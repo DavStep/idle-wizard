@@ -362,3 +362,4 @@ experience_type: product-shape
 - Haptics are app-level device feedback: keep the preference in local storage and route pulses through `HapticsFacade`. Every enabled touch control gets a mild pulse on touch-down, no second pulse on quick release, and a mild second pulse only after a validated release following a `350ms` hold; actions and click sounds remain release-confirmed.
 - Holding a button must never activate or repeat its action before release; Workshop summon follows the same release-only rule as tabs, regular buttons, icon buttons, and dialog close controls.
 - Android tap haptics should prefer the `IdleWizardHaptics` constant pulse (`5ms`, `0.5` amplitude); Capacitor `Haptics.vibrate()` uses default amplitude and feels harsher.
+- Retained room scroll height must derive from visible rendered rows, not maximum feature capacity; hidden future Garden plots otherwise create blank scroll travel and a misleading overflow rail.

@@ -22,6 +22,7 @@ export class PixiProgressBar extends Container {
     height = PIXI_UI_GEOMETRY.progressTotalHeight,
     progress = 0,
     tone = 'root',
+    usePlayerStyle = true,
     label = 'progress',
   } = {}) {
     super();
@@ -29,6 +30,7 @@ export class PixiProgressBar extends Container {
     this.barWidth = width;
     this.barHeight = height;
     this.tone = normalizeProgressTone(tone);
+    this.usePlayerStyle = Boolean(usePlayerStyle);
     this.start = 0;
     this.end = clamp01(progress);
     this.theme = DEFAULT_PIXI_THEME_SNAPSHOT;
@@ -104,7 +106,7 @@ export class PixiProgressBar extends Container {
   rebuildGradient() {
     this.gradient?.destroy();
     this.gradient = null;
-    if (this.theme.progress?.key !== 'gradient') {
+    if (this.getProgressStyleKey() !== 'gradient') {
       return;
     }
     this.gradient = new FillGradient({
@@ -148,7 +150,7 @@ export class PixiProgressBar extends Container {
       kind: 'fillMask',
     });
 
-    if (this.theme.progress?.key === 'notched') {
+    if (this.getProgressStyleKey() === 'notched') {
       this.fillGraphic
         .roundRect(fillX, border, fillWidth, innerHeight, fillRadius)
         .fill(visual.fill)
@@ -212,7 +214,7 @@ export class PixiProgressBar extends Container {
   }
 
   resolveFillVisual() {
-    const progressKey = this.theme.progress?.key;
+    const progressKey = this.getProgressStyleKey();
     if (progressKey === 'gradient') {
       return {
         fill: this.gradient ?? PIXI_PROGRESS_VISUALS.tones.root.fill,
@@ -234,6 +236,10 @@ export class PixiProgressBar extends Container {
       fill: tone.fill,
       edge: tone.edge,
     };
+  }
+
+  getProgressStyleKey() {
+    return this.usePlayerStyle ? this.theme.progress?.key : null;
   }
 
   destroy(options) {

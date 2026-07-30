@@ -868,17 +868,43 @@ describe('base styles', () => {
     );
   });
 
-  it('keeps every room background solid', () => {
+  it('keeps Night solid and gives the darker Day wall a warm paper texture', () => {
     const roomBackgroundRule = getRuleBody(
       /\.workshop-page,\s*\.brewing-page,\s*\.garden-page,\s*\.research-page,\s*\.shop-page,\s*\.guild-page,\s*\.prestige-page\s*\{(?<body>[^}]*)\}/,
     );
+    const nightRule = getRuleBody(
+      /:root\[data-style-theme="night"\]\s*\{(?<body>[^}]*)\}/,
+    );
+    const dayRule = getRuleBody(
+      /:root\[data-style-theme="day"\]\s*\{(?<body>[^}]*)\}/,
+    );
 
     expect(roomBackgroundRule).toContain(
-      '--style-page-background: var(--style-surface);',
+      '--style-page-background: var(--style-room-background, var(--style-surface));',
     );
+    expect(roomBackgroundRule).toContain(
+      'background-color: var(--style-page-background, var(--style-surface));',
+    );
+    expect(roomBackgroundRule).toContain(
+      'background-image: var(--style-room-paper-texture, none);',
+    );
+    expect(nightRule).toContain('--style-room-paper-texture: none;');
+    expect(dayRule).toContain('--style-bg: #e8bc8c;');
+    expect(dayRule).toContain('--style-room-paper-texture: url(');
+    expect(dayRule).toContain('%23ffead0');
+    expect(dayRule).toContain('%23af744c');
     expect(roomBackgroundRule).not.toContain('gradient(');
     expect(baseCss).not.toContain('--style-page-tint-bottom');
     expect(baseCss).not.toContain('--style-page-tint-top');
+  });
+
+  it('keeps the fitted game stage frameless', () => {
+    const stageRule = getRuleBody(
+      /\.game-stage\s*\{(?<body>[^}]*)\}/,
+    );
+
+    expect(stageRule).toContain('border: 0;');
+    expect(stageRule).not.toContain('border: var(--style-border);');
   });
 
   it('keeps first-run cutscene art fixed to the authored source width', () => {

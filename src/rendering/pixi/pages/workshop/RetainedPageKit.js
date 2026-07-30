@@ -21,7 +21,10 @@ import {
   ROOT_RUN_TO_IDLE_WIZARD_SCROLL_SCALE,
   StationScrollPhysics,
 } from '../../../../pages/managers/StationScrollPhysics.js';
-import { createPixiPageBackgroundGradient } from '../../theme/PixiPageBackground.js';
+import {
+  createPixiPageBackgroundGradient,
+  drawPixiPageBackground,
+} from '../../theme/PixiPageBackground.js';
 import { PixiButton } from '../../primitives/PixiButton.js';
 import {
   createPixiCapsuleSlice,
@@ -245,29 +248,13 @@ export class BaseRetainedPixiPage {
       return;
     }
 
-    this.background
-      .clear()
-      .rect(
-        0,
-        0,
-        this.sourceWidth ?? RETAINED_PAGE_GEOMETRY.width,
-        this.sourceHeight ?? RETAINED_PAGE_GEOMETRY.height,
-      );
-    try {
-      this.background.fill(
-        this.backgroundGradient ?? this.theme.surface,
-      );
-    } catch {
-      this.background
-        .clear()
-        .rect(
-          0,
-          0,
-          this.sourceWidth ?? RETAINED_PAGE_GEOMETRY.width,
-          this.sourceHeight ?? RETAINED_PAGE_GEOMETRY.height,
-        )
-        .fill({ color: this.theme.surface });
-    }
+    drawPixiPageBackground(this.background, {
+      pageId: this.pageId,
+      theme: this.theme,
+      width: this.sourceWidth ?? RETAINED_PAGE_GEOMETRY.width,
+      height: this.sourceHeight ?? RETAINED_PAGE_GEOMETRY.height,
+      background: this.backgroundGradient ?? this.theme.surface,
+    });
   }
 
   renderViewModel() {}
@@ -533,6 +520,7 @@ export class RetainedProgressBar {
     assetManager = null,
     label = 'progress',
     tone = 'root',
+    usePlayerStyle = true,
     ProgressBarClass = PixiProgressBar,
   } = {}) {
     this.theme = DEFAULT_PIXI_THEME_SNAPSHOT;
@@ -544,6 +532,7 @@ export class RetainedProgressBar {
       width: 0,
       height: this.height,
       tone,
+      usePlayerStyle,
       label,
     });
     this.root = this.control;

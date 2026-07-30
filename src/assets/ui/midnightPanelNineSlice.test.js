@@ -216,4 +216,18 @@ describe('Night and Day panel nine-slice assets', () => {
       luminance(readPixel(inactive, 78, 46)),
     );
   });
+
+  it('keeps the Day top-panel antialias fringe warm at its corners', () => {
+    const topPanel = readPng('day-top-panel-background-9slice.png');
+
+    for (let y = 0; y < topPanel.height; y += 1) {
+      for (let x = 0; x < topPanel.width; x += 1) {
+        const [red, , blue, alpha] = readPixel(topPanel, x, y);
+
+        if (alpha > 0 && alpha < 255) {
+          expect(red).toBeGreaterThan(blue);
+        }
+      }
+    }
+  });
 });

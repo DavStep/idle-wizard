@@ -63,7 +63,12 @@
       });
       transientEffects.activate();
 
-      const plots = [1, 2, 3, 4, 5].map((tileNumber) => ({
+      const overflow = new URLSearchParams(window.location.search).get('overflow') === '1';
+      const emptyPlotCount = overflow ? 11 : 5;
+      const plots = Array.from(
+        { length: emptyPlotCount },
+        (_, index) => index + 1,
+      ).map((tileNumber) => ({
         id: `plot-${tileNumber}`,
         tileNumber,
         level: tileNumber === 1 ? 2 : 1,
@@ -75,15 +80,17 @@
         semanticId: `garden.plot.${tileNumber}`,
       }));
       plots.push({
-        id: 'plot-6',
-        tileNumber: 6,
+        id: `plot-${emptyPlotCount + 1}`,
+        tileNumber: emptyPlotCount + 1,
         phase: 'empty',
         buySlot: true,
         disabled: false,
         lockReason: 'research_locked',
         actionText: 'Research',
-        semanticId: 'garden.plot.6',
+        semanticId: `garden.plot.${emptyPlotCount + 1}`,
       });
+      document.querySelector('#garden-plots-recipe-state').dataset.emptyPlots =
+        String(emptyPlotCount);
 
       const page = new GardenPixiPage({
         assetManager,
@@ -94,7 +101,6 @@
       page.bind({
         garden: {
           now: 0,
-          maxPlots: 6,
           plots,
           actionBar: {
             selectedSeed: null,

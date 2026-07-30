@@ -455,13 +455,13 @@ export const PIXI_PAGE_BACKGROUND_COLORS = Object.freeze({
     prestige: Object.freeze(['#17191f', '#17191f', '#17191f']),
   }),
   day: Object.freeze({
-    workshop: Object.freeze(['#ffe2c0', '#ffe2c0', '#ffe2c0']),
-    brewing: Object.freeze(['#ffe2c0', '#ffe2c0', '#ffe2c0']),
-    garden: Object.freeze(['#ffe2c0', '#ffe2c0', '#ffe2c0']),
-    research: Object.freeze(['#ffe2c0', '#ffe2c0', '#ffe2c0']),
-    shop: Object.freeze(['#ffe2c0', '#ffe2c0', '#ffe2c0']),
-    guild: Object.freeze(['#ffe2c0', '#ffe2c0', '#ffe2c0']),
-    prestige: Object.freeze(['#ffe2c0', '#ffe2c0', '#ffe2c0']),
+    workshop: Object.freeze(['#e8bc8c', '#e8bc8c', '#e8bc8c']),
+    brewing: Object.freeze(['#e8bc8c', '#e8bc8c', '#e8bc8c']),
+    garden: Object.freeze(['#e8bc8c', '#e8bc8c', '#e8bc8c']),
+    research: Object.freeze(['#e8bc8c', '#e8bc8c', '#e8bc8c']),
+    shop: Object.freeze(['#e8bc8c', '#e8bc8c', '#e8bc8c']),
+    guild: Object.freeze(['#e8bc8c', '#e8bc8c', '#e8bc8c']),
+    prestige: Object.freeze(['#e8bc8c', '#e8bc8c', '#e8bc8c']),
   }),
 });
 
@@ -538,7 +538,7 @@ const THEME_TOKENS = Object.freeze({
   }),
   day: Object.freeze({
     key: 'day',
-    background: '#ffe2c0',
+    background: '#e8bc8c',
     surface: '#543a28',
     text: '#f4eadb',
     stroke: '#765339',

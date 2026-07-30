@@ -1329,9 +1329,7 @@ export class PixiPagesFacade {
       garden: {
         ...garden,
         now: Date.now(),
-        maxPlots: plot.maxTiles ?? tiles.length,
         plots: tiles,
-        world: this.worldViewportByPage.get("garden") ?? {},
         actionBar: {
           selectedSeed: selectedSeed
             ? createGardenSelectedSeedModel(this.gameplaySnapshot, selectedSeed)
@@ -1467,12 +1465,6 @@ export class PixiPagesFacade {
       confirmSwap: (plot) =>
         gameplay?.replaceGardenSeed?.(plot?.tileNumber, plot?.seedTypeId),
       closeDialog: () => true,
-      setWorldViewport: (viewport) => {
-        this.worldViewportByPage.set("garden", {
-          ...viewport,
-          controlled: true,
-        });
-      },
     };
   }
 

@@ -5,6 +5,13 @@ upload script posts the section whose heading matches `package.json` `version`.
 Write these developer-to-player notes only in Idle Wizard terms. Do not mention
 other game names, source projects, ports, or implementation provenance.
 
+## 0.3.33
+
+- Rebalanced seed, herb, and potion sell values so farming and brewing rewards grow more clearly with rarer ingredients.
+- Reworked the Garden plot area into a consistent vertical scroll list with tighter bounds and clearer overflow behavior.
+- Refined the Day theme with a warmer paper-textured room background and polished panel, progress, and action artwork.
+- Improved Brewing ingredient-drop timing and simplified cauldron-switching motion.
+
 ## 0.3.32
 
 - Added day and night themes with matching room panels, tabs, settings controls, and Workshop atmosphere.

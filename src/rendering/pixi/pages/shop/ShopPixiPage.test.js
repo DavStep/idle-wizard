@@ -851,6 +851,12 @@ describe('ShopPixiPage', () => {
     expect(dialog.rangeControl.progress.fillColor).toBe('#d8ad32');
     expect(mark.control.variant).toBe('green');
     expect(clear.control.variant).toBe('red');
+    expect(clear.height).toBe(PIXI_UI_GEOMETRY.roomControlHeight);
+    expect(mark.height).toBe(PIXI_UI_GEOMETRY.roomControlHeight);
+    expect(mark.height).toBeGreaterThan(
+      PIXI_ROOT_RUN_GEOMETRY.button.borderInsets.top +
+        PIXI_ROOT_RUN_GEOMETRY.button.borderInsets.bottom,
+    );
     expect(clear.root.x).toBeLessThan(mark.root.x);
     expect(dialog.tabLayer.parent).toBe(dialog.panel);
     expect(

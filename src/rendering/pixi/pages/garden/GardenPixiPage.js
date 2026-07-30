@@ -27,6 +27,7 @@ import {
   RETAINED_PAGE_GEOMETRY,
   RETAINED_TEXT_STYLES,
   RetainedPanel,
+  RetainedScrollArea,
   RetainedTimedProgressBar,
   applyTextTheme,
   createText,
@@ -40,13 +41,11 @@ import {
 } from "./GardenDialogPixi.js";
 
 export const GARDEN_PIXI_GEOMETRY = Object.freeze({
-  worldTop: 120,
-  worldBottom: 162,
-  worldWidth: 356,
-  worldMinHeight: 560,
-  worldEdgeExtension: 16,
+  plotListTop: 120,
+  plotListBottom: 162,
   gridPaddingTop: 24,
-  gridPaddingX: 16,
+  gridPaddingBottom: 24,
+  gridPaddingX: 32,
   columns: 3,
   columnGap: 12,
   rowHeight: 92,
@@ -64,10 +63,6 @@ export const GARDEN_PIXI_GEOMETRY = Object.freeze({
   selectedSeedGap: 5,
 });
 
-const GARDEN_WORLD_MIN_ZOOM = 0.62;
-const GARDEN_WORLD_MAX_ZOOM = 1.16;
-const GARDEN_PAN_RUBBER_LIMIT = 54;
-const GARDEN_ZOOM_RUBBER_LIMIT = 0.12;
 const GARDEN_GROWING_WIND_MS = 2_400;
 const GARDEN_READY_LIFT_MS = 1_080;
 const GARDEN_SCISSORS_SNIP_MS = 420;
@@ -106,26 +101,17 @@ export class GardenPixiPage extends BaseRetainedPixiPage {
     this.ticker = ticker;
     this.timeSource = timeSource;
     this.active = false;
-    this.worldPan = { x: 0, y: 0 };
-    this.worldZoom = 1;
-    this.worldSize = {
-      width: GARDEN_PIXI_GEOMETRY.worldWidth,
-      height: GARDEN_PIXI_GEOMETRY.worldMinHeight,
-    };
-    this.panStart = null;
-    this.pinchStart = null;
     this.instanceSequence = 0;
     this.tickHandler = () => this.tick(this.timeSource());
     this.boundPlotState = new Map();
     this.hasBoundPlotState = false;
 
-    this.worldViewport = new Container({ label: "garden-world-viewport" });
-    this.worldViewport.eventMode = "static";
-    this.world = new Container({ label: "garden-world" });
-    this.worldMask = new Graphics({ label: "garden-world-mask" });
-    this.worldViewport.addChild(this.world, this.worldMask);
-    this.world.mask = this.worldMask;
-    this.content.addChild(this.worldViewport);
+    this.plotScroll = new RetainedScrollArea({
+      assetManager: this.assetManager,
+      label: "garden-page-scroll",
+      inputRouter: this.inputRouter,
+    });
+    this.content.addChild(this.plotScroll.root);
     this.plotPool = new WidgetPool({
       name: "garden plot pool",
       counters,
@@ -159,31 +145,6 @@ export class GardenPixiPage extends BaseRetainedPixiPage {
       assetManager: this.assetManager,
     });
     this.content.addChild(this.actionBar.root, this.plotTooltip.root);
-
-    this.panRegistration =
-      this.inputRouter?.registerPanSurface?.({
-        id: "garden.world.pan",
-        displayObject: this.worldViewport,
-        enabled: () => this.active,
-        priority: -1,
-        onPanStart: () => {
-          this.panStart = { ...this.worldPan };
-          return true;
-        },
-        onPan: (context) => this.onWorldPan(context),
-        onPanEnd: () => this.settleWorldViewport(),
-        onPanCancel: () => this.settleWorldViewport(),
-      }) ?? null;
-    this.pinchRegistration =
-      this.inputRouter?.registerPinchSurface?.({
-        id: "garden.world.pinch",
-        displayObject: this.worldViewport,
-        enabled: () => this.active,
-        priority: 2,
-        onPinchStart: (context) => this.onWorldPinchStart(context),
-        onPinch: (context) => this.onWorldPinch(context),
-        onPinchEnd: () => this.settleWorldViewport(),
-      }) ?? null;
 
     this.registerDialogs();
     this.applyTheme(theme);
@@ -246,20 +207,12 @@ export class GardenPixiPage extends BaseRetainedPixiPage {
   renderViewModel(viewModel) {
     const garden = viewModel.garden ?? viewModel;
     this.currentActions = viewModel.actions ?? garden.actions ?? this.actions;
-    const viewport = garden.world ?? {};
-    if (viewport.controlled === true || viewport.reset === true) {
-      this.worldPan = {
-        x: finiteOr(viewport.panX, this.worldPan.x),
-        y: finiteOr(viewport.panY, this.worldPan.y),
-      };
-      this.worldZoom = finiteOr(viewport.zoom, this.worldZoom);
-    }
 
-    const plots = normalizeRows(garden.plots ?? garden.plot?.tiles);
-    this.plots.reconcile(plots);
-    this.syncWorldSize(
-      garden.maxPlots ?? garden.plot?.maxTiles ?? plots.length,
+    const plots = normalizeRows(garden.plots ?? garden.plot?.tiles).filter(
+      (plot) => plot?.hidden !== true && plot?.visible !== false,
     );
+    this.plots.reconcile(plots);
+    this.syncPlotContentHeight(plots.length);
     this.actionBar.bind(garden.actionBar ?? {}, this.currentActions);
     this.syncDialogs(garden.dialogs ?? {});
     this.layoutGarden();
@@ -398,122 +351,25 @@ export class GardenPixiPage extends BaseRetainedPixiPage {
   }
 
   orderPlots(plots) {
-    this.world.removeChildren();
+    this.plotScroll.content.removeChildren();
     for (const plot of plots) {
-      this.world.addChild(plot.root);
+      this.plotScroll.content.addChild(plot.root);
     }
   }
 
-  syncWorldSize(maxPlots) {
+  syncPlotContentHeight(plotCount) {
     const rows = Math.max(
       1,
       Math.ceil(
-        Math.max(0, Number(maxPlots) || 0) / GARDEN_PIXI_GEOMETRY.columns,
+        Math.max(0, Number(plotCount) || 0) / GARDEN_PIXI_GEOMETRY.columns,
       ),
     );
-    this.worldSize = {
-      width: GARDEN_PIXI_GEOMETRY.worldWidth,
-      height: Math.max(
-        GARDEN_PIXI_GEOMETRY.worldMinHeight,
-        18 +
-          rows * GARDEN_PIXI_GEOMETRY.rowHeight +
-          Math.max(0, rows - 1) * GARDEN_PIXI_GEOMETRY.rowGap +
-          GARDEN_PIXI_GEOMETRY.worldEdgeExtension * 2,
-      ),
-    };
-    this.setWorldViewport(this.worldPan.x, this.worldPan.y, this.worldZoom);
-  }
-
-  onWorldPan(context) {
-    const scale = finiteOr(this.viewportProjection?.sourceScale, 3);
-    const movement = context.movement?.screen ?? { x: 0, y: 0 };
-    const start = this.panStart ?? this.worldPan;
-    this.setWorldViewport(
-      start.x + movement.x / scale,
-      start.y + movement.y / scale,
-      this.worldZoom,
-      { rubber: true },
+    this.plotScroll.setContentHeight(
+      GARDEN_PIXI_GEOMETRY.gridPaddingTop +
+        rows * GARDEN_PIXI_GEOMETRY.rowHeight +
+        Math.max(0, rows - 1) * GARDEN_PIXI_GEOMETRY.rowGap +
+        GARDEN_PIXI_GEOMETRY.gridPaddingBottom,
     );
-  }
-
-  onWorldPinchStart(context) {
-    const point = this.worldViewport.toLocal(context.point);
-    this.pinchStart = {
-      zoom: this.worldZoom,
-      worldX: (point.x - this.worldPan.x) / this.worldZoom,
-      worldY: (point.y - this.worldPan.y) / this.worldZoom,
-    };
-    return true;
-  }
-
-  onWorldPinch(context) {
-    const start = this.pinchStart;
-    if (!start) {
-      return;
-    }
-    const point = this.worldViewport.toLocal(context.point);
-    const zoom = rubberClamp(
-      start.zoom * context.scale,
-      GARDEN_WORLD_MIN_ZOOM,
-      GARDEN_WORLD_MAX_ZOOM,
-      GARDEN_ZOOM_RUBBER_LIMIT,
-    );
-    this.setWorldViewport(
-      point.x - start.worldX * zoom,
-      point.y - start.worldY * zoom,
-      zoom,
-      { rubber: true },
-    );
-  }
-
-  settleWorldViewport() {
-    this.panStart = null;
-    this.pinchStart = null;
-    this.setWorldViewport(this.worldPan.x, this.worldPan.y, this.worldZoom);
-  }
-
-  setWorldViewport(x, y, zoom, { rubber = false, notify = true } = {}) {
-    const nextZoom = rubber
-      ? rubberClamp(
-          zoom,
-          GARDEN_WORLD_MIN_ZOOM,
-          GARDEN_WORLD_MAX_ZOOM,
-          GARDEN_ZOOM_RUBBER_LIMIT,
-        )
-      : clamp(zoom, GARDEN_WORLD_MIN_ZOOM, GARDEN_WORLD_MAX_ZOOM);
-    const bounds = this.getWorldPanBounds(nextZoom);
-    const nextPan = {
-      x: rubber
-        ? rubberClamp(x, bounds.minX, bounds.maxX, GARDEN_PAN_RUBBER_LIMIT)
-        : clamp(x, bounds.minX, bounds.maxX),
-      y: rubber
-        ? rubberClamp(y, bounds.minY, bounds.maxY, GARDEN_PAN_RUBBER_LIMIT)
-        : clamp(y, bounds.minY, bounds.maxY),
-    };
-    this.worldPan = nextPan;
-    this.worldZoom = nextZoom;
-    this.world.position.set(nextPan.x, nextPan.y);
-    this.world.scale.set(nextZoom);
-    if (notify) {
-      this.currentActions?.setWorldViewport?.({
-        panX: nextPan.x,
-        panY: nextPan.y,
-        zoom: nextZoom,
-      });
-    }
-  }
-
-  getWorldPanBounds(zoom = this.worldZoom) {
-    const width = this.worldViewportWidth ?? this.sourceWidth ?? 360;
-    const height = this.worldViewportHeight ?? 0;
-    const freeX = width - this.worldSize.width * zoom;
-    const freeY = height - this.worldSize.height * zoom;
-    return {
-      minX: Math.min(0, freeX),
-      maxX: Math.max(0, freeX),
-      minY: Math.min(0, freeY),
-      maxY: Math.max(0, freeY),
-    };
   }
 
   applyThemeToChildren(theme) {
@@ -525,27 +381,21 @@ export class GardenPixiPage extends BaseRetainedPixiPage {
   }
 
   layoutPage(sourceWidth, sourceHeight) {
-    if (!this.worldViewport) {
+    if (!this.plotScroll) {
       return;
     }
-    this.worldViewportWidth = sourceWidth;
-    this.worldViewportHeight = Math.max(
+    const plotListHeight = Math.max(
       0,
       sourceHeight -
-        GARDEN_PIXI_GEOMETRY.worldTop -
-        GARDEN_PIXI_GEOMETRY.worldBottom,
+        GARDEN_PIXI_GEOMETRY.plotListTop -
+        GARDEN_PIXI_GEOMETRY.plotListBottom,
     );
-    this.worldViewport.position.set(0, GARDEN_PIXI_GEOMETRY.worldTop);
-    this.worldViewport.hitArea = new Rectangle(
+    this.plotScroll.setBounds(
       0,
-      0,
-      this.worldViewportWidth,
-      this.worldViewportHeight,
+      GARDEN_PIXI_GEOMETRY.plotListTop,
+      sourceWidth - RETAINED_PAGE_GEOMETRY.contentEdge,
+      plotListHeight,
     );
-    this.worldMask
-      .clear()
-      .rect(0, 0, this.worldViewportWidth, this.worldViewportHeight)
-      .fill({ color: 0xffffff });
     this.actionBar.setBounds(
       RETAINED_PAGE_GEOMETRY.contentEdge,
       sourceHeight - GARDEN_PIXI_GEOMETRY.actionBarBottom,
@@ -558,8 +408,7 @@ export class GardenPixiPage extends BaseRetainedPixiPage {
     if (!this.plots) {
       return;
     }
-    const contentWidth =
-      this.worldSize.width - GARDEN_PIXI_GEOMETRY.worldEdgeExtension * 2;
+    const contentWidth = this.sourceWidth - RETAINED_PAGE_GEOMETRY.contentEdge;
     const cellWidth =
       (contentWidth -
         GARDEN_PIXI_GEOMETRY.gridPaddingX * 2 -
@@ -569,25 +418,20 @@ export class GardenPixiPage extends BaseRetainedPixiPage {
       const column = index % GARDEN_PIXI_GEOMETRY.columns;
       const row = Math.floor(index / GARDEN_PIXI_GEOMETRY.columns);
       plot.setBounds(
-        GARDEN_PIXI_GEOMETRY.worldEdgeExtension +
-          GARDEN_PIXI_GEOMETRY.gridPaddingX +
+        GARDEN_PIXI_GEOMETRY.gridPaddingX +
           column * (cellWidth + GARDEN_PIXI_GEOMETRY.columnGap),
         GARDEN_PIXI_GEOMETRY.gridPaddingTop +
           row * (GARDEN_PIXI_GEOMETRY.rowHeight + GARDEN_PIXI_GEOMETRY.rowGap),
         cellWidth,
       );
     });
-    this.setWorldViewport(this.worldPan.x, this.worldPan.y, this.worldZoom, {
-      notify: false,
-    });
   }
 
   destroyPage() {
     this.ticker?.remove?.(this.tickHandler);
-    releaseRegistration(this.panRegistration);
-    releaseRegistration(this.pinchRegistration);
     this.plots?.destroy();
     this.plotPool?.destroy();
+    this.plotScroll?.destroy();
     this.actionBar?.destroy();
     this.plotTooltip?.destroy();
   }
@@ -884,6 +728,7 @@ class GardenPlotWidget {
       assetManager,
       label: `garden-plot-${instanceId}-progress`,
       tone: "green",
+      usePlayerStyle: false,
     });
     this.notificationBadge = new PixiNotificationBadge({ assetManager });
     this.notificationBadge.root.label = `garden-plot-${instanceId}-notification`;
@@ -1569,26 +1414,6 @@ function getAtlasTexture(assetManager, frameName) {
   return frameName
     ? (assetManager?.getAtlasTexture?.(frameName) ?? Texture.EMPTY)
     : Texture.EMPTY;
-}
-
-function rubberClamp(value, minimum, maximum, limit) {
-  if (value < minimum) {
-    return Math.max(
-      minimum - limit,
-      minimum - rubberDistance(minimum - value, limit),
-    );
-  }
-  if (value > maximum) {
-    return Math.min(
-      maximum + limit,
-      maximum + rubberDistance(value - maximum, limit),
-    );
-  }
-  return value;
-}
-
-function rubberDistance(distance, limit) {
-  return limit <= 0 ? 0 : limit * (1 - 1 / (distance / limit + 1));
 }
 
 function clamp(value, minimum, maximum) {

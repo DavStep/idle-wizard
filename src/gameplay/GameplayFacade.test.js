@@ -5609,7 +5609,7 @@ describe("GameplayFacade", () => {
       initialSellItems.find((item) => item.key === "manaTonic"),
     ).toMatchObject({
       quantity: 0,
-      sellCoin: 55,
+      sellCoin: 60,
     });
     expect(
       initialSellItems.find((item) => item.key === "pearlrootDraught"),
@@ -5629,15 +5629,15 @@ describe("GameplayFacade", () => {
     expect(sellItems).toHaveLength(87);
     expect(sellItems.find((item) => item.key === "mintSeed")).toMatchObject({
       quantity: 2,
-      sellCoin: 1,
+      sellCoin: 2,
     });
     expect(sellItems.find((item) => item.key === "sageHerb")).toMatchObject({
       quantity: 0,
-      sellCoin: 6,
+      sellCoin: 5,
     });
     expect(sellItems.find((item) => item.key === "nettleSeed")).toMatchObject({
       quantity: 0,
-      sellCoin: 1,
+      sellCoin: 3,
     });
   });
 
@@ -6016,7 +6016,7 @@ describe("GameplayFacade", () => {
         .shop.shelf.sellItems.find((item) => item.key === "sageHerb"),
     ).toMatchObject({
       quantity: 0,
-      sellCoin: 6,
+      sellCoin: 5,
     });
     expect(gameplayFacade.getSnapshot().shop.shelf.slots[0]).toMatchObject({
       sellItemTypeId: 1001,
@@ -6026,7 +6026,7 @@ describe("GameplayFacade", () => {
     shopNowMs = 5_000;
     ecsFacade.update({ deltaSeconds: 5 });
 
-    expect(gameplayFacade.getSnapshot().coin.current).toBe(6);
+    expect(gameplayFacade.getSnapshot().coin.current).toBe(5);
     expect(gameplayFacade.getSnapshot().inventory).toEqual([
       {
         itemTypeId: 1001,
@@ -6049,7 +6049,7 @@ describe("GameplayFacade", () => {
     shopNowMs = 10_000;
     ecsFacade.update({ deltaSeconds: 5 });
 
-    expect(gameplayFacade.getSnapshot().coin.current).toBe(6);
+    expect(gameplayFacade.getSnapshot().coin.current).toBe(5);
     expect(gameplayFacade.getSnapshot().inventory).toEqual([
       {
         itemTypeId: 1001,
@@ -6336,7 +6336,7 @@ describe("GameplayFacade", () => {
     shopNowMs = 5_000;
     ecsFacade.update({ deltaSeconds: 5 });
 
-    expect(gameplayFacade.getSnapshot().coin.current).toBe(1);
+    expect(gameplayFacade.getSnapshot().coin.current).toBe(2);
     expect(gameplayFacade.getSnapshot().inventory).toEqual([
       {
         itemTypeId: 1,

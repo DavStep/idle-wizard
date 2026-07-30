@@ -201,11 +201,6 @@ export class BrewingHudPixi {
     this.lockArt.label = 'brewing-carousel-lock-art';
     this.lockLabel = centeredText('', RETAINED_TEXT_STYLES.bold);
     this.lockLabel.anchor.set(0.5, 0);
-    this.cauldronChangeSwoosh = new Graphics({
-      label: 'brewing-cauldron-change-swoosh',
-    });
-    this.cauldronChangeSwoosh.visible = false;
-    this.cauldronChangeSwoosh.renderable = false;
     this.dots = new Graphics({ label: 'brewing-carousel-dots' });
     this.carouselPanel.body.addChild(
       this.cauldronTitlePlaque.root,
@@ -216,7 +211,6 @@ export class BrewingHudPixi {
       this.cauldronLiquidHighlight,
       this.lockArt,
       this.lockLabel,
-      this.cauldronChangeSwoosh,
       this.dots,
     );
 
@@ -1265,10 +1259,6 @@ export class BrewingHudPixi {
       rest.highlightX + offset;
     this.recipeOrbit.x =
       rest.orbitX - offset * 0.2;
-    this.drawCauldronChangeSwoosh(
-      motion.direction,
-      progress,
-    );
 
     if (progress >= 1) {
       this.resetCauldronChangeMotion();
@@ -1300,80 +1290,6 @@ export class BrewingHudPixi {
   resetCauldronChangeMotion() {
     this.restoreCauldronChangeVisuals();
     this.cauldronChangeMotion = null;
-    this.cauldronChangeSwoosh.clear();
-    this.cauldronChangeSwoosh.visible = false;
-    this.cauldronChangeSwoosh.renderable = false;
-  }
-
-  drawCauldronChangeSwoosh(direction, progress) {
-    const graphics = this.cauldronChangeSwoosh;
-    graphics.clear();
-    const sweepProgress = clamp(progress / 0.88, 0, 1);
-    const head = clamp(sweepProgress * 1.28, 0, 1);
-    const tail = Math.max(0, head - 0.38);
-    const alpha =
-      Math.sin(Math.PI * sweepProgress) * 0.9;
-    if (head - tail <= 0.005 || alpha <= 0.005) {
-      graphics.visible = false;
-      graphics.renderable = false;
-      return;
-    }
-
-    const centerX =
-      this.cauldronChangeRestState?.art.x ??
-      this.carouselPanel.width / 2;
-    const centerY =
-      this.cauldronChangeRestState?.art.y ?? 136;
-    const paths = [
-      {
-        start: [82, -28],
-        controlA: [48, -55],
-        controlB: [-24, -49],
-        end: [-78, -8],
-        color: 0x2fa8ff,
-        width: 3,
-      },
-      {
-        start: [72, 18],
-        controlA: [34, 50],
-        controlB: [-30, 46],
-        end: [-72, 16],
-        color: 0xf5c542,
-        width: 2.2,
-      },
-      {
-        start: [66, -5],
-        controlA: [28, -23],
-        controlB: [-24, -19],
-        end: [-64, 2],
-        color: 0xbfe9ff,
-        width: 1.3,
-      },
-    ];
-
-    for (const path of paths) {
-      drawBezierTrail(graphics, {
-        ...path,
-        centerX,
-        centerY,
-        direction,
-        tail,
-        head,
-        alpha,
-      });
-    }
-    const spark = pointOnDirectionalBezier({
-      ...paths[0],
-      centerX,
-      centerY,
-      direction,
-      progress: head,
-    });
-    graphics
-      .circle(spark.x, spark.y, 2.2)
-      .fill({ color: 0xf5c542, alpha });
-    graphics.visible = true;
-    graphics.renderable = true;
   }
 
   resetAutoBrewMotion() {
@@ -1883,80 +1799,6 @@ function applyCauldronSettle(
     rest.scaleY * scaleY,
   );
   displayObject.rotation = rest.rotation + rotation;
-}
-
-function drawBezierTrail(
-  graphics,
-  {
-    centerX,
-    centerY,
-    direction,
-    start,
-    controlA,
-    controlB,
-    end,
-    tail,
-    head,
-    color,
-    width,
-    alpha,
-  },
-) {
-  const segmentCount = 18;
-  for (let index = 0; index <= segmentCount; index += 1) {
-    const progress =
-      tail + ((head - tail) * index) / segmentCount;
-    const point = pointOnDirectionalBezier({
-      centerX,
-      centerY,
-      direction,
-      start,
-      controlA,
-      controlB,
-      end,
-      progress,
-    });
-    if (index === 0) {
-      graphics.moveTo(point.x, point.y);
-    } else {
-      graphics.lineTo(point.x, point.y);
-    }
-  }
-  graphics.stroke({
-    color,
-    width,
-    alpha,
-    cap: 'round',
-    join: 'round',
-  });
-}
-
-function pointOnDirectionalBezier({
-  centerX,
-  centerY,
-  direction,
-  start,
-  controlA,
-  controlB,
-  end,
-  progress,
-}) {
-  const t = clamp(progress, 0, 1);
-  const inverse = 1 - t;
-  const x =
-    inverse ** 3 * start[0] +
-    3 * inverse ** 2 * t * controlA[0] +
-    3 * inverse * t ** 2 * controlB[0] +
-    t ** 3 * end[0];
-  const y =
-    inverse ** 3 * start[1] +
-    3 * inverse ** 2 * t * controlA[1] +
-    3 * inverse * t ** 2 * controlB[1] +
-    t ** 3 * end[1];
-  return {
-    x: centerX + x * direction,
-    y: centerY + y,
-  };
 }
 
 function isBrewingQuantityActionVisible(cauldron = {}) {

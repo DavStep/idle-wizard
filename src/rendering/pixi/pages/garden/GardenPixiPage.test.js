@@ -14,10 +14,13 @@ import { DialogRegistry } from "../../retained/DialogRegistry.js";
 import { PageRegistry } from "../../retained/PageRegistry.js";
 import { SemanticTargetRegistry } from "../../retained/SemanticTargetRegistry.js";
 import {
+  PIXI_PROGRESS_VISUALS,
   PIXI_UI_GEOMETRY,
+  createPixiThemeSnapshot,
   resolvePixiTextStrokeWidth,
 } from "../../theme/PixiThemeTokens.js";
 import { ROOT_RUN_INVENTORY_CHOICE_DIALOG_GEOMETRY } from "../shared/RootRunInventoryChoiceDialogPixi.js";
+import { RetainedScrollArea } from "../workshop/RetainedPageKit.js";
 import { GARDEN_PIXI_GEOMETRY, GardenPixiPage } from "./GardenPixiPage.js";
 
 describe("GardenPixiPage", () => {
@@ -376,14 +379,15 @@ describe("GardenPixiPage", () => {
     harness.page.bind(createGardenViewModel());
     const plot = harness.page.plots.get("plot-1");
 
-    expect(harness.page.worldViewport.position).toMatchObject({
+    expect(harness.page.plotScroll).toBeInstanceOf(RetainedScrollArea);
+    expect(harness.page.plotScroll.root.position).toMatchObject({
       x: 0,
-      y: GARDEN_PIXI_GEOMETRY.worldTop,
+      y: GARDEN_PIXI_GEOMETRY.plotListTop,
     });
-    expect(harness.page.worldViewportHeight).toBeCloseTo(
+    expect(harness.page.plotScroll.height).toBeCloseTo(
       2170 / 3 -
-        GARDEN_PIXI_GEOMETRY.worldTop -
-        GARDEN_PIXI_GEOMETRY.worldBottom,
+        GARDEN_PIXI_GEOMETRY.plotListTop -
+        GARDEN_PIXI_GEOMETRY.plotListBottom,
     );
     expect(plot.root.position).toMatchObject({ x: 32, y: 24 });
     expect(harness.page.actionBar.root.position).toMatchObject({
@@ -416,6 +420,98 @@ describe("GardenPixiPage", () => {
     expect(ticker.add).toHaveBeenCalledWith(harness.page.tickHandler);
     harness.page.deactivate();
     expect(ticker.remove).toHaveBeenCalledWith(harness.page.tickHandler);
+
+    harness.page.destroy();
+    harness.dispose();
+  });
+
+  it("keeps Garden timer rails green when the player selects another progress style", () => {
+    const harness = createHarness();
+
+    harness.page.bind(createGardenViewModel());
+    harness.page.applyTheme(
+      createPixiThemeSnapshot({ progressBar: "gradient" }),
+    );
+
+    const progress = harness.page.plots.get("plot-1").progress;
+    expect(progress.control).toMatchObject({
+      tone: "green",
+      fillColor: PIXI_PROGRESS_VISUALS.tones.green.fill,
+      fillEdgeColor: PIXI_PROGRESS_VISUALS.tones.green.edge,
+      gradient: null,
+    });
+
+    harness.page.destroy();
+    harness.dispose();
+  });
+
+  it("uses the shared bounded vertical scroll pane instead of world pan and pinch", () => {
+    const harness = createHarness();
+    const model = createGardenViewModel();
+    model.garden.maxPlots = 12;
+    model.garden.plots = Array.from({ length: 12 }, (_, index) => ({
+      ...model.garden.plots[0],
+      id: `plot-${index + 1}`,
+      tileNumber: index + 1,
+    }));
+
+    harness.page.bind(model);
+    harness.page.activate();
+
+    expect(harness.page.plotScroll).toBeInstanceOf(RetainedScrollArea);
+    expect(harness.inputRouter.store.getRegistrations("scroll")).toHaveLength(
+      1,
+    );
+    expect(harness.inputRouter.store.getRegistrations("pan")).toHaveLength(0);
+    expect(harness.inputRouter.store.getRegistrations("pinch")).toHaveLength(
+      0,
+    );
+    expect(harness.page.plotScroll.contentHeight).toBe(
+      GARDEN_PIXI_GEOMETRY.gridPaddingTop +
+        GARDEN_PIXI_GEOMETRY.gridPaddingBottom +
+        GARDEN_PIXI_GEOMETRY.rowHeight * 4 +
+        GARDEN_PIXI_GEOMETRY.rowGap * 3,
+    );
+    expect(harness.page.plotScroll.scrollbarTrack.visible).toBe(true);
+
+    harness.page.plotScroll.scrollBy(24);
+
+    expect(harness.page.plotScroll.offsetY).toBe(24);
+    expect(harness.page.plotScroll.content.y).toBe(-24);
+
+    harness.page.destroy();
+    harness.dispose();
+  });
+
+  it("sizes the scroll range from rendered plots instead of maximum garden capacity", () => {
+    const harness = createHarness();
+    const model = createGardenViewModel();
+    model.garden.maxPlots = 12;
+    model.garden.plots.push({
+      ...model.garden.plots[0],
+      id: "plot-2",
+      tileNumber: 2,
+    });
+    model.garden.plots.push(
+      ...Array.from({ length: 10 }, (_, index) => ({
+        ...model.garden.plots[0],
+        id: `plot-${index + 3}`,
+        tileNumber: index + 3,
+        hidden: true,
+      })),
+    );
+
+    harness.page.bind(model);
+
+    expect(harness.page.plots.getWidgets()).toHaveLength(2);
+    expect(harness.page.plotScroll.contentHeight).toBe(
+      GARDEN_PIXI_GEOMETRY.gridPaddingTop +
+        GARDEN_PIXI_GEOMETRY.gridPaddingBottom +
+        GARDEN_PIXI_GEOMETRY.rowHeight,
+    );
+    expect(harness.page.plotScroll.physics.maxOffset).toBe(0);
+    expect(harness.page.plotScroll.scrollbarTrack.visible).toBe(false);
+    expect(harness.page.plotScroll.beginDrag()).toBe(false);
 
     harness.page.destroy();
     harness.dispose();

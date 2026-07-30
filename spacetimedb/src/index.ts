@@ -4104,73 +4104,119 @@ const unknownPotionCatalog = [
   { key: 'bloodlightWard', label: 'bloodlight ward' },
 ];
 
-const herbMarketBasePriceGoldByKey: Record<string, number> = {
-  sage: 8,
-  mint: 9,
-  nettle: 10,
-  lavender: 13,
-  briar: 15,
-  glowcap: 18,
-  mandrake: 22,
-  sunroot: 25,
-  moonflower: 30,
-  frostmoss: 35,
-  dreambell: 40,
-  starAnise: 45,
-  bloodrose: 55,
-  dragonpepper: 65,
-  silverleaf: 80,
-  yarrow: 95,
-  hyssop: 115,
-  valerian: 140,
-  comfrey: 165,
-  nightshade: 200,
-  belladonna: 240,
-  wormwood: 285,
-  snowdrop: 345,
-  pearlroot: 410,
+const seedSellPriceGoldByHerbKey: Record<string, number> = {
+  sage: 1,
+  mint: 2,
+  nettle: 3,
+  lavender: 5,
+  briar: 8,
+  glowcap: 12,
+  mandrake: 20,
+  sunroot: 32,
+  moonflower: 50,
+  frostmoss: 80,
+  dreambell: 125,
+  starAnise: 200,
+  bloodrose: 320,
+  dragonpepper: 500,
+  silverleaf: 800,
+  yarrow: 1_250,
+  hyssop: 2_000,
+  valerian: 3_200,
+  comfrey: 5_000,
+  nightshade: 8_000,
+  belladonna: 12_500,
+  wormwood: 20_000,
+  snowdrop: 32_000,
+  pearlroot: 50_000,
 };
 
-const potionMarketBasePriceGoldByKey: Record<string, number> = {
-  manaTonic: 69,
-  minorHealingPotion: 75,
-  nettleVigor: 82,
-  calmingDraught: 94,
-  simpleAntidote: 125,
-  venomDraught: 157,
-  briarWard: 132,
-  lanternTonic: 125,
-  healingPotion: 113,
-  moonlitFocus: 157,
-  sunrootStamina: 194,
-  frostmossCleanse: 200,
-  sleepDraught: 250,
-  elixirOfLife: 313,
-  starLuckPhiltre: 319,
-  dragonCourage: 357,
-  deepDreamVision: 457,
-  pactWard: 338,
-  ashenMemory: 163,
-  silverleafQuiet: 163,
-  emberSight: 319,
-  thornSleep: 194,
-  glassMoonElixir: 357,
-  rootboundResolve: 219,
-  nightOrchardTonic: 307,
-  starlessCourage: 407,
-  frostveinDraught: 282,
-  bloodlightWard: 313,
-  silverleafSalve: 425,
-  yarrowPoultice: 460,
-  hyssopClarity: 500,
-  valerianRest: 545,
-  comfreyBalm: 595,
-  nightshadeVeil: 650,
-  belladonnaSight: 710,
-  wormwoodPurge: 775,
-  snowdropBreath: 845,
-  pearlrootDraught: 925,
+const herbSellPriceGoldByKey: Record<string, number> = {
+  sage: 5,
+  mint: 10,
+  nettle: 15,
+  lavender: 25,
+  briar: 40,
+  glowcap: 60,
+  mandrake: 100,
+  sunroot: 160,
+  moonflower: 250,
+  frostmoss: 400,
+  dreambell: 625,
+  starAnise: 1_000,
+  bloodrose: 1_600,
+  dragonpepper: 2_500,
+  silverleaf: 4_000,
+  yarrow: 6_250,
+  hyssop: 10_000,
+  valerian: 16_000,
+  comfrey: 25_000,
+  nightshade: 40_000,
+  belladonna: 62_500,
+  wormwood: 100_000,
+  snowdrop: 160_000,
+  pearlroot: 250_000,
 };
+
+const potionSellPriceGoldByKey: Record<string, number> = {
+  manaTonic: 60,
+  minorHealingPotion: 80,
+  nettleVigor: 140,
+  calmingDraught: 180,
+  simpleAntidote: 380,
+  venomDraught: 760,
+  briarWard: 360,
+  lanternTonic: 520,
+  healingPotion: 440,
+  moonlitFocus: 1_200,
+  sunrootStamina: 1_400,
+  frostmossCleanse: 2_080,
+  sleepDraught: 3_700,
+  elixirOfLife: 3_200,
+  starLuckPhiltre: 6_080,
+  dragonCourage: 11_400,
+  deepDreamVision: 11_000,
+  pactWard: 8_320,
+  ashenMemory: 1_720,
+  silverleafQuiet: 1_280,
+  emberSight: 14_020,
+  thornSleep: 2_760,
+  glassMoonElixir: 7_600,
+  rootboundResolve: 1_360,
+  nightOrchardTonic: 8_980,
+  starlessCourage: 17_100,
+  frostveinDraught: 3_660,
+  bloodlightWard: 7_060,
+  silverleafSalve: 132_020,
+  yarrowPoultice: 50_140,
+  hyssopClarity: 81_240,
+  valerianRest: 130_600,
+  comfreyBalm: 201_040,
+  nightshadeVeil: 168_000,
+  belladonnaSight: 254_480,
+  wormwoodPurge: 401_720,
+  snowdropBreath: 658_000,
+  pearlrootDraught: 1_260_640,
+};
+
+const seedMarketBasePriceGoldByHerbKey = getNpcMarketBasePrices(
+  seedSellPriceGoldByHerbKey,
+);
+const herbMarketBasePriceGoldByKey = getNpcMarketBasePrices(herbSellPriceGoldByKey);
+const potionMarketBasePriceGoldByKey = getNpcMarketBasePrices(
+  potionSellPriceGoldByKey,
+);
+
+function getNpcMarketBasePrices(
+  sellPrices: Record<string, number>,
+): Record<string, number> {
+  return Object.fromEntries(
+    Object.entries(sellPrices).map(([itemKey, sellPrice]) => [
+      itemKey,
+      roundGoldPrice((sellPrice * 10_000) / Number(NPC_MARKET_BUY_BPS)),
+    ]),
+  );
+}
 
 const MAX_AUTOMATION_GARDEN_TILES = 12;
 const MAX_AUTOMATION_CAULDRONS = 5;
@@ -4945,7 +4991,7 @@ const unknownPotionCatalogByKey = new Map(
 );
 
 function getSeedMarketBasePriceGold(herb: (typeof herbCatalog)[number]): number {
-  return roundGoldPrice((herbMarketBasePriceGoldByKey[herb.key] ?? 2) * 0.4);
+  return seedMarketBasePriceGoldByHerbKey[herb.key] ?? 1;
 }
 
 const npcMarketCatalog = [
@@ -5218,16 +5264,14 @@ function getDefaultItemsConfig() {
       producesHerbTypeId: 1001 + index,
       dropWeight: 1,
       summonManaCost: 10,
-      baseSellPrice: 1,
+      baseSellPrice: seedSellPriceGoldByHerbKey[herb.key] ?? 1,
     })),
     herbs: herbCatalog.map((herb, index) => ({
       id: 1001 + index,
       key: `${herb.key}Herb`,
       label: herb.label,
       growthDurationMs: herb.growthDurationMs,
-      baseSellPrice: roundGoldPrice(
-        ((herbMarketBasePriceGoldByKey[herb.key] ?? 0) * NPC_MARKET_BUY_BPS) / 10_000,
-      ),
+      baseSellPrice: herbSellPriceGoldByKey[herb.key] ?? 0,
     })),
     potions: potionCatalog.map((potion, index) => ({
       id: 2001 + index,
@@ -5246,9 +5290,7 @@ function getDefaultItemsConfig() {
       baseSellPrice:
         'basePriceGold' in potion
           ? roundGoldPrice((potion.basePriceGold * NPC_MARKET_BUY_BPS) / 10_000)
-          : roundGoldPrice(
-              ((potionMarketBasePriceGoldByKey[potion.key] ?? 0) * NPC_MARKET_BUY_BPS) / 10_000,
-            ),
+          : (potionSellPriceGoldByKey[potion.key] ?? 0),
     })),
     ingredients: ingredientCatalog.map((ingredient) => ({
       id: ingredient.id,

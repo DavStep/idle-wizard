@@ -11,8 +11,6 @@ The page consumes display-ready presenter data:
 {
   garden: {
     now,
-    maxPlots,
-    world: { controlled, reset, panX, panY, zoom },
     plots: [{
       id, tileNumber, soilLevel, levelLabel, starTone,
       phase, label, labelResource, actionText,
@@ -45,8 +43,7 @@ The page consumes display-ready presenter data:
   actions: {
     activatePlot, activatePlotLabel,
     openSeedPicker, harvestAll,
-    selectSeed, confirmCancel, confirmSwap, closeDialog,
-    setWorldViewport
+    selectSeed, confirmCancel, confirmSwap, closeDialog
   }
 }
 ```
@@ -69,10 +66,13 @@ are ready. Empty plots show no unavailable-status label: they plant when the
 selected seed stock meets the plot requirement, or emit the shared `no seed`
 flyout when pressed without enough stock. Growing plots offer the existing
 swap confirmation when the selected seed differs. Seed, cancel-progress, and
-swap-seed dialogs are constructed on first open and retained thereafter. Pan,
-pinch, press, scrolling, modal back, and semantic tutorial targeting all use
-the injected shared registries; there are no DOM listeners or geometry
-queries.
+swap-seed dialogs are constructed on first open and retained thereafter. The
+plot grid reuses `RetainedScrollArea`, so vertical drag, wheel input, release
+inertia, elastic edges, resting bounds, and the overflow-only scrollbar match
+the other managed station panes. It stays at a fixed scale and does not
+register world pan or pinch input. Press, scrolling, modal back, and semantic
+tutorial targeting all use the injected shared registries; there are no DOM
+listeners or geometry queries.
 
 The seed picker reuses the exact `RootRunInventoryChoiceList` rendered by Load
 Stall: `50px` Settings-backed rows, `28px` seed-pack art, a two-line seed name
@@ -84,7 +84,9 @@ Open `/src/dev/uiRecipes/garden-seed-picker.html` for the deterministic,
 non-persistent four-row visual-reference state.
 Open `/src/dev/uiRecipes/garden-plots.html` for the deterministic,
 non-persistent empty-plot state used to verify label removal and the `no seed`
-press flyout.
+press flyout. Add `?overflow=1` for the valid 12-plot state used to verify
+vertical drag, wheel scrolling, the overflow-only scrollbar, and hard resting
+bounds.
 
 The cancel-progress confirmation uses the approved red danger title plaque,
 Title Case copy, a centered prompt, a yellow `Keep` action, and a red `Empty`

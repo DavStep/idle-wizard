@@ -10,7 +10,7 @@ import { isRewardEventForPage } from '../shared/rewardEventPage.js';
 
 export class GardenPageFacade {
   static explain =
-    'Shows the garden room page: a plot world for growing herbs, seed choices, and harvest feedback.';
+    'Shows the garden room page: a scrollable plot list for growing herbs, seed choices, and harvest feedback.';
 
   constructor({
     gameplayFacade,

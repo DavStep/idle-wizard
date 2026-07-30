@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest';
 
 import { ItemDefinitionManager } from './ItemDefinitionManager.js';
+import { PotionRecipeManager } from './PotionRecipeManager.js';
 
 describe('ItemDefinitionManager', () => {
   it('knows dormant herb and potion item concepts', () => {
@@ -13,7 +14,7 @@ describe('ItemDefinitionManager', () => {
       label: 'sage',
       kind: 'herb',
       growthDurationMs: 12_000,
-      baseSellPrice: 6,
+      baseSellPrice: 5,
       marketGrade: 1,
     });
     expect(manager.getDefinitionByKey('dragonpepperHerb')).toEqual({
@@ -22,7 +23,7 @@ describe('ItemDefinitionManager', () => {
       label: 'dragonpepper',
       kind: 'herb',
       growthDurationMs: 210_000,
-      baseSellPrice: 52,
+      baseSellPrice: 2_500,
       marketGrade: 3,
     });
     expect(manager.getDefinitionByKey('pearlrootHerb')).toEqual({
@@ -31,7 +32,7 @@ describe('ItemDefinitionManager', () => {
       label: 'pearlroot',
       kind: 'herb',
       growthDurationMs: 520_000,
-      baseSellPrice: 328,
+      baseSellPrice: 250_000,
       marketGrade: 5,
     });
     expect(manager.getSeedDefinition(1).producesHerbTypeId).toBe(1001);
@@ -43,7 +44,7 @@ describe('ItemDefinitionManager', () => {
       key: 'manaTonic',
       label: 'mana tonic',
       kind: 'potion',
-      baseSellPrice: 55,
+      baseSellPrice: 60,
       marketGrade: 1,
     });
     expect(manager.getPotionDefinitions()).toContainEqual({
@@ -51,7 +52,7 @@ describe('ItemDefinitionManager', () => {
       key: 'pactWard',
       label: 'pact ward',
       kind: 'potion',
-      baseSellPrice: 270,
+      baseSellPrice: 8_320,
       marketGrade: 3,
     });
     expect(manager.getPotionDefinitions()).toContainEqual({
@@ -64,7 +65,7 @@ describe('ItemDefinitionManager', () => {
       unknown: true,
       known: false,
       researchable: false,
-      baseSellPrice: 130,
+      baseSellPrice: 1_720,
       marketGrade: 3,
     });
     expect(manager.getPotionDefinitions()).toContainEqual({
@@ -81,12 +82,39 @@ describe('ItemDefinitionManager', () => {
       key: 'pearlrootDraught',
       label: 'pearlroot draught',
       kind: 'potion',
-      baseSellPrice: 740,
+      baseSellPrice: 1_260_640,
       marketGrade: 5,
     });
     expect(manager.getRecipePotionDefinitions()).toHaveLength(28);
     expect(manager.getUnknownPotionDefinitions()).toHaveLength(10);
     expect(manager.getDefinition(2001).kind).toBe('potion');
+  });
+
+  it('uses compounding seed and herb values and makes brewing worth four inputs', () => {
+    const manager = new ItemDefinitionManager();
+    const recipes = new PotionRecipeManager({
+      itemDefinitionManager: manager,
+    }).getPotionRecipes();
+
+    for (const seed of manager.getSeedDefinitions()) {
+      const herb = manager.getDefinition(seed.producesHerbTypeId);
+      expect(herb.baseSellPrice).toBe(seed.baseSellPrice * 5);
+    }
+
+    expect(manager.getDefinitionByKey('sageSeed').baseSellPrice).toBe(1);
+    expect(manager.getDefinitionByKey('pearlrootSeed').baseSellPrice).toBe(50_000);
+
+    for (const recipe of recipes) {
+      const ingredientValue = recipe.ingredients.reduce(
+        (total, ingredient) =>
+          total + manager.getDefinitionByKey(ingredient.key).baseSellPrice,
+        0,
+      );
+
+      expect(manager.getDefinitionByKey(recipe.key).baseSellPrice).toBe(
+        ingredientValue * 4,
+      );
+    }
   });
 
   it('defines active ingredients in stable rarity groups', () => {

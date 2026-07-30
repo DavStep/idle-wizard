@@ -58,16 +58,16 @@ describe('PixiButton', () => {
 
     getTexture.mockClear();
     button.applyTheme(createPixiThemeSnapshot({ theme: 'black' }));
-    expect(button.resolveRootRunVariant()).toBe('brown-dark');
+    expect(button.resolveRootRunVariant()).toBe('tab-inactive');
     expect(getTexture).toHaveBeenCalledWith(
-      PIXI_ROOT_RUN_ASSETS.buttonBrownDark,
+      PIXI_ROOT_RUN_ASSETS.buttonTabInactive,
     );
 
     getTexture.mockClear();
     button.setSelected(true);
-    expect(button.resolveRootRunVariant()).toBe('brown-light');
+    expect(button.resolveRootRunVariant()).toBe('tab-active');
     expect(getTexture).toHaveBeenCalledWith(
-      PIXI_ROOT_RUN_ASSETS.buttonBrownLight,
+      PIXI_ROOT_RUN_ASSETS.buttonTabActive,
     );
 
     button.destroy({ children: true });

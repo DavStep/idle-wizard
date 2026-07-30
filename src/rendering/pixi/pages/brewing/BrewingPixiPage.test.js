@@ -801,12 +801,12 @@ describe('BrewingPixiPage', () => {
     expect(harness.page.activeGhostMotions.size).toBe(1);
     expect(harness.page.motionGhostPool.getStats().active).toBe(1);
 
-    now = 240;
+    now = 420;
     harness.page.tick(now);
     expect(harness.page.motionGhostPool.getStats().active).toBe(0);
-    expect(cauldron.receiveMotionStart).toBe(240);
+    expect(cauldron.receiveMotionStart).toBe(420);
 
-    now = 310;
+    now = 490;
     harness.page.tick(now);
     expect(cauldron.artLayer.scale.x).not.toBe(1);
     expect(cauldron.recipeLayer.y).toBeGreaterThan(0);
@@ -814,10 +814,10 @@ describe('BrewingPixiPage', () => {
     harness.page.bind(
       createBuyCauldronViewModel({ canBuy: true }),
     );
-    now = 320;
+    now = 500;
     harness.page.bind(createBrewingViewModel());
     const bought = harness.page.cauldrons.get('cauldron-0');
-    expect(bought.purchaseMotionStart).toBe(320);
+    expect(bought.purchaseMotionStart).toBe(500);
     expect(bought.root.alpha).toBeCloseTo(0.72);
 
     harness.page.deactivate();
@@ -885,7 +885,7 @@ describe('BrewingPixiPage', () => {
       Math.sign(motion.ghost.root.x - motion.start.x),
     ).toBe(motion.path.side);
 
-    now = 240;
+    now = 420;
     harness.page.tick(now);
     expect(harness.page.activeGhostMotions.size).toBe(0);
     expect(harness.page.motionGhostPool.getStats().active).toBe(0);
@@ -1399,7 +1399,7 @@ describe('BrewingPixiPage', () => {
     harness.dispose();
   });
 
-  it('swooshes the selected cauldron in the navigation direction and settles cleanly', () => {
+  it('settles the selected cauldron in the navigation direction without decorative particles', () => {
     let now = 0;
     const harness = createHarness({ timeSource: () => now });
     const model = createBrewingViewModel();
@@ -1423,10 +1423,7 @@ describe('BrewingPixiPage', () => {
 
     now = 120;
     harness.page.tick(now);
-    expect(harness.page.hud.cauldronChangeSwoosh.visible).toBe(true);
-    expect(
-      harness.page.hud.cauldronChangeSwoosh.getLocalBounds().width,
-    ).toBeGreaterThan(40);
+    expect(harness.page.hud.cauldronChangeSwoosh).toBeUndefined();
     expect(harness.page.hud.cauldronArt.x).toBeGreaterThan(restX);
     expect(harness.page.hud.cauldronArt.x).toBeLessThan(
       restX + 2,
@@ -1435,7 +1432,6 @@ describe('BrewingPixiPage', () => {
     now = 240;
     harness.page.tick(now);
     expect(harness.page.hud.cauldronChangeMotion).toBeNull();
-    expect(harness.page.hud.cauldronChangeSwoosh.visible).toBe(false);
     expect(harness.page.hud.cauldronArt.x).toBe(restX);
     expect(harness.page.hud.cauldronArt.alpha).toBe(1);
     expect(harness.page.hud.cauldronArt.rotation).toBe(0);
@@ -1452,7 +1448,7 @@ describe('BrewingPixiPage', () => {
     harness.dispose();
   });
 
-  it('switches cauldrons without swoosh motion when reduced motion is requested', () => {
+  it('switches cauldrons without settle motion when reduced motion is requested', () => {
     const harness = createHarness();
     const model = createBrewingViewModel();
     model.brewing.cauldrons.push({
@@ -1470,7 +1466,6 @@ describe('BrewingPixiPage', () => {
 
     expect(harness.page.selectCauldron(1)).toBe(true);
     expect(harness.page.hud.cauldronChangeMotion).toBeNull();
-    expect(harness.page.hud.cauldronChangeSwoosh.visible).toBe(false);
     expect(harness.page.hud.cauldronArt.x).toBe(restX);
 
     vi.unstubAllGlobals();

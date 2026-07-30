@@ -1638,7 +1638,7 @@ describe('BrewingCauldronManager', () => {
       expect(ghost?.style.left).toBe('20px');
       expect(ghost?.style.top).toBe('30px');
       expect(animateCalls).toHaveLength(1);
-      expect(animateCalls[0].options.duration).toBe(240);
+      expect(animateCalls[0].options.duration).toBe(420);
       expect(animateCalls[0].options.easing).toBe('cubic-bezier(0.25, 1, 0.5, 1)');
 
       finishDrop();

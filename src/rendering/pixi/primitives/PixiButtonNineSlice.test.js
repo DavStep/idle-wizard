@@ -15,8 +15,42 @@ const COMPACT_BUTTON_ASSETS = [
   'brown-button-dark-9slice.png',
   'brown-button-light-9slice.png',
 ];
+const COMPACT_TAB_ASSETS = [
+  {
+    file: 'brown-tab-active-9slice.png',
+    face: '110,70,39,255',
+    highlight: '162,116,67,255',
+  },
+  {
+    file: 'brown-tab-inactive-9slice.png',
+    face: '45,33,25,255',
+    highlight: '92,62,39,255',
+  },
+];
 
 describe('compact Root Run button nine-slices', () => {
+  it('uses a muted red face with the shared coral highlight', () => {
+    const png = PNG.sync.read(
+      readFileSync(`${COMPACT_BUTTON_ASSET_DIR}/red-button-9slice.png`),
+    );
+    const colors = new Set();
+
+    for (let index = 0; index < png.data.length; index += 4) {
+      colors.add(
+        [
+          png.data[index],
+          png.data[index + 1],
+          png.data[index + 2],
+          png.data[index + 3],
+        ].join(','),
+      );
+    }
+
+    expect(colors.has('171,73,66,255')).toBe(true);
+    expect(colors.has('230,106,93,255')).toBe(true);
+    expect(colors.has('230,57,44,255')).toBe(false);
+  });
+
   it('uses a distilled flat stretch band for every color variant', () => {
     const sourceInsets = PIXI_ROOT_RUN_GEOMETRY.button.sourceInsets;
 
@@ -51,4 +85,59 @@ describe('compact Root Run button nine-slices', () => {
       }
     }
   });
+
+  it('uses compact brown tab assets that fit the 28px footer height', () => {
+    const sourceInsets = PIXI_ROOT_RUN_GEOMETRY.tabButton.sourceInsets;
+    const borderInsets = PIXI_ROOT_RUN_GEOMETRY.tabButton.borderInsets;
+
+    expect(sourceInsets).toEqual({
+      top: 78,
+      right: 43,
+      bottom: 53,
+      left: 85,
+    });
+    expect(borderInsets).toEqual({
+      top: 13,
+      right: 7,
+      bottom: 9,
+      left: 20,
+    });
+    expect(borderInsets.top + borderInsets.bottom).toBeLessThan(28);
+
+    for (const asset of COMPACT_TAB_ASSETS) {
+      const png = PNG.sync.read(
+        readFileSync(`${COMPACT_BUTTON_ASSET_DIR}/${asset.file}`),
+      );
+      const colors = collectColors(png);
+
+      expect([png.width, png.height], asset.file).toEqual([130, 132]);
+      expect(
+        png.width - sourceInsets.left - sourceInsets.right,
+        asset.file,
+      ).toBe(2);
+      expect(
+        png.height - sourceInsets.top - sourceInsets.bottom,
+        asset.file,
+      ).toBe(1);
+      expect(colors.has(asset.face), asset.file).toBe(true);
+      expect(colors.has(asset.highlight), asset.file).toBe(true);
+    }
+  });
 });
+
+function collectColors(png) {
+  const colors = new Set();
+
+  for (let index = 0; index < png.data.length; index += 4) {
+    colors.add(
+      [
+        png.data[index],
+        png.data[index + 1],
+        png.data[index + 2],
+        png.data[index + 3],
+      ].join(','),
+    );
+  }
+
+  return colors;
+}

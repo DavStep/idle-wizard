@@ -21,6 +21,6 @@ rendered inside Idle Wizard at `/3`.
   authored rounded caps.
 
 The settings gear stays in `root-run-settings`, and the level star stays
-in the existing public Root Run asset path. Idle Wizard draws its approved
-gradient through the retained fill silhouette and adds request separators
-over the retained track.
+in the existing public Root Run asset path. The level rail renders the
+authored yellow fill texture directly and adds request separators over the
+retained track.

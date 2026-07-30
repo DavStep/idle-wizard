@@ -34,7 +34,10 @@ import {
   PIXI_ROOT_RUN_GEOMETRY,
   PIXI_UI_GEOMETRY,
 } from '../../theme/PixiThemeTokens.js';
-import { createPixiPageBackgroundGradient } from '../../theme/PixiPageBackground.js';
+import {
+  createPixiPageBackgroundGradient,
+  drawPixiPageBackground,
+} from '../../theme/PixiPageBackground.js';
 import { ResearchStationTitlePlaque } from '../research/ResearchPixiPage.js';
 import { RetainedScrollArea } from '../workshop/RetainedPageKit.js';
 import { MarketTitleRibbon } from './MarketTitleRibbon.js';
@@ -696,19 +699,13 @@ export class ShopPixiPage extends BasePixiRetainedView {
     if (!this.background) {
       return;
     }
-    this.background
-      .clear()
-      .rect(0, 0, this.sourceWidth, this.sourceHeight);
-    try {
-      this.background.fill(
-        this.backgroundGradient ?? this.theme.surface,
-      );
-    } catch {
-      this.background
-        .clear()
-        .rect(0, 0, this.sourceWidth, this.sourceHeight)
-        .fill(this.theme.surface);
-    }
+    drawPixiPageBackground(this.background, {
+      pageId: 'shop',
+      theme: this.theme,
+      width: this.sourceWidth,
+      height: this.sourceHeight,
+      background: this.backgroundGradient ?? this.theme.surface,
+    });
   }
 
   updateTabNotifications() {

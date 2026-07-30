@@ -22,7 +22,7 @@ colors:
   night-theme-surface: "#17191f"
   night-theme-ink: "#d4d4d4"
   night-theme-stroke: "#3f465c"
-  day-theme-bg: "#ffe2c0"
+  day-theme-bg: "#e8bc8c"
   day-theme-surface: "#543a28"
   day-theme-ink: "#f4eadb"
   day-theme-stroke: "#765339"
@@ -179,7 +179,7 @@ Ordinary room UI uses shallow, skin-owned depth. Image-backed frames may carry b
 
 **The Dialog Weight Rule.** Popup panels use the brown Root Run Expedition outer nine-slice, its paper inner nine-slice, separate purple title plaque, round X control centered below the shell, 20px padding, and one bottom-right shadow. Ordinary room panels use their active Night or Day skin and do not borrow the paper dialog treatment.
 
-**The Day Recolor Rule.** Night is the unchanged default formerly called Midnight. Day preserves the exact silhouettes, alpha masks, slice margins, layout, and depth of Night assets while recoloring shared chrome to warm brown over a flat pale-peach daylight wall. Theme changes may swap the room background, top panel, bottom tab frames, ordinary inner boxes, and room landmarks such as the Workshop window; they must not redesign those components. The Day Workshop window keeps its exact arch geometry, uses neutral gray stone, and shows a sunny exterior.
+**The Day Recolor Rule.** Night is the unchanged default formerly called Midnight. Day preserves the exact silhouettes, alpha masks, slice margins, layout, and depth of Night assets while recoloring shared chrome to warm brown over a muted peach `#e8bc8c` wall with subtle warm paper fibers. Theme changes may swap the room background, top panel, bottom tab frames, ordinary inner boxes, and room landmarks such as the Workshop window; they must not redesign those components. The Day Workshop window keeps its exact arch geometry, uses neutral gray stone, and shows a sunny exterior. The fitted game stage itself stays frameless.
 
 ## 5. Components
 
@@ -193,7 +193,7 @@ Ordinary room UI uses shallow, skin-owned depth. Image-backed frames may carry b
 
 ### Cards / Containers
 - **Corner Style:** Owned by the shared panel nine-slice, typically softly rounded with a dark outline.
-- **Background:** Layered Night navy or the flat Day wall color `#ffe2c0`; Day components retain their authored warm-brown inset shading.
+- **Background:** Layered Night navy or the muted peach Day wall `#e8bc8c` with subtle warm paper fibers; Day components retain their authored warm-brown inset shading.
 - **Shadow Strategy:** Compact, directional, and shared; stronger only for the dominant landmark or modal layer.
 - **Border:** Image-backed frame or approved generated nine-slice, never an arbitrary feature-local radius and shadow.
 - **Internal Padding:** Compact source padding sized to the panel's artwork and content.

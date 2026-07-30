@@ -156,13 +156,13 @@ Brewing-owned motion also remains retained: herb pickup/count/return nudges
 reuse the row transform, ingredient drag, return, and brew flyouts use one
 bounded ghost pool. A successful manual Brew launches each visible ingredient
 from its orbit icon with a short outward/upward kick, then follows a high curved
-path into the visible center of the cauldron liquid. Flights keep the existing
-`45ms` stagger and `240ms` per-item duration. Cauldron
+path into the visible center of the cauldron liquid. Flights use a readable
+Root Run-style `55ms` stagger and `420ms` per-item duration. Cauldron
 receive/recipe-receive/buy feedback reuses the cauldron display tree. Changing
-the selected cauldron through a chevron or swipe plays the same directional
-blue/gold arc swoosh and compact `240ms` settle.
+the selected cauldron through a chevron or swipe plays the same compact
+directional `240ms` settle without decorative trails or particles.
 Reduced motion switches instantly. Deactivation and pool reset clear every
-target, timer, transform, swoosh, and active ghost so hidden Brewing UI performs
+target, timer, transform, and active ghost so hidden Brewing UI performs
 no motion work.
 
 Open `http://127.0.0.1:55173/?devUi=chooseHerb` for the deterministic
