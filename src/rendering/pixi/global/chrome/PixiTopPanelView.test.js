@@ -727,10 +727,6 @@ function readPath(instruction) {
   return findPath(instruction, 'roundRect').data.slice(0, 5);
 }
 
-function readRect(instruction) {
-  return findPath(instruction, 'rect').data.slice(0, 4);
-}
-
 function readColorAndAlpha(instruction) {
   return [
     instruction.data.style.color,
