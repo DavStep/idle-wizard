@@ -86,7 +86,9 @@ Open `/src/dev/uiRecipes/garden-plots.html` for the deterministic,
 non-persistent empty-plot state used to verify label removal and the `no seed`
 press flyout. Add `?overflow=1` for the valid 12-plot state used to verify
 vertical drag, wheel scrolling, the overflow-only scrollbar, and hard resting
-bounds.
+bounds. Add `?growing=1&progress=gradient` for the four-growing-plot regression
+state that verifies Garden timer rails keep their green role color even when
+the player-wide progress style is gradient.
 
 The cancel-progress confirmation uses the approved red danger title plaque,
 Title Case copy, a centered prompt, a yellow `Keep` action, and a red `Empty`

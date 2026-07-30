@@ -22,9 +22,10 @@ experience_type: style
 - Idle Witch Craft item drop and coin flyout parity lives in `../idle-whitch-craft/core/MobilePreview.ts` plus `../idle-whitch-craft/core/mobile.css` keyframes around `mobile-workshop-item-drop`, `mobile-seed-burst`, and `mobile-coin-amt-pop`.
 - Idle Witch Craft launcher icon source lives at `../idle-whitch-craft/core/assets/ui/icons/game-icon.png`; generated Android launcher PNGs live under `../idle-whitch-craft/core/android/app/src/main/res/mipmap-*`.
 - Idle Wizard's runtime splash derives its composition from `../idle-whitch-craft/core/assets/ui/mobile/splash-screen.png`, with loading gradient and art-relative placement from `../idle-whitch-craft/core/splash.css`; the local wooden sign must retain the exact player-facing title `Idle Wizard`.
-- Loading splash art fits the complete canvas width at its original aspect ratio and stays top-aligned; let the renderer clip vertical overflow instead of height-fitting, adding side gutters, or stretching the artwork.
+- Loading splash art fits the authored game width at its original aspect ratio and stays top-aligned; keep wide-stage gutters on the shared dark background and let the renderer clip vertical overflow instead of height-fitting or stretching the artwork.
 - Progress bar style is a separate visual setting (`regular`/`gradient`/`notched`), not part of a theme; the `notched` key is player-facing `bronze` and uses a solid bronze fill with continuous light/dark inset strokes, never ticks or dashes.
 - Shared passive `.style-progress` rails use the compact 10px Root Rush black capsule geometry. Purple is the default; Brewing uses blue, Garden uses green, and Market/Research use yellow through page-scoped fill/edge tokens. Optional researched fills keep the same rail geometry. Interactive sliders and the top-panel quest rail use 14px rails; allocation keeps its 14px cream circular knob with a tan border, dark-brown outer ring, and no glyph.
+- Retained Garden timer rails must pass `usePlayerStyle: false`; the player-wide gradient or bronze setting must not override Garden's green role color.
 - Fixed-milestone sliders show dots only for interior stops; the rail ends already communicate the selectable minimum and maximum, so never draw redundant endpoint dots.
 - Shared `.style-progress` rails are border-box; fills sit inside the bordered rail, so callers normally use `width: 100%`.
 - Workshop `stats`, `bag`, and the other side entries use `RootRunSideAction` with the shared `icon-side-*-root-run.png` family. Keep authored capitalization for Workshop side-panel controls and the `Summon Seed` cost button; rendering must not force them to lowercase. The summon button uses the shorter green cost-button silhouette in the shared quest-purple palette, black-stroked action and cost text, the shared gray disabled skin, and a mana-drop-plus-number cost row; other purchase cost buttons stay green and tab skins stay brown.
@@ -144,7 +145,7 @@ experience_type: style
 - Tabbed popups put whole-dialog category tabs inside the bordered `.style-dialog` brown footer; keep modal role/focus on the wrapper.
 - Keep `6px` between the paper and footer tabs and `10px` from the complete tab row to the brown shell bottom.
 - Popup tab buttons and popup titles use the same shared `3/13` proportional logical-surface stroke.
-- The canonical whole-dialog footer tab height is `28px`; use the compact `11px` tab type without shrinking the hit area.
+- The canonical whole-dialog footer tab height is `28px`; use the compact `11px` tab type without shrinking the hit area. Its tab-specific nine-slices must keep top plus bottom output edges below `28px`; reusing the regular-button `17px + 12px` edges collapses the center band and squashes both caps.
 - Tabbed popup wrappers should own centering/enter animation; do not also animate the nested `.style-dialog` with centered-dialog transforms.
 - Dialog close controls should sit as normal-weight border labels, like titles but not bold, not as boxed buttons inside the panel.
 - Guild charter tag setup should mirror trade alliance creation: stacked fields, `tag color`, square swatch buttons, and `create` copy.

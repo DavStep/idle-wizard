@@ -501,7 +501,7 @@ describe('retained Pixi gate controllers', () => {
     });
   });
 
-  it('fits the splash to viewport width and clips vertical overflow', () => {
+  it('fits the splash to the authored game width and clips vertical overflow', () => {
     const onSplashViewportChange = vi.fn();
     const view = new PixiOnlineGateView({
       assets: createAssets(),

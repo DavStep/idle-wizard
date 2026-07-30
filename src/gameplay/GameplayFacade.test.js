@@ -5637,7 +5637,7 @@ describe("GameplayFacade", () => {
     });
     expect(sellItems.find((item) => item.key === "nettleSeed")).toMatchObject({
       quantity: 0,
-      sellCoin: 3,
+      sellCoin: 4,
     });
   });
 

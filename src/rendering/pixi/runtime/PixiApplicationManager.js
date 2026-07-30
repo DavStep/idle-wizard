@@ -157,12 +157,7 @@ export class PixiApplicationManager {
         return [name, layer];
       }),
     );
-    const stageFrame = new Graphics();
-    stageFrame.label = 'authoredStageFrame';
-    stageFrame.eventMode = 'none';
-    stageFrame.zIndex = 1_000_000;
     sourceLayers.interactionLocks.sortableChildren = true;
-    sourceLayers.interactionLocks.addChild(stageFrame);
 
     root.addChild(
       background,
@@ -184,7 +179,6 @@ export class PixiApplicationManager {
       pageUi,
       dialogs,
       dialogsSource,
-      stageFrame,
       ...sourceLayers,
     };
   }
@@ -194,8 +188,6 @@ export class PixiApplicationManager {
     if (!this.layers) {
       return;
     }
-    const fitScale = Math.max(this.projection.fitScale, 0.0001);
-    const sourceScale = Math.max(this.projection.sourceScale, 0.0001);
     this.layers.backgroundGraphic
       .clear()
       .rect(
@@ -212,20 +204,6 @@ export class PixiApplicationManager {
         this.viewport.height,
       )
       .fill(this.theme.surface);
-    this.layers.stageFrame.visible = this.projection.isWide;
-    this.layers.stageFrame
-      .clear()
-      .rect(
-        0,
-        0,
-        this.viewport.width / sourceScale,
-        this.viewport.height / sourceScale,
-      )
-      .stroke({
-        color: this.theme.stroke,
-        width: 2 / fitScale / sourceScale,
-        alignment: 1,
-      });
   }
 
   setKeyboardMetrics({ keyboardInset = 0, visibleHeight = null } = {}) {

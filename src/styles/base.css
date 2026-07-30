@@ -88,10 +88,12 @@
   --style-green-button-disabled-frame: url("../../assets/game/source/ui/root-run-cost-button/gray-button-9slice.png");
   --style-green-button-frame-slice: var(--style-yellow-button-frame-slice);
   --style-green-button-frame-width: var(--style-yellow-button-frame-width);
-  --style-tab-frame: url("../../assets/game/source/ui/root-run-cost-button/brown-button-dark-9slice.png");
-  --style-tab-selected-frame: url("../../assets/game/source/ui/root-run-cost-button/brown-button-light-9slice.png");
-  --style-tab-frame-slice: var(--style-yellow-button-frame-slice);
-  --style-tab-frame-width: var(--style-yellow-button-frame-width);
+  --style-brown-button-dark-frame: url("../../assets/game/source/ui/root-run-cost-button/brown-button-dark-9slice.png");
+  --style-brown-button-light-frame: url("../../assets/game/source/ui/root-run-cost-button/brown-button-light-9slice.png");
+  --style-tab-frame: url("../../assets/game/source/ui/root-run-cost-button/brown-tab-inactive-9slice.png");
+  --style-tab-selected-frame: url("../../assets/game/source/ui/root-run-cost-button/brown-tab-active-9slice.png");
+  --style-tab-frame-slice: 78 43 53 85 fill;
+  --style-tab-frame-width: 13px 7px 9px 20px;
   --style-border-strong: var(--style-border-strong-width) solid
     var(--style-stroke);
   --style-font-size: 13px;
@@ -16552,8 +16554,8 @@ div.workshop-page__discovery-row {
   color: var(--style-yellow-button-text);
   background: transparent;
   border-color: transparent;
-  border-image-slice: var(--style-tab-frame-slice);
-  border-image-width: var(--style-tab-frame-width);
+  border-image-slice: var(--style-yellow-button-frame-slice);
+  border-image-width: var(--style-yellow-button-frame-width);
   border-image-repeat: stretch;
   -webkit-text-stroke: var(--style-text-stroke-width)
     var(--style-text-stroke-color);
@@ -16561,11 +16563,11 @@ div.workshop-page__discovery-row {
 }
 
 :root .style-button.style-button--brown-dark {
-  border-image-source: var(--style-tab-frame);
+  border-image-source: var(--style-brown-button-dark-frame);
 }
 
 :root .style-button.style-button--brown-light {
-  border-image-source: var(--style-tab-selected-frame);
+  border-image-source: var(--style-brown-button-light-frame);
 }
 
 :root

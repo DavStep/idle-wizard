@@ -505,27 +505,24 @@ describe('base styles', () => {
       /:root:is\(\[data-style-theme="night"\], \[data-style-theme="day"\]\)\s+\.style-button\[role="tab"\]\[aria-selected="true"\]\s*\{(?<body>[^}]*)\}/,
     );
     const assetDir = `${cwd()}/assets/game/source/ui/root-run-cost-button`;
-    const source = PNG.sync.read(
-      readFileSync(`${assetDir}/yellow-button-9slice.png`),
-    );
     const light = PNG.sync.read(
-      readFileSync(`${assetDir}/brown-button-light-9slice.png`),
+      readFileSync(`${assetDir}/brown-tab-active-9slice.png`),
     );
     const dark = PNG.sync.read(
-      readFileSync(`${assetDir}/brown-button-dark-9slice.png`),
+      readFileSync(`${assetDir}/brown-tab-inactive-9slice.png`),
     );
 
     expect(rootRule).toContain(
-      '--style-tab-frame: url("../../assets/game/source/ui/root-run-cost-button/brown-button-dark-9slice.png");',
+      '--style-tab-frame: url("../../assets/game/source/ui/root-run-cost-button/brown-tab-inactive-9slice.png");',
     );
     expect(rootRule).toContain(
-      '--style-tab-selected-frame: url("../../assets/game/source/ui/root-run-cost-button/brown-button-light-9slice.png");',
+      '--style-tab-selected-frame: url("../../assets/game/source/ui/root-run-cost-button/brown-tab-active-9slice.png");',
     );
     expect(rootRule).toContain(
-      '--style-tab-frame-slice: var(--style-yellow-button-frame-slice);',
+      '--style-tab-frame-slice: 78 43 53 85 fill;',
     );
     expect(rootRule).toContain(
-      '--style-tab-frame-width: var(--style-yellow-button-frame-width);',
+      '--style-tab-frame-width: 13px 7px 9px 20px;',
     );
     expect(deselectedTabRule).toContain(
       'border-image-source: var(--style-tab-frame);',
@@ -545,19 +542,17 @@ describe('base styles', () => {
     expect(midnightSelectedTabRule).toContain(
       'border-image-source: var(--style-tab-selected-frame);',
     );
-    expect([dark.width, dark.height]).toEqual([source.width, source.height]);
-    expect([light.width, light.height]).toEqual([source.width, source.height]);
+    expect([dark.width, dark.height]).toEqual([130, 132]);
+    expect([light.width, light.height]).toEqual([130, 132]);
 
-    for (const button of [dark, light]) {
-      let alphaMatches = true;
-      for (let index = 3; index < source.data.length; index += 4) {
-        if (button.data[index] !== source.data[index]) {
-          alphaMatches = false;
-          break;
-        }
+    let alphaMatches = true;
+    for (let index = 3; index < light.data.length; index += 4) {
+      if (light.data[index] !== dark.data[index]) {
+        alphaMatches = false;
+        break;
       }
-      expect(alphaMatches).toBe(true);
     }
+    expect(alphaMatches).toBe(true);
   });
 
   it('uses the yellow Root Run configuration for regular buttons', () => {
@@ -570,6 +565,9 @@ describe('base styles', () => {
     );
     const brownButtonRule = getRuleBody(
       /:root\s+\.style-button\.style-button--brown-dark,\s*:root\s+\.style-button\.style-button--brown-light\s*\{(?<body>[^}]*)\}/,
+    );
+    const tabButtonRule = getRuleBody(
+      /\.style-button\[role="tab"\]\s*\{(?<body>[^}]*)\}/,
     );
     const greenButtonRule = getRuleBody(
       /:root\s+\.style-button\.style-button--green\s*\{(?<body>[^}]*)\}/,
@@ -604,6 +602,16 @@ describe('base styles', () => {
     expect(rootRule).toContain(
       '--style-yellow-button-frame-slice: 100 43 68 85 fill;',
     );
+    expect(rootRule).toContain(
+      '--style-tab-frame: url("../../assets/game/source/ui/root-run-cost-button/brown-tab-inactive-9slice.png");',
+    );
+    expect(rootRule).toContain(
+      '--style-tab-selected-frame: url("../../assets/game/source/ui/root-run-cost-button/brown-tab-active-9slice.png");',
+    );
+    expect(rootRule).toContain('--style-tab-frame-slice: 78 43 53 85 fill;');
+    expect(rootRule).toContain(
+      '--style-tab-frame-width: 13px 7px 9px 20px;',
+    );
     expect(yellowButtonRule).toContain(
       'border-image-source: var(--style-yellow-button-frame);',
     );
@@ -617,10 +625,16 @@ describe('base styles', () => {
       '-webkit-text-stroke: var(--style-text-stroke-width)\n    var(--style-text-stroke-color);',
     );
     expect(brownDarkButtonRule).toContain(
-      'border-image-source: var(--style-tab-frame);',
+      'border-image-source: var(--style-brown-button-dark-frame);',
     );
     expect(brownButtonRule).toContain(
+      'border-image-slice: var(--style-yellow-button-frame-slice);',
+    );
+    expect(tabButtonRule).toContain(
       'border-image-slice: var(--style-tab-frame-slice);',
+    );
+    expect(tabButtonRule).toContain(
+      'border-image-width: var(--style-tab-frame-width);',
     );
     expect(greenButtonRule).toContain(
       'border-image-source: var(--style-green-button-frame);',

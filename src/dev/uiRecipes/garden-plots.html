@@ -41,6 +41,7 @@
       import { PixiInputRouter } from '/src/rendering/pixi/input/PixiInputRouter.js';
       import { GardenPixiPage } from '/src/rendering/pixi/pages/garden/GardenPixiPage.js';
       import { PixiApplicationManager } from '/src/rendering/pixi/runtime/PixiApplicationManager.js';
+      import { createPixiThemeSnapshot } from '/src/rendering/pixi/theme/PixiThemeTokens.js';
 
       const canvas = document.querySelector('canvas');
       const applicationManager = new PixiApplicationManager({ canvas });
@@ -63,38 +64,72 @@
       });
       transientEffects.activate();
 
-      const overflow = new URLSearchParams(window.location.search).get('overflow') === '1';
-      const emptyPlotCount = overflow ? 11 : 5;
+      const params = new URLSearchParams(window.location.search);
+      const overflow = params.get('overflow') === '1';
+      const growing = params.get('growing') === '1';
+      const progressBar = params.get('progress') || 'regular';
+      const emptyPlotCount = growing ? 4 : overflow ? 11 : 5;
       const plots = Array.from(
         { length: emptyPlotCount },
         (_, index) => index + 1,
-      ).map((tileNumber) => ({
-        id: `plot-${tileNumber}`,
-        tileNumber,
-        level: tileNumber === 1 ? 2 : 1,
-        phase: 'empty',
-        hasSelectedSeed: true,
-        canPlantSelectedSeed: false,
-        toolbarSeedItemTypeId: 1,
-        actionText: '',
-        semanticId: `garden.plot.${tileNumber}`,
-      }));
+      ).map((tileNumber) =>
+        growing
+          ? {
+              id: `plot-${tileNumber}`,
+              tileNumber,
+              level: tileNumber <= 2 ? 2 : 1,
+              phase: 'growing',
+              herbKey: 'sage',
+              actionText: 'growing',
+              process: {
+                durationMs: 10_000,
+                endTimeMs: 6_000 + tileNumber * 500,
+              },
+              semanticId: `garden.plot.${tileNumber}`,
+            }
+          : {
+              id: `plot-${tileNumber}`,
+              tileNumber,
+              level: tileNumber === 1 ? 2 : 1,
+              phase: 'empty',
+              hasSelectedSeed: true,
+              canPlantSelectedSeed: false,
+              toolbarSeedItemTypeId: 1,
+              actionText: '',
+              semanticId: `garden.plot.${tileNumber}`,
+            },
+      );
       plots.push({
         id: `plot-${emptyPlotCount + 1}`,
         tileNumber: emptyPlotCount + 1,
         phase: 'empty',
         buySlot: true,
         disabled: false,
-        lockReason: 'research_locked',
-        actionText: 'Research',
+        ...(growing
+          ? {
+              affordable: false,
+              costCoin: 400,
+              actionText: 'Unlock',
+            }
+          : {
+              lockReason: 'research_locked',
+              actionText: 'Research',
+            }),
         semanticId: `garden.plot.${emptyPlotCount + 1}`,
       });
-      document.querySelector('#garden-plots-recipe-state').dataset.emptyPlots =
-        String(emptyPlotCount);
+      Object.assign(
+        document.querySelector('#garden-plots-recipe-state').dataset,
+        {
+          emptyPlots: growing ? '0' : String(emptyPlotCount),
+          growingPlots: growing ? String(emptyPlotCount) : '0',
+          progressBar,
+        },
+      );
 
       const page = new GardenPixiPage({
         assetManager,
         inputRouter,
+        theme: createPixiThemeSnapshot({ progressBar }),
         timeSource: () => 0,
       });
       page.layout(applicationManager.projection);

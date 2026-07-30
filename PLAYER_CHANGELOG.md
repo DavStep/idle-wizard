@@ -5,6 +5,12 @@ upload script posts the section whose heading matches `package.json` `version`.
 Write these developer-to-player notes only in Idle Wizard terms. Do not mention
 other game names, source projects, ports, or implementation provenance.
 
+## 0.3.34
+
+- Improved compact dialog tabs with clearer active, inactive, and disabled artwork.
+- Kept the loading screen aligned to the game surface on wide displays.
+- Rebalanced seed, herb, and potion sell values so rarer items scale more consistently.
+
 ## 0.3.33
 
 - Rebalanced seed, herb, and potion sell values so farming and brewing rewards grow more clearly with rarer ingredients.

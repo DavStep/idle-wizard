@@ -50,7 +50,7 @@ describe('PixiApplicationManager', () => {
     expect(order).toEqual(['spine', 'pixi']);
   });
 
-  it('creates one ordered layer tree and centers authored/source layers on wide web', async () => {
+  it('creates one ordered frameless layer tree and centers authored/source layers on wide web', async () => {
     const app = createFakeApplication();
     const manager = new PixiApplicationManager({
       canvas: createCanvas(),
@@ -100,22 +100,10 @@ describe('PixiApplicationManager', () => {
     ).toEqual([1196, 0, 1080, 2170]);
     expect(backgroundInstructions[1].data.style.color).toBe(0x17191f);
 
-    const frameInstruction =
-      layers.stageFrame.context.instructions[0];
-    expect(frameInstruction.action).toBe('stroke');
-    expect(
-      frameInstruction.data.path.instructions[0].data.slice(0, 4),
-    ).toEqual([0, 0, 360, 2170 / 3]);
-    expect(frameInstruction.data.style.color).toBe(0x3f465c);
-    expect(frameInstruction.data.style.width).toBeCloseTo(
-      2 / manager.projection.fitScale / 3,
-      8,
-    );
-    expect(layers.stageFrame.visible).toBe(true);
-    expect(layers.stageFrame.zIndex).toBeGreaterThan(0);
+    expect(layers).not.toHaveProperty('stageFrame');
   });
 
-  it('does not frame the authored stage on mobile', async () => {
+  it('keeps the authored stage frameless on mobile', async () => {
     const app = createFakeApplication();
     const manager = new PixiApplicationManager({
       canvas: createCanvas({ width: 390, height: 844 }),
@@ -132,7 +120,7 @@ describe('PixiApplicationManager', () => {
     await manager.initialize();
 
     expect(manager.projection.isWide).toBe(false);
-    expect(manager.getLayers().stageFrame.visible).toBe(false);
+    expect(manager.getLayers()).not.toHaveProperty('stageFrame');
   });
 
   it('keeps authored layout stable and reports keyboard dialog shifts', async () => {

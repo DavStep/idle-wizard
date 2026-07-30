@@ -23,7 +23,7 @@ describe('ItemDefinitionManager', () => {
       label: 'dragonpepper',
       kind: 'herb',
       growthDurationMs: 210_000,
-      baseSellPrice: 2_500,
+      baseSellPrice: 40_960,
       marketGrade: 3,
     });
     expect(manager.getDefinitionByKey('pearlrootHerb')).toEqual({
@@ -32,7 +32,7 @@ describe('ItemDefinitionManager', () => {
       label: 'pearlroot',
       kind: 'herb',
       growthDurationMs: 520_000,
-      baseSellPrice: 250_000,
+      baseSellPrice: 41_943_040,
       marketGrade: 5,
     });
     expect(manager.getSeedDefinition(1).producesHerbTypeId).toBe(1001);
@@ -52,7 +52,7 @@ describe('ItemDefinitionManager', () => {
       key: 'pactWard',
       label: 'pact ward',
       kind: 'potion',
-      baseSellPrice: 8_320,
+      baseSellPrice: 92_800,
       marketGrade: 3,
     });
     expect(manager.getPotionDefinitions()).toContainEqual({
@@ -65,7 +65,7 @@ describe('ItemDefinitionManager', () => {
       unknown: true,
       known: false,
       researchable: false,
-      baseSellPrice: 1_720,
+      baseSellPrice: 10_420,
       marketGrade: 3,
     });
     expect(manager.getPotionDefinitions()).toContainEqual({
@@ -82,7 +82,7 @@ describe('ItemDefinitionManager', () => {
       key: 'pearlrootDraught',
       label: 'pearlroot draught',
       kind: 'potion',
-      baseSellPrice: 1_260_640,
+      baseSellPrice: 188_910_080,
       marketGrade: 5,
     });
     expect(manager.getRecipePotionDefinitions()).toHaveLength(28);
@@ -96,13 +96,19 @@ describe('ItemDefinitionManager', () => {
       itemDefinitionManager: manager,
     }).getPotionRecipes();
 
-    for (const seed of manager.getSeedDefinitions()) {
+    const seeds = manager.getSeedDefinitions();
+
+    for (const [index, seed] of seeds.entries()) {
       const herb = manager.getDefinition(seed.producesHerbTypeId);
       expect(herb.baseSellPrice).toBe(seed.baseSellPrice * 5);
+
+      if (index > 0) {
+        expect(seed.baseSellPrice).toBe(seeds[index - 1].baseSellPrice * 2);
+      }
     }
 
     expect(manager.getDefinitionByKey('sageSeed').baseSellPrice).toBe(1);
-    expect(manager.getDefinitionByKey('pearlrootSeed').baseSellPrice).toBe(50_000);
+    expect(manager.getDefinitionByKey('pearlrootSeed').baseSellPrice).toBe(8_388_608);
 
     for (const recipe of recipes) {
       const ingredientValue = recipe.ingredients.reduce(

@@ -28,7 +28,6 @@ if (!redirectMobileOidcCallbackToApp()) {
   const app = new AppFacade({ canvas });
   let devCheatsFacade = null;
   let tutorialCaptureFacade = null;
-  let uiEditorFacade = null;
   let quickUiPreviewFacade = null;
   let disposed = false;
 
@@ -77,26 +76,11 @@ if (!redirectMobileOidcCallbackToApp()) {
     );
   }
 
-  if (
-    import.meta.env.DEV &&
-    import.meta.env.VITE_ENABLE_UI_EDITOR === 'true'
-  ) {
-    void import('./dev/uiEditor/UiEditorFacade.js').then(({ UiEditorFacade }) => {
-      if (disposed) {
-        return;
-      }
-
-      uiEditorFacade = new UiEditorFacade({ app });
-      uiEditorFacade.mount();
-    });
-  }
-
   if (import.meta.hot) {
     import.meta.hot.dispose(() => {
       disposed = true;
       devCheatsFacade?.unmount();
       tutorialCaptureFacade?.unmount();
-      uiEditorFacade?.unmount();
       quickUiPreviewFacade?.unmount();
       void app.stop();
     });

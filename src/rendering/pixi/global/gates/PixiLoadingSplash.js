@@ -123,7 +123,7 @@ export class PixiLoadingSplash extends Container {
       projection.stageLogicalWidth / projection.sourceScale;
     const sourceHeight = projection.sourceHeight;
     const sourceOffsetX = projection.sourceOffsetX;
-    const artWidth = getSplashArtWidth(projection);
+    const artWidth = PIXI_UI_GEOMETRY.sourceWidth;
     const artLeft = PIXI_UI_GEOMETRY.sourceWidth / 2 - artWidth / 2;
     const barWidth = artWidth * SPLASH_BAR_WIDTH_RATIO;
     const barHeight = PIXI_UI_GEOMETRY.progressTotalHeight;
@@ -162,8 +162,4 @@ export class PixiLoadingSplash extends Container {
     this.horizontalGradient.destroy();
     super.destroy(options);
   }
-}
-
-function getSplashArtWidth(projection) {
-  return projection.stageLogicalWidth / projection.sourceScale;
 }

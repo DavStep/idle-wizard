@@ -18,16 +18,19 @@ const COMPACT_BUTTON_ASSETS = [
 const COMPACT_TAB_ASSETS = [
   {
     file: 'brown-tab-active-9slice.png',
+    sourceFile: 'brown-button-light-9slice.png',
     face: '110,70,39,255',
     highlight: '162,116,67,255',
   },
   {
     file: 'brown-tab-inactive-9slice.png',
+    sourceFile: 'brown-button-dark-9slice.png',
     face: '45,33,25,255',
     highlight: '92,62,39,255',
   },
   {
     file: 'gray-tab-disabled-9slice.png',
+    sourceFile: 'gray-button-9slice.png',
     face: '122,122,122,255',
     highlight: '155,155,155,255',
   },
@@ -113,7 +116,11 @@ describe('compact Root Run button nine-slices', () => {
       const png = PNG.sync.read(
         readFileSync(`${COMPACT_BUTTON_ASSET_DIR}/${asset.file}`),
       );
+      const sourcePng = PNG.sync.read(
+        readFileSync(`${COMPACT_BUTTON_ASSET_DIR}/${asset.sourceFile}`),
+      );
       const colors = collectColors(png);
+      const sourceColors = collectColors(sourcePng);
 
       expect([png.width, png.height], asset.file).toEqual([130, 132]);
       expect(
@@ -126,6 +133,11 @@ describe('compact Root Run button nine-slices', () => {
       ).toBe(1);
       expect(colors.has(asset.face), asset.file).toBe(true);
       expect(colors.has(asset.highlight), asset.file).toBe(true);
+      for (const color of colors) {
+        expect(sourceColors.has(color), `${asset.file} changed ${color}`).toBe(
+          true,
+        );
+      }
     }
   });
 });

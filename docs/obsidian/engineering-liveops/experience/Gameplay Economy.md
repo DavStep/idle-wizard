@@ -18,7 +18,7 @@ experience_type: gameplay-economy
 - Seed drop preferences multiply base seed `dropWeight` at roll time (`none` 0, `low` 1, `medium` 2, `high` 3); keep config `dropWeight` unchanged and use effective weight for odds.
 - Prestige keeps seed drop preferences while ordinary seed unlock research resets; preserve an explicit all-`none` setup and keep summoning unavailable until the player re-enables one researched seed.
 - Seeds produce herbs, and herbs have growth duration.
-- Default sell values compound through production: herb value is `5x` its matching seed, and a valid potion is `4x` the combined value of its herb inputs; wasted potion remains `1`.
+- Default sell values compound through production: each seed tier is `2x` the prior tier, herb value is `5x` its matching seed, and a valid potion is `4x` the combined value of its herb inputs; wasted potion remains `1`.
 - Ingredients are inventory-only catalog entries with six rarity tiers; do not invent prices, drop sources, recipes, or progression gates until those rules are explicitly requested.
 - Garden page herb inventory should read owned counts from `snapshot.garden.herbs`; Brewing's herb snapshot can subtract staged cauldron ingredients.
 - Garden and Brewing herb/potion use panels show only researched/unlocked or owned items; hide locked zero-count rows completely.

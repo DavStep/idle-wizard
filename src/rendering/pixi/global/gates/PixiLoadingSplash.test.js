@@ -53,4 +53,34 @@ describe('PixiLoadingSplash', () => {
 
     splash.destroy({ children: true });
   });
+
+  it('keeps splash art and loading chrome inside the authored game bounds on wide screens', () => {
+    const splash = new PixiLoadingSplash({
+      assets: {
+        getTexture: () => Texture.EMPTY,
+      },
+    });
+    const stageLogicalWidth = 3472;
+    const authoredOffsetX =
+      (stageLogicalWidth - PIXI_UI_GEOMETRY.authoredWidth) / 2;
+
+    splash.layout({
+      viewportPx: { width: 1440, height: 900 },
+      sourceHeight: PIXI_UI_GEOMETRY.authoredHeight / 3,
+      sourceOffsetX: authoredOffsetX / 3,
+      sourceScale: 3,
+      stageLogicalWidth,
+    });
+
+    expect(splash.art.x - splash.art.width / 2).toBe(0);
+    expect(splash.art.x + splash.art.width / 2).toBe(
+      PIXI_UI_GEOMETRY.sourceWidth,
+    );
+    expect(splash.progressBar.x).toBeGreaterThanOrEqual(0);
+    expect(splash.progressBar.x + splash.progressBar.barWidth).toBeLessThanOrEqual(
+      PIXI_UI_GEOMETRY.sourceWidth,
+    );
+
+    splash.destroy({ children: true });
+  });
 });
