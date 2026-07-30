@@ -8,6 +8,16 @@ export function createLibrarySelectionEntries() {
       label: 'Sample Button',
       sectionId: 'buttons',
       createPreview: createButtonPreview,
+      usages: [
+        {
+          label: 'Workshop primary action',
+          source: 'src/rendering/pixi/pages/workshop/WorkshopPixiPage.js',
+        },
+        {
+          label: 'Garden primary action',
+          source: 'src/rendering/pixi/pages/garden/GardenPixiPage.js',
+        },
+      ],
     },
     {
       id: 'settings-dialog',

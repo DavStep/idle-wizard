@@ -1,6 +1,11 @@
 // @vitest-environment jsdom
 
-import { describe, expect, it } from 'vitest';
+import { describe, expect, it, vi } from 'vitest';
+
+vi.mock('../widgets/UiEditorPixiButtonPreview.js', () => ({
+  createUiEditorPixiButtonPreview: (definition) => definition,
+  createUiEditorPixiButtonThumbnail: (definition) => definition,
+}));
 
 import {
   createIdleWizardButtonEntries,
@@ -18,6 +23,9 @@ describe('createIdleWizardButtonEntries', () => {
     expect(entries.every((entry) => typeof entry.createPreview === 'function')).toBe(
       true,
     );
+    expect(
+      entries.every((entry) => typeof entry.createThumbnail === 'function'),
+    ).toBe(true);
     expect(entries.map((entry) => entry.label)).toEqual(
       IDLE_WIZARD_BUTTON_WIDGETS.map((definition) => definition.label),
     );
@@ -33,5 +41,17 @@ describe('createIdleWizardButtonEntries', () => {
     ).toEqual(
       new Set(['button', 'cost', 'info', 'hud-settings', 'hud-avatar']),
     );
+  });
+
+  it('registers production usage locations for active widget contracts', () => {
+    const entries = createIdleWizardButtonEntries();
+    const greenButton = entries.find(({ id }) => id === 'green-button');
+    const accountTab = entries.find(({ id }) => id === 'account-tab-button');
+
+    expect(greenButton.usages).toContainEqual({
+      label: 'Garden Harvest All action',
+      source: 'src/rendering/pixi/pages/garden/GardenPixiPage.js',
+    });
+    expect(accountTab.usages).toEqual([]);
   });
 });

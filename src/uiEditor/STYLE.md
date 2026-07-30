@@ -45,7 +45,9 @@ Use borders before shadows. Panels use `--editor-border-subtle` or
 - Panels use a `12px` radius.
 - Large composer-like inputs may use a `16px` radius.
 - Avoid nested rounded containers when a divider or spacing is enough.
-- The left and right dock panels run the full editor height.
+- A compact global toolbar spans the editor above every dock. Its workspace
+  status stays adjacent to the single `Save workspace` action.
+- The left and right dock panels run the remaining height below the toolbar.
 - The bottom dock sits under the preview, between the two side panels.
 - The preview always consumes every remaining pixel.
 - Dock defaults are `260px` left, `300px` right, and `220px` bottom. Responsive
@@ -63,11 +65,16 @@ Use borders before shadows. Panels use `--editor-border-subtle` or
   control, an ellipsized component label, and a muted element tag. Hiding a
   parent visually mutes its descendants while preserving their individual
   visibility choices.
+- Widget usage rows use the same dense auxiliary rhythm: a readable feature
+  label, one muted monospace source location, and dividers instead of cards.
 
 ## Interaction
 
 - Focus uses the shared `2px` blue ring.
 - Hover and pressed states change the surface by one elevation step.
+- `Save workspace` is a native button and shares its action with
+  `Ctrl+S` / `Command+S`. Successful and failed saves use the existing semantic
+  status colors in a polite live region.
 - Folder and breadcrumb navigation uses native release-only buttons with
   normal keyboard activation. Folder content scrolls inside the bottom panel.
 - Hierarchy eye controls are native buttons with visible/hidden icons and

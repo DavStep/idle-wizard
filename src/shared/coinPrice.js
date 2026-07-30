@@ -76,5 +76,5 @@ export function formatCoinPriceText(value) {
 }
 
 function trimCoinDecimals(text) {
-  return text.replace(/\.00$/, '').replace(/(\.\d)0$/, '$1');
+  return text.replace(/\.00$/, '').replace(/(\.\d)0$/, '$1').replace(/\.0$/, '');
 }

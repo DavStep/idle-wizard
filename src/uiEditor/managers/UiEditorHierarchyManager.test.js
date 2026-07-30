@@ -109,4 +109,28 @@ describe('UiEditorHierarchyManager', () => {
       ).getAttribute('aria-pressed'),
     ).toBe('true');
   });
+
+  it('captures and restores hidden components by their scene path', () => {
+    const dialog = document.createElement('section');
+    const content = document.createElement('div');
+    const action = document.createElement('button');
+
+    dialog.append(content);
+    content.append(action);
+    editorRefs.preview.append(dialog);
+    manager.refresh();
+
+    content.setAttribute('data-ui-editor-scene-hidden', '');
+    expect(manager.getWorkspaceState()).toEqual({
+      hiddenComponentPaths: [[0, 0]],
+    });
+
+    content.removeAttribute('data-ui-editor-scene-hidden');
+    expect(
+      manager.restoreWorkspaceState({
+        hiddenComponentPaths: [[0, 0]],
+      }),
+    ).toBe(true);
+    expect(content.hasAttribute('data-ui-editor-scene-hidden')).toBe(true);
+  });
 });

@@ -111,7 +111,7 @@ describe('ResearchBalanceManager', () => {
         researchCostReductionLevel: 1,
       }),
     ).toEqual({
-      amount: 72,
+      amount: 360,
       currency: 'coin',
     });
     expect(
@@ -130,25 +130,67 @@ describe('ResearchBalanceManager', () => {
     });
   });
 
-  it('keeps coin research aligned with the compounding item economy', () => {
+  it('makes every post-onboarding seed and potion unlock a compounding milestone', () => {
     const research = new ResearchBalanceManager();
     const items = new ItemDefinitionManager();
     const seeds = items.getSeedDefinitions();
+    const recipeUnlockOrder = [
+      'minorHealingPotion',
+      'nettleVigor',
+      'calmingDraught',
+      'briarWard',
+      'lanternTonic',
+      'simpleAntidote',
+      'venomDraught',
+      'healingPotion',
+      'sunrootStamina',
+      'moonlitFocus',
+      'frostmossCleanse',
+      'sleepDraught',
+      'elixirOfLife',
+      'starLuckPhiltre',
+      'deepDreamVision',
+      'pactWard',
+      'dragonCourage',
+      'silverleafSalve',
+      'yarrowPoultice',
+      'hyssopClarity',
+      'valerianRest',
+      'comfreyBalm',
+      'nightshadeVeil',
+      'belladonnaSight',
+      'wormwoodPurge',
+      'snowdropBreath',
+      'pearlrootDraught',
+    ];
+    const expectedRecipeCosts = [
+      400, 700, 1_200, 2_100, 3_800, 6_600, 11_000, 20_000, 35_000, 62_000,
+      110_000, 190_000, 330_000, 580_000, 1_000_000, 1_800_000, 3_100_000,
+      5_400_000, 9_500_000, 17_000_000, 29_000_000, 51_000_000, 89_000_000,
+      160_000_000, 270_000_000, 480_000_000, 830_000_000,
+    ];
 
     expect(research.getCost('unlockSeed:sageSeed').amount).toBe(0);
     expect(research.getCost('unlockSeed:mintSeed').amount).toBe(0);
 
     for (const seed of seeds.slice(2)) {
       expect(research.getCost(`unlockSeed:${seed.key}`).amount).toBe(
-        seed.baseSellPrice * 10,
+        seed.baseSellPrice * 100,
       );
     }
 
-    for (const potion of items.getRecipePotionDefinitions()) {
-      expect(research.getCost(`unlockRecipe:${potion.key}`).amount).toBe(
-        potion.key === 'manaTonic' ? 0 : potion.baseSellPrice,
-      );
-    }
+    expect(research.getCost('unlockRecipe:manaTonic').amount).toBe(0);
+    const recipeCosts = recipeUnlockOrder.map(
+      (potionKey) => research.getCost(`unlockRecipe:${potionKey}`).amount,
+    );
+    expect(recipeCosts).toEqual(expectedRecipeCosts);
+    expect(
+      recipeCosts.every((cost, index) => index === 0 || cost > recipeCosts[index - 1]),
+    ).toBe(true);
+    expect(research.getCost('unlockSeed:pearlrootSeed').amount).toBeLessThan(
+      1_000_000_000,
+    );
+    expect(recipeCosts.at(-1)).toBeLessThan(1_000_000_000);
 
     expect(
       ['summonSeedsX2', 'summonSeedsX3', 'summonSeedsX4', 'summonSeedsX5'].map(

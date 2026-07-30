@@ -18,6 +18,11 @@ export class UiEditorViewManager {
     const shell = document.createElement('div');
     shell.className = 'ui-editor-shell';
 
+    const toolbar = document.createElement('header');
+    toolbar.className = 'ui-editor-toolbar';
+    toolbar.setAttribute('aria-label', 'Editor workspace');
+    shell.append(toolbar);
+
     const panels = {};
     for (const definition of PANEL_DEFINITIONS) {
       const panel = createPanel(definition);
@@ -53,6 +58,7 @@ export class UiEditorViewManager {
 
     this.refs = {
       shell,
+      toolbar,
       preview,
       panels,
       splitters,

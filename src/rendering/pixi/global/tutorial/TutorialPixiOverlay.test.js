@@ -479,6 +479,39 @@ describe('TutorialPixiOverlay', () => {
     );
   });
 
+  it('reserves a separate action row below ordinary lesson copy', () => {
+    const overlay = new TutorialPixiOverlay({
+      assets: createAssets(),
+      reducedMotion: true,
+    });
+    overlay.activate();
+    overlay.bind({
+      kind: 'lesson',
+      step: { id: 'intro-mana-sphere', highlightTargetIds: [] },
+      lesson: {
+        id: 'intro-mana-sphere',
+        title: 'Lesson 1: Introduction',
+        text:
+          'This is your mana. It fills over time, up to the cap shown here.',
+        autoOpen: true,
+        advanceOnClick: true,
+        advanceLabel: 'next',
+      },
+      cue: { kind: 'none' },
+    });
+
+    const copyBottom =
+      overlay.surface.copy.y + overlay.surface.layoutCopyHeight;
+    const actionBottom =
+      overlay.surface.advanceControl.y +
+      overlay.surface.advanceControl.buttonHeight;
+
+    expect(overlay.surface.advanceControl.y - copyBottom).toBe(5);
+    expect(actionBottom).toBeLessThanOrEqual(
+      overlay.surface.outerHeight,
+    );
+  });
+
   it('animates lesson height changes in both directions and snaps for reduced motion', () => {
     const ticker = createTicker();
     const overlay = new TutorialPixiOverlay({

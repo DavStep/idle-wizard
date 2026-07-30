@@ -2807,7 +2807,7 @@ describe("GameplayFacade", () => {
       {
         id: "summonSeedsX2",
         label: "x2 summon",
-        value: "1000 coin",
+        value: "1k coin",
         effect: "20 mana",
         description: "summons 2 researched seeds for 20 mana.",
         costCoin: 1_000,
@@ -2962,14 +2962,14 @@ describe("GameplayFacade", () => {
     expect(gameplayFacade.buyResearch("unlockSeed:mintSeed")).toMatchObject({
       ok: true,
     });
-    gameplayFacade.coinFacade.add(40);
+    gameplayFacade.coinFacade.add(400);
 
     expect(
       findResearchSnapshot(gameplayFacade, "unlockSeed:nettleSeed"),
     ).toMatchObject({
       id: "unlockSeed:nettleSeed",
-      value: "40 coin",
-      costCoin: 40,
+      value: "400 coin",
+      costCoin: 400,
       completed: false,
       canResearch: true,
     });
@@ -2977,7 +2977,7 @@ describe("GameplayFacade", () => {
     expect(gameplayFacade.buyResearch("unlockSeed:nettleSeed")).toEqual({
       ok: true,
       researchId: "unlockSeed:nettleSeed",
-      cost: 40,
+      cost: 400,
     });
     expect(gameplayFacade.getSnapshot().coin.current).toBe(0);
     expect(
@@ -2987,7 +2987,7 @@ describe("GameplayFacade", () => {
       ok: false,
       reason: "already_researched",
       researchId: "unlockSeed:nettleSeed",
-      cost: 40,
+      cost: 400,
     });
   });
 
@@ -3312,16 +3312,16 @@ describe("GameplayFacade", () => {
     expect(
       findResearchSnapshot(gameplayFacade, "unlockSeed:nettleSeed"),
     ).toMatchObject({
-      value: "36 coin",
-      costCoin: 36,
+      value: "360 coin",
+      costCoin: 360,
     });
 
-    gameplayFacade.coinFacade.add(36);
+    gameplayFacade.coinFacade.add(360);
 
     expect(gameplayFacade.buyResearch("unlockSeed:nettleSeed")).toMatchObject({
       ok: true,
       researchId: "unlockSeed:nettleSeed",
-      cost: 36,
+      cost: 360,
     });
   });
 
@@ -3949,7 +3949,7 @@ describe("GameplayFacade", () => {
       cost: 1_000,
     });
     expect(getResearch("summonSeedsX3")).toMatchObject({
-      value: "10000 coin",
+      value: "10k coin",
       canResearch: true,
     });
     expect(gameplayFacade.buyResearch("summonSeedsX4")).toEqual({
@@ -3975,7 +3975,7 @@ describe("GameplayFacade", () => {
       reason: "missing_required_research",
       researchId: "unlockRecipe:minorHealingPotion",
       requiredResearchId: "unlockRecipe:manaTonic",
-      cost: 80,
+      cost: 400,
     });
 
     expect(gameplayFacade.buyResearch("unlockRecipe:manaTonic")).toEqual({
@@ -3985,7 +3985,7 @@ describe("GameplayFacade", () => {
     });
     advanceToLevel(gameplayFacade, 6);
     expect(getResearch("unlockRecipe:minorHealingPotion")).toMatchObject({
-      value: "80 coin",
+      value: "400 coin",
       canResearch: true,
     });
 
@@ -4020,13 +4020,13 @@ describe("GameplayFacade", () => {
     };
 
     advanceToLevel(gameplayFacade, 3);
-    gameplayFacade.coinFacade.add(115);
+    gameplayFacade.coinFacade.add(400);
     expect(gameplayFacade.buyResearch("unlockSeed:mintSeed")).toMatchObject({
       ok: true,
       cost: 0,
     });
 
-    expect(gameplayFacade.getSnapshot().coin.current).toBe(115);
+    expect(gameplayFacade.getSnapshot().coin.current).toBe(400);
     expect(getResearch("unlockSeed:nettleSeed")).toMatchObject({
       value: "locked",
       requiredPlayerLevel: 5,
@@ -4038,7 +4038,7 @@ describe("GameplayFacade", () => {
       reason: "missing_required_level",
       researchId: "unlockSeed:nettleSeed",
       requiredPlayerLevel: 5,
-      cost: 40,
+      cost: 400,
     });
 
     while (gameplayFacade.getSnapshot().tasks.currentLevel < 5) {
@@ -4046,13 +4046,13 @@ describe("GameplayFacade", () => {
     }
 
     expect(getResearch("unlockSeed:nettleSeed")).toMatchObject({
-      value: "40 coin",
+      value: "400 coin",
       canResearch: true,
     });
     expect(gameplayFacade.buyResearch("unlockSeed:nettleSeed")).toMatchObject({
       ok: true,
       researchId: "unlockSeed:nettleSeed",
-      cost: 40,
+      cost: 400,
     });
   });
 
@@ -4103,7 +4103,7 @@ describe("GameplayFacade", () => {
       ok: false,
       reason: "not_enough_coin",
       researchId: "unlockSeed:nettleSeed",
-      cost: 40,
+      cost: 400,
     });
   });
 

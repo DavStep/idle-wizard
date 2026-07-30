@@ -1,4 +1,4 @@
-import { Assets, Texture } from 'pixi.js';
+import { Application, Assets, Texture } from 'pixi.js';
 
 import { PIXI_PRODUCTION_ASSET_MANIFEST } from '../../rendering/pixi/assets/PixiProductionAssetManifest.js';
 import {
@@ -50,6 +50,100 @@ const BUTTON_ASSET_MANIFEST = PIXI_PRODUCTION_ASSET_MANIFEST.filter(
 );
 let sharedAssetManager = null;
 
+export function createUiEditorPixiButtonThumbnail(definition) {
+  const host = document.createElement('span');
+  const canvas = document.createElement('canvas');
+  const status = document.createElement('span');
+  let controller = null;
+  let observer = null;
+  let renderGeneration = 0;
+
+  host.className = 'ui-editor-game-widget-thumbnail';
+  host.dataset.editorLibraryThumbnail = definition.id;
+  canvas.className = 'ui-editor-game-widget-thumbnail__canvas';
+  canvas.setAttribute('aria-hidden', 'true');
+  status.className = 'ui-editor-game-widget-thumbnail__status';
+  status.setAttribute('aria-hidden', 'true');
+  status.textContent = 'Loading…';
+  host.append(canvas, status);
+
+  const suspend = () => {
+    renderGeneration += 1;
+    controller?.destroy();
+    controller = null;
+    host.dataset.ready = 'false';
+  };
+
+  const render = async () => {
+    if (controller || host.dataset.loading === 'true') {
+      return;
+    }
+
+    const generation = ++renderGeneration;
+    host.dataset.loading = 'true';
+    delete host.dataset.error;
+    status.textContent = 'Loading…';
+
+    try {
+      const nextController = await mountButtonThumbnail({
+        canvas,
+        definition,
+        host,
+      });
+
+      if (generation !== renderGeneration || !host.isConnected) {
+        nextController.destroy();
+        return;
+      }
+
+      controller = nextController;
+      host.dataset.ready = 'true';
+      status.textContent = '';
+    } catch (error) {
+      if (generation === renderGeneration) {
+        host.dataset.error = 'true';
+        status.textContent = 'Preview unavailable';
+        globalThis.console?.error(error);
+      }
+    } finally {
+      if (generation === renderGeneration) {
+        host.dataset.loading = 'false';
+      }
+    }
+  };
+
+  host.uiEditorThumbnailConnect = () => {
+    if (observer) {
+      return;
+    }
+
+    if (typeof globalThis.IntersectionObserver !== 'function') {
+      void render();
+      return;
+    }
+
+    observer = new globalThis.IntersectionObserver(
+      (entries) => {
+        if (entries.some((entry) => entry.isIntersecting)) {
+          void render();
+        } else {
+          suspend();
+        }
+      },
+      { rootMargin: '80px 0px' },
+    );
+    observer.observe(host);
+  };
+
+  host.uiEditorThumbnailDisconnect = () => {
+    observer?.disconnect();
+    observer = null;
+    suspend();
+  };
+
+  return host;
+}
+
 export function createUiEditorPixiButtonPreview(definition) {
   const host = document.createElement('section');
   const canvas = document.createElement('canvas');
@@ -100,6 +194,65 @@ export function createUiEditorPixiButtonPreview(definition) {
   });
 
   return host;
+}
+
+async function mountButtonThumbnail({ canvas, definition, host }) {
+  sharedAssetManager ??= new UiEditorButtonAssetManager();
+  const application = new Application();
+  let resizeObserver = null;
+
+  await Promise.all([
+    application.init({
+      antialias: true,
+      autoDensity: true,
+      backgroundAlpha: 0,
+      canvas,
+      height: Math.max(1, host.clientHeight),
+      resolution: Math.min(globalThis.devicePixelRatio || 1, 2),
+      width: Math.max(1, host.clientWidth),
+    }),
+    sharedAssetManager.load(),
+  ]);
+
+  if (!host.isConnected) {
+    application.destroy();
+    return createDisposedController();
+  }
+
+  const preview = createPreviewControl({
+    assetManager: sharedAssetManager,
+    definition: definition.preview,
+    inputRouter: null,
+  });
+  const layout = () => {
+    application.renderer.resize(
+      Math.max(1, host.clientWidth),
+      Math.max(1, host.clientHeight),
+    );
+    layoutThumbnailControl({
+      height: host.clientHeight,
+      preview,
+      width: host.clientWidth,
+    });
+  };
+
+  preview.root.eventMode = 'none';
+  application.stage.addChild(preview.root);
+  layout();
+
+  if (typeof ResizeObserver === 'function') {
+    resizeObserver = new ResizeObserver(layout);
+    resizeObserver.observe(host);
+  }
+
+  return {
+    destroy() {
+      resizeObserver?.disconnect();
+      resizeObserver = null;
+      preview.destroy();
+      application.destroy();
+    },
+  };
 }
 
 async function mountButtonPreview({ canvas, definition, host }) {
@@ -154,6 +307,30 @@ async function mountButtonPreview({ canvas, definition, host }) {
       applicationManager.destroy();
     },
   };
+}
+
+function layoutThumbnailControl({ height, preview, width }) {
+  const inset = 8;
+  const availableWidth = Math.max(1, width - inset * 2);
+  const availableHeight = Math.max(1, height - inset * 2);
+  const fitScale = Math.min(
+    1.15,
+    availableWidth / preview.width,
+    availableHeight / preview.height,
+  );
+  const baseScaleX = preview.baseScaleX ?? preview.root.scale.x;
+  const baseScaleY = preview.baseScaleY ?? preview.root.scale.y;
+
+  preview.baseScaleX = baseScaleX;
+  preview.baseScaleY = baseScaleY;
+  preview.root.scale.set(
+    baseScaleX * fitScale,
+    baseScaleY * fitScale,
+  );
+  preview.root.position.set(
+    (width - preview.width * fitScale) / 2,
+    (height - preview.height * fitScale) / 2,
+  );
 }
 
 function createPreviewControl({ assetManager, definition, inputRouter }) {

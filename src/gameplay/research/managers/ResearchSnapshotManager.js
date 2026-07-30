@@ -1,4 +1,5 @@
 import { formatEmeraldResearchStarLevel } from '../emeraldResearchIds.js';
+import { formatCoinAmount } from '../../../shared/coinPrice.js';
 
 export class ResearchSnapshotManager {
   constructor({
@@ -171,6 +172,10 @@ export class ResearchSnapshotManager {
   formatCost(cost) {
     if (cost.amount === 0) {
       return 'Free';
+    }
+
+    if (cost.currency === 'coin') {
+      return `${formatCoinAmount(cost.amount)} coin`;
     }
 
     return `${cost.amount} ${cost.currency}`;

@@ -1,18 +1,27 @@
 import { UiEditorBottomPanelManager } from './managers/UiEditorBottomPanelManager.js';
 import { UiEditorHierarchyManager } from './managers/UiEditorHierarchyManager.js';
 import { UiEditorPanelLayoutManager } from './managers/UiEditorPanelLayoutManager.js';
+import { UiEditorUsageManager } from './managers/UiEditorUsageManager.js';
 import { UiEditorViewManager } from './managers/UiEditorViewManager.js';
+import { UiEditorWorkspaceManager } from './managers/UiEditorWorkspaceManager.js';
 
 /**
  * Creates the editor shell and keeps its docked panels sized around the preview.
  */
 export class UiEditorFacade {
-  constructor({ libraryEntries = [], root }) {
+  constructor({
+    libraryEntries = [],
+    root,
+    storage = resolveStorage(),
+  }) {
     this.viewManager = new UiEditorViewManager({ root });
     this.libraryEntries = libraryEntries;
+    this.storage = storage;
     this.layoutManager = null;
     this.bottomPanelManager = null;
     this.hierarchyManager = null;
+    this.usageManager = null;
+    this.workspaceManager = null;
     this.previewCleanup = null;
   }
 
@@ -25,6 +34,11 @@ export class UiEditorFacade {
     });
     this.hierarchyManager.mount();
 
+    this.usageManager = new UiEditorUsageManager({
+      panel: refs.panels.right,
+    });
+    this.usageManager.mount();
+
     this.bottomPanelManager = new UiEditorBottomPanelManager({
       entries: this.libraryEntries,
       onSelectEntry: (entry) => this.selectLibraryEntry(entry),
@@ -34,6 +48,14 @@ export class UiEditorFacade {
 
     this.layoutManager = new UiEditorPanelLayoutManager(refs);
     this.layoutManager.mount();
+
+    this.workspaceManager = new UiEditorWorkspaceManager({
+      createWorkspaceState: () => this.createWorkspaceState(),
+      restoreWorkspaceState: (state) => this.restoreWorkspaceState(state),
+      storage: this.storage,
+      toolbar: refs.toolbar,
+    });
+    this.workspaceManager.mount();
   }
 
   openPreview(component) {
@@ -50,6 +72,7 @@ export class UiEditorFacade {
         : null;
     preview.replaceChildren(component);
     this.hierarchyManager?.refresh();
+    this.usageManager?.clear();
     return true;
   }
 
@@ -58,12 +81,28 @@ export class UiEditorFacade {
       return false;
     }
 
-    return this.openPreview(entry.createPreview());
+    const opened = this.openPreview(entry.createPreview());
+
+    if (opened) {
+      this.usageManager?.showEntry(entry);
+    }
+
+    return opened;
   }
 
   setLibraryEntries(entries) {
     this.libraryEntries = entries;
     this.bottomPanelManager?.setEntries(entries);
+
+    const selectedEntry = entries.find(
+      ({ id }) => id === this.bottomPanelManager?.selectedEntryId,
+    );
+
+    if (selectedEntry) {
+      this.usageManager?.showEntry(selectedEntry);
+    } else {
+      this.usageManager?.clear();
+    }
   }
 
   clearPreview() {
@@ -72,17 +111,49 @@ export class UiEditorFacade {
     this.viewManager.refs?.preview.replaceChildren();
     this.bottomPanelManager?.clearSelection();
     this.hierarchyManager?.refresh();
+    this.usageManager?.clear();
+  }
+
+  createWorkspaceState() {
+    return {
+      hierarchy: this.hierarchyManager?.getWorkspaceState(),
+      layout: this.layoutManager?.getWorkspaceState(),
+      library: this.bottomPanelManager?.getWorkspaceState(),
+    };
+  }
+
+  restoreWorkspaceState(state) {
+    if (!state || typeof state !== 'object') {
+      return false;
+    }
+
+    this.layoutManager?.restoreWorkspaceState(state.layout);
+    this.bottomPanelManager?.restoreWorkspaceState(state.library);
+    this.hierarchyManager?.restoreWorkspaceState(state.hierarchy);
+    return true;
   }
 
   unmount() {
     this.previewCleanup?.();
     this.previewCleanup = null;
+    this.workspaceManager?.unmount();
+    this.workspaceManager = null;
     this.layoutManager?.unmount();
     this.layoutManager = null;
     this.bottomPanelManager?.unmount();
     this.bottomPanelManager = null;
     this.hierarchyManager?.unmount();
     this.hierarchyManager = null;
+    this.usageManager?.unmount();
+    this.usageManager = null;
     this.viewManager.unmount();
+  }
+}
+
+function resolveStorage() {
+  try {
+    return globalThis.localStorage ?? null;
+  } catch {
+    return null;
   }
 }

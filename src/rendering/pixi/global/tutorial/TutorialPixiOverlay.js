@@ -1363,7 +1363,11 @@ class TutorialLessonSurface {
     this.title.position.set(intro ? 8 : 12, intro ? -12 : 9);
     this.copy.position.set(paddingX, paddingTop);
     let y = paddingTop + this.layoutCopyHeight;
-    if (intro) {
+    if (
+      intro ||
+      (!intro &&
+        (this.progress.visible || this.advanceControl.visible))
+    ) {
       const rowHeight = Math.max(
         this.progress.visible
           ? PIXI_UI_GEOMETRY.progressTotalHeight
@@ -1392,10 +1396,6 @@ class TutorialLessonSurface {
       }
     }
     if (this.progress.visible) {
-      if (!intro) {
-        y += 5;
-        this.progress.position.set(paddingX, y);
-      }
       const progressWidth = this.advanceControl.visible
         ? Math.max(
             0,
@@ -1408,16 +1408,6 @@ class TutorialLessonSurface {
         progressWidth,
         PIXI_UI_GEOMETRY.progressTotalHeight,
       );
-      if (this.advanceControl.visible && !intro) {
-        this.advanceControl.y =
-          this.progress.y +
-          (PIXI_UI_GEOMETRY.progressTotalHeight -
-            TUTORIAL_ADVANCE_BUTTON.height) /
-            2;
-      }
-      if (!intro) {
-        y += PIXI_UI_GEOMETRY.progressTotalHeight;
-      }
     }
     if (this.progressLabel.visible && intro) {
       this.progressLabel.position.set(
@@ -1718,12 +1708,19 @@ function estimateLessonContentHeight(
     );
   let height = Math.max(
     TUTORIAL_PIXI_GEOMETRY.panelMinContentHeight,
-    Number(measuredCopyHeight) || 0,
-    lines * 16,
-    model.text ? 20 : 0,
+    (Number(measuredCopyHeight) || 0) + 14,
+    lines * 16 + 14,
+    model.text ? 34 : 0,
   );
-  if (progressVisible) {
-    height += 5 + PIXI_UI_GEOMETRY.progressTotalHeight;
+  if (progressVisible || advanceVisible) {
+    height +=
+      5 +
+      Math.max(
+        progressVisible
+          ? PIXI_UI_GEOMETRY.progressTotalHeight
+          : 0,
+        advanceVisible ? TUTORIAL_ADVANCE_BUTTON.height : 0,
+      );
   }
   if (progressLabelVisible) {
     height += 16;

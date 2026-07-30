@@ -32,6 +32,7 @@ describe('coin price formatting', () => {
 
   it('uses compact suffixes without rounding up player-visible amounts', () => {
     expect(formatCoinAmount(1_234)).toBe('1.23k');
+    expect(formatCoinAmount(10_000)).toBe('10k');
     expect(formatCoinAmount(12_345)).toBe('12.3k');
     expect(formatCoinAmount(999_999)).toBe('999k');
     expect(formatCoinAmount(1_000_000)).toBe('1m');

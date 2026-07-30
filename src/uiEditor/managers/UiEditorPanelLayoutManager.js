@@ -134,6 +134,36 @@ export class UiEditorPanelLayoutManager {
     return size;
   }
 
+  getWorkspaceState() {
+    return Object.fromEntries(
+      Object.keys(PANEL_CONFIG).map((dock) => [
+        dock,
+        Math.round(this.measurePanel(dock)),
+      ]),
+    );
+  }
+
+  restoreWorkspaceState(state) {
+    if (!state || typeof state !== 'object') {
+      return false;
+    }
+
+    let restored = false;
+
+    for (const dock of Object.keys(PANEL_CONFIG)) {
+      const size = Number(state[dock]);
+
+      if (!Number.isFinite(size)) {
+        continue;
+      }
+
+      this.setPanelSize(dock, size);
+      restored = true;
+    }
+
+    return restored;
+  }
+
   resolveMaximumSize(dock) {
     if (dock === 'bottom') {
       return Math.floor(

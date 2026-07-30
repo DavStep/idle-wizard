@@ -1,4 +1,162 @@
-import { createUiEditorPixiButtonPreview } from '../widgets/UiEditorPixiButtonPreview.js';
+import {
+  createUiEditorPixiButtonPreview,
+  createUiEditorPixiButtonThumbnail,
+} from '../widgets/UiEditorPixiButtonPreview.js';
+
+const BUTTON_USAGES = Object.freeze({
+  'control-button': usageSet(
+    [
+      'Settings feedback category controls',
+      'src/rendering/pixi/global/dialogs/PixiSettingsDialog.js',
+    ],
+    [
+      'Shared retained page actions',
+      'src/rendering/pixi/pages/workshop/RetainedPageKit.js',
+    ],
+  ),
+  'yellow-button': usageSet(
+    [
+      'First-run and tutorial advance actions',
+      'src/rendering/pixi/global/intro/FirstRunIntroPixiView.js',
+    ],
+    [
+      'Account connection and device copy actions',
+      'src/rendering/pixi/global/dialogs/PixiSettingsDialog.js',
+    ],
+    [
+      'Garden Seeds action',
+      'src/rendering/pixi/pages/garden/GardenPixiPage.js',
+    ],
+    [
+      'Level pager and online gate actions',
+      'src/rendering/pixi/global/dialogs/PixiLevelDialog.js',
+    ],
+  ),
+  'green-button': usageSet(
+    [
+      'Inbox reward claim',
+      'src/rendering/pixi/global/dialogs/PixiInboxDialog.js',
+    ],
+    [
+      'Garden Harvest All action',
+      'src/rendering/pixi/pages/garden/GardenPixiPage.js',
+    ],
+    [
+      'Market offer and listing actions',
+      'src/rendering/pixi/pages/shop/ShopPixiPage.js',
+    ],
+    [
+      'Fresh-start confirmation',
+      'src/rendering/pixi/global/gates/PixiFreshStartChoiceView.js',
+    ],
+  ),
+  'red-button': usageSet(
+    [
+      'Market cancel and remove actions',
+      'src/rendering/pixi/pages/shop/createShop.js',
+    ],
+    [
+      'Destructive confirmation actions',
+      'src/rendering/pixi/global/dialogs/PixiMessageDialogs.js',
+    ],
+  ),
+  'brown-dark-button': usageSet(
+    [
+      'Unselected dialog footer tabs',
+      'src/rendering/pixi/primitives/PixiButton.js',
+    ],
+    [
+      'Unselected shop item actions',
+      'src/rendering/pixi/pages/shop/ShopDialogPixi.js',
+    ],
+  ),
+  'brown-light-button': usageSet(
+    [
+      'Selected dialog footer tabs',
+      'src/rendering/pixi/primitives/PixiButton.js',
+    ],
+    [
+      'Elara Help toggle',
+      'src/rendering/pixi/global/tutorial/TutorialPixiOverlay.js',
+    ],
+  ),
+  'disabled-button': usageSet([
+    'Unavailable state for every retained button variant',
+    'src/rendering/pixi/primitives/PixiButton.js',
+  ]),
+  'inline-button': usageSet(
+    [
+      'Brewing ingredient slots',
+      'src/rendering/pixi/pages/brewing/BrewingHudPixi.js',
+    ],
+    [
+      'Workshop dialog row actions',
+      'src/rendering/pixi/pages/workshop/WorkshopDialogPixi.js',
+    ],
+  ),
+  'border-label-button': usageSet([
+    'Workshop request border actions',
+    'src/rendering/pixi/pages/workshop/WorkshopPixiPage.js',
+  ]),
+  'popup-tab-button': popupTabUsages(),
+  'popup-tab-selected-button': popupTabUsages(),
+  'account-save-button': usageSet([
+    'Settings account Save action',
+    'src/rendering/pixi/global/dialogs/PixiSettingsDialog.js',
+  ]),
+  'compact-cost-button': usageSet(
+    [
+      'Brewing purchase action',
+      'src/rendering/pixi/pages/brewing/BrewingPixiPage.js',
+    ],
+    [
+      'Workshop dialog purchase action',
+      'src/rendering/pixi/pages/workshop/WorkshopDialogPixi.js',
+    ],
+  ),
+  'stacked-cost-button': usageSet(
+    [
+      'Workshop Summon Seed action',
+      'src/rendering/pixi/pages/workshop/WorkshopPixiPage.js',
+    ],
+    [
+      'Garden plot purchase action',
+      'src/rendering/pixi/pages/garden/GardenPixiPage.js',
+    ],
+    [
+      'Brewing cauldron unlock action',
+      'src/rendering/pixi/pages/brewing/BrewingHudPixi.js',
+    ],
+  ),
+  'research-cost-button': usageSet(
+    [
+      'Research purchase and researched states',
+      'src/rendering/pixi/pages/research/ResearchPixiPage.js',
+    ],
+    [
+      'Prestige upgrade action',
+      'src/rendering/pixi/pages/prestige/PrestigePixiPage.js',
+    ],
+  ),
+  'info-button': usageSet(
+    [
+      'Workshop summon information',
+      'src/rendering/pixi/pages/workshop/WorkshopPixiPage.js',
+    ],
+    [
+      'Prestige upgrade help',
+      'src/rendering/pixi/pages/prestige/PrestigePixiPage.js',
+    ],
+  ),
+  'hud-settings-button': usageSet([
+    'Top HUD Settings control',
+    'src/rendering/pixi/global/chrome/PixiTopPanelView.js',
+  ]),
+  'hud-avatar-button': usageSet([
+    'Top HUD avatar control',
+    'src/rendering/pixi/global/chrome/PixiTopPanelView.js',
+  ]),
+});
 
 export const IDLE_WIZARD_BUTTON_WIDGETS = Object.freeze([
   buttonWidget('control-button', 'Control Button', {
@@ -127,10 +285,12 @@ export const IDLE_WIZARD_BUTTON_WIDGETS = Object.freeze([
 export function createIdleWizardButtonEntries() {
   return IDLE_WIZARD_BUTTON_WIDGETS.map((definition) => ({
     createPreview: () => createUiEditorPixiButtonPreview(definition),
+    createThumbnail: () => createUiEditorPixiButtonThumbnail(definition),
     id: definition.id,
     kind: 'widget',
     label: definition.label,
     sectionId: 'buttons',
+    usages: BUTTON_USAGES[definition.id] ?? [],
   }));
 }
 
@@ -140,4 +300,31 @@ function buttonWidget(id, label, preview) {
     label,
     preview: Object.freeze({ ...preview }),
   });
+}
+
+function popupTabUsages() {
+  return usageSet(
+    [
+      'Settings Avatar and Frame tabs',
+      'src/rendering/pixi/global/dialogs/PixiSettingsDialog.js',
+    ],
+    [
+      'Research page tabs',
+      'src/rendering/pixi/pages/research/ResearchPixiPage.js',
+    ],
+    [
+      'Market and item picker tabs',
+      'src/rendering/pixi/pages/shop/ShopDialogPixi.js',
+    ],
+    [
+      'Guild dialog tabs',
+      'src/rendering/pixi/pages/guild/GuildDialogPixi.js',
+    ],
+  );
+}
+
+function usageSet(...usages) {
+  return Object.freeze(
+    usages.map(([label, source]) => Object.freeze({ label, source })),
+  );
 }

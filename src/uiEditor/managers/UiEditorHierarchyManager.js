@@ -116,6 +116,38 @@ export class UiEditorHierarchyManager {
     this.refresh();
   }
 
+  getWorkspaceState() {
+    const hiddenComponentPaths = [];
+
+    for (const [rootIndex, root] of [...this.scene.children].entries()) {
+      collectHiddenComponentPaths(root, [rootIndex], hiddenComponentPaths);
+    }
+
+    return { hiddenComponentPaths };
+  }
+
+  restoreWorkspaceState(state) {
+    if (!Array.isArray(state?.hiddenComponentPaths)) {
+      return false;
+    }
+
+    for (const element of this.scene.querySelectorAll(
+      `[${SCENE_HIDDEN_ATTRIBUTE}]`,
+    )) {
+      element.removeAttribute(SCENE_HIDDEN_ATTRIBUTE);
+    }
+
+    for (const path of state.hiddenComponentPaths) {
+      resolveElementAtPath(this.scene, path)?.setAttribute(
+        SCENE_HIDDEN_ATTRIBUTE,
+        '',
+      );
+    }
+
+    this.refresh();
+    return true;
+  }
+
   createTreeItem(element, depth) {
     const id = this.getElementId(element);
     const label = getElementLabel(element);
@@ -182,6 +214,40 @@ export class UiEditorHierarchyManager {
 
     return id;
   }
+}
+
+function collectHiddenComponentPaths(element, path, hiddenComponentPaths) {
+  if (element.hasAttribute(SCENE_HIDDEN_ATTRIBUTE)) {
+    hiddenComponentPaths.push(path);
+  }
+
+  for (const [childIndex, child] of [...element.children].entries()) {
+    collectHiddenComponentPaths(
+      child,
+      [...path, childIndex],
+      hiddenComponentPaths,
+    );
+  }
+}
+
+function resolveElementAtPath(scene, path) {
+  if (
+    !Array.isArray(path)
+    || path.length === 0
+    || path.some(
+      (index) => !Number.isInteger(index) || index < 0,
+    )
+  ) {
+    return null;
+  }
+
+  let element = scene.children[path[0]] ?? null;
+
+  for (const childIndex of path.slice(1)) {
+    element = element?.children[childIndex] ?? null;
+  }
+
+  return element;
 }
 
 function getElementLabel(element) {

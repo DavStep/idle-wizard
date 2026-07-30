@@ -5,6 +5,12 @@ upload script posts the section whose heading matches `package.json` `version`.
 Write these developer-to-player notes only in Idle Wizard terms. Do not mention
 other game names, source projects, ports, or implementation provenance.
 
+## 0.3.35
+
+- Rebalanced seed and potion research costs so unlock prices grow more consistently across the full catalogue.
+- Improved Elara's lesson panels so progress and continue controls stay inside the panel without crowding the guidance text.
+- Cleaned up whole-number coin price labels.
+
 ## 0.3.34
 
 - Improved compact dialog tabs with clearer active, inactive, and disabled artwork.

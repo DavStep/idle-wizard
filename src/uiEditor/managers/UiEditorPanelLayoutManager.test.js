@@ -85,6 +85,31 @@ describe('UiEditorPanelLayoutManager', () => {
     expect(manager.setPanelSize('bottom', 5000)).toBe(405);
   });
 
+  it('captures and restores the dock sizes', () => {
+    expect(manager.getWorkspaceState()).toEqual({
+      bottom: 220,
+      left: 260,
+      right: 300,
+    });
+
+    expect(
+      manager.restoreWorkspaceState({
+        bottom: 240,
+        left: 280,
+        right: 320,
+      }),
+    ).toBe(true);
+    expect(
+      refs.shell.style.getPropertyValue('--editor-left-panel-width'),
+    ).toBe('280px');
+    expect(
+      refs.shell.style.getPropertyValue('--editor-right-panel-width'),
+    ).toBe('320px');
+    expect(
+      refs.shell.style.getPropertyValue('--editor-bottom-panel-height'),
+    ).toBe('240px');
+  });
+
   it('tracks an active drag through window pointer movement and release', () => {
     refs.splitters.left.setPointerCapture = () => {};
     refs.splitters.left.releasePointerCapture = () => {};

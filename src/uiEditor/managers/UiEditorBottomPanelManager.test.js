@@ -1,6 +1,6 @@
 // @vitest-environment jsdom
 
-import { beforeEach, describe, expect, it } from 'vitest';
+import { beforeEach, describe, expect, it, vi } from 'vitest';
 
 import {
   UI_EDITOR_LIBRARY_FOLDERS,
@@ -114,6 +114,75 @@ describe('UiEditorBottomPanelManager', () => {
     expect(widgetButton.getAttribute('aria-pressed')).toBe('false');
     expect(dialogButton.getAttribute('aria-pressed')).toBe('true');
     expect(refs.entryButtons.get('primary-button')).toBe(widgetButton);
+  });
+
+  it('captures and restores the open folder and selected entry', () => {
+    const selectedEntries = [];
+    manager.onSelectEntry = (entry) => {
+      selectedEntries.push(entry.id);
+      return true;
+    };
+    manager.setEntries([
+      {
+        id: 'primary-button',
+        kind: 'widget',
+        label: 'Primary Button',
+        sectionId: 'buttons',
+      },
+    ]);
+
+    expect(
+      manager.restoreWorkspaceState({
+        currentFolderId: 'buttons',
+        selectedEntryId: 'primary-button',
+      }),
+    ).toBe(true);
+    expect(manager.getWorkspaceState()).toEqual({
+      currentFolderId: 'buttons',
+      selectedEntryId: 'primary-button',
+    });
+    expect(selectedEntries).toEqual(['primary-button']);
+  });
+
+  it('shows optional retained previews in a compact entry gallery', () => {
+    const connect = vi.fn();
+    const disconnect = vi.fn();
+
+    manager.setEntries([
+      {
+        createThumbnail: () => {
+          const thumbnail = document.createElement('span');
+          thumbnail.dataset.editorLibraryThumbnail = 'primary-button';
+          thumbnail.uiEditorThumbnailConnect = connect;
+          thumbnail.uiEditorThumbnailDisconnect = disconnect;
+          return thumbnail;
+        },
+        id: 'primary-button',
+        kind: 'widget',
+        label: 'Primary Button',
+        sectionId: 'buttons',
+      },
+    ]);
+    manager.openFolder('buttons');
+
+    const list = refs.viewport.querySelector(
+      '[data-editor-library-section-content]',
+    );
+    const entry = refs.entryButtons.get('primary-button');
+
+    expect(list.dataset.layout).toBe('gallery');
+    expect(entry.dataset.hasThumbnail).toBe('true');
+    expect(
+      entry.querySelector('[data-editor-library-thumbnail]'),
+    ).not.toBeNull();
+    expect(
+      entry.querySelector('.ui-editor-library-entry__label').textContent,
+    ).toBe('Primary Button');
+    expect(connect).toHaveBeenCalledOnce();
+
+    const disconnectCount = disconnect.mock.calls.length;
+    manager.openFolder('dialogs');
+    expect(disconnect).toHaveBeenCalledTimes(disconnectCount + 1);
   });
 
   it('focuses the first item after opening a folder', () => {

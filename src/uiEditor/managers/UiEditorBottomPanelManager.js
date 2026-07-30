@@ -112,6 +112,7 @@ export class UiEditorBottomPanelManager {
       return;
     }
 
+    this.disposeEntryThumbnails();
     this.refs.body.removeEventListener('click', this.handleBodyClick);
     this.refs.header.removeEventListener('click', this.handleHeaderClick);
     this.refs.header.textContent = 'Bottom panel';
@@ -193,7 +194,29 @@ export class UiEditorBottomPanelManager {
     this.updateEntrySelection();
   }
 
+  getWorkspaceState() {
+    return {
+      currentFolderId: this.currentFolderId,
+      selectedEntryId: this.selectedEntryId,
+    };
+  }
+
+  restoreWorkspaceState(state) {
+    if (!state || typeof state !== 'object') {
+      return false;
+    }
+
+    const folderRestored = this.openFolder(state.currentFolderId);
+    const selectionRestored =
+      typeof state.selectedEntryId === 'string'
+        ? this.selectEntry(state.selectedEntryId)
+        : false;
+
+    return folderRestored || selectionRestored;
+  }
+
   renderEntries() {
+    this.disposeEntryThumbnails();
     this.entriesById.clear();
     this.refs.entryButtons.clear();
 
@@ -222,6 +245,7 @@ export class UiEditorBottomPanelManager {
     const folder = FOLDERS_BY_ID.get(this.currentFolderId);
     const viewport = document.createElement('div');
 
+    this.disconnectEntryThumbnails();
     viewport.className = 'ui-editor-folder-browser';
     viewport.dataset.editorLibraryFolderView = folder.id;
     this.refs.folderButtons.clear();
@@ -235,6 +259,7 @@ export class UiEditorBottomPanelManager {
 
     this.refs.body.replaceChildren(viewport);
     this.refs.viewport = viewport;
+    this.connectVisibleEntryThumbnails();
   }
 
   createFolderGrid(folderIds) {
@@ -258,6 +283,7 @@ export class UiEditorBottomPanelManager {
   createEntryList(folder) {
     const list = document.createElement('ul');
     const entryIds = [];
+    let hasThumbnails = false;
 
     list.className = 'ui-editor-library-entry-list';
     list.dataset.editorLibrarySectionContent = folder.sectionId;
@@ -269,13 +295,37 @@ export class UiEditorBottomPanelManager {
       }
 
       const item = document.createElement('li');
-      item.append(this.refs.entryButtons.get(entryId));
+      const button = this.refs.entryButtons.get(entryId);
+
+      hasThumbnails ||= button.dataset.hasThumbnail === 'true';
+      item.append(button);
       list.append(item);
       entryIds.push(entryId);
     }
 
     list.dataset.empty = String(entryIds.length === 0);
+    list.dataset.layout = hasThumbnails ? 'gallery' : 'list';
     return list;
+  }
+
+  connectVisibleEntryThumbnails() {
+    for (const thumbnail of this.refs.viewport.querySelectorAll(
+      '[data-editor-library-thumbnail]',
+    )) {
+      thumbnail.uiEditorThumbnailConnect?.();
+    }
+  }
+
+  disconnectEntryThumbnails() {
+    for (const button of this.refs?.entryButtons?.values() ?? []) {
+      button
+        .querySelector('[data-editor-library-thumbnail]')
+        ?.uiEditorThumbnailDisconnect?.();
+    }
+  }
+
+  disposeEntryThumbnails() {
+    this.disconnectEntryThumbnails();
   }
 
   updateEntrySelection() {
@@ -379,14 +429,34 @@ function createFolderIcon() {
   return icon;
 }
 
-function createLibraryEntry({ disabled = false, id, kind, label }) {
+function createLibraryEntry({
+  createThumbnail,
+  disabled = false,
+  id,
+  kind,
+  label,
+}) {
   const button = document.createElement('button');
+  const text = document.createElement('span');
+
   button.className = 'ui-editor-library-entry';
   button.type = 'button';
   button.dataset.editorLibraryEntry = id;
   button.dataset.libraryKind = kind;
   button.disabled = disabled;
   button.setAttribute('aria-pressed', 'false');
-  button.textContent = label;
+  text.className = 'ui-editor-library-entry__label';
+  text.textContent = label;
+
+  if (typeof createThumbnail === 'function') {
+    const thumbnail = createThumbnail();
+
+    if (thumbnail?.nodeType === 1) {
+      button.dataset.hasThumbnail = 'true';
+      button.append(thumbnail);
+    }
+  }
+
+  button.append(text);
   return button;
 }
