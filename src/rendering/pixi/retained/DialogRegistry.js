@@ -14,10 +14,12 @@ export class DialogRegistry {
    * @param {{
    *   dialogs?: Iterable<[string, () => import('./RetainedView.js').RetainedView]>,
    *   counters?: import('./RetainedUiCounters.js').RetainedUiCounters | null,
+   *   onOpen?: ((dialogId: string) => void) | null,
    * }} [options]
    */
-  constructor({ dialogs = [], counters = null } = {}) {
+  constructor({ dialogs = [], counters = null, onOpen = null } = {}) {
     this.counters = assertRetainedUiCounters(counters);
+    this.onOpen = typeof onOpen === 'function' ? onOpen : null;
     this.factories = new Map();
     this.dialogs = new Map();
     this.openDialogIds = [];
@@ -92,6 +94,7 @@ export class DialogRegistry {
         this.counters,
         RETAINED_UI_COUNTERS.DIALOG_OPENED,
       );
+      this.onOpen?.(safeDialogId);
     } else {
       moveToEnd(this.openDialogIds, safeDialogId);
     }
@@ -182,6 +185,7 @@ export class DialogRegistry {
     this.dialogs.clear();
     this.factories.clear();
     this.openDialogIds.length = 0;
+    this.onOpen = null;
     this.destroyed = true;
     throwRegistryErrors(errors, 'Failed to destroy one or more retained dialogs.');
     return true;

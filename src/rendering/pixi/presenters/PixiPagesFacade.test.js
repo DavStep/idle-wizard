@@ -995,6 +995,42 @@ describe("PixiPagesFacade", () => {
     ]);
   });
 
+  it("plays the harvest cue only after a ready Garden plot starts harvesting", () => {
+    const gameplaySnapshot = createGameplaySnapshot();
+    gameplaySnapshot.garden.plot = {
+      maxTiles: 1,
+      tiles: [
+        {
+          id: "plot-1",
+          tileNumber: 1,
+          unlocked: true,
+          phase: "ready",
+        },
+      ],
+    };
+    const harness = createHarness({ gameplaySnapshot });
+    harness.gameplayFacade.startGardenHarvest
+      .mockReturnValueOnce({ ok: true, tileNumber: 1 })
+      .mockReturnValueOnce({ ok: false, reason: "not_ready", tileNumber: 1 });
+    const pages = new PixiPagesFacade(harness.dependencies);
+    pages.mount();
+    pages.show("garden");
+
+    const plot = harness.getBoundPage("garden").garden.plots[0];
+    expect(harness.getBoundPage("garden").actions.activatePlot(plot)).toEqual({
+      ok: true,
+      tileNumber: 1,
+    });
+    expect(harness.gardenHarvestSoundFacade.playHarvest).toHaveBeenCalledTimes(1);
+
+    expect(harness.getBoundPage("garden").actions.activatePlot(plot)).toEqual({
+      ok: false,
+      reason: "not_ready",
+      tileNumber: 1,
+    });
+    expect(harness.gardenHarvestSoundFacade.playHarvest).toHaveBeenCalledTimes(1);
+  });
+
   it("projects Garden locked-slot affordability and blocks purchases until affordable", () => {
     const gameplaySnapshot = createGameplaySnapshot();
     gameplaySnapshot.coin.current = 10;
@@ -1587,6 +1623,7 @@ function createHarness({ gameplaySnapshot = createGameplaySnapshot() } = {}) {
   const dependencies = {
     renderFacade,
     experienceFacade: { transientEffects },
+    gardenHarvestSoundFacade: { playHarvest: vi.fn() },
     gameplayFacade,
     playerFacade,
     worldChatFacade: createSnapshotFacade({ connected: true, messages: [] }),
@@ -1599,6 +1636,7 @@ function createHarness({ gameplaySnapshot = createGameplaySnapshot() } = {}) {
     factories,
     runtime,
     gameplayFacade,
+    gardenHarvestSoundFacade: dependencies.gardenHarvestSoundFacade,
     transientEffects,
     bottomSurface,
     pageSurface,

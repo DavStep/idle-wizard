@@ -11,6 +11,8 @@ function makeFakeAudioContextConstructor({ initialState = 'running' } = {}) {
     decodeCount: 0,
     lastOscillatorType: '',
     lastSourcePlaybackRate: 0,
+    sourceGains: [],
+    sourcePlaybackRates: [],
     resumeCount: 0,
     oscillatorStartCount: 0,
     sourceStartCount: 0,
@@ -60,12 +62,16 @@ function makeFakeAudioContextConstructor({ initialState = 'running' } = {}) {
     createBufferSource() {
       const source = {
         buffer: null,
-        connect: vi.fn(),
+        connect: vi.fn((target) => {
+          source.connectedGain = target;
+        }),
         disconnect: vi.fn(),
         onended: null,
         playbackRate: makeAudioParam(1),
         start: vi.fn(() => {
           stats.lastSourcePlaybackRate = source.playbackRate.value;
+          stats.sourcePlaybackRates.push(source.playbackRate.value);
+          stats.sourceGains.push(source.connectedGain?.gain?.value ?? 0);
           stats.sourceStartCount += 1;
           source.onended?.();
         }),
@@ -141,11 +147,13 @@ describe('UiClickSoundManager', () => {
     vi.clearAllMocks();
   });
 
-  it('plays the Witch Craft pop sample with a short tone', async () => {
+  it('plays the exact Root Run button sample at its authored gain', async () => {
     const { AudioContextConstructor, stats } = makeFakeAudioContextConstructor();
     const fetch = makeFakeFetch();
     const manager = new UiClickSoundManager({
       clickSampleUrl: '/ui-click-pop.wav',
+      dialogOpenSampleUrls: [],
+      purchaseSampleUrls: [],
       random: () => 0.5,
       windowRef: {
         AudioContext: AudioContextConstructor,
@@ -160,9 +168,55 @@ describe('UiClickSoundManager', () => {
     expect(fetch).toHaveBeenCalledWith('/ui-click-pop.wav');
     expect(stats.decodeCount).toBe(1);
     expect(stats.sourceStartCount).toBe(1);
-    expect(stats.oscillatorStartCount).toBe(1);
-    expect(stats.lastOscillatorType).toBe('triangle');
-    expect(stats.lastSourcePlaybackRate).toBeCloseTo(1.36);
+    expect(stats.oscillatorStartCount).toBe(0);
+    expect(stats.lastSourcePlaybackRate).toBe(1);
+    expect(stats.sourceGains).toEqual([0.56]);
+  });
+
+  it('plays non-repeating purchase variants with the Root Run sell mix', async () => {
+    const { AudioContextConstructor, stats } = makeFakeAudioContextConstructor();
+    const fetch = makeFakeFetch();
+    const manager = new UiClickSoundManager({
+      clickSampleUrl: null,
+      dialogOpenSampleUrls: [],
+      purchaseSampleUrls: ['/sell-1.wav', '/sell-2.wav'],
+      random: () => 0,
+      windowRef: {
+        AudioContext: AudioContextConstructor,
+        fetch,
+      },
+    });
+
+    await flushPromises();
+    manager.playPurchase();
+    manager.playPurchase();
+    await flushPromises();
+
+    expect(fetch).toHaveBeenCalledWith('/sell-1.wav');
+    expect(fetch).toHaveBeenCalledWith('/sell-2.wav');
+    expect(stats.sourcePlaybackRates).toEqual([1.08, 1.08]);
+    expect(stats.sourceGains).toEqual([0.37, 0.37]);
+  });
+
+  it('plays the Root Run dialog fly bank with its randomized pitch and mix', async () => {
+    const { AudioContextConstructor, stats } = makeFakeAudioContextConstructor();
+    const manager = new UiClickSoundManager({
+      clickSampleUrl: null,
+      dialogOpenSampleUrls: ['/ui-fly-1.wav'],
+      purchaseSampleUrls: [],
+      random: () => 0.5,
+      windowRef: {
+        AudioContext: AudioContextConstructor,
+        fetch: makeFakeFetch(),
+      },
+    });
+
+    await flushPromises();
+    manager.playDialogOpen();
+    await flushPromises();
+
+    expect(stats.sourcePlaybackRates).toEqual([1.05]);
+    expect(stats.sourceGains[0]).toBeCloseTo(0.4464);
   });
 
   it('resumes a suspended context before playing the first click', async () => {
@@ -171,6 +225,8 @@ describe('UiClickSoundManager', () => {
     });
     const manager = new UiClickSoundManager({
       clickSampleUrl: null,
+      dialogOpenSampleUrls: [],
+      purchaseSampleUrls: [],
       windowRef: {
         AudioContext: AudioContextConstructor,
       },
@@ -189,6 +245,8 @@ describe('UiClickSoundManager', () => {
     const { AudioContextConstructor, stats } = makeFakeAudioContextConstructor();
     const manager = new UiClickSoundManager({
       clickSampleUrl: null,
+      dialogOpenSampleUrls: [],
+      purchaseSampleUrls: [],
       windowRef: {
         AudioContext: AudioContextConstructor,
       },
@@ -205,6 +263,8 @@ describe('UiClickSoundManager', () => {
     const { AudioContextConstructor, stats } = makeFakeAudioContextConstructor();
     const manager = new UiClickSoundManager({
       clickSampleUrl: null,
+      dialogOpenSampleUrls: [],
+      purchaseSampleUrls: [],
       windowRef: {
         AudioContext: AudioContextConstructor,
       },
@@ -221,6 +281,8 @@ describe('UiClickSoundManager', () => {
     const { AudioContextConstructor, stats } = makeFakeAudioContextConstructor();
     const manager = new UiClickSoundManager({
       clickSampleUrl: null,
+      dialogOpenSampleUrls: [],
+      purchaseSampleUrls: [],
       now: () => now,
       windowRef: {
         AudioContext: AudioContextConstructor,
@@ -240,6 +302,8 @@ describe('UiClickSoundManager', () => {
     const { AudioContextConstructor, stats } = makeFakeAudioContextConstructor();
     const manager = new UiClickSoundManager({
       clickSampleUrl: null,
+      dialogOpenSampleUrls: [],
+      purchaseSampleUrls: [],
       windowRef: {
         AudioContext: AudioContextConstructor,
       },

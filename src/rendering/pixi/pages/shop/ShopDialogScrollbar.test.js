@@ -8,7 +8,6 @@ import {
 } from '../workshop/PixiPageTestHarness.js';
 import {
   RETAINED_DIALOG_LIST_GEOMETRY,
-  RETAINED_SCROLLBAR_GEOMETRY,
 } from '../workshop/RetainedPageKit.js';
 import {
   PIXI_ROOT_RUN_GEOMETRY,
@@ -53,11 +52,12 @@ describe('ShopDialogPixi stall scrollbar', () => {
       row.root.x +
       row.background.x +
       row.background.frameWidth;
-    const scrollbarRight =
-      dialog.list.root.x +
-      dialog.list.scroll.scrollbarTrack.sprite.position.x;
+    const scrollbarBounds =
+      dialog.list.scroll.scrollbarTrack.getLocalBounds();
     const scrollbarLeft =
-      scrollbarRight - RETAINED_SCROLLBAR_GEOMETRY.width;
+      dialog.list.root.x + scrollbarBounds.x;
+    const scrollbarRight =
+      scrollbarLeft + scrollbarBounds.width;
     const paperRight =
       dialog.itemSection.x + dialog.itemSection.frameWidth;
 

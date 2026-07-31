@@ -19,7 +19,7 @@ import {
   resolvePixiTextStrokeWidth,
 } from '../../theme/PixiThemeTokens.js';
 import { ShopDialogPixi } from '../shop/ShopDialogPixi.js';
-import { RETAINED_DIALOG_LIST_GEOMETRY, RETAINED_SCROLLBAR_GEOMETRY } from './RetainedPageKit.js';
+import { RETAINED_DIALOG_LIST_GEOMETRY } from './RetainedPageKit.js';
 import {
   ROOT_RUN_SIDE_ACTION_GEOMETRY,
   WORKSHOP_WINDOW_ASSET_ID,
@@ -1090,9 +1090,12 @@ describe('WorkshopPixiPage', () => {
     const seedPaperRight = dialog.itemSection.position.x + dialog.itemSection.frameWidth;
     const firstRowRight =
       dialog.list.root.position.x + dialog.list.rows.getWidgets()[0].background.frameWidth;
+    const scrollbarBounds =
+      dialog.list.scroll.scrollbarTrack.getLocalBounds();
+    const scrollbarLeft =
+      dialog.list.root.position.x + scrollbarBounds.x;
     const scrollbarRight =
-      dialog.list.root.position.x + dialog.list.scroll.scrollbarTrack.sprite.position.x;
-    const scrollbarLeft = scrollbarRight - RETAINED_SCROLLBAR_GEOMETRY.width;
+      scrollbarLeft + scrollbarBounds.width;
 
     expect(dialog.list.scroll.scrollbarTrack.visible).toBe(true);
     expect(scrollbarLeft - firstRowRight).toBeGreaterThan(2.5);

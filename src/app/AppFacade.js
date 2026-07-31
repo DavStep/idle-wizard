@@ -17,6 +17,7 @@ import {
   PixiInteractionLockManager,
 } from '../rendering/pixi/runtime/PixiLifecycleAdapters.js';
 import { SoundSettingsFacade } from '../audio/soundSettings/SoundSettingsFacade.js';
+import { GardenHarvestSoundFacade } from '../audio/gardenHarvest/GardenHarvestSoundFacade.js';
 import { UiClickSoundFacade } from '../audio/uiClicks/UiClickSoundFacade.js';
 import { AppLifecycleManager } from './managers/AppLifecycleManager.js';
 import { AppVisibilityManager } from './managers/AppVisibilityManager.js';
@@ -35,8 +36,10 @@ export class AppFacade {
     this.gameplayFacade = new GameplayFacade();
     this.hapticsFacade = new HapticsFacade();
     this.playerFacade = new PlayerFacade();
+    this.gardenHarvestSoundFacade = new GardenHarvestSoundFacade();
     this.uiClickSoundFacade = new UiClickSoundFacade();
     this.soundSettingsFacade = new SoundSettingsFacade({
+      gardenHarvestSoundFacade: this.gardenHarvestSoundFacade,
       uiClickSoundFacade: this.uiClickSoundFacade,
     });
     this.backendFacade = new BackendFacade();
@@ -73,6 +76,7 @@ export class AppFacade {
       playerFacade: this.playerFacade,
       authFacade: this.backendFacade.getAuthFacade(),
       feedbackFacade: this.backendFacade.getFeedbackFacade(),
+      gardenHarvestSoundFacade: this.gardenHarvestSoundFacade,
       playerInboxFacade: this.backendFacade.getPlayerInboxFacade(),
       playerInfoFacade: this.backendFacade.getPlayerInfoFacade(),
       tradeAllianceFacade:
@@ -187,6 +191,7 @@ export class AppFacade {
     this.lifecycleManager.stop();
     this.renderFacade.destroy();
     this.soundSettingsFacade.destroy();
+    this.gardenHarvestSoundFacade.destroy();
     this.uiClickSoundFacade.destroy();
     this.hapticsFacade.destroy();
     return true;

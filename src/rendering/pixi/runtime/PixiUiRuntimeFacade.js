@@ -25,6 +25,7 @@ export class PixiUiRuntimeFacade {
     themeManager = new PixiThemeManager(),
     inputRouter = null,
     textEntryService = null,
+    uiClickSoundFacade = null,
     counters = new RetainedUiCounters(),
     semanticRegistry = null,
   } = {}) {
@@ -36,6 +37,7 @@ export class PixiUiRuntimeFacade {
     this.themeManager = themeManager;
     this.inputRouter = inputRouter;
     this.textEntryService = textEntryService;
+    this.uiClickSoundFacade = uiClickSoundFacade;
     this.counters = counters;
     this.semanticRegistry =
       semanticRegistry ?? new SemanticTargetRegistry({ counters });
@@ -96,6 +98,7 @@ export class PixiUiRuntimeFacade {
     // their owned dialogs while building their one retained display tree.
     this.dialogRegistry = new DialogRegistry({
       counters: this.counters,
+      onOpen: () => this.uiClickSoundFacade?.playDialogOpen?.(),
     });
     for (const [dialogId, factory] of this.dialogFactories) {
       this.dialogRegistry.register(dialogId, () => {

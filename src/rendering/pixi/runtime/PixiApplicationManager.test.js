@@ -82,6 +82,7 @@ describe('PixiApplicationManager', () => {
     expect(layers.pageUi.x).toBeCloseTo(1196, 0);
     expect(layers.pageUi.scale.x).toBe(3);
     expect(app.init.mock.calls[0][0].resolution).toBeCloseTo(900 / 2170, 8);
+    expect(app.init.mock.calls[0][0].antialias).toBe(true);
 
     const backgroundInstructions =
       layers.backgroundGraphic.context.instructions;

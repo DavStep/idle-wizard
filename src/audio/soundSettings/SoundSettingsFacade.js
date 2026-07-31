@@ -4,8 +4,13 @@ export class SoundSettingsFacade {
   static explain =
     'Stores music and sound-effect choices on this device, so feedback audio can be muted without changing game rules.';
 
-  constructor({ preferenceManager, uiClickSoundFacade = null } = {}) {
+  constructor({
+    preferenceManager,
+    gardenHarvestSoundFacade = null,
+    uiClickSoundFacade = null,
+  } = {}) {
     this.preferenceManager = preferenceManager ?? new SoundPreferenceManager();
+    this.gardenHarvestSoundFacade = gardenHarvestSoundFacade;
     this.uiClickSoundFacade = uiClickSoundFacade;
     this.lastSfxEnabled = null;
     this.preferenceUnsubscribe = this.preferenceManager.subscribe((snapshot) =>
@@ -53,6 +58,7 @@ export class SoundSettingsFacade {
     }
 
     this.lastSfxEnabled = enabled;
+    this.gardenHarvestSoundFacade?.setEnabled?.(enabled);
     this.uiClickSoundFacade?.setEnabled?.(enabled);
   }
 

@@ -67,6 +67,23 @@ describe('DialogRegistry', () => {
     expect(registry.getOpenDialogIds()).toEqual([]);
   });
 
+  it('plays the open cue only when a dialog actually activates', () => {
+    const onOpen = vi.fn();
+    const registry = new DialogRegistry({
+      dialogs: [['settings', () => createView()]],
+      onOpen,
+    });
+
+    registry.open('settings', {});
+    registry.open('settings', { tab: 'theme' });
+    registry.close('settings');
+    registry.open('settings', {});
+
+    expect(onOpen).toHaveBeenNthCalledWith(1, 'settings');
+    expect(onOpen).toHaveBeenNthCalledWith(2, 'settings');
+    expect(onOpen).toHaveBeenCalledTimes(2);
+  });
+
   it('destroys only constructed dialogs at shutdown', () => {
     const settings = createView();
     const unopened = createView();

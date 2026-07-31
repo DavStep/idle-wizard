@@ -91,6 +91,7 @@ export class PixiPagesFacade {
     worldEventLeaderboardFacade = null,
     worldChatFacade = null,
     feedbackFacade = null,
+    gardenHarvestSoundFacade = null,
     playerInboxFacade = null,
     playerInfoFacade = null,
     playerShopFacade = null,
@@ -99,6 +100,7 @@ export class PixiPagesFacade {
     authFacade = null,
     hapticsFacade = null,
     soundSettingsFacade = null,
+    uiClickSoundFacade = null,
     appPlugin = null,
     defaultPageId = "workshop",
     viewModelFactory = new PixiViewModelFactory(),
@@ -121,6 +123,7 @@ export class PixiPagesFacade {
     this.worldEventLeaderboardFacade = worldEventLeaderboardFacade;
     this.worldChatFacade = worldChatFacade;
     this.feedbackFacade = feedbackFacade;
+    this.gardenHarvestSoundFacade = gardenHarvestSoundFacade;
     this.playerInboxFacade = playerInboxFacade;
     this.playerInfoFacade = playerInfoFacade;
     this.playerShopFacade = playerShopFacade;
@@ -129,6 +132,7 @@ export class PixiPagesFacade {
     this.authFacade = authFacade;
     this.hapticsFacade = hapticsFacade;
     this.soundSettingsFacade = soundSettingsFacade;
+    this.uiClickSoundFacade = uiClickSoundFacade;
     this.appPlugin = appPlugin;
     this.viewModelFactory = viewModelFactory;
     this.pageUnlockManager = pageUnlockManager;
@@ -1292,6 +1296,7 @@ export class PixiPagesFacade {
     if (result?.ok !== true || spentAmount <= 0 || !anchorId) {
       return false;
     }
+    this.uiClickSoundFacade?.playPurchase?.();
     this.experienceFacade?.transientEffects?.emitReward?.({
       visualOnly: true,
       spendBursts: [
@@ -1387,7 +1392,11 @@ export class PixiPagesFacade {
         return result;
       }
       if (plot?.phase === "ready") {
-        return gameplay?.startGardenHarvest?.(plot.tileNumber);
+        const result = gameplay?.startGardenHarvest?.(plot.tileNumber);
+        if (result?.ok === true) {
+          this.gardenHarvestSoundFacade?.playHarvest?.();
+        }
+        return result;
       }
       if (plot?.phase === "empty") {
         if (plot.toolbarSeedItemTypeId) {

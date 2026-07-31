@@ -56,18 +56,17 @@ describe('StationScrollPhysics', () => {
     expect(scroll.velocity).toBe(0);
   });
 
-  it('cushions edge return instead of snapping the content back', () => {
+  it('matches Root Run quick edge return without snapping on the first frame', () => {
     const scroll = new StationScrollPhysics();
     scroll.setMaxOffset(1000);
     scroll.scrollByElastic(-180);
 
-    for (let frame = 0; frame < 8; frame += 1) {
-      scroll.update(1 / 60);
-    }
+    scroll.update(1 / 60);
 
-    expect(scroll.offset).toBeLessThan(-20);
+    expect(scroll.offset).toBeLessThan(0);
+    expect(scroll.offset).toBeGreaterThan(-77);
 
-    for (let frame = 8; frame < 18; frame += 1) {
+    for (let frame = 1; frame < 10; frame += 1) {
       scroll.update(1 / 60);
     }
 
@@ -102,18 +101,16 @@ describe('StationScrollPhysics', () => {
     );
   });
 
-  it('keeps release velocity stable across pointer sample rates', () => {
-    const velocities = [120, 60, 30].map((sampleRate) =>
-      sampledReleaseVelocity(sampleRate),
-    );
-    const sixtyHertzVelocity = velocities[1];
+  it('uses Root Run station spring and release filtering constants', () => {
+    expect(ROOT_RUN_STATION_SCROLL_CONSTANTS.edgeSpringStiffness).toBe(520);
+    expect(ROOT_RUN_STATION_SCROLL_CONSTANTS.edgeSpringDamping).toBe(26);
 
-    for (const velocity of velocities) {
-      expect(
-        Math.abs(velocity - sixtyHertzVelocity) /
-          sixtyHertzVelocity,
-      ).toBeLessThan(0.15);
-    }
+    const scroll = new StationScrollPhysics();
+    scroll.setMaxOffset(10_000);
+    scroll.beginDrag(600, 0);
+    scroll.dragTo(500, 100);
+
+    expect(scroll.velocity).toBeCloseTo(680, 10);
   });
 
   it('caps a frame delta at 0.05 seconds', () => {
@@ -164,31 +161,4 @@ function releasedScroll() {
   scroll.dragTo(900, 100);
   scroll.endDrag();
   return scroll;
-}
-
-function sampledReleaseVelocity(sampleRate) {
-  const scroll = new StationScrollPhysics();
-  const durationMs = 180;
-  const frameMs = 1000 / sampleRate;
-  const startY = 600;
-  const distance = 220;
-  scroll.setMaxOffset(10_000);
-  scroll.beginDrag(startY, 0);
-
-  for (
-    let elapsedMs = frameMs;
-    elapsedMs < durationMs;
-    elapsedMs += frameMs
-  ) {
-    const progress = elapsedMs / durationMs;
-    const easedProgress = 1 - (1 - progress) ** 2;
-    scroll.dragTo(
-      startY - distance * easedProgress,
-      elapsedMs,
-    );
-  }
-
-  scroll.dragTo(startY - distance, durationMs);
-  scroll.endDrag();
-  return scroll.velocity;
 }

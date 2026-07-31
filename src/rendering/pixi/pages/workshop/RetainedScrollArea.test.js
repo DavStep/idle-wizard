@@ -1,15 +1,14 @@
 // @vitest-environment jsdom
 
+import { Graphics } from 'pixi.js';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 
 import './PixiPageTestHarness.js';
 import {
   RETAINED_SCROLLBAR_GEOMETRY,
+  RETAINED_SCROLLBAR_VISUALS,
   RetainedScrollArea,
 } from './RetainedPageKit.js';
-import {
-  PIXI_CAPSULE_ASSETS,
-} from '../../primitives/PixiCapsuleSkin.js';
 
 describe('RetainedScrollArea', () => {
   let scroll = null;
@@ -89,7 +88,8 @@ describe('RetainedScrollArea', () => {
 
     expect(topBounds.height).toBeLessThan(baseHeight);
     expect(topBounds.y).toBeCloseTo(
-      RETAINED_SCROLLBAR_GEOMETRY.trackInset,
+      RETAINED_SCROLLBAR_GEOMETRY.trackInset -
+        RETAINED_SCROLLBAR_GEOMETRY.thumbBorderWidth / 2,
       5,
     );
 
@@ -102,7 +102,8 @@ describe('RetainedScrollArea', () => {
 
     expect(bottomBounds.height).toBeLessThan(baseHeight);
     expect(bottomBounds.y + bottomBounds.height).toBeCloseTo(
-      trackBottom,
+      trackBottom +
+        RETAINED_SCROLLBAR_GEOMETRY.thumbBorderWidth / 2,
       5,
     );
   });
@@ -124,51 +125,72 @@ describe('RetainedScrollArea', () => {
     expect(scroll.scrollbarThumb.visible).toBe(false);
   });
 
-  it('uses the shared capsule assets for the vertical track and thumb mask', () => {
-    const getTexture = vi.fn(() => ({
-      frame: { x: 0, y: 0, width: 1, height: 1 },
-      source: {},
-    }));
-    scroll = new RetainedScrollArea({
-      assetManager: { getTexture },
-    });
+  it('uses Root Run procedural Pixi graphics for the track and thumb', () => {
+    scroll = overflowingScroll();
 
-    expect(getTexture).toHaveBeenNthCalledWith(
-      1,
-      PIXI_CAPSULE_ASSETS.track,
-    );
-    expect(getTexture).toHaveBeenNthCalledWith(
-      2,
-      PIXI_CAPSULE_ASSETS.fillMask,
-    );
-    expect(scroll.scrollbarTrack.sprite).toBeDefined();
-    expect(scroll.scrollbarThumbFill.effects).toContain(
-      scroll.scrollbarThumbAlphaMask,
-    );
-    expect(scroll.scrollbarThumbAlphaMask).toMatchObject({
-      pipe: 'alphaMask',
-      mask: scroll.scrollbarThumbMask,
-      channel: 'alpha',
+    expect(RETAINED_SCROLLBAR_GEOMETRY).toEqual({
+      width: 6,
+      gap: 5 / 3,
+      trackInset: 4,
+      trackBorderWidth: 1,
+      thumbGap: 1,
+      thumbBorderWidth: 2 / 3,
+      thumbMinHeight: 82 / 3,
     });
-    expect(scroll.scrollbarThumbFill._maskOptions).toMatchObject({
-      channel: 'alpha',
+    expect(scroll.toPhysicsUnits(12)).toBe(36);
+    expect(scroll.toDesignUnits(36)).toBe(12);
+    expect(scroll.scrollbarTrack).toBeInstanceOf(Graphics);
+    expect(scroll.scrollbarThumb).toBeInstanceOf(Graphics);
+    expect(scroll.scrollbarTrack).not.toHaveProperty('sprite');
+    expect(scroll.scrollbarThumb).not.toHaveProperty('sprite');
+
+    const [trackFill, trackStroke] =
+      scroll.scrollbarTrack.context.instructions;
+    const [thumbFill, thumbStroke] =
+      scroll.scrollbarThumb.context.instructions;
+    expect([trackFill.action, trackStroke.action]).toEqual([
+      'fill',
+      'stroke',
+    ]);
+    expect(trackFill.data.style).toMatchObject({
+      color: RETAINED_SCROLLBAR_VISUALS.trackBackground,
+      alpha: RETAINED_SCROLLBAR_VISUALS.trackBackgroundAlpha,
+    });
+    expect(trackStroke.data.style).toMatchObject({
+      color: RETAINED_SCROLLBAR_VISUALS.trackBorder,
+      alpha: RETAINED_SCROLLBAR_VISUALS.trackBorderAlpha,
+      width: RETAINED_SCROLLBAR_GEOMETRY.trackBorderWidth,
+    });
+    expect(
+      trackFill.data.path.instructions[0].data.slice(0, 5),
+    ).toEqual([
+      100 + RETAINED_SCROLLBAR_GEOMETRY.gap,
+      RETAINED_SCROLLBAR_GEOMETRY.trackInset,
+      RETAINED_SCROLLBAR_GEOMETRY.width,
+      120 - RETAINED_SCROLLBAR_GEOMETRY.trackInset * 2,
+      RETAINED_SCROLLBAR_GEOMETRY.width / 2,
+    ]);
+    expect([thumbFill.action, thumbStroke.action]).toEqual([
+      'fill',
+      'stroke',
+    ]);
+    expect(thumbFill.data.style.color).toBe(
+      RETAINED_SCROLLBAR_VISUALS.thumbBackground,
+    );
+    expect(thumbStroke.data.style).toMatchObject({
+      color: RETAINED_SCROLLBAR_VISUALS.thumbBorder,
+      width: RETAINED_SCROLLBAR_GEOMETRY.thumbBorderWidth,
     });
   });
 
-  it('preserves rounded thumb caps while compressing at both edges', () => {
+  it('preserves procedural rounded thumb caps while compressing at both edges', () => {
     scroll = overflowingScroll();
-
-    expect(scroll.scrollbarThumbAlphaMask.mask).toBe(
-      scroll.scrollbarThumbMask,
-    );
 
     scroll.physics.scrollByElastic(-180);
     scroll.applyPhysicsOffset();
 
-    expect(scroll.scrollbarThumbAlphaMask.mask.visible).toBe(true);
-    expect(scroll.scrollbarThumbFill.effects).toContain(
-      scroll.scrollbarThumbAlphaMask,
-    );
+    expect(scroll.scrollbarThumb).toBeInstanceOf(Graphics);
+    expect(scroll.scrollbarThumb.getLocalBounds().height).toBeGreaterThan(0);
   });
 });
 

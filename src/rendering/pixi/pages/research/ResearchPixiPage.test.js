@@ -11,7 +11,10 @@ import { PageRegistry } from '../../retained/PageRegistry.js';
 import { SemanticTargetRegistry } from '../../retained/SemanticTargetRegistry.js';
 import {
   RESEARCH_PIXI_GEOMETRY,
+  RESEARCH_WIDGET_BOUNCE_DURATION_MS,
   ResearchPixiPage,
+  getResearchShineLayout,
+  getResearchWidgetBounceScale,
 } from './ResearchPixiPage.js';
 import {
   RETAINED_SCROLLBAR_GEOMETRY,
@@ -24,6 +27,97 @@ import {
 } from '../../theme/PixiThemeTokens.js';
 
 describe('ResearchPixiPage', () => {
+  it('matches the Root Run upgrade bounce and masked shine geometry', () => {
+    expect(getResearchWidgetBounceScale(0)).toBe(1);
+    expect(getResearchWidgetBounceScale(0.28)).toBeCloseTo(1.035);
+    expect(getResearchWidgetBounceScale(0.62)).toBeCloseTo(0.992);
+    expect(getResearchWidgetBounceScale(1)).toBe(1);
+    const layout = getResearchShineLayout(
+      { x: 10, y: 20, width: 80, height: 40 },
+      43,
+      81,
+      { heightScale: 1.05, cornerRadiusScale: 0.28 },
+    );
+    expect(layout).toMatchObject({
+      x: 10,
+      y: 20,
+      width: 80,
+      height: 40,
+      centerY: 40,
+    });
+    expect(layout.cornerRadius).toBeCloseTo(11.2);
+  });
+
+  it('runs the retained shine and whole-row bounce only after a successful upgrade', () => {
+    let now = 1_000;
+    const buyResearch = vi.fn(() => ({ ok: true, cost: 25 }));
+    const harness = createHarness({ timeSource: () => now });
+    const row = harness.page.rowPool.acquire();
+    const research = createAvailableResearch();
+    row.bind(
+      research,
+      { buy: () => buyResearch(research.id) },
+      'herbs',
+    );
+
+    expect(harness.semanticTargets.activate('research.mint')).toEqual({
+      ok: true,
+      cost: 25,
+    });
+    expect(row.purchaseEffect).not.toBeNull();
+    expect(row.widgetShine.root.visible).toBe(true);
+    expect(row.buttonShine.root.visible).toBe(true);
+
+    now += 100;
+    row.updateTime(now);
+    expect(row.root.scale.x).toBeGreaterThan(1);
+    expect(row.widgetShine.sprite.x).toBeGreaterThan(
+      row.widgetShine.layout.startX,
+    );
+
+    now += RESEARCH_WIDGET_BOUNCE_DURATION_MS;
+    row.updateTime(now);
+    expect(row.purchaseEffect).toBeNull();
+    expect(row.root.scale.x).toBe(1);
+    expect(row.widgetShine.root.visible).toBe(false);
+    expect(row.buttonShine.root.visible).toBe(false);
+
+    harness.page.rowPool.release(row);
+    harness.page.destroy();
+    harness.dispose();
+  });
+
+  it('suppresses upgrade motion for failed purchases and reduced-motion players', () => {
+    const failed = createHarness();
+    const failedRow = failed.page.rowPool.acquire();
+    const failedResearch = createAvailableResearch();
+    failedRow.bind(
+      failedResearch,
+      { buy: () => ({ ok: false }) },
+      'herbs',
+    );
+    failed.semanticTargets.activate('research.mint');
+    expect(failedRow.purchaseEffect).toBeNull();
+    failed.page.rowPool.release(failedRow);
+    failed.page.destroy();
+    failed.dispose();
+
+    const reduced = createHarness({ prefersReducedMotion: () => true });
+    const reducedRow = reduced.page.rowPool.acquire();
+    const reducedResearch = createAvailableResearch();
+    reducedRow.bind(
+      reducedResearch,
+      { buy: () => ({ ok: true }) },
+      'herbs',
+    );
+    reduced.semanticTargets.activate('research.mint');
+    expect(reducedRow.purchaseEffect).toBeNull();
+    expect(reducedRow.widgetShine.root.visible).toBe(false);
+    reduced.page.rowPool.release(reducedRow);
+    reduced.page.destroy();
+    reduced.dispose();
+  });
+
   it('builds once and keeps keyed boxes and research rows across updates', () => {
     const harness = createHarness();
     const pages = new PageRegistry({
@@ -741,6 +835,7 @@ describe('ResearchPixiPage', () => {
 function createHarness({
   ticker = null,
   timeSource = undefined,
+  prefersReducedMotion = undefined,
   assetManager = createPixiAssetManagerFake(Texture),
 } = {}) {
   const dialogLayer = new Container();
@@ -753,6 +848,7 @@ function createHarness({
     semanticTargets,
     ticker,
     ...(timeSource ? { timeSource } : {}),
+    ...(prefersReducedMotion ? { prefersReducedMotion } : {}),
   });
 
   return {
@@ -809,6 +905,21 @@ function createResearchViewModel({
     actions: {
       buyResearch,
       showLockedReason,
+    },
+  };
+}
+
+function createAvailableResearch() {
+  return {
+    id: 'mint',
+    displayName: 'mint',
+    effect: '+1 mint',
+    displayValue: '25 coin',
+    canResearch: true,
+    state: 'available',
+    cost: {
+      amountLabel: '25',
+      resource: 'coin',
     },
   };
 }

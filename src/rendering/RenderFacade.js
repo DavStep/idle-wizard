@@ -88,6 +88,7 @@ export class RenderFacade {
         applicationManager: this.applicationManager,
         inputRouter: this.inputRouter,
         textEntryService: this.textEntryService,
+        uiClickSoundFacade: this.uiClickSoundFacade,
       });
     this.spineRuntimeFacade ??= new SpineRuntimeFacade({
       whenPixiReady: () => this.whenPixiReady(),
@@ -136,7 +137,7 @@ export class RenderFacade {
             assets: context.assets,
             inputRouter: context.inputRouter,
             playOpenSound: () =>
-              this.uiClickSoundFacade?.playClick?.(),
+              this.uiClickSoundFacade?.playDialogOpen?.(),
           }),
         ),
       )

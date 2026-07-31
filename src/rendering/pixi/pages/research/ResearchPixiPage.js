@@ -1,6 +1,7 @@
 import {
   CanvasTextMetrics,
   Container,
+  Graphics,
   Rectangle,
   Sprite,
   Texture,
@@ -53,6 +54,15 @@ export const RESEARCH_PROGRESS_INK = '#725737';
 export const RESEARCH_RANK_INK = '#ffeecf';
 const RESEARCH_TIMER_INK = '#d4d4d4';
 const RESEARCH_LOCKED_OVERLAY_ALPHA = 0.3;
+const RESEARCH_BUTTON_SHINE_DURATION_MS = 220;
+const RESEARCH_WIDGET_SHINE_DURATION_MS = 300;
+export const RESEARCH_WIDGET_BOUNCE_DURATION_MS = 360;
+const RESEARCH_BUTTON_SHINE_HEIGHT_SCALE = 1.05;
+const RESEARCH_BUTTON_SHINE_ALPHA = 0.72;
+const RESEARCH_BUTTON_SHINE_CORNER_RADIUS_SCALE = 0.28;
+const RESEARCH_WIDGET_SHINE_HEIGHT_SCALE = 1.05;
+const RESEARCH_WIDGET_SHINE_ALPHA = 0.5;
+const RESEARCH_WIDGET_SHINE_CORNER_RADIUS_SCALE = 0.16;
 export const RESEARCH_RANK_FONT =
   '"Lilita One", "Arial Black", Arial, sans-serif';
 const RESOURCE_WORD_MATCH_PATTERN =
@@ -132,6 +142,66 @@ const RESEARCH_CARD_WIDTH =
   RETAINED_PAGE_GEOMETRY.width -
   RETAINED_PAGE_GEOMETRY.contentEdge * 2 -
   RESEARCH_CARD_OFFSET_X;
+
+export function getResearchWidgetBounceScale(progress) {
+  if (!Number.isFinite(progress) || progress < 0 || progress > 1) {
+    throw new Error(
+      `Research widget bounce progress must be between 0 and 1, got ${progress}.`,
+    );
+  }
+  if (progress <= 0.28) {
+    return lerp(1, 1.035, easeOutCubic(progress / 0.28));
+  }
+  if (progress <= 0.62) {
+    return lerp(
+      1.035,
+      0.992,
+      easeInOutCubic((progress - 0.28) / 0.34),
+    );
+  }
+  return lerp(
+    0.992,
+    1,
+    easeOutCubic((progress - 0.62) / 0.38),
+  );
+}
+
+export function getResearchShineLayout(
+  bounds,
+  textureWidth,
+  textureHeight,
+  { heightScale, cornerRadiusScale },
+) {
+  if (
+    !Number.isFinite(bounds?.x) ||
+    !Number.isFinite(bounds?.y) ||
+    !Number.isFinite(bounds?.width) ||
+    !Number.isFinite(bounds?.height) ||
+    bounds.width <= 0 ||
+    bounds.height <= 0 ||
+    !Number.isFinite(textureWidth) ||
+    !Number.isFinite(textureHeight) ||
+    textureWidth <= 0 ||
+    textureHeight <= 0
+  ) {
+    throw new Error('Research shine requires positive finite bounds and texture dimensions.');
+  }
+  const shineHeight = bounds.height * heightScale;
+  const shineWidth = (shineHeight * textureWidth) / textureHeight;
+  return Object.freeze({
+    x: bounds.x,
+    y: bounds.y,
+    width: bounds.width,
+    height: bounds.height,
+    cornerRadius:
+      Math.min(bounds.width, bounds.height) * cornerRadiusScale,
+    shineWidth,
+    shineHeight,
+    startX: bounds.x - shineWidth / 2,
+    endX: bounds.x + bounds.width + shineWidth / 2,
+    centerY: bounds.y + bounds.height / 2,
+  });
+}
 
 function normalizeStationTitleVariant(tabId) {
   if (
@@ -261,6 +331,9 @@ export class ResearchPixiPage extends BaseRetainedPixiPage {
     inputRouter = null,
     ticker = null,
     timeSource = () => Date.now(),
+    prefersReducedMotion = () =>
+      globalThis.matchMedia?.('(prefers-reduced-motion: reduce)').matches ===
+      true,
     actions = {},
     counters = null,
     theme = DEFAULT_PIXI_THEME_SNAPSHOT,
@@ -270,6 +343,7 @@ export class ResearchPixiPage extends BaseRetainedPixiPage {
     this.inputRouter = inputRouter;
     this.ticker = ticker;
     this.timeSource = timeSource;
+    this.prefersReducedMotion = prefersReducedMotion;
     this.actions = actions;
     this.selectedTabId = 'regular';
     this.active = false;
@@ -320,6 +394,7 @@ export class ResearchPixiPage extends BaseRetainedPixiPage {
           page: this,
           assetManager: this.assetManager,
           timeSource: this.timeSource,
+          prefersReducedMotion: this.prefersReducedMotion,
         }),
       reset: (row) => row.reset(),
       dispose: (row) => row.destroy(),
@@ -1197,10 +1272,11 @@ class ResearchReadonlyValue extends Container {
 }
 
 class ResearchRowWidget {
-  constructor({ page, assetManager, timeSource }) {
+  constructor({ page, assetManager, timeSource, prefersReducedMotion }) {
     this.page = page;
     this.assetManager = assetManager;
     this.timeSource = timeSource;
+    this.prefersReducedMotion = prefersReducedMotion;
     this.theme = page.theme;
     this.boxId = null;
     this.root = new Container({ label: 'research-row' });
@@ -1310,6 +1386,20 @@ class ResearchRowWidget {
     this.lockedOverlay.alpha = RESEARCH_LOCKED_OVERLAY_ALPHA;
     this.lockedOverlay.visible = false;
     this.lockedOverlay.renderable = false;
+    const shineTexture = this.resolveTexture(
+      PIXI_ROOT_RUN_ASSETS.researchButtonShine,
+    );
+    this.widgetShine = createResearchShine({
+      texture: shineTexture,
+      alpha: RESEARCH_WIDGET_SHINE_ALPHA,
+      label: 'research-row-widget-shine',
+    });
+    this.buttonShine = createResearchShine({
+      texture: shineTexture,
+      alpha: RESEARCH_BUTTON_SHINE_ALPHA,
+      label: 'research-row-button-shine',
+    });
+    this.purchaseEffect = null;
     this.labelHit = new Container({ label: 'research-row-label-hit' });
     this.labelHit.eventMode = 'static';
     this.labelHit.cursor = 'default';
@@ -1330,6 +1420,8 @@ class ResearchRowWidget {
       this.readonlyStars,
       this.progress.root,
       this.lockedOverlay,
+      this.widgetShine.root,
+      this.buttonShine.root,
       this.labelHit,
     );
     this.handleLocked = () =>
@@ -1454,7 +1546,7 @@ class ResearchRowWidget {
               : 'available',
         lockReason: '',
         enabled: state === 'available' && research.canResearch === true,
-        action: () => this.actions?.buy?.(research),
+        action: () => this.buyResearch(research),
       });
       this.costButton.setNotification(research.notification === true);
     }
@@ -1498,7 +1590,7 @@ class ResearchRowWidget {
       }),
       activate: () => {
         if (state === 'available') {
-          return this.actions?.buy?.(research);
+          return this.buyResearch(research);
         }
         if (state === 'locked') {
           return this.actions?.locked?.(research, this.costButton);
@@ -1635,9 +1727,139 @@ class ResearchRowWidget {
       geometry.cardWidth,
       geometry.rowHeight,
     );
+    this.layoutPurchaseEffect();
+  }
+
+  buyResearch(research) {
+    const result = this.actions?.buy?.(research);
+    if (result?.ok === true) {
+      this.startPurchaseEffect();
+    }
+    return result;
+  }
+
+  layoutPurchaseEffect() {
+    const shineTexture = this.widgetShine.sprite.texture;
+    const textureWidth = Math.max(1, Number(shineTexture?.width) || 0);
+    const textureHeight = Math.max(1, Number(shineTexture?.height) || 0);
+    layoutResearchShine(
+      this.widgetShine,
+      getResearchShineLayout(
+        new Rectangle(
+          RESEARCH_PIXI_GEOMETRY.cardOffsetX,
+          0,
+          RESEARCH_PIXI_GEOMETRY.cardWidth,
+          RESEARCH_PIXI_GEOMETRY.rowHeight,
+        ),
+        textureWidth,
+        textureHeight,
+        {
+          heightScale: RESEARCH_WIDGET_SHINE_HEIGHT_SCALE,
+          cornerRadiusScale:
+            RESEARCH_WIDGET_SHINE_CORNER_RADIUS_SCALE,
+        },
+      ),
+    );
+    layoutResearchShine(
+      this.buttonShine,
+      getResearchShineLayout(
+        new Rectangle(
+          this.costButton.x,
+          this.costButton.y,
+          this.costButton.buttonWidth,
+          this.costButton.buttonHeight,
+        ),
+        textureWidth,
+        textureHeight,
+        {
+          heightScale: RESEARCH_BUTTON_SHINE_HEIGHT_SCALE,
+          cornerRadiusScale:
+            RESEARCH_BUTTON_SHINE_CORNER_RADIUS_SCALE,
+        },
+      ),
+    );
+  }
+
+  startPurchaseEffect() {
+    this.finishPurchaseEffect();
+    if (this.prefersReducedMotion?.() === true) {
+      return false;
+    }
+
+    const now = this.timeSource();
+    this.purchaseEffect = {
+      startedAtMs: now,
+      baseScaleX: this.root.scale.x,
+      baseScaleY: this.root.scale.y,
+      baseOriginX: this.root.origin.x,
+      baseOriginY: this.root.origin.y,
+    };
+    this.root.origin.set(
+      RESEARCH_PIXI_GEOMETRY.cardOffsetX +
+        RESEARCH_PIXI_GEOMETRY.cardWidth / 2,
+      RESEARCH_PIXI_GEOMETRY.rowHeight / 2,
+    );
+    this.widgetShine.root.visible = true;
+    this.widgetShine.root.renderable = true;
+    this.buttonShine.root.visible = true;
+    this.buttonShine.root.renderable = true;
+    this.updatePurchaseEffect(now);
+    return true;
+  }
+
+  updatePurchaseEffect(now) {
+    const effect = this.purchaseEffect;
+    if (!effect) {
+      return false;
+    }
+
+    const elapsedMs = Math.max(
+      0,
+      finiteOr(now, this.timeSource()) - effect.startedAtMs,
+    );
+    const bounceProgress = Math.min(
+      1,
+      elapsedMs / RESEARCH_WIDGET_BOUNCE_DURATION_MS,
+    );
+    const bounceScale = getResearchWidgetBounceScale(bounceProgress);
+    this.root.scale.set(
+      effect.baseScaleX * bounceScale,
+      effect.baseScaleY * bounceScale,
+    );
+    updateResearchShine(
+      this.widgetShine,
+      elapsedMs / RESEARCH_WIDGET_SHINE_DURATION_MS,
+    );
+    updateResearchShine(
+      this.buttonShine,
+      elapsedMs / RESEARCH_BUTTON_SHINE_DURATION_MS,
+    );
+
+    if (bounceProgress < 1) {
+      return true;
+    }
+    this.finishPurchaseEffect();
+    return false;
+  }
+
+  finishPurchaseEffect() {
+    if (this.purchaseEffect) {
+      this.root.scale.set(
+        this.purchaseEffect.baseScaleX,
+        this.purchaseEffect.baseScaleY,
+      );
+      this.root.origin.set(
+        this.purchaseEffect.baseOriginX,
+        this.purchaseEffect.baseOriginY,
+      );
+    }
+    this.purchaseEffect = null;
+    hideResearchShine(this.widgetShine);
+    hideResearchShine(this.buttonShine);
   }
 
   updateTime(now) {
+    this.updatePurchaseEffect(now);
     if (!this.progress.root.visible || !this.research) {
       return;
     }
@@ -1776,6 +1998,7 @@ class ResearchRowWidget {
     this.research = null;
     this.actions = null;
     this.boxId = null;
+    this.finishPurchaseEffect();
     this.infoVisual.scale.set(1);
     this.costButton.reset();
     this.researchedButton.visible = false;
@@ -1935,6 +2158,78 @@ function parseResearchResourceValue(value) {
     resource: normalizeResearchResource(label),
     suffix: normalizedValue.slice(index + label.length),
   };
+}
+
+function createResearchShine({ texture, alpha, label }) {
+  const root = new Container({ label, eventMode: 'none' });
+  const sprite = new Sprite({
+    texture,
+    anchor: 0.5,
+    alpha,
+    blendMode: 'add',
+    eventMode: 'none',
+    label: `${label}-sprite`,
+  });
+  const mask = new Graphics({
+    label: `${label}-mask`,
+    eventMode: 'none',
+  });
+  root.addChild(sprite, mask);
+  root.mask = mask;
+  root.visible = false;
+  root.renderable = false;
+  return { root, sprite, mask, layout: null };
+}
+
+function layoutResearchShine(shine, layout) {
+  shine.layout = layout;
+  shine.sprite.width = layout.shineWidth;
+  shine.sprite.height = layout.shineHeight;
+  shine.sprite.position.set(layout.startX, layout.centerY);
+  shine.mask
+    .clear()
+    .roundRect(
+      layout.x,
+      layout.y,
+      layout.width,
+      layout.height,
+      layout.cornerRadius,
+    )
+    .fill(0xffffff);
+}
+
+function updateResearchShine(shine, progress) {
+  if (!shine.layout) {
+    return;
+  }
+  const normalizedProgress = Math.min(1, Math.max(0, progress));
+  shine.sprite.x = lerp(
+    shine.layout.startX,
+    shine.layout.endX,
+    normalizedProgress,
+  );
+  if (normalizedProgress >= 1) {
+    hideResearchShine(shine);
+  }
+}
+
+function hideResearchShine(shine) {
+  shine.root.visible = false;
+  shine.root.renderable = false;
+}
+
+function easeOutCubic(progress) {
+  return 1 - Math.pow(1 - progress, 3);
+}
+
+function easeInOutCubic(progress) {
+  return progress < 0.5
+    ? 4 * progress * progress * progress
+    : 1 - Math.pow(-2 * progress + 2, 3) / 2;
+}
+
+function lerp(start, end, progress) {
+  return start + (end - start) * progress;
 }
 
 function normalizeResearchResource(resource) {

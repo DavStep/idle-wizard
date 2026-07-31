@@ -5,13 +5,12 @@ const BOTTOM_MAX_EDGE_OVERSCROLL = 118;
 const MAX_RELEASE_VELOCITY = 2600;
 const MIN_INERTIA_VELOCITY = 10;
 const INERTIA_DAMPING = 4.8;
-const EDGE_SPRING_STIFFNESS = 260;
-const EDGE_SPRING_DAMPING = 22;
+const EDGE_SPRING_STIFFNESS = 520;
+const EDGE_SPRING_DAMPING = 26;
 const MAX_DELTA_SECONDS = 0.05;
 const SETTLE_DISTANCE = 0.35;
 const SETTLE_VELOCITY = 6;
 const VELOCITY_SAMPLE_BLEND = 0.68;
-const VELOCITY_REFERENCE_FRAME_MS = 1000 / 60;
 
 export const ROOT_RUN_SCROLL_SOURCE_WIDTH = 1080;
 export const IDLE_WIZARD_SCROLL_SOURCE_WIDTH = 390;
@@ -137,10 +136,9 @@ export class StationScrollPhysics {
 
     if (elapsedMs > 0) {
       const sampleVelocity = (nextOffset - this.lastSampleOffset) / (elapsedMs / 1000);
-      const sampleBlend = velocitySampleBlend(elapsedMs);
       this.velocity = clamp(
-        this.velocity * (1 - sampleBlend) +
-          sampleVelocity * sampleBlend,
+        this.velocity * (1 - VELOCITY_SAMPLE_BLEND) +
+          sampleVelocity * VELOCITY_SAMPLE_BLEND,
         -MAX_RELEASE_VELOCITY,
         MAX_RELEASE_VELOCITY,
       );
@@ -182,8 +180,8 @@ export class StationScrollPhysics {
       this.offset += this.velocity * dt;
 
       if (
-        (wasAboveTop && this.offset >= 0) ||
-        (wasBelowBottom && this.offset <= this.maxOffset) ||
+        (wasAboveTop && this.offset > 0) ||
+        (wasBelowBottom && this.offset < this.maxOffset) ||
         (Math.abs(this.offset - edgeTarget) <= SETTLE_DISTANCE &&
           Math.abs(this.velocity) <= SETTLE_VELOCITY)
       ) {
@@ -198,7 +196,7 @@ export class StationScrollPhysics {
       this.velocity = 0;
     }
 
-    return this.offset !== previousOffset;
+    return Math.abs(this.offset - previousOffset) > 0.001;
   }
 
   applyEdgeResistance(rawOffset) {
@@ -252,16 +250,6 @@ function rubberBand(distance, resistance, maxOverscroll) {
   return (
     (direction * maxOverscroll * resistedDistance) /
     (maxOverscroll + resistedDistance)
-  );
-}
-
-function velocitySampleBlend(elapsedMs) {
-  return (
-    1 -
-    Math.pow(
-      1 - VELOCITY_SAMPLE_BLEND,
-      elapsedMs / VELOCITY_REFERENCE_FRAME_MS,
-    )
   );
 }
 

@@ -98,7 +98,7 @@ export class PixiApplicationManager {
       height: projection.stageLogicalHeight,
       resolution,
       autoDensity: false,
-      antialias: false,
+      antialias: true,
       backgroundAlpha: 0,
       preference: 'webgl',
       powerPreference: 'high-performance',

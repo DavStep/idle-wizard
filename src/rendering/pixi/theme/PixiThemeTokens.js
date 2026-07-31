@@ -176,6 +176,8 @@ export const PIXI_ROOT_RUN_ASSETS = Object.freeze({
   researchArt: 'source:assets/ui/root-run-research/research-art-well-204x194.png',
   researchArtLocked: 'source:assets/ui/root-run-research/research-art-well-locked-204x194.png',
   researchRank: 'source:assets/ui/root-run-research/research-rank-badge-217x62.png',
+  researchButtonShine:
+    'source:assets/ui/root-run-research/research-button-shine.png',
   stallBatchBadge: 'source:assets/ui/root-run-level-badge-down-red.png',
   researchStationTitle: 'source:assets/ui/root-run-research/research-station-title-red.png',
   researchStationTitleRegular:
