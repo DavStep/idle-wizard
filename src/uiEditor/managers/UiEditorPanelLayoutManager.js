@@ -36,6 +36,7 @@ export class UiEditorPanelLayoutManager {
     this.panels = panels;
     this.splitters = splitters;
     this.drag = null;
+    this.panelSizes = {};
 
     this.handleWindowResize = () => this.updateAriaValues();
     this.handleWindowPointerMove = (event) => this.onPointerMove(event);
@@ -45,6 +46,7 @@ export class UiEditorPanelLayoutManager {
   mount() {
     for (const dock of Object.keys(PANEL_CONFIG)) {
       const splitter = this.splitters[dock];
+      this.panelSizes[dock] = this.measureRenderedPanel(dock);
       splitter.addEventListener('pointerdown', (event) =>
         this.onPointerDown(dock, event),
       );
@@ -130,8 +132,36 @@ export class UiEditorPanelLayoutManager {
     );
 
     this.shell.style.setProperty(config.cssProperty, `${size}px`);
+    this.panelSizes[dock] = size;
     this.updateAriaValue(dock);
     return size;
+  }
+
+  setPanelVisible(dock, visible) {
+    if (!PANEL_CONFIG[dock]) {
+      return false;
+    }
+
+    const panel = this.panels[dock];
+    const splitter = this.splitters[dock];
+    const nextVisible = Boolean(visible);
+
+    if (!nextVisible && !panel.hidden) {
+      this.panelSizes[dock] = this.measureRenderedPanel(dock);
+    }
+
+    panel.hidden = !nextVisible;
+    splitter.hidden = !nextVisible;
+
+    const hiddenDatasetKey = `${dock}PanelHidden`;
+    if (nextVisible) {
+      delete this.shell.dataset[hiddenDatasetKey];
+    } else {
+      this.shell.dataset[hiddenDatasetKey] = 'true';
+    }
+
+    this.updateAriaValues();
+    return true;
   }
 
   getWorkspaceState() {
@@ -179,14 +209,17 @@ export class UiEditorPanelLayoutManager {
     }
 
     const oppositeDock = dock === 'left' ? 'right' : 'left';
+    const oppositeSize = this.panels[oppositeDock].hidden
+      ? 0
+      : this.measurePanel(oppositeDock);
     return Math.floor(
       Math.max(
         MIN_PANEL_SIZE,
-        Math.min(
-          MAX_SIDE_PANEL_SIZE,
-          window.innerWidth * MAX_SIDE_VIEWPORT_RATIO,
-          window.innerWidth -
-            this.measurePanel(oppositeDock) -
+          Math.min(
+            MAX_SIDE_PANEL_SIZE,
+            window.innerWidth * MAX_SIDE_VIEWPORT_RATIO,
+            window.innerWidth -
+            oppositeSize -
             SPLITTER_SIZE * 2 -
             MIN_PREVIEW_WIDTH,
         ),
@@ -195,6 +228,18 @@ export class UiEditorPanelLayoutManager {
   }
 
   measurePanel(dock) {
+    if (this.panels[dock].hidden) {
+      return this.panelSizes[dock] ?? MIN_PANEL_SIZE;
+    }
+
+    const size = this.measureRenderedPanel(dock);
+    if (size > 0) {
+      this.panelSizes[dock] = size;
+    }
+    return size || this.panelSizes[dock] || MIN_PANEL_SIZE;
+  }
+
+  measureRenderedPanel(dock) {
     const config = PANEL_CONFIG[dock];
     return this.panels[dock].getBoundingClientRect()[config.dimension];
   }

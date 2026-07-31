@@ -81,8 +81,8 @@ export class PixiButton extends Container {
     });
     this.rootRunFrame = new PixiNineSliceFrame({
       texture: Texture.EMPTY,
-      sourceInsets: PIXI_ROOT_RUN_GEOMETRY.button.sourceInsets,
-      borderInsets: PIXI_ROOT_RUN_GEOMETRY.button.borderInsets,
+      sourceInsets: resolveButtonGeometry(variant).sourceInsets,
+      borderInsets: ZERO_INSETS,
       width,
       height,
       label: `${label}:rootRunFrame`,
@@ -275,21 +275,22 @@ export class PixiButton extends Container {
           this.buttonHeight,
           this.variant === 'tab',
         );
-      this.rootRunFrame.setTexture(
-        this.assetManager.getTexture(
-          getRootRunTextureId(visualVariant, this.variant === 'tab'),
-        ),
-        visualGeometry.sourceInsets,
+      const textureId = getRootRunTextureId(
+        visualVariant,
+        this.variant === 'tab',
       );
       this.rootRunFrame.position.set(
         visualGeometry.frame.x,
         visualGeometry.frame.y,
       );
-      this.rootRunFrame.setSize(
-        visualGeometry.frame.width,
-        visualGeometry.frame.height,
-        visualGeometry.borderInsets,
-      );
+      this.rootRunFrame.setSkin({
+        assetId: textureId,
+        borderInsets: visualGeometry.borderInsets,
+        height: visualGeometry.frame.height,
+        sourceInsets: visualGeometry.sourceInsets,
+        texture: this.assetManager.getTexture(textureId),
+        width: visualGeometry.frame.width,
+      });
       this.rootRunFrame.filters = null;
       this.textLabel.setFontFamily('"Lilita One", "Arial Black", Arial, sans-serif');
       if (Number.isFinite(visualGeometry.fontSize)) {
@@ -353,7 +354,7 @@ export class PixiButton extends Container {
     this.rootRunFrame.setSize(
       this.buttonWidth,
       this.buttonHeight,
-      PIXI_ROOT_RUN_GEOMETRY.button.borderInsets,
+      ZERO_INSETS,
     );
     this.textLabel.position.set(this.buttonWidth / 2, this.buttonHeight / 2);
     this.visual.pivot.set(this.buttonWidth / 2, this.buttonHeight / 2);
@@ -401,6 +402,13 @@ export class PixiButton extends Container {
     super.destroy(options);
   }
 }
+
+const ZERO_INSETS = Object.freeze({
+  top: 0,
+  right: 0,
+  bottom: 0,
+  left: 0,
+});
 
 function getRootRunTextureId(variant, compactTab = false) {
   if (compactTab) {
@@ -459,7 +467,7 @@ function getRootRunVisualGeometry(variant, width, height, compactTab = false) {
   }
   const buttonGeometry = compactTab
     ? PIXI_ROOT_RUN_GEOMETRY.tabButton
-    : PIXI_ROOT_RUN_GEOMETRY.button;
+    : resolveButtonGeometry(variant);
   return {
     sourceInsets: buttonGeometry.sourceInsets,
     borderInsets: buttonGeometry.borderInsets,
@@ -468,6 +476,16 @@ function getRootRunVisualGeometry(variant, width, height, compactTab = false) {
     textStroke: PIXI_TEXT_STROKE_WIDTH,
     textColor: '#ffffff',
   };
+}
+
+function resolveButtonGeometry(variant) {
+  return [
+    'regular',
+    'brown-dark',
+    'brown-light',
+  ].includes(variant)
+    ? PIXI_ROOT_RUN_GEOMETRY.legacyButton
+    : PIXI_ROOT_RUN_GEOMETRY.button;
 }
 
 function releaseScale(progress) {

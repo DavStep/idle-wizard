@@ -439,6 +439,36 @@ describe('BrewingPixiPage', () => {
     harness.dispose();
   });
 
+  it('disables an unlocked recipe action when its materials are unavailable', () => {
+    const harness = createHarness();
+    const selectRecipe = vi.fn();
+
+    harness.page.openDialog('recipes', {
+      recipes: [
+        {
+          id: 'mana-tonic',
+          key: 'manaTonic',
+          label: 'mana tonic',
+          unlocked: true,
+          canSelect: false,
+          ingredients: [],
+        },
+      ],
+      actions: { selectRecipe },
+    });
+
+    const card = harness.dialogs
+      .get('brewing.recipes')
+      .cards.getWidgets()[0];
+
+    expect(card.select.enabled).toBe(false);
+    expect(card.select.activate()).toBe(false);
+    expect(selectRecipe).not.toHaveBeenCalled();
+
+    harness.page.destroy();
+    harness.dispose();
+  });
+
   it('keeps frozen Brewing geometry, initial fit, and timer/ticker lifecycle', () => {
     const ticker = {
       add: vi.fn(),

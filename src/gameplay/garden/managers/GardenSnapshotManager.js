@@ -1,3 +1,5 @@
+import { gardenBulkResearchIds } from '../gardenBulkResearch.js';
+
 export class GardenSnapshotManager {
   constructor({
     gardenBalanceManager,
@@ -34,6 +36,16 @@ export class GardenSnapshotManager {
       Boolean(this.getRequiredCapacityResearchId(nextTileNumber));
 
     return {
+      bulkActions: {
+        canPlantAll:
+          this.researchFacade?.hasCompletedResearch?.(
+            gardenBulkResearchIds.plantAll,
+          ) === true,
+        canHarvestAll:
+          this.researchFacade?.hasCompletedResearch?.(
+            gardenBulkResearchIds.harvestAll,
+          ) === true,
+      },
       plot: {
         unlockedTiles,
         maxTiles,

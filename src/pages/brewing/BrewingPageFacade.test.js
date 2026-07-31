@@ -5,6 +5,39 @@ import { describe, expect, it, vi } from 'vitest';
 import { BrewingPageFacade } from './BrewingPageFacade.js';
 
 describe('BrewingPageFacade', () => {
+  it('keeps the previous recipe selection when preparation lacks ingredients', () => {
+    const snapshot = {
+      brewing: {
+        cauldrons: [
+          {
+            cauldronIndex: 0,
+            cauldronNumber: 1,
+            autoBrewEnabled: false,
+            autoBrewRecipeKey: null,
+          },
+        ],
+      },
+    };
+    const gameplayFacade = {
+      getSnapshot: () => snapshot,
+      prepareBrewingRecipe: vi.fn(() => ({
+        ok: false,
+        reason: 'not_enough_ingredients',
+      })),
+    };
+    const facade = new BrewingPageFacade({ gameplayFacade });
+    facade.cauldronManager.render = vi.fn();
+    facade.recipeGuideManager.selectRecipe('manaTonic', 0);
+
+    const result = facade.selectRecipe('minorHealingPotion', 0);
+
+    expect(result).toEqual({
+      ok: false,
+      reason: 'not_enough_ingredients',
+    });
+    expect(facade.recipeGuideManager.getSelectedRecipeKey(0)).toBe('manaTonic');
+  });
+
   it('does not rewrite cauldron 1 auto brew when selecting a recipe in cauldron 2', () => {
     const snapshot = {
       brewing: {

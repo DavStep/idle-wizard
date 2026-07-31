@@ -1,0 +1,52 @@
+{
+  "version": 1,
+  "format": "png",
+  "asset": "green-button-50.9.png",
+  "source": {
+    "path": "assets/game/source/ui/regular-button/green-button-50.9.png",
+    "width": 141,
+    "height": 171,
+    "mode": "RGBA",
+    "crop": {
+      "x": 0,
+      "y": 0,
+      "width": 141,
+      "height": 171
+    }
+  },
+  "sourceCropSize": {
+    "width": 141,
+    "height": 171
+  },
+  "slice": {
+    "left": 86,
+    "top": 100,
+    "right": 52,
+    "bottom": 68
+  },
+  "mode": "source",
+  "distill": null,
+  "rendering": {
+    "stretch": "edges-and-center",
+    "outputInsets": {
+      "left": 86,
+      "top": 100,
+      "right": 52,
+      "bottom": 68
+    },
+    "minimumCenter": {
+      "width": 3,
+      "height": 3
+    },
+    "minimumSize": {
+      "width": 141,
+      "height": 171
+    },
+    "qaResample": "nearest",
+    "browserPreviewSmoothingDefault": false
+  },
+  "editor": {
+    "tool": "Idle Wizard regular button generator",
+    "sourceAssetPreserved": true
+  }
+}

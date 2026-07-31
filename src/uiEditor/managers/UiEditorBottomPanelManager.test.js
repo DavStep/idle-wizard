@@ -1,6 +1,13 @@
 // @vitest-environment jsdom
 
-import { beforeEach, describe, expect, it, vi } from 'vitest';
+import {
+  afterEach,
+  beforeEach,
+  describe,
+  expect,
+  it,
+  vi,
+} from 'vitest';
 
 import {
   UI_EDITOR_LIBRARY_FOLDERS,
@@ -22,6 +29,10 @@ describe('UiEditorBottomPanelManager', () => {
       panel: editorRefs.panels.bottom,
     });
     refs = manager.mount();
+  });
+
+  afterEach(() => {
+    manager.unmount();
   });
 
   it('starts at a library root with folders instead of tabs', () => {
@@ -56,6 +67,62 @@ describe('UiEditorBottomPanelManager', () => {
     ).toEqual([...refs.folderButtons.keys()]);
   });
 
+  it('sorts production assets into their source-directory folders', () => {
+    manager.setEntries([
+      {
+        assetId: 'source:assets/ui/panel.png',
+        folderPath: ['ui'],
+        id: 'asset:panel',
+        kind: 'asset',
+        label: 'panel.png',
+        sectionId: 'assets',
+      },
+      {
+        assetId:
+          'source:assets/ui/root-run-cost-button/green-button.png',
+        folderPath: ['ui', 'root-run-cost-button'],
+        id: 'asset:green-button',
+        kind: 'asset',
+        label: 'green-button.png',
+        sectionId: 'assets',
+      },
+      {
+        assetId: 'source:assets/avatars/elara.png',
+        folderPath: ['avatars'],
+        id: 'asset:elara',
+        kind: 'asset',
+        label: 'elara.png',
+        sectionId: 'assets',
+      },
+    ]);
+    manager.openFolder('assets');
+
+    expect([...refs.folderButtons.values()].map(
+      (button) => button.textContent,
+    )).toEqual(['Avatars', 'UI']);
+
+    refs.folderButtons.get('asset-folder:ui').click();
+
+    expect(refs.breadcrumb.textContent).toBe('Library/UI Assets/UI');
+    expect(
+      refs.entryButtons.get('asset:panel').parentElement.hidden,
+    ).toBe(false);
+    expect([...refs.folderButtons.values()].map(
+      (button) => button.textContent,
+    )).toEqual(['Root Run Cost Button']);
+
+    refs.folderButtons
+      .get('asset-folder:ui/root-run-cost-button')
+      .click();
+
+    expect(refs.breadcrumb.textContent).toBe(
+      'Library/UI Assets/UI/Root Run Cost Button',
+    );
+    expect(
+      refs.entryButtons.get('asset:green-button').parentElement.hidden,
+    ).toBe(false);
+  });
+
   it('opens an empty leaf folder and navigates back through breadcrumbs', () => {
     refs.folderButtons.get('widgets').click();
     refs.folderButtons.get('buttons').click();
@@ -76,6 +143,88 @@ describe('UiEditorBottomPanelManager', () => {
       'dialogs',
       'scenes',
     ]);
+  });
+
+  it('moves backward and forward through visited folders', () => {
+    refs.folderButtons.get('widgets').click();
+    refs.folderButtons.get('buttons').click();
+
+    expect(manager.goBack()).toBe(true);
+    expect(refs.breadcrumb.textContent).toBe('Library/UI Widgets');
+    expect(manager.goBack()).toBe(true);
+    expect(refs.breadcrumb.textContent).toBe('Library');
+    expect(manager.goBack()).toBe(false);
+
+    expect(manager.goForward()).toBe(true);
+    expect(refs.breadcrumb.textContent).toBe('Library/UI Widgets');
+    expect(manager.goForward()).toBe(true);
+    expect(refs.breadcrumb.textContent).toBe('Library/UI Widgets/Buttons');
+    expect(manager.goForward()).toBe(false);
+  });
+
+  it('discards forward history after opening a different folder', () => {
+    refs.folderButtons.get('widgets').click();
+    refs.folderButtons.get('buttons').click();
+    manager.goBack();
+
+    refs.folderButtons.get('progress-bars').click();
+
+    expect(refs.breadcrumb.textContent).toBe(
+      'Library/UI Widgets/Progress bars',
+    );
+    expect(manager.goForward()).toBe(false);
+    expect(manager.goBack()).toBe(true);
+    expect(refs.breadcrumb.textContent).toBe('Library/UI Widgets');
+  });
+
+  it('uses standard folder-history shortcuts without browser navigation', () => {
+    refs.folderButtons.get('widgets').click();
+    refs.folderButtons.get('buttons').click();
+    const backEvent = new window.KeyboardEvent('keydown', {
+      altKey: true,
+      bubbles: true,
+      cancelable: true,
+      key: 'ArrowLeft',
+    });
+
+    window.dispatchEvent(backEvent);
+
+    expect(backEvent.defaultPrevented).toBe(true);
+    expect(refs.breadcrumb.textContent).toBe('Library/UI Widgets');
+    expect(document.activeElement).toBe(
+      refs.folderButtons.get('buttons'),
+    );
+
+    const forwardEvent = new window.KeyboardEvent('keydown', {
+      bubbles: true,
+      cancelable: true,
+      key: ']',
+      metaKey: true,
+    });
+
+    window.dispatchEvent(forwardEvent);
+
+    expect(forwardEvent.defaultPrevented).toBe(true);
+    expect(refs.breadcrumb.textContent).toBe(
+      'Library/UI Widgets/Buttons',
+    );
+  });
+
+  it('leaves folder-history shortcuts available to editable controls', () => {
+    refs.folderButtons.get('widgets').click();
+    const input = document.createElement('input');
+    const event = new window.KeyboardEvent('keydown', {
+      altKey: true,
+      bubbles: true,
+      cancelable: true,
+      key: 'ArrowLeft',
+    });
+
+    document.body.append(input);
+    input.dispatchEvent(event);
+
+    expect(event.defaultPrevented).toBe(false);
+    expect(refs.breadcrumb.textContent).toBe('Library/UI Widgets');
   });
 
   it('selects registered entries without rebuilding their buttons', () => {
@@ -142,6 +291,28 @@ describe('UiEditorBottomPanelManager', () => {
       selectedEntryId: 'primary-button',
     });
     expect(selectedEntries).toEqual(['primary-button']);
+    expect(manager.goBack()).toBe(false);
+  });
+
+  it('opens the containing folder for a programmatically selected asset', () => {
+    manager.setEntries([
+      {
+        assetId: 'source:assets/rooms/workshop/window.png',
+        folderPath: ['rooms', 'workshop'],
+        id: 'asset:workshop-window',
+        kind: 'asset',
+        label: 'window.png',
+        sectionId: 'assets',
+      },
+    ]);
+
+    expect(manager.openEntryFolder('asset:workshop-window')).toBe(true);
+    expect(refs.breadcrumb.textContent).toBe(
+      'Library/UI Assets/Rooms/Workshop',
+    );
+    expect(
+      refs.entryButtons.get('asset:workshop-window').parentElement.hidden,
+    ).toBe(false);
   });
 
   it('shows optional retained previews in a compact entry gallery', () => {
@@ -183,6 +354,49 @@ describe('UiEditorBottomPanelManager', () => {
     const disconnectCount = disconnect.mock.calls.length;
     manager.openFolder('dialogs');
     expect(disconnect).toHaveBeenCalledTimes(disconnectCount + 1);
+  });
+
+  it('filters the complete asset catalogue by filename or source path', () => {
+    manager.setEntries([
+      {
+        assetId:
+          'source:assets/ui/root-run-cost-button/green-button-short.9.png',
+        folderPath: ['ui', 'root-run-cost-button'],
+        id: 'asset:green-button-short',
+        kind: 'asset',
+        label: 'green-button-short.9.png',
+        sectionId: 'assets',
+      },
+      {
+        assetId: 'source:assets/avatars/elara.png',
+        folderPath: ['avatars'],
+        id: 'asset:elara',
+        kind: 'asset',
+        label: 'elara.png',
+        sectionId: 'assets',
+      },
+    ]);
+    manager.openFolder('assets');
+    const filter = refs.header.querySelector(
+      '[data-editor-library-filter="assets"]',
+    );
+
+    expect(refs.viewport.contains(filter)).toBe(false);
+    expect(filter.getAttribute('aria-label')).toBe('Filter assets');
+    expect(refs.filterStatus.textContent).toBe('2 assets');
+    filter.value = 'cost-button';
+    filter.dispatchEvent(new window.Event('input', { bubbles: true }));
+
+    expect(refs.filterStatus.textContent).toBe('1 of 2 assets');
+    expect(
+      refs.entryButtons.get('asset:green-button-short').parentElement.hidden,
+    ).toBe(false);
+    expect(
+      refs.entryButtons.get('asset:elara').parentElement.hidden,
+    ).toBe(true);
+    expect(
+      refs.viewport.querySelector('.ui-editor-folder-grid').hidden,
+    ).toBe(true);
   });
 
   it('focuses the first item after opening a folder', () => {

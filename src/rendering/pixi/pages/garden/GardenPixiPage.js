@@ -450,6 +450,15 @@ export class GardenSeedActionBar {
     this.assetManager = assetManager;
     this.theme = DEFAULT_PIXI_THEME_SNAPSHOT;
     this.root = new Container({ label: "garden-seed-action-bar" });
+    this.plantButton = new PixiButton({
+      assetManager,
+      inputRouter,
+      semanticRegistry: semanticTargets,
+      semanticId: "garden.plantAll",
+      text: "Plant All",
+      variant: "green",
+      label: "garden-plant-all",
+    });
     this.harvestButton = new PixiButton({
       assetManager,
       inputRouter,
@@ -489,6 +498,7 @@ export class GardenSeedActionBar {
     );
     this.root.addChild(
       this.selectionPanel.root,
+      this.plantButton,
       this.harvestButton,
       this.seedsButton,
     );
@@ -496,9 +506,19 @@ export class GardenSeedActionBar {
 
   bind(model = {}, actions = {}) {
     const selectedSeed = model.selectedSeed ?? null;
+    const canPlantAll = model.canPlantAll === true;
+    const canHarvestAll = model.canHarvestAll === true;
+    this.plantButton.visible = canPlantAll;
+    this.plantButton.renderable = canPlantAll;
+    this.plantButton
+      .setText("Plant All")
+      .setEnabled(canPlantAll)
+      .setAction(() => actions.plantAll?.() ?? false);
+    this.harvestButton.visible = canHarvestAll;
+    this.harvestButton.renderable = canHarvestAll;
     this.harvestButton
       .setText("Harvest All")
-      .setEnabled(true)
+      .setEnabled(canHarvestAll)
       .setNotification(Number(model.readyHarvestCount) > 0)
       .setAction(() => actions.harvestAll?.() ?? false);
     this.seedsButton
@@ -531,21 +551,24 @@ export class GardenSeedActionBar {
 
   layout() {
     const width = this.width ?? 0;
-    const buttonWidth = (width - GARDEN_PIXI_GEOMETRY.actionButtonGap) / 2;
     const buttonY = -GARDEN_PIXI_GEOMETRY.actionButtonHeight;
-    this.harvestButton.position.set(0, buttonY);
-    this.harvestButton.setSize(
-      buttonWidth,
-      GARDEN_PIXI_GEOMETRY.actionButtonHeight,
-    );
-    this.seedsButton.position.set(
-      buttonWidth + GARDEN_PIXI_GEOMETRY.actionButtonGap,
-      buttonY,
-    );
-    this.seedsButton.setSize(
-      buttonWidth,
-      GARDEN_PIXI_GEOMETRY.actionButtonHeight,
-    );
+    const visibleButtons = [
+      this.plantButton,
+      this.harvestButton,
+      this.seedsButton,
+    ].filter((button) => button.visible);
+    const buttonWidth =
+      (width -
+        GARDEN_PIXI_GEOMETRY.actionButtonGap *
+          Math.max(0, visibleButtons.length - 1)) /
+      Math.max(1, visibleButtons.length);
+    visibleButtons.forEach((button, index) => {
+      button.position.set(
+        index * (buttonWidth + GARDEN_PIXI_GEOMETRY.actionButtonGap),
+        buttonY,
+      );
+      button.setSize(buttonWidth, GARDEN_PIXI_GEOMETRY.actionButtonHeight);
+    });
 
     const indicatorWidth = Math.min(176, width);
     const indicatorX = (width - indicatorWidth) / 2;
@@ -575,6 +598,7 @@ export class GardenSeedActionBar {
 
   applyTheme(theme) {
     this.theme = theme ?? DEFAULT_PIXI_THEME_SNAPSHOT;
+    this.plantButton.applyTheme(this.theme);
     this.harvestButton.applyTheme(this.theme);
     this.seedsButton.applyTheme(this.theme);
     this.selectionPanel.applyTheme(this.theme);
@@ -586,6 +610,7 @@ export class GardenSeedActionBar {
   }
 
   destroy() {
+    this.plantButton.destroy({ children: true });
     this.harvestButton.destroy({ children: true });
     this.seedsButton.destroy({ children: true });
     this.selectionPanel.destroy();

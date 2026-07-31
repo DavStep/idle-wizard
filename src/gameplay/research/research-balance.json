@@ -28,6 +28,8 @@
     "summonSeedsX3": 10000,
     "summonSeedsX4": 100000,
     "summonSeedsX5": 1000000,
+    "garden:plantAll": 1000,
+    "garden:harvestAll": 10000,
     "unlockRecipe:manaTonic": 0,
     "unlockRecipe:minorHealingPotion": 400,
     "unlockRecipe:nettleVigor": 700,
@@ -139,7 +141,9 @@
     "unlockRecipe:belladonnaSight": 10800,
     "unlockRecipe:wormwoodPurge": 11700,
     "unlockRecipe:snowdropBreath": 12600,
-    "unlockRecipe:pearlrootDraught": 14400
+    "unlockRecipe:pearlrootDraught": 14400,
+    "garden:plantAll": 600,
+    "garden:harvestAll": 600
   },
   "researchCostsCrystal": {
     "emerald:plotPlanting:1:2": 2,

@@ -162,9 +162,15 @@ export class BrewingPageFacade {
       return result;
     }
 
-    this.recipeGuideManager.selectRecipe(recipeKey, safeCauldronIndex);
     const result =
       this.gameplayFacade?.prepareBrewingRecipe?.(recipeKey, safeCauldronIndex) ?? null;
+
+    if (result !== true && result?.ok !== true) {
+      this.cauldronManager.render(this.gameplayFacade?.getSnapshot());
+      return result;
+    }
+
+    this.recipeGuideManager.selectRecipe(recipeKey, safeCauldronIndex);
 
     if (autoBrewState.autoBrewEnabled) {
       this.gameplayFacade?.setBrewingAutoBrewRecipe?.(recipeKey, safeCauldronIndex);

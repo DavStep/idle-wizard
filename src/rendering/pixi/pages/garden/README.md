@@ -21,6 +21,8 @@ The page consumes display-ready presenter data:
       onActivate
     }],
     actionBar: {
+      canPlantAll,
+      canHarvestAll,
       selectedSeed: null | {
         itemTypeId, key, label, quantity,
         icon: { kind: 'seed', key }
@@ -42,7 +44,7 @@ The page consumes display-ready presenter data:
   },
   actions: {
     activatePlot, activatePlotLabel,
-    openSeedPicker, harvestAll,
+    openSeedPicker, plantAll, harvestAll,
     selectSeed, confirmCancel, confirmSwap, closeDialog
   }
 }
@@ -58,11 +60,14 @@ The next purchasable plot uses the shared green stacked cost button with
 `Unlock` above the coin row; its affordable-action notification stays on that
 button rather than the surrounding plot frame.
 Plots and seed-dialog rows are keyed high-water pools. The persistent
-`GardenSeedActionBar` keeps one room-level seed choice, opens the retained seed
-picker, and starts every ready harvest through the gameplay facade. `Harvest
-All` remains actionable when no plot is ready and reuses the shared reward
-flyout for `Nothing to harvest`; its notification appears only when harvests
-are ready. Empty plots show no unavailable-status label: they plant when the
+`GardenSeedActionBar` keeps one room-level seed choice and opens the retained
+seed picker. Its researched `Plant All` and `Harvest All` actions reuse the
+green shared button skin; `Seeds` keeps the yellow picker skin. The visible
+actions divide the row evenly. `Plant All` plants the toolbar seed into every
+eligible empty plot and explains missing selection, empty capacity, or
+insufficient stock through shared flyouts. `Harvest All` remains actionable
+when no plot is ready and reuses the shared reward flyout for `Nothing to
+harvest`; its notification appears only when harvests are ready. Empty plots show no unavailable-status label: they plant when the
 selected seed stock meets the plot requirement, or emit the shared `no seed`
 flyout when pressed without enough stock. Growing plots offer the existing
 swap confirmation when the selected seed differs. Seed, cancel-progress, and
@@ -88,7 +93,10 @@ press flyout. Add `?overflow=1` for the valid 12-plot state used to verify
 vertical drag, wheel scrolling, the overflow-only scrollbar, and hard resting
 bounds. Add `?growing=1&progress=gradient` for the four-growing-plot regression
 state that verifies Garden timer rails keep their green role color even when
-the player-wide progress style is gradient.
+the player-wide progress style is gradient. The default recipe shows both
+researched bulk actions with a selected Nettle seed; use `?bulk=plant` for the
+level-5 two-action composition and `?bulk=locked` for the pre-research
+Seeds-only composition.
 
 The cancel-progress confirmation uses the approved red danger title plaque,
 Title Case copy, a centered prompt, a yellow `Keep` action, and a red `Empty`

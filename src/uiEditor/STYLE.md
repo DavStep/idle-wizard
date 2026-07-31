@@ -50,12 +50,25 @@ Use borders before shadows. Panels use `--editor-border-subtle` or
 - The left and right dock panels run the remaining height below the toolbar.
 - The bottom dock sits under the preview, between the two side panels.
 - The preview always consumes every remaining pixel.
+- Asset and nine-slice workbenches collapse the component-hierarchy dock and
+  reuse that width for the preview; returning to a component scene restores the
+  hierarchy at its previous width.
 - Dock defaults are `260px` left, `300px` right, and `220px` bottom. Responsive
   clamps preserve a usable preview on narrow windows.
 - Splitters use a `5px` hit area with a centered `1px` neutral divider.
 - The bottom panel is a folder browser with a compact breadcrumb header.
   Folder rows use a familiar outline icon, remain visually flat at rest, and
   form a responsive grid without card chrome.
+- The asset catalogue covers every production-manifest texture. Source
+  directories remain nested under their normal category folders, runtime
+  aliases live under `Public`, and generated textures live under `Generated`.
+  A directory may show direct assets and child folders together. Every asset
+  folder keeps one native search field at the far right of the breadcrumb
+  header; it searches that folder and its descendants by filename or production
+  ID and reports the visible count without moving selection into a separate
+  modal. Preview-only
+  assets use the same gallery and inspector, with their editor access stated in
+  metadata instead of introducing disabled-looking tiles.
 - The `Library` root owns `UI Assets`, `UI Widgets`, `Dialogs`, and `Scenes`;
   widget categories are nested folders rather than tabs or permanent columns.
 - Library entries are compact text rows. The selected row uses
@@ -64,7 +77,34 @@ Use borders before shadows. Panels use `--editor-border-subtle` or
 - Hierarchy rows use `28px` pitch, depth-based `12px` indentation, a leading eye
   control, an ellipsized component label, and a muted element tag. Hiding a
   parent visually mutes its descendants while preserving their individual
-  visibility choices.
+  visibility choices. Retained-canvas atomic rows use the same rhythm and the
+  existing selected-row surface.
+- Atomic-component inspector fields use the existing raised control surface.
+  Position fields share one row; text and asset controls span the inspector
+  width.
+- The nine-slice workbench keeps its source and guides stable in the left pane.
+  The right pane uses compact accessible tabs: `Preview cases` holds a fixed
+  two-column Original/Height/Width/Both matrix with seam-free rendered results;
+  Original uses the slice's calculated minimum renderable dimensions and the
+  three stretch cases derive from that minimum. `Custom testing` owns exact and
+  slider dimensions, reversible ratio locking, zoom, fit, and pan. Fixed cases
+  never zoom or move, and the two modes do not share a preview scroller. Source
+  guides use an `11px` pointer target
+  around a `1px` blue line, expose their current value on hover, focus, or drag,
+  and remain adjustable through arrow keys. Reset returns to registered runtime
+  geometry, and Copy CSS reports success or failure through the local polite
+  status.
+- Ordinary PNG previews expose one compact `Convert to 9-slice` action in the
+  asset header. Authoring stays inline in the central workbench and adds only
+  `Cancel` plus `Save 9-slice`; saving reports the written metadata path through
+  the same polite semantic status treatment. Existing editable source
+  nine-slices expose the same `Save 9-slice` action without `Cancel`.
+- Source assets expose a restrained red `Delete asset` action. Its review dialog
+  uses one flat target summary, visual usage rows, dense source-reference rows,
+  and a scrollable replacement gallery built from the existing asset thumbnail
+  treatment. The footer remains visible while the review scrolls. Runtime and
+  generated assets keep the action disabled instead of implying that their
+  backing files can be removed locally.
 - Widget usage rows use the same dense auxiliary rhythm: a readable feature
   label, one muted monospace source location, and dividers instead of cards.
 
@@ -76,14 +116,31 @@ Use borders before shadows. Panels use `--editor-border-subtle` or
   `Ctrl+S` / `Command+S`. Successful and failed saves use the existing semantic
   status colors in a polite live region.
 - Folder and breadcrumb navigation uses native release-only buttons with
-  normal keyboard activation. Folder content scrolls inside the bottom panel.
+  normal keyboard activation. Folder visits keep browser-style session history:
+  `Command+[` / `Command+]`, `Alt+Left` / `Alt+Right`, and dedicated browser
+  navigation keys move backward and forward without overriding editable fields
+  or open dialogs. Folder content scrolls inside the bottom panel.
 - Hierarchy eye controls are native buttons with visible/hidden icons and
   `Hide …` / `Show …` accessible labels. They apply an editor-only visibility
   marker and never remove a component from the preview tree.
+- Retained atomic hierarchy rows are keyboard-selectable. Selection opens
+  native number, text, and select controls in the inspector and applies edits
+  immediately to the mounted preview.
+- Nine-slice source margins may be changed by direct number entry, pointer drag,
+  or keyboard movement. Opposing guides may never cross, and every size or slice
+  change updates the stretched result immediately. Clipboard output is a
+  user-initiated convenience only. Explicit `Save 9-slice`, whether converting
+  or editing an existing source nine-slice, writes only a sidecar definition and
+  preserves the source PNG byte-for-byte.
 - Normal transitions last `150ms`; larger state changes may use `200ms`.
 - Motion must explain state and respect reduced-motion preferences.
 - Disabled content uses `--editor-text-disabled` without introducing a new
   surface color.
+- Asset deletion uses a native modal dialog with focus restoration, Escape,
+  backdrop, and explicit Cancel dismissal. A used asset cannot be confirmed
+  until source inspection succeeds and one compatible replacement is selected.
+  The final destructive label states both effects: `Replace references and
+  delete`.
 
 ## Semantic color
 

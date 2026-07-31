@@ -2,6 +2,18 @@ import {
   createUiEditorPixiButtonPreview,
   createUiEditorPixiButtonThumbnail,
 } from '../widgets/UiEditorPixiButtonPreview.js';
+import {
+  DEFAULT_PIXI_THEME_SNAPSHOT,
+  PIXI_ROOT_RUN_ASSETS,
+  PIXI_ROOT_RUN_GEOMETRY,
+} from '../../rendering/pixi/theme/PixiThemeTokens.js';
+import {
+  validateNineSliceCompatibility,
+} from '../../rendering/pixi/nineSlice/NineSliceCompatibility.js';
+
+const FIXED_BUTTON_FONT = 'Lilita One';
+const THEME_BUTTON_FONT = 'Theme font (Lilita One by default)';
+const NO_PROPERTY_VALUE = 'None';
 
 const BUTTON_USAGES = Object.freeze({
   'control-button': usageSet(
@@ -283,22 +295,351 @@ export const IDLE_WIZARD_BUTTON_WIDGETS = Object.freeze([
 ]);
 
 export function createIdleWizardButtonEntries() {
-  return IDLE_WIZARD_BUTTON_WIDGETS.map((definition) => ({
-    createPreview: () => createUiEditorPixiButtonPreview(definition),
-    createThumbnail: () => createUiEditorPixiButtonThumbnail(definition),
-    id: definition.id,
-    kind: 'widget',
-    label: definition.label,
-    sectionId: 'buttons',
-    usages: BUTTON_USAGES[definition.id] ?? [],
-  }));
+  return IDLE_WIZARD_BUTTON_WIDGETS.map((definition) => {
+    const minimumSize = resolveDefinitionMinimumSize(definition);
+    const editorDefinition = Object.freeze({
+      ...definition,
+      minimumHeight: minimumSize.height,
+      minimumWidth: minimumSize.width,
+    });
+
+    return {
+      createPreview: () => createUiEditorPixiButtonPreview(editorDefinition),
+      createThumbnail: () =>
+        createUiEditorPixiButtonThumbnail(editorDefinition),
+      id: definition.id,
+      kind: 'widget',
+      label: definition.label,
+      assets: definition.assets,
+      minimumSize,
+      properties: createButtonProperties(definition.preview),
+      sectionId: 'buttons',
+      usages: BUTTON_USAGES[definition.id] ?? [],
+    };
+  });
+}
+
+export function validateIdleWizardButtonNineSliceRegistrations() {
+  return IDLE_WIZARD_BUTTON_WIDGETS.flatMap((definition) => {
+    const minimumSize = resolveDefinitionMinimumSize(definition);
+
+    return definition.assets
+      .filter(({ nineSlice }) => nineSlice)
+      .map((asset) =>
+        validateNineSliceCompatibility({
+          assetId: asset.id,
+          minimumCenter: asset.minimumCenter,
+          outputInsets: asset.borderInsets,
+          targetLabel: definition.label,
+          targetSize: {
+            width: asset.width ?? minimumSize.width,
+            height: asset.height ?? minimumSize.height,
+          },
+        }),
+      )
+      .filter(({ compatible }) => !compatible);
+  });
+}
+
+function createButtonProperties(preview) {
+  const backgroundAsset =
+    resolveButtonBackgroundAsset(preview)?.id ?? NO_PROPERTY_VALUE;
+
+  return Object.freeze([
+    Object.freeze({
+      label: 'Font',
+      value: resolveButtonFont(preview),
+    }),
+    Object.freeze({
+      label: 'Background asset',
+      monospace: backgroundAsset !== NO_PROPERTY_VALUE,
+      value: backgroundAsset,
+    }),
+  ]);
+}
+
+function resolveButtonFont(preview) {
+  if (['info', 'hud-settings', 'hud-avatar'].includes(preview.type)) {
+    return NO_PROPERTY_VALUE;
+  }
+
+  if (
+    preview.type === 'button' &&
+    ['regular', 'inline', 'border-label'].includes(preview.variant)
+  ) {
+    return THEME_BUTTON_FONT;
+  }
+
+  return FIXED_BUTTON_FONT;
+}
+
+function resolveButtonBackgroundAsset(preview) {
+  if (preview.type === 'cost') {
+    if (preview.stacked) {
+      return asset(PIXI_ROOT_RUN_ASSETS.buttonGreenStacked);
+    }
+    if (preview.compact) {
+      return standardButtonNineSlice(
+        PIXI_ROOT_RUN_ASSETS.buttonGreenNineSlice,
+        preview,
+      );
+    }
+    return asset(PIXI_ROOT_RUN_ASSETS.buttonGreen);
+  }
+
+  if (preview.type === 'info') {
+    return asset(PIXI_ROOT_RUN_ASSETS.info, 'Icon');
+  }
+  if (preview.type === 'hud-settings') {
+    return nineSliceAsset({
+      borderInsets: divideInsets(46, 3),
+      height: 122 / 3,
+      id: PIXI_ROOT_RUN_ASSETS.topHudSettings,
+      sourceInsets: uniformInsets(46),
+      width: 122 / 3,
+    });
+  }
+  if (preview.type === 'hud-avatar') {
+    return asset(PIXI_ROOT_RUN_ASSETS.topHudAvatarHead);
+  }
+
+  if (preview.enabled === false) {
+    return standardButtonNineSlice(
+      PIXI_ROOT_RUN_ASSETS.buttonGrayNineSlice,
+      preview,
+    );
+  }
+
+  switch (preview.variant) {
+    case 'regular':
+      return nineSliceAsset({
+        borderInsets: DEFAULT_PIXI_THEME_SNAPSHOT.frames.controlBorder,
+        height: preview.height ?? 36,
+        id: DEFAULT_PIXI_THEME_SNAPSHOT.frames.control,
+        sourceInsets:
+          DEFAULT_PIXI_THEME_SNAPSHOT.frames.controlSourceInsets,
+        width: preview.width ?? 100,
+      });
+    case 'yellow':
+      return standardButtonNineSlice(
+        PIXI_ROOT_RUN_ASSETS.buttonYellow,
+        preview,
+      );
+    case 'green':
+      return standardButtonNineSlice(
+        PIXI_ROOT_RUN_ASSETS.buttonGreenNineSlice,
+        preview,
+      );
+    case 'red':
+      return standardButtonNineSlice(
+        PIXI_ROOT_RUN_ASSETS.buttonRedNineSlice,
+        preview,
+      );
+    case 'brown-dark':
+      return standardButtonNineSlice(
+        PIXI_ROOT_RUN_ASSETS.buttonBrownDark,
+        preview,
+      );
+    case 'brown-light':
+      return standardButtonNineSlice(
+        PIXI_ROOT_RUN_ASSETS.buttonBrownLight,
+        preview,
+      );
+    case 'tab':
+      return compactTabNineSlice(
+        preview.selected
+          ? PIXI_ROOT_RUN_ASSETS.buttonTabActive
+          : PIXI_ROOT_RUN_ASSETS.buttonTabInactive,
+        preview,
+      );
+    case 'account-tab':
+      return accountTabNineSlice(preview);
+    case 'account-save':
+      return nineSliceAsset({
+        ...PIXI_ROOT_RUN_GEOMETRY.account.save,
+        id: PIXI_ROOT_RUN_ASSETS.accountSave,
+        sourceInsets: PIXI_ROOT_RUN_GEOMETRY.account.save.sourceInsets,
+        borderInsets: PIXI_ROOT_RUN_GEOMETRY.account.save.borderInsets,
+      });
+    default:
+      return null;
+  }
+}
+
+function createButtonAssets(preview) {
+  if (preview.type === 'hud-settings') {
+    return assetSet(
+      resolveButtonBackgroundAsset(preview),
+      asset(PIXI_ROOT_RUN_ASSETS.settingsGear, 'Icon'),
+    );
+  }
+
+  if (preview.type === 'hud-avatar') {
+    return assetSet(
+      nineSliceAsset({
+        borderInsets: divideInsets(
+          { top: 54, right: 55, bottom: 55, left: 54 },
+          3,
+        ),
+        height: 186 / 3,
+        id: PIXI_ROOT_RUN_ASSETS.topHudAvatarFrame,
+        role: 'Frame',
+        sourceInsets: {
+          top: 54,
+          right: 55,
+          bottom: 55,
+          left: 54,
+        },
+        width: 186 / 3,
+      }),
+      resolveButtonBackgroundAsset(preview),
+      asset('source:assets/avatars/elara.png', 'Portrait'),
+    );
+  }
+
+  const background = resolveButtonBackgroundAsset(preview);
+
+  if (preview.type === 'cost') {
+    return assetSet(
+      background,
+      asset(PIXI_ROOT_RUN_ASSETS.coin, 'Resource icon'),
+    );
+  }
+
+  return assetSet(background);
+}
+
+function standardButtonNineSlice(id, preview) {
+  const legacyBrown = [
+    PIXI_ROOT_RUN_ASSETS.buttonBrownDark,
+    PIXI_ROOT_RUN_ASSETS.buttonBrownLight,
+  ].includes(id);
+  const geometry = legacyBrown
+    ? PIXI_ROOT_RUN_GEOMETRY.legacyButton
+    : preview.compact
+      ? PIXI_ROOT_RUN_GEOMETRY.compactButton
+      : PIXI_ROOT_RUN_GEOMETRY.button;
+
+  return nineSliceAsset({
+    borderInsets: geometry.borderInsets,
+    height: preview.height ?? 36,
+    id,
+    sourceInsets: geometry.sourceInsets,
+    width: preview.width ?? 100,
+  });
+}
+
+function compactTabNineSlice(id, preview) {
+  return nineSliceAsset({
+    borderInsets: PIXI_ROOT_RUN_GEOMETRY.tabButton.borderInsets,
+    height: preview.height ?? 28,
+    id,
+    sourceInsets: PIXI_ROOT_RUN_GEOMETRY.tabButton.sourceInsets,
+    width: preview.width ?? 92,
+  });
+}
+
+function accountTabNineSlice(preview) {
+  const geometry = preview.selected
+    ? PIXI_ROOT_RUN_GEOMETRY.account.tab.active
+    : PIXI_ROOT_RUN_GEOMETRY.account.tab.inactive;
+
+  return nineSliceAsset({
+    borderInsets: geometry.borderInsets,
+    height: geometry.frame.height,
+    id: preview.selected
+      ? PIXI_ROOT_RUN_ASSETS.accountTabActive
+      : PIXI_ROOT_RUN_ASSETS.accountTabInactive,
+    minimumCenter: {
+      width: 1 / 3,
+      height: 1 / 3,
+    },
+    sourceInsets: geometry.sourceInsets,
+    width: geometry.frame.width,
+  });
+}
+
+function asset(id, role = 'Background') {
+  return Object.freeze({ id, role });
+}
+
+function nineSliceAsset({
+  borderInsets,
+  height,
+  id,
+  minimumCenter,
+  role = 'Background',
+  sourceInsets,
+  width,
+}) {
+  return Object.freeze({
+    borderInsets,
+    height,
+    id,
+    minimumCenter,
+    nineSlice: true,
+    role,
+    sourceInsets,
+    width,
+  });
+}
+
+function assetSet(...assets) {
+  return Object.freeze(assets.filter(Boolean));
+}
+
+function uniformInsets(value) {
+  return Object.freeze({
+    top: value,
+    right: value,
+    bottom: value,
+    left: value,
+  });
+}
+
+function divideInsets(insets, divisor) {
+  const source =
+    typeof insets === 'number' ? uniformInsets(insets) : insets;
+
+  return Object.freeze({
+    top: source.top / divisor,
+    right: source.right / divisor,
+    bottom: source.bottom / divisor,
+    left: source.left / divisor,
+  });
 }
 
 function buttonWidget(id, label, preview) {
+  const normalizedPreview = Object.freeze({ ...preview });
+
   return Object.freeze({
+    assets: createButtonAssets(normalizedPreview),
     id,
     label,
-    preview: Object.freeze({ ...preview }),
+    preview: normalizedPreview,
+  });
+}
+
+function resolveDefinitionMinimumSize(definition) {
+  const background = definition.assets.find(
+    ({ nineSlice, role }) => nineSlice && role === 'Background',
+  );
+
+  return Object.freeze({
+    width: Math.max(
+      0,
+      Number(definition.preview.minimumWidth)
+      || Number(background?.width)
+      || Number(definition.preview.width)
+      || 0,
+    ),
+    height: Math.max(
+      0,
+      Number(definition.preview.minimumHeight)
+      || Number(background?.height)
+      || Number(definition.preview.height)
+      || 0,
+    ),
   });
 }
 

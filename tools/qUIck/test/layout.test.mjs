@@ -164,3 +164,53 @@ test("renderer treats zero top and bottom margins as a horizontal 3-slice", asyn
   assert.equal(rightCap.width, 3);
   assert.equal(rightCap.height, 6);
 });
+
+test("renderer rejects a nine-slice smaller than its protected regions", async () => {
+  const renderer = new FigmaPixiRenderer({
+    textureResolver: () =>
+      new Texture({
+        source: Texture.WHITE.source,
+        frame: new Rectangle(0, 0, 30, 30),
+        orig: new Rectangle(0, 0, 30, 30)
+      })
+  });
+
+  await assert.rejects(
+    renderer.render({
+      version: "1.0.0",
+      name: "InvalidNineSlice",
+      kind: "screen",
+      designSize: { width: 20, height: 20 },
+      scaleMode: "fit",
+      safeArea: { x: 0, y: 0, width: 20, height: 20 },
+      children: [
+        {
+          id: "panel",
+          name: "TooSmallPanel",
+          type: "nineSlice",
+          x: 0,
+          y: 0,
+          width: 20,
+          height: 20,
+          assetId: "panel-asset",
+          slice: {
+            left: 10,
+            top: 10,
+            right: 10,
+            bottom: 10
+          }
+        }
+      ],
+      assets: [
+        {
+          id: "panel-asset",
+          src: "assets/panel.png",
+          width: 30,
+          height: 30,
+          scale: 1
+        }
+      ]
+    }),
+    /requires at least 21x21/
+  );
+});

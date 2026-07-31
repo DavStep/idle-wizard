@@ -1,0 +1,52 @@
+{
+  "version": 1,
+  "format": "png",
+  "asset": "blue-button-15.9.png",
+  "source": {
+    "path": "assets/game/source/ui/regular-button/blue-button-15.9.png",
+    "width": 46,
+    "height": 53,
+    "mode": "RGBA",
+    "crop": {
+      "x": 0,
+      "y": 0,
+      "width": 46,
+      "height": 53
+    }
+  },
+  "sourceCropSize": {
+    "width": 46,
+    "height": 53
+  },
+  "slice": {
+    "left": 27,
+    "top": 30,
+    "right": 16,
+    "bottom": 20
+  },
+  "mode": "source",
+  "distill": null,
+  "rendering": {
+    "stretch": "edges-and-center",
+    "outputInsets": {
+      "left": 27,
+      "top": 30,
+      "right": 16,
+      "bottom": 20
+    },
+    "minimumCenter": {
+      "width": 3,
+      "height": 3
+    },
+    "minimumSize": {
+      "width": 46,
+      "height": 53
+    },
+    "qaResample": "nearest",
+    "browserPreviewSmoothingDefault": false
+  },
+  "editor": {
+    "tool": "Idle Wizard regular button generator",
+    "sourceAssetPreserved": true
+  }
+}

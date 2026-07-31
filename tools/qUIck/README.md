@@ -123,3 +123,9 @@ stretch-full
 @text coins_label
 @nine(40,32,40,32) panel_bg
 ```
+
+Nine-slice exports include a derived `minimumSize`. Export reports an error,
+and the Pixi runtime refuses the node, when its final width or height is smaller
+than the protected design-space edges plus one stretchable pixel. Compacted
+`textureSlice` values remain texture-sampling metadata and never replace this
+layout constraint.

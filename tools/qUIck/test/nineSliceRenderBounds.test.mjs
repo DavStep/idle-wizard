@@ -87,6 +87,7 @@ test("@nine export uses rendered-pixel bounds instead of the configured group bo
   assert.equal(node.scaleX, undefined);
   assert.equal(node.scaleY, undefined);
   assert.deepEqual(node.slice, { left: 24, top: 18, right: 24, bottom: 18 });
+  assert.deepEqual(node.minimumSize, { width: 49, height: 37 });
   assert.deepEqual(
     { width: asset.width, height: asset.height },
     { width: 150, height: 72 }

@@ -110,6 +110,20 @@ describe('UiEditorPanelLayoutManager', () => {
     ).toBe('240px');
   });
 
+  it('preserves a dock size while that dock is contextually hidden', () => {
+    expect(manager.setPanelVisible('left', false)).toBe(true);
+    expect(refs.panels.left.hidden).toBe(true);
+    expect(refs.splitters.left.hidden).toBe(true);
+    expect(refs.shell.dataset.leftPanelHidden).toBe('true');
+    expect(manager.getWorkspaceState().left).toBe(260);
+
+    expect(manager.setPanelVisible('left', true)).toBe(true);
+    expect(refs.panels.left.hidden).toBe(false);
+    expect(refs.splitters.left.hidden).toBe(false);
+    expect(refs.shell.dataset.leftPanelHidden).toBeUndefined();
+    expect(manager.getWorkspaceState().left).toBe(260);
+  });
+
   it('tracks an active drag through window pointer movement and release', () => {
     refs.splitters.left.setPointerCapture = () => {};
     refs.splitters.left.releasePointerCapture = () => {};

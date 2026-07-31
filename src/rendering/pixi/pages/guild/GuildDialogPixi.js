@@ -1808,7 +1808,7 @@ class GuildQuestButton {
     this.root.label = label;
     this.frame = new GuildAssetNineSlice({
       assetManager,
-      textureId: `public:ui/guild-quest/button-${green ? 'green' : 'brown'}-9slice.png`,
+      textureId: `public:ui/guild-quest/button-${green ? 'green' : 'brown'}.9.png`,
       sourceInsets: { left: 43, top: 27, right: 43, bottom: 28 },
       outputInsets: { left: 10, top: 10, right: 10, bottom: 10 },
       label: `${label}:frame`,

@@ -7,30 +7,69 @@ import { PIXI_ROOT_RUN_GEOMETRY } from '../theme/PixiThemeTokens.js';
 
 const COMPACT_BUTTON_ASSET_DIR =
   'assets/game/source/ui/root-run-cost-button';
+const REGULAR_BUTTON_ASSET_DIR =
+  'assets/game/source/ui/regular-button';
 const COMPACT_BUTTON_ASSETS = [
-  'yellow-button-9slice.png',
-  'green-button-9slice.png',
-  'red-button-9slice.png',
-  'gray-button-9slice.png',
-  'brown-button-dark-9slice.png',
-  'brown-button-light-9slice.png',
+  {
+    directory: REGULAR_BUTTON_ASSET_DIR,
+    file: 'yellow-button-50.9.png',
+    size: [141, 171],
+    centerSize: 3,
+    sourceInsets: { top: 100, right: 52, bottom: 68, left: 86 },
+  },
+  {
+    directory: REGULAR_BUTTON_ASSET_DIR,
+    file: 'green-button-50.9.png',
+    size: [141, 171],
+    centerSize: 3,
+    sourceInsets: { top: 100, right: 52, bottom: 68, left: 86 },
+  },
+  {
+    directory: REGULAR_BUTTON_ASSET_DIR,
+    file: 'red-button-50.9.png',
+    size: [141, 171],
+    centerSize: 3,
+    sourceInsets: { top: 100, right: 52, bottom: 68, left: 86 },
+  },
+  {
+    directory: REGULAR_BUTTON_ASSET_DIR,
+    file: 'gray-button-50.9.png',
+    size: [141, 171],
+    centerSize: 3,
+    sourceInsets: { top: 100, right: 52, bottom: 68, left: 86 },
+  },
+  {
+    directory: COMPACT_BUTTON_ASSET_DIR,
+    file: 'brown-button-dark.9.png',
+    size: [130, 169],
+    centerSize: 2,
+    sourceInsets: { top: 100, right: 43, bottom: 68, left: 85 },
+  },
+  {
+    directory: COMPACT_BUTTON_ASSET_DIR,
+    file: 'brown-button-light.9.png',
+    size: [130, 169],
+    centerSize: 2,
+    sourceInsets: { top: 100, right: 43, bottom: 68, left: 85 },
+  },
 ];
 const COMPACT_TAB_ASSETS = [
   {
-    file: 'brown-tab-active-9slice.png',
-    sourceFile: 'brown-button-light-9slice.png',
+    file: 'brown-tab-active.9.png',
+    sourceFile: 'brown-button-light.9.png',
     face: '110,70,39,255',
     highlight: '162,116,67,255',
   },
   {
-    file: 'brown-tab-inactive-9slice.png',
-    sourceFile: 'brown-button-dark-9slice.png',
+    file: 'brown-tab-inactive.9.png',
+    sourceFile: 'brown-button-dark.9.png',
     face: '45,33,25,255',
     highlight: '92,62,39,255',
   },
   {
-    file: 'gray-tab-disabled-9slice.png',
-    sourceFile: 'gray-button-9slice.png',
+    file: 'gray-tab-disabled.9.png',
+    sourceDirectory: REGULAR_BUTTON_ASSET_DIR,
+    sourceFile: 'gray-button-50.9.png',
     face: '122,122,122,255',
     highlight: '155,155,155,255',
   },
@@ -39,7 +78,7 @@ const COMPACT_TAB_ASSETS = [
 describe('compact Root Run button nine-slices', () => {
   it('uses a muted red face with the shared coral highlight', () => {
     const png = PNG.sync.read(
-      readFileSync(`${COMPACT_BUTTON_ASSET_DIR}/red-button-9slice.png`),
+      readFileSync(`${REGULAR_BUTTON_ASSET_DIR}/red-button-50.9.png`),
     );
     const colors = new Set();
 
@@ -60,9 +99,13 @@ describe('compact Root Run button nine-slices', () => {
   });
 
   it('uses a distilled flat stretch band for every color variant', () => {
-    const sourceInsets = PIXI_ROOT_RUN_GEOMETRY.button.sourceInsets;
-
-    expect(sourceInsets).toEqual({
+    expect(PIXI_ROOT_RUN_GEOMETRY.button.sourceInsets).toEqual({
+      top: 100,
+      right: 52,
+      bottom: 68,
+      left: 86,
+    });
+    expect(PIXI_ROOT_RUN_GEOMETRY.legacyButton.sourceInsets).toEqual({
       top: 100,
       right: 43,
       bottom: 68,
@@ -70,26 +113,31 @@ describe('compact Root Run button nine-slices', () => {
     });
 
     for (const asset of COMPACT_BUTTON_ASSETS) {
+      const { sourceInsets } = asset;
       const png = PNG.sync.read(
-        readFileSync(`${COMPACT_BUTTON_ASSET_DIR}/${asset}`),
+        readFileSync(`${asset.directory}/${asset.file}`),
       );
       const stretchStart = sourceInsets.left;
       const stretchWidth =
         png.width - sourceInsets.left - sourceInsets.right;
 
-      expect([png.width, png.height], asset).toEqual([130, 169]);
-      expect(stretchWidth, asset).toBe(2);
+      expect([png.width, png.height], asset.file).toEqual(asset.size);
+      expect(stretchWidth, asset.file).toBe(asset.centerSize);
 
       for (let y = 0; y < png.height; y += 1) {
         const firstColumn = (y * png.width + stretchStart) * 4;
-        const secondColumn = firstColumn + 4;
 
-        expect(
-          [...png.data.subarray(firstColumn, firstColumn + 4)],
-          `${asset} stretch row ${y}`,
-        ).toEqual([
-          ...png.data.subarray(secondColumn, secondColumn + 4),
-        ]);
+        for (let x = 1; x < asset.centerSize; x += 1) {
+          expect(
+            [...png.data.subarray(firstColumn, firstColumn + 4)],
+            `${asset.file} stretch row ${y} column ${x}`,
+          ).toEqual([
+            ...png.data.subarray(
+              firstColumn + x * 4,
+              firstColumn + (x + 1) * 4,
+            ),
+          ]);
+        }
       }
     }
   });
@@ -117,7 +165,11 @@ describe('compact Root Run button nine-slices', () => {
         readFileSync(`${COMPACT_BUTTON_ASSET_DIR}/${asset.file}`),
       );
       const sourcePng = PNG.sync.read(
-        readFileSync(`${COMPACT_BUTTON_ASSET_DIR}/${asset.sourceFile}`),
+        readFileSync(
+          `${asset.sourceDirectory ?? COMPACT_BUTTON_ASSET_DIR}/${
+            asset.sourceFile
+          }`,
+        ),
       );
       const colors = collectColors(png);
       const sourceColors = collectColors(sourcePng);

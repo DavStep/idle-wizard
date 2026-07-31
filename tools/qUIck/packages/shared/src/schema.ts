@@ -216,6 +216,7 @@ export interface UINineSliceNode extends BaseUINode {
   assetId: string;
   asset?: string;
   slice: UINineSliceData;
+  minimumSize?: UISize;
   textureSlice?: UINineSliceData;
   assetOptimization?: UINineSliceAssetOptimization;
 }

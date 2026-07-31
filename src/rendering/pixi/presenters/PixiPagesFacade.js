@@ -1331,6 +1331,8 @@ export class PixiPagesFacade {
         now: Date.now(),
         plots: tiles,
         actionBar: {
+          canPlantAll: garden.bulkActions?.canPlantAll === true,
+          canHarvestAll: garden.bulkActions?.canHarvestAll === true,
           selectedSeed: selectedSeed
             ? createGardenSelectedSeedModel(this.gameplaySnapshot, selectedSeed)
             : null,
@@ -1433,6 +1435,24 @@ export class PixiPagesFacade {
       activatePlot,
       activatePlotLabel: activatePlot,
       openSeedPicker: () => this.openGardenSeedDialog(),
+      plantAll: () => {
+        const result = gameplay?.plantAllGardenSeeds?.(
+          this.gardenSelectedSeedItemTypeId,
+        ) ?? {
+          ok: false,
+          reason: "unavailable",
+        };
+        const messageByReason = {
+          no_seed_selected: "Select a seed",
+          no_empty_tiles: "No empty plots",
+          not_enough_seed: "Not enough seeds",
+        };
+        const message = messageByReason[result?.reason];
+        if (result?.ok !== true && message) {
+          this.experienceFacade?.transientEffects?.emitReward?.({ message });
+        }
+        return result;
+      },
       harvestAll: () => {
         const result = gameplay?.startAllReadyGardenHarvests?.() ?? {
           ok: false,
@@ -1624,8 +1644,22 @@ export class PixiPagesFacade {
     };
   }
 
-  decorateBrewingRecipes(recipes) {
+  decorateBrewingRecipes(recipes, cauldronIndex = 0) {
+    const safeCauldronIndex = Math.max(
+      0,
+      Math.floor(Number(cauldronIndex) || 0),
+    );
+    const selectedRecipe =
+      this.selectedRecipeByCauldron.get(safeCauldronIndex) ?? null;
+
     return (recipes ?? []).map((recipe) => {
+      const selected =
+        recipe?.key === (selectedRecipe?.key ?? selectedRecipe?.id);
+      const canSelect =
+        selected ||
+        (recipe?.unlocked === true &&
+          this.canSelectBrewingRecipe(recipe, safeCauldronIndex));
+
       if (
         recipe?.unlocked === true ||
         recipe?.unknown === true ||
@@ -1635,6 +1669,8 @@ export class PixiPagesFacade {
         return {
           ...recipe,
           canResearch: false,
+          canSelect,
+          selected,
         };
       }
       const researchId =
@@ -1647,8 +1683,108 @@ export class PixiPagesFacade {
         ...recipe,
         researchId,
         canResearch: research?.canResearch === true,
+        canSelect: false,
+        selected: false,
       };
     });
+  }
+
+  canSelectBrewingRecipe(recipe, cauldronIndex = 0) {
+    const brewing = this.gameplaySnapshot.brewing ?? {};
+    const safeCauldronIndex = Math.max(
+      0,
+      Math.floor(Number(cauldronIndex) || 0),
+    );
+    const cauldron =
+      (brewing.cauldrons ?? []).find(
+        (candidate) =>
+          Math.max(
+            0,
+            Math.floor(Number(candidate?.cauldronIndex) || 0),
+          ) === safeCauldronIndex,
+      ) ?? (safeCauldronIndex === 0 ? brewing : null);
+    const brewQuantity = Math.max(
+      1,
+      Math.floor(Number(cauldron?.brewQuantity) || 1),
+    );
+    const ownedByItemTypeId = new Map();
+    const ownedByKey = new Map();
+
+    for (const herb of brewing.herbs ?? []) {
+      const quantity = Math.max(0, Math.floor(Number(herb?.quantity) || 0));
+      if (Number.isInteger(herb?.itemTypeId)) {
+        ownedByItemTypeId.set(herb.itemTypeId, quantity);
+      }
+      if (typeof herb?.key === "string") {
+        ownedByKey.set(herb.key, quantity);
+      }
+    }
+
+    for (const otherCauldron of brewing.cauldrons ?? []) {
+      const otherCauldronIndex = Math.max(
+        0,
+        Math.floor(Number(otherCauldron?.cauldronIndex) || 0),
+      );
+      if (otherCauldronIndex === safeCauldronIndex) {
+        continue;
+      }
+
+      for (const ingredient of otherCauldron?.ingredients ?? []) {
+        if (Number.isInteger(ingredient?.itemTypeId)) {
+          ownedByItemTypeId.set(
+            ingredient.itemTypeId,
+            Math.max(
+              0,
+              (ownedByItemTypeId.get(ingredient.itemTypeId) ?? 0) - 1,
+            ),
+          );
+        }
+        const ingredientKey = ingredient?.itemKey ?? ingredient?.key;
+        if (typeof ingredientKey === "string") {
+          ownedByKey.set(
+            ingredientKey,
+            Math.max(0, (ownedByKey.get(ingredientKey) ?? 0) - 1),
+          );
+        }
+      }
+    }
+
+    const requiredByItemTypeId = new Map();
+    const requiredByKey = new Map();
+
+    for (const ingredient of recipe?.ingredients ?? []) {
+      const requiredQuantity =
+        Math.max(1, Math.floor(Number(ingredient?.quantity) || 1)) *
+        brewQuantity;
+      if (Number.isInteger(ingredient?.itemTypeId)) {
+        requiredByItemTypeId.set(
+          ingredient.itemTypeId,
+          (requiredByItemTypeId.get(ingredient.itemTypeId) ?? 0) +
+            requiredQuantity,
+        );
+        continue;
+      }
+      const ingredientKey = ingredient?.itemKey ?? ingredient?.key;
+      if (typeof ingredientKey !== "string") {
+        return false;
+      }
+      requiredByKey.set(
+        ingredientKey,
+        (requiredByKey.get(ingredientKey) ?? 0) + requiredQuantity,
+      );
+    }
+
+    for (const [itemTypeId, requiredQuantity] of requiredByItemTypeId) {
+      if ((ownedByItemTypeId.get(itemTypeId) ?? 0) < requiredQuantity) {
+        return false;
+      }
+    }
+    for (const [key, requiredQuantity] of requiredByKey) {
+      if ((ownedByKey.get(key) ?? 0) < requiredQuantity) {
+        return false;
+      }
+    }
+    return true;
   }
 
   openBrewingRecipesDialog(cauldronIndex = 0) {
@@ -1661,6 +1797,7 @@ export class PixiPagesFacade {
           cauldronIndex,
           recipes: this.decorateBrewingRecipes(
             this.gameplaySnapshot.brewing?.recipes,
+            cauldronIndex,
           ),
         }) ?? false
     );
@@ -1754,11 +1891,17 @@ export class PixiPagesFacade {
       },
       selectRecipe: (recipe, cauldronIndex = 0) => {
         const key = recipe?.key ?? recipe?.id ?? null;
-        this.selectedRecipeByCauldron.set(cauldronIndex, recipe ?? null);
         const result = key
           ? gameplay?.prepareBrewingRecipe?.(key, cauldronIndex)
           : gameplay?.setBrewingAutoBrewRecipe?.(null, cauldronIndex);
-        this.requireRuntime().closeDialog?.("brewing.recipes");
+        if (result === true || result?.ok === true) {
+          if (recipe) {
+            this.selectedRecipeByCauldron.set(cauldronIndex, recipe);
+          } else {
+            this.selectedRecipeByCauldron.delete(cauldronIndex);
+          }
+          this.requireRuntime().closeDialog?.("brewing.recipes");
+        }
         return result;
       },
       performCauldronAction: (cauldron, action) => {

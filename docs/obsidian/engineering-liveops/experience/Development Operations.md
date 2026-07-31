@@ -33,6 +33,15 @@ experience_type: development-operations
   backend events cannot overwrite during screenshot QA.
 - Raw retained-dialog and widget previews must bypass gameplay setup and save
   publication; visual inspection should not mutate or persist player state.
+- UI editor thumbnail galleries must capture static canvases through one
+  serialized shared Pixi renderer; one live application per tile exhausts
+  WebGL contexts as resizable panels reveal more entries.
+- Compatible UI editor widget selections must retain the live Pixi canvas and
+  application, replacing only the widget display object; remounting the preview
+  application exposes and repaints the unchanged background as a visible flash.
+- The standalone UI editor is a desktop development tool. Run its live visual
+  and interaction QA at desktop resolutions; the game's authored `390x844`
+  mobile viewport requirement does not apply to editor testing.
 - Canvas-only production guards must inspect Vite's emitted production module graph, not scan the whole source tree; this rejects reachable DOM UI without blocking retained legacy/dev files that are absent from release chunks.
 - Isolated Vite previews must build into their own ignored output directory; using shared `dist` lets unrelated builds replace the assets under a running QA preview.
 - Full player-save backup must use SpacetimeDB SQL/export or a dedicated admin reducer; `admin_player_gameplay_save` currently exposes only summary fields, not raw `saveJson`.

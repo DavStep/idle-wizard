@@ -20,12 +20,20 @@ const sourceDataModules = import.meta.glob(
   },
 );
 
+const sourceNineSliceMetadataModules = import.meta.glob(
+  '../../../../assets/game/source/**/*.9slice.json',
+  {
+    eager: true,
+    import: 'default',
+  },
+);
+
 const PUBLIC_ASSET_PATHS = Object.freeze([
   '/spine/tutorial-pointer/pointer.atlas',
   '/spine/tutorial-pointer/pointer.png',
   '/spine/tutorial-pointer/pointer.skel',
-  '/ui/guild-quest/button-brown-9slice.png',
-  '/ui/guild-quest/button-green-9slice.png',
+  '/ui/guild-quest/button-brown.9.png',
+  '/ui/guild-quest/button-green.9.png',
   '/ui/guild-quest/close-panel-9slice.png',
   '/ui/guild-quest/close-x.png',
   '/ui/guild-quest/dialog-panel-9slice.png',
@@ -45,18 +53,12 @@ const PUBLIC_ASSET_PATHS = Object.freeze([
   '/ui/guild-quest/wax-seal.png',
   '/ui/intro-dialog-panel-9slice.png',
   '/ui/root-run-level-star.png',
-  '/ui/player-card-button-brown-dark-fill-9slice.png',
-  '/ui/player-card-button-brown-fill-9slice.png',
+  '/ui/player-card-button-brown-dark-fill.9.png',
+  '/ui/player-card-button-brown-fill.9.png',
   '/ui/player-card-panel-9slice-v2.png',
-  '/ui/player-card-panel-9slice.png',
+  '/ui/player-card-panel.9.png',
   '/ui/player-card-panel-preview-9slice.png',
   '/ui/player-card-panel-selected-9slice.png',
-  '/ui/research/recipe-unlocks-research-banner-9slice.9slice.json',
-  '/ui/research/recipe-unlocks-research-banner-9slice.png',
-  '/ui/research/seed-unlock-research-banner-9slice.9slice.json',
-  '/ui/research/seed-unlock-research-banner-9slice.png',
-  '/ui/research/summon-seeds-unlock-banner-9slice.9slice.json',
-  '/ui/research/summon-seeds-unlock-banner-9slice.png',
   '/ui/xp-stars.webp',
 ]);
 
@@ -106,6 +108,17 @@ export const PIXI_PRODUCTION_ASSET_MANIFEST = Object.freeze([
   ...sourceAssets,
   ...publicAssets,
 ]);
+
+export const PIXI_SOURCE_NINE_SLICE_METADATA = Object.freeze(
+  Object.entries(sourceNineSliceMetadataModules).map(([metadataPath, metadata]) =>
+    Object.freeze({
+      assetId: normalizeSourceAssetId(
+        metadataPath.replace(/\.9slice\.json$/i, '.png'),
+      ),
+      metadata: Object.freeze(metadata),
+    }),
+  ),
+);
 
 export function getPixiSourceAssetId(relativePath) {
   const normalized = String(relativePath ?? '')

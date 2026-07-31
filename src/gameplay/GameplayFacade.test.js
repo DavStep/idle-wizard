@@ -12,6 +12,7 @@ import { researchCostResearchIds } from "./research/researchCostResearch.js";
 import { researchTimeResearchIds } from "./research/researchTimeResearch.js";
 import { stallStaffingResearchIds } from "./research/stallStaffingResearch.js";
 import { taskRequirementTypes } from "./tasks/taskRequirementTypes.js";
+import { gardenBulkResearchIds } from "./garden/gardenBulkResearch.js";
 
 function createMemoryStorage() {
   const values = new Map();
@@ -2791,6 +2792,7 @@ describe("GameplayFacade", () => {
     expect(research.boxes.map((box) => box.id)).toEqual([
       "seedUnlocks",
       "summonSeeds",
+      "gardenBulkActions",
     ]);
     expect(research.boxes[0].researches).toHaveLength(24);
     expect(research.boxes[0].researches[0]).toEqual({
@@ -2856,6 +2858,7 @@ describe("GameplayFacade", () => {
     expect(levelThreeResearch.boxes.map((box) => box.id)).toEqual([
       "seedUnlocks",
       "summonSeeds",
+      "gardenBulkActions",
     ]);
 
     advanceToLevel(gameplayFacade, 4);
@@ -2863,10 +2866,11 @@ describe("GameplayFacade", () => {
     expect(levelFourResearch.boxes.map((box) => box.id)).toEqual([
       "seedUnlocks",
       "summonSeeds",
+      "gardenBulkActions",
       "recipeUnlocks",
     ]);
-    expect(levelFourResearch.boxes[2].researches).toHaveLength(28);
-    expect(levelFourResearch.boxes[2].researches[0]).toEqual({
+    expect(levelFourResearch.boxes[3].researches).toHaveLength(28);
+    expect(levelFourResearch.boxes[3].researches[0]).toEqual({
       id: "unlockRecipe:manaTonic",
       label: "mana tonic",
       value: "Free",
@@ -2880,7 +2884,7 @@ describe("GameplayFacade", () => {
 
     advanceToLevel(gameplayFacade, 5);
     expect(
-      gameplayFacade.getSnapshot().research.boxes[2].researches[0],
+      gameplayFacade.getSnapshot().research.boxes[3].researches[0],
     ).toMatchObject({
       id: "unlockRecipe:manaTonic",
       value: "Free",
@@ -5205,7 +5209,7 @@ describe("GameplayFacade", () => {
     });
   });
 
-  it("starts harvest on every ready garden plot in one action", () => {
+  it("plants and harvests every eligible garden plot after each bulk-action research", () => {
     const { ecsFacade, gameplayFacade } = createGameplay();
 
     gameplayFacade.coinFacade.add(25);
@@ -5214,8 +5218,23 @@ describe("GameplayFacade", () => {
       tileNumber: 2,
     });
     gameplayFacade.itemsFacade.addItem(1, 2);
-    gameplayFacade.plantGardenSeed(1, 1);
-    gameplayFacade.plantGardenSeed(2, 1);
+    expect(gameplayFacade.plantAllGardenSeeds(1)).toMatchObject({
+      ok: false,
+      reason: "research_locked",
+      requiredResearchId: gardenBulkResearchIds.plantAll,
+    });
+
+    gameplayFacade.researchFacade.applyPersistenceSnapshot({
+      completedIds: ["unlockSeed:sageSeed", gardenBulkResearchIds.plantAll],
+    });
+    expect(gameplayFacade.getSnapshot().garden.bulkActions).toEqual({
+      canPlantAll: true,
+      canHarvestAll: false,
+    });
+    expect(gameplayFacade.plantAllGardenSeeds(1)).toMatchObject({
+      ok: true,
+      plantedTileNumbers: [1, 2],
+    });
     ecsFacade.update({ deltaSeconds: 12 });
 
     expect(
@@ -5225,6 +5244,18 @@ describe("GameplayFacade", () => {
         .map((tile) => tile.phase),
     ).toEqual(["ready", "ready"]);
 
+    expect(gameplayFacade.startAllReadyGardenHarvests()).toMatchObject({
+      ok: false,
+      reason: "research_locked",
+      requiredResearchId: gardenBulkResearchIds.harvestAll,
+    });
+    gameplayFacade.researchFacade.applyPersistenceSnapshot({
+      completedIds: [
+        "unlockSeed:sageSeed",
+        gardenBulkResearchIds.plantAll,
+        gardenBulkResearchIds.harvestAll,
+      ],
+    });
     expect(gameplayFacade.startAllReadyGardenHarvests()).toMatchObject({
       ok: true,
       harvestedTileNumbers: [1, 2],

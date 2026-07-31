@@ -10,6 +10,9 @@ import {
   type Rect2D,
   type TextStyle
 } from "../schema.js";
+import {
+  resolveNineSliceMinimumSize,
+} from "../nineSliceCompatibility.js";
 import type { AssetExportRequest, ExportedFigmaPixiUI, ExportOptions } from "./types.js";
 import { buildAssetBaseName } from "./assetNaming.js";
 import {
@@ -526,6 +529,14 @@ function convertNode(node: ExportableSceneNode, context: ConvertContext, nodePat
 
   if (tags.raster) {
     const asset = registerAsset(node, cleanName, bounds, context, tags);
+    const minimumSize = resolveNineSliceMinimumSize(sliceMetadata.insets);
+    if (width < minimumSize.width || height < minimumSize.height) {
+      context.errors.push(
+        `@nine "${cleanName}" requires at least ` +
+        `${minimumSize.width}x${minimumSize.height}, but its rendered size is ` +
+        `${width}x${height}.`
+      );
+    }
     return {
       ...base,
       type: "raster",
@@ -647,7 +658,8 @@ function convertNode(node: ExportableSceneNode, context: ConvertContext, nodePat
       type: "nineSlice",
       assetId: asset.id,
       asset: asset.src,
-      slice: sliceMetadata.insets
+      slice: sliceMetadata.insets,
+      minimumSize
     };
   }
 

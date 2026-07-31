@@ -13,6 +13,10 @@ import type {
   UITextNode
 } from "@figma-pixi/shared";
 import {
+  assertNineSliceFits,
+  resolveNineSliceMinimumSize
+} from "@figma-pixi/shared";
+import {
   Assets,
   Color,
   Container,
@@ -1136,6 +1140,11 @@ export class UIFactory {
   }
 
   private createNineSliceOrPlaceholder(node: UINineSliceNode): Container {
+    assertNineSliceFits(
+      node.name,
+      { width: node.width, height: node.height },
+      node.minimumSize ?? resolveNineSliceMinimumSize(node.slice)
+    );
     const texture = Assets.cache.get(node.assetId);
     if (texture instanceof Texture) {
       const slice = node.textureSlice ?? node.slice;

@@ -80,6 +80,8 @@ const RESEARCH_ART_ASSET_BY_BOX_ID = Object.freeze({
     'source:assets/icons/research/icon-research-cauldron-brewing.png',
   cauldronCapacity:
     'source:assets/icons/research/icon-research-cauldron-capacity.png',
+  gardenBulkActions:
+    'source:assets/icons/research/icon-research-auto-plant.png',
   plotCapacity:
     'source:assets/icons/research/icon-research-plot-capacity.png',
   plotGrowth:

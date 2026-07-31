@@ -567,7 +567,7 @@ class BrewingRecipeCard {
       !unknown &&
       (locked
         ? this.model.canResearch === true
-        : true);
+        : selected || this.model.canSelect !== false);
     this.select.setEnabled(actionEnabled);
     this.select.setSelected(selected);
     this.root.visible = true;
@@ -619,7 +619,10 @@ class BrewingRecipeCard {
   }
 
   selectRecipe() {
-    if (this.model.unlocked !== true) {
+    if (
+      this.model.unlocked !== true ||
+      (this.model.selected !== true && this.model.canSelect === false)
+    ) {
       return false;
     }
     return this.model.onSelect?.(this.model) ??

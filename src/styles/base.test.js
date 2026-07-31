@@ -472,7 +472,7 @@ describe('base styles', () => {
     );
 
     expect(rootRule).toContain(
-      '--style-midnight-panel-frame: url("../../assets/game/source/ui/player-card-panel-9slice.png");',
+      '--style-midnight-panel-frame: url("../../assets/game/source/ui/player-card-panel.9.png");',
     );
     expect(rootRule).toContain(
       '--style-midnight-panel-selected-frame: url("../../assets/game/source/ui/player-card-panel-selected-9slice.png");',
@@ -506,17 +506,17 @@ describe('base styles', () => {
     );
     const assetDir = `${cwd()}/assets/game/source/ui/root-run-cost-button`;
     const light = PNG.sync.read(
-      readFileSync(`${assetDir}/brown-tab-active-9slice.png`),
+      readFileSync(`${assetDir}/brown-tab-active.9.png`),
     );
     const dark = PNG.sync.read(
-      readFileSync(`${assetDir}/brown-tab-inactive-9slice.png`),
+      readFileSync(`${assetDir}/brown-tab-inactive.9.png`),
     );
 
     expect(rootRule).toContain(
-      '--style-tab-frame: url("../../assets/game/source/ui/root-run-cost-button/brown-tab-inactive-9slice.png");',
+      '--style-tab-frame: url("../../assets/game/source/ui/root-run-cost-button/brown-tab-inactive.9.png");',
     );
     expect(rootRule).toContain(
-      '--style-tab-selected-frame: url("../../assets/game/source/ui/root-run-cost-button/brown-tab-active-9slice.png");',
+      '--style-tab-selected-frame: url("../../assets/game/source/ui/root-run-cost-button/brown-tab-active.9.png");',
     );
     expect(rootRule).toContain(
       '--style-tab-frame-slice: 78 43 53 85 fill;',
@@ -585,28 +585,28 @@ describe('base styles', () => {
     const disabledRegularButtonRule = getRuleBody(
       /:root\s+\.style-button:is\(\s*\.style-button--yellow,[\s\S]*?\):is\(\s*\[aria-disabled="true"\],[\s\S]*?\)\s*\{(?<body>[^}]*)\}/,
     );
-    const assetDir = `${cwd()}/assets/game/source/ui/root-run-cost-button`;
+    const assetDir = `${cwd()}/assets/game/source/ui/regular-button`;
     const green = PNG.sync.read(
-      readFileSync(`${assetDir}/green-button-9slice.png`),
+      readFileSync(`${assetDir}/green-button-50.9.png`),
     );
     const yellow = PNG.sync.read(
-      readFileSync(`${assetDir}/yellow-button-9slice.png`),
+      readFileSync(`${assetDir}/yellow-button-50.9.png`),
     );
     const red = PNG.sync.read(
-      readFileSync(`${assetDir}/red-button-9slice.png`),
+      readFileSync(`${assetDir}/red-button-50.9.png`),
     );
 
     expect(rootRule).toContain(
-      '--style-yellow-button-frame: url("../../assets/game/source/ui/root-run-cost-button/yellow-button-9slice.png");',
+      '--style-yellow-button-frame: url("../../assets/game/source/ui/regular-button/yellow-button-50.9.png");',
     );
     expect(rootRule).toContain(
-      '--style-yellow-button-frame-slice: 100 43 68 85 fill;',
+      '--style-yellow-button-frame-slice: 100 52 68 86 fill;',
     );
     expect(rootRule).toContain(
-      '--style-tab-frame: url("../../assets/game/source/ui/root-run-cost-button/brown-tab-inactive-9slice.png");',
+      '--style-tab-frame: url("../../assets/game/source/ui/root-run-cost-button/brown-tab-inactive.9.png");',
     );
     expect(rootRule).toContain(
-      '--style-tab-selected-frame: url("../../assets/game/source/ui/root-run-cost-button/brown-tab-active-9slice.png");',
+      '--style-tab-selected-frame: url("../../assets/game/source/ui/root-run-cost-button/brown-tab-active.9.png");',
     );
     expect(rootRule).toContain('--style-tab-frame-slice: 78 43 53 85 fill;');
     expect(rootRule).toContain(

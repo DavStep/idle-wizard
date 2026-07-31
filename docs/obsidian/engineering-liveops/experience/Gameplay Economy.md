@@ -46,6 +46,7 @@ experience_type: gameplay-economy
 - Workshop discoveries potion rows mirror the Brewing recipe row structure, with inline ingredients and cost/time metadata instead of click-open recipe details; undiscovered row titles say `unknown potion`, and discovered row titles say `<potion>: discovered by <username>`.
 - Wasted potion is not researchable. Its source fallback base sell value is 1 coin; the verified Maincloud item value is 0.8 coin.
 - Research prices come from SpacetimeDB `research_config`/`game_config.research`; seed unlock research gates summon drops, and recipe unlock research gates known potion brewing.
+- Garden bulk controls are regular coin studies: `garden:plantAll` at level 5 for 1,000 coin, followed by `garden:harvestAll` at level 10 for 10,000 coin.
 - Live regular-coin research prices are overridden by `research_config`; prod price changes must update both `game_config.research` and matching `research_config` rows.
 - Research completion time comes from `research_config.durationSeconds`; client `game_config.research.researchDurationsSeconds` is the bootstrap fallback.
 - Research timers are capped at `4 hours`; premium-currency research is intentionally quick.

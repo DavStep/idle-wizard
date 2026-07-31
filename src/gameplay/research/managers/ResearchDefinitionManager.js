@@ -42,6 +42,10 @@ import {
   plotCapacityStartPlotNumber,
 } from '../capacityResearchIds.js';
 import { prestigeUnlockIds, prestigeUnlocks } from '../../prestige/prestigeUnlocks.js';
+import {
+  gardenBulkResearchIds,
+  gardenBulkResearchLevels,
+} from '../../garden/gardenBulkResearch.js';
 
 const summonSeedResearches = [
   {
@@ -242,6 +246,30 @@ export class ResearchDefinitionManager {
         id: 'summonSeeds',
         label: 'summon seeds unlock',
         researches: summonSeedResearches,
+      },
+      {
+        id: 'gardenBulkActions',
+        label: 'garden action research',
+        researches: [
+          {
+            id: gardenBulkResearchIds.plantAll,
+            label: 'plant all',
+            value: 'bulk action',
+            requiredPlayerLevel: gardenBulkResearchLevels.plantAll,
+            requiredResearchIds: [],
+            seriesId: 'gardenBulkActions',
+            description: 'plants the selected seed in every empty plot that has enough seed.',
+          },
+          {
+            id: gardenBulkResearchIds.harvestAll,
+            label: 'harvest all',
+            value: 'bulk action',
+            requiredPlayerLevel: gardenBulkResearchLevels.harvestAll,
+            requiredResearchIds: [gardenBulkResearchIds.plantAll],
+            seriesId: 'gardenBulkActions',
+            description: 'starts harvesting every ready garden plot.',
+          },
+        ],
       },
     ];
 

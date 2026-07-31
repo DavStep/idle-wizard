@@ -1497,6 +1497,16 @@ export class GameplayFacade {
     return result;
   }
 
+  plantAllGardenSeeds(seedTypeId) {
+    const result = this.gardenFacade.plantAllSeeds(seedTypeId);
+    for (const planted of result.results?.filter((entry) => entry.ok) ?? []) {
+      this.handleGardenSeedPlanted(planted);
+      this.gameplayLogFacade.logGardenSeedPlanted(planted);
+    }
+    this.publishAndSaveSnapshot();
+    return result;
+  }
+
   replaceGardenSeed(tileNumber, seedTypeId) {
     const result = this.gardenFacade.replaceSeed(tileNumber, seedTypeId);
     if (result.ok) {

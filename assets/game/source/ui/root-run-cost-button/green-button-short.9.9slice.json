@@ -1,0 +1,38 @@
+{
+  "version": 1,
+  "format": "png",
+  "asset": "green-button-short.9.png",
+  "source": {
+    "path": "assets/game/source/ui/root-run-cost-button/green-button-short.9.png",
+    "width": 281,
+    "height": 169,
+    "mode": "RGBA",
+    "crop": {
+      "x": 0,
+      "y": 0,
+      "width": 281,
+      "height": 169
+    }
+  },
+  "sourceCropSize": {
+    "width": 281,
+    "height": 169
+  },
+  "slice": {
+    "left": 85,
+    "top": 100,
+    "right": 71,
+    "bottom": 68
+  },
+  "mode": "source",
+  "distill": null,
+  "rendering": {
+    "stretch": "edges-and-center",
+    "qaResample": "nearest",
+    "browserPreviewSmoothingDefault": false
+  },
+  "editor": {
+    "tool": "Idle Wizard UI Editor",
+    "sourceAssetPreserved": true
+  }
+}

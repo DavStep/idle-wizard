@@ -401,6 +401,9 @@ export class BrewingRecipeBookManager {
       row.dataset.tutorialId = `brewing:recipe:${recipe.key}`;
     }
     const selected = !display.locked && recipe.key === this.getSelectedRecipeKey?.();
+    const canSelect =
+      selected ||
+      this.hasEnoughMaterials(recipe, ownedIngredientQuantities, brewQuantity);
     row.classList.toggle('is-locked', display.locked);
     row.classList.toggle('is-unknown', display.unknown);
     row.classList.toggle('is-selected', selected);
@@ -413,11 +416,11 @@ export class BrewingRecipeBookManager {
     selectButton.className = 'style-button brewing-page__recipe-select-button';
     selectButton.type = 'button';
     selectButton.textContent = selected ? 'selected' : display.actionLabel;
-    selectButton.disabled = display.locked;
+    selectButton.disabled = display.locked || !canSelect;
     selectButton.setAttribute('aria-pressed', selected ? 'true' : 'false');
     selectButton.setAttribute(
       'aria-label',
-      this.getRecipeActionAriaLabel(recipe, display, selected),
+      this.getRecipeActionAriaLabel(recipe, display, selected, canSelect),
     );
     selectButton.addEventListener('click', () => this.selectRecipe(recipe));
 
@@ -509,13 +512,17 @@ export class BrewingRecipeBookManager {
     );
   }
 
-  getRecipeActionAriaLabel(recipe, display, selected) {
+  getRecipeActionAriaLabel(recipe, display, selected, canSelect = true) {
     if (display.unknown) {
       return 'unknown recipe';
     }
 
     if (display.locked) {
       return `${recipe.label} recipe needs research`;
+    }
+
+    if (!selected && !canSelect) {
+      return `${recipe.label} recipe needs more materials`;
     }
 
     return selected ? `unselect ${recipe.label} recipe` : `select ${recipe.label} recipe`;
@@ -527,8 +534,20 @@ export class BrewingRecipeBookManager {
     }
 
     const selected = recipe?.key && recipe.key === this.getSelectedRecipeKey?.();
-    this.onSelectRecipe?.(selected ? null : recipe);
     const snapshot = this.gameplayFacade.getSnapshot();
+    const canSelect =
+      selected ||
+      this.hasEnoughMaterials(
+        recipe,
+        this.getOwnedIngredientQuantities(snapshot),
+        this.getBrewQuantity(snapshot),
+      );
+
+    if (!canSelect) {
+      return;
+    }
+
+    this.onSelectRecipe?.(selected ? null : recipe);
     this.render(snapshot);
   }
 
@@ -897,7 +916,64 @@ export class BrewingRecipeBookManager {
       quantities.set(herb.itemTypeId, this.normalizeOwnedQuantity(herb.quantity));
     }
 
+    const currentCauldronIndex = this.getSafeCurrentCauldronIndex();
+    const stagedInOtherCauldrons = new Map();
+
+    for (const cauldron of snapshot?.brewing?.cauldrons ?? []) {
+      if (this.normalizeCauldronIndex(cauldron?.cauldronIndex) === currentCauldronIndex) {
+        continue;
+      }
+
+      for (const ingredient of cauldron?.ingredients ?? []) {
+        if (!Number.isInteger(ingredient?.itemTypeId)) {
+          continue;
+        }
+
+        stagedInOtherCauldrons.set(
+          ingredient.itemTypeId,
+          (stagedInOtherCauldrons.get(ingredient.itemTypeId) ?? 0) + 1,
+        );
+      }
+    }
+
+    for (const [itemTypeId, stagedQuantity] of stagedInOtherCauldrons) {
+      quantities.set(
+        itemTypeId,
+        Math.max(0, (quantities.get(itemTypeId) ?? 0) - stagedQuantity),
+      );
+    }
+
     return quantities;
+  }
+
+  hasEnoughMaterials(
+    recipe,
+    ownedIngredientQuantities = new Map(),
+    brewQuantity = 1,
+  ) {
+    const requiredQuantities = new Map();
+    const safeBrewQuantity = Math.max(1, Math.floor(Number(brewQuantity) || 1));
+
+    for (const ingredient of recipe?.ingredients ?? []) {
+      if (!Number.isInteger(ingredient?.itemTypeId)) {
+        return false;
+      }
+
+      const quantity =
+        this.normalizeIngredientQuantity(ingredient) * safeBrewQuantity;
+      requiredQuantities.set(
+        ingredient.itemTypeId,
+        (requiredQuantities.get(ingredient.itemTypeId) ?? 0) + quantity,
+      );
+    }
+
+    for (const [itemTypeId, requiredQuantity] of requiredQuantities) {
+      if ((ownedIngredientQuantities.get(itemTypeId) ?? 0) < requiredQuantity) {
+        return false;
+      }
+    }
+
+    return true;
   }
 
   createIngredientIconLabel(ingredient) {

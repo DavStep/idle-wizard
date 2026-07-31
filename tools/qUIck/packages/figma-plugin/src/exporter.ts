@@ -9,6 +9,7 @@ import type {
   UITextStyle
 } from "@figma-pixi/shared";
 import { parseLayerName } from "@figma-pixi/shared";
+import { resolveNineSliceMinimumSize } from "@figma-pixi/shared";
 
 export interface ExportedAssetFile {
   id: string;
@@ -750,11 +751,20 @@ async function buildNode(
     if (!pluginSlice && !parsed.nineSlice) {
       ctx.report.warnings.push(`@nine node "${node.name}" used safe default slice values.`);
     }
+    const minimumSize = resolveNineSliceMinimumSize(slice);
+    if (base.width < minimumSize.width || base.height < minimumSize.height) {
+      ctx.report.errors.push(
+        `@nine "${node.name}" requires at least ` +
+        `${minimumSize.width}x${minimumSize.height}, but its rendered size is ` +
+        `${base.width}x${base.height}.`
+      );
+    }
     return {
       ...base,
       type: "nineSlice",
       assetId: asset?.id ?? `missing_${cleanId(node.id)}`,
-      slice
+      slice,
+      minimumSize
     };
   }
 

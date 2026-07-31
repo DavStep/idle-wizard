@@ -614,7 +614,7 @@ describe('ResearchBoxListManager', () => {
     expect(costButtonRule).toContain('height: calc(169px / 3);');
     expect(costButtonRule).toContain('font-family: "Lilita One", sans-serif;');
     expect(costSkinRule).toMatch(
-      /background:\s*url\("\.\.\/\.\.\/assets\/game\/source\/ui\/root-run-cost-button\/green-button-short\.png"\)\s+center\s*\/\s*100%\s+100%\s+no-repeat;/,
+      /background:\s*url\("\.\.\/\.\.\/assets\/game\/source\/ui\/root-run-cost-button\/green-button-short\.9\.png"\)\s+center\s*\/\s*100%\s+100%\s+no-repeat;/,
     );
     expect(costContentRule).toContain('display: inline-flex;');
     expect(costContentRule).toContain('align-items: center;');
@@ -757,8 +757,7 @@ describe('ResearchBoxListManager', () => {
     const costButtonAssetDir = `${cwd()}/assets/game/source/ui/root-run-cost-button`;
     for (const [greenName, grayName] of [
       ['green-button.png', 'gray-button.png'],
-      ['green-button-short.png', 'gray-button-short.png'],
-      ['green-button-9slice.png', 'gray-button-9slice.png'],
+      ['green-button-short.9.png', 'gray-button-short.png'],
     ]) {
       const greenSkin = PNG.sync.read(
         readFileSync(`${costButtonAssetDir}/${greenName}`),
@@ -781,6 +780,29 @@ describe('ResearchBoxListManager', () => {
       expect(alphaMatches).toBe(true);
       expect(grayChannelsMatch).toBe(true);
     }
+    const regularButtonAssetDir =
+      `${cwd()}/assets/game/source/ui/regular-button`;
+    const regularGreen = PNG.sync.read(
+      readFileSync(`${regularButtonAssetDir}/green-button-50.9.png`),
+    );
+    const regularGray = PNG.sync.read(
+      readFileSync(`${regularButtonAssetDir}/gray-button-50.9.png`),
+    );
+    expect([regularGray.width, regularGray.height]).toEqual([
+      regularGreen.width,
+      regularGreen.height,
+    ]);
+    for (let index = 0; index < regularGray.data.length; index += 4) {
+      expect(regularGray.data[index + 3]).toBe(
+        regularGreen.data[index + 3],
+      );
+      expect(regularGray.data[index]).toBe(
+        regularGray.data[index + 1],
+      );
+      expect(regularGray.data[index + 1]).toBe(
+        regularGray.data[index + 2],
+      );
+    }
     expect(css).toMatch(
       /\.research-page__row\.is-locked\s*\{[^}]*background-image:\s*url\("\.\.\/\.\.\/assets\/game\/source\/ui\/root-run-research\/research-card-1000x304\.png"\);/,
     );
@@ -797,7 +819,7 @@ describe('ResearchBoxListManager', () => {
       /\.research-page__row\.is-locked\s+\.research-page__research-art-image\s*\{[^}]*filter:\s*none;[^}]*opacity:\s*1;/,
     );
     expect(css).toMatch(
-      /\.style-button\.style-cost-button\.research-page__research-button\.is-unaffordable::after\s*\{[^}]*background-image:\s*url\("\.\.\/\.\.\/assets\/game\/source\/ui\/root-run-cost-button\/green-button-short\.png"\);/,
+      /\.style-button\.style-cost-button\.research-page__research-button\.is-unaffordable::after\s*\{[^}]*background-image:\s*url\("\.\.\/\.\.\/assets\/game\/source\/ui\/root-run-cost-button\/green-button-short\.9\.png"\);/,
     );
     expect(css).toMatch(
       /\.style-button\.style-cost-button\.research-page__research-button\.is-unaffordable\s+\.style-resource-label__amount\s*\{[^}]*color:\s*#c1121f;/,

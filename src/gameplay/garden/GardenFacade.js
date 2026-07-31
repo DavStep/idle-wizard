@@ -1,14 +1,12 @@
 import { GardenBalanceManager } from "./managers/GardenBalanceManager.js";
+import { GardenBulkActionManager } from "./managers/GardenBulkActionManager.js";
 import { GardenCancellationManager } from "./managers/GardenCancellationManager.js";
 import { GardenPlantingManager } from "./managers/GardenPlantingManager.js";
 import { GardenProcessManager } from "./managers/GardenProcessManager.js";
 import { GardenSnapshotManager } from "./managers/GardenSnapshotManager.js";
 import { GardenTileEntityManager } from "./managers/GardenTileEntityManager.js";
 import { GardenTilePurchaseManager } from "./managers/GardenTilePurchaseManager.js";
-import {
-  gardenTilePhaseNames,
-  gardenTilePhases,
-} from "./components/GardenComponents.js";
+import { gardenTilePhases } from "./components/GardenComponents.js";
 import { parseGameConfig } from "../config/gameConfigSnapshot.js";
 
 export class GardenFacade {
@@ -41,6 +39,11 @@ export class GardenFacade {
       gardenBalanceManager: this.gardenBalanceManager,
       gardenTileEntityManager: this.gardenTileEntityManager,
       itemsFacade,
+      researchFacade,
+    });
+    this.gardenBulkActionManager = new GardenBulkActionManager({
+      gardenPlantingManager: this.gardenPlantingManager,
+      gardenTileEntityManager: this.gardenTileEntityManager,
       researchFacade,
     });
     this.gardenCancellationManager = new GardenCancellationManager({
@@ -101,6 +104,10 @@ export class GardenFacade {
     return this.gardenPlantingManager.plantSelectedSeed(tileNumber);
   }
 
+  plantAllSeeds(seedTypeId) {
+    return this.gardenBulkActionManager.plantAll(seedTypeId);
+  }
+
   replaceSeed(tileNumber, seedTypeId) {
     return this.gardenPlantingManager.replaceSeed(tileNumber, seedTypeId);
   }
@@ -110,26 +117,7 @@ export class GardenFacade {
   }
 
   startAllReadyHarvests() {
-    const readyTiles = this.gardenSnapshotManager
-      .getTileSnapshots()
-      .filter(
-        (tile) => tile.phase === gardenTilePhaseNames[gardenTilePhases.ready],
-      );
-    const results = readyTiles.map((tile) =>
-      this.gardenPlantingManager.startHarvest(tile.tileNumber),
-    );
-    const harvestedTileNumbers = results
-      .filter((result) => result.ok)
-      .map((result) => result.tileNumber);
-
-    return {
-      ok: harvestedTileNumbers.length > 0,
-      harvestedTileNumbers,
-      results,
-      ...(harvestedTileNumbers.length === 0
-        ? { reason: "no_ready_tiles" }
-        : {}),
-    };
+    return this.gardenBulkActionManager.harvestAll();
   }
 
   cancelProgress(tileNumber) {

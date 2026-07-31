@@ -4,8 +4,9 @@
   "private": true,
   "type": "module",
   "scripts": {
-    "assets:atlas": "node scripts/build-player-avatar-assets.mjs && node scripts/generate-root-run-research-skins.mjs && node scripts/build-asset-atlas.js && node scripts/build-quick-ui-assets.mjs",
+    "assets:atlas": "node scripts/build-player-avatar-assets.mjs && node scripts/generate-regular-button-assets.mjs && node scripts/generate-root-run-research-skins.mjs && node scripts/build-asset-atlas.js && node scripts/build-quick-ui-assets.mjs",
     "assets:avatars": "node scripts/build-player-avatar-assets.mjs",
+    "assets:regular-buttons": "node scripts/generate-regular-button-assets.mjs",
     "assets:research-skins": "node scripts/generate-root-run-research-skins.mjs",
     "assets:quick-ui": "node scripts/build-quick-ui-assets.mjs",
     "import:quick-ui": "node scripts/import-quick-ui-export.mjs",

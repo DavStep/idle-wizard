@@ -78,20 +78,20 @@
   --style-border: var(--style-border-width) solid var(--style-stroke);
   --style-separator-border: var(--style-border);
   --style-tab-border: var(--style-border-strong);
-  --style-yellow-button-frame: url("../../assets/game/source/ui/root-run-cost-button/yellow-button-9slice.png");
-  --style-yellow-button-frame-slice: 100 43 68 85 fill;
+  --style-yellow-button-frame: url("../../assets/game/source/ui/regular-button/yellow-button-50.9.png");
+  --style-yellow-button-frame-slice: 100 52 68 86 fill;
   --style-yellow-button-frame-width: 17px 7px 12px 20px;
   --style-yellow-button-text: #fff;
   --style-yellow-button-text-stroke: var(--style-text-stroke-color);
-  --style-green-button-frame: url("../../assets/game/source/ui/root-run-cost-button/green-button-9slice.png");
-  --style-red-button-frame: url("../../assets/game/source/ui/root-run-cost-button/red-button-9slice.png");
-  --style-green-button-disabled-frame: url("../../assets/game/source/ui/root-run-cost-button/gray-button-9slice.png");
+  --style-green-button-frame: url("../../assets/game/source/ui/regular-button/green-button-50.9.png");
+  --style-red-button-frame: url("../../assets/game/source/ui/regular-button/red-button-50.9.png");
+  --style-green-button-disabled-frame: url("../../assets/game/source/ui/regular-button/gray-button-50.9.png");
   --style-green-button-frame-slice: var(--style-yellow-button-frame-slice);
   --style-green-button-frame-width: var(--style-yellow-button-frame-width);
-  --style-brown-button-dark-frame: url("../../assets/game/source/ui/root-run-cost-button/brown-button-dark-9slice.png");
-  --style-brown-button-light-frame: url("../../assets/game/source/ui/root-run-cost-button/brown-button-light-9slice.png");
-  --style-tab-frame: url("../../assets/game/source/ui/root-run-cost-button/brown-tab-inactive-9slice.png");
-  --style-tab-selected-frame: url("../../assets/game/source/ui/root-run-cost-button/brown-tab-active-9slice.png");
+  --style-brown-button-dark-frame: url("../../assets/game/source/ui/root-run-cost-button/brown-button-dark.9.png");
+  --style-brown-button-light-frame: url("../../assets/game/source/ui/root-run-cost-button/brown-button-light.9.png");
+  --style-tab-frame: url("../../assets/game/source/ui/root-run-cost-button/brown-tab-inactive.9.png");
+  --style-tab-selected-frame: url("../../assets/game/source/ui/root-run-cost-button/brown-tab-active.9.png");
   --style-tab-frame-slice: 78 43 53 85 fill;
   --style-tab-frame-width: 13px 7px 9px 20px;
   --style-border-strong: var(--style-border-strong-width) solid
@@ -459,8 +459,8 @@
   --guild-page-quest-paper-frame-slice: 41 42 42 41 fill;
   --guild-page-quest-list-row-frame: url("../../assets/game/source/ui/guild-quest/list-row-9slice.png");
   --guild-page-quest-list-row-frame-slice: 24 32 23 31 fill;
-  --guild-page-quest-button-green-frame: url("../../assets/game/source/ui/guild-quest/button-green-9slice.png");
-  --guild-page-quest-button-brown-frame: url("../../assets/game/source/ui/guild-quest/button-brown-9slice.png");
+  --guild-page-quest-button-green-frame: url("../../assets/game/source/ui/guild-quest/button-green.9.png");
+  --guild-page-quest-button-brown-frame: url("../../assets/game/source/ui/guild-quest/button-brown.9.png");
   --guild-page-quest-button-frame-slice: 27 43 28 43 fill;
   --guild-page-quest-close-frame: url("../../assets/game/source/ui/guild-quest/close-panel-9slice.png");
   --guild-page-quest-close-frame-slice: 28 28 27 27 fill;
@@ -761,10 +761,10 @@
   --style-room-paper-texture-size: auto;
   --style-inner-section-frame: url("../../assets/game/source/ui/inner-section-panel-midnight-9slice.png");
   --style-inner-section-fill: #242938;
-  --style-midnight-panel-frame: url("../../assets/game/source/ui/player-card-panel-9slice.png");
+  --style-midnight-panel-frame: url("../../assets/game/source/ui/player-card-panel.9.png");
   --style-midnight-panel-selected-frame: url("../../assets/game/source/ui/player-card-panel-selected-9slice.png");
-  --style-midnight-button-frame: url("../../assets/game/source/ui/player-card-button-brown-fill-9slice.png");
-  --style-midnight-button-disabled-frame: url("../../assets/game/source/ui/player-card-button-brown-dark-fill-9slice.png");
+  --style-midnight-button-frame: url("../../assets/game/source/ui/player-card-button-brown-fill.9.png");
+  --style-midnight-button-disabled-frame: url("../../assets/game/source/ui/player-card-button-brown-dark-fill.9.png");
   --style-midnight-frame-slice: 31 29 31 29 fill;
   --style-midnight-frame-outline-slice: 31 29 31 29;
   --style-midnight-frame-width: 8px 10px;
@@ -793,10 +793,10 @@
   --style-room-paper-texture-size: 96px 96px;
   --style-inner-section-frame: url("../../assets/game/source/ui/inner-section-panel-day-9slice.png");
   --style-inner-section-fill: #765238;
-  --style-midnight-panel-frame: url("../../assets/game/source/ui/player-card-panel-day-9slice.png");
+  --style-midnight-panel-frame: url("../../assets/game/source/ui/player-card-panel-day.9.png");
   --style-midnight-panel-selected-frame: url("../../assets/game/source/ui/player-card-panel-selected-day-9slice.png");
-  --style-midnight-button-frame: url("../../assets/game/source/ui/player-card-button-brown-fill-9slice.png");
-  --style-midnight-button-disabled-frame: url("../../assets/game/source/ui/player-card-button-brown-dark-fill-9slice.png");
+  --style-midnight-button-frame: url("../../assets/game/source/ui/player-card-button-brown-fill.9.png");
+  --style-midnight-button-disabled-frame: url("../../assets/game/source/ui/player-card-button-brown-dark-fill.9.png");
   --style-midnight-frame-slice: 31 29 31 29 fill;
   --style-midnight-frame-outline-slice: 31 29 31 29;
   --style-midnight-frame-width: 8px 10px;
@@ -998,7 +998,7 @@
   z-index: 0;
   pointer-events: none;
   content: "";
-  background: url("../../assets/game/source/ui/root-run-cost-button/green-button-short.png")
+  background: url("../../assets/game/source/ui/root-run-cost-button/green-button-short.9.png")
     center / 100% 100% no-repeat;
 }
 
@@ -10933,7 +10933,7 @@ div.workshop-page__discovery-row {
 }
 
 .style-button.style-cost-button.research-page__research-button.is-unaffordable::after {
-  background-image: url("../../assets/game/source/ui/root-run-cost-button/green-button-short.png");
+  background-image: url("../../assets/game/source/ui/root-run-cost-button/green-button-short.9.png");
 }
 
 .style-button.style-cost-button.research-page__research-button.is-unaffordable

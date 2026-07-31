@@ -214,8 +214,44 @@ describe("GardenPixiPage", () => {
     harness.dispose();
   });
 
+  it("reveals researched bulk actions while Seeds keeps the remaining width", () => {
+    const harness = createHarness();
+    const locked = createGardenViewModel();
+    locked.garden.actionBar.canPlantAll = false;
+    locked.garden.actionBar.canHarvestAll = false;
+    harness.page.bind(locked);
+
+    expect(harness.page.actionBar.plantButton.visible).toBe(false);
+    expect(harness.page.actionBar.harvestButton.visible).toBe(false);
+    expect(harness.page.actionBar.seedsButton.hitArea.width).toBeCloseTo(
+      harness.page.actionBar.width,
+    );
+
+    locked.garden.actionBar.canPlantAll = true;
+    harness.page.bind(locked);
+    expect(harness.page.actionBar.plantButton.visible).toBe(true);
+    expect(harness.page.actionBar.harvestButton.visible).toBe(false);
+    expect(harness.page.actionBar.plantButton.hitArea.width).toBeCloseTo(
+      harness.page.actionBar.seedsButton.hitArea.width,
+    );
+
+    locked.garden.actionBar.canHarvestAll = true;
+    harness.page.bind(locked);
+    expect(harness.page.actionBar.harvestButton.visible).toBe(true);
+    expect(harness.page.actionBar.plantButton.hitArea.width).toBeCloseTo(
+      harness.page.actionBar.harvestButton.hitArea.width,
+    );
+    expect(harness.page.actionBar.harvestButton.hitArea.width).toBeCloseTo(
+      harness.page.actionBar.seedsButton.hitArea.width,
+    );
+
+    harness.page.destroy();
+    harness.dispose();
+  });
+
   it("routes plot, toolbar, modal, and tutorial targets without Pixi listeners", () => {
     const activatePlot = vi.fn(() => true);
+    const plantAll = vi.fn(() => true);
     const harvestAll = vi.fn(() => true);
     const openSeedPicker = vi.fn(() => true);
     const selectSeed = vi.fn(() => true);
@@ -223,6 +259,7 @@ describe("GardenPixiPage", () => {
     harness.page.bind(
       createGardenViewModel({
         activatePlot,
+        plantAll,
         harvestAll,
         openSeedPicker,
       }),
@@ -242,6 +279,8 @@ describe("GardenPixiPage", () => {
       harness.page.plots.get("plot-1").root.listenerCount("pointertap"),
     ).toBe(0);
 
+    expect(harness.semanticTargets.activate("garden.plantAll")).toBe(true);
+    expect(plantAll).toHaveBeenCalledTimes(1);
     expect(harness.semanticTargets.activate("garden.harvestAll")).toBe(true);
     expect(harvestAll).toHaveBeenCalledTimes(1);
     expect(harness.semanticTargets.activate("garden.openSeeds")).toBe(true);
@@ -394,8 +433,12 @@ describe("GardenPixiPage", () => {
       x: 16,
       y: 2170 / 3 - GARDEN_PIXI_GEOMETRY.actionBarBottom,
     });
-    expect(harness.page.actionBar.harvestButton.position).toMatchObject({
+    expect(harness.page.actionBar.plantButton.position).toMatchObject({
       x: 0,
+      y: -GARDEN_PIXI_GEOMETRY.actionButtonHeight,
+    });
+    expect(harness.page.actionBar.harvestButton.position).toMatchObject({
+      x: 112,
       y: -GARDEN_PIXI_GEOMETRY.actionButtonHeight,
     });
     expect(harness.page.actionBar.seedsButton.position.y).toBe(
@@ -1011,6 +1054,7 @@ function createGardenViewModel({
   actionText = "growing",
   seedQuantity = 3,
   activatePlot = vi.fn(() => true),
+  plantAll = vi.fn(() => true),
   harvestAll = vi.fn(() => true),
   openSeedPicker = vi.fn(() => true),
 } = {}) {
@@ -1035,6 +1079,8 @@ function createGardenViewModel({
         },
       ],
       actionBar: {
+        canPlantAll: true,
+        canHarvestAll: true,
         selectedSeed: {
           id: "sage-seed",
           itemTypeId: 1,
@@ -1053,6 +1099,7 @@ function createGardenViewModel({
     },
     actions: {
       activatePlot,
+      plantAll,
       harvestAll,
       openSeedPicker,
     },

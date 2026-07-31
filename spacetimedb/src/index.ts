@@ -4291,6 +4291,8 @@ const researchDefaultCostGoldById: Record<string, bigint> = {
   'summonSeedsX3': 10_000n,
   'summonSeedsX4': 100_000n,
   'summonSeedsX5': 1_000_000n,
+  'garden:plantAll': 1_000n,
+  'garden:harvestAll': 10_000n,
   'unlockRecipe:manaTonic': 0n,
   'unlockRecipe:minorHealingPotion': 400n,
   'unlockRecipe:nettleVigor': 700n,
@@ -5041,6 +5043,10 @@ const summonSeedResearchCatalog = [
   { id: 'summonSeedsX4', label: 'x4 summon' },
   { id: 'summonSeedsX5', label: 'x5 summon' },
 ];
+const gardenBulkResearchCatalog = [
+  { id: 'garden:plantAll', label: 'plant all' },
+  { id: 'garden:harvestAll', label: 'harvest all' },
+];
 
 const automationGardenTileNumbers = Array.from(
   { length: MAX_AUTOMATION_GARDEN_TILES },
@@ -5169,6 +5175,12 @@ const researchCatalog = [
     researchId: research.id,
     label: research.label,
     groupId: 'summonSeeds',
+    defaultCostGold: researchDefaultCostGoldById[research.id] ?? 0n,
+  })),
+  ...gardenBulkResearchCatalog.map((research) => ({
+    researchId: research.id,
+    label: research.label,
+    groupId: 'gardenBulkActions',
     defaultCostGold: researchDefaultCostGoldById[research.id] ?? 0n,
   })),
   ...knownPotionResearchCatalog.map((potion) => {
@@ -10935,6 +10947,10 @@ function normalizeSaveInProgressResearches(
 }
 
 function getSaveRequiredResearchIds(researchId: string): string[] {
+  if (researchId === 'garden:harvestAll') {
+    return ['garden:plantAll'];
+  }
+
   if (researchId.startsWith('unlockSeed:')) {
     const seedKeys = herbCatalog.map((herb) => `${herb.key}Seed`);
     const seedKey = researchId.slice('unlockSeed:'.length);

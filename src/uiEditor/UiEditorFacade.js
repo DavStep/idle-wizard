@@ -29,6 +29,8 @@ export class UiEditorFacade {
     const refs = this.viewManager.mount();
 
     this.hierarchyManager = new UiEditorHierarchyManager({
+      onSelectComponent: (component) =>
+        this.usageManager?.showComponent(component),
       panel: refs.panels.left,
       scene: refs.preview,
     });
@@ -65,12 +67,27 @@ export class UiEditorFacade {
       return false;
     }
 
+    const currentComponent = preview.firstElementChild;
+
+    if (
+      typeof currentComponent?.uiEditorAdoptPreview === 'function' &&
+      currentComponent.uiEditorAdoptPreview(component)
+    ) {
+      this.syncPreviewPanels(currentComponent);
+      this.hierarchyManager?.clearSelection();
+      this.hierarchyManager?.refresh();
+      this.usageManager?.clear();
+      return true;
+    }
+
     this.previewCleanup?.();
     this.previewCleanup =
       typeof component.uiEditorDispose === 'function'
         ? component.uiEditorDispose
         : null;
     preview.replaceChildren(component);
+    this.syncPreviewPanels(component);
+    this.hierarchyManager?.clearSelection();
     this.hierarchyManager?.refresh();
     this.usageManager?.clear();
     return true;
@@ -81,13 +98,35 @@ export class UiEditorFacade {
       return false;
     }
 
-    const opened = this.openPreview(entry.createPreview());
+    const opened = this.openPreview(
+      entry.createPreview({
+        assetEntries: this.libraryEntries.filter(
+          ({ kind }) => kind === 'asset',
+        ),
+        onAssetDeleted: (deletion) =>
+          this.handleAssetDeleted(deletion),
+      }),
+    );
 
     if (opened) {
       this.usageManager?.showEntry(entry);
     }
 
     return opened;
+  }
+
+  handleAssetDeleted({ entry, replacementEntry }) {
+    const nextEntries = this.libraryEntries.filter(
+      ({ id }) => id !== entry?.id,
+    );
+
+    this.clearPreview();
+    this.setLibraryEntries(nextEntries);
+
+    if (replacementEntry && nextEntries.includes(replacementEntry)) {
+      this.bottomPanelManager?.openEntryFolder(replacementEntry.id);
+      this.bottomPanelManager?.selectEntry(replacementEntry.id);
+    }
   }
 
   setLibraryEntries(entries) {
@@ -109,9 +148,16 @@ export class UiEditorFacade {
     this.previewCleanup?.();
     this.previewCleanup = null;
     this.viewManager.refs?.preview.replaceChildren();
+    this.syncPreviewPanels(null);
     this.bottomPanelManager?.clearSelection();
     this.hierarchyManager?.refresh();
     this.usageManager?.clear();
+  }
+
+  syncPreviewPanels(component) {
+    const hierarchyVisible =
+      component?.dataset?.uiEditorHierarchy !== 'hidden';
+    this.layoutManager?.setPanelVisible('left', hierarchyVisible);
   }
 
   createWorkspaceState() {

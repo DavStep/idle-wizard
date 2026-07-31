@@ -318,7 +318,7 @@ describe('PixiCostButton', () => {
   it('keeps the green silhouette while using the exact info icon blues', () => {
     const assetDir = `${cwd()}/assets/game/source/ui`;
     const green = PNG.sync.read(
-      readFileSync(`${assetDir}/root-run-cost-button/green-button-short.png`),
+      readFileSync(`${assetDir}/root-run-cost-button/green-button-short.9.png`),
     );
     const blue = PNG.sync.read(
       readFileSync(`${assetDir}/root-run-cost-button/blue-button-short.png`),

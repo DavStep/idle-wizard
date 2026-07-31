@@ -67,6 +67,7 @@
       const params = new URLSearchParams(window.location.search);
       const overflow = params.get('overflow') === '1';
       const growing = params.get('growing') === '1';
+      const bulkActions = params.get('bulk') || 'all';
       const progressBar = params.get('progress') || 'regular';
       const emptyPlotCount = growing ? 4 : overflow ? 11 : 5;
       const plots = Array.from(
@@ -123,6 +124,7 @@
           emptyPlots: growing ? '0' : String(emptyPlotCount),
           growingPlots: growing ? String(emptyPlotCount) : '0',
           progressBar,
+          bulkActions,
         },
       );
 
@@ -138,7 +140,20 @@
           now: 0,
           plots,
           actionBar: {
-            selectedSeed: null,
+            canPlantAll:
+              bulkActions === 'plant' || bulkActions === 'all',
+            canHarvestAll: bulkActions === 'all',
+            selectedSeed: {
+              id: 'nettle-seed',
+              itemTypeId: 3,
+              key: 'nettleSeed',
+              label: 'nettle',
+              quantity: 75,
+              icon: {
+                kind: 'seed',
+                key: 'nettleSeed',
+              },
+            },
             readyHarvestCount: 0,
             hasSeedChoices: true,
           },
@@ -167,6 +182,22 @@
               reason: 'not_enough_seed',
               tileNumber: plot.tileNumber,
             };
+          },
+          plantAll: () => {
+            document.querySelector('#garden-plots-recipe-state').dataset.feedback =
+              'plant all';
+            return { ok: true };
+          },
+          harvestAll: () => {
+            transientEffects.emitReward({ message: 'Nothing to harvest' });
+            document.querySelector('#garden-plots-recipe-state').dataset.feedback =
+              'nothing to harvest';
+            return { ok: false, reason: 'no_ready_tiles' };
+          },
+          openSeedPicker: () => {
+            document.querySelector('#garden-plots-recipe-state').dataset.feedback =
+              'open seeds';
+            return { ok: true };
           },
         },
       });

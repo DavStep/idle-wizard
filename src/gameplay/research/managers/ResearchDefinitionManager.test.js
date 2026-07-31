@@ -11,6 +11,10 @@ import { ResearchBalanceManager } from './ResearchBalanceManager.js';
 import { ResearchDefinitionManager } from './ResearchDefinitionManager.js';
 import { researchCostResearchIds } from '../researchCostResearch.js';
 import { researchTimeResearchIds } from '../researchTimeResearch.js';
+import {
+  gardenBulkResearchIds,
+  gardenBulkResearchLevels,
+} from '../../garden/gardenBulkResearch.js';
 
 function createManager() {
   let maxGardenTiles = 10;
@@ -131,6 +135,26 @@ describe('ResearchDefinitionManager', () => {
     expect(manager.getResearch('unlockRecipe:manaTonic')).toMatchObject({
       id: 'unlockRecipe:manaTonic',
       requiredPlayerLevel: 4,
+    });
+  });
+
+  it('unlocks Garden bulk-action research at levels 5 and 10', () => {
+    const { manager, setCurrentLevel } = createManager();
+
+    setCurrentLevel(gardenBulkResearchLevels.plantAll - 1);
+    expect(
+      manager.getMissingRequiredPlayerLevel(gardenBulkResearchIds.plantAll),
+    ).toBe(gardenBulkResearchLevels.plantAll);
+
+    setCurrentLevel(gardenBulkResearchLevels.plantAll);
+    expect(
+      manager.getMissingRequiredPlayerLevel(gardenBulkResearchIds.plantAll),
+    ).toBeNull();
+    expect(
+      manager.getResearch(gardenBulkResearchIds.harvestAll),
+    ).toMatchObject({
+      requiredPlayerLevel: gardenBulkResearchLevels.harvestAll,
+      requiredResearchIds: [gardenBulkResearchIds.plantAll],
     });
   });
 

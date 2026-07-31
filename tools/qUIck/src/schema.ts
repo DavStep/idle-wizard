@@ -201,6 +201,7 @@ export interface NineSliceNode extends BaseNode {
   assetId: string;
   asset: string;
   slice: NineSliceInsets;
+  minimumSize?: Size2D;
   textureSlice?: NineSliceInsets;
   assetOptimization?: NineSliceAssetOptimization;
 }

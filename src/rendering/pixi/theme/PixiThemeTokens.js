@@ -120,22 +120,24 @@ export const PIXI_PROGRESS_VISUALS = Object.freeze({
 });
 
 export const PIXI_ROOT_RUN_ASSETS = Object.freeze({
-  buttonYellow: 'source:assets/ui/root-run-cost-button/yellow-button-9slice.png',
+  buttonYellow: 'source:assets/ui/regular-button/yellow-button-50.9.png',
   buttonYellowShort: 'source:assets/ui/root-run-cost-button/yellow-button-short.png',
-  buttonGreen: 'source:assets/ui/root-run-cost-button/green-button-short.png',
+  buttonGreen: 'source:assets/ui/root-run-cost-button/green-button-short.9.png',
   buttonGray: 'source:assets/ui/root-run-cost-button/gray-button-short.png',
   buttonGreenStacked: 'source:assets/ui/root-run-cost-button/green-button.png',
   buttonBlueShort: 'source:assets/ui/root-run-cost-button/blue-button-short.png',
   buttonPurpleShort: 'source:assets/ui/root-run-cost-button/purple-button-short.png',
   buttonGrayStacked: 'source:assets/ui/root-run-cost-button/gray-button.png',
-  buttonGreenNineSlice: 'source:assets/ui/root-run-cost-button/green-button-9slice.png',
-  buttonRedNineSlice: 'source:assets/ui/root-run-cost-button/red-button-9slice.png',
-  buttonGrayNineSlice: 'source:assets/ui/root-run-cost-button/gray-button-9slice.png',
-  buttonBrownDark: 'source:assets/ui/root-run-cost-button/brown-button-dark-9slice.png',
-  buttonBrownLight: 'source:assets/ui/root-run-cost-button/brown-button-light-9slice.png',
-  buttonTabActive: 'source:assets/ui/root-run-cost-button/brown-tab-active-9slice.png',
-  buttonTabInactive: 'source:assets/ui/root-run-cost-button/brown-tab-inactive-9slice.png',
-  buttonTabDisabled: 'source:assets/ui/root-run-cost-button/gray-tab-disabled-9slice.png',
+  buttonGreenNineSlice:
+    'source:assets/ui/regular-button/green-button-50.9.png',
+  buttonRedNineSlice: 'source:assets/ui/regular-button/red-button-50.9.png',
+  buttonGrayNineSlice:
+    'source:assets/ui/regular-button/gray-button-50.9.png',
+  buttonBrownDark: 'source:assets/ui/root-run-cost-button/brown-button-dark.9.png',
+  buttonBrownLight: 'source:assets/ui/root-run-cost-button/brown-button-light.9.png',
+  buttonTabActive: 'source:assets/ui/root-run-cost-button/brown-tab-active.9.png',
+  buttonTabInactive: 'source:assets/ui/root-run-cost-button/brown-tab-inactive.9.png',
+  buttonTabDisabled: 'source:assets/ui/root-run-cost-button/gray-tab-disabled.9.png',
   textFieldBrownInset: 'source:assets/ui/root-run-world-chat/world-chat-text-field-9slice.png',
   coin: 'source:assets/ui/root-run-cost-button/coin.png',
   settingsKnob: 'source:assets/ui/root-run-settings/settings-knob.png',
@@ -151,15 +153,15 @@ export const PIXI_ROOT_RUN_ASSETS = Object.freeze({
   accountTitle: 'source:assets/ui/root-run-account/account-title.png',
   accountUsername: 'source:assets/ui/root-run-account/username-bar.png',
   accountEdit: 'source:assets/ui/root-run-account/edit-pencil.png',
-  accountTabActive: 'source:assets/ui/root-run-account/tab-active-9slice.png',
-  accountTabInactive: 'source:assets/ui/root-run-account/tab-inactive-9slice.png',
-  accountSave: 'source:assets/ui/root-run-account/save-button-9slice.png',
+  accountTabActive: 'source:assets/ui/root-run-account/tab-active.9.png',
+  accountTabInactive: 'source:assets/ui/root-run-account/tab-inactive.9.png',
+  accountSave: 'source:assets/ui/root-run-account/save-button.9.png',
   accountChoice: 'source:assets/ui/root-run-account/choice-tile.png',
   accountSelected: 'source:assets/ui/root-run-account/choice-selected.png',
-  topHudAvatarFrame: 'source:assets/ui/root-run-top-hud/avatar-frame-9slice.png',
+  topHudAvatarFrame: 'source:assets/ui/root-run-top-hud/avatar-frame.9.png',
   topHudAvatarHead: 'source:assets/ui/root-run-top-hud/avatar-head-bg.png',
   topHudCurrency: 'source:assets/ui/root-run-top-hud/currency-bg-9slice.png',
-  topHudSettings: 'source:assets/ui/root-run-top-hud/settings-bg-9slice.png',
+  topHudSettings: 'source:assets/ui/root-run-top-hud/settings-bg.9.png',
   topHudLevelPanel: 'source:assets/ui/root-run-top-hud/level-progress-panel.png',
   topHudLevelTrack: 'source:assets/ui/root-run-top-hud/level-progress-track-9slice.png',
   topHudLevelFill:
@@ -351,8 +353,16 @@ export const PIXI_ROOT_RUN_GEOMETRY = Object.freeze({
     }),
   }),
   button: Object.freeze({
+    sourceInsets: Object.freeze({ top: 100, right: 52, bottom: 68, left: 86 }),
+    borderInsets: Object.freeze({ top: 17, right: 7, bottom: 12, left: 20 }),
+  }),
+  legacyButton: Object.freeze({
     sourceInsets: Object.freeze({ top: 100, right: 43, bottom: 68, left: 85 }),
     borderInsets: Object.freeze({ top: 17, right: 7, bottom: 12, left: 20 }),
+  }),
+  compactButton: Object.freeze({
+    sourceInsets: Object.freeze({ top: 100, right: 52, bottom: 68, left: 86 }),
+    borderInsets: Object.freeze({ top: 16, right: 7, bottom: 11, left: 20 }),
   }),
   tabButton: Object.freeze({
     sourceInsets: Object.freeze({ top: 78, right: 43, bottom: 53, left: 85 }),
@@ -502,9 +512,9 @@ const THEME_TOKENS = Object.freeze({
     frames: Object.freeze({
       panel: 'source:assets/ui/inner-section-panel-midnight-9slice.png',
       panelSelected: 'public:ui/player-card-panel-selected-9slice.png',
-      control: 'public:ui/player-card-panel-9slice.png',
-      button: 'public:ui/player-card-button-brown-fill-9slice.png',
-      buttonDisabled: 'public:ui/player-card-button-brown-dark-fill-9slice.png',
+      control: 'public:ui/player-card-panel.9.png',
+      button: 'public:ui/player-card-button-brown-fill.9.png',
+      buttonDisabled: 'public:ui/player-card-button-brown-dark-fill.9.png',
       panelSourceInsets: Object.freeze({
         top: 91,
         right: 73,
@@ -573,10 +583,10 @@ const THEME_TOKENS = Object.freeze({
       panel: 'source:assets/ui/inner-section-panel-day-9slice.png',
       panelSelected:
         'source:assets/ui/player-card-panel-selected-day-9slice.png',
-      control: 'source:assets/ui/player-card-panel-day-9slice.png',
-      button: 'public:ui/player-card-button-brown-fill-9slice.png',
+      control: 'source:assets/ui/player-card-panel-day.9.png',
+      button: 'public:ui/player-card-button-brown-fill.9.png',
       buttonDisabled:
-        'public:ui/player-card-button-brown-dark-fill-9slice.png',
+        'public:ui/player-card-button-brown-dark-fill.9.png',
       panelSourceInsets: Object.freeze({
         top: 91,
         right: 73,

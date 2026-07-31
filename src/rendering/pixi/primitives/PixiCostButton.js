@@ -112,7 +112,9 @@ export class PixiCostButton extends PixiButton {
     this.compactBackground = new PixiNineSliceFrame({
       texture: Texture.EMPTY,
       sourceInsets: PIXI_ROOT_RUN_GEOMETRY.button.sourceInsets,
-      borderInsets: PIXI_ROOT_RUN_GEOMETRY.button.borderInsets,
+      borderInsets: this.compact
+        ? PIXI_ROOT_RUN_GEOMETRY.compactButton.borderInsets
+        : PIXI_ROOT_RUN_GEOMETRY.button.borderInsets,
       width,
       height,
       label: `${label}:compactBackground`,
@@ -273,22 +275,21 @@ export class PixiCostButton extends PixiButton {
     const compactDisabled = this.compact && !this.modelEnabled;
     const shortToneDisabled = isShortStackedTone(this.tone) && !this.modelEnabled;
     const skinDisabled = locked || compactDisabled || shortToneDisabled;
-    const backgroundTexture = this.resolveTexture(
-      this.resolveBackgroundAsset({ skinDisabled }),
-    );
+    const backgroundAssetId = this.resolveBackgroundAsset({ skinDisabled });
+    const backgroundTexture = this.resolveTexture(backgroundAssetId);
     this.background.texture = backgroundTexture;
     this.background.visible = !this.compact;
     this.background.renderable = this.background.visible;
-    this.compactBackground
-      .setTexture(
-        backgroundTexture,
-        PIXI_ROOT_RUN_GEOMETRY.button.sourceInsets,
-      )
-      .setSize(
-        this.buttonWidth,
-        this.buttonHeight,
-        PIXI_ROOT_RUN_GEOMETRY.button.borderInsets,
-      );
+    this.compactBackground.setSkin({
+      assetId: backgroundAssetId,
+      borderInsets: this.compact
+        ? PIXI_ROOT_RUN_GEOMETRY.compactButton.borderInsets
+        : PIXI_ROOT_RUN_GEOMETRY.button.borderInsets,
+      height: this.buttonHeight,
+      sourceInsets: PIXI_ROOT_RUN_GEOMETRY.button.sourceInsets,
+      texture: backgroundTexture,
+      width: this.buttonWidth,
+    });
     this.compactBackground.visible = this.compact;
     this.compactBackground.renderable =
       this.compactBackground.visible;
@@ -392,7 +393,9 @@ export class PixiCostButton extends PixiButton {
     this.compactBackground.setSize(
       this.buttonWidth,
       this.buttonHeight,
-      PIXI_ROOT_RUN_GEOMETRY.button.borderInsets,
+      this.compact
+        ? PIXI_ROOT_RUN_GEOMETRY.compactButton.borderInsets
+        : PIXI_ROOT_RUN_GEOMETRY.button.borderInsets,
     );
     const iconSize = (this.compact
       ? PIXI_COST_BUTTON_GEOMETRY.compactIconSize

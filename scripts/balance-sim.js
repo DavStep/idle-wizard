@@ -5,6 +5,10 @@ import { createRequire } from 'node:module';
 import { ItemDefinitionManager } from '../src/gameplay/items/managers/ItemDefinitionManager.js';
 import { PotionRecipeManager } from '../src/gameplay/items/managers/PotionRecipeManager.js';
 import { itemKinds } from '../src/gameplay/items/itemKinds.js';
+import {
+  gardenBulkResearchIds,
+  gardenBulkResearchLevels,
+} from '../src/gameplay/garden/gardenBulkResearch.js';
 
 const require = createRequire(import.meta.url);
 
@@ -419,6 +423,11 @@ class BalanceSimulator {
     const requiredLevel =
       SEED_RESEARCH_LEVELS[researchId] ??
       RECIPE_RESEARCH_LEVELS[researchId] ??
+      (researchId === gardenBulkResearchIds.plantAll
+        ? gardenBulkResearchLevels.plantAll
+        : researchId === gardenBulkResearchIds.harvestAll
+          ? gardenBulkResearchLevels.harvestAll
+          : null) ??
       (researchId.startsWith('unlockRecipe:') ? 4 : 2);
 
     return this.state.level >= requiredLevel;
@@ -428,6 +437,7 @@ class BalanceSimulator {
     if (researchId === 'unlockSeed:sageSeed') return 0;
     if (researchId.startsWith('unlockSeed:')) return 10;
     if (researchId.startsWith('unlockRecipe:')) return 20;
+    if (researchId.startsWith('garden:')) return 25;
     if (researchId.startsWith('summonSeeds')) return 30;
     if (researchId.startsWith('automation:')) return 40;
     if (researchId.startsWith('advanced:')) return 50;
@@ -1275,6 +1285,19 @@ function createResearchCatalog({ recipes, seedDefinitions }) {
   ].forEach(([id, label, requiredResearchIds]) => {
     catalog.push({ id, label, requiredResearchIds });
   });
+
+  catalog.push(
+    {
+      id: gardenBulkResearchIds.plantAll,
+      label: 'plant all',
+      requiredResearchIds: [],
+    },
+    {
+      id: gardenBulkResearchIds.harvestAll,
+      label: 'harvest all',
+      requiredResearchIds: [gardenBulkResearchIds.plantAll],
+    },
+  );
 
   recipes.forEach((recipe, index) => {
     const previous = recipes[index - 1];

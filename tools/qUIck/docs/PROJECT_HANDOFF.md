@@ -632,9 +632,15 @@ In `src/exporter/figmaExporter.ts`, `convertNode` handles `tags.nine`:
   "type": "nineSlice",
   "assetId": "asset-...",
   "asset": "assets/ui/<Root>/asset-....png",
-  "slice": { "left": 87, "top": 74, "right": 90, "bottom": 105 }
+  "slice": { "left": 87, "top": 74, "right": 90, "bottom": 105 },
+  "minimumSize": { "width": 178, "height": 180 }
 }
 ```
+
+`minimumSize` is design-space layout metadata derived from the protected
+opposing edges plus one stretchable pixel. Export records an error when the
+authored node is smaller, and both runtimes reject an invalid final node size.
+Never derive this constraint from compacted `textureSlice` values.
 
 The richer `textureSlice` and `assetOptimization` fields are added later during ZIP download if PNG compaction succeeds.
 

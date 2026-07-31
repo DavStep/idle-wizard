@@ -795,6 +795,76 @@ describe("PixiPagesFacade", () => {
     );
   });
 
+  it("keeps unaffordable Brewing recipes unselected and leaves the book open", () => {
+    const gameplaySnapshot = createGameplaySnapshot();
+    const recipe = {
+      key: "manaTonic",
+      label: "mana tonic",
+      unlocked: true,
+      ingredients: [
+        {
+          itemTypeId: 1001,
+          key: "sageHerb",
+          label: "sage",
+          quantity: 1,
+        },
+      ],
+    };
+    gameplaySnapshot.brewing = {
+      cauldrons: [
+        {
+          cauldronIndex: 0,
+          cauldronNumber: 1,
+          brewQuantity: 2,
+          maxBrewQuantity: 2,
+          ingredients: [],
+        },
+      ],
+      recipes: [recipe],
+      herbs: [
+        {
+          itemTypeId: 1001,
+          key: "sageHerb",
+          quantity: 1,
+        },
+      ],
+    };
+    const harness = createHarness({ gameplaySnapshot });
+    harness.gameplayFacade.prepareBrewingRecipe.mockReturnValue({
+      ok: false,
+      reason: "not_enough_ingredients",
+    });
+    const pages = new PixiPagesFacade(harness.dependencies);
+    pages.mount();
+    pages.show("brewing");
+
+    expect(pages.openBrewingRecipesDialog(0)).toBe(true);
+    const dialogModel =
+      harness.pageSurface.openDialog.mock.calls.at(-1)[1];
+    expect(dialogModel.recipes[0]).toMatchObject({
+      key: "manaTonic",
+      canSelect: false,
+      selected: false,
+    });
+
+    const result = harness.getBoundPage("brewing").actions.selectRecipe(
+      recipe,
+      0,
+    );
+
+    expect(result).toEqual({
+      ok: false,
+      reason: "not_enough_ingredients",
+    });
+    expect(harness.runtime.closeDialog).not.toHaveBeenCalledWith(
+      "brewing.recipes",
+    );
+    pages.refreshPage("brewing");
+    expect(
+      harness.getBoundPage("brewing").brewing.cauldrons[0].selectedRecipe,
+    ).toBeNull();
+  });
+
   it("rejects locked navigation and delegates the lock surface to retained chrome", () => {
     const harness = createHarness({
       gameplaySnapshot: createGameplaySnapshot({ level: 1 }),
@@ -1187,6 +1257,40 @@ describe("PixiPagesFacade", () => {
     });
   });
 
+  it("plants all empty plots with the toolbar seed and explains an empty selection", () => {
+    const gameplaySnapshot = createGameplaySnapshot();
+    gameplaySnapshot.garden.bulkActions = {
+      canPlantAll: true,
+      canHarvestAll: false,
+    };
+    const harness = createHarness({ gameplaySnapshot });
+    harness.gameplayFacade.plantAllGardenSeeds.mockReturnValue({
+      ok: false,
+      reason: "no_seed_selected",
+      plantedTileNumbers: [],
+      results: [],
+    });
+    const pages = new PixiPagesFacade(harness.dependencies);
+    pages.mount();
+    pages.show("garden");
+
+    const garden = harness.getBoundPage("garden");
+    expect(garden.garden.actionBar).toMatchObject({
+      canPlantAll: true,
+      canHarvestAll: false,
+    });
+    expect(garden.actions.plantAll()).toMatchObject({
+      ok: false,
+      reason: "no_seed_selected",
+    });
+    expect(harness.gameplayFacade.plantAllGardenSeeds).toHaveBeenCalledWith(
+      null,
+    );
+    expect(harness.transientEffects.emitReward).toHaveBeenCalledWith({
+      message: "Select a seed",
+    });
+  });
+
   it("keeps unavailable empty Garden plots unlabeled and flies out no seed on press", () => {
     const gameplaySnapshot = createGameplaySnapshot();
     gameplaySnapshot.garden.seeds = [
@@ -1450,6 +1554,7 @@ function createHarness({ gameplaySnapshot = createGameplaySnapshot() } = {}) {
     fireGuildAdventurer: vi.fn(),
     buyGardenTile: vi.fn(),
     plantGardenSeed: vi.fn(),
+    plantAllGardenSeeds: vi.fn(),
     replaceGardenSeed: vi.fn(),
     startGardenHarvest: vi.fn(),
     startAllReadyGardenHarvests: vi.fn(),

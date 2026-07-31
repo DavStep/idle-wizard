@@ -112,6 +112,77 @@ describe('UiEditorFacade', () => {
     ).toBe('false');
   });
 
+  it('keeps a compatible preview surface mounted when its widget changes', () => {
+    const editor = new UiEditorFacade({
+      root: document.querySelector('#root'),
+    });
+    const firstPreview = document.createElement('section');
+    const nextPreview = document.createElement('section');
+    let adoptedPreview = null;
+    let firstPreviewDisposed = false;
+    let nextPreviewDisposed = false;
+
+    firstPreview.uiEditorDispose = () => {
+      firstPreviewDisposed = true;
+    };
+    firstPreview.uiEditorAdoptPreview = (candidate) => {
+      adoptedPreview = candidate;
+      candidate.uiEditorDispose();
+      return true;
+    };
+    nextPreview.uiEditorDispose = () => {
+      nextPreviewDisposed = true;
+    };
+
+    editor.mount();
+    editor.openPreview(firstPreview);
+    editor.openPreview(nextPreview);
+
+    expect(editor.viewManager.refs.preview.firstElementChild).toBe(firstPreview);
+    expect(adoptedPreview).toBe(nextPreview);
+    expect(nextPreviewDisposed).toBe(true);
+    expect(firstPreviewDisposed).toBe(false);
+
+    editor.clearPreview();
+    expect(firstPreviewDisposed).toBe(true);
+  });
+
+  it('collapses the hierarchy dock for asset workbenches and restores it for components', () => {
+    const editor = new UiEditorFacade({
+      root: document.querySelector('#root'),
+    });
+    const assetPreview = document.createElement('section');
+    const componentPreview = document.createElement('section');
+
+    assetPreview.dataset.uiEditorHierarchy = 'hidden';
+    componentPreview.dataset.uiEditorComponent = 'SampleButton';
+
+    editor.mount();
+    editor.openPreview(assetPreview);
+
+    expect(editor.viewManager.refs.panels.left.hidden).toBe(true);
+    expect(editor.viewManager.refs.splitters.left.hidden).toBe(true);
+    expect(editor.viewManager.refs.shell.dataset.leftPanelHidden).toBe('true');
+    expect(
+      editor.viewManager.refs.panels.left.querySelector(
+        '.ui-editor-hierarchy__tree',
+      ).hidden,
+    ).toBe(true);
+
+    editor.openPreview(componentPreview);
+
+    expect(editor.viewManager.refs.panels.left.hidden).toBe(false);
+    expect(editor.viewManager.refs.splitters.left.hidden).toBe(false);
+    expect(
+      editor.viewManager.refs.shell.dataset.leftPanelHidden,
+    ).toBeUndefined();
+    expect(
+      editor.viewManager.refs.panels.left.querySelector(
+        '.ui-editor-hierarchy__tree',
+      ).hidden,
+    ).toBe(false);
+  });
+
   it('clears widget usages when refreshed library entries remove selection', () => {
     const editor = new UiEditorFacade({
       libraryEntries: createLibrarySelectionEntries(),

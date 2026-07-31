@@ -1,6 +1,6 @@
 // @vitest-environment jsdom
 
-import { beforeEach, describe, expect, it } from 'vitest';
+import { beforeEach, describe, expect, it, vi } from 'vitest';
 
 import { UiEditorHierarchyManager } from './UiEditorHierarchyManager.js';
 import { UiEditorViewManager } from './UiEditorViewManager.js';
@@ -8,13 +8,16 @@ import { UiEditorViewManager } from './UiEditorViewManager.js';
 describe('UiEditorHierarchyManager', () => {
   let editorRefs;
   let manager;
+  let onSelectComponent;
 
   beforeEach(() => {
     document.body.innerHTML = '<main id="root"></main>';
     editorRefs = new UiEditorViewManager({
       root: document.querySelector('#root'),
     }).mount();
+    onSelectComponent = vi.fn();
     manager = new UiEditorHierarchyManager({
+      onSelectComponent,
       panel: editorRefs.panels.left,
       scene: editorRefs.preview,
     });
@@ -132,5 +135,64 @@ describe('UiEditorHierarchyManager', () => {
       }),
     ).toBe(true);
     expect(content.hasAttribute('data-ui-editor-scene-hidden')).toBe(true);
+  });
+
+  it('shows, selects, and hides atomic Pixi components', () => {
+    const preview = document.createElement('section');
+    let labelVisible = true;
+    const label = {
+      getFields: () => [
+        { id: 'x', label: 'X', type: 'number', value: 50 },
+      ],
+      id: 'sample-button:label',
+      isVisible: () => labelVisible,
+      label: 'Label',
+      setVisible: (visible) => {
+        labelVisible = visible;
+      },
+      type: 'text',
+      update: vi.fn(),
+    };
+
+    preview.dataset.uiEditorComponent = 'IdleWizardButtonWidget';
+    preview.uiEditorGetAtomicComponents = () => [
+      {
+        ...label,
+        id: 'sample-button:background',
+        label: 'Background',
+        type: 'image',
+      },
+      label,
+    ];
+    editorRefs.preview.append(preview);
+    manager.refresh();
+
+    const rows = [
+      ...editorRefs.panels.left.querySelectorAll(
+        '[data-editor-component-select]',
+      ),
+    ];
+
+    expect(
+      rows.map(
+        (row) => row.querySelector('.ui-editor-hierarchy__label').textContent,
+      ),
+    ).toEqual(['Background', 'Label']);
+
+    rows[1].click();
+    expect(onSelectComponent).toHaveBeenCalledWith(label);
+    expect(
+      editorRefs.panels.left
+        .querySelector('[data-selected="true"]')
+        .getAttribute('aria-selected'),
+    ).toBe('true');
+
+    editorRefs.panels.left
+      .querySelector('[aria-label="Hide Label"]')
+      .click();
+    expect(labelVisible).toBe(false);
+    expect(
+      editorRefs.panels.left.querySelector('[aria-label="Show Label"]'),
+    ).not.toBeNull();
   });
 });

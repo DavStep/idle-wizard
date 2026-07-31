@@ -1,0 +1,305 @@
+import {
+  PIXI_PRODUCTION_ASSET_MANIFEST,
+  PIXI_SOURCE_NINE_SLICE_METADATA,
+} from '../../rendering/pixi/assets/PixiProductionAssetManifest.js';
+import {
+  createUiEditorAssetPreview,
+  createUiEditorAssetThumbnail,
+} from '../widgets/UiEditorAssetWorkbench.js';
+import {
+  resolveNineSliceMinimumSize,
+} from '../../rendering/pixi/nineSlice/NineSliceCompatibility.js';
+
+const ASSET_MANIFEST_BY_ID = new Map(
+  PIXI_PRODUCTION_ASSET_MANIFEST.map((asset) => [asset.id, asset]),
+);
+const SOURCE_NINE_SLICE_BY_ASSET_ID = new Map(
+  PIXI_SOURCE_NINE_SLICE_METADATA.map(({ assetId, metadata }) => [
+    assetId,
+    metadata,
+  ]),
+);
+
+export function createIdleWizardAssetEntries(widgetEntries = []) {
+  const assetsById = new Map();
+
+  for (const manifestAsset of PIXI_PRODUCTION_ASSET_MANIFEST) {
+    if (manifestAsset.kind !== 'texture') {
+      continue;
+    }
+
+    const metadata = SOURCE_NINE_SLICE_BY_ASSET_ID.get(manifestAsset.id);
+    assetsById.set(manifestAsset.id, {
+      borderInsets: metadata?.rendering?.outputInsets ?? null,
+      id: manifestAsset.id,
+      minimumSize: metadata?.rendering?.minimumSize ?? null,
+      nineSlice: Boolean(metadata?.slice),
+      sourceInsets: metadata?.slice ?? null,
+      usages: [],
+    });
+  }
+
+  for (const widget of widgetEntries) {
+    for (const asset of widget.assets ?? []) {
+      const registered = assetsById.get(asset.id) ?? {
+        usages: [],
+      };
+      const intrinsicNineSlice = registered.nineSlice;
+      const intrinsicSourceInsets = registered.sourceInsets;
+      const intrinsicBorderInsets = registered.borderInsets;
+      const intrinsicMinimumSize = registered.minimumSize;
+
+      Object.assign(registered, asset);
+      registered.nineSlice =
+        intrinsicNineSlice === true || registered.nineSlice === true;
+      registered.sourceInsets =
+        intrinsicSourceInsets ?? registered.sourceInsets ?? null;
+      registered.borderInsets =
+        intrinsicBorderInsets ?? registered.borderInsets ?? null;
+      registered.minimumSize =
+        intrinsicMinimumSize ?? registered.minimumSize ?? null;
+      if (!registered.usages.some(({ widgetId }) => widgetId === widget.id)) {
+        registered.usages.push({
+          createThumbnail: canRenderDeclaredAssetSize(asset)
+            ? widget.createThumbnail
+            : null,
+          label: widget.label,
+          locations: widget.usages ?? [],
+          role: asset.role,
+          widgetId: widget.id,
+        });
+      }
+      assetsById.set(asset.id, registered);
+    }
+  }
+
+  const assets = [...assetsById.values()];
+  const suggestionsByFamily = createNineSliceSuggestions(assets);
+
+  return assets
+    .map((asset) =>
+      createAssetEntry(asset, suggestionsByFamily.get(resolveAssetFamily(asset.id))),
+    )
+    .sort((left, right) =>
+      left.label.localeCompare(right.label)
+      || left.assetId.localeCompare(right.assetId),
+    );
+}
+
+function createAssetEntry(asset, suggestedSourceInsets) {
+  const manifestAsset = ASSET_MANIFEST_BY_ID.get(asset.id);
+
+  if (!manifestAsset) {
+    throw new Error(`Missing production asset manifest entry: ${asset.id}`);
+  }
+
+  const editorEditable = canAuthorNineSlice(asset.id);
+  const entry = {
+    assetId: asset.id,
+    assetUrl: manifestAsset.src,
+    borderInsets: asset.borderInsets ?? null,
+    editorEditable,
+    height: asset.height ?? null,
+    id: `asset:${asset.id}`,
+    kind: 'asset',
+    label: resolveAssetLabel(asset.id),
+    folderPath: resolveAssetFolderPath(asset.id),
+    nineSlice: asset.nineSlice === true,
+    properties: createAssetProperties(asset, editorEditable),
+    sectionId: 'assets',
+    sourceInsets: asset.sourceInsets ?? null,
+    minimumSize:
+      asset.minimumSize
+      ?? (asset.nineSlice && asset.borderInsets
+        ? resolveNineSliceMinimumSize({
+            outputInsets: asset.borderInsets,
+          })
+        : null),
+    suggestedSourceInsets:
+      asset.nineSlice ? null : suggestedSourceInsets ?? null,
+    usages: asset.usages.map(({
+      createThumbnail,
+      label: widgetLabel,
+      locations,
+      role,
+      widgetId,
+    }) => ({
+      createThumbnail,
+      label: widgetLabel,
+      locations,
+      source: role,
+      widgetId,
+    })),
+    width: asset.width ?? null,
+  };
+
+  entry.createPreview = (options) =>
+    createUiEditorAssetPreview(entry, options);
+  entry.createThumbnail = () => createUiEditorAssetThumbnail(entry);
+  return Object.freeze(entry);
+}
+
+function resolveAssetFolderPath(assetId) {
+  const normalizedAssetId = String(assetId ?? '');
+  let pathPrefix = [];
+  let relativePath = normalizedAssetId;
+
+  if (normalizedAssetId.startsWith('source:assets/')) {
+    relativePath = normalizedAssetId.replace(/^source:assets\//, '');
+  } else if (normalizedAssetId.startsWith('public:')) {
+    pathPrefix = ['public'];
+    relativePath = normalizedAssetId.replace(/^public:/, '');
+  } else if (normalizedAssetId.startsWith('atlas:')) {
+    return Object.freeze(['generated', 'atlases']);
+  } else {
+    pathPrefix = ['other'];
+  }
+
+  const segments = relativePath.split('/').filter(Boolean);
+
+  return Object.freeze([...pathPrefix, ...segments.slice(0, -1)]);
+}
+
+function resolveAssetLabel(assetId) {
+  const normalizedAssetId = String(assetId ?? '');
+
+  if (normalizedAssetId.startsWith('atlas:')) {
+    return `${normalizedAssetId.slice('atlas:'.length)} atlas`;
+  }
+
+  return normalizedAssetId.split('/').at(-1) ?? normalizedAssetId;
+}
+
+function canAuthorNineSlice(assetId) {
+  return (
+    String(assetId ?? '').startsWith('source:')
+    && /\.png$/i.test(assetId)
+  );
+}
+
+function canRenderDeclaredAssetSize(asset) {
+  if (!asset?.borderInsets) {
+    return true;
+  }
+
+  const minimumWidth =
+    Number(asset.borderInsets.left) + Number(asset.borderInsets.right);
+  const minimumHeight =
+    Number(asset.borderInsets.top) + Number(asset.borderInsets.bottom);
+
+  return (
+    !Number.isFinite(Number(asset.width))
+    || Number(asset.width) >= minimumWidth
+  ) && (
+    !Number.isFinite(Number(asset.height))
+    || Number(asset.height) >= minimumHeight
+  );
+}
+
+function createAssetProperties(asset, editorEditable) {
+  const properties = [
+    {
+      label: 'Type',
+      value: resolveAssetType(asset),
+    },
+    {
+      label: 'Editor access',
+      value: editorEditable
+        ? 'Preview and 9-slice authoring'
+        : 'Preview only',
+    },
+    {
+      label: 'Asset ID',
+      monospace: true,
+      value: asset.id,
+    },
+  ];
+
+  if (asset.nineSlice) {
+    properties.push({
+      label: 'Slice margins',
+      monospace: true,
+      value: formatInsets(asset.sourceInsets),
+    });
+    if (asset.minimumSize) {
+      properties.push({
+        label: 'Minimum rendered size',
+        monospace: true,
+        value: formatSize(asset.minimumSize),
+      });
+    }
+  }
+
+  return Object.freeze(properties.map((property) => Object.freeze(property)));
+}
+
+function resolveAssetType(asset) {
+  if (asset.nineSlice) {
+    return 'Nine-slice image';
+  }
+
+  if (asset.id.startsWith('atlas:')) {
+    return 'Generated atlas';
+  }
+
+  if (asset.id.startsWith('public:')) {
+    return 'Runtime image';
+  }
+
+  return 'Image';
+}
+
+function formatInsets(insets) {
+  return [
+    `L ${formatNumber(insets?.left)}`,
+    `T ${formatNumber(insets?.top)}`,
+    `R ${formatNumber(insets?.right)}`,
+    `B ${formatNumber(insets?.bottom)}`,
+  ].join(' · ');
+}
+
+function formatNumber(value) {
+  return Number.isInteger(value) ? String(value) : Number(value).toFixed(2);
+}
+
+function formatSize(size) {
+  return `${formatNumber(size?.width)} × ${formatNumber(size?.height)}px`;
+}
+
+function createNineSliceSuggestions(assets) {
+  const suggestions = new Map();
+
+  for (const asset of assets) {
+    if (!asset.nineSlice || !asset.sourceInsets) {
+      continue;
+    }
+    suggestions.set(resolveAssetFamily(asset.id), asset.sourceInsets);
+  }
+
+  return suggestions;
+}
+
+function resolveAssetFamily(assetId) {
+  const separatorIndex = assetId.lastIndexOf('/');
+  const directory = separatorIndex >= 0
+    ? assetId.slice(0, separatorIndex + 1)
+    : '';
+  const filename = separatorIndex >= 0
+    ? assetId.slice(separatorIndex + 1)
+    : assetId;
+  const stem = filename
+    .replace(/\.[^.]+$/i, '')
+    .replace(/\.9$/i, '')
+    .replace(/-9slice$/i, '')
+    .replace(/-(?:15|30|50)$/i, '')
+    .replace(/-short$/i, '');
+
+  const familyDirectory = [
+    'source:assets/ui/regular-button/',
+    'source:assets/ui/root-run-cost-button/',
+  ].includes(directory)
+    ? 'source:assets/ui/shared-button-family/'
+    : directory;
+
+  return `${familyDirectory}${stem}`;
+}

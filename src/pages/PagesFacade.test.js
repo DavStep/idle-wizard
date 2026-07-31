@@ -10029,7 +10029,7 @@ describe('PagesFacade', () => {
     expect(popup.hidden).toBe(true);
   });
 
-  it('keeps empty cauldron contents when selected Brewing recipe cannot be staged', () => {
+  it('does not select a Brewing recipe that cannot be staged', () => {
     const stage = document.createElement('section');
     const gameplayFacade = createGameplayFacadeFake();
     unlockWorkshopSecondaryActions(gameplayFacade);
@@ -10047,18 +10047,17 @@ describe('PagesFacade', () => {
     stage
       .querySelector('.brewing-page__cauldron-select-recipe-text')
       .dispatchEvent(new window.MouseEvent('click', { bubbles: true }));
-    stage
-      .querySelector('.brewing-page__recipe-select-button')
-      .dispatchEvent(new window.MouseEvent('click', { bubbles: true }));
+    const selectRecipeButton = stage.querySelector(
+      '.brewing-page__recipe-select-button',
+    );
+
+    expect(selectRecipeButton?.disabled).toBe(true);
+    selectRecipeButton?.dispatchEvent(new window.MouseEvent('click', { bubbles: true }));
 
     expect(stage.querySelector('.brewing-page__cauldron-recipe-title')).toBeNull();
-    expect(stage.querySelector('.brewing-page__cauldron-guide')?.hidden).toBe(false);
-    expect(stage.querySelector('.brewing-page__cauldron-guide-step')?.textContent).toBe('sage1/3');
-    expect(stage.querySelector('.brewing-page__cauldron-items')?.hidden).toBe(true);
+    expect(stage.querySelector('.brewing-page__recipes-popup')?.hidden).toBe(false);
+    expect(stage.querySelector('.brewing-page__cauldron-guide')?.hidden).toBe(true);
     expect(stage.querySelector('.brewing-page__action-button')?.disabled).toBe(true);
-    expect(stage.querySelector('.brewing-page__action-button')?.getAttribute('aria-label')).toBe(
-      'missing herbs for mana tonic',
-    );
     expect(stage.querySelector('.brewing-page__cauldron-count')?.textContent).toBe('0/5');
     expect(stage.querySelector('.brewing-page__herbs')?.textContent).toContain('sage1');
   });

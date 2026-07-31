@@ -5,6 +5,11 @@ import {
   Texture,
 } from 'pixi.js';
 
+import {
+  resolveNineSliceMinimumSize,
+  validateNineSliceCompatibility,
+} from '../nineSlice/NineSliceCompatibility.js';
+
 /**
  * Nine-slice renderer with independent output widths for every edge.
  *
@@ -25,11 +30,13 @@ export class PixiNineSliceFrame extends Container {
     this.texture = null;
     this.sourceInsets = normalizeInsets(sourceInsets);
     this.borderInsets = normalizeInsets(borderInsets);
-    this.frameWidth = Math.max(0, Number(width) || 0);
-    this.frameHeight = Math.max(0, Number(height) || 0);
+    this.frameWidth = 0;
+    this.frameHeight = 0;
     this.sliceTextures = [];
     this.sprites = [];
+    this.compatibilityError = null;
     this.setTexture(texture, this.sourceInsets);
+    this.setSize(width, height, this.borderInsets);
   }
 
   setTexture(texture, sourceInsets = this.sourceInsets) {
@@ -52,11 +59,96 @@ export class PixiNineSliceFrame extends Container {
   }
 
   setSize(width, height, borderInsets = this.borderInsets) {
-    this.frameWidth = Math.max(0, Number(width) || 0);
-    this.frameHeight = Math.max(0, Number(height) || 0);
-    this.borderInsets = normalizeInsets(borderInsets);
+    const nextWidth = Math.max(0, Number(width) || 0);
+    const nextHeight = Math.max(0, Number(height) || 0);
+    const nextBorderInsets = normalizeInsets(borderInsets);
+    const compatibility = validateNineSliceCompatibility({
+      assetId: this.label,
+      minimumCenter: {
+        width: 0,
+        height: 0,
+      },
+      outputInsets: nextBorderInsets,
+      targetLabel: this.label,
+      targetSize: {
+        width: nextWidth,
+        height: nextHeight,
+      },
+    });
+
+    if (!compatibility.compatible) {
+      this.compatibilityError = compatibility;
+      if (shouldThrowCompatibilityErrors()) {
+        throw new RangeError(compatibility.message);
+      }
+      globalThis.console?.error(
+        `[PixiNineSliceFrame] ${compatibility.message}`,
+      );
+      return this;
+    }
+
+    this.compatibilityError = null;
+    this.frameWidth = nextWidth;
+    this.frameHeight = nextHeight;
+    this.borderInsets = nextBorderInsets;
     this.relayout();
     return this;
+  }
+
+  setSkin({
+    assetId = this.label,
+    borderInsets = this.borderInsets,
+    height = this.frameHeight,
+    minimumCenter = {
+      width: 0,
+      height: 0,
+    },
+    sourceInsets = this.sourceInsets,
+    texture = this.texture,
+    width = this.frameWidth,
+  } = {}) {
+    const nextWidth = Math.max(0, Number(width) || 0);
+    const nextHeight = Math.max(0, Number(height) || 0);
+    const nextBorderInsets = normalizeInsets(borderInsets);
+    const compatibility = validateNineSliceCompatibility({
+      assetId,
+      minimumCenter,
+      outputInsets: nextBorderInsets,
+      targetLabel: this.label,
+      targetSize: {
+        width: nextWidth,
+        height: nextHeight,
+      },
+    });
+
+    if (!compatibility.compatible) {
+      this.compatibilityError = compatibility;
+      if (shouldThrowCompatibilityErrors()) {
+        throw new RangeError(compatibility.message);
+      }
+      globalThis.console?.error(
+        `[PixiNineSliceFrame] ${compatibility.message}`,
+      );
+      return this;
+    }
+
+    this.compatibilityError = null;
+    this.frameWidth = nextWidth;
+    this.frameHeight = nextHeight;
+    this.borderInsets = nextBorderInsets;
+    this.setTexture(texture, sourceInsets);
+    this.relayout();
+    return this;
+  }
+
+  getMinimumSize(borderInsets = this.borderInsets) {
+    return resolveNineSliceMinimumSize({
+      minimumCenter: {
+        width: 0,
+        height: 0,
+      },
+      outputInsets: borderInsets,
+    });
   }
 
   createSlices() {
@@ -192,4 +284,8 @@ function insetsEqual(left, right) {
     left.bottom === right.bottom &&
     left.left === right.left
   );
+}
+
+function shouldThrowCompatibilityErrors() {
+  return import.meta.env?.DEV !== false;
 }

@@ -9,6 +9,7 @@ import { ResearchBalanceManager } from './ResearchBalanceManager.js';
 import { researchCostResearchIds } from '../researchCostResearch.js';
 import { researchTimeResearchIds } from '../researchTimeResearch.js';
 import { stallStaffingResearchIds } from '../stallStaffingResearch.js';
+import { gardenBulkResearchIds } from '../../garden/gardenBulkResearch.js';
 
 describe('ResearchBalanceManager', () => {
   it('caps research durations at four hours', () => {
@@ -67,6 +68,16 @@ describe('ResearchBalanceManager', () => {
     expect(manager.getDurationSeconds('unlockRecipe:briarWard')).toBe(300);
     expect(manager.getDurationSeconds('unlockRecipe:pearlrootDraught')).toBe(14_400);
     expect(manager.getDurationSeconds('summonSeedsX2')).toBe(600);
+    expect(manager.getCost(gardenBulkResearchIds.plantAll)).toEqual({
+      amount: 1_000,
+      currency: 'coin',
+    });
+    expect(manager.getCost(gardenBulkResearchIds.harvestAll)).toEqual({
+      amount: 10_000,
+      currency: 'coin',
+    });
+    expect(manager.getDurationSeconds(gardenBulkResearchIds.plantAll)).toBe(600);
+    expect(manager.getDurationSeconds(gardenBulkResearchIds.harvestAll)).toBe(600);
     expect(manager.getCost(researchTimeResearchIds.reduction(8))).toEqual({
       amount: 8,
       currency: 'emerald',

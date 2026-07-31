@@ -373,6 +373,41 @@ describe('BrewingRecipeBookManager', () => {
     parent.remove();
   });
 
+  it('disables recipe selection when the current batch lacks materials', () => {
+    const snapshot = createSnapshot();
+    snapshot.brewing.herbs[0].quantity = 1;
+    snapshot.brewing.cauldrons = [
+      {
+        cauldronIndex: 0,
+        brewQuantity: 2,
+        maxBrewQuantity: 2,
+        ingredients: [],
+      },
+    ];
+    const onSelectRecipe = vi.fn();
+    const parent = document.createElement('div');
+    document.body.append(parent);
+    const manager = new BrewingRecipeBookManager({
+      gameplayFacade: createGameplayFacadeFake(snapshot),
+      getSelectedRecipeKey: () => null,
+      getCurrentCauldronIndex: () => 0,
+      onSelectRecipe,
+    });
+
+    manager.mount(parent);
+
+    const select = parent.querySelector('.brewing-page__recipe-select-button');
+    expect(select?.disabled).toBe(true);
+    expect(select?.getAttribute('aria-label')).toBe(
+      'minor healing potion recipe needs more materials',
+    );
+    select?.dispatchEvent(new window.MouseEvent('click', { bubbles: true }));
+    expect(onSelectRecipe).not.toHaveBeenCalled();
+
+    manager.unmount();
+    parent.remove();
+  });
+
   it('shows locked and unknown recipes without making them selectable', () => {
     const snapshot = {
       brewing: {

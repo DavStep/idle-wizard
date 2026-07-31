@@ -2,16 +2,21 @@ const SCENE_HIDDEN_ATTRIBUTE = 'data-ui-editor-scene-hidden';
 const SVG_NAMESPACE = 'http://www.w3.org/2000/svg';
 
 export class UiEditorHierarchyManager {
-  constructor({ panel, scene }) {
+  constructor({ onSelectComponent = null, panel, scene }) {
     this.panel = panel;
     this.scene = scene;
+    this.onSelectComponent =
+      typeof onSelectComponent === 'function' ? onSelectComponent : null;
     this.refs = null;
     this.observer = null;
     this.elementIds = new WeakMap();
     this.elementsById = new Map();
     this.nextElementId = 1;
+    this.selectedComponentId = null;
 
     this.handleClick = (event) => this.onClick(event);
+    this.handleKeyDown = (event) => this.onKeyDown(event);
+    this.handleHierarchyChange = () => this.refresh();
   }
 
   mount() {
@@ -37,6 +42,11 @@ export class UiEditorHierarchyManager {
     hierarchy.append(emptyState, tree);
     body.replaceChildren(hierarchy);
     hierarchy.addEventListener('click', this.handleClick);
+    hierarchy.addEventListener('keydown', this.handleKeyDown);
+    this.scene.addEventListener(
+      'ui-editor-hierarchy-change',
+      this.handleHierarchyChange,
+    );
 
     this.refs = {
       body,
@@ -71,6 +81,11 @@ export class UiEditorHierarchyManager {
     this.observer?.disconnect();
     this.observer = null;
     this.refs.hierarchy.removeEventListener('click', this.handleClick);
+    this.refs.hierarchy.removeEventListener('keydown', this.handleKeyDown);
+    this.scene.removeEventListener(
+      'ui-editor-hierarchy-change',
+      this.handleHierarchyChange,
+    );
     this.refs.header.textContent = 'Left panel';
     this.panel.setAttribute('aria-label', 'Left panel');
     this.refs.body.replaceChildren();
@@ -83,7 +98,9 @@ export class UiEditorHierarchyManager {
       return;
     }
 
-    const roots = [...this.scene.children];
+    const hierarchyHidden =
+      this.scene.firstElementChild?.dataset.uiEditorHierarchy === 'hidden';
+    const roots = hierarchyHidden ? [] : [...this.scene.children];
     const fragment = document.createDocumentFragment();
     this.elementsById.clear();
 
@@ -99,20 +116,64 @@ export class UiEditorHierarchyManager {
   onClick(event) {
     const toggle = event.target.closest('[data-editor-visibility-toggle]');
 
-    if (!toggle || !this.refs.hierarchy.contains(toggle)) {
+    if (toggle && this.refs.hierarchy.contains(toggle)) {
+      const target = this.elementsById.get(
+        toggle.dataset.editorVisibilityToggle,
+      );
+
+      if (!target) {
+        return;
+      }
+
+      if (target.kind === 'atomic') {
+        target.component.setVisible(!target.component.isVisible());
+      } else {
+        target.element.toggleAttribute(
+          SCENE_HIDDEN_ATTRIBUTE,
+          !target.element.hasAttribute(SCENE_HIDDEN_ATTRIBUTE),
+        );
+      }
+      this.refresh();
       return;
     }
 
-    const element = this.elementsById.get(toggle.dataset.editorVisibilityToggle);
+    const row = event.target.closest('[data-editor-component-select]');
 
-    if (!element) {
+    if (row && this.refs.hierarchy.contains(row)) {
+      this.selectComponent(row.dataset.editorComponentSelect);
+    }
+  }
+
+  onKeyDown(event) {
+    if (event.key !== 'Enter' && event.key !== ' ') {
       return;
     }
 
-    element.toggleAttribute(
-      SCENE_HIDDEN_ATTRIBUTE,
-      !element.hasAttribute(SCENE_HIDDEN_ATTRIBUTE),
-    );
+    const row = event.target.closest('[data-editor-component-select]');
+
+    if (!row || !this.refs.hierarchy.contains(row)) {
+      return;
+    }
+
+    event.preventDefault();
+    this.selectComponent(row.dataset.editorComponentSelect);
+  }
+
+  selectComponent(id) {
+    const target = this.elementsById.get(id);
+
+    if (target?.kind !== 'atomic') {
+      return false;
+    }
+
+    this.selectedComponentId = id;
+    this.onSelectComponent?.(target.component);
+    this.refresh();
+    return true;
+  }
+
+  clearSelection() {
+    this.selectedComponentId = null;
     this.refresh();
   }
 
@@ -159,7 +220,7 @@ export class UiEditorHierarchyManager {
     const text = document.createElement('span');
     const metadata = document.createElement('span');
 
-    this.elementsById.set(id, element);
+    this.elementsById.set(id, { element, kind: 'element' });
 
     item.className = 'ui-editor-hierarchy__item';
     item.dataset.sceneVisible = String(sceneVisible);
@@ -187,19 +248,80 @@ export class UiEditorHierarchyManager {
     row.append(toggle, text, metadata);
     item.append(row);
 
-    if (element.children.length > 0) {
+    const atomicComponents = normalizeAtomicComponents(
+      element.uiEditorGetAtomicComponents?.(),
+    );
+    const children = atomicComponents.length
+      ? atomicComponents
+      : [...element.children];
+
+    if (children.length > 0) {
       const group = document.createElement('div');
       group.className = 'ui-editor-hierarchy__group';
       group.setAttribute('role', 'group');
       item.setAttribute('aria-expanded', 'true');
 
-      for (const child of element.children) {
-        group.append(this.createTreeItem(child, depth + 1));
+      for (const child of children) {
+        group.append(
+          atomicComponents.length
+            ? this.createAtomicTreeItem(child, depth + 1, sceneVisible)
+            : this.createTreeItem(child, depth + 1),
+        );
       }
 
       item.append(group);
     }
 
+    return item;
+  }
+
+  createAtomicTreeItem(component, depth, ancestorVisible) {
+    const id = `atomic:${component.id}`;
+    const visible = component.isVisible();
+    const sceneVisible = ancestorVisible && visible;
+    const item = document.createElement('div');
+    const row = document.createElement('div');
+    const toggle = document.createElement('button');
+    const text = document.createElement('span');
+    const metadata = document.createElement('span');
+
+    this.elementsById.set(id, { component, kind: 'atomic' });
+
+    item.className = 'ui-editor-hierarchy__item';
+    item.dataset.sceneVisible = String(sceneVisible);
+    item.dataset.selected = String(this.selectedComponentId === id);
+    item.setAttribute('role', 'treeitem');
+    item.setAttribute('aria-level', String(depth));
+    item.setAttribute(
+      'aria-selected',
+      String(this.selectedComponentId === id),
+    );
+    item.style.setProperty('--editor-tree-depth', String(depth));
+
+    row.className = 'ui-editor-hierarchy__row';
+    row.dataset.editorComponentSelect = id;
+    row.tabIndex = 0;
+
+    toggle.className = 'ui-editor-hierarchy__visibility';
+    toggle.type = 'button';
+    toggle.dataset.editorVisibilityToggle = id;
+    toggle.setAttribute(
+      'aria-label',
+      `${visible ? 'Hide' : 'Show'} ${component.label}`,
+    );
+    toggle.setAttribute('aria-pressed', String(visible));
+    toggle.title = `${visible ? 'Hide' : 'Show'} ${component.label}`;
+    toggle.append(createEyeIcon({ hidden: !visible }));
+
+    text.className = 'ui-editor-hierarchy__label';
+    text.textContent = component.label;
+    text.title = component.label;
+
+    metadata.className = 'ui-editor-hierarchy__metadata';
+    metadata.textContent = component.type;
+
+    row.append(toggle, text, metadata);
+    item.append(row);
     return item;
   }
 
@@ -214,6 +336,22 @@ export class UiEditorHierarchyManager {
 
     return id;
   }
+}
+
+function normalizeAtomicComponents(components) {
+  if (!Array.isArray(components)) {
+    return [];
+  }
+
+  return components.filter(
+    (component) =>
+      component
+      && typeof component.id === 'string'
+      && typeof component.label === 'string'
+      && typeof component.type === 'string'
+      && typeof component.isVisible === 'function'
+      && typeof component.setVisible === 'function',
+  );
 }
 
 function collectHiddenComponentPaths(element, path, hiddenComponentPaths) {

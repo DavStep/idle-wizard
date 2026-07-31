@@ -3,13 +3,19 @@ import { readFileSync } from 'node:fs';
 import process from 'node:process';
 import { fileURLToPath } from 'node:url';
 import { defineConfig } from 'vite';
+import {
+  createUiEditorNineSlicePlugin,
+} from './scripts/ui-editor-nine-slice-plugin.mjs';
 
 const deployVersion = createDeployVersion();
 const clientReleaseVersion = createClientReleaseVersion();
 
 export default defineConfig(() => {
   return {
-    plugins: [deployVersionPlugin()],
+    plugins: [
+      deployVersionPlugin(),
+      createUiEditorNineSlicePlugin(),
+    ],
     publicDir: 'assets/runtime',
     define: {
       'import.meta.env.VITE_DEPLOY_VERSION': JSON.stringify(deployVersion),

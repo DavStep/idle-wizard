@@ -20,6 +20,10 @@ import {
   type NineSliceNode,
   type TextNode
 } from "../schema.js";
+import {
+  assertNineSliceFits,
+  resolveNineSliceMinimumSize,
+} from "../nineSliceCompatibility.js";
 import { createRuntimePlan, hexToNumber, type RuntimeNodePlan } from "./layout.js";
 
 export interface RenderedUINode {
@@ -414,6 +418,11 @@ class HorizontalThreeSliceSprite extends Container {
 }
 
 function createNineSlice(node: NineSliceNode, texture: Texture): Container {
+  assertNineSliceFits(
+    node.name,
+    { width: node.width, height: node.height },
+    node.minimumSize ?? resolveNineSliceMinimumSize(node.slice)
+  );
   const slice = node.textureSlice ?? node.slice ?? ("insets" in node ? node.insets : undefined);
   if (!slice) {
     throw new Error(`Nine-slice node "${node.name}" is missing slice data.`);
