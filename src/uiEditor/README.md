@@ -37,14 +37,19 @@ The bottom panel is a folder browser. Its `Library` root contains `UI Assets`,
 `UI Widgets`, `Dialogs`, and `Scenes`. `UI Assets` contains every texture in the
 production asset manifest, including source images, public/runtime textures,
 and generated atlases that are not mounted by a registered editor widget.
-Source assets follow their production directories, so categories such as
-`Avatars`, `Icons`, `Items`, `Rooms`, and `UI` remain separate. Runtime aliases
-live under `Public`, and generated textures live under `Generated`. Feature
-folders remain nested beneath those roots. Mixed directories show their direct
-assets and child folders together. Shared source images are deduplicated, each
-    tile shows the real texture, and the breadcrumb header's right-aligned filter
-    searches the current folder and all of its descendants by filename or
-    production ID. Registered widget
+Source assets generally follow their production directories, so categories
+such as `Avatars`, `Icons`, `Items`, `Rooms`, and `UI` remain separate. Reusable
+UI chrome may instead use a semantic editor folder: title plaques and ribbons
+from account, dialog, market, and research source folders live together under
+`UI/Banners`, while the canonical coin, crystal, emerald, mana, and ruby icons
+live under `UI/Currencies`. This changes only editor discovery; production paths
+and asset IDs remain unchanged. Runtime aliases live under `Public`, and
+generated textures live under `Generated`. Feature folders remain nested
+beneath those roots when no semantic category applies. Mixed directories show
+their direct assets and child folders together. Shared source images are
+deduplicated, each tile shows the real texture, and the breadcrumb header's
+right-aligned filter searches the current folder and all of its descendants by
+filename or production ID. Registered widget
 consumers still appear in the inspector. The inspector marks source PNGs as
 available for preview and nine-slice authoring; WebP, runtime, and generated
 textures are preview-only. `UI Widgets` contains `Buttons`, `Progress bars`,
@@ -86,12 +91,14 @@ When a matching registered nine-slice sibling exists, the draft starts from
 those proven margins, so
 `green-button-50.9.png` starts at `L86 T100 R52 B68`. The asset browser groups
 the full seven-color, three-radius matrix under `UI/Regular Button`.
-`Save 9-slice` writes a
-`.9slice.json` definition beside the PNG through the local development server.
-It never rewrites or copies the source image. WebP assets remain preview-only
-because project nine-slices are PNG-only.
+`Save 9-slice` promotes an ordinary PNG to the `.9.png` naming convention,
+updates its project references, and writes a `.9slice.json` definition beside
+it through the local development server. Existing `.9.png` assets open as
+nine-slices even before they have authored sidecar metadata. Conversion never
+rewrites or copies the source pixels. WebP assets remain preview-only because
+project nine-slices are PNG-only.
 
-Selecting an existing nine-slice opens the same workbench directly. Reset
+Selecting an existing `.9.png` nine-slice opens the same workbench directly. Reset
 restores its registered runtime geometry, Copy CSS copies the current preview
 declaration, and `Save 9-slice` writes edited source margins back to the
 sidecar definition. The sidecar records logical output insets and the derived

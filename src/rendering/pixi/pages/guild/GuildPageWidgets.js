@@ -19,7 +19,7 @@ import {
   PIXI_UI_GEOMETRY,
 } from '../../theme/PixiThemeTokens.js';
 
-const PAPER_TEXTURE_ID = 'public:ui/guild-quest/paper-9slice.png';
+const PAPER_TEXTURE_ID = 'public:ui/guild-quest/paper.9.png';
 const PAPER_SOURCE_INSETS = Object.freeze({
   left: 41,
   top: 41,

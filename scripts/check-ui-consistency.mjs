@@ -258,11 +258,46 @@ function scanQaHarnessThemes() {
   }
 }
 
+function scanNineSliceAssetNames() {
+  const sourceRoot = projectPath('assets', 'game', 'source');
+  const legacyAssets = walkExisting(
+    sourceRoot,
+    (absolute) => /9slice.*\.png$/i.test(absolute),
+  );
+  const metadataFiles = walkExisting(
+    sourceRoot,
+    (absolute) => /\.9slice\.json$/i.test(absolute),
+  );
+
+  for (const absolute of legacyAssets) {
+    addError(
+      'nine-slice-asset-name',
+      path.relative(root, absolute),
+      1,
+      'Nine-slice PNGs must use the `.9.png` filename suffix.',
+    );
+  }
+
+  for (const absolute of metadataFiles) {
+    const assetPath = absolute.replace(/\.9slice\.json$/i, '.png');
+
+    if (!/\.9\.png$/i.test(assetPath)) {
+      addError(
+        'nine-slice-sidecar-name',
+        path.relative(root, absolute),
+        1,
+        'Nine-slice metadata must belong to a `.9.png` source asset.',
+      );
+    }
+  }
+}
+
 scanBottomPanelTabs();
 scanDefaultIconMode();
 scanCssRules();
 scanMotionDrift();
 scanQaHarnessThemes();
+scanNineSliceAssetNames();
 
 if (errors.length === 0 && warnings.length === 0) {
   console.log('UI consistency check passed.');

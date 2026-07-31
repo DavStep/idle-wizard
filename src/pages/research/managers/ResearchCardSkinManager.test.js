@@ -247,8 +247,8 @@ describe('ResearchCardSkinManager', () => {
     expect(uiLayer.dataset.researchSkinRenderer).toBe('pixi');
     expect(uiLayer.parentElement.querySelector('.research-page__skin-canvas')).not.toBeNull();
     expect(loadedUrls.map((url) => new URL(url, 'http://localhost').pathname)).toEqual([
-      '/assets/game/source/ui/root-run-research/research-upgrade-bg.png',
-      '/assets/game/source/ui/root-run-research/research-upgrade-bg.png',
+      '/assets/game/source/ui/root-run-research/research-upgrade-bg.9.png',
+      '/assets/game/source/ui/root-run-research/research-upgrade-bg.9.png',
       '/assets/game/source/ui/root-run-research/squirqle-40-cream.png',
       '/assets/game/source/ui/root-run-research/squirqle-40-cream.png',
     ]);
@@ -339,7 +339,7 @@ describe('ResearchCardSkinManager', () => {
         'http://localhost',
     ).pathname,
     ).toBe(
-      '/assets/game/source/ui/root-run-research/research-upgrade-bg.png',
+      '/assets/game/source/ui/root-run-research/research-upgrade-bg.9.png',
     );
     expect(
       new URL(

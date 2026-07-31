@@ -9,8 +9,6 @@ const BUTTON_SKIN_IDS = [
   PIXI_ROOT_RUN_ASSETS.buttonGreenNineSlice,
   PIXI_ROOT_RUN_ASSETS.buttonRedNineSlice,
   PIXI_ROOT_RUN_ASSETS.buttonGrayNineSlice,
-];
-const LEGACY_BUTTON_SKIN_IDS = [
   PIXI_ROOT_RUN_ASSETS.buttonBrownDark,
   PIXI_ROOT_RUN_ASSETS.buttonBrownLight,
 ];
@@ -33,13 +31,6 @@ for (const assetId of BUTTON_SKIN_IDS) {
   });
 }
 
-for (const assetId of LEGACY_BUTTON_SKIN_IDS) {
-  registerSkin(assetId, {
-    outputInsets: PIXI_ROOT_RUN_GEOMETRY.legacyButton.borderInsets,
-    sourceInsets: PIXI_ROOT_RUN_GEOMETRY.legacyButton.sourceInsets,
-  });
-}
-
 for (const assetId of TAB_SKIN_IDS) {
   registerSkin(assetId, {
     outputInsets: PIXI_ROOT_RUN_GEOMETRY.tabButton.borderInsets,
@@ -47,26 +38,6 @@ for (const assetId of TAB_SKIN_IDS) {
   });
 }
 
-registerSkin(PIXI_ROOT_RUN_ASSETS.accountTabActive, {
-  minimumCenter: {
-    width: 1 / 3,
-    height: 1 / 3,
-  },
-  outputInsets: PIXI_ROOT_RUN_GEOMETRY.account.tab.active.borderInsets,
-  sourceInsets: PIXI_ROOT_RUN_GEOMETRY.account.tab.active.sourceInsets,
-});
-registerSkin(PIXI_ROOT_RUN_ASSETS.accountTabInactive, {
-  minimumCenter: {
-    width: 1 / 3,
-    height: 1 / 3,
-  },
-  outputInsets: PIXI_ROOT_RUN_GEOMETRY.account.tab.inactive.borderInsets,
-  sourceInsets: PIXI_ROOT_RUN_GEOMETRY.account.tab.inactive.sourceInsets,
-});
-registerSkin(PIXI_ROOT_RUN_ASSETS.accountSave, {
-  outputInsets: PIXI_ROOT_RUN_GEOMETRY.account.save.borderInsets,
-  sourceInsets: PIXI_ROOT_RUN_GEOMETRY.account.save.sourceInsets,
-});
 registerSkin(PIXI_ROOT_RUN_ASSETS.topHudSettings, {
   outputInsets: divideInsets(uniformInsets(46), 3),
   sourceInsets: uniformInsets(46),

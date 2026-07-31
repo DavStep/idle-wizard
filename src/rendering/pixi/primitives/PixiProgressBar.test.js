@@ -45,10 +45,10 @@ beforeAll(async () => {
 describe('PixiProgressBar', () => {
   it('uses Root Run capsule textures without .9.png metadata borders', () => {
     const track = readPng(
-      '../../../../assets/game/source/ui/root-run-progress/progress-track-9slice.png',
+      '../../../../assets/game/source/ui/root-run-progress/progress-track.9.png',
     );
     const fill = readPng(
-      '../../../../assets/game/source/ui/root-run-progress/progress-fill-mask-9slice.png',
+      '../../../../assets/game/source/ui/root-run-progress/progress-fill-mask.9.png',
     );
 
     expect([track.width, track.height]).toEqual([66, 52]);

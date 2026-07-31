@@ -22,7 +22,7 @@ export const FIRST_RUN_INTRO_PIXI_ASSETS = Object.freeze({
   peace: 'source:assets/rooms/intro/peaceful-world.webp',
   workshop: 'source:assets/rooms/intro/workshop-for-sale.webp',
   panel:
-    'source:assets/ui/root-run-research/research-card-dark-1000x304.png',
+    'source:assets/ui/root-run-research/research-card-dark-1000x304.9.png',
 });
 
 export const FIRST_RUN_INTRO_PIXI_STEPS = Object.freeze([

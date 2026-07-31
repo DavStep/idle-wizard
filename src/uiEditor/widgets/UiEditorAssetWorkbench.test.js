@@ -50,10 +50,10 @@ describe('UiEditorAssetWorkbench', () => {
     vi.stubGlobal('fetch', fetchMock);
     const preview = createUiEditorAssetPreview({
       assetId:
-        'source:assets/ui/root-run-cost-button/green-button-short.9.png',
-      assetUrl: '/green-button-short.9.png',
+        'source:assets/ui/root-run-cost-button/green-button-short.png',
+      assetUrl: '/green-button-short.png',
       id: 'asset:green-short',
-      label: 'green-button-short.9.png',
+      label: 'green-button-short.png',
       nineSlice: false,
       suggestedSourceInsets: {
         top: 100,
@@ -89,7 +89,7 @@ describe('UiEditorAssetWorkbench', () => {
         method: 'POST',
         body: JSON.stringify({
           assetId:
-            'source:assets/ui/root-run-cost-button/green-button-short.9.png',
+            'source:assets/ui/root-run-cost-button/green-button-short.png',
           outputInsets: {
             left: 85,
             top: 100,
@@ -106,7 +106,8 @@ describe('UiEditorAssetWorkbench', () => {
       }),
     );
     expect(consumePendingNineSliceSelection()).toEqual({
-      entryId: 'asset:green-short',
+      entryId:
+        'asset:source:assets/ui/root-run-cost-button/green-button-short.9.png',
       metadataPath:
         'assets/game/source/ui/root-run-cost-button/'
         + 'green-button-short.9.9slice.json',
@@ -547,7 +548,7 @@ describe('UiEditorAssetWorkbench', () => {
 
   it('marks nine-slice thumbnails without duplicating button semantics', () => {
     const thumbnail = createUiEditorAssetThumbnail({
-      assetUrl: '/panel-9slice.png',
+      assetUrl: '/panel.9.png',
       id: 'asset:panel',
       nineSlice: true,
     });

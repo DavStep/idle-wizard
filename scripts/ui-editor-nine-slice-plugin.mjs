@@ -4,6 +4,7 @@ import {
   constants,
   readdir,
   readFile,
+  rename,
   unlink,
   writeFile,
 } from 'node:fs/promises';
@@ -179,13 +180,11 @@ export async function deleteUiEditorAsset(
         'The replacement must use the same file type as the deleted asset.',
       );
     }
-    const sourceHasSidecar = await pathExists(
-      resolveNineSliceSidecarPath(assetPath),
+    const sourceIsNineSlice = await isNineSliceAssetPath(assetPath);
+    const replacementIsNineSlice = await isNineSliceAssetPath(
+      replacementAssetPath,
     );
-    const replacementHasSidecar = await pathExists(
-      resolveNineSliceSidecarPath(replacementAssetPath),
-    );
-    if (sourceHasSidecar !== replacementHasSidecar) {
+    if (sourceIsNineSlice !== replacementIsNineSlice) {
       throw createHttpError(
         400,
         'The replacement must use the same image or nine-slice asset type.',
@@ -260,19 +259,50 @@ export async function saveUiEditorNineSlice(
   const normalizedOutputInsets = normalizeOutputInsets(
     outputInsets ?? normalizedSlice,
   );
+  const nineSliceAssetPath = resolveNineSliceAssetPath(assetPath);
+  const nineSliceRelativeAssetPath = path
+    .relative(sourceRoot, nineSliceAssetPath)
+    .split(path.sep)
+    .join('/');
+  const nineSliceAssetId =
+    `${SOURCE_ASSET_ID_PREFIX}${nineSliceRelativeAssetPath}`;
+  let changedFiles = [];
+
+  if (nineSliceAssetPath !== assetPath) {
+    if (await pathExists(nineSliceAssetPath)) {
+      throw createHttpError(
+        409,
+        `Nine-slice asset already exists: ${nineSliceRelativeAssetPath}`,
+      );
+    }
+    const references = await findAssetReferences({
+      assetId,
+      relativeAssetPath,
+      rootDir,
+    });
+    await rename(assetPath, nineSliceAssetPath);
+    changedFiles = await replaceAssetReferences({
+      assetId,
+      relativeAssetPath,
+      replacementAssetId: nineSliceAssetId,
+      replacementRelativePath: nineSliceRelativeAssetPath,
+      references,
+      rootDir,
+    });
+  }
   const relativeSourcePath = path
-    .relative(rootDir, assetPath)
+    .relative(rootDir, nineSliceAssetPath)
     .split(path.sep)
     .join('/');
   const metadata = createNineSliceMetadata({
-    assetName: path.basename(assetPath),
+    assetName: path.basename(nineSliceAssetPath),
     height,
     relativeSourcePath,
     outputInsets: normalizedOutputInsets,
     slice: normalizedSlice,
     width,
   });
-  const metadataPath = assetPath.replace(/\.png$/i, '.9slice.json');
+  const metadataPath = resolveNineSliceSidecarPath(nineSliceAssetPath);
 
   await writeFile(
     metadataPath,
@@ -280,10 +310,24 @@ export async function saveUiEditorNineSlice(
     'utf8',
   );
 
+  const previousMetadataPath = resolveNineSliceSidecarPath(assetPath);
+  if (previousMetadataPath !== metadataPath) {
+    try {
+      await unlink(previousMetadataPath);
+    } catch (error) {
+      if (error?.code !== 'ENOENT') {
+        throw error;
+      }
+    }
+  }
+
   return {
-    assetId,
+    assetId: nineSliceAssetId,
+    changedFiles,
     metadata,
     metadataPath: path.relative(rootDir, metadataPath).split(path.sep).join('/'),
+    renamedFromAssetId:
+      nineSliceAssetId === assetId ? null : assetId,
   };
 }
 
@@ -618,6 +662,19 @@ async function pathExists(filePath) {
 
 function resolveNineSliceSidecarPath(assetPath) {
   return assetPath.replace(/\.png$/i, '.9slice.json');
+}
+
+function resolveNineSliceAssetPath(assetPath) {
+  return /\.9\.png$/i.test(assetPath)
+    ? assetPath
+    : assetPath.replace(/\.png$/i, '.9.png');
+}
+
+async function isNineSliceAssetPath(assetPath) {
+  return (
+    /\.9\.png$/i.test(assetPath)
+    || await pathExists(resolveNineSliceSidecarPath(assetPath))
+  );
 }
 
 async function resolveExistingSidecarPath(assetPath, rootDir) {

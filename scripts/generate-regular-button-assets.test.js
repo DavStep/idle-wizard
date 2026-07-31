@@ -7,6 +7,7 @@ const ASSET_DIR = 'assets/game/source/ui/regular-button';
 const COLORS = [
   'blue',
   'brown',
+  'dark-brown',
   'gray',
   'green',
   'purple',

@@ -10,4 +10,4 @@ These raster assets preserve the shared Root Run backpack-dialog composition:
 
 The source files are copied byte-for-byte from the sibling `root-run` project.
 The shared dialog content panel intentionally reuses
-`public/ui/root-run-research/research-card-1000x304.png`.
+`public/ui/root-run-research/research-card-1000x304.9.png`.

@@ -1,7 +1,7 @@
 {
   "version": 1,
   "format": "png",
-  "asset": "midnight-top-panel-background-9slice.png",
+  "asset": "midnight-room-tab-top-cap-selected.9.png",
   "workingAsset": null,
   "scaleWorkflow": {
     "workScale": 1,
@@ -11,7 +11,7 @@
     }
   },
   "source": {
-    "path": "assets/game/source/ui/midnight-room-tab-top-cap-9slice.png",
+    "path": "assets/game/source/ui/midnight-room-tab-top-cap-selected.9.png",
     "width": 157,
     "height": 93,
     "mode": "RGBA",
@@ -27,9 +27,9 @@
     "height": 93
   },
   "slice": {
-    "left": 40,
-    "top": 40,
-    "right": 40,
+    "left": 83,
+    "top": 91,
+    "right": 73,
     "bottom": 1
   },
   "mode": "source",
@@ -51,12 +51,7 @@
       "fadePx": 2
     },
     "allowTransparentGutters": false,
-    "geometricMask": true,
-    "cornerRemap": {
-      "topRadius": 14,
-      "joinX": 40,
-      "preserveMiddleAndRowsFromY": 40
-    }
+    "geometricMask": false
   },
   "rendering": {
     "stretch": "edges-and-center",
@@ -69,9 +64,9 @@
     "naturalRoundTripExact": true,
     "cornerRoundTripExact": true,
     "alpha": {
-      "transparent": 68,
-      "translucent": 282,
-      "opaque": 14251
+      "transparent": 998,
+      "translucent": 158,
+      "opaque": 13445
     },
     "alphaBounds": {
       "x": 0,
@@ -87,8 +82,8 @@
     },
     "passesNoGutterGate": true,
     "uniqueColors": {
-      "all": 155,
-      "corners": 155,
+      "all": 43,
+      "corners": 43,
       "edges": 3
     },
     "workAsset": {
@@ -97,17 +92,17 @@
         "height": 93
       },
       "slice": {
-        "left": 40,
-        "top": 40,
-        "right": 40,
+        "left": 83,
+        "top": 91,
+        "right": 73,
         "bottom": 1
       },
       "naturalRoundTripExact": true,
       "cornerRoundTripExact": true,
       "alpha": {
-        "transparent": 68,
-        "translucent": 282,
-        "opaque": 14251
+        "transparent": 998,
+        "translucent": 158,
+        "opaque": 13445
       },
       "alphaBounds": {
         "x": 0,
@@ -122,14 +117,14 @@
         "bottom": 0
       },
       "uniqueColors": {
-        "all": 155,
-        "corners": 155,
+        "all": 43,
+        "corners": 43,
         "edges": 3
       }
     }
   },
   "qa": {
-    "sheet": "midnight-top-panel-background-9slice-qa-sheet.png",
+    "sheet": "midnight-room-tab-top-cap-selected-9slice-qa-sheet.png",
     "examples": [
       {
         "label": "original: 157x93",

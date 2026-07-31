@@ -19,6 +19,13 @@ const SOURCE_NINE_SLICE_BY_ASSET_ID = new Map(
     metadata,
   ]),
 );
+const CURRENCY_SOURCE_PATHS = new Set([
+  'icons/icon-coin.png',
+  'icons/icon-crystal.png',
+  'icons/icon-emerald.png',
+  'icons/icon-mana-drop.png',
+  'icons/icon-ruby.png',
+]);
 
 export function createIdleWizardAssetEntries(widgetEntries = []) {
   const assetsById = new Map();
@@ -29,11 +36,12 @@ export function createIdleWizardAssetEntries(widgetEntries = []) {
     }
 
     const metadata = SOURCE_NINE_SLICE_BY_ASSET_ID.get(manifestAsset.id);
+    const namedNineSlice = isNineSliceAssetId(manifestAsset.id);
     assetsById.set(manifestAsset.id, {
       borderInsets: metadata?.rendering?.outputInsets ?? null,
       id: manifestAsset.id,
       minimumSize: metadata?.rendering?.minimumSize ?? null,
-      nineSlice: Boolean(metadata?.slice),
+      nineSlice: namedNineSlice || Boolean(metadata?.slice),
       sourceInsets: metadata?.slice ?? null,
       usages: [],
     });
@@ -146,6 +154,10 @@ function resolveAssetFolderPath(assetId) {
 
   if (normalizedAssetId.startsWith('source:assets/')) {
     relativePath = normalizedAssetId.replace(/^source:assets\//, '');
+    const semanticFolderPath = resolveSemanticSourceFolderPath(relativePath);
+    if (semanticFolderPath) {
+      return semanticFolderPath;
+    }
   } else if (normalizedAssetId.startsWith('public:')) {
     pathPrefix = ['public'];
     relativePath = normalizedAssetId.replace(/^public:/, '');
@@ -158,6 +170,24 @@ function resolveAssetFolderPath(assetId) {
   const segments = relativePath.split('/').filter(Boolean);
 
   return Object.freeze([...pathPrefix, ...segments.slice(0, -1)]);
+}
+
+function resolveSemanticSourceFolderPath(relativePath) {
+  const segments = String(relativePath ?? '').split('/').filter(Boolean);
+  const filename = segments.at(-1) ?? '';
+
+  if (CURRENCY_SOURCE_PATHS.has(relativePath)) {
+    return Object.freeze(['ui', 'currencies']);
+  }
+
+  if (
+    segments[0] === 'ui'
+    && /(?:^|-)(?:title|banner|ribbon)(?:-|\.)/i.test(filename)
+  ) {
+    return Object.freeze(['ui', 'banners']);
+  }
+
+  return null;
 }
 
 function resolveAssetLabel(assetId) {
@@ -175,6 +205,10 @@ function canAuthorNineSlice(assetId) {
     String(assetId ?? '').startsWith('source:')
     && /\.png$/i.test(assetId)
   );
+}
+
+export function isNineSliceAssetId(assetId) {
+  return /\.9\.png$/i.test(String(assetId ?? ''));
 }
 
 function canRenderDeclaredAssetSize(asset) {
@@ -219,7 +253,9 @@ function createAssetProperties(asset, editorEditable) {
     properties.push({
       label: 'Slice margins',
       monospace: true,
-      value: formatInsets(asset.sourceInsets),
+      value: asset.sourceInsets
+        ? formatInsets(asset.sourceInsets)
+        : 'Auto (quarter image)',
     });
     if (asset.minimumSize) {
       properties.push({

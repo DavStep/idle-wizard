@@ -946,16 +946,11 @@ describe('retained global Pixi dialogs', () => {
       'brown-dark',
     );
 
-    expect(settings.accountSave.buttonWidth).toBeCloseTo(
-      PIXI_ROOT_RUN_GEOMETRY.account.save.width,
-    );
-    expect(settings.accountSave.buttonHeight).toBeCloseTo(
-      PIXI_ROOT_RUN_GEOMETRY.account.save.height,
-    );
-    expect(settings.accountSave.textLabel.fontSize).toBeCloseTo(
-      PIXI_ROOT_RUN_GEOMETRY.account.save.fontSize,
-    );
-    expect(settings.accountSave.variant).toBe('account-save');
+    expect(settings.accountSave.buttonWidth).toBeCloseTo(456 * (298 / 925));
+    expect(settings.accountSave.buttonHeight).toBeCloseTo(205 / 3);
+    expect(settings.accountSave.textLabel.fontSize).toBe(13);
+    expect(settings.accountSave.variant).toBe('green');
+    expect(settings.accountSave.resolveRootRunVariant()).toBe('green');
 
     const choiceBoardBottom =
       settings.accountChoiceBoard.y +

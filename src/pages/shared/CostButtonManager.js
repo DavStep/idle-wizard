@@ -1,8 +1,8 @@
 import { setResourceColorFromText } from './resourceColor.js';
 import { setResourceIconText } from './resourceIconLabel.js';
 
-const ROOT_RUN_COIN_ICON_PATH = new URL(
-  '../../../assets/game/source/ui/root-run-cost-button/coin.png',
+const COIN_ICON_PATH = new URL(
+  '../../../assets/game/source/icons/icon-coin.png',
   import.meta.url,
 ).href;
 
@@ -49,7 +49,7 @@ export class CostButtonManager {
     this.enabled = enabled === true;
     setResourceIconText(this.button, label);
     this.wrapPlainLabel(label);
-    this.useRootRunCoinIcon();
+    this.useSharedCoinIcon();
     setResourceColorFromText(this.button, label);
     this.button.disabled = !this.enabled;
     this.button.setAttribute('aria-disabled', this.enabled ? 'false' : 'true');
@@ -73,7 +73,7 @@ export class CostButtonManager {
     this.button.replaceChildren(text);
   }
 
-  useRootRunCoinIcon() {
+  useSharedCoinIcon() {
     const coinIcon = this.button.querySelector(
       '.style-resource-label--coin .style-resource-label__icon',
     );
@@ -84,11 +84,11 @@ export class CostButtonManager {
 
     const image = document.createElement('img');
     image.className = coinIcon.getAttribute('class') ?? 'style-resource-label__icon';
-    image.src = ROOT_RUN_COIN_ICON_PATH;
+    image.src = COIN_ICON_PATH;
     image.alt = '';
     image.setAttribute('aria-hidden', 'true');
     image.draggable = false;
-    image.dataset.rootRunCostIcon = 'coin';
+    image.dataset.currencyIcon = 'coin';
     coinIcon.replaceWith(image);
   }
 

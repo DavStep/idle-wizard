@@ -92,19 +92,18 @@ describe('UiEditorUsageManager', () => {
   it('shows a quiet empty state when a widget has no registered usages', () => {
     manager.showEntry({
       kind: 'widget',
-      label: 'Account Tab Button',
+      label: 'Unused Button',
       properties: [
         { label: 'Font', value: 'Lilita One' },
         {
           label: 'Background asset',
-          monospace: true,
-          value:
-            'source:assets/ui/root-run-account/tab-inactive.9.png',
+          monospace: false,
+          value: 'None',
         },
       ],
     });
 
-    expect(refs.title.textContent).toBe('Account Tab Button');
+    expect(refs.title.textContent).toBe('Unused Button');
     expect(refs.count.textContent).toBe('0 usages');
     expect(refs.properties.hidden).toBe(false);
     expect(refs.properties.querySelectorAll('dd')).toHaveLength(2);

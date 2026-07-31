@@ -1168,7 +1168,7 @@ class GuildPaper {
     this.root.label = label;
     this.frame = new GuildAssetNineSlice({
       assetManager,
-      textureId: 'public:ui/guild-quest/paper-9slice.png',
+      textureId: 'public:ui/guild-quest/paper.9.png',
       sourceInsets: { left: 41, top: 41, right: 42, bottom: 42 },
       outputInsets: { left: 5, top: 5, right: 5, bottom: 5 },
       label: `${label}:frame`,
@@ -1406,7 +1406,7 @@ class GuildRequestListItem {
     this.root = new Container();
     this.frame = new GuildAssetNineSlice({
       assetManager,
-      textureId: 'public:ui/guild-quest/list-row-9slice.png',
+      textureId: 'public:ui/guild-quest/list-row.9.png',
       sourceInsets: { left: 31, top: 24, right: 32, bottom: 23 },
       outputInsets: { left: 7, top: 7, right: 7, bottom: 7 },
       label: 'guild:requestStack:listItem:frame',
@@ -1468,8 +1468,8 @@ class GuildRequestListItem {
     this.clip.visible = selected;
     this.frame.setTextureId(
       selected
-        ? 'public:ui/guild-quest/paper-9slice.png'
-        : 'public:ui/guild-quest/list-row-9slice.png',
+        ? 'public:ui/guild-quest/paper.9.png'
+        : 'public:ui/guild-quest/list-row.9.png',
       selected
         ? { left: 41, top: 41, right: 42, bottom: 42 }
         : { left: 31, top: 24, right: 32, bottom: 23 },
@@ -1548,7 +1548,7 @@ class GuildQuestDetail {
     this.root.label = label;
     this.frame = new GuildAssetNineSlice({
       assetManager,
-      textureId: 'public:ui/guild-quest/paper-9slice.png',
+      textureId: 'public:ui/guild-quest/paper.9.png',
       sourceInsets: { left: 41, top: 41, right: 42, bottom: 42 },
       outputInsets: { left: 9, top: 9, right: 9, bottom: 9 },
       label: `${label}:frame`,

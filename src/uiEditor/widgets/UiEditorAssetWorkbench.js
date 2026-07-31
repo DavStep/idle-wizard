@@ -90,9 +90,10 @@ export function createUiEditorAssetPreview(
       cancelButton.disabled = true;
     }
     header.setStatus('Saving…');
+    const pendingAssetId = resolveNineSliceAssetId(entry.assetId);
     storePendingNineSliceSelection({
-      entryId: entry.id,
-      metadataPath: resolveNineSliceMetadataPath(entry.assetId),
+      entryId: `asset:${pendingAssetId}`,
+      metadataPath: resolveNineSliceMetadataPath(pendingAssetId),
     });
 
     try {
@@ -1582,12 +1583,14 @@ function formatNumber(value) {
   return Number.isInteger(value) ? String(value) : Number(value).toFixed(2);
 }
 
-function normalizeInsets(insets = {}) {
+function normalizeInsets(insets) {
+  const normalized = insets ?? {};
+
   return {
-    left: Number(insets.left) || 0,
-    top: Number(insets.top) || 0,
-    right: Number(insets.right) || 0,
-    bottom: Number(insets.bottom) || 0,
+    left: Number(normalized.left) || 0,
+    top: Number(normalized.top) || 0,
+    right: Number(normalized.right) || 0,
+    bottom: Number(normalized.bottom) || 0,
   };
 }
 
@@ -1759,9 +1762,17 @@ function resolveSessionStorage() {
 }
 
 function resolveNineSliceMetadataPath(assetId) {
-  return String(assetId ?? '')
+  return resolveNineSliceAssetId(assetId)
     .replace(/^source:assets\//, 'assets/game/source/')
     .replace(/\.png$/i, '.9slice.json');
+}
+
+function resolveNineSliceAssetId(assetId) {
+  const normalized = String(assetId ?? '');
+
+  return /\.9\.png$/i.test(normalized)
+    ? normalized
+    : normalized.replace(/\.png$/i, '.9.png');
 }
 
 function toRenderedPixels(value, naturalSize, renderedSize) {

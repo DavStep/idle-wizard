@@ -104,10 +104,8 @@ const ACCOUNT_CHOICES_HEIGHT =
   ACCOUNT_TABS_TOP_INSET +
   ACCOUNT_TAB_HEIGHT +
   ACCOUNT_TABS_BOTTOM_INSET;
-const ACCOUNT_SAVE_WIDTH =
-  PIXI_ROOT_RUN_GEOMETRY.account.save.width;
-const ACCOUNT_SAVE_HEIGHT =
-  PIXI_ROOT_RUN_GEOMETRY.account.save.height;
+const ACCOUNT_SAVE_WIDTH = 456 * (ACCOUNT_HEADER_WIDTH / 925);
+const ACCOUNT_SAVE_HEIGHT = 205 / 3;
 const ACCOUNT_SAVE_GAP = 8;
 const ACCOUNT_BOTTOM_GAP = 8;
 const SETTINGS_DEVICE_CONTENT_HEIGHT = 442;
@@ -348,7 +346,7 @@ export class PixiSettingsDialog extends RetainedGlobalDialog {
       semanticRegistry: this.context.semanticRegistry,
       semanticId: `${this.dialogId}.account.save`,
       text: 'Save',
-      variant: 'account-save',
+      variant: 'green',
       width: ACCOUNT_SAVE_WIDTH,
       height: ACCOUNT_SAVE_HEIGHT,
       action: () => this.saveAccount(),

@@ -180,10 +180,10 @@ describe('ShopPixiPage', () => {
       PIXI_ROOT_RUN_GEOMETRY.researchCard.borderInsets,
     );
     expect(getTexture).toHaveBeenCalledWith(
-      'source:assets/ui/root-run-research/research-card-1000x304.png',
+      'source:assets/ui/root-run-research/research-card-1000x304.9.png',
     );
     expect(harness.page.stallsSection.titlePlaque.assetId).toBe(
-      'source:assets/ui/root-run-research/research-station-title-red.png',
+      'source:assets/ui/root-run-research/research-station-title-red.9.png',
     );
     expect(stall.title.text).toBe('Stall 1');
     expect(stall.item.text).toBe('Sage');

@@ -60,8 +60,12 @@ Use borders before shadows. Panels use `--editor-border-subtle` or
   Folder rows use a familiar outline icon, remain visually flat at rest, and
   form a responsive grid without card chrome.
 - The asset catalogue covers every production-manifest texture. Source
-  directories remain nested under their normal category folders, runtime
-  aliases live under `Public`, and generated textures live under `Generated`.
+  directories remain nested under their normal category folders unless a
+  reusable visual role is clearer. Shared title plaques and ribbons live under
+  `UI/Banners` instead of account, dialog, market, or research feature folders;
+  canonical coin, crystal, emerald, mana, and ruby icons live under
+  `UI/Currencies`. Runtime aliases live under `Public`, and generated textures
+  live under `Generated`.
   A directory may show direct assets and child folders together. Every asset
   folder keeps one native search field at the far right of the breadcrumb
   header; it searches that folder and its descendants by filename or production
@@ -129,9 +133,10 @@ Use borders before shadows. Panels use `--editor-border-subtle` or
 - Nine-slice source margins may be changed by direct number entry, pointer drag,
   or keyboard movement. Opposing guides may never cross, and every size or slice
   change updates the stretched result immediately. Clipboard output is a
-  user-initiated convenience only. Explicit `Save 9-slice`, whether converting
-  or editing an existing source nine-slice, writes only a sidecar definition and
-  preserves the source PNG byte-for-byte.
+  user-initiated convenience only. Explicit `Save 9-slice` promotes an ordinary
+  source filename to `.9.png`, updates project references, writes its sidecar
+  definition, and preserves the source PNG pixels byte-for-byte. Existing
+  `.9.png` assets open directly in the nine-slice workbench.
 - Normal transitions last `150ms`; larger state changes may use `200ms`.
 - Motion must explain state and respect reduced-motion preferences.
 - Disabled content uses `--editor-text-disabled` without introducing a new

@@ -74,6 +74,40 @@ test('saves validated nine-slice metadata beside a PNG source asset', async () =
   expect(metadata.editor.sourceAssetPreserved).toBe(true);
 });
 
+test('promotes an ordinary PNG to .9.png and updates its references', async () => {
+  const rootDir = await mkdtemp(path.join(os.tmpdir(), 'idle-wizard-9slice-'));
+  const assetDir = path.join(rootDir, 'assets/game/source/ui');
+  const sourceDir = path.join(rootDir, 'src');
+
+  await mkdir(assetDir, { recursive: true });
+  await mkdir(sourceDir, { recursive: true });
+  await writeFile(path.join(assetDir, 'panel.png'), createPngHeader(40, 20));
+  await writeFile(
+    path.join(sourceDir, 'panel.js'),
+    'const panel = "source:assets/ui/panel.png";\n',
+  );
+
+  const result = await saveUiEditorNineSlice(
+    {
+      assetId: 'source:assets/ui/panel.png',
+      slice: { left: 8, top: 4, right: 8, bottom: 4 },
+    },
+    { rootDir },
+  );
+  const source = await readFile(path.join(sourceDir, 'panel.js'), 'utf8');
+  const metadata = JSON.parse(
+    await readFile(path.join(assetDir, 'panel.9.9slice.json'), 'utf8'),
+  );
+
+  expect(result.assetId).toBe('source:assets/ui/panel.9.png');
+  expect(result.renamedFromAssetId).toBe('source:assets/ui/panel.png');
+  expect(result.changedFiles).toEqual(['src/panel.js']);
+  expect(source).toContain('source:assets/ui/panel.9.png');
+  expect(metadata.asset).toBe('panel.9.png');
+  await expect(access(path.join(assetDir, 'panel.png'))).rejects.toThrow();
+  await expect(access(path.join(assetDir, 'panel.9.png'))).resolves.toBeUndefined();
+});
+
 test('rejects slice margins that consume the stretchable center', async () => {
   const rootDir = await mkdtemp(path.join(os.tmpdir(), 'idle-wizard-9slice-'));
   const assetDir = path.join(rootDir, 'assets/game/source/ui');

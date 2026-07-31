@@ -21,7 +21,7 @@ describe('createIdleWizardButtonEntries', () => {
   it('registers every supported shared button preview in the Buttons folder', () => {
     const entries = createIdleWizardButtonEntries();
 
-    expect(entries).toHaveLength(21);
+    expect(entries).toHaveLength(18);
     expect(new Set(entries.map((entry) => entry.id)).size).toBe(entries.length);
     expect(entries.every((entry) => entry.kind === 'widget')).toBe(true);
     expect(entries.every((entry) => entry.sectionId === 'buttons')).toBe(true);
@@ -53,13 +53,20 @@ describe('createIdleWizardButtonEntries', () => {
   it('registers production usage locations for active widget contracts', () => {
     const entries = createIdleWizardButtonEntries();
     const greenButton = entries.find(({ id }) => id === 'green-button');
-    const accountTab = entries.find(({ id }) => id === 'account-tab-button');
+    const popupTab = entries.find(({ id }) => id === 'popup-tab-button');
 
+    expect(greenButton.usages).toContainEqual({
+      label: 'Account Save action',
+      source: 'src/rendering/pixi/global/dialogs/PixiSettingsDialog.js',
+    });
     expect(greenButton.usages).toContainEqual({
       label: 'Garden Harvest All action',
       source: 'src/rendering/pixi/pages/garden/GardenPixiPage.js',
     });
-    expect(accountTab.usages).toEqual([]);
+    expect(popupTab.usages).toContainEqual({
+      label: 'Settings Avatar and Frame tabs',
+      source: 'src/rendering/pixi/global/dialogs/PixiSettingsDialog.js',
+    });
   });
 
   it('registers font and production background metadata for inspection', () => {

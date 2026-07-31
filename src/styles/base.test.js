@@ -340,28 +340,28 @@ describe('base styles', () => {
     );
     const assetDir = `${cwd()}/assets/game/source/ui/root-run-dialog`;
     const back = PNG.sync.read(
-      readFileSync(`${assetDir}/expedition-dialog-back.png`),
+      readFileSync(`${assetDir}/expedition-dialog-back.9.png`),
     );
     const title = PNG.sync.read(
-      readFileSync(`${assetDir}/expedition-dialog-title-purple.png`),
+      readFileSync(`${assetDir}/expedition-dialog-title-purple.9.png`),
     );
     const paper = PNG.sync.read(
-      readFileSync(`${assetDir}/expedition-dialog-front.png`),
+      readFileSync(`${assetDir}/expedition-dialog-front.9.png`),
     );
     const close = PNG.sync.read(
       readFileSync(`${assetDir}/expedition-dialog-close.png`),
     );
 
     expect(rootRule).toContain(
-      '--style-dialog-frame: url("../../assets/game/source/ui/root-run-dialog/expedition-dialog-back.png");',
+      '--style-dialog-frame: url("../../assets/game/source/ui/root-run-dialog/expedition-dialog-back.9.png");',
     );
     expect(rootRule).toContain('--style-dialog-frame-slice: 139 163 83 83 fill;');
     expect(rootRule).toContain(
-      '--style-dialog-paper-frame: url("../../assets/game/source/ui/root-run-dialog/expedition-dialog-front.png");',
+      '--style-dialog-paper-frame: url("../../assets/game/source/ui/root-run-dialog/expedition-dialog-front.9.png");',
     );
     expect(rootRule).toContain('--style-dialog-paper-frame-slice: 99 53 72 84 fill;');
     expect(rootRule).toContain(
-      '--style-dialog-title-frame: url("../../assets/game/source/ui/root-run-dialog/expedition-dialog-title-purple.png");',
+      '--style-dialog-title-frame: url("../../assets/game/source/ui/root-run-dialog/expedition-dialog-title-purple.9.png");',
     );
     expect(rootRule).toContain('--style-dialog-title-frame-slice: 0 132 0 85 fill;');
     expect(rootRule).toContain('--style-dialog-title-fill: #9d25db;');
@@ -475,7 +475,7 @@ describe('base styles', () => {
       '--style-midnight-panel-frame: url("../../assets/game/source/ui/player-card-panel.9.png");',
     );
     expect(rootRule).toContain(
-      '--style-midnight-panel-selected-frame: url("../../assets/game/source/ui/player-card-panel-selected-9slice.png");',
+      '--style-midnight-panel-selected-frame: url("../../assets/game/source/ui/player-card-panel-selected.9.png");',
     );
     expect(sharedFrameRule).toContain(
       'border-image-source: var(--style-midnight-panel-frame);',
@@ -691,28 +691,28 @@ describe('base styles', () => {
     const themeAssets = ['midnight', 'day'].map((theme) =>
       PNG.sync.read(
         readFileSync(
-          `${cwd()}/assets/game/source/ui/inner-section-panel-${theme}-9slice.png`,
+          `${cwd()}/assets/game/source/ui/inner-section-panel-${theme}.9.png`,
         ),
       ),
     );
 
     expect(baseCss).toContain(
-      '--style-inner-section-frame: url("../../assets/game/source/ui/inner-section-panel-midnight-9slice.png");',
+      '--style-inner-section-frame: url("../../assets/game/source/ui/inner-section-panel-midnight.9.png");',
     );
     expect(baseCss).toContain('--style-inner-section-fill: #242938;');
     expect(baseCss).toContain(
-      '--style-inner-section-frame: url("../../assets/game/source/ui/inner-section-panel-day-9slice.png");',
+      '--style-inner-section-frame: url("../../assets/game/source/ui/inner-section-panel-day.9.png");',
     );
     expect(baseCss).toContain('--style-inner-section-fill: #765238;');
     expect(baseCss).toContain('--style-top-panel-content-gap: 16px;');
     expect(baseCss).toContain(
-      '--style-top-panel-background-frame: url("../../assets/game/source/ui/midnight-top-panel-background-9slice.png");',
+      '--style-top-panel-background-frame: url("../../assets/game/source/ui/midnight-top-panel-background.9.png");',
     );
     expect(baseCss).toContain(
-      '--style-top-panel-background-frame-slice: 40 40 1 40 fill;',
+      '--style-top-panel-background-frame-slice: 1 30 30 30 fill;',
     );
     expect(baseCss).toContain(
-      '--style-top-panel-background-frame-width: 20px 20px 0.5px 20px;',
+      '--style-top-panel-background-frame-width: 0.5px 15px 15px 15px;',
     );
     expect(selectableThemeRule).toContain(
       '--style-inner-section-frame-slice: 91 73 90 83 fill;',
@@ -746,7 +746,7 @@ describe('base styles', () => {
     expect(topPanelBackgroundRule).toContain(
       'border-image-width: var(--style-top-panel-background-frame-width);',
     );
-    expect(topPanelBackgroundRule).toContain('transform: scaleY(-1);');
+    expect(topPanelBackgroundRule).not.toContain('transform: scaleY(-1);');
 
     const alphaMasks = themeAssets.map((png) => {
       expect(png.width).toBe(157);
@@ -957,7 +957,7 @@ describe('base styles', () => {
       'left: calc(var(--style-source-ui-gutter-x) + 20px);',
     );
     expect(panelRule).toContain(
-      '--first-run-intro-panel-frame: url("../../assets/game/source/ui/root-run-research/research-card-dark-1000x304.png");',
+      '--first-run-intro-panel-frame: url("../../assets/game/source/ui/root-run-research/research-card-dark-1000x304.9.png");',
     );
     expect(panelRule).toContain('padding: 38px 20px 20px;');
     expect(panelRule).toContain('color: #fff;');
@@ -1037,7 +1037,7 @@ describe('base styles', () => {
     );
 
     expect(introSkinRule).toContain(
-      '--intro-dialog-panel-frame: url("../../assets/game/source/ui/intro-dialog-panel-9slice.png");',
+      '--intro-dialog-panel-frame: url("../../assets/game/source/ui/intro-dialog-panel.9.png");',
     );
     expect(introSkinRule).toContain(
       '--intro-dialog-panel-slice: 31 29 31 29 fill;',

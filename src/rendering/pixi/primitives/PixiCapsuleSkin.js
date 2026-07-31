@@ -6,9 +6,9 @@ import {
 
 export const PIXI_CAPSULE_ASSETS = Object.freeze({
   track:
-    'source:assets/ui/root-run-progress/progress-track-9slice.png',
+    'source:assets/ui/root-run-progress/progress-track.9.png',
   fillMask:
-    'source:assets/ui/root-run-progress/progress-fill-mask-9slice.png',
+    'source:assets/ui/root-run-progress/progress-fill-mask.9.png',
 });
 
 const CAPSULE_SOURCE_GEOMETRY = Object.freeze({

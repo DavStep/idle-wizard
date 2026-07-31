@@ -37,9 +37,6 @@ const EDITOR_BACKGROUND_ASSET_IDS = Object.freeze([
   PIXI_ROOT_RUN_ASSETS.buttonBrownLight,
   PIXI_ROOT_RUN_ASSETS.buttonTabActive,
   PIXI_ROOT_RUN_ASSETS.buttonTabInactive,
-  PIXI_ROOT_RUN_ASSETS.accountTabActive,
-  PIXI_ROOT_RUN_ASSETS.accountTabInactive,
-  PIXI_ROOT_RUN_ASSETS.accountSave,
   PIXI_ROOT_RUN_ASSETS.buttonGreen,
   PIXI_ROOT_RUN_ASSETS.buttonGray,
   PIXI_ROOT_RUN_ASSETS.buttonGreenStacked,
@@ -50,9 +47,6 @@ const EDITOR_BACKGROUND_ASSET_IDS = Object.freeze([
 ]);
 const BUTTON_ASSET_IDS = new Set([
   ...EDITOR_BACKGROUND_ASSET_IDS,
-  PIXI_ROOT_RUN_ASSETS.accountSave,
-  PIXI_ROOT_RUN_ASSETS.accountTabActive,
-  PIXI_ROOT_RUN_ASSETS.accountTabInactive,
   PIXI_ROOT_RUN_ASSETS.buttonBlueShort,
   PIXI_ROOT_RUN_ASSETS.buttonBrownDark,
   PIXI_ROOT_RUN_ASSETS.buttonBrownLight,
@@ -594,16 +588,12 @@ function createAtomicComponents({ assetManager, definition, preview }) {
   };
 
   if (previewDefinition.type === 'cost') {
-    const backgroundTarget = previewDefinition.compact
-      ? root.compactBackground
-      : root.background;
     const components = [
       createBackgroundAtom({
         assetManager,
         asset: backgroundAsset,
         componentId,
-        displayObject: backgroundTarget,
-        extraTargets: [root.background, root.compactBackground],
+        displayObject: root.background,
         targetLabel,
         targetSize,
       }),

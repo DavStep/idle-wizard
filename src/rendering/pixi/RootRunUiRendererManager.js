@@ -69,7 +69,7 @@ const RESEARCH_SKINS = Object.freeze([
   Object.freeze({
     selector: '.research-page__row',
     url: new URL(
-      '../../../assets/game/source/ui/root-run-research/research-upgrade-bg.png',
+      '../../../assets/game/source/ui/root-run-research/research-upgrade-bg.9.png',
       import.meta.url,
     ).href,
     width: 1000,

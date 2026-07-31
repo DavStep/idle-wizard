@@ -210,9 +210,9 @@ Ordinary room UI uses shallow, skin-owned depth. Image-backed frames may carry b
 - **Page Names:** The current room name appears inside the raised active tab; inactive room names remain available through accessible labels.
 
 ### Dialogs
-- **Outer Shell:** Brown Root Run Expedition `expedition-dialog-back.png` nine-slice, rendered outside the content box.
-- **Content:** Root Run Expedition `expedition-dialog-front.png` paper nine-slice with brown ink. When a dialog needs separated groups, reuse Load Stall's split-paper composition: full-width instances of the same paper nine-slice expand through the standard content padding with an `8px` visible gap. Level rewards uses that existing composition for its two groups.
-- **Title:** Separate centered purple `expedition-dialog-title-purple.png` plaque with white outlined text.
+- **Outer Shell:** Brown Root Run Expedition `expedition-dialog-back.9.png` nine-slice, rendered outside the content box.
+- **Content:** Root Run Expedition `expedition-dialog-front.9.png` paper nine-slice with brown ink. When a dialog needs separated groups, reuse Load Stall's split-paper composition: full-width instances of the same paper nine-slice expand through the standard content padding with an `8px` visible gap. Level rewards uses that existing composition for its two groups.
+- **Title:** Separate centered purple `expedition-dialog-title-purple.9.png` plaque with white outlined text.
 - **Close:** Round `expedition-dialog-close.png` X control centered below the brown shell at the Expedition source gap; keep the accessible close label.
 - **Authored Geometry:** Preserve Expedition's `1080px` source relationships at the `390px` logical width: `1008px` shell becomes `364px`; `976px` paper becomes `352px` with a `6px` horizontal inset, `31px` top inset, and `21px` compact-dialog bottom inset; `614x121px` title becomes `222x44px`; and the `114px` close becomes `41px` with a `23px` shell gap.
 - **Title Type:** Match the exported title node's `64px` Lilita One Regular size and `73px` source line box, scaled to `23.1px` type with the shared proportional black stroke (`5.33px` at that font size). Its line box starts `22px` below the plaque top on the `1080px` source canvas.

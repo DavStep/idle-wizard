@@ -66,6 +66,47 @@ describe('createIdleWizardAssetEntries', () => {
     expect(publicPlayerCard.folderPath).toEqual(['public', 'ui']);
   });
 
+  it('groups reusable title plaques and ribbons as UI banners', () => {
+    const assets = createIdleWizardAssetEntries(
+      createIdleWizardButtonEntries(),
+    );
+    const bannerAssets = assets.filter(
+      ({ folderPath }) =>
+        JSON.stringify(folderPath) === JSON.stringify(['ui', 'banners']),
+    );
+
+    expect(bannerAssets.map(({ label }) => label).sort()).toEqual([
+      'account-title.png',
+      'dialog-title-compact.png',
+      'expedition-dialog-title-blue.9.png',
+      'expedition-dialog-title-purple.9.png',
+      'market-title-ribbon.9.png',
+      'research-station-title-blue.9.png',
+      'research-station-title-green.9.png',
+      'research-station-title-purple.9.png',
+      'research-station-title-red.9.png',
+      'research-station-title-yellow.9.png',
+    ]);
+  });
+
+  it('groups canonical currency icons as UI currencies', () => {
+    const assets = createIdleWizardAssetEntries(
+      createIdleWizardButtonEntries(),
+    );
+    const currencyAssets = assets.filter(
+      ({ folderPath }) =>
+        JSON.stringify(folderPath) === JSON.stringify(['ui', 'currencies']),
+    );
+
+    expect(currencyAssets.map(({ label }) => label).sort()).toEqual([
+      'icon-coin.png',
+      'icon-crystal.png',
+      'icon-emerald.png',
+      'icon-mana-drop.png',
+      'icon-ruby.png',
+    ]);
+  });
+
   it('groups the complete regular button color and radius matrix', () => {
     const assets = createIdleWizardAssetEntries(
       createIdleWizardButtonEntries(),
@@ -80,6 +121,7 @@ describe('createIdleWizardAssetEntries', () => {
     const colors = [
       'blue',
       'brown',
+      'dark-brown',
       'gray',
       'green',
       'purple',
@@ -184,6 +226,36 @@ describe('createIdleWizardAssetEntries', () => {
       monospace: true,
       value: 'L 85 · T 100 · R 71 · B 68',
     });
+  });
+
+  it('treats the .9.png suffix as a nine-slice without sidecar metadata', () => {
+    const assets = createIdleWizardAssetEntries(
+      createIdleWizardButtonEntries(),
+    );
+    const dialogBack = assets.find(
+      ({ assetId }) =>
+        assetId
+        === 'source:assets/ui/root-run-dialog/expedition-dialog-back.9.png',
+    );
+
+    expect(dialogBack.nineSlice).toBe(true);
+    expect(dialogBack.sourceInsets).toBeNull();
+    expect(dialogBack.properties).toContainEqual({
+      label: 'Type',
+      value: 'Nine-slice image',
+    });
+    expect(dialogBack.properties).toContainEqual({
+      label: 'Slice margins',
+      monospace: true,
+      value: 'Auto (quarter image)',
+    });
+
+    const preview = dialogBack.createPreview();
+
+    expect(preview.dataset.editorAssetMode).toBe('nine-slice');
+    expect(
+      preview.querySelector('.ui-editor-nine-slice'),
+    ).not.toBeNull();
   });
 
   it('registers widget usage and exact nine-slice geometry', () => {

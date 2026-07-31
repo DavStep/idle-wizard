@@ -1,7 +1,7 @@
 {
   "version": 1,
   "format": "png",
-  "asset": "midnight-room-tab-top-cap-selected-9slice.png",
+  "asset": "midnight-room-tab-top-cap.9.png",
   "workingAsset": null,
   "scaleWorkflow": {
     "workScale": 1,
@@ -11,9 +11,9 @@
     }
   },
   "source": {
-    "path": "assets/game/source/ui/midnight-room-tab-top-cap-selected-9slice.png",
+    "path": "assets/game/source/ui/inner-section-panel-midnight.9.png",
     "width": 157,
-    "height": 93,
+    "height": 182,
     "mode": "RGBA",
     "crop": {
       "x": 0,
@@ -124,7 +124,7 @@
     }
   },
   "qa": {
-    "sheet": "midnight-room-tab-top-cap-selected-9slice-qa-sheet.png",
+    "sheet": "midnight-room-tab-top-cap-9slice-qa-sheet.png",
     "examples": [
       {
         "label": "original: 157x93",

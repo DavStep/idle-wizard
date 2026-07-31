@@ -11,15 +11,11 @@ const ROOT_DIR = path.resolve(
 );
 const SOURCE_DIR = path.join(
   ROOT_DIR,
-  'assets/game/source/ui/root-run-cost-button',
+  'assets/game/source/ui/regular-button',
 );
 const OUTPUT_DIR = path.join(
   ROOT_DIR,
   'assets/game/source/ui/regular-button',
-);
-const MASTER_DIR = path.join(
-  ROOT_DIR,
-  'assets/game/masters/ui/regular-button',
 );
 const SOURCE_CENTER_X = 160;
 const SOURCE_CENTER_Y = 100;
@@ -31,13 +27,14 @@ const LEGACY_COMPACT_SLICE = Object.freeze({
 const LEGACY_COMPACT_CENTER_WIDTH = 2;
 
 const COLORS = Object.freeze({
-  blue: path.join(SOURCE_DIR, 'blue-button-short.png'),
-  brown: path.join(SOURCE_DIR, 'brown-button.png'),
-  gray: path.join(SOURCE_DIR, 'gray-button-short.png'),
-  green: path.join(SOURCE_DIR, 'green-button-short.9.png'),
-  purple: path.join(SOURCE_DIR, 'purple-button-short.png'),
-  red: path.join(MASTER_DIR, 'red-button-50.png'),
-  yellow: path.join(SOURCE_DIR, 'yellow-button-short.png'),
+  blue: path.join(SOURCE_DIR, 'blue-button-50.9.png'),
+  brown: path.join(SOURCE_DIR, 'brown-button-50.9.png'),
+  'dark-brown': path.join(SOURCE_DIR, 'dark-brown-button-50.9.png'),
+  gray: path.join(SOURCE_DIR, 'gray-button-50.9.png'),
+  green: path.join(SOURCE_DIR, 'green-button-50.9.png'),
+  purple: path.join(SOURCE_DIR, 'purple-button-50.9.png'),
+  red: path.join(SOURCE_DIR, 'red-button-50.9.png'),
+  yellow: path.join(SOURCE_DIR, 'yellow-button-50.9.png'),
 });
 
 const TIERS = Object.freeze([
@@ -80,9 +77,7 @@ mkdirSync(OUTPUT_DIR, { recursive: true });
 
 for (const [color, sourcePath] of Object.entries(COLORS)) {
   const rawSource = readPng(sourcePath);
-  const source = color === 'red'
-    ? transferCompactPalette(readPng(COLORS.green), rawSource)
-    : rawSource;
+  const source = rawSource;
   const sourceName = path.relative(ROOT_DIR, sourcePath);
 
   for (const tier of TIERS) {

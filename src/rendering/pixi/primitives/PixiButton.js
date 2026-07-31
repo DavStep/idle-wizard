@@ -24,9 +24,6 @@ const ROOT_RUN_VARIANTS = new Set([
   'gray',
   'brown-dark',
   'brown-light',
-  'account-tab-active',
-  'account-tab-inactive',
-  'account-save',
 ]);
 const RELEASE_DURATION_MS = 180;
 
@@ -325,11 +322,6 @@ export class PixiButton extends Container {
     if (this.variant === 'tab') {
       return this.selected ? 'brown-light' : 'brown-dark';
     }
-    if (this.variant === 'account-tab') {
-      return this.selected
-        ? 'account-tab-active'
-        : 'account-tab-inactive';
-    }
     return null;
   }
 
@@ -422,15 +414,6 @@ function getRootRunTextureId(variant, compactTab = false) {
       return PIXI_ROOT_RUN_ASSETS.buttonTabDisabled;
     }
   }
-  if (variant === 'account-tab-active') {
-    return PIXI_ROOT_RUN_ASSETS.accountTabActive;
-  }
-  if (variant === 'account-tab-inactive') {
-    return PIXI_ROOT_RUN_ASSETS.accountTabInactive;
-  }
-  if (variant === 'account-save') {
-    return PIXI_ROOT_RUN_ASSETS.accountSave;
-  }
   if (variant === 'yellow') return PIXI_ROOT_RUN_ASSETS.buttonYellow;
   if (variant === 'green') return PIXI_ROOT_RUN_ASSETS.buttonGreenNineSlice;
   if (variant === 'red') return PIXI_ROOT_RUN_ASSETS.buttonRedNineSlice;
@@ -440,31 +423,6 @@ function getRootRunTextureId(variant, compactTab = false) {
 }
 
 function getRootRunVisualGeometry(variant, width, height, compactTab = false) {
-  const account = PIXI_ROOT_RUN_GEOMETRY.account;
-  if (variant === 'account-tab-active') {
-    return {
-      ...account.tab.active,
-      fontSize: account.tab.fontSize,
-      textStroke: account.tab.textStroke,
-      textColor: '#ffffff',
-    };
-  }
-  if (variant === 'account-tab-inactive') {
-    return {
-      ...account.tab.inactive,
-      fontSize: account.tab.fontSize,
-      textStroke: account.tab.textStroke,
-      textColor: '#d3c6b4',
-    };
-  }
-  if (variant === 'account-save') {
-    return {
-      ...account.save,
-      fontSize: account.save.fontSize,
-      textStroke: account.save.textStroke,
-      textColor: '#ffffff',
-    };
-  }
   const buttonGeometry = compactTab
     ? PIXI_ROOT_RUN_GEOMETRY.tabButton
     : resolveButtonGeometry(variant);

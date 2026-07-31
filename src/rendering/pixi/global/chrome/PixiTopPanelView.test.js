@@ -82,10 +82,10 @@ describe('PixiTopPanelView', () => {
       assets.getTexture(PIXI_ROOT_RUN_ASSETS.topPanelBackground),
     );
     expect(PIXI_TOP_PANEL_BACKGROUND_SLICE).toEqual({
-      leftWidth: 40,
-      topHeight: 40,
-      rightWidth: 40,
-      bottomHeight: 1,
+      leftWidth: 30,
+      topHeight: 1,
+      rightWidth: 30,
+      bottomHeight: 30,
     });
     expect(view.panelBackground.leftWidth).toBe(
       PIXI_TOP_PANEL_BACKGROUND_SLICE.leftWidth,
@@ -101,13 +101,11 @@ describe('PixiTopPanelView', () => {
     );
     expect(view.panelBackground.position).toMatchObject({
       x: 0,
-      y:
-        PIXI_UI_GEOMETRY.roomContentTop -
-        PIXI_UI_GEOMETRY.topPanelContentGap,
+      y: 0,
     });
     expect(view.panelBackground.scale).toMatchObject({
       x: PIXI_ROOM_TAB_FRAME_SCALE,
-      y: -PIXI_ROOM_TAB_FRAME_SCALE,
+      y: PIXI_ROOM_TAB_FRAME_SCALE,
     });
     expect(
       view.panelBackground.width * view.panelBackground.scale.x,
@@ -127,7 +125,7 @@ describe('PixiTopPanelView', () => {
     );
     expect(view.levelRail.track).toBeInstanceOf(NineSliceSprite);
     expect(assets.getTexture).toHaveBeenCalledWith(
-      'source:assets/ui/root-run-top-hud/level-progress-fill-mask.png',
+      'source:assets/ui/root-run-top-hud/level-progress-fill-mask.9.png',
     );
     expect(view.levelRail.fill).toBeInstanceOf(NineSliceSprite);
     expect([

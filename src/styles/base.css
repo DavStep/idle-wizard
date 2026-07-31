@@ -88,8 +88,8 @@
   --style-green-button-disabled-frame: url("../../assets/game/source/ui/regular-button/gray-button-50.9.png");
   --style-green-button-frame-slice: var(--style-yellow-button-frame-slice);
   --style-green-button-frame-width: var(--style-yellow-button-frame-width);
-  --style-brown-button-dark-frame: url("../../assets/game/source/ui/root-run-cost-button/brown-button-dark.9.png");
-  --style-brown-button-light-frame: url("../../assets/game/source/ui/root-run-cost-button/brown-button-light.9.png");
+  --style-brown-button-dark-frame: url("../../assets/game/source/ui/regular-button/dark-brown-button-50.9.png");
+  --style-brown-button-light-frame: url("../../assets/game/source/ui/regular-button/brown-button-50.9.png");
   --style-tab-frame: url("../../assets/game/source/ui/root-run-cost-button/brown-tab-inactive.9.png");
   --style-tab-selected-frame: url("../../assets/game/source/ui/root-run-cost-button/brown-tab-active.9.png");
   --style-tab-frame-slice: 78 43 53 85 fill;
@@ -105,13 +105,13 @@
   --style-dialog-content-width: 304px;
   --style-dialog-min-content-height: 53px;
   --style-dialog-tab-gap: 8px;
-  --style-dialog-frame: url("../../assets/game/source/ui/root-run-dialog/expedition-dialog-back.png");
+  --style-dialog-frame: url("../../assets/game/source/ui/root-run-dialog/expedition-dialog-back.9.png");
   --style-dialog-frame-slice: 139 163 83 83 fill;
   --style-dialog-frame-width: calc(139px * 390 / 1080) calc(163px * 390 / 1080)
     calc(83px * 390 / 1080) calc(83px * 390 / 1080);
   --style-dialog-frame-outset: 10px;
   --style-dialog-frame-fill: #634934;
-  --style-dialog-paper-frame: url("../../assets/game/source/ui/root-run-dialog/expedition-dialog-front.png");
+  --style-dialog-paper-frame: url("../../assets/game/source/ui/root-run-dialog/expedition-dialog-front.9.png");
   --style-dialog-paper-frame-slice: 99 53 72 84 fill;
   --style-dialog-paper-frame-width: calc(99px * 390 / 1080)
     calc(53px * 390 / 1080) calc(72px * 390 / 1080) calc(84px * 390 / 1080);
@@ -123,7 +123,7 @@
   --style-dialog-ink: #634934;
   --style-dialog-muted-ink: #8d6d50;
   --style-dialog-disabled-ink: #ac9278;
-  --style-dialog-title-frame: url("../../assets/game/source/ui/root-run-dialog/expedition-dialog-title-purple.png");
+  --style-dialog-title-frame: url("../../assets/game/source/ui/root-run-dialog/expedition-dialog-title-purple.9.png");
   --style-dialog-title-danger-filter: hue-rotate(78deg) saturate(1.18)
     brightness(0.96);
   --style-dialog-title-frame-slice: 0 132 0 85 fill;
@@ -189,8 +189,8 @@
   --style-room-tab-selected-scale: 1;
   --style-room-tab-compact-inactive-icon-scale: 1.05;
   --style-room-tab-compact-selected-icon-scale: 1;
-  --style-room-tab-active-frame: url("../../assets/game/source/ui/midnight-room-tab-top-cap-selected-9slice.png");
-  --style-room-tab-inactive-frame: url("../../assets/game/source/ui/midnight-room-tab-top-cap-9slice.png");
+  --style-room-tab-active-frame: url("../../assets/game/source/ui/midnight-room-tab-top-cap-selected.9.png");
+  --style-room-tab-inactive-frame: url("../../assets/game/source/ui/midnight-room-tab-top-cap.9.png");
   --style-room-tab-frame-slice: 91 73 1 83 fill;
   --style-room-tab-frame-width: 45.5px 36.5px 0.5px 41.5px;
   --style-page-tab-scroll-clearance: calc(
@@ -293,9 +293,9 @@
   --style-room-chat-title-overhang: 12px;
   --style-room-chat-gap: 8px;
   --style-top-panel-content-gap: 16px;
-  --style-top-panel-background-frame: url("../../assets/game/source/ui/midnight-top-panel-background-9slice.png");
-  --style-top-panel-background-frame-slice: 40 40 1 40 fill;
-  --style-top-panel-background-frame-width: 20px 20px 0.5px 20px;
+  --style-top-panel-background-frame: url("../../assets/game/source/ui/midnight-top-panel-background.9.png");
+  --style-top-panel-background-frame-slice: 1 30 30 30 fill;
+  --style-top-panel-background-frame-width: 0.5px 15px 15px 15px;
   --style-room-chat-clearance: calc(
     var(--style-room-chat-bottom) + var(--style-room-chat-source-height) +
       var(--style-room-chat-title-overhang) + var(--style-room-chat-gap)
@@ -446,23 +446,23 @@
   --style-motion-ease-soft: cubic-bezier(0.39, 0.575, 0.565, 1);
   --style-motion-ease-rubber: cubic-bezier(0.39, 0.575, 0.565, 1);
   --style-motion-ease-expand-rubber: cubic-bezier(0.22, 1, 0.36, 1);
-  --guild-page-paper-frame: url("../../assets/game/source/ui/guild-quest/paper-9slice.png");
+  --guild-page-paper-frame: url("../../assets/game/source/ui/guild-quest/paper.9.png");
   --guild-page-paper-frame-slice: 41 42 42 41 fill;
   --guild-page-paper-frame-width: 5px;
   --guild-page-paper-surface: #f6f3ec;
   --guild-page-paper-text: #221d17;
   --guild-page-paper-muted: #665e54;
   --guild-page-quest-index-color: #5b3d26;
-  --guild-page-quest-dialog-frame: url("../../assets/game/source/ui/guild-quest/dialog-panel-9slice.png");
+  --guild-page-quest-dialog-frame: url("../../assets/game/source/ui/guild-quest/dialog-panel.9.png");
   --guild-page-quest-dialog-frame-slice: 43 44 43 43 fill;
-  --guild-page-quest-paper-frame: url("../../assets/game/source/ui/guild-quest/paper-9slice.png");
+  --guild-page-quest-paper-frame: url("../../assets/game/source/ui/guild-quest/paper.9.png");
   --guild-page-quest-paper-frame-slice: 41 42 42 41 fill;
-  --guild-page-quest-list-row-frame: url("../../assets/game/source/ui/guild-quest/list-row-9slice.png");
+  --guild-page-quest-list-row-frame: url("../../assets/game/source/ui/guild-quest/list-row.9.png");
   --guild-page-quest-list-row-frame-slice: 24 32 23 31 fill;
   --guild-page-quest-button-green-frame: url("../../assets/game/source/ui/guild-quest/button-green.9.png");
   --guild-page-quest-button-brown-frame: url("../../assets/game/source/ui/guild-quest/button-brown.9.png");
   --guild-page-quest-button-frame-slice: 27 43 28 43 fill;
-  --guild-page-quest-close-frame: url("../../assets/game/source/ui/guild-quest/close-panel-9slice.png");
+  --guild-page-quest-close-frame: url("../../assets/game/source/ui/guild-quest/close-panel.9.png");
   --guild-page-quest-close-frame-slice: 28 28 27 27 fill;
   --guild-page-quest-close-x: url("../../assets/game/source/ui/guild-quest/close-x.png");
   --style-block-shadow: 5px 5px 5px var(--style-muted);
@@ -759,10 +759,10 @@
   --style-room-background: var(--style-surface);
   --style-room-paper-texture: none;
   --style-room-paper-texture-size: auto;
-  --style-inner-section-frame: url("../../assets/game/source/ui/inner-section-panel-midnight-9slice.png");
+  --style-inner-section-frame: url("../../assets/game/source/ui/inner-section-panel-midnight.9.png");
   --style-inner-section-fill: #242938;
   --style-midnight-panel-frame: url("../../assets/game/source/ui/player-card-panel.9.png");
-  --style-midnight-panel-selected-frame: url("../../assets/game/source/ui/player-card-panel-selected-9slice.png");
+  --style-midnight-panel-selected-frame: url("../../assets/game/source/ui/player-card-panel-selected.9.png");
   --style-midnight-button-frame: url("../../assets/game/source/ui/player-card-button-brown-fill.9.png");
   --style-midnight-button-disabled-frame: url("../../assets/game/source/ui/player-card-button-brown-dark-fill.9.png");
   --style-midnight-frame-slice: 31 29 31 29 fill;
@@ -791,10 +791,10 @@
   --style-room-background: var(--style-bg);
   --style-room-paper-texture: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='96' height='96' viewBox='0 0 96 96'%3E%3Cg fill='none' stroke-linecap='round'%3E%3Cpath d='M3 14c14-1 22 1 35 0M51 8c9 1 19-1 34 1M11 42c20 2 37-2 55 0M31 67c16-2 34 2 55 0M5 88c12-1 24 2 39 0' stroke='%23ffead0' stroke-opacity='.22' stroke-width='.55'/%3E%3Cpath d='M18 27c7 1 13-1 20 0M61 29c8-1 15 1 25 0M9 58c6-1 12 1 18 0M55 82c7 1 14-1 23 0' stroke='%23af744c' stroke-opacity='.16' stroke-width='.58'/%3E%3C/g%3E%3Cg fill='%23af744c' fill-opacity='.12'%3E%3Ccircle cx='16' cy='9' r='.45'/%3E%3Ccircle cx='74' cy='18' r='.35'/%3E%3Ccircle cx='43' cy='34' r='.45'/%3E%3Ccircle cx='88' cy='52' r='.4'/%3E%3Ccircle cx='23' cy='76' r='.35'/%3E%3Ccircle cx='69' cy='91' r='.45'/%3E%3C/g%3E%3C/svg%3E");
   --style-room-paper-texture-size: 96px 96px;
-  --style-inner-section-frame: url("../../assets/game/source/ui/inner-section-panel-day-9slice.png");
+  --style-inner-section-frame: url("../../assets/game/source/ui/inner-section-panel-day.9.png");
   --style-inner-section-fill: #765238;
   --style-midnight-panel-frame: url("../../assets/game/source/ui/player-card-panel-day.9.png");
-  --style-midnight-panel-selected-frame: url("../../assets/game/source/ui/player-card-panel-selected-day-9slice.png");
+  --style-midnight-panel-selected-frame: url("../../assets/game/source/ui/player-card-panel-selected-day.9.png");
   --style-midnight-button-frame: url("../../assets/game/source/ui/player-card-button-brown-fill.9.png");
   --style-midnight-button-disabled-frame: url("../../assets/game/source/ui/player-card-button-brown-dark-fill.9.png");
   --style-midnight-frame-slice: 31 29 31 29 fill;
@@ -802,9 +802,9 @@
   --style-midnight-frame-width: 8px 10px;
   --style-midnight-frame-control-width: 5px 6px;
   --style-midnight-frame-compact-width: 4px 5px;
-  --style-room-tab-active-frame: url("../../assets/game/source/ui/day-room-tab-top-cap-selected-9slice.png");
-  --style-room-tab-inactive-frame: url("../../assets/game/source/ui/day-room-tab-top-cap-9slice.png");
-  --style-top-panel-background-frame: url("../../assets/game/source/ui/day-top-panel-background-9slice.png");
+  --style-room-tab-active-frame: url("../../assets/game/source/ui/day-room-tab-top-cap-selected.9.png");
+  --style-room-tab-inactive-frame: url("../../assets/game/source/ui/day-room-tab-top-cap.9.png");
+  --style-top-panel-background-frame: url("../../assets/game/source/ui/day-top-panel-background.9.png");
   --style-announcement-coin: oklch(84% 0.13 88);
   --style-backdrop-rgb: 84 58 40;
   --style-log-fade-rgb: 84 58 40;
@@ -998,8 +998,11 @@
   z-index: 0;
   pointer-events: none;
   content: "";
-  background: url("../../assets/game/source/ui/root-run-cost-button/green-button-short.9.png")
-    center / 100% 100% no-repeat;
+  box-sizing: border-box;
+  border: solid transparent;
+  border-image-source: var(--style-green-button-frame);
+  border-image-slice: var(--style-green-button-frame-slice);
+  border-image-width: var(--style-green-button-frame-width);
 }
 
 .style-button.style-cost-button.style-cost-button:is(
@@ -1017,7 +1020,7 @@
     :disabled,
     .is-disabled
   )::after {
-  background-image: url("../../assets/game/source/ui/root-run-cost-button/gray-button-short.png");
+  border-image-source: var(--style-green-button-disabled-frame);
 }
 
 .style-button.style-cost-button.style-cost-button:is(:active, .is-pressing):not(
@@ -1888,7 +1891,7 @@ body {
 }
 
 .style-box.first-run-intro__panel {
-  --first-run-intro-panel-frame: url("../../assets/game/source/ui/root-run-research/research-card-dark-1000x304.png");
+  --first-run-intro-panel-frame: url("../../assets/game/source/ui/root-run-research/research-card-dark-1000x304.9.png");
   position: absolute;
   right: calc(var(--style-source-ui-gutter-x) + 20px);
   bottom: 26px;
@@ -3732,7 +3735,7 @@ body {
   min-height: 0;
   padding: 7px 10px calc(var(--style-box-border-label-line-height) - 2px);
   background: transparent
-    url("../../assets/game/source/ui/root-run-research/research-card-1000x304.png")
+    url("../../assets/game/source/ui/root-run-research/research-card-1000x304.9.png")
     center / 100% 100% no-repeat;
   border: 0;
   pointer-events: auto;
@@ -4313,7 +4316,7 @@ body {
   color: #634934;
   line-height: normal;
   background: transparent
-    url("../../assets/game/source/ui/root-run-research/research-card-1000x304.png")
+    url("../../assets/game/source/ui/root-run-research/research-card-1000x304.9.png")
     center / 100% 100% no-repeat;
   border: 0;
   border-image: none;
@@ -4323,7 +4326,7 @@ body {
 .research-page__row.is-locked {
   color: #634934;
   cursor: pointer;
-  background-image: url("../../assets/game/source/ui/root-run-research/research-card-1000x304.png");
+  background-image: url("../../assets/game/source/ui/root-run-research/research-card-1000x304.9.png");
 }
 
 .research-page__row.is-locked::after {
@@ -4333,7 +4336,7 @@ body {
   pointer-events: none;
   content: "";
   background: transparent
-    url("../../assets/game/source/ui/root-run-research/research-card-1000x304.png")
+    url("../../assets/game/source/ui/root-run-research/research-card-1000x304.9.png")
     center / 100% 100% no-repeat;
   filter: brightness(0);
   opacity: 0.3;
@@ -10618,7 +10621,7 @@ div.workshop-page__discovery-row {
 
 .research-page__box-title {
   --research-station-title-scale: calc(42 / 117);
-  --research-station-title-image: url("../../assets/game/source/ui/root-run-research/research-station-title-yellow.png");
+  --research-station-title-image: url("../../assets/game/source/ui/root-run-research/research-station-title-yellow.9.png");
 
   position: relative;
   isolation: isolate;
@@ -10661,19 +10664,19 @@ div.workshop-page__discovery-row {
 }
 
 .research-page__box-title--regular {
-  --research-station-title-image: url("../../assets/game/source/ui/root-run-research/research-station-title-yellow.png");
+  --research-station-title-image: url("../../assets/game/source/ui/root-run-research/research-station-title-yellow.9.png");
 }
 
 .research-page__box-title--automation {
-  --research-station-title-image: url("../../assets/game/source/ui/root-run-research/research-station-title-red.png");
+  --research-station-title-image: url("../../assets/game/source/ui/root-run-research/research-station-title-red.9.png");
 }
 
 .research-page__box-title--advanced {
-  --research-station-title-image: url("../../assets/game/source/ui/root-run-research/research-station-title-green.png");
+  --research-station-title-image: url("../../assets/game/source/ui/root-run-research/research-station-title-green.9.png");
 }
 
 .research-page__box-title--crystal {
-  --research-station-title-image: url("../../assets/game/source/ui/root-run-research/research-station-title-purple.png");
+  --research-station-title-image: url("../../assets/game/source/ui/root-run-research/research-station-title-purple.9.png");
 }
 
 .research-page__run-focus {
@@ -10907,11 +10910,11 @@ div.workshop-page__discovery-row {
 }
 
 .style-button.style-cost-button.style-cost-button--yellow.research-page__research-button--completed:disabled::after {
-  background-image: url("../../assets/game/source/ui/root-run-cost-button/yellow-button-short.png");
+  border-image-source: var(--style-yellow-button-frame);
 }
 
 .style-button.style-cost-button.style-cost-button--yellow.research-page__research-button--in-progress:disabled::after {
-  background-image: url("../../assets/game/source/ui/root-run-cost-button/yellow-button-short.png");
+  border-image-source: var(--style-yellow-button-frame);
 }
 
 .style-button.style-cost-button.research-page__research-button {
@@ -10933,7 +10936,7 @@ div.workshop-page__discovery-row {
 }
 
 .style-button.style-cost-button.research-page__research-button.is-unaffordable::after {
-  background-image: url("../../assets/game/source/ui/root-run-cost-button/green-button-short.9.png");
+  border-image-source: var(--style-green-button-frame);
 }
 
 .style-button.style-cost-button.research-page__research-button.is-unaffordable
@@ -11001,7 +11004,7 @@ div.workshop-page__discovery-row {
   height: var(--style-research-card-art-height);
   overflow: hidden;
   background: transparent
-    url("../../assets/game/source/ui/root-run-research/research-art-well-204x194.png")
+    url("../../assets/game/source/ui/root-run-research/research-art-well-204x194.9.png")
     center / 100% 100% no-repeat;
   border: 0;
   border-image: none;
@@ -11009,7 +11012,7 @@ div.workshop-page__discovery-row {
 }
 
 .research-page__row.is-locked .research-page__research-art {
-  background-image: url("../../assets/game/source/ui/root-run-research/research-art-well-204x194.png");
+  background-image: url("../../assets/game/source/ui/root-run-research/research-art-well-204x194.9.png");
 }
 
 .research-page__ui-layer[data-research-skin-renderer="pixi"]
@@ -17687,7 +17690,6 @@ div.workshop-page__discovery-row {
   border-image-source: var(--style-top-panel-background-frame);
   border-image-slice: var(--style-top-panel-background-frame-slice);
   border-image-width: var(--style-top-panel-background-frame-width);
-  transform: scaleY(-1);
 }
 
 :root:is([data-style-theme="night"], [data-style-theme="day"])
@@ -17913,7 +17915,7 @@ div.workshop-page__discovery-row {
 }
 
 .style-box.tutorial-layer__lesson.is-intro-dialog {
-  --intro-dialog-panel-frame: url("../../assets/game/source/ui/intro-dialog-panel-9slice.png");
+  --intro-dialog-panel-frame: url("../../assets/game/source/ui/intro-dialog-panel.9.png");
   --intro-dialog-panel-slice: 31 29 31 29 fill;
   --intro-dialog-text: #eee8dc;
   --intro-dialog-shadow: 3px 4px 4px rgb(0 0 0 / 0.62);

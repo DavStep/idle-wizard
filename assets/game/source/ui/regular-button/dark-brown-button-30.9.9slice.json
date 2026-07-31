@@ -1,0 +1,52 @@
+{
+  "version": 1,
+  "format": "png",
+  "asset": "dark-brown-button-30.9.png",
+  "source": {
+    "path": "assets/game/source/ui/regular-button/dark-brown-button-30.9.png",
+    "width": 87,
+    "height": 104,
+    "mode": "RGBA",
+    "crop": {
+      "x": 0,
+      "y": 0,
+      "width": 87,
+      "height": 104
+    }
+  },
+  "sourceCropSize": {
+    "width": 87,
+    "height": 104
+  },
+  "slice": {
+    "left": 52,
+    "top": 60,
+    "right": 32,
+    "bottom": 41
+  },
+  "mode": "source",
+  "distill": null,
+  "rendering": {
+    "stretch": "edges-and-center",
+    "outputInsets": {
+      "left": 52,
+      "top": 60,
+      "right": 32,
+      "bottom": 41
+    },
+    "minimumCenter": {
+      "width": 3,
+      "height": 3
+    },
+    "minimumSize": {
+      "width": 87,
+      "height": 104
+    },
+    "qaResample": "nearest",
+    "browserPreviewSmoothingDefault": false
+  },
+  "editor": {
+    "tool": "Idle Wizard regular button generator",
+    "sourceAssetPreserved": true
+  }
+}

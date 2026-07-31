@@ -1,0 +1,52 @@
+{
+  "version": 1,
+  "format": "png",
+  "asset": "research-upgrade-bg.9.png",
+  "source": {
+    "path": "assets/game/source/ui/root-run-research/research-upgrade-bg.9.png",
+    "width": 157,
+    "height": 150,
+    "mode": "RGBA",
+    "crop": {
+      "x": 0,
+      "y": 0,
+      "width": 157,
+      "height": 150
+    }
+  },
+  "sourceCropSize": {
+    "width": 157,
+    "height": 150
+  },
+  "slice": {
+    "left": 74,
+    "top": 48,
+    "right": 67,
+    "bottom": 93
+  },
+  "mode": "source",
+  "distill": null,
+  "rendering": {
+    "stretch": "edges-and-center",
+    "outputInsets": {
+      "left": 74,
+      "top": 48,
+      "right": 67,
+      "bottom": 93
+    },
+    "minimumCenter": {
+      "width": 1,
+      "height": 1
+    },
+    "minimumSize": {
+      "width": 142,
+      "height": 142
+    },
+    "qaResample": "nearest",
+    "browserPreviewSmoothingDefault": false
+  },
+  "editor": {
+    "tool": "Idle Wizard UI Editor",
+    "sourceAssetPreserved": true
+  }
+}

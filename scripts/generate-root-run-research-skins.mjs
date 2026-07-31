@@ -19,28 +19,28 @@ const LOCKED_ART_MONOCHROME = Object.freeze({ floor: 12, scale: 0.34 });
 const recipes = Object.freeze([
   {
     input: 'research-upgrade-bg.png',
-    output: 'research-card-1000x304.png',
+    output: 'research-card-1000x304.9.png',
     slice: { left: 64, top: 55, right: 77, bottom: 88 },
     width: 1000,
     height: 304,
   },
   {
     input: LOCKED_CARD_SOURCE,
-    output: 'research-card-locked-1000x304.png',
+    output: 'research-card-locked-1000x304.9.png',
     slice: { left: 64, top: 55, right: 77, bottom: 88 },
     width: 1000,
     height: 304,
   },
   {
     input: 'squirqle-40-cream.png',
-    output: 'research-art-well-204x194.png',
+    output: 'research-art-well-204x194.9.png',
     slice: { left: 49, top: 49, right: 50, bottom: 50 },
     width: 204,
     height: 194,
   },
   {
     input: LOCKED_ART_SOURCE,
-    output: 'research-art-well-locked-204x194.png',
+    output: 'research-art-well-locked-204x194.9.png',
     slice: { left: 49, top: 49, right: 50, bottom: 50 },
     width: 204,
     height: 194,

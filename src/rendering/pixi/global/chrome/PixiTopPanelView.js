@@ -25,10 +25,10 @@ import {
 
 const ROOT_RUN_UI_SCALE = 3;
 export const PIXI_TOP_PANEL_BACKGROUND_SLICE = Object.freeze({
-  leftWidth: 40,
-  topHeight: 40,
-  rightWidth: 40,
-  bottomHeight: 1,
+  leftWidth: 30,
+  topHeight: 1,
+  rightWidth: 30,
+  bottomHeight: 30,
 });
 const TOP_HUD_X = 32 / ROOT_RUN_UI_SCALE;
 // The Root Run reference y includes a 108 px authored safe-area inset. The
@@ -118,10 +118,10 @@ export class PixiTopPanelView extends BasePixiRetainedView {
       roundPixels: true,
     });
     this.panelBackground.eventMode = 'none';
-    this.panelBackground.position.set(0, TOP_PANEL_BACKGROUND_HEIGHT);
+    this.panelBackground.position.set(0, 0);
     this.panelBackground.scale.set(
       PIXI_ROOM_TAB_FRAME_SCALE,
-      -PIXI_ROOM_TAB_FRAME_SCALE,
+      PIXI_ROOM_TAB_FRAME_SCALE,
     );
     this.panelBackground.setSize(
       PIXI_UI_GEOMETRY.sourceWidth / PIXI_ROOM_TAB_FRAME_SCALE,

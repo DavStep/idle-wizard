@@ -2596,7 +2596,7 @@ describe('TutorialHintManager', () => {
     expect(lessonPaletteRule).toMatch(/--style-surface:\s*#ffe7c8;/);
     expect(lessonPaletteRule).toMatch(/--style-text:\s*#634934;/);
     expect(lessonFrameRule).toContain(
-      'root-run-research/research-card-1000x304.png',
+      'root-run-research/research-card-1000x304.9.png',
     );
     expect(lessonFrameRule).toMatch(/\bborder:\s*0;/);
     expect(lessonTitleRule).toMatch(/\bposition:\s*relative;/);

@@ -116,11 +116,11 @@ const FEATURE_UNLOCK_POOL_SIZE = 5;
 export const PIXI_ROOM_TAB_FRAME_STATES = Object.freeze({
   active: Object.freeze({
     textureId:
-      'source:assets/ui/midnight-room-tab-top-cap-selected-9slice.png',
+      'source:assets/ui/midnight-room-tab-top-cap-selected.9.png',
   }),
   inactive: Object.freeze({
     textureId:
-      'source:assets/ui/midnight-room-tab-top-cap-9slice.png',
+      'source:assets/ui/midnight-room-tab-top-cap.9.png',
   }),
 });
 export const PIXI_ROOM_TAB_FRAME_SLICE = Object.freeze({

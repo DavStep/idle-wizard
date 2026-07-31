@@ -29,7 +29,7 @@ function luminance([red, green, blue]) {
 
 describe('Night and Day panel nine-slice assets', () => {
   it('keeps the inner panel center free of the exported scratch pixels', () => {
-    const panel = readPng('inner-section-panel-midnight-9slice.png');
+    const panel = readPng('inner-section-panel-midnight.9.png');
 
     expect([panel.width, panel.height]).toEqual([157, 182]);
 
@@ -41,7 +41,7 @@ describe('Night and Day panel nine-slice assets', () => {
   });
 
   it('keeps the rounded top corners free of bright highlight specks', () => {
-    const panel = readPng('inner-section-panel-midnight-9slice.png');
+    const panel = readPng('inner-section-panel-midnight.9.png');
     const cornerXs = [
       ...Array.from({ length: 58 }, (_, index) => index),
       ...Array.from({ length: 58 }, (_, index) => 99 + index),
@@ -61,13 +61,13 @@ describe('Night and Day panel nine-slice assets', () => {
   });
 
   it('derives the room-tab top cap from the repaired panel center cut', () => {
-    const panel = readPng('inner-section-panel-midnight-9slice.png');
-    const topCap = readPng('midnight-room-tab-top-cap-9slice.png');
+    const panel = readPng('inner-section-panel-midnight.9.png');
+    const topCap = readPng('midnight-room-tab-top-cap.9.png');
     const metadata = JSON.parse(
       fs.readFileSync(
         path.join(
           UI_ASSET_DIRECTORY,
-          'midnight-room-tab-top-cap-9slice.9slice.json',
+          'midnight-room-tab-top-cap.9.9slice.json',
         ),
         'utf8',
       ),
@@ -89,15 +89,15 @@ describe('Night and Day panel nine-slice assets', () => {
   });
 
   it('keeps the selected top cap lighter with identical nine-slice geometry', () => {
-    const topCap = readPng('midnight-room-tab-top-cap-9slice.png');
+    const topCap = readPng('midnight-room-tab-top-cap.9.png');
     const selectedTopCap = readPng(
-      'midnight-room-tab-top-cap-selected-9slice.png',
+      'midnight-room-tab-top-cap-selected.9.png',
     );
     const metadata = JSON.parse(
       fs.readFileSync(
         path.join(
           UI_ASSET_DIRECTORY,
-          'midnight-room-tab-top-cap-selected-9slice.9slice.json',
+          'midnight-room-tab-top-cap-selected.9.9slice.json',
         ),
         'utf8',
       ),
@@ -125,14 +125,14 @@ describe('Night and Day panel nine-slice assets', () => {
     }
   });
 
-  it('keeps the top-panel sibling unchanged outside its tighter corners', () => {
-    const roomTab = readPng('midnight-room-tab-top-cap-9slice.png');
-    const topPanel = readPng('midnight-top-panel-background-9slice.png');
+  it('uses a flipped 30px room-tab cap for every top-panel theme', () => {
+    const roomTab = readPng('midnight-room-tab-top-cap.9.png');
+    const topPanel = readPng('midnight-top-panel-background.9.png');
     const metadata = JSON.parse(
       fs.readFileSync(
         path.join(
           UI_ASSET_DIRECTORY,
-          'midnight-top-panel-background-9slice.9slice.json',
+          'midnight-top-panel-background.9.9slice.json',
         ),
         'utf8',
       ),
@@ -143,23 +143,11 @@ describe('Night and Day panel nine-slice assets', () => {
       roomTab.height,
     ]);
     expect(metadata.slice).toEqual({
-      left: 40,
-      top: 40,
-      right: 40,
-      bottom: 1,
+      left: 30,
+      top: 1,
+      right: 30,
+      bottom: 30,
     });
-
-    for (let y = 0; y < topPanel.height; y += 1) {
-      for (let x = 0; x < topPanel.width; x += 1) {
-        const isCornerRemap =
-          y < 40 && (x < 40 || x > topPanel.width - 1 - 40);
-        if (!isCornerRemap) {
-          expect(readPixel(topPanel, x, y)).toEqual(
-            readPixel(roomTab, x, y),
-          );
-        }
-      }
-    }
 
     const firstVisibleX = (image) => {
       for (let x = 0; x < image.width; x += 1) {
@@ -170,27 +158,54 @@ describe('Night and Day panel nine-slice assets', () => {
       return image.width;
     };
 
-    expect(firstVisibleX(topPanel)).toBe(9);
+    expect(firstVisibleX(topPanel)).toBe(0);
     expect(firstVisibleX(roomTab)).toBe(40);
+
+    const bottomFirstVisibleX = firstVisibleX({
+      data: topPanel.data.subarray(
+        (topPanel.height - 1) * topPanel.width * 4,
+      ),
+      height: 1,
+      width: topPanel.width,
+    });
+    expect(bottomFirstVisibleX).toBeGreaterThanOrEqual(28);
+    expect(bottomFirstVisibleX).toBeLessThanOrEqual(31);
+
+    const cornerStartY = topPanel.height - 30;
+    let previousInset = 0;
+    for (let y = cornerStartY; y < topPanel.height; y += 1) {
+      const row = {
+        data: topPanel.data.subarray(
+          y * topPanel.width * 4,
+          (y + 1) * topPanel.width * 4,
+        ),
+        height: 1,
+        width: topPanel.width,
+      };
+      const inset = firstVisibleX(row);
+
+      expect(inset).toBeGreaterThanOrEqual(previousInset);
+      previousInset = inset;
+    }
   });
 
   it('keeps every Day recolor pixel-aligned with its Night source', () => {
     const pairs = [
       [
-        'inner-section-panel-midnight-9slice.png',
-        'inner-section-panel-day-9slice.png',
+        'inner-section-panel-midnight.9.png',
+        'inner-section-panel-day.9.png',
       ],
       [
-        'midnight-room-tab-top-cap-9slice.png',
-        'day-room-tab-top-cap-9slice.png',
+        'midnight-room-tab-top-cap.9.png',
+        'day-room-tab-top-cap.9.png',
       ],
       [
-        'midnight-room-tab-top-cap-selected-9slice.png',
-        'day-room-tab-top-cap-selected-9slice.png',
+        'midnight-room-tab-top-cap-selected.9.png',
+        'day-room-tab-top-cap-selected.9.png',
       ],
       [
-        'midnight-top-panel-background-9slice.png',
-        'day-top-panel-background-9slice.png',
+        'midnight-top-panel-background.9.png',
+        'day-top-panel-background.9.png',
       ],
     ];
 
@@ -208,17 +223,66 @@ describe('Night and Day panel nine-slice assets', () => {
       }
     }
 
-    const inactive = readPng('day-room-tab-top-cap-9slice.png');
+    const inactive = readPng('day-room-tab-top-cap.9.png');
     const selected = readPng(
-      'day-room-tab-top-cap-selected-9slice.png',
+      'day-room-tab-top-cap-selected.9.png',
     );
     expect(luminance(readPixel(selected, 78, 46))).toBeGreaterThan(
       luminance(readPixel(inactive, 78, 46)),
     );
   });
 
+  it('keeps every themed room-tab and top-panel sidecar aligned', () => {
+    const expectedSlices = new Map([
+      ['midnight-room-tab-top-cap.9.9slice.json', {
+        left: 83,
+        top: 91,
+        right: 73,
+        bottom: 1,
+      }],
+      ['midnight-room-tab-top-cap-selected.9.9slice.json', {
+        left: 83,
+        top: 91,
+        right: 73,
+        bottom: 1,
+      }],
+      ['day-room-tab-top-cap.9.9slice.json', {
+        left: 83,
+        top: 91,
+        right: 73,
+        bottom: 1,
+      }],
+      ['day-room-tab-top-cap-selected.9.9slice.json', {
+        left: 83,
+        top: 91,
+        right: 73,
+        bottom: 1,
+      }],
+      ['midnight-top-panel-background.9.9slice.json', {
+        left: 30,
+        top: 1,
+        right: 30,
+        bottom: 30,
+      }],
+      ['day-top-panel-background.9.9slice.json', {
+        left: 30,
+        top: 1,
+        right: 30,
+        bottom: 30,
+      }],
+    ]);
+
+    for (const [fileName, slice] of expectedSlices) {
+      const metadata = JSON.parse(
+        fs.readFileSync(path.join(UI_ASSET_DIRECTORY, fileName), 'utf8'),
+      );
+
+      expect(metadata.slice).toEqual(slice);
+    }
+  });
+
   it('keeps the Day top-panel antialias fringe warm at its corners', () => {
-    const topPanel = readPng('day-top-panel-background-9slice.png');
+    const topPanel = readPng('day-top-panel-background.9.png');
 
     for (let y = 0; y < topPanel.height; y += 1) {
       for (let x = 0; x < topPanel.width; x += 1) {

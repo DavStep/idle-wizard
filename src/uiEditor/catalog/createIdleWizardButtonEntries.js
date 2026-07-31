@@ -46,6 +46,10 @@ const BUTTON_USAGES = Object.freeze({
   ),
   'green-button': usageSet(
     [
+      'Account Save action',
+      'src/rendering/pixi/global/dialogs/PixiSettingsDialog.js',
+    ],
+    [
       'Inbox reward claim',
       'src/rendering/pixi/global/dialogs/PixiInboxDialog.js',
     ],
@@ -112,10 +116,6 @@ const BUTTON_USAGES = Object.freeze({
   ]),
   'popup-tab-button': popupTabUsages(),
   'popup-tab-selected-button': popupTabUsages(),
-  'account-save-button': usageSet([
-    'Settings account Save action',
-    'src/rendering/pixi/global/dialogs/PixiSettingsDialog.js',
-  ]),
   'compact-cost-button': usageSet(
     [
       'Brewing purchase action',
@@ -233,28 +233,6 @@ export const IDLE_WIZARD_BUTTON_WIDGETS = Object.freeze([
     text: 'Inventory',
     variant: 'tab',
     width: 92,
-  }),
-  buttonWidget('account-tab-button', 'Account Tab Button', {
-    height: 40,
-    type: 'button',
-    text: 'Account',
-    variant: 'account-tab',
-    width: 114,
-  }),
-  buttonWidget('account-tab-selected-button', 'Account Tab Selected Button', {
-    height: 40,
-    selected: true,
-    type: 'button',
-    text: 'Account',
-    variant: 'account-tab',
-    width: 114,
-  }),
-  buttonWidget('account-save-button', 'Account Save Button', {
-    height: 52,
-    type: 'button',
-    text: 'Save',
-    variant: 'account-save',
-    width: 148,
   }),
   buttonWidget('cost-button', 'Cost Button', {
     amountLabel: '25 Coin',
@@ -375,16 +353,10 @@ function resolveButtonFont(preview) {
 
 function resolveButtonBackgroundAsset(preview) {
   if (preview.type === 'cost') {
-    if (preview.stacked) {
-      return asset(PIXI_ROOT_RUN_ASSETS.buttonGreenStacked);
-    }
-    if (preview.compact) {
-      return standardButtonNineSlice(
-        PIXI_ROOT_RUN_ASSETS.buttonGreenNineSlice,
-        preview,
-      );
-    }
-    return asset(PIXI_ROOT_RUN_ASSETS.buttonGreen);
+    return standardButtonNineSlice(
+      PIXI_ROOT_RUN_ASSETS.buttonGreenNineSlice,
+      preview,
+    );
   }
 
   if (preview.type === 'info') {
@@ -452,15 +424,6 @@ function resolveButtonBackgroundAsset(preview) {
           : PIXI_ROOT_RUN_ASSETS.buttonTabInactive,
         preview,
       );
-    case 'account-tab':
-      return accountTabNineSlice(preview);
-    case 'account-save':
-      return nineSliceAsset({
-        ...PIXI_ROOT_RUN_GEOMETRY.account.save,
-        id: PIXI_ROOT_RUN_ASSETS.accountSave,
-        sourceInsets: PIXI_ROOT_RUN_GEOMETRY.account.save.sourceInsets,
-        borderInsets: PIXI_ROOT_RUN_GEOMETRY.account.save.borderInsets,
-      });
     default:
       return null;
   }
@@ -510,15 +473,9 @@ function createButtonAssets(preview) {
 }
 
 function standardButtonNineSlice(id, preview) {
-  const legacyBrown = [
-    PIXI_ROOT_RUN_ASSETS.buttonBrownDark,
-    PIXI_ROOT_RUN_ASSETS.buttonBrownLight,
-  ].includes(id);
-  const geometry = legacyBrown
-    ? PIXI_ROOT_RUN_GEOMETRY.legacyButton
-    : preview.compact
-      ? PIXI_ROOT_RUN_GEOMETRY.compactButton
-      : PIXI_ROOT_RUN_GEOMETRY.button;
+  const geometry = preview.compact
+    ? PIXI_ROOT_RUN_GEOMETRY.compactButton
+    : PIXI_ROOT_RUN_GEOMETRY.button;
 
   return nineSliceAsset({
     borderInsets: geometry.borderInsets,
@@ -536,26 +493,6 @@ function compactTabNineSlice(id, preview) {
     id,
     sourceInsets: PIXI_ROOT_RUN_GEOMETRY.tabButton.sourceInsets,
     width: preview.width ?? 92,
-  });
-}
-
-function accountTabNineSlice(preview) {
-  const geometry = preview.selected
-    ? PIXI_ROOT_RUN_GEOMETRY.account.tab.active
-    : PIXI_ROOT_RUN_GEOMETRY.account.tab.inactive;
-
-  return nineSliceAsset({
-    borderInsets: geometry.borderInsets,
-    height: geometry.frame.height,
-    id: preview.selected
-      ? PIXI_ROOT_RUN_ASSETS.accountTabActive
-      : PIXI_ROOT_RUN_ASSETS.accountTabInactive,
-    minimumCenter: {
-      width: 1 / 3,
-      height: 1 / 3,
-    },
-    sourceInsets: geometry.sourceInsets,
-    width: geometry.frame.width,
   });
 }
 

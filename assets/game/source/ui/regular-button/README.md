@@ -12,7 +12,8 @@ Each color has three border-free PNG nine-slices:
 - `<color>-button-15.9.png`: small-radius button, `46x53`, minimum rendered
   height `53px`, source slice `L27 T30 R16 B20`.
 
-Colors are `blue`, `brown`, `gray`, `green`, `purple`, `red`, and `yellow`.
+Colors are `blue`, `brown`, `dark-brown`, `gray`, `green`, `purple`, `red`, and
+`yellow`.
 The radius tier changes the squircle corner geometry and the corresponding
 minimum asset size. The bottom slice includes the authored shadow and
 decoration. Every tier keeps a flat `3x3` center area so renderers have
@@ -21,5 +22,6 @@ decorative highlight. One matching flat gutter pixel surrounds each side of
 that center so smoothed nine-slice rendering cannot sample decoration or
 curved-cap pixels across a join.
 
-Run `npm run assets:regular-buttons` after changing a source color treatment.
-Cost-button and tab-specific assets remain in their owning folders.
+Run `npm run assets:regular-buttons` after changing a radius-50 source color
+treatment. Cost buttons compose these shared nine-slices with resource content;
+only the shorter popup-tab chrome remains separately authored.

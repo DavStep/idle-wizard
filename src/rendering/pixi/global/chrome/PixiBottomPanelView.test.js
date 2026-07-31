@@ -181,7 +181,7 @@ describe('PixiBottomPanelView', () => {
 
     expect(workshop.frame.mode).toBe('active');
     expect(workshop.frame.textureId).toBe(
-      'source:assets/ui/midnight-room-tab-top-cap-selected-9slice.png',
+      'source:assets/ui/midnight-room-tab-top-cap-selected.9.png',
     );
     expect(workshop.frame.sprite).toBeInstanceOf(NineSliceSprite);
     expect(workshop.frame.sprite.leftWidth).toBe(83);
@@ -209,7 +209,7 @@ describe('PixiBottomPanelView', () => {
 
     expect(brewing.frame.mode).toBe('inactive');
     expect(brewing.frame.textureId).toBe(
-      'source:assets/ui/midnight-room-tab-top-cap-9slice.png',
+      'source:assets/ui/midnight-room-tab-top-cap.9.png',
     );
     expect(brewing.frame.frameY).toBe(12);
     expect(brewing.frame.frameHeight).toBe(70);
@@ -742,16 +742,16 @@ function createAssets() {
     loaded: true,
     textures,
     getTexture: vi.fn((assetId) => {
-      if (assetId.endsWith('midnight-room-tab-top-cap-selected-9slice.png')) {
+      if (assetId.endsWith('midnight-room-tab-top-cap-selected.9.png')) {
         return textures.active;
       }
-      if (assetId.endsWith('midnight-room-tab-top-cap-9slice.png')) {
+      if (assetId.endsWith('midnight-room-tab-top-cap.9.png')) {
         return textures.inactive;
       }
-      if (assetId.endsWith('day-room-tab-top-cap-selected-9slice.png')) {
+      if (assetId.endsWith('day-room-tab-top-cap-selected.9.png')) {
         return textures.active;
       }
-      if (assetId.endsWith('day-room-tab-top-cap-9slice.png')) {
+      if (assetId.endsWith('day-room-tab-top-cap.9.png')) {
         return textures.inactive;
       }
       if (assetId.endsWith('notification-circle-red.png')) {

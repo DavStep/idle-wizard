@@ -542,7 +542,7 @@ describe('ResearchBoxListManager', () => {
 
     for (const [color, expectedHash] of Object.entries(expectedAssets)) {
       const asset = readFileSync(
-        `${cwd()}/assets/game/source/ui/root-run-research/research-station-title-${color}.png`,
+        `${cwd()}/assets/game/source/ui/root-run-research/research-station-title-${color}.9.png`,
       );
       expect(PNG.sync.read(asset)).toMatchObject({ width: 171, height: 121 });
       expect(createHash('sha256').update(asset).digest('hex')).toBe(
@@ -572,16 +572,16 @@ describe('ResearchBoxListManager', () => {
       'border-image: var(--research-station-title-image)',
     );
     expect(css).toMatch(
-      /\.research-page__box-title--regular\s*\{[^}]*research-station-title-yellow\.png/,
+      /\.research-page__box-title--regular\s*\{[^}]*research-station-title-yellow\.9\.png/,
     );
     expect(css).toMatch(
-      /\.research-page__box-title--automation\s*\{[^}]*research-station-title-red\.png/,
+      /\.research-page__box-title--automation\s*\{[^}]*research-station-title-red\.9\.png/,
     );
     expect(css).toMatch(
-      /\.research-page__box-title--advanced\s*\{[^}]*research-station-title-green\.png/,
+      /\.research-page__box-title--advanced\s*\{[^}]*research-station-title-green\.9\.png/,
     );
     expect(css).toMatch(
-      /\.research-page__box-title--crystal\s*\{[^}]*research-station-title-purple\.png/,
+      /\.research-page__box-title--crystal\s*\{[^}]*research-station-title-purple\.9\.png/,
     );
     expect(css).toMatch(
       /\.research-page__box-list\s*\{[^}]*gap:\s*18px;/,
@@ -804,16 +804,16 @@ describe('ResearchBoxListManager', () => {
       );
     }
     expect(css).toMatch(
-      /\.research-page__row\.is-locked\s*\{[^}]*background-image:\s*url\("\.\.\/\.\.\/assets\/game\/source\/ui\/root-run-research\/research-card-1000x304\.png"\);/,
+      /\.research-page__row\.is-locked\s*\{[^}]*background-image:\s*url\("\.\.\/\.\.\/assets\/game\/source\/ui\/root-run-research\/research-card-1000x304\.9\.png"\);/,
     );
     expect(css).toMatch(
       /\.research-page__row\.is-locked\s*\{[^}]*color:\s*#634934;/,
     );
     expect(css).toMatch(
-      /\.research-page__row\.is-locked::after\s*\{[^}]*background:\s*transparent\s+url\("\.\.\/\.\.\/assets\/game\/source\/ui\/root-run-research\/research-card-1000x304\.png"\)\s+center\s*\/\s*100%\s+100%\s+no-repeat;[^}]*filter:\s*brightness\(0\);[^}]*opacity:\s*0\.3;/,
+      /\.research-page__row\.is-locked::after\s*\{[^}]*background:\s*transparent\s+url\("\.\.\/\.\.\/assets\/game\/source\/ui\/root-run-research\/research-card-1000x304\.9\.png"\)\s+center\s*\/\s*100%\s+100%\s+no-repeat;[^}]*filter:\s*brightness\(0\);[^}]*opacity:\s*0\.3;/,
     );
     expect(css).toMatch(
-      /\.research-page__row\.is-locked\s+\.research-page__research-art\s*\{[^}]*background-image:\s*url\("\.\.\/\.\.\/assets\/game\/source\/ui\/root-run-research\/research-art-well-204x194\.png"\);/,
+      /\.research-page__row\.is-locked\s+\.research-page__research-art\s*\{[^}]*background-image:\s*url\("\.\.\/\.\.\/assets\/game\/source\/ui\/root-run-research\/research-art-well-204x194\.9\.png"\);/,
     );
     expect(css).toMatch(
       /\.research-page__row\.is-locked\s+\.research-page__research-art-image\s*\{[^}]*filter:\s*none;[^}]*opacity:\s*1;/,
@@ -905,13 +905,13 @@ describe('ResearchBoxListManager', () => {
       'margin-left: calc(var(--style-room-content-edge) - 2px);',
     );
     expect(rowRule).toMatch(
-      /background:\s*transparent\s+url\("\.\.\/\.\.\/assets\/game\/source\/ui\/root-run-research\/research-card-1000x304\.png"\)\s+center\s*\/\s*100%\s+100%\s+no-repeat;/,
+      /background:\s*transparent\s+url\("\.\.\/\.\.\/assets\/game\/source\/ui\/root-run-research\/research-card-1000x304\.9\.png"\)\s+center\s*\/\s*100%\s+100%\s+no-repeat;/,
     );
     expect(rowRule).toContain('border-image: none;');
     expect(artRule).toContain('width: var(--style-research-card-art-width);');
     expect(artRule).toContain('height: var(--style-research-card-art-height);');
     expect(artRule).toMatch(
-      /background:\s*transparent\s+url\("\.\.\/\.\.\/assets\/game\/source\/ui\/root-run-research\/research-art-well-204x194\.png"\)\s+center\s*\/\s*100%\s+100%\s+no-repeat;/,
+      /background:\s*transparent\s+url\("\.\.\/\.\.\/assets\/game\/source\/ui\/root-run-research\/research-art-well-204x194\.9\.png"\)\s+center\s*\/\s*100%\s+100%\s+no-repeat;/,
     );
     expect(artRule).toContain('border-image: none;');
     expect(artImageRule).toContain('width: 57px;');
@@ -929,10 +929,10 @@ describe('ResearchBoxListManager', () => {
     ).not.toContain('border-image-source');
     expect(
       [
-        'research-card-1000x304.png',
-        'research-card-locked-1000x304.png',
-        'research-art-well-204x194.png',
-        'research-art-well-locked-204x194.png',
+        'research-card-1000x304.9.png',
+        'research-card-locked-1000x304.9.png',
+        'research-art-well-204x194.9.png',
+        'research-art-well-locked-204x194.9.png',
       ].map((fileName) => {
         const image = PNG.sync.read(readFileSync(`${assetDir}/${fileName}`));
         return [image.width, image.height];
@@ -944,10 +944,10 @@ describe('ResearchBoxListManager', () => {
       [204, 194],
     ]);
     const normalCard = PNG.sync.read(
-      readFileSync(`${assetDir}/research-card-1000x304.png`),
+      readFileSync(`${assetDir}/research-card-1000x304.9.png`),
     );
     const lockedCard = PNG.sync.read(
-      readFileSync(`${assetDir}/research-card-locked-1000x304.png`),
+      readFileSync(`${assetDir}/research-card-locked-1000x304.9.png`),
     );
     let lockedAlphaMatches = true;
     let lockedChannelsAreGray = true;
@@ -964,10 +964,10 @@ describe('ResearchBoxListManager', () => {
       getOpaqueAverageLuminance(normalCard) * 0.45,
     );
     const normalArt = PNG.sync.read(
-      readFileSync(`${assetDir}/research-art-well-204x194.png`),
+      readFileSync(`${assetDir}/research-art-well-204x194.9.png`),
     );
     const lockedArt = PNG.sync.read(
-      readFileSync(`${assetDir}/research-art-well-locked-204x194.png`),
+      readFileSync(`${assetDir}/research-art-well-locked-204x194.9.png`),
     );
     let lockedArtAlphaMatches = true;
     let lockedArtChannelsAreGray = true;

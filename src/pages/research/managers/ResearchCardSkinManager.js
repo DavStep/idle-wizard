@@ -7,7 +7,7 @@ const RESEARCH_SKINS = Object.freeze([
     id: 'cardLocked',
     selector: '.research-page__row.is-locked',
     url: new URL(
-      '../../../../assets/game/source/ui/root-run-research/research-upgrade-bg.png',
+      '../../../../assets/game/source/ui/root-run-research/research-upgrade-bg.9.png',
       import.meta.url,
     ).href,
     width: 1000,
@@ -21,7 +21,7 @@ const RESEARCH_SKINS = Object.freeze([
     id: 'card',
     selector: '.research-page__row',
     url: new URL(
-      '../../../../assets/game/source/ui/root-run-research/research-upgrade-bg.png',
+      '../../../../assets/game/source/ui/root-run-research/research-upgrade-bg.9.png',
       import.meta.url,
     ).href,
     width: 1000,

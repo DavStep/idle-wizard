@@ -104,12 +104,7 @@ export class PixiCostButton extends PixiButton {
     this.lockReason = '';
     this.modelEnabled = true;
 
-    this.background = new Sprite({
-      texture: Texture.EMPTY,
-      label: `${label}:background`,
-      roundPixels: true,
-    });
-    this.compactBackground = new PixiNineSliceFrame({
+    this.background = new PixiNineSliceFrame({
       texture: Texture.EMPTY,
       sourceInsets: PIXI_ROOT_RUN_GEOMETRY.button.sourceInsets,
       borderInsets: this.compact
@@ -117,7 +112,7 @@ export class PixiCostButton extends PixiButton {
         : PIXI_ROOT_RUN_GEOMETRY.button.borderInsets,
       width,
       height,
-      label: `${label}:compactBackground`,
+      label: `${label}:background`,
     });
     this.resourceIcon = new Sprite({
       texture: Texture.EMPTY,
@@ -168,7 +163,6 @@ export class PixiCostButton extends PixiButton {
       label: `${label}:lockReason`,
     });
     this.visual.addChildAt(this.background, 0);
-    this.visual.addChildAt(this.compactBackground, 1);
     this.visual.addChild(
       this.resourceIcon,
       this.actionTextLabel,
@@ -277,10 +271,7 @@ export class PixiCostButton extends PixiButton {
     const skinDisabled = locked || compactDisabled || shortToneDisabled;
     const backgroundAssetId = this.resolveBackgroundAsset({ skinDisabled });
     const backgroundTexture = this.resolveTexture(backgroundAssetId);
-    this.background.texture = backgroundTexture;
-    this.background.visible = !this.compact;
-    this.background.renderable = this.background.visible;
-    this.compactBackground.setSkin({
+    this.background.setSkin({
       assetId: backgroundAssetId,
       borderInsets: this.compact
         ? PIXI_ROOT_RUN_GEOMETRY.compactButton.borderInsets
@@ -290,9 +281,8 @@ export class PixiCostButton extends PixiButton {
       texture: backgroundTexture,
       width: this.buttonWidth,
     });
-    this.compactBackground.visible = this.compact;
-    this.compactBackground.renderable =
-      this.compactBackground.visible;
+    this.background.visible = true;
+    this.background.renderable = true;
     this.resourceIcon.texture = this.resolveResourceTexture(this.resource);
     this.amountLabel
       .setText(this.amount)
@@ -388,9 +378,7 @@ export class PixiCostButton extends PixiButton {
       return;
     }
 
-    this.background.width = this.buttonWidth;
-    this.background.height = this.buttonHeight;
-    this.compactBackground.setSize(
+    this.background.setSize(
       this.buttonWidth,
       this.buttonHeight,
       this.compact

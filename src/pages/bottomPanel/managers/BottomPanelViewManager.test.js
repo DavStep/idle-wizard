@@ -781,17 +781,17 @@ describe('BottomPanelViewManager', () => {
     expect(tabBlock).toContain('border-image: none;');
     expect(
       fs.existsSync(
-        'assets/game/source/ui/midnight-room-tab-top-cap-selected-9slice.png',
+        'assets/game/source/ui/midnight-room-tab-top-cap-selected.9.png',
       ),
     ).toBe(true);
     expect(
-      fs.existsSync('assets/game/source/ui/midnight-room-tab-top-cap-9slice.png'),
+      fs.existsSync('assets/game/source/ui/midnight-room-tab-top-cap.9.png'),
     ).toBe(true);
     expect(baseCss).toContain(
-      '--style-room-tab-active-frame: url("../../assets/game/source/ui/midnight-room-tab-top-cap-selected-9slice.png");',
+      '--style-room-tab-active-frame: url("../../assets/game/source/ui/midnight-room-tab-top-cap-selected.9.png");',
     );
     expect(baseCss).toContain(
-      '--style-room-tab-inactive-frame: url("../../assets/game/source/ui/midnight-room-tab-top-cap-9slice.png");',
+      '--style-room-tab-inactive-frame: url("../../assets/game/source/ui/midnight-room-tab-top-cap.9.png");',
     );
     expect(tabFrameBlock).toContain(
       'border-image-source: var(--style-room-tab-inactive-frame);',
@@ -804,12 +804,12 @@ describe('BottomPanelViewManager', () => {
     );
     expect(tabFrameBlock).toContain('border: solid transparent;');
     expect(assetSha256(
-      'assets/game/source/ui/midnight-room-tab-top-cap-selected-9slice.png',
+      'assets/game/source/ui/midnight-room-tab-top-cap-selected.9.png',
     )).toBe(
       'e89dcf2121dd1f4cfe92f65cf73ea4184fdb06f7dd44966a6c28dfb16c7f08f7',
     );
     expect(assetSha256(
-      'assets/game/source/ui/midnight-room-tab-top-cap-9slice.png',
+      'assets/game/source/ui/midnight-room-tab-top-cap.9.png',
     )).toBe(
       '5d19200218a320cac688c24266df486269d1e488bc3caa7868f295ef3cd3fd86',
     );
