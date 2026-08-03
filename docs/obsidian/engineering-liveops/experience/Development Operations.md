@@ -15,6 +15,9 @@ experience_type: development-operations
   belongs in `assets/game/source/`; game and qUIck atlas outputs belong in
   their adjacent `atlas/` folders and must be regenerated through
   `npm run assets:atlas`, not edited by hand.
+- When promoting an authored source texture from `.png` to `.9.png`, update
+  asset-generator inputs as well as runtime references, then run
+  `npm run assets:atlas`; stale generator paths otherwise block `predev`.
 
 - Use the shared Vite dev server at `http://127.0.0.1:55173/` with `strictPort` by default. If parallel agents interfere, give each isolated runtime explicit ports and a clear owner; never rely on auto-increment, and stop every alternate listener when that agent finishes.
 - Use `npm run dev:status` to check the shared Vite server and `npm run dev:kill` to stop it.

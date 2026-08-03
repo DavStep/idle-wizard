@@ -504,22 +504,22 @@ describe('base styles', () => {
     const midnightSelectedTabRule = getRuleBody(
       /:root:is\(\[data-style-theme="night"\], \[data-style-theme="day"\]\)\s+\.style-button\[role="tab"\]\[aria-selected="true"\]\s*\{(?<body>[^}]*)\}/,
     );
-    const assetDir = `${cwd()}/assets/game/source/ui/root-run-cost-button`;
+    const assetDir = `${cwd()}/assets/game/source/ui/regular-button`;
     const light = PNG.sync.read(
-      readFileSync(`${assetDir}/brown-tab-active.9.png`),
+      readFileSync(`${assetDir}/brown-button-50.9.png`),
     );
     const dark = PNG.sync.read(
-      readFileSync(`${assetDir}/brown-tab-inactive.9.png`),
+      readFileSync(`${assetDir}/dark-brown-button-50.9.png`),
     );
 
     expect(rootRule).toContain(
-      '--style-tab-frame: url("../../assets/game/source/ui/root-run-cost-button/brown-tab-inactive.9.png");',
+      '--style-tab-frame: var(--style-brown-button-dark-frame);',
     );
     expect(rootRule).toContain(
-      '--style-tab-selected-frame: url("../../assets/game/source/ui/root-run-cost-button/brown-tab-active.9.png");',
+      '--style-tab-selected-frame: var(--style-brown-button-light-frame);',
     );
     expect(rootRule).toContain(
-      '--style-tab-frame-slice: 78 43 53 85 fill;',
+      '--style-tab-frame-slice: 100 52 68 86 fill;',
     );
     expect(rootRule).toContain(
       '--style-tab-frame-width: 13px 7px 9px 20px;',
@@ -542,8 +542,8 @@ describe('base styles', () => {
     expect(midnightSelectedTabRule).toContain(
       'border-image-source: var(--style-tab-selected-frame);',
     );
-    expect([dark.width, dark.height]).toEqual([130, 132]);
-    expect([light.width, light.height]).toEqual([130, 132]);
+    expect([dark.width, dark.height]).toEqual([141, 171]);
+    expect([light.width, light.height]).toEqual([141, 171]);
 
     let alphaMatches = true;
     for (let index = 3; index < light.data.length; index += 4) {
@@ -603,12 +603,12 @@ describe('base styles', () => {
       '--style-yellow-button-frame-slice: 100 52 68 86 fill;',
     );
     expect(rootRule).toContain(
-      '--style-tab-frame: url("../../assets/game/source/ui/root-run-cost-button/brown-tab-inactive.9.png");',
+      '--style-tab-frame: var(--style-brown-button-dark-frame);',
     );
     expect(rootRule).toContain(
-      '--style-tab-selected-frame: url("../../assets/game/source/ui/root-run-cost-button/brown-tab-active.9.png");',
+      '--style-tab-selected-frame: var(--style-brown-button-light-frame);',
     );
-    expect(rootRule).toContain('--style-tab-frame-slice: 78 43 53 85 fill;');
+    expect(rootRule).toContain('--style-tab-frame-slice: 100 52 68 86 fill;');
     expect(rootRule).toContain(
       '--style-tab-frame-width: 13px 7px 9px 20px;',
     );

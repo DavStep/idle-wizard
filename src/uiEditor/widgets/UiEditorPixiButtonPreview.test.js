@@ -58,14 +58,21 @@ describe('UiEditorPixiButtonPreview', () => {
   });
 
   it('disables nine-slice skins that exceed the widget minimum size', async () => {
-    const [{ createAssetOptions }, { PIXI_ROOT_RUN_ASSETS }] =
+    const [{ createAssetOptions }, { PIXI_ROOT_RUN_ASSETS, PIXI_ROOT_RUN_GEOMETRY }] =
       await Promise.all([
         import('./UiEditorPixiButtonPreview.js'),
         import('../../rendering/pixi/theme/PixiThemeTokens.js'),
       ]);
     const options = createAssetOptions(
-      PIXI_ROOT_RUN_ASSETS.buttonTabInactive,
+      PIXI_ROOT_RUN_ASSETS.buttonBrownDark,
       {
+        asset: {
+          borderInsets: PIXI_ROOT_RUN_GEOMETRY.tabButton.borderInsets,
+          id: PIXI_ROOT_RUN_ASSETS.buttonBrownDark,
+          minimumCenter: { width: 1, height: 1 },
+          nineSlice: true,
+          sourceInsets: PIXI_ROOT_RUN_GEOMETRY.tabButton.sourceInsets,
+        },
         targetLabel: 'Popup Tab Button',
         targetSize: {
           width: 92,
@@ -76,8 +83,8 @@ describe('UiEditorPixiButtonPreview', () => {
     const regularButton = options.find(
       ({ value }) => value === PIXI_ROOT_RUN_ASSETS.buttonGreenNineSlice,
     );
-    const compactTab = options.find(
-      ({ value }) => value === PIXI_ROOT_RUN_ASSETS.buttonTabInactive,
+    const sharedTab = options.find(
+      ({ value }) => value === PIXI_ROOT_RUN_ASSETS.buttonBrownDark,
     );
 
     expect(regularButton).toMatchObject({
@@ -85,6 +92,6 @@ describe('UiEditorPixiButtonPreview', () => {
       reason:
         'Requires at least 28×30; Popup Tab Button minimum is 92×28.',
     });
-    expect(compactTab.disabled).toBe(false);
+    expect(sharedTab.disabled).toBe(false);
   });
 });

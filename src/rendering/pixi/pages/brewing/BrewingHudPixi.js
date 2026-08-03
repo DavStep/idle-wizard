@@ -87,10 +87,10 @@ const ASSETS = Object.freeze({
   lock: PIXI_ROOT_RUN_ASSETS.lock,
 });
 const POTION_PREVIEW_SOURCE_INSETS = Object.freeze({
-  top: 49,
-  right: 50,
-  bottom: 50,
-  left: 49,
+  top: 41,
+  right: 41,
+  bottom: 41,
+  left: 41,
 });
 const POTION_PREVIEW_BORDER_INSETS = Object.freeze({
   top: 49 / 3,
@@ -305,12 +305,7 @@ export class BrewingHudPixi {
       borderInsets: POTION_PREVIEW_BORDER_INSETS,
       label: 'brewing-potion-preview-well',
     });
-    this.potionPreviewBackgroundFilter = createSolidColorFilter(
-      POTION_PREVIEW_BACKGROUND_COLOR,
-    );
-    this.potionPreviewFrame.filters = this.potionPreviewBackgroundFilter
-      ? [this.potionPreviewBackgroundFilter]
-      : null;
+    this.potionPreviewFrame.tint = POTION_PREVIEW_BACKGROUND_COLOR;
     this.potionIcon = new Sprite(Texture.EMPTY);
     this.potionIcon.anchor.set(0.5);
     this.potionName = createText('', {
@@ -1322,8 +1317,6 @@ export class BrewingHudPixi {
     this.lockedCauldronFilter?.destroy?.();
     this.lockedCauldronFilter = null;
     this.potionPreviewFrame.filters = null;
-    this.potionPreviewBackgroundFilter?.destroy?.();
-    this.potionPreviewBackgroundFilter = null;
     this.progress.destroy();
     for (const slot of this.ingredientSlots) {
       slot.destroy();
@@ -1650,21 +1643,6 @@ function createLockedArtFilter() {
       0.2125, 0.7154, 0.0721, 0, 0,
       0.2125, 0.7154, 0.0721, 0, 0,
       0.2125, 0.7154, 0.0721, 0, 0,
-      0, 0, 0, 1, 0,
-    ];
-    return filter;
-  } catch {
-    return null;
-  }
-}
-
-function createSolidColorFilter(color) {
-  try {
-    const filter = new ColorMatrixFilter();
-    filter.matrix = [
-      0, 0, 0, 0, ((color >> 16) & 0xff) / 0xff,
-      0, 0, 0, 0, ((color >> 8) & 0xff) / 0xff,
-      0, 0, 0, 0, (color & 0xff) / 0xff,
       0, 0, 0, 1, 0,
     ];
     return filter;

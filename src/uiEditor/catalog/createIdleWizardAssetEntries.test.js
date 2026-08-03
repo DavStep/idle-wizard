@@ -66,6 +66,29 @@ describe('createIdleWizardAssetEntries', () => {
     expect(publicPlayerCard.folderPath).toEqual(['public', 'ui']);
   });
 
+  it('catalogs canonical Root Run dialog shell assets', () => {
+    const assets = createIdleWizardAssetEntries(
+      createIdleWizardButtonEntries(),
+    );
+    const dialogBackAssets = assets.filter(
+      ({ assetId, folderPath }) =>
+        folderPath.join('/') === 'ui/root-run-dialog'
+        && assetId.includes('dialog-back'),
+    );
+    const dialogCloseAssets = assets.filter(
+      ({ assetId, folderPath }) =>
+        folderPath.join('/') === 'ui/root-run-dialog'
+        && assetId.includes('close'),
+    );
+
+    expect(dialogBackAssets.map(({ assetId }) => assetId)).toEqual([
+      'source:assets/ui/root-run-dialog/expedition-dialog-back.9.png',
+    ]);
+    expect(dialogCloseAssets.map(({ assetId }) => assetId)).toEqual([
+      'source:assets/ui/root-run-dialog/expedition-dialog-close.png',
+    ]);
+  });
+
   it('groups reusable title plaques and ribbons as UI banners', () => {
     const assets = createIdleWizardAssetEntries(
       createIdleWizardButtonEntries(),
@@ -105,6 +128,51 @@ describe('createIdleWizardAssetEntries', () => {
       'icon-mana-drop.png',
       'icon-ruby.png',
     ]);
+  });
+
+  it('groups related nine-slice panel backgrounds without flattening their geometry families', () => {
+    const assets = createIdleWizardAssetEntries(
+      createIdleWizardButtonEntries(),
+    );
+    const backgrounds = assets.filter(
+      ({ folderPath }) =>
+        JSON.stringify(folderPath)
+        === JSON.stringify(['ui', 'backgrounds']),
+    );
+
+    expect(backgrounds.map(({ label }) => label).sort()).toEqual([
+      'expedition-dialog-front.9.png',
+      'inner-section-panel-black.9.png',
+      'inner-section-panel-day.9.png',
+      'inner-section-panel-midnight.9.png',
+      'inner-section-panel-white.9.png',
+      'inner-section-panel-witchcraft.9.png',
+      'research-card-1000x304.9.png',
+      'research-card-dark-1000x304.9.png',
+      'research-card-locked-1000x304.9.png',
+      'research-upgrade-bg.9.png',
+    ]);
+    expect(backgrounds.every(({ nineSlice }) => nineSlice)).toBe(true);
+
+    const compactResearchCard = backgrounds.find(
+      ({ label }) => label === 'research-upgrade-bg.9.png',
+    );
+    const dialogPaper = backgrounds.find(
+      ({ label }) => label === 'expedition-dialog-front.9.png',
+    );
+
+    expect(compactResearchCard.properties).toContainEqual({
+      label: 'Background family',
+      value: 'Research card',
+    });
+    expect(compactResearchCard.properties).toContainEqual({
+      label: 'Variant',
+      value: 'Compact source',
+    });
+    expect(dialogPaper.properties).toContainEqual({
+      label: 'Background family',
+      value: 'Dialog paper',
+    });
   });
 
   it('groups the complete regular button color and radius matrix', () => {
@@ -177,6 +245,27 @@ describe('createIdleWizardAssetEntries', () => {
       label: 'Type',
       value: 'Generated atlas',
     });
+    expect(gameAtlas.atlasSize).toEqual({ height: 2048, width: 2048 });
+    expect(gameAtlas.atlasFrames.length).toBeGreaterThan(100);
+    expect(gameAtlas.atlasFrames[0]).toEqual(
+      expect.objectContaining({
+        height: expect.any(Number),
+        name: expect.any(String),
+        source: expect.stringContaining('assets/game/source/'),
+        width: expect.any(Number),
+        x: expect.any(Number),
+        y: expect.any(Number),
+      }),
+    );
+    expect(gameAtlas.properties).toContainEqual({
+      label: 'Atlas size',
+      monospace: true,
+      value: '2048 × 2048px',
+    });
+    expect(gameAtlas.properties).toContainEqual({
+      label: 'Frames',
+      value: String(gameAtlas.atlasFrames.length),
+    });
     expect(sourceWebp.editorEditable).toBe(false);
     expect(sourceWebp.properties).toContainEqual({
       label: 'Editor access',
@@ -184,47 +273,47 @@ describe('createIdleWizardAssetEntries', () => {
     });
   });
 
-  it('suggests registered sibling margins for an ordinary source asset', () => {
+  it('loads canonical regular-button sidecar metadata', () => {
     const assets = createIdleWizardAssetEntries(
       createIdleWizardButtonEntries(),
     );
-    const stackedGreenButton = assets.find(
+    const greenButton = assets.find(
       ({ assetId }) =>
         assetId
-        === 'source:assets/ui/root-run-cost-button/green-button.png',
+        === 'source:assets/ui/regular-button/green-button-50.9.png',
     );
 
-    expect(stackedGreenButton.nineSlice).toBe(false);
-    expect(stackedGreenButton.editorEditable).toBe(true);
-    expect(stackedGreenButton.suggestedSourceInsets).toEqual({
+    expect(greenButton.nineSlice).toBe(true);
+    expect(greenButton.editorEditable).toBe(true);
+    expect(greenButton.sourceInsets).toEqual({
       top: 100,
-      right: 71,
+      right: 52,
       bottom: 68,
-      left: 85,
+      left: 86,
     });
   });
 
-  it('loads editor-authored sidecar metadata as a nine-slice asset', () => {
+  it('shows canonical regular-button slice metadata in asset properties', () => {
     const assets = createIdleWizardAssetEntries(
       createIdleWizardButtonEntries(),
     );
-    const shortGreenButton = assets.find(
+    const greenButton = assets.find(
       ({ assetId }) =>
         assetId
-        === 'source:assets/ui/root-run-cost-button/green-button-short.9.png',
+        === 'source:assets/ui/regular-button/green-button-50.9.png',
     );
 
-    expect(shortGreenButton.nineSlice).toBe(true);
-    expect(shortGreenButton.sourceInsets).toEqual({
+    expect(greenButton.nineSlice).toBe(true);
+    expect(greenButton.sourceInsets).toEqual({
       top: 100,
-      right: 71,
+      right: 52,
       bottom: 68,
-      left: 85,
+      left: 86,
     });
-    expect(shortGreenButton.properties).toContainEqual({
+    expect(greenButton.properties).toContainEqual({
       label: 'Slice margins',
       monospace: true,
-      value: 'L 85 · T 100 · R 71 · B 68',
+      value: 'L 86 · T 100 · R 52 · B 68',
     });
   });
 
@@ -336,7 +425,7 @@ describe('createIdleWizardAssetEntries', () => {
       ),
     );
 
-    expect(assetIds.has('source:assets/ui/root-run-cost-button/coin.png')).toBe(
+    expect(assetIds.has('source:assets/icons/icon-coin.png')).toBe(
       true,
     );
     expect(
@@ -345,6 +434,9 @@ describe('createIdleWizardAssetEntries', () => {
       ),
     ).toBe(true);
     expect(assetIds.has('source:assets/avatars/elara.png')).toBe(true);
+    expect(
+      [...assetIds].some((assetId) => assetId.includes('/popup-tab/')),
+    ).toBe(false);
   });
 
   it('carries widget previews and feature locations into asset usages', () => {

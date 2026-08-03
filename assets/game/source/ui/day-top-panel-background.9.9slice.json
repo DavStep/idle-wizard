@@ -43,11 +43,11 @@
       "bottom": 30
     },
     "minimumCenter": {
-      "width": 1,
+      "width": 97,
       "height": 1
     },
     "minimumSize": {
-      "width": 61,
+      "width": 157,
       "height": 32
     },
     "qaResample": "nearest",

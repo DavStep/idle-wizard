@@ -93,6 +93,36 @@ export class UiEditorUsageManager {
     return true;
   }
 
+  showAtlasFrame(entry, frame) {
+    if (!this.refs || entry?.kind !== 'asset' || !frame?.name) {
+      this.clear();
+      return false;
+    }
+
+    const properties = createAtlasFrameProperties(entry, frame);
+    this.selectedComponent = null;
+    this.refs.root.dataset.empty = 'false';
+    this.refs.editor.hidden = true;
+    this.refs.editor.removeAttribute('aria-label');
+    this.refs.editor.replaceChildren();
+    this.refs.summary.hidden = false;
+    this.refs.title.textContent = frame.name;
+    this.refs.count.textContent = 'Atlas frame';
+    this.refs.properties.hidden = false;
+    this.refs.properties.setAttribute(
+      'aria-label',
+      `${frame.name} atlas frame properties`,
+    );
+    this.refs.properties.replaceChildren(
+      ...properties.map(createPropertyItem),
+    );
+    this.refs.emptyState.hidden = true;
+    this.refs.emptyState.textContent = '';
+    this.refs.list.removeAttribute('aria-label');
+    this.refs.list.replaceChildren();
+    return true;
+  }
+
   showComponent(component) {
     if (
       !this.refs
@@ -243,6 +273,55 @@ function normalizeUsages(usages) {
           },
     )
     .filter(({ label }) => label);
+}
+
+function createAtlasFrameProperties(entry, frame) {
+  const packedArea = Number(frame.width) * Number(frame.height);
+  const sourceArea = Number(frame.originalWidth) * Number(frame.originalHeight);
+  const footprint = sourceArea > 0
+    ? `${Math.round(packedArea / sourceArea * 1000) / 10}% of source`
+    : 'Unavailable';
+
+  return [
+    {
+      label: 'Frame ID',
+      monospace: true,
+      value: frame.name,
+    },
+    {
+      label: 'Source path',
+      monospace: true,
+      value: frame.source,
+    },
+    {
+      label: 'Packed size',
+      monospace: true,
+      value: formatPixelSize(frame.width, frame.height),
+    },
+    {
+      label: 'Source canvas',
+      monospace: true,
+      value: formatPixelSize(frame.originalWidth, frame.originalHeight),
+    },
+    {
+      label: 'Atlas position',
+      monospace: true,
+      value: `X ${frame.x} · Y ${frame.y}`,
+    },
+    {
+      label: 'Atlas footprint',
+      value: footprint,
+    },
+    {
+      label: 'Atlas',
+      monospace: true,
+      value: entry.assetId,
+    },
+  ];
+}
+
+function formatPixelSize(width, height) {
+  return `${Number(width) || 0} × ${Number(height) || 0}px`;
 }
 
 function createPropertyItem({ label, monospace, value }) {

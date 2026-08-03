@@ -90,9 +90,9 @@
   --style-green-button-frame-width: var(--style-yellow-button-frame-width);
   --style-brown-button-dark-frame: url("../../assets/game/source/ui/regular-button/dark-brown-button-50.9.png");
   --style-brown-button-light-frame: url("../../assets/game/source/ui/regular-button/brown-button-50.9.png");
-  --style-tab-frame: url("../../assets/game/source/ui/root-run-cost-button/brown-tab-inactive.9.png");
-  --style-tab-selected-frame: url("../../assets/game/source/ui/root-run-cost-button/brown-tab-active.9.png");
-  --style-tab-frame-slice: 78 43 53 85 fill;
+  --style-tab-frame: var(--style-brown-button-dark-frame);
+  --style-tab-selected-frame: var(--style-brown-button-light-frame);
+  --style-tab-frame-slice: 100 52 68 86 fill;
   --style-tab-frame-width: 13px 7px 9px 20px;
   --style-border-strong: var(--style-border-strong-width) solid
     var(--style-stroke);
@@ -11003,16 +11003,18 @@ div.workshop-page__discovery-row {
   width: var(--style-research-card-art-width);
   height: var(--style-research-card-art-height);
   overflow: hidden;
-  background: transparent
-    url("../../assets/game/source/ui/root-run-research/research-art-well-204x194.9.png")
-    center / 100% 100% no-repeat;
+  background: #dbc19f;
   border: 0;
   border-image: none;
   border-radius: 0;
+  -webkit-mask: url("../../assets/game/source/ui/white-squircle/white-squircle-40.9.png")
+    center / 100% 100% no-repeat;
+  mask: url("../../assets/game/source/ui/white-squircle/white-squircle-40.9.png")
+    center / 100% 100% no-repeat;
 }
 
 .research-page__row.is-locked .research-page__research-art {
-  background-image: url("../../assets/game/source/ui/root-run-research/research-art-well-204x194.9.png");
+  background-color: #dbc19f;
 }
 
 .research-page__ui-layer[data-research-skin-renderer="pixi"]
@@ -11020,6 +11022,13 @@ div.workshop-page__discovery-row {
 .research-page__ui-layer[data-research-skin-renderer="pixi"]
   .research-page__research-art {
   background-image: none;
+}
+
+.research-page__ui-layer[data-research-skin-renderer="pixi"]
+  .research-page__research-art {
+  background-color: transparent;
+  -webkit-mask-image: none;
+  mask-image: none;
 }
 
 .research-page__research-art-image {

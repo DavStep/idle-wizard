@@ -41,6 +41,20 @@ describe('player avatar assets', () => {
       }
     }
   });
+
+  it('keeps selectable character silhouettes free of pale export matte', () => {
+    const characterKeys = getPlayerCharacterOptions().map(({ key }) => key);
+
+    for (const key of characterKeys) {
+      const character = readPng(
+        `assets/game/source/characters/${key}.png`,
+      );
+      expect(
+        countPaleMattePixels(character),
+        key,
+      ).toBeLessThanOrEqual(16);
+    }
+  });
 });
 
 function readPng(relativePath) {
@@ -52,4 +66,26 @@ function readPng(relativePath) {
 function readPixel(image, x, y) {
   const index = (y * image.width + x) * 4;
   return Array.from(image.data.subarray(index, index + 4));
+}
+
+function countPaleMattePixels(image) {
+  let count = 0;
+
+  for (let index = 0; index < image.data.length; index += 4) {
+    const red = image.data[index];
+    const green = image.data[index + 1];
+    const blue = image.data[index + 2];
+    const alpha = image.data[index + 3];
+    if (
+      alpha > 0 &&
+      alpha < 240 &&
+      red > 205 &&
+      green > 205 &&
+      blue > 205
+    ) {
+      count += 1;
+    }
+  }
+
+  return count;
 }

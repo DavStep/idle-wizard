@@ -28,6 +28,7 @@ import {
   DEFAULT_PIXI_THEME_SNAPSHOT,
   PIXI_ROOT_RUN_ASSETS,
   PIXI_ROOT_RUN_GEOMETRY,
+  PIXI_SQUIRCLE_TINTS,
   PIXI_UI_GEOMETRY,
 } from '../../theme/PixiThemeTokens.js';
 import { getPlayerFrameTint } from '../../../../player/playerFrames.js';
@@ -266,11 +267,17 @@ export class PixiSettingsDialog extends RetainedGlobalDialog {
       roundPixels: true,
       label: `${this.dialogId}:accountPreviewPortrait`,
     });
-    this.usernameBacking = new Sprite({
+    const usernameGeometry = PIXI_ROOT_RUN_GEOMETRY.account.username;
+    this.usernameBacking = new PixiNineSliceFrame({
       texture: this.context.assets.getTexture(PIXI_ROOT_RUN_ASSETS.accountUsername),
-      roundPixels: true,
+      sourceInsets: usernameGeometry.sourceInsets,
+      borderInsets: usernameGeometry.borderInsets,
+      width: usernameGeometry.width,
+      height: usernameGeometry.height,
       label: `${this.dialogId}:usernameBacking`,
     });
+    this.usernameBacking.tint = PIXI_SQUIRCLE_TINTS.usernameBar;
+    this.usernameBacking.alpha = usernameGeometry.alpha;
     this.usernameField = new PixiTextField({
       assetManager: this.context.assets,
       inputRouter: this.context.inputRouter,
@@ -826,8 +833,11 @@ export class PixiSettingsDialog extends RetainedGlobalDialog {
       ACCOUNT_HEADER_X + 253 * (ACCOUNT_HEADER_WIDTH / 925),
       sectionInset + 96 / 3,
     );
-    this.usernameBacking.width = username.width;
-    this.usernameBacking.height = username.height;
+    this.usernameBacking.setSize(
+      username.width,
+      username.height,
+      username.borderInsets,
+    );
     this.usernameField.position.set(
       this.usernameBacking.x + username.textInsetX,
       this.usernameBacking.y + username.textInsetY,

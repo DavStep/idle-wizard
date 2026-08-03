@@ -169,6 +169,55 @@ describe('UiEditorUsageManager', () => {
     ).toEqual(['Green Button', 'Compact Cost Button']);
   });
 
+  it('shows selected atlas frame geometry and source metadata', () => {
+    expect(
+      manager.showAtlasFrame(
+        { assetId: 'atlas:game', kind: 'asset' },
+        {
+          height: 128,
+          name: 'potion:moon',
+          originalHeight: 256,
+          originalWidth: 256,
+          source: 'assets/game/source/items/potions/potion-moon.png',
+          width: 94,
+          x: 812,
+          y: 320,
+        },
+      ),
+    ).toBe(true);
+
+    expect(refs.title.textContent).toBe('potion:moon');
+    expect(refs.count.textContent).toBe('Atlas frame');
+    expect(
+      [...refs.properties.querySelectorAll('dt')].map(
+        (element) => element.textContent,
+      ),
+    ).toEqual([
+      'Frame ID',
+      'Source path',
+      'Packed size',
+      'Source canvas',
+      'Atlas position',
+      'Atlas footprint',
+      'Atlas',
+    ]);
+    expect(
+      [...refs.properties.querySelectorAll('dd')].map(
+        (element) => element.textContent,
+      ),
+    ).toEqual([
+      'potion:moon',
+      'assets/game/source/items/potions/potion-moon.png',
+      '94 × 128px',
+      '256 × 256px',
+      'X 812 · Y 320',
+      '18.4% of source',
+      'atlas:game',
+    ]);
+    expect(refs.emptyState.hidden).toBe(true);
+    expect(refs.list.children).toHaveLength(0);
+  });
+
   it('edits an atomic component position, text, and asset', () => {
     const update = vi.fn();
 

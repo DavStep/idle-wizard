@@ -12,11 +12,6 @@ const BUTTON_SKIN_IDS = [
   PIXI_ROOT_RUN_ASSETS.buttonBrownDark,
   PIXI_ROOT_RUN_ASSETS.buttonBrownLight,
 ];
-const TAB_SKIN_IDS = [
-  PIXI_ROOT_RUN_ASSETS.buttonTabActive,
-  PIXI_ROOT_RUN_ASSETS.buttonTabInactive,
-  PIXI_ROOT_RUN_ASSETS.buttonTabDisabled,
-];
 const SKINS = new Map();
 
 registerSkin(DEFAULT_PIXI_THEME_SNAPSHOT.frames.control, {
@@ -28,13 +23,6 @@ for (const assetId of BUTTON_SKIN_IDS) {
   registerSkin(assetId, {
     outputInsets: PIXI_ROOT_RUN_GEOMETRY.button.borderInsets,
     sourceInsets: PIXI_ROOT_RUN_GEOMETRY.button.sourceInsets,
-  });
-}
-
-for (const assetId of TAB_SKIN_IDS) {
-  registerSkin(assetId, {
-    outputInsets: PIXI_ROOT_RUN_GEOMETRY.tabButton.borderInsets,
-    sourceInsets: PIXI_ROOT_RUN_GEOMETRY.tabButton.sourceInsets,
   });
 }
 

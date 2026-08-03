@@ -12,6 +12,7 @@ import {
   DEFAULT_PIXI_THEME_SNAPSHOT,
   PIXI_ROOT_RUN_ASSETS,
   PIXI_ROOT_RUN_GEOMETRY,
+  PIXI_SQUIRCLE_TINTS,
 } from '../../theme/PixiThemeTokens.js';
 import {
   RESEARCH_PAPER_INK,
@@ -66,10 +67,10 @@ const PRESTIGE_CARD_SOURCE_INSETS =
 const PRESTIGE_CARD_BORDER_INSETS =
   PIXI_ROOT_RUN_GEOMETRY.researchCard.borderInsets;
 const PRESTIGE_ART_SOURCE_INSETS = Object.freeze({
-  top: 49,
-  right: 50,
-  bottom: 50,
-  left: 49,
+  top: 41,
+  right: 41,
+  bottom: 41,
+  left: 41,
 });
 const PRESTIGE_ART_BORDER_INSETS = Object.freeze({
   top: 49 / 3,
@@ -680,6 +681,7 @@ class PrestigeRowWidget {
       height: RESEARCH_PIXI_GEOMETRY.artHeight,
       label: 'prestige-row-art-well',
     });
+    this.artWell.tint = PIXI_SQUIRCLE_TINTS.artWell;
     this.stateIcon = new Sprite({
       texture: Texture.EMPTY,
       label: 'prestige-row-state-icon',

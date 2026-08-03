@@ -30,6 +30,7 @@ import {
   DEFAULT_PIXI_THEME_SNAPSHOT,
   PIXI_ROOT_RUN_ASSETS,
   PIXI_ROOT_RUN_GEOMETRY,
+  PIXI_SQUIRCLE_TINTS,
   PIXI_TEXT_STROKE_WIDTH,
   PIXI_UI_GEOMETRY,
 } from '../../theme/PixiThemeTokens.js';
@@ -76,10 +77,10 @@ const CARD_SOURCE_INSETS =
 const CARD_BORDER_INSETS =
   PIXI_ROOT_RUN_GEOMETRY.researchCard.borderInsets;
 const ART_SOURCE_INSETS = Object.freeze({
-  top: 49,
-  right: 50,
-  bottom: 50,
-  left: 49,
+  top: 41,
+  right: 41,
+  bottom: 41,
+  left: 41,
 });
 const ART_BORDER_INSETS = Object.freeze({
   top: 49 / 3,
@@ -1297,6 +1298,7 @@ class ResearchRowWidget {
       height: RESEARCH_PIXI_GEOMETRY.artHeight,
       label: 'research-row-art-well',
     });
+    this.artWell.tint = PIXI_SQUIRCLE_TINTS.artWell;
     this.art = new Sprite({
       texture: Texture.EMPTY,
       label: 'research-row-art',

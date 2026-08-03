@@ -22,6 +22,8 @@ decorative highlight. One matching flat gutter pixel surrounds each side of
 that center so smoothed nine-slice rendering cannot sample decoration or
 curved-cap pixels across a join.
 
-Run `npm run assets:regular-buttons` after changing a radius-50 source color
-treatment. Cost buttons compose these shared nine-slices with resource content;
-only the shorter popup-tab chrome remains separately authored.
+These checked-in tiers are the canonical regular-button assets. Run
+`npm run assets:regular-buttons` to validate the complete matrix and its
+metadata after editing them. Cost buttons compose these shared nine-slices
+with resource content. Popup tabs reuse the radius-50 brown, dark-brown, and
+gray textures with compact output insets instead of owning duplicate PNGs.

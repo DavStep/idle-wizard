@@ -144,10 +144,9 @@ describe('PixiCostButton', () => {
     });
 
     expect(button.compact).toBe(true);
-    expect(button.background.visible).toBe(false);
-    expect(button.compactBackground.visible).toBe(true);
-    expect(button.compactBackground.frameWidth).toBe(100);
-    expect(button.compactBackground.frameHeight).toBe(28);
+    expect(button.background.visible).toBe(true);
+    expect(button.background.frameWidth).toBe(100);
+    expect(button.background.frameHeight).toBe(28);
     expect(button.resourceIcon.width).toBeCloseTo(16.512);
     expect(button.resourceIcon.height).toBeCloseTo(16.512);
     expect(button.resourceIcon.y).toBe(14);
@@ -209,7 +208,7 @@ describe('PixiCostButton', () => {
     expect(button.actionTextLabel.stroke.width).toBe(
       resolvePixiTextStrokeWidth(button.actionTextLabel.fontSize),
     );
-    expect(button.compactBackground.visible).toBe(false);
+    expect(button.background.visible).toBe(true);
     expect(assetManager.getTexture).toHaveBeenCalledWith(
       PIXI_ROOT_RUN_ASSETS.buttonGreenStacked,
     );
@@ -316,14 +315,16 @@ describe('PixiCostButton', () => {
   });
 
   it('keeps the green silhouette while using the exact info icon blues', () => {
-    const assetDir = `${cwd()}/assets/game/source/ui`;
+    const assetDir = `${cwd()}/assets/game/source/ui/regular-button`;
     const green = PNG.sync.read(
-      readFileSync(`${assetDir}/root-run-cost-button/green-button-short.9.png`),
+      readFileSync(`${assetDir}/green-button-50.9.png`),
     );
     const blue = PNG.sync.read(
-      readFileSync(`${assetDir}/root-run-cost-button/blue-button-short.png`),
+      readFileSync(`${assetDir}/blue-button-50.9.png`),
     );
-    const info = PNG.sync.read(readFileSync(`${assetDir}/prop_info.png`));
+    const info = PNG.sync.read(
+      readFileSync(`${cwd()}/assets/game/source/ui/prop_info.png`),
+    );
 
     expect([blue.width, blue.height]).toEqual([green.width, green.height]);
     let alphaMatches = true;
@@ -334,17 +335,17 @@ describe('PixiCostButton', () => {
       }
     }
     expect(alphaMatches).toBe(true);
-    expect(countOpaqueColor(blue, [39, 131, 217])).toBeGreaterThan(28_000);
-    expect(countOpaqueColor(blue, [105, 243, 243])).toBeGreaterThan(6_000);
+    expect(countOpaqueColor(blue, [39, 131, 217])).toBeGreaterThan(5_000);
+    expect(countOpaqueColor(blue, [105, 243, 243])).toBeGreaterThan(1_000);
     expect(countOpaqueColor(info, [39, 131, 217])).toBeGreaterThan(900);
     expect(countOpaqueColor(info, [105, 243, 243])).toBeGreaterThan(400);
   });
 
   it('keeps the short-button silhouette while using the shared purple palette', () => {
-    const assetDir = `${cwd()}/assets/game/source/ui/root-run-cost-button`;
-    const blue = PNG.sync.read(readFileSync(`${assetDir}/blue-button-short.png`));
+    const assetDir = `${cwd()}/assets/game/source/ui/regular-button`;
+    const blue = PNG.sync.read(readFileSync(`${assetDir}/blue-button-50.9.png`));
     const purple = PNG.sync.read(
-      readFileSync(`${assetDir}/purple-button-short.png`),
+      readFileSync(`${assetDir}/purple-button-50.9.png`),
     );
 
     expect([purple.width, purple.height]).toEqual([blue.width, blue.height]);
@@ -356,8 +357,8 @@ describe('PixiCostButton', () => {
       }
     }
     expect(alphaMatches).toBe(true);
-    expect(countOpaqueColor(purple, [135, 64, 223])).toBeGreaterThan(28_000);
-    expect(countOpaqueColor(purple, [189, 114, 243])).toBeGreaterThan(6_000);
+    expect(countOpaqueColor(purple, [135, 64, 223])).toBeGreaterThan(5_000);
+    expect(countOpaqueColor(purple, [189, 114, 243])).toBeGreaterThan(1_000);
   });
 
   it('rejects empty actionable costs instead of silently rendering fallback copy', () => {

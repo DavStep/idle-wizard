@@ -135,9 +135,6 @@ export const PIXI_ROOT_RUN_ASSETS = Object.freeze({
     'source:assets/ui/regular-button/gray-button-50.9.png',
   buttonBrownDark: 'source:assets/ui/regular-button/dark-brown-button-50.9.png',
   buttonBrownLight: 'source:assets/ui/regular-button/brown-button-50.9.png',
-  buttonTabActive: 'source:assets/ui/root-run-cost-button/brown-tab-active.9.png',
-  buttonTabInactive: 'source:assets/ui/root-run-cost-button/brown-tab-inactive.9.png',
-  buttonTabDisabled: 'source:assets/ui/root-run-cost-button/gray-tab-disabled.9.png',
   textFieldBrownInset: 'source:assets/ui/root-run-world-chat/world-chat-text-field.9.png',
   coin: 'source:assets/icons/icon-coin.png',
   settingsKnob: 'source:assets/ui/root-run-settings/settings-knob.png',
@@ -151,7 +148,7 @@ export const PIXI_ROOT_RUN_ASSETS = Object.freeze({
   settingsThemeDay:
     'source:assets/ui/root-run-settings/settings-icon-theme-day.png',
   accountTitle: 'source:assets/ui/root-run-account/account-title.png',
-  accountUsername: 'source:assets/ui/root-run-account/username-bar.png',
+  accountUsername: 'source:assets/ui/white-squircle/white-squircle-40.9.png',
   accountEdit: 'source:assets/ui/root-run-account/edit-pencil.png',
   accountChoice: 'source:assets/ui/root-run-account/choice-tile.png',
   accountSelected: 'source:assets/ui/root-run-account/choice-selected.png',
@@ -170,8 +167,7 @@ export const PIXI_ROOT_RUN_ASSETS = Object.freeze({
   marketTitleRibbon: 'source:assets/ui/root-run-market/market-title-ribbon.9.png',
   researchCard: 'source:assets/ui/root-run-research/research-card-1000x304.9.png',
   researchCardLocked: 'source:assets/ui/root-run-research/research-card-locked-1000x304.9.png',
-  researchArt: 'source:assets/ui/root-run-research/research-art-well-204x194.9.png',
-  researchArtLocked: 'source:assets/ui/root-run-research/research-art-well-locked-204x194.9.png',
+  researchArt: 'source:assets/ui/white-squircle/white-squircle-40.9.png',
   researchRank: 'source:assets/ui/root-run-research/research-rank-badge-217x62.png',
   researchButtonShine:
     'source:assets/ui/root-run-research/research-button-shine.png',
@@ -218,6 +214,12 @@ export const PIXI_ROOT_RUN_ASSETS = Object.freeze({
   starOrange: 'source:assets/ui/stars/star-orange.png',
   starRed: 'source:assets/ui/stars/star-red.png',
   starPurple: 'source:assets/ui/stars/star-purple.png',
+});
+
+export const PIXI_SQUIRCLE_TINTS = Object.freeze({
+  artWell: 0xdbc19f,
+  lockedArtWell: 0x4f4f4f,
+  usernameBar: 0x000000,
 });
 
 export const PIXI_ROOT_RUN_GEOMETRY = Object.freeze({
@@ -271,6 +273,19 @@ export const PIXI_ROOT_RUN_GEOMETRY = Object.freeze({
     username: Object.freeze({
       width: 650 * ROOT_RUN_ACCOUNT_X_SCALE,
       height: 88 / 3,
+      sourceInsets: Object.freeze({
+        top: 41,
+        right: 41,
+        bottom: 41,
+        left: 41,
+      }),
+      borderInsets: Object.freeze({
+        top: 41 / 3,
+        right: 41 / 3,
+        bottom: 41 / 3,
+        left: 41 / 3,
+      }),
+      alpha: 0.4,
       textInsetX: 25 * ROOT_RUN_ACCOUNT_X_SCALE,
       textInsetY: 7 / 3,
       editInsetRight: 10 * ROOT_RUN_ACCOUNT_X_SCALE,
@@ -293,7 +308,7 @@ export const PIXI_ROOT_RUN_GEOMETRY = Object.freeze({
     borderInsets: Object.freeze({ top: 16, right: 7, bottom: 11, left: 20 }),
   }),
   tabButton: Object.freeze({
-    sourceInsets: Object.freeze({ top: 78, right: 43, bottom: 53, left: 85 }),
+    sourceInsets: Object.freeze({ top: 100, right: 52, bottom: 68, left: 86 }),
     borderInsets: Object.freeze({ top: 13, right: 7, bottom: 9, left: 20 }),
   }),
   textFieldBrownInset: Object.freeze({

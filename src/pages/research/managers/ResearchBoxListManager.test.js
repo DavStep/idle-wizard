@@ -564,7 +564,7 @@ describe('ResearchBoxListManager', () => {
       /\.research-page__row\s*\{[^}]*margin-left:\s*calc\(var\(--style-room-content-edge\) - 2px\);/,
     );
     expect(css).toMatch(
-      /\.style-button\.style-cost-button\.style-cost-button--yellow\.research-page__research-button--completed:disabled::after\s*\{[^}]*yellow-button-short\.png/,
+      /\.style-button\.style-cost-button\.style-cost-button--yellow\.research-page__research-button--completed:disabled::after\s*\{[^}]*border-image-source:\s*var\(--style-yellow-button-frame\);/,
     );
     expect(titleSkinRule).toContain('height: 117px;');
     expect(titleSkinRule).toContain('border-width: 0 165px 0 5px;');
@@ -614,7 +614,7 @@ describe('ResearchBoxListManager', () => {
     expect(costButtonRule).toContain('height: calc(169px / 3);');
     expect(costButtonRule).toContain('font-family: "Lilita One", sans-serif;');
     expect(costSkinRule).toMatch(
-      /background:\s*url\("\.\.\/\.\.\/assets\/game\/source\/ui\/root-run-cost-button\/green-button-short\.9\.png"\)\s+center\s*\/\s*100%\s+100%\s+no-repeat;/,
+      /border-image-source:\s*var\(--style-green-button-frame\);/,
     );
     expect(costContentRule).toContain('display: inline-flex;');
     expect(costContentRule).toContain('align-items: center;');
@@ -750,36 +750,10 @@ describe('ResearchBoxListManager', () => {
       /\.style-button\.style-cost-button\.research-page__research-button:is\(\s*\[aria-disabled="true"\],[\s\S]*?\)::after\s*\{(?<body>[^}]*)\}/,
     )?.groups?.body;
     expect(disabledSkinRule).toContain(
-      'background-image: url("../../assets/game/source/ui/root-run-cost-button/gray-button-short.png");',
+      'border-image-source: var(--style-green-button-disabled-frame);',
     );
     expect(disabledSkinRule).not.toContain('filter:');
     expect(disabledResearchSkinRule).toBeUndefined();
-    const costButtonAssetDir = `${cwd()}/assets/game/source/ui/root-run-cost-button`;
-    for (const [greenName, grayName] of [
-      ['green-button.png', 'gray-button.png'],
-      ['green-button-short.9.png', 'gray-button-short.png'],
-    ]) {
-      const greenSkin = PNG.sync.read(
-        readFileSync(`${costButtonAssetDir}/${greenName}`),
-      );
-      const graySkin = PNG.sync.read(
-        readFileSync(`${costButtonAssetDir}/${grayName}`),
-      );
-      expect([graySkin.width, graySkin.height]).toEqual([
-        greenSkin.width,
-        greenSkin.height,
-      ]);
-      let alphaMatches = true;
-      let grayChannelsMatch = true;
-      for (let index = 0; index < graySkin.data.length; index += 4) {
-        alphaMatches &&= graySkin.data[index + 3] === greenSkin.data[index + 3];
-        grayChannelsMatch &&=
-          graySkin.data[index] === graySkin.data[index + 1] &&
-          graySkin.data[index + 1] === graySkin.data[index + 2];
-      }
-      expect(alphaMatches).toBe(true);
-      expect(grayChannelsMatch).toBe(true);
-    }
     const regularButtonAssetDir =
       `${cwd()}/assets/game/source/ui/regular-button`;
     const regularGreen = PNG.sync.read(
@@ -813,13 +787,13 @@ describe('ResearchBoxListManager', () => {
       /\.research-page__row\.is-locked::after\s*\{[^}]*background:\s*transparent\s+url\("\.\.\/\.\.\/assets\/game\/source\/ui\/root-run-research\/research-card-1000x304\.9\.png"\)\s+center\s*\/\s*100%\s+100%\s+no-repeat;[^}]*filter:\s*brightness\(0\);[^}]*opacity:\s*0\.3;/,
     );
     expect(css).toMatch(
-      /\.research-page__row\.is-locked\s+\.research-page__research-art\s*\{[^}]*background-image:\s*url\("\.\.\/\.\.\/assets\/game\/source\/ui\/root-run-research\/research-art-well-204x194\.9\.png"\);/,
+      /\.research-page__row\.is-locked\s+\.research-page__research-art\s*\{[^}]*background-color:\s*#dbc19f;/,
     );
     expect(css).toMatch(
       /\.research-page__row\.is-locked\s+\.research-page__research-art-image\s*\{[^}]*filter:\s*none;[^}]*opacity:\s*1;/,
     );
     expect(css).toMatch(
-      /\.style-button\.style-cost-button\.research-page__research-button\.is-unaffordable::after\s*\{[^}]*background-image:\s*url\("\.\.\/\.\.\/assets\/game\/source\/ui\/root-run-cost-button\/green-button-short\.9\.png"\);/,
+      /\.style-button\.style-cost-button\.research-page__research-button\.is-unaffordable::after\s*\{[^}]*border-image-source:\s*var\(--style-green-button-frame\);/,
     );
     expect(css).toMatch(
       /\.style-button\.style-cost-button\.research-page__research-button\.is-unaffordable\s+\.style-resource-label__amount\s*\{[^}]*color:\s*#c1121f;/,
@@ -855,7 +829,7 @@ describe('ResearchBoxListManager', () => {
     expect(css).not.toContain('.research-page__zoom-controls');
   });
 
-  it('keeps exact Root Run geometry and whole-image fallbacks for Pixi startup', () => {
+  it('keeps exact Root Run geometry and a tinted white-squircle fallback', () => {
     const css = readFileSync(`${cwd()}/src/styles/base.css`, 'utf8');
     const assetDir = `${cwd()}/assets/game/source/ui/root-run-research`;
     const rootRule = css.match(/:root\s*\{(?<body>[\s\S]*?)\n\}/)?.groups?.body;
@@ -910,8 +884,9 @@ describe('ResearchBoxListManager', () => {
     expect(rowRule).toContain('border-image: none;');
     expect(artRule).toContain('width: var(--style-research-card-art-width);');
     expect(artRule).toContain('height: var(--style-research-card-art-height);');
+    expect(artRule).toContain('background: #dbc19f;');
     expect(artRule).toMatch(
-      /background:\s*transparent\s+url\("\.\.\/\.\.\/assets\/game\/source\/ui\/root-run-research\/research-art-well-204x194\.9\.png"\)\s+center\s*\/\s*100%\s+100%\s+no-repeat;/,
+      /mask:\s*url\("\.\.\/\.\.\/assets\/game\/source\/ui\/white-squircle\/white-squircle-40\.9\.png"\)\s+center\s*\/\s*100%\s+100%\s+no-repeat;/,
     );
     expect(artRule).toContain('border-image: none;');
     expect(artImageRule).toContain('width: 57px;');
@@ -931,8 +906,6 @@ describe('ResearchBoxListManager', () => {
       [
         'research-card-1000x304.9.png',
         'research-card-locked-1000x304.9.png',
-        'research-art-well-204x194.9.png',
-        'research-art-well-locked-204x194.9.png',
       ].map((fileName) => {
         const image = PNG.sync.read(readFileSync(`${assetDir}/${fileName}`));
         return [image.width, image.height];
@@ -940,8 +913,6 @@ describe('ResearchBoxListManager', () => {
     ).toEqual([
       [1000, 304],
       [1000, 304],
-      [204, 194],
-      [204, 194],
     ]);
     const normalCard = PNG.sync.read(
       readFileSync(`${assetDir}/research-card-1000x304.9.png`),
@@ -963,26 +934,22 @@ describe('ResearchBoxListManager', () => {
     expect(getOpaqueAverageLuminance(lockedCard)).toBeLessThan(
       getOpaqueAverageLuminance(normalCard) * 0.45,
     );
-    const normalArt = PNG.sync.read(
-      readFileSync(`${assetDir}/research-art-well-204x194.9.png`),
+    const whiteSquircle = PNG.sync.read(
+      readFileSync(
+        `${cwd()}/assets/game/source/ui/white-squircle/white-squircle-40.9.png`,
+      ),
     );
-    const lockedArt = PNG.sync.read(
-      readFileSync(`${assetDir}/research-art-well-locked-204x194.9.png`),
-    );
-    let lockedArtAlphaMatches = true;
-    let lockedArtChannelsAreGray = true;
-    for (let index = 0; index < lockedArt.data.length; index += 4) {
-      lockedArtAlphaMatches &&=
-        lockedArt.data[index + 3] === normalArt.data[index + 3];
-      lockedArtChannelsAreGray &&=
-        lockedArt.data[index] === lockedArt.data[index + 1] &&
-        lockedArt.data[index + 1] === lockedArt.data[index + 2];
+    expect([whiteSquircle.width, whiteSquircle.height]).toEqual([83, 83]);
+    for (let index = 0; index < whiteSquircle.data.length; index += 4) {
+      if (whiteSquircle.data[index + 3] === 0) {
+        continue;
+      }
+      expect(Array.from(whiteSquircle.data.slice(index, index + 3))).toEqual([
+        255,
+        255,
+        255,
+      ]);
     }
-    expect(lockedArtAlphaMatches).toBe(true);
-    expect(lockedArtChannelsAreGray).toBe(true);
-    expect(getOpaqueAverageLuminance(lockedArt)).toBeLessThan(
-      getOpaqueAverageLuminance(normalArt) * 0.5,
-    );
     expect(css).toContain(
       '.research-page__ui-layer[data-research-skin-renderer="pixi"]',
     );

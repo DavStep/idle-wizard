@@ -1,6 +1,9 @@
 import {
   createUiEditorAssetDeletionDialog,
 } from './UiEditorAssetDeletionDialog.js';
+import {
+  createUiEditorAtlasWorkbench,
+} from './UiEditorAtlasWorkbench.js';
 
 const NINE_SLICE_SAVE_ROUTE = '/__idle-wizard-ui-editor/nine-slice';
 export const UI_EDITOR_PENDING_NINE_SLICE_STORAGE_KEY =
@@ -33,17 +36,25 @@ export function createUiEditorAssetPreview(
   {
     assetEntries = [],
     onAssetDeleted = () => {},
+    onInspectAtlasFrame = () => {},
   } = {},
 ) {
   const root = document.createElement('section');
   const header = createHeader(entry);
-  let content = entry.nineSlice
-    ? createUiEditorNineSliceWorkbench(entry)
-    : createImagePreview(entry);
+  const atlas = hasAtlasFrames(entry);
+  let content = atlas
+    ? createUiEditorAtlasWorkbench(entry, {
+        onSelectFrame: onInspectAtlasFrame,
+      })
+    : entry.nineSlice
+      ? createUiEditorNineSliceWorkbench(entry)
+      : createImagePreview(entry);
   let activeDeleteDialog = null;
 
   root.className = 'ui-editor-asset-workbench';
-  root.dataset.editorAssetMode = entry.nineSlice ? 'nine-slice' : 'image';
+  root.dataset.editorAssetMode = atlas
+    ? 'atlas'
+    : entry.nineSlice ? 'nine-slice' : 'image';
   root.dataset.uiEditorHierarchy = 'hidden';
   root.dataset.uiEditorComponent = 'EditorAssetWorkbench';
   root.setAttribute('aria-label', `${entry.label} asset preview`);
@@ -178,7 +189,10 @@ export function createUiEditorAssetPreview(
     return [saveButton, createDeleteAction()];
   };
 
-  if (entry.nineSlice && canSaveNineSlice(entry)) {
+  if (atlas) {
+    header.setMode('Atlas');
+    header.setActions([]);
+  } else if (entry.nineSlice && canSaveNineSlice(entry)) {
     header.setActions(createNineSliceActions());
   } else if (entry.nineSlice) {
     header.setActions([createDeleteAction()]);
@@ -192,6 +206,15 @@ export function createUiEditorAssetPreview(
     content.dispose();
   };
   return root;
+}
+
+function hasAtlasFrames(entry) {
+  return (
+    Array.isArray(entry?.atlasFrames)
+    && entry.atlasFrames.length > 0
+    && Number(entry?.atlasSize?.width) > 0
+    && Number(entry?.atlasSize?.height) > 0
+  );
 }
 
 function createHeader(entry) {

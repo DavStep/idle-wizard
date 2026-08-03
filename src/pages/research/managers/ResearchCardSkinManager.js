@@ -36,29 +36,31 @@ const RESEARCH_SKINS = Object.freeze([
     selector:
       '.research-page__row.is-locked .research-page__research-art',
     url: new URL(
-      '../../../../assets/game/source/ui/root-run-research/squirqle-40-cream.png',
+      '../../../../assets/game/source/ui/white-squircle/white-squircle-40.9.png',
       import.meta.url,
     ).href,
-    width: 204,
-    height: 194,
-    left: 49,
-    top: 49,
-    right: 50,
-    bottom: 50,
+    width: 83,
+    height: 83,
+    left: 41,
+    top: 41,
+    right: 41,
+    bottom: 41,
+    tint: 0xdbc19f,
   }),
   Object.freeze({
     id: 'art',
     selector: '.research-page__research-art',
     url: new URL(
-      '../../../../assets/game/source/ui/root-run-research/squirqle-40-cream.png',
+      '../../../../assets/game/source/ui/white-squircle/white-squircle-40.9.png',
       import.meta.url,
     ).href,
-    width: 204,
-    height: 194,
-    left: 49,
-    top: 49,
-    right: 50,
-    bottom: 50,
+    width: 83,
+    height: 83,
+    left: 41,
+    top: 41,
+    right: 41,
+    bottom: 41,
+    tint: 0xdbc19f,
   }),
 ]);
 const RESEARCH_SKIN_SELECTOR = RESEARCH_SKINS.map(({ selector }) => selector).join(',');
@@ -410,6 +412,7 @@ export class ResearchCardSkinManager {
     });
     sprite.label = `researchSkin:${skin.id}`;
     sprite.eventMode = 'none';
+    sprite.tint = skin.tint ?? 0xffffff;
     sprite.sourceElement = element;
     this.sprites.set(element, sprite);
     this.authoredRoot.addChild(sprite);

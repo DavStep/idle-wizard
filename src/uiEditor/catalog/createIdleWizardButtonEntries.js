@@ -420,8 +420,8 @@ function resolveButtonBackgroundAsset(preview) {
     case 'tab':
       return compactTabNineSlice(
         preview.selected
-          ? PIXI_ROOT_RUN_ASSETS.buttonTabActive
-          : PIXI_ROOT_RUN_ASSETS.buttonTabInactive,
+          ? PIXI_ROOT_RUN_ASSETS.buttonBrownLight
+          : PIXI_ROOT_RUN_ASSETS.buttonBrownDark,
         preview,
       );
     default:

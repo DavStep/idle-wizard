@@ -275,6 +275,9 @@ function clampByte(value) {
 }
 
 function createMetadata(recipe, source) {
+  const minimumCenterWidth =
+    source.width - OUTPUT_SLICE.left - OUTPUT_SLICE.right;
+
   return {
     version: 1,
     format: 'png',
@@ -310,11 +313,12 @@ function createMetadata(recipe, source) {
       stretch: 'edges-and-center',
       outputInsets: OUTPUT_SLICE,
       minimumCenter: {
-        width: 1,
+        width: minimumCenterWidth,
         height: 1,
       },
       minimumSize: {
-        width: OUTPUT_SLICE.left + OUTPUT_SLICE.right + 1,
+        width:
+          OUTPUT_SLICE.left + OUTPUT_SLICE.right + minimumCenterWidth,
         height: OUTPUT_SLICE.top + OUTPUT_SLICE.bottom + 1,
       },
       qaResample: 'nearest',

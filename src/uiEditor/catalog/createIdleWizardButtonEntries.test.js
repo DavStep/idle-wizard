@@ -99,6 +99,7 @@ describe('createIdleWizardButtonEntries', () => {
     const greenButton = entries.find(({ id }) => id === 'green-button');
     const inlineButton = entries.find(({ id }) => id === 'inline-button');
     const costButton = entries.find(({ id }) => id === 'cost-button');
+    const popupTab = entries.find(({ id }) => id === 'popup-tab-button');
     const hudSettings = entries.find(
       ({ id }) => id === 'hud-settings-button',
     );
@@ -116,6 +117,13 @@ describe('createIdleWizardButtonEntries', () => {
       'Background',
       'Resource icon',
     ]);
+    expect(popupTab.assets).toContainEqual(
+      expect.objectContaining({
+        id: 'source:assets/ui/regular-button/dark-brown-button-50.9.png',
+        nineSlice: true,
+        role: 'Background',
+      }),
+    );
     expect(hudSettings.assets.map(({ role }) => role)).toEqual([
       'Background',
       'Icon',

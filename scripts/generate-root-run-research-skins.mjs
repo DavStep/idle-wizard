@@ -11,14 +11,13 @@ import { writeFileIfChanged } from './write-file-if-changed.mjs';
 const { PNG } = pngjs;
 const ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
 const ASSET_DIR = path.join(ROOT, 'assets/game/source/ui/root-run-research');
+const CARD_SOURCE = 'research-upgrade-bg.9.png';
 const LOCKED_CARD_SOURCE = 'research-upgrade-bg-locked.png';
-const LOCKED_ART_SOURCE = 'squirqle-40-locked.png';
 const LOCKED_CARD_MONOCHROME = Object.freeze({ floor: 12, scale: 0.28 });
-const LOCKED_ART_MONOCHROME = Object.freeze({ floor: 12, scale: 0.34 });
 
 const recipes = Object.freeze([
   {
-    input: 'research-upgrade-bg.png',
+    input: CARD_SOURCE,
     output: 'research-card-1000x304.9.png',
     slice: { left: 64, top: 55, right: 77, bottom: 88 },
     width: 1000,
@@ -30,20 +29,6 @@ const recipes = Object.freeze([
     slice: { left: 64, top: 55, right: 77, bottom: 88 },
     width: 1000,
     height: 304,
-  },
-  {
-    input: 'squirqle-40-cream.png',
-    output: 'research-art-well-204x194.9.png',
-    slice: { left: 49, top: 49, right: 50, bottom: 50 },
-    width: 204,
-    height: 194,
-  },
-  {
-    input: LOCKED_ART_SOURCE,
-    output: 'research-art-well-locked-204x194.9.png',
-    slice: { left: 49, top: 49, right: 50, bottom: 50 },
-    width: 204,
-    height: 194,
   },
   {
     input: 'upgrade-lvl-bg.png',
@@ -58,18 +43,11 @@ mkdirSync(ASSET_DIR, { recursive: true });
 
 let changed = 0;
 const lockedCardSource = createMonochromeVariant(
-  PNG.sync.read(readFileSync(path.join(ASSET_DIR, 'research-upgrade-bg.png'))),
+  PNG.sync.read(readFileSync(path.join(ASSET_DIR, CARD_SOURCE))),
   LOCKED_CARD_MONOCHROME,
 );
-const lockedArtSource = createMonochromeVariant(
-  PNG.sync.read(readFileSync(path.join(ASSET_DIR, 'squirqle-40-cream.png'))),
-  LOCKED_ART_MONOCHROME,
-);
 
-for (const [fileName, image] of [
-  [LOCKED_CARD_SOURCE, lockedCardSource],
-  [LOCKED_ART_SOURCE, lockedArtSource],
-]) {
+for (const [fileName, image] of [[LOCKED_CARD_SOURCE, lockedCardSource]]) {
   if (
     writeFileIfChanged(
       path.join(ASSET_DIR, fileName),
@@ -97,7 +75,7 @@ for (const recipe of recipes) {
 }
 
 console.log(
-  `generated locked research sources and ${recipes.length} fixed-size Root Run research skins (${changed} changed)`,
+  `generated the locked research source and ${recipes.length} fixed-size Root Run research skins (${changed} changed)`,
 );
 
 function createMonochromeVariant(source, { floor, scale }) {

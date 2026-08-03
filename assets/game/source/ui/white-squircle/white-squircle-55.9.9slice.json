@@ -1,0 +1,55 @@
+{
+  "version": 1,
+  "format": "png",
+  "asset": "white-squircle-55.9.png",
+  "source": {
+    "path": "assets/game/source/ui/white-squircle/white-squircle-55.9.png",
+    "width": 114,
+    "height": 114,
+    "mode": "RGBA",
+    "crop": {
+      "x": 0,
+      "y": 0,
+      "width": 114,
+      "height": 114
+    }
+  },
+  "sourceCropSize": {
+    "width": 114,
+    "height": 114
+  },
+  "slice": {
+    "left": 55,
+    "top": 55,
+    "right": 55,
+    "bottom": 55
+  },
+  "mode": "source",
+  "distill": null,
+  "cleanup": {
+    "androidNinePatchBorderStripped": true
+  },
+  "rendering": {
+    "stretch": "edges-and-center",
+    "outputInsets": {
+      "left": 55,
+      "top": 55,
+      "right": 55,
+      "bottom": 55
+    },
+    "minimumCenter": {
+      "width": 4,
+      "height": 4
+    },
+    "minimumSize": {
+      "width": 114,
+      "height": 114
+    },
+    "qaResample": "nearest",
+    "browserPreviewSmoothingDefault": false
+  },
+  "editor": {
+    "tool": "Idle Wizard white-squircle importer",
+    "sourceAssetPreserved": true
+  }
+}

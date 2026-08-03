@@ -405,13 +405,13 @@ const ZERO_INSETS = Object.freeze({
 function getRootRunTextureId(variant, compactTab = false) {
   if (compactTab) {
     if (variant === 'brown-light') {
-      return PIXI_ROOT_RUN_ASSETS.buttonTabActive;
+      return PIXI_ROOT_RUN_ASSETS.buttonBrownLight;
     }
     if (variant === 'brown-dark') {
-      return PIXI_ROOT_RUN_ASSETS.buttonTabInactive;
+      return PIXI_ROOT_RUN_ASSETS.buttonBrownDark;
     }
     if (variant === 'gray') {
-      return PIXI_ROOT_RUN_ASSETS.buttonTabDisabled;
+      return PIXI_ROOT_RUN_ASSETS.buttonGrayNineSlice;
     }
   }
   if (variant === 'yellow') return PIXI_ROOT_RUN_ASSETS.buttonYellow;

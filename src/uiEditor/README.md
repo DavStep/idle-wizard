@@ -41,9 +41,13 @@ Source assets generally follow their production directories, so categories
 such as `Avatars`, `Icons`, `Items`, `Rooms`, and `UI` remain separate. Reusable
 UI chrome may instead use a semantic editor folder: title plaques and ribbons
 from account, dialog, market, and research source folders live together under
-`UI/Banners`, while the canonical coin, crystal, emerald, mana, and ruby icons
-live under `UI/Currencies`. This changes only editor discovery; production paths
-and asset IDs remain unchanged. Runtime aliases live under `Public`, and
+`UI/Banners`; related paper, card, and inner-panel nine-slices live under
+`UI/Backgrounds`; and the canonical coin, crystal, emerald, mana, and ruby icons
+live under `UI/Currencies`. Background entries expose their geometry family and
+visual variant in the inspector. Grouping means visual kinship, not automatic
+interchangeability: each asset keeps its own slice and minimum-size contract.
+This changes only editor discovery; production paths and asset IDs remain
+unchanged. Runtime aliases live under `Public`, and
 generated textures live under `Generated`. Feature folders remain nested
 beneath those roots when no semantic category applies. Mixed directories show
 their direct assets and child folders together. Shared source images are
@@ -72,7 +76,10 @@ The `Buttons` folder is populated by default with the real retained Idle Wizard
 button primitives: regular color/state variants, popup and account tabs,
 account save, inline and border-label controls, cost-button compositions, the
 info button, and the HUD settings and avatar buttons. Their previews load the
-production Pixi classes and artwork rather than editor-specific copies.
+production Pixi classes and artwork rather than editor-specific copies. Cost
+buttons reference the shared `UI/Regular Button` nine-slices and
+`UI/Currencies` icons, so the asset library does not carry duplicate
+cost-button artwork.
 The folder presents them as a compact thumbnail gallery; thumbnails render the
 same retained controls but remain passive so the complete tile owns selection.
 Thumbnail captures run serially through one shared Pixi renderer and display as
@@ -103,6 +110,16 @@ restores its registered runtime geometry, Copy CSS copies the current preview
 declaration, and `Save 9-slice` writes edited source margins back to the
 sidecar definition. The sidecar records logical output insets and the derived
 minimum rendered size separately from source slice pixels.
+
+Selecting a generated atlas opens the atlas workbench instead of a passive
+image. Click any packed frame to keep its exact box selected and inspect its
+frame ID, source path, packed size, source canvas, atlas coordinates, and atlas
+footprint in the right panel. Search matches frame IDs and source paths and
+marks every matching box; Enter selects the next match. Previous/Next buttons
+and the canvas arrow keys move through the current match set, while Escape
+clears selection. `Copy ID` and `Copy path` copy the two values most often used
+in source work. The view starts fitted to width and also supports stepped zoom
+and exact `100%` inspection without changing atlas data.
 
 When editing a widget background, the asset picker keeps incompatible
 nine-slices visible but disabled. Its reason states the skin minimum and the

@@ -295,10 +295,10 @@ describe('ShopPixiPage', () => {
       frameWidth: 52,
       frameHeight: 52,
       sourceInsets: {
-        top: 49,
-        right: 50,
-        bottom: 50,
-        left: 49,
+        top: 41,
+        right: 41,
+        bottom: 41,
+        left: 41,
       },
       borderInsets: {
         top: 49 / 3,
@@ -306,6 +306,7 @@ describe('ShopPixiPage', () => {
         bottom: 50 / 3,
         left: 49 / 3,
       },
+      tint: 0xdbc19f,
     });
     expect(stall.icon.width).toBeCloseTo(44 * (121 / 128), 6);
     expect(stall.icon.height).toBe(44);

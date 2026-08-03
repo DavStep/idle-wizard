@@ -682,8 +682,7 @@ describe('BrewingPixiPage', () => {
     expect(regularControl.visible).toBe(false);
     expect(costControl.visible).toBe(true);
     expect(costControl.compact).toBe(true);
-    expect(costControl.background.visible).toBe(false);
-    expect(costControl.compactBackground.visible).toBe(true);
+    expect(costControl.background.visible).toBe(true);
     expect(costControl.buttonWidth).toBe(
       BREWING_PIXI_GEOMETRY.actionWidth,
     );
@@ -1351,14 +1350,15 @@ describe('BrewingPixiPage', () => {
     ).toBe(false);
     expect(harness.page.hud.detailBacking).toBeUndefined();
     expect(harness.page.hud.potionPreviewFrame.sourceInsets).toMatchObject({
-      top: 49,
-      right: 50,
-      bottom: 50,
-      left: 49,
+      top: 41,
+      right: 41,
+      bottom: 41,
+      left: 41,
     });
     expect(harness.page.hud.potionPreviewFrame).toMatchObject({
       frameWidth: 58,
       frameHeight: 58,
+      tint: 0x0e1016,
     });
     expect(harness.page.hud.ingredientSlots[0].frame.sourceInsets).toMatchObject({
       top: 91,

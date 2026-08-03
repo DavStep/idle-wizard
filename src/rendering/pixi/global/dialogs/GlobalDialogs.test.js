@@ -889,8 +889,19 @@ describe('retained global Pixi dialogs', () => {
     );
 
     expect(settings.panel.titleLabel.text).toBe('Wizard');
+    expect(settings.usernameBacking.texture).toBe(
+      harness.assets.getTexture(
+        PIXI_ROOT_RUN_ASSETS.accountUsername,
+      ),
+    );
+    expect(PIXI_ROOT_RUN_ASSETS.accountUsername).toBe(
+      'source:assets/ui/white-squircle/white-squircle-40.9.png',
+    );
+    expect(settings.usernameBacking.tint).toBe(0x000000);
+    expect(settings.usernameBacking.alpha).toBe(0.4);
     expect(
-      settings.usernameBacking.width / settings.usernameBacking.height,
+      settings.usernameBacking.frameWidth /
+        settings.usernameBacking.frameHeight,
     ).toBeCloseTo((650 * (298 / 925)) / (88 / 3));
     expect(settings.usernameField.textLabel.colorToken).toBe('#ffffff');
     expect(settings.usernameField.textLabel.fontSize).toBeCloseTo(64 / 3);
@@ -916,7 +927,8 @@ describe('retained global Pixi dialogs', () => {
     expect(
       settings.usernameEdit.y + settings.usernameEdit.height / 2,
     ).toBeCloseTo(
-      settings.usernameBacking.y + settings.usernameBacking.height / 2,
+      settings.usernameBacking.y +
+        settings.usernameBacking.frameHeight / 2,
     );
 
     expect(settings.accountHeader.frameWidth).toBeCloseTo(298);

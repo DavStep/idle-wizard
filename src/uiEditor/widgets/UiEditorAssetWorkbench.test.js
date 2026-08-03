@@ -38,6 +38,42 @@ describe('UiEditorAssetWorkbench', () => {
     ).toBe('Convert to 9-slice');
   });
 
+  it('routes generated atlases to the interactive atlas workbench', () => {
+    const onInspectAtlasFrame = vi.fn();
+    const preview = createUiEditorAssetPreview({
+      assetId: 'atlas:game',
+      assetUrl: '/game-atlas.png',
+      atlasFrames: [
+        {
+          height: 32,
+          name: 'icon:mana',
+          originalHeight: 64,
+          originalWidth: 64,
+          source: 'assets/game/source/icons/icon-mana.png',
+          width: 24,
+          x: 10,
+          y: 20,
+        },
+      ],
+      atlasSize: { height: 256, width: 256 },
+      id: 'asset:atlas:game',
+      label: 'game atlas',
+      nineSlice: false,
+    }, { onInspectAtlasFrame });
+
+    expect(preview.dataset.editorAssetMode).toBe('atlas');
+    expect(
+      preview.querySelector(
+        '[data-ui-editor-component="EditorAtlasWorkbench"]',
+      ),
+    ).not.toBeNull();
+    expect(preview.querySelector('.ui-editor-asset-workbench__type').textContent)
+      .toBe('Atlas');
+    expect(
+      preview.querySelectorAll('.ui-editor-asset-workbench__action'),
+    ).toHaveLength(0);
+  });
+
   it('converts an ordinary PNG using sibling slice suggestions', async () => {
     const fetchMock = vi.fn().mockResolvedValue({
       json: async () => ({

@@ -249,8 +249,8 @@ describe('ResearchCardSkinManager', () => {
     expect(loadedUrls.map((url) => new URL(url, 'http://localhost').pathname)).toEqual([
       '/assets/game/source/ui/root-run-research/research-upgrade-bg.9.png',
       '/assets/game/source/ui/root-run-research/research-upgrade-bg.9.png',
-      '/assets/game/source/ui/root-run-research/squirqle-40-cream.png',
-      '/assets/game/source/ui/root-run-research/squirqle-40-cream.png',
+      '/assets/game/source/ui/white-squircle/white-squircle-40.9.png',
+      '/assets/game/source/ui/white-squircle/white-squircle-40.9.png',
     ]);
     const authoredRoot = applications[0].stage.children.find(
       (child) => child.label === 'researchCardSkinScene',
@@ -281,10 +281,11 @@ describe('ResearchCardSkinManager', () => {
     expect(rowSprite.width).toBeCloseTo(1000);
     expect(rowSprite.height).toBeCloseTo(90 / ROOT_RUN_TO_LOGICAL_SCALE);
     expect(artSprite).toMatchObject({
-      leftWidth: 49,
-      topHeight: 49,
-      rightWidth: 50,
-      bottomHeight: 50,
+      leftWidth: 41,
+      topHeight: 41,
+      rightWidth: 41,
+      bottomHeight: 41,
+      tint: 0xdbc19f,
     });
     expect(artSprite.width).toBeCloseTo(58 / ROOT_RUN_TO_LOGICAL_SCALE);
     expect(artSprite.height).toBeCloseTo(58 / ROOT_RUN_TO_LOGICAL_SCALE);
@@ -347,7 +348,10 @@ describe('ResearchCardSkinManager', () => {
         'http://localhost',
     ).pathname,
     ).toBe(
-      '/assets/game/source/ui/root-run-research/squirqle-40-cream.png',
+      '/assets/game/source/ui/white-squircle/white-squircle-40.9.png',
+    );
+    expect(sprites.find((sprite) => sprite.sourceElement === art)?.tint).toBe(
+      0xdbc19f,
     );
 
     manager.unmount();

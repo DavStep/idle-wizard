@@ -63,9 +63,12 @@ Use borders before shadows. Panels use `--editor-border-subtle` or
   directories remain nested under their normal category folders unless a
   reusable visual role is clearer. Shared title plaques and ribbons live under
   `UI/Banners` instead of account, dialog, market, or research feature folders;
+  related paper, card, and inner-panel nine-slices live under `UI/Backgrounds`;
   canonical coin, crystal, emerald, mana, and ruby icons live under
-  `UI/Currencies`. Runtime aliases live under `Public`, and generated textures
-  live under `Generated`.
+  `UI/Currencies`. Background grouping is for discovery only: the inspector
+  names each geometry family and visual variant, while asset-specific slice and
+  minimum-size contracts still control compatibility. Runtime aliases live
+  under `Public`, and generated textures live under `Generated`.
   A directory may show direct assets and child folders together. Every asset
   folder keeps one native search field at the far right of the breadcrumb
   header; it searches that folder and its descendants by filename or production
@@ -98,6 +101,13 @@ Use borders before shadows. Panels use `--editor-border-subtle` or
   and remain adjustable through arrow keys. Reset returns to registered runtime
   geometry, and Copy CSS reports success or failure through the local polite
   status.
+- The generated-atlas workbench keeps the packed image primary. A thin neutral
+  hover box and one persistent blue selection box sit directly on frame bounds;
+  the selected frame label stays attached to that box. Its compact toolbar
+  reuses native editor controls for name/path search, match navigation, copy ID,
+  copy path, fit width, stepped zoom, and `100%`. Search marks all matching
+  frames without hiding nonmatches or rearranging the atlas. The right inspector
+  owns detailed frame metadata so the canvas does not grow a competing card.
 - Ordinary PNG previews expose one compact `Convert to 9-slice` action in the
   asset header. Authoring stays inline in the central workbench and adds only
   `Cancel` plus `Save 9-slice`; saving reports the written metadata path through
@@ -137,6 +147,11 @@ Use borders before shadows. Panels use `--editor-border-subtle` or
   source filename to `.9.png`, updates project references, writes its sidecar
   definition, and preserves the source PNG pixels byte-for-byte. Existing
   `.9.png` assets open directly in the nine-slice workbench.
+- Atlas frames are selected on pointer release from their exact packed bounds.
+  The atlas region is keyboard focusable: arrow keys traverse the active search
+  matches, Home/End jump to the first/last match, and Escape clears selection.
+  Search Enter advances through matches. Selection never mutates production
+  metadata, and copy actions remain explicit user gestures.
 - Normal transitions last `150ms`; larger state changes may use `200ms`.
 - Motion must explain state and respect reduced-motion preferences.
 - Disabled content uses `--editor-text-disabled` without introducing a new

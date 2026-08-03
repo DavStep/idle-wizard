@@ -1,0 +1,52 @@
+{
+  "version": 1,
+  "format": "png",
+  "asset": "inner-section-panel-day.9.png",
+  "source": {
+    "path": "assets/game/source/ui/inner-section-panel-day.9.png",
+    "width": 157,
+    "height": 182,
+    "mode": "RGBA",
+    "crop": {
+      "x": 0,
+      "y": 0,
+      "width": 157,
+      "height": 182
+    }
+  },
+  "sourceCropSize": {
+    "width": 157,
+    "height": 182
+  },
+  "slice": {
+    "left": 78,
+    "top": 78,
+    "right": 69,
+    "bottom": 94
+  },
+  "mode": "source",
+  "distill": null,
+  "rendering": {
+    "stretch": "edges-and-center",
+    "outputInsets": {
+      "left": 78,
+      "top": 78,
+      "right": 69,
+      "bottom": 94
+    },
+    "minimumCenter": {
+      "width": 1,
+      "height": 1
+    },
+    "minimumSize": {
+      "width": 148,
+      "height": 173
+    },
+    "qaResample": "nearest",
+    "browserPreviewSmoothingDefault": false
+  },
+  "editor": {
+    "tool": "Idle Wizard UI Editor",
+    "sourceAssetPreserved": true
+  }
+}

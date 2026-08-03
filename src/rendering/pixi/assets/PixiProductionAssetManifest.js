@@ -57,7 +57,7 @@ const PUBLIC_ASSET_PATHS = Object.freeze([
   '/ui/player-card-button-brown-fill.9.png',
   '/ui/player-card-panel-v2.9.png',
   '/ui/player-card-panel.9.png',
-  '/ui/player-card-panel-preview.9.png',
+  '/ui/root-run-dialog/expedition-dialog-front.9.png',
   '/ui/player-card-panel-selected.9.png',
   '/ui/xp-stars.webp',
 ]);

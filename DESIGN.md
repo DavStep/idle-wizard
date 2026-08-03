@@ -185,7 +185,7 @@ Ordinary room UI uses shallow, skin-owned depth. Image-backed frames may carry b
 
 ### Buttons
 - **Shape:** Image-backed rounded/chamfered controls with skin-owned corners, outlines, and shallow depth.
-- **Default:** Brown/gold for general actions, green for positive claim/collect/confirm, red for cancellation or loss, and specialized shared skins for cost and tabs.
+- **Default:** Brown/gold for general actions, green for positive claim/collect/confirm, and red for cancellation or loss. Cost buttons compose the shared regular-button skins with resource content; compact popup tabs reuse the shared brown/dark-brown/gray textures with their own 28px output geometry.
 - **Content:** A meaningful icon may lead the label when it improves recognition; labels stay visible and accessible.
 - **Focus:** Use the shared focus treatment; do not change font weight or add hover-only behavior.
 - **Active:** Use the shared compressed press state while keeping the label and icon optically centered.
@@ -193,6 +193,7 @@ Ordinary room UI uses shallow, skin-owned depth. Image-backed frames may carry b
 
 ### Cards / Containers
 - **Corner Style:** Owned by the shared panel nine-slice, typically softly rounded with a dark outline.
+- **Solid Squircles:** Use the shared white squircle nine-slice family and apply semantic color at runtime; never bake one flat color per PNG.
 - **Background:** Layered Night navy or the muted peach Day wall `#e8bc8c` with subtle warm paper fibers; Day components retain their authored warm-brown inset shading.
 - **Shadow Strategy:** Compact, directional, and shared; stronger only for the dominant landmark or modal layer.
 - **Border:** Image-backed frame or approved generated nine-slice, never an arbitrary feature-local radius and shadow.

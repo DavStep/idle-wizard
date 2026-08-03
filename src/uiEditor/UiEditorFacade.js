@@ -105,6 +105,13 @@ export class UiEditorFacade {
         ),
         onAssetDeleted: (deletion) =>
           this.handleAssetDeleted(deletion),
+        onInspectAtlasFrame: (frame) => {
+          if (frame) {
+            this.usageManager?.showAtlasFrame(entry, frame);
+          } else {
+            this.usageManager?.showEntry(entry);
+          }
+        },
       }),
     );
 

@@ -27,9 +27,9 @@ describe('CostButtonManager', () => {
     const icon = button.querySelector('.style-resource-label__icon');
     expect(icon?.tagName).toBe('IMG');
     expect(icon?.getAttribute('src')).toContain(
-      '/assets/game/source/ui/root-run-cost-button/coin.png',
+      '/assets/game/source/icons/icon-coin.png',
     );
-    expect(icon?.dataset.rootRunCostIcon).toBe('coin');
+    expect(icon?.dataset.currencyIcon).toBe('coin');
   });
 
   it('switches from a resource cost to a disabled text-only state', () => {

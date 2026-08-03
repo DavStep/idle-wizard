@@ -203,8 +203,7 @@ describe('ResearchPixiPage', () => {
       },
       getTexture(assetId) {
         if (
-          assetId === PIXI_ROOT_RUN_ASSETS.researchCardLocked ||
-          assetId === PIXI_ROOT_RUN_ASSETS.researchArtLocked
+          assetId === PIXI_ROOT_RUN_ASSETS.researchCardLocked
         ) {
           return lockedTexture;
         }
@@ -225,6 +224,7 @@ describe('ResearchPixiPage', () => {
     const row = harness.page.boxes.get('herbs').rows.get('mint');
     expect(row.card.texture).toBe(normalTexture);
     expect(row.artWell.texture).toBe(normalTexture);
+    expect(row.artWell.tint).toBe(0xdbc19f);
     expect(row.art.filters).toBeNull();
     expect(row.name.style.fill).toBe('#634934');
     expect(row.description.style.fill).toBe('#634934');

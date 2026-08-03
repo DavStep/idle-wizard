@@ -32,6 +32,7 @@ import {
   DEFAULT_PIXI_THEME_SNAPSHOT,
   PIXI_ROOT_RUN_ASSETS,
   PIXI_ROOT_RUN_GEOMETRY,
+  PIXI_SQUIRCLE_TINTS,
   PIXI_UI_GEOMETRY,
 } from '../../theme/PixiThemeTokens.js';
 import {
@@ -90,10 +91,10 @@ const STALL_QUANTITY_STROKE = Object.freeze({
   width: 2,
 });
 const STALL_ART_SOURCE_INSETS = Object.freeze({
-  top: 49,
-  right: 50,
-  bottom: 50,
-  left: 49,
+  top: 41,
+  right: 41,
+  bottom: 41,
+  left: 41,
 });
 const STALL_ART_BORDER_INSETS = Object.freeze({
   top: 49 / 3,
@@ -1228,6 +1229,7 @@ class ShopStallWidget {
       height: STALL_ART_WELL_SIZE,
       label: 'shop:stall:iconFrame',
     });
+    this.iconFrame.tint = PIXI_SQUIRCLE_TINTS.artWell;
     this.icon = new Sprite(Texture.EMPTY);
     this.icon.label = 'shop:stall:icon';
     this.icon.anchor.set(0.5);
@@ -1725,6 +1727,7 @@ class MarketOfferRow {
       height: STALL_ART_WELL_SIZE,
       label: `${label}:iconFrame`,
     });
+    this.iconFrame.tint = PIXI_SQUIRCLE_TINTS.artWell;
     this.icon = new Sprite(Texture.EMPTY);
     this.icon.label = `${label}:icon`;
     this.icon.anchor.set(0.5);

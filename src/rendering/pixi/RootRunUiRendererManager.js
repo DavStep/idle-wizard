@@ -19,6 +19,7 @@ import {
 import { getSeedPackIconLayout } from '../../assets/items/seeds/seedIconFrames.js';
 import { gameViewport } from '../../viewport/gameViewport.js';
 import { UiWidgetPoolManager } from '../managers/UiWidgetPoolManager.js';
+import { PIXI_SQUIRCLE_TINTS } from './theme/PixiThemeTokens.js';
 
 const ROOT_RUN_DESIGN_WIDTH = 1080;
 const ROOT_RUN_TO_LOGICAL_SCALE = gameViewport.width / ROOT_RUN_DESIGN_WIDTH;
@@ -83,28 +84,30 @@ const RESEARCH_SKINS = Object.freeze([
     selector:
       '.research-page__row.is-locked .research-page__research-art',
     url: new URL(
-      '../../../assets/game/source/ui/root-run-research/squirqle-40-locked.png',
+      '../../../assets/game/source/ui/white-squircle/white-squircle-40.9.png',
       import.meta.url,
     ).href,
-    width: 204,
-    height: 194,
-    left: 49,
-    top: 49,
-    right: 50,
-    bottom: 50,
+    width: 83,
+    height: 83,
+    left: 41,
+    top: 41,
+    right: 41,
+    bottom: 41,
+    tint: PIXI_SQUIRCLE_TINTS.lockedArtWell,
   }),
   Object.freeze({
     selector: '.research-page__research-art',
     url: new URL(
-      '../../../assets/game/source/ui/root-run-research/squirqle-40-cream.png',
+      '../../../assets/game/source/ui/white-squircle/white-squircle-40.9.png',
       import.meta.url,
     ).href,
-    width: 204,
-    height: 194,
-    left: 49,
-    top: 49,
-    right: 50,
-    bottom: 50,
+    width: 83,
+    height: 83,
+    left: 41,
+    top: 41,
+    right: 41,
+    bottom: 41,
+    tint: PIXI_SQUIRCLE_TINTS.artWell,
   }),
 ]);
 const RESEARCH_FALLBACK_PSEUDO_SELECTORS = new Map();
@@ -1133,13 +1136,15 @@ export class RootRunUiRendererManager {
 
     const researchSkin = getResearchSkin(element);
     this.syncShadow(style, rect, record, 'box:shadow', output);
-    const hasMaskFill = this.syncMaskedColorFill(
-      style,
-      rect,
-      record,
-      'box:maskFill',
-      output,
-    );
+    const hasMaskFill = researchSkin
+      ? false
+      : this.syncMaskedColorFill(
+          style,
+          rect,
+          record,
+          'box:maskFill',
+          output,
+        );
     if (!hasMaskFill) {
       this.syncColorFill(style, rect, record, 'box:fill', output);
       this.syncGradientFill(style, rect, record, 'box:gradient', output);
@@ -1654,6 +1659,7 @@ export class RootRunUiRendererManager {
       return next;
     });
     sprite.texture = texture;
+    sprite.tint = 0xffffff;
     sprite.position.set(rect.x, rect.y);
     sprite.setSize(rect.width / scale.x, rect.height / scale.y);
     sprite.scale.set(scale.x, scale.y);
@@ -1687,6 +1693,7 @@ export class RootRunUiRendererManager {
       return next;
     });
     sprite.texture = texture;
+    sprite.tint = skin.tint ?? 0xffffff;
     sprite.position.set(rect.x, rect.y);
     sprite.setSize(
       rect.width / ROOT_RUN_TO_LOGICAL_SCALE,

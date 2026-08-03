@@ -9,6 +9,10 @@ import {
 import {
   resolveNineSliceMinimumSize,
 } from '../../rendering/pixi/nineSlice/NineSliceCompatibility.js';
+import {
+  gameAssetAtlasFrames,
+  gameAssetAtlasSize,
+} from '../../assets/generated/game-asset-atlas.generated.js';
 
 const ASSET_MANIFEST_BY_ID = new Map(
   PIXI_PRODUCTION_ASSET_MANIFEST.map((asset) => [asset.id, asset]),
@@ -25,6 +29,48 @@ const CURRENCY_SOURCE_PATHS = new Set([
   'icons/icon-emerald.png',
   'icons/icon-mana-drop.png',
   'icons/icon-ruby.png',
+]);
+const BACKGROUND_SOURCE_ASSETS = new Map([
+  [
+    'ui/inner-section-panel-black.9.png',
+    { family: 'Inner panel', variant: 'Black' },
+  ],
+  [
+    'ui/inner-section-panel-day.9.png',
+    { family: 'Inner panel', variant: 'Day' },
+  ],
+  [
+    'ui/inner-section-panel-midnight.9.png',
+    { family: 'Inner panel', variant: 'Midnight' },
+  ],
+  [
+    'ui/inner-section-panel-white.9.png',
+    { family: 'Inner panel', variant: 'Paper' },
+  ],
+  [
+    'ui/inner-section-panel-witchcraft.9.png',
+    { family: 'Inner panel', variant: 'Witchcraft' },
+  ],
+  [
+    'ui/root-run-dialog/expedition-dialog-front.9.png',
+    { family: 'Dialog paper', variant: 'Paper' },
+  ],
+  [
+    'ui/root-run-research/research-upgrade-bg.9.png',
+    { family: 'Research card', variant: 'Compact source' },
+  ],
+  [
+    'ui/root-run-research/research-card-1000x304.9.png',
+    { family: 'Research card', variant: 'Fixed paper' },
+  ],
+  [
+    'ui/root-run-research/research-card-dark-1000x304.9.png',
+    { family: 'Research card', variant: 'Fixed dark' },
+  ],
+  [
+    'ui/root-run-research/research-card-locked-1000x304.9.png',
+    { family: 'Research card', variant: 'Fixed locked' },
+  ],
 ]);
 
 export function createIdleWizardAssetEntries(widgetEntries = []) {
@@ -102,9 +148,13 @@ function createAssetEntry(asset, suggestedSourceInsets) {
   }
 
   const editorEditable = canAuthorNineSlice(asset.id);
+  const semanticMetadata = resolveSemanticSourceAsset(asset.id);
+  const atlasMetadata = resolveAtlasMetadata(asset.id);
   const entry = {
     assetId: asset.id,
     assetUrl: manifestAsset.src,
+    atlasFrames: atlasMetadata?.frames ?? null,
+    atlasSize: atlasMetadata?.size ?? null,
     borderInsets: asset.borderInsets ?? null,
     editorEditable,
     height: asset.height ?? null,
@@ -113,7 +163,12 @@ function createAssetEntry(asset, suggestedSourceInsets) {
     label: resolveAssetLabel(asset.id),
     folderPath: resolveAssetFolderPath(asset.id),
     nineSlice: asset.nineSlice === true,
-    properties: createAssetProperties(asset, editorEditable),
+    properties: createAssetProperties(
+      asset,
+      editorEditable,
+      semanticMetadata,
+      atlasMetadata,
+    ),
     sectionId: 'assets',
     sourceInsets: asset.sourceInsets ?? null,
     minimumSize:
@@ -176,6 +231,10 @@ function resolveSemanticSourceFolderPath(relativePath) {
   const segments = String(relativePath ?? '').split('/').filter(Boolean);
   const filename = segments.at(-1) ?? '';
 
+  if (BACKGROUND_SOURCE_ASSETS.has(relativePath)) {
+    return Object.freeze(['ui', 'backgrounds']);
+  }
+
   if (CURRENCY_SOURCE_PATHS.has(relativePath)) {
     return Object.freeze(['ui', 'currencies']);
   }
@@ -188,6 +247,18 @@ function resolveSemanticSourceFolderPath(relativePath) {
   }
 
   return null;
+}
+
+function resolveSemanticSourceAsset(assetId) {
+  const normalizedAssetId = String(assetId ?? '');
+
+  if (!normalizedAssetId.startsWith('source:assets/')) {
+    return null;
+  }
+
+  return BACKGROUND_SOURCE_ASSETS.get(
+    normalizedAssetId.replace(/^source:assets\//, ''),
+  ) ?? null;
 }
 
 function resolveAssetLabel(assetId) {
@@ -230,7 +301,12 @@ function canRenderDeclaredAssetSize(asset) {
   );
 }
 
-function createAssetProperties(asset, editorEditable) {
+function createAssetProperties(
+  asset,
+  editorEditable,
+  semanticMetadata,
+  atlasMetadata,
+) {
   const properties = [
     {
       label: 'Type',
@@ -248,6 +324,33 @@ function createAssetProperties(asset, editorEditable) {
       value: asset.id,
     },
   ];
+
+  if (semanticMetadata) {
+    properties.push(
+      {
+        label: 'Background family',
+        value: semanticMetadata.family,
+      },
+      {
+        label: 'Variant',
+        value: semanticMetadata.variant,
+      },
+    );
+  }
+
+  if (atlasMetadata) {
+    properties.push(
+      {
+        label: 'Atlas size',
+        monospace: true,
+        value: formatSize(atlasMetadata.size),
+      },
+      {
+        label: 'Frames',
+        value: String(atlasMetadata.frames.length),
+      },
+    );
+  }
 
   if (asset.nineSlice) {
     properties.push({
@@ -267,6 +370,24 @@ function createAssetProperties(asset, editorEditable) {
   }
 
   return Object.freeze(properties.map((property) => Object.freeze(property)));
+}
+
+function resolveAtlasMetadata(assetId) {
+  if (assetId !== 'atlas:game') {
+    return null;
+  }
+
+  return Object.freeze({
+    frames: Object.freeze(
+      Object.entries(gameAssetAtlasFrames)
+        .map(([name, frame]) => Object.freeze({ name, ...frame }))
+        .sort((left, right) =>
+          left.source.localeCompare(right.source)
+          || left.name.localeCompare(right.name),
+        ),
+    ),
+    size: gameAssetAtlasSize,
+  });
 }
 
 function resolveAssetType(asset) {
@@ -330,10 +451,7 @@ function resolveAssetFamily(assetId) {
     .replace(/-(?:15|30|50)$/i, '')
     .replace(/-short$/i, '');
 
-  const familyDirectory = [
-    'source:assets/ui/regular-button/',
-    'source:assets/ui/root-run-cost-button/',
-  ].includes(directory)
+  const familyDirectory = directory === 'source:assets/ui/regular-button/'
     ? 'source:assets/ui/shared-button-family/'
     : directory;
 
