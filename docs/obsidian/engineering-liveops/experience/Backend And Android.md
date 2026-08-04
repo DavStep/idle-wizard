@@ -73,7 +73,7 @@ experience_type: backend-android
 - New client-only profile visual fields must not be sent to `set_player_profile` until the SpacetimeDB player schema and generated bindings support them.
 - Queue explicit profile edits made before server profile hydration finishes, then sync them after hydration so old server rows do not erase the user's choices.
 - First-run username prompts should wait until player profile hydration marks default `Wizard` as server-confirmed; legacy lowercase `wizard` rows normalize to that default, and local startup defaults are not enough.
-- SpacetimeDB table callbacks pass inserted/updated rows; use those callback rows for player profile sync because immediate table scans can still read stale usernames.
+- SpacetimeDB table callbacks pass inserted/updated rows; project those callback rows directly because immediate table scans can still be stale, as seen with player profiles and inbox claim state.
 - Local SpacetimeDB CLI target should be `local` (`http://127.0.0.1:3000`); anonymous publish cannot update an existing dev DB.
 - Use `spacetime --no-config` when CLI commands must target `.env.local`/Maincloud DB names directly; otherwise `spacetime.json` can force `idle-wizard`.
 - Keep local web `VITE_SPACETIME_URI` on `ws://127.0.0.1:3000`; LAN/`localhost` overrides can make the browser show `server required` while the backend is actually running.

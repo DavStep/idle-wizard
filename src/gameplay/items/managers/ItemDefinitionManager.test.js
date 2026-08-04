@@ -123,6 +123,15 @@ describe('ItemDefinitionManager', () => {
     }
   });
 
+  it('uses 50 mana as the default seed summon cost', () => {
+    const manager = new ItemDefinitionManager();
+
+    expect(manager.getVisibleSummonCost()).toBe(50);
+    expect(manager.getSeedDefinitions().every((seed) => seed.summonManaCost === 50)).toBe(
+      true,
+    );
+  });
+
   it('defines active ingredients in stable rarity groups', () => {
     const manager = new ItemDefinitionManager();
     const ingredients = manager.getIngredientDefinitions();

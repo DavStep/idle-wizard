@@ -586,6 +586,19 @@ describe('PixiViewModelFactory', () => {
         },
       },
     };
+    const [firstRequest] = gameplay.worldNotice.current.requests;
+    gameplay.worldNotice.current.requests.push(
+      {
+        ...firstRequest,
+        requestId: 'weekly-1:new-crown:seal',
+        title: 'protect the seal',
+      },
+      {
+        ...firstRequest,
+        requestId: 'weekly-1:new-crown:hidden-third',
+        title: 'hidden third quest',
+      },
+    );
     const actions = {
       selectWorldEventTab,
       openWorldEventDonation,
@@ -606,8 +619,8 @@ describe('PixiViewModelFactory', () => {
       header: {
         headline: 'New Crown Tours Town',
         body:
-          'The Bells Have Not Stopped.\nEvery Guild Is Waiting To Be Counted.',
-        meta: '125 Points · 5d',
+          'The bells have not stopped.\nEvery guild is waiting to be counted.',
+        meta: '125 points · 5d',
       },
       tabs: [
         { id: 'tasks', label: 'Quests', selected: true },
@@ -615,27 +628,32 @@ describe('PixiViewModelFactory', () => {
         { id: 'rewards', label: 'Rewards', selected: false },
       ],
     });
-    expect(tasks.rows).toEqual([
+    expect(tasks.rows).toHaveLength(2);
+    expect(tasks.rows.map(({ id }) => id)).toEqual([
+      'quest:weekly-1:new-crown:crowd',
+      'quest:weekly-1:new-crown:seal',
+    ]);
+    expect(tasks.rows[0]).toEqual(
       expect.objectContaining({
         id: 'quest:weekly-1:new-crown:crowd',
         type: 'worldEventQuest',
         title: 'Quiet The Crowd',
-        pointsLabel: '80 Points',
+        pointsLabel: '80 points',
         description:
-          'The Square Is Packed. Donate Calming Draughts To The Stewards.',
+          'The square is packed. Donate calming draughts to the stewards.',
         donationOptions: [
           expect.objectContaining({
             id: 'donation:weekly-1:new-crown:crowd:calmingDraught',
             label: 'Calming Draught',
-            pointsEachLabel: '120 Points Each',
-            totalLabel: '80 Points Total',
+            pointsEachLabel: '120 points each',
+            totalLabel: '80 points total',
             actionLabel: 'Donate',
             enabled: true,
             onActivate: expect.any(Function),
           }),
         ],
       }),
-    ]);
+    );
 
     tasks.tabs[1].onSelect('leaderboard');
     expect(selectWorldEventTab).toHaveBeenCalledWith('leaderboard');
@@ -674,12 +692,12 @@ describe('PixiViewModelFactory', () => {
         expect.objectContaining({
           id: 'reward:1',
           label: 'Rank 1',
-          value: '5 Emerald · 10 Crystal',
+          value: '5 emerald · 10 crystal',
         }),
         expect.objectContaining({
           id: 'reward:101+ qualified',
           label: 'Rank 101+ Qualified',
-          value: '1 Crystal',
+          value: '1 crystal',
         }),
       ]),
     );
@@ -759,13 +777,13 @@ describe('PixiViewModelFactory', () => {
           rewards: [
             {
               threshold: 30,
-              reward: { text: '+10 coin' },
+              reward: { coin: 10, crystal: 0, text: '+10 coin' },
               claimed: true,
               claimable: false,
             },
             {
               threshold: 50,
-              reward: { text: '+15 coin' },
+              reward: { coin: 15, crystal: 0, text: '+15 coin' },
               claimed: false,
               claimable: true,
             },
@@ -779,7 +797,7 @@ describe('PixiViewModelFactory', () => {
           rewards: [
             {
               threshold: 100,
-              reward: { text: '+40 coin' },
+              reward: { coin: 40, crystal: 0, text: '+40 coin' },
               claimed: true,
               claimable: false,
             },
@@ -811,29 +829,37 @@ describe('PixiViewModelFactory', () => {
           notification: true,
         },
       ],
+      periodSections: [
+        {
+          id: 'daily',
+          title: 'Today',
+          pointsLabel: '42 / 100 Points',
+          resetLabel: 'Resets in 12h',
+          detail: '1/2 Tasks',
+        },
+        {
+          id: 'weekly',
+          title: 'This Week',
+          pointsLabel: '260 / 700 Points',
+          resetLabel: 'Resets in 3d',
+        },
+      ],
     });
     expect(tasksDialog.rows).toEqual([
       {
-        id: 'daily:summary',
-        label: 'Today · 1/2 Tasks',
-        value: '42/100 pts',
-      },
-      {
-        id: 'weekly:summary',
-        label: 'Week',
-        value: '260/700 pts',
-      },
-      {
         id: 'daily:daily:summon',
-        label: 'Summon Seeds · +10 pts',
+        sectionId: 'daily',
+        label: 'Summon Seeds · +10 Points',
         value: '8/20',
         muted: false,
       },
       {
         id: 'daily:daily:mana',
-        label: 'Spend Mana · +15 pts',
+        sectionId: 'daily',
+        label: 'Spend Mana · +15 Points',
         value: 'Done',
         muted: true,
+        statusIcon: 'checkmark',
       },
     ]);
 
@@ -848,40 +874,43 @@ describe('PixiViewModelFactory', () => {
     expect(rewardsDialog.selectedTabId).toBe('rewards');
     expect(rewardsDialog.rows).toEqual([
       {
-        id: 'daily:rewards-summary',
-        label: 'Today',
-        value: '42/100 · resets 12h',
-      },
-      {
         id: 'daily:reward:30',
-        label: '30 pts · +10 coin',
+        sectionId: 'daily',
+        label: '30 Points',
+        resourceValues: [{ resourceKey: 'coin', amountLabel: '+10' }],
         value: 'Claimed',
+        height: 30,
         muted: true,
+        statusIcon: 'checkmark',
       },
       {
         id: 'daily:reward:50',
-        label: '50 pts · +15 coin',
+        sectionId: 'daily',
+        label: '50 Points',
+        resourceValues: [{ resourceKey: 'coin', amountLabel: '+15' }],
         value: '',
+        height: 30,
         actionLabel: 'Claim',
+        actionHeight: 27,
+        actionVariant: 'green',
         enabled: true,
         notification: true,
         semanticId: 'workshop.personalTasks.daily.reward.50',
         onActivate: expect.any(Function),
       },
       {
-        id: 'weekly:rewards-summary',
-        label: 'Week',
-        value: '260/700 · resets 3d',
-      },
-      {
         id: 'weekly:reward:100',
-        label: '100 pts · +40 coin',
+        sectionId: 'weekly',
+        label: '100 Points',
+        resourceValues: [{ resourceKey: 'coin', amountLabel: '+40' }],
         value: 'Claimed',
+        height: 30,
         muted: true,
+        statusIcon: 'checkmark',
       },
     ]);
 
-    rewardsDialog.rows[2].onActivate();
+    rewardsDialog.rows[1].onActivate();
     expect(claimPersonalTaskMilestoneReward).toHaveBeenCalledWith('daily', 50);
   });
 
@@ -891,6 +920,7 @@ describe('PixiViewModelFactory', () => {
     const selectLeaderboardTab = vi.fn();
     const openAlliance = vi.fn();
     const sendWorldChat = vi.fn(() => ({ ok: true }));
+    const openInbox = vi.fn(() => true);
     const factory = new PixiViewModelFactory();
     const model = factory.createWorkshop({
       gameplay: {
@@ -944,12 +974,15 @@ describe('PixiViewModelFactory', () => {
         selectStatsTab,
         selectLeaderboardTab,
         openAlliance,
+        openInbox,
         sendWorldChat,
       },
     });
     const dialogs = model.workshop.dialogs;
 
     expect(model.workshop.inbox.notification).toBe(true);
+    expect(model.workshop.inbox.onActivate()).toBe(true);
+    expect(openInbox).toHaveBeenCalledTimes(1);
     expect(dialogs.bag).toMatchObject({
       title: 'Bag',
       selectedTabId: 'seeds',
@@ -999,6 +1032,47 @@ describe('PixiViewModelFactory', () => {
     );
     expect(offline.composer.enabled).toBe(false);
     expect(offline.onSubmit).toBeNull();
+  });
+
+  it('gives duplicate-named leaderboard players and alliance members stable unique row ids', () => {
+    const factory = new PixiViewModelFactory();
+    const leaderboard = factory.createLeaderboardDialog({
+      topAllTimeUsers: [
+        { identity: 'wizard-a', name: 'Wizard', totalIncome: 12 },
+        { identity: 'wizard-b', name: 'Wizard', totalIncome: 8 },
+        { name: 'Wizard', totalIncome: 4 },
+        { name: 'Wizard', totalIncome: 2 },
+      ],
+    });
+    const alliance = factory.createAllianceDialog({
+      ownAlliance: {
+        allianceId: 'shared-alliance',
+        name: 'Shared Alliance',
+      },
+      members: [
+        {
+          memberIdentity: 'member-a',
+          allianceId: 'shared-alliance',
+          username: 'Wizard',
+        },
+        {
+          memberIdentity: 'member-b',
+          allianceId: 'shared-alliance',
+          username: 'Wizard',
+        },
+      ],
+    });
+
+    expect(leaderboard.rows.map((row) => row.id)).toEqual([
+      'wizard-a',
+      'wizard-b',
+      'Wizard:2',
+      'Wizard:3',
+    ]);
+    expect(alliance.rows.map((row) => row.id)).toEqual([
+      'member-a',
+      'member-b',
+    ]);
   });
 
   it('projects expandable alliance directory rows with members, totals, and state actions', () => {

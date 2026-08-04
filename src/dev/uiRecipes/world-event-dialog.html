@@ -1,0 +1,179 @@
+<!doctype html>
+<html
+  lang="en"
+  data-style-theme="night"
+  data-style-font="lilita-one"
+  data-style-icons="icons"
+>
+  <head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Idle Wizard World Event dialog recipe</title>
+    <style>
+      html,
+      body {
+        width: 100%;
+        height: 100%;
+        margin: 0;
+        overflow: hidden;
+        background: #1c1e26;
+      }
+
+      canvas {
+        display: block;
+        width: 100%;
+        height: 100%;
+      }
+    </style>
+  </head>
+  <body>
+    <canvas aria-label="World Event dialog visual recipe"></canvas>
+
+    <script type="module">
+      import '@fontsource/lilita-one/400.css';
+      import { PixiAssetManager } from '/src/rendering/pixi/assets/PixiAssetManager.js';
+      import { PixiInputRouter } from '/src/rendering/pixi/input/PixiInputRouter.js';
+      import { WorkshopPixiPage } from '/src/rendering/pixi/pages/workshop/WorkshopPixiPage.js';
+      import { DialogRegistry } from '/src/rendering/pixi/retained/DialogRegistry.js';
+      import { SemanticTargetRegistry } from '/src/rendering/pixi/retained/SemanticTargetRegistry.js';
+      import { PixiApplicationManager } from '/src/rendering/pixi/runtime/PixiApplicationManager.js';
+
+      const canvas = document.querySelector('canvas');
+      const applicationManager = new PixiApplicationManager({ canvas });
+      const assetManager = new PixiAssetManager();
+      const inputRouter = new PixiInputRouter();
+
+      await Promise.all([
+        applicationManager.initialize(),
+        assetManager.loadAll(),
+      ]);
+      inputRouter.mount({
+        root: applicationManager.getApplication().stage,
+        canvas,
+      });
+
+      const dialogRegistry = new DialogRegistry();
+      const semanticTargets = new SemanticTargetRegistry();
+      const page = new WorkshopPixiPage({
+        assetManager,
+        dialogLayer: applicationManager.layers.dialogsSource,
+        dialogRegistry,
+        inputRouter,
+        semanticTargets,
+      });
+      const model = {
+        workshop: {
+          dialogs: {
+            worldEvent: {
+              header: {
+                body: 'Bells ring from towers that disagreed yesterday.\nNew clerks ask every workshop to prove the town still moves and read the new edicts.',
+                headline: 'New King Crowned',
+                meta: '0 points · 4d 2h',
+              },
+              rowWidget: 'worldEventQuest',
+              rows: [
+                {
+                  description: 'The coronation bells have people cheering, arguing, and fainting in the same street. Donate calming draughts so the crowd stays upright long enough for the heralds to finish.',
+                  donationOptions: [
+                    {
+                      actionLabel: 'Donate',
+                      enabled: true,
+                      id: 'calming-draught',
+                      itemKey: 'calmingDraught',
+                      itemKind: 'potion',
+                      label: 'Calming Draught',
+                      onActivate: openDonation,
+                      pointsEachLabel: '120 points each',
+                      resourceKey: 'potion',
+                      semanticId: 'workshop.worldEvent.quest.crowd.donation.calmingDraught',
+                      totalLabel: '0 points total',
+                    },
+                    {
+                      actionLabel: 'Donate',
+                      enabled: true,
+                      id: 'valerian-rest',
+                      itemKey: 'valerianRest',
+                      itemKind: 'potion',
+                      label: 'Valerian Rest',
+                      onActivate: openDonation,
+                      pointsEachLabel: '320 points each',
+                      resourceKey: 'potion',
+                      semanticId: 'workshop.worldEvent.quest.crowd.donation.valerianRest',
+                      totalLabel: '0 points total',
+                    },
+                  ],
+                  id: 'quest:quiet-the-crowd',
+                  pointsLabel: '0 points',
+                  title: 'Quiet The Crowd',
+                },
+                {
+                  description: 'The new seal is crossing town in a box that everyone wants to touch. Donate warding potions so the seal reaches the hall without a new scandal.',
+                  donationOptions: [
+                    {
+                      actionLabel: 'Donate',
+                      enabled: true,
+                      id: 'briar-ward',
+                      itemKey: 'briarWard',
+                      itemKind: 'potion',
+                      label: 'Briar Ward',
+                      onActivate: openDonation,
+                      pointsEachLabel: '180 points each',
+                      resourceKey: 'potion',
+                      semanticId: 'workshop.worldEvent.quest.seal.donation.briarWard',
+                      totalLabel: '0 points total',
+                    },
+                  ],
+                  id: 'quest:protect-the-seal',
+                  pointsLabel: '0 points',
+                  title: 'Protect The Seal',
+                },
+              ],
+              selectedTabId: 'tasks',
+              tabs: [
+                { id: 'tasks', label: 'Quests', selected: true },
+                { id: 'leaderboard', label: 'Leaderboard' },
+                { id: 'rewards', label: 'Rewards' },
+              ],
+              title: 'World Event',
+            },
+            worldEventDonate: {
+              rows: [
+                { id: 'quest', label: 'Quest', value: 'Quiet The Crowd' },
+                { id: 'giving', label: 'Giving', value: 'Calming Draught' },
+                { id: 'owned', label: 'Owned', value: '12' },
+                { id: 'points', label: 'Points', value: '+120' },
+                {
+                  actionLabel: 'Donate x1',
+                  enabled: true,
+                  id: 'confirm',
+                  label: '1 calming draught',
+                  onActivate: () => true,
+                  value: '120 points',
+                },
+              ],
+              title: 'Donate',
+            },
+          },
+        },
+      };
+
+      function openDonation() {
+        page.openDialog('worldEventDonate');
+        return true;
+      }
+
+      page.layout(applicationManager.projection);
+      page.bind(model);
+      page.activate();
+      applicationManager.layers.pageUi.addChild(page.root);
+      page.openDialog('worldEvent');
+
+      window.__worldEventRecipe = {
+        applicationManager,
+        dialogRegistry,
+        page,
+        semanticTargets,
+      };
+    </script>
+  </body>
+</html>

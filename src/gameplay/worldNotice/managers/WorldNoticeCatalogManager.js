@@ -1,5 +1,6 @@
 export const WORLD_NOTICE_UNLOCK_LEVEL = 4;
 export const WORLD_NOTICE_STATE_VERSION = 2;
+export const WORLD_NOTICE_MAX_REQUESTS = 2;
 
 export const WORLD_NOTICE_ACTIONS = Object.freeze({
   BREW_POTIONS: 'brew_potions',
@@ -514,6 +515,28 @@ const WORLD_NOTICE_EVENTS = Object.freeze([
   },
 ]);
 
+function selectEventRequests(event) {
+  const requests = Array.isArray(event?.requests) ? event.requests : [];
+
+  if (requests.length <= WORLD_NOTICE_MAX_REQUESTS) {
+    return requests;
+  }
+
+  const fundingRequest = requests.find((request) =>
+    request.donationOptions?.some((option) => option.resourceType === 'coin'),
+  );
+
+  if (!fundingRequest) {
+    return requests.slice(0, WORLD_NOTICE_MAX_REQUESTS);
+  }
+
+  const primaryRequest = requests.find((request) => request !== fundingRequest);
+
+  return [primaryRequest, fundingRequest]
+    .filter(Boolean)
+    .slice(0, WORLD_NOTICE_MAX_REQUESTS);
+}
+
 export class WorldNoticeCatalogManager {
   getEventForWeek(weekIndex) {
     const index = Math.max(0, Math.floor(Number(weekIndex) || 0));
@@ -539,7 +562,7 @@ export class WorldNoticeCatalogManager {
       outcomes: { ...event.outcomes },
       archive: event.archive,
       contributionPoints: 0,
-      requests: event.requests.map((request) =>
+      requests: selectEventRequests(event).map((request) =>
         this.createRequestState({
           eventId: event.eventId,
           periodKey,
@@ -624,6 +647,9 @@ export class WorldNoticeCatalogManager {
       WORLD_NOTICE_EVENTS.find((candidate) => candidate.eventId === notice.eventId) ??
       this.getEventForWeek(notice.weekIndex);
     const periodKey = typeof notice.periodKey === 'string' ? notice.periodKey : '';
+    const selectedRequestKeys = new Set(
+      selectEventRequests(event).map((request) => request.requestKey),
+    );
 
     if (!periodKey || notice.version !== WORLD_NOTICE_STATE_VERSION) {
       return null;
@@ -649,7 +675,10 @@ export class WorldNoticeCatalogManager {
       requests: Array.isArray(notice.requests)
         ? notice.requests
             .map((request, index) => this.sanitizeRequest(request, event, index))
-            .filter(Boolean)
+            .filter((request) =>
+              request && selectedRequestKeys.has(request.requestKey),
+            )
+            .slice(0, WORLD_NOTICE_MAX_REQUESTS)
         : [],
     };
   }

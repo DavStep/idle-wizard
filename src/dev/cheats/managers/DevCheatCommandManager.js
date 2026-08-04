@@ -268,6 +268,26 @@ const UI_SURFACE_DEFINITIONS = Object.freeze([
     aliases: ['whileAway'],
   },
   { id: 'inbox', kind: 'dialog', dialogId: 'inbox', aliases: ['mail'] },
+  {
+    id: 'playerInfo',
+    kind: 'dialog',
+    dialogId: 'global.player',
+    options: {
+      player: {
+        allianceId: 'moss-hall',
+        allianceName: 'Moss Hall',
+        allianceTag: 'MOSS',
+        character: 'mira',
+        playerLevel: 12,
+        prestigeCount: 2,
+        totalProducedCoin: 128450,
+        totalBrewedPotions: 86,
+        totalHarvestedHerbs: 240,
+        username: 'Mira',
+      },
+    },
+    aliases: ['playerProfile'],
+  },
 ]);
 
 const UI_SURFACE_LOOKUP = new Map(

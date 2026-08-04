@@ -467,6 +467,7 @@ function writeDisplayObjectText(displayObject, value) {
 
 export function createUiEditorPixiSurfaceShell({
   component = 'PixiIntegration',
+  previewLabel = 'Dialog preview',
   viewport = UI_EDITOR_PIXI_VIEWPORTS.FLUID,
 } = {}) {
   const host = document.createElement('section');
@@ -495,7 +496,7 @@ export function createUiEditorPixiSurfaceShell({
     { panEnabled: false },
   );
   const controls = createViewportZoomControls(
-    'Dialog preview',
+    previewLabel,
     [panZoom],
     {
       centerLabel: 'Center',
@@ -518,13 +519,16 @@ export function createUiEditorPixiSurfaceShell({
   pan.className = 'ui-editor-game-screen-preview__pan';
   pan.type = 'button';
   pan.textContent = '↔ Pan';
-  pan.setAttribute('aria-label', 'Toggle dialog preview panning');
+  pan.setAttribute(
+    'aria-label',
+    `Toggle ${previewLabel.toLowerCase()} panning`,
+  );
   pan.setAttribute('aria-pressed', 'false');
   divider.className = 'ui-editor-game-screen-preview__divider';
   divider.setAttribute('aria-hidden', 'true');
   zoomGroup.className = 'ui-editor-game-screen-preview__zoom';
   zoomGroup.setAttribute('role', 'group');
-  zoomGroup.setAttribute('aria-label', 'Dialog preview zoom');
+  zoomGroup.setAttribute('aria-label', `${previewLabel} zoom`);
   zoomGroup.append(...[...zoomParts].slice(0, 3));
   controls.root.prepend(pan, divider, zoomGroup);
   frame.append(canvas);

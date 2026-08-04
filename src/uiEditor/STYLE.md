@@ -107,11 +107,12 @@ Use borders before shadows. Panels use `--editor-border-subtle` or
   labels stay secondary; live values use the editor mono face. Actions wrap at
   narrow widths and the event list scrolls within its own bounded region rather
   than expanding the dock indefinitely.
-- Retained dialog previews expose the complete authored `390px` screen frame
-  against the recessed grid canvas. The preview fills the complete central
-  canvas, and the compact bottom toolbar overlays that world like the Root Run
-  level-editor HUD. It contains only Pan, zoom out, percentage, zoom in, and
-  Center so it reads as editor chrome rather than game UI.
+- Retained dialog and standalone button previews expose the complete authored
+  `390px` screen frame against the recessed grid canvas. The preview fills the
+  complete central canvas, and the compact bottom toolbar overlays that world
+  like the Root Run level-editor HUD. It contains only Pan, zoom out,
+  percentage, zoom in, and Center so it reads as editor chrome rather than game
+  UI. Compatible button selections retain that view on the live canvas.
 - The nine-slice workbench keeps its source and guides in the left pane. The
   source contain-fits upward as well as downward, preserving crisp source
   pixels, and supports cursor-centered wheel zoom plus drag and keyboard pan.

@@ -2,6 +2,7 @@ import { describe, expect, it } from 'vitest';
 
 import {
   WORLD_NOTICE_ACTIONS,
+  WORLD_NOTICE_MAX_REQUESTS,
   WorldNoticeFacade,
 } from './WorldNoticeFacade.js';
 
@@ -44,6 +45,7 @@ function createItemsFacade(initialItems = {}) {
       },
       { id: 2009, key: 'healingPotion', label: 'healing potion', kind: 'potion' },
       { id: 2010, key: 'simpleAntidote', label: 'simple antidote', kind: 'potion' },
+      { id: 2011, key: 'briarWard', label: 'briar ward', kind: 'potion' },
     ].map((definition) => [definition.key, definition]),
   );
   const quantities = new Map(Object.entries(initialItems));
@@ -139,18 +141,17 @@ describe('WorldNoticeFacade', () => {
     expect(snapshot.current).toMatchObject({
       anchorLevel: 4,
       completedRequests: 0,
-      totalRequests: 3,
+      totalRequests: WORLD_NOTICE_MAX_REQUESTS,
       responseLabel: 'small response',
     });
     expect(snapshot.current.headline).toBeTruthy();
-    expect(snapshot.current.requests).toHaveLength(3);
+    expect(snapshot.current.requests).toHaveLength(WORLD_NOTICE_MAX_REQUESTS);
     expect(snapshot.current.requests.every((request) => request.title)).toBe(true);
     expect(snapshot.current.requests.every((request) => request.situation)).toBe(true);
     expect(snapshot.current.requests.every((request) => request.description)).toBe(true);
     expect(snapshot.current.requests.every((request) => request.donationOptions.length > 0))
       .toBe(true);
     expect(snapshot.current.requests.map((request) => request.actionType)).toEqual([
-      WORLD_NOTICE_ACTIONS.DONATE_RESOURCES,
       WORLD_NOTICE_ACTIONS.DONATE_RESOURCES,
       WORLD_NOTICE_ACTIONS.DONATE_RESOURCES,
     ]);
@@ -170,6 +171,30 @@ describe('WorldNoticeFacade', () => {
         request.donationOptions.some((option) => option.resourceType === 'coin'),
       )).toBe(true);
     }
+  });
+
+  it('drops obsolete third requests when loading an existing weekly event', () => {
+    const { facade } = createFacade({ level: 4 });
+    facade.getSnapshot();
+    const persisted = facade.getPersistenceSnapshot();
+    const [primaryRequest] = persisted.current.requests;
+    const expectedRequestIds = persisted.current.requests.map(
+      (request) => request.requestId,
+    );
+
+    persisted.current.requests.splice(1, 0, {
+      ...primaryRequest,
+      requestId: `${primaryRequest.requestId}:obsolete`,
+      requestKey: `${primaryRequest.requestKey}:obsolete`,
+    });
+    facade.applyPersistenceSnapshot(persisted);
+
+    expect(facade.getSnapshot().current.requests).toHaveLength(
+      WORLD_NOTICE_MAX_REQUESTS,
+    );
+    expect(
+      facade.getSnapshot().current.requests.map((request) => request.requestId),
+    ).toEqual(expectedRequestIds);
   });
 
   it('replaces stale saved funding events with the current catalog', () => {
@@ -256,18 +281,18 @@ describe('WorldNoticeFacade', () => {
   it('donates items and adds contribution points', () => {
     const { facade, coinFacade, itemsFacade } = createFacade({
       level: 4,
-      items: { minorHealingPotion: 3 },
+      items: { briarWard: 3 },
     });
     const donateRequest = facade.getSnapshot().current.requests.find((request) =>
-      request.donationOptions.some((option) => option.itemKey === 'minorHealingPotion'),
+      request.donationOptions.some((option) => option.itemKey === 'briarWard'),
     );
     const option = donateRequest.donationOptions.find((candidate) =>
-      candidate.itemKey === 'minorHealingPotion',
+      candidate.itemKey === 'briarWard',
     );
 
     expect(option).toMatchObject({
       itemKind: 'potion',
-      itemTypeId: 2002,
+      itemTypeId: 2011,
     });
 
     const result = facade.donateResource(donateRequest.requestId, option.optionKey, 2);
@@ -280,19 +305,19 @@ describe('WorldNoticeFacade', () => {
 
     expect(result.changed).toBe(true);
     expect(updatedRequest).toMatchObject({
-      progressQuantity: 300,
-      contributionPoints: 300,
+      progressQuantity: 360,
+      contributionPoints: 360,
     });
     expect(updatedOption).toMatchObject({
       contributedQuantity: 2,
-      contributionPoints: 300,
+      contributionPoints: 360,
       maxDonateQuantity: 1,
     });
-    expect(result.pointsAdded).toBe(300);
-    expect(facade.getSnapshot().current.leaderboard.currentPoints).toBe(300);
+    expect(result.pointsAdded).toBe(360);
+    expect(facade.getSnapshot().current.leaderboard.currentPoints).toBe(360);
     expect(facade.getSnapshot().current.leaderboard.qualificationPoints).toBe(2000);
     expect(coinFacade.current).toBe(0);
-    expect(itemsFacade.getQuantity('minorHealingPotion')).toBe(1);
+    expect(itemsFacade.getQuantity('briarWard')).toBe(1);
   });
 
   it('continues adding donation points after the quest is complete', () => {

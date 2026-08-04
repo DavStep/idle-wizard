@@ -63,6 +63,32 @@ describe('UiEditorPixiButtonPreview', () => {
     expect(liveCanvas.getAttribute('aria-label')).toBe('Next Button');
   });
 
+  it('reuses the authored-screen zoom controls while keeping panning opt-in', () => {
+    const preview = createUiEditorPixiButtonPreview({
+      id: 'base-button',
+      label: 'Base / Text Button',
+      preview: {},
+    });
+    const pan = preview.querySelector(
+      '.ui-editor-game-screen-preview__pan',
+    );
+
+    expect(preview.dataset.previewViewport).toBe('game-screen');
+    expect(
+      preview.querySelector('[aria-label="Widget preview zoom in"]'),
+    ).not.toBeNull();
+    expect(
+      preview.querySelector('[aria-label="Widget preview zoom out"]'),
+    ).not.toBeNull();
+    expect(
+      preview.querySelector('[aria-label="Center widget preview"]'),
+    ).not.toBeNull();
+    expect(pan.getAttribute('aria-pressed')).toBe('false');
+    expect(pan.getAttribute('aria-label')).toBe(
+      'Toggle widget preview panning',
+    );
+  });
+
   it('exposes live color and corner-size controls for the consolidated base button', () => {
     const preview = createUiEditorPixiButtonPreview({
       id: 'base-button',

@@ -8,7 +8,7 @@ import { getMarketGradeForCatalogIndex } from '../../../shared/marketLicence.js'
 
 const HERB_TYPE_ID_START = 1001;
 const POTION_TYPE_ID_START = 2001;
-const SEED_SUMMON_MANA_COST = 10;
+const SEED_SUMMON_MANA_COST = 50;
 
 const herbCatalog = [
   { key: 'sage', label: 'sage', growthDurationMs: 12_000 },

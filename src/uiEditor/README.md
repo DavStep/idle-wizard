@@ -172,11 +172,13 @@ owns all compatible states as scenarios, so state variants do not become
 duplicate catalogue tiles. Existing retained button previews use the same
 Inspector extension point for configuration and live activation feedback.
 
-Retained dialog previews sit inside the authored `390px` game-screen frame so
-their placement can be judged against the real rendering bounds. The compact
-bottom toolbar floats over the preview world and provides zoom out, the current
-percentage, zoom in, and Center. Enable Pan before dragging the screen; leaving
-Pan off keeps the production dialog controls interactive.
+Retained dialog and standalone button previews sit inside the authored `390px`
+game-screen frame so their placement and scale can be judged against the real
+rendering bounds. The compact bottom toolbar floats over the preview world and
+provides zoom out, the current percentage, zoom in, and Center. Enable Pan
+before dragging the screen; leaving Pan off keeps the production controls
+interactive. Button previews preserve the current view while switching between
+compatible button entries on the live canvas.
 
 Integration modules must not evaluate arbitrary scripts, call production
 backend services, or import themselves from production entry points. Every

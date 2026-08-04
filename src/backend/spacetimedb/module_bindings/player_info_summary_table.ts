@@ -16,6 +16,8 @@ export default __t.row({
   allianceTag: __t.string().name("alliance_tag"),
   allianceTagColor: __t.string().name("alliance_tag_color"),
   totalProducedGold: __t.u64().name("total_produced_gold"),
+  totalBrewedPotions: __t.u64().name("total_brewed_potions"),
+  totalHarvestedHerbs: __t.u64().name("total_harvested_herbs"),
   playerLevel: __t.u32().name("player_level"),
   prestigeCount: __t.u32().name("prestige_count"),
   updatedAt: __t.timestamp().name("updated_at"),

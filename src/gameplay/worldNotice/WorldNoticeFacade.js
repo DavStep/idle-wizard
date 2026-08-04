@@ -1,5 +1,6 @@
 import {
   WORLD_NOTICE_ACTIONS,
+  WORLD_NOTICE_MAX_REQUESTS,
   WORLD_NOTICE_STATE_VERSION,
   WORLD_NOTICE_UNLOCK_LEVEL,
   WorldNoticeCatalogManager,
@@ -10,7 +11,11 @@ import { WorldNoticeProgressManager } from './managers/WorldNoticeProgressManage
 
 const WORLD_NOTICE_ARCHIVE_LIMIT = 12;
 
-export { WORLD_NOTICE_ACTIONS, WORLD_NOTICE_UNLOCK_LEVEL };
+export {
+  WORLD_NOTICE_ACTIONS,
+  WORLD_NOTICE_MAX_REQUESTS,
+  WORLD_NOTICE_UNLOCK_LEVEL,
+};
 
 export class WorldNoticeFacade {
   static explain =

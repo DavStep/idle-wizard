@@ -13,4 +13,6 @@ thresholds in the daily and weekly tracks.
 
 The player-facing Workshop dialog is `Daily Tasks`. Its `Tasks` tab reads
 `progressQuantity` / `requiredQuantity` from the personal-task snapshot, while
-its `Rewards` tab exposes claimable daily and weekly milestones.
+its `Rewards` tab exposes claimable daily and weekly milestones. Changed task
+progress advances the gameplay frame snapshot key so retained views receive
+partial progress and completed-task points immediately.

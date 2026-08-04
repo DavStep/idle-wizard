@@ -107,6 +107,7 @@ experience_type: product-shape
 - Top-panel resource values should be written amount-first, like `560 coin`; icon mode hides the word and leaves `count icon`.
 - Icon-mode amount/resource labels should hide `.style-resource-label__spacer` and use `--style-icon-label-gap`; preserving the word-space makes count/icon pairs look too far apart.
 - Weekly events should be framed as `weekly world event` / world crisis: headline world news first, playable requests second; avoid generic quest-board framing.
+- A weekly world event exposes at most two active requests so both widened quest sections fit beneath the summary without scrolling; normalize older three-request saves instead of hiding an inaccessible objective only in rendering.
 - Personal tasks have only daily quest rows; completed daily quests add points to both daily and weekly reward tracks, separate from weekly world events and alliance quests.
 - Prestige resets the run but preserves personal task daily/weekly progress until the normal period rollover.
 - Tabbed dialog close controls use the shared round X asset centered below the shell at the authored gap; keep every whole-dialog category tab strip inside the brown shell footer below the paper. Keep content-local subsection controls inside their paper and back/previous/next as text navigation.

@@ -99,6 +99,12 @@ export class PlayerInfoSubscriptionManager {
           row.total_produced_coin ??
           row.total_produced_gold,
       ),
+      totalBrewedPotions: this.toNumber(
+        row.totalBrewedPotions ?? row.total_brewed_potions,
+      ),
+      totalHarvestedHerbs: this.toNumber(
+        row.totalHarvestedHerbs ?? row.total_harvested_herbs,
+      ),
       playerLevel: this.toPositiveInteger(row.playerLevel ?? row.player_level, {
         fallback: 1,
         min: 1,

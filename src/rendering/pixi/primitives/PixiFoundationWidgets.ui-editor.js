@@ -135,6 +135,7 @@ export default [
     id: 'primitive.resource-label',
     kind: 'widget',
     label: 'Resource Label',
+    createThumbnail: createResourceLabelThumbnail,
     sectionId: FOUNDATION_SECTION,
     properties: [
       { label: 'Production class', value: 'PixiResourceLabel' },
@@ -892,6 +893,27 @@ function createTextLabelThumbnail() {
     component: 'PixiTextLabel',
     createControl: () => createTextLabelControl({ text: 'Mana restored' }),
     id: 'primitive.text-label',
+  });
+}
+
+function createResourceLabelThumbnail() {
+  return createUiEditorPixiThumbnail({
+    component: 'PixiResourceLabel',
+    createControl: ({ assets }) => {
+      const label = new PixiResourceLabel({
+        amount: '12,450',
+        assetManager: assets,
+        includeResourceName: false,
+        resource: 'coin',
+      });
+      return {
+        destroy: () => label.destroy({ children: true }),
+        height: 18,
+        root: label,
+        width: 90,
+      };
+    },
+    id: 'primitive.resource-label',
   });
 }
 

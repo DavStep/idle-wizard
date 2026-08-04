@@ -21,6 +21,9 @@ import retainedDialogIntegrations, {
 } from './RetainedDialogs.ui-editor.js';
 import inventoryChoiceRowIntegration from './pages/shared/RootRunInventoryChoiceDialogPixi.ui-editor.js';
 import worldChatMessageRowIntegration from './pages/workshop/WorldChatMessageRowPixi.ui-editor.js';
+import worldEventQuestRowIntegration from './pages/workshop/WorldEventQuestRow.ui-editor.js';
+import inboxMailWidgetIntegration from './global/dialogs/InboxMailWidget.ui-editor.js';
+import playerAvatarIntegration from './global/chrome/RootRunAvatarWidget.ui-editor.js';
 
 installPixiPageTestCanvas();
 
@@ -227,6 +230,67 @@ describe('retained dialog UI editor integrations', () => {
     expect(mountedIds).toEqual(UI_EDITOR_RETAINED_DIALOG_IDS);
   });
 
+  it('renders Daily Tasks as split live-point sections with icon rewards and claim states', () => {
+    const dialogId = 'workshop.personalTasks';
+    const parent = new Container();
+    const counters = new RetainedUiCounters();
+    const input = new PixiInputRouter();
+    const semanticRegistry = new SemanticTargetRegistry({ counters });
+    const dialog = createUiEditorDialog({
+      assets: createPixiAssetManagerFake(Texture),
+      close: () => false,
+      counters,
+      dialogId,
+      input,
+      model: createUiEditorDialogFixture(dialogId),
+      parent,
+      projection: PROJECTION,
+      semanticRegistry,
+    });
+
+    dialog.layout(PROJECTION);
+    dialog.activate();
+
+    expect(dialog.panel.paperFrame.visible).toBe(false);
+    expect(
+      [...dialog.personalTaskSectionChrome.values()].map((section) => ({
+        title: section.title.text,
+        points: section.points.text,
+        reset: section.reset.text,
+        visible: section.root.visible,
+      })),
+    ).toEqual([
+      {
+        title: 'Today',
+        points: '70 / 100 Points',
+        reset: 'Resets in 2h',
+        visible: true,
+      },
+      {
+        title: 'This Week',
+        points: '170 / 700 Points',
+        reset: 'Resets in 4d 2h',
+        visible: true,
+      },
+    ]);
+    const rewardRows = dialog.rows.getWidgets();
+    expect(rewardRows).toHaveLength(8);
+    expect(
+      rewardRows[0].resourceValue.runs.filter((run) => run.kind === 'icon'),
+    ).toHaveLength(1);
+    expect(rewardRows[0].model.statusIcon).toBe('checkmark');
+    expect(rewardRows[3].action.variant).toBe('green');
+    expect(
+      rewardRows[7].resourceValue.runs.filter((run) => run.kind === 'icon'),
+    ).toHaveLength(2);
+    expect(rewardRows[7].action.enabled).toBe(false);
+
+    dialog.destroy();
+    semanticRegistry.clear();
+    input.destroy();
+    parent.destroy({ children: true });
+  });
+
   it.each([
     ['garden.seed', 'ChooseSeedRow:InventoryChoiceRow'],
     ['brewing.herbs', 'ChooseHerbRow:InventoryChoiceRow'],
@@ -379,5 +443,88 @@ describe('retained dialog UI editor integrations', () => {
     expect(
       worldChatMessageRowIntegration.scenarios.map(({ id }) => id),
     ).toEqual(['player', 'system', 'disabled']);
+  });
+
+  it('registers World Event quest sections as production-backed drill-in widgets', () => {
+    const dialogId = 'workshop.worldEvent';
+    const parent = new Container();
+    const counters = new RetainedUiCounters();
+    const input = new PixiInputRouter();
+    const semanticRegistry = new SemanticTargetRegistry({ counters });
+    const fixture = createUiEditorDialogFixture(dialogId);
+    const dialog = createUiEditorDialog({
+      assets: createPixiAssetManagerFake(Texture),
+      close: () => false,
+      counters,
+      dialogId,
+      input,
+      model: fixture,
+      parent,
+      projection: PROJECTION,
+      semanticRegistry,
+    });
+    const [content] = createRetainedDialogHierarchy(dialogId, dialog);
+    const dialogIntegration = retainedDialogIntegrations.find(
+      ({ id }) => id === `dialog.${dialogId}`,
+    );
+
+    expect(dialogIntegration.childWidgetIds).toEqual([
+      'compound.dialog-frame',
+      'compound.world-event-quest-row',
+    ]);
+    expect(
+      content.children.filter(
+        ({ libraryEntryId }) =>
+          libraryEntryId === 'compound.world-event-quest-row',
+      ),
+    ).toHaveLength(2);
+    expect(worldEventQuestRowIntegration.kind).toBe('widget');
+    expect(typeof worldEventQuestRowIntegration.createThumbnail).toBe(
+      'function',
+    );
+    expect(
+      worldEventQuestRowIntegration.scenarios.map(({ id }) => id),
+    ).toEqual(['available', 'unavailable', 'completed']);
+
+    dialog.destroy();
+    semanticRegistry.clear();
+    input.destroy();
+    parent.destroy({ children: true });
+  });
+
+  it('registers Inbox mail as a production-backed drill-in widget', () => {
+    const inboxIntegration = retainedDialogIntegrations.find(
+      ({ id }) => id === 'dialog.global.inbox',
+    );
+
+    expect(inboxIntegration.childWidgetIds).toEqual([
+      'compound.dialog-frame',
+      'compound.inbox-mail-widget',
+    ]);
+    expect(inboxMailWidgetIntegration.kind).toBe('widget');
+    expect(typeof inboxMailWidgetIntegration.createThumbnail).toBe(
+      'function',
+    );
+    expect(
+      inboxMailWidgetIntegration.scenarios.map(({ id }) => id),
+    ).toEqual(['claimable', 'claimed', 'message']);
+  });
+
+  it('registers the framed player avatar as a production-backed drill-in widget', () => {
+    const playerIntegration = retainedDialogIntegrations.find(
+      ({ id }) => id === 'dialog.global.player',
+    );
+
+    expect(playerIntegration.childWidgetIds).toEqual([
+      'compound.dialog-frame',
+      'compound.player-avatar',
+      'primitive.star-level-label',
+      'primitive.resource-label',
+    ]);
+    expect(playerAvatarIntegration.kind).toBe('widget');
+    expect(typeof playerAvatarIntegration.createThumbnail).toBe('function');
+    expect(
+      playerAvatarIntegration.scenarios.map(({ id }) => id),
+    ).toEqual(['mira', 'tinted-frame']);
   });
 });

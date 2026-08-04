@@ -1,0 +1,68 @@
+<!doctype html>
+<html
+  lang="en"
+  data-style-theme="night"
+  data-style-font="lilita-one"
+  data-style-icons="icons"
+>
+  <head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Idle Wizard Player Info dialog recipe</title>
+    <style>
+      html,
+      body {
+        width: 100%;
+        height: 100%;
+        margin: 0;
+        overflow: hidden;
+        background: #1c1e26;
+      }
+
+      canvas {
+        display: block;
+        width: 100%;
+        height: 100%;
+      }
+    </style>
+  </head>
+  <body>
+    <canvas aria-label="Player Info dialog visual recipe"></canvas>
+
+    <script type="module">
+      import '@fontsource/lilita-one/400.css';
+      import { PixiInputRouter } from '/src/rendering/pixi/input/PixiInputRouter.js';
+      import {
+        GLOBAL_DIALOG_IDS,
+        registerGlobalDialogFactories,
+      } from '/src/rendering/pixi/global/dialogs/index.js';
+      import { PixiApplicationManager } from '/src/rendering/pixi/runtime/PixiApplicationManager.js';
+      import { PixiUiRuntimeFacade } from '/src/rendering/pixi/runtime/PixiUiRuntimeFacade.js';
+
+      const canvas = document.querySelector('canvas');
+      const inputRouter = new PixiInputRouter();
+      const applicationManager = new PixiApplicationManager({ canvas });
+      const runtime = new PixiUiRuntimeFacade({
+        applicationManager,
+        inputRouter,
+      });
+
+      registerGlobalDialogFactories(runtime);
+      await runtime.initialize();
+      runtime.openDialog(GLOBAL_DIALOG_IDS.PLAYER, {
+        player: {
+          allianceId: 'moss-hall',
+          allianceName: 'Moss Hall',
+          allianceTag: 'MOSS',
+          character: 'mira',
+          playerLevel: 12,
+          prestigeCount: 2,
+          totalProducedCoin: 128450,
+          totalBrewedPotions: 86,
+          totalHarvestedHerbs: 240,
+          username: 'Mira',
+        },
+      });
+    </script>
+  </body>
+</html>

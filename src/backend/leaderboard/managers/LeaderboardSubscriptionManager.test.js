@@ -280,6 +280,31 @@ describe('LeaderboardSubscriptionManager', () => {
     ]);
   });
 
+  it('preserves player identity when leaderboard usernames are duplicated', () => {
+    const rows = [
+      {
+        identity: 'wizard-a',
+        username: 'Wizard',
+        playerLevel: 4,
+        totalIncome: 12n,
+      },
+      {
+        identity: 'wizard-b',
+        username: 'Wizard',
+        playerLevel: 3,
+        totalIncome: 8n,
+      },
+    ];
+    const manager = new LeaderboardSubscriptionManager();
+
+    manager.connect(createConnection(createLeaderboardTable(rows)));
+
+    expect(manager.getSnapshot().topGeneratedCoinUsers).toMatchObject([
+      { identity: 'wizard-a', name: 'Wizard' },
+      { identity: 'wizard-b', name: 'Wizard' },
+    ]);
+  });
+
   it('publishes alliance tags for leaderboard users', () => {
     const rows = [
       {
@@ -341,6 +366,7 @@ describe('LeaderboardSubscriptionManager', () => {
 
     expect(manager.getSnapshot().topGeneratedCoinUsers).toHaveLength(100);
     expect(manager.getSnapshot().currentGeneratedCoinUser).toEqual({
+      identity: 'mine',
       name: 'Mine',
       playerLevel: 4,
       income: 50,
@@ -352,6 +378,7 @@ describe('LeaderboardSubscriptionManager', () => {
       rank: 102,
     });
     expect(manager.getSnapshot().currentIncomeUser).toEqual({
+      identity: 'mine',
       name: 'Mine',
       playerLevel: 4,
       income: 50,

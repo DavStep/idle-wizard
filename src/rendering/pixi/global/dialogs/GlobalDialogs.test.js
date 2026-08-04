@@ -12,11 +12,14 @@ import {
   DeviceIdentityFooter,
   PixiDialogFrame,
   PixiNineSliceFrame,
+  PixiResourceLabel,
+  PixiStarLevelLabel,
   resolveDialogPaperOutsets,
   RootRunSettingsTogglePixi,
   RootRunDevicePreferenceRow,
   RootRunDevicePreferencesPanel,
 } from '../../primitives/index.js';
+import { RootRunAvatarWidget } from '../chrome/RootRunTopHudWidgets.js';
 import {
   DialogRegistry,
   SemanticTargetRegistry,
@@ -193,6 +196,37 @@ describe('retained global Pixi dialogs', () => {
         GLOBAL_DIALOG_IDS.CONFIRMATION,
       ),
     ).toBe(false);
+    harness.dispose();
+  });
+
+  it('composes Player Info from the framed avatar and aligned lifetime stats', () => {
+    const harness = createHarness();
+    const player = harness.registry.open(
+      GLOBAL_DIALOG_IDS.PLAYER,
+      { player: createPlayer() },
+    );
+
+    expect(player.panel.titleLabel.text).toBe('Player Info');
+    expect(player.avatarWidget).toBeInstanceOf(RootRunAvatarWidget);
+    expect(player.avatarWidget.parent).toBe(player.panel.content);
+    expect(player.statsFrame).toBeInstanceOf(PixiNineSliceFrame);
+    expect(player.statsFrame.parent).toBe(player.panel.content);
+    expect(player.prestigeStars).toBeInstanceOf(PixiStarLevelLabel);
+    expect(player.prestigeStars.starCount).toBe(2);
+    expect(player.totalCoinValue).toBeInstanceOf(PixiResourceLabel);
+    expect(player.totalCoinValue.amount).toBe('1200');
+    expect(player.totalCoinValue.icon.visible).toBe(true);
+    expect(player.totalPotionsValue.text).toBe('86');
+    expect(player.totalHerbsValue.text).toBe('240');
+    expect(player.totalCoinLabel.text).toBe('Total Produced Coin');
+    expect(player.totalPotionsLabel.text).toBe('Total Brewed Potions');
+    expect(player.totalHerbsLabel.text).toBe('Total Harvested Herbs');
+    expect(
+      player.totalCoinValue.x + player.totalCoinValue.measuredWidth,
+    ).toBeCloseTo(250);
+    expect(player.totalPotionsValue.x).toBe(250);
+    expect(player.totalHerbsValue.x).toBe(250);
+
     harness.dispose();
   });
 
@@ -735,7 +769,36 @@ describe('retained global Pixi dialogs', () => {
     const mail = inbox.mailRows.getWidgets()[0];
 
     expect(mail.claimButton.variant).toBe('green');
+    expect(mail.claimButton.sizeTier).toBe(50);
     expect(mail.claimButton.textLabel.text).toBe('Claim');
+    expect(mail.frame.assetId).toBe(
+      'source:assets/ui/inner-section-panel-white.9.png',
+    );
+
+    harness.dispose();
+  });
+
+  it('shows claimed state immediately after a successful inbox claim', async () => {
+    const harness = createHarness();
+    const claimReward = vi.fn(() => Promise.resolve({ ok: true }));
+    const inbox = harness.registry.open(
+      GLOBAL_DIALOG_IDS.INBOX,
+      {
+        actions: { claimReward },
+        mail: [createMail('claimable')],
+      },
+    );
+    const mail = inbox.mailRows.getWidgets()[0];
+
+    await mail.claimButton.activate();
+
+    expect(claimReward).toHaveBeenCalledWith(
+      'claimable',
+      expect.objectContaining({ mailKey: 'claimable' }),
+    );
+    expect(mail.claimButton.visible).toBe(false);
+    expect(mail.claimedLabel.text).toBe('Claimed');
+    expect(mail.claimedLabel.visible).toBe(true);
 
     harness.dispose();
   });
@@ -1892,6 +1955,8 @@ function createPlayer() {
     playerLevel: 4,
     prestigeCount: 2,
     totalProducedCoin: 1200,
+    totalBrewedPotions: 86,
+    totalHarvestedHerbs: 240,
     allianceId: 'alliance-one',
     allianceName: 'Moss Hall',
     allianceTag: 'MOSS',

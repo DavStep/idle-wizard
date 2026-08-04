@@ -23,7 +23,10 @@ import {
 } from './saveClientTimestampNormalizer';
 import { normalizeSaveSelectedNumber } from './saveSelectedNumberNormalizer';
 import { assertMarketScope, getMarketScopedKey, normalizeMarketId } from './marketScope';
-import { appendMissingItemConfigRows as appendMissingItemConfigRowsByKey } from './itemConfigRows';
+import {
+  appendMissingItemConfigRows as appendMissingItemConfigRowsByKey,
+  normalizeLegacySeedSummonCosts,
+} from './itemConfigRows';
 import {
   createIdentityOnlyPlayerReset,
   createInvalidatedPlayerSession,
@@ -5275,7 +5278,7 @@ function getDefaultItemsConfig() {
       label: `${herb.label} seed`,
       producesHerbTypeId: 1001 + index,
       dropWeight: 1,
-      summonManaCost: 10,
+      summonManaCost: 50,
       baseSellPrice: seedSellPriceGoldByHerbKey[herb.key] ?? 1,
     })),
     herbs: herbCatalog.map((herb, index) => ({
@@ -6262,6 +6265,8 @@ const playerInfoSummaryResult = t.array(
     allianceTag: t.string(),
     allianceTagColor: t.string(),
     totalProducedGold: t.u64(),
+    totalBrewedPotions: t.u64(),
+    totalHarvestedHerbs: t.u64(),
     playerLevel: t.u32(),
     prestigeCount: t.u32(),
     updatedAt: t.timestamp(),
@@ -9281,13 +9286,21 @@ function normalizeItemsGameConfigJson(
     const existingRows = key === 'ingredients'
       ? removeRetiredItemConfigRows(parsedConfig[key], retiredIngredientKeys)
       : parsedConfig[key];
-    const normalizedList = normalizeLegacyItemConfigRows(
+    let normalizedList = normalizeLegacyItemConfigRows(
       appendMissingItemConfigRows(
         existingRows,
         defaultConfig[key],
       ),
       defaultConfig[key],
     );
+
+    if (key === 'seeds') {
+      normalizedList = normalizeLegacySeedSummonCosts(
+        normalizedList,
+        defaultConfig[key],
+        (row) => normalizeNpcMarketItemKey(String(row.key ?? '')),
+      );
+    }
 
     if (normalizedList !== parsedConfig[key]) {
       normalizedConfig[key] = normalizedList;
@@ -12306,6 +12319,30 @@ function readSavedTotalGeneratedGold(saveJson?: string): bigint | null {
   }
 }
 
+function readSavedStatsTotal(
+  saveJson: string | undefined,
+  branchName: 'herbs' | 'potions',
+): bigint | null {
+  if (!saveJson) {
+    return null;
+  }
+
+  try {
+    const save = JSON.parse(saveJson);
+    const stats = isRecord(save?.stats) ? save.stats : {};
+    const branch = isRecord(stats[branchName]) ? stats[branchName] : {};
+    const total = Number(branch.total);
+
+    if (!Number.isFinite(total) || total < 0) {
+      return null;
+    }
+
+    return toBigInt(Math.min(Math.floor(total), Number.MAX_SAFE_INTEGER));
+  } catch {
+    return null;
+  }
+}
+
 function readSavedResearchCount(saveJson?: string): number | null {
   return readSavedCompletedResearchIds(saveJson)?.length ?? null;
 }
@@ -14701,6 +14738,8 @@ function createPlayerInfoSummaryRow(ctx: any, identity: Identity) {
   const save = ctx.db.playerGameplaySave.identity.find(identity);
   const savedLevel = readSavedCurrentLevel(save?.saveJson);
   const savedTotalProducedGold = readSavedTotalGeneratedGold(save?.saveJson);
+  const savedTotalBrewedPotions = readSavedStatsTotal(save?.saveJson, 'potions');
+  const savedTotalHarvestedHerbs = readSavedStatsTotal(save?.saveJson, 'herbs');
   const prestigeCount = readSavedPrestigeCompletedLevels(save?.saveJson)?.length ?? 0;
 
   return {
@@ -14709,6 +14748,8 @@ function createPlayerInfoSummaryRow(ctx: any, identity: Identity) {
     allianceTag: getSenderTradeAllianceTag(ctx, identity),
     allianceTagColor: getSenderTradeAllianceTagColor(ctx, identity),
     totalProducedGold: toBigInt(leaderboard?.totalIncome ?? savedTotalProducedGold ?? 0n),
+    totalBrewedPotions: savedTotalBrewedPotions ?? 0n,
+    totalHarvestedHerbs: savedTotalHarvestedHerbs ?? 0n,
     playerLevel: normalizePlayerLevel(
       player?.playerLevel ?? leaderboard?.playerLevel ?? savedLevel ?? DEFAULT_PLAYER_LEVEL,
     ),

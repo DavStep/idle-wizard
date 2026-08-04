@@ -1304,6 +1304,12 @@ body {
   pointer-events: none;
 }
 
+.ui-editor-game-widget-preview[data-preview-viewport="game-screen"]
+  .ui-editor-game-widget-preview__feedback {
+  z-index: 3;
+  bottom: 58px;
+}
+
 .ui-editor-button-inspector {
   display: flex;
   min-width: 0;

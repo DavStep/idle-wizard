@@ -42,6 +42,7 @@ import {
   RETAINED_PAGE_GEOMETRY,
   RETAINED_TEXT_STYLES,
   RetainedButton,
+  RetainedProgressBar,
   RetainedScrollArea,
   applyTextTheme,
   createText,
@@ -116,19 +117,24 @@ const ALLIANCE_DIRECTORY_EXPANDED_HEIGHT =
   8 +
   ALLIANCE_DIRECTORY_ACTION_HEIGHT +
   8;
-const WORLD_EVENT_ROW_GAP = 6;
+const WORLD_EVENT_SECTION_GAP = 4;
+const WORLD_EVENT_MAX_QUEST_ROWS = 2;
+const WORLD_EVENT_QUEST_ROW_WIDTH = 314;
 const WORLD_EVENT_QUEST_TITLE_HEIGHT = 16;
 const WORLD_EVENT_QUEST_DESCRIPTION_GAP = 4;
-const WORLD_EVENT_QUEST_OPTION_HEIGHT = 34;
-const WORLD_EVENT_QUEST_OPTION_GAP = 2;
+const WORLD_EVENT_QUEST_OPTION_HEIGHT = 42;
+const WORLD_EVENT_QUEST_OPTION_GAP = 6;
 const WORLD_EVENT_QUEST_CONTENT_INSET = 10;
-const WORLD_EVENT_QUEST_ACTION_WIDTH = 72;
-const WORLD_EVENT_QUEST_ACTION_HEIGHT = 27;
-const WORLD_EVENT_QUEST_ICON_SIZE = 16;
+const WORLD_EVENT_QUEST_CONTENT_TOP = 14;
+const WORLD_EVENT_QUEST_ACTION_WIDTH = 58;
+const WORLD_EVENT_QUEST_ACTION_HEIGHT = 29;
+const WORLD_EVENT_QUEST_ICON_SIZE = 36;
 const WORLD_EVENT_QUEST_MIN_DESCRIPTION_HEIGHT = 24;
 const WORLD_EVENT_MAX_DONATION_OPTIONS = 4;
 const WORLD_EVENT_HEADER_CONTENT_INSET = 5;
 const WORLD_EVENT_LIST_CONTENT_INSET = 5;
+const PERSONAL_TASK_SECTION_HEADER_HEIGHT = 48;
+const PERSONAL_TASK_SECTION_ROW_GAP = 2;
 const RESOURCE_ICON_FRAMES = Object.freeze({
   coin: 'resource:coin',
   crystal: 'resource:crystal',
@@ -136,6 +142,60 @@ const RESOURCE_ICON_FRAMES = Object.freeze({
   mana: 'resource:mana',
   ruby: 'resource:ruby',
 });
+
+function createPersonalTaskSectionChrome(dialog, sectionId) {
+  const root = new Container({
+    label: `${dialog.dialogId}-${sectionId}-section`,
+  });
+  const paper = createDialogPaperSection(
+    dialog.panel.paperFrame.texture,
+    `${root.label}:paper`,
+  );
+  const title = createText('', RETAINED_TEXT_STYLES.bold);
+  const points = createText('', {
+    ...RETAINED_TEXT_STYLES.bold,
+    align: 'right',
+  });
+  points.anchor.set(1, 0);
+  const reset = createText('', RETAINED_TEXT_STYLES.border);
+  const detail = createText('', {
+    ...RETAINED_TEXT_STYLES.border,
+    align: 'right',
+  });
+  detail.anchor.set(1, 0);
+  const progress = new RetainedProgressBar({
+    assetManager: dialog.assetManager,
+    label: `${root.label}:progress`,
+    tone: 'root',
+    usePlayerStyle: false,
+  });
+  const dividers = new Graphics({ label: `${root.label}:dividers` });
+  dividers.eventMode = 'none';
+  const rowLayer = new Container({ label: `${root.label}:rows` });
+
+  root.addChild(
+    paper,
+    title,
+    points,
+    reset,
+    detail,
+    progress.root,
+    dividers,
+    rowLayer,
+  );
+
+  return {
+    root,
+    paper,
+    title,
+    points,
+    reset,
+    detail,
+    progress,
+    dividers,
+    rowLayer,
+  };
+}
 
 /**
  * Shared retained shell for Workshop-owned list/dialog surfaces.
@@ -178,6 +238,8 @@ export class WorkshopDialogPixi {
       this.dialogId === 'workshop.discoveries';
     this.isAllianceDialog = this.dialogId === 'workshop.alliance';
     this.isWorldEventDialog = this.dialogId === 'workshop.worldEvent';
+    this.isPersonalTasksDialog =
+      this.dialogId === 'workshop.personalTasks';
     this.counters = counters;
     this.scrollContentPaddingTop =
       RETAINED_DIALOG_SCROLL_GEOMETRY.contentPaddingTop;
@@ -239,6 +301,14 @@ export class WorkshopDialogPixi {
       label: `${dialogId}-scroll`,
       inputRouter: this.inputRouter,
     });
+    this.personalTaskSectionChrome = this.isPersonalTasksDialog
+      ? new Map(
+          ['daily', 'weekly'].map((sectionId) => [
+            sectionId,
+            createPersonalTaskSectionChrome(this, sectionId),
+          ]),
+        )
+      : null;
     this.worldEventHeaderPaper = this.isWorldEventDialog
       ? createDialogPaperSection(
           this.panel.paperFrame.texture,
@@ -257,6 +327,9 @@ export class WorkshopDialogPixi {
         this.worldEventHeaderPaper,
         this.worldEventListPaper,
       );
+    }
+    if (this.isPersonalTasksDialog) {
+      this.panel.setPaperVisible(false);
     }
     this.tabsLayer = new Container({ label: `${dialogId}-tabs` });
     this.panel.content.addChild(
@@ -431,7 +504,13 @@ export class WorkshopDialogPixi {
       this.rows.reconcile([]);
       this.rows = nextRows;
     }
-    this.rows.reconcile(normalizeRows(this.viewModel.rows));
+    const rows = normalizeRows(this.viewModel.rows);
+    this.rows.reconcile(
+      this.isWorldEventDialog &&
+        this.viewModel.rowWidget === 'worldEventQuest'
+        ? rows.slice(0, WORLD_EVENT_MAX_QUEST_ROWS)
+        : rows,
+    );
     this.layout({
       sourceWidth: this.sourceWidth,
       sourceHeight: this.sourceHeight,
@@ -453,47 +532,190 @@ export class WorkshopDialogPixi {
   }
 
   orderRows(widgets) {
+    if (this.isPersonalTasksDialog) {
+      this.orderPersonalTaskRows(widgets);
+      return;
+    }
+
     this.scroll.content.removeChildren();
+    const contentPaddingTop =
+      this.isWorldEventDialog &&
+      this.viewModel.rowWidget === 'worldEventQuest'
+        ? 0
+        : this.scrollContentPaddingTop;
     const rowGap = this.isWorldChatDialog
       ? WORLD_CHAT_ROW_GAP
       : this.isDiscoveriesDialog
         ? DISCOVERY_ROW_GAP
         : this.isWorldEventDialog &&
             this.viewModel.rowWidget === 'worldEventQuest'
-          ? WORLD_EVENT_ROW_GAP
+          ? WORLD_EVENT_SECTION_GAP
         : 4;
-    const rowsHeight = widgets.reduce(
-      (height, widget, index) =>
-        height + widget.getPreferredHeight() + (index > 0 ? rowGap : 0),
-      0,
+    const preferredHeights = widgets.map((widget) =>
+      widget.getPreferredHeight(),
     );
+    const rowsGapHeight = Math.max(0, widgets.length - 1) * rowGap;
+    const rowsHeight =
+      preferredHeights.reduce(
+        (height, rowHeight) => height + rowHeight,
+        0,
+      ) +
+      rowsGapHeight;
     let y = this.isWorldChatDialog
       ? Math.max(
           WORLD_CHAT_SCROLL_PADDING_TOP,
           this.scroll.height - rowsHeight,
         )
-      : this.scrollContentPaddingTop;
+      : contentPaddingTop;
 
-    for (const widget of widgets) {
+    widgets.forEach((widget, index) => {
+      const rowHeight = preferredHeights[index] ?? widget.getPreferredHeight();
       this.scroll.content.addChild(widget.root);
       widget.setBounds(
         0,
         y,
         this.isWorldChatDialog
           ? WORLD_CHAT_CONTENT_WIDTH
-          : WORKSHOP_DIALOG_CONTENT_WIDTH,
-        widget.getPreferredHeight(),
+          : this.isWorldEventDialog &&
+              this.viewModel.rowWidget === 'worldEventQuest'
+            ? this.scroll.width
+            : WORKSHOP_DIALOG_CONTENT_WIDTH,
+        rowHeight,
       );
-      y += widget.getPreferredHeight() + rowGap;
+      y += rowHeight + rowGap;
+    });
+
+    const contentHeight = Math.max(
+      this.isWorldChatDialog
+        ? WORLD_CHAT_SCROLL_PADDING_TOP
+        : contentPaddingTop,
+      y - (widgets.length > 0 ? rowGap : 0),
+    );
+    const locksWorldEventQuestScroll =
+      this.isWorldEventDialog &&
+      this.viewModel.rowWidget === 'worldEventQuest' &&
+      widgets.length <= WORLD_EVENT_MAX_QUEST_ROWS;
+    this.scroll.setContentHeight(
+      locksWorldEventQuestScroll
+        ? Math.min(contentHeight, this.scroll.height)
+        : contentHeight,
+    );
+    if (locksWorldEventQuestScroll) {
+      this.scroll.scrollTo(0);
+    }
+  }
+
+  orderPersonalTaskRows(widgets) {
+    this.scroll.content.removeChildren();
+    const sectionModels = normalizeRows(this.viewModel.periodSections);
+    const paperOutsets = resolveDialogPaperOutsets({
+      top: PIXI_UI_GEOMETRY.dialogPadding,
+      right: PIXI_UI_GEOMETRY.dialogPadding,
+      bottom: PIXI_UI_GEOMETRY.dialogPadding,
+      left: PIXI_UI_GEOMETRY.dialogPadding,
+    });
+    let y = 0;
+
+    for (const chrome of this.personalTaskSectionChrome?.values?.() ?? []) {
+      chrome.root.visible = false;
+      chrome.root.renderable = false;
+      chrome.rowLayer.removeChildren();
+    }
+
+    for (const section of sectionModels) {
+      const chrome = this.personalTaskSectionChrome?.get(section.id);
+      if (!chrome) {
+        continue;
+      }
+
+      const sectionRows = widgets.filter(
+        (widget) => widget.model?.sectionId === section.id,
+      );
+      const rowsHeight = sectionRows.reduce(
+        (height, widget, index) =>
+          height +
+          widget.getPreferredHeight() +
+          (index > 0 ? PERSONAL_TASK_SECTION_ROW_GAP : 0),
+        0,
+      );
+      const contentY = paperOutsets.top;
+      const contentHeight = PERSONAL_TASK_SECTION_HEADER_HEIGHT + rowsHeight;
+      const sectionHeight =
+        paperOutsets.top + contentHeight + paperOutsets.bottom;
+
+      chrome.root.position.set(0, y);
+      chrome.root.visible = true;
+      chrome.root.renderable = true;
+      setDialogPaperSectionBounds(
+        chrome.paper,
+        {
+          x: PIXI_UI_GEOMETRY.dialogPadding,
+          y: contentY,
+          width: WORKSHOP_DIALOG_CONTENT_WIDTH,
+          height: contentHeight,
+        },
+        paperOutsets,
+      );
+      setText(chrome.title, section.title ?? section.id);
+      setText(chrome.points, section.pointsLabel ?? '');
+      setText(chrome.reset, section.resetLabel ?? '');
+      setText(chrome.detail, section.detail ?? '');
+      chrome.title.position.set(
+        PIXI_UI_GEOMETRY.dialogPadding,
+        contentY + 4,
+      );
+      chrome.points.position.set(
+        PIXI_UI_GEOMETRY.dialogPadding + WORKSHOP_DIALOG_CONTENT_WIDTH,
+        contentY + 4,
+      );
+      chrome.reset.position.set(
+        PIXI_UI_GEOMETRY.dialogPadding,
+        contentY + 20,
+      );
+      chrome.detail.position.set(
+        PIXI_UI_GEOMETRY.dialogPadding + WORKSHOP_DIALOG_CONTENT_WIDTH,
+        contentY + 20,
+      );
+      chrome.progress.setBounds(
+        PIXI_UI_GEOMETRY.dialogPadding,
+        contentY + 34,
+        WORKSHOP_DIALOG_CONTENT_WIDTH,
+        PIXI_UI_GEOMETRY.progressTotalHeight,
+      );
+      chrome.progress.setProgress(section.progress ?? 0);
+      chrome.dividers.clear();
+
+      let rowY = contentY + PERSONAL_TASK_SECTION_HEADER_HEIGHT;
+      sectionRows.forEach((widget, index) => {
+        if (index > 0) {
+          chrome.dividers
+            .moveTo(PIXI_UI_GEOMETRY.dialogPadding, rowY - 1)
+            .lineTo(
+              PIXI_UI_GEOMETRY.dialogPadding + WORKSHOP_DIALOG_CONTENT_WIDTH,
+              rowY - 1,
+            )
+            .stroke({
+              color: this.contentTheme.stroke,
+              alpha: 0.28,
+              width: 1,
+            });
+        }
+        chrome.rowLayer.addChild(widget.root);
+        widget.setBounds(
+          PIXI_UI_GEOMETRY.dialogPadding,
+          rowY,
+          WORKSHOP_DIALOG_CONTENT_WIDTH,
+          widget.getPreferredHeight(),
+        );
+        rowY += widget.getPreferredHeight() + PERSONAL_TASK_SECTION_ROW_GAP;
+      });
+
+      this.scroll.content.addChild(chrome.root);
+      y += sectionHeight + PIXI_DIALOG_SPLIT_PAPER_GEOMETRY.sectionGap;
     }
 
     this.scroll.setContentHeight(
-      Math.max(
-        this.isWorldChatDialog
-          ? WORLD_CHAT_SCROLL_PADDING_TOP
-          : this.scrollContentPaddingTop,
-        y - (widgets.length > 0 ? rowGap : 0),
-      ),
+      Math.max(0, y - PIXI_DIALOG_SPLIT_PAPER_GEOMETRY.sectionGap),
     );
   }
 
@@ -547,6 +769,26 @@ export class WorkshopDialogPixi {
       button.applyTheme(contentTheme);
     }
 
+    for (const chrome of this.personalTaskSectionChrome?.values?.() ?? []) {
+      applyTextTheme(chrome.title, contentTheme, {
+        ...RETAINED_TEXT_STYLES.bold,
+      });
+      applyTextTheme(chrome.points, contentTheme, {
+        ...RETAINED_TEXT_STYLES.bold,
+        align: 'right',
+      });
+      applyTextTheme(chrome.reset, contentTheme, {
+        ...RETAINED_TEXT_STYLES.border,
+        fill: contentTheme.muted,
+      });
+      applyTextTheme(chrome.detail, contentTheme, {
+        ...RETAINED_TEXT_STYLES.border,
+        align: 'right',
+        fill: contentTheme.muted,
+      });
+      chrome.progress.applyTheme(contentTheme);
+    }
+
     this.composerField?.applyTheme(contentTheme);
     this.composerSubmit?.applyTheme(contentTheme);
   }
@@ -560,8 +802,10 @@ export class WorkshopDialogPixi {
     const composerHeight =
       this.composerField?.visible === true ? 32 : 0;
     const height = this.isWorldEventDialog
-      ? Math.min(470, this.sourceHeight - 118)
-      : Math.min(382, this.sourceHeight - 80);
+      ? Math.min(486, this.sourceHeight - 118)
+      : this.isPersonalTasksDialog
+        ? Math.min(470, this.sourceHeight - 118)
+        : Math.min(382, this.sourceHeight - 80);
     const panelX = (this.sourceWidth - width) / 2;
     const centeredPanelY = (this.sourceHeight - height) / 2;
     const defaultPanelY = this.isWorldChatDialog
@@ -594,6 +838,15 @@ export class WorkshopDialogPixi {
     }
     if (this.isWorldEventDialog) {
       this.layoutWorldEventDialog({
+        width,
+        height,
+        tabs,
+        footerTabLayout,
+      });
+      return;
+    }
+    if (this.isPersonalTasksDialog) {
+      this.layoutPersonalTasksDialog({
         width,
         height,
         tabs,
@@ -699,6 +952,50 @@ export class WorkshopDialogPixi {
     }
   }
 
+  layoutPersonalTasksDialog({ width, height, tabs, footerTabLayout }) {
+    this.panel.setPaperVisible(false);
+    this.copy.visible = false;
+    this.copy.renderable = false;
+    this.headerHeadline.visible = false;
+    this.headerBody.visible = false;
+    this.headerMeta.visible = false;
+    const statusHeight = this.status.text ? 16 : 0;
+    const scrollTop = DIALOG_SCROLL_VIEWPORT_TOP;
+    const paperBottom =
+      footerTabLayout?.paperBottom ?? height - DIALOG_PAPER_BOTTOM_INSET;
+
+    this.scroll.setBounds(
+      0,
+      scrollTop,
+      width,
+      Math.max(0, paperBottom - scrollTop - statusHeight),
+    );
+    this.status.position.set(
+      PIXI_UI_GEOMETRY.dialogPadding,
+      paperBottom - statusHeight,
+    );
+    this.orderRows(this.rows.getWidgets());
+
+    this.tabsLayer.position.set(
+      footerTabLayout?.rowX ?? width / 2,
+      footerTabLayout?.rowY ?? height,
+    );
+    this.tabsLayer.visible = tabs.length > 0;
+    this.tabsLayer.renderable = this.tabsLayer.visible;
+    const gap = footerTabLayout?.gap ?? 0;
+    const tabWidth = footerTabLayout?.tabWidth ?? 0;
+    let tabX = 0;
+    for (const button of tabs) {
+      button.setBounds(
+        tabX,
+        0,
+        tabWidth,
+        PIXI_DIALOG_FOOTER_TABS_GEOMETRY.rowHeight,
+      );
+      tabX += tabWidth + gap;
+    }
+  }
+
   layoutWorldEventDialog({ width, height, tabs, footerTabLayout }) {
     this.panel.setPaperVisible(false);
     this.copy.visible = false;
@@ -713,6 +1010,9 @@ export class WorkshopDialogPixi {
     const contentWidth = WORKSHOP_DIALOG_CONTENT_WIDTH;
     const headerY = PIXI_UI_GEOMETRY.dialogPadding;
     const hasHeader = this.headerHeadline.visible === true;
+    const usesQuestSectionRows =
+      this.viewModel.rowWidget === 'worldEventQuest';
+    const questRowsX = (width - WORLD_EVENT_QUEST_ROW_WIDTH) / 2;
 
     this.headerHeadline.position.set(
       contentX,
@@ -759,7 +1059,7 @@ export class WorkshopDialogPixi {
       ? headerY +
         headerContentHeight +
         paperOutsets.bottom +
-        PIXI_DIALOG_SPLIT_PAPER_GEOMETRY.sectionGap
+        WORLD_EVENT_SECTION_GAP
       : headerY - paperOutsets.top;
     const listY = listFrameTop + paperOutsets.top;
     const paperBottom =
@@ -769,34 +1069,40 @@ export class WorkshopDialogPixi {
       0,
       paperBottom - listY - paperOutsets.bottom,
     );
-    this.worldEventListPaper.visible = true;
-    this.worldEventListPaper.renderable = true;
-    setDialogPaperSectionBounds(
-      this.worldEventListPaper,
-      {
-        x: contentX,
-        y: listY,
-        width: contentWidth,
-        height: listHeight,
-      },
-      paperOutsets,
-    );
+    this.worldEventListPaper.visible = !usesQuestSectionRows;
+    this.worldEventListPaper.renderable = !usesQuestSectionRows;
+    if (!usesQuestSectionRows) {
+      setDialogPaperSectionBounds(
+        this.worldEventListPaper,
+        {
+          x: contentX,
+          y: listY,
+          width: contentWidth,
+          height: listHeight,
+        },
+        paperOutsets,
+      );
+    }
 
     const statusHeight = this.status.text ? 16 : 0;
+    const scrollY = usesQuestSectionRows
+      ? listFrameTop
+      : listY + WORLD_EVENT_LIST_CONTENT_INSET;
+    const scrollBottom = usesQuestSectionRows
+      ? paperBottom
+      : listY + listHeight - WORLD_EVENT_LIST_CONTENT_INSET;
     this.scroll.setBounds(
-      contentX,
-      listY + WORLD_EVENT_LIST_CONTENT_INSET,
-      contentWidth,
+      usesQuestSectionRows ? questRowsX : contentX,
+      scrollY,
+      usesQuestSectionRows ? WORLD_EVENT_QUEST_ROW_WIDTH : contentWidth,
       Math.max(
         0,
-        listHeight -
-          WORLD_EVENT_LIST_CONTENT_INSET * 2 -
-          statusHeight,
+        scrollBottom - scrollY - statusHeight,
       ),
     );
     this.status.position.set(
       contentX,
-      listY + listHeight - WORLD_EVENT_LIST_CONTENT_INSET - statusHeight,
+      scrollBottom - statusHeight,
     );
     this.orderRows(this.rows.getWidgets());
 
@@ -854,6 +1160,12 @@ export class WorkshopDialogPixi {
     this.defaultRows = null;
     this.allianceRows = null;
     this.worldEventRows = null;
+    for (const chrome of this.personalTaskSectionChrome?.values?.() ?? []) {
+      chrome.progress.destroy();
+      chrome.root.destroy({ children: true });
+    }
+    this.personalTaskSectionChrome?.clear?.();
+    this.personalTaskSectionChrome = null;
     this.rowPool.destroy();
     this.allianceRowPool?.destroy();
     this.allianceRowPool = null;
@@ -985,6 +1297,17 @@ class WorldEventDonationOptionRow {
     this.root = new Container({
       label: `${dialog.dialogId}-quest-donation:${index}`,
     });
+    this.backing = new PixiNineSliceFrame({
+      texture:
+        dialog.assetManager?.getTexture?.(
+          PIXI_ROOT_RUN_ASSETS.settingsRow,
+        ) ?? Texture.EMPTY,
+      sourceInsets: PIXI_ROOT_RUN_GEOMETRY.settings.rowSourceInsets,
+      borderInsets: PIXI_ROOT_RUN_GEOMETRY.settings.rowBorderInsets,
+      width: 100,
+      height: WORLD_EVENT_QUEST_OPTION_HEIGHT,
+      label: `${this.root.label}:backing`,
+    });
     this.icon = new Sprite(Texture.EMPTY);
     this.icon.anchor.set(0.5);
     this.iconOverlay = new Sprite(Texture.EMPTY);
@@ -995,14 +1318,14 @@ class WorldEventDonationOptionRow {
       wordWrapWidth: 72,
     });
     this.points = createText('', {
-      fontSize: 10,
-      lineHeight: 11,
+      fontSize: 11,
+      lineHeight: 12,
       align: 'right',
     });
     this.points.anchor.set(1, 0);
     this.total = createText('', {
-      fontSize: 9,
-      lineHeight: 10,
+      fontSize: 10,
+      lineHeight: 11,
       align: 'right',
     });
     this.total.anchor.set(1, 0);
@@ -1011,11 +1334,13 @@ class WorldEventDonationOptionRow {
       inputRouter: dialog.inputRouter,
       compact: true,
       contentScale: 0.68,
+      sizeTier: 30,
       width: WORLD_EVENT_QUEST_ACTION_WIDTH,
       height: WORLD_EVENT_QUEST_ACTION_HEIGHT,
       label: `${this.root.label}:action`,
     });
     this.root.addChild(
+      this.backing,
       this.icon,
       this.iconOverlay,
       this.label,
@@ -1080,8 +1405,15 @@ class WorldEventDonationOptionRow {
     this.root.position.set(x, y);
     this.width = width;
     this.height = height;
-    const actionX = width - WORLD_EVENT_QUEST_ACTION_WIDTH;
-    const iconCenterX = WORLD_EVENT_QUEST_ICON_SIZE / 2;
+    this.backing.position.set(0, 0);
+    this.backing.setSize(
+      width,
+      height,
+      PIXI_ROOT_RUN_GEOMETRY.settings.rowBorderInsets,
+    );
+    const actionX =
+      width - WORLD_EVENT_QUEST_ACTION_WIDTH - 6;
+    const iconCenterX = 4 + WORLD_EVENT_QUEST_ICON_SIZE / 2;
     const iconCenterY = height / 2;
     if (this.iconOverlay.visible) {
       layoutPixiSeedPackIcon({
@@ -1099,13 +1431,13 @@ class WorldEventDonationOptionRow {
       this.icon.height = WORLD_EVENT_QUEST_ICON_SIZE;
       this.iconOverlay.rotation = 0;
     }
-    const copyX = this.icon.visible ? WORLD_EVENT_QUEST_ICON_SIZE + 4 : 0;
-    const copyRight = actionX - 5;
-    this.label.position.set(copyX, 2);
+    const copyX = this.icon.visible ? WORLD_EVENT_QUEST_ICON_SIZE + 8 : 6;
+    const copyRight = actionX - 7;
+    this.label.position.set(copyX, Math.max(2, (height - 11) / 2));
     this.label.style.wordWrap = true;
-    this.label.style.wordWrapWidth = Math.max(44, copyRight - copyX - 72);
-    this.points.position.set(copyRight, 2);
-    this.total.position.set(copyRight, 17);
+    this.label.style.wordWrapWidth = Math.max(52, copyRight - copyX - 92);
+    this.points.position.set(copyRight, 7);
+    this.total.position.set(copyRight, 23);
     this.action.setBounds(
       actionX,
       Math.max(0, (height - WORLD_EVENT_QUEST_ACTION_HEIGHT) / 2),
@@ -1117,6 +1449,12 @@ class WorldEventDonationOptionRow {
 
   applyTheme(theme) {
     const resolvedTheme = theme ?? this.dialog.theme;
+    this.backing.setTexture(
+      this.dialog.assetManager?.getTexture?.(
+        PIXI_ROOT_RUN_ASSETS.settingsRow,
+      ) ?? Texture.EMPTY,
+      PIXI_ROOT_RUN_GEOMETRY.settings.rowSourceInsets,
+    );
     applyTextTheme(this.label, resolvedTheme, {
       fontSize: 10,
       lineHeight: 11,
@@ -1124,16 +1462,16 @@ class WorldEventDonationOptionRow {
       wordWrapWidth: this.label.style.wordWrapWidth ?? 72,
     });
     applyTextTheme(this.points, resolvedTheme, {
-      fontSize: 10,
-      lineHeight: 11,
+      fontSize: 11,
+      lineHeight: 12,
       align: 'right',
       fill: resolvedTheme.text,
     });
     applyTextTheme(this.total, resolvedTheme, {
-      fontSize: 9,
-      lineHeight: 10,
+      fontSize: 10,
+      lineHeight: 11,
       align: 'right',
-      fill: resolvedTheme.muted,
+      fill: resolvedTheme.text,
     });
     this.action.applyTheme(resolvedTheme);
   }
@@ -1178,10 +1516,10 @@ export class WorldEventQuestRow {
     this.card = new PixiNineSliceFrame({
       texture:
         dialog.assetManager?.getTexture?.(
-          PIXI_ROOT_RUN_ASSETS.researchCard,
+          PIXI_ROOT_RUN_ASSETS.dialogPaper,
         ) ?? Texture.EMPTY,
-      sourceInsets: PIXI_ROOT_RUN_GEOMETRY.researchCard.sourceInsets,
-      borderInsets: PIXI_ROOT_RUN_GEOMETRY.researchCard.borderInsets,
+      sourceInsets: PIXI_ROOT_RUN_GEOMETRY.dialog.paperSourceInsets,
+      borderInsets: PIXI_ROOT_RUN_GEOMETRY.dialog.paperBorderInsets,
       width: WORKSHOP_DIALOG_CONTENT_WIDTH,
       height: 100,
       label: `${this.root.label}:card`,
@@ -1264,9 +1602,12 @@ export class WorldEventQuestRow {
     this.card.setSize(
       width,
       height,
-      PIXI_ROOT_RUN_GEOMETRY.researchCard.borderInsets,
+      PIXI_ROOT_RUN_GEOMETRY.dialog.paperBorderInsets,
     );
-    this.title.position.set(WORLD_EVENT_QUEST_CONTENT_INSET, 8);
+    this.title.position.set(
+      WORLD_EVENT_QUEST_CONTENT_INSET,
+      WORLD_EVENT_QUEST_CONTENT_TOP,
+    );
     this.title.style.wordWrap = true;
     this.title.style.wordWrapWidth = Math.max(
       80,
@@ -1275,7 +1616,7 @@ export class WorldEventQuestRow {
     this.points.position.set(width - WORLD_EVENT_QUEST_CONTENT_INSET, 9);
     this.description.position.set(
       WORLD_EVENT_QUEST_CONTENT_INSET,
-      8 +
+      WORLD_EVENT_QUEST_CONTENT_TOP +
         WORLD_EVENT_QUEST_TITLE_HEIGHT +
         WORLD_EVENT_QUEST_DESCRIPTION_GAP,
     );
@@ -1288,7 +1629,7 @@ export class WorldEventQuestRow {
         WORLD_EVENT_QUEST_MIN_DESCRIPTION_HEIGHT,
         Math.ceil(this.description.height),
       ) +
-      5;
+      8;
     for (const option of this.options) {
       if (!option.root.visible) {
         continue;
@@ -1328,13 +1669,13 @@ export class WorldEventQuestRow {
           ? 18
           : 0;
     return (
-      8 +
+      WORLD_EVENT_QUEST_CONTENT_TOP +
       WORLD_EVENT_QUEST_TITLE_HEIGHT +
       WORLD_EVENT_QUEST_DESCRIPTION_GAP +
       descriptionHeight +
-      5 +
+      8 +
       optionsHeight +
-      8
+      12
     );
   }
 
@@ -1342,9 +1683,9 @@ export class WorldEventQuestRow {
     const resolvedTheme = theme ?? this.dialog.theme;
     this.card.setTexture(
       this.dialog.assetManager?.getTexture?.(
-        PIXI_ROOT_RUN_ASSETS.researchCard,
+        PIXI_ROOT_RUN_ASSETS.dialogPaper,
       ) ?? Texture.EMPTY,
-      PIXI_ROOT_RUN_GEOMETRY.researchCard.sourceInsets,
+      PIXI_ROOT_RUN_GEOMETRY.dialog.paperSourceInsets,
     );
     this.card.alpha = this.model?.completed === true ? 0.72 : 1;
     const textColor =
@@ -2617,6 +2958,15 @@ class WorkshopDialogRow {
     this.valueIconOverlay.label = `${dialog.dialogId}-row:value-icon-overlay`;
     this.valueIconOverlay.anchor.set(0.5);
     this.valueIconOverlay.visible = false;
+    this.resourceValue = new PixiInlineText({
+      label: `${dialog.dialogId}-row:resource-value`,
+      style: RETAINED_TEXT_STYLES.body,
+    });
+    this.resourceValue.visible = false;
+    this.statusIcon = new Sprite(Texture.EMPTY);
+    this.statusIcon.label = `${dialog.dialogId}-row:status-icon`;
+    this.statusIcon.anchor.set(0.5);
+    this.statusIcon.visible = false;
     this.action = new RetainedButton({
       assetManager: dialog.assetManager,
       buttonLabel: `${dialog.dialogId}-row-action`,
@@ -2627,7 +2977,9 @@ class WorkshopDialogRow {
       this.label,
       this.valueIcon,
       this.valueIconOverlay,
+      this.resourceValue,
       this.value,
+      this.statusIcon,
       this.action.root,
     );
   }
@@ -2649,8 +3001,48 @@ class WorkshopDialogRow {
     this.valueIcon.visible = this.valueIcon.texture !== Texture.EMPTY;
     this.valueIconOverlay.visible =
       this.valueIcon.visible && this.valueIconOverlay.texture !== Texture.EMPTY;
+    const resourceValues = normalizeRows(model.resourceValues);
+    this.resourceValue.setRuns(
+      resourceValues.flatMap((resource, index) => [
+        ...(index > 0 ? [{ kind: 'text', text: '\n' }] : []),
+        {
+          kind: 'icon',
+          texture: resolveAtlasTexture(
+            this.dialog.assetManager,
+            RESOURCE_ICON_FRAMES[resource.resourceKey],
+          ),
+          size: 14,
+          fallbackText: resource.resourceKey ?? '',
+        },
+        {
+          kind: 'text',
+          text: ` ${resource.amountLabel ?? resource.value ?? ''}`,
+        },
+      ]),
+    );
+    this.resourceValue.visible = resourceValues.length > 0;
+    this.resourceValue.renderable = this.resourceValue.visible;
+    if (this.resourceValue.visible) {
+      this.valueIcon.visible = false;
+      this.valueIconOverlay.visible = false;
+    }
+    const statusAsset =
+      model.statusIcon === 'checkmark'
+        ? PIXI_ROOT_RUN_ASSETS.checkmark
+        : model.statusIcon === 'lock'
+          ? PIXI_ROOT_RUN_ASSETS.lock
+          : null;
+    this.statusIcon.texture = statusAsset
+      ? (this.dialog.assetManager?.getTexture?.(statusAsset) ?? Texture.EMPTY)
+      : Texture.EMPTY;
+    this.statusIcon.visible = this.statusIcon.texture !== Texture.EMPTY;
+    this.statusIcon.renderable = this.statusIcon.visible;
     const hasAction = Boolean(model.actionLabel || model.onActivate);
     this.action.root.visible = hasAction;
+    this.action.variant = model.actionVariant ?? 'button';
+    this.action.control.setVariant(
+      model.actionVariant ?? 'regular',
+    );
     this.action.setModel({
       label: model.actionLabel ?? 'open',
       enabled: model.enabled !== false,
@@ -2678,22 +3070,62 @@ class WorkshopDialogRow {
     this.root.position.set(x, y);
     const hasAction = this.action.root.visible;
     const hasValue = Boolean(this.value.text);
-    const labelWidth = hasAction ? 78 : hasValue ? 164 : width;
+    const hasResourceValue = this.resourceValue.visible;
+    const actionWidth = hasAction
+      ? Math.max(0, Number(this.model?.actionWidth) || 74)
+      : 0;
+    const actionHeight = hasAction
+      ? Math.max(20, Number(this.model?.actionHeight) || 20)
+      : 0;
+    const actionX = width - actionWidth;
+    const valueRight = hasAction ? actionX - 6 : width;
+    const statusIconSize = this.statusIcon.visible ? 14 : 0;
+    const statusGroupWidth = hasValue
+      ? this.value.width + (statusIconSize > 0 ? statusIconSize + 3 : 0)
+      : 0;
+    const resourceRight = hasAction
+      ? actionX - 6
+      : hasValue
+        ? valueRight - statusGroupWidth - 8
+        : width;
+    const labelWidth = hasResourceValue
+      ? Math.max(68, resourceRight - this.resourceValue.layoutWidth - 8)
+      : hasAction
+        ? 78
+        : hasValue
+          ? 164
+          : width;
     const valueWidth = hasAction ? 96 : 92;
     this.label.style.wordWrap = true;
     this.label.style.wordWrapWidth = labelWidth;
     this.value.style.wordWrap = true;
     this.value.style.wordWrapWidth = valueWidth;
     this.value.style.align = 'right';
-    this.label.position.set(0, 2);
-    const actionWidth = hasAction ? 74 : 0;
-    this.action.setBounds(width - actionWidth, 0, actionWidth, 20);
-    this.value.position.set(
-      width -
-        (this.action.root.visible ? actionWidth + 6 : 0) -
-        (this.dialog.isBagDialog ? BAG_ROW_VALUE_INSET_RIGHT : 0),
-      2,
+    const contentY = Math.max(0, (height - 16) / 2);
+    this.label.position.set(0, contentY);
+    this.action.setBounds(
+      actionX,
+      Math.max(0, (height - actionHeight) / 2),
+      actionWidth,
+      actionHeight,
     );
+    this.value.position.set(
+      valueRight -
+        (this.dialog.isBagDialog ? BAG_ROW_VALUE_INSET_RIGHT : 0),
+      contentY,
+    );
+    this.resourceValue.position.set(
+      Math.max(labelWidth + 6, resourceRight - this.resourceValue.layoutWidth),
+      Math.max(0, (height - this.resourceValue.layoutHeight) / 2),
+    );
+    if (this.statusIcon.visible) {
+      this.statusIcon.position.set(
+        valueRight - this.value.width - statusIconSize / 2 - 3,
+        height / 2,
+      );
+      this.statusIcon.width = statusIconSize;
+      this.statusIcon.height = statusIconSize;
+    }
     const iconSize = 16;
     const iconCenterX = this.value.x - this.value.width - 3 - iconSize / 2;
     if (this.valueIconOverlay.visible) {
@@ -2720,6 +3152,7 @@ class WorkshopDialogRow {
       20,
       this.label.height,
       this.value.height,
+      this.resourceValue.layoutHeight,
       Number(this.model?.height) || 0,
     );
   }
@@ -2748,6 +3181,10 @@ class WorkshopDialogRow {
           ? theme.muted
           : theme.text,
     });
+    this.resourceValue.setStyle({
+      ...RETAINED_TEXT_STYLES.body,
+      fill: this.model?.muted ? theme.muted : theme.text,
+    });
     this.action.applyTheme(theme);
   }
 
@@ -2763,6 +3200,12 @@ class WorkshopDialogRow {
     this.valueIconOverlay.texture = Texture.EMPTY;
     this.valueIconOverlay.visible = false;
     this.valueIconOverlay.rotation = 0;
+    this.resourceValue.setRuns([]);
+    this.resourceValue.visible = false;
+    this.resourceValue.renderable = false;
+    this.statusIcon.texture = Texture.EMPTY;
+    this.statusIcon.visible = false;
+    this.statusIcon.renderable = false;
     this.root.visible = false;
   }
 

@@ -3,6 +3,7 @@ import { describe, expect, it, vi } from 'vitest';
 import { EcsFacade } from '../../ecs/EcsFacade.js';
 import { GameplayFacade } from '../../gameplay/GameplayFacade.js';
 import { GAMEPLAY_SAVE_VERSION } from '../../gameplay/persistence/managers/GameplayMigrationManager.js';
+import { WORLD_NOTICE_MAX_REQUESTS } from '../../gameplay/worldNotice/WorldNoticeFacade.js';
 import { PlayerFacade } from '../../player/PlayerFacade.js';
 import { DevCheatsFacade } from './DevCheatsFacade.js';
 
@@ -719,7 +720,7 @@ describe('DevCheatsFacade', () => {
         ok: true,
         worldNotice: {
           current: {
-            completedRequests: 3,
+            completedRequests: WORLD_NOTICE_MAX_REQUESTS,
             leaderboard: {
               currentPoints: 2750,
             },

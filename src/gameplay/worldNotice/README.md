@@ -1,8 +1,12 @@
 # World Event
 
-World events are weekly world events with a few matched response requests.
+World events are weekly world events with at most two matched response requests.
 They are not the daily/weekly personal task board. They give normal gameplay
 actions a world-news reason for the week.
+
+The active pair keeps one primary item-donation request plus the event's
+story-backed coin request. Existing saves are normalized to the same two-request
+limit so the dialog never hides an active objective.
 
 Default events should not ask for raw funding as a main objective. Direct coin
 requests read like a quest tax unless the story makes the need unavoidable; use

@@ -54,14 +54,25 @@
         connected: true,
         mail: showEmptyState ? [] : [
           {
-            mailKey: 'admin:qa-reward',
-            senderLabel: 'admin',
-            title: 'Administrative reward',
-            body: 'These are your rewards.',
-            createdAtMs: Date.UTC(2026, 6, 28),
+            mailKey: 'world-event:new-king-crowned',
+            senderLabel: 'World Event',
+            title: 'New King Crowned',
+            body: 'You placed #1 in New King Crowned with 2,520 points. Here are your rewards.',
+            createdAtMs: Date.UTC(2026, 7, 4),
             read: false,
             hasReward: true,
             rewardCollected: false,
+            rewardText: '3 crystal',
+          },
+          {
+            mailKey: 'world-event:tainted-well',
+            senderLabel: 'World Event',
+            title: 'Tainted Well',
+            body: 'You placed #1 in Tainted Well with 621,948 points. Here are your rewards.',
+            createdAtMs: Date.UTC(2026, 6, 28),
+            read: true,
+            hasReward: true,
+            rewardCollected: true,
             rewardText: '4 emerald',
           },
         ],
@@ -70,6 +81,7 @@
       inboxModel.actions = {
         claimReward: async () => {
           inboxModel.mail[0].rewardCollected = true;
+          inboxModel.mail[0].read = true;
           inboxDialog.bind(inboxModel);
           return { ok: true };
         },

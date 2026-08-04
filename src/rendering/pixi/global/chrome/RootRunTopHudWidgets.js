@@ -60,6 +60,73 @@ const LEVEL_TEXT_STROKE = Object.freeze({
   scale: PIXI_UI_GEOMETRY.sourceScale,
 });
 
+/**
+ * Shared framed player portrait. Interaction belongs to the composing control;
+ * this widget owns only the production frame, backing, mask, and portrait.
+ */
+export class RootRunAvatarWidget extends Container {
+  constructor({
+    assets,
+    texture,
+    label = 'playerAvatar',
+  } = {}) {
+    super({ label });
+    this.avatarFrame = createNineSlice({
+      texture: assets.getTexture(HUD_ASSETS.avatarFrame),
+      insets: { left: 54, top: 54, right: 55, bottom: 55 },
+      width: AVATAR_SIZE,
+      height: AVATAR_SIZE,
+      label: `${label}:frame`,
+    });
+    this.headBackground = new Sprite({
+      texture: assets.getTexture(HUD_ASSETS.avatarHead),
+      label: `${label}:background`,
+      roundPixels: true,
+    });
+    this.headBackground.position.set(AVATAR_INSET, AVATAR_INSET);
+    this.headBackground.width = AVATAR_PORTRAIT_SIZE;
+    this.headBackground.height = AVATAR_PORTRAIT_SIZE + 1;
+
+    this.portraitMask = new Graphics()
+      .rect(
+        AVATAR_INSET,
+        AVATAR_INSET,
+        AVATAR_PORTRAIT_SIZE,
+        AVATAR_PORTRAIT_SIZE,
+      )
+      .fill('#ffffff');
+    this.portraitMask.label = `${label}:mask`;
+    this.portrait = new Sprite({
+      texture,
+      label: `${label}:portrait`,
+      roundPixels: true,
+    });
+    this.portrait.mask = this.portraitMask;
+    this.addChild(
+      this.avatarFrame,
+      this.headBackground,
+      this.portrait,
+      this.portraitMask,
+    );
+    this.setTexture(texture);
+  }
+
+  setTexture(texture) {
+    if (texture) {
+      this.portrait.texture = texture;
+    }
+    this.portrait.width = AVATAR_PORTRAIT_SIZE;
+    this.portrait.height = AVATAR_PORTRAIT_SIZE;
+    this.portrait.position.set(AVATAR_INSET, AVATAR_INSET);
+    return this;
+  }
+
+  setFrameTint(tint = 0xffffff) {
+    this.avatarFrame.tint = Number(tint) || 0xffffff;
+    return this;
+  }
+}
+
 export class RootRunHudAvatarButton extends PixiButton {
   constructor({
     action = null,
@@ -79,61 +146,25 @@ export class RootRunHudAvatarButton extends PixiButton {
       label: 'topPanel:avatarViewport',
     });
 
-    this.avatarFrame = createNineSlice({
-      texture: assets.getTexture(HUD_ASSETS.avatarFrame),
-      insets: { left: 54, top: 54, right: 55, bottom: 55 },
-      width: AVATAR_SIZE,
-      height: AVATAR_SIZE,
-      label: 'topPanel:avatarFrame',
-    });
-    this.headBackground = new Sprite({
-      texture: assets.getTexture(HUD_ASSETS.avatarHead),
-      label: 'topPanel:avatarBackground',
-      roundPixels: true,
-    });
-    this.headBackground.position.set(AVATAR_INSET, AVATAR_INSET);
-    this.headBackground.width = AVATAR_PORTRAIT_SIZE;
-    this.headBackground.height = AVATAR_PORTRAIT_SIZE + 1;
-
-    this.portraitMask = new Graphics()
-      .rect(
-        AVATAR_INSET,
-        AVATAR_INSET,
-        AVATAR_PORTRAIT_SIZE,
-        AVATAR_PORTRAIT_SIZE,
-      )
-      .fill('#ffffff');
-    this.portraitMask.label = 'topPanel:avatarMask';
-    this.portrait = new Sprite({
+    this.avatarWidget = new RootRunAvatarWidget({
+      assets,
       texture,
-      label: 'topPanel:avatar',
-      roundPixels: true,
+      label: 'topPanel:avatarWidget',
     });
-    this.portrait.mask = this.portraitMask;
-    this.visual.addChild(
-      this.avatarFrame,
-      this.headBackground,
-      this.portrait,
-      this.portraitMask,
-    );
-    this.setTexture(texture);
+    this.visual.addChild(this.avatarWidget);
+    this.avatarFrame = this.avatarWidget.avatarFrame;
+    this.headBackground = this.avatarWidget.headBackground;
+    this.portraitMask = this.avatarWidget.portraitMask;
+    this.portrait = this.avatarWidget.portrait;
   }
 
   setTexture(texture) {
-    if (texture) {
-      this.portrait.texture = texture;
-    }
-    this.portrait.width = AVATAR_PORTRAIT_SIZE;
-    this.portrait.height = AVATAR_PORTRAIT_SIZE;
-    this.portrait.position.set(
-      AVATAR_INSET,
-      AVATAR_INSET,
-    );
+    this.avatarWidget.setTexture(texture);
     return this;
   }
 
   setFrameTint(tint = 0xffffff) {
-    this.avatarFrame.tint = Number(tint) || 0xffffff;
+    this.avatarWidget.setFrameTint(tint);
     return this;
   }
 }

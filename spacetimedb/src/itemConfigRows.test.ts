@@ -1,6 +1,9 @@
 import { describe, expect, it } from 'vitest';
 
-import { appendMissingItemConfigRows } from './itemConfigRows';
+import {
+  appendMissingItemConfigRows,
+  normalizeLegacySeedSummonCosts,
+} from './itemConfigRows';
 
 describe('appendMissingItemConfigRows', () => {
   it('backfills a newly introduced catalog list when the stored config predates it', () => {
@@ -40,5 +43,42 @@ describe('appendMissingItemConfigRows', () => {
       { id: 3001, key: 'ratTail', label: 'custom rat tail' },
       { id: 3002, key: 'crowFeather', label: 'crow feather' },
     ]);
+  });
+});
+
+describe('normalizeLegacySeedSummonCosts', () => {
+  it.each([10, 15])('migrates the legacy %i-mana cost to 50', (legacyCost) => {
+    const storedRows = [
+      { id: 1, key: 'sageSeed', summonManaCost: legacyCost },
+      { id: 2, key: 'mintSeed', summonManaCost: legacyCost },
+    ];
+    const defaultRows = [
+      { id: 1, key: 'sageSeed', summonManaCost: 50 },
+      { id: 2, key: 'mintSeed', summonManaCost: 50 },
+    ];
+
+    expect(
+      normalizeLegacySeedSummonCosts(
+        storedRows,
+        defaultRows,
+        (row) => String(row.key ?? ''),
+      ),
+    ).toEqual([
+      { id: 1, key: 'sageSeed', summonManaCost: 50 },
+      { id: 2, key: 'mintSeed', summonManaCost: 50 },
+    ]);
+  });
+
+  it('preserves an intentional non-legacy runtime override', () => {
+    const storedRows = [{ id: 1, key: 'sageSeed', summonManaCost: 75 }];
+    const defaultRows = [{ id: 1, key: 'sageSeed', summonManaCost: 50 }];
+
+    expect(
+      normalizeLegacySeedSummonCosts(
+        storedRows,
+        defaultRows,
+        (row) => String(row.key ?? ''),
+      ),
+    ).toBe(storedRows);
   });
 });

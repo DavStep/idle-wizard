@@ -33,6 +33,10 @@ import {
 import {
   createUiEditorThumbnailRenderQueue,
 } from './UiEditorThumbnailRenderQueue.js';
+import {
+  createUiEditorPixiSurfaceShell,
+  UI_EDITOR_PIXI_VIEWPORTS,
+} from './createUiEditorPixiSurface.js';
 
 const EDITOR_BACKGROUND_ASSET_IDS = Object.freeze([
   ...PIXI_BUTTON_COLORS.flatMap((color) =>
@@ -190,19 +194,18 @@ export function createUiEditorPixiButtonThumbnail(definition) {
 }
 
 export function createUiEditorPixiButtonPreview(definition) {
-  const host = document.createElement('section');
-  const canvas = document.createElement('canvas');
+  const shell = createUiEditorPixiSurfaceShell({
+    component: 'IdleWizardButtonWidget',
+    previewLabel: 'Widget preview',
+    viewport: UI_EDITOR_PIXI_VIEWPORTS.GAME_SCREEN,
+  });
+  const { canvas, host } = shell;
   const status = document.createElement('p');
   const feedback = document.createElement('p');
   let controller = null;
   let currentDefinition = definition;
   let editorState = createButtonEditorState(definition);
   let disposed = false;
-
-  host.className = 'ui-editor-game-widget-preview';
-  host.dataset.uiEditorComponent = 'IdleWizardButtonWidget';
-
-  canvas.className = 'ui-editor-game-widget-preview__canvas';
 
   status.className = 'ui-editor-game-widget-preview__status';
   status.setAttribute('role', 'status');
@@ -211,7 +214,7 @@ export function createUiEditorPixiButtonPreview(definition) {
   feedback.setAttribute('role', 'status');
   feedback.setAttribute('aria-live', 'polite');
   feedback.textContent = 'Press the widget to test its feedback.';
-  host.append(canvas, status, feedback);
+  host.append(status, feedback);
 
   const feedbackTracker = createFeedbackTracker(feedback);
   const inspector = createButtonInspector({
@@ -270,6 +273,7 @@ export function createUiEditorPixiButtonPreview(definition) {
     disposed = true;
     controller?.destroy();
     controller = null;
+    shell.dispose();
   };
 
   globalThis.queueMicrotask(async () => {
@@ -284,6 +288,7 @@ export function createUiEditorPixiButtonPreview(definition) {
         definition: applyButtonEditorState(mountedDefinition, editorState),
         feedbackTracker,
         host,
+        resizeTarget: shell.resizeTarget,
       });
       if (disposed) {
         controller.destroy();
@@ -388,7 +393,13 @@ async function createSharedThumbnailRenderer() {
   return { application, canvas };
 }
 
-async function mountButtonPreview({ canvas, definition, feedbackTracker, host }) {
+async function mountButtonPreview({
+  canvas,
+  definition,
+  feedbackTracker,
+  host,
+  resizeTarget = host,
+}) {
   sharedAssetManager ??= new UiEditorButtonAssetManager();
   const applicationManager = new PixiApplicationManager({
     canvas,
@@ -433,7 +444,7 @@ async function mountButtonPreview({ canvas, definition, feedbackTracker, host })
 
   if (typeof ResizeObserver === 'function') {
     resizeObserver = new ResizeObserver(() => applicationManager.resizeNow());
-    resizeObserver.observe(host);
+    resizeObserver.observe(resizeTarget);
   }
 
   return {

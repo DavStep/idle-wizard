@@ -27,6 +27,12 @@ injected `DialogRegistry` and retain their display trees after close.
 The Bag presenter keeps unlocked or owned item rows and omits locked zero-count
 catalog entries.
 
+Open `src/dev/uiRecipes/world-event-dialog.html` through the shared Vite server
+for a deterministic production-backed World Event Quests state. It includes
+the full-width `314px` paper request sections, the two-quest no-scroll composition,
+and Donate-to-donation-dialog interaction without depending on a gameplay save
+or backend account session.
+
 Pass the shared `PixiInputRouter` when constructing the page. Buttons,
 release-only summoning, scrolling, dialog backdrops, Escape/Android back, and
 modal blocking register once through that router; their registrations are

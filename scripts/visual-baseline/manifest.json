@@ -1424,12 +1424,13 @@
       "kind": "dialog",
       "production": true,
       "coverage": {
+        "devUi": ["playerInfo"],
         "globalOwners": ["playerInfoDialogFacade"],
         "domSelectors": [".room-player-info-dialog"]
       },
       "recipe": {
-        "kind": "manual",
-        "gap": "No named recipe currently supplies a deterministic player identity summary."
+        "kind": "devUi",
+        "surfaceId": "playerInfo"
       },
       "anchors": [
         {

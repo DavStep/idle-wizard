@@ -455,6 +455,8 @@ export const PlayerInfoSummaryResult = __t.object("PlayerInfoSummaryResult", {
   allianceTag: __t.string(),
   allianceTagColor: __t.string(),
   totalProducedGold: __t.u64(),
+  totalBrewedPotions: __t.u64(),
+  totalHarvestedHerbs: __t.u64(),
   playerLevel: __t.u32(),
   prestigeCount: __t.u32(),
   updatedAt: __t.timestamp(),

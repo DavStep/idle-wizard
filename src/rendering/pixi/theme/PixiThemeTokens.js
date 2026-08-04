@@ -120,6 +120,8 @@ export const PIXI_PROGRESS_VISUALS = Object.freeze({
 });
 
 export const PIXI_ROOT_RUN_ASSETS = Object.freeze({
+  innerSectionPanelWhite:
+    'source:assets/ui/inner-section-panel-white.9.png',
   buttonYellow: 'source:assets/ui/regular-button/yellow-button-50.9.png',
   buttonYellowShort: 'source:assets/ui/regular-button/yellow-button-50.9.png',
   buttonGreen: 'source:assets/ui/regular-button/green-button-50.9.png',
@@ -224,6 +226,20 @@ export const PIXI_SQUIRCLE_TINTS = Object.freeze({
 
 export const PIXI_ROOT_RUN_GEOMETRY = Object.freeze({
   designWidth: 1080,
+  innerSectionPanelWhite: Object.freeze({
+    sourceInsets: Object.freeze({
+      top: 88,
+      right: 72,
+      bottom: 86,
+      left: 70,
+    }),
+    borderInsets: Object.freeze({
+      top: 88 / 3,
+      right: 72 / 3,
+      bottom: 86 / 3,
+      left: 70 / 3,
+    }),
+  }),
   marketTitleRibbon: Object.freeze({
     sourceInsets: Object.freeze({
       top: 27,

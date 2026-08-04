@@ -5,6 +5,13 @@ upload script posts the section whose heading matches `package.json` `version`.
 Write these developer-to-player notes only in Idle Wizard terms. Do not mention
 other game names, source projects, ports, or implementation provenance.
 
+## 0.3.38
+
+- Improved Player Info with the wizard portrait, prestige stars, total brewed potions, and total harvested herbs.
+- Refined Inbox messages and Personal Tasks with clearer grouping, progress, rewards, and claim states.
+- Simplified weekly World Events to two focused requests with larger potion art and clearer donation choices.
+- Rebalanced Summon Seed to cost 50 mana per seed across its research upgrades.
+
 ## 0.3.37
 
 - Fixed the Workshop Summon Seed button artwork so its frame stays clean and readable at larger display scales.

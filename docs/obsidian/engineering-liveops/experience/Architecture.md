@@ -170,6 +170,7 @@ experience_type: architecture
 - Gameplay autosaves should avoid `savedAt`-only writes; unchanged saves still consume write bytes, reducer work, and own-save subscription egress. Current autosave interval is `30s`, with pagehide/deploy-refresh flushing for close/reload.
 - Gameplay save subscription is hydration-only; unsubscribe after own-save ready because single-account locking makes live own-save echo unnecessary.
 - Timer-driven personal task progress must request an immediate gameplay save; otherwise a completed daily quest can be lost before autosave and make weekly quest points short after the next daily reset.
+- Personal-task mutations must advance the frame snapshot key as well as the save-pending flag; saving the new state without publishing it leaves open task dialogs on stale progress and point totals.
 - SpacetimeDB subscription cleanup must be locally idempotent; `isEnded()` can still be false after `unsubscribe()` was requested, and a second call throws.
 - Automatic frame snapshots must be deduped before publishing; unchanged snapshots make every page subscriber rerender and can burn 120Hz mobile frame budget.
 - Room navigation should retain each mounted page tree, detach inactive roots, and reattach them at the stable page slot; run a lightweight deactivate hook for transient dialogs/data, and keep the detached page's Pixi records instead of rebuilding both DOM and display objects.

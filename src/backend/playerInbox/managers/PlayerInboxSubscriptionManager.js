@@ -9,7 +9,12 @@ export class PlayerInboxSubscriptionManager {
     this.table = null;
     this.subscription = null;
     this.snapshot = { ...EMPTY_PLAYER_INBOX_SNAPSHOT };
-    this.handleTableChange = () => this.publishFromTable();
+    this.handleTableInsert = (_context, row) =>
+      row ? this.upsertRow(row) : this.publishFromTable();
+    this.handleTableUpdate = (_context, _oldRow, newRow) =>
+      newRow ? this.upsertRow(newRow) : this.publishFromTable();
+    this.handleTableDelete = (_context, row) =>
+      row ? this.removeRow(row) : this.publishFromTable();
   }
 
   connect(connection) {
@@ -23,9 +28,9 @@ export class PlayerInboxSubscriptionManager {
       return;
     }
 
-    this.table.onInsert?.(this.handleTableChange);
-    this.table.onUpdate?.(this.handleTableChange);
-    this.table.onDelete?.(this.handleTableChange);
+    this.table.onInsert?.(this.handleTableInsert);
+    this.table.onUpdate?.(this.handleTableUpdate);
+    this.table.onDelete?.(this.handleTableDelete);
 
     this.subscription = connection
       .subscriptionBuilder()
@@ -37,9 +42,9 @@ export class PlayerInboxSubscriptionManager {
 
   disconnect() {
     if (this.table) {
-      this.table.removeOnInsert?.(this.handleTableChange);
-      this.table.removeOnUpdate?.(this.handleTableChange);
-      this.table.removeOnDelete?.(this.handleTableChange);
+      this.table.removeOnInsert?.(this.handleTableInsert);
+      this.table.removeOnUpdate?.(this.handleTableUpdate);
+      this.table.removeOnDelete?.(this.handleTableDelete);
     }
 
     if (this.subscription && !this.subscription.isEnded?.()) {
@@ -64,22 +69,56 @@ export class PlayerInboxSubscriptionManager {
 
     const mail = Array.from(this.table.iter())
       .map((row) => this.mapRow(row))
-      .filter((row) => row.mailKey)
-      .sort((left, right) => {
+      .filter((row) => row.mailKey);
+    this.publishMail(mail);
+  }
+
+  upsertRow(row) {
+    const nextMail = this.mapRow(row);
+    if (!nextMail.mailKey) {
+      return;
+    }
+
+    const mail = [...(this.snapshot.mail ?? [])];
+    const index = mail.findIndex(
+      (candidate) => candidate.mailKey === nextMail.mailKey,
+    );
+    if (index >= 0) {
+      mail[index] = nextMail;
+    } else {
+      mail.push(nextMail);
+    }
+    this.publishMail(mail);
+  }
+
+  removeRow(row) {
+    const mailKey = String(row?.mailKey ?? row?.mail_key ?? '');
+    if (!mailKey) {
+      return;
+    }
+    this.publishMail(
+      (this.snapshot.mail ?? []).filter(
+        (candidate) => candidate.mailKey !== mailKey,
+      ),
+    );
+  }
+
+  publishMail(mail) {
+    const sortedMail = [...mail].sort((left, right) => {
         if (left.createdAtMs !== right.createdAtMs) {
           return right.createdAtMs - left.createdAtMs;
         }
 
         return left.mailKey.localeCompare(right.mailKey);
       });
-    const unreadCount = mail.filter((row) => !row.read).length;
-    const claimableCount = mail.filter(
+    const unreadCount = sortedMail.filter((row) => !row.read).length;
+    const claimableCount = sortedMail.filter(
       (row) => row.hasReward && !row.rewardCollected,
     ).length;
 
     this.publish({
       connected: true,
-      mail,
+      mail: sortedMail,
       unreadCount,
       claimableCount,
       hasNotification: unreadCount > 0 || claimableCount > 0,

@@ -75,6 +75,12 @@ const INVENTORY_CHOICE_DIALOG_HIERARCHY = Object.freeze({
 });
 
 const WORLD_CHAT_ROW_WIDGET_ID = 'compound.world-chat-message-row';
+const INBOX_MAIL_WIDGET_ID = 'compound.inbox-mail-widget';
+const PLAYER_AVATAR_WIDGET_ID = 'compound.player-avatar';
+const RESOURCE_LABEL_WIDGET_ID = 'primitive.resource-label';
+const STAR_LEVEL_WIDGET_ID = 'primitive.star-level-label';
+const WORLD_EVENT_QUEST_ROW_WIDGET_ID =
+  'compound.world-event-quest-row';
 
 const DIALOG_LABELS = Object.freeze({
   'global.settings': 'Settings',
@@ -92,7 +98,7 @@ const DIALOG_LABELS = Object.freeze({
   'workshop.alliance': 'Alliance Directory',
   'workshop.leaderboard': 'Leaderboard',
   'workshop.discoveries': 'Discoveries',
-  'workshop.personalTasks': 'Personal Tasks',
+  'workshop.personalTasks': 'Daily Tasks',
   'workshop.worldEvent': 'World Event',
   'workshop.worldEventDonate': 'World Event Donation',
   'workshop.worldChat': 'World Chat',
@@ -293,6 +299,9 @@ export function createUiEditorDialogFixture(dialogId, variantIndex = 0) {
   if (dialogId === 'workshop.worldChat') {
     return createWorldChatDialogFixture(variantIndex);
   }
+  if (dialogId === 'workshop.worldEvent') {
+    return createWorldEventDialogFixture(variantIndex);
+  }
   return normalizeUiEditorDialogFixture(
     dialogId,
     createDialogViewModel(dialogId, variantIndex === 0 ? 'a' : 'b'),
@@ -345,6 +354,76 @@ function createWorldChatDialogFixture(variantIndex) {
       { id: 'alliance', label: 'Alliance' },
     ],
     title: 'World Chat',
+  };
+}
+
+function createWorldEventDialogFixture(variantIndex) {
+  const alternate = variantIndex > 0;
+  const donationOptions = [
+    {
+      actionLabel: alternate ? 'Unavailable' : 'Donate',
+      enabled: !alternate,
+      id: 'calming-draught',
+      itemKey: 'calmingDraught',
+      itemKind: 'potion',
+      label: 'Calming Draught',
+      ...(alternate ? {} : { onActivate: () => true }),
+      pointsEachLabel: '120 points each',
+      resourceKey: 'potion',
+      totalLabel: '0 points total',
+    },
+    {
+      actionLabel: alternate ? 'Unavailable' : 'Donate',
+      enabled: !alternate,
+      id: 'valerian-rest',
+      itemKey: 'valerianRest',
+      itemKind: 'potion',
+      label: 'Valerian Rest',
+      ...(alternate ? {} : { onActivate: () => true }),
+      pointsEachLabel: '320 points each',
+      resourceKey: 'potion',
+      totalLabel: '0 points total',
+    },
+  ];
+
+  return {
+    header: {
+      body: 'Bells ring from towers that disagreed yesterday.\nNew clerks ask every workshop to prove the town still moves.',
+      headline: 'New King Crowned',
+      meta: '0 points · 4d 2h',
+    },
+    rowWidget: 'worldEventQuest',
+    rows: [
+      {
+        completed: alternate,
+        description: 'The coronation bells have people cheering, arguing, and fainting in the same street. Donate calming draughts so the crowd stays upright long enough for the heralds to finish.',
+        donationOptions,
+        id: 'quest:quiet-the-crowd',
+        pointsLabel: alternate ? '1,240 points' : '0 points',
+        title: 'Quiet The Crowd',
+      },
+      {
+        completed: false,
+        description: 'The new seal is crossing town in a box that everyone wants to touch. Donate warding potions so the seal reaches the hall without a new scandal.',
+        donationOptions: donationOptions.slice(0, 1).map((option) => ({
+          ...option,
+          id: 'briar-ward',
+          itemKey: 'briarWard',
+          label: 'Briar Ward',
+          pointsEachLabel: '180 points each',
+        })),
+        id: 'quest:protect-the-seal',
+        pointsLabel: '0 points',
+        title: 'Protect The Seal',
+      },
+    ],
+    selectedTabId: 'tasks',
+    tabs: [
+      { id: 'tasks', label: 'Quests', selected: true },
+      { id: 'leaderboard', label: 'Leaderboard' },
+      { id: 'rewards', label: 'Rewards' },
+    ],
+    title: 'World Event',
   };
 }
 
@@ -567,6 +646,48 @@ function createDialogContentHierarchy(dialogId, dialog, content) {
 }
 
 function createReusableDialogContentHierarchy(dialogId, dialog) {
+  if (dialogId === GLOBAL_DIALOG_IDS.PLAYER) {
+    return [
+      createUiEditorPixiHierarchyComponent({
+        displayObjects: [dialog.avatarWidget],
+        id: `${dialogId}:avatar`,
+        label: 'PlayerAvatar:RootRunAvatarWidget',
+        libraryEntryId: PLAYER_AVATAR_WIDGET_ID,
+        primary: dialog.avatarWidget,
+        type: 'widget',
+      }),
+      createUiEditorPixiHierarchyComponent({
+        displayObjects: [dialog.prestigeStars],
+        id: `${dialogId}:prestige-stars`,
+        label: 'PrestigeStars:PixiStarLevelLabel',
+        libraryEntryId: STAR_LEVEL_WIDGET_ID,
+        primary: dialog.prestigeStars,
+        type: 'widget',
+      }),
+      createUiEditorPixiHierarchyComponent({
+        displayObjects: [dialog.totalCoinValue],
+        id: `${dialogId}:total-coin`,
+        label: 'TotalCoin:PixiResourceLabel',
+        libraryEntryId: RESOURCE_LABEL_WIDGET_ID,
+        primary: dialog.totalCoinValue,
+        type: 'widget',
+      }),
+    ];
+  }
+
+  if (dialogId === GLOBAL_DIALOG_IDS.INBOX) {
+    return (dialog.mailRows?.getWidgets?.() ?? []).map((row, index) =>
+      createUiEditorPixiHierarchyComponent({
+        displayObjects: [row.root],
+        id: `${dialogId}:mail:${row.data?.mailKey ?? index}`,
+        label: 'InboxMail:InboxMailWidget',
+        libraryEntryId: INBOX_MAIL_WIDGET_ID,
+        primary: row.root,
+        type: 'widget',
+      }),
+    );
+  }
+
   if (dialogId === 'workshop.worldChat') {
     return (dialog.rows?.getWidgets?.() ?? []).map((row, index) =>
       createUiEditorPixiHierarchyComponent({
@@ -574,6 +695,19 @@ function createReusableDialogContentHierarchy(dialogId, dialog) {
         id: `${dialogId}:row:${row.model?.id ?? index}`,
         label: 'ChatMessageRow:WorldChatMessageRow',
         libraryEntryId: WORLD_CHAT_ROW_WIDGET_ID,
+        primary: row.root,
+        type: 'widget',
+      }),
+    );
+  }
+
+  if (dialogId === 'workshop.worldEvent') {
+    return (dialog.worldEventRows?.getWidgets?.() ?? []).map((row, index) =>
+      createUiEditorPixiHierarchyComponent({
+        displayObjects: [row.root],
+        id: `${dialogId}:quest:${row.model?.id ?? index}`,
+        label: 'WorldEventQuest:WorldEventQuestRow',
+        libraryEntryId: WORLD_EVENT_QUEST_ROW_WIDGET_ID,
         primary: row.root,
         type: 'widget',
       }),
@@ -777,6 +911,8 @@ const GLOBAL_DIALOG_SCENARIOS = Object.freeze({
         playerLevel: 12,
         prestigeCount: 2,
         totalProducedCoin: 128450,
+        totalBrewedPotions: 86,
+        totalHarvestedHerbs: 240,
         username: 'Mira',
       },
     })),
@@ -881,8 +1017,22 @@ export default UI_EDITOR_RETAINED_DIALOG_IDS.map((dialogId) =>
 );
 
 function resolveDialogChildWidgetIds(dialogId) {
+  if (dialogId === GLOBAL_DIALOG_IDS.PLAYER) {
+    return [
+      'compound.dialog-frame',
+      PLAYER_AVATAR_WIDGET_ID,
+      STAR_LEVEL_WIDGET_ID,
+      RESOURCE_LABEL_WIDGET_ID,
+    ];
+  }
+  if (dialogId === GLOBAL_DIALOG_IDS.INBOX) {
+    return ['compound.dialog-frame', INBOX_MAIL_WIDGET_ID];
+  }
   if (dialogId === 'workshop.worldChat') {
     return ['compound.dialog-frame', WORLD_CHAT_ROW_WIDGET_ID];
+  }
+  if (dialogId === 'workshop.worldEvent') {
+    return ['compound.dialog-frame', WORLD_EVENT_QUEST_ROW_WIDGET_ID];
   }
   return INVENTORY_CHOICE_DIALOG_HIERARCHY[dialogId]
     ? ['compound.dialog-frame', 'compound.inventory-choice-row']

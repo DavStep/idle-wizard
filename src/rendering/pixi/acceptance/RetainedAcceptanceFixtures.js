@@ -82,6 +82,10 @@ export function createDialogViewModel(
 ) {
   const key = normalizeVariant(variant);
 
+  if (dialogId === 'workshop.personalTasks') {
+    return createPersonalTasksDialogModel(key);
+  }
+
   if (dialogId.startsWith('workshop.')) {
     return {
       title: dialogId,
@@ -183,6 +187,83 @@ export function createDialogViewModel(
   }
 
   throw new Error(`Unknown retained acceptance dialog: ${dialogId}`);
+}
+
+function createPersonalTasksDialogModel(key) {
+  const alternate = key === 'b';
+  const claimed = alternate;
+  return {
+    title: 'Daily Tasks',
+    selectedTabId: 'rewards',
+    periodSections: [
+      {
+        id: 'daily',
+        title: 'Today',
+        currentPoints: alternate ? 100 : 70,
+        maxPoints: 100,
+        pointsLabel: `${alternate ? 100 : 70} / 100 Points`,
+        progress: alternate ? 1 : 0.7,
+        resetLabel: 'Resets in 2h',
+      },
+      {
+        id: 'weekly',
+        title: 'This Week',
+        currentPoints: alternate ? 200 : 170,
+        maxPoints: 700,
+        pointsLabel: `${alternate ? 200 : 170} / 700 Points`,
+        progress: alternate ? 2 / 7 : 17 / 70,
+        resetLabel: 'Resets in 4d 2h',
+      },
+    ],
+    rows: [
+      ...[30, 50, 70, 100].map((threshold) => ({
+        id: `daily:reward:${threshold}`,
+        sectionId: 'daily',
+        label: `${threshold} Points`,
+        resourceValues: [
+          { resourceKey: 'coin', amountLabel: `+${threshold * 45}` },
+        ],
+        value: threshold <= 70 || claimed ? 'Claimed' : '',
+        height: 30,
+        muted: threshold <= 70 || claimed,
+        ...(threshold <= 70 || claimed
+          ? { statusIcon: 'checkmark' }
+          : {
+              actionLabel: 'Claim',
+              actionHeight: 27,
+              actionVariant: 'green',
+              enabled: true,
+              onActivate: accept,
+            }),
+      })),
+      ...[100, 250, 500, 700].map((threshold) => ({
+        id: `weekly:reward:${threshold}`,
+        sectionId: 'weekly',
+        label: `${threshold} Points`,
+        resourceValues: [
+          { resourceKey: 'coin', amountLabel: `+${threshold * 20}` },
+          ...(threshold === 700
+            ? [{ resourceKey: 'crystal', amountLabel: '+1' }]
+            : []),
+        ],
+        value: threshold <= 100 ? 'Claimed' : '',
+        height: 30,
+        muted: true,
+        ...(threshold <= 100
+          ? { statusIcon: 'checkmark' }
+          : {
+              actionLabel: 'Locked',
+              actionHeight: 27,
+              actionVariant: 'green',
+              enabled: false,
+            }),
+      })),
+    ],
+    tabs: [
+      { id: 'tasks', label: 'Tasks' },
+      { id: 'rewards', label: 'Rewards', selected: true },
+    ],
+  };
 }
 
 function createWorkshopModel(key) {

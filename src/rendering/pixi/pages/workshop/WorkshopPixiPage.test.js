@@ -782,6 +782,8 @@ describe('WorkshopPixiPage', () => {
         dialogId === 'worldEvent'
           ? dialog.worldEventListPaper.y +
             dialog.worldEventListPaper.frameHeight
+          : dialogId === 'personalTasks'
+            ? dialog.scroll.root.y + dialog.scroll.height
           : dialog.panel.paperFrame.y +
             dialog.panel.paperFrame.frameHeight;
 
@@ -799,7 +801,7 @@ describe('WorkshopPixiPage', () => {
     },
   );
 
-  it('renders World Event requests as research-card rows between separate header and list papers', () => {
+  it('renders World Event requests directly below the header with backed donation rows and visible actions', () => {
     const donate = vi.fn();
     const assetManager = createPixiAssetManagerFake(Texture);
     assetManager.has = vi.fn(() => true);
@@ -813,8 +815,9 @@ describe('WorkshopPixiPage', () => {
       rowWidget: 'worldEventQuest',
       header: {
         headline: 'New King Crowned',
-        body: 'Bells Ring From Towers That Disagreed Yesterday.',
-        meta: '0 Points · 5d 9h',
+        body:
+          'Bells ring from towers that disagreed yesterday.\nNew clerks ask every workshop to prove the town still moves and read the new edicts.',
+        meta: '0 points · 4d 2h',
       },
       tabs: [
         { id: 'tasks', label: 'Quests', selected: true },
@@ -827,7 +830,7 @@ describe('WorkshopPixiPage', () => {
           title: 'Quiet The Crowd',
           pointsLabel: '0 Points',
           description:
-            'The Coronation Bells Have People Cheering, Arguing, And Fainting In The Same Street.',
+            'The coronation bells have people cheering, arguing, and fainting in the same street.',
           progressLabel: '0 / 120',
           statusLabel: 'Active',
           donationOptions: [
@@ -852,12 +855,32 @@ describe('WorkshopPixiPage', () => {
         },
       ],
     };
+    const [firstQuest] = model.workshop.dialogs.worldEvent.rows;
+    model.workshop.dialogs.worldEvent.rows.push(
+      {
+        ...firstQuest,
+        id: 'quest:seal',
+        title: 'Protect The Seal',
+        donationOptions: firstQuest.donationOptions.slice(0, 1).map(
+          (option) => ({
+            ...option,
+            id: `${option.id}:seal`,
+          }),
+        ),
+      },
+      {
+        ...firstQuest,
+        id: 'quest:hidden-third',
+        title: 'Hidden Third Quest',
+      },
+    );
 
     harness.page.bind(model);
     harness.page.openDialog('worldEvent');
 
     const dialog = harness.dialogs.get('workshop.worldEvent');
     const row = dialog.rows.get('quest:crowd');
+    const secondRow = dialog.rows.get('quest:seal');
     const headerFrameBottom =
       dialog.worldEventHeaderPaper.y +
       dialog.worldEventHeaderPaper.frameHeight;
@@ -865,22 +888,47 @@ describe('WorkshopPixiPage', () => {
     expect(dialog.panel.titleLabel.textObject.text).toBe('World Event');
     expect(dialog.panel.paperFrame.visible).toBe(false);
     expect(dialog.worldEventHeaderPaper.visible).toBe(true);
-    expect(dialog.worldEventListPaper.visible).toBe(true);
-    expect(dialog.worldEventListPaper.y - headerFrameBottom).toBeCloseTo(8);
+    expect(dialog.worldEventListPaper.visible).toBe(false);
+    expect(dialog.rows.getWidgets()).toHaveLength(2);
+    expect(dialog.scroll.width).toBe(314);
+    expect(row.width).toBe(314);
+    expect(secondRow.width).toBe(314);
+    expect(dialog.scroll.physics.maxOffset).toBe(0);
+    expect(dialog.scroll.scrollbarTrack.visible).toBe(false);
+    expect(
+      dialog.scroll.root.position.y - headerFrameBottom,
+    ).toBeCloseTo(4);
+    expect(
+      secondRow.root.position.y -
+        (row.root.position.y + row.height),
+    ).toBeCloseTo(4);
     expect(row.title.text).toBe('Quiet The Crowd');
     expect(row.description.text).toBe(
-      'The Coronation Bells Have People Cheering, Arguing, And Fainting In The Same Street.',
+      'The coronation bells have people cheering, arguing, and fainting in the same street.',
     );
+    expect(row.options[0].backing.visible).toBe(true);
+    expect(row.options[0].backing.frameWidth).toBeGreaterThan(0);
+    expect(row.options[0].icon.width).toBe(36);
+    expect(row.options[0].icon.height).toBe(36);
+    expect(row.options[0].action.sizeTier).toBe(30);
     expect(row.options[0].action.enabled).toBe(false);
     expect(row.options[1].action.enabled).toBe(true);
+    expect(row.options[1].action.visible).toBe(true);
+    expect(row.options[1].action.renderable).toBe(true);
+    expect(
+      row.options[1].action.x + row.options[1].action.buttonWidth,
+    ).toBeLessThanOrEqual(row.options[1].width);
     expect(assetManager.getTexture).toHaveBeenCalledWith(
-      PIXI_ROOT_RUN_ASSETS.researchCard,
+      PIXI_ROOT_RUN_ASSETS.dialogPaper,
     );
     expect(assetManager.getTexture).toHaveBeenCalledWith(
-      PIXI_ROOT_RUN_ASSETS.buttonGrayNineSlice,
+      PIXI_ROOT_RUN_ASSETS.settingsRow,
     );
     expect(assetManager.getTexture).toHaveBeenCalledWith(
-      PIXI_ROOT_RUN_ASSETS.buttonGreenNineSlice,
+      getPixiButtonAssetId('gray', 30),
+    );
+    expect(assetManager.getTexture).toHaveBeenCalledWith(
+      getPixiButtonAssetId('green', 30),
     );
 
     row.options[1].action.activate();

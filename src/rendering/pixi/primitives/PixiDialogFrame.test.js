@@ -1,7 +1,7 @@
 // @vitest-environment jsdom
 
 import { Texture } from 'pixi.js';
-import { describe, expect, it, vi } from 'vitest';
+import { afterEach, describe, expect, it, vi } from 'vitest';
 
 import {
   createPixiThemeSnapshot,
@@ -20,8 +20,13 @@ import {
   resolveDialogFooterTabLayout,
   setDialogPaperAboveFooterTabs,
 } from './PixiDialogFrame.js';
+import { PixiButton } from './PixiButton.js';
 
 installPixiPageTestCanvas();
+
+afterEach(() => {
+  vi.unstubAllGlobals();
+});
 
 function createHarness(options = {}) {
   const inputRegistrations = [];
@@ -234,12 +239,30 @@ describe('PixiDialogFrame', () => {
 
     expect(inputRegistrations).toHaveLength(1);
     expect(semanticDefinitions).toHaveLength(1);
+    expect(frame.closeControl).toBeInstanceOf(PixiButton);
     expect(frame.closeControl.visible).toBe(false);
     expect(inputRegistrations[0].descriptor.enabled()).toBe(false);
 
     frame.setCloseAction(firstAction);
     expect(frame.closeControl.visible).toBe(true);
     expect(inputRegistrations[0].descriptor.enabled()).toBe(true);
+    inputRegistrations[0].descriptor.onPressChange(true);
+    expect(frame.closeControl.visual.scale.x).toBe(0.94);
+    inputRegistrations[0].descriptor.onPressChange(false, {
+      confirmed: false,
+    });
+    expect(frame.closeControl.visual.scale.x).toBe(1);
+    const requestAnimationFrame = vi.fn(() => 17);
+    const cancelAnimationFrame = vi.fn();
+    vi.stubGlobal('requestAnimationFrame', requestAnimationFrame);
+    vi.stubGlobal('cancelAnimationFrame', cancelAnimationFrame);
+    vi.stubGlobal('matchMedia', vi.fn(() => ({ matches: false })));
+    inputRegistrations[0].descriptor.onPressChange(true);
+    inputRegistrations[0].descriptor.onPressChange(false, {
+      confirmed: true,
+    });
+    expect(requestAnimationFrame).toHaveBeenCalledOnce();
+    expect(frame.closeControl.visual.scale.x).toBe(0.94);
     expect(inputRegistrations[0].descriptor.onActivate('pointer')).toBe(true);
     expect(firstAction).toHaveBeenCalledWith('pointer');
     expect(semanticDefinitions[0].activate('semantic')).toBe(true);
@@ -254,6 +277,7 @@ describe('PixiDialogFrame', () => {
     frame.setCloseAction(null);
     expect(frame.closeControl.visible).toBe(false);
     expect(frame.activateClose()).toBe(false);
+    expect(cancelAnimationFrame).toHaveBeenCalledWith(17);
 
     frame.destroy({ children: true });
     expect(inputUnregister).toHaveBeenCalledOnce();

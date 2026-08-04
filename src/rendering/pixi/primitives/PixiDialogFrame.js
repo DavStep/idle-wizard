@@ -12,6 +12,7 @@ import {
   PIXI_ROOT_RUN_GEOMETRY,
 } from '../theme/PixiThemeTokens.js';
 import { PixiNineSliceFrame } from './PixiNineSliceFrame.js';
+import { PixiButton } from './PixiButton.js';
 import { PixiTextLabel } from './PixiTextLabel.js';
 
 export const PIXI_DIALOG_PALETTE = Object.freeze({
@@ -60,7 +61,6 @@ const TITLE_MAX_INSET_X = 8;
 const SHADOW_OFFSET_X = 3;
 const SHADOW_OFFSET_Y = 4;
 const SHADOW_ALPHA = 0.42;
-const CLOSE_PRESS_SCALE = 0.94;
 
 /**
  * Retained player-facing dialog chrome.
@@ -172,12 +172,18 @@ export class PixiDialogFrame extends Container {
       label: `${label}:title`,
     });
 
-    this.closeControl = new Container({ label: `${label}:closeControl` });
-    this.closeControl.hitArea = new Rectangle(
-      -PIXI_ROOT_RUN_GEOMETRY.dialog.closeSize / 2,
-      -PIXI_ROOT_RUN_GEOMETRY.dialog.closeSize / 2,
-      PIXI_ROOT_RUN_GEOMETRY.dialog.closeSize,
-      PIXI_ROOT_RUN_GEOMETRY.dialog.closeSize,
+    this.closeControl = new PixiButton({
+      assetManager,
+      inputRouter,
+      width: PIXI_ROOT_RUN_GEOMETRY.dialog.closeSize,
+      height: PIXI_ROOT_RUN_GEOMETRY.dialog.closeSize,
+      action: (payload) => this.activateClose(payload),
+      haptic: 'light',
+      variant: 'image-only',
+      label: `${label}:closeControl`,
+    });
+    this.closeControl.pivot.set(
+      PIXI_ROOT_RUN_GEOMETRY.dialog.closeSize / 2,
     );
     this.closeSprite = new Sprite({
       texture: this.resolveTexture(PIXI_ROOT_RUN_ASSETS.dialogClose),
@@ -187,7 +193,10 @@ export class PixiDialogFrame extends Container {
     });
     this.closeSprite.width = PIXI_ROOT_RUN_GEOMETRY.dialog.closeSize;
     this.closeSprite.height = PIXI_ROOT_RUN_GEOMETRY.dialog.closeSize;
-    this.closeControl.addChild(this.closeSprite);
+    this.closeSprite.position.set(
+      PIXI_ROOT_RUN_GEOMETRY.dialog.closeSize / 2,
+    );
+    this.closeControl.visual.addChild(this.closeSprite);
 
     this.addChild(
       this.shadow,
@@ -202,14 +211,6 @@ export class PixiDialogFrame extends Container {
     this.titleVariant = 'default';
     this.dangerTitleFilter = null;
     this.modalContentRoots = Object.freeze([this]);
-    this.closeRegistration =
-      this.inputRouter?.registerPressTarget?.(this.closeControl, {
-        enabled: () => this.isCloseEnabled(),
-        onPressChange: (pressed) => this.setClosePressed(pressed),
-        onActivate: (payload) => this.activateClose(payload),
-        haptic: 'light',
-        excludePageSwipe: true,
-      }) ?? null;
     this.closeSemanticDefinition =
       closeSemanticId && semanticRegistry
         ? semanticRegistry.register({
@@ -220,11 +221,14 @@ export class PixiDialogFrame extends Container {
               enabled: this.isCloseEnabled(),
               interactive: this.closeControl.eventMode !== 'none',
               visible:
-                this.closeControl.visible && this.closeControl.renderable,
+                this.closeControl.visible &&
+                this.closeControl.renderable &&
+                this.visible &&
+                this.renderable,
               active: !this.destroyed,
               selected: false,
             }),
-            activate: (payload) => this.activateClose(payload),
+            activate: (payload) => this.closeControl.activate(payload),
           })
         : null;
 
@@ -406,9 +410,10 @@ export class PixiDialogFrame extends Container {
     );
   }
 
-  setClosePressed(pressed) {
-    this.closeControl.scale.set(
-      pressed && this.isCloseEnabled() ? CLOSE_PRESS_SCALE : 1,
+  setClosePressed(pressed, context = null) {
+    this.closeControl.setPressed(
+      pressed && this.isCloseEnabled(),
+      context,
     );
   }
 
@@ -419,11 +424,10 @@ export class PixiDialogFrame extends Container {
     const visible = typeof this.closeAction === 'function';
     this.closeControl.visible = visible;
     this.closeControl.renderable = visible;
-    this.closeControl.eventMode = visible ? 'static' : 'none';
-    this.closeControl.cursor = visible ? 'pointer' : 'default';
     if (!visible) {
       this.setClosePressed(false);
     }
+    this.closeControl.setEnabled(visible);
   }
 
   relayout() {
@@ -525,12 +529,6 @@ export class PixiDialogFrame extends Container {
   }
 
   destroy(options) {
-    if (typeof this.closeRegistration === 'function') {
-      this.closeRegistration();
-    } else {
-      this.closeRegistration?.unregister?.();
-    }
-    this.closeRegistration = null;
     if (this.closeSemanticDefinition) {
       this.semanticRegistry.unregister(this.closeSemanticId, {
         displayObject: this.closeControl,

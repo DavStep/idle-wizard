@@ -198,6 +198,10 @@ export class LeaderboardSubscriptionManager {
       totalIncome: user.totalIncome,
     };
 
+    if (user.identity) {
+      snapshotUser.identity = user.identity;
+    }
+
     if (user.character) {
       snapshotUser.character = user.character;
     }

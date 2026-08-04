@@ -839,6 +839,8 @@ export class PixiPagesFacade {
         },
         fillTask: (taskId) => gameplay?.fillTask?.(taskId),
         sendWorldChat: (body) => this.worldChatFacade?.sendMessage?.(body),
+        openInbox: () =>
+          this.globalDialogPresenter?.open?.("inbox") ?? false,
         claimInboxReward: (mailKey) =>
           this.playerInboxFacade?.claimReward?.(mailKey),
         markInboxRead: (mailKey) => this.playerInboxFacade?.markRead?.(mailKey),

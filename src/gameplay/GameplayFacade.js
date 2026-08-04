@@ -223,6 +223,7 @@ export class GameplayFacade {
     this.cachedSnapshot = null;
     this.persistenceLoadRevision = 0;
     this.personalTaskSavePending = false;
+    this.personalTaskFrameRevision = 0;
     this.freshRuntimeSnapshot = null;
   }
 
@@ -886,6 +887,7 @@ export class GameplayFacade {
 
     if (result?.changed) {
       this.personalTaskSavePending = true;
+      this.personalTaskFrameRevision += 1;
     }
 
     return result;
@@ -1740,6 +1742,7 @@ export class GameplayFacade {
       manaCapped: cap > 0 && current >= cap,
       manaCap: cap,
       guild: this.guildFacade.getFrameSnapshotKey(),
+      personalTasks: this.personalTaskFrameRevision,
     });
   }
 

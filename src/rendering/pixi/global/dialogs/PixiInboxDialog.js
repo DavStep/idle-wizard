@@ -7,7 +7,7 @@ import {
 
 import {
   PixiButton,
-  PixiFrame,
+  PixiNineSliceFrame,
   PixiScrollView,
   PixiTextLabel,
 } from '../../primitives/index.js';
@@ -17,8 +17,11 @@ import {
 } from '../../retained/index.js';
 import {
   DEFAULT_PIXI_THEME_SNAPSHOT,
+  PIXI_ROOT_RUN_ASSETS,
+  PIXI_ROOT_RUN_GEOMETRY,
   PIXI_UI_GEOMETRY,
 } from '../../theme/PixiThemeTokens.js';
+import { PIXI_DIALOG_PALETTE } from '../../primitives/PixiDialogFrame.js';
 import {
   GLOBAL_DIALOG_GEOMETRY,
   RetainedGlobalDialog,
@@ -29,10 +32,14 @@ const INBOX_CONTENT_WIDTH =
   GLOBAL_DIALOG_GEOMETRY.maxContentWidth;
 const INBOX_CONTENT_HEIGHT = 360;
 const MAIL_GAP = 8;
-const MAIL_PADDING_X = 10;
-const MAIL_PADDING_Y = 8;
-const MAIL_ACTION_WIDTH = 54;
+const MAIL_PADDING_X = 16;
+const MAIL_PADDING_Y = 14;
+const MAIL_ACTION_WIDTH = 80;
 const MAIL_COLUMN_GAP = 8;
+const MAIL_SECTION_GAP = 4;
+const MAIL_FOOTER_GAP = 8;
+const MAIL_MIN_HEIGHT = 88;
+const MAIL_CLAIM_HEIGHT = 30;
 const INBOX_EMPTY_FONT_SIZE = 20;
 
 /**
@@ -78,7 +85,9 @@ export class PixiInboxDialog extends RetainedGlobalDialog {
         new InboxMailWidget({
           assetManager: this.context.assets,
           inputRouter: this.context.inputRouter,
-          theme: this.theme,
+          theme:
+            this.panel.getContentTheme?.() ??
+            this.theme,
           label: `${dialogId}:mail`,
         }),
       reset: (widget) => widget.reset(),
@@ -139,6 +148,15 @@ export class PixiInboxDialog extends RetainedGlobalDialog {
       result = { ok: false, reason: 'offline' };
     } finally {
       this.pendingMailKeys.delete(mailKey);
+      if (isConfirmedClaim(result)) {
+        const claimedMail = this.inboxModel?.mail?.find(
+          (candidate) => candidate.mailKey === mailKey,
+        );
+        if (claimedMail) {
+          claimedMail.read = true;
+          claimedMail.rewardCollected = true;
+        }
+      }
       this.refreshPendingMail();
     }
     return result ?? true;
@@ -219,7 +237,7 @@ export class PixiInboxDialog extends RetainedGlobalDialog {
   }
 }
 
-class InboxMailWidget {
+export class InboxMailWidget {
   constructor({
     assetManager = null,
     inputRouter = null,
@@ -232,14 +250,21 @@ class InboxMailWidget {
     this.root.label = label;
     this.root.visible = false;
     this.root.renderable = false;
-    this.frame = new PixiFrame({
-      assetManager,
+    const panelSkin = PIXI_ROOT_RUN_GEOMETRY.innerSectionPanelWhite;
+    const panelAssetId = PIXI_ROOT_RUN_ASSETS.innerSectionPanelWhite;
+    this.frame = new PixiNineSliceFrame({
+      texture: assetManager?.getTexture?.(panelAssetId) ?? Texture.EMPTY,
+      sourceInsets: panelSkin.sourceInsets,
+      borderInsets: panelSkin.borderInsets,
       width: INBOX_CONTENT_WIDTH,
-      height: 48,
+      height: MAIL_MIN_HEIGHT,
       label: `${label}:frame`,
     });
+    this.frame.assetId = panelAssetId;
     this.title = new PixiTextLabel({
       fontWeight: 'bold',
+      color: PIXI_DIALOG_PALETTE.crystal,
+      wordWrap: true,
       label: `${label}:title`,
     });
     this.meta = new PixiTextLabel({
@@ -248,15 +273,15 @@ class InboxMailWidget {
       label: `${label}:meta`,
     });
     this.body = new PixiTextLabel({
-      fontSize: PIXI_UI_GEOMETRY.bodyFontSize - 1,
-      lineHeight: 15,
+      fontSize: PIXI_UI_GEOMETRY.bodyFontSize,
+      lineHeight: 16,
       wordWrap: true,
       label: `${label}:body`,
     });
     this.reward = new PixiTextLabel({
-      fontSize: PIXI_UI_GEOMETRY.borderLabelFontSize,
+      fontSize: PIXI_UI_GEOMETRY.bodyFontSize,
       fontWeight: 'bold',
-      color: 'muted',
+      color: PIXI_DIALOG_PALETTE.coin,
       wordWrap: true,
       label: `${label}:reward`,
     });
@@ -266,6 +291,12 @@ class InboxMailWidget {
       anchor: { x: 1, y: 0 },
       label: `${label}:status`,
     });
+    this.claimedLabel = new PixiTextLabel({
+      fontSize: PIXI_UI_GEOMETRY.borderLabelFontSize,
+      fontWeight: 'bold',
+      color: PIXI_DIALOG_PALETTE.herb,
+      label: `${label}:claimedLabel`,
+    });
     this.claimedIcon = new Sprite(getCheckTexture(assetManager));
     this.claimedIcon.label = `${label}:claimed`;
     this.claimedIcon.width = 12;
@@ -274,9 +305,9 @@ class InboxMailWidget {
       assetManager,
       inputRouter,
       text: 'Claim',
-      width: 48,
-      height: 20,
-      sizeTier: 30,
+      width: MAIL_ACTION_WIDTH,
+      height: MAIL_CLAIM_HEIGHT,
+      sizeTier: 50,
       action: () => this.claim(),
       variant: 'green',
       label: `${label}:claim`,
@@ -289,12 +320,13 @@ class InboxMailWidget {
       this.reward,
       this.status,
       this.claimedIcon,
+      this.claimedLabel,
       this.claimButton,
     );
     this.data = {};
     this.actions = {};
     this.width = INBOX_CONTENT_WIDTH;
-    this.height = 48;
+    this.height = MAIL_MIN_HEIGHT;
     this.applyTheme(theme);
   }
 
@@ -303,9 +335,7 @@ class InboxMailWidget {
     this.actions = actions ?? {};
     this.root.visible = true;
     this.root.renderable = true;
-    this.title.setText(
-      `${this.data.read ? '' : '* '}${this.data.title || 'message'}`,
-    );
+    this.title.setText(this.data.title || 'message');
     this.meta.setText(this.data.meta ?? '');
     this.body.setText(this.data.body ?? '');
     this.reward.setText(
@@ -328,6 +358,9 @@ class InboxMailWidget {
     );
     this.claimedIcon.visible = claimed;
     this.claimedIcon.renderable = claimed;
+    this.claimedLabel.setText(claimed ? 'Claimed' : '');
+    this.claimedLabel.visible = claimed;
+    this.claimedLabel.renderable = claimed;
     this.claimButton.visible = claimable;
     this.claimButton.renderable = claimable;
     this.claimButton
@@ -346,6 +379,9 @@ class InboxMailWidget {
     this.status.setText('');
     this.claimedIcon.visible = false;
     this.claimedIcon.renderable = false;
+    this.claimedLabel.setText('');
+    this.claimedLabel.visible = false;
+    this.claimedLabel.renderable = false;
     this.claimButton
       .setText('Claim')
       .setEnabled(false);
@@ -357,29 +393,34 @@ class InboxMailWidget {
   }
 
   getPreferredHeight(width = this.width) {
-    const mainWidth =
-      width -
-      MAIL_PADDING_X * 2 -
-      MAIL_ACTION_WIDTH -
-      MAIL_COLUMN_GAP;
-    this.body.setWrapWidth(mainWidth);
-    this.reward.setWrapWidth(mainWidth);
+    const contentWidth = Math.max(0, width - MAIL_PADDING_X * 2);
+    const footerTextWidth = Math.max(
+      0,
+      contentWidth - MAIL_ACTION_WIDTH - MAIL_COLUMN_GAP,
+    );
+    this.title.setWrapWidth(contentWidth);
+    this.body.setWrapWidth(contentWidth);
+    this.reward.setWrapWidth(footerTextWidth);
     let contentHeight =
       this.title.measuredHeight +
-      1 +
+      2 +
       this.meta.measuredHeight;
     if (this.body.text) {
-      contentHeight += 3 + this.body.measuredHeight;
+      contentHeight += MAIL_SECTION_GAP + this.body.measuredHeight;
     }
-    if (this.reward.text) {
-      contentHeight += 3 + this.reward.measuredHeight;
+    const footerHeight = this.getFooterHeight();
+    if (footerHeight > 0) {
+      contentHeight += MAIL_FOOTER_GAP + footerHeight;
     }
-    return Math.max(40, Math.ceil(contentHeight) + MAIL_PADDING_Y * 2);
+    return Math.max(
+      MAIL_MIN_HEIGHT,
+      Math.ceil(contentHeight) + MAIL_PADDING_Y * 2,
+    );
   }
 
   setBounds(x, y, width, height = this.getPreferredHeight(width)) {
     this.width = Math.max(0, Number(width) || 0);
-    this.height = Math.max(40, Number(height) || 40);
+    this.height = Math.max(MAIL_MIN_HEIGHT, Number(height) || MAIL_MIN_HEIGHT);
     this.root.position.set(x, y);
     this.root.hitArea = new Rectangle(
       0,
@@ -391,51 +432,74 @@ class InboxMailWidget {
   }
 
   layoutCurrent() {
-    const mainWidth =
-      this.width -
-      MAIL_PADDING_X * 2 -
-      MAIL_ACTION_WIDTH -
-      MAIL_COLUMN_GAP;
-    this.frame.setSize(this.width, this.height);
+    const contentWidth = Math.max(0, this.width - MAIL_PADDING_X * 2);
+    const footerTextWidth = Math.max(
+      0,
+      contentWidth - MAIL_ACTION_WIDTH - MAIL_COLUMN_GAP,
+    );
+    this.frame.setSize(
+      this.width,
+      this.height,
+      PIXI_ROOT_RUN_GEOMETRY.innerSectionPanelWhite.borderInsets,
+    );
     this.title.position.set(MAIL_PADDING_X, MAIL_PADDING_Y);
-    this.title.setWrapWidth(mainWidth);
+    this.title.setWrapWidth(contentWidth);
     let y =
       MAIL_PADDING_Y +
       this.title.measuredHeight +
-      1;
+      2;
     this.meta.position.set(MAIL_PADDING_X, y);
     y += this.meta.measuredHeight;
-    this.body.setWrapWidth(mainWidth);
+    this.body.setWrapWidth(contentWidth);
     if (this.body.text) {
-      y += 3;
+      y += MAIL_SECTION_GAP;
       this.body.position.set(MAIL_PADDING_X, y);
       y += this.body.measuredHeight;
     }
-    this.reward.setWrapWidth(mainWidth);
-    if (this.reward.text) {
-      y += 3;
-      this.reward.position.set(MAIL_PADDING_X, y);
-    }
+    const footerHeight = this.getFooterHeight();
+    const footerY = footerHeight > 0 ? y + MAIL_FOOTER_GAP : y;
+    this.reward.setWrapWidth(footerTextWidth);
+    this.reward.position.set(MAIL_PADDING_X, footerY);
     const actionRight = this.width - MAIL_PADDING_X;
-    this.status.position.set(actionRight, MAIL_PADDING_Y);
+    this.status.position.set(actionRight, footerY + 8);
     this.claimedIcon.position.set(
-      actionRight - 12,
-      MAIL_PADDING_Y + 1,
+      actionRight - this.claimedLabel.measuredWidth - 18,
+      footerY + Math.max(0, (footerHeight - 12) / 2),
+    );
+    this.claimedLabel.position.set(
+      actionRight - this.claimedLabel.measuredWidth,
+      footerY + Math.max(0, (footerHeight - this.claimedLabel.measuredHeight) / 2),
     );
     this.claimButton.position.set(
-      actionRight - 48,
-      MAIL_PADDING_Y,
+      actionRight - MAIL_ACTION_WIDTH,
+      footerY,
+    );
+  }
+
+  getFooterHeight() {
+    const claimedHeight = this.claimedLabel.visible
+      ? Math.max(12, this.claimedLabel.measuredHeight)
+      : 0;
+    const statusHeight = this.status.text
+      ? this.status.measuredHeight
+      : 0;
+    const actionHeight = this.claimButton.visible
+      ? MAIL_CLAIM_HEIGHT
+      : Math.max(claimedHeight, statusHeight);
+    return Math.max(
+      this.reward.text ? this.reward.measuredHeight : 0,
+      actionHeight,
     );
   }
 
   applyTheme(theme) {
     this.theme = theme ?? DEFAULT_PIXI_THEME_SNAPSHOT;
-    this.frame.applyTheme(this.theme);
     this.title.applyTheme(this.theme);
     this.meta.applyTheme(this.theme);
     this.body.applyTheme(this.theme);
     this.reward.applyTheme(this.theme);
     this.status.applyTheme(this.theme);
+    this.claimedLabel.applyTheme(this.theme);
     this.claimButton.applyTheme(this.theme);
   }
 
@@ -530,4 +594,11 @@ function getCheckTexture(assetManager) {
   } catch {
     return Texture.EMPTY;
   }
+}
+
+function isConfirmedClaim(result) {
+  return (
+    (result === true || result?.ok === true) &&
+    result?.pendingServer !== true
+  );
 }

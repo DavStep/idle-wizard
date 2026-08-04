@@ -40,6 +40,7 @@ const WORLD_EVENT_TABS = Object.freeze([
   Object.freeze({ id: 'leaderboard', label: 'Leaderboard' }),
   Object.freeze({ id: 'rewards', label: 'Rewards' }),
 ]);
+const WORLD_EVENT_MAX_QUEST_ROWS = 2;
 const TRADE_ALLIANCE_ROLE_LABELS = Object.freeze({
   tradeMaster: 'trade master',
   quartermaster: 'quartermaster',
@@ -252,6 +253,7 @@ export class PixiViewModelFactory {
           weight: 10,
           enabled: true,
           visible: true,
+          onActivate: () => actions.openInbox?.() ?? false,
           notification:
             playerInbox.hasNotification === true ||
             Number(playerInbox.unreadCount) > 0 ||
@@ -815,10 +817,12 @@ export class PixiViewModelFactory {
       copy: alliance?.description ?? '',
       rows: members.map((row, index) => ({
         id:
-          row.identity ??
-          row.allianceId ??
-          row.id ??
-          index,
+          String(
+            row.memberIdentity ??
+              row.identity ??
+              row.id ??
+              '',
+          ).trim() || `${alliance.allianceId ?? 'alliance'}:member:${index}`,
         label:
           row.username ??
           row.name ??
@@ -870,7 +874,9 @@ export class PixiViewModelFactory {
                 : null,
           }))
         : users.slice(0, 100).map((user, index) => ({
-            id: user.identity ?? user.name ?? index,
+            id:
+              String(user.identity ?? '').trim() ||
+              `${user.name ?? user.username ?? 'Wizard'}:${index}`,
             label: formatLeaderboardUserLabel(user, index),
             value: formatCoinPriceText(
               user.totalIncome ??
@@ -905,24 +911,17 @@ export class PixiViewModelFactory {
     const rows = [];
     const daily = tasks.daily;
     const weekly = tasks.weekly;
+    const periodSections = [
+      createPersonalTaskPeriodSection('daily', 'Today', daily),
+      createPersonalTaskPeriodSection('weekly', 'This Week', weekly),
+    ].filter(Boolean);
 
     if (safeTabId === 'rewards') {
-      for (const [periodId, label] of [
-        ['daily', 'Today'],
-        ['weekly', 'Week'],
-      ]) {
+      for (const periodId of ['daily', 'weekly']) {
         const period = tasks[periodId];
         if (!period) {
           continue;
         }
-
-        rows.push({
-          id: `${periodId}:rewards-summary`,
-          label,
-          value: `${period.currentPoints ?? 0}/${period.maxPoints ?? 0} · ${
-            period.resetLabel ?? ''
-          }`.trim(),
-        });
 
         for (const reward of period.rewards ?? period.milestones ?? []) {
           const threshold = Math.max(
@@ -934,9 +933,9 @@ export class PixiViewModelFactory {
             typeof actions.claimPersonalTaskMilestoneReward === 'function';
           const row = {
             id: `${periodId}:reward:${threshold}`,
-            label: `${threshold} pts · ${
-              reward.reward?.text || 'Reward'
-            }`,
+            sectionId: periodId,
+            label: `${formatPersonalTaskNumber(threshold)} Points`,
+            resourceValues: createPersonalTaskRewardValues(reward.reward),
             value: reward.claimed
               ? 'Claimed'
               : canClaim
@@ -944,12 +943,16 @@ export class PixiViewModelFactory {
                 : reward.claimable
                   ? 'Ready'
                   : 'Locked',
+            height: 30,
             ...(reward.claimed || !reward.claimable ? { muted: true } : {}),
+            ...(reward.claimed ? { statusIcon: 'checkmark' } : {}),
           };
 
           if (canClaim) {
             Object.assign(row, {
               actionLabel: 'Claim',
+              actionHeight: 27,
+              actionVariant: 'green',
               enabled: true,
               notification: true,
               semanticId: `workshop.personalTasks.${periodId}.reward.${threshold}`,
@@ -959,6 +962,14 @@ export class PixiViewModelFactory {
                   threshold,
                 ),
             });
+          } else if (!reward.claimed) {
+            Object.assign(row, {
+              actionLabel: reward.claimable ? 'Ready' : 'Locked',
+              actionHeight: 27,
+              actionVariant: 'green',
+              enabled: false,
+              value: '',
+            });
           }
 
           rows.push(row);
@@ -966,20 +977,12 @@ export class PixiViewModelFactory {
       }
     } else {
       if (daily) {
-        rows.push({
-          id: 'daily:summary',
-          label: `Today · ${daily.completedTasks ?? 0}/${
+        const dailySection = periodSections.find((section) => section.id === 'daily');
+        if (dailySection) {
+          dailySection.detail = `${daily.completedTasks ?? 0}/${
             daily.totalTasks ?? 0
-          } Tasks`,
-          value: `${daily.currentPoints ?? 0}/${daily.maxPoints ?? 0} pts`,
-        });
-      }
-      if (weekly) {
-        rows.push({
-          id: 'weekly:summary',
-          label: 'Week',
-          value: `${weekly.currentPoints ?? 0}/${weekly.maxPoints ?? 0} pts`,
-        });
+          } Tasks`;
+        }
       }
 
       for (const task of daily?.tasks ?? []) {
@@ -994,11 +997,13 @@ export class PixiViewModelFactory {
         const completed = task.completed === true;
         rows.push({
           id: `daily:${task.id ?? task.taskId}`,
+          sectionId: 'daily',
           label: `${toTitleCase(
             task.label ?? task.description ?? task.id,
-          )} · +${pointValue} pts`,
+          )} · +${pointValue} Points`,
           value: completed ? 'Done' : `${progress}/${required}`,
           muted: completed,
+          ...(completed ? { statusIcon: 'checkmark' } : {}),
         });
       }
     }
@@ -1024,6 +1029,7 @@ export class PixiViewModelFactory {
         notification: tab.id === 'rewards' && claimableRewards > 0,
         onSelect: (tabId) => actions.selectPersonalTasksTab?.(tabId),
       })),
+      periodSections,
       status: tasks.unlocked ? '' : `unlocks at level ${tasks.unlockLevel ?? 4}`,
       rows,
     };
@@ -1119,7 +1125,7 @@ export class PixiViewModelFactory {
             localLeaderboard.qualified === true ||
             sharedLeaderboard.qualified === true
               ? 'Qualified'
-              : `${formatWorldEventNumber(remaining)} Points To Qualify`,
+              : `${formatWorldEventNumber(remaining)} points to qualify`,
           height: 32,
         },
         ...(
@@ -1129,12 +1135,13 @@ export class PixiViewModelFactory {
         ).map((tier) => ({
           id: `reward:${tier.rankLabel}`,
           label: toTitleCase(`Rank ${tier.rankLabel}`),
-          value: toTitleCase(formatWorldEventRewardTier(tier)),
+          value: formatWorldEventRewardTier(tier),
         })),
       ];
     } else {
-      rows = (current?.requests ?? current?.options ?? []).map(
-        (request, index) => {
+      rows = (current?.requests ?? current?.options ?? [])
+        .slice(0, WORLD_EVENT_MAX_QUEST_ROWS)
+        .map((request, index) => {
           const requestId =
             request.requestId ?? request.id ?? request.key ?? index;
           const donationOptions = (request.donationOptions ?? []).map(
@@ -1149,15 +1156,13 @@ export class PixiViewModelFactory {
                 label: toTitleCase(option.label ?? 'Donation'),
                 pointsEachLabel: `${formatWorldEventNumber(
                   option.pointsPerUnit,
-                )} Points Each`,
-                totalLabel: toTitleCase(
-                  `${
-                    option.collectedPointText ??
-                    `${formatWorldEventNumber(
-                      option.contributionPoints,
-                    )} Points`
-                  } Total`,
-                ),
+                )} points each`,
+                totalLabel: `${
+                  option.collectedPointText ??
+                  `${formatWorldEventNumber(
+                    option.contributionPoints,
+                  )} points`
+                } total`,
                 itemKind,
                 itemKey: option.itemKey,
                 resourceKey:
@@ -1182,27 +1187,24 @@ export class PixiViewModelFactory {
             requestId,
             type: 'worldEventQuest',
             title: toTitleCase(request.title ?? request.label ?? 'Quest'),
-            pointsLabel: toTitleCase(
+            pointsLabel:
               request.collectedPointText ??
-                `${formatWorldEventNumber(request.contributionPoints)} Points`,
-            ),
-            description: toTitleCase(
+              `${formatWorldEventNumber(request.contributionPoints)} points`,
+            description: toSentenceCase(
               [request.situation, request.description]
               .filter(Boolean)
               .join(' '),
             ),
             progressLabel:
               donationOptions.length === 0
-                ? toTitleCase(
-                    request.collectedPointText ??
-                      `${formatWorldEventNumber(
-                        request.contributionPoints,
-                      )} Points Total`,
-                  )
+                ? request.collectedPointText ??
+                  `${formatWorldEventNumber(
+                    request.contributionPoints,
+                  )} points total`
                 : '',
             statusLabel:
               donationOptions.length === 0
-                ? toTitleCase(
+                ? toSentenceCase(
                     request.completed === true
                       ? 'Completed'
                       : request.actionText ?? '',
@@ -1211,21 +1213,20 @@ export class PixiViewModelFactory {
             completed: request.completed === true,
             donationOptions,
           };
-        },
-      );
+        });
     }
 
     return {
       title: 'World Event',
       status: notice.unlocked
         ? ''
-        : `Unlocks At Level ${notice.unlockLevel ?? 4}`,
+        : `Unlocks at level ${notice.unlockLevel ?? 4}`,
       selectedTabId: safeTabId,
       rowWidget: safeTabId === 'tasks' ? 'worldEventQuest' : 'default',
       header: current
         ? {
             headline: toTitleCase(current.headline ?? 'World Event'),
-            body: toTitleCase(
+            body: toSentenceCase(
               Array.isArray(current.body)
                 ? current.body.join('\n')
                 : current.body ?? '',
@@ -1233,7 +1234,7 @@ export class PixiViewModelFactory {
             meta: `${formatWorldEventNumber(
               localLeaderboard.currentPoints ??
                 sharedLeaderboard.currentPoints,
-            )} Points · ${formatWorldEventTimer(current.resetLabel)}`,
+            )} points · ${formatWorldEventTimer(current.resetLabel)}`,
           }
         : null,
       onSelectTab: (tabId) => actions.selectWorldEventTab?.(tabId),
@@ -1262,7 +1263,7 @@ export class PixiViewModelFactory {
     if (!request || !option) {
       return {
         title: 'Donate',
-        status: 'Donation Is No Longer Available.',
+        status: 'Donation is no longer available.',
         rows: [],
       };
     }
@@ -1304,7 +1305,7 @@ export class PixiViewModelFactory {
 
     return {
       title: 'Donate',
-      status: canDonate ? '' : 'Not Enough Resources.',
+      status: canDonate ? '' : 'Not enough resources.',
       rows: [
         {
           id: 'quest',
@@ -1326,10 +1327,9 @@ export class PixiViewModelFactory {
         {
           id: 'total',
           label: 'Total Contributed',
-          value: toTitleCase(
+          value:
             option.collectedPointText ??
-              `${formatWorldEventNumber(option.contributionPoints)} Points`,
-          ),
+            `${formatWorldEventNumber(option.contributionPoints)} points`,
         },
         {
           id: 'owned',
@@ -1350,7 +1350,7 @@ export class PixiViewModelFactory {
           label: `${formatWorldEventNumber(amount)} ${
             option.label ?? 'resource'
           }`,
-          value: `${formatWorldEventNumber(points)} Points`,
+          value: `${formatWorldEventNumber(points)} points`,
           actionLabel: `Donate x${formatWorldEventNumber(amount)}`,
           enabled: canDonate,
           onActivate: () =>
@@ -1491,6 +1491,68 @@ function normalizeLeaderboardRank(rank, index) {
 function normalizeVisibleLevel(value) {
   const level = Math.floor(Number(value));
   return Number.isFinite(level) && level >= 1 ? level : null;
+}
+
+function createPersonalTaskPeriodSection(id, title, period) {
+  if (!period) {
+    return null;
+  }
+
+  const currentPoints = Math.max(
+    0,
+    Math.floor(Number(period.currentPoints) || 0),
+  );
+  const maxPoints = Math.max(
+    1,
+    Math.floor(Number(period.maxPoints) || 1),
+  );
+
+  return {
+    id,
+    title,
+    currentPoints,
+    maxPoints,
+    pointsLabel: `${formatPersonalTaskNumber(currentPoints)} / ${formatPersonalTaskNumber(maxPoints)} Points`,
+    progress: Math.min(1, currentPoints / maxPoints),
+    resetLabel: formatPersonalTaskResetLabel(period.resetLabel),
+  };
+}
+
+function createPersonalTaskRewardValues(reward = {}) {
+  const values = [];
+
+  for (const resourceKey of ['coin', 'crystal']) {
+    const amount = Math.max(
+      0,
+      Math.floor(Number(reward?.[resourceKey]) || 0),
+    );
+    if (amount > 0) {
+      values.push({
+        resourceKey,
+        amountLabel: `+${formatPersonalTaskNumber(amount)}`,
+      });
+    }
+  }
+
+  return values;
+}
+
+function formatPersonalTaskResetLabel(value) {
+  const remaining = String(value ?? '')
+    .trim()
+    .replace(/^resets\s+/i, '');
+
+  if (!remaining) {
+    return '';
+  }
+
+  return remaining.toLowerCase() === 'now'
+    ? 'Resets now'
+    : `Resets in ${remaining}`;
+}
+
+function formatPersonalTaskNumber(value) {
+  return Math.max(0, Math.floor(Number(value) || 0)).toLocaleString('en-US');
 }
 
 function getPageContextResource(pageId, researchTabId) {
@@ -2613,6 +2675,13 @@ function toTitleCase(value) {
       `${prefix}${letter.toUpperCase()}`
     ))
     .replace(/\bNpc\b/g, 'NPC');
+}
+
+function toSentenceCase(value) {
+  return String(value ?? '').replace(
+    /(^|[.!?]\s+|\n)([a-z])/g,
+    (_, prefix, letter) => `${prefix}${letter.toUpperCase()}`,
+  );
 }
 
 function formatPercent(value) {

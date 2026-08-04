@@ -184,4 +184,50 @@ describe('PlayerInboxSubscriptionManager', () => {
       hasNotification: false,
     });
   });
+
+  it('publishes the updated callback row when the table iterator is still stale', () => {
+    const staleRow = {
+      mailKey: 'world-event:weekly-1:id',
+      sourceType: 'world-event',
+      sourceKey: 'weekly-1',
+      senderLabel: 'world event',
+      title: 'event finished',
+      body: 'you placed #1 with 2520 points.',
+      createdAt: createTimestamp(2_000),
+      read: false,
+      rewardCollected: false,
+      rewardText: '3 crystal',
+      coinReward: 0n,
+      crystalReward: 3,
+      rubyReward: 0,
+      emeraldReward: 0,
+      itemRewardsJson: '[]',
+    };
+    const table = createTable([staleRow]);
+    const manager = new PlayerInboxSubscriptionManager();
+
+    manager.connect(createConnection(table));
+    table.callbacks.update?.(
+      {},
+      staleRow,
+      {
+        ...staleRow,
+        read: true,
+        rewardCollected: true,
+      },
+    );
+
+    expect(manager.getSnapshot()).toMatchObject({
+      unreadCount: 0,
+      claimableCount: 0,
+      hasNotification: false,
+      mail: [
+        expect.objectContaining({
+          mailKey: staleRow.mailKey,
+          read: true,
+          rewardCollected: true,
+        }),
+      ],
+    });
+  });
 });

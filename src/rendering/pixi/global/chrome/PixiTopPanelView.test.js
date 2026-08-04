@@ -17,6 +17,7 @@ import {
   PIXI_TOP_PANEL_BACKGROUND_SLICE,
   PixiTopPanelView,
 } from './PixiTopPanelView.js';
+import { RootRunAvatarWidget } from './RootRunTopHudWidgets.js';
 import { QUEST_REQUEST_FILL_DURATION_MS } from '../../managers/QuestCompletionMotionCoordinator.js';
 
 installPixiPageTestCanvas();
@@ -119,6 +120,9 @@ describe('PixiTopPanelView', () => {
         PIXI_UI_GEOMETRY.topPanelContentGap,
     );
     expect(view.avatarViewport.avatarFrame).toBeInstanceOf(NineSliceSprite);
+    expect(view.avatarViewport.avatarWidget).toBeInstanceOf(
+      RootRunAvatarWidget,
+    );
     expect(view.coin.background).toBeInstanceOf(NineSliceSprite);
     expect(assets.getTexture).toHaveBeenCalledWith(
       'source:assets/ui/white-squircle/white-squircle-20.9.png',
