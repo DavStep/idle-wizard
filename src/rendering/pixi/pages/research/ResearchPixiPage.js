@@ -424,6 +424,7 @@ export class ResearchPixiPage extends BaseRetainedPixiPage {
           assetManager: this.assetManager,
           buttonLabel: 'research-tab',
           inputRouter: this.inputRouter,
+          sizeTier: 30,
           variant: 'tab',
         });
         button.control.textLabel

@@ -286,7 +286,8 @@ export class PixiButton extends Container {
         visualVariant,
         this.buttonWidth,
         this.buttonHeight,
-        this.variant === 'tab',
+        this.variant === 'tab'
+          && this.buttonHeight <= PIXI_UI_GEOMETRY.tabHeight,
         this.sizeTier,
       );
       const textureId = visualGeometry.assetId;

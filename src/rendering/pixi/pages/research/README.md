@@ -25,6 +25,10 @@ The shared `PixiInputRouter`, theme snapshot, asset manager, viewport
 projection, and semantic-target registry are constructor/runtime dependencies.
 The renderer never queries DOM geometry or derives locked-state behavior.
 
+The fixed category tabs use the regular-button tier `30` source assets at the
+shared `36px` room-control height. They use the editor-authored sidecar geometry;
+the separate compact `28px` footer-tab treatment does not apply to this row.
+
 The UI Lab exposes the complete room as `feature.research-room` and the exact
 production `ResearchRowWidget` and `ResearchStationTitlePlaque` classes as
 standalone `compound.research-row` and `compound.research-station-title`

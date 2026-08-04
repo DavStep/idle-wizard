@@ -364,6 +364,24 @@ describe('ResearchPixiPage', () => {
     expect(expectedWrapWidth).toBe(73.75);
     for (const tab of tabs) {
       expect(tab.height).toBe(PIXI_UI_GEOMETRY.roomControlHeight);
+      expect(tab.control.sizeTier).toBe(30);
+      expect(tab.control.rootRunFrame.sourceInsets).toEqual({
+        top: 60,
+        right: 32,
+        bottom: 41,
+        left: 52,
+      });
+      const cornerScales = Object.fromEntries(
+        Object.entries(tab.control.rootRunFrame.sourceInsets).map(
+          ([side, inset]) => [
+            side,
+            tab.control.rootRunFrame.borderInsets[side] / inset,
+          ],
+        ),
+      );
+      expect(cornerScales.left).toBeCloseTo(cornerScales.right);
+      expect(cornerScales.left).toBeCloseTo(cornerScales.top);
+      expect(cornerScales.left).toBeCloseTo(cornerScales.bottom);
       expect(tab.control.textLabel.fontSize).toBe(10);
       expect(tab.control.textLabel.lineHeight).toBe(12);
       expect(tab.control.textLabel.align).toBe('center');
