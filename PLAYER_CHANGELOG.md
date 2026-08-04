@@ -5,6 +5,10 @@ upload script posts the section whose heading matches `package.json` `version`.
 Write these developer-to-player notes only in Idle Wizard terms. Do not mention
 other game names, source projects, ports, or implementation provenance.
 
+## 0.3.41
+
+- Fixed Research category tab frames so their rounded corners render cleanly at room-control size.
+
 ## 0.3.40
 
 - Fixed rounded button frames so their corners stay balanced and undistorted at compact sizes.
