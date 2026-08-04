@@ -2524,10 +2524,29 @@ describe('WorkshopPixiPage', () => {
       bottom: 68,
       left: 86,
     });
-    expect(harness.page.summon.button.background.borderInsets.top).toBe(17);
-    expect(harness.page.summon.button.background.borderInsets.right).toBe(7);
-    expect(harness.page.summon.button.background.borderInsets.bottom).toBe(12);
-    expect(harness.page.summon.button.background.borderInsets.left).toBe(20);
+    const summonBackground = harness.page.summon.button.background;
+    const cornerScales = {
+      top:
+        summonBackground.borderInsets.top
+        / summonBackground.sourceInsets.top,
+      right:
+        summonBackground.borderInsets.right
+        / summonBackground.sourceInsets.right,
+      bottom:
+        summonBackground.borderInsets.bottom
+        / summonBackground.sourceInsets.bottom,
+      left:
+        summonBackground.borderInsets.left
+        / summonBackground.sourceInsets.left,
+    };
+    expect(cornerScales.left).toBeCloseTo(cornerScales.right);
+    expect(cornerScales.left).toBeCloseTo(cornerScales.top);
+    expect(cornerScales.left).toBeCloseTo(cornerScales.bottom);
+    expect(
+      summonBackground.borderInsets.top
+        + 1
+        + summonBackground.borderInsets.bottom,
+    ).toBeCloseTo(52);
     expect(harness.page.summon.button.actionTextLabel.text).toBe('Summon Seed');
     expect(harness.page.summon.button.actionTextLabel.fontSize).toBe(11);
     expect(harness.page.summon.button.amountLabel.fontSize).toBe(13);

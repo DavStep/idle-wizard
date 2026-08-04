@@ -288,7 +288,9 @@ export class PixiCostButton extends PixiButton {
     const skin = getPixiButtonSkin({
       color: visualColor,
       compactTab: this.compact,
+      height: this.buttonHeight,
       sizeTier: this.sizeTier,
+      width: this.buttonWidth,
     });
     const backgroundAssetId = skin.assetId;
     const backgroundTexture = this.resolveTexture(backgroundAssetId);
@@ -381,7 +383,9 @@ export class PixiCostButton extends PixiButton {
       getPixiButtonSkin({
         color: this.tone,
         compactTab: this.compact,
+        height: this.buttonHeight,
         sizeTier: this.sizeTier,
+        width: this.buttonWidth,
       }).borderInsets,
     );
     const iconSize = (this.compact

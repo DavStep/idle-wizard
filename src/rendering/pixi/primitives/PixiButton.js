@@ -422,7 +422,9 @@ function getRootRunVisualGeometry(
   const skin = getPixiButtonSkin({
     color: variant,
     compactTab,
+    height,
     sizeTier,
+    width,
   });
   return {
     ...skin,

@@ -1,3 +1,11 @@
+import {
+  getPixiSourceNineSliceMetadata,
+} from '../assets/PixiProductionAssetManifest.js';
+import {
+  fitNineSliceOutputInsets,
+} from '../nineSlice/NineSliceCompatibility.js';
+import { PIXI_UI_GEOMETRY } from '../theme/PixiThemeTokens.js';
+
 const BUTTON_ASSET_COLOR = Object.freeze({
   blue: 'blue',
   brown: 'brown',
@@ -22,19 +30,6 @@ export const PIXI_BUTTON_COLORS = Object.freeze([
 ]);
 
 export const PIXI_BUTTON_SIZE_TIERS = Object.freeze([50, 30, 15]);
-
-const SOURCE_INSETS_BY_SIZE = Object.freeze({
-  50: Object.freeze({ top: 100, right: 52, bottom: 68, left: 86 }),
-  30: Object.freeze({ top: 60, right: 32, bottom: 41, left: 52 }),
-  15: Object.freeze({ top: 30, right: 16, bottom: 20, left: 27 }),
-});
-
-const OUTPUT_INSETS_50 = Object.freeze({
-  top: 17,
-  right: 7,
-  bottom: 12,
-  left: 20,
-});
 
 const TAB_OUTPUT_INSETS_50 = Object.freeze({
   top: 13,
@@ -66,20 +61,45 @@ export function getPixiButtonAssetId(color, sizeTier = 50) {
 export function getPixiButtonSkin({
   color,
   compactTab = false,
+  height = null,
   sizeTier = 50,
+  width = null,
 } = {}) {
   const normalizedSize = normalizePixiButtonSizeTier(sizeTier);
-  const scale = normalizedSize / 50;
-  const outputInsets = compactTab
-    ? TAB_OUTPUT_INSETS_50
-    : OUTPUT_INSETS_50;
+  const assetId = getPixiButtonAssetId(color, normalizedSize);
+  const metadata = getPixiSourceNineSliceMetadata(assetId);
+  if (
+    !metadata?.slice
+    || !metadata?.rendering?.outputInsets
+    || !metadata?.rendering?.minimumCenter
+  ) {
+    throw new Error(
+      `Regular button nine-slice metadata is missing for "${assetId}".`,
+    );
+  }
+  const sourceInsets = freezeInsets(metadata.slice);
+  const minimumCenter = scaleSize(
+    metadata.rendering.minimumCenter,
+    1 / PIXI_UI_GEOMETRY.sourceScale,
+  );
+  const naturalOutputInsets = scaleInsets(
+    metadata.rendering.outputInsets,
+    1 / PIXI_UI_GEOMETRY.sourceScale,
+  );
+  const borderInsets = compactTab
+    ? scaleInsets(TAB_OUTPUT_INSETS_50, normalizedSize / 50)
+    : fitNineSliceOutputInsets({
+        minimumCenter,
+        outputInsets: naturalOutputInsets,
+        targetSize: { width, height },
+      });
 
   return Object.freeze({
-    assetId: getPixiButtonAssetId(color, normalizedSize),
-    borderInsets: scaleInsets(outputInsets, scale),
-    minimumCenter: Object.freeze({ width: 1, height: 1 }),
+    assetId,
+    borderInsets,
+    minimumCenter,
     sizeTier: normalizedSize,
-    sourceInsets: SOURCE_INSETS_BY_SIZE[normalizedSize],
+    sourceInsets,
   });
 }
 
@@ -89,5 +109,21 @@ function scaleInsets(insets, scale) {
     right: insets.right * scale,
     bottom: insets.bottom * scale,
     left: insets.left * scale,
+  });
+}
+
+function scaleSize(size, scale) {
+  return Object.freeze({
+    width: Math.max(0, Number(size?.width) || 0) * scale,
+    height: Math.max(0, Number(size?.height) || 0) * scale,
+  });
+}
+
+function freezeInsets(insets) {
+  return Object.freeze({
+    top: Math.max(0, Number(insets?.top) || 0),
+    right: Math.max(0, Number(insets?.right) || 0),
+    bottom: Math.max(0, Number(insets?.bottom) || 0),
+    left: Math.max(0, Number(insets?.left) || 0),
   });
 }

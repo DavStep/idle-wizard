@@ -115,6 +115,19 @@ export const PIXI_SOURCE_NINE_SLICE_METADATA = Object.freeze(
   ),
 );
 
+const SOURCE_NINE_SLICE_METADATA_BY_ASSET_ID = new Map(
+  PIXI_SOURCE_NINE_SLICE_METADATA.map(({ assetId, metadata }) => [
+    assetId,
+    metadata,
+  ]),
+);
+
+export function getPixiSourceNineSliceMetadata(assetId) {
+  return SOURCE_NINE_SLICE_METADATA_BY_ASSET_ID.get(
+    String(assetId ?? ''),
+  ) ?? null;
+}
+
 export function getPixiSourceAssetId(relativePath) {
   const normalized = String(relativePath ?? '')
     .replace(/^\/+/, '')

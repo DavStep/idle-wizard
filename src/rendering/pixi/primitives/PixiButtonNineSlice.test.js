@@ -4,6 +4,7 @@ import { PNG } from 'pngjs';
 import { describe, expect, it } from 'vitest';
 
 import { PIXI_ROOT_RUN_GEOMETRY } from '../theme/PixiThemeTokens.js';
+import { getPixiButtonSkin } from './PixiButtonStyle.js';
 
 const REGULAR_BUTTON_ASSET_DIR =
   'assets/game/source/ui/regular-button';
@@ -70,6 +71,36 @@ const SHARED_TAB_ASSETS = [
 ];
 
 describe('compact Root Run button nine-slices', () => {
+  it('preserves the editor-authored corner scale at the Summon Seed size', () => {
+    const skin = getPixiButtonSkin({
+      color: 'purple',
+      height: 52,
+      sizeTier: 50,
+      width: 92,
+    });
+    const scales = {
+      top: skin.borderInsets.top / skin.sourceInsets.top,
+      right: skin.borderInsets.right / skin.sourceInsets.right,
+      bottom: skin.borderInsets.bottom / skin.sourceInsets.bottom,
+      left: skin.borderInsets.left / skin.sourceInsets.left,
+    };
+
+    expect(skin.sourceInsets).toEqual({
+      top: 100,
+      right: 52,
+      bottom: 68,
+      left: 86,
+    });
+    expect(scales.left).toBeCloseTo(scales.right);
+    expect(scales.left).toBeCloseTo(scales.top);
+    expect(scales.left).toBeCloseTo(scales.bottom);
+    expect(
+      skin.borderInsets.top
+        + skin.minimumCenter.height
+        + skin.borderInsets.bottom,
+    ).toBeLessThanOrEqual(52);
+  });
+
   it('uses a muted red face with the shared coral highlight', () => {
     const png = PNG.sync.read(
       readFileSync(`${REGULAR_BUTTON_ASSET_DIR}/red-button-50.9.png`),

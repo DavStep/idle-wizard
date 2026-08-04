@@ -385,19 +385,23 @@ function createButtonAssets(preview) {
 }
 
 function configuredButtonNineSlice(color, preview, { compactTab = false } = {}) {
+  const width = preview.width ?? 100;
+  const height = preview.height ?? 36;
   const skin = getPixiButtonSkin({
     color,
     compactTab,
+    height,
     sizeTier: preview.sizeTier,
+    width,
   });
 
   return nineSliceAsset({
     borderInsets: skin.borderInsets,
-    height: preview.height ?? 36,
+    height,
     id: skin.assetId,
     minimumCenter: skin.minimumCenter,
     sourceInsets: skin.sourceInsets,
-    width: preview.width ?? 100,
+    width,
   });
 }
 

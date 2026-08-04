@@ -27,3 +27,7 @@ These checked-in tiers are the canonical regular-button assets. Run
 metadata after editing them. Cost buttons compose these shared nine-slices
 with resource content. Popup tabs reuse the radius-50 brown, dark-brown, and
 gray textures with compact output insets instead of owning duplicate PNGs.
+Production regular buttons read their source slices, output insets, and minimum
+center directly from each adjacent `.9slice.json` sidecar. The runtime maps all
+four authored corners with one shared scale at the target button size so it
+cannot make one side rounder than the other.

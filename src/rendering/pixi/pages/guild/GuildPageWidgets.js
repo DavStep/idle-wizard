@@ -687,7 +687,9 @@ class GuildSectionRow {
     });
     const buttonSkin = getPixiButtonSkin({
       color: 'brown-light',
+      height: ROW_HEIGHT,
       sizeTier: 15,
+      width: 100,
     });
     this.buttonFrame = new PixiNineSliceFrame({
       texture:
@@ -866,7 +868,12 @@ class GuildSectionRow {
     this.buttonFrame.setSize(
       width,
       height,
-      getPixiButtonSkin({ color: 'brown-light', sizeTier: 15 }).borderInsets,
+      getPixiButtonSkin({
+        color: 'brown-light',
+        height,
+        sizeTier: 15,
+        width,
+      }).borderInsets,
     );
     this.buttonLabel.position.set(
       width / 2,

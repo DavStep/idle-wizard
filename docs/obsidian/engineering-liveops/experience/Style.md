@@ -326,3 +326,4 @@ experience_type: style
 - Build research icon families from shared plot, cauldron, seed-pack, hourglass, and action-overlay masters. Do not independently generate each final icon or identical gameplay concepts will drift; keep currencies out of research artwork.
 - Pixi `ColorMatrixFilter.grayscale(1)` sums RGB channels and clips bright art; locked cauldron artwork that intentionally stays monochrome should use the Idle Outpost luminance weights `0.2125/0.7154/0.0721` and neutralize sprite tint RGB.
 - Grayscale and monochrome shaders are icon-only. Disabled buttons must swap to the shared gray button asset instead of filtering colored button chrome.
+- Regular-button retained rendering must read the adjacent editor-owned `.9slice.json` sidecar and apply one shared output scale to all four corners at the target size. Independent left/right or top/bottom remaps distort asymmetric source cuts even when the editor preview is correct.

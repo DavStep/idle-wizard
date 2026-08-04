@@ -17,6 +17,37 @@ export function resolveNineSliceMinimumSize({
   });
 }
 
+export function fitNineSliceOutputInsets({
+  outputInsets,
+  minimumCenter = DEFAULT_MINIMUM_CENTER_SIZE,
+  targetSize,
+} = {}) {
+  const insets = normalizeInsets(outputInsets);
+  const center = normalizeSize(minimumCenter, DEFAULT_MINIMUM_CENTER_SIZE);
+  const target = normalizeSize(targetSize);
+
+  if (target.width <= 0 || target.height <= 0) {
+    return Object.freeze(insets);
+  }
+
+  const horizontalInsets = insets.left + insets.right;
+  const verticalInsets = insets.top + insets.bottom;
+  const horizontalScale = horizontalInsets > 0
+    ? Math.max(0, target.width - center.width) / horizontalInsets
+    : 1;
+  const verticalScale = verticalInsets > 0
+    ? Math.max(0, target.height - center.height) / verticalInsets
+    : 1;
+  const scale = Math.min(1, horizontalScale, verticalScale);
+
+  return Object.freeze({
+    top: insets.top * scale,
+    right: insets.right * scale,
+    bottom: insets.bottom * scale,
+    left: insets.left * scale,
+  });
+}
+
 export function validateNineSliceCompatibility({
   assetId = 'nine-slice',
   outputInsets,
