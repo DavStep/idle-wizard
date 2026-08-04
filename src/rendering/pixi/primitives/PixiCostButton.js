@@ -242,6 +242,12 @@ export class PixiCostButton extends PixiButton {
     return this;
   }
 
+  setPressed(pressed, context = null) {
+    super.setPressed(pressed, context);
+    this.syncCostAppearance();
+    return this;
+  }
+
   applyTheme(theme) {
     super.applyTheme(theme ?? DEFAULT_PIXI_THEME_SNAPSHOT);
     if (!this.amountLabel) {

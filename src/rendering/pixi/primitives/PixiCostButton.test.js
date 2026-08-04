@@ -38,6 +38,7 @@ function createHarness(options = {}) {
     compact: options.compact,
     stacked: options.stacked,
     tone: options.tone,
+    sizeTier: options.sizeTier,
     width: options.width,
     height: options.height,
   });
@@ -357,6 +358,29 @@ describe('PixiCostButton', () => {
     expect(assetManager.getTexture).toHaveBeenCalledWith(
       PIXI_ROOT_RUN_ASSETS.buttonGrayStacked,
     );
+  });
+
+  it('keeps the cost skin visible throughout press and release feedback', () => {
+    const { button } = createHarness({
+      stacked: true,
+      tone: 'purple',
+      width: 92,
+      height: 52,
+    });
+
+    button.setModel({
+      actionLabel: 'Summon Seed',
+      amount: '10',
+      resource: 'mana',
+    });
+
+    button.setPressed(true);
+    expect(button.background.visible).toBe(true);
+    expect(button.background.renderable).toBe(true);
+
+    button.setPressed(false, { confirmed: false });
+    expect(button.background.visible).toBe(true);
+    expect(button.background.renderable).toBe(true);
   });
 
   it('keeps the green silhouette while using the exact info icon blues', () => {

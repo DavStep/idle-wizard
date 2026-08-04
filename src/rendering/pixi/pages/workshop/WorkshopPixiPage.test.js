@@ -8,6 +8,7 @@ import { DialogRegistry } from '../../retained/DialogRegistry.js';
 import { PixiInputRouter } from '../../input/PixiInputRouter.js';
 import { PixiDialogFrame } from '../../primitives/PixiDialogFrame.js';
 import { PixiOwnedDialogSurface } from '../../primitives/PixiOwnedDialogSurface.js';
+import { getPixiButtonAssetId } from '../../primitives/PixiButtonStyle.js';
 import { PageRegistry } from '../../retained/PageRegistry.js';
 import { SemanticTargetRegistry } from '../../retained/SemanticTargetRegistry.js';
 import {
@@ -2444,13 +2445,13 @@ describe('WorkshopPixiPage', () => {
     const assetManager = createPixiAssetManagerFake(Texture);
     assetManager.has = vi.fn(
       (assetId) =>
-        assetId === PIXI_ROOT_RUN_ASSETS.buttonPurpleShort ||
-        assetId === PIXI_ROOT_RUN_ASSETS.buttonGrayStacked,
+        assetId === getPixiButtonAssetId('purple', 30) ||
+        assetId === getPixiButtonAssetId('gray', 30),
     );
     assetManager.getTexture = vi.fn((assetId) =>
-      assetId === PIXI_ROOT_RUN_ASSETS.buttonPurpleShort
+      assetId === getPixiButtonAssetId('purple', 30)
         ? summonTexture
-        : assetId === PIXI_ROOT_RUN_ASSETS.buttonGrayStacked
+        : assetId === getPixiButtonAssetId('gray', 30)
           ? disabledTexture
           : Texture.EMPTY,
     );
@@ -2464,10 +2465,21 @@ describe('WorkshopPixiPage', () => {
     expect(harness.page.summon.button).toMatchObject({
       stacked: true,
       tone: 'purple',
+      sizeTier: 30,
       buttonWidth: 92,
       buttonHeight: 52,
     });
     expect(harness.page.summon.button.background.texture).toBe(summonTexture);
+    expect(harness.page.summon.button.background.sourceInsets).toEqual({
+      top: 60,
+      right: 32,
+      bottom: 41,
+      left: 52,
+    });
+    expect(harness.page.summon.button.background.borderInsets.top).toBeCloseTo(10.2);
+    expect(harness.page.summon.button.background.borderInsets.right).toBeCloseTo(4.2);
+    expect(harness.page.summon.button.background.borderInsets.bottom).toBeCloseTo(7.2);
+    expect(harness.page.summon.button.background.borderInsets.left).toBeCloseTo(12);
     expect(harness.page.summon.button.actionTextLabel.text).toBe('Summon Seed');
     expect(harness.page.summon.button.actionTextLabel.fontSize).toBe(11);
     expect(harness.page.summon.button.amountLabel.fontSize).toBe(13);

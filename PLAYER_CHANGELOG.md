@@ -5,6 +5,11 @@ upload script posts the section whose heading matches `package.json` `version`.
 Write these developer-to-player notes only in Idle Wizard terms. Do not mention
 other game names, source projects, ports, or implementation provenance.
 
+## 0.3.37
+
+- Fixed the Workshop Summon Seed button artwork so its frame stays clean and readable at larger display scales.
+- Fixed Summon Seed press feedback so the button no longer briefly disappears when activated.
+
 ## 0.3.36
 
 - Improved Elara's active request with a moving progress shine and a clearer completion sequence before the next request appears.
