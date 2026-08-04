@@ -17,6 +17,7 @@ import {
   PIXI_TOP_PANEL_BACKGROUND_SLICE,
   PixiTopPanelView,
 } from './PixiTopPanelView.js';
+import { QUEST_REQUEST_FILL_DURATION_MS } from '../../managers/QuestCompletionMotionCoordinator.js';
 
 installPixiPageTestCanvas();
 
@@ -482,14 +483,21 @@ describe('PixiTopPanelView', () => {
     }));
 
     expect(motion.requestFrame).toHaveBeenCalledTimes(1);
-    expect(view.questFlightRoot.visible).toBe(true);
+    expect(view.questFlightRoot.visible).toBe(false);
     expect(view.levelRail.completed).toBe(1);
     const { start, destination, durationMs } =
       view.questCompletionMotion;
     expect(durationMs).toBeGreaterThanOrEqual(420);
     expect(durationMs).toBeLessThanOrEqual(760);
 
-    motion.runAt(durationMs / 2);
+    motion.runAt(QUEST_REQUEST_FILL_DURATION_MS - 1);
+    expect(view.questFlightRoot.visible).toBe(false);
+    expect(view.levelRail.completed).toBe(1);
+
+    motion.runAt(QUEST_REQUEST_FILL_DURATION_MS);
+    expect(view.questFlightRoot.visible).toBe(true);
+
+    motion.runAt(QUEST_REQUEST_FILL_DURATION_MS + durationMs / 2);
     expect(view.questFlightRoot.position.x).toBeCloseTo(
       (start.x + destination.x) / 2,
       5,
@@ -501,22 +509,22 @@ describe('PixiTopPanelView', () => {
     expect(view.questFlightRoot.alpha).toBeCloseTo(0.96, 5);
     expect(view.levelRail.completed).toBe(1);
 
-    motion.runAt(durationMs - 1);
+    motion.runAt(QUEST_REQUEST_FILL_DURATION_MS + durationMs - 1);
     expect(view.levelRail.completed).toBe(1);
 
-    motion.runAt(durationMs);
+    motion.runAt(QUEST_REQUEST_FILL_DURATION_MS + durationMs);
     expect(view.questFlightRoot.visible).toBe(false);
     expect(view.questArrivalRoot.visible).toBe(true);
     expect(view.questArrivalSparks).toHaveLength(8);
     expect(view.levelRail.completed).toBe(2);
 
-    motion.runAt(durationMs + 200);
+    motion.runAt(QUEST_REQUEST_FILL_DURATION_MS + durationMs + 200);
     expect(view.levelMotionRoot.scale.x).toBeCloseTo(1.1, 5);
 
-    motion.runAt(durationMs + 320);
+    motion.runAt(QUEST_REQUEST_FILL_DURATION_MS + durationMs + 320);
     expect(view.questArrivalRoot.visible).toBe(false);
 
-    motion.runAt(durationMs + 400);
+    motion.runAt(QUEST_REQUEST_FILL_DURATION_MS + durationMs + 400);
     expect(view.levelMotionRoot.scale.x).toBe(1);
     expect(motion.hasPendingFrame()).toBe(false);
 
@@ -592,14 +600,16 @@ describe('PixiTopPanelView', () => {
     expect(view.levelValue.text).toBe('4');
     expect(view.levelRail.completed).toBe(3);
 
-    motion.runAt(durationMs);
+    const arrivalMs = QUEST_REQUEST_FILL_DURATION_MS + durationMs;
+    motion.runAt(QUEST_REQUEST_FILL_DURATION_MS);
+    motion.runAt(arrivalMs);
     expect(view.levelValue.text).toBe('4');
     expect(view.levelRail.completed).toBe(4);
 
-    motion.runAt(durationMs + 204);
+    motion.runAt(arrivalMs + 204);
     expect(view.levelValue.text).toBe('4');
 
-    motion.runAt(durationMs + 205);
+    motion.runAt(arrivalMs + 205);
     expect(view.levelValue.text).toBe('5');
     expect(view.levelRail.completed).toBe(0);
     expect(view.levelRail.total).toBe(5);
@@ -644,7 +654,7 @@ describe('PixiTopPanelView', () => {
       completed: 4,
       loadRevision: 2,
     }));
-    motion.runAt(210);
+    motion.runAt(QUEST_REQUEST_FILL_DURATION_MS);
     expect(view.questFlightRoot.visible).toBe(true);
 
     view.deactivate();

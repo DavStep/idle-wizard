@@ -46,14 +46,14 @@ export default defineUiEditorIntegration({
 });
 
 async function mountManualProgress() {
-  const state = { progress: 0.55, tone: 'root' };
+  const state = { progress: 0.55, tone: 'purple' };
   const surface = await createProgressSurface({
     createBar: ({ assets }) => {
       const bar = new PixiProgressBar({
         assetManager: assets,
         height: PROGRESS_HEIGHT,
         progress: state.progress,
-        tone: state.tone,
+        tone: resolveProductionTone(state.tone),
         usePlayerStyle: false,
         width: PROGRESS_WIDTH,
       });
@@ -70,8 +70,8 @@ async function mountManualProgress() {
       }, formatPercent),
       selectControl('tone', 'Tone', () => state.tone, (value) => {
         state.tone = value;
-        bar.setTone(value);
-      }, ['root', 'blue', 'green', 'yellow', 'red']),
+        bar.setTone(resolveProductionTone(value));
+      }, ['purple', 'blue', 'green', 'yellow', 'red']),
     ],
   };
 }
@@ -234,4 +234,8 @@ function clamp01(value) {
 
 function formatPercent(value) {
   return `${Math.round(Number(value) * 100)}%`;
+}
+
+function resolveProductionTone(tone) {
+  return tone === 'purple' ? 'root' : tone;
 }

@@ -4,6 +4,11 @@ import { ResearchPixiPage } from './ResearchPixiPage.js';
 
 export default defineUiEditorIntegration({
   apiVersion: 1,
+  childWidgetIds: [
+    'compound.research-row',
+    'compound.research-station-title',
+    'base-button',
+  ],
   folderPath: ['Research'],
   id: 'feature.research-room',
   kind: 'scene',
@@ -16,7 +21,7 @@ export default defineUiEditorIntegration({
   scenarios: [
     { fixture: { state: 'available' }, id: 'available', label: 'Available research', mount: mountResearch },
     { fixture: { state: 'locked' }, id: 'locked', label: 'Locked research', mount: mountResearch },
-    { fixture: { state: 'researched' }, id: 'researched', label: 'Researched', mount: mountResearch },
+    { fixture: { state: 'completed' }, id: 'researched', label: 'Researched', mount: mountResearch },
   ],
 });
 
@@ -27,7 +32,7 @@ async function mountResearch(context, fixture) {
     actions: {
       buyResearch: (id) => {
         context.emit('researchPurchased', { cost: state.cost, id });
-        state.researchState = 'researched';
+        state.researchState = 'completed';
         refresh();
         return true;
       },
@@ -99,7 +104,7 @@ async function mountResearch(context, fixture) {
         getValue: () => state.researchState,
         id: 'state',
         label: 'State',
-        options: ['available', 'locked', 'researched'],
+        options: ['available', 'locked', 'completed'],
         setValue: (value) => {
           state.researchState = value;
           refresh();
@@ -112,7 +117,7 @@ async function mountResearch(context, fixture) {
 
 function createResearchRow(state) {
   const locked = state.researchState === 'locked';
-  const researched = state.researchState === 'researched';
+  const researched = state.researchState === 'completed';
   return {
     canResearch: !locked && !researched,
     cost: {
@@ -125,7 +130,7 @@ function createResearchRow(state) {
     effect: researched ? 'Growth improved' : 'Learn to grow mint',
     id: 'mint-cultivation',
     locked,
+    completed: researched,
     state: state.researchState,
   };
 }
-

@@ -42,6 +42,11 @@ describe('FirstRunIntroPixiView', () => {
     });
     expect(view.copy.textObject.style.fill).toBe('#ffffff');
     expect(view.advanceButton.variant).toBe('yellow');
+    expect(view.advanceButton.sizeTier).toBe(30);
+    expect(view.advanceButton.buttonHeight).toBe(
+      FIRST_RUN_INTRO_PIXI_GEOMETRY.advanceButtonHeight,
+    );
+    expect(view.advanceButton.rootRunFrame.compatibilityError).toBeNull();
     expect(view.advanceButton.buttonWidth).toBe(
       FIRST_RUN_INTRO_PIXI_GEOMETRY.nextButtonWidth,
     );

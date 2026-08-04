@@ -77,9 +77,17 @@ function normalizeIntegration(definition) {
   }
 
   const scenarios = normalizeScenarios(definition.scenarios, definition.mount);
+  const childWidgetIds = normalizeChildWidgetIds(definition.childWidgetIds);
+
+  if (isLargePreview({ id, kind }) && childWidgetIds.length === 0) {
+    throw new Error(
+      `Large UI Lab integration ${id} must declare childWidgetIds.`,
+    );
+  }
 
   return {
     apiVersion,
+    childWidgetIds,
     createThumbnail: optionalFunction(
       definition.createThumbnail,
       'createThumbnail',
@@ -93,6 +101,25 @@ function normalizeIntegration(definition) {
     sectionId,
     usages: normalizeUsages(definition.usages),
   };
+}
+
+function isLargePreview({ id, kind }) {
+  return kind === 'scene' || kind === 'dialog' || id.startsWith('feature.');
+}
+
+function normalizeChildWidgetIds(childWidgetIds) {
+  const ids = new Set();
+
+  return Object.freeze(
+    (Array.isArray(childWidgetIds) ? childWidgetIds : []).map((value) => {
+      const id = requiredText(value, 'child widget id');
+      if (ids.has(id)) {
+        throw new Error(`Duplicate child widget id: ${id}`);
+      }
+      ids.add(id);
+      return id;
+    }),
+  );
 }
 
 function optionalFunction(value, label) {

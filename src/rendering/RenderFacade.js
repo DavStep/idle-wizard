@@ -154,6 +154,8 @@ export class RenderFacade {
           assets: context.assets,
           inputRouter: context.inputRouter,
           semanticRegistry: context.semanticRegistry,
+          questCompletionMotionCoordinator:
+            context.questCompletionMotionCoordinator,
         }),
       )
       .registerGlobalSurface('chrome.bottom', (context) =>

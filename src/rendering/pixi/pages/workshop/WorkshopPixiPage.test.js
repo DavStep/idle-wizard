@@ -20,6 +20,7 @@ import {
 } from '../../theme/PixiThemeTokens.js';
 import { ShopDialogPixi } from '../shop/ShopDialogPixi.js';
 import { RETAINED_DIALOG_LIST_GEOMETRY } from './RetainedPageKit.js';
+import { QuestCompletionMotionCoordinator } from '../../managers/QuestCompletionMotionCoordinator.js';
 import {
   ROOT_RUN_SIDE_ACTION_GEOMETRY,
   WORKSHOP_WINDOW_ASSET_ID,
@@ -138,6 +139,61 @@ describe('WorkshopPixiPage', () => {
     }
 
     harness.page.destroy();
+    harness.dispose();
+  });
+
+  it('sweeps the request fill and holds the completed request until the star flight completes', () => {
+    const motion = createWorkshopMotionHarness();
+    const questCompletionMotionCoordinator =
+      new QuestCompletionMotionCoordinator();
+    const harness = createHarness({
+      questCompletionMotionCoordinator,
+      requestFrame: motion.requestFrame,
+      cancelFrame: motion.cancelFrame,
+      timeSource: motion.timeSource,
+      reducedMotion: () => false,
+    });
+    harness.page.activate();
+    harness.page.bind(createWorkshopViewModel());
+
+    const outgoingRow = harness.page.tasks.rows.get('request-1');
+    expect(outgoingRow.displayedProgress).toBe(0.5);
+    expect(outgoingRow.progressShineRoot.visible).toBe(true);
+    const initialShineX = outgoingRow.progressShine.x;
+
+    motion.runAt(325);
+    expect(outgoingRow.progressShine.x).not.toBe(initialShineX);
+
+    const transitionId = questCompletionMotionCoordinator.begin({
+      previousTaskId: 'request-1',
+      nextTaskId: 'request-2',
+      fillDurationMs: 260,
+    });
+    const nextModel = createWorkshopViewModel();
+    nextModel.workshop.tasks.rows = [{
+      id: 'request-2',
+      label: 'brew mana tonic',
+      current: 0,
+      required: 1,
+    }];
+    harness.page.bind(nextModel);
+
+    expect(harness.page.tasks.rows.get('request-1')).toBe(outgoingRow);
+    expect(harness.page.tasks.rows.get('request-2')).toBeNull();
+
+    motion.runAt(585);
+    expect(outgoingRow.displayedProgress).toBe(1);
+    expect(outgoingRow.progressShineRoot.visible).toBe(false);
+
+    questCompletionMotionCoordinator.startFlight(transitionId);
+    expect(harness.page.tasks.rows.get('request-1')).toBe(outgoingRow);
+
+    questCompletionMotionCoordinator.complete(transitionId);
+    expect(harness.page.tasks.rows.get('request-1')).toBeNull();
+    expect(harness.page.tasks.rows.get('request-2')).toBeDefined();
+
+    harness.page.destroy();
+    questCompletionMotionCoordinator.destroy();
     harness.dispose();
   });
 
@@ -745,6 +801,7 @@ describe('WorkshopPixiPage', () => {
   it('renders World Event requests as research-card rows between separate header and list papers', () => {
     const donate = vi.fn();
     const assetManager = createPixiAssetManagerFake(Texture);
+    assetManager.has = vi.fn(() => true);
     assetManager.getTexture = vi.fn(() => Texture.EMPTY);
     assetManager.getAtlasTexture = vi.fn(() => Texture.EMPTY);
     const harness = createHarness({ assetManager });
@@ -818,16 +875,12 @@ describe('WorkshopPixiPage', () => {
     expect(assetManager.getTexture).toHaveBeenCalledWith(
       PIXI_ROOT_RUN_ASSETS.researchCard,
     );
-    expect(
-      row.options[0].action.resolveBackgroundAsset({
-        skinDisabled: true,
-      }),
-    ).toBe(PIXI_ROOT_RUN_ASSETS.buttonGrayNineSlice);
-    expect(
-      row.options[1].action.resolveBackgroundAsset({
-        skinDisabled: false,
-      }),
-    ).toBe(PIXI_ROOT_RUN_ASSETS.buttonGreenNineSlice);
+    expect(assetManager.getTexture).toHaveBeenCalledWith(
+      PIXI_ROOT_RUN_ASSETS.buttonGrayNineSlice,
+    );
+    expect(assetManager.getTexture).toHaveBeenCalledWith(
+      PIXI_ROOT_RUN_ASSETS.buttonGreenNineSlice,
+    );
 
     row.options[1].action.activate();
     expect(donate).toHaveBeenCalledOnce();
@@ -2237,7 +2290,8 @@ describe('WorkshopPixiPage', () => {
       height: 60,
     });
     expect(harness.page.summon.info.icon.label).toBe('workshop-summon-info:icon');
-    expect(harness.page.summon.info.textLabel).toBeUndefined();
+    expect(harness.page.summon.info.textLabel.visible).toBe(false);
+    expect(harness.page.summon.info.textLabel.renderable).toBe(false);
     expect(harness.semanticTargets.get('workshop.summonArea')?.displayObject).toBe(
       harness.page.summon.circle,
     );
@@ -2624,6 +2678,31 @@ function createPointerEvent(target, type, point = { x: 0, y: 0 }) {
     preventDefault: vi.fn(),
     stopPropagation: vi.fn(),
     stopImmediatePropagation: vi.fn(),
+  };
+}
+
+function createWorkshopMotionHarness() {
+  let now = 0;
+  let nextFrameId = 1;
+  let pendingFrame = null;
+  const requestFrame = vi.fn((callback) => {
+    pendingFrame = callback;
+    return nextFrameId++;
+  });
+  const cancelFrame = vi.fn(() => {
+    pendingFrame = null;
+  });
+  return {
+    requestFrame,
+    cancelFrame,
+    timeSource: () => now,
+    runAt(timestamp) {
+      now = timestamp;
+      const callback = pendingFrame;
+      pendingFrame = null;
+      expect(callback).toEqual(expect.any(Function));
+      callback(timestamp);
+    },
   };
 }
 

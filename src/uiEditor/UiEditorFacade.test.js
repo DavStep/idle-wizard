@@ -147,6 +147,39 @@ describe('UiEditorFacade', () => {
     expect(firstPreviewDisposed).toBe(true);
   });
 
+  it('opens a standalone library widget from a hierarchy component target', () => {
+    const rowEntry = {
+      createPreview: () => {
+        const preview = document.createElement('section');
+        preview.dataset.uiEditorComponent = 'InventoryChoiceRow';
+        return preview;
+      },
+      folderPath: ['Brewing'],
+      id: 'lab:compound.inventory-choice-row',
+      integrationId: 'compound.inventory-choice-row',
+      kind: 'widget',
+      label: 'Inventory Choice Row',
+      sectionId: 'composite-widgets',
+      usages: [],
+    };
+    const editor = new UiEditorFacade({
+      libraryEntries: [rowEntry],
+      root: document.querySelector('#root'),
+    });
+
+    editor.mount();
+
+    expect(
+      editor.openLibraryComponent('compound.inventory-choice-row'),
+    ).toBe(true);
+    expect(editor.bottomPanelManager.selectedEntryId).toBe(rowEntry.id);
+    expect(
+      document.querySelector(
+        '[data-ui-editor-component="InventoryChoiceRow"]',
+      ),
+    ).not.toBeNull();
+  });
+
   it('collapses the hierarchy dock for asset workbenches and restores it for components', () => {
     const editor = new UiEditorFacade({
       root: document.querySelector('#root'),

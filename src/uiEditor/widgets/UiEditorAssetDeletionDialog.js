@@ -140,7 +140,7 @@ export function createUiEditorAssetDeletionDialog({
       dialog.close();
     } else {
       dialog.removeAttribute('open');
-      dialog.dispatchEvent(new Event('close'));
+      dialog.dispatchEvent(new globalThis.Event('close'));
     }
   };
 

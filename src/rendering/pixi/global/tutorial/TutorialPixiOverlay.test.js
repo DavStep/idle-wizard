@@ -27,6 +27,28 @@ import {
 installPixiPageTestCanvas();
 
 describe('TutorialPixiOverlay', () => {
+  it('uses compact skins for its sub-30px tutorial controls', () => {
+    const overlay = new TutorialPixiOverlay({
+      assets: createAssets(),
+      reducedMotion: true,
+    });
+
+    expect(overlay.guideLabelButton).toMatchObject({
+      buttonHeight: 24,
+      sizeTier: 30,
+    });
+    expect(overlay.surface.advanceControl).toMatchObject({
+      buttonHeight: 26,
+      sizeTier: 30,
+    });
+    expect(overlay.guideLabelFrame.compatibilityError).toBeNull();
+    expect(
+      overlay.surface.advanceControl.rootRunFrame.compatibilityError,
+    ).toBeNull();
+
+    overlay.destroy();
+  });
+
   it('proxies pointer-guided taps to the current semantic target', () => {
     const registry = new SemanticTargetRegistry();
     const target = new Container();

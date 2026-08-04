@@ -138,6 +138,7 @@ export class TutorialPixiOverlay extends BasePixiRetainedView {
       width: 36,
       height: 24,
       variant: 'brown-light',
+      sizeTier: 30,
       label: 'tutorial:guideLabelButton',
     });
     this.guideLabelButton.eventMode = 'none';
@@ -1109,6 +1110,7 @@ class TutorialLessonSurface {
       width: TUTORIAL_ADVANCE_BUTTON.minWidth,
       height: TUTORIAL_ADVANCE_BUTTON.height,
       variant: 'yellow',
+      sizeTier: 30,
       action: onAdvance,
       label: 'tutorial.lesson.advance',
     });

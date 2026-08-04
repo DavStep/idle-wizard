@@ -109,7 +109,8 @@ describe('PrestigePixiPage', () => {
     expect(row.action.research).toBe(true);
     expect(row.action.amount).toBe('Prestige');
     expect(row.help).toBeInstanceOf(PixiInfoButton);
-    expect(row.help.textLabel).toBeUndefined();
+    expect(row.help.textLabel.visible).toBe(false);
+    expect(row.help.textLabel.renderable).toBe(false);
     expect(page.confirm.cancel.control.variant).toBe('regular');
     expect(page.confirm.proceed.control.variant).toBe('regular');
     expect(page.scroll.offsetY).toBeGreaterThan(0);

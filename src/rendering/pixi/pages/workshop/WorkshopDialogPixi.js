@@ -292,6 +292,7 @@ export class WorkshopDialogPixi {
         assetManager: this.assetManager,
         buttonLabel: `${dialogId}-submit`,
         inputRouter: this.inputRouter,
+        sizeTier: 30,
         variant: 'yellow',
       });
       this.panel.content.addChild(
@@ -2620,6 +2621,7 @@ class WorkshopDialogRow {
       assetManager: dialog.assetManager,
       buttonLabel: `${dialog.dialogId}-row-action`,
       inputRouter: dialog.inputRouter,
+      sizeTier: 30,
     });
     this.root.addChild(
       this.label,

@@ -2293,6 +2293,7 @@ class BrewingCauldronButton {
       buttonLabel: `${id}.regular`,
       onActivate: () => this.activate(),
       inputRouter,
+      sizeTier: 30,
       variant: 'yellow',
     });
     this.costButton = new PixiCostButton({

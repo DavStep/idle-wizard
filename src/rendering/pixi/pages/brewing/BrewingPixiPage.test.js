@@ -552,16 +552,8 @@ describe('BrewingPixiPage', () => {
     });
     expect(harness.page.hud.phaseTime.text).toBe('0:10');
     expect(harness.page.hud.phaseTime.style.padding).toBe(1);
-    expect(harness.page.hud.potionPreviewFrame.filters).toHaveLength(1);
-    expect(
-      harness.page.hud.potionPreviewFrame.filters[0].matrix[4],
-    ).toBeCloseTo(0x0e / 0xff);
-    expect(
-      harness.page.hud.potionPreviewFrame.filters[0].matrix[9],
-    ).toBeCloseTo(0x10 / 0xff);
-    expect(
-      harness.page.hud.potionPreviewFrame.filters[0].matrix[14],
-    ).toBeCloseTo(0x16 / 0xff);
+    expect(harness.page.hud.potionPreviewFrame.tint).toBe(0x0e1016);
+    expect(harness.page.hud.potionPreviewFrame.filters).toBeUndefined();
 
     now = 3_500;
     harness.page.hud.updateMotion(now, {
@@ -1366,11 +1358,23 @@ describe('BrewingPixiPage', () => {
       bottom: 90,
       left: 83,
     });
+    expect(harness.page.hud.ingredientSlots[0].frame.borderInsets).toEqual({
+      top: 12,
+      right: 12,
+      bottom: 12,
+      left: 12,
+    });
     expect(harness.page.hud.progress.width).toBe(238);
     expect(harness.page.hud.phaseLabel.text).toBe('');
     expect(harness.page.hud.phaseTime.text).toBe('');
     expect(harness.page.hud.cancel).toBeUndefined();
     expect(harness.page.hud.collect).toBeUndefined();
+    expect(
+      harness.page.cauldrons.get('cauldron-0').buttons.recipes.button.control,
+    ).toMatchObject({
+      buttonHeight: 28,
+      sizeTier: 30,
+    });
 
     expect(harness.page.openAutomationSettings()).toBe(true);
     const settings = harness.dialogs.get('brewing.automation-settings');

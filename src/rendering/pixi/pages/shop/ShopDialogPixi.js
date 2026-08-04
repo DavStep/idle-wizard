@@ -467,6 +467,7 @@ export class ShopDialogPixi extends BasePixiRetainedView {
           assetManager,
           inputRouter,
           buttonLabel: `${dialogId}:action`,
+          sizeTier: 30,
           variant: config.actionVariant ?? 'yellow',
         }),
       reset: (button) =>
@@ -793,7 +794,7 @@ export class ShopDialogPixi extends BasePixiRetainedView {
     this.panel.position.set(panelX, panelY);
     this.panel.relayout();
     const footerTabLayout =
-      tabCount > 0
+      tabCount > 1
         ? resolveDialogFooterTabLayout({
             coreWidth: this.panel.coreWidth,
             coreHeight: this.panel.coreHeight,
@@ -1169,19 +1170,27 @@ export class ShopDialogPixi extends BasePixiRetainedView {
 
   relayoutTabs(footerTabLayout) {
     const tabButtons = this.tabs?.getWidgets?.() ?? [];
-    this.tabLayer.visible = tabButtons.length > 0;
+    const tabsVisible = Boolean(footerTabLayout) && tabButtons.length > 1;
+    this.tabLayer.visible = tabsVisible;
     this.tabLayer.renderable = this.tabLayer.visible;
+    for (const button of tabButtons) {
+      button.root.visible = tabsVisible;
+      button.root.renderable = tabsVisible;
+    }
+    if (!tabsVisible) {
+      return;
+    }
     this.tabLayer.position.set(
-      footerTabLayout?.rowX ?? this.panel.coreWidth / 2,
-      footerTabLayout?.rowY ?? this.panel.coreHeight,
+      footerTabLayout.rowX,
+      footerTabLayout.rowY,
     );
     layoutButtons(
       tabButtons,
       0,
       0,
-      footerTabLayout?.rowWidth ?? 0,
+      footerTabLayout.rowWidth,
       PIXI_DIALOG_FOOTER_TABS_GEOMETRY.rowHeight,
-      footerTabLayout?.gap ?? 0,
+      footerTabLayout.gap,
     );
   }
 
@@ -1648,6 +1657,7 @@ class AmountSelectorPixi {
       assetManager,
       inputRouter,
       text: '1',
+      sizeTier: 30,
       label: `${label}:value`,
       action: () => this.showEditor(),
     });
@@ -1670,6 +1680,7 @@ class AmountSelectorPixi {
           assetManager,
           inputRouter,
           text: delta > 0 ? `+${delta}` : String(delta),
+          sizeTier: 30,
           label: `${label}:step:${delta}`,
           action: () => this.model?.onStep?.(delta),
         }),
@@ -1819,7 +1830,7 @@ class VirtualShopDialogList {
       name: `${label} viewport row pool`,
       counters,
       create: () =>
-        new VirtualShopDialogRow({
+        new RootRunInventoryChoiceRowPixi({
           assetManager,
           inputRouter,
           semanticRegistry,
@@ -2166,7 +2177,7 @@ class VirtualShopDialogList {
 
 export { VirtualShopDialogList as RootRunInventoryChoiceList };
 
-class VirtualShopDialogRow {
+export class RootRunInventoryChoiceRowPixi {
   constructor({
     assetManager,
     inputRouter,

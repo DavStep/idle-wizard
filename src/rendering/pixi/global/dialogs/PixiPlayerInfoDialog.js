@@ -50,11 +50,11 @@ export class PixiPlayerInfoDialog extends RetainedGlobalDialog {
       text: '',
       width: 40,
       height: 18,
+      sizeTier: 15,
+      variant: 'text',
       action: () => this.openAlliance(),
       label: `${dialogId}:alliance`,
     });
-    this.allianceButton.frame.visible = false;
-    this.allianceButton.frame.renderable = false;
     this.allianceButton.textLabel.setAnchor(0, 0.5);
     this.levelLabel = new PixiTextLabel({
       text: 'level',

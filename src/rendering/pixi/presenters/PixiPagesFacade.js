@@ -212,6 +212,8 @@ export class PixiPagesFacade {
       textEntryService: context.textEntryService,
       ticker: context.application?.ticker,
       theme: context.theme(),
+      questCompletionMotionCoordinator:
+        context.questCompletionMotionCoordinator,
     });
 
     this.renderFacade

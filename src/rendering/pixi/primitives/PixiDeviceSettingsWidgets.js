@@ -51,6 +51,8 @@ export class RootRunDevicePreferencesPanel extends Container {
         PIXI_ROOT_RUN_GEOMETRY.settings.rowSourceInsets,
       borderInsets:
         PIXI_ROOT_RUN_GEOMETRY.settings.rowBorderInsets,
+      width: this.panelWidth,
+      height: DEVICE_PANEL_PADDING_Y * 2,
       label: `${label}:background`,
     });
     this.content = new Container({
@@ -287,6 +289,7 @@ export class DeviceIdentityFooter extends Container {
       text: 'copy',
       width: DEVICE_IDENTITY_COPY_WIDTH,
       height: DEVICE_IDENTITY_COPY_HEIGHT,
+      sizeTier: 30,
       variant: 'yellow',
       action: () => this.copyUserId(),
       label: `${label}:copy`,

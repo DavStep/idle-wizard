@@ -152,6 +152,25 @@ describe('GuildPixiPage', () => {
     harness.page.bind(createGuildViewModel());
     harness.page.activate();
 
+    for (const [tabId, button] of harness.page.tabButtons) {
+      expect(button.variant, tabId).toBe('tab');
+      expect(button.buttonHeight, tabId).toBe(28);
+      expect(button.rootRunFrame.compatibilityError, tabId).toBeNull();
+    }
+    expect(
+      harness.page.tabButtons.get('hall').rootRunFrame.borderInsets,
+    ).toMatchObject({ top: 13, bottom: 9 });
+    expect(
+      harness.page.tabButtons.get('board').rootRunFrame.borderInsets,
+    ).toMatchObject({ top: 13, bottom: 9 });
+    expect(harness.page.secretarySection.button).toMatchObject({
+      buttonHeight: 20,
+      sizeTier: 30,
+    });
+    expect(
+      harness.page.secretarySection.button.rootRunFrame.compatibilityError,
+    ).toBeNull();
+
     expect(
       harness.semanticRegistry.activate('guild.request.quest-1'),
     ).toBe(true);

@@ -22,6 +22,7 @@ import {
   RootRunHudLevelRail,
   RootRunHudSquareIconButton,
 } from './RootRunTopHudWidgets.js';
+import { QUEST_REQUEST_FILL_DURATION_MS } from '../../managers/QuestCompletionMotionCoordinator.js';
 
 const ROOT_RUN_UI_SCALE = 3;
 export const PIXI_TOP_PANEL_BACKGROUND_SLICE = Object.freeze({
@@ -73,6 +74,7 @@ export class PixiTopPanelView extends BasePixiRetainedView {
     cancelFrame = defaultCancelFrame,
     timeSource = defaultTimeSource,
     random = Math.random,
+    questCompletionMotionCoordinator = null,
   } = {}) {
     super({ label: 'topPanel' });
     this.assets = assets;
@@ -86,6 +88,8 @@ export class PixiTopPanelView extends BasePixiRetainedView {
     this.cancelFrame = cancelFrame;
     this.timeSource = timeSource;
     this.random = random;
+    this.questCompletionMotionCoordinator =
+      questCompletionMotionCoordinator;
     this.actions = {};
     this.model = {};
     this.motionSnapshot = null;
@@ -567,6 +571,9 @@ export class PixiTopPanelView extends BasePixiRetainedView {
     };
     this.questCompletionMotion = {
       startMs,
+      phase: 'filling',
+      fillDurationMs: QUEST_REQUEST_FILL_DURATION_MS,
+      flightStartMs: null,
       durationMs,
       start,
       destination,
@@ -576,6 +583,12 @@ export class PixiTopPanelView extends BasePixiRetainedView {
       previousSnapshot,
       nextSnapshot,
     };
+    this.questCompletionMotion.transitionId =
+      this.questCompletionMotionCoordinator?.begin?.({
+        previousTaskId: previousModel?.quest?.activeTaskId,
+        nextTaskId: pendingModel?.quest?.activeTaskId,
+        fillDurationMs: QUEST_REQUEST_FILL_DURATION_MS,
+      }) ?? null;
     this.questArrivalMotion = null;
     this.questImpactMotion = null;
     this.questRolloverMotion = null;
@@ -589,8 +602,8 @@ export class PixiTopPanelView extends BasePixiRetainedView {
     this.questFlightRoot.rotation = 0;
     this.questFlightRoot.scale.set(0.58);
     this.questFlightRoot.alpha = 0;
-    this.questFlightRoot.visible = true;
-    this.questFlightRoot.renderable = true;
+    this.questFlightRoot.visible = false;
+    this.questFlightRoot.renderable = false;
     this.questFlightGlow.alpha = 0.26;
     this.questArrivalRoot.visible = false;
     this.questArrivalRoot.renderable = false;
@@ -737,7 +750,26 @@ export class PixiTopPanelView extends BasePixiRetainedView {
     if (!motion) {
       return false;
     }
-    const elapsedMs = Math.max(0, now - motion.startMs);
+    if (motion.phase === 'filling') {
+      const fillProgress = clampProgress(
+        (now - motion.startMs) / motion.fillDurationMs,
+      );
+      if (fillProgress < 1) {
+        return true;
+      }
+      motion.phase = 'flying';
+      motion.flightStartMs = now;
+      this.questCompletionMotionCoordinator?.startFlight?.(
+        motion.transitionId,
+      );
+      this.questFlightRoot.visible = true;
+      this.questFlightRoot.renderable = true;
+    }
+
+    const elapsedMs = Math.max(
+      0,
+      now - (motion.flightStartMs ?? now),
+    );
     const progress = clampProgress(
       elapsedMs / motion.durationMs,
     );
@@ -829,6 +861,9 @@ export class PixiTopPanelView extends BasePixiRetainedView {
   }
 
   applyQuestCompletionArrival(motion, now) {
+    this.questCompletionMotionCoordinator?.complete?.(
+      motion.transitionId,
+    );
     const levelChanged =
       motion.nextSnapshot.level !==
       motion.previousSnapshot.level;
@@ -949,6 +984,8 @@ export class PixiTopPanelView extends BasePixiRetainedView {
         this.questRolloverMotion?.pendingModel ??
         null
       : null;
+    const transitionId =
+      this.questCompletionMotion?.transitionId ?? null;
     this.levelMotion = null;
     this.questCompletionMotion = null;
     this.questArrivalMotion = null;
@@ -958,6 +995,11 @@ export class PixiTopPanelView extends BasePixiRetainedView {
     this.questFlightRoot.renderable = false;
     this.questArrivalRoot.visible = false;
     this.questArrivalRoot.renderable = false;
+    if (transitionId !== null) {
+      this.questCompletionMotionCoordinator?.complete?.(
+        transitionId,
+      );
+    }
     this.applyLevelMotion(1, 0);
     this.questRail.scale.set(1);
     if (pendingModel) {

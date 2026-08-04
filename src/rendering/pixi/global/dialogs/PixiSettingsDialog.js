@@ -389,6 +389,7 @@ export class PixiSettingsDialog extends RetainedGlobalDialog {
         text: label,
         width: 100,
         height: 24,
+        variant: 'tab',
         action: () => this.selectFeedbackKind(key),
         label: `${this.dialogId}:feedbackKind:${key}`,
       });
@@ -1287,7 +1288,6 @@ export class PixiSettingsDialog extends RetainedGlobalDialog {
       frame.applyTheme(theme);
     }
     if (this.usernameField) {
-      this.usernameField.frame.visible = false;
       this.usernameField.insetFrame.visible = false;
     }
   }

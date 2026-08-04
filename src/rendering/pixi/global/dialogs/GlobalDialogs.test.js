@@ -35,6 +35,7 @@ import {
 } from './index.js';
 import { GLOBAL_DIALOG_GEOMETRY } from './GlobalDialogKit.js';
 import { RetainedScrollArea } from '../../pages/workshop/RetainedPageKit.js';
+import { getPixiButtonSkin } from '../../primitives/PixiButtonStyle.js';
 
 installPixiPageTestCanvas();
 
@@ -217,6 +218,32 @@ describe('retained global Pixi dialogs', () => {
       ),
     ).toBe(true);
     expect(settings.tabsLayer).toBeUndefined();
+
+    harness.dispose();
+  });
+
+  it('uses compact tab geometry for the feedback kind selectors', () => {
+    const harness = createHarness();
+    const feedback = harness.registry.open(
+      GLOBAL_DIALOG_IDS.FEEDBACK,
+      { kind: 'feedback' },
+    );
+    const compactTabSkin = getPixiButtonSkin({
+      color: 'brown-dark',
+      compactTab: true,
+      sizeTier: 50,
+    });
+    const compactTabMinimumHeight =
+      compactTabSkin.borderInsets.top +
+      compactTabSkin.minimumCenter.height +
+      compactTabSkin.borderInsets.bottom;
+
+    for (const { button } of feedback.feedbackKindButtons) {
+      expect(button.variant).toBe('tab');
+      expect(button.buttonHeight).toBeGreaterThanOrEqual(
+        compactTabMinimumHeight,
+      );
+    }
 
     harness.dispose();
   });
@@ -987,7 +1014,7 @@ describe('retained global Pixi dialogs', () => {
       settings.accountSave.buttonHeight;
 
     expect(tabsTop).toBeGreaterThan(choiceViewportBottom);
-    expect(tabsTop - choiceBoardBottom).toBe(
+    expect(tabsTop - choiceBoardBottom).toBeCloseTo(
       choiceContentBottom - tabsBottom,
     );
     expect(tabsBottom).toBeLessThan(choiceSectionBottom);

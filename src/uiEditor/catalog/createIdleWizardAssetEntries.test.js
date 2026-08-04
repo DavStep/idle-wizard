@@ -356,25 +356,25 @@ describe('createIdleWizardAssetEntries', () => {
     const assets = createIdleWizardAssetEntries(
       createIdleWizardButtonEntries(),
     );
-    const dialogBack = assets.find(
+    const researchCard = assets.find(
       ({ assetId }) =>
         assetId
-        === 'source:assets/ui/root-run-dialog/expedition-dialog-back.9.png',
+        === 'source:assets/ui/root-run-research/research-card-1000x304.9.png',
     );
 
-    expect(dialogBack.nineSlice).toBe(true);
-    expect(dialogBack.sourceInsets).toBeNull();
-    expect(dialogBack.properties).toContainEqual({
+    expect(researchCard.nineSlice).toBe(true);
+    expect(researchCard.sourceInsets).toBeNull();
+    expect(researchCard.properties).toContainEqual({
       label: 'Type',
       value: 'Nine-slice image',
     });
-    expect(dialogBack.properties).toContainEqual({
+    expect(researchCard.properties).toContainEqual({
       label: 'Slice margins',
       monospace: true,
       value: 'Auto (quarter image)',
     });
 
-    const preview = dialogBack.createPreview();
+    const preview = researchCard.createPreview();
 
     expect(preview.dataset.editorAssetMode).toBe('nine-slice');
     expect(
@@ -417,11 +417,7 @@ describe('createIdleWizardAssetEntries', () => {
     expect(greenButton.usages).toEqual(
       expect.arrayContaining([
         expect.objectContaining({
-          label: 'Green Button',
-          source: 'Background',
-        }),
-        expect.objectContaining({
-          label: 'Compact Cost Button',
+          label: 'Cost Button',
           source: 'Background',
         }),
       ]),
@@ -475,21 +471,21 @@ describe('createIdleWizardAssetEntries', () => {
   });
 
   it('carries widget previews and feature locations into asset usages', () => {
-    const greenButton = createIdleWizardAssetEntries(
+    const yellowButton = createIdleWizardAssetEntries(
       createIdleWizardButtonEntries(),
     ).find(
       ({ assetId }) =>
         assetId
-        === 'source:assets/ui/regular-button/green-button-50.9.png',
+        === 'source:assets/ui/regular-button/yellow-button-50.9.png',
     );
-    const usage = greenButton.usages.find(
-      ({ widgetId }) => widgetId === 'green-button',
+    const usage = yellowButton.usages.find(
+      ({ widgetId }) => widgetId === 'base-button',
     );
 
     expect(usage).toEqual(
       expect.objectContaining({
         createThumbnail: expect.any(Function),
-        label: 'Green Button',
+        label: 'Base / Text Button',
         locations: expect.arrayContaining([
           {
             label: 'Garden Harvest All action',

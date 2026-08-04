@@ -25,7 +25,7 @@ export const PIXI_DIALOG_PALETTE = Object.freeze({
   mana: '#25658a',
   herb: '#4a7146',
   title: '#9d25db',
-  titleDanger: '#db1e2a',
+  titleDanger: '#ab4942',
   titleText: '#ffffff',
   titleStroke: '#0a0a0a',
   shadow: '#000000',
@@ -101,7 +101,7 @@ export class PixiDialogFrame extends Container {
     this.contentBoxHeight = this.coreHeight;
     this.contentInsets = createContentInsets();
     this.theme = DEFAULT_PIXI_THEME_SNAPSHOT;
-    this.contentTheme = createContentTheme(this.theme);
+    this.contentTheme = createDialogContentTheme(this.theme);
     this.paperVisible = true;
 
     const initialGeometry = PIXI_ROOT_RUN_GEOMETRY.dialog;
@@ -306,9 +306,11 @@ export class PixiDialogFrame extends Container {
     if (this.titleVariant === 'danger') {
       if (!this.dangerTitleFilter) {
         this.dangerTitleFilter = new ColorMatrixFilter();
-        this.dangerTitleFilter.hue(78, false);
-        this.dangerTitleFilter.saturate(0.18, true);
-        this.dangerTitleFilter.brightness(0.96, true);
+        // Map the banner's #9d25db body to the shared red button's #ab4942
+        // body while preserving the banner artwork, shading, and nine-slices.
+        this.dangerTitleFilter.hue(83, false);
+        this.dangerTitleFilter.saturate(-0.15, true);
+        this.dangerTitleFilter.brightness(0.75, true);
       }
       this.titleFrame.filters = [this.dangerTitleFilter];
     } else {
@@ -332,7 +334,7 @@ export class PixiDialogFrame extends Container {
 
   applyTheme(theme) {
     this.theme = theme ?? DEFAULT_PIXI_THEME_SNAPSHOT;
-    this.contentTheme = createContentTheme(this.theme);
+    this.contentTheme = createDialogContentTheme(this.theme);
     this.titleLabel.applyTheme(this.theme);
     this.titleLabel
       .setColor(PIXI_DIALOG_PALETTE.titleText)
@@ -669,7 +671,7 @@ export function resolveDialogFooterPaperReduction({
   );
 }
 
-function createContentTheme(theme) {
+export function createDialogContentTheme(theme) {
   return Object.freeze({
     ...theme,
     surface: PIXI_DIALOG_PALETTE.paper,

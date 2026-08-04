@@ -24,3 +24,9 @@ atlas frame. Other research rows continue to use their family `artAssetId`.
 The shared `PixiInputRouter`, theme snapshot, asset manager, viewport
 projection, and semantic-target registry are constructor/runtime dependencies.
 The renderer never queries DOM geometry or derives locked-state behavior.
+
+The UI Lab exposes the complete room as `feature.research-room` and the exact
+production `ResearchRowWidget` and `ResearchStationTitlePlaque` classes as
+standalone `compound.research-row` and `compound.research-station-title`
+entries. The room manifest declares both children, and the row separately
+declares its shared cost-button, star-label, and progress-bar dependencies.

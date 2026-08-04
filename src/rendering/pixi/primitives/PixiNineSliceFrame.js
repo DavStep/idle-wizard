@@ -62,6 +62,14 @@ export class PixiNineSliceFrame extends Container {
     const nextWidth = Math.max(0, Number(width) || 0);
     const nextHeight = Math.max(0, Number(height) || 0);
     const nextBorderInsets = normalizeInsets(borderInsets);
+    if (isUnlaidOutSize(nextWidth, nextHeight)) {
+      this.compatibilityError = null;
+      this.frameWidth = nextWidth;
+      this.frameHeight = nextHeight;
+      this.borderInsets = nextBorderInsets;
+      this.relayout();
+      return this;
+    }
     const compatibility = validateNineSliceCompatibility({
       assetId: this.label,
       minimumCenter: {
@@ -110,6 +118,15 @@ export class PixiNineSliceFrame extends Container {
     const nextWidth = Math.max(0, Number(width) || 0);
     const nextHeight = Math.max(0, Number(height) || 0);
     const nextBorderInsets = normalizeInsets(borderInsets);
+    if (isUnlaidOutSize(nextWidth, nextHeight)) {
+      this.compatibilityError = null;
+      this.frameWidth = nextWidth;
+      this.frameHeight = nextHeight;
+      this.borderInsets = nextBorderInsets;
+      this.setTexture(texture, sourceInsets);
+      this.relayout();
+      return this;
+    }
     const compatibility = validateNineSliceCompatibility({
       assetId,
       minimumCenter,
@@ -284,6 +301,10 @@ function insetsEqual(left, right) {
     left.bottom === right.bottom &&
     left.left === right.left
   );
+}
+
+function isUnlaidOutSize(width, height) {
+  return width === 0 || height === 0;
 }
 
 function shouldThrowCompatibilityErrors() {

@@ -369,6 +369,83 @@ describe('ShopPixiPage', () => {
     harness.dispose();
   });
 
+  it('renders empty Players slots like Traders without section counters', () => {
+    const harness = createHarness();
+    const model = createShopViewModel();
+    model.shop.selectedTabId = 'players';
+    model.shop.players.requests.countLabel = '0/1';
+    model.shop.players.requests.canClear = false;
+    Object.assign(model.shop.players.requests.slots[0], {
+      itemLabel: 'empty request',
+      quantityLabel: '',
+      value: 'select',
+    });
+    model.shop.players.market.countLabel = '0/1';
+    Object.assign(model.shop.players.market.slots[0], {
+      itemLabel: 'empty stand',
+      quantityLabel: '',
+      value: 'select',
+    });
+
+    harness.page.bind(model);
+    harness.page.activate();
+
+    const request =
+      harness.page.requestsSection.rows.get('request-1');
+    const listing =
+      harness.page.playerMarketSection.rows.get('listing-1');
+    for (const emptySlot of [request, listing]) {
+      expect(emptySlot.price.visible).toBe(false);
+      expect(emptySlot.priceAction).toMatchObject({
+        variant: 'green',
+        visible: true,
+        renderable: true,
+      });
+      expect(emptySlot.priceAction.textLabel.text).toBe('Select');
+      expect(emptySlot.priceAction.rootRunFrame.visible).toBe(true);
+    }
+    expect(harness.page.requestsSection.countLabel.visible).toBe(false);
+    expect(harness.page.playerMarketSection.countLabel.visible).toBe(false);
+
+    harness.page.destroy();
+    harness.dispose();
+  });
+
+  it('opens the Players slot dialog after its selection action', () => {
+    const inputRouter = new PixiInputRouter();
+    const harness = createHarness({ inputRouter });
+    const selectRequestSlot = vi.fn(() => null);
+    const model = createShopViewModel();
+    model.shop.selectedTabId = 'players';
+    model.shop.players.requests.canClear = false;
+    Object.assign(model.shop.players.requests.slots[0], {
+      itemLabel: 'empty request',
+      quantityLabel: '',
+      value: 'select',
+      action: selectRequestSlot,
+    });
+
+    harness.page.bind(model);
+    harness.page.activate();
+
+    const request =
+      harness.page.requestsSection.rows.get('request-1');
+    const point = request.priceAction.getGlobalPosition();
+    inputRouter.onPointerDown(
+      createPointerEvent(request.priceAction, 'pointerdown', point),
+    );
+    inputRouter.onPointerUp(
+      createPointerEvent(request.priceAction, 'pointerup', point),
+    );
+
+    expect(selectRequestSlot).toHaveBeenCalledTimes(1);
+    expect(harness.dialogs.isOpen(SHOP_DIALOG_IDS.REQUEST)).toBe(true);
+
+    harness.page.destroy();
+    harness.dispose();
+    inputRouter.destroy();
+  });
+
   it('presses only the Select button when the nested stall action is targeted', () => {
     const inputRouter = new PixiInputRouter();
     const harness = createHarness({ inputRouter });
@@ -631,6 +708,11 @@ describe('ShopPixiPage', () => {
           tutorialId: 'shop:sell:tab:seed',
           action: selectSeedTab,
         },
+        {
+          id: 'herb',
+          label: 'herbs',
+          semanticId: 'shop.stall.1.tab.herb',
+        },
       ],
     });
 
@@ -735,6 +817,47 @@ describe('ShopPixiPage', () => {
     expect(firstRow.itemIcon.x).toBeLessThan(firstRow.label.x);
     expect(firstRow.detail.visible).toBe(true);
     expect(secondRow.root.y).toBeGreaterThanOrEqual(firstDetailBottom);
+
+    harness.page.destroy();
+    harness.dispose();
+  });
+
+  it('hides a lone Market Ledger tab and gives its footer space to the list', () => {
+    const harness = createHarness();
+    harness.page.bind(createShopViewModel());
+    harness.page.activate();
+
+    harness.page.openDialog(SHOP_DIALOG_IDS.LEDGER, {
+      title: 'Market Ledger',
+      selectedTabId: 'seed',
+      tabs: [
+        {
+          id: 'seed',
+          label: 'Seeds',
+          selected: true,
+          semanticId: 'shop.ledger.tab.seed',
+        },
+      ],
+      items: [
+        {
+          id: 'sage',
+          label: 'Sage Seed',
+          detail: 'stock 4 · buyers 6',
+          value: '3 coin',
+          itemKind: 'seed',
+          itemKey: 'sageSeed',
+        },
+      ],
+    });
+
+    const dialog = harness.dialogs.get(SHOP_DIALOG_IDS.LEDGER);
+    const [seedTab] = dialog.tabs.getWidgets();
+
+    expect(dialog.tabLayer.visible).toBe(false);
+    expect(dialog.tabLayer.renderable).toBe(false);
+    expect(seedTab.root.visible).toBe(false);
+    expect(seedTab.root.renderable).toBe(false);
+    expect(dialog.list.height).toBe(312);
 
     harness.page.destroy();
     harness.dispose();
@@ -1480,6 +1603,8 @@ describe('ShopPixiPage', () => {
     });
     expect(proceeds.valueButton.textLabel.text).toBe('Claim');
     expect(proceeds.valueButton.variant).toBe('green');
+    expect(proceeds.valueButton.sizeTier).toBe(30);
+    expect(proceeds.valueButton.rootRunFrame.compatibilityError).toBeNull();
     expect(proceeds.notificationBadge.root.visible).toBe(false);
     expect(
       harness.page.playerMarketSection.trailingRowsLayer.y +
@@ -1487,6 +1612,27 @@ describe('ShopPixiPage', () => {
         proceeds.valueButton.y +
         proceeds.valueButton.height,
     ).toBeLessThanOrEqual(browse.root.y);
+
+    harness.page.destroy();
+    harness.dispose();
+  });
+
+  it('omits the clear footer when the selected request slot is empty', () => {
+    const harness = createHarness();
+    const viewModel = createShopViewModel();
+    viewModel.shop.selectedTabId = 'players';
+    viewModel.shop.players.requests.canClear = false;
+    Object.assign(viewModel.shop.players.requests.slots[0], {
+      itemLabel: 'empty request',
+      value: 'select',
+    });
+
+    harness.page.bind(viewModel);
+    harness.page.activate();
+
+    expect(
+      harness.page.requestsSection.actions.get('clear'),
+    ).toBeNull();
 
     harness.page.destroy();
     harness.dispose();
@@ -1641,6 +1787,7 @@ function createShopViewModel({
       players: {
         requests: {
           countLabel: '1/3',
+          canClear: true,
           slots: [
             {
               id: 'request-1',

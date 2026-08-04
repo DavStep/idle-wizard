@@ -8,9 +8,11 @@ import { createUiEditorIntegrationPreview } from './UiEditorIntegrationPreview.j
 describe('UiEditorIntegrationPreview', () => {
   it('mounts scenarios and connects controls, actions, events, and cleanup', async () => {
     const dispose = vi.fn();
+    const selectAtomicComponent = vi.fn();
     const state = { value: 2 };
     const integration = defineUiEditorIntegration({
       apiVersion: 1,
+      childWidgetIds: ['sample.child'],
       id: 'sample.integration',
       kind: 'dialog',
       label: 'Sample Integration',
@@ -22,6 +24,7 @@ describe('UiEditorIntegrationPreview', () => {
           mount(context) {
             const preview = document.createElement('div');
             preview.dataset.uiEditorComponent = 'SampleDialog';
+            preview.uiEditorSelectAtomicComponent = selectAtomicComponent;
             return {
               actions: [
                 {
@@ -49,6 +52,17 @@ describe('UiEditorIntegrationPreview', () => {
                 },
               ],
               dispose,
+              getAtomicComponents: () => [
+                {
+                  getFields: () => [],
+                  id: 'sample-dialog:title',
+                  isVisible: () => true,
+                  label: 'Title',
+                  setVisible() {},
+                  type: 'text',
+                  update() {},
+                },
+              ],
               preview,
             };
           },
@@ -67,6 +81,13 @@ describe('UiEditorIntegrationPreview', () => {
     await flushAsyncMount();
     const inspector = preview.uiEditorCreateInspector();
     document.body.append(inspector);
+
+    expect(preview.dataset.uiEditorComponent).toBe('SampleDialog');
+    expect(preview.dataset.uiEditorType).toBe('div');
+    expect(preview.uiEditorGetAtomicComponents()).toHaveLength(1);
+    const atomicComponent = preview.uiEditorGetAtomicComponents()[0];
+    preview.uiEditorSelectAtomicComponent(atomicComponent);
+    expect(selectAtomicComponent).toHaveBeenCalledWith(atomicComponent);
 
     const range = inspector.querySelector('[data-lab-control="value"]');
     range.value = '6';

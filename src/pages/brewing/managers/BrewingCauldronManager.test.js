@@ -1213,7 +1213,7 @@ describe('BrewingCauldronManager', () => {
     ).toBe('3');
     expect(
       buyButton?.querySelector('.style-resource-label--coin .style-resource-label__icon')
-        ?.dataset.rootRunCostIcon,
+        ?.dataset.currencyIcon,
     ).toBe('coin');
     expect(buyButton?.disabled).toBe(true);
 

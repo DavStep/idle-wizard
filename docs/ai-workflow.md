@@ -46,6 +46,12 @@ When a feature change would be meaningfully faster or safer with a repo-local he
   manifest. Use the versioned UI Lab SDK for scenarios, typed controls, actions,
   events, deterministic time, and cleanup; do not add feature-specific imports
   or conditional behavior to the editor shell or production engine.
+- UI Lab parity is mandatory: previews instantiate the same exported production
+  class/factory as the game. Every scene, dialog, and `feature.*` manifest lists
+  all reusable visual and interactive children in `childWidgetIds`; each child
+  must be an independently selectable `kind: 'widget'` entry with a passive
+  production-backed thumbnail. Fixtures may fake data/services, not rendering.
+  Run the UI editor integration coverage test when changing these manifests.
 - Any reference-driven state must be reproducible through that checked-in path, a data template, tutorial loader, or focused harness. Do not use temporary source branches, read-only DOM mutation, or undocumented local state as final screenshot setup.
 - Document the command, required env flags, and intended use in this file when it is broad, or in the feature-local `README.md` when it is feature-specific.
 - Keep tools deterministic and scoped to the current repo; prefer shared Vite and SpacetimeDB processes. If parallel agents interfere, isolated runtimes may use explicit alternate ports, with one clear owner responsible for stopping every alternate listener when finished.

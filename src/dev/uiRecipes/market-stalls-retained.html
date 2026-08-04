@@ -239,6 +239,14 @@
         : ['request', 'listing'].includes(dialogQuery)
           ? 'players'
           : 'traders';
+      if (query.get('proceeds') === 'none') {
+        playerShopSnapshot.proceedsCoin = 0;
+      }
+      if (query.get('requests') === 'empty') {
+        gameplaySnapshot.shop.playerRequests.slots = [
+          { slotNumber: 1, unlocked: true },
+        ];
+      }
       if (query.get('coinOffer') === 'ready') {
         gameplaySnapshot.shop.coinOffer.canCollect = true;
         gameplaySnapshot.shop.coinOffer.cooldownRemainingSeconds = 0;
@@ -248,6 +256,17 @@
       const showRequestDialog = dialogQuery === 'request';
       const showListingDialog = dialogQuery === 'listing';
       const showOverflowItems = query.get('items') === 'overflow';
+      if (query.get('categories') === 'seed') {
+        for (const catalogue of [
+          gameplaySnapshot.shop.shelf,
+          gameplaySnapshot.shop.playerShelf,
+          gameplaySnapshot.shop.stock,
+        ]) {
+          catalogue.sellKinds = catalogue.sellKinds.filter(
+            (kind) => kind.kind === 'seed',
+          );
+        }
+      }
       const stallCount = Math.max(
         0,
         Math.floor(Number(query.get('count')) || 0),

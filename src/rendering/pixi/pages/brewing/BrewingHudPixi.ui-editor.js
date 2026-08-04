@@ -3,22 +3,14 @@ import { createUiEditorPixiSurface } from '../../../../uiEditor/widgets/createUi
 import { DEFAULT_PIXI_THEME_SNAPSHOT } from '../../theme/PixiThemeTokens.js';
 import { BrewingHudPixi } from './BrewingHudPixi.js';
 
-const LAB_PANEL_BORDER = Object.freeze({
-  top: 12,
-  right: 12,
-  bottom: 12,
-  left: 12,
-});
-const BREWING_LAB_THEME = Object.freeze({
-  ...DEFAULT_PIXI_THEME_SNAPSHOT,
-  frames: Object.freeze({
-    ...DEFAULT_PIXI_THEME_SNAPSHOT.frames,
-    panelBorder: LAB_PANEL_BORDER,
-  }),
-});
-
 export default defineUiEditorIntegration({
   apiVersion: 1,
+  childWidgetIds: [
+    'base-button',
+    'cost-button',
+    'primitive.progress-bar',
+    'primitive.star-level-label',
+  ],
   folderPath: ['Brewing'],
   id: 'feature.brewing-hud',
   kind: 'widget',
@@ -135,7 +127,7 @@ async function mountBrewing(context, fixture) {
         assetManager: assets,
         inputRouter: input,
         page,
-        theme: BREWING_LAB_THEME,
+        theme: DEFAULT_PIXI_THEME_SNAPSHOT,
       });
       hud.bind(createModel(), actions);
       return {

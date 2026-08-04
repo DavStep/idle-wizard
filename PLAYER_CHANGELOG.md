@@ -5,6 +5,12 @@ upload script posts the section whose heading matches `package.json` `version`.
 Write these developer-to-player notes only in Idle Wizard terms. Do not mention
 other game names, source projects, ports, or implementation provenance.
 
+## 0.3.36
+
+- Improved Elara's active request with a moving progress shine and a clearer completion sequence before the next request appears.
+- Polished dialogs, buttons, progress bars, and room controls for more consistent sizing, selection, and touch behavior.
+- Refined Research and Market presentation with clearer reusable rows, previews, and interaction states.
+
 ## 0.3.35
 
 - Rebalanced seed and potion research costs so unlock prices grow more consistently across the full catalogue.

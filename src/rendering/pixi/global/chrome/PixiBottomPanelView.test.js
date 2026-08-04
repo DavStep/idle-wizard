@@ -8,6 +8,7 @@ import { DEFAULT_PAGE_SWIPE_ORDER } from '../../../../pages/managers/pageOrder.j
 import { SemanticTargetRegistry } from '../../retained/index.js';
 import {
   PIXI_BOTTOM_PANEL_TABS,
+  PixiBottomRoomTab,
   PixiBottomPanelView,
 } from './PixiBottomPanelView.js';
 import { PixiDialogFrame } from '../../primitives/PixiDialogFrame.js';
@@ -60,6 +61,9 @@ describe('PixiBottomPanelView', () => {
     });
 
     expect(view.tabs).toEqual(tabs);
+    expect(view.tabs.every((tab) => tab instanceof PixiBottomRoomTab)).toBe(
+      true,
+    );
     expect(
       view.tabs.find((tab) => tab.definition.id === 'guild').root.visible,
     ).toBe(true);

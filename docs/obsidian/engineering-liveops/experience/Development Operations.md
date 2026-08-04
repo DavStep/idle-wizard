@@ -42,6 +42,20 @@ experience_type: development-operations
 - Compatible UI editor widget selections must retain the live Pixi canvas and
   application, replacing only the widget display object; remounting the preview
   application exposes and repaints the unchanged background as a visible flash.
+- UI Lab hierarchy roots must adopt the mounted preview's identity and bridge
+  semantic Pixi controls, text, frames, and sprites as editable atoms; never
+  fall back to exposing integration, pan/zoom, toolbar, canvas, or nine-slice
+  renderer internals as component rows.
+- UI Lab hierarchy selection must bridge each semantic Pixi atom back to its
+  production display objects and draw the shared editor selection outline from
+  their live world bounds; DOM selection attributes cannot highlight pixels
+  inside the retained canvas.
+- UI Lab compound hierarchies must preserve production ownership boundaries:
+  show the base dialog, paper content, and reusable child-widget instances as
+  leaves. Show a child's semantic atoms only in its standalone view. Give
+  reusable instances a drill-in library ID, then discover the remaining visible
+  primitive atoms beneath Content while stopping at those registered roots;
+  never flatten pooled row internals into the dialog tree.
 - The standalone UI editor is a desktop development tool. Run its live visual
   and interaction QA at desktop resolutions; the game's authored `390x844`
   mobile viewport requirement does not apply to editor testing.

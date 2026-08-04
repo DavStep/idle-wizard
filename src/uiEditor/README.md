@@ -13,17 +13,35 @@ store the current dock sizes, open library folder, selected preview, and
 hierarchy visibility overrides in browser-local storage. The editor restores
 the latest saved workspace when it next opens.
 
-The left panel mirrors the component hierarchy of the widget or dialog mounted
-in the central preview. Every component has an eye control that hides or restores
-that component in the scene without removing it from the hierarchy. Retained
-Pixi widgets bridge their meaningful atomic parts into the same tree, so a
-button exposes its background and label, while compound controls also expose
-their icons and additional labels. Asset previews, including the nine-slice
-workbench, collapse the hierarchy dock because their internal DOM is editor
-implementation rather than an editable component scene. Selecting a widget,
-dialog, or scene restores the dock at its previous width.
+The left panel mirrors the authored component hierarchy of the widget or dialog
+mounted in the central preview. Retained dialogs appear as
+`<Feature>Dialog:BaseDialog`, then their paper `Content`, reusable child-widget
+instances as leaf nodes, and the remaining visible production buttons, text,
+images, and text fields as semantic atoms. Dialog adapters list reusable
+children explicitly so automatic discovery stops at those ownership
+boundaries; hidden panes and renderer internals stay out of the active tree.
+Use `Find layers` to filter by component name or semantic type while preserving
+the matching ancestor path. The result count reports direct matches. Branch
+disclosure buttons, or Left/Right while a row is focused, collapse and expand
+the tree without changing production visibility.
+Selecting any hierarchy row marks the row;
+double-clicking a reusable component instance opens its standalone
+production-backed library view, where that widget's meaningful inner atoms are
+shown. DOM-backed
+components also receive a blue outline in the preview. Every component has an
+eye control that hides or restores that component in the scene without removing
+it from the hierarchy. Retained Pixi widgets bridge their meaningful atomic
+parts into the same tree, so a button exposes its background and label, while
+compound controls also expose their icons and additional labels. Asset previews,
+including the nine-slice workbench, collapse the hierarchy dock because their
+internal DOM is editor implementation rather than an editable component scene.
+Selecting a widget, dialog, or scene restores the dock at its previous width.
 
 The right panel inspects the selected widget, asset, or atomic component.
+Its Storybook-style section tabs keep live controls or static properties
+separate from production usage references. Left/Right moves between available
+tabs, and the selected object summary stays pinned above them while the panel
+scrolls.
 The retained Base / Text Button exposes one live color-swatch control for the
 full eight-color skin family, one `50` / `30` / `15` corner-size selector, its
 label, and enabled state. Cost Button adds layout, optional top-label, price,
@@ -115,10 +133,50 @@ panel. Scenario fixtures and adapter state stay development-only; production
 widgets are exercised through their public binding and interaction APIs without
 editor branches in engine code.
 
+### Production parity contract
+
+- A preview imports and instantiates the exported production class or factory
+  used by the game. Do not recreate game markup, Pixi trees, skins, or layout in
+  editor-only code.
+- Fixtures may replace data, time, callbacks, input routing, and backend
+  services. They must not replace rendering code.
+- Every scene, dialog, and `feature.*` integration declares every reusable
+  visual or interactive child in `childWidgetIds`.
+- Every declared child must resolve to a separate `kind: 'widget'` library
+  entry with a passive production-backed thumbnail. The parent and standalone
+  preview must use the same production class.
+- A reusable child hidden as a private class must be exported or extracted
+  before its large parent preview is considered complete.
+- `validateUiEditorCompositionCoverage` runs before editor mount, while focused
+  tests guard manifest coverage. Missing children, non-widget children,
+  self-references, and children without thumbnails fail fast.
+
+The validator proves that declared dependencies exist and are discoverable.
+Code review is still responsible for ensuring `childWidgetIds` is exhaustive
+for the production composition.
+
 Current proof integrations cover manual, timed, and ranged progress bars;
-range, milestone, and disabled sliders; fixture-driven dialog data; the Brewing
-HUD; and the Research room. Existing retained button previews use the same
+range, milestone, and disabled sliders; the settings toggle; text fields;
+regular, outlined, wrapped, inline, resource, and star labels; the managed
+scroll area; the complete device-preferences board; HUD level and currency
+widgets; the standalone bottom room tab and its composing tab group; the complete retained production-dialog inventory;
+the Brewing HUD; the Research room; and the standalone Research Row, Research
+Station Title, Dialog Frame, and Inventory Choice Row components. The `Dialogs` library folder groups
+all 39 production dialogs under `Global`, `Workshop`, `Garden`, `Brewing`,
+`Market`, and `Guild`. Each entry mounts the real production dialog with
+deterministic populated and alternate-state fixtures. The level widget lives directly under
+`Progress bars`; other
+foundational entries stay independently selectable under nested `Text`,
+`Inputs`, `Settings`, `Scrolling`, `HUD`, and `Navigation` folders. One entry
+owns all compatible states as scenarios, so state variants do not become
+duplicate catalogue tiles. Existing retained button previews use the same
 Inspector extension point for configuration and live activation feedback.
+
+Retained dialog previews sit inside the authored `390px` game-screen frame so
+their placement can be judged against the real rendering bounds. The compact
+bottom toolbar floats over the preview world and provides zoom out, the current
+percentage, zoom in, and Center. Enable Pan before dragging the screen; leaving
+Pan off keeps the production dialog controls interactive.
 
 Integration modules must not evaluate arbitrary scripts, call production
 backend services, or import themselves from production entry points. Every

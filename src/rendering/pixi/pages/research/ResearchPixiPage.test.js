@@ -13,6 +13,7 @@ import {
   RESEARCH_PIXI_GEOMETRY,
   RESEARCH_WIDGET_BOUNCE_DURATION_MS,
   ResearchPixiPage,
+  ResearchStationTitlePlaque,
   getResearchShineLayout,
   getResearchWidgetBounceScale,
 } from './ResearchPixiPage.js';
@@ -27,6 +28,19 @@ import {
 } from '../../theme/PixiThemeTokens.js';
 
 describe('ResearchPixiPage', () => {
+  it('keeps the empty title plaque inside its nine-slice minimum before binding', () => {
+    const plaque = new ResearchStationTitlePlaque();
+
+    expect(plaque.width).toBeGreaterThanOrEqual(62);
+    expect(plaque.frame).toMatchObject({
+      compatibilityError: null,
+      frameHeight: 42,
+      frameWidth: plaque.width,
+    });
+
+    plaque.root.destroy({ children: true });
+  });
+
   it('matches the Root Run upgrade bounce and masked shine geometry', () => {
     expect(getResearchWidgetBounceScale(0)).toBe(1);
     expect(getResearchWidgetBounceScale(0.28)).toBeCloseTo(1.035);
@@ -128,6 +142,9 @@ describe('ResearchPixiPage', () => {
     const root = harness.page.getDisplayObject();
     const box = harness.page.boxes.get('herbs');
     const row = box.rows.get('mint');
+
+    expect(row.costButton.background.visible).toBe(true);
+    expect(row.costButton.background.renderable).toBe(true);
 
     pages.bind('research', createResearchViewModel({ value: '80 mana' }));
 
@@ -392,12 +409,20 @@ describe('ResearchPixiPage', () => {
       firstRow.card.position.x +
       RESEARCH_PIXI_GEOMETRY.cardWidth;
     expect(cardRight).toBeLessThanOrEqual(scroll.width);
+    const trackStrokeOutset =
+      RETAINED_SCROLLBAR_GEOMETRY.trackBorderWidth / 2;
     expect(scroll.scrollbarTrack.getLocalBounds()).toMatchObject({
-      x: scroll.width + RETAINED_SCROLLBAR_GEOMETRY.gap,
-      y: RETAINED_SCROLLBAR_GEOMETRY.trackInset,
-      width: RETAINED_SCROLLBAR_GEOMETRY.width,
+      x:
+        scroll.width +
+        RETAINED_SCROLLBAR_GEOMETRY.gap -
+        trackStrokeOutset,
+      y: RETAINED_SCROLLBAR_GEOMETRY.trackInset - trackStrokeOutset,
+      width:
+        RETAINED_SCROLLBAR_GEOMETRY.width + trackStrokeOutset * 2,
       height:
-        scroll.height - RETAINED_SCROLLBAR_GEOMETRY.trackInset * 2,
+        scroll.height -
+        RETAINED_SCROLLBAR_GEOMETRY.trackInset * 2 +
+        trackStrokeOutset * 2,
     });
     expect(RETAINED_SCROLLBAR_VISUALS).toMatchObject({
       trackBackground: 0x17100c,
@@ -691,6 +716,8 @@ describe('ResearchPixiPage', () => {
       buttonWidth: 72,
       buttonHeight: 42,
     });
+    expect(row.researchedButton.background.visible).toBe(true);
+    expect(row.researchedButton.background.renderable).toBe(true);
     expect(row.readonlyValue.visible).toBe(false);
 
     harness.page.destroy();

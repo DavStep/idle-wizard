@@ -1155,19 +1155,24 @@ function createSliceSourceViewport(
   };
 }
 
-export function createPanZoomViewport(label) {
+export function createPanZoomViewport(
+  label,
+  { panEnabled: initialPanEnabled = true } = {},
+) {
   const root = document.createElement('div');
   const content = document.createElement('div');
   const listeners = [];
   const zoomListeners = new Set();
   const pan = { x: 0, y: 0 };
   let zoom = 1;
+  let panEnabled = initialPanEnabled === true;
   let activePointer = null;
   let resizeObserver = null;
 
   root.className =
     'ui-editor-pan-zoom-viewport ui-editor-checkerboard';
   root.dataset.uiEditorComponent = 'EditorPanZoomViewport';
+  root.dataset.panEnabled = String(panEnabled);
   root.dataset.zoom = '1';
   root.setAttribute('aria-label', `${label}. Drag or use arrow keys to move.`);
   root.setAttribute('role', 'region');
@@ -1220,6 +1225,11 @@ export function createPanZoomViewport(label) {
     pan.y += deltaY;
     applyTransform();
   };
+  const center = () => {
+    pan.x = 0;
+    pan.y = 0;
+    applyTransform();
+  };
   const notifyZoom = () => {
     for (const listener of zoomListeners) {
       listener(zoom);
@@ -1257,7 +1267,7 @@ export function createPanZoomViewport(label) {
 
   listen(root, 'pointerdown', (event) => {
     if (
-      event.button !== 0
+      (!panEnabled || event.button !== 0)
       || event.target.closest('[data-slice-guide], button, input')
     ) {
       return;
@@ -1297,9 +1307,7 @@ export function createPanZoomViewport(label) {
       moveBy(...movement);
       event.preventDefault();
     } else if (event.key === 'Home') {
-      pan.x = 0;
-      pan.y = 0;
-      applyTransform();
+      center();
       event.preventDefault();
     } else if (event.key === '+' || event.key === '=') {
       setZoomAt(zoom * 1.25);
@@ -1317,6 +1325,7 @@ export function createPanZoomViewport(label) {
   }
 
   return {
+    center,
     content,
     root,
     fit: () => {
@@ -1331,6 +1340,15 @@ export function createPanZoomViewport(label) {
     refresh: applyTransform,
     setZoom: (nextZoom) => setZoomAt(nextZoom),
     setZoomAt,
+    setPanEnabled: (enabled) => {
+      panEnabled = enabled === true;
+      root.dataset.panEnabled = String(panEnabled);
+      if (!panEnabled) {
+        activePointer = null;
+        delete root.dataset.panning;
+      }
+      return panEnabled;
+    },
     subscribeZoom: (listener) => {
       zoomListeners.add(listener);
       return () => zoomListeners.delete(listener);
@@ -1346,13 +1364,22 @@ export function createPanZoomViewport(label) {
   };
 }
 
-function createViewportZoomControls(label, viewports) {
+export function createViewportZoomControls(
+  label,
+  viewports,
+  {
+    centerLabel = null,
+    fitLabel = 'Fit',
+    showHint = true,
+  } = {},
+) {
   const root = document.createElement('div');
   const hint = document.createElement('span');
   const zoomOut = document.createElement('button');
   const status = document.createElement('output');
   const zoomIn = document.createElement('button');
   const fit = document.createElement('button');
+  const center = document.createElement('button');
   const listeners = [];
   const zoomSubscriptions = [];
   let zoom = 1;
@@ -1360,6 +1387,7 @@ function createViewportZoomControls(label, viewports) {
   root.className = 'ui-editor-pan-zoom-controls';
   hint.className = 'ui-editor-pan-zoom-controls__hint';
   hint.textContent = 'Drag to move · Scroll to zoom';
+  hint.hidden = showHint !== true;
   zoomOut.className = 'ui-editor-pan-zoom-controls__button';
   zoomOut.type = 'button';
   zoomOut.textContent = '−';
@@ -1373,9 +1401,19 @@ function createViewportZoomControls(label, viewports) {
   zoomIn.setAttribute('aria-label', `${label} zoom in`);
   fit.className = 'ui-editor-pan-zoom-controls__button';
   fit.type = 'button';
-  fit.textContent = 'Fit';
+  fit.textContent = fitLabel ?? '';
   fit.setAttribute('aria-label', `Fit ${label.toLowerCase()} to view`);
-  root.append(hint, zoomOut, status, zoomIn, fit);
+  center.className = 'ui-editor-pan-zoom-controls__button';
+  center.type = 'button';
+  center.textContent = centerLabel ?? '';
+  center.setAttribute('aria-label', `Center ${label.toLowerCase()}`);
+  root.append(hint, zoomOut, status, zoomIn);
+  if (fitLabel) {
+    root.append(fit);
+  }
+  if (centerLabel) {
+    root.append(center);
+  }
 
   const updateStatus = (nextZoom) => {
     zoom = nextZoom;
@@ -1396,6 +1434,11 @@ function createViewportZoomControls(label, viewports) {
       viewport.fit();
     }
     updateStatus(viewports[0]?.getZoom?.() ?? 1);
+  };
+  const onCenter = () => {
+    for (const viewport of viewports) {
+      viewport.center?.();
+    }
   };
   const onWheel = (event) => {
     const delta = event.deltaMode === 1
@@ -1420,10 +1463,12 @@ function createViewportZoomControls(label, viewports) {
   zoomOut.addEventListener('click', onZoomOut);
   zoomIn.addEventListener('click', onZoomIn);
   fit.addEventListener('click', onFit);
+  center.addEventListener('click', onCenter);
   listeners.push(
     () => zoomOut.removeEventListener('click', onZoomOut),
     () => zoomIn.removeEventListener('click', onZoomIn),
     () => fit.removeEventListener('click', onFit),
+    () => center.removeEventListener('click', onCenter),
   );
   for (const viewport of viewports) {
     viewport.root.addEventListener('wheel', onWheel, { passive: false });

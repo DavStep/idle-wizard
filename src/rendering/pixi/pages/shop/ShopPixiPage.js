@@ -398,18 +398,20 @@ export class ShopPixiPage extends BasePixiRetainedView {
   createRequestSectionOptions() {
     const requests = this.model.players.requests;
     return {
-      countLabel: requests.countLabel ?? '',
-      actions: [
-        {
-          id: 'clear',
-          label: 'clear',
-          semanticId: 'shop.requests.clear',
-          enabled: requests.canClear !== false,
-          action:
-            requests.clearAction ??
-            this.currentActions.clearPlayerRequest,
-        },
-      ],
+      actions:
+        requests.canClear === true
+          ? [
+              {
+                id: 'clear',
+                label: 'clear',
+                semanticId: 'shop.requests.clear',
+                enabled: true,
+                action:
+                  requests.clearAction ??
+                  this.currentActions.clearPlayerRequest,
+              },
+            ]
+          : [],
       onRow: (slot) =>
         slot.action?.(slot) ??
         this.openDialog(
@@ -454,7 +456,6 @@ export class ShopPixiPage extends BasePixiRetainedView {
       },
     ];
     return {
-      countLabel: market.countLabel ?? '',
       actions: footerActions,
       trailingRows: market.proceedsLabel
         ? [
@@ -1331,7 +1332,7 @@ class ShopStallWidget {
     this.unregisterSemantic();
     this.key = key;
     this.model = stall;
-    this.action = stall.action ?? action;
+    this.action = action ?? stall.action;
     this.enabled = stall.enabled !== false && stall.locked !== true;
     this.root.visible = stall.hidden !== true;
     this.root.renderable = this.root.visible;
@@ -1981,6 +1982,7 @@ class ShopCompactRow {
       inputRouter,
       width: OFFER_ACTION_WIDTH,
       height: OFFER_ACTION_HEIGHT,
+      sizeTier: 30,
       variant: 'green',
       label: `${label}:valueButton`,
     });
@@ -2672,20 +2674,30 @@ function normalizeSectionStallRow(
     quantitySuffix && rawItemLabel.endsWith(quantitySuffix)
       ? rawItemLabel.slice(0, -quantitySuffix.length)
       : rawItemLabel;
+  const priceLabel =
+    row.priceLabel ??
+    row.value ??
+    row.actionLabel ??
+    '';
+  const priceResourceKey =
+    row.priceResourceKey ??
+    row.valueResourceKey ??
+    null;
+  const isAvailableSelectAction =
+    !priceResourceKey &&
+    row.enabled !== false &&
+    row.locked !== true &&
+    String(priceLabel).trim().toLowerCase() === 'select';
   return {
     ...row,
     title: row.title ?? `${titlePrefix} ${slotNumber}`,
     itemLabel,
     quantityLabel,
-    priceLabel:
-      row.priceLabel ??
-      row.value ??
-      row.actionLabel ??
-      '',
-    priceResourceKey:
-      row.priceResourceKey ??
-      row.valueResourceKey ??
-      null,
+    priceLabel,
+    priceResourceKey,
+    priceVariant:
+      row.priceVariant ??
+      (isAvailableSelectAction ? 'green' : null),
     semanticId:
       row.semanticId ??
       `${semanticPrefix}.${slotNumber}`,

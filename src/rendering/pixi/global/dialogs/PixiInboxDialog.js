@@ -276,6 +276,7 @@ class InboxMailWidget {
       text: 'Claim',
       width: 48,
       height: 20,
+      sizeTier: 30,
       action: () => this.claim(),
       variant: 'green',
       label: `${label}:claim`,

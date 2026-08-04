@@ -22,6 +22,7 @@ describe('UI Lab integration definitions', () => {
 
     expect(integration).toMatchObject({
       apiVersion: 1,
+      childWidgetIds: [],
       createThumbnail,
       folderPath: ['Brewing'],
       id: 'brewing.cauldron',
@@ -30,6 +31,57 @@ describe('UI Lab integration definitions', () => {
     expect(integration.scenarios).toEqual([
       expect.objectContaining({ id: 'default', mount }),
     ]);
+  });
+
+  it('requires scenes, dialogs, and feature previews to declare child widgets', () => {
+    for (const definition of [
+      { id: 'room.preview', kind: 'scene' },
+      { id: 'dialog.preview', kind: 'dialog' },
+      { id: 'feature.preview', kind: 'widget' },
+    ]) {
+      expect(() =>
+        defineUiEditorIntegration({
+          apiVersion: 1,
+          ...definition,
+          label: definition.id,
+          mount() {},
+          sectionId:
+            definition.kind === 'scene'
+              ? 'scenes'
+              : definition.kind === 'dialog'
+                ? 'dialogs'
+                : 'composite-widgets',
+        }),
+      ).toThrow('must declare childWidgetIds');
+    }
+  });
+
+  it('normalizes unique child widget ids on a large preview', () => {
+    const integration = defineUiEditorIntegration({
+      apiVersion: 1,
+      childWidgetIds: [' cost-button ', 'primitive.progress-bar'],
+      id: 'feature.preview',
+      kind: 'widget',
+      label: 'Feature Preview',
+      mount() {},
+      sectionId: 'composite-widgets',
+    });
+
+    expect(integration.childWidgetIds).toEqual([
+      'cost-button',
+      'primitive.progress-bar',
+    ]);
+    expect(() =>
+      defineUiEditorIntegration({
+        apiVersion: 1,
+        childWidgetIds: ['cost-button', 'cost-button'],
+        id: 'feature.duplicate-child',
+        kind: 'widget',
+        label: 'Duplicate Child',
+        mount() {},
+        sectionId: 'composite-widgets',
+      }),
+    ).toThrow('Duplicate child widget id: cost-button');
   });
 
   it('rejects a non-function thumbnail hook', () => {

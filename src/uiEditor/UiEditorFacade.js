@@ -35,6 +35,8 @@ export class UiEditorFacade {
     const refs = this.viewManager.mount();
 
     this.hierarchyManager = new UiEditorHierarchyManager({
+      onOpenComponent: (entryId) =>
+        this.openLibraryComponent(entryId),
       onSelectComponent: (component) =>
         this.usageManager?.showComponent(component),
       panel: refs.panels.left,
@@ -132,6 +134,20 @@ export class UiEditorFacade {
     }
 
     return opened;
+  }
+
+  openLibraryComponent(entryId) {
+    const entry = this.libraryEntries.find(
+      (candidate) =>
+        candidate.id === entryId || candidate.integrationId === entryId,
+    );
+
+    if (!entry) {
+      return false;
+    }
+
+    this.bottomPanelManager?.openEntryFolder(entry.id);
+    return this.bottomPanelManager?.selectEntry(entry.id) ?? false;
   }
 
   handleAssetDeleted({ entry, replacementEntry }) {

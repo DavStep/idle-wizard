@@ -426,6 +426,7 @@ export class RetainedButton {
     inputRouter = null,
     semanticRegistry = null,
     semanticId = null,
+    sizeTier = 50,
     tutorialId = null,
     variant = 'button',
   } = {}) {
@@ -442,6 +443,7 @@ export class RetainedButton {
       inputRouter,
       semanticRegistry,
       semanticId,
+      sizeTier,
       tutorialId,
       text: label,
       action: onActivate,

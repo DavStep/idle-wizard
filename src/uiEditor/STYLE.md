@@ -86,11 +86,19 @@ Use borders before shadows. Panels use `--editor-border-subtle` or
 - Library entries are compact text rows. The selected row uses
   `--editor-surface-selected`; opening it replaces the center preview without
   adding preview chrome.
-- Hierarchy rows use `28px` pitch, depth-based `12px` indentation, a leading eye
-  control, an ellipsized component label, and a muted element tag. Hiding a
+- The hierarchy owns one sticky `Find layers` field and direct-match count.
+  Filtering keeps every matching ancestor visible, while native disclosure
+  buttons and Left/Right keys collapse or expand branches independently from
+  the eye visibility control.
+- Hierarchy rows use `28px` pitch, depth-based `12px` indentation, a disclosure,
+  leading eye control, an ellipsized component label, and a muted element tag. Hiding a
   parent visually mutes its descendants while preserving their individual
   visibility choices. Retained-canvas atomic rows use the same rhythm and the
   existing selected-row surface.
+- The right Inspector pins the selected-object summary and a compact native tab
+  row. `Controls`, `Properties`, or `Details` owns editing and metadata;
+  `Usage` owns production references. Tabs use the shared blue underline and
+  Left/Right focus-following selection instead of stacking both long sections.
 - Atomic-component inspector fields use the existing raised control surface.
   Position fields share one row; text and asset controls span the inspector
   width.
@@ -99,6 +107,11 @@ Use borders before shadows. Panels use `--editor-border-subtle` or
   labels stay secondary; live values use the editor mono face. Actions wrap at
   narrow widths and the event list scrolls within its own bounded region rather
   than expanding the dock indefinitely.
+- Retained dialog previews expose the complete authored `390px` screen frame
+  against the recessed grid canvas. The preview fills the complete central
+  canvas, and the compact bottom toolbar overlays that world like the Root Run
+  level-editor HUD. It contains only Pan, zoom out, percentage, zoom in, and
+  Center so it reads as editor chrome rather than game UI.
 - The nine-slice workbench keeps its source and guides in the left pane. The
   source contain-fits upward as well as downward, preserving crisp source
   pixels, and supports cursor-centered wheel zoom plus drag and keyboard pan.
@@ -151,9 +164,14 @@ Use borders before shadows. Panels use `--editor-border-subtle` or
 - Hierarchy eye controls are native buttons with visible/hidden icons and
   `Hide …` / `Show …` accessible labels. They apply an editor-only visibility
   marker and never remove a component from the preview tree.
-- Retained atomic hierarchy rows are keyboard-selectable. Selection opens
-  native number, text, and select controls in the inspector and applies edits
-  immediately to the mounted preview.
+- Every hierarchy row is pointer- and keyboard-selectable. Selection uses the
+  existing selected-row surface, and DOM-backed selection outlines the matching
+  preview component in blue. Retained atomic selection opens native number,
+  text, and select controls in the inspector and applies edits immediately to
+  the mounted preview. Double-clicking a reusable retained component instance
+  opens its standalone production-backed library entry; embedded widget
+  instances remain hierarchy leaves, and their inner components appear only in
+  that standalone view. Single click remains selection only.
 - Retained button selections expose compact native inspector groups instead of
   duplicate catalogue entries. Use labeled color swatches, segmented `50` /
   `30` / `15` corner-size choices, and explicit state choices; Cost Button also
@@ -167,6 +185,9 @@ Use borders before shadows. Panels use `--editor-border-subtle` or
   the central canvas. Changing scenario remounts only that integration and
   disposes its clock, listeners, isolated state, and Pixi tree before the next
   scenario starts.
+- Dialog-preview Pan is opt-in so production canvas controls remain interactive
+  by default. Zoom may use the toolbar, wheel, or keyboard. Center clears only
+  pan and preserves the current zoom; Home provides the same keyboard action.
 - Nine-slice source margins may be changed by direct number entry, pointer drag,
   or keyboard movement. Opposing guides may never cross, and every size or slice
   change updates the stretched result immediately. Clipboard output is a

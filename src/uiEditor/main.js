@@ -7,6 +7,7 @@ import { createHierarchyPreviewFixture } from './fixtures/createHierarchyPreview
 import { createLibrarySelectionEntries } from './fixtures/createLibrarySelectionEntries.js';
 import { loadUiEditorIntegrations } from './integrations/loadUiEditorIntegrations.js';
 import { createUiEditorIntegrationEntries } from './sdk/createUiEditorIntegrationEntries.js';
+import { validateUiEditorCompositionCoverage } from './sdk/validateUiEditorCompositionCoverage.js';
 import { UiEditorFacade } from './UiEditorFacade.js';
 import {
   consumePendingNineSliceSelection,
@@ -23,6 +24,10 @@ const buttonEntries = createIdleWizardButtonEntries();
 const integrationEntries = createUiEditorIntegrationEntries(
   loadUiEditorIntegrations(),
 );
+validateUiEditorCompositionCoverage([
+  ...buttonEntries,
+  ...integrationEntries,
+]);
 const editor = new UiEditorFacade({
   libraryEntries: [
     ...createIdleWizardAssetEntries(buttonEntries),

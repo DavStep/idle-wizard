@@ -189,7 +189,7 @@ export class PixiBottomPanelView extends BasePixiRetainedView {
     this.notificationsRoot.zIndex = 10;
     this.tabs = PIXI_BOTTOM_PANEL_TABS.map(
       (definition) =>
-        new PixiBottomTab({
+        new PixiBottomRoomTab({
           definition,
           assets,
           inputRouter,
@@ -747,7 +747,7 @@ export class PixiBottomPanelView extends BasePixiRetainedView {
   }
 }
 
-class PixiBottomTab {
+export class PixiBottomRoomTab {
   constructor({
     definition,
     assets,

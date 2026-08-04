@@ -111,6 +111,7 @@ export class GuildPixiPage extends BasePixiRetainedView {
         semanticId: `guild.tab.${tab.id}`,
         text: tab.label,
         label: `guild:tab:${tab.id}`,
+        variant: 'tab',
         action: () => this.selectTab(tab.id),
       });
       this.tabButtons.set(tab.id, button);

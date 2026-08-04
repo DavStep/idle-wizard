@@ -320,6 +320,7 @@ export class GuildSecretarySection {
       semanticRegistry,
       semanticId: 'guild.secretary.upgrade',
       text: 'upgrade secretary',
+      sizeTier: 30,
       label: 'guild:secretary:upgrade',
     });
     this.costLabel = new PixiTextLabel({

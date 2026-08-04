@@ -243,6 +243,7 @@ export class FirstRunIntroPixiView extends BasePixiRetainedView {
       width: FIRST_RUN_INTRO_PIXI_GEOMETRY.nextButtonWidth,
       height: FIRST_RUN_INTRO_PIXI_GEOMETRY.advanceButtonHeight,
       variant: 'yellow',
+      sizeTier: 30,
       action: () => this.actions.advance?.(),
       label: 'firstRunIntro:advance',
     });

@@ -2,6 +2,7 @@ import {
   DEFAULT_PIXI_THEME_SNAPSHOT,
   PIXI_UI_GEOMETRY,
 } from '../theme/PixiThemeTokens.js';
+import { PIXI_DIALOG_BASE_GEOMETRY } from './PixiDialogFrame.js';
 import { PixiModalSurface } from './PixiModalSurface.js';
 
 const DEFAULT_SOURCE_HEIGHT = 2170 / 3;
@@ -37,8 +38,8 @@ export class PixiOwnedDialogSurface extends PixiModalSurface {
     super({
       assetManager,
       title,
-      contentWidth: 0,
-      contentHeight: 0,
+      contentWidth: PIXI_DIALOG_BASE_GEOMETRY.contentWidth,
+      contentHeight: PIXI_DIALOG_BASE_GEOMETRY.minContentHeight,
       backdropAlpha,
       inputRouter,
       semanticRegistry,

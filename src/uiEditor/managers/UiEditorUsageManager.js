@@ -5,6 +5,8 @@ export class UiEditorUsageManager {
     this.selectedComponent = null;
 
     this.handleInput = (event) => this.onInput(event);
+    this.handleTabClick = (event) => this.onTabClick(event);
+    this.handleTabKeyDown = (event) => this.onTabKeyDown(event);
   }
 
   mount() {
@@ -19,8 +21,15 @@ export class UiEditorUsageManager {
     const summary = document.createElement('div');
     const title = document.createElement('h2');
     const count = document.createElement('span');
+    const tabs = document.createElement('div');
+    const detailsTab = document.createElement('button');
+    const usageTab = document.createElement('button');
+    const detailsPanel = document.createElement('section');
+    const usagePanel = document.createElement('section');
     const editor = document.createElement('div');
     const properties = document.createElement('dl');
+    const detailsEmpty = document.createElement('p');
+    const usageEmpty = document.createElement('p');
     const list = document.createElement('ul');
 
     header.textContent = 'Inspector';
@@ -32,19 +41,54 @@ export class UiEditorUsageManager {
     summary.hidden = true;
     title.className = 'ui-editor-usages__title';
     count.className = 'ui-editor-usages__count';
+    tabs.className = 'ui-editor-usages__tabs';
+    tabs.setAttribute('role', 'tablist');
+    tabs.setAttribute('aria-label', 'Inspector sections');
+    tabs.hidden = true;
+    configureTab(detailsTab, 'details', 'Properties');
+    configureTab(usageTab, 'usage', 'Usage');
+    detailsTab.id = 'ui-editor-inspector-details-tab';
+    detailsTab.setAttribute('aria-controls', 'ui-editor-inspector-details-panel');
+    usageTab.id = 'ui-editor-inspector-usage-tab';
+    usageTab.setAttribute('aria-controls', 'ui-editor-inspector-usage-panel');
+    detailsPanel.className = 'ui-editor-usages__panel';
+    detailsPanel.id = 'ui-editor-inspector-details-panel';
+    detailsPanel.dataset.inspectorPanel = 'details';
+    detailsPanel.setAttribute('role', 'tabpanel');
+    detailsPanel.setAttribute('aria-labelledby', detailsTab.id);
+    detailsPanel.hidden = true;
+    usagePanel.className = 'ui-editor-usages__panel';
+    usagePanel.id = 'ui-editor-inspector-usage-panel';
+    usagePanel.dataset.inspectorPanel = 'usage';
+    usagePanel.setAttribute('role', 'tabpanel');
+    usagePanel.setAttribute('aria-labelledby', usageTab.id);
+    usagePanel.hidden = true;
     editor.className = 'ui-editor-usages__editor';
     editor.hidden = true;
     properties.className = 'ui-editor-usages__properties';
     properties.hidden = true;
+    detailsEmpty.className = 'ui-editor-usages__section-empty';
+    detailsEmpty.textContent = 'No editable properties for this selection.';
+    detailsEmpty.hidden = true;
+    usageEmpty.className = 'ui-editor-usages__section-empty';
+    usageEmpty.hidden = true;
     list.className = 'ui-editor-usages__list';
     summary.append(title, count);
-    root.append(summary, editor, properties, emptyState, list);
+    tabs.append(detailsTab, usageTab);
+    detailsPanel.append(editor, properties, detailsEmpty);
+    usagePanel.append(usageEmpty, list);
+    root.append(summary, tabs, detailsPanel, usagePanel, emptyState);
     body.replaceChildren(root);
     editor.addEventListener('input', this.handleInput);
+    tabs.addEventListener('click', this.handleTabClick);
+    tabs.addEventListener('keydown', this.handleTabKeyDown);
 
     this.refs = {
       body,
       count,
+      detailsEmpty,
+      detailsPanel,
+      detailsTab,
       editor,
       emptyState,
       header,
@@ -52,7 +96,11 @@ export class UiEditorUsageManager {
       properties,
       root,
       summary,
+      tabs,
       title,
+      usageEmpty,
+      usagePanel,
+      usageTab,
     };
     return this.refs;
   }
@@ -86,12 +134,7 @@ export class UiEditorUsageManager {
     this.refs.root.dataset.empty = String(
       usages.length === 0 && !customInspector,
     );
-    this.refs.emptyState.hidden = usages.length > 0 || Boolean(customInspector);
-    this.refs.emptyState.textContent = usages.length
-      ? ''
-      : customInspector
-        ? ''
-        : `No usages registered for this ${entry.kind}.`;
+    this.refs.emptyState.hidden = true;
     this.refs.summary.hidden = false;
     this.refs.title.textContent = entry.label;
     this.refs.count.textContent = `${usages.length} ${
@@ -105,6 +148,15 @@ export class UiEditorUsageManager {
     this.refs.properties.replaceChildren(...properties.map(createPropertyItem));
     this.refs.list.setAttribute('aria-label', `${entry.label} usages`);
     this.refs.list.replaceChildren(...usages.map(createUsageItem));
+    this.refs.detailsEmpty.hidden = properties.length > 0 || Boolean(customInspector);
+    this.refs.usageEmpty.hidden = usages.length > 0;
+    this.refs.usageEmpty.textContent = usages.length
+      ? ''
+      : `No usages registered for this ${entry.kind}.`;
+    this.configureTabs({
+      detailsLabel: customInspector ? 'Controls' : 'Properties',
+      showUsage: ['asset', 'widget'].includes(entry.kind),
+    });
     return true;
   }
 
@@ -132,9 +184,12 @@ export class UiEditorUsageManager {
       ...properties.map(createPropertyItem),
     );
     this.refs.emptyState.hidden = true;
-    this.refs.emptyState.textContent = '';
     this.refs.list.removeAttribute('aria-label');
     this.refs.list.replaceChildren();
+    this.refs.detailsEmpty.hidden = true;
+    this.refs.usageEmpty.hidden = true;
+    this.refs.usageEmpty.textContent = '';
+    this.configureTabs({ detailsLabel: 'Details', showUsage: false });
     return true;
   }
 
@@ -165,11 +220,56 @@ export class UiEditorUsageManager {
     this.refs.properties.replaceChildren();
     this.refs.list.removeAttribute('aria-label');
     this.refs.list.replaceChildren();
-    this.refs.emptyState.hidden = fields.length > 0;
-    this.refs.emptyState.textContent = fields.length
-      ? ''
-      : 'No editable properties for this component.';
+    this.refs.emptyState.hidden = true;
+    this.refs.detailsEmpty.hidden = fields.length > 0;
+    this.refs.detailsEmpty.textContent = 'No editable properties for this component.';
+    this.refs.usageEmpty.hidden = true;
+    this.refs.usageEmpty.textContent = '';
+    this.configureTabs({ detailsLabel: 'Properties', showUsage: false });
     return true;
+  }
+
+  onTabClick(event) {
+    const tab = event.target.closest('[data-inspector-tab]');
+    if (!tab || !this.refs.tabs.contains(tab) || tab.hidden) {
+      return;
+    }
+    this.setActiveTab(tab.dataset.inspectorTab);
+  }
+
+  onTabKeyDown(event) {
+    if (!['ArrowLeft', 'ArrowRight'].includes(event.key)) {
+      return;
+    }
+
+    const tab = event.target.closest('[data-inspector-tab]');
+    if (!tab || !this.refs.tabs.contains(tab) || this.refs.usageTab.hidden) {
+      return;
+    }
+
+    event.preventDefault();
+    const nextTab = tab === this.refs.detailsTab
+      ? this.refs.usageTab
+      : this.refs.detailsTab;
+    this.setActiveTab(nextTab.dataset.inspectorTab);
+    nextTab.focus();
+  }
+
+  configureTabs({ detailsLabel, showUsage }) {
+    this.refs.detailsTab.textContent = detailsLabel;
+    this.refs.usageTab.hidden = !showUsage;
+    this.refs.tabs.hidden = false;
+    this.setActiveTab('details');
+  }
+
+  setActiveTab(tabId) {
+    const showUsage = tabId === 'usage' && !this.refs.usageTab.hidden;
+    this.refs.detailsTab.setAttribute('aria-selected', String(!showUsage));
+    this.refs.usageTab.setAttribute('aria-selected', String(showUsage));
+    this.refs.detailsTab.tabIndex = showUsage ? -1 : 0;
+    this.refs.usageTab.tabIndex = showUsage ? 0 : -1;
+    this.refs.detailsPanel.hidden = showUsage;
+    this.refs.usagePanel.hidden = !showUsage;
   }
 
   onInput(event) {
@@ -207,6 +307,9 @@ export class UiEditorUsageManager {
     this.refs.emptyState.textContent =
       'Select a widget or asset to inspect it.';
     this.refs.summary.hidden = true;
+    this.refs.tabs.hidden = true;
+    this.refs.detailsPanel.hidden = true;
+    this.refs.usagePanel.hidden = true;
     this.refs.title.textContent = '';
     this.refs.count.textContent = '';
     this.refs.properties.hidden = true;
@@ -214,6 +317,9 @@ export class UiEditorUsageManager {
     this.refs.properties.replaceChildren();
     this.refs.list.removeAttribute('aria-label');
     this.refs.list.replaceChildren();
+    this.refs.detailsEmpty.hidden = true;
+    this.refs.usageEmpty.hidden = true;
+    this.refs.usageEmpty.textContent = '';
   }
 
   unmount() {
@@ -223,10 +329,21 @@ export class UiEditorUsageManager {
 
     this.refs.header.textContent = 'Right panel';
     this.refs.editor.removeEventListener('input', this.handleInput);
+    this.refs.tabs.removeEventListener('click', this.handleTabClick);
+    this.refs.tabs.removeEventListener('keydown', this.handleTabKeyDown);
     this.refs.body.replaceChildren();
     this.selectedComponent = null;
     this.refs = null;
   }
+}
+
+function configureTab(button, id, label) {
+  button.className = 'ui-editor-usages__tab';
+  button.type = 'button';
+  button.dataset.inspectorTab = id;
+  button.setAttribute('role', 'tab');
+  button.setAttribute('aria-selected', 'false');
+  button.textContent = label;
 }
 
 function normalizeFields(fields) {

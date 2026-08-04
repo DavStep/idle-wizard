@@ -333,10 +333,9 @@ export class BorderLabelButton {
       height: PIXI_UI_GEOMETRY.borderLabelLineHeight,
       action,
       haptic: 'light',
+      variant: 'border-label',
       label: `${label}:button`,
     });
-    this.button.frame.visible = false;
-    this.button.frame.renderable = false;
     this.button.textLabel
       .setFontSize(PIXI_UI_GEOMETRY.borderLabelFontSize)
       .setFontWeight('normal');

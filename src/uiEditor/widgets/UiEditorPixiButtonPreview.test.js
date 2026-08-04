@@ -1,16 +1,25 @@
 // @vitest-environment jsdom
 
 import { beforeAll, describe, expect, it } from 'vitest';
+import { createUiEditorThumbnailRenderQueue } from './UiEditorThumbnailRenderQueue.js';
+
+let createUiEditorPixiButtonPreview;
+let createAssetOptions;
+let PIXI_ROOT_RUN_ASSETS;
+let PIXI_ROOT_RUN_GEOMETRY;
 
 describe('UiEditorPixiButtonPreview', () => {
-  beforeAll(() => {
+  beforeAll(async () => {
     globalThis.HTMLCanvasElement.prototype.getContext = () => null;
-  });
+    const [previewModule, themeModule] = await Promise.all([
+      import('./UiEditorPixiButtonPreview.js'),
+      import('../../rendering/pixi/theme/PixiThemeTokens.js'),
+    ]);
+    ({ createAssetOptions, createUiEditorPixiButtonPreview } = previewModule);
+    ({ PIXI_ROOT_RUN_ASSETS, PIXI_ROOT_RUN_GEOMETRY } = themeModule);
+  }, 15_000);
 
   it('serializes thumbnail renders so expanding the library cannot fan out GPU contexts', async () => {
-    const { createUiEditorThumbnailRenderQueue } = await import(
-      './UiEditorPixiButtonPreview.js'
-    );
     const queue = createUiEditorThumbnailRenderQueue();
     let activeRenders = 0;
     let maximumActiveRenders = 0;
@@ -32,10 +41,7 @@ describe('UiEditorPixiButtonPreview', () => {
     expect(maximumActiveRenders).toBe(1);
   });
 
-  it('adopts another button definition without replacing its live canvas', async () => {
-    const { createUiEditorPixiButtonPreview } = await import(
-      './UiEditorPixiButtonPreview.js'
-    );
+  it('adopts another button definition without replacing its live canvas', () => {
     const firstPreview = createUiEditorPixiButtonPreview({
       id: 'first-button',
       label: 'First Button',
@@ -57,10 +63,7 @@ describe('UiEditorPixiButtonPreview', () => {
     expect(liveCanvas.getAttribute('aria-label')).toBe('Next Button');
   });
 
-  it('exposes live color and corner-size controls for the consolidated base button', async () => {
-    const { createUiEditorPixiButtonPreview } = await import(
-      './UiEditorPixiButtonPreview.js'
-    );
+  it('exposes live color and corner-size controls for the consolidated base button', () => {
     const preview = createUiEditorPixiButtonPreview({
       id: 'base-button',
       label: 'Base / Text Button',
@@ -96,10 +99,7 @@ describe('UiEditorPixiButtonPreview', () => {
     });
   });
 
-  it('lets the cost-button inspector toggle its top label independently', async () => {
-    const { createUiEditorPixiButtonPreview } = await import(
-      './UiEditorPixiButtonPreview.js'
-    );
+  it('lets the cost-button inspector toggle its top label independently', () => {
     const preview = createUiEditorPixiButtonPreview({
       id: 'cost-button',
       label: 'Cost Button',
@@ -121,12 +121,7 @@ describe('UiEditorPixiButtonPreview', () => {
     expect(preview.uiEditorGetButtonEditorState().label).toBe('show');
   });
 
-  it('disables nine-slice skins that exceed the widget minimum size', async () => {
-    const [{ createAssetOptions }, { PIXI_ROOT_RUN_ASSETS, PIXI_ROOT_RUN_GEOMETRY }] =
-      await Promise.all([
-        import('./UiEditorPixiButtonPreview.js'),
-        import('../../rendering/pixi/theme/PixiThemeTokens.js'),
-      ]);
+  it('disables nine-slice skins that exceed the widget minimum size', () => {
     const options = createAssetOptions(
       PIXI_ROOT_RUN_ASSETS.buttonBrownDark,
       {

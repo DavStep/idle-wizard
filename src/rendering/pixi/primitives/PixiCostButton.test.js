@@ -96,6 +96,28 @@ describe('PixiCostButton', () => {
     );
   });
 
+  it('keeps the production cost skin visible after parent layout resizes it', () => {
+    const { assetManager, button } = createHarness({
+      research: true,
+      width: 80,
+      height: 48,
+    });
+
+    button.setModel({
+      amountLabel: '25 Coin',
+      enabled: true,
+    });
+    button.setBounds(7, 9, 72, 42);
+
+    expect(button.background.visible).toBe(true);
+    expect(button.background.renderable).toBe(true);
+    expect(button.background.frameWidth).toBe(72);
+    expect(button.background.frameHeight).toBe(42);
+    expect(assetManager.getTexture).toHaveBeenCalledWith(
+      PIXI_ROOT_RUN_ASSETS.buttonGreen,
+    );
+  });
+
   it('uses the retained Research lock treatment and clamps its reason to two lines', () => {
     const { button } = createHarness({
       research: true,

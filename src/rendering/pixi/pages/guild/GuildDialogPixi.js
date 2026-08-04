@@ -212,6 +212,7 @@ export class GuildDialogPixi extends BasePixiRetainedView {
         this.dialogId === GUILD_DIALOG_IDS.CHARTER
           ? 'create'
           : 'save',
+      sizeTier: 30,
       label: `${this.dialogId}:submit`,
       action: () => this.submitProfile(),
     });
@@ -313,6 +314,7 @@ export class GuildDialogPixi extends BasePixiRetainedView {
       inputRouter: this.inputRouter,
       semanticRegistry: this.semanticRegistry,
       semanticId: `${this.dialogId}.action`,
+      sizeTier: 30,
       label: `${this.dialogId}:action`,
     });
     this.cardTabsLayer = new Container();
@@ -1180,6 +1182,7 @@ class GuildPaper {
       inputRouter,
       semanticRegistry,
       semanticId: 'guild.request.action',
+      sizeTier: 30,
       label: `${label}:action`,
     });
     this.root.addChild(

@@ -106,8 +106,11 @@ const STATION_TITLE_BORDER_INSETS = Object.freeze({
 });
 const STATION_TITLE_TEXT_INSET_X = 12;
 const STATION_TITLE_WIDTH_ALLOWANCE = 60;
-const STATION_TITLE_FRAME_MIN_WIDTH = Math.ceil(
-  STATION_TITLE_BORDER_INSETS.left + STATION_TITLE_BORDER_INSETS.right,
+const STATION_TITLE_MIN_WIDTH = Math.max(
+  STATION_TITLE_WIDTH_ALLOWANCE,
+  Math.ceil(
+    STATION_TITLE_BORDER_INSETS.left + STATION_TITLE_BORDER_INSETS.right,
+  ),
 );
 const STATION_TITLE_MIN_FONT_SIZE = 13;
 const STATION_TITLE_FONT_SIZE = 18;
@@ -450,6 +453,7 @@ export class ResearchPixiPage extends BaseRetainedPixiPage {
           assetManager: this.assetManager,
           buttonLabel: 'research-run-focus-button',
           inputRouter: this.inputRouter,
+          sizeTier: 30,
         }),
       reset: (button) => button.setModel({ label: '', enabled: false }),
       dispose: (button) => button.destroy(),
@@ -1017,7 +1021,7 @@ export class ResearchStationTitlePlaque {
       texture: this.resolveTexture(this.assetId),
       sourceInsets: STATION_TITLE_SOURCE_INSETS,
       borderInsets: STATION_TITLE_BORDER_INSETS,
-      width: STATION_TITLE_WIDTH_ALLOWANCE,
+      width: STATION_TITLE_MIN_WIDTH,
       height: STATION_TITLE_HEIGHT,
       label: 'research-station-title-plaque-frame',
     });
@@ -1051,8 +1055,8 @@ export class ResearchStationTitlePlaque {
 
   setMaxWidth(maxWidth) {
     this.maxWidth = Math.max(
-      STATION_TITLE_WIDTH_ALLOWANCE,
-      finiteOr(maxWidth, STATION_TITLE_WIDTH_ALLOWANCE),
+      STATION_TITLE_MIN_WIDTH,
+      finiteOr(maxWidth, STATION_TITLE_MIN_WIDTH),
     );
     this.layout();
   }
@@ -1074,17 +1078,20 @@ export class ResearchStationTitlePlaque {
       this.applyTitleStyle(fontSize);
     }
 
-    this.width = Math.min(
-      this.maxWidth,
-      Math.ceil(
-        this.title.width +
-          trailingGap +
-          trailingWidth +
-          STATION_TITLE_WIDTH_ALLOWANCE,
+    this.width = Math.max(
+      STATION_TITLE_MIN_WIDTH,
+      Math.min(
+        this.maxWidth,
+        Math.ceil(
+          this.title.width +
+            trailingGap +
+            trailingWidth +
+            STATION_TITLE_WIDTH_ALLOWANCE,
+        ),
       ),
     );
     this.frame.setSize(
-      Math.max(this.width, STATION_TITLE_FRAME_MIN_WIDTH),
+      this.width,
       STATION_TITLE_HEIGHT,
       STATION_TITLE_BORDER_INSETS,
     );
@@ -1275,7 +1282,7 @@ class ResearchReadonlyValue extends Container {
   }
 }
 
-class ResearchRowWidget {
+export class ResearchRowWidget {
   constructor({ page, assetManager, timeSource, prefersReducedMotion }) {
     this.page = page;
     this.assetManager = assetManager;

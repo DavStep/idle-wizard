@@ -153,6 +153,7 @@ export class PixiViewModelFactory {
             completed: progress.completedQuests ?? 0,
             total: progress.totalQuests ?? 0,
             activeFraction: getActiveQuestFraction(progress),
+            activeTaskId: progress.activeQuest?.taskId ?? null,
             remaining: Math.max(
               0,
               (progress.totalQuests ?? 0) -

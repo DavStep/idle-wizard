@@ -122,6 +122,12 @@ const RETAINED_INGREDIENT_COUNT_STYLE = Object.freeze({
   fontSize: 8,
   lineHeight: 9,
 });
+const INGREDIENT_SLOT_BORDER_INSETS = Object.freeze({
+  top: 12,
+  right: 12,
+  bottom: 12,
+  left: 12,
+});
 const AUTO_GEAR_STEP_INTERVAL_MS = 320;
 const AUTO_GEAR_STEP_DURATION_MS = 70;
 const AUTO_GEAR_STEP_RADIANS = Math.PI / 8;
@@ -1563,7 +1569,7 @@ class BrewingIngredientPickerSlot {
   applyTheme(theme) {
     this.control.applyTheme(theme);
     const sourceInsets = theme?.frames?.panelSourceInsets ?? null;
-    this.frameInsets = theme?.frames?.panelBorder ?? null;
+    this.frameInsets = INGREDIENT_SLOT_BORDER_INSETS;
     this.frame.setTexture(
       getTexture(this.assetManager, theme?.frames?.panel),
       sourceInsets,

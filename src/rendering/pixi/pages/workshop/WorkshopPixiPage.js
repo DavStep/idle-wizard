@@ -184,6 +184,10 @@ const WORKSHOP_REQUEST_TEXT_FILL = '#ffffff';
 const WORKSHOP_REQUEST_TITLE_STROKE = '#0a0a0a';
 const WORKSHOP_SIDE_LABEL_FILL = '#ffffff';
 const WORKSHOP_SIDE_LABEL_STROKE = '#0a0a0a';
+const REQUEST_PROGRESS_UPDATE_DURATION_MS = 220;
+const REQUEST_PROGRESS_SHINE_CYCLE_MS = 1_300;
+const REQUEST_PROGRESS_SHINE_ALPHA = 0.5;
+const REQUEST_PROGRESS_SHINE_HEIGHT_SCALE = 2.4;
 const SUMMON_EFFECT_FRAMES = Object.freeze([
   Object.freeze({ progress: 0, alpha: 0.84, scale: 1 }),
   Object.freeze({ progress: 0.32, alpha: 1, scale: 1.045 }),
@@ -206,6 +210,7 @@ export class WorkshopPixiPage extends BaseRetainedPixiPage {
     cancelFrame = defaultCancelFrame,
     timeSource = defaultTimeSource,
     reducedMotion = prefersReducedMotion,
+    questCompletionMotionCoordinator = null,
   } = {}) {
     super({ pageId: 'workshop', semanticTargets, theme });
     this.assetManager = assetManager;
@@ -226,6 +231,8 @@ export class WorkshopPixiPage extends BaseRetainedPixiPage {
     this.timeSource = timeSource;
     this.reducedMotion =
       typeof reducedMotion === 'function' ? reducedMotion : () => Boolean(reducedMotion);
+    this.questCompletionMotionCoordinator =
+      questCompletionMotionCoordinator;
 
     this.workshopWindow = new Sprite({
       texture:
@@ -561,10 +568,12 @@ export class WorkshopPixiPage extends BaseRetainedPixiPage {
 
   activate() {
     super.activate();
+    this.tasks?.resumeMotion();
     this.summon?.setActive(true);
   }
 
   deactivate() {
+    this.tasks?.pauseMotion();
     this.summon?.setActive(false);
     super.deactivate();
   }
@@ -914,10 +923,33 @@ class WorkshopTaskPanel {
     this.panel.title.cursor = 'default';
 
     this.height = 34;
+    this.pendingModel = null;
+    this.questMotionUnsubscribe =
+      this.page.questCompletionMotionCoordinator?.subscribe?.(
+        (snapshot) => this.handleQuestCompletionMotion(snapshot),
+      ) ?? null;
   }
 
   bind(model) {
-    this.model = model ?? {};
+    const nextModel = model ?? {};
+    const transition =
+      this.page.questCompletionMotionCoordinator?.getSnapshot?.();
+    const currentTaskId = this.getActiveRow()?.model?.id ?? null;
+    const nextTaskId = getRequestTaskId(nextModel);
+    if (
+      transition?.active === true &&
+      currentTaskId === transition.previousTaskId &&
+      nextTaskId !== currentTaskId
+    ) {
+      this.pendingModel = nextModel;
+      return;
+    }
+    this.pendingModel = null;
+    this.applyModel(nextModel);
+  }
+
+  applyModel(model) {
+    this.model = model;
     this.panel.setTitle(this.model.title ?? "Elara's Request");
     setText(this.next, this.model.nextText ?? this.model.next ?? '');
     setText(this.rewards, normalizeRows(this.model.rewardLines ?? this.model.rewards).join('\n'));
@@ -937,6 +969,48 @@ class WorkshopTaskPanel {
       action: () => this.model?.onTogglePinned?.(),
     });
     this.applyTheme(this.page.theme);
+  }
+
+  handleQuestCompletionMotion(snapshot) {
+    const row = this.getActiveRow();
+    if (
+      snapshot?.phase === 'filling' &&
+      row?.model?.id === snapshot.previousTaskId
+    ) {
+      row.startCompletionFill(snapshot.fillDurationMs);
+      return;
+    }
+    if (
+      snapshot?.phase === 'flying' &&
+      row?.model?.id === snapshot.previousTaskId
+    ) {
+      row.holdCompletedProgress();
+      return;
+    }
+    if (snapshot?.phase === 'complete') {
+      row?.holdCompletedProgress();
+      if (this.pendingModel) {
+        const pendingModel = this.pendingModel;
+        this.pendingModel = null;
+        this.applyModel(pendingModel);
+      }
+    }
+  }
+
+  getActiveRow() {
+    return this.rows.getWidgets()[0] ?? null;
+  }
+
+  pauseMotion() {
+    for (const row of this.rows.getWidgets()) {
+      row.pauseMotion();
+    }
+  }
+
+  resumeMotion() {
+    for (const row of this.rows.getWidgets()) {
+      row.resumeMotion();
+    }
   }
 
   orderRows(rows) {
@@ -1014,6 +1088,8 @@ class WorkshopTaskPanel {
   }
 
   destroy() {
+    this.questMotionUnsubscribe?.();
+    this.questMotionUnsubscribe = null;
     this.rows.destroy();
     this.rowPool.destroy();
     this.pinButton.destroy();
@@ -1043,6 +1119,7 @@ class WorkshopTaskRow {
       buttonLabel: 'workshop-task-action',
       fallbackHitTest: true,
       inputRouter: this.page.inputRouter,
+      sizeTier: 30,
       variant: 'yellow',
     });
     this.progress = new RetainedProgressBar({
@@ -1050,6 +1127,46 @@ class WorkshopTaskRow {
       label: 'workshop-task-progress',
       tone: 'root',
     });
+    this.progressShineRoot = new Container({
+      label: 'workshop-task-progress-shine',
+      eventMode: 'none',
+    });
+    this.progressShine = new Sprite({
+      texture:
+        assetManager?.getTexture?.(
+          PIXI_ROOT_RUN_ASSETS.researchButtonShine,
+        ) ?? Texture.EMPTY,
+      anchor: 0.5,
+      alpha: REQUEST_PROGRESS_SHINE_ALPHA,
+      blendMode: 'add',
+      eventMode: 'none',
+      label: 'workshop-task-progress-shine-sprite',
+    });
+    this.progressShineMask = new Graphics({
+      label: 'workshop-task-progress-shine-mask',
+      eventMode: 'none',
+    });
+    this.progressShineRoot.addChild(
+      this.progressShine,
+      this.progressShineMask,
+    );
+    this.progressShineRoot.mask = this.progressShineMask;
+    this.progressShineRoot.visible = false;
+    this.progressShineRoot.renderable = false;
+    this.progress.root.addChild(this.progressShineRoot);
+    this.displayedProgress = 0;
+    this.targetProgress = 0;
+    this.progressMotion = null;
+    this.shineStartedAtMs = null;
+    this.motionFrame = null;
+    this.handleMotionFrame = (timestamp) => {
+      this.motionFrame = null;
+      this.updateMotion(
+        Number.isFinite(timestamp)
+          ? timestamp
+          : this.page.timeSource(),
+      );
+    };
     this.root.addChild(
       this.icon,
       this.iconOverlay,
@@ -1061,6 +1178,7 @@ class WorkshopTaskRow {
   }
 
   bind(model) {
+    const previousTaskId = this.model?.id ?? null;
     this.model = model;
     this.root.visible = true;
     setText(this.label, model.label ?? model.text ?? '');
@@ -1087,15 +1205,14 @@ class WorkshopTaskRow {
       notification: model.notification === true,
       action: () => model.onActivate?.(model),
     });
-    this.progress.setProgress(
-      finiteOr(
-        model.progress,
-        finiteOr(model.required, 0) > 0
-          ? finiteOr(model.current, 0) / finiteOr(model.required, 1)
-          : 0,
-      ),
-    );
+    const nextProgress = resolveRequestProgress(model);
+    if (previousTaskId === null || previousTaskId !== model.id) {
+      this.setProgressImmediate(nextProgress);
+    } else {
+      this.animateProgressTo(nextProgress);
+    }
     this.progress.root.visible = model.showProgress !== false;
+    this.updateShineVisibility();
     this.targetId = model.semanticId ?? `workshop.task.${model.id}`;
     this.page.registerSemanticTarget({
       semanticId: this.targetId,
@@ -1133,6 +1250,8 @@ class WorkshopTaskRow {
     this.value.position.set(width - (this.action.root.visible ? 64 : 0), 1);
     this.action.setBounds(width - 58, 0, 58, 20);
     this.progress.setBounds(0, 22, width, PIXI_UI_GEOMETRY.progressTotalHeight);
+    this.layoutProgressShine();
+    this.updateShineVisibility();
   }
 
   getPreferredHeight() {
@@ -1160,6 +1279,10 @@ class WorkshopTaskRow {
     }
 
     this.targetId = null;
+    this.pauseMotion();
+    this.progressMotion = null;
+    this.shineStartedAtMs = null;
+    this.setProgressImmediate(0);
     this.model = null;
     this.icon.texture = Texture.EMPTY;
     this.icon.visible = false;
@@ -1174,9 +1297,223 @@ class WorkshopTaskRow {
       this.page.unregisterSemanticTarget(this.targetId);
     }
 
+    this.pauseMotion();
     this.action.destroy();
     this.progress.destroy();
     this.root.destroy({ children: true });
+  }
+
+  startCompletionFill(durationMs) {
+    this.animateProgressTo(1, {
+      durationMs,
+      completion: true,
+    });
+  }
+
+  holdCompletedProgress() {
+    this.progressMotion = null;
+    this.setProgressImmediate(1);
+    this.progressShineRoot.visible = false;
+    this.progressShineRoot.renderable = false;
+    this.stopMotionFrame();
+  }
+
+  animateProgressTo(
+    progress,
+    {
+      durationMs = REQUEST_PROGRESS_UPDATE_DURATION_MS,
+      completion = false,
+    } = {},
+  ) {
+    const nextProgress = clampUnit(progress);
+    this.targetProgress = nextProgress;
+    if (
+      this.page.reducedMotion?.() === true ||
+      !this.page.root.visible ||
+      nextProgress <= this.displayedProgress
+    ) {
+      this.setProgressImmediate(nextProgress);
+      return;
+    }
+    if (
+      this.progressMotion &&
+      this.progressMotion.end === nextProgress &&
+      this.progressMotion.completion === completion
+    ) {
+      return;
+    }
+    const now = this.page.timeSource();
+    this.progressMotion = {
+      start: this.displayedProgress,
+      end: nextProgress,
+      startedAtMs: now,
+      durationMs: Math.max(1, Number(durationMs) || REQUEST_PROGRESS_UPDATE_DURATION_MS),
+      completion,
+    };
+    this.shineStartedAtMs ??= now;
+    this.updateShineVisibility();
+    this.scheduleMotionFrame();
+  }
+
+  setProgressImmediate(progress) {
+    this.displayedProgress = clampUnit(progress);
+    this.targetProgress = this.displayedProgress;
+    this.progress.setProgress(this.displayedProgress);
+    this.layoutProgressShine();
+    this.updateShineVisibility();
+  }
+
+  updateMotion(now = this.page.timeSource()) {
+    if (!this.page.root.visible || this.page.reducedMotion?.() === true) {
+      this.pauseMotion();
+      if (this.progressMotion) {
+        this.setProgressImmediate(this.progressMotion.end);
+        this.progressMotion = null;
+      }
+      return false;
+    }
+
+    let completionProgress = null;
+    if (this.progressMotion) {
+      const progress = clampUnit(
+        (now - this.progressMotion.startedAtMs) /
+          this.progressMotion.durationMs,
+      );
+      completionProgress = this.progressMotion.completion
+        ? progress
+        : null;
+      const eased = easeOutQuart(progress);
+      this.displayedProgress = interpolate(
+        this.progressMotion.start,
+        this.progressMotion.end,
+        eased,
+      );
+      this.progress.setProgress(this.displayedProgress);
+      this.layoutProgressShine();
+      if (progress >= 1) {
+        const wasCompletion = this.progressMotion.completion;
+        this.progressMotion = null;
+        this.displayedProgress = this.targetProgress;
+        this.progress.setProgress(this.displayedProgress);
+        this.layoutProgressShine();
+        if (wasCompletion) {
+          this.progressShineRoot.visible = false;
+          this.progressShineRoot.renderable = false;
+        }
+      }
+    }
+
+    this.updateProgressShine(now, completionProgress);
+    const keepAnimating = Boolean(
+      this.progressMotion || this.shouldLoopProgressShine(),
+    );
+    if (keepAnimating) {
+      this.scheduleMotionFrame();
+    } else {
+      this.progressShineRoot.visible = false;
+      this.progressShineRoot.renderable = false;
+    }
+    return keepAnimating;
+  }
+
+  updateProgressShine(now, completionProgress = null) {
+    if (!this.progressShineRoot.visible) {
+      return;
+    }
+    const layout = this.progressShineLayout;
+    if (!layout) {
+      return;
+    }
+    this.shineStartedAtMs ??= now;
+    const travel = completionProgress === null
+      ? pingPong(
+          Math.max(0, now - this.shineStartedAtMs) /
+            REQUEST_PROGRESS_SHINE_CYCLE_MS,
+        )
+      : easeOutQuart(completionProgress);
+    this.progressShine.position.set(
+      interpolate(layout.startX, layout.endX, travel),
+      layout.centerY,
+    );
+  }
+
+  layoutProgressShine() {
+    const border = PIXI_UI_GEOMETRY.progressRailBorderWidth;
+    const innerWidth = Math.max(0, this.progress.width - border * 2);
+    const innerHeight = Math.max(0, this.progress.height - border * 2);
+    const fillWidth = innerWidth * this.displayedProgress;
+    this.progressShineMask.clear();
+    if (fillWidth <= 0 || innerHeight <= 0) {
+      this.progressShineLayout = null;
+      return;
+    }
+    const radius = Math.min(fillWidth / 2, innerHeight / 2);
+    this.progressShineMask
+      .roundRect(border, border, fillWidth, innerHeight, radius)
+      .fill(0xffffff);
+    const shineHeight = innerHeight * REQUEST_PROGRESS_SHINE_HEIGHT_SCALE;
+    const textureWidth = Math.max(1, Number(this.progressShine.texture?.width) || 1);
+    const textureHeight = Math.max(1, Number(this.progressShine.texture?.height) || 1);
+    const shineWidth = (shineHeight * textureWidth) / textureHeight;
+    this.progressShine.width = shineWidth;
+    this.progressShine.height = shineHeight;
+    this.progressShineLayout = {
+      startX: border - shineWidth / 2,
+      endX: border + fillWidth + shineWidth / 2,
+      centerY: border + innerHeight / 2,
+    };
+  }
+
+  shouldLoopProgressShine() {
+    return Boolean(
+      this.progress.root.visible &&
+      this.displayedProgress > 0 &&
+      this.displayedProgress < 1 &&
+      this.page.reducedMotion?.() !== true &&
+      this.page.root.visible,
+    );
+  }
+
+  updateShineVisibility() {
+    const visible = Boolean(
+      this.progress.root.visible &&
+      this.progressShineLayout &&
+      this.page.reducedMotion?.() !== true &&
+      (this.progressMotion?.completion || this.shouldLoopProgressShine()),
+    );
+    this.progressShineRoot.visible = visible;
+    this.progressShineRoot.renderable = visible;
+    if (visible) {
+      this.scheduleMotionFrame();
+    }
+  }
+
+  scheduleMotionFrame() {
+    if (this.motionFrame !== null || !this.page.root.visible) {
+      return;
+    }
+    this.motionFrame = this.page.requestFrame(this.handleMotionFrame);
+  }
+
+  stopMotionFrame() {
+    if (this.motionFrame === null) {
+      return;
+    }
+    this.page.cancelFrame(this.motionFrame);
+    this.motionFrame = null;
+  }
+
+  pauseMotion() {
+    this.stopMotionFrame();
+    this.progressShineRoot.visible = false;
+    this.progressShineRoot.renderable = false;
+  }
+
+  resumeMotion() {
+    this.updateShineVisibility();
+    if (this.progressMotion || this.shouldLoopProgressShine()) {
+      this.scheduleMotionFrame();
+    }
   }
 }
 
@@ -1961,6 +2298,30 @@ function interpolateSummonEffect(progress) {
 
 function compareSideControlEntries(left, right) {
   return finiteOr(left.weight, 0) - finiteOr(right.weight, 0) || left.id.localeCompare(right.id);
+}
+
+function getRequestTaskId(model = {}) {
+  const row = normalizeRows(model.rows ?? model.tasks)[0];
+  const taskId = String(row?.id ?? '').trim();
+  return taskId || null;
+}
+
+function resolveRequestProgress(model = {}) {
+  const required = finiteOr(model.required, 0);
+  return clampUnit(
+    required > 0
+      ? finiteOr(model.current, 0) / required
+      : finiteOr(model.progress, 0),
+  );
+}
+
+function clampUnit(value) {
+  return Math.max(0, Math.min(1, Number(value) || 0));
+}
+
+function pingPong(value) {
+  const phase = ((Number(value) || 0) % 1 + 1) % 1;
+  return phase <= 0.5 ? phase * 2 : (1 - phase) * 2;
 }
 
 function interpolate(from, to, progress) {

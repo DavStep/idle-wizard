@@ -61,7 +61,9 @@ Dialog payloads are display-ready. Common fields are `title`, `summaryRows`,
 `rows`, `actions`, `tabs`, and optional `fields`/`amount`/`range` models.
 Rows in long market/history dialogs are viewport-windowed and keyed by `id`.
 Actions are invoked directly and are expected to call the authoritative
-gameplay/backend facade.
+gameplay/backend facade. Whole-dialog footer tabs render only when at least two
+choices are available; one-category dialogs use the complete paper/content
+height instead.
 
 The compatibility adapter also accepts the current raw `shelf`,
 `playerShelf`, `coinOffer`, and `crystalOffers` snapshot names during cutover.
@@ -86,6 +88,8 @@ stall renderer with loaded Sage and Briar Seed rows, without gameplay,
 account, or tutorial gates. Add `?dialog=stall` to open the loader with enabled
 mark and clear actions. Add `?dialog=ledger` to open the Bag-sized Market
 Ledger with overflow rows, item icons, and unlocked category tabs.
+Add `&categories=seed` to retain only the always-available Seeds category for
+single-category dialog and reclaimed-footer QA.
 Add `?stalls=empty-notified` to render one actionable empty stall with the
 rolled-up orange NPC-listing notification on both the Traders tab and the
 stall's Select action.
@@ -100,7 +104,9 @@ geometry and swap the action to the shared disabled gray state.
 Add `?tab=players` to open the Player Market tab with its station-title
 sections, the same retained stand widget used by Traders for each request and
 listing slot, a dedicated compact claim-proceeds row, and bottom-border actions
-on the final card.
+on the final card. Add `&proceeds=none` to isolate the empty-request state
+without the claim-proceeds row, and add `&requests=empty` to render one empty
+request slot.
 Add `?dialog=request` to open the retained Request picker directly with
 `Coins Per Item` and `Max Quantity` fields. Add `?dialog=listing` to open the
 retained Sell picker directly with its quantity slider and `Coins Per Item`

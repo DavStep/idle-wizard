@@ -118,4 +118,31 @@ describe('NineSliceCompatibility', () => {
     expect(frame.texture).toBe(Texture.EMPTY);
     expect(frame.sourceInsets.left).toBe(85);
   });
+
+  it('allows an empty pre-layout frame but validates its first visible size', () => {
+    const frame = new PixiNineSliceFrame({
+      borderInsets: {
+        top: 17,
+        right: 7,
+        bottom: 12,
+        left: 20,
+      },
+      sourceInsets: {
+        top: 100,
+        right: 43,
+        bottom: 68,
+        left: 85,
+      },
+      texture: Texture.EMPTY,
+    });
+
+    expect(frame).toMatchObject({
+      compatibilityError: null,
+      frameHeight: 0,
+      frameWidth: 0,
+    });
+    expect(() => frame.setSize(92, 28)).toThrow(
+      /requires at least 27×29/,
+    );
+  });
 });

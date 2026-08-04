@@ -2,6 +2,7 @@ import { Container } from 'pixi.js';
 
 import { defineUiEditorIntegration } from '../../../uiEditor/sdk/defineUiEditorIntegration.js';
 import { createUiEditorPixiSurface } from '../../../uiEditor/widgets/createUiEditorPixiSurface.js';
+import { createUiEditorPixiThumbnail } from '../../../uiEditor/widgets/createUiEditorPixiThumbnail.js';
 import { PixiButton } from './PixiButton.js';
 import { PixiDialogFrame } from './PixiDialogFrame.js';
 import { PixiTextLabel } from './PixiTextLabel.js';
@@ -9,44 +10,138 @@ import { PixiTextLabel } from './PixiTextLabel.js';
 const DIALOG_WIDTH = 260;
 const DIALOG_HEIGHT = 156;
 
-export default defineUiEditorIntegration({
-  apiVersion: 1,
-  id: 'primitive.data-dialog',
-  kind: 'dialog',
-  label: 'Data Dialog',
-  sectionId: 'dialogs',
-  properties: [
-    { label: 'Production frame', value: 'PixiDialogFrame' },
-    { label: 'Data source', value: 'Scenario fixture' },
-  ],
-  scenarios: [
-    {
-      fixture: { rows: [], title: 'Empty Report' },
-      id: 'empty',
-      label: 'Empty',
-      mount: mountDialog,
-    },
-    {
-      fixture: {
-        rows: ['Mana: 120', 'Herbs: 8', 'Potions: 2'],
-        title: 'Brewing Report',
+export default [
+  defineUiEditorIntegration({
+    apiVersion: 1,
+    createThumbnail: createDialogFrameThumbnail,
+    folderPath: ['Dialogs'],
+    id: 'compound.dialog-frame',
+    kind: 'widget',
+    label: 'Dialog Frame',
+    sectionId: 'composite-widgets',
+    properties: [
+      { label: 'Production class', value: 'PixiDialogFrame' },
+      { label: 'Contract', value: 'Shared retained dialog shell' },
+    ],
+    scenarios: [
+      {
+        fixture: { dismissible: true, title: 'Brewing Report' },
+        id: 'dismissible',
+        label: 'Dismissible',
+        mount: mountDialogFrame,
       },
-      id: 'populated',
-      label: 'Populated',
-      mount: mountDialog,
-    },
-    {
-      fixture: {
-        rows: ['Connection unavailable', 'Try again when online'],
-        title: 'Unable to Load',
-        variant: 'danger',
+      {
+        fixture: { dismissible: true, title: 'Unable to Load', variant: 'danger' },
+        id: 'danger',
+        label: 'Danger',
+        mount: mountDialogFrame,
       },
-      id: 'error',
-      label: 'Error',
-      mount: mountDialog,
-    },
-  ],
-});
+      {
+        fixture: { dismissible: false, title: 'Choose Your Path' },
+        id: 'blocking',
+        label: 'Blocking',
+        mount: mountDialogFrame,
+      },
+    ],
+    usages: [
+      {
+        label: 'Shared production dialog shell',
+        source: 'src/rendering/pixi/primitives/PixiDialogFrame.js',
+      },
+    ],
+  }),
+  defineUiEditorIntegration({
+    apiVersion: 1,
+    childWidgetIds: [
+      'compound.dialog-frame',
+      'base-button',
+      'primitive.text-label',
+    ],
+    id: 'primitive.data-dialog',
+    kind: 'dialog',
+    label: 'Data Dialog',
+    sectionId: 'dialogs',
+    properties: [
+      { label: 'Production frame', value: 'PixiDialogFrame' },
+      { label: 'Data source', value: 'Scenario fixture' },
+    ],
+    scenarios: [
+      {
+        fixture: { rows: [], title: 'Empty Report' },
+        id: 'empty',
+        label: 'Empty',
+        mount: mountDialog,
+      },
+      {
+        fixture: {
+          rows: ['Mana: 120', 'Herbs: 8', 'Potions: 2'],
+          title: 'Brewing Report',
+        },
+        id: 'populated',
+        label: 'Populated',
+        mount: mountDialog,
+      },
+      {
+        fixture: {
+          rows: ['Connection unavailable', 'Try again when online'],
+          title: 'Unable to Load',
+          variant: 'danger',
+        },
+        id: 'error',
+        label: 'Error',
+        mount: mountDialog,
+      },
+    ],
+  }),
+];
+
+function createDialogFrameThumbnail() {
+  return createUiEditorPixiThumbnail({
+    assetFilter: dialogAssetFilter,
+    component: 'PixiDialogFrame',
+    createControl: ({ assets }) => createDialogFrameControl({
+      assets,
+      fixture: { dismissible: true, title: 'Dialog' },
+      input: null,
+    }),
+    id: 'compound.dialog-frame',
+  });
+}
+
+async function mountDialogFrame(context, fixture) {
+  return createUiEditorPixiSurface({
+    assetFilter: dialogAssetFilter,
+    component: 'PixiDialogFrame',
+    createControl: ({ assets, input }) => createDialogFrameControl({
+      assets,
+      fixture,
+      input,
+      onClose: () => context.emit('dialogClosed'),
+    }),
+  });
+}
+
+function createDialogFrameControl({ assets, fixture, input, onClose }) {
+  const frame = new PixiDialogFrame({
+    assetManager: assets,
+    closeAction: fixture.dismissible ? onClose ?? (() => true) : null,
+    coreHeight: DIALOG_HEIGHT,
+    coreWidth: DIALOG_WIDTH,
+    inputRouter: input,
+    title: fixture.title,
+    titleVariant: fixture.variant,
+  });
+  return {
+    destroy: () => frame.destroy({ children: true }),
+    height: frame.getLocalBounds().height,
+    root: frame,
+    width: frame.getLocalBounds().width,
+  };
+}
+
+function dialogAssetFilter({ id }) {
+  return id.includes('/ui/root-run-dialog/');
+}
 
 async function mountDialog(context, fixture) {
   const state = {
@@ -55,7 +150,7 @@ async function mountDialog(context, fixture) {
   };
   const surface = await createUiEditorPixiSurface({
     assetFilter: ({ id }) =>
-      id.includes('/ui/root-run-dialog/') ||
+      dialogAssetFilter({ id }) ||
       id.includes('/ui/regular-button/') ||
       id.includes('/ui/notification-circle-'),
     component: 'PixiDataDialog',

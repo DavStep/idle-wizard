@@ -1060,6 +1060,7 @@ class PrestigeConfirmPanel {
       label: 'Cancel',
       buttonLabel: 'prestige-confirm-cancel',
       inputRouter,
+      sizeTier: 30,
       onActivate: onCancel,
     });
     this.proceed = new RetainedButton({
@@ -1067,6 +1068,7 @@ class PrestigeConfirmPanel {
       label: 'Prestige',
       buttonLabel: 'prestige-confirm-proceed',
       inputRouter,
+      sizeTier: 30,
       onActivate: onProceed,
     });
     this.panel.body.addChild(this.message, this.cancel.root, this.proceed.root);

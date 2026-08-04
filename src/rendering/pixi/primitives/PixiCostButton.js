@@ -226,7 +226,7 @@ export class PixiCostButton extends PixiButton {
 
   setSize(width, height = this.buttonHeight) {
     super.setSize(width, height);
-    this.layoutCostContent();
+    this.syncCostAppearance();
     return this;
   }
 

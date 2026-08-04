@@ -115,6 +115,7 @@ export function createUiEditorIntegrationPreview(integration) {
       }
       instance = normalizeInstance(mounted);
       surface.replaceChildren(instance.preview);
+      syncPreviewIdentity(host, integration, instance.preview);
       status.hidden = true;
       reportEvent('scenarioMounted', { scenarioId });
       renderInspector();
@@ -306,6 +307,8 @@ export function createUiEditorIntegrationPreview(integration) {
   host.uiEditorCreateInspector = () => inspector;
   host.uiEditorGetAtomicComponents = () =>
     instance?.getAtomicComponents?.() ?? [];
+  host.uiEditorSelectAtomicComponent = (component) =>
+    instance?.preview?.uiEditorSelectAtomicComponent?.(component);
   host.uiEditorDispose = () => {
     if (disposed) {
       return;
@@ -320,6 +323,18 @@ export function createUiEditorIntegrationPreview(integration) {
   renderInspector();
   globalThis.queueMicrotask(() => void mountScenario(scenarioId));
   return host;
+}
+
+function syncPreviewIdentity(host, integration, preview) {
+  const component =
+    preview.dataset.uiEditorComponent?.trim()
+    || preview.dataset.uiEditorLabel?.trim()
+    || integration.label;
+  host.dataset.uiEditorComponent = component;
+  host.dataset.uiEditorType = preview.querySelector('canvas')
+    ? 'canvas'
+    : preview.tagName.toLowerCase();
+  host.setAttribute('aria-label', `${component} UI Lab preview`);
 }
 
 function normalizeInstance(instance) {
@@ -453,4 +468,3 @@ function formatEventDetail(detail) {
 function escapeSelector(value) {
   return globalThis.CSS?.escape?.(String(value)) ?? String(value).replaceAll('"', '\\"');
 }
-

@@ -9,6 +9,7 @@ import {
 } from '../retained/index.js';
 import { PixiAssetManager } from '../assets/PixiAssetManager.js';
 import { PixiThemeManager } from '../theme/PixiThemeManager.js';
+import { QuestCompletionMotionCoordinator } from '../managers/QuestCompletionMotionCoordinator.js';
 
 /**
  * Production retained-mode composition root. Registration happens before
@@ -28,6 +29,7 @@ export class PixiUiRuntimeFacade {
     uiClickSoundFacade = null,
     counters = new RetainedUiCounters(),
     semanticRegistry = null,
+    questCompletionMotionCoordinator = new QuestCompletionMotionCoordinator(),
   } = {}) {
     if (!applicationManager) {
       throw new Error('PixiUiRuntimeFacade requires a PixiApplicationManager.');
@@ -41,6 +43,7 @@ export class PixiUiRuntimeFacade {
     this.counters = counters;
     this.semanticRegistry =
       semanticRegistry ?? new SemanticTargetRegistry({ counters });
+    this.questCompletionMotionCoordinator = questCompletionMotionCoordinator;
     this.pageFactories = new Map();
     this.dialogFactories = new Map();
     this.globalFactories = new Map();
@@ -173,6 +176,7 @@ export class PixiUiRuntimeFacade {
       inputRouter: this.inputRouter,
       textEntryService: this.textEntryService,
       semanticRegistry: this.semanticRegistry,
+      questCompletionMotionCoordinator: this.questCompletionMotionCoordinator,
       counters: this.counters,
       dialogRegistry: () => this.dialogRegistry,
       theme: () => this.themeManager.getSnapshot(),
@@ -376,6 +380,7 @@ export class PixiUiRuntimeFacade {
     for (const destroyable of [
       this.dialogRegistry,
       this.pageRegistry,
+      this.questCompletionMotionCoordinator,
       this.semanticRegistry,
       this.inputRouter,
       this.textEntryService,
@@ -391,6 +396,7 @@ export class PixiUiRuntimeFacade {
     }
     this.dialogRegistry = null;
     this.pageRegistry = null;
+    this.questCompletionMotionCoordinator = null;
     this.initialized = false;
     if (errors.length === 1) {
       throw errors[0];

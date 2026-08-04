@@ -107,10 +107,14 @@ describe('UiEditorUsageManager', () => {
     expect(refs.count.textContent).toBe('0 usages');
     expect(refs.properties.hidden).toBe(false);
     expect(refs.properties.querySelectorAll('dd')).toHaveLength(2);
-    expect(refs.emptyState.hidden).toBe(false);
-    expect(refs.emptyState.textContent).toBe(
+    expect(refs.emptyState.hidden).toBe(true);
+    expect(refs.usageEmpty.hidden).toBe(false);
+    expect(refs.usageEmpty.textContent).toBe(
       'No usages registered for this widget.',
     );
+    refs.usageTab.click();
+    expect(refs.detailsPanel.hidden).toBe(true);
+    expect(refs.usagePanel.hidden).toBe(false);
   });
 
   it('clears widget usages for non-widget selections', () => {
@@ -155,6 +159,8 @@ describe('UiEditorUsageManager', () => {
       refs.editor.querySelector('[data-sample-integration-inspector]'),
     ).toBe(inspector);
     expect(refs.emptyState.hidden).toBe(true);
+    expect(refs.detailsTab.textContent).toBe('Controls');
+    expect(refs.usageTab.hidden).toBe(true);
   });
 
   it('lets live integration controls suppress stale static properties', () => {
@@ -209,6 +215,31 @@ describe('UiEditorUsageManager', () => {
         (element) => element.textContent,
       ),
     ).toEqual(['Green Button', 'Compact Cost Button']);
+  });
+
+  it('separates properties from usage references with inspector tabs', () => {
+    manager.showEntry({
+      kind: 'widget',
+      label: 'Green Button',
+      properties: [{ label: 'Font', value: 'Lilita One' }],
+      usages: [{ label: 'Garden Harvest All', source: 'GardenPixiPage.js' }],
+    });
+
+    expect(refs.detailsTab.textContent).toBe('Properties');
+    expect(refs.detailsTab.getAttribute('aria-selected')).toBe('true');
+    expect(refs.detailsPanel.hidden).toBe(false);
+    expect(refs.usagePanel.hidden).toBe(true);
+
+    refs.detailsTab.focus();
+    refs.detailsTab.dispatchEvent(new window.KeyboardEvent('keydown', {
+      bubbles: true,
+      key: 'ArrowRight',
+    }));
+
+    expect(refs.usageTab.getAttribute('aria-selected')).toBe('true');
+    expect(document.activeElement).toBe(refs.usageTab);
+    expect(refs.detailsPanel.hidden).toBe(true);
+    expect(refs.usagePanel.hidden).toBe(false);
   });
 
   it('shows selected atlas frame geometry and source metadata', () => {

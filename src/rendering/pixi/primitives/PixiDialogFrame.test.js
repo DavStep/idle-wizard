@@ -64,6 +64,18 @@ function createHarness(options = {}) {
   };
 }
 
+function applyColorMatrix(matrix, [red, green, blue]) {
+  return [0, 1, 2].map((channel) => {
+    const offset = channel * 5;
+    const value =
+      matrix[offset] * red
+      + matrix[offset + 1] * green
+      + matrix[offset + 2] * blue
+      + matrix[offset + 4] * 255;
+    return Math.round(Math.max(0, Math.min(255, value)));
+  });
+}
+
 describe('PixiDialogFrame', () => {
   it('uses the fixed base width and minimum height contract', () => {
     const frame = new PixiDialogFrame();
@@ -131,6 +143,10 @@ describe('PixiDialogFrame', () => {
     expect(frame.titleVariant).toBe('danger');
     expect(titleFrame.filters).toEqual([frame.dangerTitleFilter]);
     expect(frame.dangerTitleFilter).not.toBeNull();
+    expect(
+      applyColorMatrix(frame.dangerTitleFilter.matrix, [157, 37, 219]),
+    ).toEqual([171, 73, 66]);
+    expect(PIXI_DIALOG_PALETTE.titleDanger).toBe('#ab4942');
 
     frame.setTitleVariant('default');
 
@@ -259,7 +275,7 @@ describe('PixiDialogFrame', () => {
   });
 
   it('derives balanced in-shell footer tabs from the dialog and tab count', () => {
-    const { frame } = createHarness();
+    const { frame } = createHarness({ coreHeight: 200 });
     const layout = resolveDialogFooterTabLayout({
       coreWidth: frame.coreWidth,
       coreHeight: frame.coreHeight,
