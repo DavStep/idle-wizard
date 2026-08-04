@@ -2493,13 +2493,13 @@ describe('WorkshopPixiPage', () => {
     const assetManager = createPixiAssetManagerFake(Texture);
     assetManager.has = vi.fn(
       (assetId) =>
-        assetId === getPixiButtonAssetId('purple', 30) ||
-        assetId === getPixiButtonAssetId('gray', 30),
+        assetId === getPixiButtonAssetId('purple', 50) ||
+        assetId === getPixiButtonAssetId('gray', 50),
     );
     assetManager.getTexture = vi.fn((assetId) =>
-      assetId === getPixiButtonAssetId('purple', 30)
+      assetId === getPixiButtonAssetId('purple', 50)
         ? summonTexture
-        : assetId === getPixiButtonAssetId('gray', 30)
+        : assetId === getPixiButtonAssetId('gray', 50)
           ? disabledTexture
           : Texture.EMPTY,
     );
@@ -2513,21 +2513,21 @@ describe('WorkshopPixiPage', () => {
     expect(harness.page.summon.button).toMatchObject({
       stacked: true,
       tone: 'purple',
-      sizeTier: 30,
+      sizeTier: 50,
       buttonWidth: 92,
       buttonHeight: 52,
     });
     expect(harness.page.summon.button.background.texture).toBe(summonTexture);
     expect(harness.page.summon.button.background.sourceInsets).toEqual({
-      top: 60,
-      right: 32,
-      bottom: 41,
-      left: 52,
+      top: 100,
+      right: 52,
+      bottom: 68,
+      left: 86,
     });
-    expect(harness.page.summon.button.background.borderInsets.top).toBeCloseTo(10.2);
-    expect(harness.page.summon.button.background.borderInsets.right).toBeCloseTo(4.2);
-    expect(harness.page.summon.button.background.borderInsets.bottom).toBeCloseTo(7.2);
-    expect(harness.page.summon.button.background.borderInsets.left).toBeCloseTo(12);
+    expect(harness.page.summon.button.background.borderInsets.top).toBe(17);
+    expect(harness.page.summon.button.background.borderInsets.right).toBe(7);
+    expect(harness.page.summon.button.background.borderInsets.bottom).toBe(12);
+    expect(harness.page.summon.button.background.borderInsets.left).toBe(20);
     expect(harness.page.summon.button.actionTextLabel.text).toBe('Summon Seed');
     expect(harness.page.summon.button.actionTextLabel.fontSize).toBe(11);
     expect(harness.page.summon.button.amountLabel.fontSize).toBe(13);

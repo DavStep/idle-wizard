@@ -1540,7 +1540,7 @@ class WorkshopSummonControl {
       height: SUMMON_BUTTON_HEIGHT,
       stacked: true,
       tone: 'purple',
-      sizeTier: 30,
+      sizeTier: 50,
       label: 'workshop-summon-button',
     });
     this.info = new PixiInfoButton({
