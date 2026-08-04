@@ -13,6 +13,7 @@ import { expect, test } from 'vitest';
 import {
   deleteUiEditorAsset,
   inspectUiEditorAsset,
+  inspectUiEditorAssetUsage,
   saveUiEditorNineSlice,
 } from './ui-editor-nine-slice-plugin.mjs';
 
@@ -183,6 +184,24 @@ test('finds source asset references with exact file and line context', async () 
       occurrences: 1,
       path: 'src/button.js',
     }),
+  ]);
+});
+
+test('finds unused source assets in one catalogue inspection', async () => {
+  const rootDir = await createAssetDeletionFixture();
+
+  const result = await inspectUiEditorAssetUsage(
+    {
+      assetIds: [
+        'source:assets/ui/old-button.png',
+        'source:assets/ui/new-button.png',
+      ],
+    },
+    { rootDir },
+  );
+
+  expect(result.unusedAssetIds).toEqual([
+    'source:assets/ui/new-button.png',
   ]);
 });
 

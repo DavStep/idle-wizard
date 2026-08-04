@@ -21,7 +21,7 @@ export const UI_EDITOR_ASSET_ROUTE =
   '/__idle-wizard-ui-editor/asset';
 
 const SOURCE_ASSET_ID_PREFIX = 'source:assets/';
-const MAX_REQUEST_BYTES = 32 * 1024;
+const MAX_REQUEST_BYTES = 128 * 1024;
 const ASSET_REFERENCE_ROOTS = Object.freeze([
   'docs',
   'scripts',
@@ -106,7 +106,9 @@ export function createUiEditorNineSlicePlugin({
           if (route === UI_EDITOR_NINE_SLICE_ROUTE) {
             result = await saveUiEditorNineSlice(requestBody, { rootDir });
           } else if (request.method === 'POST') {
-            result = await inspectUiEditorAsset(requestBody, { rootDir });
+            result = Array.isArray(requestBody.assetIds)
+              ? await inspectUiEditorAssetUsage(requestBody, { rootDir })
+              : await inspectUiEditorAsset(requestBody, { rootDir });
           } else if (request.method === 'DELETE') {
             result = await deleteUiEditorAsset(requestBody, { rootDir });
           }
@@ -146,6 +148,53 @@ export async function inspectUiEditorAsset(
     assetPath: toRootRelativePath(assetPath, rootDir),
     references,
     sidecarPath: await resolveExistingSidecarPath(assetPath, rootDir),
+  };
+}
+
+export async function inspectUiEditorAssetUsage(
+  { assetIds } = {},
+  { rootDir = fileURLToPath(new URL('../', import.meta.url)) } = {},
+) {
+  if (!Array.isArray(assetIds)) {
+    throw createHttpError(400, 'Provide source asset IDs to inspect.');
+  }
+
+  const uniqueAssetIds = [...new Set(assetIds)];
+  const sourceRoot = path.resolve(rootDir, 'assets/game/source');
+  const assets = [];
+
+  for (const assetId of uniqueAssetIds) {
+    const relativeAssetPath = resolveRelativeAssetPath(assetId);
+    const assetPath = path.resolve(sourceRoot, relativeAssetPath);
+
+    assertInsideSourceRoot(assetPath, sourceRoot);
+    await assertReadableFile(
+      assetPath,
+      'A source asset could not be inspected because it no longer exists.',
+    );
+    assets.push({
+      assetId,
+      needles: createAssetReferenceNeedles(assetId, relativeAssetPath),
+      used: false,
+    });
+  }
+
+  const referenceFiles = await listAssetReferenceFiles(rootDir);
+
+  for (const filePath of referenceFiles) {
+    const content = await readFile(filePath, 'utf8');
+
+    for (const asset of assets) {
+      if (!asset.used && findNeedleMatches(content, asset.needles).length > 0) {
+        asset.used = true;
+      }
+    }
+  }
+
+  return {
+    unusedAssetIds: assets
+      .filter(({ used }) => !used)
+      .map(({ assetId }) => assetId),
   };
 }
 

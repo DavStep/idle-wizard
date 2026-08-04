@@ -230,6 +230,29 @@ describe('PixiCostButton', () => {
     );
   });
 
+  it('can show or hide the top label without changing the cost-button type', () => {
+    const { button } = createHarness({ width: 92, height: 52 });
+
+    button.setModel({
+      actionLabel: 'Unlock',
+      amountLabel: '25 Coin',
+      showLabel: true,
+    });
+
+    expect(button.showLabel).toBe(true);
+    expect(button.actionTextLabel.visible).toBe(true);
+    expect(button.actionTextLabel.text).toBe('Unlock');
+
+    button.setModel({
+      actionLabel: 'Unlock',
+      amountLabel: '25 Coin',
+      showLabel: false,
+    });
+
+    expect(button.showLabel).toBe(false);
+    expect(button.actionTextLabel.visible).toBe(false);
+  });
+
   it('reuses the stacked cost-button contract with an info-blue mana skin', () => {
     const { assetManager, button } = createHarness({
       stacked: true,

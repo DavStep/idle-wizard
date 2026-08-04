@@ -96,6 +96,10 @@ describe('UiEditorAtlasWorkbench', () => {
       key: 'Enter',
     }));
     expect(workbench.getSelectedFrame()?.name).toBe('potion:moon');
+    expect(
+      workbench.root.querySelector('.ui-editor-atlas__selection-status')
+        .textContent,
+    ).toBe('1 / 1');
 
     canvas.dispatchEvent(new window.KeyboardEvent('keydown', {
       bubbles: true,

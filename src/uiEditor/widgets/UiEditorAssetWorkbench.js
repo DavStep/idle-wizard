@@ -13,7 +13,8 @@ let editorTabSetId = 0;
 export function createUiEditorAssetThumbnail(entry) {
   const host = document.createElement('span');
   const image = document.createElement('img');
-  const badge = document.createElement('span');
+  const nineSliceBadge = document.createElement('span');
+  const unusedBadge = document.createElement('span');
 
   host.className = 'ui-editor-asset-thumbnail';
   host.dataset.editorLibraryThumbnail = entry.id;
@@ -23,11 +24,22 @@ export function createUiEditorAssetThumbnail(entry) {
   image.draggable = false;
   image.loading = 'lazy';
   image.src = entry.assetUrl;
-  badge.className = 'ui-editor-asset-thumbnail__badge';
-  badge.hidden = !entry.nineSlice;
-  badge.textContent = '9';
-  badge.setAttribute('aria-hidden', 'true');
-  host.append(image, badge);
+  nineSliceBadge.className =
+    'ui-editor-asset-thumbnail__badge '
+    + 'ui-editor-asset-thumbnail__badge--nine-slice';
+  nineSliceBadge.hidden = !entry.nineSlice;
+  nineSliceBadge.textContent = '9';
+  nineSliceBadge.setAttribute('aria-hidden', 'true');
+  unusedBadge.className =
+    'ui-editor-asset-thumbnail__badge '
+    + 'ui-editor-asset-thumbnail__badge--unused';
+  unusedBadge.hidden = true;
+  unusedBadge.textContent = 'Unused';
+  unusedBadge.setAttribute('aria-hidden', 'true');
+  host.uiEditorSetUnused = (unused) => {
+    unusedBadge.hidden = unused !== true;
+  };
+  host.append(image, unusedBadge, nineSliceBadge);
   return host;
 }
 
@@ -337,10 +349,20 @@ export function createUiEditorNineSliceWorkbench(entry) {
   const comparison = document.createElement('div');
   const sourcePane = createPane('Slice source');
   const outputPane = createPane('Preview');
-  const sourceStage = document.createElement('div');
   const sourceFrame = document.createElement('div');
   const sourceImage = document.createElement('img');
   const sourceStatus = document.createElement('p');
+  const sourceViewport = createSliceSourceViewport(
+    `${entry.label} source editor`,
+    sourceImage,
+    sourceFrame,
+    () => updateSliceGuides(),
+  );
+  const sourceStage = sourceViewport.root;
+  const sourceZoom = createViewportZoomControls(
+    'Source',
+    [sourceViewport],
+  );
   const previewMatrix = document.createElement('div');
   const previewCases = PREVIEW_CASES.map((previewCase) =>
     createNineSlicePreviewCase(entry, previewCase),
@@ -415,7 +437,6 @@ export function createUiEditorNineSliceWorkbench(entry) {
   let previewHeight = initialHeight;
   let lockedRatio = null;
   let activeGuide = null;
-  let resizeObserver = null;
 
   editor.className = 'ui-editor-nine-slice';
   editor.dataset.uiEditorComponent = 'EditorNineSliceWorkbench';
@@ -423,10 +444,6 @@ export function createUiEditorNineSliceWorkbench(entry) {
   outputPane.root.dataset.paneRole = 'previews';
   sourcePane.body.classList.add('ui-editor-nine-slice__source-pane-body');
   outputPane.body.classList.add('ui-editor-nine-slice__preview-pane-body');
-  sourceStage.className =
-    'ui-editor-nine-slice__source-stage ui-editor-checkerboard';
-  sourceStage.setAttribute('aria-label', `${entry.label} source editor`);
-  sourceStage.setAttribute('role', 'region');
   previewGrid.className = 'ui-editor-nine-slice__dimension-grid';
   previewActions.className = 'ui-editor-nine-slice__quick-actions';
   sliceGrid.className = 'ui-editor-nine-slice__slice-grid';
@@ -462,7 +479,6 @@ export function createUiEditorNineSliceWorkbench(entry) {
     sourceFrame.append(guide);
   }
   sourceFrame.prepend(sourceImage);
-  sourceStage.append(sourceFrame);
   customViewport.content.append(output);
   previewGrid.append(widthControl.root, heightControl.root);
   previewActions.append(ratioButton);
@@ -475,6 +491,7 @@ export function createUiEditorNineSliceWorkbench(entry) {
   sourcePane.body.append(
     sourceStage,
     sourceStatus,
+    sourceZoom.root,
     sliceGroup.root,
     utilityActions,
   );
@@ -707,7 +724,9 @@ export function createUiEditorNineSliceWorkbench(entry) {
     }
 
     sourceStatus.textContent =
-      `${naturalWidth} × ${naturalHeight}px · ${formatInsets(draftInsets)}`;
+      `${naturalWidth} × ${naturalHeight}px · `
+        + `${Math.round(sourceViewport.getScale() * 100)}% · `
+        + formatInsets(draftInsets);
   };
 
   const setSlice = (edge, nextValue) => {
@@ -774,6 +793,7 @@ export function createUiEditorNineSliceWorkbench(entry) {
     for (const edge of SLICE_EDGES) {
       sliceControls[edge].input.disabled = false;
     }
+    sourceViewport.fit();
     updateSliceGuides();
   };
 
@@ -890,11 +910,6 @@ export function createUiEditorNineSliceWorkbench(entry) {
   listen(sourceImage, 'load', onSourceLoad);
   listen(sourceImage, 'error', onSourceError);
 
-  if (typeof ResizeObserver === 'function') {
-    resizeObserver = new ResizeObserver(updateSliceGuides);
-    resizeObserver.observe(sourceImage);
-  }
-
   updateDimensionControls();
   updateSliceGuides();
   customZoom.fit();
@@ -907,9 +922,9 @@ export function createUiEditorNineSliceWorkbench(entry) {
         ? { ...draftInsets }
         : null,
     dispose: () => {
-      resizeObserver?.disconnect();
-      resizeObserver = null;
       previewTabs.dispose();
+      sourceZoom.dispose();
+      sourceViewport.dispose();
       customZoom.dispose();
       customViewport.dispose();
       for (const previewCase of previewCases) {
@@ -922,10 +937,229 @@ export function createUiEditorNineSliceWorkbench(entry) {
   };
 }
 
+function createSliceSourceViewport(
+  label,
+  sourceImage,
+  sourceFrame,
+  onViewChange = () => {},
+) {
+  const root = document.createElement('div');
+  const listeners = [];
+  const zoomListeners = new Set();
+  const pan = { x: 0, y: 0 };
+  let zoom = 1;
+  let activePointer = null;
+  let resizeObserver = null;
+
+  root.className =
+    'ui-editor-nine-slice__source-stage '
+    + 'ui-editor-pan-zoom-viewport ui-editor-checkerboard';
+  root.dataset.uiEditorComponent = 'EditorSliceSourceViewport';
+  root.dataset.zoom = '1';
+  root.setAttribute(
+    'aria-label',
+    `${label}. Drag or use arrow keys to move. Scroll or use plus and minus `
+      + 'to zoom.',
+  );
+  root.setAttribute('role', 'region');
+  root.tabIndex = 0;
+  root.append(sourceFrame);
+
+  const listen = (target, type, handler, options) => {
+    target.addEventListener(type, handler, options);
+    listeners.push(() => target.removeEventListener(type, handler, options));
+  };
+  const getFitScale = () => {
+    const naturalWidth = sourceImage.naturalWidth;
+    const naturalHeight = sourceImage.naturalHeight;
+    const availableWidth = root.clientWidth - 32;
+    const availableHeight = root.clientHeight - 32;
+
+    if (
+      !naturalWidth
+      || !naturalHeight
+      || availableWidth <= 0
+      || availableHeight <= 0
+    ) {
+      return 1;
+    }
+
+    return Math.max(
+      0.01,
+      Math.min(
+        availableWidth / naturalWidth,
+        availableHeight / naturalHeight,
+      ),
+    );
+  };
+  const getScale = () => getFitScale() * zoom;
+  const applyTransform = () => {
+    const naturalWidth = sourceImage.naturalWidth;
+    const naturalHeight = sourceImage.naturalHeight;
+    const scale = getScale();
+
+    if (naturalWidth && naturalHeight) {
+      const renderedWidth = Math.max(1, naturalWidth * scale);
+      const renderedHeight = Math.max(1, naturalHeight * scale);
+      const frameWidth = renderedWidth + 16;
+      const frameHeight = renderedHeight + 16;
+      const visibleEdge = 28;
+      const maxPanX = Math.max(
+        0,
+        (frameWidth - root.clientWidth) / 2 + visibleEdge,
+      );
+      const maxPanY = Math.max(
+        0,
+        (frameHeight - root.clientHeight) / 2 + visibleEdge,
+      );
+
+      pan.x = clampNumber(pan.x, -maxPanX, maxPanX, 2);
+      pan.y = clampNumber(pan.y, -maxPanY, maxPanY, 2);
+      sourceImage.style.width = `${formatNumber(renderedWidth)}px`;
+      sourceImage.style.height = `${formatNumber(renderedHeight)}px`;
+      sourceImage.style.imageRendering = scale >= 1 ? 'pixelated' : 'auto';
+    }
+
+    sourceFrame.style.transform =
+      `translate(calc(-50% + ${pan.x}px), `
+        + `calc(-50% + ${pan.y}px))`;
+    root.dataset.zoom = formatNumber(zoom);
+    root.dataset.scale = formatNumber(scale);
+    onViewChange();
+  };
+  const notifyZoom = () => {
+    for (const listener of zoomListeners) {
+      listener(zoom);
+    }
+  };
+  const setZoomAt = (nextZoom, clientX, clientY) => {
+    const previousScale = getScale();
+    const next = clampNumber(nextZoom, 0.125, 8, 3);
+    const nextScale = getFitScale() * next;
+    const rect = root.getBoundingClientRect();
+    const pointX = Number.isFinite(clientX)
+      ? clientX - rect.left - rect.width / 2
+      : 0;
+    const pointY = Number.isFinite(clientY)
+      ? clientY - rect.top - rect.height / 2
+      : 0;
+
+    if (previousScale > 0) {
+      const scaleRatio = nextScale / previousScale;
+      pan.x = pointX - (pointX - pan.x) * scaleRatio;
+      pan.y = pointY - (pointY - pan.y) * scaleRatio;
+    }
+    zoom = next;
+    applyTransform();
+    notifyZoom();
+  };
+  const moveBy = (deltaX, deltaY) => {
+    pan.x += deltaX;
+    pan.y += deltaY;
+    applyTransform();
+  };
+  const finishPan = (event) => {
+    if (activePointer?.pointerId !== event.pointerId) {
+      return;
+    }
+    activePointer = null;
+    delete root.dataset.panning;
+  };
+
+  listen(root, 'pointerdown', (event) => {
+    if (event.button !== 0 || event.target.closest('[data-slice-guide]')) {
+      return;
+    }
+    activePointer = {
+      pointerId: event.pointerId,
+      pointerX: event.clientX,
+      pointerY: event.clientY,
+    };
+    root.dataset.panning = 'true';
+    root.setPointerCapture?.(event.pointerId);
+    event.preventDefault();
+  });
+  listen(window, 'pointermove', (event) => {
+    if (activePointer?.pointerId !== event.pointerId) {
+      return;
+    }
+    const deltaX = event.clientX - activePointer.pointerX;
+    const deltaY = event.clientY - activePointer.pointerY;
+
+    activePointer.pointerX = event.clientX;
+    activePointer.pointerY = event.clientY;
+    moveBy(deltaX, deltaY);
+  });
+  listen(window, 'pointerup', finishPan);
+  listen(window, 'pointercancel', finishPan);
+  listen(root, 'keydown', (event) => {
+    const step = event.shiftKey ? 48 : 16;
+    const movement = {
+      ArrowLeft: [step, 0],
+      ArrowRight: [-step, 0],
+      ArrowUp: [0, step],
+      ArrowDown: [0, -step],
+    }[event.key];
+
+    if (movement) {
+      moveBy(...movement);
+      event.preventDefault();
+    } else if (event.key === '+' || event.key === '=') {
+      setZoomAt(zoom * 1.25);
+      event.preventDefault();
+    } else if (event.key === '-' || event.key === '_') {
+      setZoomAt(zoom / 1.25);
+      event.preventDefault();
+    } else if (event.key === 'Home' || event.key === '0') {
+      zoom = 1;
+      pan.x = 0;
+      pan.y = 0;
+      applyTransform();
+      notifyZoom();
+      event.preventDefault();
+    }
+  });
+
+  if (typeof ResizeObserver === 'function') {
+    resizeObserver = new ResizeObserver(applyTransform);
+    resizeObserver.observe(root);
+  }
+
+  return {
+    root,
+    fit: () => {
+      zoom = 1;
+      pan.x = 0;
+      pan.y = 0;
+      applyTransform();
+      notifyZoom();
+    },
+    getScale,
+    getZoom: () => zoom,
+    moveBy,
+    refresh: applyTransform,
+    setZoom: (nextZoom) => setZoomAt(nextZoom),
+    setZoomAt,
+    subscribeZoom: (listener) => {
+      zoomListeners.add(listener);
+      return () => zoomListeners.delete(listener);
+    },
+    dispose: () => {
+      resizeObserver?.disconnect();
+      resizeObserver = null;
+      zoomListeners.clear();
+      for (const cleanup of listeners) {
+        cleanup();
+      }
+    },
+  };
+}
+
 export function createPanZoomViewport(label) {
   const root = document.createElement('div');
   const content = document.createElement('div');
   const listeners = [];
+  const zoomListeners = new Set();
   const pan = { x: 0, y: 0 };
   let zoom = 1;
   let activePointer = null;
@@ -986,6 +1220,33 @@ export function createPanZoomViewport(label) {
     pan.y += deltaY;
     applyTransform();
   };
+  const notifyZoom = () => {
+    for (const listener of zoomListeners) {
+      listener(zoom);
+    }
+  };
+  const setZoomAt = (nextZoom, clientX, clientY) => {
+    const fitScale = getFitScale();
+    const previousScale = fitScale * zoom;
+    const next = clampNumber(nextZoom, 0.125, 8, 3);
+    const nextScale = fitScale * next;
+    const rect = root.getBoundingClientRect();
+    const pointX = Number.isFinite(clientX)
+      ? clientX - rect.left - rect.width / 2
+      : 0;
+    const pointY = Number.isFinite(clientY)
+      ? clientY - rect.top - rect.height / 2
+      : 0;
+
+    if (previousScale > 0) {
+      const scaleRatio = nextScale / previousScale;
+      pan.x = pointX - (pointX - pan.x) * scaleRatio;
+      pan.y = pointY - (pointY - pan.y) * scaleRatio;
+    }
+    zoom = next;
+    applyTransform();
+    notifyZoom();
+  };
   const finishPan = (event) => {
     if (activePointer?.pointerId !== event.pointerId) {
       return;
@@ -1040,6 +1301,12 @@ export function createPanZoomViewport(label) {
       pan.y = 0;
       applyTransform();
       event.preventDefault();
+    } else if (event.key === '+' || event.key === '=') {
+      setZoomAt(zoom * 1.25);
+      event.preventDefault();
+    } else if (event.key === '-' || event.key === '_') {
+      setZoomAt(zoom / 1.25);
+      event.preventDefault();
     }
   });
 
@@ -1057,17 +1324,21 @@ export function createPanZoomViewport(label) {
       pan.x = 0;
       pan.y = 0;
       applyTransform();
+      notifyZoom();
     },
     getZoom: () => zoom,
     moveBy,
     refresh: applyTransform,
-    setZoom: (nextZoom) => {
-      zoom = clampNumber(nextZoom, 0.5, 4, 2);
-      applyTransform();
+    setZoom: (nextZoom) => setZoomAt(nextZoom),
+    setZoomAt,
+    subscribeZoom: (listener) => {
+      zoomListeners.add(listener);
+      return () => zoomListeners.delete(listener);
     },
     dispose: () => {
       resizeObserver?.disconnect();
       resizeObserver = null;
+      zoomListeners.clear();
       for (const cleanup of listeners) {
         cleanup();
       }
@@ -1083,11 +1354,12 @@ function createViewportZoomControls(label, viewports) {
   const zoomIn = document.createElement('button');
   const fit = document.createElement('button');
   const listeners = [];
+  const zoomSubscriptions = [];
   let zoom = 1;
 
   root.className = 'ui-editor-pan-zoom-controls';
   hint.className = 'ui-editor-pan-zoom-controls__hint';
-  hint.textContent = 'Drag to move';
+  hint.textContent = 'Drag to move · Scroll to zoom';
   zoomOut.className = 'ui-editor-pan-zoom-controls__button';
   zoomOut.type = 'button';
   zoomOut.textContent = '−';
@@ -1105,12 +1377,16 @@ function createViewportZoomControls(label, viewports) {
   fit.setAttribute('aria-label', `Fit ${label.toLowerCase()} to view`);
   root.append(hint, zoomOut, status, zoomIn, fit);
 
+  const updateStatus = (nextZoom) => {
+    zoom = nextZoom;
+    status.textContent = `${Math.round(zoom * 100)}%`;
+  };
   const applyZoom = (nextZoom) => {
-    zoom = clampNumber(nextZoom, 0.5, 4, 2);
+    zoom = clampNumber(nextZoom, 0.125, 8, 3);
     for (const viewport of viewports) {
       viewport.setZoom(zoom);
     }
-    status.textContent = `${Math.round(zoom * 100)}%`;
+    updateStatus(viewports[0]?.getZoom?.() ?? zoom);
   };
   const onZoomOut = () => applyZoom(zoom / 1.25);
   const onZoomIn = () => applyZoom(zoom * 1.25);
@@ -1119,7 +1395,26 @@ function createViewportZoomControls(label, viewports) {
     for (const viewport of viewports) {
       viewport.fit();
     }
-    status.textContent = '100%';
+    updateStatus(viewports[0]?.getZoom?.() ?? 1);
+  };
+  const onWheel = (event) => {
+    const delta = event.deltaMode === 1
+      ? event.deltaY * 16
+      : event.deltaMode === 2
+        ? event.deltaY * 120
+        : event.deltaY;
+    const nextZoom = clampNumber(
+      zoom * Math.exp(-delta * 0.0015),
+      0.125,
+      8,
+      3,
+    );
+
+    for (const viewport of viewports) {
+      viewport.setZoomAt(nextZoom, event.clientX, event.clientY);
+    }
+    updateStatus(viewports[0]?.getZoom?.() ?? nextZoom);
+    event.preventDefault();
   };
 
   zoomOut.addEventListener('click', onZoomOut);
@@ -1130,6 +1425,17 @@ function createViewportZoomControls(label, viewports) {
     () => zoomIn.removeEventListener('click', onZoomIn),
     () => fit.removeEventListener('click', onFit),
   );
+  for (const viewport of viewports) {
+    viewport.root.addEventListener('wheel', onWheel, { passive: false });
+    listeners.push(() => viewport.root.removeEventListener(
+      'wheel',
+      onWheel,
+      { passive: false },
+    ));
+    if (viewport.subscribeZoom) {
+      zoomSubscriptions.push(viewport.subscribeZoom(updateStatus));
+    }
+  }
 
   return {
     root,
@@ -1137,6 +1443,9 @@ function createViewportZoomControls(label, viewports) {
     dispose: () => {
       for (const cleanup of listeners) {
         cleanup();
+      }
+      for (const unsubscribe of zoomSubscriptions) {
+        unsubscribe();
       }
     },
   };

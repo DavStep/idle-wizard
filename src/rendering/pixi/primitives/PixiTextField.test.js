@@ -33,7 +33,6 @@ describe('PixiTextField', () => {
     expect(field.insetFrame.frameWidth).toBe(195);
     expect(field.insetFrame.frameHeight).toBe(27);
     expect(field.insetFrame.visible).toBe(true);
-    expect(field.frame.visible).toBe(false);
 
     field.destroy({ children: true });
   });

@@ -106,6 +106,9 @@ const STATION_TITLE_BORDER_INSETS = Object.freeze({
 });
 const STATION_TITLE_TEXT_INSET_X = 12;
 const STATION_TITLE_WIDTH_ALLOWANCE = 60;
+const STATION_TITLE_FRAME_MIN_WIDTH = Math.ceil(
+  STATION_TITLE_BORDER_INSETS.left + STATION_TITLE_BORDER_INSETS.right,
+);
 const STATION_TITLE_MIN_FONT_SIZE = 13;
 const STATION_TITLE_FONT_SIZE = 18;
 const STATION_TITLE_TEXT_STYLE = Object.freeze({
@@ -1081,7 +1084,7 @@ export class ResearchStationTitlePlaque {
       ),
     );
     this.frame.setSize(
-      this.width,
+      Math.max(this.width, STATION_TITLE_FRAME_MIN_WIDTH),
       STATION_TITLE_HEIGHT,
       STATION_TITLE_BORDER_INSETS,
     );

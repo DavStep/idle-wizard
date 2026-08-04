@@ -82,40 +82,38 @@ const RESEARCH_ICON_FRAMES = Object.freeze({
 const FEATURE_ICON_PRESENTATIONS = Object.freeze({
   alliance: Object.freeze({
     assetId:
-      'source:assets/icons/icon-alliance-banner-base.webp',
-    maskAssetId:
-      'source:assets/icons/icon-alliance-banner-cloth-mask.webp',
+      'source:assets/icons/icon-side-alliance-root-run.png',
   }),
   brewing: Object.freeze({
     assetId:
-      'source:assets/icons/icon-brewing-cauldron-tab.webp',
+      'source:assets/icons/icon-brewing-cauldron-tab.png',
   }),
   discoveries: Object.freeze({
     assetId:
-      'source:assets/icons/icon-discoveries-journal.webp',
+      'source:assets/icons/icon-side-discoveries-root-run.png',
   }),
   garden: Object.freeze({
     assetId:
-      'source:assets/icons/icon-garden-plot-tab.webp',
+      'source:assets/icons/icon-garden-plot-tab.png',
   }),
   inbox: Object.freeze({
     assetId:
-      'source:assets/icons/icon-mail-envelope.webp',
+      'source:assets/icons/icon-side-inbox-root-run.png',
   }),
   leaderboard: Object.freeze({
     assetId:
-      'source:assets/icons/icon-leaderboard-trophy.webp',
+      'source:assets/icons/icon-side-leaderboard-root-run.png',
   }),
   market: Object.freeze({
     assetId:
-      'source:assets/icons/icon-shop-market-stall-tab.webp',
+      'source:assets/icons/icon-shop-market-stall-tab.png',
   }),
   prestige: Object.freeze({
     assetId: 'source:assets/icons/icon-prestige-star.png',
   }),
   research: Object.freeze({
     assetId:
-      'source:assets/icons/icon-research-telescope-tab.webp',
+      'source:assets/icons/icon-research-telescope-tab.png',
   }),
 });
 

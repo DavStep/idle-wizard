@@ -303,6 +303,8 @@ export class BrewingHudPixi {
       texture: Texture.EMPTY,
       sourceInsets: POTION_PREVIEW_SOURCE_INSETS,
       borderInsets: POTION_PREVIEW_BORDER_INSETS,
+      width: 58,
+      height: 58,
       label: 'brewing-potion-preview-well',
     });
     this.potionPreviewFrame.tint = POTION_PREVIEW_BACKGROUND_COLOR;
@@ -1489,6 +1491,8 @@ class BrewingIngredientPickerSlot {
     );
     this.model = null;
     this.frameInsets = null;
+    this.width = BREWING_HUD_GEOMETRY.ingredientSlotWidth;
+    this.height = BREWING_HUD_GEOMETRY.ingredientSlotHeight;
     this.semanticId = `brewing.ingredient-slot.${index}`;
     this.control.setEnabled(false);
   }

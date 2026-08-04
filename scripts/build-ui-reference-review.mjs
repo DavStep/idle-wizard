@@ -105,9 +105,7 @@ function readDataUrl(filePath) {
   const mimeType =
     extension === '.jpg' || extension === '.jpeg'
       ? 'image/jpeg'
-      : extension === '.webp'
-        ? 'image/webp'
-        : 'image/png';
+      : 'image/png';
 
   return `data:${mimeType};base64,${fs.readFileSync(filePath).toString('base64')}`;
 }

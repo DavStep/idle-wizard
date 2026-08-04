@@ -4,18 +4,23 @@ import { UiEditorPanelLayoutManager } from './managers/UiEditorPanelLayoutManage
 import { UiEditorUsageManager } from './managers/UiEditorUsageManager.js';
 import { UiEditorViewManager } from './managers/UiEditorViewManager.js';
 import { UiEditorWorkspaceManager } from './managers/UiEditorWorkspaceManager.js';
+import {
+  inspectUiEditorAssetUsage,
+} from './widgets/UiEditorAssetDeletionDialog.js';
 
 /**
  * Creates the editor shell and keeps its docked panels sized around the preview.
  */
 export class UiEditorFacade {
   constructor({
+    inspectAssetUsage = inspectUiEditorAssetUsage,
     libraryEntries = [],
     root,
     storage = resolveStorage(),
   }) {
     this.viewManager = new UiEditorViewManager({ root });
     this.libraryEntries = libraryEntries;
+    this.inspectAssetUsage = inspectAssetUsage;
     this.storage = storage;
     this.layoutManager = null;
     this.bottomPanelManager = null;
@@ -23,6 +28,7 @@ export class UiEditorFacade {
     this.usageManager = null;
     this.workspaceManager = null;
     this.previewCleanup = null;
+    this.assetUsageRequestId = 0;
   }
 
   mount() {
@@ -47,6 +53,7 @@ export class UiEditorFacade {
       panel: refs.panels.bottom,
     });
     this.bottomPanelManager.mount();
+    void this.refreshAssetUsageBadges();
 
     this.layoutManager = new UiEditorPanelLayoutManager(refs);
     this.layoutManager.mount();
@@ -98,8 +105,7 @@ export class UiEditorFacade {
       return false;
     }
 
-    const opened = this.openPreview(
-      entry.createPreview({
+    const candidate = entry.createPreview({
         assetEntries: this.libraryEntries.filter(
           ({ kind }) => kind === 'asset',
         ),
@@ -109,14 +115,20 @@ export class UiEditorFacade {
           if (frame) {
             this.usageManager?.showAtlasFrame(entry, frame);
           } else {
-            this.usageManager?.showEntry(entry);
+            this.usageManager?.showEntry(
+              entry,
+              this.viewManager.refs?.preview.firstElementChild,
+            );
           }
         },
-      }),
-    );
+      });
+    const opened = this.openPreview(candidate);
 
     if (opened) {
-      this.usageManager?.showEntry(entry);
+      this.usageManager?.showEntry(
+        entry,
+        this.viewManager.refs?.preview.firstElementChild,
+      );
     }
 
     return opened;
@@ -129,6 +141,7 @@ export class UiEditorFacade {
 
     this.clearPreview();
     this.setLibraryEntries(nextEntries);
+    void this.refreshAssetUsageBadges();
 
     if (replacementEntry && nextEntries.includes(replacementEntry)) {
       this.bottomPanelManager?.openEntryFolder(replacementEntry.id);
@@ -145,9 +158,40 @@ export class UiEditorFacade {
     );
 
     if (selectedEntry) {
-      this.usageManager?.showEntry(selectedEntry);
+      this.usageManager?.showEntry(
+        selectedEntry,
+        this.viewManager.refs?.preview.firstElementChild,
+      );
     } else {
       this.usageManager?.clear();
+    }
+  }
+
+  async refreshAssetUsageBadges() {
+    const requestId = ++this.assetUsageRequestId;
+    const assetIds = this.libraryEntries
+      .filter(
+        ({ assetId, kind }) =>
+          kind === 'asset'
+          && assetId?.startsWith('source:assets/'),
+      )
+      .map(({ assetId }) => assetId);
+
+    if (assetIds.length === 0) {
+      this.bottomPanelManager?.setUnusedAssetIds([]);
+      return;
+    }
+
+    try {
+      const result = await this.inspectAssetUsage(assetIds);
+      if (requestId !== this.assetUsageRequestId) {
+        return;
+      }
+      this.bottomPanelManager?.setUnusedAssetIds(
+        result?.unusedAssetIds,
+      );
+    } catch {
+      // The catalogue remains usable when the local development route is absent.
     }
   }
 
@@ -187,6 +231,7 @@ export class UiEditorFacade {
   }
 
   unmount() {
+    this.assetUsageRequestId += 1;
     this.previewCleanup?.();
     this.previewCleanup = null;
     this.workspaceManager?.unmount();

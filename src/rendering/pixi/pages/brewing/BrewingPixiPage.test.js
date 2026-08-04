@@ -1054,7 +1054,7 @@ describe('BrewingPixiPage', () => {
     expect(harness.page.hud.cauldronTitlePlaque).toMatchObject({
       variant: 'brewing',
       assetId:
-        'source:assets/ui/root-run-research/research-station-title-blue.9.png',
+        'source:assets/ui/banners/banner-blue-right.9.png',
     });
     expect(
       harness.page.hud.cauldronTitlePlaque.root.position,

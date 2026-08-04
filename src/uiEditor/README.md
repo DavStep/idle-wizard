@@ -24,6 +24,11 @@ implementation rather than an editable component scene. Selecting a widget,
 dialog, or scene restores the dock at its previous width.
 
 The right panel inspects the selected widget, asset, or atomic component.
+The retained Base / Text Button exposes one live color-swatch control for the
+full eight-color skin family, one `50` / `30` / `15` corner-size selector, its
+label, and enabled state. Cost Button adds layout, optional top-label, price,
+and availability controls. Changes update the production widget immediately;
+the preview status counts its real activation, click-sound, and haptic path.
 Selecting an atomic part in the hierarchy exposes live local `X` and `Y`
 controls. Text parts also expose their copy, and compatible backgrounds expose
 an asset picker backed by the registered production button skins. These edits
@@ -39,9 +44,8 @@ production asset manifest, including source images, public/runtime textures,
 and generated atlases that are not mounted by a registered editor widget.
 Source assets generally follow their production directories, so categories
 such as `Avatars`, `Icons`, `Items`, `Rooms`, and `UI` remain separate. Reusable
-UI chrome may instead use a semantic editor folder: title plaques and ribbons
-from account, dialog, market, and research source folders live together under
-`UI/Banners`; related paper, card, and inner-panel nine-slices live under
+UI chrome may instead use a semantic editor folder: shared title plaques and
+ribbons live under `UI/Banners`; related paper, card, and inner-panel nine-slices live under
 `UI/Backgrounds`; and the canonical coin, crystal, emerald, mana, and ruby icons
 live under `UI/Currencies`. Background entries expose their geometry family and
 visual variant in the inspector. Grouping means visual kinship, not automatic
@@ -55,9 +59,12 @@ deduplicated, each tile shows the real texture, and the breadcrumb header's
 right-aligned filter searches the current folder and all of its descendants by
 filename or production ID. Registered widget
 consumers still appear in the inspector. The inspector marks source PNGs as
-available for preview and nine-slice authoring; WebP, runtime, and generated
-textures are preview-only. `UI Widgets` contains `Buttons`, `Progress bars`,
-`Sliders`, and `Composite widgets` folders. Open folders with their native
+available for preview and nine-slice authoring; runtime aliases and generated
+textures are preview-only. After mount, one bulk local reference scan marks
+source textures with no project references using an amber `Unused` thumbnail
+badge. This uses the same reference rules as asset deletion; runtime aliases and
+generated textures are not classified as unused. `UI Widgets` contains
+`Buttons`, `Progress bars`, `Sliders`, and `Composite widgets` folders. Open folders with their native
 buttons and use the breadcrumb path to move back up the library. Folder visits
 also keep session history: use `Command+[` / `Command+]` or
 `Alt+Left` / `Alt+Right` to move backward and forward. Opening a different
@@ -73,11 +80,12 @@ the stable background does not flash. Empty folders keep a quiet placeholder
 until real editor content is registered.
 
 The `Buttons` folder is populated by default with the real retained Idle Wizard
-button primitives: regular color/state variants, popup and account tabs,
-account save, inline and border-label controls, cost-button compositions, the
-info button, and the HUD settings and avatar buttons. Their previews load the
-production Pixi classes and artwork rather than editor-specific copies. Cost
-buttons reference the shared `UI/Regular Button` nine-slices and
+button hierarchy: one configurable Base / Text Button, popup tabs, inline and
+border-label controls, the Cost Button composition, and the specialized info,
+HUD settings, and HUD avatar buttons. Color, corner size, cost layout, and
+button state are editor configurations rather than duplicate catalogue
+entries. Their previews load the production Pixi classes and artwork rather
+than editor-specific copies. Cost buttons reference the shared `UI/Regular Button` nine-slices and
 `UI/Currencies` icons, so the asset library does not carry duplicate
 cost-button artwork.
 The folder presents them as a compact thumbnail gallery; thumbnails render the
@@ -86,10 +94,45 @@ Thumbnail captures run serially through one shared Pixi renderer and display as
 static canvases, so revealing more rows does not allocate a WebGL context per
 tile.
 
+## UI Lab integrations
+
+Interactive editor previews are discovered from colocated `*.ui-editor.js`
+modules under `src/rendering` and `src/pages`. Each module exports a versioned
+manifest created with `defineUiEditorIntegration`. The manifest chooses its
+library section and optional nested feature folder, declares named scenarios,
+and mounts the real production widget, dialog, composite HUD, page, or scene.
+Adding an integration does not require editing the editor catalogue or shell.
+Visually meaningful integrations may also declare a passive production-backed
+thumbnail. The library then presents them in the same lazy, static-canvas
+gallery used by retained buttons; selecting the tile still opens the complete
+interactive scenario.
+
+The selected integration receives an editor-owned deterministic clock, event
+reporter, invalidation callback, and cleanup registrar. Its mounted instance may
+contribute typed controls, actions, atomic hierarchy components, and a dispose
+callback. The Inspector renders those contributions through the shared UI Lab
+panel. Scenario fixtures and adapter state stay development-only; production
+widgets are exercised through their public binding and interaction APIs without
+editor branches in engine code.
+
+Current proof integrations cover manual, timed, and ranged progress bars;
+range, milestone, and disabled sliders; fixture-driven dialog data; the Brewing
+HUD; and the Research room. Existing retained button previews use the same
+Inspector extension point for configuration and live activation feedback.
+
+Integration modules must not evaluate arbitrary scripts, call production
+backend services, or import themselves from production entry points. Every
+timer, listener, Pixi tree, and isolated feature world must be returned through
+the integration cleanup lifecycle.
+
 Selecting a normal asset opens an image preview. Any PNG source asset can enter
 `Convert to 9-slice`, which opens the reusable nine-slice workbench. Edit slice
-margins numerically or drag and keyboard-adjust the guides over the stable
-source. The right pane has separate `Preview cases` and `Custom testing` tabs.
+margins numerically or drag and keyboard-adjust the guides over the source.
+The source auto-fits in both directions, so small assets enlarge to use the
+available pane while large assets remain contained. Use the mouse wheel over
+the source to zoom around the cursor, drag to pan, or use the visible zoom
+controls and keyboard equivalents. The right pane has separate `Preview cases`
+and `Custom testing` tabs.
 The first shows a fixed, seam-free Original case at the slice's minimum
 renderable size, then derives Height stretched, Width stretched, and Both
 stretched cases from that minimum without zoom or pan. The second accepts exact
@@ -102,8 +145,8 @@ the full seven-color, three-radius matrix under `UI/Regular Button`.
 updates its project references, and writes a `.9slice.json` definition beside
 it through the local development server. Existing `.9.png` assets open as
 nine-slices even before they have authored sidecar metadata. Conversion never
-rewrites or copies the source pixels. WebP assets remain preview-only because
-project nine-slices are PNG-only.
+rewrites or copies the source pixels. Project runtime raster assets and
+nine-slices are PNG-only.
 
 Selecting an existing `.9.png` nine-slice opens the same workbench directly. Reset
 restores its registered runtime geometry, Copy CSS copies the current preview

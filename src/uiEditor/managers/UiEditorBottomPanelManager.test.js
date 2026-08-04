@@ -315,6 +315,26 @@ describe('UiEditorBottomPanelManager', () => {
     ).toBe(false);
   });
 
+  it('creates nested feature folders for discovered UI Lab integrations', () => {
+    manager.setEntries([
+      {
+        folderPath: ['Brewing'],
+        id: 'lab:brewing-hud',
+        kind: 'widget',
+        label: 'Brewing HUD',
+        sectionId: 'composite-widgets',
+      },
+    ]);
+
+    expect(manager.openEntryFolder('lab:brewing-hud')).toBe(true);
+    expect(refs.breadcrumb.textContent).toBe(
+      'Library/UI Widgets/Composite widgets/Brewing',
+    );
+    expect(
+      refs.entryButtons.get('lab:brewing-hud').parentElement.hidden,
+    ).toBe(false);
+  });
+
   it('shows optional retained previews in a compact entry gallery', () => {
     const connect = vi.fn();
     const disconnect = vi.fn();
@@ -354,6 +374,38 @@ describe('UiEditorBottomPanelManager', () => {
     const disconnectCount = disconnect.mock.calls.length;
     manager.openFolder('dialogs');
     expect(disconnect).toHaveBeenCalledTimes(disconnectCount + 1);
+  });
+
+  it('projects unused source-asset state into its thumbnail and accessible name', () => {
+    const setUnused = vi.fn();
+
+    manager.setEntries([
+      {
+        assetId: 'source:assets/ui/unused-panel.png',
+        createThumbnail: () => {
+          const thumbnail = document.createElement('span');
+          thumbnail.dataset.editorLibraryThumbnail = 'asset:unused-panel';
+          thumbnail.uiEditorSetUnused = setUnused;
+          return thumbnail;
+        },
+        folderPath: ['ui'],
+        id: 'asset:unused-panel',
+        kind: 'asset',
+        label: 'unused-panel.png',
+        sectionId: 'assets',
+      },
+    ]);
+    manager.setUnusedAssetIds([
+      'source:assets/ui/unused-panel.png',
+    ]);
+
+    const button = refs.entryButtons.get('asset:unused-panel');
+
+    expect(setUnused).toHaveBeenLastCalledWith(true);
+    expect(button.dataset.assetUnused).toBe('');
+    expect(button.getAttribute('aria-label')).toBe(
+      'unused-panel.png, unused asset',
+    );
   });
 
   it('filters the complete asset catalogue by filename or source path', () => {

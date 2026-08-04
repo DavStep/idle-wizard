@@ -542,7 +542,7 @@ describe('ResearchBoxListManager', () => {
 
     for (const [color, expectedHash] of Object.entries(expectedAssets)) {
       const asset = readFileSync(
-        `${cwd()}/assets/game/source/ui/root-run-research/research-station-title-${color}.9.png`,
+        `${cwd()}/assets/game/source/ui/banners/banner-${color}-right.9.png`,
       );
       expect(PNG.sync.read(asset)).toMatchObject({ width: 171, height: 121 });
       expect(createHash('sha256').update(asset).digest('hex')).toBe(
@@ -572,16 +572,16 @@ describe('ResearchBoxListManager', () => {
       'border-image: var(--research-station-title-image)',
     );
     expect(css).toMatch(
-      /\.research-page__box-title--regular\s*\{[^}]*research-station-title-yellow\.9\.png/,
+      /\.research-page__box-title--regular\s*\{[^}]*banner-yellow-right\.9\.png/,
     );
     expect(css).toMatch(
-      /\.research-page__box-title--automation\s*\{[^}]*research-station-title-red\.9\.png/,
+      /\.research-page__box-title--automation\s*\{[^}]*banner-red-right\.9\.png/,
     );
     expect(css).toMatch(
-      /\.research-page__box-title--advanced\s*\{[^}]*research-station-title-green\.9\.png/,
+      /\.research-page__box-title--advanced\s*\{[^}]*banner-green-right\.9\.png/,
     );
     expect(css).toMatch(
-      /\.research-page__box-title--crystal\s*\{[^}]*research-station-title-purple\.9\.png/,
+      /\.research-page__box-title--crystal\s*\{[^}]*banner-purple-right\.9\.png/,
     );
     expect(css).toMatch(
       /\.research-page__box-list\s*\{[^}]*gap:\s*18px;/,

@@ -1,8 +1,19 @@
 import { describe, expect, it } from 'vitest';
 
-import { resolvePixiPublicAssetUrl } from './PixiProductionAssetManifest.js';
+import {
+  PIXI_PRODUCTION_ASSET_MANIFEST,
+  resolvePixiPublicAssetUrl,
+} from './PixiProductionAssetManifest.js';
 
 describe('PixiProductionAssetManifest', () => {
+  it('excludes retired player-card skins from production and editor discovery', () => {
+    expect(
+      PIXI_PRODUCTION_ASSET_MANIFEST.some(({ id }) =>
+        id.includes('/player-card-'),
+      ),
+    ).toBe(false);
+  });
+
   it('resolves public production assets against the deployed base path', () => {
     expect(
       resolvePixiPublicAssetUrl(

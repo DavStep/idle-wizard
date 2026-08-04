@@ -338,18 +338,19 @@ describe('base styles', () => {
     const closeRule = getRuleBody(
       /\.game-stage[\s\S]*?button:is\(\[class\*="__close"\], \[class\*="-close"\]\):not\([\s\S]*?\.guild-page__close\s*\{(?<body>[^}]*)\}/,
     );
-    const assetDir = `${cwd()}/assets/game/source/ui/root-run-dialog`;
+    const dialogAssetDir = `${cwd()}/assets/game/source/ui/root-run-dialog`;
+    const bannerAssetDir = `${cwd()}/assets/game/source/ui/banners`;
     const back = PNG.sync.read(
-      readFileSync(`${assetDir}/expedition-dialog-back.9.png`),
+      readFileSync(`${dialogAssetDir}/expedition-dialog-back.9.png`),
     );
     const title = PNG.sync.read(
-      readFileSync(`${assetDir}/expedition-dialog-title-purple.9.png`),
+      readFileSync(`${bannerAssetDir}/banner-purple.9.png`),
     );
     const paper = PNG.sync.read(
-      readFileSync(`${assetDir}/expedition-dialog-front.9.png`),
+      readFileSync(`${dialogAssetDir}/expedition-dialog-front.9.png`),
     );
     const close = PNG.sync.read(
-      readFileSync(`${assetDir}/expedition-dialog-close.png`),
+      readFileSync(`${dialogAssetDir}/expedition-dialog-close.png`),
     );
 
     expect(rootRule).toContain(
@@ -361,7 +362,7 @@ describe('base styles', () => {
     );
     expect(rootRule).toContain('--style-dialog-paper-frame-slice: 99 53 72 84 fill;');
     expect(rootRule).toContain(
-      '--style-dialog-title-frame: url("../../assets/game/source/ui/root-run-dialog/expedition-dialog-title-purple.9.png");',
+      '--style-dialog-title-frame: url("../../assets/game/source/ui/banners/banner-purple.9.png");',
     );
     expect(rootRule).toContain('--style-dialog-title-frame-slice: 0 132 0 85 fill;');
     expect(rootRule).toContain('--style-dialog-title-fill: #9d25db;');
@@ -447,7 +448,7 @@ describe('base styles', () => {
     );
   });
 
-  it('uses the theme box frame for standalone buttons and the button frame inside boxes or dialogs', () => {
+  it('uses shared inner-panel and regular-button skins instead of legacy player-card frames', () => {
     const rootRule = getRuleBody(/:root\[data-style-theme="night"\]\s*\{(?<body>[^}]*)\}/);
     const sharedFrameRule = getRuleBody(
       /:root:is\(\[data-style-theme="night"\], \[data-style-theme="day"\]\)\s*:where\(\s*\.style-panel,[\s\S]*?\)\s*\{(?<body>[^}]*)\}/,
@@ -472,10 +473,13 @@ describe('base styles', () => {
     );
 
     expect(rootRule).toContain(
-      '--style-midnight-panel-frame: url("../../assets/game/source/ui/player-card-panel.9.png");',
+      '--style-midnight-panel-frame: var(--style-inner-section-frame);',
     );
     expect(rootRule).toContain(
-      '--style-midnight-panel-selected-frame: url("../../assets/game/source/ui/player-card-panel-selected.9.png");',
+      '--style-midnight-panel-selected-frame: url("../../assets/game/source/ui/inner-section-panel-witchcraft.9.png");',
+    );
+    expect(rootRule).toContain(
+      '--style-midnight-button-frame: var(--style-brown-button-light-frame);',
     );
     expect(sharedFrameRule).toContain(
       'border-image-source: var(--style-midnight-panel-frame);',
@@ -487,7 +491,8 @@ describe('base styles', () => {
       '.style-dialog .style-button:not(.workshop-page__summon-button),',
     );
     expect(nestedButtonFrameRule).toBeDefined();
-    expect(globalButtonFrameRule).toBeUndefined();
+    expect(globalButtonFrameRule).toBeDefined();
+    expect(baseCss).not.toContain('player-card-');
   });
 
   it('uses dark and light Root Run button skins for shared tab states', () => {

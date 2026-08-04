@@ -1,0 +1,56 @@
+{
+  "version": 1,
+  "format": "png",
+  "asset": "level-progress-fill-mask.9.png",
+  "source": {
+    "path": "assets/game/source/ui/root-run-top-hud/level-progress-fill-mask.9.png",
+    "width": 53,
+    "height": 42,
+    "mode": "RGBA",
+    "crop": {
+      "x": 0,
+      "y": 0,
+      "width": 53,
+      "height": 42
+    }
+  },
+  "sourceCropSize": {
+    "width": 53,
+    "height": 42
+  },
+  "slice": {
+    "left": 26,
+    "top": 20,
+    "right": 26,
+    "bottom": 21
+  },
+  "mode": "source",
+  "distill": null,
+  "cleanup": {
+    "neutralTintMask": true
+  },
+  "rendering": {
+    "stretch": "edges-and-center",
+    "outputInsets": {
+      "left": 26,
+      "top": 20,
+      "right": 26,
+      "bottom": 21
+    },
+    "minimumCenter": {
+      "width": 1,
+      "height": 1
+    },
+    "minimumSize": {
+      "width": 53,
+      "height": 42
+    },
+    "qaResample": "linear",
+    "browserPreviewSmoothingDefault": true
+  },
+  "editor": {
+    "tool": "Idle Wizard Root Run HUD distillation",
+    "sourceAlphaPreserved": true,
+    "sourceAssetPreserved": false
+  }
+}

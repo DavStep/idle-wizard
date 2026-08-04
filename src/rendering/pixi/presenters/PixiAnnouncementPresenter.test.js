@@ -571,20 +571,36 @@ describe('Pixi announcement presentation helpers', () => {
       getFeatureUnlockTargetId({ value: 'leaderboard' }),
     ).toBe('workshop.feature.leaderboard');
     expect(
-      getFeatureUnlockIconPresentation({
-        value: 'leaderboard',
-      }),
+      Object.fromEntries(
+        FEATURE_UNLOCK_PREVIEW_VALUES.map((value) => [
+          value,
+          getFeatureUnlockIconPresentation({ value })
+            ?.assetId,
+        ]),
+      ),
     ).toEqual({
-      assetId:
-        'source:assets/icons/icon-leaderboard-trophy.webp',
+      alliance:
+        'source:assets/icons/icon-side-alliance-root-run.png',
+      brewing:
+        'source:assets/icons/icon-brewing-cauldron-tab.png',
+      discoveries:
+        'source:assets/icons/icon-side-discoveries-root-run.png',
+      garden:
+        'source:assets/icons/icon-garden-plot-tab.png',
+      inbox:
+        'source:assets/icons/icon-side-inbox-root-run.png',
+      leaderboard:
+        'source:assets/icons/icon-side-leaderboard-root-run.png',
+      prestige:
+        'source:assets/icons/icon-prestige-star.png',
+      research:
+        'source:assets/icons/icon-research-telescope-tab.png',
     });
     expect(
-      getFeatureUnlockIconPresentation({
-        value: 'prestige',
-      }),
+      getFeatureUnlockIconPresentation({ value: 'market' }),
     ).toEqual({
       assetId:
-        'source:assets/icons/icon-prestige-star.png',
+        'source:assets/icons/icon-shop-market-stall-tab.png',
     });
     expect(
       getResearchIconPresentation({

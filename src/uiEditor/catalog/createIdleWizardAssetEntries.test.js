@@ -52,10 +52,10 @@ describe('createIdleWizardAssetEntries', () => {
         assetId
         === 'source:assets/ui/root-run-settings/settings-icon-gear.png',
     );
-    const publicPlayerCard = assets.find(
+    const regularButton = assets.find(
       ({ assetId }) =>
         assetId
-        === 'public:ui/player-card-panel.9.png',
+        === 'source:assets/ui/regular-button/brown-button-50.9.png',
     );
 
     expect(elara.folderPath).toEqual(['avatars']);
@@ -63,7 +63,43 @@ describe('createIdleWizardAssetEntries', () => {
       'ui',
       'root-run-settings',
     ]);
-    expect(publicPlayerCard.folderPath).toEqual(['public', 'ui']);
+    expect(regularButton.folderPath).toEqual(['ui', 'regular-button']);
+  });
+
+  it('does not catalog retired player-card skins', () => {
+    const assets = createIdleWizardAssetEntries(
+      createIdleWizardButtonEntries(),
+    );
+
+    expect(
+      assets.some(({ assetId }) => assetId.includes('/player-card-')),
+    ).toBe(false);
+  });
+
+  it('does not catalog duplicate baked top-HUD backings', () => {
+    const assets = createIdleWizardAssetEntries(
+      createIdleWizardButtonEntries(),
+    );
+    const assetIds = new Set(assets.map(({ assetId }) => assetId));
+
+    expect(assetIds.has(
+      'source:assets/ui/root-run-top-hud/currency-bg.9.png',
+    )).toBe(false);
+    expect(assetIds.has(
+      'source:assets/ui/root-run-top-hud/settings-bg.9.png',
+    )).toBe(false);
+    expect(assetIds.has(
+      'source:assets/ui/root-run-top-hud/level-progress-panel.png',
+    )).toBe(false);
+    expect(assetIds.has(
+      'source:assets/ui/white-squircle/white-squircle-20.9.png',
+    )).toBe(true);
+    expect(assetIds.has(
+      'source:assets/ui/white-squircle/white-squircle-30.9.png',
+    )).toBe(true);
+    expect(assetIds.has(
+      'source:assets/ui/white-squircle/white-squircle-40.9.png',
+    )).toBe(true);
   });
 
   it('catalogs canonical Root Run dialog shell assets', () => {
@@ -99,16 +135,15 @@ describe('createIdleWizardAssetEntries', () => {
     );
 
     expect(bannerAssets.map(({ label }) => label).sort()).toEqual([
-      'account-title.png',
-      'dialog-title-compact.png',
-      'expedition-dialog-title-blue.9.png',
-      'expedition-dialog-title-purple.9.png',
-      'market-title-ribbon.9.png',
-      'research-station-title-blue.9.png',
-      'research-station-title-green.9.png',
-      'research-station-title-purple.9.png',
-      'research-station-title-red.9.png',
-      'research-station-title-yellow.9.png',
+      'banner-blue-right.9.png',
+      'banner-blue.9.png',
+      'banner-cream.png',
+      'banner-green-right.9.png',
+      'banner-purple-ribbon.9.png',
+      'banner-purple-right.9.png',
+      'banner-purple.9.png',
+      'banner-red-right.9.png',
+      'banner-yellow-right.9.png',
     ]);
   });
 
@@ -213,7 +248,7 @@ describe('createIdleWizardAssetEntries', () => {
     ).toBe(true);
   });
 
-  it('includes preview-only runtime and generated textures', () => {
+  it('distinguishes editable source PNGs from preview-only runtime and generated textures', () => {
     const assets = createIdleWizardAssetEntries(
       createIdleWizardButtonEntries(),
     );
@@ -224,8 +259,8 @@ describe('createIdleWizardAssetEntries', () => {
     const gameAtlas = assets.find(
       ({ assetId }) => assetId === 'atlas:game',
     );
-    const sourceWebp = assets.find(
-      ({ assetId }) => assetId === 'source:assets/ui/xp-stars.webp',
+    const sourcePng = assets.find(
+      ({ assetId }) => assetId === 'source:assets/ui/xp-stars.png',
     );
 
     expect(tutorialPointer.folderPath).toEqual([
@@ -266,10 +301,10 @@ describe('createIdleWizardAssetEntries', () => {
       label: 'Frames',
       value: String(gameAtlas.atlasFrames.length),
     });
-    expect(sourceWebp.editorEditable).toBe(false);
-    expect(sourceWebp.properties).toContainEqual({
+    expect(sourcePng.editorEditable).toBe(true);
+    expect(sourcePng.properties).toContainEqual({
       label: 'Editor access',
-      value: 'Preview only',
+      value: 'Preview and 9-slice authoring',
     });
   });
 

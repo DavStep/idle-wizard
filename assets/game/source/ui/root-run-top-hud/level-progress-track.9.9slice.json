@@ -1,0 +1,56 @@
+{
+  "version": 1,
+  "format": "png",
+  "asset": "level-progress-track.9.png",
+  "source": {
+    "path": "assets/game/source/ui/root-run-top-hud/level-progress-track.9.png",
+    "width": 63,
+    "height": 51,
+    "mode": "RGBA",
+    "crop": {
+      "x": 0,
+      "y": 0,
+      "width": 63,
+      "height": 51
+    }
+  },
+  "sourceCropSize": {
+    "width": 63,
+    "height": 51
+  },
+  "slice": {
+    "left": 31,
+    "top": 0,
+    "right": 31,
+    "bottom": 0
+  },
+  "mode": "source",
+  "distill": null,
+  "cleanup": {
+    "neutralTintMask": true
+  },
+  "rendering": {
+    "stretch": "horizontal-center-only",
+    "outputInsets": {
+      "left": 31,
+      "top": 0,
+      "right": 31,
+      "bottom": 0
+    },
+    "minimumCenter": {
+      "width": 1,
+      "height": 51
+    },
+    "minimumSize": {
+      "width": 63,
+      "height": 51
+    },
+    "qaResample": "linear",
+    "browserPreviewSmoothingDefault": true
+  },
+  "editor": {
+    "tool": "Idle Wizard Root Run HUD distillation",
+    "sourceAlphaPreserved": true,
+    "sourceAssetPreserved": false
+  }
+}

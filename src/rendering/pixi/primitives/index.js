@@ -1,6 +1,15 @@
 export { BasePixiRetainedView } from './BasePixiRetainedView.js';
 export { PixiButton } from './PixiButton.js';
 export {
+  getPixiButtonAssetId,
+  getPixiButtonSkin,
+  isPixiButtonColor,
+  normalizePixiButtonColor,
+  normalizePixiButtonSizeTier,
+  PIXI_BUTTON_COLORS,
+  PIXI_BUTTON_SIZE_TIERS,
+} from './PixiButtonStyle.js';
+export {
   PIXI_COST_BUTTON_GEOMETRY,
   PixiCostButton,
 } from './PixiCostButton.js';

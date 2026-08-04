@@ -8,7 +8,9 @@ import {
 } from 'pixi.js';
 
 import { PixiButton } from '../../primitives/PixiButton.js';
+import { getPixiButtonSkin } from '../../primitives/PixiButtonStyle.js';
 import { PixiFrame } from '../../primitives/PixiFrame.js';
+import { PixiNineSliceFrame } from '../../primitives/PixiNineSliceFrame.js';
 import { PixiPanel } from '../../primitives/PixiPanel.js';
 import { PixiTextLabel } from '../../primitives/PixiTextLabel.js';
 import { PixiNotificationBadge } from '../../global/transient/PixiNotificationBadges.js';
@@ -659,6 +661,7 @@ class GuildSectionRow {
     semanticPrefix,
     label,
   }) {
+    this.assetManager = assetManager;
     this.root = new Container();
     this.root.label = label;
     this.background = new Graphics();
@@ -681,9 +684,17 @@ class GuildSectionRow {
       fontWeight: 'bold',
       label: `${label}:identityName`,
     });
-    this.buttonFrame = new PixiFrame({
-      assetManager,
-      variant: 'control',
+    const buttonSkin = getPixiButtonSkin({
+      color: 'brown-light',
+      sizeTier: 15,
+    });
+    this.buttonFrame = new PixiNineSliceFrame({
+      texture:
+        assetManager?.getTexture?.(buttonSkin.assetId) ?? Texture.EMPTY,
+      sourceInsets: buttonSkin.sourceInsets,
+      borderInsets: buttonSkin.borderInsets,
+      width: 100,
+      height: ROW_HEIGHT,
       label: `${label}:buttonFrame`,
     });
     this.buttonLabel = new PixiTextLabel({
@@ -741,6 +752,14 @@ class GuildSectionRow {
     this.model = model;
     this.action = model.action;
     this.enabled = model.enabled !== false && model.disabled !== true;
+    const buttonSkin = getPixiButtonSkin({
+      color: this.enabled ? 'brown-light' : 'gray',
+      sizeTier: 15,
+    });
+    this.buttonFrame.setTexture(
+      this.assetManager?.getTexture?.(buttonSkin.assetId) ?? Texture.EMPTY,
+      buttonSkin.sourceInsets,
+    );
     this.root.visible = true;
     this.root.renderable = true;
     const kind = model.kind ?? (model.action ? 'button' : 'row');
@@ -843,7 +862,11 @@ class GuildSectionRow {
             : 0),
       ),
     );
-    this.buttonFrame.setSize(width, height);
+    this.buttonFrame.setSize(
+      width,
+      height,
+      getPixiButtonSkin({ color: 'brown-light', sizeTier: 15 }).borderInsets,
+    );
     this.buttonLabel.position.set(
       width / 2,
       this.buttonValue.visible ? height / 2 - 6 : height / 2,
@@ -865,7 +888,6 @@ class GuildSectionRow {
     this.paragraph.applyTheme(this.theme);
     this.identityTag.applyTheme(this.theme);
     this.identityName.applyTheme(this.theme);
-    this.buttonFrame.applyTheme(this.theme);
     this.buttonLabel.applyTheme(this.theme);
     this.buttonValue.applyTheme(this.theme);
     this.valueLabel.setColor(

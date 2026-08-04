@@ -21,7 +21,7 @@ describe('createIdleWizardButtonEntries', () => {
   it('registers every supported shared button preview in the Buttons folder', () => {
     const entries = createIdleWizardButtonEntries();
 
-    expect(entries).toHaveLength(18);
+    expect(entries).toHaveLength(8);
     expect(new Set(entries.map((entry) => entry.id)).size).toBe(entries.length);
     expect(entries.every((entry) => entry.kind === 'widget')).toBe(true);
     expect(entries.every((entry) => entry.sectionId === 'buttons')).toBe(true);
@@ -52,14 +52,14 @@ describe('createIdleWizardButtonEntries', () => {
 
   it('registers production usage locations for active widget contracts', () => {
     const entries = createIdleWizardButtonEntries();
-    const greenButton = entries.find(({ id }) => id === 'green-button');
+    const baseButton = entries.find(({ id }) => id === 'base-button');
     const popupTab = entries.find(({ id }) => id === 'popup-tab-button');
 
-    expect(greenButton.usages).toContainEqual({
+    expect(baseButton.usages).toContainEqual({
       label: 'Account Save action',
       source: 'src/rendering/pixi/global/dialogs/PixiSettingsDialog.js',
     });
-    expect(greenButton.usages).toContainEqual({
+    expect(baseButton.usages).toContainEqual({
       label: 'Garden Harvest All action',
       source: 'src/rendering/pixi/pages/garden/GardenPixiPage.js',
     });
@@ -71,16 +71,16 @@ describe('createIdleWizardButtonEntries', () => {
 
   it('registers font and production background metadata for inspection', () => {
     const entries = createIdleWizardButtonEntries();
-    const greenButton = entries.find(({ id }) => id === 'green-button');
+    const baseButton = entries.find(({ id }) => id === 'base-button');
     const inlineButton = entries.find(({ id }) => id === 'inline-button');
     const infoButton = entries.find(({ id }) => id === 'info-button');
 
-    expect(greenButton.properties).toEqual([
+    expect(baseButton.properties).toEqual([
       { label: 'Font', value: 'Lilita One' },
       {
         label: 'Background asset',
         monospace: true,
-        value: 'source:assets/ui/regular-button/green-button-50.9.png',
+        value: 'source:assets/ui/regular-button/yellow-button-50.9.png',
       },
     ]);
     expect(inlineButton.properties).toContainEqual({
@@ -96,7 +96,7 @@ describe('createIdleWizardButtonEntries', () => {
 
   it('declares every production asset mounted by each atomic preview', () => {
     const entries = createIdleWizardButtonEntries();
-    const greenButton = entries.find(({ id }) => id === 'green-button');
+    const baseButton = entries.find(({ id }) => id === 'base-button');
     const inlineButton = entries.find(({ id }) => id === 'inline-button');
     const costButton = entries.find(({ id }) => id === 'cost-button');
     const popupTab = entries.find(({ id }) => id === 'popup-tab-button');
@@ -105,9 +105,9 @@ describe('createIdleWizardButtonEntries', () => {
     );
     const hudAvatar = entries.find(({ id }) => id === 'hud-avatar-button');
 
-    expect(greenButton.assets).toContainEqual(
+    expect(baseButton.assets).toContainEqual(
       expect.objectContaining({
-        id: 'source:assets/ui/regular-button/green-button-50.9.png',
+        id: 'source:assets/ui/regular-button/yellow-button-50.9.png',
         nineSlice: true,
         role: 'Background',
       }),

@@ -281,7 +281,7 @@ describe('UiEditorAssetWorkbench', () => {
     ).toBe('381x331');
   });
 
-  it('keeps fixed previews static and pans only the custom tester', () => {
+  it('keeps fixed cases static while source and custom previews pan and zoom', () => {
     const preview = createUiEditorAssetPreview({
       assetUrl: '/green-button.9.png',
       borderInsets: { top: 17, right: 7, bottom: 12, left: 20 },
@@ -294,6 +294,12 @@ describe('UiEditorAssetWorkbench', () => {
     });
     const customCase = preview.querySelector(
       '[data-preview-case="custom"]',
+    );
+    const sourceViewport = preview.querySelector(
+      '.ui-editor-nine-slice__source-stage',
+    );
+    const source = preview.querySelector(
+      '.ui-editor-nine-slice__source-image',
     );
     const viewport = customCase.querySelector(
       '.ui-editor-pan-zoom-viewport',
@@ -310,6 +316,11 @@ describe('UiEditorAssetWorkbench', () => {
       offsetHeight: { configurable: true, value: 80 },
       offsetWidth: { configurable: true, value: 100 },
     });
+    Object.defineProperties(sourceViewport, {
+      clientHeight: { configurable: true, value: 240 },
+      clientWidth: { configurable: true, value: 400 },
+    });
+    loadImage(source, { height: 36, width: 42 });
 
     expect(
       preview.querySelectorAll(
@@ -327,7 +338,23 @@ describe('UiEditorAssetWorkbench', () => {
     ).toHaveLength(4);
     expect(
       preview.querySelector('[aria-label="Source zoom in"]'),
-    ).toBeNull();
+    ).not.toBeNull();
+    expect(source.style.width).toBe('242.67px');
+    expect(source.style.height).toBe('208px');
+    expect(sourceViewport.dataset.scale).toBe('5.78');
+
+    const wheel = new window.WheelEvent('wheel', {
+      bubbles: true,
+      cancelable: true,
+      clientX: 200,
+      clientY: 120,
+      deltaY: -120,
+    });
+    sourceViewport.dispatchEvent(wheel);
+
+    expect(wheel.defaultPrevented).toBe(true);
+    expect(Number(sourceViewport.dataset.zoom)).toBeGreaterThan(1);
+    expect(Number.parseFloat(source.style.width)).toBeGreaterThan(242.67);
 
     preview.querySelector('[data-editor-tab="custom"]').click();
     preview.querySelector('[aria-label="Custom preview zoom in"]').click();
@@ -592,7 +619,22 @@ describe('UiEditorAssetWorkbench', () => {
     expect(thumbnail.dataset.editorLibraryThumbnail).toBe('asset:panel');
     expect(thumbnail.querySelector('img').alt).toBe('');
     expect(
-      thumbnail.querySelector('.ui-editor-asset-thumbnail__badge').hidden,
+      thumbnail.querySelector(
+        '.ui-editor-asset-thumbnail__badge--nine-slice',
+      ).hidden,
+    ).toBe(false);
+    expect(
+      thumbnail.querySelector(
+        '.ui-editor-asset-thumbnail__badge--unused',
+      ).hidden,
+    ).toBe(true);
+
+    thumbnail.uiEditorSetUnused(true);
+
+    expect(
+      thumbnail.querySelector(
+        '.ui-editor-asset-thumbnail__badge--unused',
+      ).hidden,
     ).toBe(false);
   });
 

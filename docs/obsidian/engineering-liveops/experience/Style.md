@@ -76,6 +76,7 @@ experience_type: style
 - For separated dialog sections, copy Load Stall's split-paper composition exactly: reuse the Expedition paper nine-slice for each full-width section, keep content on the standard `20px`-inset dialog column without another side inset, start section content `5px` from its content boundary, and preserve an `8px` visible paper-to-paper gap. Never replace this with nested feature-local cards.
 - Every whole-dialog category tab row stays fully inside the brown shell footer below the paper: `28px` row height, `9px` side insets, `6px` above, and `10px` below. Expand gaps by count (`4px` for five, `6px` for four, `8px` for three, `10px` for two), then divide the remaining width equally. Apply the same rule to continuous and split paper; only content-local subsection controls remain inside the paper.
 - Progress, research-complete, and feature-unlock announcements are full-screen screens, not dialogs: keep their centered composition unframed and reserve dialog chrome for report-style announcements.
+- Feature-unlock announcements must reuse the exact destination room-tab or Workshop side-action icon; do not substitute parallel semantic artwork.
 - Transparent nine-slice corners reveal any CSS fill drawn underneath. Let the Root Run shell, paper, title, and close PNGs own their centers; keep their backing layers transparent and preserve the source inset plus minimum slice dimensions instead of hiding geometry mistakes with solid rectangles.
 - Shared chrome overlays with the same z-index paint by DOM order; visible bottom-panel lock notices must raise the bottom panel layer above the passive chat preview.
 - Dialog paper owns its fixed brown-on-cream palette; do not recolor it from the active room theme.
@@ -206,6 +207,7 @@ experience_type: style
 - UI editor background families are semantic discovery groups, not proof that the textures are interchangeable. Keep paper/card/panel variants together under `UI/Backgrounds`, but preserve and validate each asset's own slice margins, output insets, and minimum size before replacement.
 - Nine-slice compatibility is a logical output-border contract, not a source-PNG pixel comparison. Keep source slices, output insets, and the derived minimum size separate; editor selection, qUIck export/runtime, and retained Pixi setters must reject undersized bindings before mutating the active skin.
 - UI editor source-asset deletion must rescan project references at confirmation time, require a same-extension and same nine-slice-type replacement while references remain, update every reviewed path form, then delete the texture and optional sidecar.
+- UI editor unused-asset badges must use the same project-reference rules as deletion and batch the catalogue scan once; per-thumbnail scans are both slower and vulnerable to inconsistent used/unused results.
 - Player font options live in `src/player/playerFonts.js`, apply through `html[data-style-font]`, and need matching SpacetimeDB `PLAYER_FONTS` entries to survive profile sync.
 - Bundled player fonts need an `@fontsource/<font>` dependency plus `src/main.js` CSS imports; CSS fallback alone is not enough for Android/offline builds.
 - Legacy player color-mode values remain profile-compatible, but `html[data-style-color]` and `data-resource-color` metadata must not assign resource or currency text colors.
@@ -305,6 +307,8 @@ experience_type: style
 - Garden plot `.is-empty` means the plot has no active plant, not that its selected seed label is unavailable; selected seed labels still follow the row's normal state color.
 - Research item-name spans may keep resource metadata for icons, but their text inherits the row's normal, completed, or unavailable state color.
 - Treat every new UI primitive, compound component, scroll behavior, box/dialog type, control pattern, or meaningfully different widget variant as a reusable project widget: define its contract before implementation, then catalog it with real-app evidence in `docs/ui-patterns.md`.
+- Standalone interactive editor coverage belongs in colocated `*.ui-editor.js` UI Lab integrations discovered by the editor. Keep scenarios and service fakes editor-only, drive production widgets through public APIs, and return every clock, listener, isolated state holder, and Pixi tree through the shared cleanup lifecycle.
+- Visually meaningful UI Lab integrations must declare a passive production-backed thumbnail so their library folder communicates the control before selection; keep the tile as the sole click target and reserve interaction for the full preview.
 - Retained global dialogs must count the Root Run frame outsets when enforcing width: cap the complete shell at `90%` of the `360px` source screen, then reflow content inside the resulting `264px` content box.
 - Retained dialog tabs must reuse `RetainedButton` with the shared `resolveDialogFooterTabLayout` and `setDialogPaperAboveFooterTabs` geometry; do not build feature-local `PixiButton` tab rows or place whole-dialog tabs outside the shell. When a dialog intentionally uses multiple paper sections, hide the generic full paper frame so those sections sit directly on the brown shell instead of nesting paper inside paper; render every split section with the shared Expedition paper nine-slice and end the final section at the shared footer boundary.
 - Stall allocation rows and their slider knob reuse the exact Root Run Settings qUIck assets and `/3` source geometry: 50px row pitch, 8px content insets, and a 23px knob. Do not redraw either surface with `Graphics`.
@@ -313,7 +317,7 @@ experience_type: style
 
 ## Runtime art sources
 
-- Keep high-resolution generation masters outside `assets/game/source`; the production asset manifest includes every PNG and WebP below that tree. Put only runtime-sized finals there, or intermediate art will inflate web and APK builds.
+- Keep high-resolution generation masters outside `assets/game/source`; the production asset manifest includes every PNG below that tree. Put only runtime-sized finals there, or intermediate art will inflate web and APK builds.
 - Build research icon families from shared plot, cauldron, seed-pack, hourglass, and action-overlay masters. Do not independently generate each final icon or identical gameplay concepts will drift; keep currencies out of research artwork.
 - Pixi `ColorMatrixFilter.grayscale(1)` sums RGB channels and clips bright art; locked cauldron artwork that intentionally stays monochrome should use the Idle Outpost luminance weights `0.2125/0.7154/0.0721` and neutralize sprite tint RGB.
 - Grayscale and monochrome shaders are icon-only. Disabled buttons must swap to the shared gray button asset instead of filtering colored button chrome.

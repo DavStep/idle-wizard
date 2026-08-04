@@ -45,6 +45,9 @@ const LEVEL_TRACK_INSET = 3;
 const LEVEL_FILL_HEIGHT = 51;
 const LEVEL_FILL_CAP_WIDTH = 26;
 const LEVEL_FILL_TEXTURE_WIDTH = 53;
+const HUD_BACKING_TINT = 0x000000;
+const HUD_BACKING_ALPHA = 0.4;
+const LEVEL_FILL_TINT = 0xffdf41;
 const LEVEL_FILL_SLICE = Object.freeze({
   left: 26,
   top: 20,
@@ -58,9 +61,17 @@ const LEVEL_TEXT_STROKE = Object.freeze({
 });
 
 export class RootRunHudAvatarButton extends PixiButton {
-  constructor({ assets, texture } = {}) {
+  constructor({
+    action = null,
+    assets,
+    inputRouter = null,
+    texture,
+  } = {}) {
     super({
+      action,
       assetManager: assets,
+      fallbackHitTest: true,
+      inputRouter,
       width: AVATAR_SIZE,
       height: AVATAR_SIZE,
       text: '',
@@ -137,11 +148,13 @@ export class RootRunHudCurrencyCapsule extends Container {
     super({ label });
     this.background = createNineSlice({
       texture: assets.getTexture(HUD_ASSETS.currency),
-      insets: { left: 25, top: 24, right: 25, bottom: 25 },
+      insets: { left: 21, top: 21, right: 21, bottom: 21 },
       width: CURRENCY_WIDTH,
       height: CURRENCY_HEIGHT,
       label: `${label}:background`,
     });
+    this.background.tint = HUD_BACKING_TINT;
+    this.background.alpha = HUD_BACKING_ALPHA;
     this.resourceLabel = new PixiResourceLabel({
       assetManager: assets,
       resource,
@@ -205,20 +218,33 @@ export class RootRunHudCurrencyCapsule extends Container {
   }
 }
 
-export class RootRunHudSquareIconButton extends Container {
-  constructor({ assets } = {}) {
+export class RootRunHudSquareIconButton extends PixiButton {
+  constructor({
+    action = null,
+    assets,
+    inputRouter = null,
+    label = 'topPanel:settingsControl',
+  } = {}) {
     super({
-      label: 'topPanel:settingsControl',
-      eventMode: 'static',
+      action,
+      assetManager: assets,
+      fallbackHitTest: true,
+      height: SETTINGS_SIZE,
+      inputRouter,
+      label,
+      text: '',
+      variant: 'inline',
+      width: SETTINGS_SIZE,
     });
-    this.hitArea = new Rectangle(0, 0, SETTINGS_SIZE, SETTINGS_SIZE);
     this.background = createNineSlice({
       texture: assets.getTexture(HUD_ASSETS.settings),
-      insets: { left: 46, top: 46, right: 46, bottom: 46 },
+      insets: { left: 41, top: 41, right: 41, bottom: 41 },
       width: SETTINGS_SIZE,
       height: SETTINGS_SIZE,
       label: 'topPanel:settingsBackground',
     });
+    this.background.tint = HUD_BACKING_TINT;
+    this.background.alpha = HUD_BACKING_ALPHA;
     this.icon = new Sprite({
       texture: assets.getTexture(HUD_ASSETS.settingsGear),
       label: 'topPanel:settingsIcon',
@@ -227,7 +253,9 @@ export class RootRunHudSquareIconButton extends Container {
     this.icon.position.set(21, 19);
     this.icon.width = 80;
     this.icon.height = 84;
-    this.addChild(this.background, this.icon);
+    this.visual.addChild(this.background, this.icon);
+    this.textLabel.visible = false;
+    this.textLabel.renderable = false;
   }
 }
 
@@ -253,14 +281,16 @@ export class RootRunHudLevelRail extends Container {
       label: 'topPanel:questVisuals',
       eventMode: 'none',
     });
-    this.panel = new Sprite({
+    this.panel = createNineSlice({
       texture: assets.getTexture(HUD_ASSETS.levelPanel),
+      insets: { left: 31, top: 31, right: 31, bottom: 31 },
+      width: 656,
+      height: 76,
       label: 'topPanel:levelPanel',
-      roundPixels: true,
     });
     this.panel.position.set(6, 8);
-    this.panel.width = 656;
-    this.panel.height = 76;
+    this.panel.tint = HUD_BACKING_TINT;
+    this.panel.alpha = HUD_BACKING_ALPHA;
     this.track = createNineSlice({
       texture: assets.getTexture(HUD_ASSETS.levelTrack),
       insets: { left: 31, top: 0, right: 31, bottom: 0 },
@@ -268,6 +298,7 @@ export class RootRunHudLevelRail extends Container {
       height: LEVEL_TRACK_HEIGHT,
       label: 'topPanel:questTrack',
     });
+    this.track.tint = HUD_BACKING_TINT;
     this.track.position.set(LEVEL_TRACK_X, LEVEL_TRACK_Y);
     this.fill = createNineSlice({
       texture: assets.getTexture(HUD_ASSETS.levelFill),
@@ -276,6 +307,7 @@ export class RootRunHudLevelRail extends Container {
       height: LEVEL_FILL_HEIGHT,
       label: 'topPanel:questFill',
     });
+    this.fill.tint = LEVEL_FILL_TINT;
     this.dividers = new Graphics();
     this.dividers.label = 'topPanel:questDividers';
     this.questVisuals.addChild(

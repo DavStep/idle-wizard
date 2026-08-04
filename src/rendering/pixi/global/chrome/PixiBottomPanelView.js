@@ -32,31 +32,31 @@ const TAB_DEFINITIONS = Object.freeze({
   brewing: Object.freeze({
     id: 'brewing',
     label: 'Brewing',
-    icon: 'icon-brewing-cauldron-tab.webp',
+    icon: 'icon-brewing-cauldron-tab.png',
     artScale: 0.72,
   }),
   garden: Object.freeze({
     id: 'garden',
     label: 'Garden',
-    icon: 'icon-garden-plot-tab.webp',
+    icon: 'icon-garden-plot-tab.png',
     artScale: 1,
   }),
   workshop: Object.freeze({
     id: 'workshop',
     label: 'Workshop',
-    icon: 'icon-workshop-house-tab.webp',
+    icon: 'icon-workshop-house-tab.png',
     artScale: 0.84,
   }),
   research: Object.freeze({
     id: 'research',
     label: 'Research',
-    icon: 'icon-research-telescope-tab.webp',
+    icon: 'icon-research-telescope-tab.png',
     artScale: 0.84,
   }),
   shop: Object.freeze({
     id: 'shop',
     label: 'Market',
-    icon: 'icon-shop-market-stall-tab.webp',
+    icon: 'icon-shop-market-stall-tab.png',
     artScale: 0.9,
   }),
   advancedBrewing: Object.freeze({

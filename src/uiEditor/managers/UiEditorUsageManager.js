@@ -57,26 +57,41 @@ export class UiEditorUsageManager {
     return this.refs;
   }
 
-  showEntry(entry) {
+  showEntry(entry, preview = null) {
+    const customInspector = preview?.uiEditorCreateInspector?.() ?? null;
     if (
       !this.refs ||
-      !['asset', 'widget'].includes(entry?.kind)
+      (!['asset', 'widget'].includes(entry?.kind) && !customInspector)
     ) {
       this.clear();
       return false;
     }
 
     const usages = normalizeUsages(entry.usages);
-    const properties = normalizeProperties(entry.properties);
+    const properties = preview?.uiEditorSuppressStaticProperties
+      ? []
+      : normalizeProperties(entry.properties);
     this.selectedComponent = null;
-    this.refs.editor.hidden = true;
-    this.refs.editor.removeAttribute('aria-label');
-    this.refs.editor.replaceChildren();
-    this.refs.root.dataset.empty = String(usages.length === 0);
-    this.refs.emptyState.hidden = usages.length > 0;
+    this.refs.editor.hidden = !customInspector;
+    if (customInspector) {
+      this.refs.editor.setAttribute(
+        'aria-label',
+        `${entry.label} integration controls`,
+      );
+      this.refs.editor.replaceChildren(customInspector);
+    } else {
+      this.refs.editor.removeAttribute('aria-label');
+      this.refs.editor.replaceChildren();
+    }
+    this.refs.root.dataset.empty = String(
+      usages.length === 0 && !customInspector,
+    );
+    this.refs.emptyState.hidden = usages.length > 0 || Boolean(customInspector);
     this.refs.emptyState.textContent = usages.length
       ? ''
-      : `No usages registered for this ${entry.kind}.`;
+      : customInspector
+        ? ''
+        : `No usages registered for this ${entry.kind}.`;
     this.refs.summary.hidden = false;
     this.refs.title.textContent = entry.label;
     this.refs.count.textContent = `${usages.length} ${

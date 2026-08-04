@@ -7,7 +7,6 @@ import {
   PIXI_UI_GEOMETRY,
   resolvePixiTextStrokeWidth,
 } from '../theme/PixiThemeTokens.js';
-import { PixiFrame } from './PixiFrame.js';
 import { PixiNineSliceFrame } from './PixiNineSliceFrame.js';
 import { PixiTextLabel } from './PixiTextLabel.js';
 
@@ -56,13 +55,6 @@ export class PixiTextField extends Container {
     this.sessionUnsubscribe = null;
     this.focusRequestToken = 0;
     this.fieldDestroying = false;
-    this.frame = new PixiFrame({
-      assetManager,
-      variant: 'control',
-      width,
-      height,
-      label: `${label}:frame`,
-    });
     this.insetFrame = new PixiNineSliceFrame({
       texture:
         assetManager?.getTexture?.(PIXI_ROOT_RUN_ASSETS.textFieldBrownInset) ??
@@ -94,7 +86,6 @@ export class PixiTextField extends Container {
     );
     this.textViewport.mask = this.textMask;
     this.addChild(
-      this.frame,
       this.insetFrame,
       this.focusGraphic,
       this.textViewport,
@@ -117,7 +108,6 @@ export class PixiTextField extends Container {
 
   applyTheme(theme) {
     this.theme = theme ?? DEFAULT_PIXI_THEME_SNAPSHOT;
-    this.frame.applyTheme(this.theme);
     this.textLabel.applyTheme(this.theme);
     this.redrawTextState();
   }
@@ -218,7 +208,7 @@ export class PixiTextField extends Container {
   }
 
   setVariant(variant) {
-    this.variant = String(variant || 'control');
+    this.variant = String(variant || 'brown-inset');
     this.relayout();
     return this;
   }
@@ -227,7 +217,6 @@ export class PixiTextField extends Container {
     const border = PIXI_UI_GEOMETRY.ordinaryBorderWidth;
     const paddingX = PIXI_UI_GEOMETRY.panelPaddingX;
     const paddingY = PIXI_UI_GEOMETRY.panelPaddingY;
-    this.frame.setSize(this.fieldWidth, this.fieldHeight);
     this.insetFrame.setSize(
       this.fieldWidth,
       this.fieldHeight,
@@ -243,7 +232,6 @@ export class PixiTextField extends Container {
           PIXI_ROOT_RUN_GEOMETRY.account.username.fontSize,
         )
       : 0;
-    this.frame.visible = !brownInset && !accountUsername;
     this.insetFrame.visible = brownInset;
     this.textViewport.position.set(textInsetX, textInsetY);
     this.textMask

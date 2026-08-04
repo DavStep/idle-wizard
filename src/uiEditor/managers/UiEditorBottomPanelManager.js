@@ -1,6 +1,7 @@
 const LIBRARY_ROOT_ID = 'library';
 const ASSET_ROOT_ID = 'assets';
 const ASSET_FOLDER_PREFIX = 'asset-folder:';
+const ENTRY_FOLDER_PREFIX = 'entry-folder:';
 
 export const UI_EDITOR_LIBRARY_FOLDERS = [
   {
@@ -80,6 +81,7 @@ export class UiEditorBottomPanelManager {
     this.foldersById = createBaseFolderMap();
     this.folderHistory = [LIBRARY_ROOT_ID];
     this.folderHistoryIndex = 0;
+    this.unusedAssetIds = new Set();
     this.refs = null;
 
     this.handleBodyClick = (event) => this.onBodyClick(event);
@@ -276,6 +278,13 @@ export class UiEditorBottomPanelManager {
     }
   }
 
+  setUnusedAssetIds(assetIds) {
+    this.unusedAssetIds = new Set(
+      Array.isArray(assetIds) ? assetIds : [],
+    );
+    this.updateAssetUsageBadges();
+  }
+
   selectEntry(entryId) {
     const entry = this.entriesById.get(entryId);
 
@@ -354,6 +363,7 @@ export class UiEditorBottomPanelManager {
 
     this.renderCurrentFolder();
     this.updateEntrySelection();
+    this.updateAssetUsageBadges();
   }
 
   renderCurrentFolder() {
@@ -520,16 +530,14 @@ export class UiEditorBottomPanelManager {
     this.entryFolderIds.clear();
 
     for (const entry of this.entriesById.values()) {
-      if (entry.sectionId !== 'assets') {
-        continue;
-      }
-
-      let parentId = ASSET_ROOT_ID;
+      let parentId = entry.sectionId === 'assets'
+        ? ASSET_ROOT_ID
+        : entry.sectionId;
       const path = [];
 
       for (const segment of normalizeFolderPath(entry.folderPath)) {
         path.push(segment);
-        const folderId = createAssetFolderId(path);
+        const folderId = createEntryFolderId(entry.sectionId, path);
 
         if (!this.foldersById.has(folderId)) {
           this.foldersById.set(folderId, {
@@ -537,7 +545,7 @@ export class UiEditorBottomPanelManager {
             id: folderId,
             label: formatAssetFolderLabel(segment),
             parentId,
-            sectionId: 'assets',
+            sectionId: entry.sectionId,
           });
         }
 
@@ -552,6 +560,7 @@ export class UiEditorBottomPanelManager {
       if (
         folder.id !== ASSET_ROOT_ID
         && !folder.id.startsWith(ASSET_FOLDER_PREFIX)
+        && !folder.id.startsWith(ENTRY_FOLDER_PREFIX)
       ) {
         continue;
       }
@@ -611,6 +620,27 @@ export class UiEditorBottomPanelManager {
         'aria-pressed',
         String(entryId === this.selectedEntryId),
       );
+    }
+  }
+
+  updateAssetUsageBadges() {
+    if (!this.refs) {
+      return;
+    }
+
+    for (const [entryId, button] of this.refs.entryButtons) {
+      const entry = this.entriesById.get(entryId);
+      const unused = this.unusedAssetIds.has(entry?.assetId);
+
+      button
+        .querySelector('[data-editor-library-thumbnail]')
+        ?.uiEditorSetUnused?.(unused);
+      button.toggleAttribute('data-asset-unused', unused);
+      if (unused) {
+        button.setAttribute('aria-label', `${entry.label}, unused asset`);
+      } else {
+        button.removeAttribute('aria-label');
+      }
     }
   }
 }
@@ -715,6 +745,15 @@ function createAssetFolderId(path) {
     .join('/')}`;
 }
 
+function createEntryFolderId(sectionId, path) {
+  if (sectionId === 'assets') {
+    return createAssetFolderId(path);
+  }
+  return `${ENTRY_FOLDER_PREFIX}${encodeURIComponent(sectionId)}:${path
+    .map((segment) => encodeURIComponent(segment))
+    .join('/')}`;
+}
+
 function normalizeFolderPath(folderPath) {
   return Array.isArray(folderPath)
     ? folderPath
@@ -728,10 +767,6 @@ function formatAssetFolderLabel(segment) {
 
   if (normalized === 'ui') {
     return 'UI';
-  }
-
-  if (normalized === 'webp') {
-    return 'WebP';
   }
 
   return normalized

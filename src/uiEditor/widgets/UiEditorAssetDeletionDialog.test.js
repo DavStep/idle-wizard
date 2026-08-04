@@ -7,6 +7,7 @@ import {
   deleteUiEditorAsset,
   findCompatibleReplacementEntries,
   inspectUiEditorAsset,
+  inspectUiEditorAssetUsage,
 } from './UiEditorAssetDeletionDialog.js';
 
 describe('UiEditorAssetDeletionDialog', () => {
@@ -191,6 +192,36 @@ describe('UiEditorAssetDeletionDialog', () => {
         { fetchImpl },
       ),
     ).rejects.toThrow('Source asset no longer exists.');
+  });
+
+  it('requests one bulk usage inspection for the asset catalogue', async () => {
+    const fetchImpl = vi.fn(async () => response({
+      unusedAssetIds: ['source:assets/ui/unused.png'],
+    }));
+
+    await expect(
+      inspectUiEditorAssetUsage(
+        [
+          'source:assets/ui/used.png',
+          'source:assets/ui/unused.png',
+        ],
+        { fetchImpl },
+      ),
+    ).resolves.toEqual({
+      unusedAssetIds: ['source:assets/ui/unused.png'],
+    });
+    expect(fetchImpl).toHaveBeenCalledWith(
+      '/__idle-wizard-ui-editor/asset',
+      expect.objectContaining({
+        body: JSON.stringify({
+          assetIds: [
+            'source:assets/ui/used.png',
+            'source:assets/ui/unused.png',
+          ],
+        }),
+        method: 'POST',
+      }),
+    );
   });
 });
 

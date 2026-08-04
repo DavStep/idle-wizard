@@ -76,6 +76,11 @@ Use borders before shadows. Panels use `--editor-border-subtle` or
   modal. Preview-only
   assets use the same gallery and inspector, with their editor access stated in
   metadata instead of introducing disabled-looking tiles.
+- Asset thumbnails keep the compact blue `9` badge at the top-right for
+  nine-slices. A source texture with no scanned project references gets a
+  compact amber `Unused` badge at the top-left; the tile's accessible name must
+  communicate the same state. Do not classify runtime or generated assets as
+  unused.
 - The `Library` root owns `UI Assets`, `UI Widgets`, `Dialogs`, and `Scenes`;
   widget categories are nested folders rather than tabs or permanent columns.
 - Library entries are compact text rows. The selected row uses
@@ -89,7 +94,16 @@ Use borders before shadows. Panels use `--editor-border-subtle` or
 - Atomic-component inspector fields use the existing raised control surface.
   Position fields share one row; text and asset controls span the inspector
   width.
-- The nine-slice workbench keeps its source and guides stable in the left pane.
+- UI Lab integrations reuse the right Inspector for one compact vertical flow:
+  scenario, typed controls, actions, then the latest events. Scenario and field
+  labels stay secondary; live values use the editor mono face. Actions wrap at
+  narrow widths and the event list scrolls within its own bounded region rather
+  than expanding the dock indefinitely.
+- The nine-slice workbench keeps its source and guides in the left pane. The
+  source contain-fits upward as well as downward, preserving crisp source
+  pixels, and supports cursor-centered wheel zoom plus drag and keyboard pan.
+  Zooming changes the rendered source size rather than scaling the guide
+  overlays, so guide lines and pointer targets keep their authored thickness.
   The right pane uses compact accessible tabs: `Preview cases` holds a fixed
   two-column Original/Height/Width/Both matrix with seam-free rendered results;
   Original uses the slice's calculated minimum renderable dimensions and the
@@ -140,6 +154,19 @@ Use borders before shadows. Panels use `--editor-border-subtle` or
 - Retained atomic hierarchy rows are keyboard-selectable. Selection opens
   native number, text, and select controls in the inspector and applies edits
   immediately to the mounted preview.
+- Retained button selections expose compact native inspector groups instead of
+  duplicate catalogue entries. Use labeled color swatches, segmented `50` /
+  `30` / `15` corner-size choices, and explicit state choices; Cost Button also
+  exposes layout, optional top label, label copy, price, and availability. Every
+  choice updates the mounted production control without remounting the editor.
+- The selected button preview carries a polite live status that confirms the
+  real activation, click-sound, and haptic pipeline, so one press verifies all
+  three shared behaviors.
+- UI Lab scenario selects, native fields, and action buttons are keyboard
+  operable. Production Pixi controls keep their real input-router behavior in
+  the central canvas. Changing scenario remounts only that integration and
+  disposes its clock, listeners, isolated state, and Pixi tree before the next
+  scenario starts.
 - Nine-slice source margins may be changed by direct number entry, pointer drag,
   or keyboard movement. Opposing guides may never cross, and every size or slice
   change updates the stretched result immediately. Clipboard output is a

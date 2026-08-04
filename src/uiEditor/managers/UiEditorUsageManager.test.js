@@ -134,6 +134,48 @@ describe('UiEditorUsageManager', () => {
     );
   });
 
+  it('shows integration controls for dialogs and scenes', () => {
+    const preview = document.createElement('section');
+    const inspector = document.createElement('section');
+    inspector.dataset.sampleIntegrationInspector = 'true';
+    inspector.textContent = 'Scenario controls';
+    preview.uiEditorCreateInspector = () => inspector;
+
+    expect(
+      manager.showEntry(
+        {
+          kind: 'dialog',
+          label: 'Data Dialog',
+        },
+        preview,
+      ),
+    ).toBe(true);
+    expect(refs.editor.hidden).toBe(false);
+    expect(
+      refs.editor.querySelector('[data-sample-integration-inspector]'),
+    ).toBe(inspector);
+    expect(refs.emptyState.hidden).toBe(true);
+  });
+
+  it('lets live integration controls suppress stale static properties', () => {
+    const preview = document.createElement('section');
+    preview.uiEditorCreateInspector = () => document.createElement('section');
+    preview.uiEditorSuppressStaticProperties = true;
+
+    expect(
+      manager.showEntry(
+        {
+          kind: 'widget',
+          label: 'Configurable Button',
+          properties: [{ label: 'Background', value: 'Initial skin' }],
+        },
+        preview,
+      ),
+    ).toBe(true);
+    expect(refs.properties.hidden).toBe(true);
+    expect(refs.properties.children).toHaveLength(0);
+  });
+
   it('inspects assets and lists the widgets that use them', () => {
     expect(
       manager.showEntry({

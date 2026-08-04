@@ -126,13 +126,16 @@ export function createUiEditorAtlasWorkbench(
 
   const updateSelectionControls = () => {
     const hasSelection = selectedIndex >= 0;
-    previousButton.disabled = frames.length === 0;
-    nextButton.disabled = frames.length === 0;
+    const selectedMatchIndex = matchingIndices.indexOf(selectedIndex);
+    previousButton.disabled = matchingIndices.length === 0;
+    nextButton.disabled = matchingIndices.length === 0;
     copyIdButton.disabled = !hasSelection;
     copyPathButton.disabled = !hasSelection;
-    selectionStatus.textContent = hasSelection
-      ? `${selectedIndex + 1} / ${frames.length}`
-      : `${frames.length} frames`;
+    selectionStatus.textContent = selectedMatchIndex >= 0
+      ? `${selectedMatchIndex + 1} / ${matchingIndices.length}`
+      : hasSelection
+        ? `${selectedIndex + 1} / ${frames.length}`
+        : `${matchingIndices.length} frames`;
   };
 
   const setHoveredFrame = (index) => {
@@ -173,6 +176,7 @@ export function createUiEditorAtlasWorkbench(
       centerFrame(frame);
     }
     if (announce) {
+      liveStatus.removeAttribute('data-tone');
       liveStatus.textContent = frame
         ? `Selected ${frame.name}`
         : 'Frame selection cleared.';
@@ -231,6 +235,7 @@ export function createUiEditorAtlasWorkbench(
           )
         : []),
     );
+    updateSelectionControls();
   };
 
   const copySelectedValue = async (field) => {
@@ -403,9 +408,12 @@ function renderOutline(outline, frame, atlasWidth, atlasHeight) {
   outline.style.top = `${frame.y / atlasHeight * 100}%`;
   outline.style.width = `${frame.width / atlasWidth * 100}%`;
   outline.style.height = `${frame.height / atlasHeight * 100}%`;
-  outline.querySelector('.ui-editor-atlas__frame-label')?.replaceChildren(
-    document.createTextNode(frame.name),
-  );
+  const label = outline.querySelector('.ui-editor-atlas__frame-label');
+  if (label) {
+    outline.dataset.labelSide =
+      frame.x + frame.width / 2 > atlasWidth * 0.66 ? 'end' : 'start';
+    label.replaceChildren(document.createTextNode(frame.name));
+  }
 }
 
 function resolveZoomStep(currentScale, direction) {

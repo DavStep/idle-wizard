@@ -147,24 +147,24 @@ export const PIXI_ROOT_RUN_ASSETS = Object.freeze({
     'source:assets/ui/root-run-settings/settings-icon-theme-night.png',
   settingsThemeDay:
     'source:assets/ui/root-run-settings/settings-icon-theme-day.png',
-  accountTitle: 'source:assets/ui/root-run-account/account-title.png',
+  accountTitle: 'source:assets/ui/banners/banner-cream.png',
   accountUsername: 'source:assets/ui/white-squircle/white-squircle-40.9.png',
   accountEdit: 'source:assets/ui/root-run-account/edit-pencil.png',
   accountChoice: 'source:assets/ui/root-run-account/choice-tile.png',
   accountSelected: 'source:assets/ui/root-run-account/choice-selected.png',
   topHudAvatarFrame: 'source:assets/ui/root-run-top-hud/avatar-frame.9.png',
   topHudAvatarHead: 'source:assets/ui/root-run-top-hud/avatar-head-bg.png',
-  topHudCurrency: 'source:assets/ui/root-run-top-hud/currency-bg.9.png',
-  topHudSettings: 'source:assets/ui/root-run-top-hud/settings-bg.9.png',
-  topHudLevelPanel: 'source:assets/ui/root-run-top-hud/level-progress-panel.png',
+  topHudCurrency: 'source:assets/ui/white-squircle/white-squircle-20.9.png',
+  topHudSettings: 'source:assets/ui/white-squircle/white-squircle-40.9.png',
+  topHudLevelPanel: 'source:assets/ui/white-squircle/white-squircle-30.9.png',
   topHudLevelTrack: 'source:assets/ui/root-run-top-hud/level-progress-track.9.png',
   topHudLevelFill:
     'source:assets/ui/root-run-top-hud/level-progress-fill-mask.9.png',
   dialogBack: 'source:assets/ui/root-run-dialog/expedition-dialog-back.9.png',
   dialogPaper: 'source:assets/ui/root-run-dialog/expedition-dialog-front.9.png',
-  dialogTitle: 'source:assets/ui/root-run-dialog/expedition-dialog-title-purple.9.png',
+  dialogTitle: 'source:assets/ui/banners/banner-purple.9.png',
   dialogClose: 'source:assets/ui/root-run-dialog/expedition-dialog-close.png',
-  marketTitleRibbon: 'source:assets/ui/root-run-market/market-title-ribbon.9.png',
+  marketTitleRibbon: 'source:assets/ui/banners/banner-purple-ribbon.9.png',
   researchCard: 'source:assets/ui/root-run-research/research-card-1000x304.9.png',
   researchCardLocked: 'source:assets/ui/root-run-research/research-card-locked-1000x304.9.png',
   researchArt: 'source:assets/ui/white-squircle/white-squircle-40.9.png',
@@ -172,17 +172,17 @@ export const PIXI_ROOT_RUN_ASSETS = Object.freeze({
   researchButtonShine:
     'source:assets/ui/root-run-research/research-button-shine.png',
   stallBatchBadge: 'source:assets/ui/root-run-level-badge-down-red.png',
-  researchStationTitle: 'source:assets/ui/root-run-research/research-station-title-red.9.png',
+  researchStationTitle: 'source:assets/ui/banners/banner-red-right.9.png',
   researchStationTitleRegular:
-    'source:assets/ui/root-run-research/research-station-title-yellow.9.png',
+    'source:assets/ui/banners/banner-yellow-right.9.png',
   researchStationTitleAutomation:
-    'source:assets/ui/root-run-research/research-station-title-red.9.png',
+    'source:assets/ui/banners/banner-red-right.9.png',
   researchStationTitleAdvanced:
-    'source:assets/ui/root-run-research/research-station-title-green.9.png',
+    'source:assets/ui/banners/banner-green-right.9.png',
   researchStationTitleCrystal:
-    'source:assets/ui/root-run-research/research-station-title-purple.9.png',
+    'source:assets/ui/banners/banner-purple-right.9.png',
   researchStationTitleBrewing:
-    'source:assets/ui/root-run-research/research-station-title-blue.9.png',
+    'source:assets/ui/banners/banner-blue-right.9.png',
   roomTabActive: 'source:assets/ui/midnight-room-tab-top-cap-selected.9.png',
   roomTabInactive: 'source:assets/ui/midnight-room-tab-top-cap.9.png',
   topPanelBackground: 'source:assets/ui/midnight-top-panel-background.9.png',
@@ -193,9 +193,9 @@ export const PIXI_ROOT_RUN_ASSETS = Object.freeze({
   topPanelBackgroundDay:
     'source:assets/ui/day-top-panel-background.9.png',
   workshopWindowNight:
-    'source:assets/rooms/workshop/workshop-window.webp',
+    'source:assets/rooms/workshop/workshop-window.png',
   workshopWindowDay:
-    'source:assets/rooms/workshop/workshop-window-day.webp',
+    'source:assets/rooms/workshop/workshop-window-day.png',
   info: 'source:assets/ui/prop_info.png',
   workshopBag: 'source:assets/icons/icon-side-bag-root-run.png',
   workshopStats: 'source:assets/icons/icon-side-stats-root-run.png',
@@ -454,10 +454,6 @@ const THEME_TOKENS = Object.freeze({
     }),
     frames: Object.freeze({
       panel: 'source:assets/ui/inner-section-panel-midnight.9.png',
-      panelSelected: 'public:ui/player-card-panel-selected.9.png',
-      control: 'public:ui/player-card-panel.9.png',
-      button: 'public:ui/player-card-button-brown-fill.9.png',
-      buttonDisabled: 'public:ui/player-card-button-brown-dark-fill.9.png',
       panelSourceInsets: Object.freeze({
         top: 91,
         right: 73,
@@ -469,24 +465,6 @@ const THEME_TOKENS = Object.freeze({
         right: 73 / 3,
         bottom: 30,
         left: 83 / 3,
-      }),
-      controlSourceInsets: Object.freeze({
-        top: 31,
-        right: 29,
-        bottom: 31,
-        left: 29,
-      }),
-      controlBorder: Object.freeze({
-        top: 5,
-        right: 6,
-        bottom: 5,
-        left: 6,
-      }),
-      compactBorder: Object.freeze({
-        top: 4,
-        right: 5,
-        bottom: 4,
-        left: 5,
       }),
     }),
     chrome: Object.freeze({
@@ -524,12 +502,6 @@ const THEME_TOKENS = Object.freeze({
     }),
     frames: Object.freeze({
       panel: 'source:assets/ui/inner-section-panel-day.9.png',
-      panelSelected:
-        'source:assets/ui/player-card-panel-selected-day.9.png',
-      control: 'source:assets/ui/player-card-panel-day.9.png',
-      button: 'public:ui/player-card-button-brown-fill.9.png',
-      buttonDisabled:
-        'public:ui/player-card-button-brown-dark-fill.9.png',
       panelSourceInsets: Object.freeze({
         top: 91,
         right: 73,
@@ -541,24 +513,6 @@ const THEME_TOKENS = Object.freeze({
         right: 73 / 3,
         bottom: 30,
         left: 83 / 3,
-      }),
-      controlSourceInsets: Object.freeze({
-        top: 31,
-        right: 29,
-        bottom: 31,
-        left: 29,
-      }),
-      controlBorder: Object.freeze({
-        top: 5,
-        right: 6,
-        bottom: 5,
-        left: 6,
-      }),
-      compactBorder: Object.freeze({
-        top: 4,
-        right: 5,
-        bottom: 4,
-        left: 5,
       }),
     }),
     chrome: Object.freeze({

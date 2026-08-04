@@ -104,11 +104,18 @@ export class PixiDialogFrame extends Container {
     this.contentTheme = createContentTheme(this.theme);
     this.paperVisible = true;
 
+    const initialGeometry = PIXI_ROOT_RUN_GEOMETRY.dialog;
+    const initialShellWidth =
+      this.coreWidth + initialGeometry.frameOutset * 2;
+    const initialShellHeight =
+      this.coreHeight + initialGeometry.frameOutset * 2;
     const frameTexture = this.resolveTexture(PIXI_ROOT_RUN_ASSETS.dialogBack);
     this.shadow = new PixiNineSliceFrame({
       texture: frameTexture,
       sourceInsets: PIXI_ROOT_RUN_GEOMETRY.dialog.frameSourceInsets,
       borderInsets: PIXI_ROOT_RUN_GEOMETRY.dialog.frameBorderInsets,
+      width: initialShellWidth,
+      height: initialShellHeight,
       label: `${label}:shadow`,
     });
     this.shadow.tint = PIXI_DIALOG_PALETTE.shadow;
@@ -119,6 +126,8 @@ export class PixiDialogFrame extends Container {
       texture: frameTexture,
       sourceInsets: PIXI_ROOT_RUN_GEOMETRY.dialog.frameSourceInsets,
       borderInsets: PIXI_ROOT_RUN_GEOMETRY.dialog.frameBorderInsets,
+      width: initialShellWidth,
+      height: initialShellHeight,
       label: `${label}:outerFrame`,
     });
     this.outerFrame.eventMode = 'none';
@@ -132,6 +141,8 @@ export class PixiDialogFrame extends Container {
       texture: this.resolveTexture(PIXI_ROOT_RUN_ASSETS.dialogPaper),
       sourceInsets: PIXI_ROOT_RUN_GEOMETRY.dialog.paperSourceInsets,
       borderInsets: PIXI_ROOT_RUN_GEOMETRY.dialog.paperBorderInsets,
+      width: this.coreWidth,
+      height: this.coreHeight,
       label: `${label}:paperFrame`,
     });
     this.paperFrame.eventMode = 'none';
@@ -142,6 +153,8 @@ export class PixiDialogFrame extends Container {
       texture: this.resolveTexture(PIXI_ROOT_RUN_ASSETS.dialogTitle),
       sourceInsets: PIXI_ROOT_RUN_GEOMETRY.dialog.titleSourceInsets,
       borderInsets: PIXI_ROOT_RUN_GEOMETRY.dialog.titleBorderInsets,
+      width: this.coreWidth,
+      height: initialGeometry.titleHeight,
       label: `${label}:titleFrame`,
     });
     this.titleFrame.eventMode = 'none';

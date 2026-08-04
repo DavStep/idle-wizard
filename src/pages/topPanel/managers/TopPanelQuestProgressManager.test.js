@@ -385,7 +385,7 @@ function createFixture({ completedQuests = 1, currentLevel = 2, progress = null 
     questRemainingValue: document.createElement('strong'),
     questProgressTail: document.createTextNode(''),
   };
-  refs.levelStar.src = '/assets/game/source/ui/level-star.webp';
+  refs.levelStar.src = '/assets/game/source/ui/level-star.png';
   refs.questProgressText.append(
     refs.questProgressLead,
     refs.questRemainingValue,

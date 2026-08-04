@@ -17,10 +17,10 @@ import {
 } from '../../theme/PixiThemeTokens.js';
 
 export const FIRST_RUN_INTRO_PIXI_ASSETS = Object.freeze({
-  castle: 'source:assets/rooms/intro/castle-ruins.webp',
-  defeated: 'source:assets/rooms/intro/demon-defeated.webp',
-  peace: 'source:assets/rooms/intro/peaceful-world.webp',
-  workshop: 'source:assets/rooms/intro/workshop-for-sale.webp',
+  castle: 'source:assets/rooms/intro/castle-ruins.png',
+  defeated: 'source:assets/rooms/intro/demon-defeated.png',
+  peace: 'source:assets/rooms/intro/peaceful-world.png',
+  workshop: 'source:assets/rooms/intro/workshop-for-sale.png',
   panel:
     'source:assets/ui/root-run-research/research-card-dark-1000x304.9.png',
 });

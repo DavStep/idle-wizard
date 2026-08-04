@@ -8,23 +8,18 @@ import {
 import { PixiNotificationBadge } from '../global/transient/PixiNotificationBadges.js';
 import {
   DEFAULT_PIXI_THEME_SNAPSHOT,
-  PIXI_ROOT_RUN_ASSETS,
-  PIXI_ROOT_RUN_GEOMETRY,
   PIXI_TEXT_STROKE_WIDTH,
   PIXI_UI_GEOMETRY,
 } from '../theme/PixiThemeTokens.js';
-import { PixiFrame } from './PixiFrame.js';
 import { PixiNineSliceFrame } from './PixiNineSliceFrame.js';
 import { PixiTextLabel } from './PixiTextLabel.js';
+import {
+  getPixiButtonSkin,
+  isPixiButtonColor,
+  normalizePixiButtonColor,
+  normalizePixiButtonSizeTier,
+} from './PixiButtonStyle.js';
 
-const ROOT_RUN_VARIANTS = new Set([
-  'yellow',
-  'green',
-  'red',
-  'gray',
-  'brown-dark',
-  'brown-light',
-]);
 const RELEASE_DURATION_MS = 180;
 
 /**
@@ -46,6 +41,8 @@ export class PixiButton extends Container {
     action = null,
     fallbackHitTest = false,
     haptic = 'light',
+    color = null,
+    sizeTier = 50,
     variant = 'regular',
     label = 'button',
   } = {}) {
@@ -62,6 +59,10 @@ export class PixiButton extends Container {
     this.action = action;
     this.haptic = haptic;
     this.variant = variant;
+    this.color = normalizePixiButtonColor(
+      color ?? (isPixiButtonColor(variant) ? variant : 'brown'),
+    );
+    this.sizeTier = normalizePixiButtonSizeTier(sizeTier);
     this.inputRouter = inputRouter;
     this.semanticRegistry = semanticRegistry;
     this.semanticId = semanticId;
@@ -69,16 +70,12 @@ export class PixiButton extends Container {
     this.releaseStartedAt = 0;
 
     this.visual = new Container({ label: `${label}:visual` });
-    this.frame = new PixiFrame({
-      assetManager,
-      variant: 'control',
-      width,
-      height,
-      label: `${label}:frame`,
-    });
     this.rootRunFrame = new PixiNineSliceFrame({
       texture: Texture.EMPTY,
-      sourceInsets: resolveButtonGeometry(variant).sourceInsets,
+      sourceInsets: getPixiButtonSkin({
+        color: this.color,
+        sizeTier: this.sizeTier,
+      }).sourceInsets,
       borderInsets: ZERO_INSETS,
       width,
       height,
@@ -96,7 +93,6 @@ export class PixiButton extends Container {
     this.notificationBadge.root.label = `${label}:notification`;
     this.notificationDot = this.notificationBadge.root;
     this.visual.addChild(
-      this.frame,
       this.rootRunFrame,
       this.inlineBacking,
       this.textLabel,
@@ -141,6 +137,12 @@ export class PixiButton extends Container {
     this.setNotification(Boolean(data.notification), data.notificationTone);
     if (data.variant) {
       this.setVariant(data.variant);
+    }
+    if (data.color) {
+      this.setColor(data.color);
+    }
+    if (data.sizeTier) {
+      this.setSizeTier(data.sizeTier);
     }
     this.visible = data.hidden !== true;
     this.renderable = this.visible;
@@ -194,6 +196,24 @@ export class PixiButton extends Container {
 
   setVariant(variant) {
     this.variant = String(variant || 'regular');
+    if (isPixiButtonColor(this.variant)) {
+      this.color = normalizePixiButtonColor(this.variant);
+    }
+    this.syncAppearance();
+    return this;
+  }
+
+  setColor(color) {
+    this.color = normalizePixiButtonColor(color, this.color);
+    if (isPixiButtonColor(this.variant)) {
+      this.variant = this.color;
+    }
+    this.syncAppearance();
+    return this;
+  }
+
+  setSizeTier(sizeTier) {
+    this.sizeTier = normalizePixiButtonSizeTier(sizeTier, this.sizeTier);
     this.syncAppearance();
     return this;
   }
@@ -229,7 +249,6 @@ export class PixiButton extends Container {
 
   applyTheme(theme) {
     this.theme = theme ?? DEFAULT_PIXI_THEME_SNAPSHOT;
-    this.frame.applyTheme(this.theme);
     this.textLabel.applyTheme(this.theme);
     this.syncAppearance();
   }
@@ -248,15 +267,13 @@ export class PixiButton extends Container {
   }
 
   syncAppearance() {
-    if (!this.frame || !this.rootRunFrame) {
+    if (!this.rootRunFrame) {
       return;
     }
 
     const rootRunVariant = this.resolveRootRunVariant();
-    const inline = this.variant === 'inline';
     const borderLabel = this.variant === 'border-label';
     this.rootRunFrame.visible = Boolean(rootRunVariant);
-    this.frame.visible = !rootRunVariant && !inline && !borderLabel;
     this.inlineBacking.visible = borderLabel;
     this.inlineBacking
       .clear()
@@ -265,17 +282,14 @@ export class PixiButton extends Container {
 
     if (rootRunVariant) {
       const visualVariant = this.enabled ? rootRunVariant : 'gray';
-      const visualGeometry =
-        getRootRunVisualGeometry(
-          visualVariant,
-          this.buttonWidth,
-          this.buttonHeight,
-          this.variant === 'tab',
-        );
-      const textureId = getRootRunTextureId(
+      const visualGeometry = getRootRunVisualGeometry(
         visualVariant,
+        this.buttonWidth,
+        this.buttonHeight,
         this.variant === 'tab',
+        this.sizeTier,
       );
+      const textureId = visualGeometry.assetId;
       this.rootRunFrame.position.set(
         visualGeometry.frame.x,
         visualGeometry.frame.y,
@@ -284,8 +298,9 @@ export class PixiButton extends Container {
         assetId: textureId,
         borderInsets: visualGeometry.borderInsets,
         height: visualGeometry.frame.height,
+        minimumCenter: visualGeometry.minimumCenter,
         sourceInsets: visualGeometry.sourceInsets,
-        texture: this.assetManager.getTexture(textureId),
+        texture: this.assetManager?.getTexture?.(textureId) ?? Texture.EMPTY,
         width: visualGeometry.frame.width,
       });
       this.rootRunFrame.filters = null;
@@ -304,23 +319,19 @@ export class PixiButton extends Container {
       this.textLabel.setFontFamily(null);
       this.textLabel.setStroke(null);
       this.textLabel.setColor(this.enabled ? 'text' : 'disabled');
-      this.frame.setVariant(
-        this.selected
-          ? 'selected'
-          : this.enabled
-            ? 'control'
-            : 'button-disabled',
-      );
     }
     this.syncNotification();
   }
 
   resolveRootRunVariant() {
-    if (ROOT_RUN_VARIANTS.has(this.variant)) {
-      return this.variant;
+    if (isPixiButtonColor(this.variant)) {
+      return this.color;
     }
     if (this.variant === 'tab') {
       return this.selected ? 'brown-light' : 'brown-dark';
+    }
+    if (this.variant === 'regular') {
+      return this.color;
     }
     return null;
   }
@@ -342,7 +353,6 @@ export class PixiButton extends Container {
   }
 
   relayout() {
-    this.frame.setSize(this.buttonWidth, this.buttonHeight);
     this.rootRunFrame.setSize(
       this.buttonWidth,
       this.buttonHeight,
@@ -402,48 +412,25 @@ const ZERO_INSETS = Object.freeze({
   left: 0,
 });
 
-function getRootRunTextureId(variant, compactTab = false) {
-  if (compactTab) {
-    if (variant === 'brown-light') {
-      return PIXI_ROOT_RUN_ASSETS.buttonBrownLight;
-    }
-    if (variant === 'brown-dark') {
-      return PIXI_ROOT_RUN_ASSETS.buttonBrownDark;
-    }
-    if (variant === 'gray') {
-      return PIXI_ROOT_RUN_ASSETS.buttonGrayNineSlice;
-    }
-  }
-  if (variant === 'yellow') return PIXI_ROOT_RUN_ASSETS.buttonYellow;
-  if (variant === 'green') return PIXI_ROOT_RUN_ASSETS.buttonGreenNineSlice;
-  if (variant === 'red') return PIXI_ROOT_RUN_ASSETS.buttonRedNineSlice;
-  if (variant === 'gray') return PIXI_ROOT_RUN_ASSETS.buttonGrayNineSlice;
-  if (variant === 'brown-light') return PIXI_ROOT_RUN_ASSETS.buttonBrownLight;
-  return PIXI_ROOT_RUN_ASSETS.buttonBrownDark;
-}
-
-function getRootRunVisualGeometry(variant, width, height, compactTab = false) {
-  const buttonGeometry = compactTab
-    ? PIXI_ROOT_RUN_GEOMETRY.tabButton
-    : resolveButtonGeometry(variant);
+function getRootRunVisualGeometry(
+  variant,
+  width,
+  height,
+  compactTab = false,
+  sizeTier = 50,
+) {
+  const skin = getPixiButtonSkin({
+    color: variant,
+    compactTab,
+    sizeTier,
+  });
   return {
-    sourceInsets: buttonGeometry.sourceInsets,
-    borderInsets: buttonGeometry.borderInsets,
+    ...skin,
     frame: { x: 0, y: 0, width, height },
     fontSize: null,
     textStroke: PIXI_TEXT_STROKE_WIDTH,
     textColor: '#ffffff',
   };
-}
-
-function resolveButtonGeometry(variant) {
-  return [
-    'regular',
-    'brown-dark',
-    'brown-light',
-  ].includes(variant)
-    ? PIXI_ROOT_RUN_GEOMETRY.legacyButton
-    : PIXI_ROOT_RUN_GEOMETRY.button;
 }
 
 function releaseScale(progress) {

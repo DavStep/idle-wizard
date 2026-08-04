@@ -44,7 +44,7 @@
     "tutorial:capture": "node scripts/capture-tutorial-flow.js",
     "mobile:sync": "npm run mobile:sync:prod",
     "mobile:sync:dev": "npm run build:dev -- --outDir=tmp/android-dist && npx cap sync android",
-    "mobile:sync:prod": "npm run build:prod -- --outDir=tmp/android-dist && node scripts/optimize-android-web-assets.js tmp/android-dist && npx cap sync android",
+    "mobile:sync:prod": "npm run build:prod -- --outDir=tmp/android-dist && npx cap sync android",
     "android:add": "npx cap add android",
     "android:open": "npx cap open android",
     "android:run": "npm run android:run:dev",

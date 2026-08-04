@@ -16,31 +16,6 @@ const FRAME_VARIANTS = Object.freeze({
     sourceInsetsKey: 'panelSourceInsets',
     borderKey: 'panelBorder',
   }),
-  selected: Object.freeze({
-    textureKey: 'panelSelected',
-    sourceInsetsKey: 'controlSourceInsets',
-    borderKey: 'controlBorder',
-  }),
-  control: Object.freeze({
-    textureKey: 'control',
-    sourceInsetsKey: 'controlSourceInsets',
-    borderKey: 'controlBorder',
-  }),
-  button: Object.freeze({
-    textureKey: 'button',
-    sourceInsetsKey: 'controlSourceInsets',
-    borderKey: 'controlBorder',
-  }),
-  'button-disabled': Object.freeze({
-    textureKey: 'buttonDisabled',
-    sourceInsetsKey: 'controlSourceInsets',
-    borderKey: 'controlBorder',
-  }),
-  compact: Object.freeze({
-    textureKey: 'control',
-    sourceInsetsKey: 'controlSourceInsets',
-    borderKey: 'compactBorder',
-  }),
 });
 
 export class PixiFrame extends Container {

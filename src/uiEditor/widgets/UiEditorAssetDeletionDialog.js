@@ -338,6 +338,17 @@ export async function inspectUiEditorAsset(
   });
 }
 
+export async function inspectUiEditorAssetUsage(
+  assetIds,
+  { fetchImpl = globalThis.fetch } = {},
+) {
+  return requestAssetRoute({
+    body: { assetIds },
+    fetchImpl,
+    method: 'POST',
+  });
+}
+
 export async function deleteUiEditorAsset(
   assetId,
   replacementAssetId,

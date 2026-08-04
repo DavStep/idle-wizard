@@ -12,8 +12,7 @@ experience_type: product-shape
 # Experience: Product Shape
 
 - This is a PC-first JavaScript game that also supports mobile.
-- macOS `sips` can read project WebP portraits but cannot write them; use `cwebp` for WebP resize/encode.
-- Large PNG web assets are stored uncompressed inside Android APKs and can trip Discord webhook limits; use WebP for full-screen intro/tab art, and delete the old APK before remeasuring because Gradle can update the zip in place.
+- Runtime raster assets are PNG-only across web and Android. Do not add alternate-format sources or Android packaging rewrites; reduce asset dimensions or content when APK size needs attention.
 - The default release APK path builds the smaller minified release APK and signs it with the existing debug keystore; keep `DISCORD_APK_CHANGELOG_FILE=/dev/null DISCORD_APK_SKIP_CHANGELOG=1 DISCORD_FEATURE_SKIP=1` for manual reposts after a changelog already succeeded.
 - Ignored local `public/qa-data` is still copied by Vite/Capacitor when present; move it out of `public/` before release builds or APK uploads can exceed Discord webhook limits.
 - Android dev builds that point at local SpacetimeDB need `adb reverse tcp:3000 tcp:3000`; without it, Pixel WebView loops on `connecting to server`.

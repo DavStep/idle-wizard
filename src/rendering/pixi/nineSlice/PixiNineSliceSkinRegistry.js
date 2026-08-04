@@ -1,5 +1,4 @@
 import {
-  DEFAULT_PIXI_THEME_SNAPSHOT,
   PIXI_ROOT_RUN_ASSETS,
   PIXI_ROOT_RUN_GEOMETRY,
 } from '../theme/PixiThemeTokens.js';
@@ -14,11 +13,6 @@ const BUTTON_SKIN_IDS = [
 ];
 const SKINS = new Map();
 
-registerSkin(DEFAULT_PIXI_THEME_SNAPSHOT.frames.control, {
-  outputInsets: DEFAULT_PIXI_THEME_SNAPSHOT.frames.controlBorder,
-  sourceInsets: DEFAULT_PIXI_THEME_SNAPSHOT.frames.controlSourceInsets,
-});
-
 for (const assetId of BUTTON_SKIN_IDS) {
   registerSkin(assetId, {
     outputInsets: PIXI_ROOT_RUN_GEOMETRY.button.borderInsets,
@@ -26,10 +20,6 @@ for (const assetId of BUTTON_SKIN_IDS) {
   });
 }
 
-registerSkin(PIXI_ROOT_RUN_ASSETS.topHudSettings, {
-  outputInsets: divideInsets(uniformInsets(46), 3),
-  sourceInsets: uniformInsets(46),
-});
 registerSkin(PIXI_ROOT_RUN_ASSETS.topHudAvatarFrame, {
   outputInsets: divideInsets({
     top: 54,
@@ -98,15 +88,6 @@ function freezeSize(value) {
     width: Math.max(0, Number(value?.width) || 0),
     height: Math.max(0, Number(value?.height) || 0),
   });
-}
-
-function uniformInsets(value) {
-  return {
-    top: value,
-    right: value,
-    bottom: value,
-    left: value,
-  };
 }
 
 function divideInsets(insets, divisor) {

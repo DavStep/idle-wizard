@@ -17,24 +17,29 @@ import {
   getPixiNineSliceSkin,
 } from '../../rendering/pixi/nineSlice/PixiNineSliceSkinRegistry.js';
 import { PixiButton } from '../../rendering/pixi/primitives/PixiButton.js';
+import {
+  getPixiButtonAssetId,
+  PIXI_BUTTON_COLORS,
+  PIXI_BUTTON_SIZE_TIERS,
+} from '../../rendering/pixi/primitives/PixiButtonStyle.js';
 import { PixiCostButton } from '../../rendering/pixi/primitives/PixiCostButton.js';
 import { PixiInfoButton } from '../../rendering/pixi/primitives/PixiInfoButton.js';
 import { PixiApplicationManager } from '../../rendering/pixi/runtime/PixiApplicationManager.js';
 import {
-  DEFAULT_PIXI_THEME_SNAPSHOT,
   PIXI_ROOT_RUN_ASSETS,
   PIXI_ROOT_RUN_GEOMETRY,
   PIXI_UI_GEOMETRY,
 } from '../../rendering/pixi/theme/PixiThemeTokens.js';
+import {
+  createUiEditorThumbnailRenderQueue,
+} from './UiEditorThumbnailRenderQueue.js';
 
 const EDITOR_BACKGROUND_ASSET_IDS = Object.freeze([
-  DEFAULT_PIXI_THEME_SNAPSHOT.frames.control,
-  PIXI_ROOT_RUN_ASSETS.buttonYellow,
-  PIXI_ROOT_RUN_ASSETS.buttonGreenNineSlice,
-  PIXI_ROOT_RUN_ASSETS.buttonRedNineSlice,
-  PIXI_ROOT_RUN_ASSETS.buttonGrayNineSlice,
-  PIXI_ROOT_RUN_ASSETS.buttonBrownDark,
-  PIXI_ROOT_RUN_ASSETS.buttonBrownLight,
+  ...PIXI_BUTTON_COLORS.flatMap((color) =>
+    PIXI_BUTTON_SIZE_TIERS.map((sizeTier) =>
+      getPixiButtonAssetId(color, sizeTier),
+    ),
+  ),
   PIXI_ROOT_RUN_ASSETS.buttonGreen,
   PIXI_ROOT_RUN_ASSETS.buttonGray,
   PIXI_ROOT_RUN_ASSETS.buttonGreenStacked,
@@ -83,17 +88,7 @@ let sharedAssetManager = null;
 let sharedThumbnailRendererPromise = null;
 const thumbnailRenderQueue = createUiEditorThumbnailRenderQueue();
 
-export function createUiEditorThumbnailRenderQueue() {
-  let tail = Promise.resolve();
-
-  return {
-    run(task) {
-      const result = tail.then(task, task);
-      tail = result.catch(() => {});
-      return result;
-    },
-  };
-}
+export { createUiEditorThumbnailRenderQueue };
 
 export function createUiEditorPixiButtonThumbnail(definition) {
   const host = document.createElement('span');
@@ -198,8 +193,10 @@ export function createUiEditorPixiButtonPreview(definition) {
   const host = document.createElement('section');
   const canvas = document.createElement('canvas');
   const status = document.createElement('p');
+  const feedback = document.createElement('p');
   let controller = null;
   let currentDefinition = definition;
+  let editorState = createButtonEditorState(definition);
   let disposed = false;
 
   host.className = 'ui-editor-game-widget-preview';
@@ -210,11 +207,33 @@ export function createUiEditorPixiButtonPreview(definition) {
   status.className = 'ui-editor-game-widget-preview__status';
   status.setAttribute('role', 'status');
   status.textContent = 'Loading widget…';
-  host.append(canvas, status);
+  feedback.className = 'ui-editor-game-widget-preview__feedback';
+  feedback.setAttribute('role', 'status');
+  feedback.setAttribute('aria-live', 'polite');
+  feedback.textContent = 'Press the widget to test its feedback.';
+  host.append(canvas, status, feedback);
+
+  const feedbackTracker = createFeedbackTracker(feedback);
+  const inspector = createButtonInspector({
+    getDefinition: () => currentDefinition,
+    getState: () => editorState,
+    update: (fieldId, value) => {
+      editorState = updateButtonEditorState(editorState, fieldId, value);
+      controller?.setDefinition(
+        applyButtonEditorState(currentDefinition, editorState),
+      );
+    },
+  });
+  const inspectorElement = createButtonInspectorElement(inspector);
 
   const applyDefinition = (nextDefinition) => {
-    controller?.setDefinition(nextDefinition);
     currentDefinition = nextDefinition;
+    editorState = createButtonEditorState(nextDefinition);
+    controller?.setDefinition(
+      applyButtonEditorState(nextDefinition, editorState),
+    );
+    feedbackTracker.reset();
+    inspectorElement.uiEditorRender?.();
     host.dataset.editorButtonWidget = nextDefinition.id;
     host.setAttribute('aria-label', `${nextDefinition.label} preview`);
     canvas.dataset.uiEditorComponent = nextDefinition.label;
@@ -226,6 +245,9 @@ export function createUiEditorPixiButtonPreview(definition) {
   host.uiEditorButtonPreviewDefinition = definition;
   host.uiEditorGetAtomicComponents = () =>
     controller?.getAtomicComponents() ?? [];
+  host.uiEditorGetButtonEditorState = () => editorState;
+  host.uiEditorCreateInspector = () => inspectorElement;
+  host.uiEditorSuppressStaticProperties = true;
   host.uiEditorAdoptPreview = (candidate) => {
     const nextDefinition = candidate?.uiEditorButtonPreviewDefinition;
 
@@ -259,7 +281,8 @@ export function createUiEditorPixiButtonPreview(definition) {
       const mountedDefinition = currentDefinition;
       controller = await mountButtonPreview({
         canvas,
-        definition: mountedDefinition,
+        definition: applyButtonEditorState(mountedDefinition, editorState),
+        feedbackTracker,
         host,
       });
       if (disposed) {
@@ -268,7 +291,9 @@ export function createUiEditorPixiButtonPreview(definition) {
         return;
       }
       if (currentDefinition !== mountedDefinition) {
-        controller.setDefinition(currentDefinition);
+        controller.setDefinition(
+          applyButtonEditorState(currentDefinition, editorState),
+        );
       }
       status.remove();
       host.dispatchEvent(
@@ -363,13 +388,20 @@ async function createSharedThumbnailRenderer() {
   return { application, canvas };
 }
 
-async function mountButtonPreview({ canvas, definition, host }) {
+async function mountButtonPreview({ canvas, definition, feedbackTracker, host }) {
   sharedAssetManager ??= new UiEditorButtonAssetManager();
   const applicationManager = new PixiApplicationManager({
     canvas,
     prepareSpineRuntime: async () => null,
   });
-  const inputRouter = new PixiInputRouter();
+  const inputRouter = new PixiInputRouter({
+    hapticsFacade: {
+      playUiTap: () => feedbackTracker.recordHaptic(),
+    },
+    uiClickSoundFacade: {
+      playClick: () => feedbackTracker.recordSound(),
+    },
+  });
   let resizeObserver = null;
 
   await Promise.all([
@@ -391,6 +423,7 @@ async function mountButtonPreview({ canvas, definition, host }) {
     assetManager: sharedAssetManager,
     definition,
     inputRouter,
+    onActivate: () => feedbackTracker.recordActivation(),
   });
   const sourceWidth = applicationManager.projection.sourceWidth;
   const sourceHeight = applicationManager.projection.sourceHeight;
@@ -419,6 +452,7 @@ async function mountButtonPreview({ canvas, definition, host }) {
         assetManager: sharedAssetManager,
         definition: nextDefinition,
         inputRouter,
+        onActivate: () => feedbackTracker.recordActivation(),
       });
 
       layoutPreviewControl({
@@ -438,6 +472,369 @@ async function mountButtonPreview({ canvas, definition, host }) {
       );
     },
   };
+}
+
+function createFeedbackTracker(element) {
+  const counts = {
+    activation: 0,
+    haptic: 0,
+    sound: 0,
+  };
+
+  const render = () => {
+    const hapticStatus = counts.haptic > 0
+      ? counts.haptic
+      : 'touch only';
+    element.textContent = counts.activation === 0
+      ? 'Press the widget to test its feedback.'
+      : `Activated ${counts.activation} · Sound ${counts.sound} · Haptic ${hapticStatus}`;
+  };
+
+  return {
+    recordActivation() {
+      counts.activation += 1;
+      render();
+      return true;
+    },
+    recordHaptic() {
+      counts.haptic += 1;
+      render();
+    },
+    recordSound() {
+      counts.sound += 1;
+      render();
+    },
+    reset() {
+      counts.activation = 0;
+      counts.haptic = 0;
+      counts.sound = 0;
+      render();
+    },
+  };
+}
+
+function createButtonInspector({ getDefinition, getState, update }) {
+  return Object.freeze({
+    getFields: () => createButtonInspectorFields(
+      getDefinition()?.preview ?? getDefinition(),
+      getState(),
+    ),
+    label: 'Widget configuration',
+    update,
+  });
+}
+
+function createButtonInspectorElement(inspector) {
+  const root = document.createElement('section');
+  root.className = 'ui-editor-button-inspector';
+  root.setAttribute('aria-label', 'Button configuration');
+
+  const render = () => {
+    root.replaceChildren(
+      ...inspector.getFields().map(createButtonInspectorField),
+    );
+  };
+
+  root.addEventListener('input', (event) => {
+    const input = event.target.closest('[data-button-inspector-field]');
+    if (!input || !root.contains(input)) {
+      return;
+    }
+    inspector.update(input.dataset.buttonInspectorField, input.value);
+  });
+  root.addEventListener('click', (event) => {
+    const option = event.target.closest('[data-button-inspector-option]');
+    if (!option || !root.contains(option)) {
+      return;
+    }
+    const group = option.closest('[role="radiogroup"]');
+    for (const sibling of group.querySelectorAll(
+      '[data-button-inspector-option]',
+    )) {
+      sibling.setAttribute('aria-checked', String(sibling === option));
+    }
+    inspector.update(
+      option.dataset.buttonInspectorField,
+      option.dataset.buttonInspectorOption,
+    );
+  });
+  root.uiEditorRender = render;
+  render();
+  return root;
+}
+
+function createButtonInspectorField(field) {
+  if (field.type === 'segmented' || field.type === 'swatches') {
+    const fieldset = document.createElement('fieldset');
+    const legend = document.createElement('legend');
+    const group = document.createElement('div');
+    fieldset.className = 'ui-editor-button-inspector__field';
+    legend.className = 'ui-editor-button-inspector__label';
+    legend.textContent = field.label;
+    group.className = 'ui-editor-button-inspector__options';
+    group.dataset.optionType = field.type;
+    group.setAttribute('role', 'radiogroup');
+    group.setAttribute('aria-label', field.label);
+
+    for (const option of field.options) {
+      const button = document.createElement('button');
+      button.className = 'ui-editor-button-inspector__option';
+      button.type = 'button';
+      button.dataset.buttonInspectorField = field.id;
+      button.dataset.buttonInspectorOption = option.value;
+      button.setAttribute('role', 'radio');
+      button.setAttribute(
+        'aria-checked',
+        String(option.value === String(field.value)),
+      );
+      button.title = option.label;
+
+      if (field.type === 'swatches') {
+        const swatch = document.createElement('span');
+        const label = document.createElement('span');
+        swatch.className = 'ui-editor-button-inspector__swatch';
+        swatch.dataset.buttonColor = option.color || option.value;
+        swatch.setAttribute('aria-hidden', 'true');
+        label.className = 'ui-editor-button-inspector__option-label';
+        label.textContent = option.label;
+        button.append(swatch, label);
+      } else {
+        button.textContent = option.label;
+      }
+      group.append(button);
+    }
+    fieldset.append(legend, group);
+    return fieldset;
+  }
+
+  const wrapper = document.createElement('label');
+  const label = document.createElement('span');
+  const input = document.createElement('input');
+  wrapper.className = 'ui-editor-button-inspector__field';
+  label.className = 'ui-editor-button-inspector__label';
+  label.textContent = field.label;
+  input.className = 'ui-editor-button-inspector__input';
+  input.dataset.buttonInspectorField = field.id;
+  input.type = field.type;
+  input.value = String(field.value ?? '');
+  wrapper.append(label, input);
+  return wrapper;
+}
+
+function createButtonEditorState(definition) {
+  const preview = definition?.preview ?? definition ?? {};
+  const type = preview.type ?? 'button';
+  const state = {
+    enabled: preview.enabled === false ? 'disabled' : 'enabled',
+    text: String(preview.text ?? ''),
+    type,
+  };
+
+  if (type === 'button') {
+    state.color = preview.color ?? (
+      PIXI_BUTTON_COLORS.includes(preview.variant)
+        ? preview.variant
+        : 'yellow'
+    );
+    state.sizeTier = String(preview.sizeTier ?? 50);
+    state.selected = preview.selected === true ? 'selected' : 'resting';
+  } else if (type === 'cost') {
+    state.actionLabel = String(preview.actionLabel ?? 'Unlock');
+    state.amountLabel = String(preview.amountLabel ?? '25 Coin');
+    state.color = preview.color ?? preview.tone ?? 'green';
+    state.label = preview.showLabel || preview.stacked ? 'show' : 'hide';
+    state.layout = preview.research
+      ? 'research'
+      : preview.compact
+        ? 'compact'
+        : 'standard';
+    state.sizeTier = String(preview.sizeTier ?? 50);
+    state.status = preview.state ?? (
+      preview.enabled === false ? 'disabled' : 'available'
+    );
+  }
+
+  return Object.freeze(state);
+}
+
+function updateButtonEditorState(state, fieldId, value) {
+  return Object.freeze({
+    ...state,
+    [fieldId]: String(value),
+  });
+}
+
+function applyButtonEditorState(definition, state) {
+  const preview = definition?.preview ?? definition ?? {};
+  const nextPreview = {
+    ...preview,
+    enabled: state.enabled !== 'disabled',
+  };
+
+  if (state.type === 'button') {
+    nextPreview.text = state.text;
+    nextPreview.selected = state.selected === 'selected';
+    if (isConfigurableBaseButton(preview)) {
+      nextPreview.color = state.color;
+      nextPreview.sizeTier = Number(state.sizeTier);
+      nextPreview.variant = preview.variant === 'regular'
+        ? 'regular'
+        : state.color;
+    }
+  } else if (state.type === 'cost') {
+    const layout = resolveCostEditorLayout(state);
+    nextPreview.actionLabel = state.actionLabel;
+    nextPreview.amountLabel = state.amountLabel;
+    nextPreview.color = state.color;
+    nextPreview.compact = layout.compact;
+    nextPreview.enabled = state.status !== 'disabled';
+    nextPreview.height = layout.height;
+    nextPreview.research = layout.research;
+    nextPreview.showLabel = state.label === 'show';
+    nextPreview.sizeTier = Number(state.sizeTier);
+    nextPreview.stacked = state.label === 'show';
+    nextPreview.state = state.status === 'disabled'
+      ? 'available'
+      : state.status;
+    nextPreview.width = layout.width;
+  }
+
+  return definition?.preview
+    ? { ...definition, preview: nextPreview }
+    : nextPreview;
+}
+
+function createButtonInspectorFields(preview, state) {
+  const fields = [];
+
+  if (state.type === 'button' && 'text' in state) {
+    fields.push(editorTextField('text', 'Label', state.text));
+  }
+  if (state.type === 'button' && isConfigurableBaseButton(preview)) {
+    fields.push(
+      editorOptionField(
+        'color',
+        'Color',
+        state.color,
+        PIXI_BUTTON_COLORS.map((color) => ({
+          color,
+          label: formatButtonColor(color),
+          value: color,
+        })),
+        'swatches',
+      ),
+      editorOptionField(
+        'sizeTier',
+        'Corner size',
+        state.sizeTier,
+        PIXI_BUTTON_SIZE_TIERS.map((size) => ({
+          label: String(size),
+          value: String(size),
+        })),
+      ),
+    );
+  }
+  if (state.type === 'button' && preview.variant === 'tab') {
+    fields.push(
+      editorOptionField('selected', 'Tab state', state.selected, [
+        { label: 'Resting', value: 'resting' },
+        { label: 'Selected', value: 'selected' },
+      ]),
+    );
+  }
+  if (state.type === 'cost') {
+    fields.push(
+      editorOptionField(
+        'color',
+        'Color',
+        state.color,
+        PIXI_BUTTON_COLORS.map((color) => ({
+          color,
+          label: formatButtonColor(color),
+          value: color,
+        })),
+        'swatches',
+      ),
+      editorOptionField(
+        'sizeTier',
+        'Corner size',
+        state.sizeTier,
+        PIXI_BUTTON_SIZE_TIERS.map((size) => ({
+          label: String(size),
+          value: String(size),
+        })),
+      ),
+      editorOptionField('layout', 'Layout', state.layout, [
+        { label: 'Standard', value: 'standard' },
+        { label: 'Compact', value: 'compact' },
+        { label: 'Research', value: 'research' },
+      ]),
+      editorOptionField('label', 'Top label', state.label, [
+        { label: 'Hidden', value: 'hide' },
+        { label: 'Shown', value: 'show' },
+      ]),
+      editorTextField('actionLabel', 'Top label text', state.actionLabel),
+      editorTextField('amountLabel', 'Price', state.amountLabel),
+      editorOptionField('status', 'Cost state', state.status, [
+        { label: 'Available', value: 'available' },
+        { label: 'Unaffordable', value: 'unaffordable' },
+        { label: 'Disabled', value: 'disabled' },
+        { label: 'Locked', value: 'locked' },
+      ]),
+    );
+  } else {
+    fields.push(
+      editorOptionField('enabled', 'Input state', state.enabled, [
+        { label: 'Enabled', value: 'enabled' },
+        { label: 'Disabled', value: 'disabled' },
+      ]),
+    );
+  }
+
+  return fields;
+}
+
+function editorOptionField(
+  id,
+  label,
+  value,
+  options,
+  type = 'segmented',
+) {
+  return { id, label, options, type, value };
+}
+
+function editorTextField(id, label, value) {
+  return { id, label, type: 'text', value };
+}
+
+function isConfigurableBaseButton(preview) {
+  return preview?.type === 'button'
+    && PIXI_BUTTON_COLORS.includes(preview.color ?? preview.variant);
+}
+
+function resolveCostEditorLayout(state) {
+  if (state.layout === 'compact') {
+    return { compact: true, height: 28, research: false, width: 100 };
+  }
+  if (state.layout === 'research') {
+    return { compact: false, height: 48, research: true, width: 80 };
+  }
+  if (state.label === 'show') {
+    return { compact: false, height: 52, research: false, width: 92 };
+  }
+  return {
+    compact: false,
+    height: 169 / 3,
+    research: false,
+    width: 281 / 3,
+  };
+}
+
+function formatButtonColor(color) {
+  return String(color)
+    .replace(/-/g, ' ')
+    .replace(/\b\w/g, (letter) => letter.toUpperCase());
 }
 
 function layoutPreviewControl({ preview, sourceHeight, sourceWidth }) {
@@ -471,7 +868,12 @@ function layoutThumbnailControl({ height, preview, width }) {
   );
 }
 
-function createPreviewControl({ assetManager, definition, inputRouter }) {
+function createPreviewControl({
+  assetManager,
+  definition,
+  inputRouter,
+  onActivate = () => true,
+}) {
   const previewDefinition = definition.preview ?? definition;
   let preview;
 
@@ -480,10 +882,11 @@ function createPreviewControl({ assetManager, definition, inputRouter }) {
       assetManager,
       definition: previewDefinition,
       inputRouter,
+      onActivate,
     });
   } else if (previewDefinition.type === 'info') {
     const root = new PixiInfoButton({
-      action: () => true,
+      action: onActivate,
       assetManager,
       inputRouter,
       size: previewDefinition.size,
@@ -495,7 +898,11 @@ function createPreviewControl({ assetManager, definition, inputRouter }) {
       width: previewDefinition.size,
     };
   } else if (previewDefinition.type === 'hud-settings') {
-    const root = new RootRunHudSquareIconButton({ assets: assetManager });
+    const root = new RootRunHudSquareIconButton({
+      action: onActivate,
+      assets: assetManager,
+      inputRouter,
+    });
     root.scale.set(1 / PIXI_UI_GEOMETRY.sourceScale);
     preview = {
       destroy: () => root.destroy({ children: true }),
@@ -505,7 +912,9 @@ function createPreviewControl({ assetManager, definition, inputRouter }) {
     };
   } else if (previewDefinition.type === 'hud-avatar') {
     const root = new RootRunHudAvatarButton({
+      action: onActivate,
       assets: assetManager,
+      inputRouter,
       texture: assetManager.getTexture('source:assets/avatars/elara.png'),
     });
     root.scale.set(1 / PIXI_UI_GEOMETRY.sourceScale);
@@ -520,10 +929,12 @@ function createPreviewControl({ assetManager, definition, inputRouter }) {
     const height =
       previewDefinition.height ?? PIXI_UI_GEOMETRY.roomControlHeight;
     const root = new PixiButton({
-      action: () => true,
+      action: onActivate,
       assetManager,
+      color: previewDefinition.color,
       height,
       inputRouter,
+      sizeTier: previewDefinition.sizeTier,
       text: previewDefinition.text,
       variant: previewDefinition.variant,
       width,
@@ -546,20 +957,32 @@ function createPreviewControl({ assetManager, definition, inputRouter }) {
   return preview;
 }
 
-function createCostButtonPreview({ assetManager, definition, inputRouter }) {
+function createCostButtonPreview({
+  assetManager,
+  definition,
+  inputRouter,
+  onActivate,
+}) {
   const root = new PixiCostButton({
     assetManager,
     compact: definition.compact,
     height: definition.height,
     inputRouter,
     research: definition.research,
+    showLabel: definition.showLabel,
+    sizeTier: definition.sizeTier,
     stacked: definition.stacked,
+    tone: definition.color,
     width: definition.width,
   });
   root.setModel({
-    action: () => true,
+    action: onActivate,
     actionLabel: definition.actionLabel,
     amountLabel: definition.amountLabel,
+    enabled: definition.enabled !== false,
+    showLabel: definition.showLabel,
+    state: definition.state,
+    tone: definition.color,
   });
   return {
     destroy: () => root.destroy({ children: true }),
@@ -706,7 +1129,7 @@ function createButtonBackgroundAtom({
   targetLabel,
   targetSize,
 }) {
-  const targets = [root.frame, root.rootRunFrame, root.inlineBacking];
+  const targets = [root.frame, root.rootRunFrame, root.inlineBacking].filter(Boolean);
   let activeTarget =
     targets.find((target) => target.visible && target.renderable !== false)
     ?? root.rootRunFrame;
@@ -1025,7 +1448,7 @@ export function createAssetOptions(
 function formatAssetLabel(assetId) {
   const filename = String(assetId).split('/').pop() ?? String(assetId);
   return filename
-    .replace(/\.(png|webp|jpg|jpeg)$/i, '')
+    .replace(/\.(png|jpg|jpeg)$/i, '')
     .replace(/[-_]+/g, ' ')
     .replace(/\b\w/g, (letter) => letter.toUpperCase());
 }

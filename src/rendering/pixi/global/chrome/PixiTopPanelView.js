@@ -294,6 +294,8 @@ export class PixiTopPanelView extends BasePixiRetainedView {
         id: 'top.settings',
         displayObject: this.settingsControl,
         enabled: () => this.isControlAvailable(this.settingsControl),
+        onPressChange: (pressed, context) =>
+          this.settingsControl.setPressed(pressed, context),
         onActivate: () => this.actions.openSettings?.(),
         haptic: 'light',
       }),

@@ -123,7 +123,7 @@
   --style-dialog-ink: #634934;
   --style-dialog-muted-ink: #8d6d50;
   --style-dialog-disabled-ink: #ac9278;
-  --style-dialog-title-frame: url("../../assets/game/source/ui/root-run-dialog/expedition-dialog-title-purple.9.png");
+  --style-dialog-title-frame: url("../../assets/game/source/ui/banners/banner-purple.9.png");
   --style-dialog-title-danger-filter: hue-rotate(78deg) saturate(1.18)
     brightness(0.96);
   --style-dialog-title-frame-slice: 0 132 0 85 fill;
@@ -761,15 +761,20 @@
   --style-room-paper-texture-size: auto;
   --style-inner-section-frame: url("../../assets/game/source/ui/inner-section-panel-midnight.9.png");
   --style-inner-section-fill: #242938;
-  --style-midnight-panel-frame: url("../../assets/game/source/ui/player-card-panel.9.png");
-  --style-midnight-panel-selected-frame: url("../../assets/game/source/ui/player-card-panel-selected.9.png");
-  --style-midnight-button-frame: url("../../assets/game/source/ui/player-card-button-brown-fill.9.png");
-  --style-midnight-button-disabled-frame: url("../../assets/game/source/ui/player-card-button-brown-dark-fill.9.png");
-  --style-midnight-frame-slice: 31 29 31 29 fill;
-  --style-midnight-frame-outline-slice: 31 29 31 29;
-  --style-midnight-frame-width: 8px 10px;
-  --style-midnight-frame-control-width: 5px 6px;
-  --style-midnight-frame-compact-width: 4px 5px;
+  --style-midnight-panel-frame: var(--style-inner-section-frame);
+  --style-midnight-panel-selected-frame: url("../../assets/game/source/ui/inner-section-panel-witchcraft.9.png");
+  --style-midnight-button-frame: var(--style-brown-button-light-frame);
+  --style-midnight-button-disabled-frame: url("../../assets/game/source/ui/regular-button/gray-button-50.9.png");
+  --style-midnight-frame-slice: 91 73 90 83 fill;
+  --style-midnight-frame-outline-slice: 91 73 90 83;
+  --style-midnight-frame-width: calc(91px * 390 / 1080)
+    calc(73px * 390 / 1080) calc(90px * 390 / 1080)
+    calc(83px * 390 / 1080);
+  --style-midnight-frame-control-width: var(--style-yellow-button-frame-width);
+  --style-midnight-frame-compact-width: calc(91px * 390 / 1080)
+    calc(73px * 390 / 1080) calc(90px * 390 / 1080)
+    calc(83px * 390 / 1080);
+  --style-midnight-button-frame-slice: var(--style-yellow-button-frame-slice);
   --style-announcement-coin: oklch(82% 0.14 88);
   --style-backdrop-rgb: 28 30 38;
   --style-log-fade-rgb: 23 25 31;
@@ -793,15 +798,20 @@
   --style-room-paper-texture-size: 96px 96px;
   --style-inner-section-frame: url("../../assets/game/source/ui/inner-section-panel-day.9.png");
   --style-inner-section-fill: #765238;
-  --style-midnight-panel-frame: url("../../assets/game/source/ui/player-card-panel-day.9.png");
-  --style-midnight-panel-selected-frame: url("../../assets/game/source/ui/player-card-panel-selected-day.9.png");
-  --style-midnight-button-frame: url("../../assets/game/source/ui/player-card-button-brown-fill.9.png");
-  --style-midnight-button-disabled-frame: url("../../assets/game/source/ui/player-card-button-brown-dark-fill.9.png");
-  --style-midnight-frame-slice: 31 29 31 29 fill;
-  --style-midnight-frame-outline-slice: 31 29 31 29;
-  --style-midnight-frame-width: 8px 10px;
-  --style-midnight-frame-control-width: 5px 6px;
-  --style-midnight-frame-compact-width: 4px 5px;
+  --style-midnight-panel-frame: var(--style-inner-section-frame);
+  --style-midnight-panel-selected-frame: url("../../assets/game/source/ui/inner-section-panel-witchcraft.9.png");
+  --style-midnight-button-frame: var(--style-brown-button-light-frame);
+  --style-midnight-button-disabled-frame: url("../../assets/game/source/ui/regular-button/gray-button-50.9.png");
+  --style-midnight-frame-slice: 91 73 90 83 fill;
+  --style-midnight-frame-outline-slice: 91 73 90 83;
+  --style-midnight-frame-width: calc(91px * 390 / 1080)
+    calc(73px * 390 / 1080) calc(90px * 390 / 1080)
+    calc(83px * 390 / 1080);
+  --style-midnight-frame-control-width: var(--style-yellow-button-frame-width);
+  --style-midnight-frame-compact-width: calc(91px * 390 / 1080)
+    calc(73px * 390 / 1080) calc(90px * 390 / 1080)
+    calc(83px * 390 / 1080);
+  --style-midnight-button-frame-slice: var(--style-yellow-button-frame-slice);
   --style-room-tab-active-frame: url("../../assets/game/source/ui/day-room-tab-top-cap-selected.9.png");
   --style-room-tab-inactive-frame: url("../../assets/game/source/ui/day-room-tab-top-cap.9.png");
   --style-top-panel-background-frame: url("../../assets/game/source/ui/day-top-panel-background.9.png");
@@ -10621,7 +10631,7 @@ div.workshop-page__discovery-row {
 
 .research-page__box-title {
   --research-station-title-scale: calc(42 / 117);
-  --research-station-title-image: url("../../assets/game/source/ui/root-run-research/research-station-title-yellow.9.png");
+  --research-station-title-image: url("../../assets/game/source/ui/banners/banner-yellow-right.9.png");
 
   position: relative;
   isolation: isolate;
@@ -10664,19 +10674,19 @@ div.workshop-page__discovery-row {
 }
 
 .research-page__box-title--regular {
-  --research-station-title-image: url("../../assets/game/source/ui/root-run-research/research-station-title-yellow.9.png");
+  --research-station-title-image: url("../../assets/game/source/ui/banners/banner-yellow-right.9.png");
 }
 
 .research-page__box-title--automation {
-  --research-station-title-image: url("../../assets/game/source/ui/root-run-research/research-station-title-red.9.png");
+  --research-station-title-image: url("../../assets/game/source/ui/banners/banner-red-right.9.png");
 }
 
 .research-page__box-title--advanced {
-  --research-station-title-image: url("../../assets/game/source/ui/root-run-research/research-station-title-green.9.png");
+  --research-station-title-image: url("../../assets/game/source/ui/banners/banner-green-right.9.png");
 }
 
 .research-page__box-title--crystal {
-  --research-station-title-image: url("../../assets/game/source/ui/root-run-research/research-station-title-purple.9.png");
+  --research-station-title-image: url("../../assets/game/source/ui/banners/banner-purple-right.9.png");
 }
 
 .research-page__run-focus {
@@ -17737,6 +17747,20 @@ div.workshop-page__discovery-row {
 
 :root:is([data-style-theme="night"], [data-style-theme="day"])
   :where(
+    .style-button:not(.workshop-page__summon-button),
+    .workshop-page__summon-button-text,
+    .tutorial-layer__objective-button-label,
+    .tutorial-layer__lesson-show,
+    .tutorial-layer__lesson-advance,
+    .tutorial-layer__advance
+  ) {
+  border-image-source: var(--style-midnight-button-frame);
+  border-image-slice: var(--style-midnight-button-frame-slice);
+  border-image-width: var(--style-midnight-frame-control-width);
+}
+
+:root:is([data-style-theme="night"], [data-style-theme="day"])
+  :where(
     .style-box .style-button:not(.workshop-page__summon-button),
     .style-dialog .style-button:not(.workshop-page__summon-button),
     .style-box .workshop-page__summon-button-text,
@@ -17751,6 +17775,8 @@ div.workshop-page__discovery-row {
     .style-dialog .tutorial-layer__advance
   ) {
   border-image-source: var(--style-midnight-button-frame);
+  border-image-slice: var(--style-midnight-button-frame-slice);
+  border-image-width: var(--style-midnight-frame-control-width);
 }
 
 :root:is([data-style-theme="night"], [data-style-theme="day"])
@@ -17797,6 +17823,8 @@ div.workshop-page__discovery-row {
       .tutorial-layer__objective-button-label
   ) {
   border-image-source: var(--style-midnight-button-disabled-frame);
+  border-image-slice: var(--style-midnight-button-frame-slice);
+  border-image-width: var(--style-midnight-frame-control-width);
 }
 
 :root:is([data-style-theme="night"], [data-style-theme="day"])

@@ -6,9 +6,42 @@ import { describe, expect, it } from 'vitest';
 
 const ROOT = process.cwd();
 const RUNTIME_ASSET_EXTENSION =
-  /\.(?:atlas|gif|jpe?g|mp3|ogg|otf|png|skel|svg|ttf|wav|webp|woff2?)$/i;
+  /\.(?:atlas|gif|jpe?g|mp3|ogg|otf|png|skel|svg|ttf|wav|woff2?)$/i;
+const TEXT_SOURCE_EXTENSION = /\.(?:css|html|js|json|md|mjs|ts)$/i;
 
 describe('asset structure', () => {
+  it('uses PNG as the only runtime raster asset format', () => {
+    const webpAssets = [
+      'android/app/src/main/res',
+      'art-source',
+      'assets',
+      'output',
+      'public',
+    ]
+      .flatMap((directory) => collectFiles(path.join(ROOT, directory)))
+      .filter((filePath) => /\.webp$/i.test(filePath))
+      .map((filePath) => path.relative(ROOT, filePath));
+    const webpReferences = ['src', 'scripts'].flatMap((directory) =>
+      collectFiles(path.join(ROOT, directory))
+        .filter(
+          (filePath) =>
+            TEXT_SOURCE_EXTENSION.test(filePath) &&
+            path.basename(filePath) !== 'asset-structure.test.js' &&
+            fs.readFileSync(filePath, 'utf8').includes('.webp'),
+        )
+        .map((filePath) => path.relative(ROOT, filePath)),
+    );
+    const packageInfo = JSON.parse(
+      fs.readFileSync(path.join(ROOT, 'package.json'), 'utf8'),
+    );
+
+    expect(webpAssets).toEqual([]);
+    expect(webpReferences).toEqual([]);
+    expect(packageInfo.scripts['mobile:sync:prod']).not.toContain(
+      'optimize-android-web-assets',
+    );
+  });
+
   it('keeps runtime binary assets out of source and legacy public folders', () => {
     const scatteredAssets = ['src', 'public'].flatMap((directory) =>
       collectFiles(path.join(ROOT, directory))

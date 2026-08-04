@@ -120,35 +120,35 @@ describe('BottomPanelViewManager', () => {
     expect(brewingIcon?.getAttribute('aria-hidden')).toBe('true');
     expect(brewingIcon?.getAttribute('alt')).toBe('');
     expect(brewingIcon?.getAttribute('src')).toContain(
-      'icon-brewing-cauldron-tab.webp',
+      'icon-brewing-cauldron-tab.png',
     );
     expect(workshopIconFrame?.getAttribute('aria-hidden')).toBe('true');
     expect(workshopIcon?.tagName).toBe('IMG');
     expect(workshopIcon?.getAttribute('aria-hidden')).toBe('true');
     expect(workshopIcon?.getAttribute('alt')).toBe('');
     expect(workshopIcon?.getAttribute('src')).toContain(
-      'icon-workshop-house-tab.webp',
+      'icon-workshop-house-tab.png',
     );
     expect(gardenIconFrame?.getAttribute('aria-hidden')).toBe('true');
     expect(gardenIcon?.tagName).toBe('IMG');
     expect(gardenIcon?.getAttribute('aria-hidden')).toBe('true');
     expect(gardenIcon?.getAttribute('alt')).toBe('');
     expect(gardenIcon?.getAttribute('src')).toContain(
-      'icon-garden-plot-tab.webp',
+      'icon-garden-plot-tab.png',
     );
     expect(researchIconFrame?.getAttribute('aria-hidden')).toBe('true');
     expect(researchIcon?.tagName).toBe('IMG');
     expect(researchIcon?.getAttribute('aria-hidden')).toBe('true');
     expect(researchIcon?.getAttribute('alt')).toBe('');
     expect(researchIcon?.getAttribute('src')).toContain(
-      'icon-research-telescope-tab.webp',
+      'icon-research-telescope-tab.png',
     );
     expect(marketIconFrame?.getAttribute('aria-hidden')).toBe('true');
     expect(marketIcon?.tagName).toBe('IMG');
     expect(marketIcon?.getAttribute('aria-hidden')).toBe('true');
     expect(marketIcon?.getAttribute('alt')).toBe('');
     expect(marketIcon?.getAttribute('src')).toContain(
-      'icon-shop-market-stall-tab.webp',
+      'icon-shop-market-stall-tab.png',
     );
     expect(brewingTab?.querySelector('.room-bottom-panel__tab-label')?.textContent).toBe(
       'Brewing',
@@ -545,7 +545,7 @@ describe('BottomPanelViewManager', () => {
       expect(stage.querySelectorAll('.room-feature-unlock-flyout')).toHaveLength(1);
       expect(
         stage.querySelector('.room-feature-unlock-flyout img')?.getAttribute('src'),
-      ).toContain('icon-garden-plot-tab.webp');
+      ).toContain('icon-garden-plot-tab.png');
       expect(
         stage.querySelector('.room-feature-unlock-flyout')?.parentElement,
       ).toBe(stage);
@@ -685,7 +685,7 @@ describe('BottomPanelViewManager', () => {
       const iconFrame = document.createElement('span');
       iconFrame.className = 'workshop-page__leaderboard-button-icon-frame';
       const icon = document.createElement('img');
-      icon.src = '/feature-leaderboard.webp';
+      icon.src = '/feature-leaderboard.png';
       iconFrame.append(icon);
       featureButton.append(iconFrame);
       stage.append(featureButton);
@@ -715,7 +715,7 @@ describe('BottomPanelViewManager', () => {
       expect(document.querySelectorAll('.room-feature-unlock-flyout')).toHaveLength(1);
       expect(
         document.querySelector('.room-feature-unlock-flyout img')?.getAttribute('src'),
-      ).toContain('feature-leaderboard.webp');
+      ).toContain('feature-leaderboard.png');
       expect(
         document.querySelector('.room-feature-unlock-flyout')?.parentElement,
       ).toBe(document.body);

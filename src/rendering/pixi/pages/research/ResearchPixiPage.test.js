@@ -524,7 +524,7 @@ describe('ResearchPixiPage', () => {
     expect(box.titlePlaque).toMatchObject({
       variant: 'regular',
       assetId:
-        'source:assets/ui/root-run-research/research-station-title-yellow.9.png',
+        'source:assets/ui/banners/banner-yellow-right.9.png',
     });
     expect(box.title.position).toMatchObject({ x: 12, y: 21 });
     expect(box.titlePlaque.root.position).toMatchObject({ x: 0, y: 0 });
@@ -559,22 +559,22 @@ describe('ResearchPixiPage', () => {
       {
         tabId: 'regular',
         variant: 'regular',
-        asset: 'research-station-title-yellow.9.png',
+        asset: 'banner-yellow-right.9.png',
       },
       {
         tabId: 'automation',
         variant: 'automation',
-        asset: 'research-station-title-red.9.png',
+        asset: 'banner-red-right.9.png',
       },
       {
         tabId: 'advanced',
         variant: 'advanced',
-        asset: 'research-station-title-green.9.png',
+        asset: 'banner-green-right.9.png',
       },
       {
         tabId: 'emerald',
         variant: 'crystal',
-        asset: 'research-station-title-purple.9.png',
+        asset: 'banner-purple-right.9.png',
       },
     ];
 
@@ -586,7 +586,7 @@ describe('ResearchPixiPage', () => {
 
       expect(harness.page.boxes.get('herbs').titlePlaque).toMatchObject({
         variant,
-        assetId: `source:assets/ui/root-run-research/${asset}`,
+        assetId: `source:assets/ui/banners/${asset}`,
       });
     }
 

@@ -29,11 +29,11 @@ const ROOT_RUN_SIDE_ICON_FILES = Object.freeze([
   'icon-side-stats-root-run.png',
   'icon-side-tasks-root-run.png',
 ]);
-const WEBP_ICON_FILES = Object.freeze([
-  'icon-alliance-banner-base.webp',
-  'icon-alliance-banner-cloth-mask.webp',
-  'icon-leaderboard-trophy.webp',
-  'icon-discoveries-journal.webp',
+const CONVERTED_PNG_ICON_FILES = Object.freeze([
+  'icon-alliance-banner-base.png',
+  'icon-alliance-banner-cloth-mask.png',
+  'icon-leaderboard-trophy.png',
+  'icon-discoveries-journal.png',
 ]);
 
 function inspectIcon(fileName) {
@@ -227,11 +227,11 @@ describe('Workshop action icon assets', () => {
     expect(leaderboard.paletteRatios.gold).toBeGreaterThan(0.45);
   });
 
-  it.each(WEBP_ICON_FILES)('keeps %s as a non-empty WebP runtime asset', (fileName) => {
+  it.each(CONVERTED_PNG_ICON_FILES)('keeps %s as a non-empty PNG runtime asset', (fileName) => {
     const bytes = fs.readFileSync(path.join(ICON_DIRECTORY, fileName));
 
     expect(bytes.length).toBeGreaterThan(1_000);
-    expect(bytes.subarray(0, 4).toString('ascii')).toBe('RIFF');
-    expect(bytes.subarray(8, 12).toString('ascii')).toBe('WEBP');
+    expect(bytes.subarray(1, 4).toString('ascii')).toBe('PNG');
+    expect(() => PNG.sync.read(bytes)).not.toThrow();
   });
 });

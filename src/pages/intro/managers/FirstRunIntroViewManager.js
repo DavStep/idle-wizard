@@ -1,7 +1,7 @@
-const CASTLE_RUINS_URL = new URL('../../../../assets/game/source/rooms/intro/castle-ruins.webp', import.meta.url).href;
-const DEMON_DEFEATED_URL = new URL('../../../../assets/game/source/rooms/intro/demon-defeated.webp', import.meta.url).href;
-const PEACEFUL_WORLD_URL = new URL('../../../../assets/game/source/rooms/intro/peaceful-world.webp', import.meta.url).href;
-const WORKSHOP_FOR_SALE_URL = new URL('../../../../assets/game/source/rooms/intro/workshop-for-sale.webp', import.meta.url).href;
+const CASTLE_RUINS_URL = new URL('../../../../assets/game/source/rooms/intro/castle-ruins.png', import.meta.url).href;
+const DEMON_DEFEATED_URL = new URL('../../../../assets/game/source/rooms/intro/demon-defeated.png', import.meta.url).href;
+const PEACEFUL_WORLD_URL = new URL('../../../../assets/game/source/rooms/intro/peaceful-world.png', import.meta.url).href;
+const WORKSHOP_FOR_SALE_URL = new URL('../../../../assets/game/source/rooms/intro/workshop-for-sale.png', import.meta.url).href;
 
 const INTRO_STEP_EXIT_MS = 180;
 const INTRO_IMAGE_URLS = Object.freeze([

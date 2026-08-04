@@ -10,10 +10,50 @@ import {
   PIXI_UI_GEOMETRY,
 } from '../theme/PixiThemeTokens.js';
 import { PixiButton } from './PixiButton.js';
+import { getPixiButtonAssetId } from './PixiButtonStyle.js';
 
 installPixiPageTestCanvas();
 
 describe('PixiButton', () => {
+  it('selects color and corner size independently from one base widget', () => {
+    const getTexture = vi.fn(() => Texture.EMPTY);
+    const button = new PixiButton({
+      assetManager: { getTexture },
+      color: 'blue',
+      sizeTier: 30,
+      variant: 'regular',
+    });
+
+    expect(getTexture).toHaveBeenCalledWith(
+      getPixiButtonAssetId('blue', 30),
+    );
+
+    getTexture.mockClear();
+    button.setColor('purple').setSizeTier(15);
+
+    expect(button.color).toBe('purple');
+    expect(button.sizeTier).toBe(15);
+    expect(getTexture).toHaveBeenCalledWith(
+      getPixiButtonAssetId('purple', 15),
+    );
+
+    button.destroy({ children: true });
+  });
+
+  it('uses the current brown regular-button skin for the default variant', () => {
+    const getTexture = vi.fn(() => Texture.EMPTY);
+    const button = new PixiButton({
+      assetManager: { getTexture },
+    });
+
+    expect(button.resolveRootRunVariant()).toBe('brown');
+    expect(getTexture).toHaveBeenCalledWith(
+      'source:assets/ui/regular-button/brown-button-50.9.png',
+    );
+
+    button.destroy({ children: true });
+  });
+
   it.each(['yellow', 'green', 'red', 'gray', 'brown-dark', 'brown-light'])(
     'uses the gray asset without a shader for disabled %s buttons',
     (variant) => {

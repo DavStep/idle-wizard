@@ -5,6 +5,8 @@ import { createIdleWizardAssetEntries } from './catalog/createIdleWizardAssetEnt
 import { createIdleWizardButtonEntries } from './catalog/createIdleWizardButtonEntries.js';
 import { createHierarchyPreviewFixture } from './fixtures/createHierarchyPreviewFixture.js';
 import { createLibrarySelectionEntries } from './fixtures/createLibrarySelectionEntries.js';
+import { loadUiEditorIntegrations } from './integrations/loadUiEditorIntegrations.js';
+import { createUiEditorIntegrationEntries } from './sdk/createUiEditorIntegrationEntries.js';
 import { UiEditorFacade } from './UiEditorFacade.js';
 import {
   consumePendingNineSliceSelection,
@@ -18,10 +20,14 @@ if (!root) {
 
 const previewId = new URLSearchParams(window.location.search).get('preview');
 const buttonEntries = createIdleWizardButtonEntries();
+const integrationEntries = createUiEditorIntegrationEntries(
+  loadUiEditorIntegrations(),
+);
 const editor = new UiEditorFacade({
   libraryEntries: [
     ...createIdleWizardAssetEntries(buttonEntries),
     ...buttonEntries,
+    ...integrationEntries,
     ...(previewId === 'library-selection'
       ? createLibrarySelectionEntries()
       : []),

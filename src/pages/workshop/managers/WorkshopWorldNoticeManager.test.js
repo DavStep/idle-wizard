@@ -408,7 +408,7 @@ describe('WorkshopWorldNoticeManager', () => {
     ).toEqual(['quests', 'leaderboard', 'rewards']);
     expect(
       popup.querySelector('.workshop-page__world-notice-dialog-character')?.getAttribute('src'),
-    ).toContain('guild-secretary.webp');
+    ).toContain('guild-secretary.png');
     expect(
       [...popup.querySelectorAll('.workshop-page__world-notice-meta-row')].map((row) =>
         [

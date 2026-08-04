@@ -1,8 +1,6 @@
 /* global console */
 
-import childProcess from 'node:child_process';
 import fs from 'node:fs';
-import os from 'node:os';
 import path from 'node:path';
 import { argv } from 'node:process';
 import { fileURLToPath } from 'node:url';
@@ -14,7 +12,6 @@ const { PNG } = pngjs;
 const ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
 const OUTPUT_DIR = path.join(ROOT, 'assets/game/source/icons/research');
 const SIZE = 256;
-const TEMP_DIR = fs.mkdtempSync(path.join(os.tmpdir(), 'idle-wizard-research-icons-'));
 
 const sourcePaths = Object.freeze({
   arrow: 'art-source/research-icons/primitives/upgrade-arrow.png',
@@ -117,24 +114,20 @@ const selectedRecipes =
     ? recipes.filter(([fileName]) => requestedRecipeNames.has(fileName))
     : recipes;
 
-try {
-  fs.mkdirSync(OUTPUT_DIR, { recursive: true });
-  const sources = loadSources(sourcePaths);
+fs.mkdirSync(OUTPUT_DIR, { recursive: true });
+const sources = loadSources(sourcePaths);
 
-  for (const [fileName, layers] of selectedRecipes) {
-    const canvas = new PNG({ width: SIZE, height: SIZE });
+for (const [fileName, layers] of selectedRecipes) {
+  const canvas = new PNG({ width: SIZE, height: SIZE });
 
-    for (const nextLayer of layers) {
-      compositeLayer(canvas, sources[nextLayer.source], nextLayer);
-    }
-
-    fs.writeFileSync(path.join(OUTPUT_DIR, fileName), PNG.sync.write(canvas));
+  for (const nextLayer of layers) {
+    compositeLayer(canvas, sources[nextLayer.source], nextLayer);
   }
 
-  console.log(`generated ${selectedRecipes.length} research icons from game assets`);
-} finally {
-  fs.rmSync(TEMP_DIR, { recursive: true, force: true });
+  fs.writeFileSync(path.join(OUTPUT_DIR, fileName), PNG.sync.write(canvas));
 }
+
+console.log(`generated ${selectedRecipes.length} research icons from game assets`);
 
 function layer(source, x, y, width, height, options = {}) {
   return Object.freeze({
@@ -189,15 +182,6 @@ function loadSources(paths) {
 
 function readPngAsset(relativePath) {
   const sourcePath = path.join(ROOT, relativePath);
-
-  if (relativePath.endsWith('.webp')) {
-    const pngPath = path.join(TEMP_DIR, `${path.basename(relativePath, '.webp')}.png`);
-    childProcess.execFileSync('sips', ['-s', 'format', 'png', sourcePath, '--out', pngPath], {
-      stdio: 'ignore',
-    });
-    return PNG.sync.read(fs.readFileSync(pngPath));
-  }
-
   return PNG.sync.read(fs.readFileSync(sourcePath));
 }
 

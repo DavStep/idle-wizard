@@ -3,7 +3,7 @@ import {
 } from '../../../assets/generated/game-asset-atlas.generated.js';
 
 const sourceRasterModules = import.meta.glob(
-  '../../../../assets/game/source/**/*.{png,webp}',
+  '../../../../assets/game/source/**/*.png',
   {
     eager: true,
     import: 'default',
@@ -53,13 +53,8 @@ const PUBLIC_ASSET_PATHS = Object.freeze([
   '/ui/guild-quest/wax-seal.png',
   '/ui/intro-dialog-panel.9.png',
   '/ui/root-run-level-star.png',
-  '/ui/player-card-button-brown-dark-fill.9.png',
-  '/ui/player-card-button-brown-fill.9.png',
-  '/ui/player-card-panel-v2.9.png',
-  '/ui/player-card-panel.9.png',
   '/ui/root-run-dialog/expedition-dialog-front.9.png',
-  '/ui/player-card-panel-selected.9.png',
-  '/ui/xp-stars.webp',
+  '/ui/xp-stars.png',
 ]);
 
 function normalizeSourceAssetId(path) {
@@ -93,7 +88,7 @@ const publicAssets = PUBLIC_ASSET_PATHS.map((publicPath) => {
   return Object.freeze({
     id: `public:${publicPath.slice(1)}`,
     src,
-    kind: /\.(?:png|webp)$/i.test(publicPath)
+    kind: /\.png$/i.test(publicPath)
       ? 'texture'
       : 'binary',
   });

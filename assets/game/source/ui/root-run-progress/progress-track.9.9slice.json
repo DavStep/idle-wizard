@@ -1,0 +1,52 @@
+{
+  "version": 1,
+  "format": "png",
+  "asset": "progress-track.9.png",
+  "source": {
+    "path": "assets/game/source/ui/root-run-progress/progress-track.9.png",
+    "width": 66,
+    "height": 52,
+    "mode": "RGBA",
+    "crop": {
+      "x": 0,
+      "y": 0,
+      "width": 66,
+      "height": 52
+    }
+  },
+  "sourceCropSize": {
+    "width": 66,
+    "height": 52
+  },
+  "slice": {
+    "left": 28,
+    "top": 24,
+    "right": 27,
+    "bottom": 24
+  },
+  "mode": "source",
+  "distill": null,
+  "rendering": {
+    "stretch": "edges-and-center",
+    "outputInsets": {
+      "left": 28,
+      "top": 24,
+      "right": 27,
+      "bottom": 24
+    },
+    "minimumCenter": {
+      "width": 1,
+      "height": 1
+    },
+    "minimumSize": {
+      "width": 56,
+      "height": 49
+    },
+    "qaResample": "nearest",
+    "browserPreviewSmoothingDefault": false
+  },
+  "editor": {
+    "tool": "Idle Wizard UI Editor",
+    "sourceAssetPreserved": true
+  }
+}

@@ -1,5 +1,5 @@
 const WORKSHOP_CHARACTER_IMAGE_URLS = Object.freeze({
-  worldNotice: new URL('../../../assets/game/source/rooms/workshop/characters/guild-secretary.webp', import.meta.url).href,
+  worldNotice: new URL('../../../assets/game/source/rooms/workshop/characters/guild-secretary.png', import.meta.url).href,
 });
 
 export function getWorkshopCharacterImageUrl(character) {

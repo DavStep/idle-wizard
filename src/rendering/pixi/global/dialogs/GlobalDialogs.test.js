@@ -1124,7 +1124,7 @@ describe('retained global Pixi dialogs', () => {
       label: 'garden',
       value: 'new room available',
       icon: {
-        assetId: 'source:assets/icons/icon-garden-plot-tab.webp',
+        assetId: 'source:assets/icons/icon-garden-plot-tab.png',
       },
     };
     const researchUnlock = {
@@ -1134,7 +1134,7 @@ describe('retained global Pixi dialogs', () => {
       label: 'research',
       value: 'new room available',
       icon: {
-        assetId: 'source:assets/icons/icon-research-tab.webp',
+        assetId: 'source:assets/icons/icon-research-tab.png',
       },
     };
     const announcement = harness.registry.open(
@@ -1234,7 +1234,7 @@ describe('retained global Pixi dialogs', () => {
             label: 'garden',
             icon: {
               assetId:
-                'source:assets/icons/icon-garden-plot-tab.webp',
+                'source:assets/icons/icon-garden-plot-tab.png',
             },
           },
         ],

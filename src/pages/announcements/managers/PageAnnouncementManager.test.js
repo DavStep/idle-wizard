@@ -251,7 +251,7 @@ describe('PageAnnouncementManager', () => {
     const destinationIconFrame = document.createElement('span');
     destinationIconFrame.className = 'workshop-page__leaderboard-button-icon-frame';
     const destinationIcon = document.createElement('img');
-    destinationIcon.src = '/feature-leaderboard.webp';
+    destinationIcon.src = '/feature-leaderboard.png';
     destinationIconFrame.append(destinationIcon);
     button.append(destinationIconFrame);
     stage.append(button);
@@ -269,7 +269,7 @@ describe('PageAnnouncementManager', () => {
       stage
         .querySelector('.room-announcement__unlock-icon-source img')
         ?.getAttribute('src'),
-    ).toContain('feature-leaderboard.webp');
+    ).toContain('feature-leaderboard.png');
 
     manager.hideCurrent();
 

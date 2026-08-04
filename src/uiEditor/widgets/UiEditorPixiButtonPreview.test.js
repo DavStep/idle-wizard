@@ -57,6 +57,70 @@ describe('UiEditorPixiButtonPreview', () => {
     expect(liveCanvas.getAttribute('aria-label')).toBe('Next Button');
   });
 
+  it('exposes live color and corner-size controls for the consolidated base button', async () => {
+    const { createUiEditorPixiButtonPreview } = await import(
+      './UiEditorPixiButtonPreview.js'
+    );
+    const preview = createUiEditorPixiButtonPreview({
+      id: 'base-button',
+      label: 'Base / Text Button',
+      preview: {
+        color: 'yellow',
+        sizeTier: 50,
+        text: 'Continue',
+        type: 'button',
+        variant: 'yellow',
+      },
+    });
+    const inspector = preview.uiEditorCreateInspector();
+    const colorOptions = inspector.querySelectorAll(
+      '[data-button-inspector-field="color"]',
+    );
+    const sizeOptions = inspector.querySelectorAll(
+      '[data-button-inspector-field="sizeTier"]',
+    );
+
+    expect(colorOptions).toHaveLength(8);
+    expect(sizeOptions).toHaveLength(3);
+
+    inspector.querySelector(
+      '[data-button-inspector-option="purple"]',
+    ).click();
+    inspector.querySelector(
+      '[data-button-inspector-option="15"]',
+    ).click();
+
+    expect(preview.uiEditorGetButtonEditorState()).toMatchObject({
+      color: 'purple',
+      sizeTier: '15',
+    });
+  });
+
+  it('lets the cost-button inspector toggle its top label independently', async () => {
+    const { createUiEditorPixiButtonPreview } = await import(
+      './UiEditorPixiButtonPreview.js'
+    );
+    const preview = createUiEditorPixiButtonPreview({
+      id: 'cost-button',
+      label: 'Cost Button',
+      preview: {
+        actionLabel: 'Unlock',
+        amountLabel: '25 Coin',
+        color: 'green',
+        showLabel: false,
+        type: 'cost',
+      },
+    });
+    const inspector = preview.uiEditorCreateInspector();
+
+    inspector.querySelector(
+      '[data-button-inspector-field="label"]'
+      + '[data-button-inspector-option="show"]',
+    ).click();
+
+    expect(preview.uiEditorGetButtonEditorState().label).toBe('show');
+  });
+
   it('disables nine-slice skins that exceed the widget minimum size', async () => {
     const [{ createAssetOptions }, { PIXI_ROOT_RUN_ASSETS, PIXI_ROOT_RUN_GEOMETRY }] =
       await Promise.all([

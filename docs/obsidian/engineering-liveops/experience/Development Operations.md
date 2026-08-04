@@ -75,8 +75,7 @@ experience_type: development-operations
 - Optional Google login is controlled by `VITE_GOOGLE_AUTH_CLIENT_ID`; the Google OAuth client ID is public config and can live in `.env.production`.
 - Browser Google login must use Google Identity Services to receive a Google-signed ID token in a JavaScript callback; Google code flow needs backend token exchange and `oidc-client-ts` rejects legacy implicit `id_token`.
 - Current player APK release automation must keep using the OAuth-compatible Android debug certificate until a true release keystore SHA-1 is registered and account connect/restore is device-tested.
-- Android native splash density assets are stored uncompressed in the APK; keep them as quality-90 WebP with full alpha quality, because full-size PNG variants can push the signed APK past Discord's upload limit.
-- Android WebP optimization can overlap in the shared `dist`; use invocation-unique temporary files and idempotent source cleanup so concurrent packaging does not consume another optimizer's `.tmp` file.
+- Android native splash density assets follow the project-wide PNG-only policy. Keep their dimensions/content lean enough for the signed APK upload limit.
 - Android `versionCode` must reserve three digits each for minor and patch values; a two-digit mapping made `0.3.0` older than `0.2.104`, causing Android to reject the release as a downgrade.
 - OIDC redirect state must use persistent `localStorage` through `stateStore`; default session storage can disappear on Android/new-tab OAuth returns and produce callback state errors.
 - The sibling dashboard repo is `../idle-wizard-dashboard`; it runs on Vite port `55183` and syncs generated SpacetimeDB bindings from this repo.

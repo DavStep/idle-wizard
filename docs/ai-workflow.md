@@ -41,6 +41,11 @@ When a feature change would be meaningfully faster or safer with a repo-local he
 
 - Prefer an `npm` script, checked-in harness, fixture generator, capture script, or focused validator that future agents can run directly.
 - Any new dialog, window, page, popup, or notable UI surface should get a dev command path, usually through `cheats.openUi(surfaceId)` and `?devUi=surfaceId`, so future QA can open it directly.
+- Reusable widgets, dialogs, composite HUDs, pages, and scenes may also expose a
+  standalone interactive editor harness through a colocated `*.ui-editor.js`
+  manifest. Use the versioned UI Lab SDK for scenarios, typed controls, actions,
+  events, deterministic time, and cleanup; do not add feature-specific imports
+  or conditional behavior to the editor shell or production engine.
 - Any reference-driven state must be reproducible through that checked-in path, a data template, tutorial loader, or focused harness. Do not use temporary source branches, read-only DOM mutation, or undocumented local state as final screenshot setup.
 - Document the command, required env flags, and intended use in this file when it is broad, or in the feature-local `README.md` when it is feature-specific.
 - Keep tools deterministic and scoped to the current repo; prefer shared Vite and SpacetimeDB processes. If parallel agents interfere, isolated runtimes may use explicit alternate ports, with one clear owner responsible for stopping every alternate listener when finished.

@@ -128,7 +128,7 @@ const SUMMON_BUTTON_DOWN_OFFSET = SUMMON_BUTTON_HEIGHT / 2;
 const SUMMON_CHAT_GAP = 32;
 const SUMMON_VERTICAL_OFFSET = 16;
 export const WORKSHOP_WINDOW_ASSET_ID =
-  'source:assets/rooms/workshop/workshop-window.webp';
+  'source:assets/rooms/workshop/workshop-window.png';
 export const WORKSHOP_WINDOW_GEOMETRY = Object.freeze({
   top: 172,
   width: 150,

@@ -119,11 +119,28 @@ describe('PixiTopPanelView', () => {
     );
     expect(view.avatarViewport.avatarFrame).toBeInstanceOf(NineSliceSprite);
     expect(view.coin.background).toBeInstanceOf(NineSliceSprite);
+    expect(assets.getTexture).toHaveBeenCalledWith(
+      'source:assets/ui/white-squircle/white-squircle-20.9.png',
+    );
+    expect(view.coin.background.tint).toBe(0x000000);
+    expect(view.coin.background.alpha).toBe(0.4);
     expect(view.settingsControl.background).toBeInstanceOf(NineSliceSprite);
+    expect(assets.getTexture).toHaveBeenCalledWith(
+      'source:assets/ui/white-squircle/white-squircle-40.9.png',
+    );
+    expect(view.settingsControl.background.tint).toBe(0x000000);
+    expect(view.settingsControl.background.alpha).toBe(0.4);
     expect(assets.getTexture).toHaveBeenCalledWith(
       PIXI_ROOT_RUN_ASSETS.settingsGear,
     );
+    expect(view.levelRail.panel).toBeInstanceOf(NineSliceSprite);
+    expect(assets.getTexture).toHaveBeenCalledWith(
+      'source:assets/ui/white-squircle/white-squircle-30.9.png',
+    );
+    expect(view.levelRail.panel.tint).toBe(0x000000);
+    expect(view.levelRail.panel.alpha).toBe(0.4);
     expect(view.levelRail.track).toBeInstanceOf(NineSliceSprite);
+    expect(view.levelRail.track.tint).toBe(0x000000);
     expect(assets.getTexture).toHaveBeenCalledWith(
       'source:assets/ui/root-run-top-hud/level-progress-fill-mask.9.png',
     );
@@ -332,7 +349,7 @@ describe('PixiTopPanelView', () => {
     expect(view.levelRail.fill.width).toBe(234.375);
     expect(view.levelRail.fill.height).toBe(51);
     expect(view.levelRail.fill.visible).toBe(true);
-    expect(view.levelRail.fill.tint).toBe(0xffffff);
+    expect(view.levelRail.fill.tint).toBe(0xffdf41);
 
     const dividerRects =
       view.levelRail.dividers.context.instructions.filter(
@@ -418,7 +435,7 @@ describe('PixiTopPanelView', () => {
     });
 
     expect(view.levelRail.fill).toBeInstanceOf(NineSliceSprite);
-    expect(view.levelRail.fill.tint).toBe(0xffffff);
+    expect(view.levelRail.fill.tint).toBe(0xffdf41);
     expect(view.levelRail.fill.visible).toBe(true);
 
     view.destroy();

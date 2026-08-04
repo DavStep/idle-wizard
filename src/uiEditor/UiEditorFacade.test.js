@@ -1,6 +1,6 @@
 // @vitest-environment jsdom
 
-import { beforeEach, describe, expect, it } from 'vitest';
+import { beforeEach, describe, expect, it, vi } from 'vitest';
 
 import { createHierarchyPreviewFixture } from './fixtures/createHierarchyPreviewFixture.js';
 import { createLibrarySelectionEntries } from './fixtures/createLibrarySelectionEntries.js';
@@ -199,6 +199,47 @@ describe('UiEditorFacade', () => {
     expect(
       document.querySelector('.ui-editor-usages__summary').hidden,
     ).toBe(true);
+  });
+
+  it('loads unused source-asset badges after mounting the catalogue', async () => {
+    const inspectAssetUsage = vi.fn(async () => ({
+      unusedAssetIds: ['source:assets/ui/unused.png'],
+    }));
+    const editor = new UiEditorFacade({
+      inspectAssetUsage,
+      libraryEntries: [
+        {
+          assetId: 'source:assets/ui/unused.png',
+          createThumbnail: () => {
+            const thumbnail = document.createElement('span');
+            thumbnail.dataset.editorLibraryThumbnail = 'asset:unused';
+            thumbnail.uiEditorSetUnused = (unused) => {
+              thumbnail.dataset.unused = String(unused);
+            };
+            return thumbnail;
+          },
+          folderPath: ['ui'],
+          id: 'asset:unused',
+          kind: 'asset',
+          label: 'unused.png',
+          sectionId: 'assets',
+        },
+      ],
+      root: document.querySelector('#root'),
+    });
+
+    editor.mount();
+
+    await vi.waitFor(() => {
+      expect(
+        editor.bottomPanelManager.refs.entryButtons
+          .get('asset:unused')
+          .dataset.assetUnused,
+      ).toBe('');
+    });
+    expect(inspectAssetUsage).toHaveBeenCalledWith([
+      'source:assets/ui/unused.png',
+    ]);
   });
 
   it('restores the saved library selection and hierarchy visibility', () => {

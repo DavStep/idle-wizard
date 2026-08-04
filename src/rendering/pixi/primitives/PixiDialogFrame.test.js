@@ -94,7 +94,7 @@ describe('PixiDialogFrame', () => {
       PIXI_ROOT_RUN_ASSETS.dialogTitle,
     );
     expect(PIXI_ROOT_RUN_ASSETS.dialogTitle).toContain(
-      'expedition-dialog-title-purple.9.png',
+      'banner-purple.9.png',
     );
     expect(frame.outerFrame.position).toMatchObject({ x: -10, y: -10 });
     expect(frame.outerFrame.frameWidth).toBe(324);
