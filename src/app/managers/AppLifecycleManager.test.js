@@ -563,6 +563,53 @@ describe('AppLifecycleManager', () => {
     expect(lifecycle.backendFacade.start).toHaveBeenCalledTimes(1);
   });
 
+  it('keeps the loading splash hidden when the app resumes during the fresh-start choice', async () => {
+    let resolveChoice;
+    const freshStartChoiceManager = {
+      mount: vi.fn(),
+      choose: vi.fn(
+        () =>
+          new Promise((resolve) => {
+            resolveChoice = resolve;
+          }),
+      ),
+      isChoosing: vi.fn(() => true),
+      render: vi.fn(),
+      hide: vi.fn(),
+      unmount: vi.fn(),
+    };
+    const authFacade = {
+      getPendingAccountLinkSave: vi.fn(() => null),
+      clearPendingAccountLinkSave: vi.fn(),
+      getSnapshot: vi.fn(() => ({
+        hasToken: false,
+        oidc: { authenticated: false, enabled: false },
+      })),
+      signInWithGoogle: vi.fn(),
+    };
+    const { lifecycle, hideApp, showApp } = createLifecycle({
+      freshStartChoiceManager,
+      authFacade,
+    });
+
+    lifecycle.start();
+    await flushPromises();
+
+    expect(freshStartChoiceManager.choose).toHaveBeenCalledTimes(1);
+    expect(lifecycle.onlineGateManager.showConnecting).toHaveBeenCalledTimes(1);
+    expect(lifecycle.onlineGateManager.hide).toHaveBeenCalledTimes(1);
+
+    hideApp();
+    showApp();
+
+    expect(lifecycle.onlineGateManager.showConnecting).toHaveBeenCalledTimes(1);
+    expect(lifecycle.onlineGateManager.hide).toHaveBeenCalledTimes(2);
+
+    resolveChoice(FRESH_START_CHOICE_START_FRESH);
+    await flushPromises();
+    lifecycle.stop();
+  });
+
   it('shows the fresh-start gate when native auth appears during prepare on fresh app data', async () => {
     let authenticated = false;
     let resolveChoice;

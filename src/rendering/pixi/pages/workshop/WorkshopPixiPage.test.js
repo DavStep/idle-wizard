@@ -143,7 +143,7 @@ describe('WorkshopPixiPage', () => {
     harness.dispose();
   });
 
-  it('sweeps the request fill and holds the completed request until the star flight completes', () => {
+  it('fills to the reached point, then shines, then boinks', () => {
     const motion = createWorkshopMotionHarness();
     const questCompletionMotionCoordinator =
       new QuestCompletionMotionCoordinator();
@@ -159,11 +159,51 @@ describe('WorkshopPixiPage', () => {
 
     const outgoingRow = harness.page.tasks.rows.get('request-1');
     expect(outgoingRow.displayedProgress).toBe(0.5);
+    expect(outgoingRow.progressShineRoot.visible).toBe(false);
+
+    const progressedModel = createWorkshopViewModel();
+    progressedModel.workshop.tasks.rows[0].current = 2;
+    progressedModel.workshop.tasks.rows[0].required = 3;
+    harness.page.bind(progressedModel);
+
+    motion.runAt(110);
+    expect(outgoingRow.displayedProgress).toBeGreaterThan(0.5);
+    expect(outgoingRow.displayedProgress).toBeLessThan(2 / 3);
+    expect(outgoingRow.progressShineRoot.visible).toBe(false);
+    expect(outgoingRow.progress.root.scale.x).toBe(1);
+
+    motion.runAt(220);
+    expect(outgoingRow.displayedProgress).toBeCloseTo(2 / 3);
     expect(outgoingRow.progressShineRoot.visible).toBe(true);
     const initialShineX = outgoingRow.progressShine.x;
 
-    motion.runAt(325);
-    expect(outgoingRow.progressShine.x).not.toBe(initialShineX);
+    motion.runAt(370);
+    expect(outgoingRow.progressShine.x).toBeGreaterThan(initialShineX);
+    expect(outgoingRow.progress.root.scale.x).toBe(1);
+
+    motion.runAt(540);
+    expect(outgoingRow.progressShineRoot.visible).toBe(false);
+    expect(outgoingRow.progress.root.scale.x).toBeGreaterThan(1);
+
+    motion.runAt(660);
+    expect(outgoingRow.progress.root.scale.x).toBe(1);
+  });
+
+  it('holds the completed request until the star flight completes', () => {
+    const motion = createWorkshopMotionHarness();
+    const questCompletionMotionCoordinator =
+      new QuestCompletionMotionCoordinator();
+    const harness = createHarness({
+      questCompletionMotionCoordinator,
+      requestFrame: motion.requestFrame,
+      cancelFrame: motion.cancelFrame,
+      timeSource: motion.timeSource,
+      reducedMotion: () => false,
+    });
+    harness.page.activate();
+    harness.page.bind(createWorkshopViewModel());
+
+    const outgoingRow = harness.page.tasks.rows.get('request-1');
 
     const transitionId = questCompletionMotionCoordinator.begin({
       previousTaskId: 'request-1',
@@ -182,9 +222,19 @@ describe('WorkshopPixiPage', () => {
     expect(harness.page.tasks.rows.get('request-1')).toBe(outgoingRow);
     expect(harness.page.tasks.rows.get('request-2')).toBeNull();
 
-    motion.runAt(585);
+    motion.runAt(260);
     expect(outgoingRow.displayedProgress).toBe(1);
+    expect(outgoingRow.progressShineRoot.visible).toBe(true);
+
+    motion.runAt(560);
     expect(outgoingRow.progressShineRoot.visible).toBe(false);
+    expect(outgoingRow.progress.root.scale.x).toBe(1);
+
+    motion.runAt(600);
+    expect(outgoingRow.progress.root.scale.x).toBeGreaterThan(1);
+
+    motion.runAt(700);
+    expect(outgoingRow.progress.root.scale.x).toBe(1);
 
     questCompletionMotionCoordinator.startFlight(transitionId);
     expect(harness.page.tasks.rows.get('request-1')).toBe(outgoingRow);

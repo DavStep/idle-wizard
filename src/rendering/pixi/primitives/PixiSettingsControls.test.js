@@ -183,6 +183,34 @@ describe('Root Run settings controls', () => {
     slider.destroy({ children: true });
   });
 
+  it('points left from a full stall allocation to the tutorial quantity', () => {
+    const harness = createHarness();
+    const slider = new RootRunSettingsSliderPixi({
+      ...harness.dependencies,
+      semanticId: 'shop.stall.1.allocation',
+      tutorialId: 'shop:sell:percentage',
+      label: 'stallAllocation',
+    });
+    slider.bind({
+      mode: 'range',
+      min: 0,
+      max: 5,
+      step: 1,
+      value: 5,
+      tutorialTargetValue: 1,
+      onChange: vi.fn(),
+    });
+    slider.setBounds(0, 0, 200);
+
+    expect(slider.getTutorialPointerGesture()).toEqual({
+      kind: 'horizontal-drag',
+      travelX:
+        -((200 - PIXI_ROOT_RUN_GEOMETRY.settings.knobSize) * 4) / 5,
+    });
+
+    slider.destroy({ children: true });
+  });
+
   it('keeps the disabled knob opaque while rejecting press and drag changes', () => {
     const harness = createHarness();
     const onChange = vi.fn();

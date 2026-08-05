@@ -680,6 +680,12 @@ describe("PixiPagesFacade", () => {
 
     let dialog = harness.getBoundPage("shop").shop.traders.stalls[0].dialog;
     expect(dialog.items.map((item) => item.itemKey)).toEqual(["sageSeed"]);
+    expect(dialog.summaryRows[0]).toMatchObject({
+      value: "Empty",
+      quantityLabel: "",
+    });
+    expect(dialog.range.enabled).toBe(false);
+    expect(dialog.items[0].selected).toBe(false);
 
     dialog.items[0].action();
     expect(harness.pageSurface.openDialog).toHaveBeenCalledWith(

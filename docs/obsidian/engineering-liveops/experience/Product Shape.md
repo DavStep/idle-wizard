@@ -35,6 +35,7 @@ experience_type: product-shape
 - Timer progress bars should not depend on 250ms gameplay snapshots for visual smoothness; snapshots provide authoritative state, while UI derives in-between fill and label time.
 - First-run cutscene animations need a per-step replay trigger; scene/data-state selectors alone do not replay when advancing through steps that reuse the same scene.
 - First-run intro controls must remain allowed through the app interaction lock because the intro can mount before the backend finishes its online transition and sits above the server gate.
+- Keep the loading gate hidden when Android resumes while the fresh-start choice is open; re-showing the underlying gate re-pushes its modal above Elara's visible dialog and blocks every choice tap.
 - Stable first-run backdrop transitions may freeze transform only; freezing an in-progress opacity or filter can preserve a black scene after a fast `next` tap.
 - When smooth timer bars are desired, derive fill, remaining label, and ARIA percent from one inferred end time; do not let snapshot `progress` disagree with `remainingMs`.
 - Progress bars reset to `0` should disable transitions and snap empty; never animate backward after completion, cancel, or remount reset.
@@ -87,7 +88,7 @@ experience_type: product-shape
 - Resource-gated FTUE steps must refresh from `subscribeFrameResources`; top-panel mana can change without a full gameplay snapshot.
 - Frame-resource snapshots are partial; retained presenters must merge nested `tasks.currentLevel` into the full task snapshot instead of replacing `tasks`, or mana ticks erase `questProgress` and hide the level rail.
 - FTUE repeated action prompts should show once as brief non-dimming hints, then reappear only after idle time; do not keep alternating guidance through active loops.
-- Level-two FTUE trader-stand loading selects Sage Seed, targets the percentage rail until it reads `25%`, then targets `mark x1`; this sells one of five lesson seeds and preserves four for turn-in.
+- Level-two FTUE trader-stand loading must ask for the Sage Seed row first, then target the exact-count rail until it reads `x1`, then target `mark x1`; this sells one of five lesson seeds and preserves four for turn-in.
 - A page means a room view, not a web route.
 - The first page is `Workshop`.
 - Level requirements can be typed action rows; only `turnIn` consumes inventory, while `research`, `summon`, `grow`, `brew`, and `sell` progress from gameplay events and auto-complete at target.
@@ -209,10 +210,9 @@ experience_type: product-shape
 - Fresh-start/account gates are pre-game surfaces: keep their backdrops opaque and do not mount room chrome behind them before the player chooses.
 - Screenshot QA must dismiss app-level account/server gates before trusting target-dialog DOM checks; the target can exist behind a blocking gate.
 - After screenshot QA viewport changes, wait for `.app-online-gate[hidden]`; the server gate can flash during reconnect and stale screenshots can be blank even if later DOM metrics pass.
-- Explicit FTUE spotlight targets can animate independently; use layout/hidden/display/visibility checks for mask placement instead of rejecting transient opacity `0`.
+- Retained FTUE highlights render the live semantic target once through a dedicated Pixi `RenderLayer` above the uninterrupted dim backdrop; keep its scene-graph parent unchanged and never restore cutout masks, clones, or reparented target visuals.
 - FTUE dim backdrops must use stage-wide coordinates for web-wide gutters; guide, pointer, and collision placement should stay source-layer based.
-- FTUE text-shaped spotlight holes must remeasure for a few RAFs during layout transitions; web-wide SVG backdrops need explicit `100% + gutters` width because `width:auto` can stop short.
-- Icon-mode top-panel resource FTUE spotlights should target the resource label wrapper with an element hole; SVG text holes can ghost the amount and leave the icon dimmed.
+- Icon-mode top-panel resource FTUE highlights should promote the complete resource label display object so its icon and amount remain visually intact above the dim layer.
 - HTML screenshot harnesses that load `/src/styles/base.css` must set `html[data-style-theme="midnight"]`; missing or `white` themes fall back to the removed light base.
 - Resource-label screenshot harnesses must set `html[data-style-icons="icons"]`; resource and currency labels must retain their shared semantic colors and still match the live app.
 - FTUE should also hide behind ordinary room popups unless the active step targets that popup or explicitly uses popup-only copy guidance.
@@ -222,8 +222,8 @@ experience_type: product-shape
 - FTUE `data-tutorial-id` should sit on the real actionable control; task opening targets the `expand` toggle, not the summary row.
 - FTUE NPC market `data-tutorial-id` should sit on stand/item name spans, not full rows or price/value spans, so the finger avoids the demand control.
 - Trader loader rows are one action; make the whole visual row the button and put FTUE ids on that button (`shop:sell:<itemKey>`).
-- FTUE Market teaching is `open first stall -> select sage seed -> set 25% -> mark one seed -> wait for timed sale`; target `shop:sell:percentage` until `25%`, then `shop:sell:mark`.
-- FTUE slider demonstrations must anchor the tutorial target to the live knob, not the whole rail; the level-2 Market allocation cue presses, holds, drags right to `25%`, releases, hides, and repeats after a two-second pause.
+- FTUE Market teaching is `open first stall -> select sage seed -> set exact amount x1 -> mark one seed -> wait for timed sale`; keep the item-selection objective visible until the Sage Seed row is selected, then target `shop:sell:percentage` until `x1`, then `shop:sell:mark`.
+- FTUE slider demonstrations must anchor the tutorial target to the live knob, not the whole rail; the level-2 Market allocation cue presses, holds, drags to the exact count `x1`, releases, hides, and repeats after a two-second pause. Tutorial checks must compare the slider's current units, never a retired percentage representation.
 - FTUE guide border labels need white surface backgrounds as masks; transparent labels lose legibility over the overlay/top border.
 - FTUE lesson border-action buttons need late `.style-box .tutorial-layer__...` overrides, because the global `.style-box :where(button, ...)` rule can re-inflate them to body size.
 - Tutorial UI edits need the project-local `idle-wizard-tutorial-ui` skill in addition to `impeccable`; generic UI guidance has missed FTUE box stacking, collision, and target-placement rules.

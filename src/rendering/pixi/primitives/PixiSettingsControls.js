@@ -433,7 +433,7 @@ export class RootRunSettingsSliderPixi extends Container {
         this.controlWidth -
           PIXI_ROOT_RUN_GEOMETRY.settings.knobSize,
       ) *
-      Math.max(0, targetNormalizedValue - this.normalizedValue);
+      (targetNormalizedValue - this.normalizedValue);
     return {
       kind: 'horizontal-drag',
       travelX,

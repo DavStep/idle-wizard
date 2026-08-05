@@ -819,8 +819,8 @@ export class PixiTutorialRuntimeState {
       isShopSellPopupOpen: () =>
         this.isDialogOpen('shop.stall'),
       hasShopSellSelection: () => this.hasShopSellSelection(),
-      isShopSellPercentageSelected: (percentage) =>
-        this.isShopSellPercentageSelected(percentage),
+      isShopSellQuantitySelected: (quantity) =>
+        this.isShopSellQuantitySelected(quantity),
       isShopSellTabSelected: (kind) =>
         this.isTargetSelected(`shop:sell:tab:${kind}`),
       getUsername: () => this.getUsername(),
@@ -953,14 +953,12 @@ export class PixiTutorialRuntimeState {
     return Boolean(target?.state?.visible);
   }
 
-  isShopSellPercentageSelected(percentage) {
+  isShopSellQuantitySelected(quantity) {
     const target = this.resolveTarget('shop:sell:percentage');
     const value = Number(target?.displayObject?.value);
-    const normalized =
-      value <= 1 ? Math.round(value * 100) : Math.round(value);
     return (
-      Number.isFinite(normalized) &&
-      normalized === Math.round(Number(percentage))
+      Number.isFinite(value) &&
+      Math.round(value) === Math.round(Number(quantity))
     );
   }
 

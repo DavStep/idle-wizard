@@ -28,7 +28,7 @@ function createDomFake({
   selectedBrewingRecipeKey = null,
   shopSellPopupOpen = false,
   shopSellSelection = false,
-  shopSellPercentage = 100,
+  shopSellQuantity = 0,
   sellTabKind = 'seed',
 } = {}) {
   return {
@@ -37,7 +37,7 @@ function createDomFake({
     isBrewingRecipeSelected: (recipeKey) => selectedBrewingRecipeKey === recipeKey,
     isGardenSeedPopupOpen: () => seedPopupOpen,
     hasShopSellSelection: () => shopSellSelection,
-    isShopSellPercentageSelected: (percentage) => shopSellPercentage === percentage,
+    isShopSellQuantitySelected: (quantity) => shopSellQuantity === quantity,
     isShopSellPopupOpen: () => shopSellPopupOpen,
     isShopSellTabSelected: (kind) => sellTabKind === kind,
     isTasksExpanded: () => tasksExpanded,
@@ -698,7 +698,7 @@ describe('TutorialStepManager', () => {
       id: 'select-sage-seed-sale',
       targetId: 'shop:sell:sageSeed',
       hintText: 'select sage seed',
-      objectiveText: 'load sage seed into the stall',
+      objectiveText: 'select sage seed',
       progressLabel: '0/1 seed',
       stepLabel: '13/31',
     });
@@ -716,8 +716,8 @@ describe('TutorialStepManager', () => {
     ).toMatchObject({
       id: 'select-sage-seed-sale',
       targetId: 'shop:sell:percentage',
-      hintText: 'set 25%',
-      objectiveText: 'load sage seed into the stall',
+      hintText: 'select amount',
+      objectiveText: 'select 1 sage seed',
     });
 
     expect(
@@ -727,7 +727,7 @@ describe('TutorialStepManager', () => {
         dom: createDomFake({
           shopSellPopupOpen: true,
           shopSellSelection: true,
-          shopSellPercentage: 25,
+          shopSellQuantity: 1,
         }),
         completed: completedThrough('select-market-stand'),
       }),
@@ -735,7 +735,7 @@ describe('TutorialStepManager', () => {
       id: 'select-sage-seed-sale',
       targetId: 'shop:sell:mark',
       hintText: 'mark one seed',
-      objectiveText: 'load sage seed into the stall',
+      objectiveText: 'mark 1 sage seed',
     });
 
     snapshot.shop.shelf.slots = [

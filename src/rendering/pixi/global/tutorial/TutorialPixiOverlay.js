@@ -2,6 +2,7 @@ import {
   Container,
   Graphics,
   Rectangle,
+  RenderLayer,
   Sprite,
 } from 'pixi.js';
 
@@ -22,7 +23,6 @@ import {
 import { PixiNotificationBadge } from '../transient/PixiNotificationBadges.js';
 import {
   normalizeSourceRect,
-  padSourceRect,
   projectSemanticBoundsToSource,
   resolveSemanticTutorialTarget,
   resolveTutorialObjectivePlacement,
@@ -115,6 +115,10 @@ export class TutorialPixiOverlay extends BasePixiRetainedView {
     this.backdrop.label = 'tutorial:spotlight';
     this.backdrop.eventMode = 'none';
 
+    this.highlightLayer = new RenderLayer();
+    this.highlightLayer.label = 'tutorial:highlightLayer';
+    this.highlightedTargets = new Map();
+
     this.pointer = new TutorialPointerSpine({ spineRuntime });
 
     this.guideButton = new Container();
@@ -182,6 +186,7 @@ export class TutorialPixiOverlay extends BasePixiRetainedView {
 
     this.root.addChild(
       this.backdrop,
+      this.highlightLayer,
       this.pointer.root,
       this.guideButton,
       this.surface.root,
@@ -322,6 +327,7 @@ export class TutorialPixiOverlay extends BasePixiRetainedView {
   onDeactivate() {
     this.stopTicker();
     this.clearTargetPressProxy();
+    this.clearHighlightedTargets();
     this.pointer.setVisible(false);
     this.cancelTypewriter();
     this.restoreTargetEmphasis();
@@ -330,6 +336,7 @@ export class TutorialPixiOverlay extends BasePixiRetainedView {
   onDestroy() {
     this.stopTicker();
     this.clearTargetPressProxy();
+    this.clearHighlightedTargets();
     for (const registration of this.registrations) {
       releaseRegistration(registration);
     }
@@ -379,6 +386,7 @@ export class TutorialPixiOverlay extends BasePixiRetainedView {
     this.renderPositions();
     this.renderTargetCue();
     this.redrawSpotlight();
+    this.syncHighlightedTargets();
   }
 
   renderPositions() {
@@ -552,39 +560,69 @@ export class TutorialPixiOverlay extends BasePixiRetainedView {
         color: '#000000',
         alpha: TUTORIAL_PIXI_GEOMETRY.backdropOpacity,
       });
-    const localBounds = {
-      left: 0,
-      top: 0,
-      right: this.sourceBounds.width,
-      bottom: this.sourceBounds.height,
-    };
-    for (const targetId of this.model.step?.highlightTargetIds ?? []) {
-      const rect = padSourceRect(
-        this.resolveTargetRect(targetId),
-        this.resolveHighlightPadding(targetId),
-        localBounds,
-      );
-      if (rect?.width > 0 && rect?.height > 0) {
-        this.backdrop
-          .rect(rect.x, rect.y, rect.width, rect.height)
-          .cut();
-      }
-    }
     this.backdrop.visible = true;
     this.backdrop.renderable = true;
   }
 
-  resolveHighlightPadding(targetId) {
-    const explicit = this.model.highlightPaddingById?.[targetId];
-    return Number.isFinite(explicit)
-      ? Math.max(
-          0,
-          Math.min(
-            TUTORIAL_PIXI_GEOMETRY.highlightPadding,
-            explicit,
-          ),
-        )
-      : TUTORIAL_PIXI_GEOMETRY.highlightPadding;
+  syncHighlightedTargets() {
+    const nextTargets = new Set();
+    if (
+      this.active &&
+      this.model.kind === 'lesson' &&
+      this.panelOpen &&
+      this.backdrop.visible
+    ) {
+      for (const targetId of this.model.step?.highlightTargetIds ?? []) {
+        const snapshot = resolveSemanticTutorialTarget(
+          this.semanticRegistry,
+          targetId,
+        );
+        const target = snapshot?.displayObject;
+        if (
+          target?.parent &&
+          target.destroyed !== true &&
+          snapshot.state?.active !== false &&
+          snapshot.state?.visible !== false
+        ) {
+          nextTargets.add(target);
+        }
+      }
+    }
+
+    for (const target of this.highlightedTargets.keys()) {
+      if (!nextTargets.has(target)) {
+        this.releaseHighlightedTarget(target);
+      }
+    }
+    for (const target of nextTargets) {
+      if (this.highlightedTargets.has(target)) {
+        continue;
+      }
+      const previousLayer = target.parentRenderLayer ?? null;
+      this.highlightLayer.attach(target);
+      this.highlightedTargets.set(target, previousLayer);
+    }
+  }
+
+  releaseHighlightedTarget(target) {
+    const previousLayer = this.highlightedTargets.get(target) ?? null;
+    if (target?.parentRenderLayer === this.highlightLayer) {
+      this.highlightLayer.detach(target);
+    }
+    if (
+      previousLayer &&
+      previousLayer.destroyed !== true &&
+      target?.parent
+    ) {
+      previousLayer.attach(target);
+    }
+    this.highlightedTargets.delete(target);
+  }
+
+  clearHighlightedTargets() {
+    for (const target of [...this.highlightedTargets.keys()]) {
+      this.releaseHighlightedTarget(target);
+    }
   }
 
   whenPointerReady() {
@@ -858,6 +896,7 @@ export class TutorialPixiOverlay extends BasePixiRetainedView {
     this.renderPositions();
     this.renderTargetCue();
     this.redrawSpotlight();
+    this.syncHighlightedTargets();
     this.syncTicker();
   }
 
@@ -1200,7 +1239,6 @@ class TutorialLessonSurface {
     this.targetContentHeight = estimateLessonContentHeight(
       layoutModel,
       intro,
-      this.contentWidth,
       {
         measuredCopyHeight: this.layoutCopyHeight,
         advanceVisible: this.advanceControl.visible,
@@ -1664,7 +1702,6 @@ function estimateLessonContentWidth(model) {
 function estimateLessonContentHeight(
   model,
   intro,
-  contentWidth,
   {
     measuredCopyHeight = null,
     advanceVisible = false,
@@ -1697,21 +1734,10 @@ function estimateLessonContentHeight(
       ),
     );
   }
-  const width = intro
-    ? TUTORIAL_PIXI_GEOMETRY.introContentWidth
-    : contentWidth;
-  const charsPerLine = Math.max(1, Math.floor(width / 6.4));
-  const lines = String(model.text ?? '')
-    .split('\n')
-    .reduce(
-      (total, line) =>
-        total + Math.max(1, Math.ceil(line.length / charsPerLine)),
-      0,
-    );
   let height = Math.max(
     TUTORIAL_PIXI_GEOMETRY.panelMinContentHeight,
-    (Number(measuredCopyHeight) || 0) + 14,
-    lines * 16 + 14,
+    (Number(measuredCopyHeight) || 0) +
+      (advanceVisible ? 16 : 14),
     model.text ? 34 : 0,
   );
   if (progressVisible || advanceVisible) {
@@ -1746,7 +1772,10 @@ function normalizeProgress(value) {
   ) {
     return null;
   }
-  const number = Number(value);
+  const number =
+    typeof value === 'object'
+      ? Number(value.value) / Number(value.max)
+      : Number(value);
   return Number.isFinite(number)
     ? Math.max(0, Math.min(1, number))
     : null;

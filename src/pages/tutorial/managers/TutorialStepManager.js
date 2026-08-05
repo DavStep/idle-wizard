@@ -177,7 +177,6 @@ export const TUTORIAL_STEPS = [
     highlightTargetIds: [MANA_VALUE_TARGET_ID, MANA_REGEN_TARGET_ID],
     text: 'This is your mana. It fills over time, up to the cap shown here.',
     advanceOnClick: true,
-    showPointer: false,
     isAvailable: ({ snapshot }) => getCurrentLevel(snapshot) === 0,
     isComplete: ({ snapshot }) => getCurrentLevel(snapshot) >= 1,
   },
@@ -405,20 +404,26 @@ export const TUTORIAL_STEPS = [
     id: 'select-sage-seed-sale',
     kind: 'objective',
     pageId: 'shop',
-    objectiveText: 'load sage seed into the stall',
+    getObjectiveText: ({ dom }) => {
+      if (!dom.isShopSellPopupOpen?.()) return 'open the first stall';
+      if (!dom.hasShopSellSelection?.()) return 'select sage seed';
+      return dom.isShopSellQuantitySelected?.(1)
+        ? 'mark 1 sage seed'
+        : 'select 1 sage seed';
+    },
     getTargetId: ({ dom }) => {
       if (!dom.isShopSellPopupOpen?.()) return 'shop:stand:1';
       if (!dom.hasShopSellSelection?.()) return `shop:sell:${SAGE_SEED_KEY}`;
-      return dom.isShopSellPercentageSelected?.(25)
+      return dom.isShopSellQuantitySelected?.(1)
         ? 'shop:sell:mark'
         : 'shop:sell:percentage';
     },
     getHintText: ({ dom }) => {
       if (!dom.isShopSellPopupOpen?.()) return 'open the first stall';
       if (!dom.hasShopSellSelection?.()) return 'select sage seed';
-      return dom.isShopSellPercentageSelected?.(25)
+      return dom.isShopSellQuantitySelected?.(1)
         ? 'mark one seed'
-        : 'set 25%';
+        : 'select amount';
     },
     getProgress: ({ snapshot }) => ({
       value:

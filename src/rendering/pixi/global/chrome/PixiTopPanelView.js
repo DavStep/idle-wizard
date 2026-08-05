@@ -22,7 +22,10 @@ import {
   RootRunHudLevelRail,
   RootRunHudSquareIconButton,
 } from './RootRunTopHudWidgets.js';
-import { QUEST_REQUEST_FILL_DURATION_MS } from '../../managers/QuestCompletionMotionCoordinator.js';
+import {
+  QUEST_REQUEST_FEEDBACK_DURATION_MS,
+  QUEST_REQUEST_FILL_DURATION_MS,
+} from '../../managers/QuestCompletionMotionCoordinator.js';
 
 const ROOT_RUN_UI_SCALE = 3;
 export const PIXI_TOP_PANEL_BACKGROUND_SLICE = Object.freeze({
@@ -573,6 +576,7 @@ export class PixiTopPanelView extends BasePixiRetainedView {
       startMs,
       phase: 'filling',
       fillDurationMs: QUEST_REQUEST_FILL_DURATION_MS,
+      feedbackDurationMs: QUEST_REQUEST_FEEDBACK_DURATION_MS,
       flightStartMs: null,
       durationMs,
       start,
@@ -752,7 +756,8 @@ export class PixiTopPanelView extends BasePixiRetainedView {
     }
     if (motion.phase === 'filling') {
       const fillProgress = clampProgress(
-        (now - motion.startMs) / motion.fillDurationMs,
+        (now - motion.startMs) /
+          (motion.fillDurationMs + motion.feedbackDurationMs),
       );
       if (fillProgress < 1) {
         return true;

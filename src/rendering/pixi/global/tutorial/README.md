@@ -1,10 +1,13 @@
 # Retained Pixi tutorial UI
 
 `createTutorialPixiOverlay()` constructs Elara, the objective/lesson surface,
-the spotlight, the pointer host, and every input registration once. Attach its
-root to the shared `tutorial` layer. The overlay resolves targets only through
-`SemanticTargetRegistry`; it never accepts selectors, DOM nodes, computed
-styles, or `data-*` geometry.
+the dim backdrop, the highlight render layer, the pointer host, and every input
+registration once. Attach its root to the shared `tutorial` layer. The overlay
+resolves targets only through `SemanticTargetRegistry`; it never accepts
+selectors, DOM nodes, computed styles, or `data-*` geometry. Highlighted targets
+stay in their original scene-graph parents and are rendered once through the
+dedicated `RenderLayer` above the uninterrupted black backdrop. Do not restore
+spotlight cutouts or clone/reparent target visuals.
 
 The presenter shape mirrors `TutorialFacade`:
 
@@ -62,6 +65,8 @@ Seed persisted Elara position once with
 `SpineRuntimeFacade`, attaches it inside the existing Pixi tree with
 `layer: null`, and manually updates it only while the retained overlay is
 active, visible, and motion-enabled. It never creates another canvas.
+Horizontal drag guidance preserves the signed target delta so the same
+press-hold-drag-release sequence supports either direction.
 Preflight/golden setup should `await overlay.whenPointerReady()`; load failures
 reject that promise so a missing skeleton or atlas cannot silently become a
 fallback visual.

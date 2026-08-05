@@ -5,6 +5,7 @@ import { describe, expect, it, vi } from 'vitest';
 import {
   PIXI_EXPERIENCE_SURFACE_IDS,
   PixiExperienceFacade,
+  PixiTutorialRuntimeState,
 } from './PixiExperienceFacade.js';
 
 describe('PixiExperienceFacade', () => {
@@ -164,6 +165,26 @@ describe('PixiExperienceFacade', () => {
 
     facade.onPageChanged('workshop');
     expect(harness.views.transient.clear).toHaveBeenCalledOnce();
+  });
+
+  it('reads the stall tutorial slider in exact item-count units', () => {
+    const slider = { value: 1 };
+    const state = new PixiTutorialRuntimeState({
+      runtime: { getOpenDialogIds: () => ['shop.stall'] },
+      semanticRegistry: {
+        getTutorialTarget: (tutorialId) =>
+          tutorialId === 'shop:sell:percentage'
+            ? {
+                displayObject: slider,
+                state: { visible: true },
+              }
+            : null,
+      },
+    }).createManagerState();
+
+    expect(state.hasShopSellSelection()).toBe(true);
+    expect(state.isShopSellQuantitySelected(1)).toBe(true);
+    expect(state.isShopSellQuantitySelected(2)).toBe(false);
   });
 });
 

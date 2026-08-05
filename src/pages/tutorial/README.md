@@ -4,11 +4,13 @@ Elara Starbrew teaches through one optional lesson surface after the first purch
 
 Tutorial logic is unified through `TutorialLogicManager`. `TutorialStepManager` chooses and normalizes the current step, step definitions own reveal tokens and effects, `TutorialReminderManager` owns timing, and `TutorialLogicManager` returns the single view state the facade renders. Keep new tutorial flow rules in that path instead of branching directly inside `TutorialFacade`.
 
+Persisted Elara drag placement is a preference, not permission to cover the current action. When the open lesson or Elara button intersects the live tutorial target or another protected control, retained placement resolves to the nearest clear slot before input is registered. Object-shaped step progress uses its `value / max` ratio so the rail and its label always describe the same state.
+
 The guide covers the sequential main requests for a free level 1 seed task with automatic level-up, level 2 summon/load/wait/turn-in play with normal trader-stand rules, level 3 Research and mint seed requests, level 4 Garden herb requests, and level 5 Brewing with mana tonic research. Early steps focus Elara's copy and pointer on mana, summoning, and the first request while the rest of the room remains fully available. It has no skip state.
 
 Lesson 5 prepares and refills mana tonic through the live retained Brewing controls: `Recipes`, Mana Tonic in the recipe book, then the primary Brew action. When the refill reaches `3/3 Sage`, the objective and pointer switch from filling/Recipes to `Brew Mana Tonic Again` and the live Brew action. The live HUD controls own those tutorial IDs; hidden legacy Brewing controls are not tutorial targets.
 
-The first Market sequence opens stand 1, points at `shop:sell:sageSeed`, then demonstrates the percentage gesture from the live knob to `25%`: appear on the knob, press and hold, drag right, release, hide, and repeat after a two-second pause. Once one of the five lesson seeds is selected, it points at `shop:sell:mark`. Once matching stock is loaded, the objective becomes a passive wait for the five-second sale.
+The first Market sequence opens stand 1 and explicitly asks the player to select the `shop:sell:sageSeed` row before the allocation control becomes the lesson target. It then demonstrates the exact-count gesture from the live knob to `x1`: appear on the knob, press and hold, drag to one seed, release, hide, and repeat after a two-second pause. Once one of the five lesson seeds is selected, it points at `shop:sell:mark`. Once matching stock is loaded, the objective becomes a passive wait for the five-second sale.
 
 The target cue keeps the same diagonal placement math and uses the Spine pointer on a pointer-local Pixi canvas. Rotate the Spine shell by placement so the authored upward tap points at the target anchor.
 

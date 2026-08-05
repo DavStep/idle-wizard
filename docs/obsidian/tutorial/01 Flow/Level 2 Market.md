@@ -26,7 +26,7 @@ The flow uses live available quantities and loaded stall state, not tutorial-own
 
 ## Design Notes
 
-- Elara points to the first stand, then `shop:sell:sageSeed`, then `shop:sell:percentage` for `25%`, then `shop:sell:mark`, and waits while the loaded stall sells.
+- Elara points to the first stand, explicitly asks for `shop:sell:sageSeed`, then targets `shop:sell:percentage` until the exact allocation is `x1`, then points to `shop:sell:mark` and waits while the loaded stall sells.
 - The sale is a normal level-2 request. Completing the final request advances the level automatically.
 
 ## Related

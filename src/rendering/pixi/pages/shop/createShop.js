@@ -482,9 +482,7 @@ function createStallDialog({
       step: 1,
       value: targetQuantity,
       tutorialTargetValue:
-        totalQuantity > 0
-          ? Math.max(1, Math.ceil(totalQuantity * 0.25))
-          : 0,
+        totalQuantity > 0 ? 1 : 0,
       onChange: (quantity) =>
         callFirst(
           uiActions,

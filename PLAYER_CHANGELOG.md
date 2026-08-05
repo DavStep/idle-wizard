@@ -5,6 +5,11 @@ upload script posts the section whose heading matches `package.json` `version`.
 Write these developer-to-player notes only in Idle Wizard terms. Do not mention
 other game names, source projects, ports, or implementation provenance.
 
+## 0.3.42
+
+- Improved Elara's early lessons with clearer highlighted controls, better panel sizing, and more precise Market guidance.
+- Polished request completion and level-up feedback, and kept account-start choices clear while reconnecting.
+
 ## 0.3.41
 
 - Fixed Research category tab frames so their rounded corners render cleanly at room-control size.

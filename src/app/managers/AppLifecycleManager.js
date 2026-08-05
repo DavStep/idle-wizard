@@ -716,6 +716,10 @@ export class AppLifecycleManager {
 
     if (this.backendConnecting || this.backendConnectionFlowActive) {
       this.interactionLockManager.lock('connecting');
+      if (this.freshStartChoiceManager.isChoosing?.()) {
+        this.onlineGateManager.hide();
+        return;
+      }
       this.onlineGateManager.showConnecting();
       return;
     }

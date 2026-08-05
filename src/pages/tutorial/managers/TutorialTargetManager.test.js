@@ -223,17 +223,17 @@ describe('TutorialTargetManager', () => {
     expect(manager.getDomState().hasShopSellSelection()).toBe(true);
   });
 
-  it('reads the selected stall allocation percentage', () => {
+  it('reads the selected stall allocation quantity', () => {
     const stage = document.createElement('section');
     const range = document.createElement('input');
     range.className = 'shop-page__sell-allocation-range';
     range.type = 'range';
-    range.value = '25';
+    range.value = '1';
     stage.append(range);
     const manager = new TutorialTargetManager({ stage });
 
-    expect(manager.getDomState().isShopSellPercentageSelected(25)).toBe(true);
-    expect(manager.getDomState().isShopSellPercentageSelected(50)).toBe(false);
+    expect(manager.getDomState().isShopSellQuantitySelected(1)).toBe(true);
+    expect(manager.getDomState().isShopSellQuantitySelected(2)).toBe(false);
   });
 
   it('allows popup guidance when the active target is inside the open popup', () => {

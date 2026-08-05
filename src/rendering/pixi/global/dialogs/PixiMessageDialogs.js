@@ -478,6 +478,16 @@ export class PixiAnnouncementSurface extends RetainedGlobalDialog {
     return super.getModalContentRoots();
   }
 
+  isModalContentPoint(point) {
+    if (
+      this.announcementModel?.animation?.kind ===
+        'level-rewards'
+    ) {
+      return false;
+    }
+    return super.isModalContentPoint(point);
+  }
+
   applyAnnouncementPresentationMode() {
     if (!this.announcementModel) {
       return;

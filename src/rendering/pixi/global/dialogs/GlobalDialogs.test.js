@@ -1623,6 +1623,53 @@ describe('retained global Pixi dialogs', () => {
     harness.dispose();
   });
 
+  it('dismisses a settled level-up announcement when the continue prompt is tapped', () => {
+    const advance = vi.fn(() => true);
+    const harness = createHarness({
+      announcementMotionRuntime: {
+        requestFrame: vi.fn(),
+        cancelFrame: vi.fn(),
+        now: () => 0,
+        prefersReducedMotion: () => true,
+      },
+    });
+    const announcement = harness.registry.open(
+      GLOBAL_DIALOG_IDS.ANNOUNCEMENT,
+      {
+        kind: 'level',
+        title: 'Level Up!',
+        dismissible: true,
+        continueLabel: 'Tap to continue',
+        animation: { kind: 'level-rewards' },
+        actions: { advance },
+        rows: [
+          {
+            id: 'mana',
+            label: 'Mana Capacity',
+            value: '+10',
+          },
+        ],
+      },
+    );
+    const modal = harness.inputRouter.getTopModal();
+    const promptPoint = announcement.continuePrompt.toGlobal({
+      x: 0,
+      y: 0,
+    });
+
+    expect(announcement.levelAdvanceReady).toBe(true);
+    expect(announcement.panel.containsModalPoint(promptPoint)).toBe(true);
+    expect(modal?.onOutsidePress?.({ point: promptPoint })).toBe(true);
+    expect(advance).toHaveBeenCalledWith(
+      expect.objectContaining({ source: 'outside' }),
+    );
+    expect(
+      harness.registry.isOpen(GLOBAL_DIALOG_IDS.ANNOUNCEMENT),
+    ).toBe(false);
+
+    harness.dispose();
+  });
+
   it('wraps long level reward values inside the main two-column row contract', () => {
     const harness = createHarness();
     const announcement = harness.registry.open(

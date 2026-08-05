@@ -123,6 +123,32 @@ describe('TutorialLogicManager', () => {
     });
   });
 
+  it('points to the mana readout while its highlighted lesson is open', () => {
+    const target = {};
+    const step = createStep({
+      id: 'intro-mana-sphere',
+      kind: 'prompt',
+      targetId: 'top:mana',
+      text: 'This is your mana.',
+      advanceOnClick: true,
+      showPointer: undefined,
+    });
+    const { manager } = createManager({ step });
+
+    const viewState = manager.getViewState({
+      snapshot: {},
+      dom: {},
+      targetResolver: () => target,
+      lessonPanelOpen: true,
+    });
+
+    expect(viewState.cue).toMatchObject({
+      kind: 'target-cue',
+      target,
+      showPointer: true,
+    });
+  });
+
   it('keeps narrative lesson copy in its authored sentence case', () => {
     const step = createStep({
       id: 'intro-welcome',

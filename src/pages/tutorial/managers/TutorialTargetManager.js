@@ -83,9 +83,9 @@ export class TutorialTargetManager {
             '.shop-page__sell-current[data-has-selection="true"]',
           ),
         ),
-      isShopSellPercentageSelected: (percentage) => {
+      isShopSellQuantitySelected: (quantity) => {
         const range = this.stage?.querySelector('.shop-page__sell-allocation-range');
-        return Number(range?.value) === Number(percentage);
+        return Number(range?.value) === Number(quantity);
       },
       isShopSellTabSelected: (kind) =>
         Boolean(

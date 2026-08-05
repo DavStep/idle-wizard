@@ -110,6 +110,10 @@ export class AppFreshStartChoiceManager {
     return root;
   }
 
+  isChoosing() {
+    return Boolean(this.resolveChoice);
+  }
+
   choose({ authSnapshot, statusText, busy = false, keepOpenOnConnect = false } = {}) {
     if (!this.root || !this.refs) {
       return Promise.resolve(FRESH_START_CHOICE_START_FRESH);

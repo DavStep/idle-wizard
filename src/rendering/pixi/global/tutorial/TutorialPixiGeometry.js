@@ -248,28 +248,38 @@ export function resolveTutorialObjectivePlacement({
       buttonTop: TUTORIAL_PIXI_GEOMETRY.objectiveTop,
     });
   }
-  if (manualPlacement) {
-    return clampManualPlacement({
+  const clampedManualPlacement = manualPlacement
+    ? clampManualPlacement({
       manualPlacement,
       area,
       outerWidth,
       outerHeight,
       panelOpen,
-    });
+    })
+    : null;
+  if (
+    clampedManualPlacement &&
+    getPlacementOverlap(
+      clampedManualPlacement,
+      outerWidth,
+      outerHeight,
+      avoidRects,
+    ) === 0
+  ) {
+    return clampedManualPlacement;
   }
+  const normalizedAvoidRects = avoidRects
+    .map(normalizeSourceRect)
+    .filter(Boolean);
   const tops = [
+    clampedManualPlacement?.objectiveTop,
     TUTORIAL_PIXI_GEOMETRY.objectiveTop,
+    ...normalizedAvoidRects.map((rect) => rect.bottom + 16),
+    ...normalizedAvoidRects.map(
+      (rect) => rect.top - outerHeight - 16,
+    ),
     ...TUTORIAL_PIXI_GEOMETRY.objectiveFallbackTops,
-    ...avoidRects.flatMap((rect) => {
-      const normalized = normalizeSourceRect(rect);
-      return normalized
-        ? [
-            normalized.top - outerHeight - 16,
-            normalized.bottom + 16,
-          ]
-        : [];
-    }),
-  ];
+  ].filter(Number.isFinite);
   const candidates = tops.map((top, index) => {
     const objectiveLeft = clamp(
       TUTORIAL_PIXI_GEOMETRY.objectiveLeft,
@@ -330,6 +340,36 @@ export function resolveTutorialObjectivePlacement({
     buttonLeft: best.buttonLeft,
     buttonTop: best.buttonTop,
   });
+}
+
+function getPlacementOverlap(
+  placement,
+  outerWidth,
+  outerHeight,
+  avoidRects,
+) {
+  const objectiveRect = normalizeSourceRect({
+    x: placement.objectiveLeft,
+    y: placement.objectiveTop,
+    width: outerWidth,
+    height: outerHeight,
+  });
+  const buttonRect = normalizeSourceRect({
+    x: placement.buttonLeft,
+    y: placement.buttonTop,
+    width: TUTORIAL_PIXI_GEOMETRY.guideWidth,
+    height: TUTORIAL_PIXI_GEOMETRY.guideHeight,
+  });
+  return avoidRects
+    .map(normalizeSourceRect)
+    .filter(Boolean)
+    .reduce(
+      (total, rect) =>
+        total +
+        getOverlapArea(objectiveRect, rect) +
+        getOverlapArea(buttonRect, rect),
+      0,
+    );
 }
 
 function clampManualPlacement({

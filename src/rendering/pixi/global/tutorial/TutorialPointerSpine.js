@@ -329,8 +329,8 @@ function normalizeGesture(gesture) {
   ) {
     return null;
   }
-  const travelX = Math.max(0, Number(gesture.travelX) || 0);
-  return travelX > 0
+  const travelX = Number(gesture.travelX) || 0;
+  return Math.abs(travelX) > 0
     ? Object.freeze({
         kind: TUTORIAL_POINTER_GESTURE_KINDS.HORIZONTAL_DRAG,
         travelX,

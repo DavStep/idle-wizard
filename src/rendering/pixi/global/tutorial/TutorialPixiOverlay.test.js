@@ -281,6 +281,83 @@ describe('TutorialPixiOverlay', () => {
     expect(actions.lessonPanelClose).toHaveBeenCalledTimes(1);
   });
 
+  it('renders live highlighted targets once above an uninterrupted backdrop', () => {
+    const registry = new SemanticTargetRegistry();
+    const scene = new Container();
+    const manaValue = new Container();
+    const manaRegen = new Container();
+    scene.addChild(manaValue, manaRegen);
+    for (const [semanticId, tutorialId, displayObject, y] of [
+      ['top.mana.value', 'top:mana:value', manaValue, 60],
+      ['top.mana.regen', 'top:mana:regen', manaRegen, 78],
+    ]) {
+      displayObject.getBounds = () => ({
+        x: 270,
+        y,
+        width: 48,
+        height: 16,
+      });
+      registry.register({
+        semanticId,
+        tutorialId,
+        displayObject,
+      });
+    }
+    const overlay = new TutorialPixiOverlay({
+      assets: createAssets(),
+      semanticRegistry: registry,
+      reducedMotion: true,
+    });
+
+    overlay.activate();
+    overlay.bind({
+      kind: 'lesson',
+      step: {
+        id: 'intro-mana-sphere',
+        targetId: 'top:mana:value',
+        highlightTargetIds: ['top:mana:value', 'top:mana:regen'],
+      },
+      lesson: {
+        id: 'intro-mana-sphere',
+        text: 'Mana refills over time.',
+        autoOpen: true,
+        advanceOnClick: true,
+      },
+      cue: {
+        kind: 'target-cue',
+        targetId: 'top:mana:value',
+        showPointer: true,
+      },
+    });
+
+    expect(overlay.root.getChildIndex(overlay.backdrop)).toBeLessThan(
+      overlay.root.getChildIndex(overlay.highlightLayer),
+    );
+    expect(overlay.root.getChildIndex(overlay.highlightLayer)).toBeLessThan(
+      overlay.root.getChildIndex(overlay.pointer.root),
+    );
+    expect(overlay.highlightLayer.renderLayerChildren).toEqual([
+      manaValue,
+      manaRegen,
+    ]);
+    expect(manaValue.parent).toBe(scene);
+    expect(manaRegen.parent).toBe(scene);
+    expect(manaValue.parentRenderLayer).toBe(overlay.highlightLayer);
+    expect(manaRegen.parentRenderLayer).toBe(overlay.highlightLayer);
+    expect(overlay.backdrop.visible).toBe(true);
+    expect(overlay.pointer.root.visible).toBe(true);
+
+    overlay.bind({ kind: 'hidden' });
+
+    expect(overlay.highlightLayer.renderLayerChildren).toEqual([]);
+    expect(manaValue.parent).toBe(scene);
+    expect(manaRegen.parent).toBe(scene);
+    expect(manaValue.parentRenderLayer).toBeNull();
+    expect(manaRegen.parentRenderLayer).toBeNull();
+
+    overlay.destroy();
+  });
+
   it('starts every tutorial advance label with a capital letter', () => {
     const overlay = new TutorialPixiOverlay({
       assets: createAssets(),
@@ -501,6 +578,89 @@ describe('TutorialPixiOverlay', () => {
     );
   });
 
+  it('renders object-shaped lesson progress from the tutorial step manager', () => {
+    const overlay = new TutorialPixiOverlay({
+      assets: createAssets(),
+      reducedMotion: true,
+    });
+    overlay.activate();
+    overlay.bind({
+      kind: 'lesson',
+      step: { id: 'summon-five-seeds', highlightTargetIds: [] },
+      lesson: {
+        id: 'summon-five-seeds',
+        title: 'Lesson 1: Introduction',
+        text: 'Summon 5 Sage Seeds',
+        progress: { value: 4, max: 5 },
+        progressLabel: '4/5 Seeds',
+        autoOpen: true,
+      },
+      cue: { kind: 'none' },
+    });
+
+    expect(overlay.surface.progress.visible).toBe(true);
+    expect(overlay.surface.progress.end).toBe(0.8);
+    expect(overlay.surface.progressLabel.text).toBe('4/5 Seeds');
+
+    overlay.destroy();
+  });
+
+  it('moves a persisted open lesson placement clear of its summon target', () => {
+    const summonTarget = {
+      x: 134,
+      y: 500,
+      width: 92,
+      height: 52,
+    };
+    const overlay = new TutorialPixiOverlay({
+      assets: createAssets(),
+      reducedMotion: true,
+    });
+    overlay.activate();
+    overlay.setGuidePlacement({ buttonLeft: 4, buttonTop: 500 });
+    overlay.bind({
+      kind: 'lesson',
+      step: {
+        id: 'summon-five-seeds',
+        targetId: 'workshop:summonSeed',
+        highlightTargetIds: [],
+      },
+      lesson: {
+        id: 'summon-five-seeds',
+        title: 'Lesson 1: Introduction',
+        text: 'Summon 5 Sage Seeds',
+        progress: { value: 4, max: 5 },
+        progressLabel: '4/5 Seeds',
+        autoOpen: true,
+      },
+      cue: {
+        kind: 'target-cue',
+        targetId: 'workshop:summonSeed',
+        showPointer: true,
+      },
+      targetBounds: {
+        'workshop:summonSeed': summonTarget,
+      },
+    });
+
+    const lessonRect = {
+      x: overlay.surface.root.x,
+      y: overlay.surface.root.y,
+      width: overlay.surface.outerWidth,
+      height: overlay.surface.outerHeight,
+    };
+    const guideRect = {
+      x: overlay.guideButton.x,
+      y: overlay.guideButton.y,
+      width: TUTORIAL_PIXI_GEOMETRY.guideWidth,
+      height: TUTORIAL_PIXI_GEOMETRY.guideHeight,
+    };
+    expect(rectanglesOverlap(lessonRect, summonTarget)).toBe(false);
+    expect(rectanglesOverlap(guideRect, summonTarget)).toBe(false);
+
+    overlay.destroy();
+  });
+
   it('reserves a separate action row below ordinary lesson copy', () => {
     const overlay = new TutorialPixiOverlay({
       assets: createAssets(),
@@ -532,6 +692,36 @@ describe('TutorialPixiOverlay', () => {
     expect(actionBottom).toBeLessThanOrEqual(
       overlay.surface.outerHeight,
     );
+  });
+
+  it('keeps the market continue row tight to the ordinary lesson panel bottom', () => {
+    const overlay = new TutorialPixiOverlay({
+      assets: createAssets(),
+      reducedMotion: true,
+    });
+    overlay.activate();
+    overlay.bind({
+      kind: 'lesson',
+      step: { id: 'intro-market', highlightTargetIds: [] },
+      lesson: {
+        id: 'intro-market',
+        title: 'Market Opened',
+        text:
+          'The front room is cleared out.\n\nFirst, summon sage seeds again. Then sell one in market.',
+        autoOpen: true,
+        advanceOnClick: true,
+        advanceLabel: 'continue',
+      },
+      cue: { kind: 'none' },
+    });
+
+    const actionBottom =
+      overlay.surface.advanceControl.y +
+      overlay.surface.advanceControl.buttonHeight;
+
+    expect(overlay.surface.outerHeight - actionBottom).toBe(6);
+
+    overlay.destroy();
   });
 
   it('animates lesson height changes in both directions and snaps for reduced motion', () => {
@@ -821,6 +1011,19 @@ describe('TutorialPointerSpine', () => {
       'click1',
       true,
     );
+
+    pointer.setGesture({
+      kind: 'horizontal-drag',
+      travelX: -40,
+    });
+    pointer.setVisible(true);
+    pointer.update(
+      timing.appearMs +
+        timing.pressMs +
+        timing.holdMs +
+        timing.dragMs,
+    );
+    expect(pointer.root.x).toBe(baseX - 40);
   });
 });
 
@@ -881,4 +1084,13 @@ function createTicker() {
       }
     },
   };
+}
+
+function rectanglesOverlap(left, right) {
+  return (
+    left.x < right.x + right.width &&
+    left.x + left.width > right.x &&
+    left.y < right.y + right.height &&
+    left.y + left.height > right.y
+  );
 }

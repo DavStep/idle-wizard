@@ -151,6 +151,7 @@ describe('createShop', () => {
         max: 10,
         step: 1,
         value: 2,
+        tutorialTargetValue: 1,
       },
       summaryRows: [
         {
@@ -319,6 +320,12 @@ describe('createShop', () => {
     });
     expect(createDialog().tabs.map((tab) => tab.id)).toEqual(['seed']);
     expect(createDialog().items.map((item) => item.itemKey)).toEqual(['sageSeed']);
+    expect(createDialog().summaryRows[0]).toMatchObject({
+      value: 'Empty',
+      quantityLabel: '',
+    });
+    expect(createDialog().range.enabled).toBe(false);
+    expect(createDialog().items[0].selected).toBe(false);
 
     gameplaySnapshot.playerLevel.currentLevel = 2;
     expect(createDialog().tabs.map((tab) => tab.id)).toEqual(['seed', 'herb']);
