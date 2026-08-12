@@ -36,7 +36,7 @@ export function normalizeLegacySeedSummonCosts(
   ]));
   let changed = false;
   const normalizedRows = existingRows.map((row) => {
-    if (!isConfigRow(row) || ![10, 15].includes(Number(row.summonManaCost))) {
+    if (!isConfigRow(row) || ![15, 50].includes(Number(row.summonManaCost))) {
       return row;
     }
 

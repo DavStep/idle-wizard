@@ -123,11 +123,11 @@ describe('ItemDefinitionManager', () => {
     }
   });
 
-  it('uses 50 mana as the default seed summon cost', () => {
+  it('uses 10 mana as the default seed summon cost', () => {
     const manager = new ItemDefinitionManager();
 
-    expect(manager.getVisibleSummonCost()).toBe(50);
-    expect(manager.getSeedDefinitions().every((seed) => seed.summonManaCost === 50)).toBe(
+    expect(manager.getVisibleSummonCost()).toBe(10);
+    expect(manager.getSeedDefinitions().every((seed) => seed.summonManaCost === 10)).toBe(
       true,
     );
   });

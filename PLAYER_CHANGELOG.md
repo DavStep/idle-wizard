@@ -5,6 +5,10 @@ upload script posts the section whose heading matches `package.json` `version`.
 Write these developer-to-player notes only in Idle Wizard terms. Do not mention
 other game names, source projects, ports, or implementation provenance.
 
+## 0.3.43
+
+- Reduced seed summoning to 10 mana per seed, including every multi-summon research tier.
+
 ## 0.3.42
 
 - Improved Elara's early lessons with clearer highlighted controls, better panel sizing, and more precise Market guidance.

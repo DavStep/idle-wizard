@@ -56,8 +56,8 @@ experience_type: gameplay-economy
 - Seed/herb unlock research and recipe unlock research are catalog-ordered; each row requires the previous row before it can be bought.
 - `unlockSeed:sageSeed` costs `0` and displays as `free`; seed summoning stays locked until that research is completed.
 - Summon multiplier research is ordered `x2 -> x3 -> x4 -> x5`; each later multiplier requires the previous one.
-- `summonSeedsX2` through `summonSeedsX5` use the highest completed multiplier; summon cost and rolled seed count both scale from 50 mana.
-- Initial local gameplay defaults: mana cap `50`, mana generation `1/second`, seed summon cost `50`, and herb growth ranges from `12s` to `520s` across the 24-herb catalog.
+- `summonSeedsX2` through `summonSeedsX5` use the highest completed multiplier; summon cost and rolled seed count both scale from 10 mana.
+- Initial local gameplay defaults: mana cap `50`, mana generation `1/second`, seed summon cost `10`, and herb growth ranges from `12s` to `520s` across the 24-herb catalog.
 - Crystal is the hard currency; it appears in the top panel only where usable, player levels grant `playerLevel.crystal.perLevel` starting at level 1, and plot/cauldron multiplier research spends it.
 - Ruby is the prestige currency; it appears in the top panel only where usable, and automation research spends it.
 - Prestige ruby is derived from completed prestige milestones minus committed ruby automation research costs; save prestige milestone data and do not treat raw ruby as permanent across prestige resets.

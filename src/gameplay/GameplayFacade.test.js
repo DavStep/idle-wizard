@@ -376,7 +376,7 @@ describe("GameplayFacade", () => {
     expect(
       gameplayFacade.getSnapshot().research.completedResearchIds,
     ).toContain("unlockSeed:sageSeed");
-    gameplayFacade.manaFacade.setCurrent(49);
+    gameplayFacade.manaFacade.setCurrent(9);
     gameplayFacade.publishSnapshot();
 
     const unsubscribe = gameplayFacade.subscribe((snapshot) =>
@@ -388,7 +388,7 @@ describe("GameplayFacade", () => {
 
     expect(snapshots).toHaveLength(1);
     expect(snapshots[0]).toMatchObject({
-      mana: { current: 50 },
+      mana: { current: 10 },
       seedSummoning: { canSummon: true },
     });
 
@@ -1193,7 +1193,6 @@ describe("GameplayFacade", () => {
       ok: true,
       preference: "medium",
     });
-    gameplayFacade.manaFacade.fill();
     expect(gameplayFacade.getSnapshot().seedSummoning.canSummon).toBe(true);
     expect(gameplayFacade.summonSeed()).toMatchObject({
       ok: true,
@@ -1992,7 +1991,7 @@ describe("GameplayFacade", () => {
     );
 
     unlockSageSeed(gameplayFacade);
-    ecsFacade.update({ deltaSeconds: 20 });
+    ecsFacade.update({ deltaSeconds: 10 });
     const summonResult = gameplayFacade.summonSeed();
     gameplayFacade.loadSelectedShopShelfSlotItem(summonResult.seed.id, 1);
     ecsFacade.update({ deltaSeconds: 5 });
@@ -2460,17 +2459,17 @@ describe("GameplayFacade", () => {
   it("spends mana to summon a seed into inventory", () => {
     const { ecsFacade, gameplayFacade } = createGameplay();
 
-    ecsFacade.update({ deltaSeconds: 20 });
+    ecsFacade.update({ deltaSeconds: 10 });
     expect(gameplayFacade.getSnapshot().seedSummoning.canSummon).toBe(true);
     const result = gameplayFacade.summonSeed();
     const snapshot = gameplayFacade.getSnapshot();
 
     expect(result.ok).toBe(true);
-    expect(result.cost).toBe(50);
+    expect(result.cost).toBe(10);
     expect(result.quantity).toBe(1);
     expect(result.seed.dropWeight).toBe(1);
     expect(result.seed.key).toBe("sageSeed");
-    expect(snapshot.mana.current).toBe(0);
+    expect(snapshot.mana.current).toBe(30);
     expect(result.seed.label).toMatch(/seed$/);
     expect(snapshot.inventory).toEqual([
       {
@@ -2501,12 +2500,12 @@ describe("GameplayFacade", () => {
       cost: 1_000,
     });
     gameplayFacade.manaFacade.applyPersistenceSnapshot({
-      current: 100,
-      cap: 100,
+      current: 50,
+      cap: 50,
     });
 
     expect(gameplayFacade.getSnapshot().seedSummoning).toEqual({
-      cost: 100,
+      cost: 20,
       quantity: 2,
       canSummon: true,
       unavailableReason: null,
@@ -2539,7 +2538,7 @@ describe("GameplayFacade", () => {
     const snapshot = gameplayFacade.getSnapshot();
 
     expect(result.ok).toBe(true);
-    expect(result.cost).toBe(100);
+    expect(result.cost).toBe(20);
     expect(result.quantity).toBe(2);
     expect(result.seedCounts).toEqual([
       {
@@ -2547,7 +2546,7 @@ describe("GameplayFacade", () => {
         quantity: 2,
       },
     ]);
-    expect(snapshot.mana.current).toBe(0);
+    expect(snapshot.mana.current).toBe(30);
     expect(snapshot.inventory).toEqual([
       {
         itemTypeId: result.seed.id,
@@ -2574,7 +2573,7 @@ describe("GameplayFacade", () => {
     expect(result).toEqual({
       ok: false,
       reason: "no_summonable_seeds",
-      cost: 50,
+      cost: 10,
     });
     expect(snapshot.mana.current).toBe(40);
     expect(snapshot.seedSummoning.canSummon).toBe(false);
@@ -2590,7 +2589,7 @@ describe("GameplayFacade", () => {
     expect(result).toEqual({
       ok: false,
       reason: "not_enough_mana",
-      cost: 50,
+      cost: 10,
     });
     expect(gameplayFacade.getSnapshot().inventory).toEqual([]);
     expect(gameplayFacade.getSnapshot().seedInventory).toHaveLength(24);
@@ -2843,8 +2842,8 @@ describe("GameplayFacade", () => {
         id: "summonSeedsX2",
         label: "x2 summon",
         value: "1k coin",
-        effect: "100 mana",
-        description: "summons 2 researched seeds for 100 mana.",
+        effect: "20 mana",
+        description: "summons 2 researched seeds for 20 mana.",
         costCoin: 1_000,
         completed: false,
         canResearch: false,
@@ -2853,9 +2852,9 @@ describe("GameplayFacade", () => {
         id: "summonSeedsX3",
         label: "x3 summon",
         value: "locked",
-        effect: "150 mana",
+        effect: "30 mana",
         requiredResearchIds: ["summonSeedsX2"],
-        description: "summons 3 researched seeds for 150 mana.",
+        description: "summons 3 researched seeds for 30 mana.",
         costCoin: 10_000,
         completed: false,
         locked: true,
@@ -2865,9 +2864,9 @@ describe("GameplayFacade", () => {
         id: "summonSeedsX4",
         label: "x4 summon",
         value: "locked",
-        effect: "200 mana",
+        effect: "40 mana",
         requiredResearchIds: ["summonSeedsX3"],
-        description: "summons 4 researched seeds for 200 mana.",
+        description: "summons 4 researched seeds for 40 mana.",
         costCoin: 100_000,
         completed: false,
         locked: true,
@@ -2877,9 +2876,9 @@ describe("GameplayFacade", () => {
         id: "summonSeedsX5",
         label: "x5 summon",
         value: "locked",
-        effect: "250 mana",
+        effect: "50 mana",
         requiredResearchIds: ["summonSeedsX4"],
-        description: "summons 5 researched seeds for 250 mana.",
+        description: "summons 5 researched seeds for 50 mana.",
         costCoin: 1_000_000,
         completed: false,
         locked: true,
@@ -3175,9 +3174,9 @@ describe("GameplayFacade", () => {
     expect(gameplayFacade.getSnapshot().ruby.current).toBe(0);
     expect(gameplayFacade.getSnapshot().coin.current).toBe(100);
 
-    ecsFacade.update({ deltaSeconds: 20 });
+    ecsFacade.update({ deltaSeconds: 10 });
 
-    expect(gameplayFacade.getSnapshot().mana.current).toBe(0);
+    expect(gameplayFacade.getSnapshot().mana.current).toBe(30);
     expect(gameplayFacade.getSnapshot().seedInventory).toContainEqual({
       itemTypeId: 1,
       key: "sageSeed",
@@ -3208,11 +3207,6 @@ describe("GameplayFacade", () => {
     expect(gameplayFacade.getSnapshot().mana.current).toBe(50);
     expect(gameplayFacade.itemsFacade.getItemQuantity(1)).toBe(0);
 
-    gameplayFacade.manaFacade.applyPersistenceSnapshot({
-      current: 50,
-      cap: 100,
-    });
-
     expect(gameplayFacade.setSeedSummoningAutoEnabled(true)).toEqual({
       ok: true,
       enabled: true,
@@ -3222,14 +3216,14 @@ describe("GameplayFacade", () => {
       manaReserve: 15,
     });
 
-    ecsFacade.update({ deltaSeconds: 15 });
+    ecsFacade.update({ deltaSeconds: 4 });
 
-    expect(gameplayFacade.getSnapshot().mana.current).toBe(15);
+    expect(gameplayFacade.getSnapshot().mana.current).toBe(40);
     expect(gameplayFacade.itemsFacade.getItemQuantity(1)).toBe(1);
 
-    ecsFacade.update({ deltaSeconds: 50 });
+    ecsFacade.update({ deltaSeconds: 1 });
 
-    expect(gameplayFacade.getSnapshot().mana.current).toBe(15);
+    expect(gameplayFacade.getSnapshot().mana.current).toBe(31);
     expect(gameplayFacade.itemsFacade.getItemQuantity(1)).toBe(2);
   });
 

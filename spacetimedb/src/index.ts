@@ -5278,7 +5278,7 @@ function getDefaultItemsConfig() {
       label: `${herb.label} seed`,
       producesHerbTypeId: 1001 + index,
       dropWeight: 1,
-      summonManaCost: 50,
+      summonManaCost: 10,
       baseSellPrice: seedSellPriceGoldByHerbKey[herb.key] ?? 1,
     })),
     herbs: herbCatalog.map((herb, index) => ({

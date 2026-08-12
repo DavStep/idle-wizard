@@ -47,14 +47,14 @@ describe('appendMissingItemConfigRows', () => {
 });
 
 describe('normalizeLegacySeedSummonCosts', () => {
-  it.each([10, 15])('migrates the legacy %i-mana cost to 50', (legacyCost) => {
+  it.each([15, 50])('migrates the legacy %i-mana cost to 10', (legacyCost) => {
     const storedRows = [
       { id: 1, key: 'sageSeed', summonManaCost: legacyCost },
       { id: 2, key: 'mintSeed', summonManaCost: legacyCost },
     ];
     const defaultRows = [
-      { id: 1, key: 'sageSeed', summonManaCost: 50 },
-      { id: 2, key: 'mintSeed', summonManaCost: 50 },
+      { id: 1, key: 'sageSeed', summonManaCost: 10 },
+      { id: 2, key: 'mintSeed', summonManaCost: 10 },
     ];
 
     expect(
@@ -64,14 +64,14 @@ describe('normalizeLegacySeedSummonCosts', () => {
         (row) => String(row.key ?? ''),
       ),
     ).toEqual([
-      { id: 1, key: 'sageSeed', summonManaCost: 50 },
-      { id: 2, key: 'mintSeed', summonManaCost: 50 },
+      { id: 1, key: 'sageSeed', summonManaCost: 10 },
+      { id: 2, key: 'mintSeed', summonManaCost: 10 },
     ]);
   });
 
   it('preserves an intentional non-legacy runtime override', () => {
     const storedRows = [{ id: 1, key: 'sageSeed', summonManaCost: 75 }];
-    const defaultRows = [{ id: 1, key: 'sageSeed', summonManaCost: 50 }];
+    const defaultRows = [{ id: 1, key: 'sageSeed', summonManaCost: 10 }];
 
     expect(
       normalizeLegacySeedSummonCosts(
