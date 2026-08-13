@@ -18,6 +18,7 @@ import {
   getResearchWidgetBounceScale,
 } from './ResearchPixiPage.js';
 import {
+  RETAINED_PAGE_GEOMETRY,
   RETAINED_SCROLLBAR_GEOMETRY,
   RETAINED_SCROLLBAR_VISUALS,
 } from '../workshop/RetainedPageKit.js';
@@ -390,6 +391,27 @@ describe('ResearchPixiPage', () => {
         expectedWrapWidth,
       );
     }
+
+    harness.page.destroy();
+    harness.dispose();
+  });
+
+  it('extends the research list and lowers its tabs while world chat is hidden', () => {
+    const harness = createHarness();
+    const model = createResearchViewModel();
+    model.chrome = { worldChatVisible: false };
+
+    harness.page.bind(model);
+
+    const releasedClearance =
+      RETAINED_PAGE_GEOMETRY.chatClearance -
+      PIXI_UI_GEOMETRY.roomChatBottom;
+    expect(harness.page.scroll.height).toBeCloseTo(
+      409.33333333333337 + releasedClearance,
+    );
+    expect(harness.page.tabsLayer.position.y).toBeCloseTo(
+      519.3333333333334 + releasedClearance,
+    );
 
     harness.page.destroy();
     harness.dispose();

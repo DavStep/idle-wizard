@@ -268,6 +268,7 @@ experience_type: style
 - World chat system rows keep their original parchment surface. Use a darker brown for the `System` title and a subtly lighter brown than body copy for the announced-player name; make only the announced player name interactive.
 - Successful world/alliance chat sends should render a local sent row until the matching subscription row arrives; reducer success can precede the table/view echo.
 - Compact world chat preview height is exactly two source rows, and room content clearance must use the same source-line variables; otherwise lower room content can overlap it.
+- Reserve the full world-chat clearance only while the preview is visible; before its level unlock, room content should release the preview height, title overhang, and chat gap while still clearing bottom navigation.
 - Compact world chat preview rows stay one line with ellipsis, form one left-aligned block vertically centered with a `2px` downward optical correction, and render the system sender as `System`; wrapping belongs in the full popup only.
 - World chat popup rows need normal block flow plus at least `--style-row-min-height` line-height; fixed 16px chat line-height can overlap wrapped rows.
 - Room page content must reserve `--style-room-chat-clearance`, including the chat border-title overhang; otherwise lower page blocks render under shared world chat.

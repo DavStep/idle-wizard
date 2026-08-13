@@ -5,6 +5,10 @@ upload script posts the section whose heading matches `package.json` `version`.
 Write these developer-to-player notes only in Idle Wizard terms. Do not mention
 other game names, source projects, ports, or implementation provenance.
 
+## 0.3.44
+
+- Rooms now use the space above navigation before World Chat unlocks, keeping Garden actions and Research tabs closer to the bottom of the screen.
+
 ## 0.3.43
 
 - Reduced seed summoning to 10 mana per seed, including every multi-summon research tier.

@@ -33,6 +33,7 @@ import {
   createText,
   finiteOr,
   normalizeRows,
+  resolveRetainedPageBottomClearance,
   setText,
 } from "../workshop/RetainedPageKit.js";
 import {
@@ -215,7 +216,7 @@ export class GardenPixiPage extends BaseRetainedPixiPage {
     this.syncPlotContentHeight(plots.length);
     this.actionBar.bind(garden.actionBar ?? {}, this.currentActions);
     this.syncDialogs(garden.dialogs ?? {});
-    this.layoutGarden();
+    this.layoutPage(this.sourceWidth, this.sourceHeight);
     this.tick(finiteOr(garden.now, this.timeSource()));
   }
 
@@ -384,11 +385,14 @@ export class GardenPixiPage extends BaseRetainedPixiPage {
     if (!this.plotScroll) {
       return;
     }
+    const bottomClearance = resolveRetainedPageBottomClearance(
+      this.viewModel,
+    );
     const plotListHeight = Math.max(
       0,
       sourceHeight -
         GARDEN_PIXI_GEOMETRY.plotListTop -
-        GARDEN_PIXI_GEOMETRY.plotListBottom,
+        bottomClearance,
     );
     this.plotScroll.setBounds(
       0,
@@ -398,7 +402,7 @@ export class GardenPixiPage extends BaseRetainedPixiPage {
     );
     this.actionBar.setBounds(
       RETAINED_PAGE_GEOMETRY.contentEdge,
-      sourceHeight - GARDEN_PIXI_GEOMETRY.actionBarBottom,
+      sourceHeight - bottomClearance,
       sourceWidth - RETAINED_PAGE_GEOMETRY.contentEdge * 2,
     );
     this.layoutGarden();

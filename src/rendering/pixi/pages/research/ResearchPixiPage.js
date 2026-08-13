@@ -47,6 +47,7 @@ import {
   createText,
   finiteOr,
   normalizeRows,
+  resolveRetainedPageBottomClearance,
   setText,
 } from '../workshop/RetainedPageKit.js';
 const MAX_LOCKED_ROWS_PER_BOX = 1;
@@ -540,7 +541,7 @@ export class ResearchPixiPage extends BaseRetainedPixiPage {
     );
     this.rows.reconcile(rows);
     this.attachRowsToBoxes(boxes);
-    this.layoutResearchContent();
+    this.layoutPage(this.sourceWidth, this.sourceHeight);
   }
 
   getRowActions() {
@@ -726,7 +727,7 @@ export class ResearchPixiPage extends BaseRetainedPixiPage {
     const contentHeight =
       sourceHeight -
       RETAINED_PAGE_GEOMETRY.contentTop -
-      RETAINED_PAGE_GEOMETRY.chatClearance;
+      resolveRetainedPageBottomClearance(this.viewModel);
     const width = sourceWidth - edge * 2;
     const scrollWidth = sourceWidth - edge;
     const tabClearance =

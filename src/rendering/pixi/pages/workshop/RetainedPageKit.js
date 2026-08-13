@@ -44,6 +44,12 @@ export const RETAINED_PAGE_GEOMETRY = Object.freeze({
   scrollCut: 6,
 });
 
+export function resolveRetainedPageBottomClearance(viewModel = null) {
+  return viewModel?.chrome?.worldChatVisible === false
+    ? PIXI_UI_GEOMETRY.roomChatBottom
+    : RETAINED_PAGE_GEOMETRY.chatClearance;
+}
+
 export const RETAINED_SCROLLBAR_GEOMETRY = Object.freeze({
   width: 18 / PIXI_UI_GEOMETRY.sourceScale,
   gap: 5 / PIXI_UI_GEOMETRY.sourceScale,

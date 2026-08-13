@@ -34,6 +34,7 @@ import {
   applyTextTheme,
   createText,
   normalizeRows,
+  resolveRetainedPageBottomClearance,
   setText,
 } from '../workshop/RetainedPageKit.js';
 
@@ -222,7 +223,7 @@ export class PrestigePixiPage extends BaseRetainedPixiPage {
       this.pendingConfirm = prestige.confirm;
     }
     this.confirm.bind(this.pendingConfirm);
-    this.layoutPrestigeContent();
+    this.layoutPage(this.sourceWidth, this.sourceHeight);
   }
 
   bindTab(button, tab) {
@@ -360,7 +361,7 @@ export class PrestigePixiPage extends BaseRetainedPixiPage {
     const contentHeight =
       sourceHeight -
       RETAINED_PAGE_GEOMETRY.contentTop -
-      RETAINED_PAGE_GEOMETRY.chatClearance;
+      resolveRetainedPageBottomClearance(this.viewModel);
     const width = sourceWidth - edge * 2;
     const scrollWidth = sourceWidth - edge;
     const tabClearance =

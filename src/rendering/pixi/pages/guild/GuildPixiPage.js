@@ -14,6 +14,7 @@ import {
   createPixiPageBackgroundGradient,
   drawPixiPageBackground,
 } from '../../theme/PixiPageBackground.js';
+import { resolveRetainedPageBottomClearance } from '../workshop/RetainedPageKit.js';
 import {
   GUILD_DIALOG_IDS,
   GuildDialogPixi,
@@ -757,7 +758,7 @@ export class GuildPixiPage extends BasePixiRetainedView {
     }
     const edge = PIXI_UI_GEOMETRY.roomContentEdge;
     const contentWidth = this.sourceWidth - edge * 2;
-    const chatClearance = getChatClearance();
+    const chatClearance = resolveRetainedPageBottomClearance(this.model);
     const tabY =
       this.sourceHeight -
       chatClearance -
@@ -1015,15 +1016,6 @@ function normalizeNotificationState(notification) {
         ? 'orange'
         : 'red',
   };
-}
-
-function getChatClearance() {
-  return (
-    PIXI_UI_GEOMETRY.roomChatBottom +
-    PIXI_UI_GEOMETRY.roomChatHeight +
-    PIXI_UI_GEOMETRY.roomChatTitleOverhang +
-    PIXI_UI_GEOMETRY.roomChatGap
-  );
 }
 
 function detachAndDestroy(displayObject, destroy) {

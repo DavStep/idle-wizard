@@ -468,6 +468,32 @@ describe("GardenPixiPage", () => {
     harness.dispose();
   });
 
+  it("releases the hidden world-chat clearance to the plot list and action bar", () => {
+    const harness = createHarness();
+    const model = createGardenViewModel();
+    model.chrome = { worldChatVisible: false };
+
+    harness.page.bind(model);
+
+    expect(harness.page.plotScroll.height).toBeCloseTo(
+      2170 / 3 -
+        GARDEN_PIXI_GEOMETRY.plotListTop -
+        PIXI_UI_GEOMETRY.roomChatBottom,
+    );
+    expect(harness.page.actionBar.root.position.y).toBeCloseTo(
+      2170 / 3 - PIXI_UI_GEOMETRY.roomChatBottom,
+    );
+
+    model.chrome.worldChatVisible = true;
+    harness.page.bind(model);
+    expect(harness.page.actionBar.root.position.y).toBeCloseTo(
+      2170 / 3 - GARDEN_PIXI_GEOMETRY.actionBarBottom,
+    );
+
+    harness.page.destroy();
+    harness.dispose();
+  });
+
   it("keeps Garden timer rails green when the player selects another progress style", () => {
     const harness = createHarness();
 

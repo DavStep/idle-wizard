@@ -38,6 +38,7 @@ import {
   createText,
   finiteOr,
   normalizeRows,
+  resolveRetainedPageBottomClearance,
   setText,
 } from '../workshop/RetainedPageKit.js';
 import {
@@ -409,7 +410,7 @@ export class BrewingPixiPage extends BaseRetainedPixiPage {
     this.worldViewport.renderable = false;
     this.inventoryLayer.visible = false;
     this.inventoryLayer.renderable = false;
-    this.layoutBrewing();
+    this.layoutPage(this.sourceWidth, this.sourceHeight);
     if (!this.worldViewportTouched) {
       this.fitWorldViewportToCauldrons();
     } else {
@@ -1199,12 +1200,15 @@ export class BrewingPixiPage extends BaseRetainedPixiPage {
     if (!this.worldViewport) {
       return;
     }
+    const bottomClearance = resolveRetainedPageBottomClearance(
+      this.viewModel,
+    );
     this.worldViewportWidth = sourceWidth;
     this.worldViewportHeight = Math.max(
       0,
       sourceHeight -
         BREWING_PIXI_GEOMETRY.worldTop -
-        BREWING_PIXI_GEOMETRY.worldBottom,
+        bottomClearance,
     );
     this.worldViewport.position.set(0, BREWING_PIXI_GEOMETRY.worldTop);
     this.worldViewport.hitArea = new Rectangle(
@@ -1219,7 +1223,7 @@ export class BrewingPixiPage extends BaseRetainedPixiPage {
       .fill({ color: 0xffffff });
     const buttonY =
       sourceHeight -
-      BREWING_PIXI_GEOMETRY.worldBottom -
+      bottomClearance -
       6 -
       BREWING_PIXI_GEOMETRY.inventoryButtonHeight;
     this.herbsButton.setBounds(
@@ -1252,12 +1256,16 @@ export class BrewingPixiPage extends BaseRetainedPixiPage {
     });
     const panelWidth =
       this.sourceWidth - RETAINED_PAGE_GEOMETRY.contentEdge * 2;
+    const inventoryPanelBottom =
+      resolveRetainedPageBottomClearance(this.viewModel) +
+      BREWING_PIXI_GEOMETRY.inventoryPanelBottom -
+      RETAINED_PAGE_GEOMETRY.chatClearance;
     for (const panel of [this.herbInventory, this.potionInventory]) {
       panel.setWidth(panelWidth);
       panel.root.position.set(
         RETAINED_PAGE_GEOMETRY.contentEdge,
         this.sourceHeight -
-          BREWING_PIXI_GEOMETRY.inventoryPanelBottom -
+          inventoryPanelBottom -
           panel.height,
       );
     }

@@ -20,6 +20,9 @@ describe("PixiPagesFacade", () => {
     pages.mount();
 
     expect(harness.runtime.bindPage).toHaveBeenCalledTimes(1);
+    expect(harness.getBoundPage("workshop").chrome).toEqual({
+      worldChatVisible: true,
+    });
     expect(harness.runtime.activatePage).toHaveBeenCalledWith("workshop");
     expect(harness.runtime.bindGlobalSurface).toHaveBeenCalledWith(
       "chrome.top",
@@ -52,6 +55,25 @@ describe("PixiPagesFacade", () => {
 
     pages.unmount();
     expect(harness.runtime.deactivatePage).toHaveBeenCalledTimes(1);
+  });
+
+  it("releases page chat clearance before world chat unlocks", () => {
+    const harness = createHarness({
+      gameplaySnapshot: createGameplaySnapshot({ level: 2 }),
+    });
+    const pages = new PixiPagesFacade(harness.dependencies);
+
+    pages.mount();
+
+    expect(harness.getBoundGlobal("chrome.chat").visible).toBe(false);
+    expect(harness.getBoundPage("workshop").chrome).toEqual({
+      worldChatVisible: false,
+    });
+
+    expect(pages.show("garden")).toBe(true);
+    expect(harness.getBoundPage("garden").chrome).toEqual({
+      worldChatVisible: false,
+    });
   });
 
   it("keeps level progress visible across partial frame resource snapshots", () => {

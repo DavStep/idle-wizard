@@ -40,7 +40,10 @@ import {
   drawPixiPageBackground,
 } from '../../theme/PixiPageBackground.js';
 import { ResearchStationTitlePlaque } from '../research/ResearchPixiPage.js';
-import { RetainedScrollArea } from '../workshop/RetainedPageKit.js';
+import {
+  RetainedScrollArea,
+  resolveRetainedPageBottomClearance,
+} from '../workshop/RetainedPageKit.js';
 import { MarketTitleRibbon } from './MarketTitleRibbon.js';
 import { SHOP_DIALOG_IDS, ShopDialogPixi } from './ShopDialogPixi.js';
 
@@ -582,10 +585,7 @@ export class ShopPixiPage extends BasePixiRetainedView {
       STATION_TITLE_ROW_GAP;
     const tabY =
       this.sourceHeight -
-      (PIXI_UI_GEOMETRY.roomChatBottom +
-        PIXI_UI_GEOMETRY.roomChatHeight +
-        PIXI_UI_GEOMETRY.roomChatTitleOverhang +
-        PIXI_UI_GEOMETRY.roomChatGap) -
+      resolveRetainedPageBottomClearance(this.model) -
       6 -
       PIXI_UI_GEOMETRY.roomControlHeight;
     const panelBottom = tabY - PAGE_SCROLL_CUT;

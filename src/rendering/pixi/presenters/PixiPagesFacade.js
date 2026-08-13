@@ -699,9 +699,16 @@ export class PixiPagesFacade {
       this.tutorialNotificationPolicy,
       { pageNotification },
     );
-    runtime.bindPage(pageId, projectedViewModel);
+    const chromeAwareViewModel = {
+      ...projectedViewModel,
+      chrome: {
+        ...(projectedViewModel.chrome ?? {}),
+        worldChatVisible: this.isWorldChatUnlocked(),
+      },
+    };
+    runtime.bindPage(pageId, chromeAwareViewModel);
     this.dirtyPageIds.delete(pageId);
-    return projectedViewModel;
+    return chromeAwareViewModel;
   }
 
   refreshShopStallDialog(slotNumber) {
