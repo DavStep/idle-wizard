@@ -71,7 +71,15 @@ describe('retained dialog UI editor integrations', () => {
       components.find(({ label }) => label === 'Message')
         .getFields()
         .map(({ id }) => id),
-    ).toEqual(['x', 'y', 'text']);
+    ).toEqual(expect.arrayContaining([
+      'text',
+      'fontFamily',
+      'positionMode',
+      'x',
+      'y',
+      'anchor',
+      'paddingTop',
+    ]));
 
     dialog.destroy();
     semanticRegistry.clear();

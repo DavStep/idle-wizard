@@ -4,7 +4,7 @@ import {
 } from 'pixi.js';
 
 import { BasePixiRetainedView } from '../../primitives/BasePixiRetainedView.js';
-import { PixiButton } from '../../primitives/PixiButton.js';
+import { PixiPopupTabButton } from '../../primitives/PixiPopupTabButton.js';
 import { PixiScrollView } from '../../primitives/PixiScrollView.js';
 import {
   DEFAULT_PIXI_THEME_SNAPSHOT,
@@ -105,14 +105,13 @@ export class GuildPixiPage extends BasePixiRetainedView {
     this.tabNotifications = new Map();
     this.tabScrolls = new Map();
     for (const tab of GUILD_TABS) {
-      const button = new PixiButton({
+      const button = new PixiPopupTabButton({
         assetManager,
         inputRouter,
         semanticRegistry,
         semanticId: `guild.tab.${tab.id}`,
         text: tab.label,
         label: `guild:tab:${tab.id}`,
-        variant: 'tab',
         action: () => this.selectTab(tab.id),
       });
       this.tabButtons.set(tab.id, button);

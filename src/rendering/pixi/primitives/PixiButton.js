@@ -286,8 +286,7 @@ export class PixiButton extends Container {
         visualVariant,
         this.buttonWidth,
         this.buttonHeight,
-        this.variant === 'tab'
-          && this.buttonHeight <= PIXI_UI_GEOMETRY.tabHeight,
+        this.usesCompactSkinGeometry(),
         this.sizeTier,
       );
       const textureId = visualGeometry.assetId;
@@ -328,13 +327,14 @@ export class PixiButton extends Container {
     if (isPixiButtonColor(this.variant)) {
       return this.color;
     }
-    if (this.variant === 'tab') {
-      return this.selected ? 'brown-light' : 'brown-dark';
-    }
     if (this.variant === 'regular') {
       return this.color;
     }
     return null;
+  }
+
+  usesCompactSkinGeometry() {
+    return false;
   }
 
   syncNotification() {

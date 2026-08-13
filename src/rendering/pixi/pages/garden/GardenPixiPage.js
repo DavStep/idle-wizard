@@ -60,6 +60,7 @@ export const GARDEN_PIXI_GEOMETRY = Object.freeze({
   actionBarBottom: 162,
   actionButtonHeight: PIXI_UI_GEOMETRY.roomControlHeight,
   actionButtonGap: 8,
+  soloSeedsButtonWidth: 220,
   selectedSeedHeight: 24,
   selectedSeedGap: 5,
 });
@@ -561,14 +562,20 @@ export class GardenSeedActionBar {
       this.harvestButton,
       this.seedsButton,
     ].filter((button) => button.visible);
+    const seedsOnly =
+      visibleButtons.length === 1 && visibleButtons[0] === this.seedsButton;
     const buttonWidth =
-      (width -
-        GARDEN_PIXI_GEOMETRY.actionButtonGap *
-          Math.max(0, visibleButtons.length - 1)) /
-      Math.max(1, visibleButtons.length);
+      seedsOnly
+        ? Math.min(width, GARDEN_PIXI_GEOMETRY.soloSeedsButtonWidth)
+        : (width -
+            GARDEN_PIXI_GEOMETRY.actionButtonGap *
+              Math.max(0, visibleButtons.length - 1)) /
+          Math.max(1, visibleButtons.length);
+    const buttonRowX = seedsOnly ? (width - buttonWidth) / 2 : 0;
     visibleButtons.forEach((button, index) => {
       button.position.set(
-        index * (buttonWidth + GARDEN_PIXI_GEOMETRY.actionButtonGap),
+        buttonRowX +
+          index * (buttonWidth + GARDEN_PIXI_GEOMETRY.actionButtonGap),
         buttonY,
       );
       button.setSize(buttonWidth, GARDEN_PIXI_GEOMETRY.actionButtonHeight);

@@ -9,6 +9,7 @@ import {
 import {
   DeviceIdentityFooter,
   PixiButton,
+  PixiPopupTabButton,
   createDialogPaperSection,
   PixiNineSliceFrame,
   PixiScrollView,
@@ -381,7 +382,7 @@ export class PixiSettingsDialog extends RetainedGlobalDialog {
 
   buildReportPane() {
     this.feedbackKindButtons = FEEDBACK_KINDS.map(({ key, label }) => {
-      const button = new PixiButton({
+      const button = new PixiPopupTabButton({
         assetManager: this.context.assets,
         inputRouter: this.context.inputRouter,
         semanticRegistry: this.context.semanticRegistry,
@@ -389,7 +390,6 @@ export class PixiSettingsDialog extends RetainedGlobalDialog {
         text: label,
         width: 100,
         height: 24,
-        variant: 'tab',
         action: () => this.selectFeedbackKind(key),
         label: `${this.dialogId}:feedbackKind:${key}`,
       });

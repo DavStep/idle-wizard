@@ -224,7 +224,12 @@ describe("GardenPixiPage", () => {
     expect(harness.page.actionBar.plantButton.visible).toBe(false);
     expect(harness.page.actionBar.harvestButton.visible).toBe(false);
     expect(harness.page.actionBar.seedsButton.hitArea.width).toBeCloseTo(
-      harness.page.actionBar.width,
+      GARDEN_PIXI_GEOMETRY.soloSeedsButtonWidth,
+    );
+    expect(harness.page.actionBar.seedsButton.position.x).toBeCloseTo(
+      (harness.page.actionBar.width -
+        GARDEN_PIXI_GEOMETRY.soloSeedsButtonWidth) /
+        2,
     );
 
     locked.garden.actionBar.canPlantAll = true;

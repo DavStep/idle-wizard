@@ -35,7 +35,6 @@ import {
   createText,
   finiteOr,
   normalizeRows,
-  resolveRetainedPageBottomClearance,
   setText,
 } from './RetainedPageKit.js';
 import { WorkshopDialogPixi } from './WorkshopDialogPixi.js';
@@ -599,14 +598,10 @@ export class WorkshopPixiPage extends BaseRetainedPixiPage {
       RETAINED_PAGE_GEOMETRY.contentTop,
       width,
     );
-    const releasedChatClearance =
-      RETAINED_PAGE_GEOMETRY.chatClearance -
-      resolveRetainedPageBottomClearance(this.viewModel);
     const worldChatTop =
       this.sourceHeight -
       PIXI_UI_GEOMETRY.roomChatBottom -
-      PIXI_UI_GEOMETRY.roomChatHeight +
-      releasedChatClearance;
+      PIXI_UI_GEOMETRY.roomChatHeight;
     this.summon.setBounds(
       this.sourceWidth / 2,
       worldChatTop -

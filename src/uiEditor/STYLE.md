@@ -100,8 +100,11 @@ Use borders before shadows. Panels use `--editor-border-subtle` or
   `Usage` owns production references. Tabs use the shared blue underline and
   Left/Right focus-following selection instead of stacking both long sections.
 - Atomic-component inspector fields use the existing raised control surface.
-  Position fields share one row; text and asset controls span the inspector
-  width.
+  Text atoms use flat `Text`, `Transform`, and `Anchor padding` sections. Paired
+  coordinates and edge paddings share rows; font, copy, and asset controls span
+  the inspector width. Relative position resolves from a 3x3 parent anchor,
+  while absolute position exposes parent-local coordinates. Segmented choices
+  use arrow/Home/End navigation.
 - UI Lab integrations reuse the right Inspector for one compact vertical flow:
   scenario, typed controls, actions, then the latest events. Scenario and field
   labels stay secondary; live values use the editor mono face. Actions wrap at
@@ -166,8 +169,9 @@ Use borders before shadows. Panels use `--editor-border-subtle` or
   `Hide …` / `Show …` accessible labels. They apply an editor-only visibility
   marker and never remove a component from the preview tree.
 - Every hierarchy row is pointer- and keyboard-selectable. Selection uses the
-  existing selected-row surface, and DOM-backed selection outlines the matching
-  preview component in blue. Retained atomic selection opens native number,
+  existing selected-row surface. DOM-backed selection outlines the matching
+  preview component in blue; retained Pixi selection draws live world bounds,
+  eight resize-reference handles, and the component pivot. Retained atomic selection opens native number,
   text, and select controls in the inspector and applies edits immediately to
   the mounted preview. Double-clicking a reusable retained component instance
   opens its standalone production-backed library entry; embedded widget

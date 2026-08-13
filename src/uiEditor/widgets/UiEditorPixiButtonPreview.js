@@ -24,6 +24,7 @@ import {
 } from '../../rendering/pixi/primitives/PixiButtonStyle.js';
 import { PixiCostButton } from '../../rendering/pixi/primitives/PixiCostButton.js';
 import { PixiInfoButton } from '../../rendering/pixi/primitives/PixiInfoButton.js';
+import { PixiPopupTabButton } from '../../rendering/pixi/primitives/PixiPopupTabButton.js';
 import { PixiApplicationManager } from '../../rendering/pixi/runtime/PixiApplicationManager.js';
 import {
   PIXI_ROOT_RUN_ASSETS,
@@ -34,7 +35,9 @@ import {
   createUiEditorThumbnailRenderQueue,
 } from './UiEditorThumbnailRenderQueue.js';
 import {
+  createUiEditorPixiSelectionOverlay,
   createUiEditorPixiSurfaceShell,
+  createUiEditorPixiTextComponent,
   UI_EDITOR_PIXI_VIEWPORTS,
 } from './createUiEditorPixiSurface.js';
 
@@ -248,6 +251,14 @@ export function createUiEditorPixiButtonPreview(definition) {
   host.uiEditorButtonPreviewDefinition = definition;
   host.uiEditorGetAtomicComponents = () =>
     controller?.getAtomicComponents() ?? [];
+  host.uiEditorSelectAtomicComponent = (component) => {
+    if (component) {
+      host.dataset.selectedAtomicComponent = String(component.id ?? '');
+    } else {
+      delete host.dataset.selectedAtomicComponent;
+    }
+    controller?.selectAtomicComponent(component);
+  };
   host.uiEditorGetButtonEditorState = () => editorState;
   host.uiEditorCreateInspector = () => inspectorElement;
   host.uiEditorSuppressStaticProperties = true;
@@ -425,6 +436,9 @@ async function mountButtonPreview({
     return createDisposedController();
   }
 
+  const application = applicationManager.getApplication();
+  const selectionOverlay = createUiEditorPixiSelectionOverlay({ application });
+
   inputRouter.mount({
     canvas,
     root: applicationManager.getApplication().stage,
@@ -451,12 +465,16 @@ async function mountButtonPreview({
     destroy() {
       resizeObserver?.disconnect();
       resizeObserver = null;
+      selectionOverlay.destroy();
       inputRouter.destroy();
       preview.destroy();
       applicationManager.destroy();
     },
     getAtomicComponents() {
       return preview.atomicComponents ?? [];
+    },
+    selectAtomicComponent(component) {
+      selectionOverlay.select(component);
     },
     setDefinition(nextDefinition) {
       const nextPreview = createPreviewControl({
@@ -939,7 +957,10 @@ function createPreviewControl({
     const width = previewDefinition.width ?? 100;
     const height =
       previewDefinition.height ?? PIXI_UI_GEOMETRY.roomControlHeight;
-    const root = new PixiButton({
+    const ButtonClass = previewDefinition.variant === 'tab'
+      ? PixiPopupTabButton
+      : PixiButton;
+    const root = new ButtonClass({
       action: onActivate,
       assetManager,
       color: previewDefinition.color,
@@ -947,7 +968,9 @@ function createPreviewControl({
       inputRouter,
       sizeTier: previewDefinition.sizeTier,
       text: previewDefinition.text,
-      variant: previewDefinition.variant,
+      ...(previewDefinition.variant === 'tab'
+        ? {}
+        : { variant: previewDefinition.variant }),
       width,
     });
     root.setEnabled(previewDefinition.enabled !== false);
@@ -1127,6 +1150,12 @@ function createAtomicComponents({ assetManager, definition, preview }) {
       componentId,
       displayObject: root.textLabel,
       id: 'label',
+      layoutBounds: {
+        height: preview.height,
+        width: preview.width,
+        x: 0,
+        y: 0,
+      },
       label: 'Label',
     }),
   ];
@@ -1202,6 +1231,7 @@ function createButtonBackgroundAtom({
 
   return createAtomicComponent({
     componentId,
+    displayObjects: targets,
     getFields: () => [
       positionField('x', 'X', x),
       positionField('y', 'Y', y),
@@ -1311,17 +1341,13 @@ function createTextAtom({
   displayObject,
   id,
   label,
+  layoutBounds = null,
 }) {
-  return createDisplayAtom({
-    componentId,
+  return createUiEditorPixiTextComponent({
     displayObject,
-    id,
+    id: `${componentId}:${id}`,
     label,
-    textField: {
-      getValue: () => displayObject.text,
-      setValue: (value) => displayObject.setText(value),
-    },
-    type: 'text',
+    layoutBounds,
   });
 }
 
@@ -1336,6 +1362,7 @@ function createDisplayAtom({
 }) {
   return createAtomicComponent({
     componentId,
+    displayObjects: [displayObject],
     getFields: () => [
       positionField('x', 'X', displayObject.position.x),
       positionField('y', 'Y', displayObject.position.y),
@@ -1382,6 +1409,7 @@ function createDisplayAtom({
 
 function createAtomicComponent({
   componentId,
+  displayObjects = [],
   getFields,
   id,
   isVisible,
@@ -1392,6 +1420,9 @@ function createAtomicComponent({
 }) {
   return Object.freeze({
     getFields,
+    getSelectionAnchorPoint: () =>
+      displayObjects[0]?.getGlobalPosition?.() ?? null,
+    getSelectionDisplayObjects: () => displayObjects,
     id: `${componentId}:${id}`,
     isVisible,
     label,

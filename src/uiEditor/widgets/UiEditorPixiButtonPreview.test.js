@@ -89,6 +89,19 @@ describe('UiEditorPixiButtonPreview', () => {
     );
   });
 
+  it('bridges hierarchy selection into the live Pixi preview', () => {
+    const preview = createUiEditorPixiButtonPreview({
+      id: 'base-button',
+      label: 'Base / Text Button',
+      preview: {
+        text: 'Continue',
+        type: 'button',
+      },
+    });
+
+    expect(typeof preview.uiEditorSelectAtomicComponent).toBe('function');
+  });
+
   it('exposes live color and corner-size controls for the consolidated base button', () => {
     const preview = createUiEditorPixiButtonPreview({
       id: 'base-button',

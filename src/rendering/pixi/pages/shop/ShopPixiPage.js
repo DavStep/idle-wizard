@@ -18,6 +18,7 @@ import {
 } from '../../../../assets/items/seeds/seedIconFrames.js';
 import { BasePixiRetainedView } from '../../primitives/BasePixiRetainedView.js';
 import { PixiButton } from '../../primitives/PixiButton.js';
+import { PixiPopupTabButton } from '../../primitives/PixiPopupTabButton.js';
 import { PIXI_DIALOG_PALETTE } from '../../primitives/PixiDialogFrame.js';
 import { PixiNineSliceFrame } from '../../primitives/PixiNineSliceFrame.js';
 import { PixiProgressBar } from '../../primitives/PixiProgressBar.js';
@@ -161,13 +162,12 @@ export class ShopPixiPage extends BasePixiRetainedView {
     this.tabLayer.label = 'shop:tabs';
     this.tabButtons = new Map();
     for (const tab of SHOP_TABS) {
-      const button = new PixiButton({
+      const button = new PixiPopupTabButton({
         assetManager,
         inputRouter,
         semanticRegistry,
         semanticId: `shop.tab.${tab.id}`,
         text: tab.label,
-        variant: 'tab',
         label: `shop:tab:${tab.id}`,
         action: () => this.selectTab(tab.id),
       });

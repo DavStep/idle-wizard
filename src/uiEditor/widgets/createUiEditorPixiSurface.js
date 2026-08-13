@@ -17,6 +17,29 @@ export const UI_EDITOR_PIXI_VIEWPORTS = Object.freeze({
   GAME_SCREEN: 'game-screen',
 });
 
+const UI_EDITOR_FONT_OPTIONS = Object.freeze([
+  {
+    label: 'Project · Lilita One',
+    value: '"Lilita One", "Arial Black", Arial, sans-serif',
+  },
+  { label: 'System UI', value: 'system-ui, sans-serif' },
+  { label: 'Arial', value: 'Arial, sans-serif' },
+  { label: 'Arial Black', value: '"Arial Black", Arial, sans-serif' },
+  { label: 'Georgia', value: 'Georgia, serif' },
+  { label: 'Monospace', value: 'ui-monospace, monospace' },
+]);
+const UI_EDITOR_ANCHOR_PRESETS = Object.freeze([
+  { label: 'Top left', shortLabel: '↖', value: 'top-left', x: 0, y: 0 },
+  { label: 'Top', shortLabel: '↑', value: 'top', x: 0.5, y: 0 },
+  { label: 'Top right', shortLabel: '↗', value: 'top-right', x: 1, y: 0 },
+  { label: 'Left', shortLabel: '←', value: 'left', x: 0, y: 0.5 },
+  { label: 'Center', shortLabel: '•', value: 'center', x: 0.5, y: 0.5 },
+  { label: 'Right', shortLabel: '→', value: 'right', x: 1, y: 0.5 },
+  { label: 'Bottom left', shortLabel: '↙', value: 'bottom-left', x: 0, y: 1 },
+  { label: 'Bottom', shortLabel: '↓', value: 'bottom', x: 0.5, y: 1 },
+  { label: 'Bottom right', shortLabel: '↘', value: 'bottom-right', x: 1, y: 1 },
+]);
+
 /**
  * Mounts a production Pixi control inside an editor-owned canvas.
  */
@@ -243,6 +266,262 @@ export function createUiEditorPixiHierarchyComponent({
   });
 }
 
+/**
+ * Creates the editor contract for a production Pixi text object. The editor
+ * keeps layout overrides local to the mounted preview and never mutates source.
+ */
+export function createUiEditorPixiTextComponent({
+  displayObject,
+  id,
+  label = 'Label',
+  layoutBounds = null,
+}) {
+  const textTarget = resolveTextTarget(displayObject);
+  const anchorTarget = textTarget?.textObject ?? displayObject;
+  const initialPosition = {
+    x: Number(displayObject?.position?.x) || 0,
+    y: Number(displayObject?.position?.y) || 0,
+  };
+  const anchor = resolveAnchorPreset(
+    anchorTarget?.anchor?.x,
+    anchorTarget?.anchor?.y,
+  );
+  const state = {
+    anchor: anchor.value,
+    offsetX: 0,
+    offsetY: 0,
+    paddingBottom: 0,
+    paddingLeft: 0,
+    paddingRight: 0,
+    paddingTop: 0,
+    positionMode: layoutBounds ? 'relative' : 'absolute',
+  };
+
+  if (layoutBounds) {
+    const point = resolveAnchoredPoint(layoutBounds, state, anchor);
+    state.offsetX = initialPosition.x - point.x;
+    state.offsetY = initialPosition.y - point.y;
+  }
+
+  const getFields = () => {
+    const currentAnchor = getAnchorPreset(state.anchor);
+    const currentFont = String(
+      textTarget?.fontFamily
+      ?? textTarget?.textObject?.style?.fontFamily
+      ?? '',
+    );
+    const fontOptions = [...UI_EDITOR_FONT_OPTIONS];
+    if (
+      currentFont
+      && !fontOptions.some(({ value }) => value === currentFont)
+    ) {
+      fontOptions.unshift({ label: `Current · ${currentFont}`, value: currentFont });
+    }
+    const position = displayObject?.position ?? initialPosition;
+
+    return [
+      editorField('text', 'Text', 'text', readDisplayObjectText(textTarget), {
+        group: 'Text',
+      }),
+      editorField('fontFamily', 'Font', 'select', currentFont, {
+        group: 'Text',
+        options: fontOptions,
+      }),
+      editorField('fontSize', 'Size', 'number', readTextMetric(textTarget, 'fontSize', 13), {
+        group: 'Text',
+        min: 4,
+        step: 1,
+      }),
+      editorField('fontWeight', 'Weight', 'segmented', normalizeFontWeight(textTarget?.fontWeight), {
+        group: 'Text',
+        options: [
+          { label: 'Regular', value: 'normal' },
+          { label: 'Bold', value: 'bold' },
+        ],
+      }),
+      editorField('lineHeight', 'Line height', 'number', readPositiveTextMetric(
+        textTarget,
+        'lineHeight',
+        readTextMetric(textTarget, 'fontSize', 13),
+      ), {
+        group: 'Text',
+        min: 4,
+        step: 1,
+      }),
+      editorField('letterSpacing', 'Letter spacing', 'number', readTextMetric(
+        textTarget,
+        'letterSpacing',
+        0,
+      ), {
+        group: 'Text',
+        step: 0.5,
+      }),
+      editorField('align', 'Text align', 'segmented', normalizeTextAlign(textTarget?.align), {
+        group: 'Text',
+        options: [
+          { label: 'Left', value: 'left' },
+          { label: 'Center', value: 'center' },
+          { label: 'Right', value: 'right' },
+        ],
+      }),
+      editorField('wrapWidth', 'Wrap width', 'number', readTextMetric(textTarget, 'wrapWidth', 0), {
+        group: 'Text',
+        hint: '0 keeps the label on one line.',
+        min: 0,
+        step: 1,
+      }),
+      editorField('positionMode', 'Position', 'segmented', state.positionMode, {
+        group: 'Transform',
+        options: [
+          { label: 'Relative', value: 'relative', disabled: !layoutBounds },
+          { label: 'Absolute', value: 'absolute' },
+        ],
+      }),
+      editorField(
+        'x',
+        state.positionMode === 'relative' ? 'Offset X' : 'X',
+        'number',
+        state.positionMode === 'relative' ? state.offsetX : position.x,
+        { group: 'Transform', row: 'position', step: 1 },
+      ),
+      editorField(
+        'y',
+        state.positionMode === 'relative' ? 'Offset Y' : 'Y',
+        'number',
+        state.positionMode === 'relative' ? state.offsetY : position.y,
+        { group: 'Transform', row: 'position', step: 1 },
+      ),
+      editorField('anchor', 'Anchor', 'segmented', currentAnchor.value, {
+        group: 'Transform',
+        options: UI_EDITOR_ANCHOR_PRESETS.map((preset) => ({
+          label: preset.label,
+          shortLabel: preset.shortLabel,
+          value: preset.value,
+        })),
+        presentation: 'anchor-grid',
+      }),
+      editorField('paddingTop', 'Top', 'number', state.paddingTop, {
+        disabled: state.positionMode !== 'relative',
+        group: 'Anchor padding',
+        min: 0,
+        row: 'padding-a',
+        step: 1,
+      }),
+      editorField('paddingRight', 'Right', 'number', state.paddingRight, {
+        disabled: state.positionMode !== 'relative',
+        group: 'Anchor padding',
+        min: 0,
+        row: 'padding-a',
+        step: 1,
+      }),
+      editorField('paddingBottom', 'Bottom', 'number', state.paddingBottom, {
+        disabled: state.positionMode !== 'relative',
+        group: 'Anchor padding',
+        min: 0,
+        row: 'padding-b',
+        step: 1,
+      }),
+      editorField('paddingLeft', 'Left', 'number', state.paddingLeft, {
+        disabled: state.positionMode !== 'relative',
+        group: 'Anchor padding',
+        min: 0,
+        row: 'padding-b',
+        step: 1,
+      }),
+    ];
+  };
+
+  const applyRelativePosition = () => {
+    if (!layoutBounds || !displayObject?.position) {
+      return;
+    }
+    const point = resolveAnchoredPoint(
+      layoutBounds,
+      state,
+      getAnchorPreset(state.anchor),
+    );
+    displayObject.position.set(
+      point.x + state.offsetX,
+      point.y + state.offsetY,
+    );
+  };
+
+  return Object.freeze({
+    getFields,
+    getSelectionAnchorPoint: () =>
+      displayObject?.getGlobalPosition?.() ?? null,
+    getSelectionDisplayObjects: () => [displayObject],
+    id,
+    isVisible: () =>
+      displayObject?.visible !== false && displayObject?.renderable !== false,
+    label,
+    setVisible: (visible) => {
+      displayObject.visible = Boolean(visible);
+      displayObject.renderable = Boolean(visible);
+    },
+    type: 'text',
+    update: (fieldId, value) => {
+      if (fieldId === 'text') {
+        writeDisplayObjectText(textTarget, value);
+      } else if (fieldId === 'fontFamily') {
+        textTarget?.setFontFamily?.(String(value || ''));
+      } else if (fieldId === 'fontSize') {
+        textTarget?.setFontSize?.(finiteNumber(value, 13));
+      } else if (fieldId === 'fontWeight') {
+        textTarget?.setFontWeight?.(normalizeFontWeight(value));
+      } else if (fieldId === 'lineHeight') {
+        textTarget?.setLineHeight?.(finiteNumber(value, 13));
+      } else if (fieldId === 'letterSpacing') {
+        const nextValue = finiteNumber(value, 0);
+        textTarget.letterSpacing = nextValue;
+        if (textTarget?.textObject?.style) {
+          textTarget.textObject.style.letterSpacing = nextValue;
+        }
+      } else if (fieldId === 'align') {
+        textTarget?.setAlign?.(normalizeTextAlign(value));
+      } else if (fieldId === 'wrapWidth') {
+        textTarget?.setWrapWidth?.(Math.max(0, finiteNumber(value, 0)));
+      } else if (fieldId === 'positionMode') {
+        const nextMode = value === 'relative' && layoutBounds
+          ? 'relative'
+          : 'absolute';
+        if (nextMode === state.positionMode) {
+          return false;
+        }
+        if (nextMode === 'relative') {
+          const point = resolveAnchoredPoint(
+            layoutBounds,
+            state,
+            getAnchorPreset(state.anchor),
+          );
+          state.offsetX = displayObject.position.x - point.x;
+          state.offsetY = displayObject.position.y - point.y;
+        }
+        state.positionMode = nextMode;
+        return true;
+      } else if (fieldId === 'x' || fieldId === 'y') {
+        const nextValue = finiteNumber(value, 0);
+        if (state.positionMode === 'relative') {
+          state[fieldId === 'x' ? 'offsetX' : 'offsetY'] = nextValue;
+          applyRelativePosition();
+        } else if (displayObject?.position) {
+          displayObject.position[fieldId] = nextValue;
+        }
+      } else if (fieldId === 'anchor') {
+        const nextAnchor = getAnchorPreset(value);
+        state.anchor = nextAnchor.value;
+        textTarget?.setAnchor?.(nextAnchor.x, nextAnchor.y);
+        applyRelativePosition();
+        return true;
+      } else if (fieldId in state && fieldId.startsWith('padding')) {
+        state[fieldId] = Math.max(0, finiteNumber(value, 0));
+        applyRelativePosition();
+      }
+      return false;
+    },
+  });
+}
+
 function resolveAtomicKind(displayObject) {
   if (
     displayObject.insetFrame
@@ -291,6 +570,14 @@ function resolveAtomicKind(displayObject) {
 function createDisplayObjectAtomicComponent(displayObject, type, index) {
   const label = createAtomicLabel(displayObject, type);
   const id = `pixi:${index}:${slugifyAtomicId(displayObject.label ?? label)}`;
+
+  if (type === 'text') {
+    return createUiEditorPixiTextComponent({
+      displayObject,
+      id,
+      label,
+    });
+  }
 
   return Object.freeze({
     getFields: () => [
@@ -352,6 +639,20 @@ export function createUiEditorPixiSelectionOverlay({ application }) {
       .stroke({ color: 0x090b10, width: 4 })
       .rect(bounds.x, bounds.y, bounds.width, bounds.height)
       .stroke({ color: 0x4c91ff, width: 2 });
+
+    drawSelectionHandles(outline, bounds);
+    const anchorPoint = selectedComponent?.getSelectionAnchorPoint?.();
+    if (Number.isFinite(anchorPoint?.x) && Number.isFinite(anchorPoint?.y)) {
+      outline
+        .circle(anchorPoint.x, anchorPoint.y, 4)
+        .fill({ color: 0x171717 })
+        .stroke({ color: 0x8eb8ff, width: 2 })
+        .moveTo(anchorPoint.x - 7, anchorPoint.y)
+        .lineTo(anchorPoint.x + 7, anchorPoint.y)
+        .moveTo(anchorPoint.x, anchorPoint.y - 7)
+        .lineTo(anchorPoint.x, anchorPoint.y + 7)
+        .stroke({ color: 0x8eb8ff, width: 1 });
+    }
   };
 
   application.ticker.add(render);
@@ -368,6 +669,25 @@ export function createUiEditorPixiSelectionOverlay({ application }) {
       render();
     },
   };
+}
+
+function drawSelectionHandles(outline, bounds) {
+  const points = [
+    [bounds.x, bounds.y],
+    [bounds.x + bounds.width / 2, bounds.y],
+    [bounds.x + bounds.width, bounds.y],
+    [bounds.x, bounds.y + bounds.height / 2],
+    [bounds.x + bounds.width, bounds.y + bounds.height / 2],
+    [bounds.x, bounds.y + bounds.height],
+    [bounds.x + bounds.width / 2, bounds.y + bounds.height],
+    [bounds.x + bounds.width, bounds.y + bounds.height],
+  ];
+  for (const [x, y] of points) {
+    outline
+      .rect(x - 2.5, y - 2.5, 5, 5)
+      .fill({ color: 0xf2f6ff })
+      .stroke({ color: 0x4c91ff, width: 1 });
+  }
 }
 
 function collectSelectionBounds(displayObjects) {
@@ -436,6 +756,100 @@ function slugifyAtomicId(value) {
     .toLowerCase()
     .replace(/[^a-z0-9]+/g, '-')
     .replace(/^-|-$/g, '') || 'component';
+}
+
+function editorField(id, label, type, value, options = {}) {
+  return {
+    id,
+    label,
+    type,
+    value: type === 'number' ? roundEditorNumber(value) : value,
+    ...options,
+  };
+}
+
+function resolveTextTarget(displayObject) {
+  if (
+    displayObject?.textObject
+    && typeof displayObject.setText === 'function'
+  ) {
+    return displayObject;
+  }
+  if (
+    displayObject?.textLabel?.textObject
+    && typeof displayObject.textLabel.setText === 'function'
+  ) {
+    return displayObject.textLabel;
+  }
+  return displayObject;
+}
+
+function readTextMetric(textTarget, key, fallback) {
+  const rawValue = textTarget?.[key] ?? textTarget?.textObject?.style?.[key];
+  if (rawValue === null || rawValue === undefined || rawValue === '') {
+    return fallback;
+  }
+  const value = Number(rawValue);
+  return Number.isFinite(value) ? value : fallback;
+}
+
+function readPositiveTextMetric(textTarget, key, fallback) {
+  const value = readTextMetric(textTarget, key, fallback);
+  return value > 0 ? value : fallback;
+}
+
+function resolveAnchorPreset(x, y) {
+  const anchorX = finiteNumber(x, 0.5);
+  const anchorY = finiteNumber(y, 0.5);
+  return UI_EDITOR_ANCHOR_PRESETS.reduce((closest, candidate) => {
+    const distance = Math.abs(anchorX - candidate.x)
+      + Math.abs(anchorY - candidate.y);
+    return distance < closest.distance
+      ? { ...candidate, distance }
+      : closest;
+  }, { ...UI_EDITOR_ANCHOR_PRESETS[4], distance: Infinity });
+}
+
+function getAnchorPreset(value) {
+  return UI_EDITOR_ANCHOR_PRESETS.find(
+    (preset) => preset.value === value,
+  ) ?? UI_EDITOR_ANCHOR_PRESETS[4];
+}
+
+function resolveAnchoredPoint(bounds, padding, anchor) {
+  const left = finiteNumber(bounds?.x, 0)
+    + Math.max(0, finiteNumber(padding.paddingLeft, 0));
+  const top = finiteNumber(bounds?.y, 0)
+    + Math.max(0, finiteNumber(padding.paddingTop, 0));
+  const right = finiteNumber(bounds?.x, 0)
+    + Math.max(0, finiteNumber(bounds?.width, 0))
+    - Math.max(0, finiteNumber(padding.paddingRight, 0));
+  const bottom = finiteNumber(bounds?.y, 0)
+    + Math.max(0, finiteNumber(bounds?.height, 0))
+    - Math.max(0, finiteNumber(padding.paddingBottom, 0));
+  const safeRight = Math.max(left, right);
+  const safeBottom = Math.max(top, bottom);
+  return {
+    x: left + (safeRight - left) * anchor.x,
+    y: top + (safeBottom - top) * anchor.y,
+  };
+}
+
+function normalizeFontWeight(value) {
+  return value === 'bold' || Number(value) >= 600 ? 'bold' : 'normal';
+}
+
+function normalizeTextAlign(value) {
+  return ['left', 'center', 'right'].includes(value) ? value : 'left';
+}
+
+function finiteNumber(value, fallback = 0) {
+  const number = Number(value);
+  return Number.isFinite(number) ? number : fallback;
+}
+
+function roundEditorNumber(value) {
+  return Math.round(finiteNumber(value) * 1000) / 1000;
 }
 
 function createPositionField(id, label, value) {

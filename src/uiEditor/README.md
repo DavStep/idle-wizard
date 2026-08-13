@@ -27,8 +27,9 @@ the tree without changing production visibility.
 Selecting any hierarchy row marks the row;
 double-clicking a reusable component instance opens its standalone
 production-backed library view, where that widget's meaningful inner atoms are
-shown. DOM-backed
-components also receive a blue outline in the preview. Every component has an
+shown. DOM-backed components receive a blue outline in the preview. Retained
+Pixi atoms receive the same live blue bounds, eight resize reference handles,
+and a pivot marker drawn from their production world geometry. Every component has an
 eye control that hides or restores that component in the scene without removing
 it from the hierarchy. Retained Pixi widgets bridge their meaningful atomic
 parts into the same tree, so a button exposes its background and label, while
@@ -47,10 +48,13 @@ full eight-color skin family, one `50` / `30` / `15` corner-size selector, its
 label, and enabled state. Cost Button adds layout, optional top-label, price,
 and availability controls. Changes update the production widget immediately;
 the preview status counts its real activation, click-sound, and haptic path.
-Selecting an atomic part in the hierarchy exposes live local `X` and `Y`
-controls. Text parts also expose their copy, and compatible backgrounds expose
-an asset picker backed by the registered production button skins. These edits
-change the mounted preview without mutating production source files. Widget
+Selecting an atomic part in the hierarchy opens a preview-only property editor.
+Text parts group copy, font, size, weight, line height, letter spacing,
+alignment, and wrap width above their transform. Relative positioning uses a
+familiar 3x3 parent anchor with X/Y offsets and four edge paddings; absolute
+positioning exposes direct parent-local X/Y coordinates. Background atoms keep
+their compatible production-asset picker. Every edit updates the mounted
+preview immediately without mutating production source files. Widget
 entries expose their production font and background asset before the registered
 usage list; assets expose their production ID, type, slice margins when
 applicable, and the widgets that use them. Assetless or image-only controls show

@@ -339,6 +339,44 @@ describe('UiEditorUsageManager', () => {
     expect(update).toHaveBeenNthCalledWith(2, 'asset', 'yellow.png');
   });
 
+  it('groups text controls and exposes keyboard-safe segmented choices', () => {
+    const update = vi.fn(() => false);
+
+    manager.showComponent({
+      getFields: () => [
+        { group: 'Text', id: 'text', label: 'Text', type: 'text', value: 'Continue' },
+        {
+          group: 'Transform',
+          id: 'positionMode',
+          label: 'Position',
+          options: [
+            { label: 'Relative', value: 'relative' },
+            { label: 'Absolute', value: 'absolute' },
+          ],
+          type: 'segmented',
+          value: 'relative',
+        },
+      ],
+      label: 'Label',
+      type: 'text',
+      update,
+    });
+
+    expect(refs.count.textContent).toBe('Text · Preview override');
+    expect(
+      [...refs.editor.querySelectorAll('.ui-editor-usages__group-heading')]
+        .map(({ textContent }) => textContent),
+    ).toEqual(['Text', 'Transform']);
+
+    const absolute = refs.editor.querySelector(
+      '[data-editor-component-option="absolute"]',
+    );
+    absolute.click();
+
+    expect(update).toHaveBeenCalledWith('positionMode', 'absolute');
+    expect(absolute.getAttribute('aria-checked')).toBe('true');
+  });
+
   it('keeps incompatible nine-slice assets visible but unavailable', () => {
     manager.showComponent({
       getFields: () => [

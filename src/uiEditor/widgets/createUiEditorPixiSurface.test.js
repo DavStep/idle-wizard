@@ -10,6 +10,7 @@ import {
   createUiEditorPixiAtomicComponents,
   createUiEditorPixiHierarchyComponent,
   createUiEditorPixiSurfaceShell,
+  createUiEditorPixiTextComponent,
   disposeUiEditorPixiControl,
 } from './createUiEditorPixiSurface.js';
 
@@ -106,6 +107,82 @@ describe('createUiEditorPixiAtomicComponents', () => {
     ).toEqual([icon]);
     component.setVisible(false);
     expect(root.visible).toBe(false);
+  });
+
+  it('edits text, font, relative anchors, padding, and absolute position', () => {
+    const anchor = { x: 0.5, y: 0.5 };
+    const text = createDisplayObject('button:label', {
+      align: 'center',
+      fontFamily: '"Lilita One", "Arial Black", Arial, sans-serif',
+      fontSize: 13,
+      fontWeight: 'normal',
+      getGlobalPosition: () => ({ x: 70, y: 35 }),
+      lineHeight: 13,
+      position: {
+        set(x, y) {
+          this.x = x;
+          this.y = y;
+        },
+        x: 50,
+        y: 15,
+      },
+      setAlign: vi.fn((value) => { text.align = value; }),
+      setAnchor: vi.fn((x, y) => { anchor.x = x; anchor.y = y; }),
+      setFontFamily: vi.fn((value) => { text.fontFamily = value; }),
+      setFontSize: vi.fn((value) => { text.fontSize = value; }),
+      setFontWeight: vi.fn((value) => { text.fontWeight = value; }),
+      setLineHeight: vi.fn((value) => { text.lineHeight = value; }),
+      setText: vi.fn(),
+      setWrapWidth: vi.fn((value) => { text.wrapWidth = value; }),
+      text: 'Continue',
+      textObject: { anchor, style: {} },
+      wrapWidth: 0,
+    });
+    const component = createUiEditorPixiTextComponent({
+      displayObject: text,
+      id: 'base-button:label',
+      label: 'Label',
+      layoutBounds: { x: 0, y: 0, width: 100, height: 30 },
+    });
+
+    expect(component.getSelectionDisplayObjects()).toEqual([text]);
+    expect(component.getSelectionAnchorPoint()).toEqual({ x: 70, y: 35 });
+    expect(component.getFields().map(({ id }) => id)).toEqual([
+      'text',
+      'fontFamily',
+      'fontSize',
+      'fontWeight',
+      'lineHeight',
+      'letterSpacing',
+      'align',
+      'wrapWidth',
+      'positionMode',
+      'x',
+      'y',
+      'anchor',
+      'paddingTop',
+      'paddingRight',
+      'paddingBottom',
+      'paddingLeft',
+    ]);
+
+    component.update('text', 'Begin');
+    component.update('fontSize', 18);
+    expect(component.update('anchor', 'top-left')).toBe(true);
+    component.update('paddingLeft', 8);
+    component.update('paddingTop', 6);
+    component.update('x', 2);
+    component.update('y', 3);
+
+    expect(text.setText).toHaveBeenCalledWith('Begin');
+    expect(text.setFontSize).toHaveBeenCalledWith(18);
+    expect(text.setAnchor).toHaveBeenCalledWith(0, 0);
+    expect(text.position).toMatchObject({ x: 10, y: 9 });
+
+    expect(component.update('positionMode', 'absolute')).toBe(true);
+    component.update('x', 72);
+    component.update('y', 24);
+    expect(text.position).toMatchObject({ x: 72, y: 24 });
   });
 });
 

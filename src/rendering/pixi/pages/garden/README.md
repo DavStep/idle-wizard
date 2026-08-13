@@ -62,8 +62,10 @@ button rather than the surrounding plot frame.
 Plots and seed-dialog rows are keyed high-water pools. The persistent
 `GardenSeedActionBar` keeps one room-level seed choice and opens the retained
 seed picker. Its researched `Plant All` and `Harvest All` actions reuse the
-green shared button skin; `Seeds` keeps the yellow picker skin. The visible
-actions divide the row evenly. `Plant All` plants the toolbar seed into every
+green shared button skin; `Seeds` keeps the yellow picker skin. Before bulk
+actions unlock, the lone `Seeds` control stays centered at a long `220px`
+source width instead of spanning the row. With multiple visible actions, the
+controls divide the row evenly. `Plant All` plants the toolbar seed into every
 eligible empty plot and explains missing selection, empty capacity, or
 insufficient stock through shared flyouts. `Harvest All` remains actionable
 when no plot is ready and reuses the shared reward flyout for `Nothing to

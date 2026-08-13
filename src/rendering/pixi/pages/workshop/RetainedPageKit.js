@@ -24,6 +24,7 @@ import {
   drawPixiPageBackground,
 } from '../../theme/PixiPageBackground.js';
 import { PixiButton } from '../../primitives/PixiButton.js';
+import { PixiPopupTabButton } from '../../primitives/PixiPopupTabButton.js';
 import {
   PixiProgressBar,
   PixiTimedProgressBar,
@@ -444,7 +445,8 @@ export class RetainedButton {
     this.width = 0;
     this.height = 0;
     this.variant = variant;
-    this.control = new PixiButton({
+    const ButtonClass = variant === 'tab' ? PixiPopupTabButton : PixiButton;
+    this.control = new ButtonClass({
       assetManager,
       inputRouter,
       semanticRegistry,
@@ -454,7 +456,9 @@ export class RetainedButton {
       text: label,
       action: onActivate,
       fallbackHitTest,
-      variant: normalizeRetainedButtonVariant(variant),
+      ...(variant === 'tab'
+        ? {}
+        : { variant: normalizeRetainedButtonVariant(variant) }),
       label: buttonLabel,
     });
     this.root = this.control;
@@ -502,9 +506,11 @@ export class RetainedButton {
       .setEnabled(this.enabled)
       .setSelected(this.selected)
       .setNotification(this.notification)
-      .setAction(this.activation)
-      .setVariant(normalizeRetainedButtonVariant(this.variant))
-      .applyTheme(this.theme);
+      .setAction(this.activation);
+    if (!(this.control instanceof PixiPopupTabButton)) {
+      this.control.setVariant(normalizeRetainedButtonVariant(this.variant));
+    }
+    this.control.applyTheme(this.theme);
   }
 
   destroy() {

@@ -2399,6 +2399,22 @@ describe('WorkshopPixiPage', () => {
     harness.dispose();
   });
 
+  it('keeps the Workshop summon composition fixed while world chat is hidden', () => {
+    const harness = createHarness();
+    const model = createWorkshopViewModel();
+    model.chrome = { worldChatVisible: false };
+
+    harness.page.bind(model);
+
+    expect(harness.page.summon.root.position).toMatchObject({
+      x: 180,
+      y: 2170 / 3 - 101 - 41 - 52 - 32 + 16,
+    });
+
+    harness.page.destroy();
+    harness.dispose();
+  });
+
   it('uses the main HUD art, event timer, and pooled feature notifications', () => {
     expect(PIXI_ROOT_RUN_ASSETS.workshopAlliance).toBe(
       'source:assets/icons/icon-side-alliance-root-run.png',

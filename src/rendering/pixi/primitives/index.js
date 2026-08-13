@@ -30,6 +30,7 @@ export {
 } from './PixiDeviceSettingsWidgets.js';
 export { PixiFrame } from './PixiFrame.js';
 export { PixiInfoButton } from './PixiInfoButton.js';
+export { PixiPopupTabButton } from './PixiPopupTabButton.js';
 export {
   PIXI_MODAL_OPEN_MOTION,
   PixiModalSurface,
