@@ -19,6 +19,7 @@ import {
 import { PixiButton } from '../../rendering/pixi/primitives/PixiButton.js';
 import {
   getPixiButtonAssetId,
+  getPixiButtonSkin,
   PIXI_BUTTON_COLORS,
   PIXI_BUTTON_SIZE_TIERS,
 } from '../../rendering/pixi/primitives/PixiButtonStyle.js';
@@ -88,6 +89,14 @@ const SOURCE_NINE_SLICE_METADATA_BY_ASSET_ID = new Map(
     assetId,
     metadata,
   ]),
+);
+const REGULAR_BUTTON_CONFIGURATION_BY_ASSET_ID = new Map(
+  PIXI_BUTTON_COLORS.flatMap((color) =>
+    PIXI_BUTTON_SIZE_TIERS.map((sizeTier) => [
+      getPixiButtonAssetId(color, sizeTier),
+      { color, sizeTier },
+    ]),
+  ),
 );
 const THUMBNAIL_RENDER_HEIGHT = 54;
 const THUMBNAIL_RENDER_WIDTH = 212;
@@ -220,18 +229,6 @@ export function createUiEditorPixiButtonPreview(definition) {
   host.append(status, feedback);
 
   const feedbackTracker = createFeedbackTracker(feedback);
-  const inspector = createButtonInspector({
-    getDefinition: () => currentDefinition,
-    getState: () => editorState,
-    update: (fieldId, value) => {
-      editorState = updateButtonEditorState(editorState, fieldId, value);
-      controller?.setDefinition(
-        applyButtonEditorState(currentDefinition, editorState),
-      );
-    },
-  });
-  const inspectorElement = createButtonInspectorElement(inspector);
-
   const applyDefinition = (nextDefinition) => {
     currentDefinition = nextDefinition;
     editorState = createButtonEditorState(nextDefinition);
@@ -239,7 +236,6 @@ export function createUiEditorPixiButtonPreview(definition) {
       applyButtonEditorState(nextDefinition, editorState),
     );
     feedbackTracker.reset();
-    inspectorElement.uiEditorRender?.();
     host.dataset.editorButtonWidget = nextDefinition.id;
     host.setAttribute('aria-label', `${nextDefinition.label} preview`);
     canvas.dataset.uiEditorComponent = nextDefinition.label;
@@ -251,6 +247,8 @@ export function createUiEditorPixiButtonPreview(definition) {
   host.uiEditorButtonPreviewDefinition = definition;
   host.uiEditorGetAtomicComponents = () =>
     controller?.getAtomicComponents() ?? [];
+  host.uiEditorGetInspectorComponent = () =>
+    controller?.getInspectorComponent() ?? null;
   host.uiEditorSelectAtomicComponent = (component) => {
     if (component) {
       host.dataset.selectedAtomicComponent = String(component.id ?? '');
@@ -260,8 +258,6 @@ export function createUiEditorPixiButtonPreview(definition) {
     controller?.selectAtomicComponent(component);
   };
   host.uiEditorGetButtonEditorState = () => editorState;
-  host.uiEditorCreateInspector = () => inspectorElement;
-  host.uiEditorSuppressStaticProperties = true;
   host.uiEditorAdoptPreview = (candidate) => {
     const nextDefinition = candidate?.uiEditorButtonPreviewDefinition;
 
@@ -298,8 +294,12 @@ export function createUiEditorPixiButtonPreview(definition) {
         canvas,
         definition: applyButtonEditorState(mountedDefinition, editorState),
         feedbackTracker,
+        getEditorState: () => editorState,
         host,
         resizeTarget: shell.resizeTarget,
+        updateEditorState: (fieldId, value) => {
+          editorState = updateButtonEditorState(editorState, fieldId, value);
+        },
       });
       if (disposed) {
         controller.destroy();
@@ -408,8 +408,10 @@ async function mountButtonPreview({
   canvas,
   definition,
   feedbackTracker,
+  getEditorState,
   host,
   resizeTarget = host,
+  updateEditorState,
 }) {
   sharedAssetManager ??= new UiEditorButtonAssetManager();
   const applicationManager = new PixiApplicationManager({
@@ -449,6 +451,13 @@ async function mountButtonPreview({
     definition,
     inputRouter,
     onActivate: () => feedbackTracker.recordActivation(),
+    getEditorState,
+    updateEditorState,
+    notifyHierarchyChange: () => host.dispatchEvent(
+      new globalThis.CustomEvent('ui-editor-hierarchy-change', {
+        bubbles: true,
+      }),
+    ),
   });
   const sourceWidth = applicationManager.projection.sourceWidth;
   const sourceHeight = applicationManager.projection.sourceHeight;
@@ -473,6 +482,9 @@ async function mountButtonPreview({
     getAtomicComponents() {
       return preview.atomicComponents ?? [];
     },
+    getInspectorComponent() {
+      return preview.inspectorComponent ?? null;
+    },
     selectAtomicComponent(component) {
       selectionOverlay.select(component);
     },
@@ -482,6 +494,13 @@ async function mountButtonPreview({
         definition: nextDefinition,
         inputRouter,
         onActivate: () => feedbackTracker.recordActivation(),
+        getEditorState,
+        updateEditorState,
+        notifyHierarchyChange: () => host.dispatchEvent(
+          new globalThis.CustomEvent('ui-editor-hierarchy-change', {
+            bubbles: true,
+          }),
+        ),
       });
 
       layoutPreviewControl({
@@ -540,114 +559,6 @@ function createFeedbackTracker(element) {
       render();
     },
   };
-}
-
-function createButtonInspector({ getDefinition, getState, update }) {
-  return Object.freeze({
-    getFields: () => createButtonInspectorFields(
-      getDefinition()?.preview ?? getDefinition(),
-      getState(),
-    ),
-    label: 'Widget configuration',
-    update,
-  });
-}
-
-function createButtonInspectorElement(inspector) {
-  const root = document.createElement('section');
-  root.className = 'ui-editor-button-inspector';
-  root.setAttribute('aria-label', 'Button configuration');
-
-  const render = () => {
-    root.replaceChildren(
-      ...inspector.getFields().map(createButtonInspectorField),
-    );
-  };
-
-  root.addEventListener('input', (event) => {
-    const input = event.target.closest('[data-button-inspector-field]');
-    if (!input || !root.contains(input)) {
-      return;
-    }
-    inspector.update(input.dataset.buttonInspectorField, input.value);
-  });
-  root.addEventListener('click', (event) => {
-    const option = event.target.closest('[data-button-inspector-option]');
-    if (!option || !root.contains(option)) {
-      return;
-    }
-    const group = option.closest('[role="radiogroup"]');
-    for (const sibling of group.querySelectorAll(
-      '[data-button-inspector-option]',
-    )) {
-      sibling.setAttribute('aria-checked', String(sibling === option));
-    }
-    inspector.update(
-      option.dataset.buttonInspectorField,
-      option.dataset.buttonInspectorOption,
-    );
-  });
-  root.uiEditorRender = render;
-  render();
-  return root;
-}
-
-function createButtonInspectorField(field) {
-  if (field.type === 'segmented' || field.type === 'swatches') {
-    const fieldset = document.createElement('fieldset');
-    const legend = document.createElement('legend');
-    const group = document.createElement('div');
-    fieldset.className = 'ui-editor-button-inspector__field';
-    legend.className = 'ui-editor-button-inspector__label';
-    legend.textContent = field.label;
-    group.className = 'ui-editor-button-inspector__options';
-    group.dataset.optionType = field.type;
-    group.setAttribute('role', 'radiogroup');
-    group.setAttribute('aria-label', field.label);
-
-    for (const option of field.options) {
-      const button = document.createElement('button');
-      button.className = 'ui-editor-button-inspector__option';
-      button.type = 'button';
-      button.dataset.buttonInspectorField = field.id;
-      button.dataset.buttonInspectorOption = option.value;
-      button.setAttribute('role', 'radio');
-      button.setAttribute(
-        'aria-checked',
-        String(option.value === String(field.value)),
-      );
-      button.title = option.label;
-
-      if (field.type === 'swatches') {
-        const swatch = document.createElement('span');
-        const label = document.createElement('span');
-        swatch.className = 'ui-editor-button-inspector__swatch';
-        swatch.dataset.buttonColor = option.color || option.value;
-        swatch.setAttribute('aria-hidden', 'true');
-        label.className = 'ui-editor-button-inspector__option-label';
-        label.textContent = option.label;
-        button.append(swatch, label);
-      } else {
-        button.textContent = option.label;
-      }
-      group.append(button);
-    }
-    fieldset.append(legend, group);
-    return fieldset;
-  }
-
-  const wrapper = document.createElement('label');
-  const label = document.createElement('span');
-  const input = document.createElement('input');
-  wrapper.className = 'ui-editor-button-inspector__field';
-  label.className = 'ui-editor-button-inspector__label';
-  label.textContent = field.label;
-  input.className = 'ui-editor-button-inspector__input';
-  input.dataset.buttonInspectorField = field.id;
-  input.type = field.type;
-  input.value = String(field.value ?? '');
-  wrapper.append(label, input);
-  return wrapper;
 }
 
 function createButtonEditorState(definition) {
@@ -733,13 +644,14 @@ function applyButtonEditorState(definition, state) {
     : nextPreview;
 }
 
-function createButtonInspectorFields(preview, state) {
+export function createButtonInspectorFields(preview, state, scope = 'widget') {
   const fields = [];
 
-  if (state.type === 'button' && 'text' in state) {
-    fields.push(editorTextField('text', 'Label', state.text));
-  }
-  if (state.type === 'button' && isConfigurableBaseButton(preview)) {
+  if (
+    scope === 'background'
+    && state.type === 'button'
+    && isConfigurableBaseButton(preview)
+  ) {
     fields.push(
       editorOptionField(
         'color',
@@ -750,7 +662,8 @@ function createButtonInspectorFields(preview, state) {
           label: formatButtonColor(color),
           value: color,
         })),
-        'swatches',
+        'segmented',
+        'color-swatches',
       ),
       editorOptionField(
         'sizeTier',
@@ -763,7 +676,7 @@ function createButtonInspectorFields(preview, state) {
       ),
     );
   }
-  if (state.type === 'button' && preview.variant === 'tab') {
+  if (scope === 'widget' && state.type === 'button' && preview.variant === 'tab') {
     fields.push(
       editorOptionField('selected', 'Tab state', state.selected, [
         { label: 'Resting', value: 'resting' },
@@ -771,7 +684,7 @@ function createButtonInspectorFields(preview, state) {
       ]),
     );
   }
-  if (state.type === 'cost') {
+  if (scope === 'background' && state.type === 'cost') {
     fields.push(
       editorOptionField(
         'color',
@@ -782,7 +695,8 @@ function createButtonInspectorFields(preview, state) {
           label: formatButtonColor(color),
           value: color,
         })),
-        'swatches',
+        'segmented',
+        'color-swatches',
       ),
       editorOptionField(
         'sizeTier',
@@ -793,6 +707,9 @@ function createButtonInspectorFields(preview, state) {
           value: String(size),
         })),
       ),
+    );
+  } else if (scope === 'widget' && state.type === 'cost') {
+    fields.push(
       editorOptionField('layout', 'Layout', state.layout, [
         { label: 'Standard', value: 'standard' },
         { label: 'Compact', value: 'compact' },
@@ -802,8 +719,6 @@ function createButtonInspectorFields(preview, state) {
         { label: 'Hidden', value: 'hide' },
         { label: 'Shown', value: 'show' },
       ]),
-      editorTextField('actionLabel', 'Top label text', state.actionLabel),
-      editorTextField('amountLabel', 'Price', state.amountLabel),
       editorOptionField('status', 'Cost state', state.status, [
         { label: 'Available', value: 'available' },
         { label: 'Unaffordable', value: 'unaffordable' },
@@ -811,7 +726,7 @@ function createButtonInspectorFields(preview, state) {
         { label: 'Locked', value: 'locked' },
       ]),
     );
-  } else {
+  } else if (scope === 'widget') {
     fields.push(
       editorOptionField('enabled', 'Input state', state.enabled, [
         { label: 'Enabled', value: 'enabled' },
@@ -829,12 +744,9 @@ function editorOptionField(
   value,
   options,
   type = 'segmented',
+  presentation = '',
 ) {
-  return { id, label, options, type, value };
-}
-
-function editorTextField(id, label, value) {
-  return { id, label, type: 'text', value };
+  return { id, label, options, presentation, type, value };
 }
 
 function isConfigurableBaseButton(preview) {
@@ -900,8 +812,11 @@ function layoutThumbnailControl({ height, preview, width }) {
 function createPreviewControl({
   assetManager,
   definition,
+  getEditorState = () => createButtonEditorState(definition),
   inputRouter,
+  notifyHierarchyChange = () => {},
   onActivate = () => true,
+  updateEditorState = () => {},
 }) {
   const previewDefinition = definition.preview ?? definition;
   let preview;
@@ -986,7 +901,17 @@ function createPreviewControl({
   preview.atomicComponents = createAtomicComponents({
     assetManager,
     definition,
+    getEditorState,
+    notifyHierarchyChange,
     preview,
+    updateEditorState,
+  });
+  preview.inspectorComponent = createButtonRootInspectorComponent({
+    definition,
+    getEditorState,
+    notifyHierarchyChange,
+    preview,
+    updateEditorState,
   });
   return preview;
 }
@@ -1026,13 +951,18 @@ function createCostButtonPreview({
   };
 }
 
-function createAtomicComponents({ assetManager, definition, preview }) {
+function createAtomicComponents({
+  assetManager,
+  definition,
+  getEditorState,
+  preview,
+  updateEditorState,
+}) {
   const previewDefinition = definition.preview ?? definition;
   const root = preview.root;
   const componentId = definition.id ?? previewDefinition.type ?? 'widget';
   const assets = Array.isArray(definition.assets) ? definition.assets : [];
-  const backgroundAsset =
-    assets.find(({ role }) => role === 'Background') ?? null;
+  const backgroundAsset = resolveButtonBackgroundAtomAsset(assets, root);
   const targetLabel = definition.label ?? componentId;
   const targetSize = {
     width: definition.minimumWidth ?? preview.width,
@@ -1041,13 +971,16 @@ function createAtomicComponents({ assetManager, definition, preview }) {
 
   if (previewDefinition.type === 'cost') {
     const components = [
-      createBackgroundAtom({
+      createButtonBackgroundAtom({
         assetManager,
         asset: backgroundAsset,
         componentId,
-        displayObject: root.background,
+        getEditorState,
+        previewDefinition,
+        root,
         targetLabel,
         targetSize,
+        updateEditorState,
       }),
       createDisplayAtom({
         componentId,
@@ -1058,16 +991,15 @@ function createAtomicComponents({ assetManager, definition, preview }) {
       }),
     ];
 
-    if (root.actionTextLabel.visible) {
-      components.push(
-        createTextAtom({
-          componentId,
-          displayObject: root.actionTextLabel,
-          id: 'action-label',
-          label: 'Action label',
-        }),
-      );
-    }
+    components.push(
+      createTextAtom({
+        componentId,
+        displayObject: root.actionTextLabel,
+        id: 'action-label',
+        label: 'Action label',
+        onTextUpdate: (value) => updateEditorState('actionLabel', value),
+      }),
+    );
 
     components.push(
       createTextAtom({
@@ -1075,6 +1007,7 @@ function createAtomicComponents({ assetManager, definition, preview }) {
         displayObject: root.amountLabel,
         id: 'cost-label',
         label: 'Cost label',
+        onTextUpdate: (value) => updateEditorState('amountLabel', value),
       }),
     );
     return components;
@@ -1145,6 +1078,9 @@ function createAtomicComponents({ assetManager, definition, preview }) {
       root,
       targetLabel,
       targetSize,
+      getEditorState,
+      previewDefinition,
+      updateEditorState,
     }),
     createTextAtom({
       componentId,
@@ -1157,8 +1093,48 @@ function createAtomicComponents({ assetManager, definition, preview }) {
         y: 0,
       },
       label: 'Label',
+      onTextUpdate: (value) => updateEditorState('text', value),
     }),
   ];
+}
+
+function createButtonRootInspectorComponent({
+  definition,
+  getEditorState,
+  notifyHierarchyChange,
+  preview,
+  updateEditorState,
+}) {
+  const previewDefinition = definition.preview ?? definition;
+  const root = preview.root;
+
+  return Object.freeze({
+    getFields: () => createButtonInspectorFields(
+      previewDefinition,
+      getEditorState(),
+      'widget',
+    ),
+    id: `${definition.id}:widget`,
+    isVisible: () => root.visible && root.renderable !== false,
+    label: 'IdleWizardButtonWidget',
+    setVisible: (visible) => {
+      root.visible = Boolean(visible);
+      root.renderable = Boolean(visible);
+    },
+    type: 'widget',
+    update: (fieldId, value) => {
+      updateEditorState(fieldId, value);
+      if (root instanceof PixiCostButton) {
+        applyCostButtonEditorState(root, getEditorState());
+        notifyHierarchyChange();
+      } else if (fieldId === 'enabled') {
+        root.setEnabled(value !== 'disabled');
+      } else if (fieldId === 'selected') {
+        root.setSelected(value === 'selected');
+      }
+      return false;
+    },
+  });
 }
 
 function createButtonBackgroundAtom({
@@ -1168,8 +1144,13 @@ function createButtonBackgroundAtom({
   root,
   targetLabel,
   targetSize,
+  getEditorState,
+  previewDefinition,
+  updateEditorState,
 }) {
   const targets = [root.frame, root.rootRunFrame, root.inlineBacking].filter(Boolean);
+  const resolveSkin = (assetId) =>
+    resolveButtonEditorSkin(assetId, asset, root);
   let activeTarget =
     targets.find((target) => target.visible && target.renderable !== false)
     ?? root.rootRunFrame;
@@ -1192,7 +1173,7 @@ function createButtonBackgroundAtom({
   };
   const applyAsset = (nextAssetId) => {
     const candidateAssetId = String(nextAssetId ?? '');
-    const skin = resolveEditorNineSliceSkin(candidateAssetId, asset);
+    const skin = resolveSkin(candidateAssetId);
     const compatibility = skin
       ? validateNineSliceCompatibility({
           assetId: candidateAssetId,
@@ -1233,6 +1214,11 @@ function createButtonBackgroundAtom({
     componentId,
     displayObjects: targets,
     getFields: () => [
+      ...createButtonInspectorFields(
+        previewDefinition,
+        getEditorState(),
+        'background',
+      ),
       positionField('x', 'X', x),
       positionField('y', 'Y', y),
       {
@@ -1240,6 +1226,7 @@ function createButtonBackgroundAtom({
         label: 'Asset',
         options: createAssetOptions(assetId, {
           asset,
+          resolveSkin,
           targetLabel,
           targetSize,
         }),
@@ -1256,7 +1243,35 @@ function createButtonBackgroundAtom({
     },
     type: 'image',
     update: (fieldId, value) => {
-      if (fieldId === 'x') {
+      if (fieldId === 'color') {
+        updateEditorState(fieldId, value);
+        if (root instanceof PixiCostButton) {
+          applyCostButtonEditorState(root, getEditorState());
+        } else {
+          root.setColor(value);
+        }
+        assetId = getPixiButtonAssetId(
+          getEditorState().color,
+          getEditorState().sizeTier,
+        );
+        activeTarget = root.rootRunFrame;
+        applyVisibility();
+        return true;
+      } else if (fieldId === 'sizeTier') {
+        updateEditorState(fieldId, value);
+        if (root instanceof PixiCostButton) {
+          applyCostButtonEditorState(root, getEditorState());
+        } else {
+          root.setSizeTier(value);
+        }
+        assetId = getPixiButtonAssetId(
+          getEditorState().color,
+          getEditorState().sizeTier,
+        );
+        activeTarget = root.rootRunFrame;
+        applyVisibility();
+        return true;
+      } else if (fieldId === 'x') {
         x = Number(value);
         applyPosition();
       } else if (fieldId === 'y') {
@@ -1269,70 +1284,32 @@ function createButtonBackgroundAtom({
   });
 }
 
-function createBackgroundAtom({
-  assetManager,
-  asset,
-  componentId,
-  displayObject,
-  extraTargets = [],
-  targetLabel,
-  targetSize,
-}) {
-  const targets = [...new Set([displayObject, ...extraTargets].filter(Boolean))];
-  let assetId = asset?.id ?? '';
+function applyCostButtonEditorState(root, state) {
+  const layout = resolveCostEditorLayout(state);
+  const center = {
+    x: root.position.x + root.buttonWidth / 2,
+    y: root.position.y + root.buttonHeight / 2,
+  };
 
-  return createDisplayAtom({
-    assetField: {
-      getOptions: () => createAssetOptions(assetId, {
-        asset,
-        targetLabel,
-        targetSize,
-      }),
-      getValue: () => assetId,
-      setValue: (nextAssetId) => {
-        const candidateAssetId = String(nextAssetId ?? '');
-        const skin = resolveEditorNineSliceSkin(candidateAssetId, asset);
-        const compatibility = skin
-          ? validateNineSliceCompatibility({
-              assetId: candidateAssetId,
-              minimumCenter: skin.minimumCenter,
-              outputInsets: skin.outputInsets,
-              targetLabel,
-              targetSize,
-            })
-          : null;
-
-        if (compatibility && !compatibility.compatible) {
-          return false;
-        }
-
-        assetId = candidateAssetId;
-        if (!candidateAssetId) {
-          for (const target of targets) {
-            target.visible = false;
-            target.renderable = false;
-          }
-          return true;
-        }
-        for (const target of targets) {
-          applyTexture({
-            asset,
-            assetId,
-            assetManager,
-            displayObject: target,
-            skin,
-          });
-        }
-        displayObject.visible = true;
-        displayObject.renderable = true;
-        return true;
-      },
-    },
-    componentId,
-    displayObject,
-    id: 'background',
-    label: 'Background',
-    type: 'image',
+  root.compact = layout.compact;
+  root.research = layout.research;
+  root.stacked = state.label === 'show';
+  root.showLabel = state.label === 'show';
+  root.setSize(layout.width, layout.height);
+  root.position.set(
+    center.x - layout.width / 2,
+    center.y - layout.height / 2,
+  );
+  root.applyFixedTextStyle();
+  root.setModel({
+    action: root.action,
+    actionLabel: state.actionLabel,
+    amountLabel: state.amountLabel,
+    enabled: state.status !== 'disabled',
+    showLabel: state.label === 'show',
+    sizeTier: state.sizeTier,
+    state: state.status === 'disabled' ? 'available' : state.status,
+    tone: state.color,
   });
 }
 
@@ -1342,12 +1319,23 @@ function createTextAtom({
   id,
   label,
   layoutBounds = null,
+  onTextUpdate = () => {},
 }) {
-  return createUiEditorPixiTextComponent({
+  const component = createUiEditorPixiTextComponent({
     displayObject,
     id: `${componentId}:${id}`,
     label,
     layoutBounds,
+  });
+  return Object.freeze({
+    ...component,
+    update: (fieldId, value) => {
+      const shouldRefresh = component.update(fieldId, value);
+      if (fieldId === 'text') {
+        onTextUpdate(value);
+      }
+      return shouldRefresh;
+    },
   });
 }
 
@@ -1446,6 +1434,7 @@ export function createAssetOptions(
   currentAssetId,
   {
     asset = null,
+    resolveSkin = (assetId) => resolveEditorNineSliceSkin(assetId, asset),
     targetLabel = 'widget',
     targetSize = { width: 0, height: 0 },
   } = {},
@@ -1458,7 +1447,7 @@ export function createAssetOptions(
   return [
     { label: 'None', value: '' },
     ...[...assetIds].map((assetId) => {
-      const skin = resolveEditorNineSliceSkin(assetId, asset);
+      const skin = resolveSkin(assetId);
       const compatibility = skin
         ? validateNineSliceCompatibility({
             assetId,
@@ -1487,55 +1476,54 @@ export function createAssetOptions(
   ];
 }
 
+export function resolveButtonBackgroundAtomAsset(assets, root) {
+  const activeSkin = root?.activeSkin;
+  if (activeSkin?.assetId) {
+    return Object.freeze({
+      borderInsets: activeSkin.borderInsets,
+      height: root.buttonHeight,
+      id: activeSkin.assetId,
+      minimumCenter: activeSkin.minimumCenter,
+      nineSlice: true,
+      role: 'Background',
+      sourceInsets: activeSkin.sourceInsets,
+      width: root.buttonWidth,
+    });
+  }
+
+  return assets.find(({ role }) => role === 'Background') ?? null;
+}
+
+function resolveButtonEditorSkin(assetId, registeredAsset, root) {
+  if (root instanceof PixiPopupTabButton) {
+    const configuration = REGULAR_BUTTON_CONFIGURATION_BY_ASSET_ID.get(
+      String(assetId ?? ''),
+    );
+    if (configuration) {
+      const skin = getPixiButtonSkin({
+        color: configuration.color,
+        height: root.buttonHeight,
+        sizeTier: configuration.sizeTier,
+        width: root.buttonWidth,
+      });
+      return createPixiNineSliceSkin({
+        assetId: skin.assetId,
+        minimumCenter: skin.minimumCenter,
+        outputInsets: skin.borderInsets,
+        sourceInsets: skin.sourceInsets,
+      });
+    }
+  }
+
+  return resolveEditorNineSliceSkin(assetId, registeredAsset);
+}
+
 function formatAssetLabel(assetId) {
   const filename = String(assetId).split('/').pop() ?? String(assetId);
   return filename
     .replace(/\.(png|jpg|jpeg)$/i, '')
     .replace(/[-_]+/g, ' ')
     .replace(/\b\w/g, (letter) => letter.toUpperCase());
-}
-
-function applyTexture({
-  asset,
-  assetId,
-  assetManager,
-  displayObject,
-  skin = resolveEditorNineSliceSkin(assetId, asset),
-}) {
-  const texture = assetManager.getTexture(assetId);
-  const width = displayObject.frameWidth ?? displayObject.width;
-  const height = displayObject.frameHeight ?? displayObject.height;
-  const usesSkinContract = typeof displayObject.setSkin === 'function';
-
-  if (usesSkinContract) {
-    displayObject.setSkin({
-      assetId,
-      borderInsets:
-        skin?.outputInsets ?? PIXI_ROOT_RUN_GEOMETRY.button.borderInsets,
-      height,
-      minimumCenter: skin?.minimumCenter,
-      sourceInsets:
-        skin?.sourceInsets ?? PIXI_ROOT_RUN_GEOMETRY.button.sourceInsets,
-      texture,
-      width,
-    });
-  } else if (typeof displayObject.setTexture === 'function') {
-    displayObject.setTexture(
-      texture,
-      skin?.sourceInsets ?? PIXI_ROOT_RUN_GEOMETRY.button.sourceInsets,
-    );
-  } else if ('texture' in displayObject) {
-    displayObject.texture = texture;
-  }
-
-  if (
-    !usesSkinContract
-    && Number.isFinite(width)
-    && Number.isFinite(height)
-  ) {
-    displayObject.width = width;
-    displayObject.height = height;
-  }
 }
 
 function resolveEditorNineSliceSkin(assetId, registeredAsset) {

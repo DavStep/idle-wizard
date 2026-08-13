@@ -440,7 +440,7 @@ describe('retained dialog UI editor integrations', () => {
     );
     expect(
       inventoryChoiceRowIntegration.scenarios.map(({ id }) => id),
-    ).toEqual(['unselected', 'selected', 'disabled']);
+    ).toEqual(['unselected', 'selected', 'pressed', 'disabled']);
   });
 
   it('registers the production World Chat row as a drill-in widget with states', () => {

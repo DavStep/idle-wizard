@@ -87,6 +87,11 @@ and `N Available` label, `6px` row rhythm, and the shared right-inset checkmark
 for the selected seed. Its shared choice-dialog viewport keeps a 4.5-row
 minimum height and top-aligns shorter lists. Do not replace it with a compact
 Garden-specific row.
+The production `RootRunInventoryChoiceRowPixi` extends `ClickableWidget`, so
+the entire row shares the standard compact press/release feedback. Its
+standalone editor entry is `Inventory Choice Row` under
+`UI Widgets / Composite widgets / Brewing`, with unselected, selected,
+pressed, and unavailable scenarios.
 Open `/src/dev/uiRecipes/garden-seed-picker.html` for the deterministic,
 non-persistent four-row visual-reference state.
 Open `/src/dev/uiRecipes/garden-plots.html` for the deterministic,

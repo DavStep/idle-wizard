@@ -12,6 +12,7 @@ import {
   createUiEditorPixiSurfaceShell,
   createUiEditorPixiTextComponent,
   disposeUiEditorPixiControl,
+  resolveUiEditorSelectionPixelScale,
 } from './createUiEditorPixiSurface.js';
 
 const uiEditorCss = readFileSync(`${cwd()}/src/uiEditor/uiEditor.css`, 'utf8');
@@ -302,5 +303,33 @@ describe('createUiEditorPixiSurfaceShell', () => {
     expect(viewportRule).toMatch(/(?:^|\n)\s*inset:\s*0;/);
     expect(toolbarRule).toContain('position: absolute;');
     expect(toolbarRule).toContain('bottom: 12px;');
+  });
+
+  it('keeps the Pixi preview on the same smooth sampling path as the game', () => {
+    expect(uiEditorCss).toMatch(
+      /\.ui-editor-game-widget-preview__canvas\s*\{[^}]*display:\s*block;[^}]*image-rendering:\s*auto;/,
+    );
+    expect(uiEditorCss).not.toMatch(
+      /\.ui-editor-game-widget-preview__canvas\s*\{[^}]*image-rendering:\s*pixelated;/,
+    );
+  });
+});
+
+describe('resolveUiEditorSelectionPixelScale', () => {
+  it('keeps selection chrome at a constant screen size through DOM zoom', () => {
+    const application = {
+      canvas: {
+        getBoundingClientRect: () => ({ height: 2646.774, width: 1313.89 }),
+      },
+      screen: { height: 2170, width: 1080 },
+    };
+
+    expect(resolveUiEditorSelectionPixelScale(application)).toBeCloseTo(
+      1080 / 1313.89,
+    );
+  });
+
+  it('falls back safely before the canvas has measurable bounds', () => {
+    expect(resolveUiEditorSelectionPixelScale({})).toBe(1);
   });
 });

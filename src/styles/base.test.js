@@ -527,7 +527,7 @@ describe('base styles', () => {
       '--style-tab-frame-slice: 100 52 68 86 fill;',
     );
     expect(rootRule).toContain(
-      '--style-tab-frame-width: 13px 7px 9px 20px;',
+      '--style-tab-frame-width: var(--style-yellow-button-frame-width);',
     );
     expect(deselectedTabRule).toContain(
       'border-image-source: var(--style-tab-frame);',
@@ -615,7 +615,7 @@ describe('base styles', () => {
     );
     expect(rootRule).toContain('--style-tab-frame-slice: 100 52 68 86 fill;');
     expect(rootRule).toContain(
-      '--style-tab-frame-width: 13px 7px 9px 20px;',
+      '--style-tab-frame-width: var(--style-yellow-button-frame-width);',
     );
     expect(yellowButtonRule).toContain(
       'border-image-source: var(--style-yellow-button-frame);',

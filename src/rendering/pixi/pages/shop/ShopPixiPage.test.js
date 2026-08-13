@@ -1002,7 +1002,7 @@ describe('ShopPixiPage', () => {
     ).toBeCloseTo(8);
     expect(seedsTab.control.variant).toBe('tab');
     expect(seedsTab.control.resolveRootRunVariant()).toBe(
-      'brown-light',
+      'brown',
     );
     expect(herbsTab.control.resolveRootRunVariant()).toBe(
       'brown-dark',
@@ -1331,7 +1331,7 @@ describe('ShopPixiPage', () => {
     ).toEqual(['tab', 'tab', 'tab']);
     expect(
       harness.page.tabButtons.get('traders').resolveRootRunVariant(),
-    ).toBe('brown-light');
+    ).toBe('brown');
     expect(
       harness.page.tabButtons.get('players').resolveRootRunVariant(),
     ).toBe('brown-dark');

@@ -323,10 +323,6 @@ export const PIXI_ROOT_RUN_GEOMETRY = Object.freeze({
     sourceInsets: Object.freeze({ top: 100, right: 52, bottom: 68, left: 86 }),
     borderInsets: Object.freeze({ top: 16, right: 7, bottom: 11, left: 20 }),
   }),
-  tabButton: Object.freeze({
-    sourceInsets: Object.freeze({ top: 100, right: 52, bottom: 68, left: 86 }),
-    borderInsets: Object.freeze({ top: 13, right: 7, bottom: 9, left: 20 }),
-  }),
   textFieldBrownInset: Object.freeze({
     sourceInsets: Object.freeze({ top: 26, right: 26, bottom: 26, left: 26 }),
     borderInsets: Object.freeze({

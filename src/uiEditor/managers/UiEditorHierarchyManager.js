@@ -361,7 +361,9 @@ export class UiEditorHierarchyManager {
       this.onSelectComponent?.(target.component);
     } else {
       target.element.setAttribute(SCENE_SELECTED_ATTRIBUTE, '');
-      this.onSelectComponent?.(null);
+      this.onSelectComponent?.(
+        target.element.uiEditorGetInspectorComponent?.() ?? null,
+      );
     }
     this.refresh();
     return true;

@@ -256,27 +256,21 @@ describe('retained global Pixi dialogs', () => {
     harness.dispose();
   });
 
-  it('uses compact tab geometry for the feedback kind selectors', () => {
+  it('uses fitted base-button geometry for the feedback kind selectors', () => {
     const harness = createHarness();
     const feedback = harness.registry.open(
       GLOBAL_DIALOG_IDS.FEEDBACK,
       { kind: 'feedback' },
     );
-    const compactTabSkin = getPixiButtonSkin({
-      color: 'brown-dark',
-      compactTab: true,
-      sizeTier: 50,
-    });
-    const compactTabMinimumHeight =
-      compactTabSkin.borderInsets.top +
-      compactTabSkin.minimumCenter.height +
-      compactTabSkin.borderInsets.bottom;
-
     for (const { button } of feedback.feedbackKindButtons) {
+      const baseSkin = getPixiButtonSkin({
+        color: 'brown-dark',
+        height: button.buttonHeight,
+        sizeTier: 50,
+        width: button.buttonWidth,
+      });
       expect(button.variant).toBe('tab');
-      expect(button.buttonHeight).toBeGreaterThanOrEqual(
-        compactTabMinimumHeight,
-      );
+      expect(button.activeSkin.borderInsets).toEqual(baseSkin.borderInsets);
     }
 
     harness.dispose();
@@ -1042,7 +1036,7 @@ describe('retained global Pixi dialogs', () => {
     expect(settings.avatarTabButton.textLabel.fontSize).toBe(13);
     expect(settings.avatarTabButton.variant).toBe('tab');
     expect(settings.avatarTabButton.resolveRootRunVariant()).toBe(
-      'brown-light',
+      'brown',
     );
     expect(settings.frameTabButton.resolveRootRunVariant()).toBe(
       'brown-dark',

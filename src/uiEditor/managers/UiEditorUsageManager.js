@@ -214,7 +214,9 @@ export class UiEditorUsageManager {
     this.refs.title.textContent = component.label;
     this.refs.count.textContent = component.type === 'text'
       ? 'Text · Preview override'
-      : 'Atomic component';
+      : component.type === 'widget'
+        ? 'Widget component'
+        : 'Atomic component';
     this.refs.editor.hidden = fields.length === 0;
     this.refs.editor.setAttribute(
       'aria-label',
@@ -429,6 +431,7 @@ function normalizeFields(fields) {
         ? field.options
             .map((option) => ({
               disabled: option?.disabled === true,
+              color: String(option?.color ?? ''),
               label: String(option?.label ?? option?.value ?? ''),
               reason: String(option?.reason ?? ''),
               shortLabel: String(option?.shortLabel ?? ''),
@@ -587,6 +590,16 @@ function createEditorField({
       button.tabIndex = option.value === String(value) ? 0 : -1;
       button.textContent = option.shortLabel || option.label;
       button.title = option.reason || option.label;
+      if (presentation === 'color-swatches') {
+        const swatch = document.createElement('span');
+        const optionLabel = document.createElement('span');
+        swatch.className = 'ui-editor-button-inspector__swatch';
+        swatch.dataset.buttonColor = option.color || option.value;
+        swatch.setAttribute('aria-hidden', 'true');
+        optionLabel.className = 'ui-editor-button-inspector__option-label';
+        optionLabel.textContent = option.shortLabel || option.label;
+        button.replaceChildren(swatch, optionLabel);
+      }
       group.append(button);
     }
     wrapper.append(fieldLabel, group);

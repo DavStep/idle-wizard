@@ -160,9 +160,15 @@ describe('compact Root Run button nine-slices', () => {
     }
   });
 
-  it('reuses regular button assets with output insets that fit the 28px footer height', () => {
-    const sourceInsets = PIXI_ROOT_RUN_GEOMETRY.tabButton.sourceInsets;
-    const borderInsets = PIXI_ROOT_RUN_GEOMETRY.tabButton.borderInsets;
+  it('fits regular button geometry to the 28px footer height', () => {
+    const skin = getPixiButtonSkin({
+      color: 'brown-dark',
+      height: 28,
+      sizeTier: 50,
+      width: 92,
+    });
+    const sourceInsets = skin.sourceInsets;
+    const borderInsets = skin.borderInsets;
 
     expect(sourceInsets).toEqual({
       top: 100,
@@ -170,13 +176,8 @@ describe('compact Root Run button nine-slices', () => {
       bottom: 68,
       left: 86,
     });
-    expect(borderInsets).toEqual({
-      top: 13,
-      right: 7,
-      bottom: 9,
-      left: 20,
-    });
-    expect(borderInsets.top + borderInsets.bottom).toBeLessThan(28);
+    expect(borderInsets.top + skin.minimumCenter.height + borderInsets.bottom)
+      .toBeLessThanOrEqual(28);
 
     expect(sourceInsets).toEqual(PIXI_ROOT_RUN_GEOMETRY.button.sourceInsets);
 

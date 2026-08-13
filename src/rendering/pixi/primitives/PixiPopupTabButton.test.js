@@ -35,7 +35,10 @@ describe('PixiPopupTabButton', () => {
 
     getTexture.mockClear();
     button.setSelected(true);
-    expect(button.resolveRootRunVariant()).toBe('brown-light');
+    expect(button.resolveRootRunVariant()).toBe('brown');
+    expect(button.activeSkin.assetId).toBe(
+      PIXI_ROOT_RUN_ASSETS.buttonBrownLight,
+    );
     expect(getTexture).toHaveBeenCalledWith(
       PIXI_ROOT_RUN_ASSETS.buttonBrownLight,
     );
@@ -43,22 +46,22 @@ describe('PixiPopupTabButton', () => {
     button.destroy({ children: true });
   });
 
-  it('adds compact tab geometry without changing the base notification contract', () => {
+  it('inherits fitted base geometry without changing the notification contract', () => {
     const button = new PixiPopupTabButton({
       assetManager: { getTexture: vi.fn(() => Texture.EMPTY) },
       width: 100,
     });
-    const compactSkin = getPixiButtonSkin({
+    const baseSkin = getPixiButtonSkin({
       color: 'brown-dark',
-      compactTab: true,
       height: PIXI_UI_GEOMETRY.tabHeight,
       sizeTier: 50,
       width: 100,
     });
 
     expect(button.rootRunFrame.borderInsets).toEqual(
-      compactSkin.borderInsets,
+      baseSkin.borderInsets,
     );
+    expect(button.activeSkin.borderInsets).toEqual(baseSkin.borderInsets);
 
     button.setNotification(true);
     button.setSelected(true);

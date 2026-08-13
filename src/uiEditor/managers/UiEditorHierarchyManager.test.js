@@ -231,6 +231,29 @@ describe('UiEditorHierarchyManager', () => {
     expect(musicRow.hasAttribute('data-ui-editor-scene-selected')).toBe(true);
   });
 
+  it('opens the owning component inspector when the hierarchy root is selected', () => {
+    const preview = document.createElement('section');
+    const inspectorComponent = {
+      getFields: () => [],
+      id: 'sample-widget',
+      label: 'SampleWidget',
+      update: vi.fn(),
+    };
+    preview.dataset.uiEditorComponent = 'SampleWidget';
+    preview.uiEditorGetInspectorComponent = () => inspectorComponent;
+    editorRefs.preview.append(preview);
+    manager.refresh();
+
+    editorRefs.panels.left
+      .querySelector('[data-editor-component-select]')
+      .click();
+
+    expect(onSelectComponent).toHaveBeenLastCalledWith(inspectorComponent);
+    expect(
+      editorRefs.panels.left.querySelector('[data-selected="true"]'),
+    ).not.toBeNull();
+  });
+
   it('shows, selects, and hides atomic Pixi components', () => {
     const preview = document.createElement('section');
     preview.uiEditorSelectAtomicComponent = vi.fn();

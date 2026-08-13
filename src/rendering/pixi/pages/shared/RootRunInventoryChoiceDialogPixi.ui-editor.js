@@ -41,6 +41,12 @@ export default defineUiEditorIntegration({
       mount: mountInventoryChoiceRow,
     },
     {
+      fixture: createHerbFixture({ pressed: true }),
+      id: 'pressed',
+      label: 'Herb, pressed',
+      mount: mountInventoryChoiceRow,
+    },
+    {
       fixture: createHerbFixture({ disabled: true }),
       id: 'disabled',
       label: 'Herb, unavailable',
@@ -105,6 +111,7 @@ function createInventoryChoiceRowControl({ assets, fixture, input }) {
   row.bind(fixture.key, fixture);
   row.setBounds(0, 0, ROW_WIDTH, ROW_HEIGHT, ROW_HEIGHT);
   row.applyTheme(DEFAULT_PIXI_THEME_SNAPSHOT);
+  row.setPressed(fixture.pressed === true);
 
   return {
     atomicComponents: createInventoryChoiceRowHierarchy(row),

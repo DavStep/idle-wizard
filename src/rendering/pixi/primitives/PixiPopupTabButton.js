@@ -1,12 +1,34 @@
 import { PIXI_UI_GEOMETRY } from '../theme/PixiThemeTokens.js';
 import { PixiButton } from './PixiButton.js';
+import { getPixiButtonSkin } from './PixiButtonStyle.js';
+
+export const PIXI_POPUP_TAB_BUTTON_COLORS = Object.freeze({
+  resting: 'brown-dark',
+  selected: 'brown',
+});
+
+export function getPixiPopupTabButtonSkin({
+  height = PIXI_UI_GEOMETRY.tabHeight,
+  selected = false,
+  sizeTier = 50,
+  width = null,
+} = {}) {
+  return getPixiButtonSkin({
+    color: selected
+      ? PIXI_POPUP_TAB_BUTTON_COLORS.selected
+      : PIXI_POPUP_TAB_BUTTON_COLORS.resting,
+    height,
+    sizeTier,
+    width,
+  });
+}
 
 /**
  * Popup text tab built on the shared retained button contract.
  *
  * PixiButton owns input, press feedback, disabled state, semantics, haptics,
- * notifications, and activation. This subclass adds only popup-tab selection
- * skins and the compact 28px nine-slice geometry.
+ * notifications, activation, and fitted skin geometry. This subclass adds
+ * only popup-tab selection skins.
  */
 export class PixiPopupTabButton extends PixiButton {
   constructor({
@@ -23,10 +45,8 @@ export class PixiPopupTabButton extends PixiButton {
   }
 
   resolveRootRunVariant() {
-    return this.selected ? 'brown-light' : 'brown-dark';
-  }
-
-  usesCompactSkinGeometry() {
-    return this.buttonHeight <= PIXI_UI_GEOMETRY.tabHeight;
+    return this.selected
+      ? PIXI_POPUP_TAB_BUTTON_COLORS.selected
+      : PIXI_POPUP_TAB_BUTTON_COLORS.resting;
   }
 }

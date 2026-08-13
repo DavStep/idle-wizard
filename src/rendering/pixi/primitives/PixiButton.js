@@ -68,6 +68,7 @@ export class PixiButton extends Container {
     this.semanticId = semanticId;
     this.releaseFrame = 0;
     this.releaseStartedAt = 0;
+    this.activeSkin = null;
 
     this.visual = new Container({ label: `${label}:visual` });
     this.rootRunFrame = new PixiNineSliceFrame({
@@ -286,9 +287,9 @@ export class PixiButton extends Container {
         visualVariant,
         this.buttonWidth,
         this.buttonHeight,
-        this.usesCompactSkinGeometry(),
         this.sizeTier,
       );
+      this.activeSkin = visualGeometry;
       const textureId = visualGeometry.assetId;
       this.rootRunFrame.position.set(
         visualGeometry.frame.x,
@@ -314,6 +315,7 @@ export class PixiButton extends Container {
       });
       this.textLabel.setColor(visualGeometry.textColor);
     } else {
+      this.activeSkin = null;
       this.rootRunFrame.position.set(0, 0);
       this.rootRunFrame.filters = null;
       this.textLabel.setFontFamily(null);
@@ -331,10 +333,6 @@ export class PixiButton extends Container {
       return this.color;
     }
     return null;
-  }
-
-  usesCompactSkinGeometry() {
-    return false;
   }
 
   syncNotification() {
@@ -417,12 +415,10 @@ function getRootRunVisualGeometry(
   variant,
   width,
   height,
-  compactTab = false,
   sizeTier = 50,
 ) {
   const skin = getPixiButtonSkin({
     color: variant,
-    compactTab,
     height,
     sizeTier,
     width,

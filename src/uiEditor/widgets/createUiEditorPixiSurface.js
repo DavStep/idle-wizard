@@ -633,25 +633,27 @@ export function createUiEditorPixiSelectionOverlay({ application }) {
       return;
     }
 
+    const pixelScale = resolveUiEditorSelectionPixelScale(application);
+
     outline
       .rect(bounds.x, bounds.y, bounds.width, bounds.height)
       .fill({ color: 0x4c91ff, alpha: 0.1 })
-      .stroke({ color: 0x090b10, width: 4 })
+      .stroke({ color: 0x090b10, width: 4 * pixelScale })
       .rect(bounds.x, bounds.y, bounds.width, bounds.height)
-      .stroke({ color: 0x4c91ff, width: 2 });
+      .stroke({ color: 0x4c91ff, width: 2 * pixelScale });
 
-    drawSelectionHandles(outline, bounds);
+    drawSelectionHandles(outline, bounds, pixelScale);
     const anchorPoint = selectedComponent?.getSelectionAnchorPoint?.();
     if (Number.isFinite(anchorPoint?.x) && Number.isFinite(anchorPoint?.y)) {
       outline
-        .circle(anchorPoint.x, anchorPoint.y, 4)
+        .circle(anchorPoint.x, anchorPoint.y, 4 * pixelScale)
         .fill({ color: 0x171717 })
-        .stroke({ color: 0x8eb8ff, width: 2 })
-        .moveTo(anchorPoint.x - 7, anchorPoint.y)
-        .lineTo(anchorPoint.x + 7, anchorPoint.y)
-        .moveTo(anchorPoint.x, anchorPoint.y - 7)
-        .lineTo(anchorPoint.x, anchorPoint.y + 7)
-        .stroke({ color: 0x8eb8ff, width: 1 });
+        .stroke({ color: 0x8eb8ff, width: 2 * pixelScale })
+        .moveTo(anchorPoint.x - 7 * pixelScale, anchorPoint.y)
+        .lineTo(anchorPoint.x + 7 * pixelScale, anchorPoint.y)
+        .moveTo(anchorPoint.x, anchorPoint.y - 7 * pixelScale)
+        .lineTo(anchorPoint.x, anchorPoint.y + 7 * pixelScale)
+        .stroke({ color: 0x8eb8ff, width: pixelScale });
     }
   };
 
@@ -671,7 +673,27 @@ export function createUiEditorPixiSelectionOverlay({ application }) {
   };
 }
 
-function drawSelectionHandles(outline, bounds) {
+/**
+ * Converts one visible editor pixel into Pixi stage units. The preview zoom is
+ * a DOM transform outside Pixi, so drawing fixed stage-space handles would
+ * make the editor chrome grow and shrink with the authored game world.
+ */
+export function resolveUiEditorSelectionPixelScale(application) {
+  const canvas = application?.canvas ?? application?.renderer?.canvas;
+  const rect = canvas?.getBoundingClientRect?.();
+  const screen = application?.screen ?? application?.renderer?.screen;
+  const widthScale = positiveRatio(screen?.width, rect?.width);
+  const heightScale = positiveRatio(screen?.height, rect?.height);
+
+  if (widthScale && heightScale) {
+    return Math.max(widthScale, heightScale);
+  }
+  return widthScale || heightScale || 1;
+}
+
+function drawSelectionHandles(outline, bounds, pixelScale) {
+  const size = 5 * pixelScale;
+  const halfSize = size / 2;
   const points = [
     [bounds.x, bounds.y],
     [bounds.x + bounds.width / 2, bounds.y],
@@ -684,10 +706,15 @@ function drawSelectionHandles(outline, bounds) {
   ];
   for (const [x, y] of points) {
     outline
-      .rect(x - 2.5, y - 2.5, 5, 5)
+      .rect(x - halfSize, y - halfSize, size, size)
       .fill({ color: 0xf2f6ff })
-      .stroke({ color: 0x4c91ff, width: 1 });
+      .stroke({ color: 0x4c91ff, width: pixelScale });
   }
+}
+
+function positiveRatio(numerator, denominator) {
+  const ratio = Number(numerator) / Number(denominator);
+  return Number.isFinite(ratio) && ratio > 0 ? ratio : 0;
 }
 
 function collectSelectionBounds(displayObjects) {

@@ -185,7 +185,7 @@ Ordinary room UI uses shallow, skin-owned depth. Image-backed frames may carry b
 
 ### Buttons
 - **Shape:** Image-backed rounded/chamfered controls with skin-owned corners, outlines, and shallow depth.
-- **Default:** Brown/gold for general actions, green for positive claim/collect/confirm, and red for cancellation or loss. Cost buttons compose the shared regular-button skins with resource content; compact popup tabs reuse the shared brown/dark-brown/gray textures with their own 28px output geometry.
+- **Default:** Brown/gold for general actions, green for positive claim/collect/confirm, and red for cancellation or loss. Cost buttons compose the shared regular-button skins with resource content; popup tabs reuse the shared brown/dark-brown/gray textures and the base button's fitted geometry at their 28px height.
 - **Content:** A meaningful icon may lead the label when it improves recognition; labels stay visible and accessible.
 - **Focus:** Use the shared focus treatment; do not change font weight or add hover-only behavior.
 - **Active:** Use the shared compressed press state while keeping the label and icon optically centered.

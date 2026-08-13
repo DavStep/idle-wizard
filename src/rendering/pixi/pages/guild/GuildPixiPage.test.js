@@ -14,6 +14,7 @@ import {
   PIXI_DIALOG_FOOTER_TABS_GEOMETRY,
   PixiDialogFrame,
 } from '../../primitives/PixiDialogFrame.js';
+import { getPixiButtonSkin } from '../../primitives/PixiButtonStyle.js';
 import { PIXI_ROOT_RUN_GEOMETRY } from '../../theme/PixiThemeTokens.js';
 import { GUILD_DIALOG_IDS } from './GuildDialogPixi.js';
 import { GuildPixiPage } from './GuildPixiPage.js';
@@ -157,12 +158,16 @@ describe('GuildPixiPage', () => {
       expect(button.buttonHeight, tabId).toBe(28);
       expect(button.rootRunFrame.compatibilityError, tabId).toBeNull();
     }
-    expect(
-      harness.page.tabButtons.get('hall').rootRunFrame.borderInsets,
-    ).toMatchObject({ top: 13, bottom: 9 });
-    expect(
-      harness.page.tabButtons.get('board').rootRunFrame.borderInsets,
-    ).toMatchObject({ top: 13, bottom: 9 });
+    for (const button of harness.page.tabButtons.values()) {
+      expect(button.rootRunFrame.borderInsets).toEqual(
+        getPixiButtonSkin({
+          color: button.resolveRootRunVariant(),
+          height: button.buttonHeight,
+          sizeTier: button.sizeTier,
+          width: button.buttonWidth,
+        }).borderInsets,
+      );
+    }
     expect(harness.page.secretarySection.button).toMatchObject({
       buttonHeight: 20,
       sizeTier: 30,

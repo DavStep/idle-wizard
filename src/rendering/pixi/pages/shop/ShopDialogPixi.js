@@ -17,6 +17,7 @@ import {
   getSeedPackItemFrameName,
 } from '../../../../assets/items/seeds/seedIconFrames.js';
 import { BasePixiRetainedView } from '../../primitives/BasePixiRetainedView.js';
+import { ClickableWidget } from '../../primitives/ClickableWidget.js';
 import { PixiButton } from '../../primitives/PixiButton.js';
 import {
   createDialogPaperSection,
@@ -418,8 +419,6 @@ export class ShopDialogPixi extends BasePixiRetainedView {
       counters,
       rowHeight: config.rowHeight,
       useSettingsRows: usesSplitPaperSections,
-      rubberPress:
-        dialogId === WORKSHOP_SUMMON_INFO_DIALOG_ID,
       expandedControl:
         dialogId === WORKSHOP_SUMMON_INFO_DIALOG_ID
           ? this.dropSettingsSlider
@@ -1788,7 +1787,6 @@ class VirtualShopDialogList {
     counters,
     rowHeight,
     useSettingsRows = false,
-    rubberPress = false,
     expandedControl = null,
     requestFrame = defaultRequestFrame,
     cancelFrame = defaultCancelFrame,
@@ -1798,7 +1796,6 @@ class VirtualShopDialogList {
   }) {
     this.rowHeight = rowHeight;
     this.useSettingsRows = useSettingsRows;
-    this.rubberPress = rubberPress;
     this.expandedControl = expandedControl;
     this.requestFrame = requestFrame;
     this.cancelFrame = cancelFrame;
@@ -1835,7 +1832,6 @@ class VirtualShopDialogList {
           inputRouter,
           semanticRegistry,
           useSettingsStyle: this.useSettingsRows,
-          rubberPress: this.rubberPress,
           requestFrame: this.requestFrame,
           cancelFrame: this.cancelFrame,
           timeSource: this.timeSource,
@@ -2177,33 +2173,38 @@ class VirtualShopDialogList {
 
 export { VirtualShopDialogList as RootRunInventoryChoiceList };
 
-export class RootRunInventoryChoiceRowPixi {
+export class RootRunInventoryChoiceRowPixi extends ClickableWidget {
   constructor({
     assetManager,
     inputRouter,
     semanticRegistry,
     useSettingsStyle = false,
-    rubberPress = false,
     requestFrame = defaultRequestFrame,
     cancelFrame = defaultCancelFrame,
     timeSource = defaultTimeSource,
     reducedMotion = prefersReducedMotion,
     label,
   }) {
-    this.root = new Container();
-    this.root.label = label;
+    super({
+      enabled: false,
+      inputRouter,
+      label,
+      motionRuntime: {
+        cancelFrame,
+        now: timeSource,
+        prefersReducedMotion: reducedMotion,
+        requestFrame,
+      },
+      pressScale: SETTINGS_ROW_PRESS_SCALE,
+      releaseDurationMs: SETTINGS_ROW_RELEASE_DURATION_MS,
+      releasePeakScale: SETTINGS_ROW_RELEASE_PEAK_SCALE,
+    });
     this.visual = new Container({
       label: `${label}:visual`,
     });
+    this.setClickableVisual(this.visual);
     this.assetManager = assetManager;
     this.useSettingsStyle = useSettingsStyle;
-    this.rubberPress = rubberPress;
-    this.requestFrame = requestFrame;
-    this.cancelFrame = cancelFrame;
-    this.timeSource = timeSource;
-    this.reducedMotion = reducedMotion;
-    this.releaseFrame = null;
-    this.releaseStartedAt = null;
     this.background = useSettingsStyle
       ? new PixiNineSliceFrame({
           texture:
@@ -2270,18 +2271,6 @@ export class RootRunInventoryChoiceRowPixi {
     this.selected = false;
     this.expanded = false;
     this.theme = DEFAULT_PIXI_THEME_SNAPSHOT;
-    this.registration =
-      inputRouter?.registerPressTarget?.(this.root, {
-        enabled: () =>
-          this.enabled &&
-          Boolean(this.action) &&
-          this.root.visible &&
-          this.root.renderable,
-        onPressChange: (pressed, context) =>
-          this.setPressed(pressed, context),
-        onActivate: (payload) => this.action?.(payload),
-        haptic: 'light',
-      }) ?? null;
   }
 
   bind(key, item) {
@@ -2344,7 +2333,7 @@ export class RootRunInventoryChoiceRowPixi {
     this.selectedIndicator.visible = this.selected;
     this.selectedIndicator.renderable = this.selected;
     this.selectedIndicator.alpha = this.enabled ? 1 : 0.45;
-    this.root.eventMode = this.action && this.enabled ? 'static' : 'none';
+    this.syncClickableInteraction();
     this.label.setColor(
       resolveThemeColor(
         item.disabled
@@ -2527,69 +2516,6 @@ export class RootRunInventoryChoiceRowPixi {
     this.redraw();
   }
 
-  setPressed(pressed, context = null) {
-    const nextPressed = Boolean(pressed) && this.enabled;
-    if (!this.rubberPress) {
-      this.pressed = nextPressed;
-      this.redraw();
-      return;
-    }
-
-    if (nextPressed) {
-      this.cancelReleaseAnimation();
-      this.pressed = true;
-      this.visual.scale.set(SETTINGS_ROW_PRESS_SCALE);
-      this.redraw();
-      return;
-    }
-
-    const wasPressed = this.pressed;
-    this.pressed = false;
-    this.redraw();
-    if (
-      wasPressed &&
-      context?.confirmed === true &&
-      !this.reducedMotion?.()
-    ) {
-      this.startReleaseAnimation();
-    } else {
-      this.cancelReleaseAnimation();
-      this.visual.scale.set(1);
-    }
-  }
-
-  startReleaseAnimation() {
-    this.cancelReleaseAnimation();
-    this.releaseStartedAt = this.timeSource();
-    const tick = () => {
-      const progress = Math.min(
-        1,
-        Math.max(
-          0,
-          (this.timeSource() - this.releaseStartedAt) /
-            SETTINGS_ROW_RELEASE_DURATION_MS,
-        ),
-      );
-      this.visual.scale.set(sampleSettingsRowReleaseScale(progress));
-      if (progress >= 1) {
-        this.releaseFrame = null;
-        this.releaseStartedAt = null;
-        this.visual.scale.set(1);
-        return;
-      }
-      this.releaseFrame = this.requestFrame(tick);
-    };
-    this.releaseFrame = this.requestFrame(tick);
-  }
-
-  cancelReleaseAnimation() {
-    if (this.releaseFrame !== null) {
-      this.cancelFrame(this.releaseFrame);
-    }
-    this.releaseFrame = null;
-    this.releaseStartedAt = null;
-  }
-
   redraw() {
     if (!this.useSettingsStyle) {
       this.background.clear();
@@ -2604,21 +2530,17 @@ export class RootRunInventoryChoiceRowPixi {
         });
       return;
     }
-    this.background.alpha =
-      this.rubberPress || !this.pressed ? 1 : 0.82;
+    this.background.alpha = 1;
   }
 
   reset() {
-    this.cancelReleaseAnimation();
     this.unregisterSemantic();
     this.registration?.update?.({ fallbackHitTest: false });
     this.item = null;
     this.key = null;
-    this.action = null;
-    this.enabled = false;
+    this.resetClickableState();
     this.selected = false;
     this.expanded = false;
-    this.pressed = false;
     this.itemIcon.texture = Texture.EMPTY;
     this.itemIcon.visible = false;
     this.itemIconOverlay.texture = Texture.EMPTY;
@@ -2628,10 +2550,8 @@ export class RootRunInventoryChoiceRowPixi {
     this.valueResource.visible = false;
     this.valueResource.renderable = false;
     this.notificationBadge.reset();
-    this.root.eventMode = 'none';
     this.root.visible = false;
     this.root.renderable = false;
-    this.visual.scale.set(1);
     if (this.useSettingsStyle) {
       this.background.alpha = 1;
     } else {
@@ -2650,11 +2570,8 @@ export class RootRunInventoryChoiceRowPixi {
   }
 
   destroy() {
-    this.cancelReleaseAnimation();
     this.unregisterSemantic();
-    this.registration?.();
-    this.registration = null;
-    this.root.destroy({ children: true });
+    super.destroy({ children: true });
   }
 }
 
@@ -2837,22 +2754,6 @@ function sampleAutoSummonRevealScale(progress) {
     AUTO_SUMMON_REVEAL_OVERSHOOT_SCALE +
     (1 - AUTO_SUMMON_REVEAL_OVERSHOOT_SCALE) *
       localProgress
-  );
-}
-
-function sampleSettingsRowReleaseScale(progress) {
-  const safeProgress = Math.min(1, Math.max(0, progress));
-  if (safeProgress <= 0.36) {
-    return (
-      SETTINGS_ROW_PRESS_SCALE +
-      (SETTINGS_ROW_RELEASE_PEAK_SCALE - SETTINGS_ROW_PRESS_SCALE) *
-        easeOutCubic(safeProgress / 0.36)
-    );
-  }
-  return (
-    SETTINGS_ROW_RELEASE_PEAK_SCALE +
-    (1 - SETTINGS_ROW_RELEASE_PEAK_SCALE) *
-      easeOutCubic((safeProgress - 0.36) / 0.64)
   );
 }
 

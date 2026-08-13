@@ -5,6 +5,10 @@ upload script posts the section whose heading matches `package.json` `version`.
 Write these developer-to-player notes only in Idle Wizard terms. Do not mention
 other game names, source projects, ports, or implementation provenance.
 
+## 0.3.46
+
+- Improved popup tab sizing and selection styling, and made seed and ingredient choice rows respond more clearly when tapped.
+
 ## 0.3.45
 
 - Polished popup tabs across Settings, Guild, and Market, and improved Garden and Workshop action placement.

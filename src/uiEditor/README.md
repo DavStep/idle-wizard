@@ -43,11 +43,12 @@ Its Storybook-style section tabs keep live controls or static properties
 separate from production usage references. Left/Right moves between available
 tabs, and the selected object summary stays pinned above them while the panel
 scrolls.
-The retained Base / Text Button exposes one live color-swatch control for the
-full eight-color skin family, one `50` / `30` / `15` corner-size selector, its
-label, and enabled state. Cost Button adds layout, optional top-label, price,
-and availability controls. Changes update the production widget immediately;
-the preview status counts its real activation, click-sound, and haptic path.
+Retained button controls follow hierarchy ownership. Selecting the button
+background exposes its live color family and `50` / `30` / `15` corner-size
+selector, selecting a label exposes copy and typography/layout, and selecting
+the `IdleWizardButtonWidget` root exposes input state. Changes update the
+production widget immediately; the preview status counts its real activation,
+click-sound, and haptic path.
 Selecting an atomic part in the hierarchy opens a preview-only property editor.
 Text parts group copy, font, size, weight, line height, letter spacing,
 alignment, and wrap width above their transform. Relative positioning uses a

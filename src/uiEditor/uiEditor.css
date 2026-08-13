@@ -824,6 +824,19 @@ body {
   grid-auto-flow: row;
 }
 
+.ui-editor-usages__options[data-presentation="color-swatches"] {
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  grid-auto-flow: row;
+}
+
+.ui-editor-usages__options[data-presentation="color-swatches"]
+  .ui-editor-usages__option {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: var(--editor-space-1);
+}
+
 .ui-editor-usages__option {
   min-width: 0;
   min-height: 28px;
@@ -1399,6 +1412,7 @@ body {
 
 .ui-editor-game-widget-preview__canvas {
   display: block;
+  image-rendering: auto;
 }
 
 .ui-editor-game-widget-preview__status {

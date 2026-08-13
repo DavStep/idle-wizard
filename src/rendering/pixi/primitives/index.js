@@ -1,4 +1,5 @@
 export { BasePixiRetainedView } from './BasePixiRetainedView.js';
+export { ClickableWidget } from './ClickableWidget.js';
 export { PixiButton } from './PixiButton.js';
 export {
   getPixiButtonAssetId,
@@ -30,7 +31,11 @@ export {
 } from './PixiDeviceSettingsWidgets.js';
 export { PixiFrame } from './PixiFrame.js';
 export { PixiInfoButton } from './PixiInfoButton.js';
-export { PixiPopupTabButton } from './PixiPopupTabButton.js';
+export {
+  getPixiPopupTabButtonSkin,
+  PIXI_POPUP_TAB_BUTTON_COLORS,
+  PixiPopupTabButton,
+} from './PixiPopupTabButton.js';
 export {
   PIXI_MODAL_OPEN_MOTION,
   PixiModalSurface,

@@ -11,6 +11,9 @@ import {
 import {
   getPixiButtonSkin,
 } from '../../rendering/pixi/primitives/PixiButtonStyle.js';
+import {
+  getPixiPopupTabButtonSkin,
+} from '../../rendering/pixi/primitives/PixiPopupTabButton.js';
 
 const FIXED_BUTTON_FONT = 'Lilita One';
 const THEME_BUTTON_FONT = 'Theme font (Lilita One by default)';
@@ -331,11 +334,7 @@ function resolveButtonBackgroundAsset(preview) {
         preview,
       );
     case 'tab':
-      return configuredButtonNineSlice(
-        preview.selected ? 'brown-light' : 'brown-dark',
-        preview,
-        { compactTab: true },
-      );
+      return configuredPopupTabNineSlice(preview);
     default:
       return null;
   }
@@ -391,6 +390,26 @@ function configuredButtonNineSlice(color, preview, { compactTab = false } = {}) 
     color,
     compactTab,
     height,
+    sizeTier: preview.sizeTier,
+    width,
+  });
+
+  return nineSliceAsset({
+    borderInsets: skin.borderInsets,
+    height,
+    id: skin.assetId,
+    minimumCenter: skin.minimumCenter,
+    sourceInsets: skin.sourceInsets,
+    width,
+  });
+}
+
+function configuredPopupTabNineSlice(preview) {
+  const width = preview.width ?? 100;
+  const height = preview.height ?? 28;
+  const skin = getPixiPopupTabButtonSkin({
+    height,
+    selected: preview.selected === true,
     sizeTier: preview.sizeTier,
     width,
   });

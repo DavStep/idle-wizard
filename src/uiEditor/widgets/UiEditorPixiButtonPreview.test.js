@@ -5,18 +5,27 @@ import { createUiEditorThumbnailRenderQueue } from './UiEditorThumbnailRenderQue
 
 let createUiEditorPixiButtonPreview;
 let createAssetOptions;
+let createButtonInspectorFields;
+let resolveButtonBackgroundAtomAsset;
 let PIXI_ROOT_RUN_ASSETS;
-let PIXI_ROOT_RUN_GEOMETRY;
+let getPixiPopupTabButtonSkin;
 
 describe('UiEditorPixiButtonPreview', () => {
   beforeAll(async () => {
     globalThis.HTMLCanvasElement.prototype.getContext = () => null;
-    const [previewModule, themeModule] = await Promise.all([
+    const [previewModule, themeModule, popupTabModule] = await Promise.all([
       import('./UiEditorPixiButtonPreview.js'),
       import('../../rendering/pixi/theme/PixiThemeTokens.js'),
+      import('../../rendering/pixi/primitives/PixiPopupTabButton.js'),
     ]);
-    ({ createAssetOptions, createUiEditorPixiButtonPreview } = previewModule);
-    ({ PIXI_ROOT_RUN_ASSETS, PIXI_ROOT_RUN_GEOMETRY } = themeModule);
+    ({
+      createAssetOptions,
+      createButtonInspectorFields,
+      createUiEditorPixiButtonPreview,
+      resolveButtonBackgroundAtomAsset,
+    } = previewModule);
+    ({ PIXI_ROOT_RUN_ASSETS } = themeModule);
+    ({ getPixiPopupTabButtonSkin } = popupTabModule);
   }, 15_000);
 
   it('serializes thumbnail renders so expanding the library cannot fan out GPU contexts', async () => {
@@ -102,7 +111,7 @@ describe('UiEditorPixiButtonPreview', () => {
     expect(typeof preview.uiEditorSelectAtomicComponent).toBe('function');
   });
 
-  it('exposes live color and corner-size controls for the consolidated base button', () => {
+  it('scopes button controls to the selected hierarchy component', () => {
     const preview = createUiEditorPixiButtonPreview({
       id: 'base-button',
       label: 'Base / Text Button',
@@ -114,31 +123,19 @@ describe('UiEditorPixiButtonPreview', () => {
         variant: 'yellow',
       },
     });
-    const inspector = preview.uiEditorCreateInspector();
-    const colorOptions = inspector.querySelectorAll(
-      '[data-button-inspector-field="color"]',
-    );
-    const sizeOptions = inspector.querySelectorAll(
-      '[data-button-inspector-field="sizeTier"]',
-    );
-
-    expect(colorOptions).toHaveLength(8);
-    expect(sizeOptions).toHaveLength(3);
-
-    inspector.querySelector(
-      '[data-button-inspector-option="purple"]',
-    ).click();
-    inspector.querySelector(
-      '[data-button-inspector-option="15"]',
-    ).click();
-
-    expect(preview.uiEditorGetButtonEditorState()).toMatchObject({
-      color: 'purple',
-      sizeTier: '15',
-    });
+    const state = preview.uiEditorGetButtonEditorState();
+    expect(preview.uiEditorCreateInspector).toBeUndefined();
+    expect(
+      createButtonInspectorFields(preview.uiEditorButtonPreviewDefinition.preview, state, 'background')
+        .map(({ id }) => id),
+    ).toEqual(['color', 'sizeTier']);
+    expect(
+      createButtonInspectorFields(preview.uiEditorButtonPreviewDefinition.preview, state, 'widget')
+        .map(({ id }) => id),
+    ).toEqual(['enabled']);
   });
 
-  it('lets the cost-button inspector toggle its top label independently', () => {
+  it('keeps cost layout and state on the widget rather than its visual atoms', () => {
     const preview = createUiEditorPixiButtonPreview({
       id: 'cost-button',
       label: 'Cost Button',
@@ -150,26 +147,29 @@ describe('UiEditorPixiButtonPreview', () => {
         type: 'cost',
       },
     });
-    const inspector = preview.uiEditorCreateInspector();
-
-    inspector.querySelector(
-      '[data-button-inspector-field="label"]'
-      + '[data-button-inspector-option="show"]',
-    ).click();
-
-    expect(preview.uiEditorGetButtonEditorState().label).toBe('show');
+    const state = preview.uiEditorGetButtonEditorState();
+    expect(
+      createButtonInspectorFields(preview.uiEditorButtonPreviewDefinition.preview, state, 'widget')
+        .map(({ id }) => id),
+    ).toEqual(['layout', 'label', 'status']);
   });
 
   it('disables nine-slice skins that exceed the widget minimum size', () => {
+    const tabSkin = getPixiPopupTabButtonSkin({
+      height: 28,
+      selected: false,
+      sizeTier: 50,
+      width: 92,
+    });
     const options = createAssetOptions(
       PIXI_ROOT_RUN_ASSETS.buttonBrownDark,
       {
         asset: {
-          borderInsets: PIXI_ROOT_RUN_GEOMETRY.tabButton.borderInsets,
+          borderInsets: tabSkin.borderInsets,
           id: PIXI_ROOT_RUN_ASSETS.buttonBrownDark,
           minimumCenter: { width: 1, height: 1 },
           nineSlice: true,
-          sourceInsets: PIXI_ROOT_RUN_GEOMETRY.tabButton.sourceInsets,
+          sourceInsets: tabSkin.sourceInsets,
         },
         targetLabel: 'Popup Tab Button',
         targetSize: {
@@ -191,5 +191,35 @@ describe('UiEditorPixiButtonPreview', () => {
         'Requires at least 28×30; Popup Tab Button minimum is 92×28.',
     });
     expect(sharedTab.disabled).toBe(false);
+  });
+
+  it('inspects the popup tab active skin instead of its resting catalogue asset', () => {
+    const tabSkin = getPixiPopupTabButtonSkin({
+      height: 28,
+      selected: true,
+      sizeTier: 50,
+      width: 92,
+    });
+    const activeAsset = resolveButtonBackgroundAtomAsset(
+      [{
+        id: PIXI_ROOT_RUN_ASSETS.buttonBrownDark,
+        role: 'Background',
+      }],
+      {
+        activeSkin: {
+          assetId: PIXI_ROOT_RUN_ASSETS.buttonBrownLight,
+          borderInsets: tabSkin.borderInsets,
+          minimumCenter: { width: 1, height: 1 },
+          sourceInsets: tabSkin.sourceInsets,
+        },
+        buttonHeight: 28,
+        buttonWidth: 92,
+      },
+    );
+
+    expect(activeAsset).toMatchObject({
+      id: PIXI_ROOT_RUN_ASSETS.buttonBrownLight,
+      role: 'Background',
+    });
   });
 });

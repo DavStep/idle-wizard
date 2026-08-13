@@ -93,7 +93,7 @@
   --style-tab-frame: var(--style-brown-button-dark-frame);
   --style-tab-selected-frame: var(--style-brown-button-light-frame);
   --style-tab-frame-slice: 100 52 68 86 fill;
-  --style-tab-frame-width: 13px 7px 9px 20px;
+  --style-tab-frame-width: var(--style-yellow-button-frame-width);
   --style-border-strong: var(--style-border-strong-width) solid
     var(--style-stroke);
   --style-font-size: 13px;
