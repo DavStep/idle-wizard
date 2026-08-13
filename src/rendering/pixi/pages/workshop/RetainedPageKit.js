@@ -440,6 +440,7 @@ export class RetainedButton {
     this.theme = DEFAULT_PIXI_THEME_SNAPSHOT;
     this.activation = onActivate;
     this.enabled = true;
+    this.locked = false;
     this.selected = false;
     this.notification = false;
     this.width = 0;
@@ -480,17 +481,20 @@ export class RetainedButton {
   setModel({
     label,
     enabled = true,
+    locked = false,
     selected = false,
     notification = false,
     action,
   } = {}) {
     this.enabled = enabled !== false;
+    this.locked = locked === true;
     this.selected = selected === true;
     this.notification = notification === true;
     this.activation = typeof action === 'function' ? action : null;
     this.control
       .setText(label ?? '')
       .setEnabled(this.enabled)
+      .setLocked(this.locked)
       .setSelected(this.selected)
       .setNotification(this.notification)
       .setAction(this.activation);
@@ -504,6 +508,7 @@ export class RetainedButton {
   redraw() {
     this.control
       .setEnabled(this.enabled)
+      .setLocked(this.locked)
       .setSelected(this.selected)
       .setNotification(this.notification)
       .setAction(this.activation);

@@ -50,6 +50,7 @@ function createHarness() {
       return () => projectionListeners.delete(listener);
     }),
     applyTheme: vi.fn(),
+    setSplashViewportActive: vi.fn(),
     destroy: vi.fn(),
   };
   const theme = { revisionKey: 'test' };
@@ -123,6 +124,52 @@ describe('PixiUiRuntimeFacade', () => {
       2,
       true,
     );
+  });
+
+  it('shows the startup view while remaining production assets load', async () => {
+    const harness = createHarness();
+    let finishRemainingAssets = null;
+    harness.assetManager.loadCritical = vi.fn(async () => {});
+    harness.assetManager.loadRemaining = vi.fn(
+      ({ onProgress }) =>
+        new Promise((resolve) => {
+          onProgress(0.25);
+          finishRemainingAssets = () => {
+            onProgress(1);
+            resolve();
+          };
+        }),
+    );
+    const startupView = Object.assign(new Container(), {
+      applyTheme: vi.fn(),
+      layout: vi.fn(),
+      setProgress: vi.fn(),
+    });
+    const runtime = new PixiUiRuntimeFacade({
+      ...harness,
+      startupViewFactory: vi.fn(() => startupView),
+    });
+
+    const initializePromise = runtime.initialize();
+    await vi.waitFor(() => {
+      expect(harness.assetManager.loadRemaining).toHaveBeenCalledTimes(1);
+    });
+
+    expect(harness.assetManager.loadCritical).toHaveBeenCalledTimes(1);
+    expect(startupView.parent).toBe(harness.layers.interactionLocks);
+    expect(startupView.setProgress).toHaveBeenLastCalledWith(0.25);
+    expect(
+      harness.applicationManager.setSplashViewportActive,
+    ).toHaveBeenCalledWith(true);
+
+    finishRemainingAssets();
+    await initializePromise;
+
+    expect(startupView.setProgress).toHaveBeenLastCalledWith(1);
+    expect(startupView.destroyed).toBe(true);
+    expect(
+      harness.applicationManager.setSplashViewportActive,
+    ).toHaveBeenLastCalledWith(false);
   });
 
   it('eagerly constructs pages/globals and constructs each dialog only once', async () => {

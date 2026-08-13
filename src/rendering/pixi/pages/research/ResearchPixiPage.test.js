@@ -321,6 +321,11 @@ describe('ResearchPixiPage', () => {
     const model = createResearchViewModel();
     model.research.tabs.push(
       {
+        id: 'emerald',
+        label: 'crystal research',
+        boxes: [],
+      },
+      {
         id: 'automation',
         label: 'automation',
         boxes: [],
@@ -328,11 +333,6 @@ describe('ResearchPixiPage', () => {
       {
         id: 'advanced',
         label: 'advanced research',
-        boxes: [],
-      },
-      {
-        id: 'crystal',
-        label: 'crystal research',
         boxes: [],
       },
     );
@@ -356,9 +356,9 @@ describe('ResearchPixiPage', () => {
     const tabs = harness.page.tabs.getWidgets();
     expect(tabs.map((tab) => tab.control.textLabel.text)).toEqual([
       'Regular Research',
+      'Crystal Research',
       'Automation',
       'Advanced Research',
-      'Crystal Research',
     ]);
     const expectedWrapWidth =
       (358 - 3 * (tabs.length - 1)) / tabs.length - 6;
@@ -391,6 +391,55 @@ describe('ResearchPixiPage', () => {
         expectedWrapWidth,
       );
     }
+
+    harness.page.destroy();
+    harness.dispose();
+  });
+
+  it('keeps locked research tabs explainable without allowing selection', () => {
+    const selectTab = vi.fn();
+    const harness = createHarness();
+    const model = createResearchViewModel();
+    model.actions.selectTab = selectTab;
+    model.research.tabs.push({
+      id: 'emerald',
+      label: 'crystal research',
+      boxes: [],
+      locked: true,
+      unlocked: false,
+      requiredLevel: 4,
+      lockPrompt: 'Unlocks at level 4',
+    });
+    harness.page.bind(model);
+
+    const lockedTab = harness.page.tabs.get('emerald');
+    expect(lockedTab).toMatchObject({ locked: true, selected: false });
+    expect(lockedTab.control).toMatchObject({
+      enabled: true,
+      locked: true,
+      eventMode: 'static',
+    });
+    expect(lockedTab.control.activeSkin.assetId).toBe(
+      'source:assets/ui/regular-button/gray-button-30.9.png',
+    );
+    expect(lockedTab.control.textLabel.visible).toBe(false);
+    expect(lockedTab.lockIcon).toMatchObject({
+      visible: true,
+      renderable: true,
+      x: lockedTab.width / 2,
+      y: RETAINED_PAGE_GEOMETRY.tabHeight / 2,
+    });
+
+    expect(harness.semanticTargets.getState('research.tab.emerald')).toMatchObject({
+      enabled: true,
+      interactive: true,
+      locked: true,
+    });
+    expect(harness.semanticTargets.activate('research.tab.emerald')).toBe(true);
+    expect(selectTab).not.toHaveBeenCalled();
+    expect(harness.page.selectedTabId).toBe('regular');
+    expect(harness.page.lockTooltip.root.visible).toBe(true);
+    expect(harness.page.lockTooltip.copy.text).toBe('Unlocks at level 4');
 
     harness.page.destroy();
     harness.dispose();

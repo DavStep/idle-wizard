@@ -57,14 +57,16 @@ export const RESEARCH_RANK_INK = '#ffeecf';
 const RESEARCH_TIMER_INK = '#d4d4d4';
 const RESEARCH_LOCKED_OVERLAY_ALPHA = 0.3;
 const RESEARCH_BUTTON_SHINE_DURATION_MS = 220;
-const RESEARCH_WIDGET_SHINE_DURATION_MS = 300;
+export const RESEARCH_WIDGET_SHINE_DURATION_MS = 300;
 export const RESEARCH_WIDGET_BOUNCE_DURATION_MS = 360;
 const RESEARCH_BUTTON_SHINE_HEIGHT_SCALE = 1.05;
 const RESEARCH_BUTTON_SHINE_ALPHA = 0.72;
 const RESEARCH_BUTTON_SHINE_CORNER_RADIUS_SCALE = 0.28;
-const RESEARCH_WIDGET_SHINE_HEIGHT_SCALE = 1.05;
-const RESEARCH_WIDGET_SHINE_ALPHA = 0.5;
-const RESEARCH_WIDGET_SHINE_CORNER_RADIUS_SCALE = 0.16;
+export const RESEARCH_WIDGET_SHINE_HEIGHT_SCALE = 1.05;
+export const RESEARCH_WIDGET_SHINE_ALPHA = 0.5;
+export const RESEARCH_WIDGET_SHINE_CORNER_RADIUS_SCALE = 0.16;
+const RESEARCH_TAB_LOCK_WIDTH = 18;
+const RESEARCH_TAB_LOCK_HEIGHT = 20.5;
 export const RESEARCH_RANK_FONT =
   '"Lilita One", "Arial Black", Arial, sans-serif';
 const RESOURCE_WORD_MATCH_PATTERN =
@@ -432,6 +434,20 @@ export class ResearchPixiPage extends BaseRetainedPixiPage {
           .setFontSize(10)
           .setLineHeight(12)
           .setAlign('center');
+        button.lockIcon = new Sprite({
+          texture:
+            this.assetManager?.getAtlasTexture?.('status:lockDefault') ??
+            this.assetManager?.getTexture?.(PIXI_ROOT_RUN_ASSETS.lock) ??
+            Texture.EMPTY,
+          label: 'research-tab:lock',
+          roundPixels: true,
+        });
+        button.lockIcon.anchor.set(0.5);
+        button.lockIcon.width = RESEARCH_TAB_LOCK_WIDTH;
+        button.lockIcon.height = RESEARCH_TAB_LOCK_HEIGHT;
+        button.lockIcon.visible = false;
+        button.lockIcon.renderable = false;
+        button.control.visual.addChild(button.lockIcon);
         return button;
       },
       reset: (button) => button.setModel({ label: '', enabled: false }),
@@ -617,18 +633,24 @@ export class ResearchPixiPage extends BaseRetainedPixiPage {
   }
 
   bindTab(button, tab) {
+    const locked = tab.locked === true || tab.unlocked === false;
     button.applyTheme(this.theme);
     button.setModel({
       label: formatResearchTitle(tab.label ?? tab.id),
-      selected: tab.id === this.selectedTabId,
+      locked,
+      selected: !locked && tab.id === this.selectedTabId,
       notification:
-        tab.notification === true ||
-        (tab.boxes ?? []).some((box) =>
-          (box.allResearches ?? box.researches ?? []).some(
-            (item) => item.canResearch === true,
-          ),
-        ),
+        !locked &&
+        (tab.notification === true ||
+          (tab.boxes ?? []).some((box) =>
+            (box.allResearches ?? box.researches ?? []).some(
+              (item) => item.canResearch === true,
+            ),
+          )),
       action: () => {
+        if (locked) {
+          return this.showTabLockTooltip(tab, button.root);
+        }
         if (tab.id === this.selectedTabId) {
           return false;
         }
@@ -636,12 +658,33 @@ export class ResearchPixiPage extends BaseRetainedPixiPage {
         return this.currentActions?.selectTab?.(tab.id) ?? true;
       },
     });
+    button.control.textLabel.visible = !locked;
+    button.control.textLabel.renderable = !locked;
+    button.lockIcon.visible = locked;
+    button.lockIcon.renderable = locked;
     this.registerSemanticTarget({
       semanticId: `research.tab.${tab.id}`,
       tutorialId: tab.tutorialId ?? null,
       displayObject: button.root,
+      state: () => ({
+        enabled: true,
+        interactive: button.root.eventMode !== 'none',
+        locked,
+      }),
       activate: () => button.handleTap(),
     });
+  }
+
+  showTabLockTooltip(tab, target) {
+    const requiredLevel = Math.max(
+      1,
+      Math.floor(Number(tab?.requiredLevel) || 1),
+    );
+    const copy = tab?.lockPrompt || `Unlocks at level ${requiredLevel}`;
+    this.lockTooltipResearchId = null;
+    this.lockTooltip.bind(copy);
+    this.positionLockTooltip(target);
+    return true;
   }
 
   bindRunFocusButton(button, option) {
@@ -816,6 +859,10 @@ export class ResearchPixiPage extends BaseRetainedPixiPage {
       );
       button.control.textLabel.setWrapWidth(
         Math.max(0, buttonWidth - 6),
+      );
+      button.lockIcon?.position.set(
+        buttonWidth / 2,
+        RETAINED_PAGE_GEOMETRY.tabHeight / 2,
       );
       x += buttonWidth + gap;
     }
@@ -2174,7 +2221,7 @@ function parseResearchResourceValue(value) {
   };
 }
 
-function createResearchShine({ texture, alpha, label }) {
+export function createResearchShine({ texture, alpha, label }) {
   const root = new Container({ label, eventMode: 'none' });
   const sprite = new Sprite({
     texture,
@@ -2195,7 +2242,7 @@ function createResearchShine({ texture, alpha, label }) {
   return { root, sprite, mask, layout: null };
 }
 
-function layoutResearchShine(shine, layout) {
+export function layoutResearchShine(shine, layout) {
   shine.layout = layout;
   shine.sprite.width = layout.shineWidth;
   shine.sprite.height = layout.shineHeight;
@@ -2212,7 +2259,7 @@ function layoutResearchShine(shine, layout) {
     .fill(0xffffff);
 }
 
-function updateResearchShine(shine, progress) {
+export function updateResearchShine(shine, progress) {
   if (!shine.layout) {
     return;
   }
@@ -2227,7 +2274,7 @@ function updateResearchShine(shine, progress) {
   }
 }
 
-function hideResearchShine(shine) {
+export function hideResearchShine(shine) {
   shine.root.visible = false;
   shine.root.renderable = false;
 }

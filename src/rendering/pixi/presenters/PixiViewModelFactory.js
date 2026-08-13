@@ -111,6 +111,13 @@ const WORLD_CHAT_PRESTIGE_ICON_ASSET =
 const WORLD_CHAT_PRESTIGE_DETAIL_PATTERN =
   /^reached ⭐ \d+, completing prestige level \d+$/u;
 
+export const RESEARCH_TAB_UNLOCK_LEVELS = Object.freeze({
+  regular: 1,
+  emerald: 4,
+  automation: 7,
+  advanced: 10,
+});
+
 export class PixiViewModelFactory {
   createTopPanel({
     gameplay = {},
@@ -327,6 +334,8 @@ export class PixiViewModelFactory {
 
   createTaskRow(task, actions = {}) {
     const automatic = task.autoProgress === true;
+    const canNavigate =
+      automatic && typeof actions.navigateToTask === 'function';
     const current = Math.max(0, Number(task.progressQuantity) || 0);
     const required = Math.max(0, Number(task.requiredQuantity) || 0);
     return {
@@ -346,6 +355,12 @@ export class PixiViewModelFactory {
       showProgress: true,
       semanticId: `workshop.task.${task.taskId}`,
       tutorialId: `task:${task.taskId}`,
+      ...(canNavigate
+        ? {
+            rowEnabled: true,
+            onRowActivate: () => actions.navigateToTask(task),
+          }
+        : {}),
       ...(automatic
         ? {}
         : {
@@ -371,12 +386,6 @@ export class PixiViewModelFactory {
               boxes: research.boxes ?? [],
             },
           ];
-    const resolvedSelectedTabId =
-      sourceTabs.find((tab) => tab.id === selectedTabId)?.id ??
-      sourceTabs.find((tab) => tab.selected === true)?.id ??
-      sourceTabs.find((tab) => tab.id === 'regular')?.id ??
-      sourceTabs[0]?.id ??
-      'regular';
     const researchById = createResearchById(sourceTabs);
     const completedResearchIds = createCompletedResearchIds(
       research,
@@ -391,6 +400,28 @@ export class PixiViewModelFactory {
         ) || 1,
       ),
     );
+    const highestReachedLevel = Math.max(
+      playerLevel,
+      Math.floor(Number(gameplay.playerLevel?.highestReachedLevel) || 0),
+      ...(Array.isArray(gameplay.prestige?.completedLevels)
+        ? gameplay.prestige.completedLevels.map((level) =>
+            Math.max(0, Math.floor(Number(level) || 0)),
+          )
+        : []),
+    );
+    const isTabUnlocked = (tab) =>
+      highestReachedLevel >= (RESEARCH_TAB_UNLOCK_LEVELS[tab.id] ?? 1);
+    const resolvedSelectedTabId =
+      sourceTabs.find(
+        (tab) => tab.id === selectedTabId && isTabUnlocked(tab),
+      )?.id ??
+      sourceTabs.find(
+        (tab) => tab.selected === true && isTabUnlocked(tab),
+      )?.id ??
+      sourceTabs.find((tab) => tab.id === 'regular')?.id ??
+      sourceTabs.find(isTabUnlocked)?.id ??
+      sourceTabs[0]?.id ??
+      'regular';
     const prestigeCount = Math.max(
       0,
       Math.floor(
@@ -402,6 +433,8 @@ export class PixiViewModelFactory {
     );
     const runFocus = createResearchRunFocus(gameplay.prestige?.runFocus);
     const tabs = sourceTabs.map((tab) => {
+      const requiredLevel = RESEARCH_TAB_UNLOCK_LEVELS[tab.id] ?? 1;
+      const unlocked = highestReachedLevel >= requiredLevel;
       const boxes = orderResearchBoxesByRunFocus(
         (tab.boxes ?? []).map((box) =>
           createResearchBoxModel(box, {
@@ -417,11 +450,17 @@ export class PixiViewModelFactory {
       return {
         ...tab,
         selected: tab.id === resolvedSelectedTabId,
-        notification: boxes.some((box) =>
-          (box.allResearches ?? box.researches).some(
-            (item) => item.canResearch === true,
+        requiredLevel,
+        unlocked,
+        locked: !unlocked,
+        lockPrompt: unlocked ? '' : `Unlocks at level ${requiredLevel}`,
+        notification:
+          unlocked &&
+          boxes.some((box) =>
+            (box.allResearches ?? box.researches).some(
+              (item) => item.canResearch === true,
+            ),
           ),
-        ),
         semanticId: `research.tab.${tab.id}`,
         tutorialId: tab.tutorialId ?? `research:tab:${tab.id}`,
         boxes,

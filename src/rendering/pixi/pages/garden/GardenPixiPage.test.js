@@ -871,6 +871,19 @@ describe("GardenPixiPage", () => {
     now = 300;
     expect(plot.activate()).toBe(true);
     expect(plot.receiveStartedAt).toBe(300);
+    expect(harness.page.actionBar.seedUsedStartedAt).toBe(300);
+
+    now = 300 + 220 * 0.5;
+    harness.page.tick(now);
+    expect(harness.page.actionBar.seedIconDropY).toBeCloseTo(6);
+    expect(harness.page.actionBar.seedPack.y).toBeCloseTo(18);
+    expect(harness.page.actionBar.seedItem.y).toBeCloseTo(18);
+    expect(harness.page.actionBar.selectionPanel.root.scale.x).toBeCloseTo(
+      1.012,
+    );
+    expect(harness.page.actionBar.selectionPanel.root.scale.y).toBeCloseTo(
+      0.97,
+    );
 
     now = 300 + 240 * 0.52;
     harness.page.tick(now);
@@ -881,12 +894,90 @@ describe("GardenPixiPage", () => {
     harness.page.tick(now);
     expect(plot.receiveStartedAt).toBeNull();
     expect(plot.frame.scale).toMatchObject({ x: 1, y: 1 });
+    expect(harness.page.actionBar.seedUsedStartedAt).toBeNull();
+    expect(harness.page.actionBar.seedIconDropY).toBe(0);
+    expect(harness.page.actionBar.selectionPanel.root.scale).toMatchObject({
+      x: 1,
+      y: 1,
+    });
 
     expect(plot.frame.children).toHaveLength(plotChildren);
     expect(harness.page.plotPool.getStats()).toMatchObject({
       allocated: 1,
       highWaterMark: 1,
     });
+
+    harness.page.destroy();
+    harness.dispose();
+  });
+
+  it("animates the selected seed indicator only after successful seed use", () => {
+    let now = 40;
+    const plantAll = vi
+      .fn()
+      .mockReturnValueOnce({ ok: false, reason: "not_enough_seed" })
+      .mockReturnValueOnce({ ok: true, planted: 2 });
+    const harness = createHarness({ timeSource: () => now });
+    harness.page.bind(createGardenViewModel({ plantAll }));
+
+    expect(harness.page.actionBar.plantButton.activate()).toMatchObject({
+      ok: false,
+    });
+    expect(harness.page.actionBar.seedUsedStartedAt).toBeNull();
+
+    now = 80;
+    expect(harness.page.actionBar.plantButton.activate()).toMatchObject({
+      ok: true,
+    });
+    expect(harness.page.actionBar.seedUsedStartedAt).toBe(80);
+
+    harness.page.destroy();
+    harness.dispose();
+  });
+
+  it("keeps selected seed use feedback still when reduced motion is requested", () => {
+    const harness = createHarness({ reducedMotion: true });
+    const model = createGardenViewModel({
+      activatePlot: vi.fn(() => ({ ok: true })),
+    });
+    model.garden.plots[0].phase = "empty";
+    model.garden.plots[0].process = null;
+    model.garden.plots[0].toolbarSeedItemTypeId = 1;
+    harness.page.bind(model);
+
+    expect(harness.page.plots.get("plot-1").activate()).toMatchObject({
+      ok: true,
+    });
+    expect(harness.page.actionBar.seedUsedStartedAt).toBeNull();
+    expect(harness.page.actionBar.seedIconDropY).toBe(0);
+    expect(harness.page.actionBar.selectionPanel.root.scale).toMatchObject({
+      x: 1,
+      y: 1,
+    });
+
+    harness.page.destroy();
+    harness.dispose();
+  });
+
+  it("runs selected seed use feedback after a successful swap confirmation", () => {
+    let now = 120;
+    const confirmSwap = vi.fn(() => ({ ok: true }));
+    const harness = createHarness({ timeSource: () => now });
+    harness.page.bind(createGardenViewModel());
+    harness.page.openDialog("swap", {
+      message: "swap sage seed for thyme seed?",
+      payload: { tileNumber: 1, seedTypeId: 2 },
+      onConfirm: confirmSwap,
+    });
+
+    expect(harness.dialogs.get("garden.swap").confirmAction()).toMatchObject({
+      ok: true,
+    });
+    expect(confirmSwap).toHaveBeenCalledWith({
+      tileNumber: 1,
+      seedTypeId: 2,
+    });
+    expect(harness.page.actionBar.seedUsedStartedAt).toBe(120);
 
     harness.page.destroy();
     harness.dispose();
@@ -906,12 +997,18 @@ describe("GardenPixiPage", () => {
     harness.page.activate();
     const plot = harness.page.plots.get("plot-1");
     plot.startSeedReceive(0);
+    harness.page.actionBar.startSeedUsedMotion(0);
     now = 60;
     harness.page.tick(now);
     harness.page.deactivate();
 
     expect(ticker.remove).toHaveBeenCalledWith(harness.page.tickHandler);
     expect(plot.receiveStartedAt).toBeNull();
+    expect(harness.page.actionBar.seedUsedStartedAt).toBeNull();
+    expect(harness.page.actionBar.selectionPanel.root.scale).toMatchObject({
+      x: 1,
+      y: 1,
+    });
 
     harness.page.destroy();
     harness.dispose();
@@ -1032,7 +1129,11 @@ describe("GardenPixiPage", () => {
   });
 });
 
-function createHarness({ ticker = null, timeSource = () => 0 } = {}) {
+function createHarness({
+  ticker = null,
+  timeSource = () => 0,
+  reducedMotion = false,
+} = {}) {
   const dialogLayer = new Container();
   const dialogs = new DialogRegistry();
   const inputRouter = new PixiInputRouter();
@@ -1047,6 +1148,7 @@ function createHarness({ ticker = null, timeSource = () => 0 } = {}) {
     semanticTargets,
     ticker,
     timeSource,
+    reducedMotion,
   });
 
   return {

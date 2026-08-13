@@ -16,7 +16,9 @@ export class ClickableWidget {
   constructor({
     action = null,
     enabled = true,
+    fallbackHitTest = false,
     haptic = 'light',
+    hitTest = null,
     inputRouter = null,
     label = 'clickableWidget',
     motionRuntime = null,
@@ -51,7 +53,9 @@ export class ClickableWidget {
         onPressChange: (pressed, context) =>
           this.setPressed(pressed, context),
         onActivate: (payload) => this.activate(payload),
+        fallbackHitTest,
         haptic,
+        hitTest,
         excludePageSwipe: true,
       }) ?? null;
     this.syncClickableInteraction();

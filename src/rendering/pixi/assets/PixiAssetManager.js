@@ -5,6 +5,7 @@ import {
 } from '../../../assets/generated/game-asset-atlas.generated.js';
 import {
   PIXI_PRODUCTION_ASSET_MANIFEST,
+  PIXI_STARTUP_ASSET_IDS,
 } from './PixiProductionAssetManifest.js';
 
 const REQUIRED_FONT_FACES = Object.freeze([
@@ -24,13 +25,14 @@ function waitForRetry(delayMs) {
 
 export class PixiAssetManager {
   static explain =
-    'Loads every production image and font before retained Pixi pages are constructed.';
+    'Loads the startup splash first, then every remaining production asset before retained Pixi pages are constructed.';
 
   constructor({
     assets = Assets,
     TextureClass = Texture,
     RectangleClass = Rectangle,
     manifest = PIXI_PRODUCTION_ASSET_MANIFEST,
+    startupAssetIds = PIXI_STARTUP_ASSET_IDS,
     atlasFrames = gameAssetAtlasFrames,
     fontFaceSet = globalThis.document?.fonts ?? null,
     prepareSpineLoaders = prepareSpineAssetLoaders,
@@ -41,6 +43,7 @@ export class PixiAssetManager {
     this.TextureClass = TextureClass;
     this.RectangleClass = RectangleClass;
     this.manifest = manifest;
+    this.startupAssetIds = new Set(startupAssetIds);
     this.atlasFrames = atlasFrames;
     this.fontFaceSet = fontFaceSet;
     this.prepareSpineLoaders = prepareSpineLoaders;
@@ -50,6 +53,8 @@ export class PixiAssetManager {
     this.values = new Map();
     this.atlasTextures = new Map();
     this.loadPromise = null;
+    this.criticalLoadPromise = null;
+    this.remainingLoadPromise = null;
     this.loaded = false;
   }
 
@@ -66,19 +71,77 @@ export class PixiAssetManager {
   }
 
   async performLoad() {
+    await this.loadCritical();
+    await this.loadRemaining();
+    return this;
+  }
+
+  loadCritical() {
+    if (this.criticalLoadPromise) {
+      return this.criticalLoadPromise;
+    }
+
+    this.criticalLoadPromise = this.performCriticalLoad().catch((error) => {
+      this.criticalLoadPromise = null;
+      throw error;
+    });
+    return this.criticalLoadPromise;
+  }
+
+  async performCriticalLoad() {
     const duplicateIds = this.findDuplicateIds();
     if (duplicateIds.length > 0) {
       throw new Error(`Duplicate Pixi asset ids: ${duplicateIds.join(', ')}`);
     }
 
     await this.loadFonts();
-    if (this.manifest.some(({ src }) => /\.(?:atlas|skel)$/i.test(src))) {
+    const criticalAssets = this.manifest.filter(({ id }) =>
+      this.startupAssetIds.has(id),
+    );
+    await this.loadManifestAssets(criticalAssets);
+    return this;
+  }
+
+  loadRemaining({ onProgress = null } = {}) {
+    if (this.loaded) {
+      onProgress?.(1);
+      return Promise.resolve(this);
+    }
+    if (this.remainingLoadPromise) {
+      return this.remainingLoadPromise;
+    }
+
+    this.remainingLoadPromise = this.performRemainingLoad({ onProgress }).catch(
+      (error) => {
+        this.remainingLoadPromise = null;
+        throw error;
+      },
+    );
+    return this.remainingLoadPromise;
+  }
+
+  async performRemainingLoad({ onProgress }) {
+    await this.loadCritical();
+    const remainingAssets = this.manifest.filter(
+      ({ id }) => !this.startupAssetIds.has(id),
+    );
+    if (remainingAssets.some(({ src }) => /\.(?:atlas|skel)$/i.test(src))) {
       await this.prepareSpineLoaders();
     }
 
+    await this.loadManifestAssets(remainingAssets, { onProgress });
+    this.buildAtlasTextures();
+    this.loaded = true;
+    return this;
+  }
+
+  async loadManifestAssets(manifest, { onProgress = null } = {}) {
     const failures = [];
+    let completed = 0;
+    const total = manifest.length;
+    onProgress?.(total === 0 ? 1 : 0);
     await Promise.all(
-      this.manifest.map(async (asset) => {
+      manifest.map(async (asset) => {
         try {
           const value = await this.loadAssetWithRetry(asset);
           this.values.set(asset.id, value);
@@ -87,6 +150,9 @@ export class PixiAssetManager {
           }
         } catch (error) {
           failures.push(`${asset.id}: ${String(error?.message ?? error)}`);
+        } finally {
+          completed += 1;
+          onProgress?.(completed / total);
         }
       }),
     );
@@ -94,10 +160,6 @@ export class PixiAssetManager {
     if (failures.length > 0) {
       throw new Error(`Pixi production assets failed to load:\n${failures.join('\n')}`);
     }
-
-    this.buildAtlasTextures();
-    this.loaded = true;
-    return this;
   }
 
   async loadAssetWithRetry(asset) {
@@ -169,8 +231,10 @@ export class PixiAssetManager {
     }
   }
 
-  getTexture(assetId) {
-    this.requireLoaded();
+  getTexture(assetId, { allowPartial = false } = {}) {
+    if (!allowPartial) {
+      this.requireLoaded();
+    }
     const texture = this.textures.get(assetId);
     if (!texture) {
       throw new Error(`Missing Pixi texture: ${assetId}`);
@@ -220,5 +284,7 @@ export class PixiAssetManager {
     this.values.clear();
     this.loaded = false;
     this.loadPromise = null;
+    this.criticalLoadPromise = null;
+    this.remainingLoadPromise = null;
   }
 }

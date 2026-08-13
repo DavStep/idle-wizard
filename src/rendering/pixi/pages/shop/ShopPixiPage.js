@@ -40,7 +40,18 @@ import {
   createPixiPageBackgroundGradient,
   drawPixiPageBackground,
 } from '../../theme/PixiPageBackground.js';
-import { ResearchStationTitlePlaque } from '../research/ResearchPixiPage.js';
+import {
+  createResearchShine,
+  getResearchShineLayout,
+  hideResearchShine,
+  layoutResearchShine,
+  RESEARCH_WIDGET_SHINE_ALPHA,
+  RESEARCH_WIDGET_SHINE_CORNER_RADIUS_SCALE,
+  RESEARCH_WIDGET_SHINE_DURATION_MS,
+  RESEARCH_WIDGET_SHINE_HEIGHT_SCALE,
+  ResearchStationTitlePlaque,
+  updateResearchShine,
+} from '../research/ResearchPixiPage.js';
 import {
   RetainedScrollArea,
   resolveRetainedPageBottomClearance,
@@ -396,6 +407,20 @@ export class ShopPixiPage extends BasePixiRetainedView {
 
     this.applySelectedTab();
     this.relayoutSections();
+  }
+
+  playStallSaleEffect(slotNumber) {
+    const normalizedSlotNumber = Math.floor(Number(slotNumber));
+    if (!Number.isInteger(normalizedSlotNumber) || normalizedSlotNumber < 1) {
+      return false;
+    }
+    const stall = this.stallsSection.stalls
+      .getWidgets()
+      .find(
+        (candidate) =>
+          Number(candidate.model?.slotNumber) === normalizedSlotNumber,
+      );
+    return stall?.startSaleShine() ?? false;
   }
 
   createRequestSectionOptions() {
@@ -1286,6 +1311,13 @@ class ShopStallWidget {
     this.notificationBadge = new PixiNotificationBadge({ assetManager });
     this.notificationBadge.root.label = 'shop:stall:notification';
     this.notification = this.notificationBadge.root;
+    this.saleShine = createResearchShine({
+      texture: resolveTexture(assetManager, {
+        textureId: PIXI_ROOT_RUN_ASSETS.researchButtonShine,
+      }),
+      alpha: RESEARCH_WIDGET_SHINE_ALPHA,
+      label: 'shop:stall:saleShine',
+    });
     this.visual.addChild(
       this.frame,
       this.title,
@@ -1303,6 +1335,7 @@ class ShopStallWidget {
       this.progress,
       this.timer,
       this.notification,
+      this.saleShine.root,
     );
     this.root.addChild(this.visual);
     this.enabled = false;
@@ -1314,6 +1347,8 @@ class ShopStallWidget {
     this.priceSemanticDefinition = null;
     this.releaseFrame = 0;
     this.releaseStartedAt = 0;
+    this.saleShineFrame = 0;
+    this.saleShineStartedAt = 0;
     this.registration =
       inputRouter?.registerPressTarget?.(this.root, {
         fallbackHitTest: true,
@@ -1528,6 +1563,19 @@ class ShopStallWidget {
       width,
       height,
     });
+    layoutResearchShine(
+      this.saleShine,
+      getResearchShineLayout(
+        new Rectangle(0, 0, width, height),
+        Math.max(1, Number(this.saleShine.sprite.texture?.width) || 0),
+        Math.max(1, Number(this.saleShine.sprite.texture?.height) || 0),
+        {
+          heightScale: RESEARCH_WIDGET_SHINE_HEIGHT_SCALE,
+          cornerRadiusScale:
+            RESEARCH_WIDGET_SHINE_CORNER_RADIUS_SCALE,
+        },
+      ),
+    );
   }
 
   applyTheme(theme) {
@@ -1620,6 +1668,44 @@ class ShopStallWidget {
     }
   }
 
+  startSaleShine() {
+    this.cancelSaleShine();
+    if (prefersReducedMotion() || !this.saleShine.layout) {
+      return false;
+    }
+
+    this.saleShineStartedAt = now();
+    this.saleShine.root.visible = true;
+    this.saleShine.root.renderable = true;
+    updateResearchShine(this.saleShine, 0);
+    const tick = () => {
+      const progress = Math.min(
+        1,
+        Math.max(
+          0,
+          (now() - this.saleShineStartedAt) /
+            RESEARCH_WIDGET_SHINE_DURATION_MS,
+        ),
+      );
+      updateResearchShine(this.saleShine, progress);
+      if (progress >= 1) {
+        this.saleShineFrame = 0;
+        return;
+      }
+      this.saleShineFrame = requestFrame(tick);
+    };
+    this.saleShineFrame = requestFrame(tick);
+    return true;
+  }
+
+  cancelSaleShine() {
+    if (this.saleShineFrame) {
+      cancelFrame(this.saleShineFrame);
+      this.saleShineFrame = 0;
+    }
+    hideResearchShine(this.saleShine);
+  }
+
   redrawState() {
     this.frame.alpha = this.model?.selected ? 0.86 : 1;
     this.title.setColor(STALL_TEXT_INK);
@@ -1660,6 +1746,7 @@ class ShopStallWidget {
     this.action = null;
     this.enabled = false;
     this.setPressed(false);
+    this.cancelSaleShine();
     this.root.eventMode = 'none';
     this.root.visible = false;
     this.root.renderable = false;
@@ -1693,6 +1780,7 @@ class ShopStallWidget {
   destroy() {
     this.unregisterSemantic();
     this.cancelReleaseAnimation();
+    this.cancelSaleShine();
     this.registration?.();
     this.registration = null;
     this.root.destroy({ children: true });

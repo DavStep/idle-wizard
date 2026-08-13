@@ -67,6 +67,8 @@
       const params = new URLSearchParams(window.location.search);
       const overflow = params.get('overflow') === '1';
       const growing = params.get('growing') === '1';
+      const seedUseMotion = params.get('motion') === 'seed-use';
+      const seedUseMidFrame = seedUseMotion && params.get('frame') === 'mid';
       const bulkActions = params.get('bulk') || 'all';
       const progressBar = params.get('progress') || 'regular';
       const emptyPlotCount = growing ? 4 : overflow ? 11 : 5;
@@ -125,14 +127,20 @@
           growingPlots: growing ? String(emptyPlotCount) : '0',
           progressBar,
           bulkActions,
+          motion: seedUseMotion ? 'seed-use' : 'still',
         },
       );
 
+      let recipeNow = 0;
       const page = new GardenPixiPage({
         assetManager,
         inputRouter,
         theme: createPixiThemeSnapshot({ progressBar }),
-        timeSource: () => 0,
+        timeSource: seedUseMidFrame
+          ? () => recipeNow
+          : seedUseMotion
+            ? () => performance.now()
+            : () => 0,
       });
       page.layout(applicationManager.projection);
       page.bind({
@@ -202,6 +210,11 @@
         },
       });
       page.activate();
+      if (seedUseMidFrame) {
+        page.actionBar.startSeedUsedMotion(0);
+        recipeNow = 110;
+        page.tick(recipeNow);
+      }
       applicationManager.layers.pageUi.addChild(page.root);
       window.__gardenPlotsRecipe = page;
     </script>

@@ -80,6 +80,9 @@ inside that well. The loaded quantity sits over the artwork as white,
 dark-stroked text without a badge background. The sale batch size uses the
 shortened `30x27px` red downward badge at the card's top-right, inset `14px`
 from the right edge, with centered white, dark-stroked `xN` text.
+Each successful automatic sale sweeps the Research upgrade shine once across
+the selling stall while the existing bounded coin trail travels to the top
+currency display. Reduced motion skips the shine without delaying the sale.
 
 Open `/src/dev/uiRecipes/market-title-ribbon.html` for the deterministic
 component-level ribbon state. Open
@@ -93,6 +96,8 @@ single-category dialog and reclaimed-footer QA.
 Add `?stalls=empty-notified` to render one actionable empty stall with the
 rolled-up orange NPC-listing notification on both the Traders tab and the
 stall's Select action.
+Add `?saleShine=loop` to replay the successful-sale shine on Stall 1 for
+motion and native-pixel capture QA.
 Add `?tab=crystals` to open the Crystal Market tab with its deterministic
 cooling-down coin offer and six crystal bundles. Add
 `&coinOffer=ready` to show the ready green Collect action.

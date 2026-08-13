@@ -48,6 +48,13 @@ const PAGE_IDS = Object.freeze([
 ]);
 
 const SWIPE_PAGE_IDS = new Set(PAGE_IDS);
+const TASK_DESTINATION_PAGE_BY_TYPE = Object.freeze({
+  research: "research",
+  summon: "workshop",
+  grow: "garden",
+  brew: "brewing",
+  sell: "shop",
+});
 const COLLAPSED_INVENTORY_ITEM_COUNT = 6;
 const INVENTORY_KINDS_BY_PAGE = Object.freeze({
   garden: Object.freeze(["herbs", "seeds"]),
@@ -819,6 +826,11 @@ export class PixiPagesFacade {
     const gameplay = this.gameplayFacade;
     return {
       workshop: {
+        navigateToTask: (task) => {
+          const taskType = String(task?.type ?? task?.action ?? "").trim();
+          const pageId = TASK_DESTINATION_PAGE_BY_TYPE[taskType];
+          return pageId ? this.show(pageId) : false;
+        },
         summonSeed: () => {
           const result = gameplay?.summonSeed?.();
           if (result?.reason === "no_active_seed_weights") {

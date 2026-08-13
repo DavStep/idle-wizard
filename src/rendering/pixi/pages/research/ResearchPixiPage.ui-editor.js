@@ -20,13 +20,17 @@ export default defineUiEditorIntegration({
   ],
   scenarios: [
     { fixture: { state: 'available' }, id: 'available', label: 'Available research', mount: mountResearch },
+    { fixture: { state: 'locked-tabs' }, id: 'locked-tabs', label: 'Locked tabs', mount: mountResearch },
     { fixture: { state: 'locked' }, id: 'locked', label: 'Locked research', mount: mountResearch },
     { fixture: { state: 'completed' }, id: 'researched', label: 'Researched', mount: mountResearch },
   ],
 });
 
 async function mountResearch(context, fixture) {
-  const state = { cost: 25, researchState: fixture.state };
+  const state = {
+    cost: 25,
+    researchState: fixture.state === 'locked-tabs' ? 'available' : fixture.state,
+  };
   let page = null;
   const viewModel = () => ({
     actions: {
@@ -53,6 +57,13 @@ async function mountResearch(context, fixture) {
           id: 'regular',
           label: 'Regular Research',
         },
+        ...(fixture.state === 'locked-tabs'
+          ? [
+              createLockedResearchTab('emerald', 'Crystal Research', 4),
+              createLockedResearchTab('automation', 'Automation', 7),
+              createLockedResearchTab('advanced', 'Advanced Research', 10),
+            ]
+          : []),
       ],
     },
   });
@@ -112,6 +123,18 @@ async function mountResearch(context, fixture) {
         type: 'select',
       },
     ],
+  };
+}
+
+function createLockedResearchTab(id, label, requiredLevel) {
+  return {
+    boxes: [],
+    id,
+    label,
+    locked: true,
+    lockPrompt: `Unlocks at level ${requiredLevel}`,
+    requiredLevel,
+    unlocked: false,
   };
 }
 

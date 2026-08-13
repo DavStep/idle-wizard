@@ -2622,17 +2622,20 @@ describe("GameplayFacade", () => {
 
     expect(research.tabs.map((tab) => tab.id)).toEqual([
       "regular",
+      "emerald",
       "automation",
       "advanced",
-      "emerald",
     ]);
-    expect(research.tabs[1].label).toBe("automation");
-    expect(research.tabs[1].boxes.map((box) => box.id)).toEqual([
+    const crystalTab = research.tabs.find((tab) => tab.id === "emerald");
+    const automationTab = research.tabs.find((tab) => tab.id === "automation");
+    const advancedTab = research.tabs.find((tab) => tab.id === "advanced");
+    expect(automationTab.label).toBe("automation");
+    expect(automationTab.boxes.map((box) => box.id)).toEqual([
       "autoSeedSpawn",
       "autoPlantTiles",
       "autoBrewCauldrons",
     ]);
-    expect(research.tabs[1].boxes[0].researches[0]).toEqual({
+    expect(automationTab.boxes[0].researches[0]).toEqual({
       id: automationResearchIds.autoSeedSpawn(),
       label: "auto seed spawn",
       value: "2 ruby",
@@ -2644,7 +2647,7 @@ describe("GameplayFacade", () => {
       completed: false,
       canResearch: false,
     });
-    expect(research.tabs[1].boxes[1].researches[0]).toEqual({
+    expect(automationTab.boxes[1].researches[0]).toEqual({
       id: automationResearchIds.autoPlantTile(1),
       label: "automate plot 1",
       value: "1 ruby",
@@ -2657,7 +2660,7 @@ describe("GameplayFacade", () => {
       completed: false,
       canResearch: false,
     });
-    expect(research.tabs[1].boxes[1].researches[1]).toMatchObject({
+    expect(automationTab.boxes[1].researches[1]).toMatchObject({
       id: automationResearchIds.autoPlantTile(2),
       label: "automate plot 2",
       value: "locked",
@@ -2668,15 +2671,15 @@ describe("GameplayFacade", () => {
       locked: true,
     });
     expect(
-      research.tabs[1].boxes[1].researches.map((research) => research.id),
+      automationTab.boxes[1].researches.map((research) => research.id),
     ).toEqual([
       automationResearchIds.autoPlantTile(1),
       automationResearchIds.autoPlantTile(2),
     ]);
     expect(
-      research.tabs[1].boxes[2].researches.map((research) => research.id),
+      automationTab.boxes[2].researches.map((research) => research.id),
     ).toEqual([automationResearchIds.autoBrewCauldron(1)]);
-    expect(research.tabs[1].boxes[2].researches[0]).toMatchObject({
+    expect(automationTab.boxes[2].researches[0]).toMatchObject({
       id: automationResearchIds.autoBrewCauldron(1),
       label: "automate cauldron 1",
       value: "1 ruby",
@@ -2686,7 +2689,7 @@ describe("GameplayFacade", () => {
       costRuby: 1,
       costCurrency: "ruby",
     });
-    expect(research.tabs[2].boxes.map((box) => box.id)).toEqual([
+    expect(advancedTab.boxes.map((box) => box.id)).toEqual([
       "stallStaffing",
       "researchCost",
       "researchTime",
@@ -2697,9 +2700,9 @@ describe("GameplayFacade", () => {
       "plotGrowth",
     ]);
     expect(
-      research.tabs[2].boxes[0].researches.map((research) => research.id),
+      advancedTab.boxes[0].researches.map((research) => research.id),
     ).toEqual([stallStaffingResearchIds.capacity(1)]);
-    expect(research.tabs[2].boxes[0].researches[0]).toMatchObject({
+    expect(advancedTab.boxes[0].researches[0]).toMatchObject({
       id: stallStaffingResearchIds.capacity(1),
       label: "stall 1 staffing",
       value: "1 emerald",
@@ -2711,9 +2714,9 @@ describe("GameplayFacade", () => {
       costCurrency: "emerald",
     });
     expect(
-      research.tabs[2].boxes[1].researches.map((research) => research.id),
+      advancedTab.boxes[1].researches.map((research) => research.id),
     ).toEqual([researchCostResearchIds.reduction(1)]);
-    expect(research.tabs[2].boxes[1].researches[0]).toMatchObject({
+    expect(advancedTab.boxes[1].researches[0]).toMatchObject({
       id: researchCostResearchIds.reduction(1),
       label: "research cost lvl 1",
       value: "1 emerald",
@@ -2723,9 +2726,9 @@ describe("GameplayFacade", () => {
       costCurrency: "emerald",
     });
     expect(
-      research.tabs[2].boxes[2].researches.map((research) => research.id),
+      advancedTab.boxes[2].researches.map((research) => research.id),
     ).toEqual([researchTimeResearchIds.reduction(1)]);
-    expect(research.tabs[2].boxes[2].researches[0]).toMatchObject({
+    expect(advancedTab.boxes[2].researches[0]).toMatchObject({
       id: researchTimeResearchIds.reduction(1),
       label: "research time lvl 1",
       value: "1 emerald",
@@ -2737,9 +2740,9 @@ describe("GameplayFacade", () => {
       costCurrency: "emerald",
     });
     expect(
-      research.tabs[2].boxes[4].researches.map((research) => research.id),
+      advancedTab.boxes[4].researches.map((research) => research.id),
     ).toEqual([capacityResearchIds.plot(6)]);
-    expect(research.tabs[2].boxes[4].researches[0]).toMatchObject({
+    expect(advancedTab.boxes[4].researches[0]).toMatchObject({
       id: capacityResearchIds.plot(6),
       label: "plot 6 capacity",
       value: "locked",
@@ -2753,9 +2756,9 @@ describe("GameplayFacade", () => {
       costCurrency: "emerald",
     });
     expect(
-      research.tabs[2].boxes[5].researches.map((research) => research.id),
+      advancedTab.boxes[5].researches.map((research) => research.id),
     ).toEqual([capacityResearchIds.cauldron(3)]);
-    expect(research.tabs[2].boxes[5].researches[0]).toMatchObject({
+    expect(advancedTab.boxes[5].researches[0]).toMatchObject({
       id: capacityResearchIds.cauldron(3),
       label: "cauldron 3 capacity",
       value: "locked",
@@ -2769,9 +2772,9 @@ describe("GameplayFacade", () => {
       costCurrency: "emerald",
     });
     expect(
-      research.tabs[2].boxes[6].researches.map((research) => research.id),
+      advancedTab.boxes[6].researches.map((research) => research.id),
     ).toEqual([advancedResearchIds.cauldronBrewing(1, 1)]);
-    expect(research.tabs[2].boxes[6].researches[0]).toMatchObject({
+    expect(advancedTab.boxes[6].researches[0]).toMatchObject({
       id: advancedResearchIds.cauldronBrewing(1, 1),
       label: "cauldron 1 brewing",
       starLevel: 1,
@@ -2784,17 +2787,17 @@ describe("GameplayFacade", () => {
       costCurrency: "emerald",
     });
     expect(
-      research.tabs[2].boxes[7].researches.map((research) => research.id),
+      advancedTab.boxes[7].researches.map((research) => research.id),
     ).toEqual([
       advancedResearchIds.plotGrowth(1, 1),
       advancedResearchIds.plotGrowth(2, 1),
     ]);
-    expect(research.tabs[3].label).toBe("crystal research");
-    expect(research.tabs[3].boxes.map((box) => box.id)).toEqual([
+    expect(crystalTab.label).toBe("crystal research");
+    expect(crystalTab.boxes.map((box) => box.id)).toEqual([
       "plotPlanting",
       "cauldronBrewing",
     ]);
-    expect(research.tabs[3].boxes[0].researches[0]).toMatchObject({
+    expect(crystalTab.boxes[0].researches[0]).toMatchObject({
       id: emeraldResearchIds.plotPlanting(1, 2),
       label: "plot 1 lvl 2",
       value: "2 crystal",
@@ -2803,7 +2806,7 @@ describe("GameplayFacade", () => {
       costCrystal: 2,
       costCurrency: "crystal",
     });
-    expect(research.tabs[3].boxes[0].researches[1]).toMatchObject({
+    expect(crystalTab.boxes[0].researches[1]).toMatchObject({
       id: emeraldResearchIds.plotPlanting(2, 2),
       label: "plot 2 lvl 2",
       value: "2 crystal",
@@ -2811,7 +2814,7 @@ describe("GameplayFacade", () => {
       costCrystal: 2,
       costCurrency: "crystal",
     });
-    expect(research.tabs[3].boxes[1].researches[0]).toMatchObject({
+    expect(crystalTab.boxes[1].researches[0]).toMatchObject({
       id: emeraldResearchIds.cauldronBrewing(1, 2),
       label: "cauldron 1",
       value: "2 crystal",

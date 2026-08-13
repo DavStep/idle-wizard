@@ -3,6 +3,7 @@
 import { Texture } from 'pixi.js';
 import { describe, expect, it } from 'vitest';
 
+import { PixiAssetManager } from '../../assets/PixiAssetManager.js';
 import { installPixiPageTestCanvas } from '../../pages/workshop/PixiPageTestHarness.js';
 import { PixiProgressBar } from '../../primitives/PixiProgressBar.js';
 import {
@@ -15,6 +16,24 @@ import { PixiLoadingSplash } from './PixiLoadingSplash.js';
 installPixiPageTestCanvas();
 
 describe('PixiLoadingSplash', () => {
+  it('constructs after the startup-only asset phase', async () => {
+    const assets = new PixiAssetManager({
+      assets: { load: async () => Texture.EMPTY },
+      fontFaceSet: {
+        load: async () => [{}],
+        ready: Promise.resolve(),
+      },
+    });
+
+    await assets.loadCritical();
+
+    const splash = new PixiLoadingSplash({ assets });
+    expect(splash.art.texture).toBe(Texture.EMPTY);
+
+    splash.destroy({ children: true });
+    assets.destroy();
+  });
+
   it('reuses the fixed game font and shared gradient progress rail', () => {
     const splash = new PixiLoadingSplash({
       assets: {

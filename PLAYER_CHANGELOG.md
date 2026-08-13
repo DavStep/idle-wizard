@@ -5,6 +5,12 @@ upload script posts the section whose heading matches `package.json` `version`.
 Write these developer-to-player notes only in Idle Wizard terms. Do not mention
 other game names, source projects, ports, or implementation provenance.
 
+## 0.3.48
+
+- Added clearer seed-use feedback in the Garden and sale flashes for active Market stalls.
+- Improved Research category ordering and added level requirements to locked categories.
+- Made startup loading progress appear sooner and refined account avatar and save controls.
+
 ## 0.3.47
 
 - Added a direct Empty action for clearing the selected Brewing cauldron.

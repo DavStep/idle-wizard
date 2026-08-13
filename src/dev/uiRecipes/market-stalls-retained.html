@@ -256,6 +256,7 @@
       const showRequestDialog = dialogQuery === 'request';
       const showListingDialog = dialogQuery === 'listing';
       const showOverflowItems = query.get('items') === 'overflow';
+      const loopSaleShine = query.get('saleShine') === 'loop';
       if (query.get('categories') === 'seed') {
         for (const catalogue of [
           gameplaySnapshot.shop.shelf,
@@ -496,6 +497,10 @@
       applicationManager.layers.pageUi.addChild(page.root);
       window.__marketRecipePage = page;
       window.__marketRecipeDialogs = dialogRegistry;
+      if (loopSaleShine) {
+        page.playStallSaleEffect(1);
+        window.setInterval(() => page.playStallSaleEffect(1), 650);
+      }
       if (showStallDialog) {
         page.openDialog(
           SHOP_DIALOG_IDS.STALL,

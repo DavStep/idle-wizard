@@ -579,6 +579,38 @@ describe('WorkshopPixiPage', () => {
     harness.dispose();
   });
 
+  it('routes automatic request row presses through the shared whole-row control', () => {
+    const inputRouter = new PixiInputRouter();
+    const navigate = vi.fn(() => true);
+    const harness = createHarness({ inputRouter });
+    const model = createWorkshopViewModel();
+    model.workshop.tasks.rows[0].rowEnabled = true;
+    model.workshop.tasks.rows[0].onRowActivate = navigate;
+
+    harness.page.bind(model);
+
+    const row = harness.page.tasks.rows.get('request-1');
+    const registration = inputRouter.store
+      .getRegistrations('press')
+      .find((candidate) => candidate.displayObject === row.root);
+
+    expect(registration).toMatchObject({
+      excludePageSwipe: true,
+      fallbackHitTest: true,
+      haptic: 'light',
+      hitTest: expect.any(Function),
+    });
+    expect(row.root.hitArea).toMatchObject({ width: 338, height: 32 });
+    registration.onPressChange(true, { confirmed: false });
+    expect(row.visual.scale.x).toBeCloseTo(0.97);
+    registration.onPressChange(false, { confirmed: true });
+    expect(registration.onActivate()).toBe(true);
+    expect(navigate).toHaveBeenCalledWith(model.workshop.tasks.rows[0]);
+
+    harness.page.destroy();
+    harness.dispose();
+  });
+
   it('routes a retargeted tutorial-overlay press to the request action', () => {
     const inputRouter = new PixiInputRouter();
     const turnIn = vi.fn(() => ({ ok: true }));

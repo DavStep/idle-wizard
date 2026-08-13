@@ -73,6 +73,7 @@ experience_type: development-operations
 - Release Discord posts must wait for both `Checks` and `Deploy GitHub Pages` to succeed for the exact pushed commit; a successful `git push` is only the start of the web release.
 - Pixi production-manifest assets copied from `public/` must resolve through `import.meta.env.BASE_URL`; root-absolute Spine URLs make the GitHub Pages build fail closed on startup.
 - Pixi production preloads must retry transient asset fetch failures; GitHub Pages can briefly return `503` for a valid hashed image, and one response must not permanently fail startup.
+- Pixi startup preloads must contain the loading splash art, its shared progress-rail textures, and the game font only. Mount that splash before fetching the remaining production manifest, but keep pages and dialogs gated on the full preload.
 - If `build` delegates to `build:prod`, keep `build` as `npm run build:prod --` so Pages' `--base=/idle-wizard/` reaches Vite.
 - `DavStep/idle-wizard` is public and GitHub Pages deploys at `https://davstep.github.io/idle-wizard/`.
 - Web deploy freshness uses `/deploy-version.json`; Vite emits it per build and the app polls it with `no-store`, then reloads on version change.

@@ -7,6 +7,7 @@ import {
 } from 'pixi.js';
 
 import {
+  ClickableWidget,
   DeviceIdentityFooter,
   PixiButton,
   PixiPopupTabButton,
@@ -107,7 +108,8 @@ const ACCOUNT_CHOICES_HEIGHT =
   ACCOUNT_TAB_HEIGHT +
   ACCOUNT_TABS_BOTTOM_INSET;
 const ACCOUNT_SAVE_WIDTH = 456 * (ACCOUNT_HEADER_WIDTH / 925);
-const ACCOUNT_SAVE_HEIGHT = 205 / 3;
+const ACCOUNT_SAVE_HEIGHT = 52;
+const ACCOUNT_SAVE_FONT_SIZE = 16;
 const ACCOUNT_SAVE_GAP = 8;
 const ACCOUNT_BOTTOM_GAP = 8;
 const SETTINGS_DEVICE_CONTENT_HEIGHT = 442;
@@ -360,6 +362,7 @@ export class PixiSettingsDialog extends RetainedGlobalDialog {
       action: () => this.saveAccount(),
       label: `${this.dialogId}:accountSave`,
     });
+    this.accountSave.textLabel.setFontSize(ACCOUNT_SAVE_FONT_SIZE);
     this.usernameSave = this.accountSave;
     this.accountLayer.addChild(
       this.accountHeaderSection,
@@ -560,7 +563,6 @@ export class PixiSettingsDialog extends RetainedGlobalDialog {
       bind: (widget, avatar, key) =>
         widget.bind(key, avatar, {
           select: (data) => this.selectAccountOption(data),
-          research: (data) => this.researchVisualOption(data),
         }),
       afterReconcile: (widgets) =>
         orderDisplayObjects(this.accountChoiceScroll.content, widgets),
@@ -1354,15 +1356,20 @@ export class PixiSettingsDialog extends RetainedGlobalDialog {
   }
 }
 
-class SettingsAvatarWidget {
+class SettingsAvatarWidget extends ClickableWidget {
   constructor({
     assetManager,
     inputRouter,
     label,
   }) {
+    super({
+      enabled: false,
+      inputRouter,
+      label,
+    });
     this.assetManager = assetManager;
-    this.root = new Container();
-    this.root.label = label;
+    this.visual = new Container({ label: `${label}:visual` });
+    this.setClickableVisual(this.visual);
     this.frame = new Sprite({
       texture: assetManager.getTexture(PIXI_ROOT_RUN_ASSETS.accountChoice),
       roundPixels: true,
@@ -1386,28 +1393,17 @@ class SettingsAvatarWidget {
       roundPixels: true,
       label: `${label}:status`,
     });
-    this.root.addChild(
+    this.visual.addChild(
       this.frame,
       this.sprite,
       this.lockOverlay,
       this.selectionFrame,
       this.status,
     );
+    this.root.addChild(this.visual);
     this.data = {};
     this.actions = {};
     this.theme = DEFAULT_PIXI_THEME_SNAPSHOT;
-    this.registration =
-      inputRouter?.registerPressTarget?.(this.root, {
-        enabled: () =>
-          this.root.visible &&
-          this.root.renderable &&
-          this.data.enabled !== false,
-        onActivate: () =>
-          this.data.researched === false
-            ? this.actions.research?.(this.data)
-            : this.actions.select?.(this.data),
-        haptic: 'light',
-      }) ?? null;
     this.root.visible = false;
   }
 
@@ -1416,8 +1412,13 @@ class SettingsAvatarWidget {
     this.actions = actions ?? {};
     this.root.visible = true;
     this.root.renderable = true;
-    this.root.eventMode =
-      data.enabled === false ? 'none' : 'static';
+    this.setClickableState({
+      action: () => this.actions.select?.(this.data),
+      enabled:
+        data.enabled !== false &&
+        data.researched !== false &&
+        data.selected !== true,
+    });
     this.sprite.texture = getCharacterTexture(
       this.assetManager,
       data.portraitKey ?? data.key,
@@ -1441,14 +1442,16 @@ class SettingsAvatarWidget {
   reset() {
     this.data = {};
     this.actions = {};
+    this.resetClickableState();
     this.root.visible = false;
     this.root.renderable = false;
-    this.root.eventMode = 'none';
   }
 
   setBounds(x, y, width, height) {
     this.root.position.set(x, y);
     this.root.hitArea = new Rectangle(0, 0, width, height);
+    this.visual.pivot.set(width / 2, height / 2);
+    this.visual.position.set(width / 2, height / 2);
     this.frame.position.set(0, 0);
     this.frame.width = width;
     this.frame.height = height;
@@ -1479,12 +1482,7 @@ class SettingsAvatarWidget {
   redraw() {}
 
   destroy() {
-    if (typeof this.registration === 'function') {
-      this.registration();
-    } else {
-      this.registration?.unregister?.();
-    }
-    this.root.destroy({ children: true });
+    super.destroy({ children: true });
   }
 }
 

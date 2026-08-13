@@ -128,6 +128,7 @@ describe('PixiViewModelFactory', () => {
   });
 
   it('keeps request fill in sync with the visible quantity', () => {
+    const navigateToTask = vi.fn(() => true);
     const factory = new PixiViewModelFactory();
     const model = factory.createWorkshop({
       gameplay: {
@@ -142,19 +143,26 @@ describe('PixiViewModelFactory', () => {
                 requiredQuantity: 3,
                 progress: 0,
                 autoProgress: true,
+                type: 'brew',
                 isActiveQuest: true,
               },
             ],
           },
         },
       },
+      actions: { navigateToTask },
     });
 
     expect(model.workshop.tasks.rows[0]).toMatchObject({
       current: 1,
       required: 3,
       progress: 1 / 3,
+      rowEnabled: true,
     });
+    expect(model.workshop.tasks.rows[0].onRowActivate()).toBe(true);
+    expect(navigateToTask).toHaveBeenCalledWith(
+      expect.objectContaining({ taskId: 'brew-mana-tonic', type: 'brew' }),
+    );
   });
 
   it('does not project the obsolete manual level-up row', () => {
@@ -1601,6 +1609,65 @@ describe('PixiViewModelFactory', () => {
       title: '1 Point',
       rewardLines: ['Crossroads Market', 'Village Market'],
     });
+  });
+
+  it('gates research tabs by the highest level reached and never relocks them after prestige', () => {
+    const factory = new PixiViewModelFactory();
+    const research = {
+      tabs: [
+        { id: 'regular', label: 'regular research', boxes: [] },
+        { id: 'emerald', label: 'crystal research', boxes: [] },
+        { id: 'automation', label: 'automation', boxes: [] },
+        { id: 'advanced', label: 'advanced research', boxes: [] },
+      ],
+    };
+
+    const levelThree = factory.createResearch({
+      gameplay: { playerLevel: { currentLevel: 3 }, research },
+      selectedTabId: 'advanced',
+    }).research;
+
+    expect(levelThree.selectedTabId).toBe('regular');
+    expect(levelThree.tabs.map((tab) => ({
+      id: tab.id,
+      locked: tab.locked,
+      requiredLevel: tab.requiredLevel,
+    }))).toEqual([
+      { id: 'regular', locked: false, requiredLevel: 1 },
+      { id: 'emerald', locked: true, requiredLevel: 4 },
+      { id: 'automation', locked: true, requiredLevel: 7 },
+      { id: 'advanced', locked: true, requiredLevel: 10 },
+    ]);
+    expect(levelThree.tabs[1].lockPrompt).toBe('Unlocks at level 4');
+
+    const levelFive = factory.createResearch({
+      gameplay: { playerLevel: { currentLevel: 5 }, research },
+      selectedTabId: 'emerald',
+    }).research;
+    expect(levelFive.selectedTabId).toBe('emerald');
+    expect(levelFive.tabs.find((tab) => tab.id === 'emerald')?.locked).toBe(false);
+    expect(levelFive.tabs.find((tab) => tab.id === 'automation')?.locked).toBe(true);
+    expect(levelFive.tabs.find((tab) => tab.id === 'advanced')?.locked).toBe(true);
+
+    const levelSeven = factory.createResearch({
+      gameplay: { playerLevel: { currentLevel: 7 }, research },
+      selectedTabId: 'automation',
+    }).research;
+    expect(levelSeven.selectedTabId).toBe('automation');
+    expect(levelSeven.tabs.find((tab) => tab.id === 'automation')?.locked).toBe(false);
+    expect(levelSeven.tabs.find((tab) => tab.id === 'advanced')?.locked).toBe(true);
+
+    const postPrestige = factory.createResearch({
+      gameplay: {
+        playerLevel: { currentLevel: 5 },
+        prestige: { completedLevels: [10] },
+        research,
+      },
+      selectedTabId: 'advanced',
+    }).research;
+    expect(postPrestige.selectedTabId).toBe('advanced');
+    expect(postPrestige.tabs.find((tab) => tab.id === 'advanced')?.locked).toBe(false);
+    expect(postPrestige.tabs.every((tab) => tab.locked === false)).toBe(true);
   });
 
   it('derives natural research lock reasons from prerequisites across tabs', () => {

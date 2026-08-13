@@ -139,6 +139,36 @@ describe("PixiPagesFacade", () => {
     });
   });
 
+  it.each([
+    ["research", "research"],
+    ["summon", "workshop"],
+    ["grow", "garden"],
+    ["brew", "brewing"],
+    ["sell", "shop"],
+  ])(
+    "navigates an Elara %s request to the room that completes it",
+    (taskType, expectedPageId) => {
+      const gameplaySnapshot = createGameplaySnapshot();
+      gameplaySnapshot.tasks.level.tasks = [
+        {
+          taskId: `request-${taskType}`,
+          type: taskType,
+          autoProgress: true,
+          isActiveQuest: true,
+          requirementLabel: `${taskType} request`,
+          requiredQuantity: 1,
+        },
+      ];
+      const harness = createHarness({ gameplaySnapshot });
+      const pages = new PixiPagesFacade(harness.dependencies);
+      pages.mount();
+
+      const request = harness.getBoundPage("workshop").workshop.tasks.rows[0];
+      expect(request.onRowActivate()).toBe(true);
+      expect(pages.getCurrentPageId()).toBe(expectedPageId);
+    },
+  );
+
   it("keeps the Daily Tasks tab selection live and routes milestone claims", () => {
     const gameplaySnapshot = createGameplaySnapshot();
     gameplaySnapshot.personalTasks = {

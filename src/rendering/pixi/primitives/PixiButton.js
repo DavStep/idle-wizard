@@ -52,6 +52,7 @@ export class PixiButton extends Container {
     this.buttonHeight = height;
     this.theme = DEFAULT_PIXI_THEME_SNAPSHOT;
     this.enabled = true;
+    this.locked = false;
     this.pressed = false;
     this.selected = false;
     this.notification = false;
@@ -120,6 +121,7 @@ export class PixiButton extends Container {
             state: () => ({
               enabled: this.enabled,
               interactive: this.eventMode !== 'none',
+              locked: this.locked,
               visible: this.visible && this.renderable,
               active: !this.destroyed,
               selected: this.selected,
@@ -134,6 +136,7 @@ export class PixiButton extends Container {
   bind(_key, data = {}, actions = null) {
     this.setText(data.label ?? data.text ?? '');
     this.setEnabled(data.enabled !== false && data.disabled !== true);
+    this.setLocked(data.locked === true);
     this.setSelected(Boolean(data.selected));
     this.setNotification(Boolean(data.notification), data.notificationTone);
     if (data.variant) {
@@ -161,6 +164,7 @@ export class PixiButton extends Container {
     this.setPressed(false);
     this.setSelected(false);
     this.setNotification(false);
+    this.setLocked(false);
     this.setEnabled(false);
     this.visible = false;
     this.renderable = false;
@@ -179,6 +183,12 @@ export class PixiButton extends Container {
   setEnabled(enabled) {
     this.enabled = Boolean(enabled);
     this.syncInteraction();
+    return this;
+  }
+
+  setLocked(locked) {
+    this.locked = Boolean(locked);
+    this.syncAppearance();
     return this;
   }
 
@@ -282,7 +292,9 @@ export class PixiButton extends Container {
       .fill({ color: this.theme.surface });
 
     if (rootRunVariant) {
-      const visualVariant = this.enabled ? rootRunVariant : 'gray';
+      const visualVariant = this.enabled && !this.locked
+        ? rootRunVariant
+        : 'gray';
       const visualGeometry = getRootRunVisualGeometry(
         visualVariant,
         this.buttonWidth,
@@ -348,7 +360,7 @@ export class PixiButton extends Container {
     this.notificationBadge
       .placeAtTopRight(bounds)
       .setTone(this.notificationTone)
-      .setActive(this.notification && this.enabled);
+      .setActive(this.notification && this.enabled && !this.locked);
   }
 
   relayout() {

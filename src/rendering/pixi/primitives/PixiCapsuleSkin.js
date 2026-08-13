@@ -34,6 +34,7 @@ export function createPixiCapsuleSlice({
   assetManager = null,
   kind,
   label,
+  allowPartialAssets = false,
 } = {}) {
   const source = CAPSULE_SOURCE_GEOMETRY[kind];
   const assetId = PIXI_CAPSULE_ASSETS[kind];
@@ -42,10 +43,11 @@ export function createPixiCapsuleSlice({
   }
 
   const root = new Container({ label });
+  const texture = allowPartialAssets
+    ? assetManager?.getTexture?.(assetId, { allowPartial: true })
+    : assetManager?.getTexture?.(assetId);
   const sprite = new NineSliceSprite({
-    texture:
-      assetManager?.getTexture?.(assetId) ??
-      Texture.EMPTY,
+    texture: texture ?? Texture.EMPTY,
     leftWidth: source.left,
     topHeight: source.top,
     rightWidth: source.right,

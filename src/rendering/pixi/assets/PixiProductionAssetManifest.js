@@ -57,6 +57,12 @@ const PUBLIC_ASSET_PATHS = Object.freeze([
   '/ui/xp-stars.png',
 ]);
 
+export const PIXI_STARTUP_ASSET_IDS = Object.freeze([
+  'source:assets/ui/idle-witch-craft-splash/splash-screen.png',
+  'source:assets/ui/root-run-progress/progress-track.9.png',
+  'source:assets/ui/root-run-progress/progress-fill-mask.9.png',
+]);
+
 function normalizeSourceAssetId(path) {
   const normalized = path
     .replace(

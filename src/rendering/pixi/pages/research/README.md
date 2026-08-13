@@ -28,9 +28,14 @@ The renderer never queries DOM geometry or derives locked-state behavior.
 The fixed category tabs use the regular-button tier `30` source assets at the
 shared `36px` room-control height. They use the editor-authored sidecar geometry;
 the separate compact `28px` footer-tab treatment does not apply to this row.
+Locked tabs keep release input only for the retained requirement tooltip, do
+not select, use the gray tier-30 skin, and replace their visible label with the
+centered shared lock icon.
 
 The UI Lab exposes the complete room as `feature.research-room` and the exact
 production `ResearchRowWidget` and `ResearchStationTitlePlaque` classes as
 standalone `compound.research-row` and `compound.research-station-title`
 entries. The room manifest declares both children, and the row separately
 declares its shared cost-button, star-label, and progress-bar dependencies.
+The `locked-tabs` room scenario reproduces all three gated tab states and their
+tooltips without changing saved gameplay data.

@@ -34,7 +34,7 @@ export class PixiLoadingSplash extends Container {
       label: 'loadingSplash:background',
     });
     this.art = new Sprite({
-      texture: assets.getTexture(SPLASH_TEXTURE_ID),
+      texture: assets.getTexture(SPLASH_TEXTURE_ID, { allowPartial: true }),
       label: 'loadingSplash:art',
     });
     this.art.anchor.set(0.5, 0);
@@ -59,6 +59,7 @@ export class PixiLoadingSplash extends Container {
       assetManager: assets,
       width: 0,
       height: PIXI_UI_GEOMETRY.progressTotalHeight,
+      allowPartialAssets: true,
       label: 'loadingSplash:progress',
     });
     this.progressBar.applyTheme(SPLASH_PROGRESS_THEME);

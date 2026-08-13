@@ -17,6 +17,47 @@ class FakeTexture {
 }
 
 describe('PixiAssetManager', () => {
+  it('loads only startup assets before the remaining production manifest', async () => {
+    const atlasTexture = { source: { label: 'atlas-source' } };
+    const splashTexture = { source: { label: 'splash-source' } };
+    const assets = {
+      load: vi.fn(async (src) =>
+        src === '/splash.png' ? splashTexture : atlasTexture,
+      ),
+    };
+    const manager = new PixiAssetManager({
+      assets,
+      TextureClass: FakeTexture,
+      RectangleClass: FakeRectangle,
+      manifest: [
+        { id: 'splash', src: '/splash.png', kind: 'texture' },
+        { id: 'atlas:game', src: '/atlas.png', kind: 'texture' },
+      ],
+      startupAssetIds: ['splash'],
+      atlasFrames: {},
+      fontFaceSet: {
+        load: vi.fn(async () => [{}]),
+        ready: Promise.resolve(),
+      },
+    });
+
+    await manager.loadCritical();
+
+    expect(assets.load).toHaveBeenCalledTimes(1);
+    expect(assets.load).toHaveBeenCalledWith('/splash.png');
+    expect(manager.getTexture('splash', { allowPartial: true })).toBe(
+      splashTexture,
+    );
+    expect(() => manager.getTexture('atlas:game')).toThrow(
+      'Pixi assets must finish loading',
+    );
+
+    await manager.loadRemaining();
+
+    expect(assets.load).toHaveBeenCalledTimes(2);
+    expect(manager.getTexture('atlas:game')).toBe(atlasTexture);
+  });
+
   it('loads fonts and creates atlas frame textures before reporting ready', async () => {
     const atlasTexture = { source: { label: 'atlas-source' } };
     const assets = {

@@ -325,6 +325,12 @@ export class PixiExperienceFacade {
       return null;
     }
 
+    if (event?.type === 'item_sold') {
+      this.runtime?.getPage?.('shop')?.playStallSaleEffect?.(
+        event.slotNumber,
+      );
+    }
+
     return this.presentRewardEvent(event);
   }
 

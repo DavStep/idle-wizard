@@ -11,6 +11,7 @@ import {
   isNotificationActive,
 } from '../../../../pages/shared/notificationTone.js';
 import { PixiNotificationBadge } from '../../global/transient/PixiNotificationBadges.js';
+import { ClickableWidget } from '../../primitives/ClickableWidget.js';
 import { PixiCostButton } from '../../primitives/PixiCostButton.js';
 import { PixiInfoButton } from '../../primitives/PixiInfoButton.js';
 import { layoutPixiSeedPackIcon } from '../../primitives/PixiSeedPackIcon.js';
@@ -1105,9 +1106,17 @@ class WorkshopTaskPanel {
 
 class WorkshopTaskRow {
   constructor({ page, assetManager }) {
+    this.clickable = new ClickableWidget({
+      fallbackHitTest: true,
+      hitTest: (point) => this.containsGlobalPoint(point),
+      inputRouter: page.inputRouter,
+      label: 'workshop-task-row',
+    });
+    this.root = this.clickable.root;
     this.page = page;
     this.assetManager = assetManager;
-    this.root = new Container({ label: 'workshop-task-row' });
+    this.visual = new Container({ label: 'workshop-task-row:visual' });
+    this.clickable.setClickableVisual(this.visual);
     this.icon = new Sprite(Texture.EMPTY);
     this.icon.label = 'workshop-task-row:icon';
     this.icon.anchor.set(0.5);
@@ -1172,7 +1181,7 @@ class WorkshopTaskRow {
           : this.page.timeSource(),
       );
     };
-    this.root.addChild(
+    this.visual.addChild(
       this.icon,
       this.iconOverlay,
       this.label,
@@ -1180,6 +1189,7 @@ class WorkshopTaskRow {
       this.action.root,
       this.progress.root,
     );
+    this.root.addChild(this.visual);
   }
 
   bind(model) {
@@ -1203,6 +1213,7 @@ class WorkshopTaskRow {
     this.icon.visible = this.icon.texture !== Texture.EMPTY;
     this.iconOverlay.visible = this.icon.visible && this.iconOverlay.texture !== Texture.EMPTY;
     const hasAction = Boolean(model.actionLabel || model.onActivate);
+    const hasRowAction = typeof model.onRowActivate === 'function';
     this.action.root.visible = hasAction;
     this.action.setModel({
       label: model.actionLabel ?? 'turn in',
@@ -1210,6 +1221,14 @@ class WorkshopTaskRow {
       notification: model.notification === true,
       action: () => model.onActivate?.(model),
     });
+    this.clickable.setClickableState({
+      action: hasRowAction ? () => model.onRowActivate(model) : null,
+      enabled: hasRowAction && model.rowEnabled !== false,
+    });
+    if (!hasRowAction) {
+      this.root.eventMode = 'passive';
+      this.root.cursor = 'default';
+    }
     const nextProgress = resolveRequestProgress(model);
     const isNewTask = previousTaskId === null || previousTaskId !== model.id;
     if (isNewTask) {
@@ -1225,10 +1244,15 @@ class WorkshopTaskRow {
       tutorialId: model.tutorialId ?? null,
       displayObject: hasAction ? this.action.root : this.root,
       state: () => ({
-        enabled: model.enabled !== false,
-        interactive: hasAction,
+        enabled: hasAction
+          ? model.enabled !== false
+          : hasRowAction && model.rowEnabled !== false,
+        interactive: hasAction || hasRowAction,
       }),
-      activate: () => model.onActivate?.(model) ?? false,
+      activate: () =>
+        (hasAction
+          ? model.onActivate?.(model)
+          : model.onRowActivate?.(model)) ?? false,
     });
     this.applyTheme(this.page.theme);
   }
@@ -1256,6 +1280,10 @@ class WorkshopTaskRow {
     this.value.position.set(width - (this.action.root.visible ? 64 : 0), 1);
     this.action.setBounds(width - 58, 0, 58, 20);
     this.progress.setBounds(0, 22, width, PIXI_UI_GEOMETRY.progressTotalHeight);
+    const height = this.getPreferredHeight();
+    this.root.hitArea = new Rectangle(0, 0, width, height);
+    this.visual.pivot.set(width / 2, height / 2);
+    this.visual.position.set(width / 2, height / 2);
     this.progressBounds = {
       x: 0,
       y: 22,
@@ -1270,6 +1298,17 @@ class WorkshopTaskRow {
 
   getPreferredHeight() {
     return this.progress.root.visible ? 32 : 20;
+  }
+
+  containsGlobalPoint(point) {
+    const local = this.root?.toLocal?.(point);
+    return Boolean(
+      local &&
+        local.x >= 0 &&
+        local.x <= this.width &&
+        local.y >= 0 &&
+        local.y <= this.getPreferredHeight(),
+    );
   }
 
   applyTheme(theme) {
@@ -1293,6 +1332,7 @@ class WorkshopTaskRow {
     }
 
     this.targetId = null;
+    this.clickable.resetClickableState();
     this.pauseMotion();
     this.progressMotion = null;
     this.progressFeedback = null;
@@ -1315,7 +1355,7 @@ class WorkshopTaskRow {
     this.pauseMotion();
     this.action.destroy();
     this.progress.destroy();
-    this.root.destroy({ children: true });
+    this.clickable.destroy({ children: true });
   }
 
   startCompletionFill(durationMs) {

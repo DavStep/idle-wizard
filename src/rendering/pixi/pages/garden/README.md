@@ -92,6 +92,11 @@ the entire row shares the standard compact press/release feedback. Its
 standalone editor entry is `Inventory Choice Row` under
 `UI Widgets / Composite widgets / Brewing`, with unselected, selected,
 pressed, and unavailable scenarios.
+Successful single-plot planting, `Plant All`, and seed swaps give the selected
+seed indicator one `220ms` use response: the seed-pack icon drops `6px` while
+the complete row compresses slightly from its center, then both settle through
+one restrained snap. Failed actions do not animate, and reduced motion keeps
+the indicator at rest.
 Open `/src/dev/uiRecipes/garden-seed-picker.html` for the deterministic,
 non-persistent four-row visual-reference state.
 Open `/src/dev/uiRecipes/garden-plots.html` for the deterministic,
@@ -103,7 +108,9 @@ state that verifies Garden timer rails keep their green role color even when
 the player-wide progress style is gradient. The default recipe shows both
 researched bulk actions with a selected Nettle seed; use `?bulk=plant` for the
 level-5 two-action composition and `?bulk=locked` for the pre-research
-Seeds-only composition.
+Seeds-only composition. Add `?motion=seed-use`, then press `Plant All`, to
+exercise the selected-seed use feedback with a live clock and no persistence;
+add `&frame=mid` for its deterministic halfway visual-QA frame.
 
 The cancel-progress confirmation uses the approved red danger title plaque,
 Title Case copy, a centered prompt, a yellow `Keep` action, and a red `Empty`

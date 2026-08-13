@@ -23,6 +23,7 @@ export class PixiProgressBar extends Container {
     progress = 0,
     tone = 'root',
     usePlayerStyle = true,
+    allowPartialAssets = false,
     label = 'progress',
   } = {}) {
     super();
@@ -38,6 +39,7 @@ export class PixiProgressBar extends Container {
       assetManager,
       kind: 'track',
       label: `${label}:rail`,
+      allowPartialAssets,
     });
     this.fillGraphic = new Graphics();
     this.fillGraphic.label = `${label}:fill`;
@@ -48,6 +50,7 @@ export class PixiProgressBar extends Container {
       assetManager,
       kind: 'fillMask',
       label: `${label}:fillMask`,
+      allowPartialAssets,
     });
     this.fillAlphaMask = new AlphaMask({
       mask: this.fillMask,

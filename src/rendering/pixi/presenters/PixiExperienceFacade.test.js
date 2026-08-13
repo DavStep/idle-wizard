@@ -130,6 +130,35 @@ describe('PixiExperienceFacade', () => {
     });
   });
 
+  it('routes a visible item sale to the exact retained stall shine', () => {
+    const harness = createHarness();
+    const facade = harness.createFacade({
+      getCurrentPageId: () => 'shop',
+    });
+    facade.firstRunProgressManager.markComplete();
+    harness.materializeSurfaces();
+    facade.mount();
+
+    harness.rewardListener({
+      id: 71,
+      type: 'item_sold',
+      slotNumber: 2,
+      item: { label: 'sage seed' },
+      quantity: 1,
+      coin: 10,
+    });
+
+    expect(harness.shopPage.playStallSaleEffect).toHaveBeenCalledWith(2);
+    expect(harness.views.transient.emitReward).toHaveBeenCalledWith(
+      expect.objectContaining({
+        id: 71,
+        message: 'sold sage seed for 10 coin',
+      }),
+    );
+
+    facade.unmount();
+  });
+
   it('does not render another page reward event over the active room', () => {
     let currentPageId = 'workshop';
     const harness = createHarness();
@@ -231,6 +260,9 @@ function createHarness({
       clear: vi.fn(),
     },
   };
+  const shopPage = {
+    playStallSaleEffect: vi.fn(() => true),
+  };
   const runtime = {
     initialized: true,
     semanticRegistry: registry,
@@ -239,6 +271,8 @@ function createHarness({
     getPage: vi.fn((pageId) =>
       pageId === 'workshop'
         ? { tasks: { model: workshopTasks } }
+        : pageId === 'shop'
+          ? shopPage
         : null,
     ),
   };
@@ -309,6 +343,7 @@ function createHarness({
     },
     rewardListener: () => {},
     rewardUnsubscribe,
+    shopPage,
     surfaceFactories,
     views,
   };

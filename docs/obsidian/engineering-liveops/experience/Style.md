@@ -109,6 +109,7 @@ experience_type: style
 - Locked-but-pressable room tabs should use `.is-locked` plus an explanatory aria-label, not `aria-disabled`, so taps can still open the unlock notice.
 - Research catalog content can exceed the visible room; keep bottom nav clear and let the research content scroll instead of squeezing page chrome.
 - Research page uses `snapshot.research.tabs` for full-page regular/automation/advanced tabs; `snapshot.research.boxes` remains the regular-tab alias for compatibility.
+- Research tabs follow progression order and unlock permanently from the highest level reached: Regular, Crystal at 4, Automation at 7, and Advanced at 10. Locked tabs keep release input only to show `Unlocks at level N`, never change selection, use the shared gray button skin, hide notifications, and replace their label with the centered shared lock icon.
 - Automation research is target-specific (`automation:autoPlantTile:1`, `automation:autoBrewCauldron:1`): one plot study combines plant + harvest, and one cauldron study combines brew + bottle.
 - Research blocks should render only the next locked row; keep deeper locked research hidden until earlier items unlock.
 - Completed research rows display `researched` on the shared yellow regular-button nine-slice and keep the same fixed value-slot height as price controls.

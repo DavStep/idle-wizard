@@ -6,6 +6,7 @@ import { PixiFreshStartChoiceController } from './pixi/global/gates/PixiFreshSta
 import { PixiFreshStartChoiceView } from './pixi/global/gates/PixiFreshStartChoiceView.js';
 import { PixiOnlineGateController } from './pixi/global/gates/PixiOnlineGateController.js';
 import { PixiOnlineGateView } from './pixi/global/gates/PixiOnlineGateView.js';
+import { PixiLoadingSplash } from './pixi/global/gates/PixiLoadingSplash.js';
 import { PixiBottomPanelView } from './pixi/global/chrome/PixiBottomPanelView.js';
 import { PixiTopPanelView } from './pixi/global/chrome/PixiTopPanelView.js';
 import { PixiWorldChatView } from './pixi/global/chrome/PixiWorldChatView.js';
@@ -89,6 +90,8 @@ export class RenderFacade {
         inputRouter: this.inputRouter,
         textEntryService: this.textEntryService,
         uiClickSoundFacade: this.uiClickSoundFacade,
+        startupViewFactory: (context) =>
+          new PixiLoadingSplash({ assets: context.assets }),
       });
     this.spineRuntimeFacade ??= new SpineRuntimeFacade({
       whenPixiReady: () => this.whenPixiReady(),

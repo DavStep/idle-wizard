@@ -30,6 +30,7 @@ export class PixiUiRuntimeFacade {
     counters = new RetainedUiCounters(),
     semanticRegistry = null,
     questCompletionMotionCoordinator = new QuestCompletionMotionCoordinator(),
+    startupViewFactory = null,
   } = {}) {
     if (!applicationManager) {
       throw new Error('PixiUiRuntimeFacade requires a PixiApplicationManager.');
@@ -44,6 +45,8 @@ export class PixiUiRuntimeFacade {
     this.semanticRegistry =
       semanticRegistry ?? new SemanticTargetRegistry({ counters });
     this.questCompletionMotionCoordinator = questCompletionMotionCoordinator;
+    this.startupViewFactory = startupViewFactory;
+    this.startupView = null;
     this.pageFactories = new Map();
     this.dialogFactories = new Map();
     this.globalFactories = new Map();
@@ -95,7 +98,19 @@ export class PixiUiRuntimeFacade {
       root: this.applicationManager.getApplication().stage,
       canvas: this.applicationManager.canvas,
     });
-    await this.assetManager.loadAll();
+    if (
+      this.startupViewFactory &&
+      this.assetManager.loadCritical &&
+      this.assetManager.loadRemaining
+    ) {
+      await this.assetManager.loadCritical();
+      this.mountStartupView();
+      await this.assetManager.loadRemaining({
+        onProgress: (progress) => this.startupView?.setProgress?.(progress),
+      });
+    } else {
+      await this.assetManager.loadAll();
+    }
 
     // The registry must exist before page construction. Page factories register
     // their owned dialogs while building their one retained display tree.
@@ -164,8 +179,39 @@ export class PixiUiRuntimeFacade {
     for (const lifecycle of this.globalViews.values()) {
       lifecycle.activate();
     }
+    this.unmountStartupView();
     this.initialized = true;
     return this;
+  }
+
+  mountStartupView() {
+    const view = this.startupViewFactory({
+      application: this.applicationManager.getApplication(),
+      layers: this.applicationManager.getLayers(),
+      assets: this.assetManager,
+      theme: this.themeManager.getSnapshot(),
+      projection: this.applicationManager.getProjection(),
+    });
+    if (!view) {
+      return;
+    }
+    this.startupView = view;
+    view.applyTheme?.(this.themeManager.getSnapshot());
+    view.layout?.(this.applicationManager.getProjection());
+    view.setProgress?.(0);
+    this.applicationManager.getLayers().interactionLocks.addChild(view);
+    this.applicationManager.setSplashViewportActive?.(true);
+    this.applicationManager.getApplication().render?.();
+  }
+
+  unmountStartupView() {
+    if (!this.startupView) {
+      return;
+    }
+    this.applicationManager.setSplashViewportActive?.(false);
+    this.startupView.removeFromParent?.();
+    this.startupView.destroy?.({ children: true });
+    this.startupView = null;
   }
 
   createFactoryContext() {
@@ -367,6 +413,7 @@ export class PixiUiRuntimeFacade {
     this.textEntryUnsubscribe = null;
     this.textEntryActiveUnsubscribe?.();
     this.textEntryActiveUnsubscribe = null;
+    this.unmountStartupView();
 
     for (const lifecycle of this.globalViews.values()) {
       try {

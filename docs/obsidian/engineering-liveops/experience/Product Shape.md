@@ -330,6 +330,7 @@ experience_type: product-shape
 - Generated character sheet cuts need dark/magenta background QA against `mira.png`; use premultiplied-alpha resizing, de-matte pale edges, and remove opaque neutral-white holes near hair/props or sheet artifacts remain.
 - The Workshop bag popup is PagesFacade-owned global catalog UI; Garden/Brewing icon buttons expand inline room inventory boxes instead of opening the global bag.
 - Workshop main progression is one always-open `elara's request` at a time, with a 20 XP reward and level XP rail; do not restore the old expandable, pinnable, reorderable requirements checklist.
+- Automatic Elara request rows navigate to their completion room and need an explicit full-row local hit test; relying on child bounds leaves blank row space untappable. Turn-in rows keep their inline Workshop action.
 - Task config `level` is the current paid player level; the visible target level is `level + 1` except at max level.
 - Task balance changes must update both `src/gameplay/tasks/tasks.json` and `spacetimedb/src/index.ts`; from target level 6 onward, adjacent rows should not reuse exact requirement item keys.
 - Task difficulty uses two curves: global bands by level range plus local ten-level boss/relief rhythm, so 10/20/30/... are gates and the next row is easier.

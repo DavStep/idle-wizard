@@ -206,6 +206,14 @@ export class ResearchDefinitionManager {
         }),
       },
       {
+        id: 'emerald',
+        label: 'crystal research',
+        boxes: this.getEmeraldResearchBoxes({
+          includeLevelLockedAutomation,
+          completedResearchIds,
+        }),
+      },
+      {
         id: 'automation',
         label: 'automation',
         boxes: this.getAutomationResearchBoxes({
@@ -217,14 +225,6 @@ export class ResearchDefinitionManager {
         id: 'advanced',
         label: 'advanced research',
         boxes: this.getAdvancedResearchBoxes({
-          includeLevelLockedAutomation,
-          completedResearchIds,
-        }),
-      },
-      {
-        id: 'emerald',
-        label: 'crystal research',
-        boxes: this.getEmeraldResearchBoxes({
           includeLevelLockedAutomation,
           completedResearchIds,
         }),

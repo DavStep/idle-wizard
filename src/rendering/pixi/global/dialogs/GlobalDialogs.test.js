@@ -9,6 +9,7 @@ import { describe, expect, it, vi } from 'vitest';
 
 import { PixiInputRouter } from '../../input/PixiInputRouter.js';
 import {
+  ClickableWidget,
   DeviceIdentityFooter,
   PixiDialogFrame,
   PixiNineSliceFrame,
@@ -948,6 +949,85 @@ describe('retained global Pixi dialogs', () => {
     harness.dispose();
   });
 
+  it('gives enabled avatar choices shared press feedback while selected and locked choices stay silent', () => {
+    const harness = createHarness();
+    const settings = harness.registry.open(
+      GLOBAL_DIALOG_IDS.SETTINGS,
+      {
+        tabId: 'account',
+        account: { username: 'wizard' },
+        selections: { character: 'elara', frame: 'classic' },
+        researched: {
+          character: { elara: true, mira: true, bramble: false },
+          frame: { classic: true, emerald: true },
+        },
+        categories: [
+          {
+            key: 'character',
+            options: [
+              { key: 'elara', label: 'elara' },
+              { key: 'mira', label: 'mira' },
+              { key: 'bramble', label: 'bramble' },
+            ],
+          },
+          {
+            key: 'frame',
+            options: [
+              { key: 'classic', label: 'classic', tint: 0xffffff },
+              { key: 'emerald', label: 'emerald', tint: 0x2ed46f },
+            ],
+          },
+        ],
+      },
+    );
+    const [selected, available, locked] = settings.avatars.getWidgets();
+
+    expect(available).toBeInstanceOf(ClickableWidget);
+    const selectedPress = harness.inputRouter.store.get(
+      selected.registration.id,
+    );
+    const availablePress = harness.inputRouter.store.get(
+      available.registration.id,
+    );
+    const lockedPress = harness.inputRouter.store.get(
+      locked.registration.id,
+    );
+
+    expect(selectedPress.enabled()).toBe(false);
+    expect(lockedPress.enabled()).toBe(false);
+    expect(availablePress.enabled()).toBe(true);
+    expect(availablePress.haptic).toBe('light');
+
+    availablePress.onPressChange(true, { confirmed: false });
+    expect(available.visual.scale.x).toBe(0.97);
+    expect(available.visual.scale.y).toBe(0.97);
+    availablePress.onPressChange(false, { confirmed: false });
+    expect(available.visual.scale.x).toBe(1);
+    expect(available.visual.scale.y).toBe(1);
+    expect(availablePress.onActivate()).toBe(true);
+    expect(settings.accountDraft.character).toBe('mira');
+
+    settings.selectAccountChoiceTab('frame');
+    const [selectedFrame, availableFrame] = settings.frames.getWidgets();
+    const selectedFramePress = harness.inputRouter.store.get(
+      selectedFrame.registration.id,
+    );
+    const availableFramePress = harness.inputRouter.store.get(
+      availableFrame.registration.id,
+    );
+
+    expect(selectedFramePress.enabled()).toBe(false);
+    expect(availableFramePress.enabled()).toBe(true);
+    expect(availableFramePress.haptic).toBe('light');
+    availableFramePress.onPressChange(true, { confirmed: false });
+    expect(availableFrame.visual.scale.x).toBe(0.97);
+    availableFramePress.onPressChange(false, { confirmed: false });
+    expect(availableFramePress.onActivate()).toBe(true);
+    expect(settings.accountDraft.frame).toBe('emerald');
+
+    harness.dispose();
+  });
+
   it('places fixed tabs on the paper below the choice board and keeps a wide save control close to the dialog bottom', () => {
     const harness = createHarness();
     const settings = harness.registry.open(
@@ -1046,8 +1126,16 @@ describe('retained global Pixi dialogs', () => {
     );
 
     expect(settings.accountSave.buttonWidth).toBeCloseTo(456 * (298 / 925));
-    expect(settings.accountSave.buttonHeight).toBeCloseTo(205 / 3);
-    expect(settings.accountSave.textLabel.fontSize).toBe(13);
+    expect(settings.accountSave.buttonHeight).toBe(52);
+    expect(settings.accountSave.textLabel.fontSize).toBe(16);
+    expect(settings.accountSave.textLabel.stroke).toEqual({
+      color: '#0a0a0a',
+      width: resolvePixiTextStrokeWidth(16),
+      join: 'round',
+    });
+    expect(settings.accountSave.textLabel.y).toBe(
+      settings.accountSave.buttonHeight / 2,
+    );
     expect(settings.accountSave.variant).toBe('green');
     expect(settings.accountSave.resolveRootRunVariant()).toBe('green');
 

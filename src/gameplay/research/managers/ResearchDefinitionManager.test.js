@@ -53,6 +53,17 @@ function createManager() {
 }
 
 describe('ResearchDefinitionManager', () => {
+  it('orders research tabs by their progression unlocks', () => {
+    const { manager } = createManager();
+
+    expect(manager.getResearchTabs().map((tab) => tab.id)).toEqual([
+      'regular',
+      'emerald',
+      'automation',
+      'advanced',
+    ]);
+  });
+
   it('reuses research definitions for the same visible state', () => {
     const { manager } = createManager();
     const firstTabs = manager.getResearchTabs();

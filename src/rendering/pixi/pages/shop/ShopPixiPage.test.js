@@ -665,6 +665,49 @@ describe('ShopPixiPage', () => {
     inputRouter.destroy();
   });
 
+  it('sweeps the Research shine across the selling stall only', () => {
+    const requestAnimationFrame = vi.fn(() => 41);
+    const cancelAnimationFrame = vi.fn();
+    vi.stubGlobal('requestAnimationFrame', requestAnimationFrame);
+    vi.stubGlobal('cancelAnimationFrame', cancelAnimationFrame);
+    vi.stubGlobal(
+      'matchMedia',
+      vi.fn(() => ({ matches: false })),
+    );
+
+    const harness = createHarness();
+    harness.page.bind(createShopViewModel());
+    harness.page.activate();
+
+    const stall = harness.page.stallsSection.stalls.get('stall-1');
+    expect(harness.page.playStallSaleEffect(1)).toBe(true);
+    expect(stall.saleShine.root).toMatchObject({
+      visible: true,
+      renderable: true,
+    });
+    expect(stall.saleShine.sprite.x).toBe(
+      stall.saleShine.layout.startX,
+    );
+    expect(stall.saleShine.layout).toMatchObject({
+      width: stall.width,
+      height: stall.height,
+    });
+    expect(requestAnimationFrame).toHaveBeenCalledOnce();
+    expect(harness.page.playStallSaleEffect(2)).toBe(false);
+
+    vi.stubGlobal(
+      'matchMedia',
+      vi.fn(() => ({ matches: true })),
+    );
+    expect(harness.page.playStallSaleEffect(1)).toBe(false);
+    expect(stall.saleShine.root.visible).toBe(false);
+    expect(cancelAnimationFrame).toHaveBeenCalledWith(41);
+
+    harness.page.destroy();
+    harness.dispose();
+    vi.unstubAllGlobals();
+  });
+
   it('registers every Market lesson target inside the stall dialog', () => {
     const inputRouter = new PixiInputRouter();
     const harness = createHarness({ inputRouter });
