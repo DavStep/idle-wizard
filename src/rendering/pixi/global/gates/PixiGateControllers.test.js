@@ -507,7 +507,7 @@ describe('retained Pixi gate controllers', () => {
       assets: createAssets(),
       onSplashViewportChange,
     });
-    const sourceHeight = 2170 / 3;
+    const sourceHeight = PIXI_UI_GEOMETRY.sourceHeight;
 
     view.applyTheme(createPixiThemeSnapshot({ theme: 'midnight' }));
     view.layout({
@@ -515,7 +515,7 @@ describe('retained Pixi gate controllers', () => {
       sourceHeight,
       sourceOffsetX: 0,
       sourceScale: 3,
-      stageLogicalWidth: 1080,
+      stageLogicalWidth: PIXI_UI_GEOMETRY.authoredWidth,
       dialogShift: 0,
     });
     view.bind({
@@ -528,8 +528,11 @@ describe('retained Pixi gate controllers', () => {
     expect(view.panel.visible).toBe(false);
     expect(view.splash).toBeInstanceOf(PixiLoadingSplash);
     expect(view.splash.visible).toBe(true);
-    expect(view.splash.art.width).toBe(360);
-    expect(view.splash.art.height).toBeCloseTo(360 / (818 / 1923), 5);
+    expect(view.splash.art.width).toBe(PIXI_UI_GEOMETRY.sourceWidth);
+    expect(view.splash.art.height).toBeCloseTo(
+      PIXI_UI_GEOMETRY.sourceWidth / (818 / 1923),
+      5,
+    );
     expect(view.splash.art.height).toBeGreaterThan(sourceHeight);
     expect(view.splash.art.x).toBe(PIXI_UI_GEOMETRY.sourceWidth / 2);
     expect(view.splash.art.y).toBe(0);

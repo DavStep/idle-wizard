@@ -152,7 +152,8 @@ export class GardenConfirmDialogPixi {
   }
 
   layout(viewportProjection) {
-    this.sourceWidth = Number(viewportProjection?.sourceWidth) || 360;
+    this.sourceWidth =
+      Number(viewportProjection?.sourceWidth) || PIXI_UI_GEOMETRY.sourceWidth;
     this.sourceHeight =
       Number(viewportProjection?.sourceHeight) || RETAINED_PAGE_GEOMETRY.height;
     const messageHeight =

@@ -412,15 +412,24 @@ describe('WorkshopPixiPage', () => {
       y: 175 + ROOT_RUN_SIDE_ACTION_GEOMETRY.rowPitch * 2,
     });
     expect(harness.page.statsButton.root.position).toMatchObject({
-      x: 360 - ROOT_RUN_SIDE_ACTION_GEOMETRY.stageEdge - ROOT_RUN_SIDE_ACTION_GEOMETRY.width,
+      x:
+        PIXI_UI_GEOMETRY.sourceWidth -
+        ROOT_RUN_SIDE_ACTION_GEOMETRY.stageEdge -
+        ROOT_RUN_SIDE_ACTION_GEOMETRY.width,
       y: 175,
     });
     expect(harness.page.bagButton.root.position).toMatchObject({
-      x: 360 - ROOT_RUN_SIDE_ACTION_GEOMETRY.stageEdge - ROOT_RUN_SIDE_ACTION_GEOMETRY.width,
+      x:
+        PIXI_UI_GEOMETRY.sourceWidth -
+        ROOT_RUN_SIDE_ACTION_GEOMETRY.stageEdge -
+        ROOT_RUN_SIDE_ACTION_GEOMETRY.width,
       y: 175 + ROOT_RUN_SIDE_ACTION_GEOMETRY.rowPitch,
     });
     expect(harness.page.features.get('discoveries').root.position).toMatchObject({
-      x: 360 - ROOT_RUN_SIDE_ACTION_GEOMETRY.stageEdge - ROOT_RUN_SIDE_ACTION_GEOMETRY.width,
+      x:
+        PIXI_UI_GEOMETRY.sourceWidth -
+        ROOT_RUN_SIDE_ACTION_GEOMETRY.stageEdge -
+        ROOT_RUN_SIDE_ACTION_GEOMETRY.width,
       y: 175 + ROOT_RUN_SIDE_ACTION_GEOMETRY.rowPitch * 2,
     });
 
@@ -2340,15 +2349,24 @@ describe('WorkshopPixiPage', () => {
     harness.page.bind(createWorkshopViewModel());
 
     expect(harness.page.summon.root.position).toMatchObject({
-      x: 180,
-      y: 2170 / 3 - 101 - 41 - 52 - 32 + 16,
+      x: PIXI_UI_GEOMETRY.sourceWidth / 2,
+      y:
+        PIXI_UI_GEOMETRY.sourceHeight -
+        101 -
+        41 -
+        52 -
+        32 +
+        16,
     });
     expect(harness.page.bagButton.root.position).toMatchObject({
       x: ROOT_RUN_SIDE_ACTION_GEOMETRY.stageEdge,
       y: 175 + ROOT_RUN_SIDE_ACTION_GEOMETRY.rowPitch * 3,
     });
     expect(harness.page.statsButton.root.position).toMatchObject({
-      x: 360 - ROOT_RUN_SIDE_ACTION_GEOMETRY.stageEdge - ROOT_RUN_SIDE_ACTION_GEOMETRY.width,
+      x:
+        PIXI_UI_GEOMETRY.sourceWidth -
+        ROOT_RUN_SIDE_ACTION_GEOMETRY.stageEdge -
+        ROOT_RUN_SIDE_ACTION_GEOMETRY.width,
       y: 175,
     });
     const alliance = harness.page.features.get('alliance');
@@ -2358,7 +2376,10 @@ describe('WorkshopPixiPage', () => {
       y: 175,
     });
     expect(inbox.root.position).toMatchObject({
-      x: 360 - ROOT_RUN_SIDE_ACTION_GEOMETRY.stageEdge - ROOT_RUN_SIDE_ACTION_GEOMETRY.width,
+      x:
+        PIXI_UI_GEOMETRY.sourceWidth -
+        ROOT_RUN_SIDE_ACTION_GEOMETRY.stageEdge -
+        ROOT_RUN_SIDE_ACTION_GEOMETRY.width,
       y: 175 + ROOT_RUN_SIDE_ACTION_GEOMETRY.rowPitch,
     });
     expect(alliance.panel).toBeUndefined();
@@ -2407,8 +2428,14 @@ describe('WorkshopPixiPage', () => {
     harness.page.bind(model);
 
     expect(harness.page.summon.root.position).toMatchObject({
-      x: 180,
-      y: 2170 / 3 - 101 - 41 - 52 - 32 + 16,
+      x: PIXI_UI_GEOMETRY.sourceWidth / 2,
+      y:
+        PIXI_UI_GEOMETRY.sourceHeight -
+        101 -
+        41 -
+        52 -
+        32 +
+        16,
     });
 
     harness.page.destroy();

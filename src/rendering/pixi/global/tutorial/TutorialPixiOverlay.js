@@ -47,6 +47,7 @@ const TUTORIAL_ADVANCE_BUTTON = Object.freeze({
   bottomInset: 6,
   contentGap: 6,
 });
+const TUTORIAL_PROGRESS_LABEL_GAP = 6;
 const DRAG_YELLS = Object.freeze([
   'AAAAAA!!!',
   'Put me down!',
@@ -1403,21 +1404,31 @@ class TutorialLessonSurface {
     this.title.position.set(intro ? 8 : 12, intro ? -12 : 9);
     this.copy.position.set(paddingX, paddingTop);
     let y = paddingTop + this.layoutCopyHeight;
+    let rowY = y;
+    let rowHeight = 0;
+    const progressLabelInRow =
+      !intro &&
+      this.progress.visible &&
+      this.progressLabel.visible;
     if (
       intro ||
       (!intro &&
         (this.progress.visible || this.advanceControl.visible))
     ) {
-      const rowHeight = Math.max(
+      rowHeight = Math.max(
         this.progress.visible
           ? PIXI_UI_GEOMETRY.progressTotalHeight
           : 0,
         this.advanceControl.visible
           ? TUTORIAL_ADVANCE_BUTTON.height
           : 0,
+        progressLabelInRow
+          ? PIXI_UI_GEOMETRY.borderLabelLineHeight
+          : 0,
       );
       if (rowHeight > 0) {
         y += 5;
+        rowY = y;
         if (this.advanceControl.visible) {
           this.advanceControl.y =
             y +
@@ -1435,15 +1446,21 @@ class TutorialLessonSurface {
         y += rowHeight;
       }
     }
+    const progressRowRight = this.advanceControl.visible
+      ? this.advanceControl.x -
+        TUTORIAL_ADVANCE_BUTTON.contentGap
+      : paddingX + this.contentWidth;
     if (this.progress.visible) {
-      const progressWidth = this.advanceControl.visible
-        ? Math.max(
-            0,
-            this.advanceControl.x -
-              TUTORIAL_ADVANCE_BUTTON.contentGap -
-              paddingX,
-          )
-        : this.contentWidth;
+      const progressLabelWidth = progressLabelInRow
+        ? Math.ceil(this.progressLabel.measuredWidth) +
+          TUTORIAL_PROGRESS_LABEL_GAP
+        : 0;
+      const progressWidth = Math.max(
+        0,
+        progressRowRight -
+          paddingX -
+          progressLabelWidth,
+      );
       this.progress.setSize(
         progressWidth,
         PIXI_UI_GEOMETRY.progressTotalHeight,
@@ -1456,10 +1473,20 @@ class TutorialLessonSurface {
       );
     }
     if (this.progressLabel.visible && !intro) {
-      this.progressLabel.position.set(
-        this.progress.x + this.progress.barWidth,
-        y + 2,
-      );
+      if (progressLabelInRow) {
+        this.progressLabel.position.set(
+          progressRowRight,
+          rowY +
+            (rowHeight -
+              PIXI_UI_GEOMETRY.borderLabelLineHeight) /
+              2,
+        );
+      } else {
+        this.progressLabel.position.set(
+          paddingX + this.contentWidth,
+          y + 2,
+        );
+      }
     }
     this.showControl.root.position.set(
       this.outerWidth / 2,
@@ -1741,6 +1768,8 @@ function estimateLessonContentHeight(
     model.text ? 34 : 0,
   );
   if (progressVisible || advanceVisible) {
+    const progressLabelInRow =
+      progressVisible && progressLabelVisible;
     height +=
       5 +
       Math.max(
@@ -1748,9 +1777,12 @@ function estimateLessonContentHeight(
           ? PIXI_UI_GEOMETRY.progressTotalHeight
           : 0,
         advanceVisible ? TUTORIAL_ADVANCE_BUTTON.height : 0,
+        progressLabelInRow
+          ? PIXI_UI_GEOMETRY.borderLabelLineHeight
+          : 0,
       );
   }
-  if (progressLabelVisible) {
+  if (progressLabelVisible && !progressVisible) {
     height += 16;
   }
   return Math.ceil(

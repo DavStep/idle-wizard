@@ -10,10 +10,10 @@ import {
 describe('Pixi theme tokens', () => {
   it('keeps the authored source geometry and Night defaults', () => {
     expect(PIXI_UI_GEOMETRY).toMatchObject({
-      authoredWidth: 1080,
-      authoredHeight: 2170,
+      authoredWidth: 1170,
+      authoredHeight: 2532,
       sourceScale: 3,
-      sourceWidth: 360,
+      sourceWidth: 390,
       bodyFontSize: 13,
       dialogTitleFontSize: 14,
       borderLabelFontSize: 11,

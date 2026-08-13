@@ -5,6 +5,12 @@ upload script posts the section whose heading matches `package.json` `version`.
 Write these developer-to-player notes only in Idle Wizard terms. Do not mention
 other game names, source projects, ports, or implementation provenance.
 
+## 0.3.47
+
+- Added a direct Empty action for clearing the selected Brewing cauldron.
+- Improved room, dialog, and tutorial sizing across phone and fitted desktop displays.
+- Made tutorial dragging and inventory selection feedback more reliable and easier to read.
+
 ## 0.3.46
 
 - Improved popup tab sizing and selection styling, and made seed and ingredient choice rows respond more clearly when tapped.

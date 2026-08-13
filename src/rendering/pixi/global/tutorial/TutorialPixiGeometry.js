@@ -1,6 +1,8 @@
+import { PIXI_UI_GEOMETRY } from '../../theme/PixiThemeTokens.js';
+
 export const TUTORIAL_PIXI_GEOMETRY = Object.freeze({
-  sourceWidth: 360,
-  sourceHeight: 2170 / 3,
+  sourceWidth: PIXI_UI_GEOMETRY.sourceWidth,
+  sourceHeight: PIXI_UI_GEOMETRY.sourceHeight,
   backdropOpacity: 0.58,
   highlightPadding: 3,
   hintGap: 8,

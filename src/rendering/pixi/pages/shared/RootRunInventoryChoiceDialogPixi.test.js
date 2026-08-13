@@ -16,6 +16,37 @@ globalThis.CanvasRenderingContext2D.prototype.createLinearGradient =
 globalThis.CanvasRenderingContext2D.prototype.fillRect = () => {};
 
 describe('RootRunInventoryChoiceRowPixi', () => {
+  it('centers the enlarged selected checkmark on the visible row frame', () => {
+    const row = new RootRunInventoryChoiceRowPixi({
+      assetManager: createPixiAssetManagerFake(Texture),
+      label: 'inventory-choice-row',
+      useSettingsStyle: true,
+    });
+
+    row.bind('sageSeed', {
+      detail: '52 Available',
+      enabled: true,
+      itemKind: 'seed',
+      key: 'sageSeed',
+      label: 'Sage Seed',
+      selected: true,
+    });
+    row.setBounds(0, 0, 276, 50, 50);
+
+    expect(row.label.fontSize).toBe(14);
+    expect(row.detail.fontSize).toBe(13);
+    expect(row.selectedIndicator.width).toBeCloseTo(27);
+    expect(row.selectedIndicator.height).toBeCloseTo(27);
+    expect(row.selectedIndicator.x).toBeCloseTo(
+      row.background.x + row.background.frameWidth / 2,
+    );
+    expect(row.selectedIndicator.y).toBeCloseTo(
+      row.summaryHeight / 2,
+    );
+
+    row.destroy();
+  });
+
   it('uses compact whole-row press feedback for inventory selection', () => {
     let pressTarget = null;
     let now = 0;

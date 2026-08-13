@@ -794,8 +794,10 @@ export class WorkshopDialogPixi {
   }
 
   layout(viewportProjection) {
-    this.sourceWidth = Number(viewportProjection?.sourceWidth) || 360;
-    this.sourceHeight = Number(viewportProjection?.sourceHeight) || 2170 / 3;
+    this.sourceWidth =
+      Number(viewportProjection?.sourceWidth) || PIXI_UI_GEOMETRY.sourceWidth;
+    this.sourceHeight =
+      Number(viewportProjection?.sourceHeight) || PIXI_UI_GEOMETRY.sourceHeight;
     const width = 304;
     const tabs = this.tabs.getWidgets();
     const tabsInShellFooter = tabs.length > 0;

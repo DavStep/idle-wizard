@@ -198,11 +198,11 @@ describe('GuildPixiPage', () => {
     ).toMatchObject({ x: 16, y: 104 });
     expect(harness.page.tabLayer.position).toMatchObject({
       x: 16,
-      y: 527.3333333333334,
+      y: 648,
     });
     expect(
       harness.page.tabScrolls.get('hall').viewportHeight,
-    ).toBeCloseTo(417.33333333333337, 10);
+    ).toBeCloseTo(538, 10);
 
     harness.page.destroy();
     harness.dispose();

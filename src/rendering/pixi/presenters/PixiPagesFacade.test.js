@@ -519,6 +519,49 @@ describe("PixiPagesFacade", () => {
     ).not.toHaveBeenCalled();
   });
 
+  it("empties the selected cauldron and clears its page-local recipe", () => {
+    const gameplaySnapshot = createGameplaySnapshot();
+    const recipe = {
+      key: "manaTonic",
+      label: "mana tonic",
+      unlocked: true,
+      ingredients: [],
+    };
+    gameplaySnapshot.brewing = {
+      cauldrons: [
+        {
+          cauldronIndex: 0,
+          cauldronNumber: 1,
+          canAddIngredient: true,
+          ingredients: [{ itemTypeId: 1001, key: "sageHerb" }],
+        },
+      ],
+      recipes: [recipe],
+      herbs: [],
+    };
+    const harness = createHarness({ gameplaySnapshot });
+    harness.gameplayFacade.prepareBrewingRecipe.mockReturnValue({ ok: true });
+    harness.gameplayFacade.clearBrewingCauldron.mockReturnValue({ ok: true });
+    const pages = new PixiPagesFacade(harness.dependencies);
+    pages.mount();
+    pages.show("brewing");
+    const brewing = harness.getBoundPage("brewing");
+
+    expect(brewing.actions.selectRecipe(recipe, 0)).toEqual({ ok: true });
+    expect(brewing.actions.emptyCauldron(0)).toEqual({ ok: true });
+    expect(
+      harness.gameplayFacade.clearBrewingCauldron,
+    ).toHaveBeenCalledWith(0);
+    expect(brewing.actions.clearRecipe).toBe(
+      brewing.actions.emptyCauldron,
+    );
+    pages.refreshPage("brewing");
+    expect(
+      harness.getBoundPage("brewing").brewing.cauldrons[0]
+        .selectedRecipe,
+    ).toBeNull();
+  });
+
   it("copies the selected recipe into Auto Brew before enabling it", () => {
     const gameplaySnapshot = createGameplaySnapshot();
     const recipe = {
@@ -1626,6 +1669,7 @@ function createHarness({ gameplaySnapshot = createGameplaySnapshot() } = {}) {
     cancelBrewing: vi.fn(),
     collectBrewing: vi.fn(),
     addBrewingIngredient: vi.fn(),
+    clearBrewingCauldron: vi.fn(),
     setBrewingIngredientSlotQuantity: vi.fn(),
     prepareBrewingRecipe: vi.fn(),
     setBrewingAutoBrewRecipe: vi.fn(),

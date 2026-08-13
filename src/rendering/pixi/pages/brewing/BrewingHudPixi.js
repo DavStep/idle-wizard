@@ -59,6 +59,13 @@ export const BREWING_HUD_GEOMETRY = Object.freeze({
   autoLabelY: 21,
   autoHitSize: 44,
   autoHitTop: -4,
+  emptyButtonWidth: 44,
+  emptyButtonHeight: 48,
+  emptyButtonGapAboveDetail: 8,
+  emptyIconWidth: 30,
+  emptyIconHeight: 24,
+  emptyLabelY: 31,
+  emptyHitSize: 48,
   quantityHitSize: 44,
   potionIconSize: 50,
   carouselContentOffset: 32,
@@ -82,6 +89,7 @@ const ASSETS = Object.freeze({
   previous: 'source:assets/ui/brewing-carousel/chevron-left.png',
   next: 'source:assets/ui/brewing-carousel/chevron-right.png',
   settings: PIXI_ROOT_RUN_ASSETS.settingsGear,
+  emptyCauldron: 'source:assets/rooms/brewing/cauldron/cauldron-empty.png',
   herbs: 'source:assets/icons/icon-herb-box.png',
   potions: 'source:assets/icons/icon-potion-box.png',
   lock: PIXI_ROOT_RUN_ASSETS.lock,
@@ -236,6 +244,15 @@ export class BrewingHudPixi {
     this.autoBrew = this.createButton('autobrew', 'Auto', 'yellow', () =>
       this.actions.toggleAutoBrew?.(this.selectedIndex),
     );
+    this.emptyCauldron = this.createButton(
+      'empty-cauldron',
+      'Empty',
+      'icon',
+      () =>
+        this.actions.emptyCauldron?.(this.selectedIndex) ??
+        this.actions.clearRecipe?.(this.selectedIndex) ??
+        false,
+    );
     this.quantity = this.createButton('quantity', 'x1', 'yellow', () => {
       const cauldron = this.getSelectedCauldron();
       const quantity = cauldron?.quantityAction ?? {};
@@ -274,10 +291,17 @@ export class BrewingHudPixi {
     this.autoBrew.control.textLabel
       .setFontSize(COMPACT_CAULDRON_ACTION_LABEL_STYLE.fontSize)
       .setLineHeight(COMPACT_CAULDRON_ACTION_LABEL_STYLE.lineHeight);
+    this.emptyCauldron.control.textLabel
+      .setFontSize(COMPACT_CAULDRON_ACTION_LABEL_STYLE.fontSize)
+      .setLineHeight(COMPACT_CAULDRON_ACTION_LABEL_STYLE.lineHeight);
     this.actionIcons = {
       autoBrew: createSpriteActionIcon(
         getTexture(assetManager, ASSETS.settings),
         'brewing-autobrew-action-icon',
+      ),
+      emptyCauldron: createSpriteActionIcon(
+        getTexture(assetManager, ASSETS.emptyCauldron),
+        'brewing-empty-cauldron-action-icon',
       ),
     };
     this.navigationIcons = {
@@ -293,11 +317,16 @@ export class BrewingHudPixi {
     attachActionIcon(this.previous, this.navigationIcons.previous);
     attachActionIcon(this.next, this.navigationIcons.next);
     attachActionIcon(this.autoBrew, this.actionIcons.autoBrew);
+    attachActionIcon(
+      this.emptyCauldron,
+      this.actionIcons.emptyCauldron,
+    );
     for (const button of [
       this.previous,
       this.next,
       this.recipes,
       this.autoBrew,
+      this.emptyCauldron,
       this.quantity,
       this.brew,
     ]) {
@@ -504,6 +533,18 @@ export class BrewingHudPixi {
     });
     this.layoutAutoBrewContent();
     this.setAutoBrewMotionEnabled(autoBrewEnabled);
+    const hasCauldronContents =
+      Boolean(cauldron?.selectedRecipe) ||
+      (cauldron?.ingredients?.length ?? 0) > 0;
+    this.emptyCauldron.setModel({
+      label: 'Empty',
+      enabled: unlocked && !active && hasCauldronContents,
+      action: () =>
+        this.actions.emptyCauldron?.(this.selectedIndex) ??
+        this.actions.clearRecipe?.(this.selectedIndex) ??
+        false,
+    });
+    this.layoutEmptyCauldronContent();
     const quantity = cauldron?.quantityAction ?? {};
     this.quantity.setModel({
       label: quantity.label ?? `x${Math.max(1, Number(cauldron?.brewQuantity) || 1)}`,
@@ -894,6 +935,17 @@ export class BrewingHudPixi {
     this.phaseLabel.position.set(78, 10);
     this.phaseTime.position.set(detailWidth - 12, 12);
     this.progress.setBounds(78, 34, detailWidth - 90, 11);
+    this.emptyCauldron.setBounds(
+      sourceWidth -
+        edge -
+        BREWING_HUD_GEOMETRY.emptyButtonWidth,
+      BREWING_HUD_GEOMETRY.detailTop -
+        BREWING_HUD_GEOMETRY.emptyButtonHeight -
+        BREWING_HUD_GEOMETRY.emptyButtonGapAboveDetail,
+      BREWING_HUD_GEOMETRY.emptyButtonWidth,
+      BREWING_HUD_GEOMETRY.emptyButtonHeight,
+    );
+    this.layoutEmptyCauldronContent();
     this.layoutConfigurationButtons(sourceWidth);
     this.brew.setBounds(
       edge +
@@ -954,6 +1006,7 @@ export class BrewingHudPixi {
       this.next,
       this.recipes,
       this.autoBrew,
+      this.emptyCauldron,
       this.quantity,
       this.brew,
     ]) {
@@ -1028,6 +1081,8 @@ export class BrewingHudPixi {
 
     this.recipes.root.visible = unlocked;
     this.recipes.root.renderable = unlocked;
+    this.emptyCauldron.root.visible = unlocked;
+    this.emptyCauldron.root.renderable = unlocked;
     this.brew.root.visible = unlocked;
     this.brew.root.renderable = unlocked;
     this.quantity.root.visible = quantityVisible;
@@ -1133,6 +1188,20 @@ export class BrewingHudPixi {
       hitSize: BREWING_HUD_GEOMETRY.autoHitSize,
       hitTop: BREWING_HUD_GEOMETRY.autoHitTop,
     });
+  }
+
+  layoutEmptyCauldronContent() {
+    layoutActionIcon(
+      this.emptyCauldron,
+      this.actionIcons.emptyCauldron,
+      {
+        iconWidth: BREWING_HUD_GEOMETRY.emptyIconWidth,
+        iconHeight: BREWING_HUD_GEOMETRY.emptyIconHeight,
+        labelY: BREWING_HUD_GEOMETRY.emptyLabelY,
+        hitSize: BREWING_HUD_GEOMETRY.emptyHitSize,
+        hitTop: 0,
+      },
+    );
   }
 
   setAutoBrewMotionEnabled(enabled) {
@@ -1315,6 +1384,7 @@ export class BrewingHudPixi {
       this.next,
       this.recipes,
       this.autoBrew,
+      this.emptyCauldron,
       this.quantity,
       this.brew,
     ]) {
@@ -1406,8 +1476,10 @@ export class BrewingAutomationSettingsDialogPixi {
   }
 
   layout(projection = {}) {
-    const sourceWidth = Number(projection.sourceWidth) || 360;
-    const sourceHeight = Number(projection.sourceHeight) || 2170 / 3;
+    const sourceWidth =
+      Number(projection.sourceWidth) || PIXI_UI_GEOMETRY.sourceWidth;
+    const sourceHeight =
+      Number(projection.sourceHeight) || PIXI_UI_GEOMETRY.sourceHeight;
     const width = 270;
     const height = 150;
     this.modal.setBounds(

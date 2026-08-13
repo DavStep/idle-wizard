@@ -104,6 +104,76 @@ describe('BrewingPixiPage', () => {
     harness.dispose();
   });
 
+  it('empties the selected cauldron from the compact release-only action', () => {
+    const emptyCauldron = vi.fn(() => ({ ok: true }));
+    const harness = createHarness();
+    const model = createBrewingViewModel();
+    model.actions.emptyCauldron = emptyCauldron;
+    harness.page.bind(model);
+    harness.page.activate();
+
+    const button = harness.page.hud.emptyCauldron;
+    const registration = harness.inputRouter.store
+      .getRegistrations('press')
+      .find((candidate) => candidate.displayObject === button.root);
+
+    expect(button.control).toBeInstanceOf(PixiButton);
+    expect(button.text.text).toBe('Empty');
+    expect(button.variant).toBe('icon');
+    expect(button.control.rootRunFrame.visible).toBe(false);
+    expect(button.control.inlineBacking.visible).toBe(false);
+    expect(button.enabled).toBe(true);
+    expect(button.root.visible).toBe(true);
+    expect(button.root.position).toMatchObject({
+      x:
+        PIXI_UI_GEOMETRY.sourceWidth -
+        BREWING_HUD_GEOMETRY.edge -
+        BREWING_HUD_GEOMETRY.emptyButtonWidth,
+      y:
+        BREWING_HUD_GEOMETRY.detailTop -
+        BREWING_HUD_GEOMETRY.emptyButtonHeight -
+        BREWING_HUD_GEOMETRY.emptyButtonGapAboveDetail,
+    });
+    expect(
+      harness.page.hud.actionIcons.emptyCauldron.iconSprites[0],
+    ).toMatchObject({
+      width: BREWING_HUD_GEOMETRY.emptyIconWidth,
+      height: BREWING_HUD_GEOMETRY.emptyIconHeight,
+    });
+    expect(registration).toMatchObject({
+      excludePageSwipe: true,
+      onActivate: expect.any(Function),
+      onPressChange: expect.any(Function),
+    });
+
+    registration.onPressChange(true, { confirmed: false });
+    expect(emptyCauldron).not.toHaveBeenCalled();
+    expect(registration.onActivate({ source: 'pointer' })).toEqual({
+      ok: true,
+    });
+    expect(emptyCauldron).toHaveBeenCalledWith(0);
+
+    model.brewing.cauldrons[0].ingredients = [];
+    model.brewing.cauldrons[0].selectedRecipe = null;
+    harness.page.bind(model);
+    expect(button.enabled).toBe(false);
+    expect(button.root.visible).toBe(true);
+
+    model.brewing.cauldrons[0].ingredients = [
+      { key: 'sageHerb', label: 'Sage', quantity: 1 },
+    ];
+    model.brewing.cauldrons[0].activeBrew = {
+      key: 'manaTonic',
+      label: 'Mana Tonic',
+      phase: 'brewing',
+    };
+    harness.page.bind(model);
+    expect(button.enabled).toBe(false);
+
+    harness.page.destroy();
+    harness.dispose();
+  });
+
   it('shows a red zero for a missing selected-recipe ingredient slot', () => {
     const harness = createHarness();
     const model = createBrewingViewModel();
@@ -485,7 +555,7 @@ describe('BrewingPixiPage', () => {
       y: BREWING_PIXI_GEOMETRY.worldTop,
     });
     expect(harness.page.worldViewportHeight).toBeCloseTo(
-      2170 / 3 -
+      PIXI_UI_GEOMETRY.sourceHeight -
         BREWING_PIXI_GEOMETRY.worldTop -
         BREWING_PIXI_GEOMETRY.worldBottom,
     );
@@ -496,13 +566,13 @@ describe('BrewingPixiPage', () => {
     });
     expect(harness.page.herbsButton.root.position).toMatchObject({
       x: 16,
-      y: 2170 / 3 - 162 - 6 - 80.25,
+      y: PIXI_UI_GEOMETRY.sourceHeight - 162 - 6 - 80.25,
     });
     expect(harness.page.potionsButton.root.position).toMatchObject({
-      x: 298.5,
-      y: 2170 / 3 - 162 - 6 - 80.25,
+      x: 328.5,
+      y: PIXI_UI_GEOMETRY.sourceHeight - 162 - 6 - 80.25,
     });
-    expect(harness.page.worldZoom).toBeCloseTo(328 / 516);
+    expect(harness.page.worldZoom).toBeCloseTo(358 / 516);
     expect(cauldron.progress.progress).toBeCloseTo(0.5);
     expect(cauldron.progress).toMatchObject({
       tone: 'blue',
@@ -1090,6 +1160,7 @@ describe('BrewingPixiPage', () => {
     expect(harness.page.hud.ingredientSlots[5].quantity).toBeUndefined();
     expect(Object.keys(harness.page.hud.actionIcons)).toEqual([
       'autoBrew',
+      'emptyCauldron',
     ]);
     expect(harness.page.hud.actionIcons.autoBrew.label).toBe(
       'brewing-autobrew-action-icon',
@@ -1197,7 +1268,7 @@ describe('BrewingPixiPage', () => {
     );
     expect(harness.page.hud.autoBrew.control.textLabel.fontSize).toBe(10);
     expect(harness.page.hud.autoBrew.control.textLabel.lineHeight).toBe(12);
-    expect(harness.page.hud.detailPanel.width).toBe(328);
+    expect(harness.page.hud.detailPanel.width).toBe(358);
     expect(harness.page.hud.detailPanel.root.x).toBe(16);
     expect(harness.page.hud.potionIcon.width).toBe(50);
     expect(harness.page.hud.potionIcon.height).toBe(50);
@@ -1207,10 +1278,10 @@ describe('BrewingPixiPage', () => {
       PIXI_UI_GEOMETRY.roomControlHeight,
     );
     expect(harness.page.hud.quantity.width).toBe(32);
-    expect(harness.page.hud.brew.width).toBe(308);
-    expect(harness.page.hud.recipes.root.x).toBe(198);
-    expect(harness.page.hud.autoBrew.root.x).toBe(268);
-    expect(harness.page.hud.quantity.root.x).toBe(312);
+    expect(harness.page.hud.brew.width).toBe(338);
+    expect(harness.page.hud.recipes.root.x).toBe(228);
+    expect(harness.page.hud.autoBrew.root.x).toBe(298);
+    expect(harness.page.hud.quantity.root.x).toBe(342);
     expect(harness.page.hud.recipes.root.y).toBe(
       BREWING_HUD_GEOMETRY.top +
         BREWING_HUD_GEOMETRY.carouselContentOffset +
@@ -1297,6 +1368,7 @@ describe('BrewingPixiPage', () => {
     for (const button of [
       harness.page.hud.recipes,
       harness.page.hud.autoBrew,
+      harness.page.hud.emptyCauldron,
       harness.page.hud.quantity,
       harness.page.hud.brew,
     ]) {
@@ -1311,7 +1383,7 @@ describe('BrewingPixiPage', () => {
     expect(harness.page.hud.detailPanel.root.visible).toBe(false);
     expect(harness.page.hud.detailPanel.root.renderable).toBe(false);
     expect(harness.page.hud.unlockCostButton.position).toMatchObject({
-      x: 134,
+      x: 149,
       y: 473,
     });
     expect(harness.page.hud.unlockCostButton.activate()).toBe(true);
@@ -1364,7 +1436,7 @@ describe('BrewingPixiPage', () => {
       bottom: 12,
       left: 12,
     });
-    expect(harness.page.hud.progress.width).toBe(238);
+    expect(harness.page.hud.progress.width).toBe(268);
     expect(harness.page.hud.phaseLabel.text).toBe('');
     expect(harness.page.hud.phaseTime.text).toBe('');
     expect(harness.page.hud.cancel).toBeUndefined();

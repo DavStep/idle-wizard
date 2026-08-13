@@ -67,7 +67,7 @@ The preferred renderer-neutral view model is:
     performCauldronAction, primaryAction,
     selectBrewQuantity, toggleAutoBrew, toggleAutoCollect,
     cancelBrew, collectBrew,
-    addHerb, dropHerb, addIngredient, removeIngredient,
+    addHerb, dropHerb, addIngredient, removeIngredient, emptyCauldron,
     toggleInventory, toggleInventoryExpanded, inspectPotion,
     previewHerbDrag, endHerbDrag, cancelHerbDrag,
     closeDialog
@@ -98,7 +98,12 @@ and top-aligns shorter lists.
 Cauldron liquid reuses the exact source-art mask,
 matches the cauldron sprite transform, and stays behind the rendered rim.
 Potion identity and rarity sit directly below the landmark after a recipe is
-selected. The empty preview does not repeat `Choose Recipe`, and batch quantity
+selected. A compact red cauldron-over-`Empty` action sits to the right of that
+identity, immediately above the batch detail panel. It clears the selected
+recipe and every staged herb for the selected cauldron, stays visible but
+disabled when there is nothing to clear or a brew is active, and uses the
+shared retained-button release semantics. The empty preview does not repeat
+`Choose Recipe`, and batch quantity
 appears only in the existing `xN` configuration control.
 
 The framed action section begins with the predicted potion inside the shared

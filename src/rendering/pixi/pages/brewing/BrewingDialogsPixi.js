@@ -11,7 +11,10 @@ import { PixiButton } from '../../primitives/PixiButton.js';
 import { PixiOwnedDialogSurface } from '../../primitives/PixiOwnedDialogSurface.js';
 import { PooledCollection } from '../../retained/PooledCollection.js';
 import { WidgetPool } from '../../retained/WidgetPool.js';
-import { DEFAULT_PIXI_THEME_SNAPSHOT } from '../../theme/PixiThemeTokens.js';
+import {
+  DEFAULT_PIXI_THEME_SNAPSHOT,
+  PIXI_UI_GEOMETRY,
+} from '../../theme/PixiThemeTokens.js';
 import {
   RETAINED_PAGE_GEOMETRY,
   RETAINED_TEXT_STYLES,
@@ -108,7 +111,8 @@ export class BrewingRecipeChoiceDialogPixi {
   }
 
   layout(viewportProjection) {
-    this.sourceWidth = Number(viewportProjection?.sourceWidth) || 360;
+    this.sourceWidth =
+      Number(viewportProjection?.sourceWidth) || PIXI_UI_GEOMETRY.sourceWidth;
     this.sourceHeight =
       Number(viewportProjection?.sourceHeight) || RETAINED_PAGE_GEOMETRY.height;
     const contentHeight = 30 * 2 + 8;
@@ -373,7 +377,8 @@ export class BrewingRecipeBookDialogPixi {
   }
 
   layout(viewportProjection) {
-    this.sourceWidth = Number(viewportProjection?.sourceWidth) || 360;
+    this.sourceWidth =
+      Number(viewportProjection?.sourceWidth) || PIXI_UI_GEOMETRY.sourceWidth;
     this.sourceHeight =
       Number(viewportProjection?.sourceHeight) || RETAINED_PAGE_GEOMETRY.height;
     this.modal.setBounds(

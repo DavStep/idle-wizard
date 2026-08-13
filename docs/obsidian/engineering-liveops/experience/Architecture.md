@@ -24,6 +24,7 @@ experience_type: architecture
 - UI click sounds live in `src/audio/uiClicks`; trigger them through `PressFeedbackManager` so individual button managers do not duplicate sound hooks.
 - Idle Witch Craft's button tap cue uses `idlefarmer-mouth-pop.wav` plus a short triangle tone; Idle Wizard mirrors that in `assets/game/source/audio/ui-click-pop.wav`.
 - Root Run-style presentation uses one retained Pixi application with a fixed `390x844` logical stage for every room, popup, gate, tutorial overlay, and Spine visual; do not add page-local Pixi applications or extra WebGL canvases.
+- Derive the retained Pixi authored stage from that canonical viewport (`1170x2532` at the existing 3x source-art scale). A mismatched authored aspect ratio makes Pixi allocate a shorter backing bitmap that CSS stretches, softening every UI edge even when antialiasing is enabled.
 - Keep the existing DOM managers as the source of layout, state, taps, tutorial targets, and accessibility while the central renderer owns visible output. Reveal a whole direct stage root only while one of its native text inputs is focused or when rendering fails open.
 - Restore the Pixi scene after `focusout` only when native text-input fallback is actually active; ordinary button focus changes must not flash the DOM or force a full scene refresh.
 - The central UI renderer must be invalidation-driven and retain display objects across refreshes. Do not restore interval polling or rebuild the scene graph on every tick.

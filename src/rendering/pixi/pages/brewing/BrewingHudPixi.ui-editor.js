@@ -36,7 +36,21 @@ export default defineUiEditorIntegration({
 async function mountBrewing(context, fixture) {
   const state = {
     active: fixture.phase === 'ready' ? null : createActiveBrew(fixture.phase),
+    ingredients: [
+      { key: 'sageHerb', label: 'Sage', quantity: 1 },
+      { key: 'mintHerb', label: 'Mint', quantity: 1 },
+    ],
     quantity: 1,
+    selectedRecipe: {
+      ingredients: [
+        { itemKey: 'sageHerb', label: 'Sage', quantity: 1 },
+        { itemKey: 'mintHerb', label: 'Mint', quantity: 1 },
+      ],
+      key: 'minorManaPotion',
+      label: 'Minor Mana Potion',
+      ownedQuantity: 2,
+      rarity: 'common',
+    },
   };
   let hud = null;
   const createModel = () => ({
@@ -48,10 +62,7 @@ async function mountBrewing(context, fixture) {
         canSelectRecipe: true,
         cauldronNumber: 1,
         id: 'cauldron-0',
-        ingredients: [
-          { key: 'sageHerb', label: 'Sage', quantity: 1 },
-          { key: 'mintHerb', label: 'Mint', quantity: 1 },
-        ],
+        ingredients: state.ingredients,
         level: 2,
         maxBrewQuantity: 3,
         primaryAction: state.active
@@ -64,16 +75,7 @@ async function mountBrewing(context, fixture) {
           label: `x${state.quantity}`,
           nextQuantity: state.quantity >= 3 ? 1 : state.quantity + 1,
         },
-        selectedRecipe: {
-          ingredients: [
-            { itemKey: 'sageHerb', label: 'Sage', quantity: 1 },
-            { itemKey: 'mintHerb', label: 'Mint', quantity: 1 },
-          ],
-          key: 'minorManaPotion',
-          label: 'Minor Mana Potion',
-          ownedQuantity: 2,
-          rarity: 'common',
-        },
+        selectedRecipe: state.selectedRecipe,
         unlocked: true,
       },
     ],
@@ -88,6 +90,13 @@ async function mountBrewing(context, fixture) {
       return true;
     },
     openRecipes: () => context.emit('recipesOpened'),
+    emptyCauldron: () => {
+      context.emit('cauldronEmptied');
+      state.ingredients = [];
+      state.selectedRecipe = null;
+      refresh();
+      return true;
+    },
     performCauldronAction: () => {
       context.emit('brewStarted', { quantity: state.quantity });
       state.active = createActiveBrew('brewing');
@@ -170,6 +179,7 @@ async function mountBrewing(context, fixture) {
     ],
     actions: [
       { id: 'start', label: 'Start brew', enabled: () => !state.active, run: actions.performCauldronAction },
+      { id: 'empty', label: 'Empty cauldron', enabled: () => !state.active && Boolean(state.selectedRecipe || state.ingredients.length), run: actions.emptyCauldron },
       { id: 'advance', label: 'Advance 1s', enabled: () => Boolean(state.active), run: () => context.clock.advance(1000) },
       { id: 'complete', label: 'Complete', enabled: () => Boolean(state.active), run: () => context.clock.advance(5000) },
       { id: 'collect', label: 'Collect', enabled: () => state.active?.canCollect === true, run: actions.collectBrew },

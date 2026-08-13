@@ -78,10 +78,10 @@ describe('PixiApplicationManager', () => {
       'transientLayer',
       'interactionLocksLayer',
     ]);
-    expect(layers.pageWorlds.x).toBeCloseTo(1196, 0);
-    expect(layers.pageUi.x).toBeCloseTo(1196, 0);
+    expect(layers.pageWorlds.x).toBeCloseTo(1441, 0);
+    expect(layers.pageUi.x).toBeCloseTo(1441, 0);
     expect(layers.pageUi.scale.x).toBe(3);
-    expect(app.init.mock.calls[0][0].resolution).toBeCloseTo(900 / 2170, 8);
+    expect(app.init.mock.calls[0][0].resolution).toBeCloseTo(900 / 2532, 8);
     expect(app.init.mock.calls[0][0].antialias).toBe(true);
 
     const backgroundInstructions =
@@ -92,13 +92,13 @@ describe('PixiApplicationManager', () => {
     ]);
     expect(
       backgroundInstructions[0].data.path.instructions[0].data.slice(0, 4),
-    ).toEqual([0, 0, manager.projection.stageLogicalWidth, 2170]);
+    ).toEqual([0, 0, manager.projection.stageLogicalWidth, 2532]);
     expect(backgroundInstructions[0].data.style.color).toBe(0x1c1e26);
     expect(
       backgroundInstructions[1].data.path.instructions
         .at(-1)
         .data.slice(0, 4),
-    ).toEqual([1196, 0, 1080, 2170]);
+    ).toEqual([1440.6, 0, 1170, 2532]);
     expect(backgroundInstructions[1].data.style.color).toBe(0x17191f);
 
     expect(layers).not.toHaveProperty('stageFrame');
@@ -122,43 +122,50 @@ describe('PixiApplicationManager', () => {
 
     expect(manager.projection.isWide).toBe(false);
     expect(manager.getLayers()).not.toHaveProperty('stageFrame');
+    expect(app.init).toHaveBeenCalledWith(
+      expect.objectContaining({
+        width: 1170,
+        height: 2532,
+        resolution: 1 / 3,
+      }),
+    );
   });
 
   it('keeps authored layout stable and reports keyboard dialog shifts', async () => {
     const app = createFakeApplication();
-    const canvas = createCanvas({ width: 1080, height: 2170 });
+    const canvas = createCanvas({ width: 1170, height: 2532 });
     const manager = new PixiApplicationManager({
       canvas,
       createApplication: () => app,
       windowTarget: {
-        innerWidth: 1080,
-        innerHeight: 2170,
+        innerWidth: 1170,
+        innerHeight: 2532,
         addEventListener: vi.fn(),
         removeEventListener: vi.fn(),
       },
     });
     await manager.initialize();
 
-    canvas.clientHeight = 1300;
+    canvas.clientHeight = 1662;
     const projection = manager.setKeyboardMetrics({
       keyboardInset: 870,
-      visibleHeight: 1300,
+      visibleHeight: 1662,
     });
 
-    expect(projection.viewportPx.height).toBe(2170);
+    expect(projection.viewportPx.height).toBe(2532);
     expect(projection.dialogShift).toBe(-145);
-    expect(app.renderer.resize).toHaveBeenLastCalledWith(1080, 2170, 1);
+    expect(app.renderer.resize).toHaveBeenLastCalledWith(1170, 2532, 1);
   });
 
   it('locks the authored layout before keyboard resize and through keyboard dismissal', async () => {
     const app = createFakeApplication();
-    const canvas = createCanvas({ width: 1080, height: 2170 });
+    const canvas = createCanvas({ width: 1170, height: 2532 });
     const manager = new PixiApplicationManager({
       canvas,
       createApplication: () => app,
       windowTarget: {
-        innerWidth: 1080,
-        innerHeight: 2170,
+        innerWidth: 1170,
+        innerHeight: 2532,
         addEventListener: vi.fn(),
         removeEventListener: vi.fn(),
       },
@@ -166,17 +173,17 @@ describe('PixiApplicationManager', () => {
     await manager.initialize();
 
     manager.setTextEntryActive(true);
-    canvas.clientHeight = 1300;
-    expect(manager.resizeNow().viewportPx.height).toBe(2170);
+    canvas.clientHeight = 1662;
+    expect(manager.resizeNow().viewportPx.height).toBe(2532);
 
     manager.setTextEntryActive(false);
-    expect(manager.getProjection().viewportPx.height).toBe(2170);
+    expect(manager.getProjection().viewportPx.height).toBe(2532);
 
-    canvas.clientHeight = 2170;
-    expect(manager.resizeNow().viewportPx.height).toBe(2170);
+    canvas.clientHeight = 2532;
+    expect(manager.resizeNow().viewportPx.height).toBe(2532);
 
-    canvas.clientHeight = 1300;
-    expect(manager.resizeNow().viewportPx.height).toBe(1300);
+    canvas.clientHeight = 1662;
+    expect(manager.resizeNow().viewportPx.height).toBe(1662);
   });
 
   it('temporarily expands the loading splash across mobile safe areas', async () => {

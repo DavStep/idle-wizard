@@ -5,7 +5,7 @@ import {
 import { PIXI_DIALOG_BASE_GEOMETRY } from './PixiDialogFrame.js';
 import { PixiModalSurface } from './PixiModalSurface.js';
 
-const DEFAULT_SOURCE_HEIGHT = 2170 / 3;
+const DEFAULT_SOURCE_HEIGHT = PIXI_UI_GEOMETRY.sourceHeight;
 
 /**
  * Player-dialog adapter for page-owned retained dialogs.

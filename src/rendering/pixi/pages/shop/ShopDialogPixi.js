@@ -105,7 +105,7 @@ const PLAYER_LISTING_ACTIONS_Y =
 const PLAYER_LISTING_SELECTION_HEIGHT =
   PLAYER_LISTING_ACTIONS_Y + STALL_ACTION_HEIGHT + 6;
 const STALL_ITEM_ICON_SIZE = 28;
-const STALL_SELECTED_CHECK_SIZE = 18;
+const STALL_SELECTED_CHECK_SIZE = 27;
 const AUTOMATION_COG_TEXTURE_ID = PIXI_ROOT_RUN_ASSETS.settingsGear;
 const SETTINGS_ROW_EXPANSION_HEIGHT =
   PIXI_ROOT_RUN_GEOMETRY.settings.knobSize + 8;
@@ -2231,9 +2231,12 @@ export class RootRunInventoryChoiceRowPixi extends ClickableWidget {
     this.selectedIndicator.texture =
       assetManager?.getTexture?.(PIXI_ROOT_RUN_ASSETS.checkmark) ??
       Texture.EMPTY;
-    this.label = new PixiTextLabel({ label: `${label}:label` });
+    this.label = new PixiTextLabel({
+      fontSize: PIXI_UI_GEOMETRY.dialogTitleFontSize,
+      label: `${label}:label`,
+    });
     this.detail = new PixiTextLabel({
-      fontSize: PIXI_UI_GEOMETRY.borderLabelFontSize,
+      fontSize: PIXI_UI_GEOMETRY.bodyFontSize,
       color: 'muted',
       label: `${label}:detail`,
     });
@@ -2464,7 +2467,7 @@ export class RootRunInventoryChoiceRowPixi extends ClickableWidget {
     if (this.selectedIndicator.visible) {
       setItemSpriteBounds(
         this.selectedIndicator,
-        contentRight - STALL_SELECTED_CHECK_SIZE / 2,
+        this.background.x + this.background.frameWidth / 2,
         summaryHeight / 2,
         STALL_SELECTED_CHECK_SIZE,
       );

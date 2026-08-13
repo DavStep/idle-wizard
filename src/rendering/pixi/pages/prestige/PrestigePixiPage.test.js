@@ -144,12 +144,12 @@ describe('PrestigePixiPage', () => {
 
     expect(page.scroll.root.position).toMatchObject({ x: 0, y: 151 });
     expect(page.scroll).toMatchObject({
-      width: 344,
-      height: 362.33333333333337,
+      width: 374,
+      height: 483,
     });
     expect(page.tabsLayer.position).toMatchObject({
       x: 16,
-      y: 519.3333333333334,
+      y: 640,
     });
     page.destroy();
   });

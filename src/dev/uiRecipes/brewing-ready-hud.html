@@ -40,6 +40,7 @@
     <script type="module">
       import '@fontsource/lilita-one/400.css';
       import { BrewingHudPixi } from '/src/rendering/pixi/pages/brewing/BrewingHudPixi.js';
+      import { PixiInputRouter } from '/src/rendering/pixi/input/PixiInputRouter.js';
       import { PixiApplicationManager } from '/src/rendering/pixi/runtime/PixiApplicationManager.js';
       import { PixiUiRuntimeFacade } from '/src/rendering/pixi/runtime/PixiUiRuntimeFacade.js';
 
@@ -49,8 +50,15 @@
         document.documentElement.dataset.styleTheme = requestedTheme;
       }
       const canvas = document.querySelector('canvas');
+      const recipeState = document.querySelector(
+        '#brewing-ready-hud-recipe-state',
+      );
+      const inputRouter = new PixiInputRouter();
       const applicationManager = new PixiApplicationManager({ canvas });
-      const runtime = new PixiUiRuntimeFacade({ applicationManager });
+      const runtime = new PixiUiRuntimeFacade({
+        applicationManager,
+        inputRouter,
+      });
       await runtime.initialize();
       const state = parameters.get('state');
       const activeBrew =
@@ -67,10 +75,12 @@
 
       const hud = new BrewingHudPixi({
         assetManager: runtime.assetManager,
+        inputRouter,
+        semanticTargets: runtime.semanticRegistry,
         theme: runtime.themeManager.getSnapshot(),
       });
       applicationManager.getLayers().pageUi.addChild(hud.root);
-      hud.bind({
+      const hudModel = {
         selectedCauldronIndex: 0,
         configuredMaxCauldrons: 5,
         cauldrons: [
@@ -125,7 +135,18 @@
             },
           },
         ],
-      });
+      };
+      const hudActions = {
+        emptyCauldron: () => {
+          const cauldron = hudModel.cauldrons[0];
+          cauldron.selectedRecipe = null;
+          cauldron.ingredients = [];
+          recipeState.dataset.empty = 'true';
+          hud.bind(hudModel, hudActions);
+          return true;
+        },
+      };
+      hud.bind(hudModel, hudActions);
       hud.layout(applicationManager.getProjection().sourceWidth);
       if (parameters.get('repeatTheme') === 'true') {
         hud.applyTheme(runtime.themeManager.getSnapshot());
@@ -137,17 +158,12 @@
             active: true,
             reducedMotion: parameters.get('reducedMotion') === 'true',
           });
-          document.querySelector(
-            '#brewing-ready-hud-recipe-state',
-          ).dataset.progress = hud.progress.progress.toFixed(4);
+          recipeState.dataset.progress = hud.progress.progress.toFixed(4);
         });
       }
-      document.querySelector(
-        '#brewing-ready-hud-recipe-state',
-      ).dataset.state = state ?? 'ready';
-      document.querySelector(
-        '#brewing-ready-hud-recipe-state',
-      ).dataset.visibleSlotText = hud.ingredientSlots
+      recipeState.dataset.state = state ?? 'ready';
+      recipeState.dataset.empty = 'false';
+      recipeState.dataset.visibleSlotText = hud.ingredientSlots
         .map((slot) => slot.name.text)
         .filter(Boolean)
         .join(',');

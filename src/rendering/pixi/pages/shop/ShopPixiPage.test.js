@@ -154,7 +154,8 @@ describe('ShopPixiPage', () => {
       ribbon.stars.x + ribbon.stars.measuredWidth,
     ).toBeCloseTo(ribbon.contentGroupRight, 6);
     const expectedContentCenterY =
-      ribbon.height / 2 - 6 * (360 / 390);
+      ribbon.height / 2 -
+      6 * (PIXI_UI_GEOMETRY.sourceWidth / 390);
     expect(ribbon.title.y).toBeCloseTo(
       expectedContentCenterY,
       6,
@@ -761,6 +762,66 @@ describe('ShopPixiPage', () => {
     inputRouter.destroy();
   });
 
+  it('drags the Market lesson slider when the tutorial overlay owns the event path', () => {
+    const inputRouter = new PixiInputRouter({ dragThreshold: 4 });
+    const harness = createHarness({ inputRouter });
+    const setAllocation = vi.fn(() => true);
+    harness.page.bind(createShopViewModel());
+    harness.page.activate();
+    harness.page.openDialog(SHOP_DIALOG_IDS.STALL, {
+      title: 'load stall',
+      range: {
+        enabled: true,
+        min: 0,
+        max: 5,
+        step: 1,
+        value: 0,
+        tutorialTargetValue: 1,
+        onChange: setAllocation,
+      },
+      items: [],
+      actions: [],
+      tabs: [],
+    });
+
+    const dialog = harness.dialogs.get(SHOP_DIALOG_IDS.STALL);
+    const slider = dialog.rangeControl;
+    const dragRegistration = inputRouter.store
+      .getRegistrations('drag')
+      .find((entry) => entry.displayObject === slider);
+    const tutorialOverlay = new Container({
+      label: 'tutorial-overlay-hit',
+    });
+    const bounds = slider.getBounds();
+    const start = {
+      x: bounds.x + PIXI_ROOT_RUN_GEOMETRY.settings.knobSize / 2,
+      y: bounds.y + bounds.height / 2,
+    };
+    const end = {
+      x: bounds.x + bounds.width * 0.8,
+      y: start.y,
+    };
+
+    expect(dragRegistration?.fallbackHitTest).toBe(true);
+    inputRouter.onPointerDown(
+      createPointerEvent(tutorialOverlay, 'pointerdown', start),
+    );
+    inputRouter.onPointerMove(
+      createPointerEvent(tutorialOverlay, 'pointermove', end),
+    );
+    inputRouter.onPointerUp(
+      createPointerEvent(tutorialOverlay, 'pointerup', end),
+    );
+
+    expect(setAllocation).toHaveBeenCalled();
+    expect(slider.value).toBeGreaterThan(0);
+
+    tutorialOverlay.destroy();
+    harness.page.destroy();
+    harness.dispose();
+    inputRouter.destroy();
+  });
+
   it('keeps market ledger detail lines inside their retained rows', () => {
     const assetManager = createPixiAssetManagerFake(Texture);
     assetManager.getAtlasTexture = vi.fn(() => new Texture());
@@ -1030,13 +1091,16 @@ describe('ShopPixiPage', () => {
         row.background.x,
     ).toBeCloseTo(8);
     expect(row.selectedIndicator.visible).toBe(true);
-    expect(row.selectedIndicator.x).toBeGreaterThan(row.label.x);
+    expect(row.selectedIndicator.width).toBeCloseTo(27);
+    expect(row.selectedIndicator.height).toBeCloseTo(27);
     expect(
-      row.background.x +
-        row.background.frameWidth -
-        (row.selectedIndicator.x +
-          row.selectedIndicator.width / 2),
-    ).toBeCloseTo(8);
+      row.selectedIndicator.x,
+    ).toBeCloseTo(
+      row.background.x + row.background.frameWidth / 2,
+    );
+    expect(row.selectedIndicator.y).toBeCloseTo(
+      row.summaryHeight / 2,
+    );
     expect(row.value.visible).toBe(false);
     expect(row.valueResource.visible).toBe(true);
     expect(row.valueResource.amountLabel.text).toBe('2');
@@ -1116,10 +1180,9 @@ describe('ShopPixiPage', () => {
       );
     }
     expect(
-      selected.selectedIndicator.x +
-        selected.selectedIndicator.width / 2,
+      selected.selectedIndicator.x,
     ).toBeCloseTo(
-      priceRightEdges[0],
+      selected.background.x + selected.background.frameWidth / 2,
     );
     expect(
       selected.visual.getChildIndex(selected.selectedIndicator),
@@ -1275,14 +1338,14 @@ describe('ShopPixiPage', () => {
     expect(tradersScroll.root.y).toBe(151);
     expect(harness.page.tabLayer.position).toMatchObject({
       x: 16,
-      y: 519.3333333333334,
+      y: 640,
     });
     expect(harness.page.tabButtons.get('traders')).toMatchObject({
       buttonHeight: PIXI_UI_GEOMETRY.roomControlHeight,
     });
     expect(
       tradersScroll.height,
-    ).toBeCloseTo(362.33333333333337, 10);
+    ).toBeCloseTo(483, 10);
 
     harness.page.destroy();
     harness.dispose();

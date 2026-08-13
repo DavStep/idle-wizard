@@ -12,16 +12,18 @@ import {
   normalizePlayerProgressBar,
 } from '../../../player/playerProgressBars.js';
 import { DEFAULT_PLAYER_THEME, normalizePlayerTheme } from '../../../player/playerThemes.js';
+import { gameViewport } from '../../../viewport/gameViewport.js';
 
 const ROOT_RUN_DIALOG_INNER_BOARD_WIDTH = 298;
 const ROOT_RUN_ACCOUNT_X_SCALE = ROOT_RUN_DIALOG_INNER_BOARD_WIDTH / 925;
+const ROOT_RUN_TO_SOURCE_SCALE = gameViewport.width / 390;
 
 export const PIXI_UI_GEOMETRY = Object.freeze({
-  authoredWidth: 1080,
-  authoredHeight: 2170,
   sourceScale: 3,
-  sourceWidth: 360,
-  sourceHeight: 2170 / 3,
+  authoredWidth: gameViewport.width * 3,
+  authoredHeight: gameViewport.height * 3,
+  sourceWidth: gameViewport.width,
+  sourceHeight: gameViewport.height,
   bodyFontSize: 13,
   strokedTextWidth: 3,
   dialogTitleFontSize: 14,
@@ -248,22 +250,22 @@ export const PIXI_ROOT_RUN_GEOMETRY = Object.freeze({
       left: 73,
     }),
     borderInsets: Object.freeze({
-      top: 27 * (360 / 390),
-      right: 73 * (360 / 390),
-      bottom: 27 * (360 / 390),
-      left: 73 * (360 / 390),
+      top: 27 * ROOT_RUN_TO_SOURCE_SCALE,
+      right: 73 * ROOT_RUN_TO_SOURCE_SCALE,
+      bottom: 27 * ROOT_RUN_TO_SOURCE_SCALE,
+      left: 73 * ROOT_RUN_TO_SOURCE_SCALE,
     }),
-    width: 370 * (360 / 390),
-    height: 55 * (360 / 390),
-    contentInsetX: 66 * (360 / 390),
-    contentGap: 5 * (360 / 390),
-    contentOffsetY: -6 * (360 / 390),
-    titleFontSize: 20 * (360 / 390),
-    titleLineHeight: 24 * (360 / 390),
-    titleStroke: 3 * (360 / 390),
+    width: 370 * ROOT_RUN_TO_SOURCE_SCALE,
+    height: 55 * ROOT_RUN_TO_SOURCE_SCALE,
+    contentInsetX: 66 * ROOT_RUN_TO_SOURCE_SCALE,
+    contentGap: 5 * ROOT_RUN_TO_SOURCE_SCALE,
+    contentOffsetY: -6 * ROOT_RUN_TO_SOURCE_SCALE,
+    titleFontSize: 20 * ROOT_RUN_TO_SOURCE_SCALE,
+    titleLineHeight: 24 * ROOT_RUN_TO_SOURCE_SCALE,
+    titleStroke: 3 * ROOT_RUN_TO_SOURCE_SCALE,
     titleMinFontSize: 13,
-    starSize: 15 * (360 / 390),
-    starGap: 2 * (360 / 390),
+    starSize: 15 * ROOT_RUN_TO_SOURCE_SCALE,
+    starGap: 2 * ROOT_RUN_TO_SOURCE_SCALE,
   }),
   settings: Object.freeze({
     gearAspectRatio: 80 / 84,

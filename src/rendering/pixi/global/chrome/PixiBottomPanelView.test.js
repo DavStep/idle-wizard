@@ -15,6 +15,7 @@ import { PixiDialogFrame } from '../../primitives/PixiDialogFrame.js';
 import {
   createPixiThemeSnapshot,
   PIXI_ROOT_RUN_ASSETS,
+  PIXI_UI_GEOMETRY,
 } from '../../theme/PixiThemeTokens.js';
 
 installPixiPageTestCanvas();
@@ -74,10 +75,10 @@ describe('PixiBottomPanelView', () => {
   it('lays out fixed five, six, and seven-tab rows with a wider selection', () => {
     const view = new PixiBottomPanelView({ assets: createAssets() });
     view.layout({
-      sourceHeight: 723.333333,
+      sourceHeight: PIXI_UI_GEOMETRY.sourceHeight,
       sourceScale: 3,
       sourceOffsetX: 0,
-      stageLogicalWidth: 1080,
+      stageLogicalWidth: PIXI_UI_GEOMETRY.authoredWidth,
     });
 
     for (const visibleIds of [
@@ -107,14 +108,16 @@ describe('PixiBottomPanelView', () => {
 
       const visibleTabs = view.tabs.filter((tab) => tab.root.visible);
       const expectedBaseWidth =
-        (360 + 2.888889 * (visibleIds.length - 1) - 6) /
+        (PIXI_UI_GEOMETRY.sourceWidth +
+          2.888889 * (visibleIds.length - 1) -
+          6) /
         visibleIds.length;
       expect(visibleTabs.map(({ definition }) => definition.id)).toEqual(
         visibleIds,
       );
       expect(view.tabsRoot.position.x).toBe(0);
       expect(view.tabsRoot.position.y).toBeCloseTo(
-        723.333333 - 82,
+        PIXI_UI_GEOMETRY.sourceHeight - 82,
         6,
       );
       let expectedX = 0;
@@ -132,7 +135,10 @@ describe('PixiBottomPanelView', () => {
         expect(tab.compactIcons).toBe(visibleIds.length >= 7);
       }
       const last = visibleTabs.at(-1);
-      expect(last.root.position.x + last.width).toBeCloseTo(360, 6);
+      expect(last.root.position.x + last.width).toBeCloseTo(
+        PIXI_UI_GEOMETRY.sourceWidth,
+        6,
+      );
     }
   });
 
@@ -437,11 +443,11 @@ describe('PixiBottomPanelView', () => {
     });
     view.activate();
     view.layout({
-      sourceHeight: 723.333333,
+      sourceHeight: PIXI_UI_GEOMETRY.sourceHeight,
       sourceScale: 3,
       uiScale: 3,
       sourceOffsetX: 0,
-      stageLogicalWidth: 1080,
+      stageLogicalWidth: PIXI_UI_GEOMETRY.authoredWidth,
     });
     view.bind({
       currentPageId: 'workshop',

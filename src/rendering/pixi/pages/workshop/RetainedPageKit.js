@@ -34,8 +34,8 @@ import { normalizePixiTextStroke } from '../../primitives/PixiTextLabel.js';
 let nextRetainedInputId = 1;
 
 export const RETAINED_PAGE_GEOMETRY = Object.freeze({
-  width: 360,
-  height: 2170 / 3,
+  width: PIXI_UI_GEOMETRY.sourceWidth,
+  height: PIXI_UI_GEOMETRY.sourceHeight,
   contentTop: PIXI_UI_GEOMETRY.roomContentTop,
   contentEdge: 16,
   chatClearance: 162,

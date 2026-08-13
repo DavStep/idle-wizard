@@ -28,6 +28,7 @@ import {
   PIXI_ROOT_RUN_ASSETS,
   PIXI_ROOT_RUN_GEOMETRY,
   PIXI_TEXT_STROKE_COLOR,
+  PIXI_UI_GEOMETRY,
   createPixiThemeSnapshot,
   resolvePixiTextStrokeWidth,
 } from '../../theme/PixiThemeTokens.js';
@@ -657,12 +658,14 @@ describe('retained global Pixi dialogs', () => {
       outerHeight: 400,
     });
     const inboxWrapperLeft =
-      (360 - GLOBAL_DIALOG_GEOMETRY.maxShellWidth) / 2;
+      (GLOBAL_DIALOG_GEOMETRY.sourceWidth -
+        GLOBAL_DIALOG_GEOMETRY.maxShellWidth) /
+      2;
     const inboxCoreLeft =
       inbox.panel.x - inbox.panel.pivot.x;
     expect(inboxCoreLeft - inboxWrapperLeft).toBe(10);
     expect(
-      360 -
+      GLOBAL_DIALOG_GEOMETRY.sourceWidth -
         inboxWrapperLeft -
         (inboxCoreLeft + inbox.panel.outerWidth),
     ).toBe(10);
@@ -1907,11 +1910,11 @@ function createHarness({
     dialogRegistry: () => registry,
     theme: () => createPixiThemeSnapshot({ theme: 'black' }),
     projection: () => ({
-      sourceWidth: 360,
-      sourceHeight: 2170 / 3,
-      sourceScale: 1,
+      sourceWidth: PIXI_UI_GEOMETRY.sourceWidth,
+      sourceHeight: PIXI_UI_GEOMETRY.sourceHeight,
+      sourceScale: PIXI_UI_GEOMETRY.sourceScale,
       sourceOffsetX: 0,
-      stageLogicalWidth: 360,
+      stageLogicalWidth: PIXI_UI_GEOMETRY.authoredWidth,
       dialogShift: 0,
     }),
   };

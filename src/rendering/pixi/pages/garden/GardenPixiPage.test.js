@@ -346,11 +346,16 @@ describe("GardenPixiPage", () => {
     expect(seedRow.label.text).toBe("sage seed");
     expect(seedRow.detail.text).toBe("2 Available");
     expect(seedRow.selectedIndicator.visible).toBe(true);
+    expect(seedRow.selectedIndicator.width).toBeCloseTo(27);
+    expect(seedRow.selectedIndicator.height).toBeCloseTo(27);
     expect(
-      seedRow.background.x +
-        seedRow.background.frameWidth -
-        (seedRow.selectedIndicator.x + seedRow.selectedIndicator.width / 2),
-    ).toBeCloseTo(8);
+      seedRow.selectedIndicator.x,
+    ).toBeCloseTo(
+      seedRow.background.x + seedRow.background.frameWidth / 2,
+    );
+    expect(seedRow.selectedIndicator.y).toBeCloseTo(
+      seedRow.summaryHeight / 2,
+    );
     expect(harness.assetManager.getAtlasTexture).toHaveBeenCalledWith(
       "seed:pack",
     );
@@ -429,21 +434,23 @@ describe("GardenPixiPage", () => {
       y: GARDEN_PIXI_GEOMETRY.plotListTop,
     });
     expect(harness.page.plotScroll.height).toBeCloseTo(
-      2170 / 3 -
+      PIXI_UI_GEOMETRY.sourceHeight -
         GARDEN_PIXI_GEOMETRY.plotListTop -
         GARDEN_PIXI_GEOMETRY.plotListBottom,
     );
     expect(plot.root.position).toMatchObject({ x: 32, y: 24 });
     expect(harness.page.actionBar.root.position).toMatchObject({
       x: 16,
-      y: 2170 / 3 - GARDEN_PIXI_GEOMETRY.actionBarBottom,
+      y:
+        PIXI_UI_GEOMETRY.sourceHeight -
+        GARDEN_PIXI_GEOMETRY.actionBarBottom,
     });
     expect(harness.page.actionBar.plantButton.position).toMatchObject({
       x: 0,
       y: -GARDEN_PIXI_GEOMETRY.actionButtonHeight,
     });
     expect(harness.page.actionBar.harvestButton.position).toMatchObject({
-      x: 112,
+      x: 122,
       y: -GARDEN_PIXI_GEOMETRY.actionButtonHeight,
     });
     expect(harness.page.actionBar.seedsButton.position.y).toBe(
@@ -481,18 +488,19 @@ describe("GardenPixiPage", () => {
     harness.page.bind(model);
 
     expect(harness.page.plotScroll.height).toBeCloseTo(
-      2170 / 3 -
+      PIXI_UI_GEOMETRY.sourceHeight -
         GARDEN_PIXI_GEOMETRY.plotListTop -
         PIXI_UI_GEOMETRY.roomChatBottom,
     );
     expect(harness.page.actionBar.root.position.y).toBeCloseTo(
-      2170 / 3 - PIXI_UI_GEOMETRY.roomChatBottom,
+      PIXI_UI_GEOMETRY.sourceHeight - PIXI_UI_GEOMETRY.roomChatBottom,
     );
 
     model.chrome.worldChatVisible = true;
     harness.page.bind(model);
     expect(harness.page.actionBar.root.position.y).toBeCloseTo(
-      2170 / 3 - GARDEN_PIXI_GEOMETRY.actionBarBottom,
+      PIXI_UI_GEOMETRY.sourceHeight -
+        GARDEN_PIXI_GEOMETRY.actionBarBottom,
     );
 
     harness.page.destroy();
@@ -522,8 +530,8 @@ describe("GardenPixiPage", () => {
   it("uses the shared bounded vertical scroll pane instead of world pan and pinch", () => {
     const harness = createHarness();
     const model = createGardenViewModel();
-    model.garden.maxPlots = 12;
-    model.garden.plots = Array.from({ length: 12 }, (_, index) => ({
+    model.garden.maxPlots = 18;
+    model.garden.plots = Array.from({ length: 18 }, (_, index) => ({
       ...model.garden.plots[0],
       id: `plot-${index + 1}`,
       tileNumber: index + 1,
@@ -543,8 +551,8 @@ describe("GardenPixiPage", () => {
     expect(harness.page.plotScroll.contentHeight).toBe(
       GARDEN_PIXI_GEOMETRY.gridPaddingTop +
         GARDEN_PIXI_GEOMETRY.gridPaddingBottom +
-        GARDEN_PIXI_GEOMETRY.rowHeight * 4 +
-        GARDEN_PIXI_GEOMETRY.rowGap * 3,
+        GARDEN_PIXI_GEOMETRY.rowHeight * 6 +
+        GARDEN_PIXI_GEOMETRY.rowGap * 5,
     );
     expect(harness.page.plotScroll.scrollbarTrack.visible).toBe(true);
 

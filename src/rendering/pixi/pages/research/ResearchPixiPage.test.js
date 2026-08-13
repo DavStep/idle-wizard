@@ -340,8 +340,8 @@ describe('ResearchPixiPage', () => {
 
     expect(harness.page.scroll.root.position).toMatchObject({ x: 0, y: 104 });
     expect(harness.page.scroll).toMatchObject({
-      width: 344,
-      height: 409.33333333333337,
+      width: 374,
+      height: 530,
     });
     const box = harness.page.boxes.get('herbs');
     expect(box.root.position.x).toBe(0);
@@ -351,7 +351,7 @@ describe('ResearchPixiPage', () => {
     expect(box.rows.get('mint').card.position.x).toBe(-2);
     expect(harness.page.tabsLayer.position).toMatchObject({
       x: 16,
-      y: 519.3333333333334,
+      y: 640,
     });
     const tabs = harness.page.tabs.getWidgets();
     expect(tabs.map((tab) => tab.control.textLabel.text)).toEqual([
@@ -361,8 +361,8 @@ describe('ResearchPixiPage', () => {
       'Crystal Research',
     ]);
     const expectedWrapWidth =
-      (328 - 3 * (tabs.length - 1)) / tabs.length - 6;
-    expect(expectedWrapWidth).toBe(73.75);
+      (358 - 3 * (tabs.length - 1)) / tabs.length - 6;
+    expect(expectedWrapWidth).toBe(81.25);
     for (const tab of tabs) {
       expect(tab.height).toBe(PIXI_UI_GEOMETRY.roomControlHeight);
       expect(tab.control.sizeTier).toBe(30);
@@ -407,10 +407,10 @@ describe('ResearchPixiPage', () => {
       RETAINED_PAGE_GEOMETRY.chatClearance -
       PIXI_UI_GEOMETRY.roomChatBottom;
     expect(harness.page.scroll.height).toBeCloseTo(
-      409.33333333333337 + releasedClearance,
+      530 + releasedClearance,
     );
     expect(harness.page.tabsLayer.position.y).toBeCloseTo(
-      519.3333333333334 + releasedClearance,
+      640 + releasedClearance,
     );
 
     harness.page.destroy();

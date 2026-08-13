@@ -227,9 +227,14 @@ describe('TutorialPixiOverlay', () => {
       overlay.surface.progress.width,
     ).toBeLessThan(overlay.surface.contentWidth);
     expect(
-      overlay.surface.advanceControl.x -
+      overlay.surface.progressLabel.x -
+        overlay.surface.progressLabel.measuredWidth -
         (overlay.surface.progress.x +
           overlay.surface.progress.barWidth),
+    ).toBe(6);
+    expect(
+      overlay.surface.advanceControl.x -
+        overlay.surface.progressLabel.x,
     ).toBe(6);
     expect(
       overlay.surface.advanceControl.y +
@@ -601,6 +606,21 @@ describe('TutorialPixiOverlay', () => {
     expect(overlay.surface.progress.visible).toBe(true);
     expect(overlay.surface.progress.end).toBe(0.8);
     expect(overlay.surface.progressLabel.text).toBe('4/5 Seeds');
+    expect(
+      overlay.surface.progressLabel.x -
+        overlay.surface.progressLabel.measuredWidth -
+        (overlay.surface.progress.x +
+          overlay.surface.progress.barWidth),
+    ).toBe(6);
+    expect(overlay.surface.progressLabel.x).toBe(
+      overlay.surface.progress.x + overlay.surface.contentWidth,
+    );
+    expect(
+      overlay.surface.progressLabel.y + 7,
+    ).toBe(
+      overlay.surface.progress.y +
+        overlay.surface.progress.barHeight / 2,
+    );
 
     overlay.destroy();
   });

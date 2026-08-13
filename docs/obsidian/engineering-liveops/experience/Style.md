@@ -40,7 +40,7 @@ experience_type: style
 - Resource icons are fixed on. Resource and currency labels use their shared semantic color family, including mana blue and coin gold, while disabled/locked states consistently reduce contrast. Do not invent feature-local colors for the same resource.
 - Recipe ingredient rows are unit slots, so show the item label without a quantity prefix; repeated herbs render as repeated ordered rows.
 - Before adding new UI, compare against `docs/ui-patterns.md` and reuse existing motifs for rows, boxes, popups, border labels, and tabs.
-- Garden seed selection must use the exact Load Stall retained inventory-row contract: `50px` Settings-backed rows, `28px` seed-pack art, two-line availability copy, and the shared selected checkmark. Do not substitute a compact text-and-count row.
+- Garden seed selection must use the exact Load Stall retained inventory-row contract: `50px` Settings-backed rows, `28px` seed-pack art, a `14px` item name above a `13px` availability count, and the shared `27px` selected checkmark centered on the visible row frame. Do not substitute a compact text-and-count row.
 - Standalone info/help buttons use `assets/game/source/ui/prop_info.png` through `setInfoButtonIcon`; never fall back to `[i]`, `?`, or a font glyph.
 - All lock graphics use `assets/game/source/ui/prop_lock.png` through `createStatusIcon(..., STATUS_ICON_LOCK)`; keep meaningful `locked` text, but do not introduce alternate lock artwork or glyphs.
 - All checkmark graphics use `assets/game/source/ui/prop_checkmark.png` through `createStatusIcon(..., STATUS_ICON_CHECK)` or the research-icon generator for baked composites; keep meaningful state text, but do not introduce alternate checkmark artwork or glyphs.

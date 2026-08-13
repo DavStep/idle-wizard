@@ -1869,6 +1869,10 @@ export class PixiPagesFacade {
 
   createBrewingActions() {
     const gameplay = this.gameplayFacade;
+    const emptyCauldron = (cauldronIndex = 0) => {
+      this.selectedRecipeByCauldron.delete(cauldronIndex);
+      return gameplay?.clearBrewingCauldron?.(cauldronIndex);
+    };
     return {
       selectCauldron: (cauldronIndex) => {
         this.selectedBrewingCauldronIndex = Math.max(
@@ -2022,6 +2026,7 @@ export class PixiPagesFacade {
           ingredient?.slotIndex,
           cauldron?.cauldronIndex ?? 0,
         ),
+      emptyCauldron,
       toggleInventory: (tabId) => {
         this.brewingInventoryTabId =
           this.brewingInventoryTabId === tabId ? null : tabId;
@@ -2040,10 +2045,7 @@ export class PixiPagesFacade {
           touched: true,
         });
       },
-      clearRecipe: (cauldronIndex) => {
-        this.selectedRecipeByCauldron.delete(cauldronIndex);
-        return gameplay?.clearBrewingCauldron?.(cauldronIndex);
-      },
+      clearRecipe: emptyCauldron,
       chooseAnother: (cauldronIndex) =>
         this.openBrewingRecipesDialog(cauldronIndex),
     };

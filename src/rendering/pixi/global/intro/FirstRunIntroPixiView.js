@@ -54,8 +54,8 @@ export const FIRST_RUN_INTRO_PIXI_STEPS = Object.freeze([
 ]);
 
 export const FIRST_RUN_INTRO_PIXI_GEOMETRY = Object.freeze({
-  sourceWidth: 360,
-  sourceHeight: 2170 / 3,
+  sourceWidth: PIXI_UI_GEOMETRY.sourceWidth,
+  sourceHeight: PIXI_UI_GEOMETRY.sourceHeight,
   panelLeft: 20,
   panelRight: 20,
   panelBottom: 26,

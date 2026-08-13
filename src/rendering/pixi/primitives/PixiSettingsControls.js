@@ -99,6 +99,7 @@ export class RootRunSettingsSliderPixi extends Container {
       inputRouter?.registerGestureSurface?.(this, {
         kind: 'drag',
         axis: 'x',
+        fallbackHitTest: Boolean(tutorialId),
         excludePageSwipe: true,
         enabled: () => this.isInteractive(),
         onStart: (payload) => this.setFromPayload(payload),

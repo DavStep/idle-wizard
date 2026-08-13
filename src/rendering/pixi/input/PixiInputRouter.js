@@ -1042,7 +1042,7 @@ export class PixiInputRouter {
         this.resolvePressTarget(event?.target, point.global);
     const drag = blockedModal
       ? []
-      : this.getEligibleCandidates(event?.target, 'drag');
+      : this.getEligibleCandidates(event?.target, 'drag', point.global);
     const scroll = blockedModal
       ? []
       : this.getEligibleCandidates(event?.target, 'scroll');
@@ -1707,16 +1707,37 @@ export class PixiInputRouter {
     );
   }
 
-  getEligibleCandidates(target, kind) {
-    return this.store
+  getEligibleCandidates(target, kind, fallbackPoint = null) {
+    const pathCandidates = this.store
       .getCandidates(target, kind)
       .map((candidate) => candidate.registration)
-      .filter(
-        (registration) =>
-          this.isRegistrationAllowed(registration) &&
-          (kind !== 'press' ||
-            !resolveRegistrationBoolean(registration.selected, false)),
-      );
+      .filter((registration) => this.isRegistrationAllowed(registration));
+    const pathIds = new Set(
+      pathCandidates.map((registration) => registration.id),
+    );
+    const fallbackCandidates = fallbackPoint
+      ? this.store
+          .getRegistrations(kind)
+          .filter(
+            (registration) =>
+              !pathIds.has(registration.id) &&
+              registration.fallbackHitTest === true &&
+              this.isRegistrationAllowed(registration) &&
+              pointInDisplayObject(
+                registration.displayObject,
+                fallbackPoint,
+                0,
+                registration.hitTest,
+              ),
+          )
+          .sort(compareRegistrationPriority)
+      : [];
+
+    return [...pathCandidates, ...fallbackCandidates].filter(
+      (registration) =>
+        kind !== 'press' ||
+        !resolveRegistrationBoolean(registration.selected, false),
+    );
   }
 
   resolvePressTarget(target, point) {

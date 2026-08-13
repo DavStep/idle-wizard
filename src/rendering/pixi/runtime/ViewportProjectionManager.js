@@ -9,7 +9,7 @@ const PIXI_AUTHORED_VIEWPORT = Object.freeze({
 
 export class ViewportProjectionManager {
   static explain =
-    'Maps the fixed 1080x2170 room and its 360-wide source UI into phones and wide desktop windows.';
+    'Maps the fixed 390x844 source UI and its 3x authored room into phones and wide desktop windows.';
 
   constructor({
     viewport = PIXI_AUTHORED_VIEWPORT,
