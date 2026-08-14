@@ -13,7 +13,7 @@ experience_type: product-shape
 
 - This is a PC-first JavaScript game that also supports mobile.
 - Runtime raster assets are PNG-only across web and Android. Do not add alternate-format sources or Android packaging rewrites; reduce asset dimensions or content when APK size needs attention.
-- The default release APK path builds the smaller minified release APK and signs it with the existing debug keystore; keep `DISCORD_APK_CHANGELOG_FILE=/dev/null DISCORD_APK_SKIP_CHANGELOG=1 DISCORD_FEATURE_SKIP=1` for manual reposts after a changelog already succeeded.
+- The default release APK path builds the smaller minified release APK and signs it with the existing debug keystore; APKs over the Discord attachment threshold must use the automated GitHub Release link fallback. Keep `DISCORD_APK_SKIP_CHANGELOG=1 DISCORD_FEATURE_SKIP=1` for manual recovery posts after a changelog already succeeded.
 - Ignored local `public/qa-data` is still copied by Vite/Capacitor when present; move it out of `public/` before release builds or APK uploads can exceed Discord webhook limits.
 - Android dev builds that point at local SpacetimeDB need `adb reverse tcp:3000 tcp:3000`; without it, Pixel WebView loops on `connecting to server`.
 - Before wiping local SpacetimeDB progress, check `.env.local` for the active `VITE_SPACETIME_DATABASE`; the shared Vite app may use `idle-wizard-codex-run` while `npm run stdb:publish` still targets `idle-wizard`.

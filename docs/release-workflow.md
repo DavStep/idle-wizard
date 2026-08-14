@@ -6,11 +6,13 @@ and any required Maincloud backend publish is verified.
 
 ## Release Definition
 
-- Player APK: Discord post with changelog and APK.
+- Player APK: Discord post with changelog and either an APK attachment or its
+  GitHub Release download link.
 - Web client: GitHub Pages deploy from `main`.
 - Android live update: checksum-bound web bundle from the same Pages deployment.
 - Backend: SpacetimeDB Maincloud publish when `spacetimedb/` changed.
-- Formal GitHub Release/tag: optional, not part of `npm run release` today.
+- GitHub Release/tag: created automatically when the APK exceeds Discord's
+  attachment limit.
 
 The current player APK channel uses a minified release build signed with the
 existing Android debug key. That keeps the package on the same certificate used
@@ -77,7 +79,8 @@ This performs:
 8. git commit and push from `main`
 9. wait for the pushed commit's `Checks` and `Deploy GitHub Pages` workflows to
    succeed
-10. Discord changelog, optional feature spotlight, and APK upload
+10. host an oversized APK in a versioned GitHub Release when needed
+11. Discord changelog, optional feature spotlight, and APK attachment or link
 
 Discord is the final release action. If either required GitHub Actions workflow
 fails or does not start, the command exits without posting any Discord messages
@@ -178,7 +181,8 @@ find android/app/build/outputs/apk -type f -name '*.apk' -print -exec ls -lh {} 
 ```
 
 Confirm Discord manually by checking the target channel for the changelog and APK
-post. The repo cannot prove Discord delivery after the script exits.
+attachment or download-link post. The repo cannot prove Discord delivery after
+the script exits.
 
 ## If Release Fails
 
@@ -192,22 +196,17 @@ post. The repo cannot prove Discord delivery after the script exits.
   `RELEASE_BACKEND=always npm run release` or manually run
   `npm run stdb:publish:maincloud` after verification.
 
-## Optional GitHub Release
+## GitHub Release Fallback
 
-`npm run release` does not create a tag or GitHub Release. If a formal release is
-needed:
+`npm run release` attaches APKs up to 10 MiB directly to Discord. Larger APKs
+are automatically uploaded to a versioned GitHub Release and the release script
+posts that HTTPS download link to Discord. Override the threshold only when the
+target channel supports a different limit:
 
 ```sh
-VERSION="$(node -p "require('./package.json').version")"
-mkdir -p tmp
-# Put only the current PLAYER_CHANGELOG.md version section in this file.
-$EDITOR tmp/release-notes.md
-git tag "v$VERSION"
-git push origin "v$VERSION"
-gh release create "v$VERSION" \
-  tmp/idle-wizard-$VERSION-debug-release.apk \
-  --title "Idle Wizard $VERSION" \
-  --notes-file tmp/release-notes.md
+DISCORD_APK_MAX_UPLOAD_BYTES=25000000 npm run release
 ```
 
-Only use this after the normal release verification passes.
+For a recovery post after the changelog already succeeded, set
+`DISCORD_APK_SKIP_CHANGELOG=1` and `DISCORD_FEATURE_SKIP=1`; the former also
+prevents the existing current-version changelog from being posted twice.

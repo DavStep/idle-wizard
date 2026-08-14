@@ -19,6 +19,7 @@ await loadEnvFile('.env');
 
 const webhookUrl = process.env.DISCORD_APK_WEBHOOK_URL || process.env.DISCORD_WEBHOOK_URL;
 const featureWebhookUrl = process.env.DISCORD_FEATURE_WEBHOOK_URL || process.env.DISCORD_BIG_FEATURE_WEBHOOK_URL;
+const apkDownloadUrl = process.env.DISCORD_APK_DOWNLOAD_URL?.trim() || null;
 const apkPath = await resolveApkPath(process.argv[2] || process.env.DISCORD_APK_FILE);
 
 if (!webhookUrl) {
@@ -27,6 +28,10 @@ if (!webhookUrl) {
 
 if (!isDiscordWebhookUrl(webhookUrl)) {
   fail('DISCORD_APK_WEBHOOK_URL does not look like a Discord webhook URL.');
+}
+
+if (apkDownloadUrl && !isHttpsUrl(apkDownloadUrl)) {
+  fail('DISCORD_APK_DOWNLOAD_URL must be an HTTPS URL.');
 }
 
 if (/unsigned/i.test(path.basename(apkPath)) && process.env.DISCORD_APK_ALLOW_UNSIGNED !== '1') {
@@ -46,10 +51,12 @@ const featureAnnouncement = process.env.DISCORD_FEATURE_SKIP === '1'
     rootDir,
     version: packageInfo.version,
   });
-const changelog = await loadPlayerChangelog({
-  rootDir,
-  version: packageInfo.version,
-});
+const changelog = process.env.DISCORD_APK_SKIP_CHANGELOG === '1'
+  ? null
+  : await loadPlayerChangelog({
+    rootDir,
+    version: packageInfo.version,
+  });
 
 if (featureAnnouncement && !featureWebhookUrl) {
   fail(
@@ -91,27 +98,36 @@ if (changelog) {
   console.log(`Posted player changelog from ${changelog.source} to Discord.`);
 }
 
-const apkBytes = await readFile(apkPath);
-const form = new FormData();
-form.append('payload_json', JSON.stringify({ content: message }));
-form.append(
-  'files[0]',
-  new Blob([apkBytes], { type: 'application/vnd.android.package-archive' }),
-  path.basename(apkPath),
-);
+if (apkDownloadUrl) {
+  await postDiscordMessage(
+    webhookUrl,
+    `${message}\nDownload APK: ${apkDownloadUrl}`,
+    'APK download link',
+  );
+  console.log(`Posted download link for ${relative(apkPath)} to Discord (${formatBytes(apkStats.size)}).`);
+} else {
+  const apkBytes = await readFile(apkPath);
+  const form = new FormData();
+  form.append('payload_json', JSON.stringify({ content: message }));
+  form.append(
+    'files[0]',
+    new Blob([apkBytes], { type: 'application/vnd.android.package-archive' }),
+    path.basename(apkPath),
+  );
 
-const response = await fetch(webhookUrl, {
-  method: 'POST',
-  body: form,
-});
+  const response = await fetch(webhookUrl, {
+    method: 'POST',
+    body: form,
+  });
 
-const responseBody = await response.text();
+  const responseBody = await response.text();
 
-if (!response.ok) {
-  fail(`Discord upload failed: ${response.status} ${response.statusText}${responseBody ? `\n${responseBody}` : ''}`);
+  if (!response.ok) {
+    fail(`Discord upload failed: ${response.status} ${response.statusText}${responseBody ? `\n${responseBody}` : ''}`);
+  }
+
+  console.log(`Posted ${relative(apkPath)} to Discord (${formatBytes(apkStats.size)}).`);
 }
-
-console.log(`Posted ${relative(apkPath)} to Discord (${formatBytes(apkStats.size)}).`);
 
 async function postDiscordMessage(url, content, label) {
   const response = await fetch(url, {
@@ -210,6 +226,14 @@ function stripEnvQuotes(value) {
 
 function isDiscordWebhookUrl(value) {
   return /^https:\/\/(?:discord(?:app)?\.com)\/api\/webhooks\/\d+\/[\w-]+/.test(value);
+}
+
+function isHttpsUrl(value) {
+  try {
+    return new URL(value).protocol === 'https:';
+  } catch {
+    return false;
+  }
 }
 
 function formatBytes(bytes) {

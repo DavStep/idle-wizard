@@ -3,7 +3,7 @@
 
 import { spawnSync } from 'node:child_process';
 import { existsSync } from 'node:fs';
-import { mkdir, readFile, readdir, writeFile } from 'node:fs/promises';
+import { mkdir, readFile, readdir, stat, writeFile } from 'node:fs/promises';
 import { homedir } from 'node:os';
 import path from 'node:path';
 import {
@@ -24,6 +24,7 @@ import {
 } from './android-version-code-policy.js';
 import { shouldPublishBackend } from './release-backend-policy.js';
 import { waitForReleaseWorkflows } from './release-github-actions.js';
+import { shouldHostApkInGithubRelease } from './release-apk-delivery.js';
 
 const rootDir = process.cwd();
 const options = parseOptions(process.argv.slice(2));
@@ -109,6 +110,8 @@ if (shouldPublishBackend(backendMode, getBackendReleaseState())) {
   run('npm', ['run', 'stdb:publish:maincloud'], { input: 'y\ny\n' });
 }
 
+let releaseCommit = capture('git', ['rev-parse', 'HEAD']).trim();
+
 if (!skipGit) {
   step('git commit');
   run('git', ['add', '-A']);
@@ -121,10 +124,10 @@ if (!skipGit) {
 
   step('git push');
   run('git', ['push', 'origin', branch]);
+  releaseCommit = capture('git', ['rev-parse', 'HEAD']).trim();
 
   if (branch === 'main') {
     step('github release workflows');
-    const releaseCommit = capture('git', ['rev-parse', 'HEAD']).trim();
     try {
       await waitForReleaseWorkflows({
         commitSha: releaseCommit,
@@ -139,8 +142,26 @@ if (!skipGit) {
 }
 
 if (!skipDiscord) {
-  step('discord player changelog + apk upload');
-  run('node', ['scripts/post-apk-discord.js', apkPath]);
+  const apkStats = await stat(path.resolve(rootDir, apkPath));
+  const discordEnv = {};
+
+  if (shouldHostApkInGithubRelease({ apkSize: apkStats.size, env: process.env })) {
+    if (skipGit || branch !== 'main') {
+      fail(
+        'APK exceeds the Discord attachment limit. Push it from main so the release can host it as a GitHub Release asset.',
+      );
+    }
+
+    step('github release apk hosting');
+    discordEnv.DISCORD_APK_DOWNLOAD_URL = ensureGithubReleaseApk({
+      apkPath,
+      version: packageInfo.version,
+      targetCommit: releaseCommit,
+    });
+  }
+
+  step('discord player changelog + apk delivery');
+  run('node', ['scripts/post-apk-discord.js', apkPath], { env: discordEnv });
 }
 
 console.log('Release complete.');
@@ -505,6 +526,45 @@ function parseOptions(rawArgs) {
   return parsed;
 }
 
+function ensureGithubReleaseApk({ apkPath, version, targetCommit }) {
+  const tag = `v${version}`;
+  const absoluteApkPath = path.resolve(rootDir, apkPath);
+  const apkFileName = path.basename(absoluteApkPath);
+
+  if (commandSucceeds('gh', ['release', 'view', tag])) {
+    run('gh', ['release', 'upload', tag, absoluteApkPath, '--clobber']);
+  } else {
+    run('gh', [
+      'release',
+      'create',
+      tag,
+      absoluteApkPath,
+      '--target',
+      targetCommit,
+      '--title',
+      `Idle Wizard ${version}`,
+      '--notes',
+      `Android player build for Idle Wizard ${version}.`,
+    ]);
+  }
+
+  const releaseInfo = JSON.parse(capture('gh', [
+    'release',
+    'view',
+    tag,
+    '--json',
+    'assets,url',
+  ]));
+  const apkAsset = releaseInfo.assets?.find((asset) => asset.name === apkFileName);
+
+  if (!apkAsset?.url) {
+    fail(`GitHub Release ${tag} does not contain ${apkFileName}.`);
+  }
+
+  console.log(`Hosted APK at ${apkAsset.url}`);
+  return apkAsset.url;
+}
+
 async function loadEnvFile(fileName, { overrideKeys } = {}) {
   const filePath = path.join(rootDir, fileName);
   if (!existsSync(filePath)) {
@@ -591,10 +651,10 @@ function step(label) {
   console.log(`\n==> ${label}`);
 }
 
-function run(command, args, { input } = {}) {
+function run(command, args, { input, env } = {}) {
   const result = spawnSync(command, args, {
     cwd: rootDir,
-    env: process.env,
+    env: { ...process.env, ...env },
     input,
     stdio: input === undefined ? 'inherit' : ['pipe', 'inherit', 'inherit'],
   });
@@ -606,6 +666,16 @@ function run(command, args, { input } = {}) {
   if (result.status !== 0) {
     fail(`${command} ${args.join(' ')} failed with exit ${result.status}.`);
   }
+}
+
+function commandSucceeds(command, args) {
+  const result = spawnSync(command, args, {
+    cwd: rootDir,
+    env: process.env,
+    stdio: 'ignore',
+  });
+
+  return !result.error && result.status === 0;
 }
 
 function capture(command, args) {
