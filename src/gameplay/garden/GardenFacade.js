@@ -6,6 +6,7 @@ import { GardenProcessManager } from "./managers/GardenProcessManager.js";
 import { GardenSnapshotManager } from "./managers/GardenSnapshotManager.js";
 import { GardenTileEntityManager } from "./managers/GardenTileEntityManager.js";
 import { GardenTilePurchaseManager } from "./managers/GardenTilePurchaseManager.js";
+import { GardenTapAccelerationManager } from "./managers/GardenTapAccelerationManager.js";
 import { gardenTilePhases } from "./components/GardenComponents.js";
 import { parseGameConfig } from "../config/gameConfigSnapshot.js";
 
@@ -19,6 +20,7 @@ export class GardenFacade {
     playerLevelFacade,
     onHarvestComplete,
     researchFacade,
+    tapNow,
   }) {
     this.itemsFacade = itemsFacade;
     this.playerLevelFacade = playerLevelFacade;
@@ -40,6 +42,10 @@ export class GardenFacade {
       gardenTileEntityManager: this.gardenTileEntityManager,
       itemsFacade,
       researchFacade,
+    });
+    this.gardenTapAccelerationManager = new GardenTapAccelerationManager({
+      gardenTileEntityManager: this.gardenTileEntityManager,
+      now: tapNow,
     });
     this.gardenBulkActionManager = new GardenBulkActionManager({
       gardenPlantingManager: this.gardenPlantingManager,
@@ -120,6 +126,10 @@ export class GardenFacade {
     return this.gardenBulkActionManager.harvestAll();
   }
 
+  acceleratePlot(tileNumber) {
+    return this.gardenTapAccelerationManager.accelerate(tileNumber);
+  }
+
   cancelProgress(tileNumber) {
     return this.gardenCancellationManager.cancelProgress(tileNumber);
   }
@@ -153,6 +163,7 @@ export class GardenFacade {
       return;
     }
 
+    this.gardenTapAccelerationManager.reset();
     const tiles = Array.isArray(snapshot.tiles)
       ? snapshot.tiles.map((tile) => this.restoreTile(tile)).filter(Boolean)
       : [];

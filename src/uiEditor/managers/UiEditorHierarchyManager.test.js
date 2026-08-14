@@ -78,6 +78,31 @@ describe('UiEditorHierarchyManager', () => {
     expect(items[0].getAttribute('aria-expanded')).toBe('true');
   });
 
+  it('treats an explicit empty semantic hierarchy as a preview leaf', () => {
+    const preview = document.createElement('section');
+    const editorViewport = document.createElement('div');
+    const editorToolbar = document.createElement('div');
+
+    preview.dataset.uiEditorComponent = 'BaseButton';
+    preview.uiEditorGetAtomicComponents = () => [];
+    editorViewport.dataset.uiEditorComponent = 'EditorPanZoomViewport';
+    editorToolbar.dataset.uiEditorComponent = 'EditorViewportToolbar';
+    preview.append(editorViewport, editorToolbar);
+    editorRefs.preview.append(preview);
+    manager.refresh();
+
+    const items = [
+      ...editorRefs.panels.left.querySelectorAll(
+        '.ui-editor-hierarchy__item[role="treeitem"]',
+      ),
+    ];
+
+    expect(items).toHaveLength(1);
+    expect(
+      items[0].querySelector('.ui-editor-hierarchy__label').textContent,
+    ).toBe('BaseButton');
+  });
+
   it('collapses branches and filters layers while preserving matching ancestors', () => {
     const dialog = document.createElement('section');
     const content = document.createElement('div');
@@ -213,7 +238,7 @@ describe('UiEditorHierarchyManager', () => {
         .querySelector('[data-selected="true"]')
         .getAttribute('aria-selected'),
     ).toBe('true');
-    expect(onSelectComponent).toHaveBeenCalledWith(null);
+    expect(onSelectComponent).toHaveBeenCalledWith(null, soundRow);
 
     const musicHierarchyRow = [
       ...editorRefs.panels.left.querySelectorAll(
@@ -248,10 +273,28 @@ describe('UiEditorHierarchyManager', () => {
       .querySelector('[data-editor-component-select]')
       .click();
 
-    expect(onSelectComponent).toHaveBeenLastCalledWith(inspectorComponent);
+    expect(onSelectComponent).toHaveBeenLastCalledWith(
+      inspectorComponent,
+      preview,
+    );
     expect(
       editorRefs.panels.left.querySelector('[data-selected="true"]'),
     ).not.toBeNull();
+  });
+
+  it('selects the hierarchy root programmatically', () => {
+    const preview = document.createElement('section');
+    preview.dataset.uiEditorComponent = 'PixiProgressBar';
+    editorRefs.preview.append(preview);
+    manager.refresh();
+
+    expect(manager.selectRootComponent()).toBe(true);
+    expect(
+      editorRefs.panels.left
+        .querySelector('[aria-level="1"]')
+        .getAttribute('aria-selected'),
+    ).toBe('true');
+    expect(onSelectComponent).toHaveBeenLastCalledWith(null, preview);
   });
 
   it('shows, selects, and hides atomic Pixi components', () => {
@@ -272,13 +315,14 @@ describe('UiEditorHierarchyManager', () => {
       update: vi.fn(),
     };
 
-    preview.dataset.uiEditorComponent = 'IdleWizardButtonWidget';
+    preview.dataset.uiEditorComponent = 'TextButton';
     preview.uiEditorGetAtomicComponents = () => [
       {
         ...label,
-        id: 'sample-button:background',
-        label: 'Background',
-        type: 'image',
+        id: 'sample-button:base-button',
+        label: 'BaseButton (inherited)',
+        libraryEntryId: 'base-button',
+        type: 'widget',
       },
       label,
     ];
@@ -295,7 +339,7 @@ describe('UiEditorHierarchyManager', () => {
       rows.map(
         (row) => row.querySelector('.ui-editor-hierarchy__label').textContent,
       ),
-    ).toEqual(['Background', 'Label']);
+    ).toEqual(['BaseButton (inherited)', 'Label']);
 
     rows[1].click();
     expect(onSelectComponent).toHaveBeenCalledWith(label);

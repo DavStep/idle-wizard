@@ -12,7 +12,10 @@ import {
   PIXI_ROOT_RUN_ASSETS,
   resolvePixiTextStrokeWidth,
 } from '../theme/PixiThemeTokens.js';
-import { PixiCostButton } from './PixiCostButton.js';
+import {
+  PIXI_COST_BUTTON_GEOMETRY,
+  PixiCostButton,
+} from './PixiCostButton.js';
 
 const { PNG } = pngjs;
 
@@ -61,6 +64,24 @@ describe('PixiCostButton', () => {
     expect(button.buttonWidth).toBe(281 / 3);
     expect(button.activate()).toBe(true);
     expect(action).toHaveBeenCalledOnce();
+  });
+
+  it('keeps the standard currency icon close to the cost amount', () => {
+    const { button } = createHarness();
+
+    button.setModel({
+      amountLabel: '600 Coin',
+      action: vi.fn(),
+    });
+
+    const iconRight = button.resourceIcon.x + button.resourceIcon.width / 2;
+    const amountLeft =
+      button.amountLabel.x - button.amountLabel.measuredWidth / 2;
+
+    expect(PIXI_COST_BUTTON_GEOMETRY.contentGap).toBeCloseTo(16 * 0.14);
+    expect(amountLeft - iconRight).toBeCloseTo(
+      PIXI_COST_BUTTON_GEOMETRY.contentGap,
+    );
   });
 
   it('keeps an unaffordable cost green while disabling only its action', () => {

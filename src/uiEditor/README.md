@@ -24,6 +24,8 @@ Use `Find layers` to filter by component name or semantic type while preserving
 the matching ancestor path. The result count reports direct matches. Branch
 disclosure buttons, or Left/Right while a row is focused, collapse and expand
 the tree without changing production visibility.
+Selecting a widget in the library also selects its hierarchy root, so the
+production widget and its configuration read as one active selection.
 Selecting any hierarchy row marks the row;
 double-clicking a reusable component instance opens its standalone
 production-backed library view, where that widget's meaningful inner atoms are
@@ -32,8 +34,9 @@ Pixi atoms receive the same live blue bounds, eight resize reference handles,
 and a pivot marker drawn from their production world geometry. Every component has an
 eye control that hides or restores that component in the scene without removing
 it from the hierarchy. Retained Pixi widgets bridge their meaningful atomic
-parts into the same tree, so a button exposes its background and label, while
-compound controls also expose their icons and additional labels. Asset previews,
+parts into the same tree. A `TextButton` exposes its inherited `BaseButton`
+widget and its added label, while compound controls also expose their composed
+widgets, icons, and additional labels. Asset previews,
 including the nine-slice workbench, collapse the hierarchy dock because their
 internal DOM is editor implementation rather than an editable component scene.
 Selecting a widget, dialog, or scene restores the dock at its previous width.
@@ -43,12 +46,13 @@ Its Storybook-style section tabs keep live controls or static properties
 separate from production usage references. Left/Right moves between available
 tabs, and the selected object summary stays pinned above them while the panel
 scrolls.
-Retained button controls follow hierarchy ownership. Selecting the button
-background exposes its live color family and `50` / `30` / `15` corner-size
-selector, selecting a label exposes copy and typography/layout, and selecting
-the `IdleWizardButtonWidget` root exposes input state. Changes update the
-production widget immediately; the preview status counts its real activation,
-click-sound, and haptic path.
+Retained button controls follow production ownership. Selecting an inherited
+`BaseButton` exposes its live color family, `50` / `30` / `15` corner-size,
+asset, position, visibility, and input state. Selecting the label added by
+`TextButton` exposes copy and typography/layout. `TabButton` adds selected and
+resting state controls at its root. Changes update the exact production class
+immediately; the preview status counts its real activation, click-sound, and
+haptic path.
 Selecting an atomic part in the hierarchy opens a preview-only property editor.
 Text parts group copy, font, size, weight, line height, letter spacing,
 alignment, and wrap width above their transform. Relative positioning uses a
@@ -59,7 +63,9 @@ preview immediately without mutating production source files. Widget
 entries expose their production font and background asset before the registered
 usage list; assets expose their production ID, type, slice margins when
 applicable, and the widgets that use them. Assetless or image-only controls show
-an explicit `None`. Dialog and scene selections clear the inspector.
+an explicit `None`. Selecting a UI Lab root restores its registered controls,
+including widget, dialog, and scene scenarios. Plain dialog and scene
+selections clear the inspector.
 
 The bottom panel is a folder browser. Its `Library` root contains `UI Assets`,
 `UI Widgets`, `Dialogs`, and `Scenes`. `UI Assets` contains every texture in the
@@ -103,9 +109,9 @@ the stable background does not flash. Empty folders keep a quiet placeholder
 until real editor content is registered.
 
 The `Buttons` folder is populated by default with the real retained Idle Wizard
-button hierarchy: one configurable Base / Text Button, popup tabs, inline and
-border-label controls, the Cost Button composition, and the specialized info,
-HUD settings, and HUD avatar buttons. Color, corner size, cost layout, and
+button hierarchy: the label-free `Base Button`, `Text Button`, `Tab Button`,
+inline and border-label text controls, the Cost Button composition, and the
+specialized info, HUD settings, and HUD avatar buttons. Color, corner size, cost layout, and
 button state are editor configurations rather than duplicate catalogue
 entries. Their previews load the production Pixi classes and artwork rather
 than editor-specific copies. Cost buttons reference the shared `UI/Regular Button` nine-slices and
@@ -160,22 +166,16 @@ The validator proves that declared dependencies exist and are discoverable.
 Code review is still responsible for ensuring `childWidgetIds` is exhaustive
 for the production composition.
 
-Current proof integrations cover manual, timed, and ranged progress bars;
-range, milestone, and disabled sliders; the settings toggle; text fields;
-regular, outlined, wrapped, inline, resource, and star labels; the managed
-scroll area; the complete device-preferences board; HUD level and currency
-widgets; the standalone bottom room tab and its composing tab group; the complete retained production-dialog inventory;
-the Brewing HUD; the Research room; and the standalone Research Row, Research
-Station Title, Dialog Frame, and Inventory Choice Row components. The `Dialogs` library folder groups
-all 39 production dialogs under `Global`, `Workshop`, `Garden`, `Brewing`,
-`Market`, and `Guild`. Each entry mounts the real production dialog with
-deterministic populated and alternate-state fixtures. The level widget lives directly under
-`Progress bars`; other
-foundational entries stay independently selectable under nested `Text`,
-`Inputs`, `Settings`, `Scrolling`, `HUD`, and `Navigation` folders. One entry
-owns all compatible states as scenarios, so state variants do not become
-duplicate catalogue tiles. Existing retained button previews use the same
-Inspector extension point for configuration and live activation feedback.
+Current proof integrations cover every retained production room, every retained
+production dialog, shared/global chrome, foundational controls, and the reusable
+Workshop, Garden, Brewing, Research, Market, Guild, and Prestige component
+families. The `Scenes` library contains all seven rooms. The `Dialogs` library
+groups all 39 retained dialogs under `Global`, `Workshop`, `Garden`, `Brewing`,
+`Market`, and `Guild`. Each parent mounts the real production class with
+deterministic fixtures and names its independently selectable child widgets.
+One entry owns all compatible states as scenarios, so state variants do not
+become duplicate catalogue tiles. Renderer-only helpers and wrappers without
+an independent contract stay encapsulated.
 
 Retained dialog and standalone button previews sit inside the authored `390px`
 game-screen frame so their placement and scale can be judged against the real

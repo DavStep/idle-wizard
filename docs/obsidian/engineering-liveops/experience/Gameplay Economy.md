@@ -123,6 +123,7 @@ experience_type: gameplay-economy
 - Garden seed picker title is `Choose Seed`; hide locked/unresearched seeds, but keep researched zero-count seeds visible/selectable and gray.
 - Garden manual seed choice is page-level and remains visible in the selected-seed tool. Active plots keep their planted crop data, and harvest completion does not auto-replant.
 - Tapping a growing plot with a different page-level seed selected opens the swap confirmation; replacement returns the committed old seed and restarts growth.
+- Growing and harvesting plot taps remove at most one second from that plot's active timer, with the per-plot cooldown enforced in gameplay; a different selected seed still takes priority and opens swap confirmation.
 - Garden growth/harvest timer text belongs next to the right action label, not inside the progress rail.
 - Garden plot right-side action labels (`choose`, `no seeds`, `buy`, `growing`, `harvest`) should share the smaller growing-label size.
 - Garden plot row height must include the progress rail slot even when no progress is shown; hide the rail but keep the space.

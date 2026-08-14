@@ -1,5 +1,5 @@
 import { PixiOwnedDialogSurface } from '../../primitives/PixiOwnedDialogSurface.js';
-import { PixiButton } from '../../primitives/PixiButton.js';
+import { PixiTextButton } from '../../primitives/PixiTextButton.js';
 import {
   DEFAULT_PIXI_THEME_SNAPSHOT,
   PIXI_UI_GEOMETRY,
@@ -222,7 +222,7 @@ class GardenModalButton {
     this.id = id;
     this.action = action;
     this.variant = variant;
-    this.button = new PixiButton({
+    this.button = new PixiTextButton({
       assetManager,
       inputRouter,
       text: label,

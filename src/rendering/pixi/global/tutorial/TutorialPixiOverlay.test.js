@@ -231,11 +231,11 @@ describe('TutorialPixiOverlay', () => {
         overlay.surface.progressLabel.measuredWidth -
         (overlay.surface.progress.x +
           overlay.surface.progress.barWidth),
-    ).toBe(6);
+    ).toBe(8);
     expect(
       overlay.surface.advanceControl.x -
         overlay.surface.progressLabel.x,
-    ).toBe(6);
+    ).toBe(8);
     expect(
       overlay.surface.advanceControl.y +
         overlay.surface.advanceControl.buttonHeight / 2,
@@ -257,8 +257,8 @@ describe('TutorialPixiOverlay', () => {
     );
     expect(overlay.surface.frame.visible).toBe(true);
     expect(overlay.surface.title.position).toMatchObject({
-      x: 12,
-      y: 9,
+      x: 16,
+      y: 12,
     });
     expect(overlay.surface.stepLabel.visible).toBe(false);
     expect(overlay.backdrop.visible).toBe(true);
@@ -267,7 +267,8 @@ describe('TutorialPixiOverlay', () => {
     expect(overlay.model.lesson.dimBackdrop).toBe(true);
     expect(overlay.isLessonPanelOpen()).toBe(true);
     expect(overlay.surface.progress).toMatchObject({
-      tone: 'root',
+      tone: 'yellow',
+      usePlayerStyle: false,
       barHeight: 10,
       end: 0.5,
     });
@@ -559,9 +560,7 @@ describe('TutorialPixiOverlay', () => {
     });
 
     const shortHeight = overlay.surface.outerHeight;
-    expect(shortHeight).toBe(
-      TUTORIAL_PIXI_GEOMETRY.panelMinContentHeight + 21,
-    );
+    expect(shortHeight).toBe(68);
 
     overlay.bind({
       kind: 'lesson',
@@ -611,7 +610,7 @@ describe('TutorialPixiOverlay', () => {
         overlay.surface.progressLabel.measuredWidth -
         (overlay.surface.progress.x +
           overlay.surface.progress.barWidth),
-    ).toBe(6);
+    ).toBe(8);
     expect(overlay.surface.progressLabel.x).toBe(
       overlay.surface.progress.x + overlay.surface.contentWidth,
     );
@@ -708,7 +707,7 @@ describe('TutorialPixiOverlay', () => {
       overlay.surface.advanceControl.y +
       overlay.surface.advanceControl.buttonHeight;
 
-    expect(overlay.surface.advanceControl.y - copyBottom).toBe(5);
+    expect(overlay.surface.advanceControl.y - copyBottom).toBe(8);
     expect(actionBottom).toBeLessThanOrEqual(
       overlay.surface.outerHeight,
     );
@@ -739,7 +738,7 @@ describe('TutorialPixiOverlay', () => {
       overlay.surface.advanceControl.y +
       overlay.surface.advanceControl.buttonHeight;
 
-    expect(overlay.surface.outerHeight - actionBottom).toBe(6);
+    expect(overlay.surface.outerHeight - actionBottom).toBe(12);
 
     overlay.destroy();
   });
@@ -870,7 +869,9 @@ describe('TutorialPixiOverlay', () => {
     expect(initialSize.width).toBeGreaterThan(
       TUTORIAL_PIXI_GEOMETRY.panelOuterWidth,
     );
-    expect(initialSize.width).toBeLessThanOrEqual(278);
+    expect(initialSize.width).toBeLessThanOrEqual(
+      TUTORIAL_PIXI_GEOMETRY.panelMaxContentWidth + 32,
+    );
 
     ticker.tick(12);
     expect(overlay.surface.copy.text).toBe('Su');

@@ -6,7 +6,7 @@ import {
 } from 'pixi.js';
 
 import {
-  PixiButton,
+  PixiTextButton,
   PixiNineSliceFrame,
   PixiScrollView,
   PixiTextLabel,
@@ -301,7 +301,7 @@ export class InboxMailWidget {
     this.claimedIcon.label = `${label}:claimed`;
     this.claimedIcon.width = 12;
     this.claimedIcon.height = 12;
-    this.claimButton = new PixiButton({
+    this.claimButton = new PixiTextButton({
       assetManager,
       inputRouter,
       text: 'Claim',

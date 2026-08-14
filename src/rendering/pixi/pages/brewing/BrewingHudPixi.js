@@ -17,7 +17,7 @@ import {
   PIXI_COST_BUTTON_GEOMETRY,
   PixiCostButton,
 } from '../../primitives/PixiCostButton.js';
-import { PixiButton } from '../../primitives/PixiButton.js';
+import { PixiTextButton } from '../../primitives/PixiTextButton.js';
 import { PixiNineSliceFrame } from '../../primitives/PixiNineSliceFrame.js';
 import {
   createTimedProgressWindow,
@@ -77,6 +77,9 @@ export const BREWING_HUD_GEOMETRY = Object.freeze({
   navigationIconOpticalNudge: 0.7,
   ingredientSlotWidth: 56,
   ingredientSlotHeight: 54,
+  ingredientIconSize: 38,
+  ingredientIconCenterY: 21,
+  ingredientNameY: 41,
   ingredientColumns: 3,
   ingredientRows: 2,
   ingredientSlots: 6,
@@ -120,8 +123,8 @@ const BREWING_DETAIL_TEXT_STYLE = Object.freeze({
 const POTION_PREVIEW_BACKGROUND_COLOR = 0x0e1016;
 const BREWING_STATUS_TEXTURE_PADDING = 1;
 const RETAINED_INGREDIENT_NAME_STYLE = Object.freeze({
-  fontSize: 8,
-  lineHeight: 9,
+  fontSize: 10,
+  lineHeight: 11,
   align: 'center',
   wordWrap: true,
   wordWrapWidth: 54,
@@ -141,6 +144,13 @@ const AUTO_GEAR_STEP_DURATION_MS = 70;
 const AUTO_GEAR_STEP_RADIANS = Math.PI / 8;
 const CAULDRON_CHANGE_MOTION_DURATION_MS = 240;
 const CAULDRON_CHANGE_TRAVEL = 18;
+const PRIMARY_ACTION_MOTION_DURATION_MS = 240;
+const INGREDIENT_SLOT_ARRIVAL_DURATION_MS = 220;
+const INGREDIENT_ORBIT_MOTION_DURATION_MS = 260;
+const CAULDRON_INGREDIENT_IMPACT_DURATION_MS = 220;
+const CAULDRON_COMPLETION_MOTION_DURATION_MS = 320;
+const PREPARED_LIQUID_CYCLE_MS = 2_400;
+const BREWING_LIQUID_CYCLE_MS = 1_100;
 
 export class BrewingHudPixi {
   constructor({
@@ -161,6 +171,14 @@ export class BrewingHudPixi {
     this.autoBrewMotionStartedAt = null;
     this.cauldronChangeMotion = null;
     this.cauldronChangeRestState = null;
+    this.cauldronMotionMode = 'idle';
+    this.cauldronMotionModeStartedAt = 0;
+    this.cauldronImpactMotion = null;
+    this.completionMotionStart = null;
+    this.primaryActionMotionStart = null;
+    this.ingredientOrbitMotion = null;
+    this.lastMotionCauldronKey = null;
+    this.boundMotionStates = new Map();
     this.root = new Container({ label: 'brewing-fantasy-hud' });
 
     this.carouselPanel = new RetainedPanel({
@@ -197,6 +215,10 @@ export class BrewingHudPixi {
     this.recipeOrbit = new Graphics({
       label: 'brewing-recipe-orbit',
     });
+    this.recipeOrbitFeedback = new Graphics({
+      label: 'brewing-recipe-orbit-feedback',
+    });
+    this.recipeOrbitFeedback.eventMode = 'none';
     this.cauldronArt = new Sprite(getTexture(assetManager, ASSETS.cauldron));
     this.cauldronArt.anchor.set(0.5);
     this.cauldronArt.label = 'brewing-carousel-cauldron-art';
@@ -209,6 +231,10 @@ export class BrewingHudPixi {
     this.cauldronLiquidHighlight = new Graphics({
       label: 'brewing-carousel-cauldron-liquid-highlight',
     });
+    this.cauldronStateFx = new Graphics({
+      label: 'brewing-carousel-state-feedback',
+    });
+    this.cauldronStateFx.eventMode = 'none';
     this.lockedCauldronFilter = createLockedArtFilter();
     this.lockArt = new Sprite(getTexture(assetManager, ASSETS.lock));
     this.lockArt.anchor.set(0.5);
@@ -220,9 +246,11 @@ export class BrewingHudPixi {
       this.cauldronTitlePlaque.root,
       this.counter,
       this.recipeOrbit,
+      this.recipeOrbitFeedback,
       this.cauldronArt,
       this.cauldronLiquid,
       this.cauldronLiquidHighlight,
+      this.cauldronStateFx,
       this.lockArt,
       this.lockLabel,
       this.dots,
@@ -455,6 +483,7 @@ export class BrewingHudPixi {
   }
 
   bind(model = {}, actions = {}) {
+    this.restoreCauldronStateVisuals();
     this.restoreCauldronChangeVisuals();
     this.model = model;
     this.actions = actions;
@@ -467,6 +496,16 @@ export class BrewingHudPixi {
       Math.max(0, cauldrons.length - 1),
     );
     const cauldron = this.getSelectedCauldron();
+    const motionKey = resolveCauldronMotionKey(
+      cauldron,
+      this.selectedIndex,
+    );
+    const previousMotionState =
+      this.boundMotionStates.get(motionKey) ?? null;
+    const animateStateChanges =
+      previousMotionState !== null &&
+      this.lastMotionCauldronKey === motionKey;
+    const motionNow = this.getTimerNow();
     const unlocked = cauldron?.unlocked !== false;
     const number = cauldron?.cauldronNumber ?? this.selectedIndex + 1;
     this.cauldronStars.setLevel(unlocked ? cauldron?.level ?? 1 : 0);
@@ -568,16 +607,48 @@ export class BrewingHudPixi {
       enabled: unlocked && primaryState.enabled,
       action: () => this.activatePrimaryAction(),
     });
+    const nextMotionState = createBrewingHudMotionState(
+      cauldron,
+      primaryState,
+    );
+    if (animateStateChanges) {
+      if (
+        previousMotionState.primaryId !== nextMotionState.primaryId ||
+        (!previousMotionState.primaryEnabled &&
+          nextMotionState.primaryEnabled)
+      ) {
+        this.startPrimaryActionMotion(motionNow);
+      }
+      if (
+        !previousMotionState.complete &&
+        nextMotionState.complete
+      ) {
+        this.startCompletionMotion(motionNow);
+      }
+    }
+    this.setCauldronMotionMode(
+      resolveCauldronMotionMode(cauldron, primaryState),
+      motionNow,
+    );
     this.setCauldronActionVisibility(unlocked, cauldron);
     this.detailPanel.root.visible = unlocked;
     this.detailPanel.root.renderable = unlocked;
     this.bindUnlockCostButton(cauldron, unlocked);
-    this.bindDetail(cauldron, active);
+    this.bindDetail(cauldron, active, {
+      animateTransitions: animateStateChanges,
+      now: motionNow,
+    });
     this.syncActionIcons();
     this.drawDots();
+    this.boundMotionStates.set(motionKey, nextMotionState);
+    this.lastMotionCauldronKey = motionKey;
   }
 
-  bindDetail(cauldron = {}, active = null) {
+  bindDetail(
+    cauldron = {},
+    active = null,
+    { animateTransitions = false, now = this.getTimerNow() } = {},
+  ) {
     const recipe =
       cauldron.selectedRecipe ??
       (cauldron.match
@@ -634,12 +705,22 @@ export class BrewingHudPixi {
       !active &&
       cauldron.canAddIngredient !== false &&
       cauldron.acceptsHerbDrop !== false;
-    this.ingredientSlots.forEach((slot, index) =>
-      slot.bind(requirements[index] ?? null, {
+    let firstArrivingSlot = null;
+    this.ingredientSlots.forEach((slot, index) => {
+      const startedArrival = slot.bind(requirements[index] ?? null, {
         enabled: ingredientSelectionEnabled,
         showMissing: Boolean(recipe && !active),
-      }),
-    );
+        animate: animateTransitions,
+        now,
+        reducedMotion: this.page?.prefersReducedMotion?.() === true,
+      });
+      if (startedArrival && firstArrivingSlot === null) {
+        firstArrivingSlot = index;
+      }
+    });
+    if (firstArrivingSlot !== null) {
+      this.startIngredientArrivalMotion(firstArrivingSlot, now);
+    }
 
     setText(
       this.phaseLabel,
@@ -651,7 +732,6 @@ export class BrewingHudPixi {
           ? 'Ready to Brew'
           : '',
     );
-    const now = this.getTimerNow();
     this.syncActiveTimer(active, now);
     this.updateActiveTimer(now);
   }
@@ -705,8 +785,16 @@ export class BrewingHudPixi {
       state.id === 'brew'
         ? this.captureIngredientMotionSources()
         : [];
+    const collectedPotionSource =
+      state.id === 'collect'
+        ? this.page?.captureHudPotionMotionSource?.(this)
+        : null;
     let result;
     switch (state.id) {
+      case 'recipes':
+        result =
+          this.actions.openRecipes?.(this.selectedIndex) ?? false;
+        break;
       case 'cancel':
         if (
           cauldron?.activeBrew?.phase === 'brewing' ||
@@ -743,10 +831,20 @@ export class BrewingHudPixi {
     ) {
       this.page?.animateHudBrewIngredients?.(this, brewSources);
     }
+    if (
+      state.id === 'collect' &&
+      result !== false &&
+      result?.ok !== false
+    ) {
+      this.page?.animateHudCollectedPotion?.(collectedPotionSource);
+    }
     return result;
   }
 
   captureIngredientMotionSources() {
+    if (typeof this.page?.getDisplayObjectCenter !== 'function') {
+      return [];
+    }
     return this.ingredientSlots
       .filter(
         (slot) =>
@@ -1224,6 +1322,21 @@ export class BrewingHudPixi {
       active,
       reducedMotion,
     });
+    this.updatePrimaryActionMotion(now, {
+      active,
+      reducedMotion,
+    });
+    this.updateIngredientOrbitMotion(now, {
+      active,
+      reducedMotion,
+    });
+    for (const slot of this.ingredientSlots) {
+      slot.updateMotion(now, { active, reducedMotion });
+    }
+    this.updateCauldronStateMotion(now, {
+      active,
+      reducedMotion,
+    });
     if (
       !active ||
       reducedMotion ||
@@ -1255,6 +1368,357 @@ export class BrewingHudPixi {
         AUTO_GEAR_STEP_RADIANS) %
         (Math.PI * 2),
     );
+  }
+
+  startPrimaryActionMotion(now = this.getTimerNow()) {
+    if (this.page?.prefersReducedMotion?.()) {
+      this.resetPrimaryActionMotion();
+      return;
+    }
+    this.primaryActionMotionStart = Number(now) || 0;
+    this.updatePrimaryActionMotion(now, {
+      active: true,
+      reducedMotion: false,
+    });
+  }
+
+  updatePrimaryActionMotion(
+    now,
+    { active = true, reducedMotion = false } = {},
+  ) {
+    if (
+      this.primaryActionMotionStart === null ||
+      !active ||
+      reducedMotion ||
+      !this.brew.root.visible
+    ) {
+      if (!active || reducedMotion) {
+        this.resetPrimaryActionMotion();
+      }
+      return;
+    }
+    const progress = clamp(
+      ((Number(now) || 0) - this.primaryActionMotionStart) /
+        PRIMARY_ACTION_MOTION_DURATION_MS,
+      0,
+      1,
+    );
+    const eased = easeOutQuint(progress);
+    this.brew.control.textLabel.alpha = 0.55 + eased * 0.45;
+    this.brew.control.textLabel.scale.set(0.94 + eased * 0.06);
+    this.brew.control.rootRunFrame.alpha = 0.84 + eased * 0.16;
+    if (progress >= 1) {
+      this.resetPrimaryActionMotion();
+    }
+  }
+
+  resetPrimaryActionMotion() {
+    this.primaryActionMotionStart = null;
+    this.brew.control.textLabel.alpha = 1;
+    this.brew.control.textLabel.scale.set(1);
+    this.brew.control.rootRunFrame.alpha = 1;
+  }
+
+  startIngredientArrivalMotion(index, now = this.getTimerNow()) {
+    if (this.page?.prefersReducedMotion?.()) {
+      this.resetIngredientOrbitMotion();
+      return;
+    }
+    this.ingredientOrbitMotion = {
+      index: clamp(
+        Math.floor(Number(index) || 0),
+        0,
+        this.ingredientSlots.length - 1,
+      ),
+      startedAt: Number(now) || 0,
+    };
+    this.startIngredientReceiveMotion(now);
+    this.updateIngredientOrbitMotion(now, {
+      active: true,
+      reducedMotion: false,
+    });
+  }
+
+  updateIngredientOrbitMotion(
+    now,
+    { active = true, reducedMotion = false } = {},
+  ) {
+    const motion = this.ingredientOrbitMotion;
+    if (!motion || !active || reducedMotion) {
+      if (!active || reducedMotion) {
+        this.resetIngredientOrbitMotion();
+      }
+      return;
+    }
+    const progress = clamp(
+      ((Number(now) || 0) - motion.startedAt) /
+        INGREDIENT_ORBIT_MOTION_DURATION_MS,
+      0,
+      1,
+    );
+    this.drawIngredientOrbitFeedback(motion.index, progress);
+    if (progress >= 1) {
+      this.resetIngredientOrbitMotion();
+    }
+  }
+
+  drawIngredientOrbitFeedback(index, progress) {
+    this.recipeOrbitFeedback.clear();
+    const width = this.carouselPanel.width;
+    if (!Number.isFinite(width) || width <= 0) {
+      return;
+    }
+    const position = resolveIngredientPositions(width)[index];
+    if (!position) {
+      return;
+    }
+    const start = {
+      x: position.x + BREWING_HUD_GEOMETRY.ingredientSlotWidth / 2,
+      y: position.y + BREWING_HUD_GEOMETRY.ingredientSlotHeight / 2,
+    };
+    const center = {
+      x: width / 2,
+      y:
+        136 +
+        BREWING_HUD_GEOMETRY.previewVerticalOffset +
+        BREWING_HUD_GEOMETRY.carouselContentOffset,
+    };
+    const eased = easeOutQuint(progress);
+    const end = {
+      x: lerpValue(start.x, center.x, eased),
+      y: lerpValue(start.y, center.y, eased),
+    };
+    this.recipeOrbitFeedback
+      .moveTo(start.x, start.y)
+      .lineTo(end.x, end.y)
+      .stroke({
+        color: this.cauldronLiquidColor ?? 0x2fa8ff,
+        width: 2,
+        alpha: 0.72 * (1 - progress),
+      });
+  }
+
+  resetIngredientOrbitMotion() {
+    this.ingredientOrbitMotion = null;
+    this.recipeOrbitFeedback.clear();
+  }
+
+  setCauldronMotionMode(mode, now = this.getTimerNow()) {
+    const nextMode = String(mode || 'idle');
+    if (nextMode === this.cauldronMotionMode) {
+      return;
+    }
+    this.cauldronMotionMode = nextMode;
+    this.cauldronMotionModeStartedAt = Number(now) || 0;
+  }
+
+  startIngredientReceiveMotion(now = this.getTimerNow()) {
+    if (this.page?.prefersReducedMotion?.()) {
+      return;
+    }
+    this.cauldronImpactMotion = {
+      kind: 'ingredient',
+      startedAt: Number(now) || 0,
+      durationMs: CAULDRON_INGREDIENT_IMPACT_DURATION_MS,
+    };
+  }
+
+  startCompletionMotion(now = this.getTimerNow()) {
+    if (this.page?.prefersReducedMotion?.()) {
+      this.resetCompletionMotion();
+      return;
+    }
+    const startedAt = Number(now) || 0;
+    this.completionMotionStart = startedAt;
+    this.cauldronImpactMotion = {
+      kind: 'completion',
+      startedAt,
+      durationMs: CAULDRON_COMPLETION_MOTION_DURATION_MS,
+    };
+    this.startPrimaryActionMotion(now);
+  }
+
+  updateCauldronStateMotion(
+    now,
+    { active = true, reducedMotion = false } = {},
+  ) {
+    const rest = this.cauldronChangeRestState;
+    if (!active || reducedMotion || !rest) {
+      this.restoreCauldronStateVisuals();
+      this.cauldronStateFx.clear();
+      if (!active || reducedMotion) {
+        this.cauldronImpactMotion = null;
+        this.completionMotionStart = null;
+      }
+      return;
+    }
+    if (this.cauldronChangeMotion) {
+      this.cauldronStateFx.clear();
+      return;
+    }
+
+    this.restoreCauldronStateVisuals();
+    const elapsed = Math.max(
+      0,
+      (Number(now) || 0) - this.cauldronMotionModeStartedAt,
+    );
+    const ambientCycle =
+      this.cauldronMotionMode === 'brewing'
+        ? BREWING_LIQUID_CYCLE_MS
+        : PREPARED_LIQUID_CYCLE_MS;
+    const wave = Math.sin((elapsed / ambientCycle) * Math.PI * 2);
+    if (
+      this.cauldronLiquid.visible &&
+      (this.cauldronMotionMode === 'prepared' ||
+        this.cauldronMotionMode === 'brewing' ||
+        this.cauldronMotionMode === 'complete')
+    ) {
+      const strength =
+        this.cauldronMotionMode === 'brewing' ? 1 : 0.45;
+      this.cauldronLiquid.y = rest.liquid.y + wave * 0.55 * strength;
+      this.cauldronLiquid.scale.set(
+        rest.liquid.scaleX * (1 + wave * 0.012 * strength),
+        rest.liquid.scaleY * (1 - wave * 0.007 * strength),
+      );
+      this.cauldronLiquidHighlight.x =
+        rest.highlightX + wave * 2.2 * strength;
+      this.cauldronLiquidHighlight.alpha =
+        rest.highlightAlpha * (0.82 + (wave + 1) * 0.09);
+    }
+
+    let impactProgress = null;
+    const impact = this.cauldronImpactMotion;
+    if (impact) {
+      impactProgress = clamp(
+        ((Number(now) || 0) - impact.startedAt) /
+          impact.durationMs,
+        0,
+        1,
+      );
+      const pulse = Math.sin(Math.PI * impactProgress);
+      const strength = impact.kind === 'completion' ? 1 : 0.58;
+      this.cauldronArt.scale.set(
+        rest.art.scaleX * (1 + pulse * 0.035 * strength),
+        rest.art.scaleY * (1 - pulse * 0.065 * strength),
+      );
+      this.cauldronArt.y = rest.art.y + pulse * 2.2 * strength;
+      this.cauldronLiquid.scale.set(
+        rest.liquid.scaleX * (1 + pulse * 0.045 * strength),
+        rest.liquid.scaleY * (1 - pulse * 0.08 * strength),
+      );
+      this.cauldronLiquid.y = rest.liquid.y + pulse * 2.2 * strength;
+      if (impactProgress >= 1) {
+        this.cauldronImpactMotion = null;
+        if (impact.kind === 'completion') {
+          this.completionMotionStart = null;
+        }
+      }
+    }
+    this.drawCauldronStateFx(elapsed, impact, impactProgress);
+  }
+
+  drawCauldronStateFx(elapsed, impact, impactProgress) {
+    const graphics = this.cauldronStateFx;
+    graphics.clear();
+    if (!this.cauldronLiquid.visible) {
+      return;
+    }
+    const rest = this.cauldronChangeRestState;
+    const centerX = rest.art.x;
+    const liquidY = rest.art.y - 94 * 0.312;
+    if (this.cauldronMotionMode === 'prepared') {
+      const phase = (elapsed % PREPARED_LIQUID_CYCLE_MS) /
+        PREPARED_LIQUID_CYCLE_MS;
+      if (phase < 0.42) {
+        const local = phase / 0.42;
+        graphics
+          .ellipse(centerX, liquidY, 15 + local * 13, 3 + local * 2)
+          .stroke({
+            color: 0xbfe9ff,
+            width: 1.2,
+            alpha: 0.42 * (1 - local),
+          });
+      }
+    }
+    if (this.cauldronMotionMode === 'brewing') {
+      const cycle = elapsed / BREWING_LIQUID_CYCLE_MS;
+      const bubbles = [
+        { offset: 0, x: -14, drift: 2.5, radius: 1.7 },
+        { offset: 0.34, x: 4, drift: -2, radius: 1.25 },
+        { offset: 0.68, x: 16, drift: 1.5, radius: 1.4 },
+      ];
+      for (const bubble of bubbles) {
+        const phase = (cycle + bubble.offset) % 1;
+        const alpha = Math.sin(Math.PI * phase) * 0.62;
+        graphics
+          .circle(
+            centerX + bubble.x + Math.sin(phase * Math.PI) * bubble.drift,
+            liquidY + 2 - phase * 11,
+            bubble.radius + phase * 0.65,
+          )
+          .stroke({ color: 0xdaf4ff, width: 1, alpha });
+      }
+    }
+    if (impact && impactProgress !== null) {
+      const fade = 1 - impactProgress;
+      const strength = impact.kind === 'completion' ? 1 : 0.58;
+      graphics
+        .ellipse(
+          centerX,
+          liquidY,
+          17 + impactProgress * 19,
+          3.5 + impactProgress * 4.5,
+        )
+        .stroke({
+          color: 0xdaf4ff,
+          width: impact.kind === 'completion' ? 2 : 1.4,
+          alpha: fade * 0.78 * strength,
+        });
+      if (impact.kind === 'completion') {
+        for (const direction of [-1, 0, 1]) {
+          graphics
+            .circle(
+              centerX + direction * (11 + impactProgress * 8),
+              liquidY - 4 - impactProgress * (10 + Math.abs(direction) * 3),
+              1.8 - impactProgress * 0.6,
+            )
+            .fill({ color: 0xe9f8ff, alpha: fade * 0.8 });
+        }
+      }
+    }
+  }
+
+  restoreCauldronStateVisuals() {
+    const rest = this.cauldronChangeRestState;
+    if (!rest || this.cauldronChangeMotion) {
+      return;
+    }
+    restoreDisplayState(this.cauldronArt, rest.art);
+    restoreDisplayState(this.cauldronLiquid, rest.liquid);
+    this.cauldronLiquidHighlight.position.set(
+      rest.highlightX,
+      rest.highlightY,
+    );
+    this.cauldronLiquidHighlight.alpha = rest.highlightAlpha;
+  }
+
+  resetCompletionMotion() {
+    this.completionMotionStart = null;
+    if (this.cauldronImpactMotion?.kind === 'completion') {
+      this.cauldronImpactMotion = null;
+    }
+  }
+
+  resetStateMotion() {
+    this.resetPrimaryActionMotion();
+    this.resetIngredientOrbitMotion();
+    this.resetCompletionMotion();
+    this.cauldronImpactMotion = null;
+    this.cauldronStateFx.clear();
+    for (const slot of this.ingredientSlots) {
+      slot.resetArrivalMotion();
+    }
+    this.restoreCauldronStateVisuals();
   }
 
   startCauldronChangeMotion(
@@ -1343,6 +1807,8 @@ export class BrewingHudPixi {
       liquid: captureDisplayState(this.cauldronLiquid),
       lock: captureDisplayState(this.lockArt),
       highlightX: this.cauldronLiquidHighlight.x,
+      highlightY: this.cauldronLiquidHighlight.y,
+      highlightAlpha: this.cauldronLiquidHighlight.alpha,
       orbitX: this.recipeOrbit.x,
     };
   }
@@ -1355,7 +1821,11 @@ export class BrewingHudPixi {
     restoreDisplayState(this.cauldronArt, rest.art);
     restoreDisplayState(this.cauldronLiquid, rest.liquid);
     restoreDisplayState(this.lockArt, rest.lock);
-    this.cauldronLiquidHighlight.x = rest.highlightX;
+    this.cauldronLiquidHighlight.position.set(
+      rest.highlightX,
+      rest.highlightY,
+    );
+    this.cauldronLiquidHighlight.alpha = rest.highlightAlpha;
     this.recipeOrbit.x = rest.orbitX;
   }
 
@@ -1377,6 +1847,7 @@ export class BrewingHudPixi {
   }
 
   destroy() {
+    this.resetStateMotion();
     this.resetCauldronChangeMotion();
     releaseRegistration(this.swipeRegistration);
     for (const button of [
@@ -1520,7 +1991,7 @@ export class BrewingAutomationSettingsDialogPixi {
   }
 }
 
-class BrewingIngredientPickerSlot {
+export class BrewingIngredientPickerSlot {
   constructor({
     index,
     assetManager,
@@ -1533,7 +2004,7 @@ class BrewingIngredientPickerSlot {
     this.semanticTargets = semanticTargets;
     this.onActivate = onActivate;
     this.enabled = false;
-    this.control = new PixiButton({
+    this.control = new PixiTextButton({
       assetManager,
       inputRouter,
       semanticRegistry: semanticTargets,
@@ -1555,19 +2026,25 @@ class BrewingIngredientPickerSlot {
     this.icon.anchor.set(0.5);
     this.name = centeredText('', RETAINED_INGREDIENT_NAME_STYLE);
     this.name.anchor.set(0.5, 0);
+    this.contentMotion = new Container({
+      label: `brewing-ingredient-picker-slot-${index}-content-motion`,
+    });
     this.countGroup = new Container();
     this.missingCount = centeredText('', RETAINED_INGREDIENT_COUNT_STYLE);
     this.requiredCount = centeredText('', RETAINED_INGREDIENT_COUNT_STYLE);
     this.missingCount.anchor.set(0, 0);
     this.requiredCount.anchor.set(0, 0);
     this.countGroup.addChild(this.missingCount, this.requiredCount);
-    this.control.visual.addChild(
-      this.frame,
+    this.contentMotion.addChild(
       this.icon,
       this.name,
       this.countGroup,
     );
+    this.control.visual.addChild(this.frame, this.contentMotion);
     this.model = null;
+    this.hasBoundModel = false;
+    this.stagedSignature = '';
+    this.arrivalMotionStart = null;
     this.frameInsets = null;
     this.width = BREWING_HUD_GEOMETRY.ingredientSlotWidth;
     this.height = BREWING_HUD_GEOMETRY.ingredientSlotHeight;
@@ -1577,12 +2054,26 @@ class BrewingIngredientPickerSlot {
 
   bind(
     model,
-    { decorative = false, enabled = true, showMissing = false } = {},
+    {
+      decorative = false,
+      enabled = true,
+      showMissing = false,
+      animate = false,
+      now = 0,
+      reducedMotion = false,
+    } = {},
   ) {
+    const key = model?.itemKey ?? model?.key ?? null;
+    const nextStagedSignature =
+      model?.staged === true && key ? String(key) : '';
+    const shouldAnimateArrival =
+      animate === true &&
+      this.hasBoundModel &&
+      Boolean(nextStagedSignature) &&
+      nextStagedSignature !== this.stagedSignature;
     this.model = model;
     this.enabled = enabled === true;
     this.control.setEnabled(this.enabled);
-    const key = model?.itemKey ?? model?.key ?? null;
     this.icon.texture = getAtlasTexture(
       this.assetManager,
       key ? getHerbIconFrameName(key) : null,
@@ -1606,8 +2097,14 @@ class BrewingIngredientPickerSlot {
     this.requiredCount.visible = missing;
     this.requiredCount.renderable = missing;
     this.decorative = decorative && !model;
+    this.hasBoundModel = true;
+    this.stagedSignature = nextStagedSignature;
     this.layoutCount();
     this.redraw();
+    if (shouldAnimateArrival) {
+      this.startArrivalMotion(now, { reducedMotion });
+    }
+    return shouldAnimateArrival && !reducedMotion;
   }
 
   setBounds(x, y, width, height) {
@@ -1616,10 +2113,18 @@ class BrewingIngredientPickerSlot {
     this.height = height;
     this.control.setSize(width, height);
     this.frame.setSize(width, height, this.frameInsets);
-    this.icon.position.set(width / 2, 19);
-    this.icon.width = 26;
-    this.icon.height = 26;
-    this.name.position.set(width / 2, 35);
+    this.contentMotion.pivot.set(width / 2, height / 2);
+    this.contentMotion.position.set(width / 2, height / 2);
+    this.icon.position.set(
+      width / 2,
+      BREWING_HUD_GEOMETRY.ingredientIconCenterY,
+    );
+    this.icon.width = BREWING_HUD_GEOMETRY.ingredientIconSize;
+    this.icon.height = BREWING_HUD_GEOMETRY.ingredientIconSize;
+    this.name.position.set(
+      width / 2,
+      BREWING_HUD_GEOMETRY.ingredientNameY,
+    );
     this.name.style.wordWrapWidth = width - 8;
     this.layoutCount();
     this.redraw();
@@ -1635,6 +2140,56 @@ class BrewingIngredientPickerSlot {
   }
 
   redraw() {
+    this.frame.alpha = this.decorative ? 0.72 : 1;
+  }
+
+  startArrivalMotion(now = 0, { reducedMotion = false } = {}) {
+    if (reducedMotion) {
+      this.resetArrivalMotion();
+      return;
+    }
+    this.arrivalMotionStart = Number(now) || 0;
+    this.updateMotion(now, { active: true, reducedMotion: false });
+  }
+
+  updateMotion(
+    now,
+    { active = true, reducedMotion = false } = {},
+  ) {
+    if (
+      this.arrivalMotionStart === null ||
+      !active ||
+      reducedMotion
+    ) {
+      if (!active || reducedMotion) {
+        this.resetArrivalMotion();
+      }
+      return;
+    }
+    const progress = clamp(
+      ((Number(now) || 0) - this.arrivalMotionStart) /
+        INGREDIENT_SLOT_ARRIVAL_DURATION_MS,
+      0,
+      1,
+    );
+    const eased = easeOutQuint(progress);
+    const direction = this.index % 2 === 0 ? -1 : 1;
+    this.contentMotion.alpha = 0.58 + eased * 0.42;
+    this.contentMotion.scale.set(0.78 + eased * 0.22);
+    this.contentMotion.rotation =
+      direction * 0.075 * (1 - eased);
+    this.frame.alpha =
+      (this.decorative ? 0.72 : 1) * (0.78 + eased * 0.22);
+    if (progress >= 1) {
+      this.resetArrivalMotion();
+    }
+  }
+
+  resetArrivalMotion() {
+    this.arrivalMotionStart = null;
+    this.contentMotion.alpha = 1;
+    this.contentMotion.scale.set(1);
+    this.contentMotion.rotation = 0;
     this.frame.alpha = this.decorative ? 0.72 : 1;
   }
 
@@ -1663,6 +2218,7 @@ class BrewingIngredientPickerSlot {
   }
 
   destroy() {
+    this.resetArrivalMotion();
     this.control.destroy({ children: true });
     this.control = null;
   }
@@ -1685,6 +2241,7 @@ function normalizeRequirements(rows, herbs, stagedIngredients = []) {
       return {
         ...row,
         itemKey: key,
+        staged: stagedMatches,
         owned:
           stagedMatches
             ? required
@@ -1876,6 +2433,61 @@ function clamp(value, minimum, maximum) {
   return Math.max(minimum, Math.min(maximum, Number(value) || 0));
 }
 
+function lerpValue(start, end, progress) {
+  return start + (end - start) * progress;
+}
+
+function easeOutQuint(progress) {
+  const value = clamp(progress, 0, 1);
+  return 1 - (1 - value) ** 5;
+}
+
+function resolveCauldronMotionKey(cauldron = {}, index = 0) {
+  return String(
+    cauldron.id ??
+      cauldron.cauldronIndex ??
+      cauldron.cauldronNumber ??
+      index,
+  );
+}
+
+function createBrewingHudMotionState(cauldron = {}, primaryState = {}) {
+  const active = cauldron.activeBrew ?? null;
+  return {
+    primaryId: primaryState.id ?? 'idle',
+    primaryEnabled: primaryState.enabled === true,
+    complete: Boolean(
+      active?.canCollect === true ||
+        active?.canStartBottling === true ||
+        active?.phase === 'brewed' ||
+        active?.phase === 'ready',
+    ),
+  };
+}
+
+function resolveCauldronMotionMode(cauldron = {}, primaryState = {}) {
+  const active = cauldron.activeBrew ?? null;
+  if (
+    active?.canCollect === true ||
+    active?.canStartBottling === true ||
+    active?.phase === 'brewed' ||
+    active?.phase === 'ready'
+  ) {
+    return 'complete';
+  }
+  if (active) {
+    return 'brewing';
+  }
+  if (
+    cauldron.selectedRecipe ||
+    cauldron.match ||
+    primaryState.id === 'brew'
+  ) {
+    return 'prepared';
+  }
+  return 'idle';
+}
+
 export function resolveBrewingPrimaryState(cauldron = {}) {
   const active = cauldron.activeBrew ?? null;
   const auto = cauldron.autoBrewEnabled === true;
@@ -1927,6 +2539,18 @@ export function resolveBrewingPrimaryState(cauldron = {}) {
       enabled:
         active?.phase === 'brewing' ||
         active?.phase === 'bottling',
+      variant: 'yellow',
+    };
+  }
+
+  const isEmpty =
+    !cauldron.selectedRecipe &&
+    (cauldron.ingredients?.length ?? 0) === 0;
+  if (isEmpty) {
+    return {
+      id: 'recipes',
+      label: 'Choose Recipe',
+      enabled: cauldron.canSelectRecipe !== false,
       variant: 'yellow',
     };
   }

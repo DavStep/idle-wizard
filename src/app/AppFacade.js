@@ -20,6 +20,7 @@ import { SoundSettingsFacade } from '../audio/soundSettings/SoundSettingsFacade.
 import { GardenHarvestSoundFacade } from '../audio/gardenHarvest/GardenHarvestSoundFacade.js';
 import { UiClickSoundFacade } from '../audio/uiClicks/UiClickSoundFacade.js';
 import { AppLifecycleManager } from './managers/AppLifecycleManager.js';
+import { AppLiveUpdateManager } from './managers/AppLiveUpdateManager.js';
 import { AppVisibilityManager } from './managers/AppVisibilityManager.js';
 
 export class AppFacade {
@@ -43,6 +44,7 @@ export class AppFacade {
       uiClickSoundFacade: this.uiClickSoundFacade,
     });
     this.backendFacade = new BackendFacade();
+    this.liveUpdateManager = new AppLiveUpdateManager();
     this.gameplayFacade.setPersistenceStorage(this.backendFacade.getGameplaySaveFacade());
     this.gameplayFacade.setGameConfigFacade(this.backendFacade.getGameConfigFacade());
     this.gameplayFacade.setNpcMarketFacade(this.backendFacade.getNpcMarketFacade());
@@ -172,6 +174,9 @@ export class AppFacade {
       .then(() => {
         if (!this.disposed) {
           this.lifecycleManager.start();
+          void this.liveUpdateManager.start().catch(() => {
+            // Live updates are best-effort; the bundled APK remains playable.
+          });
         }
         return this;
       });

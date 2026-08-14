@@ -4,6 +4,8 @@ import { createUiEditorPixiThumbnail } from '../../../../uiEditor/widgets/create
 import { DEFAULT_PIXI_THEME_SNAPSHOT } from '../../theme/PixiThemeTokens.js';
 import {
   RESEARCH_PIXI_GEOMETRY,
+  ResearchBoxWidget,
+  ResearchLockTooltip,
   ResearchRowWidget,
   ResearchStationTitlePlaque,
 } from './ResearchPixiPage.js';
@@ -64,6 +66,76 @@ export default [
     usages: [
       {
         label: 'Research room station headings',
+        source: 'src/rendering/pixi/pages/research/ResearchPixiPage.js',
+      },
+    ],
+  }),
+  defineUiEditorIntegration({
+    apiVersion: 1,
+    childWidgetIds: [
+      'compound.research-station-title',
+      'compound.research-row',
+    ],
+    createThumbnail: createResearchBoxThumbnail,
+    folderPath: ['Research'],
+    id: 'compound.research-station-box',
+    kind: 'widget',
+    label: 'Research Station Box',
+    sectionId: 'composite-widgets',
+    properties: [
+      { label: 'Production class', value: 'ResearchBoxWidget' },
+      { label: 'Contract', value: 'Station title with retained research rows' },
+    ],
+    scenarios: [
+      {
+        fixture: { states: ['available'] },
+        id: 'single-row',
+        label: 'Single row',
+        mount: mountResearchBox,
+      },
+      {
+        fixture: { states: ['available', 'in-progress', 'completed'] },
+        id: 'multiple-rows',
+        label: 'Multiple rows',
+        mount: mountResearchBox,
+      },
+    ],
+    usages: [
+      {
+        label: 'Research room station groups',
+        source: 'src/rendering/pixi/pages/research/ResearchPixiPage.js',
+      },
+    ],
+  }),
+  defineUiEditorIntegration({
+    apiVersion: 1,
+    createThumbnail: createResearchTooltipThumbnail,
+    folderPath: ['Research'],
+    id: 'compound.research-lock-tooltip',
+    kind: 'widget',
+    label: 'Research Lock Tooltip',
+    sectionId: 'composite-widgets',
+    properties: [
+      { label: 'Production class', value: 'ResearchLockTooltip' },
+      { label: 'Contract', value: 'Requirement explanation for locked research' },
+    ],
+    scenarios: [
+      {
+        fixture: { copy: 'Complete prior research' },
+        id: 'requirement',
+        label: 'Requirement',
+        mount: mountResearchTooltip,
+      },
+      {
+        fixture: { copy: 'Reach Level 10 to unlock Advanced Research' },
+        id: 'wrapped',
+        label: 'Wrapped copy',
+        mount: mountResearchTooltip,
+      },
+    ],
+    usages: [
+      {
+        label: 'Locked Research rows and tabs',
         source: 'src/rendering/pixi/pages/research/ResearchPixiPage.js',
       },
     ],
@@ -220,6 +292,118 @@ function createStationTitleControl({ assets, fixture }) {
     height: RESEARCH_PIXI_GEOMETRY.categoryTitleHeight,
     root: plaque.root,
     width: plaque.width,
+  };
+}
+
+function createResearchBoxThumbnail() {
+  return createUiEditorPixiThumbnail({
+    assetFilter: researchAssetFilter,
+    component: 'ResearchBoxWidget',
+    createControl: ({ assets, input }) => createResearchBoxControl({
+      assets,
+      fixture: { states: ['available', 'in-progress'] },
+      input,
+      now: () => 0,
+    }),
+    id: 'compound.research-station-box',
+  });
+}
+
+async function mountResearchBox(context, fixture) {
+  return createUiEditorPixiSurface({
+    assetFilter: researchAssetFilter,
+    component: 'ResearchBoxWidget',
+    createControl: ({ assets, input }) => createResearchBoxControl({
+      assets,
+      fixture,
+      input,
+      now: () => context.clock.now(),
+    }),
+  });
+}
+
+function createResearchBoxControl({ assets, fixture, input, now }) {
+  const page = createResearchWidgetPage({ assets, input });
+  const rows = fixture.states.map((state, index) => {
+    const row = new ResearchRowWidget({
+      assetManager: assets,
+      page,
+      prefersReducedMotion: () => true,
+      timeSource: now,
+    });
+    row.bind(
+      {
+        ...createResearchRowModel(state),
+        displayName: ['Mint Cultivation', 'Sage Mastery', 'Herbal Memory'][index],
+        id: `research-editor-${index}`,
+      },
+      { buy: () => true, locked: () => true },
+      'herbs',
+    );
+    return row;
+  });
+  const box = new ResearchBoxWidget({ page });
+  box.bind({ id: 'herbs', label: 'Herbal Studies' });
+  box.setRows(rows);
+  box.setBounds(0, 0, RESEARCH_PIXI_GEOMETRY.cardWidth);
+  return {
+    destroy: () => {
+      box.reset();
+      for (const row of rows) row.destroy();
+      box.destroy();
+    },
+    height: box.getPreferredHeight(),
+    root: box.root,
+    width: RESEARCH_PIXI_GEOMETRY.cardWidth,
+  };
+}
+
+function createResearchTooltipThumbnail() {
+  return createUiEditorPixiThumbnail({
+    assetFilter: researchAssetFilter,
+    component: 'ResearchLockTooltip',
+    createControl: ({ assets }) => createResearchTooltipControl({
+      assets,
+      fixture: { copy: 'Complete prior research' },
+    }),
+    id: 'compound.research-lock-tooltip',
+  });
+}
+
+async function mountResearchTooltip(_context, fixture) {
+  return createUiEditorPixiSurface({
+    assetFilter: researchAssetFilter,
+    component: 'ResearchLockTooltip',
+    createControl: ({ assets }) => createResearchTooltipControl({ assets, fixture }),
+  });
+}
+
+function createResearchTooltipControl({ assets, fixture }) {
+  const tooltip = new ResearchLockTooltip({ assetManager: assets });
+  tooltip.bind(fixture.copy);
+  tooltip.show({ x: 0, y: 0 });
+  return {
+    destroy: () => tooltip.destroy(),
+    height: tooltip.height,
+    root: tooltip.root,
+    width: tooltip.width,
+  };
+}
+
+function createResearchWidgetPage({ assets, input }) {
+  const semanticTargets = new Map();
+  return {
+    assetManager: assets,
+    inputRouter: input,
+    registerSemanticTarget(target) {
+      semanticTargets.set(target.semanticId, target);
+    },
+    rowPool: null,
+    selectedTabId: 'regular',
+    theme: DEFAULT_PIXI_THEME_SNAPSHOT,
+    unregisterSemanticTarget(semanticId) {
+      return semanticTargets.delete(semanticId);
+    },
   };
 }
 

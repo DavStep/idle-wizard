@@ -16,7 +16,8 @@ import {
   createPixiNineSliceSkin,
   getPixiNineSliceSkin,
 } from '../../rendering/pixi/nineSlice/PixiNineSliceSkinRegistry.js';
-import { PixiButton } from '../../rendering/pixi/primitives/PixiButton.js';
+import { PixiBaseButton } from '../../rendering/pixi/primitives/PixiBaseButton.js';
+import { PixiTextButton } from '../../rendering/pixi/primitives/PixiTextButton.js';
 import {
   getPixiButtonAssetId,
   getPixiButtonSkin,
@@ -25,7 +26,7 @@ import {
 } from '../../rendering/pixi/primitives/PixiButtonStyle.js';
 import { PixiCostButton } from '../../rendering/pixi/primitives/PixiCostButton.js';
 import { PixiInfoButton } from '../../rendering/pixi/primitives/PixiInfoButton.js';
-import { PixiPopupTabButton } from '../../rendering/pixi/primitives/PixiPopupTabButton.js';
+import { PixiTabButton } from '../../rendering/pixi/primitives/PixiTabButton.js';
 import { PixiApplicationManager } from '../../rendering/pixi/runtime/PixiApplicationManager.js';
 import {
   PIXI_ROOT_RUN_ASSETS,
@@ -207,7 +208,7 @@ export function createUiEditorPixiButtonThumbnail(definition) {
 
 export function createUiEditorPixiButtonPreview(definition) {
   const shell = createUiEditorPixiSurfaceShell({
-    component: 'IdleWizardButtonWidget',
+    component: resolveEditorWidgetName(definition),
     previewLabel: 'Widget preview',
     viewport: UI_EDITOR_PIXI_VIEWPORTS.GAME_SCREEN,
   });
@@ -237,6 +238,7 @@ export function createUiEditorPixiButtonPreview(definition) {
     );
     feedbackTracker.reset();
     host.dataset.editorButtonWidget = nextDefinition.id;
+    shell.setComponent(resolveEditorWidgetName(nextDefinition));
     host.setAttribute('aria-label', `${nextDefinition.label} preview`);
     canvas.dataset.uiEditorComponent = nextDefinition.label;
     canvas.setAttribute('aria-label', nextDefinition.label);
@@ -563,14 +565,16 @@ function createFeedbackTracker(element) {
 
 function createButtonEditorState(definition) {
   const preview = definition?.preview ?? definition ?? {};
-  const type = preview.type ?? 'button';
+  const type = preview.type === 'button'
+    ? preview.variant === 'tab' ? 'tab' : 'text'
+    : preview.type ?? 'text';
   const state = {
     enabled: preview.enabled === false ? 'disabled' : 'enabled',
     text: String(preview.text ?? ''),
     type,
   };
 
-  if (type === 'button') {
+  if (['base', 'text', 'tab'].includes(type)) {
     state.color = preview.color ?? (
       PIXI_BUTTON_COLORS.includes(preview.variant)
         ? preview.variant
@@ -611,9 +615,13 @@ function applyButtonEditorState(definition, state) {
     enabled: state.enabled !== 'disabled',
   };
 
-  if (state.type === 'button') {
-    nextPreview.text = state.text;
-    nextPreview.selected = state.selected === 'selected';
+  if (['base', 'text', 'tab'].includes(state.type)) {
+    if (state.type !== 'base') {
+      nextPreview.text = state.text;
+    }
+    if (state.type === 'tab') {
+      nextPreview.selected = state.selected === 'selected';
+    }
     if (isConfigurableBaseButton(preview)) {
       nextPreview.color = state.color;
       nextPreview.sizeTier = Number(state.sizeTier);
@@ -648,8 +656,7 @@ export function createButtonInspectorFields(preview, state, scope = 'widget') {
   const fields = [];
 
   if (
-    scope === 'background'
-    && state.type === 'button'
+    scope === 'base'
     && isConfigurableBaseButton(preview)
   ) {
     fields.push(
@@ -676,7 +683,7 @@ export function createButtonInspectorFields(preview, state, scope = 'widget') {
       ),
     );
   }
-  if (scope === 'widget' && state.type === 'button' && preview.variant === 'tab') {
+  if (scope === 'widget' && state.type === 'tab') {
     fields.push(
       editorOptionField('selected', 'Tab state', state.selected, [
         { label: 'Resting', value: 'resting' },
@@ -684,7 +691,7 @@ export function createButtonInspectorFields(preview, state, scope = 'widget') {
       ]),
     );
   }
-  if (scope === 'background' && state.type === 'cost') {
+  if (scope === 'base' && state.type === 'cost') {
     fields.push(
       editorOptionField(
         'color',
@@ -726,7 +733,10 @@ export function createButtonInspectorFields(preview, state, scope = 'widget') {
         { label: 'Locked', value: 'locked' },
       ]),
     );
-  } else if (scope === 'widget') {
+  } else if (
+    (scope === 'base' && state.type !== 'cost')
+    || (scope === 'widget' && ['base', 'info', 'hud-settings', 'hud-avatar'].includes(state.type))
+  ) {
     fields.push(
       editorOptionField('enabled', 'Input state', state.enabled, [
         { label: 'Enabled', value: 'enabled' },
@@ -750,7 +760,7 @@ function editorOptionField(
 }
 
 function isConfigurableBaseButton(preview) {
-  return preview?.type === 'button'
+  return ['base', 'text'].includes(preview?.type)
     && PIXI_BUTTON_COLORS.includes(preview.color ?? preview.variant);
 }
 
@@ -872,9 +882,11 @@ function createPreviewControl({
     const width = previewDefinition.width ?? 100;
     const height =
       previewDefinition.height ?? PIXI_UI_GEOMETRY.roomControlHeight;
-    const ButtonClass = previewDefinition.variant === 'tab'
-      ? PixiPopupTabButton
-      : PixiButton;
+    const ButtonClass = previewDefinition.type === 'base'
+      ? PixiBaseButton
+      : previewDefinition.type === 'tab'
+        ? PixiTabButton
+        : PixiTextButton;
     const root = new ButtonClass({
       action: onActivate,
       assetManager,
@@ -882,8 +894,10 @@ function createPreviewControl({
       height,
       inputRouter,
       sizeTier: previewDefinition.sizeTier,
-      text: previewDefinition.text,
-      ...(previewDefinition.variant === 'tab'
+      ...(previewDefinition.type === 'base'
+        ? {}
+        : { text: previewDefinition.text }),
+      ...(previewDefinition.type === 'tab'
         ? {}
         : { variant: previewDefinition.variant }),
       width,
@@ -969,9 +983,13 @@ function createAtomicComponents({
     height: definition.minimumHeight ?? preview.height,
   };
 
+  if (previewDefinition.type === 'base') {
+    return [];
+  }
+
   if (previewDefinition.type === 'cost') {
     const components = [
-      createButtonBackgroundAtom({
+      createBaseButtonComponent({
         assetManager,
         asset: backgroundAsset,
         componentId,
@@ -1071,7 +1089,7 @@ function createAtomicComponents({
   }
 
   return [
-    createButtonBackgroundAtom({
+    createBaseButtonComponent({
       assetManager,
       asset: backgroundAsset,
       componentId,
@@ -1082,7 +1100,7 @@ function createAtomicComponents({
       previewDefinition,
       updateEditorState,
     }),
-    createTextAtom({
+    ...(root.textLabel ? [createTextAtom({
       componentId,
       displayObject: root.textLabel,
       id: 'label',
@@ -1094,7 +1112,7 @@ function createAtomicComponents({
       },
       label: 'Label',
       onTextUpdate: (value) => updateEditorState('text', value),
-    }),
+    })] : []),
   ];
 }
 
@@ -1112,11 +1130,11 @@ function createButtonRootInspectorComponent({
     getFields: () => createButtonInspectorFields(
       previewDefinition,
       getEditorState(),
-      'widget',
+      previewDefinition.type === 'base' ? 'base' : 'widget',
     ),
     id: `${definition.id}:widget`,
     isVisible: () => root.visible && root.renderable !== false,
-    label: 'IdleWizardButtonWidget',
+    label: resolveEditorWidgetName(definition),
     setVisible: (visible) => {
       root.visible = Boolean(visible);
       root.renderable = Boolean(visible);
@@ -1131,13 +1149,17 @@ function createButtonRootInspectorComponent({
         root.setEnabled(value !== 'disabled');
       } else if (fieldId === 'selected') {
         root.setSelected(value === 'selected');
+      } else if (fieldId === 'color') {
+        root.setColor(value);
+      } else if (fieldId === 'sizeTier') {
+        root.setSizeTier(value);
       }
       return false;
     },
   });
 }
 
-function createButtonBackgroundAtom({
+function createBaseButtonComponent({
   assetManager,
   asset,
   componentId,
@@ -1217,7 +1239,7 @@ function createButtonBackgroundAtom({
       ...createButtonInspectorFields(
         previewDefinition,
         getEditorState(),
-        'background',
+        'base',
       ),
       positionField('x', 'X', x),
       positionField('y', 'Y', y),
@@ -1234,14 +1256,15 @@ function createButtonBackgroundAtom({
         value: assetId,
       },
     ],
-    id: 'background',
+    id: 'base-button',
     isVisible: () => visible,
-    label: 'Background',
+    label: 'BaseButton (inherited)',
+    libraryEntryId: 'base-button',
     setVisible: (nextVisible) => {
       visible = Boolean(nextVisible);
       applyVisibility();
     },
-    type: 'image',
+    type: 'widget',
     update: (fieldId, value) => {
       if (fieldId === 'color') {
         updateEditorState(fieldId, value);
@@ -1271,6 +1294,10 @@ function createButtonBackgroundAtom({
         activeTarget = root.rootRunFrame;
         applyVisibility();
         return true;
+      } else if (fieldId === 'enabled') {
+        updateEditorState(fieldId, value);
+        root.setEnabled(value !== 'disabled');
+        return false;
       } else if (fieldId === 'x') {
         x = Number(value);
         applyPosition();
@@ -1402,6 +1429,7 @@ function createAtomicComponent({
   id,
   isVisible,
   label,
+  libraryEntryId = null,
   setVisible,
   type,
   update,
@@ -1414,10 +1442,34 @@ function createAtomicComponent({
     id: `${componentId}:${id}`,
     isVisible,
     label,
+    libraryEntryId,
     setVisible,
     type,
     update,
   });
+}
+
+function resolveEditorWidgetName(definition) {
+  const preview = definition?.preview ?? definition ?? {};
+  const type = preview.type === 'button'
+    ? preview.variant === 'tab' ? 'tab' : 'text'
+    : preview.type;
+  switch (type) {
+    case 'base':
+      return 'BaseButton';
+    case 'tab':
+      return 'TabButton';
+    case 'cost':
+      return 'CostButton';
+    case 'info':
+      return 'InfoButton';
+    case 'hud-settings':
+      return 'HudSettingsButton';
+    case 'hud-avatar':
+      return 'HudAvatarButton';
+    default:
+      return 'TextButton';
+  }
 }
 
 function positionField(id, label, value) {
@@ -1495,7 +1547,7 @@ export function resolveButtonBackgroundAtomAsset(assets, root) {
 }
 
 function resolveButtonEditorSkin(assetId, registeredAsset, root) {
-  if (root instanceof PixiPopupTabButton) {
+  if (root instanceof PixiTabButton) {
     const configuration = REGULAR_BUTTON_CONFIGURATION_BY_ASSET_ID.get(
       String(assetId ?? ''),
     );

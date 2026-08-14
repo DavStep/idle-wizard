@@ -78,6 +78,7 @@ experience_type: development-operations
 - `DavStep/idle-wizard` is public and GitHub Pages deploys at `https://davstep.github.io/idle-wizard/`.
 - Web deploy freshness uses `/deploy-version.json`; Vite emits it per build and the app polls it with `no-store`, then reloads on version change.
 - `/deploy-version.json` can include `releaseVersion`, but deploy refresh should compare only the generated deploy `version` build id.
+- Android OTA bundles need a separate production build with base `/`; the GitHub Pages build uses `/idle-wizard/` and its absolute asset URLs do not work inside Capacitor's local origin.
 - Deploy-triggered page refresh should only load compatible new code after migrations/sanitizers preserve player saves; refresh must not write defaults over hydrated user data.
 - Deploy refresh must call gameplay save-and-flush before `location.reload()` so open tabs persist current progress before swapping bundles.
 - Production web builds should set `VITE_SPACETIME_URI=https://maincloud.spacetimedb.com` and publish the module with `npm run stdb:publish:maincloud`.

@@ -1043,7 +1043,7 @@ export function createRewardVisualPresentation(event) {
   return {};
 }
 
-class RewardFlyoutWidget {
+export class RewardFlyoutWidget {
   constructor({ assets, parent }) {
     this.assets = assets;
     this.root = new Container();

@@ -116,6 +116,41 @@ describe('NativeTextEntryAdapter', () => {
     expect(handlers.onSubmit).toHaveBeenCalledTimes(1);
     expect(plugin.removeListener).toHaveBeenCalledTimes(6);
   });
+
+  it('applies the native editor final value before submitting', async () => {
+    const plugin = createPlugin();
+    const handlers = createHandlers();
+    const adapter = new NativeTextEntryAdapter({ plugin });
+    await adapter.open(
+      {
+        id: 'session-3',
+        value: 'old name',
+        selectionStart: 8,
+        selectionEnd: 8,
+        inputKind: 'username',
+        multiline: false,
+        maxLength: 24,
+        submitOnEnter: true,
+      },
+      handlers,
+    );
+
+    plugin.emit(NATIVE_EVENT_NAMES.SUBMIT, {
+      sessionId: 'session-3',
+      value: 'final composed name',
+      selectionStart: 19,
+      selectionEnd: 19,
+    });
+
+    expect(handlers.onValue).toHaveBeenCalledWith({
+      value: 'final composed name',
+      selectionStart: 19,
+      selectionEnd: 19,
+    });
+    expect(handlers.onValue.mock.invocationCallOrder[0]).toBeLessThan(
+      handlers.onSubmit.mock.invocationCallOrder[0],
+    );
+  });
 });
 
 function createHandlers() {

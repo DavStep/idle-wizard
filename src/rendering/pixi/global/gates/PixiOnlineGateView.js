@@ -1,5 +1,5 @@
 import {
-  PixiButton,
+  PixiTextButton,
   PixiModalSurface,
   PixiProgressBar,
   PixiTextLabel,
@@ -67,7 +67,7 @@ export class PixiOnlineGateView extends PixiModalSurface {
       width: ONLINE_GATE_CONTENT_WIDTH,
       label: 'onlineGate:progress',
     });
-    this.action = new PixiButton({
+    this.action = new PixiTextButton({
       assetManager: assets,
       inputRouter,
       text: '',

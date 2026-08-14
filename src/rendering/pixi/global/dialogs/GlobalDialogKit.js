@@ -7,7 +7,7 @@ import {
 } from 'pixi.js';
 
 import {
-  PixiButton,
+  PixiTextButton,
   PixiModalSurface,
   PixiTextLabel,
 } from '../../primitives/index.js';
@@ -313,7 +313,7 @@ class PlayerDialogCloseAdapter {
 
 /**
  * Border-label control used by close/current-style actions. It wraps the
- * shared PixiButton so press registration is installed once while its frame is
+ * shared PixiTextButton so press registration is installed once while its frame is
  * intentionally replaced by the dialog-surface backing.
  */
 export class BorderLabelButton {
@@ -328,7 +328,7 @@ export class BorderLabelButton {
     this.root.label = label;
     this.backing = new Graphics();
     this.backing.label = `${label}:backing`;
-    this.button = new PixiButton({
+    this.button = new PixiTextButton({
       assetManager,
       inputRouter,
       text,

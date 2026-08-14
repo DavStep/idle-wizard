@@ -13,6 +13,7 @@ const WIDGET_WIDTH = 314;
 
 export default defineUiEditorIntegration({
   apiVersion: 1,
+  childWidgetIds: ['compound.world-event-donation-option-row'],
   createThumbnail: createWorldEventQuestRowThumbnail,
   folderPath: ['Workshop'],
   id: WIDGET_ID,

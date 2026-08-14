@@ -1,13 +1,13 @@
 import { Sprite, Texture } from 'pixi.js';
 
 import { PIXI_ROOT_RUN_ASSETS } from '../theme/PixiThemeTokens.js';
-import { PixiButton } from './PixiButton.js';
+import { PixiBaseButton } from './PixiBaseButton.js';
 
 /**
  * Image-only information control composed on the shared button press, input,
  * sound, haptic, disabled, and release-animation contract.
  */
-export class PixiInfoButton extends PixiButton {
+export class PixiInfoButton extends PixiBaseButton {
   constructor({
     assetManager = null,
     inputRouter = null,
@@ -22,7 +22,6 @@ export class PixiInfoButton extends PixiButton {
       height: size,
       inputRouter,
       label,
-      text: '',
       variant: 'inline',
       width: size,
     });
@@ -34,8 +33,6 @@ export class PixiInfoButton extends PixiButton {
     });
     this.icon.anchor.set(0.5);
     this.visual.addChild(this.icon);
-    this.textLabel.visible = false;
-    this.textLabel.renderable = false;
     this.handleDirectTap = (payload) => this.activate(payload);
     this.handleDirectDown = () => this.setPressed(true);
     this.handleDirectUp = () => this.setPressed(false, { confirmed: true });

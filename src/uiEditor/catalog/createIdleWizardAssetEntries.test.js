@@ -479,13 +479,13 @@ describe('createIdleWizardAssetEntries', () => {
         === 'source:assets/ui/regular-button/yellow-button-50.9.png',
     );
     const usage = yellowButton.usages.find(
-      ({ widgetId }) => widgetId === 'base-button',
+      ({ widgetId }) => widgetId === 'text-button',
     );
 
     expect(usage).toEqual(
       expect.objectContaining({
         createThumbnail: expect.any(Function),
-        label: 'Base / Text Button',
+        label: 'Text Button',
         locations: expect.arrayContaining([
           {
             label: 'Garden Harvest All action',

@@ -8,7 +8,7 @@ import { describe, expect, it, vi } from 'vitest';
 
 import { PixiInputRouter } from '../../input/PixiInputRouter.js';
 import { PixiDialogFrame } from '../../primitives/PixiDialogFrame.js';
-import { PixiButton } from '../../primitives/PixiButton.js';
+import { PixiTextButton } from '../../primitives/PixiTextButton.js';
 import { PixiOwnedDialogSurface } from '../../primitives/PixiOwnedDialogSurface.js';
 import { DialogRegistry } from '../../retained/DialogRegistry.js';
 import { PageRegistry } from '../../retained/PageRegistry.js';
@@ -80,12 +80,24 @@ describe('BrewingPixiPage', () => {
       .getRegistrations('press')
       .find((candidate) => candidate.displayObject === slot.root);
 
-    expect(slot.control).toBeInstanceOf(PixiButton);
+    expect(slot.control).toBeInstanceOf(PixiTextButton);
     expect(registration).toMatchObject({
       excludePageSwipe: true,
       onPressChange: expect.any(Function),
     });
     expect(registration.haptic()).toBe('light');
+    expect(slot.icon.position).toMatchObject({
+      x: BREWING_HUD_GEOMETRY.ingredientSlotWidth / 2,
+      y: BREWING_HUD_GEOMETRY.ingredientIconCenterY,
+    });
+    expect(slot.icon.width).toBe(BREWING_HUD_GEOMETRY.ingredientIconSize);
+    expect(slot.icon.height).toBe(BREWING_HUD_GEOMETRY.ingredientIconSize);
+    expect(slot.name.position).toMatchObject({
+      x: BREWING_HUD_GEOMETRY.ingredientSlotWidth / 2,
+      y: BREWING_HUD_GEOMETRY.ingredientNameY,
+    });
+    expect(slot.name.style.fontSize).toBe(10);
+    expect(slot.name.style.lineHeight).toBe(11);
 
     registration.onPressChange(true, { confirmed: false });
     expect(slot.control.visual.scale.x).toBe(0.94);
@@ -117,7 +129,7 @@ describe('BrewingPixiPage', () => {
       .getRegistrations('press')
       .find((candidate) => candidate.displayObject === button.root);
 
-    expect(button.control).toBeInstanceOf(PixiButton);
+    expect(button.control).toBeInstanceOf(PixiTextButton);
     expect(button.text.text).toBe('Empty');
     expect(button.variant).toBe('icon');
     expect(button.control.rootRunFrame.visible).toBe(false);
@@ -493,7 +505,7 @@ describe('BrewingPixiPage', () => {
     );
     expect(dialog.divider.getLocalBounds().width).toBeCloseTo(2);
     expect(card.separator.getLocalBounds().height).toBeCloseTo(2);
-    expect(card.select).toBeInstanceOf(PixiButton);
+    expect(card.select).toBeInstanceOf(PixiTextButton);
     expect(card.select.variant).toBe('yellow');
     expect(card.select.textLabel.text).toBe('Research');
     expect(card.select.enabled).toBe(true);
@@ -985,6 +997,190 @@ describe('BrewingPixiPage', () => {
     harness.dispose();
   });
 
+  it('lands newly staged HUD ingredients with a bounded slot and orbit pulse', () => {
+    let now = 0;
+    const harness = createHarness({ timeSource: () => now });
+    const model = createBrewingViewModel();
+    const cauldron = model.brewing.cauldrons[0];
+    cauldron.selectedRecipe = {
+      key: 'sage-tonic',
+      label: 'sage tonic',
+      ingredients: [
+        { itemKey: 'sage', label: 'sage', quantity: 1 },
+      ],
+    };
+    cauldron.ingredients = [];
+    harness.page.bind(model);
+    harness.page.activate();
+
+    cauldron.ingredients = [
+      {
+        id: 'sage-slot',
+        key: 'sage',
+        label: 'sage',
+        quantity: 1,
+        removable: true,
+      },
+    ];
+    harness.page.bind(model);
+
+    const slot = harness.page.hud.ingredientSlots[0];
+    expect(slot.arrivalMotionStart).toBe(0);
+    expect(harness.page.hud.ingredientOrbitMotion).toMatchObject({
+      index: 0,
+      startedAt: 0,
+    });
+    expect(slot.contentMotion.scale.x).toBeLessThan(1);
+
+    now = 90;
+    harness.page.tick(now);
+    expect(slot.contentMotion.scale.x).toBeGreaterThan(0.78);
+    expect(slot.contentMotion.scale.x).toBeLessThan(1);
+    expect(
+      harness.page.hud.recipeOrbitFeedback.getLocalBounds().width,
+    ).toBeGreaterThan(0);
+
+    now = 280;
+    harness.page.tick(now);
+    expect(slot.arrivalMotionStart).toBeNull();
+    expect(slot.contentMotion.scale.x).toBe(1);
+    expect(slot.contentMotion.rotation).toBeCloseTo(0);
+    expect(harness.page.hud.ingredientOrbitMotion).toBeNull();
+
+    harness.page.destroy();
+    harness.dispose();
+  });
+
+  it('keeps prepared and active liquid stateful without moving the cauldron at rest', () => {
+    let now = 0;
+    const harness = createHarness({ timeSource: () => now });
+    const model = createBrewingViewModel();
+    const cauldron = model.brewing.cauldrons[0];
+    cauldron.selectedRecipe = {
+      key: 'sage-tonic',
+      label: 'sage tonic',
+      ingredients: [{ itemKey: 'sage', label: 'sage', quantity: 1 }],
+    };
+    harness.page.bind(model);
+    harness.page.activate();
+    const restArt = {
+      x: harness.page.hud.cauldronArt.x,
+      y: harness.page.hud.cauldronArt.y,
+    };
+
+    now = 360;
+    harness.page.tick(now);
+    expect(harness.page.hud.cauldronMotionMode).toBe('prepared');
+    expect(harness.page.hud.cauldronArt.position).toMatchObject(restArt);
+    expect(
+      harness.page.hud.cauldronStateFx.getLocalBounds().width,
+    ).toBeGreaterThan(0);
+
+    cauldron.activeBrew = {
+      key: 'sage-tonic',
+      label: 'sage tonic',
+      phase: 'brewing',
+      durationMs: 10_000,
+      endTimeMs: 11_000,
+    };
+    now = 1_000;
+    model.brewing.now = now;
+    harness.page.bind(model);
+    now = 1_240;
+    harness.page.tick(now);
+    expect(harness.page.hud.cauldronMotionMode).toBe('brewing');
+    expect(
+      harness.page.hud.cauldronStateFx.getLocalBounds().height,
+    ).toBeGreaterThan(0);
+    expect(harness.page.hud.cauldronLiquid.y).not.toBe(
+      harness.page.hud.cauldronChangeRestState.liquid.y,
+    );
+
+    vi.stubGlobal(
+      'matchMedia',
+      vi.fn(() => ({ matches: true })),
+    );
+    harness.page.tick(1_300);
+    expect(harness.page.hud.cauldronStateFx.getLocalBounds().width).toBe(0);
+    expect(harness.page.hud.cauldronLiquid.position).toMatchObject({
+      x: harness.page.hud.cauldronChangeRestState.liquid.x,
+      y: harness.page.hud.cauldronChangeRestState.liquid.y,
+    });
+    vi.unstubAllGlobals();
+
+    harness.page.destroy();
+    harness.dispose();
+  });
+
+  it('punctuates brew completion and lifts collected potion art from the liquid', () => {
+    let now = 0;
+    const harness = createHarness({ timeSource: () => now });
+    const model = createBrewingViewModel();
+    const cauldron = model.brewing.cauldrons[0];
+    cauldron.selectedRecipe = {
+      key: 'sage-tonic',
+      label: 'sage tonic',
+      ingredients: [{ itemKey: 'sage', label: 'sage', quantity: 1 }],
+    };
+    cauldron.activeBrew = {
+      key: 'sage-tonic',
+      label: 'sage tonic',
+      phase: 'brewing',
+      durationMs: 10_000,
+      endTimeMs: 10_000,
+    };
+    const collectBrew = vi.fn(() => ({ ok: true }));
+    model.actions.collectBrew = collectBrew;
+    harness.page.bind(model);
+    harness.page.activate();
+
+    now = 500;
+    model.brewing.now = now;
+    cauldron.activeBrew = {
+      ...cauldron.activeBrew,
+      phase: 'ready',
+      canCollect: true,
+      remainingMs: 0,
+    };
+    harness.page.bind(model);
+    expect(harness.page.hud.completionMotionStart).toBe(500);
+    expect(harness.page.hud.primaryActionMotionStart).toBe(500);
+
+    now = 620;
+    harness.page.tick(now);
+    expect(harness.page.hud.cauldronArt.scale.y).toBeLessThan(
+      harness.page.hud.cauldronChangeRestState.art.scaleY,
+    );
+    expect(
+      harness.page.hud.cauldronStateFx.getLocalBounds().width,
+    ).toBeGreaterThan(0);
+
+    harness.page.hud.potionIcon.texture = Texture.WHITE;
+    harness.page.hud.potionIcon.visible = true;
+    harness.page.hud.potionIcon.renderable = true;
+    expect(harness.page.hud.activatePrimaryAction()).toEqual({ ok: true });
+    expect(collectBrew).toHaveBeenCalledWith(0);
+    const collectMotion = [...harness.page.activeGhostMotions].find(
+      (motion) => motion.kind === 'collect',
+    );
+    expect(collectMotion).toBeDefined();
+    expect(collectMotion.target.y).toBeLessThan(collectMotion.start.y);
+
+    now = 1_100;
+    harness.page.tick(now);
+    expect(harness.page.activeGhostMotions.size).toBe(0);
+    expect(harness.page.hud.completionMotionStart).toBeNull();
+    expect(harness.page.hud.cauldronArt.scale.x).toBe(
+      harness.page.hud.cauldronChangeRestState.art.scaleX,
+    );
+    expect(harness.page.hud.cauldronArt.scale.y).toBe(
+      harness.page.hud.cauldronChangeRestState.art.scaleY,
+    );
+
+    harness.page.destroy();
+    harness.dispose();
+  });
+
   it('starts the brew without ingredient travel when reduced motion is requested', () => {
     const harness = createHarness();
     const brew = vi.fn(() => ({ ok: true }));
@@ -1004,6 +1200,23 @@ describe('BrewingPixiPage', () => {
     expect(harness.page.motionGhostPool.getStats().active).toBe(0);
 
     vi.unstubAllGlobals();
+    harness.page.destroy();
+    harness.dispose();
+  });
+
+  it('starts the brew when the HUD has no page motion owner', () => {
+    const harness = createHarness();
+    const brew = vi.fn(() => ({ ok: true }));
+    const model = createBrewingViewModel();
+    model.actions.performCauldronAction = brew;
+    harness.page.bind(model);
+    harness.page.hud.page = null;
+
+    expect(harness.page.hud.activatePrimaryAction()).toEqual({ ok: true });
+    expect(brew).toHaveBeenCalledOnce();
+    expect(harness.page.activeGhostMotions.size).toBe(0);
+
+    harness.page.hud.page = harness.page;
     harness.page.destroy();
     harness.dispose();
   });
@@ -1581,7 +1794,17 @@ describe('BrewingPixiPage', () => {
 
   it('maps manual and automatic brewing phases to one primary action', () => {
     const states = [
-      [{ primaryAction: { enabled: true } }, 'brew', 'Brew', 'green', true],
+      [{}, 'recipes', 'Choose Recipe', 'yellow', true],
+      [
+        {
+          selectedRecipe: { key: 'mana-tonic' },
+          primaryAction: { enabled: true },
+        },
+        'brew',
+        'Brew',
+        'green',
+        true,
+      ],
       [
         { activeBrew: { phase: 'brewing' } },
         'cancel',
@@ -1642,6 +1865,32 @@ describe('BrewingPixiPage', () => {
         enabled,
       });
     }
+  });
+
+  it('opens Recipes from the primary action when the cauldron is empty', () => {
+    const harness = createHarness();
+    const model = createBrewingViewModel();
+    const cauldron = model.brewing.cauldrons[0];
+    cauldron.ingredients = [];
+    cauldron.selectedRecipe = null;
+    const openRecipes = vi.fn(() => true);
+    const performCauldronAction = vi.fn(() => true);
+    model.actions.openRecipes = openRecipes;
+    model.actions.performCauldronAction = performCauldronAction;
+
+    harness.page.bind(model);
+
+    expect(harness.page.hud.recipes.text.text).toBe('Recipes');
+    expect(harness.page.hud.recipes.root.visible).toBe(true);
+    expect(harness.page.hud.brew.text.text).toBe('Choose Recipe');
+    expect(harness.page.hud.brew.variant).toBe('yellow');
+    expect(harness.page.hud.brew.enabled).toBe(true);
+    expect(harness.page.hud.brew.handleTap()).toBe(true);
+    expect(openRecipes).toHaveBeenCalledWith(0);
+    expect(performCauldronAction).not.toHaveBeenCalled();
+
+    harness.page.destroy();
+    harness.dispose();
   });
 
   it('routes the single primary button through cancel, bottle, and collect actions', () => {

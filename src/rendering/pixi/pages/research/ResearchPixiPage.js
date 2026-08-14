@@ -920,7 +920,7 @@ export class ResearchPixiPage extends BaseRetainedPixiPage {
   }
 }
 
-class ResearchLockTooltip {
+export class ResearchLockTooltip {
   constructor({ assetManager }) {
     this.width = 180;
     this.height = 0;
@@ -971,7 +971,7 @@ class ResearchLockTooltip {
   }
 }
 
-class ResearchBoxWidget {
+export class ResearchBoxWidget {
   constructor({ page }) {
     this.page = page;
     this.theme = page.theme;

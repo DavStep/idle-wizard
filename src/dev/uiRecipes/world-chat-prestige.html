@@ -33,8 +33,7 @@
       import '@fontsource/lilita-one/400.css';
       import { PixiAssetManager } from '/src/rendering/pixi/assets/PixiAssetManager.js';
       import { PixiInputRouter } from '/src/rendering/pixi/input/PixiInputRouter.js';
-      import { WorkshopPixiPage } from '/src/rendering/pixi/pages/workshop/WorkshopPixiPage.js';
-      import { DialogRegistry } from '/src/rendering/pixi/retained/DialogRegistry.js';
+      import { WorkshopDialogPixi } from '/src/rendering/pixi/pages/workshop/WorkshopDialogPixi.js';
       import { SemanticTargetRegistry } from '/src/rendering/pixi/retained/SemanticTargetRegistry.js';
       import { PixiApplicationManager } from '/src/rendering/pixi/runtime/PixiApplicationManager.js';
 
@@ -54,85 +53,76 @@
         canvas,
       });
 
-      const dialogRegistry = new DialogRegistry();
       const semanticTargets = new SemanticTargetRegistry();
-      const page = new WorkshopPixiPage({
+      const dialog = new WorkshopDialogPixi({
+        dialogId: 'workshop.worldChat',
         assetManager,
-        dialogLayer: applicationManager.layers.dialogsSource,
-        dialogRegistry,
         inputRouter,
+        onClose: () => false,
+        parent: applicationManager.layers.dialogsSource,
         semanticTargets,
       });
-      page.layout(applicationManager.projection);
-      page.bind({
-        workshop: {
-          dialogs: {
-            worldChat: {
-              title: 'World Chat',
-              composer: {
-                placeholder: 'Message',
-                maxLength: 160,
-                enabled: true,
-              },
-              rows: [
-                {
-                  id: 'preview-player',
-                  type: 'player',
-                  username: 'Mira',
-                  body: 'The moon garden is glowing tonight.',
-                  allianceTag: 'MOSS',
-                  allianceTagColor: 'green',
-                  character: 'mira',
-                  ageLabel: '3m ago',
-                },
-                {
-                  id: 'preview-system',
-                  type: 'system',
-                  username: 'System',
-                  body: 'The weekly world event has begun.',
-                  ageLabel: '1m ago',
-                },
-                {
-                  id: 'preview-prestige',
-                  type: 'system',
-                  username: 'System',
-                  body: 'Ada reached ⭐ 4, completing prestige level 40',
-                  systemPlayerUsername: 'Ada',
-                  systemPlayerDetail:
-                    'reached ⭐ 4, completing prestige level 40',
-                  bodyRuns: [
-                    {
-                      kind: 'text',
-                      text: 'reached ',
-                    },
-                    {
-                      kind: 'icon',
-                      assetId: PRESTIGE_ICON_ASSET,
-                      fallbackText: '⭐',
-                      label: 'Prestige star',
-                      size: 12,
-                    },
-                    {
-                      kind: 'text',
-                      text: ' 4, completing prestige level 40',
-                    },
-                  ],
-                  ageLabel: 'now',
-                },
-              ],
-              onSubmit: async () => ({ ok: false, reason: 'offline' }),
-            },
-          },
+      dialog.bind({
+        title: 'World Chat',
+        composer: {
+          placeholder: 'Message',
+          maxLength: 160,
+          enabled: true,
         },
+        rows: [
+          {
+            id: 'preview-player',
+            type: 'player',
+            username: 'Mira',
+            body: 'The moon garden is glowing tonight.',
+            allianceTag: 'MOSS',
+            allianceTagColor: 'green',
+            character: 'mira',
+            ageLabel: '3m ago',
+          },
+          {
+            id: 'preview-system',
+            type: 'system',
+            username: 'System',
+            body: 'The weekly world event has begun.',
+            ageLabel: '1m ago',
+          },
+          {
+            id: 'preview-prestige',
+            type: 'system',
+            username: 'System',
+            body: 'Ada reached ⭐ 4, completing prestige level 40',
+            systemPlayerUsername: 'Ada',
+            systemPlayerDetail:
+              'reached ⭐ 4, completing prestige level 40',
+            bodyRuns: [
+              {
+                kind: 'text',
+                text: 'reached ',
+              },
+              {
+                kind: 'icon',
+                assetId: PRESTIGE_ICON_ASSET,
+                fallbackText: '⭐',
+                label: 'Prestige star',
+                size: 12,
+              },
+              {
+                kind: 'text',
+                text: ' 4, completing prestige level 40',
+              },
+            ],
+            ageLabel: 'now',
+          },
+        ],
+        onSubmit: async () => ({ ok: false, reason: 'offline' }),
       });
-      page.activate();
-      applicationManager.layers.pageUi.addChild(page.root);
-      page.openDialog('worldChat');
+      dialog.layout(applicationManager.projection);
+      dialog.activate();
 
       window.__worldChatPrestigeRecipe = {
         applicationManager,
-        dialogRegistry,
-        page,
+        dialog,
         semanticTargets,
       };
     </script>

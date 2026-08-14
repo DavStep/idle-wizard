@@ -4,6 +4,8 @@ import { beforeEach, describe, expect, it, vi } from 'vitest';
 
 import { createHierarchyPreviewFixture } from './fixtures/createHierarchyPreviewFixture.js';
 import { createLibrarySelectionEntries } from './fixtures/createLibrarySelectionEntries.js';
+import { createUiEditorIntegrationEntries } from './sdk/createUiEditorIntegrationEntries.js';
+import { defineUiEditorIntegration } from './sdk/defineUiEditorIntegration.js';
 import { UiEditorFacade } from './UiEditorFacade.js';
 import { UI_EDITOR_WORKSPACE_STORAGE_KEY } from './managers/UiEditorWorkspaceManager.js';
 
@@ -110,6 +112,83 @@ describe('UiEditorFacade', () => {
         .get('settings-dialog')
       .getAttribute('aria-pressed'),
     ).toBe('false');
+  });
+
+  it('selects UI Lab widget roots and restores their controls from the hierarchy', async () => {
+    const integration = defineUiEditorIntegration({
+      apiVersion: 1,
+      id: 'sample.progress',
+      kind: 'widget',
+      label: 'Progress Bar',
+      sectionId: 'progress-bars',
+      scenarios: [
+        {
+          id: 'manual',
+          label: 'Manual value',
+          mount() {
+            const preview = document.createElement('div');
+            preview.dataset.uiEditorComponent = 'PixiProgressBar';
+            return {
+              controls: [
+                {
+                  getValue: () => 0.55,
+                  id: 'value',
+                  label: 'Value',
+                  max: 1,
+                  min: 0,
+                  setValue() {},
+                  step: 0.01,
+                  type: 'range',
+                },
+              ],
+              getAtomicComponents: () => [
+                {
+                  getFields: () => [],
+                  id: 'progress-fill',
+                  isVisible: () => true,
+                  label: 'Fill',
+                  setVisible() {},
+                  type: 'image',
+                  update() {},
+                },
+              ],
+              preview,
+            };
+          },
+        },
+      ],
+    });
+    const [entry] = createUiEditorIntegrationEntries([integration]);
+    const editor = new UiEditorFacade({
+      libraryEntries: [entry],
+      root: document.querySelector('#root'),
+    });
+
+    editor.mount();
+    editor.bottomPanelManager.selectEntry(entry.id);
+    await flushAsyncMount();
+
+    const selectedRoot = document.querySelector(
+      '.ui-editor-hierarchy__item[aria-level="1"][data-selected="true"]',
+    );
+    expect(
+      selectedRoot?.querySelector('.ui-editor-hierarchy__label').textContent,
+    ).toBe('PixiProgressBar');
+    expect(
+      document.querySelector('[data-lab-control="value"]'),
+    ).not.toBeNull();
+
+    document.querySelector(
+      '[data-editor-component-select^="atomic:"]',
+    ).click();
+    document.querySelector(
+      '.ui-editor-hierarchy__item[aria-level="1"] '
+        + '> .ui-editor-hierarchy__row',
+    ).click();
+
+    expect(
+      document.querySelector('[data-lab-control="value"]'),
+    ).not.toBeNull();
   });
 
   it('keeps a compatible preview surface mounted when its widget changes', () => {
@@ -318,6 +397,12 @@ describe('UiEditorFacade', () => {
     ).toBe('Workspace restored');
   });
 });
+
+async function flushAsyncMount() {
+  await Promise.resolve();
+  await Promise.resolve();
+  await new Promise((resolve) => globalThis.setTimeout(resolve, 0));
+}
 
 function createMemoryStorage() {
   const values = new Map();

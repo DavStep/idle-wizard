@@ -168,7 +168,10 @@ Use borders before shadows. Panels use `--editor-border-subtle` or
 - Hierarchy eye controls are native buttons with visible/hidden icons and
   `Hide …` / `Show …` accessible labels. They apply an editor-only visibility
   marker and never remove a component from the preview tree.
-- Every hierarchy row is pointer- and keyboard-selectable. Selection uses the
+- Every hierarchy row is pointer- and keyboard-selectable. Selecting a widget
+  library tile selects its hierarchy root and keeps the widget's registered
+  configuration visible; selecting an atomic child transfers selection and
+  inspection to that child. Selection uses the
   existing selected-row surface. DOM-backed selection outlines the matching
   preview component in blue; retained Pixi selection draws live world bounds,
   eight resize-reference handles, and the component pivot. Retained atomic selection opens native number,

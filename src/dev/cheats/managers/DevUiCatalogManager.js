@@ -1,5 +1,5 @@
 const WIDGET_DEFINITIONS = Object.freeze([
-  defineWidget('PixiButton', 'button', 'workshop'),
+  defineWidget('PixiTextButton', 'button', 'workshop'),
   defineWidget('PixiCostButton', 'button', 'research'),
   defineWidget('PixiDialogFrame', 'dialog', 'settings'),
   defineWidget('PixiFrame', 'container', 'workshop'),
@@ -17,15 +17,15 @@ const WIDGET_DEFINITIONS = Object.freeze([
 ]);
 
 const BUTTON_DEFINITIONS = Object.freeze([
-  defineButton('regular', 'PixiButton', 'workshop'),
-  defineButton('control', 'PixiButton', 'settings'),
-  defineButton('button', 'PixiButton', 'worldChat'),
-  defineButton('yellow', 'PixiButton', 'firstRunIntro'),
-  defineButton('brown-dark', 'PixiButton', 'bag'),
-  defineButton('brown-light', 'PixiButton', 'bag'),
-  defineButton('tab', 'PixiButton', 'bag'),
-  defineButton('inline', 'PixiButton', 'market'),
-  defineButton('border-label', 'PixiButton', 'workshop'),
+  defineButton('regular', 'PixiTextButton', 'workshop'),
+  defineButton('control', 'PixiTextButton', 'settings'),
+  defineButton('button', 'PixiTextButton', 'worldChat'),
+  defineButton('yellow', 'PixiTextButton', 'firstRunIntro'),
+  defineButton('brown-dark', 'PixiTextButton', 'bag'),
+  defineButton('brown-light', 'PixiTextButton', 'bag'),
+  defineButton('tab', 'PixiTextButton', 'bag'),
+  defineButton('inline', 'PixiTextButton', 'market'),
+  defineButton('border-label', 'PixiTextButton', 'workshop'),
   defineButton('cost', 'PixiCostButton', 'research'),
   defineButton('info', 'PixiInfoButton', 'summonInfo'),
 ]);
@@ -315,12 +315,19 @@ function createPreviewModel(dialogId) {
 }
 
 function createLedgerPreviewItem(itemKey, label, stock, buyers, coin) {
+  const sellCoin = Math.max(1, coin - 2);
   return {
     id: itemKey,
     label,
     detail: `stock ${stock} · buyers ${buyers}`,
     value: `${coin} coin`,
     valueResourceKey: 'coin',
+    stockLabel: String(stock),
+    buyersLabel: String(buyers),
+    buyPriceLabel: `${coin} coin`,
+    buyPriceResourceKey: 'coin',
+    sellPriceLabel: `${sellCoin} coin`,
+    sellPriceResourceKey: 'coin',
     itemKey,
     itemKind: 'seed',
     resourceKey: 'seed',

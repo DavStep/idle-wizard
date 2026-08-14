@@ -69,9 +69,12 @@ const STATS_SCROLLBAR_SHIFT_RIGHT = 4;
 const WORLD_CHAT_ROW_GAP = 3;
 const WORLD_CHAT_SCROLL_PADDING_TOP = 8;
 const WORLD_CHAT_CONTENT_INSET_X = 8;
-const WORLD_CHAT_CONTENT_WIDTH = 288;
-const WORLD_CHAT_DIALOG_DEFAULT_SHIFT_Y = -42;
 const WORLD_CHAT_DIALOG_MIN_TOP = 18;
+const WORLD_CHAT_COMPOSER_GAP = 6;
+const WORLD_CHAT_COMPOSER_HEIGHT = 34;
+const WORLD_CHAT_COMPOSER_FIELD_HEIGHT = 29;
+const WORLD_CHAT_COMPOSER_SEND_WIDTH = 74;
+const WORLD_CHAT_COMPOSER_SEND_HEIGHT = 29;
 const WORLD_CHAT_AVATAR_SIZE = 22;
 const WORLD_CHAT_TEXT_X = 25;
 const WORLD_CHAT_HEADER_HEIGHT = 12;
@@ -252,7 +255,9 @@ export class WorkshopDialogPixi {
           : 0;
     this.scrollViewportWidth =
       this.isWorldChatDialog
-        ? WORLD_CHAT_CONTENT_WIDTH
+        ? this.sourceWidth -
+          PIXI_ROOT_RUN_GEOMETRY.dialog.frameOutset * 2 -
+          WORLD_CHAT_CONTENT_INSET_X * 2
         : WORKSHOP_DIALOG_CONTENT_WIDTH +
           (this.isBagDialog
             ? RETAINED_DIALOG_SCROLL_GEOMETRY.scrollbarShiftRight
@@ -270,11 +275,15 @@ export class WorkshopDialogPixi {
       title: dialogId.split('.').at(-1),
       onClose: () => this.onClose?.(),
       theme,
+      openMotion: this.isWorldChatDialog ? 'top' : 'center',
       label: `${dialogId}-dialog`,
     });
     this.root = this.modal.root;
     this.backdrop = this.modal.backdrop;
     this.panel = this.modal.panel;
+    if (this.isWorldChatDialog) {
+      this.panel.setHeaderLayout('edge');
+    }
     this.copy = createText('', {
       ...RETAINED_TEXT_STYLES.body,
       wordWrapWidth: 264,
@@ -575,7 +584,7 @@ export class WorkshopDialogPixi {
         0,
         y,
         this.isWorldChatDialog
-          ? WORLD_CHAT_CONTENT_WIDTH
+          ? this.scroll.width
           : this.isWorldEventDialog &&
               this.viewModel.rowWidget === 'worldEventQuest'
             ? this.scroll.width
@@ -798,30 +807,41 @@ export class WorkshopDialogPixi {
       Number(viewportProjection?.sourceWidth) || PIXI_UI_GEOMETRY.sourceWidth;
     this.sourceHeight =
       Number(viewportProjection?.sourceHeight) || PIXI_UI_GEOMETRY.sourceHeight;
-    const width = 304;
+    const frameOutset = PIXI_ROOT_RUN_GEOMETRY.dialog.frameOutset;
+    const width = this.isWorldChatDialog
+      ? this.sourceWidth - frameOutset * 2
+      : 304;
+    if (this.isWorldChatDialog) {
+      this.scrollViewportWidth =
+        width - WORLD_CHAT_CONTENT_INSET_X * 2;
+    }
     const tabs = this.tabs.getWidgets();
     const tabsInShellFooter = tabs.length > 0;
     const composerHeight =
-      this.composerField?.visible === true ? 32 : 0;
+      this.composerField?.visible === true
+        ? WORLD_CHAT_COMPOSER_HEIGHT
+        : 0;
     const height = this.isWorldEventDialog
       ? Math.min(486, this.sourceHeight - 118)
       : this.isPersonalTasksDialog
         ? Math.min(470, this.sourceHeight - 118)
         : Math.min(382, this.sourceHeight - 80);
-    const panelX = (this.sourceWidth - width) / 2;
+    const panelX = this.isWorldChatDialog
+      ? frameOutset
+      : (this.sourceWidth - width) / 2;
     const centeredPanelY = (this.sourceHeight - height) / 2;
-    const defaultPanelY = this.isWorldChatDialog
-      ? centeredPanelY + WORLD_CHAT_DIALOG_DEFAULT_SHIFT_Y
-      : centeredPanelY;
     const keyboardShift = this.isWorldChatDialog
-      ? Math.min(0, Number(viewportProjection?.dialogShift) || 0)
+      ? Math.min(
+          0,
+          (Number(viewportProjection?.dialogShift) || 0) * 2,
+        )
       : 0;
     const panelY = this.isWorldChatDialog
       ? Math.max(
           WORLD_CHAT_DIALOG_MIN_TOP,
-          defaultPanelY + keyboardShift,
+          this.sourceHeight - height - frameOutset + keyboardShift,
         )
-      : defaultPanelY;
+      : centeredPanelY;
     this.modal.layout(viewportProjection);
     this.modal.setBounds(
       panelX,
@@ -948,9 +968,29 @@ export class WorkshopDialogPixi {
     );
 
     if (this.composerField) {
-      this.composerField.position.set(18, height - 40);
-      this.composerField.setSize(195, 27);
-      this.composerSubmit.setBounds(219, height - 40, 67, 27);
+      const composerLeft = this.panel.paperFrame.x;
+      const composerRight =
+        this.panel.paperFrame.x +
+        this.panel.paperFrame.frameWidth;
+      const sendX =
+        composerRight - WORLD_CHAT_COMPOSER_SEND_WIDTH;
+      const composerY = height - 40;
+      this.composerField.position.set(
+        composerLeft,
+        composerY,
+      );
+      this.composerField.setSize(
+        sendX -
+          WORLD_CHAT_COMPOSER_GAP -
+          composerLeft,
+        WORLD_CHAT_COMPOSER_FIELD_HEIGHT,
+      );
+      this.composerSubmit.setBounds(
+        sendX,
+        composerY,
+        WORLD_CHAT_COMPOSER_SEND_WIDTH,
+        WORLD_CHAT_COMPOSER_SEND_HEIGHT,
+      );
     }
   }
 
@@ -1293,7 +1333,7 @@ export class WorkshopDialogPixi {
 
 }
 
-class WorldEventDonationOptionRow {
+export class WorldEventDonationOptionRow {
   constructor({ dialog, index }) {
     this.dialog = dialog;
     this.root = new Container({
@@ -2945,7 +2985,7 @@ export class PotionDiscoveryRowPixi {
   }
 }
 
-class WorkshopDialogRow {
+export class WorkshopDialogRow {
   constructor({ dialog }) {
     this.dialog = dialog;
     this.root = new Container({ label: `${dialog.dialogId}-row` });

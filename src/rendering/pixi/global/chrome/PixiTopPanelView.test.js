@@ -147,6 +147,28 @@ describe('PixiTopPanelView', () => {
     );
     expect(view.levelRail.panel.tint).toBe(0x000000);
     expect(view.levelRail.panel.alpha).toBe(0.4);
+    expect(view.settingsControl.position.x).toBe(984);
+    expect(view.levelRail.position.x).toBe(203);
+    expect(view.levelRail.hitArea.width).toBe(760);
+    expect(view.levelRail.panel.width).toBe(754);
+    expect(view.levelRail.track.width).toBe(729);
+    expect(view.coin.position.x).toBe(209);
+    expect(view.contextCurrency.position.x).toBe(466);
+    expect(view.mana.position.x).toBe(723);
+    expect(view.coin.background.width).toBe(240);
+    expect(view.contextCurrency.background.width).toBe(240);
+    expect(view.mana.background.width).toBe(240);
+    expect(view.manaRate.position.x).toBe(843);
+
+    const avatarLeftInset = view.topHudRoot.position.x;
+    const settingsRightInset =
+      PIXI_UI_GEOMETRY.sourceWidth -
+      view.topHudRoot.position.x -
+      (view.settingsControl.position.x + 122) * view.topHudRoot.scale.x;
+    expect(settingsRightInset).toBeCloseTo(avatarLeftInset, 8);
+    expect(view.levelRail.position.x + view.levelRail.hitArea.width).toBe(
+      view.mana.position.x + view.mana.background.width,
+    );
     expect(view.levelRail.track).toBeInstanceOf(NineSliceSprite);
     expect(view.levelRail.track.tint).toBe(0x000000);
     expect(assets.getTexture).toHaveBeenCalledWith(
@@ -302,7 +324,7 @@ describe('PixiTopPanelView', () => {
     expect(view.levelRail.hitArea).toMatchObject({
       x: 0,
       y: 0,
-      width: 662,
+      width: 760,
       height: 93,
     });
     expect(semanticRegistry.get('top.level')?.displayObject).toBe(
@@ -354,7 +376,7 @@ describe('PixiTopPanelView', () => {
       x: 23,
       y: 21,
     });
-    expect(view.levelRail.fill.width).toBe(234.375);
+    expect(view.levelRail.fill.width).toBe(271.125);
     expect(view.levelRail.fill.height).toBe(51);
     expect(view.levelRail.fill.visible).toBe(true);
     expect(view.levelRail.fill.tint).toBe(0xffdf41);
@@ -365,15 +387,15 @@ describe('PixiTopPanelView', () => {
           Boolean(findPath(instruction, 'roundRect')),
       );
     expect(dividerRects.map(readPath)).toEqual([
-      [176.25, 30, 3, 33, 1.5],
-      [182.25, 30, 3, 33, 1.5],
-      [179.25, 30, 3, 33, 1.5],
-      [332.5, 30, 3, 33, 1.5],
-      [338.5, 30, 3, 33, 1.5],
-      [335.5, 30, 3, 33, 1.5],
-      [488.75, 30, 3, 33, 1.5],
-      [494.75, 30, 3, 33, 1.5],
-      [491.75, 30, 3, 33, 1.5],
+      [200.75, 30, 3, 33, 1.5],
+      [206.75, 30, 3, 33, 1.5],
+      [203.75, 30, 3, 33, 1.5],
+      [381.5, 30, 3, 33, 1.5],
+      [387.5, 30, 3, 33, 1.5],
+      [384.5, 30, 3, 33, 1.5],
+      [562.25, 30, 3, 33, 1.5],
+      [568.25, 30, 3, 33, 1.5],
+      [565.25, 30, 3, 33, 1.5],
     ]);
     expect(dividerRects.map(readColorAndAlpha)).toEqual([
       [0xffffff, 0.12],
@@ -410,12 +432,12 @@ describe('PixiTopPanelView', () => {
           Boolean(findPath(instruction, 'roundRect')),
       );
     expect(dividerRects.map(readPath)).toEqual([
-      [332.5, 30, 3, 33, 1.5],
-      [338.5, 30, 3, 33, 1.5],
-      [335.5, 30, 3, 33, 1.5],
-      [488.75, 30, 3, 33, 1.5],
-      [494.75, 30, 3, 33, 1.5],
-      [491.75, 30, 3, 33, 1.5],
+      [381.5, 30, 3, 33, 1.5],
+      [387.5, 30, 3, 33, 1.5],
+      [384.5, 30, 3, 33, 1.5],
+      [562.25, 30, 3, 33, 1.5],
+      [568.25, 30, 3, 33, 1.5],
+      [565.25, 30, 3, 33, 1.5],
     ]);
 
     view.destroy();

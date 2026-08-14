@@ -5,9 +5,11 @@ import { ResearchPixiPage } from './ResearchPixiPage.js';
 export default defineUiEditorIntegration({
   apiVersion: 1,
   childWidgetIds: [
+    'compound.research-station-box',
     'compound.research-row',
     'compound.research-station-title',
-    'base-button',
+    'compound.research-lock-tooltip',
+    'text-button',
   ],
   folderPath: ['Research'],
   id: 'feature.research-room',

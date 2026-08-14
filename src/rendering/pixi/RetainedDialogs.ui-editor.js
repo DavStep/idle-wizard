@@ -82,6 +82,108 @@ const STAR_LEVEL_WIDGET_ID = 'primitive.star-level-label';
 const WORLD_EVENT_QUEST_ROW_WIDGET_ID =
   'compound.world-event-quest-row';
 
+const DIALOG_CHILD_WIDGET_IDS = Object.freeze({
+  [GLOBAL_DIALOG_IDS.SETTINGS]: Object.freeze([
+    'tab-button',
+    'primitive.text-field',
+    'compound.device-preferences',
+    'compound.device-identity-footer',
+    'compound.settings-avatar-option',
+    'text-button',
+  ]),
+  [GLOBAL_DIALOG_IDS.FEEDBACK]: Object.freeze([
+    'tab-button',
+    'primitive.text-field',
+    'text-button',
+  ]),
+  [GLOBAL_DIALOG_IDS.LEVEL]: Object.freeze(['text-button']),
+  [GLOBAL_DIALOG_IDS.ALLIANCE]: Object.freeze(['text-button']),
+  [GLOBAL_DIALOG_IDS.ANNOUNCEMENT]: Object.freeze([
+    'compound.feature-unlock-announcement-item',
+  ]),
+  [GLOBAL_DIALOG_IDS.CONFIRMATION]: Object.freeze(['text-button']),
+  'workshop.summonInfo': Object.freeze(['cost-button']),
+  'workshop.bag': Object.freeze(['compound.workshop-dialog-row']),
+  'workshop.stats': Object.freeze(['compound.workshop-dialog-row']),
+  'workshop.inbox': Object.freeze(['compound.workshop-dialog-row']),
+  'workshop.alliance': Object.freeze([
+    'compound.alliance-directory-row',
+    'compound.alliance-member-row',
+  ]),
+  'workshop.leaderboard': Object.freeze(['compound.workshop-dialog-row']),
+  'workshop.discoveries': Object.freeze(['compound.potion-discovery-row']),
+  'workshop.personalTasks': Object.freeze([
+    'compound.workshop-dialog-row',
+    'primitive.progress-bar',
+    'text-button',
+  ]),
+  'workshop.worldEventDonate': Object.freeze([
+    'compound.world-event-donation-option-row',
+  ]),
+  'garden.cancel': Object.freeze(['text-button']),
+  'garden.swap': Object.freeze(['text-button']),
+  'brewing.recipes': Object.freeze([
+    'compound.brewing-recipe-card',
+    'compound.brewing-recipe-ingredient-row',
+    'text-button',
+  ]),
+  'brewing.recipe-choice': Object.freeze(['text-button']),
+  'brewing.automation-settings': Object.freeze([
+    'compound.brewing-automation-toggle',
+  ]),
+  'shop.stall': Object.freeze([
+    'compound.dialog-summary-row',
+    'primitive.settings-slider',
+    'text-button',
+  ]),
+  'shop.ledger': Object.freeze(['compound.market-ledger-row']),
+  'shop.request': Object.freeze([
+    'compound.dialog-field',
+    'compound.amount-selector',
+    'text-button',
+  ]),
+  'shop.listing': Object.freeze([
+    'compound.dialog-field',
+    'compound.amount-selector',
+    'text-button',
+  ]),
+  'shop.market': Object.freeze([
+    'compound.market-compact-row',
+    'tab-button',
+  ]),
+  'shop.tradeHistory': Object.freeze(['compound.market-compact-row']),
+  'shop.support': Object.freeze(['compound.dialog-summary-row']),
+  'guild.charter': Object.freeze([
+    'compound.guild-profile-field',
+    'primitive.guild-color-swatch',
+    'text-button',
+  ]),
+  'guild.settings': Object.freeze([
+    'compound.guild-profile-field',
+    'primitive.guild-color-swatch',
+    'text-button',
+  ]),
+  'guild.request': Object.freeze([
+    'compound.guild-quest-detail',
+    'compound.guild-quest-detail-line',
+  ]),
+  'guild.requestStack': Object.freeze([
+    'compound.guild-request-list-item',
+    'primitive.progress-bar',
+    'text-button',
+  ]),
+  'guild.adventurer': Object.freeze([
+    'compound.guild-detail-row',
+    'tab-button',
+    'text-button',
+  ]),
+  'guild.applicant': Object.freeze([
+    'compound.guild-detail-row',
+    'tab-button',
+    'text-button',
+  ]),
+});
+
 const DIALOG_LABELS = Object.freeze({
   'global.settings': 'Settings',
   'global.feedback': 'Feedback',
@@ -321,6 +423,12 @@ function normalizeUiEditorDialogFixture(dialogId, fixture) {
 function createWorldChatDialogFixture(variantIndex) {
   const alternate = variantIndex > 0;
   return {
+    composer: {
+      enabled: true,
+      maxLength: 160,
+      placeholder: 'Message',
+    },
+    onSubmit: async () => ({ ok: true }),
     rows: [
       {
         ageLabel: alternate ? '2m' : 'now',
@@ -348,10 +456,6 @@ function createWorldChatDialogFixture(variantIndex) {
         type: 'system',
         username: 'System',
       },
-    ],
-    tabs: [
-      { id: 'world', label: 'World', selected: true },
-      { id: 'alliance', label: 'Alliance' },
     ],
     title: 'World Chat',
   };
@@ -689,16 +793,34 @@ function createReusableDialogContentHierarchy(dialogId, dialog) {
   }
 
   if (dialogId === 'workshop.worldChat') {
-    return (dialog.rows?.getWidgets?.() ?? []).map((row, index) =>
+    return [
+      ...(dialog.rows?.getWidgets?.() ?? []).map((row, index) =>
+        createUiEditorPixiHierarchyComponent({
+          displayObjects: [row.root],
+          id: `${dialogId}:row:${row.model?.id ?? index}`,
+          label: 'ChatMessageRow:WorldChatMessageRow',
+          libraryEntryId: WORLD_CHAT_ROW_WIDGET_ID,
+          primary: row.root,
+          type: 'widget',
+        }),
+      ),
       createUiEditorPixiHierarchyComponent({
-        displayObjects: [row.root],
-        id: `${dialogId}:row:${row.model?.id ?? index}`,
-        label: 'ChatMessageRow:WorldChatMessageRow',
-        libraryEntryId: WORLD_CHAT_ROW_WIDGET_ID,
-        primary: row.root,
+        displayObjects: [dialog.composerField],
+        id: `${dialogId}:composer`,
+        label: 'Composer:PixiTextField',
+        libraryEntryId: 'primitive.text-field',
+        primary: dialog.composerField,
         type: 'widget',
       }),
-    );
+      createUiEditorPixiHierarchyComponent({
+        displayObjects: [dialog.composerSubmit?.root],
+        id: `${dialogId}:send`,
+        label: 'Send:PixiTextButton',
+        libraryEntryId: 'text-button',
+        primary: dialog.composerSubmit?.root,
+        type: 'widget',
+      }),
+    ];
   }
 
   if (dialogId === 'workshop.worldEvent') {
@@ -1029,14 +1151,23 @@ function resolveDialogChildWidgetIds(dialogId) {
     return ['compound.dialog-frame', INBOX_MAIL_WIDGET_ID];
   }
   if (dialogId === 'workshop.worldChat') {
-    return ['compound.dialog-frame', WORLD_CHAT_ROW_WIDGET_ID];
+    return [
+      'compound.dialog-frame',
+      WORLD_CHAT_ROW_WIDGET_ID,
+      'primitive.text-field',
+      'text-button',
+    ];
   }
   if (dialogId === 'workshop.worldEvent') {
     return ['compound.dialog-frame', WORLD_EVENT_QUEST_ROW_WIDGET_ID];
   }
-  return INVENTORY_CHOICE_DIALOG_HIERARCHY[dialogId]
-    ? ['compound.dialog-frame', 'compound.inventory-choice-row']
-    : ['compound.dialog-frame'];
+  if (INVENTORY_CHOICE_DIALOG_HIERARCHY[dialogId]) {
+    return ['compound.dialog-frame', 'compound.inventory-choice-row'];
+  }
+  return [
+    'compound.dialog-frame',
+    ...(DIALOG_CHILD_WIDGET_IDS[dialogId] ?? []),
+  ];
 }
 
 function scenario(id, label, fixture) {

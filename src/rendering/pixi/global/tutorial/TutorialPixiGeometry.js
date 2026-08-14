@@ -8,7 +8,7 @@ export const TUTORIAL_PIXI_GEOMETRY = Object.freeze({
   hintGap: 8,
   panelContentWidth: 190,
   panelMaxContentWidth: 254,
-  panelOuterWidth: 214,
+  panelOuterWidth: 222,
   panelDefaultContentHeight: 82,
   panelDefaultOuterHeight: 103,
   panelMinContentHeight: 34,

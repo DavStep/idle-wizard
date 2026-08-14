@@ -10,7 +10,7 @@ import {
   PIXI_ROOT_RUN_ASSETS,
   PIXI_ROOT_RUN_GEOMETRY,
 } from '../theme/PixiThemeTokens.js';
-import { PixiButton } from './PixiButton.js';
+import { PixiTextButton } from './PixiTextButton.js';
 import { PixiNineSliceFrame } from './PixiNineSliceFrame.js';
 import { RootRunSettingsTogglePixi } from './PixiSettingsControls.js';
 import { PixiTextLabel } from './PixiTextLabel.js';
@@ -281,7 +281,7 @@ export class DeviceIdentityFooter extends Container {
       anchor: { x: 1, y: 0 },
       label: `${label}:userId`,
     });
-    this.copyButton = new PixiButton({
+    this.copyButton = new PixiTextButton({
       assetManager,
       inputRouter,
       semanticRegistry,

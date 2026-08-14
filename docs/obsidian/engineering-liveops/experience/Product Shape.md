@@ -45,6 +45,7 @@ experience_type: product-shape
 - Page announcement level baselines must accept pre-level `0`; the first playable `0 -> 1` level-up should queue the level 1/market unlock notice, not treat level 1 as the initial baseline.
 - Feature unlocks should remain separate queued room announcements after the level-up card; the level-up reward row and Elara lesson copy do not replace the unlock card.
 - Feature unlock announcements should clone each destination icon and measure each icon's own source rect; one shared origin makes multi-unlock flyouts detach from the icons players just saw.
+- Newly unlocked Workshop side controls must stay non-renderable while the unlock announcement is open; start their entrance only after the announcement clears, including a post-announcement snap for reduced motion.
 - While-away report rows should keep the row label left and the reward/status right; attach item/resource icons to the right-side value instead of adding a separate leading icon slot.
 - Retained scrollable dialogs keep image-backed rows inside the shared `8px` horizontal content inset, use the shared `12px` top inset, and reserve the right paper gutter for the overflow-only scrollbar.
 - While-away reports cap paper content at `128px`, use the shared station scrollbar only on overflow, keep title and row labels in Title Case, and show only the numeric quantity beside each identifying icon.
@@ -198,6 +199,7 @@ experience_type: product-shape
 - Plantable Garden plot taps need a no-drag world pointerup path with click dedupe, same as ready harvest; WebView can drop the native row click after small drift.
 - Garden no-drag plot actions must suppress retargeted herb/seed label clicks too; after planting, the new herb label can appear under the release point and reopen choices.
 - Ready Garden plot boxes should harvest from the visible plot frame, not only the plant/action label; the plant icon is too small as the sole tap target.
+- Active Garden plot acceleration is release-only and locks the plot for the complete feedback sequence; reduced motion removes movement but must keep the same gameplay cooldown.
 - Ready Garden plot boxes should not show a visible `harvest` label; the ready animation and plot tap affordance are enough.
 - Ready Garden plot taps need a no-drag world pointerup path with click dedupe; WebView can turn small finger drift into pan and drop the native click.
 - Buyable Garden plot slots also need a no-drag world pointerup path with click dedupe; otherwise WebView drift can pan the world and suppress the native buy click.
@@ -363,5 +365,6 @@ experience_type: product-shape
 - Haptics are app-level device feedback: keep the preference in local storage and route pulses through `HapticsFacade`. Every enabled touch control gets a mild pulse on touch-down, no second pulse on quick release, and a mild second pulse only after a validated release following a `350ms` hold; actions and click sounds remain release-confirmed.
 - Holding a button must never activate or repeat its action before release; Workshop summon follows the same release-only rule as tabs, regular buttons, icon buttons, and dialog close controls.
 - Android tap haptics should prefer the `IdleWizardHaptics` constant pulse (`5ms`, `0.5` amplitude); Capacitor `Haptics.vibrate()` uses default amplitude and feels harsher.
+- Retained Brewing state motion must reapply cauldron, liquid, and highlight effects from captured rest transforms each tick; otherwise ambient brewing motion, carousel settling, completion impacts, and reduced-motion resets accumulate visual drift.
 - Retained room scroll height must derive from visible rendered rows, not maximum feature capacity; hidden future Garden plots otherwise create blank scroll travel and a misleading overflow rail.
 - Whole-row retained controls use `ClickableWidget` for their single press target and compact release feedback; do not gate that interaction contract behind feature-list constructor flags.

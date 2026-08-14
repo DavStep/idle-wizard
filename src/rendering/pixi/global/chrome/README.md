@@ -14,7 +14,9 @@ frame, icon, label, lock, and notification atoms.
 Coordinates are source UI units (`360 × 723.333…`) and preserve the current
 DOM chrome anchors: top panel `16/9/328`, content begins at `104`, and room
 tabs sit `23` units above the bottom edge. World chat stays directly above the
-tabs on every active room after its level gate unlocks.
+tabs on every active room after its level gate unlocks. Its two clipped preview
+rows retain player avatar, alliance tag, username, level, and body color roles;
+system rows omit the avatar and use the active theme's system sender color.
 
 The retained top-panel background uses the less-rounded sibling of the inactive
 room-tab nine-slice, flips it vertically, and spans source x `0…360` from

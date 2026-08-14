@@ -20,7 +20,7 @@ import {
   resolveDialogFooterTabLayout,
   setDialogPaperAboveFooterTabs,
 } from './PixiDialogFrame.js';
-import { PixiButton } from './PixiButton.js';
+import { PixiTextButton } from './PixiTextButton.js';
 
 installPixiPageTestCanvas();
 
@@ -140,6 +140,35 @@ describe('PixiDialogFrame', () => {
     );
   });
 
+  it('supports an edge header with the title at the left and close at the right', () => {
+    const { frame } = createHarness({
+      closeAction: vi.fn(),
+      coreWidth: 340,
+      headerLayout: 'edge',
+    });
+    const geometry = PIXI_ROOT_RUN_GEOMETRY.dialog;
+    const titleCenterY =
+      -geometry.frameOutset -
+      geometry.titleOverhang +
+      geometry.titleHeight / 2;
+
+    expect(frame.headerLayout).toBe('edge');
+    expect(frame.titleFrame.x).toBe(-geometry.frameOutset);
+    expect(frame.titleLabel.x).toBe(
+      frame.titleFrame.x + frame.titleFrame.frameWidth / 2,
+    );
+    expect(frame.closeControl.x + geometry.closeSize / 2).toBe(
+      frame.coreWidth + geometry.frameOutset,
+    );
+    expect(frame.closeControl.y).toBeCloseTo(titleCenterY);
+
+    frame.setCoreSize(320, 120);
+    expect(frame.titleFrame.x).toBe(-geometry.frameOutset);
+    expect(frame.closeControl.x + geometry.closeSize / 2).toBe(
+      frame.coreWidth + geometry.frameOutset,
+    );
+  });
+
   it('preserves the Expedition title geometry while applying the danger title variant', () => {
     const { frame } = createHarness({ titleVariant: 'danger' });
     const titleFrame = frame.titleFrame;
@@ -239,7 +268,7 @@ describe('PixiDialogFrame', () => {
 
     expect(inputRegistrations).toHaveLength(1);
     expect(semanticDefinitions).toHaveLength(1);
-    expect(frame.closeControl).toBeInstanceOf(PixiButton);
+    expect(frame.closeControl).toBeInstanceOf(PixiTextButton);
     expect(frame.closeControl.visible).toBe(false);
     expect(inputRegistrations[0].descriptor.enabled()).toBe(false);
 

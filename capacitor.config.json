@@ -9,5 +9,13 @@
   },
   "android": {
     "path": "android"
+  },
+  "plugins": {
+    "CapacitorUpdater": {
+      "appReadyTimeout": 30000,
+      "autoDeleteFailed": false,
+      "autoUpdate": "off",
+      "statsUrl": ""
+    }
   }
 }

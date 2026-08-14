@@ -6,7 +6,7 @@ import {
 } from 'pixi.js';
 
 import {
-  PixiButton,
+  PixiTextButton,
   PixiNineSliceFrame,
   PixiTextLabel,
 } from '../../primitives/index.js';
@@ -1646,7 +1646,7 @@ class FeatureUnlockAnnouncementItems {
   }
 }
 
-class FeatureUnlockAnnouncementItem {
+export class FeatureUnlockAnnouncementItem {
   constructor({
     assets,
     label,
@@ -1990,7 +1990,7 @@ export class PixiConfirmationDialog extends RetainedGlobalDialog {
       color: 'muted',
       label: `${dialogId}:status`,
     });
-    this.cancelButton = new PixiButton({
+    this.cancelButton = new PixiTextButton({
       assetManager: this.context.assets,
       inputRouter: this.context.inputRouter,
       semanticRegistry: this.context.semanticRegistry,
@@ -2001,7 +2001,7 @@ export class PixiConfirmationDialog extends RetainedGlobalDialog {
       action: () => this.cancel(),
       label: `${dialogId}:cancel`,
     });
-    this.confirmButton = new PixiButton({
+    this.confirmButton = new PixiTextButton({
       assetManager: this.context.assets,
       inputRouter: this.context.inputRouter,
       semanticRegistry: this.context.semanticRegistry,

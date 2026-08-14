@@ -13,7 +13,7 @@ import {
   normalizeTradeAllianceTagColor,
 } from '../../../../shared/tradeAllianceTagColors.js';
 import { BasePixiRetainedView } from '../../primitives/BasePixiRetainedView.js';
-import { PixiButton } from '../../primitives/PixiButton.js';
+import { PixiTextButton } from '../../primitives/PixiTextButton.js';
 import {
   PIXI_DIALOG_FOOTER_TABS_GEOMETRY,
   PixiDialogFrame,
@@ -203,7 +203,7 @@ export class GuildDialogPixi extends BasePixiRetainedView {
         }),
     );
     this.swatchLayer.addChild(...this.swatches.map((swatch) => swatch.root));
-    this.submitButton = new PixiButton({
+    this.submitButton = new PixiTextButton({
       assetManager: this.assetManager,
       inputRouter: this.inputRouter,
       semanticRegistry: this.semanticRegistry,
@@ -309,7 +309,7 @@ export class GuildDialogPixi extends BasePixiRetainedView {
       afterReconcile: (widgets) =>
         orderChildren(this.detailScroll.content, widgets),
     });
-    this.cardAction = new PixiButton({
+    this.cardAction = new PixiTextButton({
       assetManager: this.assetManager,
       inputRouter: this.inputRouter,
       semanticRegistry: this.semanticRegistry,
@@ -1020,7 +1020,7 @@ export class GuildRequestStackDialogPixi extends BasePixiRetainedView {
   }
 }
 
-class GuildProfileField {
+export class GuildProfileField {
   constructor({
     assetManager,
     inputRouter,
@@ -1075,7 +1075,7 @@ class GuildProfileField {
   }
 }
 
-class GuildColorSwatch {
+export class GuildColorSwatch {
   constructor({
     inputRouter,
     semanticRegistry,
@@ -1177,7 +1177,7 @@ class GuildPaper {
     });
     this.rowsLayer = new Container();
     this.rowsLayer.label = `${label}:rows`;
-    this.actionButton = new PixiButton({
+    this.actionButton = new PixiTextButton({
       assetManager,
       inputRouter,
       semanticRegistry,
@@ -1291,7 +1291,7 @@ class GuildPaper {
   }
 }
 
-class GuildDetailRow {
+export class GuildDetailRow {
   constructor({ paper = false, label }) {
     this.root = new Container();
     this.root.label = label;
@@ -1398,7 +1398,7 @@ class GuildDetailRow {
   }
 }
 
-class GuildRequestListItem {
+export class GuildRequestListItem {
   constructor({
     assetManager,
     inputRouter,
@@ -1545,7 +1545,7 @@ class GuildRequestListItem {
   }
 }
 
-class GuildQuestDetail {
+export class GuildQuestDetail {
   constructor({ assetManager, label }) {
     this.root = new Container();
     this.root.label = label;
@@ -1667,7 +1667,7 @@ class GuildQuestDetail {
   }
 }
 
-class GuildQuestDetailLine {
+export class GuildQuestDetailLine {
   constructor({ assetManager, icon, label }) {
     this.root = new Container();
     this.labelText = label;

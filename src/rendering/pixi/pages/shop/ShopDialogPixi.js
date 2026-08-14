@@ -18,7 +18,7 @@ import {
 } from '../../../../assets/items/seeds/seedIconFrames.js';
 import { BasePixiRetainedView } from '../../primitives/BasePixiRetainedView.js';
 import { ClickableWidget } from '../../primitives/ClickableWidget.js';
-import { PixiButton } from '../../primitives/PixiButton.js';
+import { PixiTextButton } from '../../primitives/PixiTextButton.js';
 import {
   createDialogPaperSection,
   PIXI_DIALOG_FOOTER_TABS_GEOMETRY,
@@ -52,7 +52,6 @@ import {
 } from '../../theme/PixiThemeTokens.js';
 import {
   RETAINED_DIALOG_LIST_GEOMETRY,
-  RETAINED_DIALOG_SCROLL_GEOMETRY,
   RetainedButton,
   RetainedScrollArea,
   resolveRetainedDialogListLayout,
@@ -76,6 +75,7 @@ const WIDE_DIALOG_WIDTH = 344;
 const LEDGER_DIALOG_WIDTH = DEFAULT_DIALOG_WIDTH;
 const DEFAULT_DIALOG_HEIGHT = 364;
 const LEDGER_DIALOG_HEIGHT = 382;
+const LEDGER_ROW_HEIGHT = 58;
 const LEDGER_SCROLL_VIEWPORT_TOP = 20;
 const LEDGER_SCROLL_VIEWPORT_BOTTOM_INSET = 10;
 const CONTENT_GAP = 6;
@@ -145,12 +145,11 @@ const DIALOG_CONFIG = Object.freeze({
     title: 'Market Ledger',
     width: LEDGER_DIALOG_WIDTH,
     height: LEDGER_DIALOG_HEIGHT,
-    rowHeight: 34,
+    rowHeight: LEDGER_ROW_HEIGHT,
+    listFrameWidth: RETAINED_DIALOG_LIST_GEOMETRY.rowFrameWidth,
     scrollViewportBottomInset:
       LEDGER_SCROLL_VIEWPORT_BOTTOM_INSET,
     scrollViewportTopInset: LEDGER_SCROLL_VIEWPORT_TOP,
-    scrollViewportWidthOutset:
-      RETAINED_DIALOG_SCROLL_GEOMETRY.scrollbarShiftRight,
     tabFontSize: PIXI_UI_GEOMETRY.borderLabelFontSize,
   }),
   [SHOP_DIALOG_IDS.REQUEST]: Object.freeze({
@@ -206,10 +205,11 @@ const DIALOG_CONFIG = Object.freeze({
     rowHeight: 36,
   }),
   [SHOP_DIALOG_IDS.SUPPORT]: Object.freeze({
-    title: 'support',
+    title: 'Support',
     width: DEFAULT_DIALOG_WIDTH,
     height: 126,
     rowHeight: 34,
+    centerMessage: true,
   }),
   [WORKSHOP_SUMMON_INFO_DIALOG_ID]: Object.freeze({
     title: 'Summoning Seeds',
@@ -349,6 +349,10 @@ export class ShopDialogPixi extends BasePixiRetainedView {
     this.tabLayer.label = `${dialogId}:tabs`;
     this.messageLabel = new PixiTextLabel({
       wordWrap: true,
+      align: config.centerMessage ? 'center' : 'left',
+      anchor: config.centerMessage
+        ? { x: 0.5, y: 0.5 }
+        : { x: 0, y: 0 },
       label: `${dialogId}:message`,
     });
     this.statusLabel = new PixiTextLabel({
@@ -418,6 +422,10 @@ export class ShopDialogPixi extends BasePixiRetainedView {
       semanticRegistry,
       counters,
       rowHeight: config.rowHeight,
+      rowVariant:
+        dialogId === SHOP_DIALOG_IDS.LEDGER
+          ? 'market-ledger'
+          : 'inventory-choice',
       useSettingsRows: usesSplitPaperSections,
       expandedControl:
         dialogId === WORKSHOP_SUMMON_INFO_DIALOG_ID
@@ -469,8 +477,10 @@ export class ShopDialogPixi extends BasePixiRetainedView {
           sizeTier: 30,
           variant: config.actionVariant ?? 'yellow',
         }),
-      reset: (button) =>
-        button.setModel({ label: '', enabled: false }),
+      reset: (button) => {
+        button.layoutWeight = 1;
+        button.setModel({ label: '', enabled: false });
+      },
       dispose: (button) => button.destroy(),
       maxSize: 4,
     });
@@ -480,6 +490,10 @@ export class ShopDialogPixi extends BasePixiRetainedView {
       counters,
       keyOf: (action, index) => action.id ?? index,
       bind: (button, action) => {
+        button.layoutWeight = Math.max(
+          0,
+          finiteOr(action.layoutWeight, 1),
+        );
         button.applyTheme(this.contentTheme ?? this.theme);
         button.variant =
           action.variant ??
@@ -840,13 +854,20 @@ export class ShopDialogPixi extends BasePixiRetainedView {
     }
 
     if (this.messageLabel.visible) {
-      this.messageLabel.position.set(0, y);
       this.messageLabel.setWrapWidth(bodyWidth);
-      y += Math.max(
-        PIXI_UI_GEOMETRY.rowMinHeight,
-        this.messageLabel.measuredHeight,
-      );
-      y += CONTENT_GAP;
+      if (this.config.centerMessage) {
+        this.messageLabel.position.set(
+          bodyWidth / 2,
+          usableBodyHeight / 2,
+        );
+      } else {
+        this.messageLabel.position.set(0, y);
+        y += Math.max(
+          PIXI_UI_GEOMETRY.rowMinHeight,
+          this.messageLabel.measuredHeight,
+        );
+        y += CONTENT_GAP;
+      }
     }
 
     if (this.rangeControl.visible) {
@@ -886,12 +907,28 @@ export class ShopDialogPixi extends BasePixiRetainedView {
         statusHeight -
         finiteOr(this.config.scrollViewportBottomInset, 0),
     );
+    const listFrameWidth = Number(this.config.listFrameWidth);
+    const listLayout = Number.isFinite(listFrameWidth)
+      ? resolveRetainedDialogListLayout({
+          bodyWidth,
+          paperRight:
+            bodyWidth +
+            resolveDialogPaperOutsets(this.panel.contentInsets).right,
+          rowFrameWidth: listFrameWidth,
+        })
+      : {
+          x: 0,
+          viewportWidth:
+            bodyWidth +
+            finiteOr(this.config.scrollViewportWidthOutset, 0),
+          rowWidth: bodyWidth,
+        };
     this.list.setBounds(
-      0,
+      listLayout.x,
       y,
-      bodyWidth + finiteOr(this.config.scrollViewportWidthOutset, 0),
+      listLayout.viewportWidth,
       listHeight,
-      bodyWidth,
+      listLayout.rowWidth,
     );
     this.list.root.visible = this.model.items.length > 0;
     this.list.root.renderable = this.list.root.visible;
@@ -1311,7 +1348,7 @@ export class ShopDialogPixi extends BasePixiRetainedView {
   }
 }
 
-class DialogSummaryRow {
+export class DialogSummaryRow {
   constructor({
     assetManager,
     inputRouter,
@@ -1575,7 +1612,7 @@ class DialogSummaryRow {
   }
 }
 
-class DialogField {
+export class DialogField {
   constructor({
     assetManager,
     inputRouter,
@@ -1642,7 +1679,7 @@ class DialogField {
   }
 }
 
-class AmountSelectorPixi {
+export class AmountSelectorPixi {
   constructor({
     assetManager,
     inputRouter,
@@ -1652,7 +1689,7 @@ class AmountSelectorPixi {
     this.root = new Container();
     this.root.label = label;
     this.model = null;
-    this.valueButton = new PixiButton({
+    this.valueButton = new PixiTextButton({
       assetManager,
       inputRouter,
       text: '1',
@@ -1675,7 +1712,7 @@ class AmountSelectorPixi {
     });
     this.stepButtons = AMOUNT_DELTAS.map(
       (delta) =>
-        new PixiButton({
+        new PixiTextButton({
           assetManager,
           inputRouter,
           text: delta > 0 ? `+${delta}` : String(delta),
@@ -1786,6 +1823,7 @@ class VirtualShopDialogList {
     semanticRegistry,
     counters,
     rowHeight,
+    rowVariant = 'inventory-choice',
     useSettingsRows = false,
     expandedControl = null,
     requestFrame = defaultRequestFrame,
@@ -1795,6 +1833,7 @@ class VirtualShopDialogList {
     label,
   }) {
     this.rowHeight = rowHeight;
+    this.rowVariant = rowVariant;
     this.useSettingsRows = useSettingsRows;
     this.expandedControl = expandedControl;
     this.requestFrame = requestFrame;
@@ -1815,6 +1854,7 @@ class VirtualShopDialogList {
     this.expansionFrame = null;
     this.expansionStartedAt = null;
     this.contentPaddingTop = PIXI_UI_GEOMETRY.dialogScrollPaddingTop;
+    this.theme = DEFAULT_PIXI_THEME_SNAPSHOT;
     this.scroll = new RetainedScrollArea({
       assetManager,
       inputRouter,
@@ -1827,17 +1867,28 @@ class VirtualShopDialogList {
       name: `${label} viewport row pool`,
       counters,
       create: () =>
-        new RootRunInventoryChoiceRowPixi({
-          assetManager,
-          inputRouter,
-          semanticRegistry,
-          useSettingsStyle: this.useSettingsRows,
-          requestFrame: this.requestFrame,
-          cancelFrame: this.cancelFrame,
-          timeSource: this.timeSource,
-          reducedMotion: this.reducedMotion,
-          label: `${label}:row`,
-        }),
+        this.rowVariant === 'market-ledger'
+          ? new MarketLedgerRowPixi({
+              assetManager,
+              inputRouter,
+              semanticRegistry,
+              requestFrame: this.requestFrame,
+              cancelFrame: this.cancelFrame,
+              timeSource: this.timeSource,
+              reducedMotion: this.reducedMotion,
+              label: `${label}:row`,
+            })
+          : new RootRunInventoryChoiceRowPixi({
+              assetManager,
+              inputRouter,
+              semanticRegistry,
+              useSettingsStyle: this.useSettingsRows,
+              requestFrame: this.requestFrame,
+              cancelFrame: this.cancelFrame,
+              timeSource: this.timeSource,
+              reducedMotion: this.reducedMotion,
+              label: `${label}:row`,
+            }),
       reset: (row) => row.reset(),
       dispose: (row) => row.destroy(),
       maxSize: 24,
@@ -1848,6 +1899,7 @@ class VirtualShopDialogList {
       counters,
       keyOf: (entry) => entry.item.__virtualKey,
       bind: (widget, entry) => {
+        widget.applyTheme(this.theme);
         widget.bind(entry.item.__virtualKey, entry.item);
         widget.setBounds(
           0,
@@ -2156,8 +2208,9 @@ class VirtualShopDialogList {
   }
 
   applyTheme(theme) {
+    this.theme = theme ?? DEFAULT_PIXI_THEME_SNAPSHOT;
     for (const row of this.rows.getWidgets()) {
-      row.applyTheme(theme);
+      row.applyTheme(this.theme);
     }
   }
 
@@ -2172,6 +2225,342 @@ class VirtualShopDialogList {
 }
 
 export { VirtualShopDialogList as RootRunInventoryChoiceList };
+
+/**
+ * Player-centered Market Ledger catalogue row.
+ *
+ * Trader stock is paired with the player's buy price, while buyer demand is
+ * paired with the player's sell payout. The whole row keeps the existing
+ * release-confirmed purchase action when a unit is actually buyable.
+ */
+export class MarketLedgerRowPixi extends ClickableWidget {
+  constructor({
+    assetManager,
+    inputRouter,
+    semanticRegistry,
+    requestFrame = defaultRequestFrame,
+    cancelFrame = defaultCancelFrame,
+    timeSource = defaultTimeSource,
+    reducedMotion = prefersReducedMotion,
+    label = 'marketLedgerRow',
+  } = {}) {
+    super({
+      enabled: false,
+      inputRouter,
+      label,
+      motionRuntime: {
+        cancelFrame,
+        now: timeSource,
+        prefersReducedMotion: reducedMotion,
+        requestFrame,
+      },
+      pressScale: SETTINGS_ROW_PRESS_SCALE,
+      releaseDurationMs: SETTINGS_ROW_RELEASE_DURATION_MS,
+      releasePeakScale: SETTINGS_ROW_RELEASE_PEAK_SCALE,
+    });
+    this.visual = new Container({ label: `${label}:visual` });
+    this.setClickableVisual(this.visual);
+    this.assetManager = assetManager;
+    this.background = new PixiNineSliceFrame({
+      texture:
+        assetManager?.getTexture?.(PIXI_ROOT_RUN_ASSETS.settingsRow) ??
+        Texture.EMPTY,
+      sourceInsets: PIXI_ROOT_RUN_GEOMETRY.settings.rowSourceInsets,
+      borderInsets: PIXI_ROOT_RUN_GEOMETRY.settings.rowBorderInsets,
+      label: `${label}:background`,
+    });
+    this.background.eventMode = 'none';
+    this.itemIcon = createItemSprite(`${label}:itemIcon`);
+    this.itemIconOverlay = createItemSprite(`${label}:itemIconOverlay`);
+    this.title = new PixiTextLabel({
+      fontSize: PIXI_UI_GEOMETRY.dialogTitleFontSize,
+      fontWeight: 'bold',
+      label: `${label}:title`,
+    });
+    this.stockKey = createLedgerFactKey(`${label}:stockKey`, 'Stock');
+    this.stockValue = createLedgerFactValue(`${label}:stockValue`);
+    this.buyKey = createLedgerFactKey(`${label}:buyKey`, 'Buy');
+    this.buyValue = createLedgerFactValue(`${label}:buyValue`);
+    this.buyResource = createLedgerPriceResource(
+      assetManager,
+      `${label}:buyResource`,
+    );
+    this.demandKey = createLedgerFactKey(
+      `${label}:demandKey`,
+      'Buyers',
+    );
+    this.demandValue = createLedgerFactValue(`${label}:demandValue`);
+    this.sellKey = createLedgerFactKey(`${label}:sellKey`, 'Sell');
+    this.sellValue = createLedgerFactValue(`${label}:sellValue`);
+    this.sellResource = createLedgerPriceResource(
+      assetManager,
+      `${label}:sellResource`,
+    );
+    this.availability = new PixiTextLabel({
+      fontSize: PIXI_UI_GEOMETRY.borderLabelFontSize,
+      color: 'disabled',
+      label: `${label}:availability`,
+    });
+    this.visual.addChild(
+      this.background,
+      this.itemIcon,
+      this.itemIconOverlay,
+      this.title,
+      this.stockKey,
+      this.stockValue,
+      this.buyKey,
+      this.buyValue,
+      this.buyResource,
+      this.demandKey,
+      this.demandValue,
+      this.sellKey,
+      this.sellValue,
+      this.sellResource,
+      this.availability,
+    );
+    this.root.addChild(this.visual);
+    this.semanticRegistry = semanticRegistry;
+    this.semanticId = null;
+    this.semanticDefinition = null;
+    this.theme = DEFAULT_PIXI_THEME_SNAPSHOT;
+    this.disabled = false;
+    this.width = 0;
+    this.height = 0;
+  }
+
+  bind(key, item = {}) {
+    this.unregisterSemantic();
+    this.key = key;
+    this.item = item;
+    this.root.visible = true;
+    this.root.renderable = true;
+    this.title.setText(item.label ?? item.text ?? '');
+    this.stockValue.setText(item.stockLabel ?? '—');
+    this.demandValue.setText(item.buyersLabel ?? item.demandLabel ?? '—');
+    this.disabled = item.disabled === true;
+    this.action = item.action ?? item.onActivate ?? null;
+    this.enabled = item.enabled !== false && !this.disabled;
+    this.availability
+      .setText(item.availabilityLabel ?? 'Not traded in this market');
+    this.availability.visible = this.disabled;
+    this.availability.renderable = this.disabled;
+    this.setFactsVisible(!this.disabled);
+    bindLedgerPrice({
+      disabled: this.disabled,
+      resource: this.buyResource,
+      resourceKey: item.buyPriceResourceKey,
+      text: this.buyValue,
+      value: item.buyPriceLabel ?? item.value ?? 'Unavailable',
+    });
+    bindLedgerPrice({
+      disabled: this.disabled,
+      resource: this.sellResource,
+      resourceKey: item.sellPriceResourceKey,
+      text: this.sellValue,
+      value: item.sellPriceLabel ?? 'Unavailable',
+    });
+    const iconFrames = resolveItemIconFrames(item);
+    bindItemSprite(
+      this.itemIcon,
+      this.assetManager,
+      iconFrames.base,
+      iconFrames.texture,
+    );
+    bindItemSprite(
+      this.itemIconOverlay,
+      this.assetManager,
+      iconFrames.overlay,
+    );
+    const itemAlpha = this.disabled ? 0.42 : 1;
+    this.itemIcon.alpha = itemAlpha;
+    this.itemIconOverlay.alpha = itemAlpha;
+    this.applyTheme(this.theme);
+    this.syncClickableInteraction();
+    this.semanticId = item.semanticId ?? null;
+    if (this.semanticId && this.semanticRegistry) {
+      this.semanticDefinition = this.semanticRegistry.register({
+        semanticId: this.semanticId,
+        tutorialId: item.tutorialId ?? null,
+        displayObject: this.root,
+        state: () => ({
+          enabled: this.enabled,
+          interactive: Boolean(this.action),
+          visible: this.root.visible && this.root.renderable,
+        }),
+        activate: (payload) => this.action?.(payload),
+      });
+    }
+    this.relayout();
+  }
+
+  setFactsVisible(visible) {
+    for (const displayObject of [
+      this.stockKey,
+      this.stockValue,
+      this.buyKey,
+      this.buyValue,
+      this.buyResource,
+      this.demandKey,
+      this.demandValue,
+      this.sellKey,
+      this.sellValue,
+      this.sellResource,
+    ]) {
+      displayObject.visible = visible;
+      displayObject.renderable = visible;
+    }
+  }
+
+  setBounds(x, y, width, height) {
+    this.root.position.set(x, y);
+    this.width = Math.max(0, width);
+    this.height = Math.max(0, height);
+    this.root.hitArea = new Rectangle(0, 0, this.width, this.height);
+    this.visual.pivot.set(this.width / 2, this.height / 2);
+    this.visual.position.set(this.width / 2, this.height / 2);
+    this.relayout();
+  }
+
+  relayout() {
+    if (!this.width || !this.height) {
+      return;
+    }
+    const rowGap = PIXI_ROOT_RUN_GEOMETRY.settings.rowGap;
+    const backgroundWidth = Math.max(0, this.width - rowGap);
+    const backgroundHeight = Math.max(0, this.height - rowGap);
+    const backgroundY = rowGap / 2;
+    const padding = 7;
+    const iconSize = 32;
+    const contentLeft = padding + iconSize + 7;
+    const contentRight = Math.max(contentLeft, backgroundWidth - padding);
+    const columnGap = 8;
+    const columnWidth = Math.max(
+      0,
+      (contentRight - contentLeft - columnGap) / 2,
+    );
+    const secondColumnX = contentLeft + columnWidth + columnGap;
+    const titleY = 4;
+    const firstFactY = 23;
+    const secondFactY = 39;
+
+    this.background.position.set(0, backgroundY);
+    this.background.setSize(
+      backgroundWidth,
+      backgroundHeight,
+      PIXI_ROOT_RUN_GEOMETRY.settings.rowBorderInsets,
+    );
+    setSeedPackCompositeBounds(
+      this.itemIcon,
+      this.itemIconOverlay,
+      padding + iconSize / 2,
+      backgroundY + backgroundHeight / 2,
+      iconSize,
+      0,
+    );
+    this.title.position.set(contentLeft, titleY);
+    this.title.setWrapWidth(Math.max(0, contentRight - contentLeft));
+    this.availability.position.set(contentLeft, 28);
+    this.availability.setWrapWidth(Math.max(0, contentRight - contentLeft));
+    layoutLedgerFact(
+      this.stockKey,
+      this.stockValue,
+      contentLeft,
+      firstFactY,
+      columnWidth,
+    );
+    layoutLedgerFact(
+      this.demandKey,
+      this.demandValue,
+      contentLeft,
+      secondFactY,
+      columnWidth,
+    );
+    layoutLedgerPrice(
+      this.buyKey,
+      this.buyValue,
+      this.buyResource,
+      secondColumnX,
+      firstFactY,
+      columnWidth,
+    );
+    layoutLedgerPrice(
+      this.sellKey,
+      this.sellValue,
+      this.sellResource,
+      secondColumnX,
+      secondFactY,
+      columnWidth,
+    );
+  }
+
+  applyTheme(theme) {
+    this.theme = theme ?? DEFAULT_PIXI_THEME_SNAPSHOT;
+    for (const label of [
+      this.title,
+      this.stockKey,
+      this.stockValue,
+      this.buyKey,
+      this.buyValue,
+      this.demandKey,
+      this.demandValue,
+      this.sellKey,
+      this.sellValue,
+      this.availability,
+    ]) {
+      label.applyTheme(this.theme);
+    }
+    this.buyResource.applyTheme(this.theme);
+    this.sellResource.applyTheme(this.theme);
+    const primaryColor = resolveThemeColor(
+      this.disabled ? 'disabled' : 'text',
+    );
+    const secondaryColor = resolveThemeColor(
+      this.disabled ? 'disabled' : 'muted',
+    );
+    this.title.setColor(primaryColor);
+    this.stockValue.setColor(primaryColor);
+    this.demandValue.setColor(primaryColor);
+    this.stockKey.setColor(secondaryColor);
+    this.buyKey.setColor(secondaryColor);
+    this.demandKey.setColor(secondaryColor);
+    this.sellKey.setColor(secondaryColor);
+    this.availability.setColor(secondaryColor);
+    this.background.alpha = this.disabled ? 0.58 : 1;
+  }
+
+  reset() {
+    this.unregisterSemantic();
+    this.resetClickableState();
+    this.item = null;
+    this.key = null;
+    this.disabled = false;
+    this.itemIcon.texture = Texture.EMPTY;
+    this.itemIcon.visible = false;
+    this.itemIconOverlay.texture = Texture.EMPTY;
+    this.itemIconOverlay.visible = false;
+    this.buyResource.visible = false;
+    this.buyResource.renderable = false;
+    this.sellResource.visible = false;
+    this.sellResource.renderable = false;
+    this.root.visible = false;
+    this.root.renderable = false;
+  }
+
+  unregisterSemantic() {
+    if (this.semanticDefinition && this.semanticId) {
+      this.semanticRegistry?.unregister?.(this.semanticId, {
+        displayObject: this.root,
+      });
+    }
+    this.semanticDefinition = null;
+    this.semanticId = null;
+  }
+
+  destroy() {
+    this.unregisterSemantic();
+    super.destroy({ children: true });
+  }
+}
 
 export class RootRunInventoryChoiceRowPixi extends ClickableWidget {
   constructor({
@@ -2591,7 +2980,7 @@ function normalizeDialogModel(dialogId, viewModel = {}) {
       ...model,
       message:
         model.message ??
-        'thank you for trying to support the project but the transactions are not yet available <3',
+        'Thank you for trying to support the project but the transactions are not yet available <3',
       items: [],
       fields: [],
       summaryRows: [],
@@ -2610,6 +2999,79 @@ function normalizeDialogModel(dialogId, viewModel = {}) {
     range: model.range ?? model.allocation ?? null,
     amount: model.amount ?? model.quantityControl ?? null,
   };
+}
+
+function createLedgerFactKey(label, text) {
+  return new PixiTextLabel({
+    text,
+    fontSize: PIXI_UI_GEOMETRY.tinyFontSize,
+    lineHeight: PIXI_UI_GEOMETRY.tinyLineHeight,
+    color: 'muted',
+    label,
+  });
+}
+
+function createLedgerFactValue(label) {
+  return new PixiTextLabel({
+    fontSize: PIXI_UI_GEOMETRY.borderLabelFontSize,
+    lineHeight: PIXI_UI_GEOMETRY.borderLabelLineHeight,
+    anchor: { x: 1, y: 0 },
+    label,
+  });
+}
+
+function createLedgerPriceResource(assetManager, label) {
+  const resource = new PixiResourceLabel({
+    assetManager,
+    resource: 'coin',
+    fontSize: PIXI_UI_GEOMETRY.borderLabelFontSize,
+    includeResourceName: false,
+    label,
+  });
+  resource.visible = false;
+  resource.renderable = false;
+  return resource;
+}
+
+function bindLedgerPrice({
+  disabled,
+  resource,
+  resourceKey,
+  text,
+  value,
+}) {
+  if (disabled) {
+    text.visible = false;
+    text.renderable = false;
+    resource.visible = false;
+    resource.renderable = false;
+    return;
+  }
+  const hasResource = Boolean(resourceKey);
+  text.setText(value);
+  text.setColor(hasResource ? 'text' : 'disabled');
+  text.visible = !hasResource;
+  text.renderable = !hasResource;
+  resource.visible = hasResource;
+  resource.renderable = hasResource;
+  if (hasResource) {
+    resource.bind(resource.label, {
+      resource: resourceKey,
+      amount: stripDialogResourceName(value, resourceKey),
+      includeResourceName: false,
+    });
+  }
+}
+
+function layoutLedgerFact(key, value, x, y, width) {
+  key.position.set(x, y);
+  value.position.set(x + width, y - 1);
+}
+
+function layoutLedgerPrice(key, text, resource, x, y, width) {
+  key.position.set(x, y);
+  text.position.set(x + width, y - 1);
+  resource.position.set(x + width - resource.measuredWidth, y - 1);
 }
 
 function stripDialogResourceName(value, resource) {
@@ -2818,12 +3280,17 @@ function layoutButtons(buttons, x, y, width, height, gap) {
   if (buttons.length === 0) {
     return;
   }
-  const buttonWidth = Math.max(
+  const availableWidth = Math.max(
     0,
-    (width - gap * (buttons.length - 1)) / buttons.length,
+    width - gap * (buttons.length - 1),
   );
+  const weights = buttons.map((button) =>
+    Math.max(0, finiteOr(button.layoutWeight, 1)),
+  );
+  const totalWeight = weights.reduce((sum, weight) => sum + weight, 0) || 1;
   let cursorX = x;
-  for (const button of buttons) {
+  buttons.forEach((button, index) => {
+    const buttonWidth = availableWidth * (weights[index] / totalWeight);
     if (button.root && typeof button.setBounds === 'function') {
       button.setBounds(cursorX, y, buttonWidth, height);
     } else {
@@ -2831,7 +3298,7 @@ function layoutButtons(buttons, x, y, width, height, gap) {
       button.setSize(buttonWidth, height);
     }
     cursorX += buttonWidth + gap;
-  }
+  });
 }
 
 function safeArray(value) {

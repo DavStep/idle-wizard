@@ -619,7 +619,7 @@ describe('ResearchBoxListManager', () => {
     expect(costContentRule).toContain('display: inline-flex;');
     expect(costContentRule).toContain('align-items: center;');
     expect(costContentRule).toContain('justify-content: center;');
-    expect(costContentRule).toContain('gap: calc(21.243px / 3);');
+    expect(costContentRule).toContain('gap: var(--style-icon-label-gap);');
     expect(researchCostButtonRule).toContain('width: 72px;');
     expect(researchCostButtonRule).toContain('height: 42px;');
     expect(researchCostButtonRule).toMatch(

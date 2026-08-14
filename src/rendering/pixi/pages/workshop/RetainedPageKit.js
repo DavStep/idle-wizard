@@ -23,8 +23,8 @@ import {
   createPixiPageBackgroundGradient,
   drawPixiPageBackground,
 } from '../../theme/PixiPageBackground.js';
-import { PixiButton } from '../../primitives/PixiButton.js';
-import { PixiPopupTabButton } from '../../primitives/PixiPopupTabButton.js';
+import { PixiTextButton } from '../../primitives/PixiTextButton.js';
+import { PixiTabButton } from '../../primitives/PixiTabButton.js';
 import {
   PixiProgressBar,
   PixiTimedProgressBar,
@@ -446,7 +446,7 @@ export class RetainedButton {
     this.width = 0;
     this.height = 0;
     this.variant = variant;
-    const ButtonClass = variant === 'tab' ? PixiPopupTabButton : PixiButton;
+    const ButtonClass = variant === 'tab' ? PixiTabButton : PixiTextButton;
     this.control = new ButtonClass({
       assetManager,
       inputRouter,
@@ -512,7 +512,7 @@ export class RetainedButton {
       .setSelected(this.selected)
       .setNotification(this.notification)
       .setAction(this.activation);
-    if (!(this.control instanceof PixiPopupTabButton)) {
+    if (!(this.control instanceof PixiTabButton)) {
       this.control.setVariant(normalizeRetainedButtonVariant(this.variant));
     }
     this.control.applyTheme(this.theme);

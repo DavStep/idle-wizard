@@ -12,8 +12,8 @@ import {
   getPixiButtonSkin,
 } from '../../rendering/pixi/primitives/PixiButtonStyle.js';
 import {
-  getPixiPopupTabButtonSkin,
-} from '../../rendering/pixi/primitives/PixiPopupTabButton.js';
+  getPixiTabButtonSkin,
+} from '../../rendering/pixi/primitives/PixiTabButton.js';
 
 const FIXED_BUTTON_FONT = 'Lilita One';
 const THEME_BUTTON_FONT = 'Theme font (Lilita One by default)';
@@ -21,6 +21,20 @@ const NO_PROPERTY_VALUE = 'None';
 
 const BUTTON_USAGES = Object.freeze({
   'base-button': usageSet(
+    [
+      'Text Button foundation',
+      'src/rendering/pixi/primitives/PixiTextButton.js',
+    ],
+    [
+      'Cost Button foundation',
+      'src/rendering/pixi/primitives/PixiCostButton.js',
+    ],
+    [
+      'Tab Button foundation',
+      'src/rendering/pixi/primitives/PixiTabButton.js',
+    ],
+  ),
+  'text-button': usageSet(
     [
       'Settings feedback category controls',
       'src/rendering/pixi/global/dialogs/PixiSettingsDialog.js',
@@ -75,7 +89,7 @@ const BUTTON_USAGES = Object.freeze({
     ],
     [
       'Unselected dialog footer tabs',
-      'src/rendering/pixi/primitives/PixiButton.js',
+      'src/rendering/pixi/primitives/PixiTextButton.js',
     ],
     [
       'Unselected shop item actions',
@@ -83,7 +97,7 @@ const BUTTON_USAGES = Object.freeze({
     ],
     [
       'Selected dialog footer tabs',
-      'src/rendering/pixi/primitives/PixiButton.js',
+      'src/rendering/pixi/primitives/PixiTextButton.js',
     ],
     [
       'Elara Help toggle',
@@ -91,7 +105,7 @@ const BUTTON_USAGES = Object.freeze({
     ],
     [
       'Unavailable state for every retained button color',
-      'src/rendering/pixi/primitives/PixiButton.js',
+      'src/rendering/pixi/primitives/PixiTextButton.js',
     ],
   ),
   'inline-button': usageSet(
@@ -108,7 +122,7 @@ const BUTTON_USAGES = Object.freeze({
     'Workshop request border actions',
     'src/rendering/pixi/pages/workshop/WorkshopPixiPage.js',
   ]),
-  'popup-tab-button': popupTabUsages(),
+  'tab-button': popupTabUsages(),
   'cost-button': usageSet(
     [
       'Brewing purchase action',
@@ -160,28 +174,34 @@ const BUTTON_USAGES = Object.freeze({
 });
 
 export const IDLE_WIZARD_BUTTON_WIDGETS = Object.freeze([
-  buttonWidget('base-button', 'Base / Text Button', {
+  buttonWidget('base-button', 'Base Button', {
     color: 'yellow',
     sizeTier: 50,
-    type: 'button',
+    type: 'base',
+    variant: 'regular',
+  }),
+  buttonWidget('text-button', 'Text Button', {
+    color: 'yellow',
+    sizeTier: 50,
+    type: 'text',
     text: 'Continue',
     variant: 'regular',
   }),
   buttonWidget('inline-button', 'Inline Button', {
-    type: 'button',
+    type: 'text',
     text: 'Open',
     variant: 'inline',
   }),
   buttonWidget('border-label-button', 'Border Label Button', {
     height: 24,
-    type: 'button',
+    type: 'text',
     text: 'Expand',
     variant: 'border-label',
     width: 78,
   }),
-  buttonWidget('popup-tab-button', 'Popup Tab Button', {
+  buttonWidget('tab-button', 'Tab Button', {
     height: 28,
-    type: 'button',
+    type: 'tab',
     text: 'Inventory',
     variant: 'tab',
     width: 92,
@@ -190,9 +210,12 @@ export const IDLE_WIZARD_BUTTON_WIDGETS = Object.freeze([
     amountLabel: '25 Coin',
     actionLabel: 'Unlock',
     color: 'green',
-    showLabel: false,
+    height: 52,
+    showLabel: true,
     sizeTier: 50,
+    stacked: true,
     type: 'cost',
+    width: 92,
   }),
   buttonWidget('info-button', 'Info Button', {
     size: 24,
@@ -271,18 +294,18 @@ function createButtonProperties(preview) {
 }
 
 function resolveButtonFont(preview) {
-  if (['info', 'hud-settings', 'hud-avatar'].includes(preview.type)) {
+  if (['base', 'info', 'hud-settings', 'hud-avatar'].includes(preview.type)) {
     return NO_PROPERTY_VALUE;
   }
 
   if (
-    preview.type === 'button' &&
+    preview.type === 'text' &&
     ['inline', 'border-label'].includes(preview.variant)
   ) {
     return THEME_BUTTON_FONT;
   }
 
-  if (preview.type === 'button' && preview.variant === 'regular' && !preview.color) {
+  if (preview.type === 'text' && preview.variant === 'regular' && !preview.color) {
     return THEME_BUTTON_FONT;
   }
 
@@ -314,6 +337,10 @@ function resolveButtonBackgroundAsset(preview) {
     return configuredButtonNineSlice('gray', preview);
   }
 
+  if (preview.type === 'tab') {
+    return configuredPopupTabNineSlice(preview);
+  }
+
   switch (preview.variant) {
     case 'regular':
       return configuredButtonNineSlice(preview.color ?? 'brown', preview);
@@ -333,8 +360,6 @@ function resolveButtonBackgroundAsset(preview) {
         preview.color ?? preview.variant,
         preview,
       );
-    case 'tab':
-      return configuredPopupTabNineSlice(preview);
     default:
       return null;
   }
@@ -407,7 +432,7 @@ function configuredButtonNineSlice(color, preview, { compactTab = false } = {}) 
 function configuredPopupTabNineSlice(preview) {
   const width = preview.width ?? 100;
   const height = preview.height ?? 28;
-  const skin = getPixiPopupTabButtonSkin({
+  const skin = getPixiTabButtonSkin({
     height,
     selected: preview.selected === true,
     sizeTier: preview.sizeTier,

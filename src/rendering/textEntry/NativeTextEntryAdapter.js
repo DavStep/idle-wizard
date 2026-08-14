@@ -145,6 +145,11 @@ export class NativeTextEntryAdapter {
       return;
     }
 
+    this.handlers.onValue({
+      value: event.value,
+      selectionStart: event.selectionStart,
+      selectionEnd: event.selectionEnd,
+    });
     this.handlers.onSubmit();
     void this.cleanup();
   }

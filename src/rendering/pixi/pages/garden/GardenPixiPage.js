@@ -4,7 +4,7 @@ import { getHerbIconFrameName } from "../../../../assets/items/herbs/herbIcons.j
 import { formatRemainingTime } from "../../../../pages/shared/timerDisplay.js";
 import { formatCoinPriceText } from "../../../../shared/coinPrice.js";
 import { PixiCostButton } from "../../primitives/PixiCostButton.js";
-import { PixiButton } from "../../primitives/PixiButton.js";
+import { PixiTextButton } from "../../primitives/PixiTextButton.js";
 import { PixiNotificationBadge } from "../../global/transient/PixiNotificationBadges.js";
 import {
   createTimedProgressWindow,
@@ -70,6 +70,8 @@ const GARDEN_READY_LIFT_MS = 1_080;
 const GARDEN_SCISSORS_SNIP_MS = 420;
 const GARDEN_PLOT_RECEIVE_MS = 240;
 const GARDEN_SEED_USED_FEEDBACK_MS = 220;
+const GARDEN_PLOT_TAP_FEEDBACK_MS = 800;
+const GARDEN_PLOT_TAP_REDUCED_MOTION_LABEL_MS = 220;
 const GARDEN_DIALOG_IDS = Object.freeze({
   seed: "garden.seed",
   cancel: "garden.cancel",
@@ -491,7 +493,7 @@ export class GardenSeedActionBar {
     this.indicatorScaleX = 1;
     this.indicatorScaleY = 1;
     this.root = new Container({ label: "garden-seed-action-bar" });
-    this.plantButton = new PixiButton({
+    this.plantButton = new PixiTextButton({
       assetManager,
       inputRouter,
       semanticRegistry: semanticTargets,
@@ -500,7 +502,7 @@ export class GardenSeedActionBar {
       variant: "green",
       label: "garden-plant-all",
     });
-    this.harvestButton = new PixiButton({
+    this.harvestButton = new PixiTextButton({
       assetManager,
       inputRouter,
       semanticRegistry: semanticTargets,
@@ -509,7 +511,7 @@ export class GardenSeedActionBar {
       variant: "green",
       label: "garden-harvest-all",
     });
-    this.seedsButton = new PixiButton({
+    this.seedsButton = new PixiTextButton({
       assetManager,
       inputRouter,
       semanticRegistry: semanticTargets,
@@ -744,7 +746,7 @@ export class GardenSeedActionBar {
   }
 }
 
-class GardenPlotTooltip {
+export class GardenPlotTooltip {
   constructor({ assetManager }) {
     this.width = 180;
     this.height = 0;
@@ -797,7 +799,7 @@ class GardenPlotTooltip {
   }
 }
 
-class GardenPlotWidget {
+export class GardenPlotWidget {
   constructor({
     instanceId,
     page,
@@ -820,6 +822,13 @@ class GardenPlotWidget {
     this.receiveOffsetY = 0;
     this.receiveScaleX = 1;
     this.receiveScaleY = 1;
+    this.tapFeedbackStartedAt = null;
+    this.tapFeedbackLockUntil = 0;
+    this.tapFeedbackLabelUntil = 0;
+    this.tapOffsetY = 0;
+    this.tapScaleX = 1;
+    this.tapScaleY = 1;
+    this.tapRotation = 0;
     this.semanticIds = [];
     this.root = new Container({ label: `garden-plot-${instanceId}` });
     this.frame = new Container({ label: `garden-plot-${instanceId}-frame` });
@@ -838,6 +847,9 @@ class GardenPlotWidget {
       gap: 1,
       label: `garden-plot-${instanceId}-stars`,
     });
+    this.tapPlantMotion = new Container({
+      label: `garden-plot-${instanceId}-tap-plant-motion`,
+    });
     this.plantMotion = new Container({
       label: `garden-plot-${instanceId}-plant-motion`,
     });
@@ -845,6 +857,7 @@ class GardenPlotWidget {
     this.plant.label = `garden-plot-${instanceId}-plant`;
     this.plant.anchor.set(0.5, 1);
     this.plantMotion.addChild(this.plant);
+    this.tapPlantMotion.addChild(this.plantMotion);
     this.action = createText("", {
       fontSize: 9,
       lineHeight: 11,
@@ -884,15 +897,30 @@ class GardenPlotWidget {
     this.notificationBadge = new PixiNotificationBadge({ assetManager });
     this.notificationBadge.root.label = `garden-plot-${instanceId}-notification`;
     this.notification = this.notificationBadge.root;
+    this.tapBurst = new Graphics({
+      label: `garden-plot-${instanceId}-tap-burst`,
+    });
+    this.tapFeedback = createText("-1s", {
+      ...RETAINED_TEXT_STYLES.bold,
+      fontSize: 13,
+      lineHeight: 15,
+      fill: "#fff0a6",
+      align: "center",
+    });
+    this.tapFeedback.anchor.set(0.5);
+    this.tapFeedback.visible = false;
+    this.tapFeedback.renderable = false;
     this.frame.addChild(
       this.soil,
       this.buyFrame,
       this.number,
       this.level,
-      this.plantMotion,
+      this.tapPlantMotion,
       this.action,
       this.buyCostButton,
       this.scissorsMotion,
+      this.tapBurst,
+      this.tapFeedback,
     );
     this.root.addChild(this.frame, this.progress.root, this.notification);
     this.pressRegistration =
@@ -900,7 +928,8 @@ class GardenPlotWidget {
         id: `garden.plot.instance.${instanceId}`,
         displayObject: this.root,
         fallbackHitTest: true,
-        enabled: () => this.enabled,
+        enabled: () =>
+          this.enabled && !this.isActivationLocked(this.page.timeSource()),
         slop: 12,
         onPressChange: (pressed) => this.setPressed(pressed),
         onActivate: () => this.activate(),
@@ -973,7 +1002,8 @@ class GardenPlotWidget {
       state: () => ({
         visible: this.root.visible && this.root.renderable,
         interactive: this.root.eventMode !== "none",
-        enabled: this.enabled,
+        enabled:
+          this.enabled && !this.isActivationLocked(this.page.timeSource()),
         active: !this.root.destroyed,
       }),
       activate: () => this.activate(),
@@ -987,8 +1017,10 @@ class GardenPlotWidget {
       displayObject: this.root,
       state: () => ({
         visible: this.root.visible && this.root.renderable,
-        interactive: this.enabled,
-        enabled: this.enabled,
+        interactive:
+          this.enabled && !this.isActivationLocked(this.page.timeSource()),
+        enabled:
+          this.enabled && !this.isActivationLocked(this.page.timeSource()),
         active: !this.root.destroyed,
       }),
       activate: () =>
@@ -1000,6 +1032,14 @@ class GardenPlotWidget {
   }
 
   activate() {
+    const now = this.page.timeSource();
+    if (this.isActivationLocked(now)) {
+      return {
+        ok: false,
+        reason: "tap_cooldown",
+        retryAfterMs: Math.max(0, this.tapFeedbackLockUntil - now),
+      };
+    }
     const receivesSeed =
       this.model.phase === "empty" && Boolean(this.model.toolbarSeedItemTypeId);
     const result =
@@ -1015,6 +1055,9 @@ class GardenPlotWidget {
     if (receivesSeed && actionSucceeded(result)) {
       this.startSeedReceive(this.page.timeSource());
       this.page.startSeedUsedFeedback(result);
+    }
+    if (plotAccelerationSucceeded(result)) {
+      this.startTapAcceleration(result, now);
     }
     return result;
   }
@@ -1057,6 +1100,10 @@ class GardenPlotWidget {
     this.scissorsOpen.width = 30;
     this.scissorsOpen.height = 30;
     this.scissorsMotion.pivot.set(14.4, 17.4);
+    this.tapFeedback.position.set(
+      GARDEN_PIXI_GEOMETRY.plotWidth / 2,
+      GARDEN_PIXI_GEOMETRY.plotHeight / 2,
+    );
     this.notificationBadge.placeAtTopRight({
       x: (width - GARDEN_PIXI_GEOMETRY.plotWidth) / 2,
       y: 0,
@@ -1081,9 +1128,10 @@ class GardenPlotWidget {
   applyFrameTransform() {
     const pressScale = this.pressed ? 0.97 : 1;
     this.frame.scale.set(
-      pressScale * this.receiveScaleX,
-      pressScale * this.receiveScaleY,
+      pressScale * this.receiveScaleX * this.tapScaleX,
+      pressScale * this.receiveScaleY * this.tapScaleY,
     );
+    this.frame.rotation = this.tapRotation;
     this.frame.pivot.set(
       GARDEN_PIXI_GEOMETRY.plotWidth / 2,
       GARDEN_PIXI_GEOMETRY.plotHeight / 2,
@@ -1093,7 +1141,8 @@ class GardenPlotWidget {
         GARDEN_PIXI_GEOMETRY.plotWidth / 2,
       GARDEN_PIXI_GEOMETRY.plotHeight / 2 +
         (this.pressed ? 1 : 0) +
-        this.receiveOffsetY,
+        this.receiveOffsetY +
+        this.tapOffsetY,
     );
   }
 
@@ -1190,6 +1239,88 @@ class GardenPlotWidget {
     }
 
     this.updateSeedReceive(now);
+    this.updateTapAcceleration(now);
+  }
+
+  isActivationLocked(now = this.page.timeSource()) {
+    return finiteOr(now, 0) < this.tapFeedbackLockUntil;
+  }
+
+  startTapAcceleration(result, now = this.page.timeSource()) {
+    const reducedSeconds = Math.max(0, Number(result?.reducedSeconds) || 0);
+    if (reducedSeconds <= 0) {
+      return false;
+    }
+    const cooldownMs = Math.max(
+      GARDEN_PLOT_TAP_FEEDBACK_MS,
+      Number(result?.cooldownMs) || 0,
+    );
+    const startedAt = finiteOr(now, 0);
+    this.tapFeedbackStartedAt = startedAt;
+    this.tapFeedbackLockUntil = startedAt + cooldownMs;
+    this.tapFeedbackLabelUntil =
+      startedAt + GARDEN_PLOT_TAP_REDUCED_MOTION_LABEL_MS;
+    setText(
+      this.tapFeedback,
+      `-${Number.isInteger(reducedSeconds) ? reducedSeconds : reducedSeconds.toFixed(1)}s`,
+    );
+    this.updateTapAcceleration(startedAt);
+    return true;
+  }
+
+  updateTapAcceleration(now) {
+    if (this.tapFeedbackStartedAt === null) {
+      return false;
+    }
+    const currentTime = finiteOr(now, this.tapFeedbackStartedAt);
+    const reducedMotion = this.page.reducedMotion?.() === true;
+    if (reducedMotion) {
+      const showLabel = currentTime < this.tapFeedbackLabelUntil;
+      this.tapFeedback.visible = showLabel;
+      this.tapFeedback.renderable = showLabel;
+      this.tapFeedback.alpha = 1;
+      this.tapFeedback.position.set(
+        GARDEN_PIXI_GEOMETRY.plotWidth / 2,
+        GARDEN_PIXI_GEOMETRY.plotHeight / 2 - 9,
+      );
+      this.tapBurst.clear();
+      if (currentTime >= this.tapFeedbackLockUntil) {
+        this.settleTapAcceleration();
+      }
+      return showLabel;
+    }
+
+    const progress = clamp(
+      (currentTime - this.tapFeedbackStartedAt) /
+        GARDEN_PLOT_TAP_FEEDBACK_MS,
+      0,
+      1,
+    );
+    if (progress >= 1) {
+      this.settleTapAcceleration();
+      return false;
+    }
+    applyTapAccelerationMotion(this, progress);
+    this.applyFrameTransform();
+    return true;
+  }
+
+  settleTapAcceleration() {
+    this.tapFeedbackStartedAt = null;
+    this.tapFeedbackLockUntil = 0;
+    this.tapFeedbackLabelUntil = 0;
+    this.tapOffsetY = 0;
+    this.tapScaleX = 1;
+    this.tapScaleY = 1;
+    this.tapRotation = 0;
+    this.tapPlantMotion.position.set(0, 0);
+    this.tapPlantMotion.scale.set(1);
+    this.tapPlantMotion.rotation = 0;
+    this.tapFeedback.alpha = 1;
+    this.tapFeedback.visible = false;
+    this.tapFeedback.renderable = false;
+    this.tapBurst.clear();
+    this.applyFrameTransform();
   }
 
   startSeedReceive(now) {
@@ -1211,7 +1342,7 @@ class GardenPlotWidget {
       1,
     );
     if (progress >= 1) {
-      this.settleTransientMotion();
+      this.settleSeedReceive();
       return false;
     }
     applyReceiveMotion(this, progress);
@@ -1220,6 +1351,11 @@ class GardenPlotWidget {
   }
 
   settleTransientMotion() {
+    this.settleSeedReceive();
+    this.settleTapAcceleration();
+  }
+
+  settleSeedReceive() {
     this.receiveStartedAt = null;
     this.receiveOffsetY = 0;
     this.receiveScaleX = 1;
@@ -1251,6 +1387,13 @@ class GardenPlotWidget {
     this.action.style.stroke = normalizePixiTextStroke({
       color: "#0a0a0a",
     }, this.action.style.fontSize);
+    applyTextTheme(this.tapFeedback, this.theme, {
+      ...RETAINED_TEXT_STYLES.bold,
+      fontSize: 13,
+      lineHeight: 15,
+      fill: "#fff0a6",
+      align: "center",
+    });
     this.buyCostButton.applyTheme(this.theme);
     this.progress.applyTheme(this.theme);
     this.redraw();
@@ -1356,6 +1499,13 @@ class GardenPlotWidget {
     this.receiveOffsetY = 0;
     this.receiveScaleX = 1;
     this.receiveScaleY = 1;
+    this.tapFeedbackStartedAt = null;
+    this.tapFeedbackLockUntil = 0;
+    this.tapFeedbackLabelUntil = 0;
+    this.tapOffsetY = 0;
+    this.tapScaleX = 1;
+    this.tapScaleY = 1;
+    this.tapRotation = 0;
     this.width = 0;
     setText(this.number, "");
     this.level.setLevel(0);
@@ -1366,12 +1516,18 @@ class GardenPlotWidget {
     this.plantMotion.position.set(0, 0);
     this.plantMotion.scale.set(1);
     this.plantMotion.rotation = 0;
+    this.tapPlantMotion.position.set(0, 0);
+    this.tapPlantMotion.scale.set(1);
+    this.tapPlantMotion.rotation = 0;
     this.plant.visible = false;
     this.scissors.visible = false;
     this.scissorsOpen.visible = false;
     this.scissorsMotion.visible = false;
     this.resetScissorsMotion();
     this.notificationBadge.setActive(false);
+    this.tapFeedback.visible = false;
+    this.tapFeedback.renderable = false;
+    this.tapBurst.clear();
   }
 
   unregisterSemanticTargets() {
@@ -1488,6 +1644,153 @@ function applyReceiveMotion(plot, progress) {
   plot.receiveScaleY = lerp(fromScaleY, toScaleY, eased);
 }
 
+function applyTapAccelerationMotion(plot, progress) {
+  let segment;
+  let fromY;
+  let toY;
+  let fromScaleX;
+  let toScaleX;
+  let fromScaleY;
+  let toScaleY;
+  let fromRotation;
+  let toRotation;
+  let fromPlantY;
+  let toPlantY;
+  let fromPlantScaleX;
+  let toPlantScaleX;
+  let fromPlantScaleY;
+  let toPlantScaleY;
+  let fromPlantRotation;
+  let toPlantRotation;
+
+  if (progress < 0.18) {
+    segment = progress / 0.18;
+    fromY = 0;
+    toY = 2.5;
+    fromScaleX = 1;
+    toScaleX = 1.035;
+    fromScaleY = 1;
+    toScaleY = 0.955;
+    fromRotation = 0;
+    toRotation = -0.8;
+    fromPlantY = 0;
+    toPlantY = 3;
+    fromPlantScaleX = 1;
+    toPlantScaleX = 1.08;
+    fromPlantScaleY = 1;
+    toPlantScaleY = 0.86;
+    fromPlantRotation = 0;
+    toPlantRotation = -3;
+  } else if (progress < 0.42) {
+    segment = (progress - 0.18) / 0.24;
+    fromY = 2.5;
+    toY = -1.5;
+    fromScaleX = 1.035;
+    toScaleX = 0.985;
+    fromScaleY = 0.955;
+    toScaleY = 1.025;
+    fromRotation = -0.8;
+    toRotation = 0.55;
+    fromPlantY = 3;
+    toPlantY = -7;
+    fromPlantScaleX = 1.08;
+    toPlantScaleX = 0.92;
+    fromPlantScaleY = 0.86;
+    toPlantScaleY = 1.1;
+    fromPlantRotation = -3;
+    toPlantRotation = 4;
+  } else if (progress < 0.7) {
+    segment = (progress - 0.42) / 0.28;
+    fromY = -1.5;
+    toY = 0.5;
+    fromScaleX = 0.985;
+    toScaleX = 1.012;
+    fromScaleY = 1.025;
+    toScaleY = 0.992;
+    fromRotation = 0.55;
+    toRotation = -0.2;
+    fromPlantY = -7;
+    toPlantY = -1.5;
+    fromPlantScaleX = 0.92;
+    toPlantScaleX = 1.025;
+    fromPlantScaleY = 1.1;
+    toPlantScaleY = 0.98;
+    fromPlantRotation = 4;
+    toPlantRotation = -1;
+  } else {
+    segment = (progress - 0.7) / 0.3;
+    fromY = 0.5;
+    toY = 0;
+    fromScaleX = 1.012;
+    toScaleX = 1;
+    fromScaleY = 0.992;
+    toScaleY = 1;
+    fromRotation = -0.2;
+    toRotation = 0;
+    fromPlantY = -1.5;
+    toPlantY = 0;
+    fromPlantScaleX = 1.025;
+    toPlantScaleX = 1;
+    fromPlantScaleY = 0.98;
+    toPlantScaleY = 1;
+    fromPlantRotation = -1;
+    toPlantRotation = 0;
+  }
+
+  const eased = softEase(segment);
+  plot.tapOffsetY = lerp(fromY, toY, eased);
+  plot.tapScaleX = lerp(fromScaleX, toScaleX, eased);
+  plot.tapScaleY = lerp(fromScaleY, toScaleY, eased);
+  plot.tapRotation = degreesToRadians(
+    lerp(fromRotation, toRotation, eased),
+  );
+  plot.tapPlantMotion.position.set(0, lerp(fromPlantY, toPlantY, eased));
+  plot.tapPlantMotion.scale.set(
+    lerp(fromPlantScaleX, toPlantScaleX, eased),
+    lerp(fromPlantScaleY, toPlantScaleY, eased),
+  );
+  plot.tapPlantMotion.rotation = degreesToRadians(
+    lerp(fromPlantRotation, toPlantRotation, eased),
+  );
+
+  const labelProgress = clamp((progress - 0.08) / 0.72, 0, 1);
+  const labelAlpha =
+    labelProgress < 0.16
+      ? labelProgress / 0.16
+      : labelProgress < 0.62
+        ? 1
+        : 1 - (labelProgress - 0.62) / 0.38;
+  plot.tapFeedback.visible = labelProgress > 0 && labelProgress < 1;
+  plot.tapFeedback.renderable = plot.tapFeedback.visible;
+  plot.tapFeedback.alpha = clamp(labelAlpha, 0, 1);
+  plot.tapFeedback.position.set(
+    GARDEN_PIXI_GEOMETRY.plotWidth / 2,
+    lerp(48, 15, softEase(labelProgress)),
+  );
+
+  plot.tapBurst.clear();
+  const burstProgress = clamp((progress - 0.12) / 0.58, 0, 1);
+  if (burstProgress <= 0 || burstProgress >= 1) {
+    return;
+  }
+  const burstEase = softEase(burstProgress);
+  const burstAlpha = 1 - burstProgress;
+  const centerX = GARDEN_PIXI_GEOMETRY.plotWidth / 2;
+  const centerY = GARDEN_PIXI_GEOMETRY.plotHeight / 2 + 4;
+  for (let index = 0; index < 5; index += 1) {
+    const angle = degreesToRadians(-150 + index * 48);
+    const distance = lerp(5, 23, burstEase);
+    const radius = lerp(2, 0.6, burstProgress);
+    plot.tapBurst
+      .circle(
+        centerX + Math.cos(angle) * distance,
+        centerY + Math.sin(angle) * distance,
+        radius,
+      )
+      .fill({ color: 0xfff0a6, alpha: burstAlpha });
+  }
+}
+
 function applySeedUsedMotion(actionBar, progress) {
   let segment;
   let fromIconY;
@@ -1538,6 +1841,14 @@ function applySeedUsedMotion(actionBar, progress) {
 
 function actionSucceeded(result) {
   return result !== false && result?.ok !== false;
+}
+
+function plotAccelerationSucceeded(result) {
+  return (
+    result?.ok === true &&
+    Number.isFinite(Number(result.reducedSeconds)) &&
+    Number(result.reducedSeconds) > 0
+  );
 }
 
 function seedUseSucceeded(result) {

@@ -158,4 +158,23 @@ describe('loadUiEditorIntegrations', () => {
       ),
     ).toBe(true);
   });
+
+  it('catalogues every retained production room as a scene', () => {
+    const scenes = loadUiEditorIntegrations().filter(
+      ({ id, kind }) => kind === 'scene' && id.startsWith('feature.'),
+    );
+
+    expect(scenes.map(({ id }) => id).sort()).toEqual([
+      'feature.brewing-room',
+      'feature.garden-room',
+      'feature.guild-room',
+      'feature.market-room',
+      'feature.prestige-room',
+      'feature.research-room',
+      'feature.workshop-room',
+    ]);
+    expect(
+      scenes.every(({ childWidgetIds }) => childWidgetIds.length > 0),
+    ).toBe(true);
+  });
 });

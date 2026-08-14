@@ -9,20 +9,22 @@ import {
   PIXI_ROOT_RUN_ASSETS,
   PIXI_UI_GEOMETRY,
 } from '../theme/PixiThemeTokens.js';
-import { PixiButton } from './PixiButton.js';
+import { PixiBaseButton } from './PixiBaseButton.js';
+import { PixiTextButton } from './PixiTextButton.js';
 import { getPixiButtonSkin } from './PixiButtonStyle.js';
-import { PixiPopupTabButton } from './PixiPopupTabButton.js';
+import { PixiTabButton } from './PixiTabButton.js';
 
 installPixiPageTestCanvas();
 
-describe('PixiPopupTabButton', () => {
+describe('PixiTabButton', () => {
   it('extends the base button with selected popup-tab skins', () => {
     const getTexture = vi.fn(() => Texture.EMPTY);
-    const button = new PixiPopupTabButton({
+    const button = new PixiTabButton({
       assetManager: { getTexture },
     });
 
-    expect(button).toBeInstanceOf(PixiButton);
+    expect(button).toBeInstanceOf(PixiBaseButton);
+    expect(button).toBeInstanceOf(PixiTextButton);
     expect(button.variant).toBe('tab');
     expect(button.buttonHeight).toBe(PIXI_UI_GEOMETRY.tabHeight);
 
@@ -47,7 +49,7 @@ describe('PixiPopupTabButton', () => {
   });
 
   it('inherits fitted base geometry without changing the notification contract', () => {
-    const button = new PixiPopupTabButton({
+    const button = new PixiTabButton({
       assetManager: { getTexture: vi.fn(() => Texture.EMPTY) },
       width: 100,
     });

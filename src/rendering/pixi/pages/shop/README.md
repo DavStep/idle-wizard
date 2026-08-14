@@ -113,9 +113,16 @@ on the final card. Add `&proceeds=none` to isolate the empty-request state
 without the claim-proceeds row, and add `&requests=empty` to render one empty
 request slot.
 Add `?dialog=request` to open the retained Request picker directly with
-`Coins Per Item` and `Max Quantity` fields. Add `?dialog=listing` to open the
+`Coins Per Item` and `Max Quantity` fields. Add `&requestStatus=offline` to
+verify visible submission-failure feedback. Add `?dialog=listing` to open the
 retained Sell picker directly with its quantity slider and `Coins Per Item`
-field. Both use the same split-paper item-picker composition as Load Stall.
+field. Sell uses the Market-yellow rail, a narrow always-active red `Clear` on
+the left, and a double-width green `Sell` on the right. Empty Clear attempts
+emit `Nothing to clear`; successful Sell actions close only after backend
+publication and local inventory reservation both succeed. Both use the same
+split-paper item-picker composition as Load Stall.
+Add `&listingState=reference` to reproduce the Mint Seed `x12` / `10` coin
+state used for Sell-dialog reference comparison.
 Add `&items=overflow` with `?dialog=stall` to open the Load Stall
 inventory with eight unlocked seed rows for row-width, spacing, and
 scrollbar-gutter QA. Add `&count=3` to bind the allocation slider to the

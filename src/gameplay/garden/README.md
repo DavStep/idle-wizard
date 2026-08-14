@@ -5,3 +5,9 @@ The garden owns buyable planting tiles. Tile costs, row width, and harvest time 
 Player level unlocks the first 5 plot buy caps before prestige. Permanent advanced capacity research unlocks plot caps 6-12 after enough completed prestiges and makes the researched cap buyable immediately in that run, but the actual plots are still bought with coin.
 
 Each unlocked tile can hold one active crop. The manual Garden UI keeps one page-level selected seed, then passes it to any empty plot the player taps. Planting consumes that seed quantity, grows the matching herb for the herb definition growth time, then waits ready. Replacing a growing seed returns the old planted seed, consumes the newly selected seed, and restarts growth from zero. Starting harvest runs a second timer; completion adds the plot's herb. `garden:plantAll` unlocks at player level 5 for 1,000 coin and plants the selected seed in unlocked empty plots in tile order until stock runs out. `garden:harvestAll` requires that study, unlocks at level 10 for 10,000 coin, and starts the harvest timer on every ready plot. `GardenBulkActionManager` enforces both gates independently of rendering. Canceling in-progress growth or harvest returns the planted seed and clears the plot selection.
+
+`GardenTapAccelerationManager` owns manual active-plot acceleration. Each accepted
+tap removes at most one second from that plot's growth or harvest timer, then
+rejects further taps on the same plot for 800ms. The cooldown is enforced in
+gameplay as well as rendering so direct or repeated action calls cannot bypass
+it. Cooldowns are transient and reset when a persistence snapshot is loaded.

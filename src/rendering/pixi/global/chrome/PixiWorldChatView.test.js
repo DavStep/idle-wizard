@@ -16,8 +16,9 @@ describe('PixiWorldChatView', () => {
   it('stays in global chrome, keeps the latest two messages, and opens from any room', () => {
     const onActivate = vi.fn(() => true);
     const input = createInputRouter();
+    const assets = createAssets();
     const view = new PixiWorldChatView({
-      assets: createAssets(),
+      assets,
       inputRouter: input.router,
     });
 
@@ -28,9 +29,21 @@ describe('PixiWorldChatView', () => {
       label: 'World Chat',
       visible: true,
       messages: [
-        { body: 'first' },
-        { body: 'second' },
-        { body: 'third' },
+        { body: 'first', character: 'elara', username: 'First' },
+        {
+          allianceTag: 'ARC',
+          allianceTagColor: 'violet',
+          body: 'second',
+          character: 'mira',
+          playerLevel: 4,
+          username: 'Second',
+        },
+        {
+          body: 'third',
+          character: 'rowan',
+          playerLevel: 5,
+          username: 'Third',
+        },
       ],
       onActivate,
     });
@@ -49,11 +62,32 @@ describe('PixiWorldChatView', () => {
       y: expect.closeTo(601.833333, 5),
     });
     expect(view.panel.root.pivot).toMatchObject({ x: 164, y: 20.5 });
-    expect(view.preview.text).toBe('second\nthird');
+    expect(view.preview.text).toBe('[ARC] Second(4): second\nThird(5): third');
     expect(view.preview.anchor).toMatchObject({ x: 0, y: 0.5 });
-    expect(view.preview.position).toMatchObject({ x: 5, y: 22.5 });
+    expect(view.preview.position).toMatchObject({ x: 10, y: 22.5 });
     expect(view.preview.style.align).toBe('left');
     expect(view.preview.style.whiteSpace).toBe('pre-line');
+    expect(view.preview.visible).toBe(false);
+    expect(view.previewRows[0].root.visible).toBe(true);
+    expect(view.previewRows[0].avatar.visible).toBe(true);
+    expect(view.previewRows[0].avatar).toMatchObject({
+      height: 14,
+      width: 14,
+    });
+    expect(assets.getTexture).toHaveBeenCalledWith(
+      'source:assets/avatars/mira.png',
+    );
+    expect(view.previewRows[0].tag.text).toBe('[ARC]');
+    expect(view.previewRows[0].username.text).toBe('Second(4):');
+    expect(view.previewRows[0].body.text).toBe('second');
+    expect(view.previewRows[0].username.style.fill).toBe('#d4d4d4');
+    expect(view.previewRows[0].body.style.fill).toBe('#a6a6a6');
+    expect(view.previewRows[0].root.position.x).toBe(10);
+    expect(view.previewRows[0].root.position.y).toBe(6.5);
+    expect(view.previewRows[1].username.text).toBe('Third(5):');
+    expect(view.previewRows[1].root.position.y).toBe(22.5);
+    expect(view.previewContent.mask).toBe(view.previewClip);
+    expect(view.previewRows[0].root.hitArea.width).toBe(308);
 
     expect(input.registration.haptic).toBe('light');
     input.registration.onPressChange(true, { confirmed: false });
@@ -122,13 +156,36 @@ describe('PixiWorldChatView', () => {
     view.bind({ visible: true, preview: 'mira: hello' });
     expect(view.root.visible).toBe(true);
     expect(view.preview.text).toBe('mira: hello');
+    expect(view.preview.visible).toBe(true);
+    expect(view.previewRows.every((row) => row.root.visible === false)).toBe(true);
+  });
+
+  it('uses the system color role without inventing a player avatar', () => {
+    const view = new PixiWorldChatView({ assets: createAssets() });
+    view.applyTheme(createPixiThemeSnapshot({ theme: 'midnight' }));
+    view.activate();
+    view.bind({
+      visible: true,
+      messages: [
+        {
+          body: 'Wizard reached level 5',
+          character: 'mira',
+          username: 'system',
+        },
+      ],
+    });
+
+    expect(view.previewRows[0].avatar.visible).toBe(false);
+    expect(view.previewRows[0].username.text).toBe('System:');
+    expect(view.previewRows[0].username.style.fill).toBe('#ec928b');
+    expect(view.previewRows[0].body.style.fill).toBe('#a6a6a6');
   });
 });
 
 function createAssets() {
   return {
     has: () => false,
-    getTexture: () => Texture.EMPTY,
+    getTexture: vi.fn(() => Texture.EMPTY),
     getAtlasTexture: () => Texture.EMPTY,
   };
 }

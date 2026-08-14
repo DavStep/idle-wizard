@@ -914,12 +914,25 @@ export function createUiEditorPixiSurfaceShell({
   const host = document.createElement('section');
   const canvas = document.createElement('canvas');
   const cleanups = [];
+  let authoredViewport = null;
+
+  const setComponent = (nextComponent) => {
+    const componentName = String(nextComponent || 'PixiIntegration');
+    host.dataset.uiEditorComponent = componentName;
+    canvas.setAttribute(
+      'aria-label',
+      `${componentName} interactive preview`,
+    );
+    authoredViewport?.setAttribute(
+      'aria-label',
+      `${componentName} authored screen. Drag or use arrow keys to move.`,
+    );
+  };
 
   host.className = 'ui-editor-game-widget-preview';
   host.dataset.previewViewport = viewport;
-  host.dataset.uiEditorComponent = component;
   canvas.className = 'ui-editor-game-widget-preview__canvas';
-  canvas.setAttribute('aria-label', `${component} interactive preview`);
+  setComponent(component);
 
   if (viewport !== UI_EDITOR_PIXI_VIEWPORTS.GAME_SCREEN) {
     host.append(canvas);
@@ -928,6 +941,7 @@ export function createUiEditorPixiSurfaceShell({
       dispose() {},
       host,
       resizeTarget: host,
+      setComponent,
     };
   }
 
@@ -936,6 +950,7 @@ export function createUiEditorPixiSurfaceShell({
     `${component} authored screen`,
     { panEnabled: false },
   );
+  authoredViewport = panZoom.root;
   const controls = createViewportZoomControls(
     previewLabel,
     [panZoom],
@@ -995,6 +1010,7 @@ export function createUiEditorPixiSurfaceShell({
     },
     host,
     resizeTarget: frame,
+    setComponent,
   };
 }
 

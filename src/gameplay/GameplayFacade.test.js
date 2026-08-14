@@ -5383,6 +5383,35 @@ describe("GameplayFacade", () => {
     ]);
   });
 
+  it("reduces one active Garden plot second per accepted tap", () => {
+    const { ecsFacade, gameplayFacade } = createGameplay();
+    gameplayFacade.itemsFacade.addItem(1, 1);
+    gameplayFacade.plantGardenSeed(1, 1);
+
+    expect(gameplayFacade.accelerateGardenPlot(1)).toMatchObject({
+      ok: true,
+      tileNumber: 1,
+      phase: "growing",
+      reducedSeconds: 1,
+      remainingMs: 11_000,
+      cooldownMs: 800,
+    });
+    expect(gameplayFacade.getSnapshot().garden.plot.tiles[0]).toMatchObject({
+      phase: "growing",
+      remainingMs: 11_000,
+    });
+    expect(gameplayFacade.accelerateGardenPlot(1)).toMatchObject({
+      ok: false,
+      reason: "tap_cooldown",
+    });
+
+    ecsFacade.update({ deltaSeconds: 11 });
+    expect(gameplayFacade.getSnapshot().garden.plot.tiles[0]).toMatchObject({
+      phase: "ready",
+      remainingMs: 0,
+    });
+  });
+
   it("rejects garden seed changes while a crop is active", () => {
     const { ecsFacade, gameplayFacade } = createGameplay();
 

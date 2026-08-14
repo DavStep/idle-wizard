@@ -4,7 +4,7 @@ import {
   DEFAULT_PIXI_THEME_SNAPSHOT,
   PIXI_ROOT_RUN_ASSETS,
 } from '../theme/PixiThemeTokens.js';
-import { PixiButton } from './PixiButton.js';
+import { PixiBaseButton } from './PixiBaseButton.js';
 import {
   getPixiButtonSkin,
   normalizePixiButtonColor,
@@ -37,7 +37,7 @@ export const PIXI_COST_BUTTON_GEOMETRY = Object.freeze({
   researchWidth: 80,
   researchHeight: 48,
   iconSize: 23,
-  contentGap: 7.081,
+  contentGap: 16 * 0.14,
   contentOffsetY: -7 / 3,
   compactIconSize: 16.512,
   compactContentGap: 2.24,
@@ -66,7 +66,7 @@ export const PIXI_COST_BUTTON_GEOMETRY = Object.freeze({
  * Root Run cost control composed on the same retained input/press primitive as
  * regular buttons. Economy rules stay outside this view.
  */
-export class PixiCostButton extends PixiButton {
+export class PixiCostButton extends PixiBaseButton {
   constructor({
     assetManager,
     inputRouter = null,
@@ -169,8 +169,6 @@ export class PixiCostButton extends PixiButton {
       this.lockedLabel,
       this.lockReasonLabel,
     );
-    this.textLabel.visible = false;
-    this.textLabel.renderable = false;
     this.applyTheme(DEFAULT_PIXI_THEME_SNAPSHOT);
     this.syncCostAppearance();
   }

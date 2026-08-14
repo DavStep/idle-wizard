@@ -1,0 +1,9 @@
+{
+  "schemaVersion": 1,
+  "appId": "com.idlewizard.game",
+  "minimumNativeVersion": "0.3.49",
+  "platforms": [
+    "android"
+  ],
+  "manifestUrl": "https://davstep.github.io/idle-wizard/ota/latest.json"
+}

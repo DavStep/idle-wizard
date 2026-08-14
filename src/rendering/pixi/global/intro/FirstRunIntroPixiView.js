@@ -7,7 +7,7 @@ import {
 
 import {
   BasePixiRetainedView,
-  PixiButton,
+  PixiTextButton,
   PixiFrame,
   PixiTextLabel,
 } from '../../primitives/index.js';
@@ -235,7 +235,7 @@ export class FirstRunIntroPixiView extends BasePixiRetainedView {
         panelWidth - FIRST_RUN_INTRO_PIXI_GEOMETRY.panelPaddingX * 2,
       label: 'firstRunIntro:copy',
     });
-    this.advanceButton = new PixiButton({
+    this.advanceButton = new PixiTextButton({
       assetManager: assets,
       inputRouter,
       semanticId: null,

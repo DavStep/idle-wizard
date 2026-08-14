@@ -7,7 +7,7 @@ import {
 } from 'pixi.js';
 
 import { getPotionIconFrameName } from '../../../../assets/items/potions/potionIcons.js';
-import { PixiButton } from '../../primitives/PixiButton.js';
+import { PixiTextButton } from '../../primitives/PixiTextButton.js';
 import { PixiOwnedDialogSurface } from '../../primitives/PixiOwnedDialogSurface.js';
 import { PooledCollection } from '../../retained/PooledCollection.js';
 import { WidgetPool } from '../../retained/WidgetPool.js';
@@ -435,7 +435,7 @@ export class BrewingRecipeBookDialogPixi {
   }
 }
 
-class BrewingRecipeCard {
+export class BrewingRecipeCard {
   constructor({
     instanceId,
     assetManager,
@@ -468,7 +468,7 @@ class BrewingRecipeCard {
     });
     this.cost = createText('', RETAINED_TEXT_STYLES.border);
     this.duration = createText('', RETAINED_TEXT_STYLES.border);
-    this.select = new PixiButton({
+    this.select = new PixiTextButton({
       assetManager,
       inputRouter,
       text: 'select',
@@ -741,7 +741,7 @@ class BrewingRecipeCard {
   }
 }
 
-class BrewingRecipeIngredientRow {
+export class BrewingRecipeIngredientRow {
   constructor({ instanceId }) {
     this.theme = DEFAULT_PIXI_THEME_SNAPSHOT;
     this.model = {};

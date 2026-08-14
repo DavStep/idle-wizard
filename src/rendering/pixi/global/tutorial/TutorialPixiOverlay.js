@@ -8,7 +8,7 @@ import {
 
 import {
   BasePixiRetainedView,
-  PixiButton,
+  PixiTextButton,
   PixiDialogFrame,
   PixiNineSliceFrame,
   PixiProgressBar,
@@ -43,11 +43,18 @@ const TUTORIAL_ADVANCE_BUTTON = Object.freeze({
   maxWidth: 116,
   height: 26,
   labelPadding: 24,
-  rightInset: 10,
-  bottomInset: 6,
-  contentGap: 6,
+  rightInset: 16,
+  bottomInset: 12,
+  contentGap: 8,
 });
-const TUTORIAL_PROGRESS_LABEL_GAP = 6;
+const TUTORIAL_LESSON_LAYOUT = Object.freeze({
+  horizontalPadding: 16,
+  titleTop: 12,
+  copyTop: 36,
+  rowGap: 8,
+  bottomPadding: 12,
+});
+const TUTORIAL_PROGRESS_LABEL_GAP = 8;
 const DRAG_YELLS = Object.freeze([
   'AAAAAA!!!',
   'Put me down!',
@@ -137,7 +144,7 @@ export class TutorialPixiOverlay extends BasePixiRetainedView {
     });
     this.guideImage.label = 'tutorial:guideImage';
     this.guideImage.anchor.set(0.5, 1);
-    this.guideLabelButton = new PixiButton({
+    this.guideLabelButton = new PixiTextButton({
       assetManager: assets,
       text: 'Help',
       width: 36,
@@ -1070,7 +1077,7 @@ export function createTutorialPixiViewModel(
   });
 }
 
-class TutorialLessonSurface {
+export class TutorialLessonSurface {
   constructor({
     assets,
     inputRouter,
@@ -1126,7 +1133,8 @@ class TutorialLessonSurface {
     this.progress = new PixiProgressBar({
       assetManager: this.assets,
       width: TUTORIAL_PIXI_GEOMETRY.panelContentWidth,
-      tone: 'root',
+      tone: 'yellow',
+      usePlayerStyle: false,
       label: 'tutorial:lessonProgress',
     });
     this.progressLabel = new PixiTextLabel({
@@ -1143,7 +1151,7 @@ class TutorialLessonSurface {
       text: 'show me',
       action: onShowTarget,
     });
-    this.advanceControl = new PixiButton({
+    this.advanceControl = new PixiTextButton({
       assetManager: assets,
       inputRouter,
       text: 'next',
@@ -1251,7 +1259,8 @@ class TutorialLessonSurface {
       this.targetContentHeight + (intro ? 40 : 21);
     this.outerWidth = intro
       ? this.contentWidth + 40
-      : this.contentWidth + 24;
+      : this.contentWidth +
+        TUTORIAL_LESSON_LAYOUT.horizontalPadding * 2;
     this.introDialog.setTitle(
       intro ? model.title ?? 'lesson' : '',
     );
@@ -1375,8 +1384,12 @@ class TutorialLessonSurface {
 
   layout() {
     const intro = this.model.variant === 'intro-dialog';
-    const paddingX = intro ? 20 : 12;
-    const paddingTop = intro ? 20 : 31;
+    const paddingX = intro
+      ? 20
+      : TUTORIAL_LESSON_LAYOUT.horizontalPadding;
+    const paddingTop = intro
+      ? 20
+      : TUTORIAL_LESSON_LAYOUT.copyTop;
     const advanceWidth = Math.max(
       TUTORIAL_ADVANCE_BUTTON.minWidth,
       Math.min(
@@ -1401,7 +1414,10 @@ class TutorialLessonSurface {
         advanceBottomInset -
         TUTORIAL_ADVANCE_BUTTON.height,
     );
-    this.title.position.set(intro ? 8 : 12, intro ? -12 : 9);
+    this.title.position.set(
+      intro ? 8 : TUTORIAL_LESSON_LAYOUT.horizontalPadding,
+      intro ? -12 : TUTORIAL_LESSON_LAYOUT.titleTop,
+    );
     this.copy.position.set(paddingX, paddingTop);
     let y = paddingTop + this.layoutCopyHeight;
     let rowY = y;
@@ -1427,7 +1443,7 @@ class TutorialLessonSurface {
           : 0,
       );
       if (rowHeight > 0) {
-        y += 5;
+        y += intro ? 5 : TUTORIAL_LESSON_LAYOUT.rowGap;
         rowY = y;
         if (this.advanceControl.visible) {
           this.advanceControl.y =
@@ -1763,15 +1779,16 @@ function estimateLessonContentHeight(
   }
   let height = Math.max(
     TUTORIAL_PIXI_GEOMETRY.panelMinContentHeight,
-    (Number(measuredCopyHeight) || 0) +
-      (advanceVisible ? 16 : 14),
-    model.text ? 34 : 0,
+    TUTORIAL_LESSON_LAYOUT.copyTop +
+      Math.max(20, Number(measuredCopyHeight) || 0) +
+      TUTORIAL_LESSON_LAYOUT.bottomPadding -
+      21,
   );
   if (progressVisible || advanceVisible) {
     const progressLabelInRow =
       progressVisible && progressLabelVisible;
     height +=
-      5 +
+      TUTORIAL_LESSON_LAYOUT.rowGap +
       Math.max(
         progressVisible
           ? PIXI_UI_GEOMETRY.progressTotalHeight

@@ -148,6 +148,42 @@ export class GardenTileEntityManager {
     }
   }
 
+  reduceTileProcessRemainingSeconds(tileNumber, deltaSeconds) {
+    const safeDeltaSeconds = Number.isFinite(deltaSeconds)
+      ? Math.max(0, deltaSeconds)
+      : 0;
+    let tileEntityId;
+    try {
+      tileEntityId = this.getTileEntityId(tileNumber);
+    } catch {
+      return null;
+    }
+
+    const phase = GardenTile.phase[tileEntityId];
+    if (
+      phase !== gardenTilePhases.growing &&
+      phase !== gardenTilePhases.harvesting
+    ) {
+      return null;
+    }
+
+    const previousRemainingSeconds = Math.max(
+      0,
+      GardenTile.remainingSeconds[tileEntityId] ?? 0,
+    );
+    const remainingSeconds = Math.max(
+      0,
+      previousRemainingSeconds - safeDeltaSeconds,
+    );
+    GardenTile.remainingSeconds[tileEntityId] = remainingSeconds;
+
+    return {
+      phase: gardenTilePhaseNames[phase],
+      reducedSeconds: previousRemainingSeconds - remainingSeconds,
+      remainingSeconds,
+    };
+  }
+
   completeFinishedGrowths() {
     const completedTiles = [];
 

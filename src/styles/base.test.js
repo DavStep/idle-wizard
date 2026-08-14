@@ -226,6 +226,14 @@ describe('base styles', () => {
     );
   });
 
+  it('uses the shared compact icon-label gap inside cost buttons', () => {
+    const costContentRule = getRuleBody(
+      /\.style-cost-button\s*>\s*\.style-resource-label\s*\{(?<body>[^}]*)\}/,
+    );
+
+    expect(costContentRule).toContain('gap: var(--style-icon-label-gap);');
+  });
+
   it('uses only regular text or the shared stroked-text width and color', () => {
     const rootRule = getRuleBody(/:root\s*\{(?<body>[^}]*)\}/);
     const declarations = [
@@ -837,8 +845,8 @@ describe('base styles', () => {
     expect(rootRule).toContain('--style-progress-blue-edge: #72c8ff;');
     expect(rootRule).toContain('--style-progress-green-fill: #4aa83f;');
     expect(rootRule).toContain('--style-progress-green-edge: #8bdc69;');
-    expect(rootRule).toContain('--style-progress-yellow-fill: #d8ad32;');
-    expect(rootRule).toContain('--style-progress-yellow-edge: #f6d86a;');
+    expect(rootRule).toContain('--style-progress-yellow-fill: #f5c542;');
+    expect(rootRule).toContain('--style-progress-yellow-edge: #ffee7d;');
     expect(progressRule).toContain('background: var(--style-progress-rail-background);');
     expect(progressRule).toContain('border: var(--style-progress-rail-border);');
     expect(progressRule).toContain('border-radius: 999px;');

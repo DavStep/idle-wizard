@@ -7,7 +7,7 @@ Use this when an AI agent or contributor needs to change the repo without guessi
 1. Read `AGENTS.md` for mandatory project rules.
 2. Read `experience.md`, then read the routed `docs/obsidian/engineering-liveops/experience/` files for durable lessons and current traps in the touched area.
 3. Read `docs/architecture.md` when the change crosses feature boundaries or needs architecture placement.
-4. For structural or visual UI work, also read `docs/style.md` and the reusable widget library in `docs/ui-patterns.md`. Use the `idle-wizard-ui-workflow` reuse review before product code changes.
+4. For structural or visual UI work, read `docs/ui-patterns-index.md`, classify the UI risk tier, and open only the matching catalogue/style sections. Full `docs/style.md` and `docs/ui-patterns.md` reads are reserved for new shared widgets, page-wide redesigns, reference work, and catalogue-wide audits.
 5. For tutorial/FTUE work, use the local `idle-wizard-tutorial-ui` skill and its QA checklist.
 6. For release work, read `docs/release-workflow.md`.
 7. Read the feature-local `README.md` before editing a feature folder.
@@ -22,7 +22,8 @@ Use the smallest check that proves the change, then broaden when touching shared
 - Focused logic change: run the matching `*.test.js`.
 - Feature-local gameplay or page behavior: run the owning feature tests and the smallest integration test that proves the changed boundary.
 - Shared infrastructure, cross-feature behavior, persistence-format changes, backend schema changes, or release behavior: run `npm run check` plus the relevant platform build/check.
-- Structural UI, layout, interaction, or tutorial change: run focused tests plus browser screenshot/click QA at the authored mobile surface and a fitted desktop viewport.
+- Feature-local UI reuse/extension with no shared contract change: run focused tests, `npm run check:ui`, and one authored `390x844` screenshot when visible pixels changed. Add fitted-desktop evidence only when containment, responsive layout, room chrome, or popup bounds can change.
+- New/changed shared widget, page-wide layout, interaction primitive, or tutorial change: run focused tests plus browser screenshot/click QA at the authored mobile surface and a fitted desktop viewport. Capture a native-pixel crop when optical alignment, text/art baselines, nine-slices, or asset geometry changed.
 - Any UI task: report `New widgets: none` or list the widgets introduced. Add new reusable widgets to `docs/ui-patterns.md` with their source, contract, and real-app evidence.
 - Visual-reference/composition change: follow `docs/visual-reference-qa.md`; define the target anchors before editing, open a reproducible real-app state, capture a native-pixel close crop, and run `npm run ui:compare`. Green tests and a full-screen thumbnail do not prove parity.
 - Dialog visual work: open the dialog through `cheats.openUi(surfaceId)` or `?devUi=surfaceId` for iteration and screenshots. If that path does not exist, add it before visual QA.
@@ -46,12 +47,14 @@ When a feature change would be meaningfully faster or safer with a repo-local he
   manifest. Use the versioned UI Lab SDK for scenarios, typed controls, actions,
   events, deterministic time, and cleanup; do not add feature-specific imports
   or conditional behavior to the editor shell or production engine.
-- UI Lab parity is mandatory: previews instantiate the same exported production
-  class/factory as the game. Every scene, dialog, and `feature.*` manifest lists
-  all reusable visual and interactive children in `childWidgetIds`; each child
-  must be an independently selectable `kind: 'widget'` entry with a passive
-  production-backed thumbnail. Fixtures may fake data/services, not rendering.
-  Run the UI editor integration coverage test when changing these manifests.
+- UI Lab parity is mandatory for new or changed coverage: previews instantiate
+  the same exported production class/factory as the game. New or materially
+  changed scene, dialog, and `feature.*` manifests list their reusable children
+  in `childWidgetIds`; every introduced or changed child is an independently
+  selectable `kind: 'widget'` entry with a passive production-backed thumbnail.
+  Run the integration coverage test when those manifests change. Repository-wide
+  legacy completeness is handled by an explicit UI Lab migration/release audit,
+  not by expanding an unrelated feature task.
 - Any reference-driven state must be reproducible through that checked-in path, a data template, tutorial loader, or focused harness. Do not use temporary source branches, read-only DOM mutation, or undocumented local state as final screenshot setup.
 - Document the command, required env flags, and intended use in this file when it is broad, or in the feature-local `README.md` when it is feature-specific.
 - Keep tools deterministic and scoped to the current repo; prefer shared Vite and SpacetimeDB processes. If parallel agents interfere, isolated runtimes may use explicit alternate ports, with one clear owner responsible for stopping every alternate listener when finished.
@@ -79,6 +82,12 @@ When a feature change would be meaningfully faster or safer with a repo-local he
 ## Shared Local Runtime
 
 Live browser/Android/manual QA must happen from the primary branch/worktree that owns the shared local services. Alternate branches/worktrees can help with code edits and static checks, but they must not claim runtime verification unless they also own the running services.
+
+For multi-iteration UI work, treat the shared runtime as a session resource. If
+it is down, start `npm run local:keepalive` once, then reuse the same Vite and
+SpacetimeDB processes for every screenshot and interaction pass. Repeated
+`npm run dev` restarts rerun the complete asset preparation chain and should not
+be part of the edit/inspect loop.
 
 Before local runtime QA, confirm both shared services, or the exact isolated endpoints selected for the QA:
 

@@ -17,8 +17,8 @@ import {
   getSeedPackItemFrameName,
 } from '../../../../assets/items/seeds/seedIconFrames.js';
 import { BasePixiRetainedView } from '../../primitives/BasePixiRetainedView.js';
-import { PixiButton } from '../../primitives/PixiButton.js';
-import { PixiPopupTabButton } from '../../primitives/PixiPopupTabButton.js';
+import { PixiTextButton } from '../../primitives/PixiTextButton.js';
+import { PixiTabButton } from '../../primitives/PixiTabButton.js';
 import { PIXI_DIALOG_PALETTE } from '../../primitives/PixiDialogFrame.js';
 import { PixiNineSliceFrame } from '../../primitives/PixiNineSliceFrame.js';
 import { PixiProgressBar } from '../../primitives/PixiProgressBar.js';
@@ -173,7 +173,7 @@ export class ShopPixiPage extends BasePixiRetainedView {
     this.tabLayer.label = 'shop:tabs';
     this.tabButtons = new Map();
     for (const tab of SHOP_TABS) {
-      const button = new PixiPopupTabButton({
+      const button = new PixiTabButton({
         assetManager,
         inputRouter,
         semanticRegistry,
@@ -775,7 +775,7 @@ export class ShopPixiPage extends BasePixiRetainedView {
   }
 }
 
-class ShopStallsSection {
+export class ShopStallsSection {
   constructor({
     page,
     assetManager,
@@ -913,7 +913,7 @@ class ShopStallsSection {
   }
 }
 
-class ShopRowsSection {
+export class ShopRowsSection {
   constructor({
     page,
     title,
@@ -1206,7 +1206,7 @@ class ShopRowsSection {
   }
 }
 
-class ShopStallWidget {
+export class ShopStallWidget {
   constructor({
     assetManager,
     inputRouter,
@@ -1280,7 +1280,7 @@ class ShopStallWidget {
       color: STALL_TEXT_INK,
       label: 'shop:stall:price',
     });
-    this.priceAction = new PixiButton({
+    this.priceAction = new PixiTextButton({
       assetManager,
       inputRouter,
       width: STALL_SELECT_ACTION_WIDTH,
@@ -1787,7 +1787,7 @@ class ShopStallWidget {
   }
 }
 
-class MarketOfferRow {
+export class MarketOfferRow {
   constructor({
     assetManager,
     inputRouter,
@@ -1830,7 +1830,7 @@ class MarketOfferRow {
       stroke: STALL_QUANTITY_STROKE,
       label: `${label}:amount`,
     });
-    this.actionButton = new PixiButton({
+    this.actionButton = new PixiTextButton({
       assetManager,
       inputRouter,
       width: MARKET_OFFER_ACTION_WIDTH,
@@ -2015,7 +2015,7 @@ class MarketOfferRow {
   }
 }
 
-class ShopCompactRow {
+export class ShopCompactRow {
   constructor({
     assetManager,
     inputRouter,
@@ -2065,7 +2065,7 @@ class ShopCompactRow {
     });
     this.valueResource.visible = false;
     this.valueResource.renderable = false;
-    this.valueButton = new PixiButton({
+    this.valueButton = new PixiTextButton({
       assetManager,
       inputRouter,
       width: OFFER_ACTION_WIDTH,

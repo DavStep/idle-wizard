@@ -12,7 +12,7 @@ import {
   PIXI_ROOT_RUN_GEOMETRY,
 } from '../theme/PixiThemeTokens.js';
 import { PixiNineSliceFrame } from './PixiNineSliceFrame.js';
-import { PixiButton } from './PixiButton.js';
+import { PixiTextButton } from './PixiTextButton.js';
 import { PixiTextLabel } from './PixiTextLabel.js';
 
 export const PIXI_DIALOG_PALETTE = Object.freeze({
@@ -58,9 +58,12 @@ export const PIXI_DIALOG_FOOTER_TABS_GEOMETRY = Object.freeze({
 
 const TITLE_TEXT_PADDING_X = 89 / 3;
 const TITLE_MAX_INSET_X = 8;
+const TITLE_CLOSE_GAP = 4;
 const SHADOW_OFFSET_X = 3;
 const SHADOW_OFFSET_Y = 4;
 const SHADOW_ALPHA = 0.42;
+const CENTERED_HEADER_LAYOUT = 'centered';
+const EDGE_HEADER_LAYOUT = 'edge';
 
 /**
  * Retained player-facing dialog chrome.
@@ -80,6 +83,7 @@ export class PixiDialogFrame extends Container {
     closeTutorialId = null,
     title = '',
     titleVariant = 'default',
+    headerLayout = CENTERED_HEADER_LAYOUT,
     coreWidth = PIXI_DIALOG_BASE_GEOMETRY.coreWidth,
     coreHeight = PIXI_DIALOG_BASE_GEOMETRY.minCoreHeight,
     closeAction = null,
@@ -103,6 +107,7 @@ export class PixiDialogFrame extends Container {
     this.theme = DEFAULT_PIXI_THEME_SNAPSHOT;
     this.contentTheme = createDialogContentTheme(this.theme);
     this.paperVisible = true;
+    this.headerLayout = normalizeHeaderLayout(headerLayout);
 
     const initialGeometry = PIXI_ROOT_RUN_GEOMETRY.dialog;
     const initialShellWidth =
@@ -172,7 +177,7 @@ export class PixiDialogFrame extends Container {
       label: `${label}:title`,
     });
 
-    this.closeControl = new PixiButton({
+    this.closeControl = new PixiTextButton({
       assetManager,
       inputRouter,
       width: PIXI_ROOT_RUN_GEOMETRY.dialog.closeSize,
@@ -323,6 +328,12 @@ export class PixiDialogFrame extends Container {
     return this;
   }
 
+  setHeaderLayout(layout = CENTERED_HEADER_LAYOUT) {
+    this.headerLayout = normalizeHeaderLayout(layout);
+    this.relayout();
+    return this;
+  }
+
   setCloseAction(action) {
     this.closeAction = typeof action === 'function' ? action : null;
     this.syncCloseState();
@@ -469,14 +480,7 @@ export class PixiDialogFrame extends Container {
       this.contentInsets.top,
     );
     this.layoutTitle();
-
-    this.closeControl.position.set(
-      this.coreWidth / 2,
-      this.coreHeight +
-        geometry.frameOutset +
-        geometry.closeGap +
-        geometry.closeSize / 2,
-    );
+    this.layoutCloseControl();
   }
 
   layoutTitle() {
@@ -484,14 +488,25 @@ export class PixiDialogFrame extends Container {
       return;
     }
     const geometry = PIXI_ROOT_RUN_GEOMETRY.dialog;
-    const maxWidth = Math.max(0, this.coreWidth - TITLE_MAX_INSET_X * 2);
+    const usesEdgeHeader = this.headerLayout === EDGE_HEADER_LAYOUT;
+    const maxWidth = Math.max(
+      0,
+      usesEdgeHeader
+        ? this.coreWidth +
+          geometry.frameOutset * 2 -
+          geometry.closeSize -
+          TITLE_CLOSE_GAP
+        : this.coreWidth - TITLE_MAX_INSET_X * 2,
+    );
     const desiredWidth = Math.max(
       geometry.titleMinWidth,
       this.titleLabel.measuredWidth + TITLE_TEXT_PADDING_X * 2,
     );
     const titleWidth =
       maxWidth > 0 ? Math.min(desiredWidth, maxWidth) : desiredWidth;
-    const titleX = (this.coreWidth - titleWidth) / 2;
+    const titleX = usesEdgeHeader
+      ? -geometry.frameOutset
+      : (this.coreWidth - titleWidth) / 2;
     const titleY = -geometry.frameOutset - geometry.titleOverhang;
 
     this.titleFrame.position.set(titleX, titleY);
@@ -501,10 +516,30 @@ export class PixiDialogFrame extends Container {
       geometry.titleBorderInsets,
     );
     this.titleLabel.position.set(
-      this.coreWidth / 2,
+      titleX + titleWidth / 2,
       titleY + geometry.titleHeight / 2,
     );
     this.syncHitArea();
+  }
+
+  layoutCloseControl() {
+    const geometry = PIXI_ROOT_RUN_GEOMETRY.dialog;
+    if (this.headerLayout === EDGE_HEADER_LAYOUT) {
+      const titleY = -geometry.frameOutset - geometry.titleOverhang;
+      this.closeControl.position.set(
+        this.coreWidth + geometry.frameOutset - geometry.closeSize / 2,
+        titleY + geometry.titleHeight / 2,
+      );
+      return;
+    }
+
+    this.closeControl.position.set(
+      this.coreWidth / 2,
+      this.coreHeight +
+        geometry.frameOutset +
+        geometry.closeGap +
+        geometry.closeSize / 2,
+    );
   }
 
   syncHitArea() {
@@ -540,6 +575,12 @@ export class PixiDialogFrame extends Container {
     this.dangerTitleFilter = null;
     super.destroy(options);
   }
+}
+
+function normalizeHeaderLayout(layout) {
+  return layout === EDGE_HEADER_LAYOUT
+    ? EDGE_HEADER_LAYOUT
+    : CENTERED_HEADER_LAYOUT;
 }
 
 export function createDialogPaperSection(texture, label) {

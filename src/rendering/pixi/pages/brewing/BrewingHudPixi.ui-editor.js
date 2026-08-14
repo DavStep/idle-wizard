@@ -1,13 +1,18 @@
 import { defineUiEditorIntegration } from '../../../../uiEditor/sdk/defineUiEditorIntegration.js';
 import { createUiEditorPixiSurface } from '../../../../uiEditor/widgets/createUiEditorPixiSurface.js';
-import { DEFAULT_PIXI_THEME_SNAPSHOT } from '../../theme/PixiThemeTokens.js';
+import {
+  DEFAULT_PIXI_THEME_SNAPSHOT,
+  PIXI_UI_GEOMETRY,
+} from '../../theme/PixiThemeTokens.js';
 import { BrewingHudPixi } from './BrewingHudPixi.js';
 
 export default defineUiEditorIntegration({
   apiVersion: 1,
   childWidgetIds: [
-    'base-button',
+    'text-button',
     'cost-button',
+    'compound.brewing-batch-detail',
+    'compound.brewing-ingredient-picker-slot',
     'primitive.progress-bar',
     'primitive.star-level-label',
   ],
@@ -139,11 +144,12 @@ async function mountBrewing(context, fixture) {
         theme: DEFAULT_PIXI_THEME_SNAPSHOT,
       });
       hud.bind(createModel(), actions);
+      hud.layout(PIXI_UI_GEOMETRY.sourceWidth);
       return {
         destroy: () => hud.destroy(),
         height: 600,
         root: hud.root,
-        width: 390,
+        width: PIXI_UI_GEOMETRY.sourceWidth,
       };
     },
   });

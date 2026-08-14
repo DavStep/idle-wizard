@@ -5,6 +5,12 @@ upload script posts the section whose heading matches `package.json` `version`.
 Write these developer-to-player notes only in Idle Wizard terms. Do not mention
 other game names, source projects, ports, or implementation provenance.
 
+## 0.3.49
+
+- Added automatic Android game updates. After installing this APK, compatible fixes and improvements can be prepared in the background and applied on restart.
+- Improved Garden plot feedback and made active growing and harvesting work respond more clearly to taps.
+- Polished room controls, dialogs, navigation, chat, and account surfaces for more consistent spacing and interaction.
+
 ## 0.3.48
 
 - Added clearer seed-use feedback in the Garden and sale flashes for active Market stalls.

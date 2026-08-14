@@ -21,7 +21,7 @@ describe('createIdleWizardButtonEntries', () => {
   it('registers every supported shared button preview in the Buttons folder', () => {
     const entries = createIdleWizardButtonEntries();
 
-    expect(entries).toHaveLength(8);
+    expect(entries).toHaveLength(9);
     expect(new Set(entries.map((entry) => entry.id)).size).toBe(entries.length);
     expect(entries.every((entry) => entry.kind === 'widget')).toBe(true);
     expect(entries.every((entry) => entry.sectionId === 'buttons')).toBe(true);
@@ -38,7 +38,7 @@ describe('createIdleWizardButtonEntries', () => {
     );
   });
 
-  it('covers regular, cost, info, and HUD button contracts', () => {
+  it('covers base, text, tab, cost, info, and HUD button contracts', () => {
     expect(
       new Set(
         IDLE_WIZARD_BUTTON_WIDGETS.map(
@@ -46,24 +46,37 @@ describe('createIdleWizardButtonEntries', () => {
         ),
       ),
     ).toEqual(
-      new Set(['button', 'cost', 'info', 'hud-settings', 'hud-avatar']),
+      new Set([
+        'base',
+        'text',
+        'tab',
+        'cost',
+        'info',
+        'hud-settings',
+        'hud-avatar',
+      ]),
     );
   });
 
   it('registers production usage locations for active widget contracts', () => {
     const entries = createIdleWizardButtonEntries();
     const baseButton = entries.find(({ id }) => id === 'base-button');
-    const popupTab = entries.find(({ id }) => id === 'popup-tab-button');
+    const textButton = entries.find(({ id }) => id === 'text-button');
+    const tabButton = entries.find(({ id }) => id === 'tab-button');
 
     expect(baseButton.usages).toContainEqual({
+      label: 'Text Button foundation',
+      source: 'src/rendering/pixi/primitives/PixiTextButton.js',
+    });
+    expect(textButton.usages).toContainEqual({
       label: 'Account Save action',
       source: 'src/rendering/pixi/global/dialogs/PixiSettingsDialog.js',
     });
-    expect(baseButton.usages).toContainEqual({
+    expect(textButton.usages).toContainEqual({
       label: 'Garden Harvest All action',
       source: 'src/rendering/pixi/pages/garden/GardenPixiPage.js',
     });
-    expect(popupTab.usages).toContainEqual({
+    expect(tabButton.usages).toContainEqual({
       label: 'Settings Avatar and Frame tabs',
       source: 'src/rendering/pixi/global/dialogs/PixiSettingsDialog.js',
     });
@@ -76,7 +89,7 @@ describe('createIdleWizardButtonEntries', () => {
     const infoButton = entries.find(({ id }) => id === 'info-button');
 
     expect(baseButton.properties).toEqual([
-      { label: 'Font', value: 'Lilita One' },
+      { label: 'Font', value: 'None' },
       {
         label: 'Background asset',
         monospace: true,
@@ -99,7 +112,7 @@ describe('createIdleWizardButtonEntries', () => {
     const baseButton = entries.find(({ id }) => id === 'base-button');
     const inlineButton = entries.find(({ id }) => id === 'inline-button');
     const costButton = entries.find(({ id }) => id === 'cost-button');
-    const popupTab = entries.find(({ id }) => id === 'popup-tab-button');
+    const tabButton = entries.find(({ id }) => id === 'tab-button');
     const hudSettings = entries.find(
       ({ id }) => id === 'hud-settings-button',
     );
@@ -117,7 +130,7 @@ describe('createIdleWizardButtonEntries', () => {
       'Background',
       'Resource icon',
     ]);
-    expect(popupTab.assets).toContainEqual(
+    expect(tabButton.assets).toContainEqual(
       expect.objectContaining({
         id: 'source:assets/ui/regular-button/dark-brown-button-50.9.png',
         nineSlice: true,

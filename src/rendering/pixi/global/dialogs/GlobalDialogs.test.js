@@ -129,6 +129,7 @@ describe('retained global Pixi dialogs', () => {
         actions: { saveUsername },
       },
     );
+    expect(settings.usernameField.inputKind).toBe('username');
     settings.usernameField.setValue('mira', { notify: true });
     expect(settings.usernameSave.activate()).toEqual({
       ok: true,

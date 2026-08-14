@@ -14,6 +14,7 @@ import { PixiNotificationBadge } from '../../global/transient/PixiNotificationBa
 import { ClickableWidget } from '../../primitives/ClickableWidget.js';
 import { PixiCostButton } from '../../primitives/PixiCostButton.js';
 import { PixiInfoButton } from '../../primitives/PixiInfoButton.js';
+import { PixiNineSliceFrame } from '../../primitives/PixiNineSliceFrame.js';
 import { layoutPixiSeedPackIcon } from '../../primitives/PixiSeedPackIcon.js';
 import { normalizePixiTextStroke } from '../../primitives/PixiTextLabel.js';
 import { PooledCollection } from '../../retained/PooledCollection.js';
@@ -21,6 +22,7 @@ import { WidgetPool } from '../../retained/WidgetPool.js';
 import {
   DEFAULT_PIXI_THEME_SNAPSHOT,
   PIXI_ROOT_RUN_ASSETS,
+  PIXI_ROOT_RUN_GEOMETRY,
   PIXI_UI_GEOMETRY,
 } from '../../theme/PixiThemeTokens.js';
 import { ShopDialogPixi, WORKSHOP_SUMMON_INFO_DIALOG_ID } from '../shop/ShopDialogPixi.js';
@@ -129,9 +131,8 @@ const WORKSHOP_FEATURE_PRESENTATIONS = Object.freeze({
 const SUMMON_EFFECT_DURATION_MS = 520;
 const SUMMON_BUTTON_WIDTH = 92;
 const SUMMON_BUTTON_HEIGHT = 52;
-const SUMMON_BUTTON_DOWN_OFFSET = SUMMON_BUTTON_HEIGHT / 2;
+const SUMMON_BUTTON_UP_OFFSET = 4;
 const SUMMON_CHAT_GAP = 32;
-const SUMMON_VERTICAL_OFFSET = 16;
 export const WORKSHOP_WINDOW_ASSET_ID =
   'source:assets/rooms/workshop/workshop-window.png';
 export const WORKSHOP_WINDOW_GEOMETRY = Object.freeze({
@@ -185,8 +186,10 @@ const SIDE_PANEL_MOVE_DURATION_MS = 180;
 const SIDE_PANEL_ENTER_OFFSET = 10;
 const SIDE_PANEL_ENTER_SCALE = 0.96;
 const SIDE_PANEL_STAGGER_MS = 16;
-const WORKSHOP_REQUEST_TEXT_FILL = '#ffffff';
+const WORKSHOP_REQUEST_TEXT_FILL = '#634934';
+const WORKSHOP_REQUEST_TITLE_FILL = '#ffffff';
 const WORKSHOP_REQUEST_TITLE_STROKE = '#0a0a0a';
+const WORKSHOP_TASK_ICON_SIZE = 24;
 const WORKSHOP_SIDE_LABEL_FILL = '#ffffff';
 const WORKSHOP_SIDE_LABEL_STROKE = '#0a0a0a';
 const REQUEST_PROGRESS_UPDATE_DURATION_MS = 220;
@@ -214,6 +217,7 @@ export class WorkshopPixiPage extends BaseRetainedPixiPage {
     cancelFrame = defaultCancelFrame,
     timeSource = defaultTimeSource,
     reducedMotion = prefersReducedMotion,
+    isUnlockAnimationBlocked = null,
     questCompletionMotionCoordinator = null,
   } = {}) {
     super({ pageId: 'workshop', semanticTargets, theme });
@@ -235,6 +239,11 @@ export class WorkshopPixiPage extends BaseRetainedPixiPage {
     this.timeSource = timeSource;
     this.reducedMotion =
       typeof reducedMotion === 'function' ? reducedMotion : () => Boolean(reducedMotion);
+    this.isUnlockAnimationBlocked =
+      typeof isUnlockAnimationBlocked === 'function'
+        ? isUnlockAnimationBlocked
+        : () =>
+            this.dialogRegistry?.isOpen?.('global.announcement') === true;
     this.questCompletionMotionCoordinator =
       questCompletionMotionCoordinator;
 
@@ -608,7 +617,7 @@ export class WorkshopPixiPage extends BaseRetainedPixiPage {
       worldChatTop -
         SUMMON_BUTTON_HEIGHT -
         SUMMON_CHAT_GAP +
-        SUMMON_VERTICAL_OFFSET,
+        SUMMON_BUTTON_UP_OFFSET,
     );
     const sideControlsTop =
       RETAINED_PAGE_GEOMETRY.contentTop + this.tasks.height + SIDE_CONTROLS_TASK_GAP;
@@ -749,12 +758,15 @@ export class WorkshopPixiPage extends BaseRetainedPixiPage {
     state.destination = destination;
     this.sideControlMotionStates.set(entry.id, state);
 
-    if (!animate || !previous) {
+    const appearing = wasVisible === false && entry.visible;
+    const waitForUnlockAnnouncement =
+      appearing && this.getIsUnlockAnimationBlocked();
+
+    if ((!animate || !previous) && !waitForUnlockAnnouncement) {
       this.finishSideControlTransition(entry, state);
       return;
     }
 
-    const appearing = wasVisible === false && entry.visible;
     const disappearing = wasVisible === true && !entry.visible;
     const offset = entry.side === 'right' ? SIDE_PANEL_ENTER_OFFSET : -SIDE_PANEL_ENTER_OFFSET;
     const from = {
@@ -777,13 +789,26 @@ export class WorkshopPixiPage extends BaseRetainedPixiPage {
     const delay = appearing ? Math.min(destination.slot, 2) * SIDE_PANEL_STAGGER_MS : 0;
 
     entry.root.visible = true;
-    entry.root.renderable = true;
+    entry.root.renderable = !waitForUnlockAnnouncement;
     entry.root.position.set(from.x, from.y);
     entry.root.alpha = from.alpha;
     entry.root.scale.set(from.scale);
 
     let startedAt = null;
     const tick = (timestamp) => {
+      if (appearing && this.getIsUnlockAnimationBlocked()) {
+        entry.root.renderable = false;
+        state.frame = this.requestFrame(tick);
+        return;
+      }
+
+      entry.root.renderable = true;
+      if (!animate) {
+        state.frame = 0;
+        this.finishSideControlTransition(entry, state);
+        return;
+      }
+
       if (startedAt === null) {
         startedAt = timestamp;
       }
@@ -807,6 +832,14 @@ export class WorkshopPixiPage extends BaseRetainedPixiPage {
     };
 
     state.frame = this.requestFrame(tick);
+  }
+
+  getIsUnlockAnimationBlocked() {
+    try {
+      return Boolean(this.isUnlockAnimationBlocked());
+    } catch {
+      return false;
+    }
   }
 
   finishSideControlTransition(entry, state) {
@@ -867,15 +900,27 @@ export class WorkshopPixiPage extends BaseRetainedPixiPage {
   }
 }
 
-class WorkshopTaskPanel {
+export class WorkshopTaskPanel {
   constructor({ page, assetManager, counters }) {
     this.page = page;
+    this.assetManager = assetManager;
     this.panel = new RetainedPanel({
       assetManager,
       label: "Elara's Request",
       panelLabel: 'workshop-tasks',
     });
     this.root = this.panel.root;
+    this.background = new PixiNineSliceFrame({
+      texture:
+        assetManager?.getTexture?.(
+          PIXI_ROOT_RUN_ASSETS.researchCard,
+        ) ?? Texture.EMPTY,
+      sourceInsets: PIXI_ROOT_RUN_GEOMETRY.researchCard.sourceInsets,
+      borderInsets: PIXI_ROOT_RUN_GEOMETRY.researchCard.borderInsets,
+      label: 'workshop-tasks:research-card-background',
+    });
+    this.background.eventMode = 'none';
+    this.root.addChildAt(this.background, 0);
     this.next = createText('', {
       ...RETAINED_TEXT_STYLES.body,
       wordWrapWidth: 308,
@@ -1055,7 +1100,14 @@ class WorkshopTaskPanel {
 
     this.height = Math.max(34, Math.ceil(contentY + 9));
     this.panel.setBounds(x, y, width, this.height);
-    this.applyTitleStroke();
+    this.background.setSize(
+      width,
+      this.height,
+      PIXI_ROOT_RUN_GEOMETRY.researchCard.borderInsets,
+    );
+    this.panel.frame.visible = false;
+    this.panel.fallback.visible = false;
+    applyWorkshopRequestTitleTheme(this.panel.title, this.page.theme);
     this.pinButton.setBounds(8, this.height - 7, 42, 14);
     this.expandButton.setBounds(width / 2 - 30, this.height - 7, 60, 14);
     this.page.registerSemanticTarget({
@@ -1068,13 +1120,20 @@ class WorkshopTaskPanel {
 
   applyTheme(theme) {
     this.panel.applyTheme(theme);
-    applyWorkshopRequestTextTheme(this.panel.title, theme, RETAINED_TEXT_STYLES.bold);
-    this.applyTitleStroke();
+    this.background.setTexture(
+      this.assetManager?.getTexture?.(
+        PIXI_ROOT_RUN_ASSETS.researchCard,
+      ) ?? Texture.EMPTY,
+      PIXI_ROOT_RUN_GEOMETRY.researchCard.sourceInsets,
+    );
+    this.panel.frame.visible = false;
+    this.panel.fallback.visible = false;
+    applyWorkshopRequestTitleTheme(this.panel.title, theme);
     applyWorkshopRequestTextTheme(this.next, theme, {
       ...RETAINED_TEXT_STYLES.body,
       wordWrapWidth: 308,
     });
-    applyWorkshopRequestTextTheme(this.rewardsTitle, theme, RETAINED_TEXT_STYLES.bold);
+    applyWorkshopRequestTextTheme(this.rewardsTitle, theme, RETAINED_TEXT_STYLES.body);
     applyWorkshopRequestTextTheme(this.rewards, theme, {
       ...RETAINED_TEXT_STYLES.body,
       wordWrapWidth: 308,
@@ -1085,12 +1144,6 @@ class WorkshopTaskPanel {
     for (const row of this.rows.getWidgets()) {
       row.applyTheme(theme);
     }
-  }
-
-  applyTitleStroke() {
-    this.panel.title.style.stroke = normalizePixiTextStroke({
-      color: WORKSHOP_REQUEST_TITLE_STROKE,
-    }, this.panel.title.style.fontSize);
   }
 
   destroy() {
@@ -1104,7 +1157,7 @@ class WorkshopTaskPanel {
   }
 }
 
-class WorkshopTaskRow {
+export class WorkshopTaskRow {
   constructor({ page, assetManager }) {
     this.clickable = new ClickableWidget({
       fallbackHitTest: true,
@@ -1259,7 +1312,7 @@ class WorkshopTaskRow {
 
   setBounds(x, y, width) {
     this.root.position.set(x, y);
-    const iconSize = 16;
+    const iconSize = WORKSHOP_TASK_ICON_SIZE;
     if (this.iconOverlay.visible) {
       layoutPixiSeedPackIcon({
         base: this.icon,
@@ -1608,7 +1661,7 @@ class WorkshopTaskRow {
   }
 }
 
-class WorkshopSummonControl {
+export class WorkshopSummonControl {
   constructor({
     page,
     assetManager,
@@ -1736,7 +1789,7 @@ class WorkshopSummonControl {
     this.setCircleEffectFrame({ alpha: this.enabled ? 1 : 0.38, scale: 1 });
     this.button.setBounds(
       -SUMMON_BUTTON_WIDTH / 2,
-      -SUMMON_BUTTON_HEIGHT / 2 + SUMMON_BUTTON_DOWN_OFFSET,
+      -SUMMON_BUTTON_UP_OFFSET,
       SUMMON_BUTTON_WIDTH,
       SUMMON_BUTTON_HEIGHT,
     );
@@ -1862,7 +1915,7 @@ class WorkshopSummonControl {
   }
 }
 
-class WorkshopIconPanelAction {
+export class WorkshopIconPanelAction {
   constructor({
     page,
     assetManager,
@@ -2045,7 +2098,7 @@ class WorkshopIconPanelAction {
   }
 }
 
-class WorkshopFeatureButton {
+export class WorkshopFeatureButton {
   constructor({ page, assetManager }) {
     this.page = page;
     this.assetManager = assetManager;
@@ -2468,8 +2521,16 @@ function applyWorkshopRequestTextTheme(text, theme, style = RETAINED_TEXT_STYLES
     ...style,
     fill: style.fill ?? WORKSHOP_REQUEST_TEXT_FILL,
   });
+  text.style.stroke = null;
+}
+
+function applyWorkshopRequestTitleTheme(text, theme) {
+  applyTextTheme(text, theme, {
+    ...RETAINED_TEXT_STYLES.body,
+    fill: WORKSHOP_REQUEST_TITLE_FILL,
+  });
   text.style.stroke = normalizePixiTextStroke({
-    color: theme.surface,
+    color: WORKSHOP_REQUEST_TITLE_STROKE,
   }, text.style.fontSize);
 }
 

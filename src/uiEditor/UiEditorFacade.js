@@ -29,6 +29,7 @@ export class UiEditorFacade {
     this.workspaceManager = null;
     this.previewCleanup = null;
     this.assetUsageRequestId = 0;
+    this.activeLibraryEntry = null;
   }
 
   mount() {
@@ -37,8 +38,8 @@ export class UiEditorFacade {
     this.hierarchyManager = new UiEditorHierarchyManager({
       onOpenComponent: (entryId) =>
         this.openLibraryComponent(entryId),
-      onSelectComponent: (component) =>
-        this.usageManager?.showComponent(component),
+      onSelectComponent: (component, element) =>
+        this.showHierarchySelection(component, element),
       panel: refs.panels.left,
       scene: refs.preview,
     });
@@ -127,10 +128,14 @@ export class UiEditorFacade {
     const opened = this.openPreview(candidate);
 
     if (opened) {
+      this.activeLibraryEntry = entry;
       this.usageManager?.showEntry(
         entry,
         this.viewManager.refs?.preview.firstElementChild,
       );
+      if (entry.kind === 'widget') {
+        this.hierarchyManager?.selectRootComponent();
+      }
     }
 
     return opened;
@@ -174,13 +179,35 @@ export class UiEditorFacade {
     );
 
     if (selectedEntry) {
+      this.activeLibraryEntry = selectedEntry;
       this.usageManager?.showEntry(
         selectedEntry,
         this.viewManager.refs?.preview.firstElementChild,
       );
     } else {
+      this.activeLibraryEntry = null;
       this.usageManager?.clear();
     }
+  }
+
+  showHierarchySelection(component, element) {
+    if (component) {
+      return this.usageManager?.showComponent(component) ?? false;
+    }
+
+    if (
+      element
+      && element === this.viewManager.refs?.preview.firstElementChild
+      && this.activeLibraryEntry
+    ) {
+      return this.usageManager?.showEntry(
+        this.activeLibraryEntry,
+        element,
+      ) ?? false;
+    }
+
+    this.usageManager?.clear();
+    return false;
   }
 
   async refreshAssetUsageBadges() {
@@ -214,6 +241,7 @@ export class UiEditorFacade {
   clearPreview() {
     this.previewCleanup?.();
     this.previewCleanup = null;
+    this.activeLibraryEntry = null;
     this.viewManager.refs?.preview.replaceChildren();
     this.syncPreviewPanels(null);
     this.bottomPanelManager?.clearSelection();
@@ -250,6 +278,7 @@ export class UiEditorFacade {
     this.assetUsageRequestId += 1;
     this.previewCleanup?.();
     this.previewCleanup = null;
+    this.activeLibraryEntry = null;
     this.workspaceManager?.unmount();
     this.workspaceManager = null;
     this.layoutManager?.unmount();

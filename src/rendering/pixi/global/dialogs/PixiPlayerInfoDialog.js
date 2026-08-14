@@ -3,7 +3,7 @@ import {
 } from 'pixi.js';
 
 import {
-  PixiButton,
+  PixiTextButton,
   PixiNineSliceFrame,
   PixiResourceLabel,
   PixiStarLevelLabel,
@@ -54,7 +54,7 @@ export class PixiPlayerInfoDialog extends RetainedGlobalDialog {
       fontWeight: 'bold',
       label: `${dialogId}:name`,
     });
-    this.allianceButton = new PixiButton({
+    this.allianceButton = new PixiTextButton({
       assetManager: this.context.assets,
       inputRouter: this.context.inputRouter,
       semanticRegistry: this.context.semanticRegistry,

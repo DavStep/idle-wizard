@@ -15,12 +15,18 @@ import {
   PixiBottomPanelView,
   PixiBottomRoomTab,
 } from '../global/chrome/PixiBottomPanelView.js';
-import { RetainedScrollArea } from '../pages/workshop/RetainedPageKit.js';
 import {
+  RetainedPanel,
+  RetainedScrollArea,
+} from '../pages/workshop/RetainedPageKit.js';
+import {
+  DEFAULT_PIXI_THEME_SNAPSHOT,
   PIXI_ROOT_RUN_ASSETS,
   PIXI_UI_GEOMETRY,
 } from '../theme/PixiThemeTokens.js';
 import {
+  DeviceIdentityFooter,
+  ROOT_RUN_DEVICE_PREFERENCE_ROW_HEIGHT,
   RootRunDevicePreferenceRow,
   RootRunDevicePreferencesPanel,
 } from './PixiDeviceSettingsWidgets.js';
@@ -35,6 +41,30 @@ const HUD_SOURCE_SCALE = PIXI_UI_GEOMETRY.sourceScale;
 const FOUNDATION_SECTION = 'composite-widgets';
 
 export default [
+  defineUiEditorIntegration({
+    apiVersion: 1,
+    createThumbnail: createRetainedPanelThumbnail,
+    folderPath: ['Panels'],
+    id: 'primitive.retained-panel',
+    kind: 'widget',
+    label: 'Border-Labeled Panel',
+    sectionId: FOUNDATION_SECTION,
+    properties: [
+      { label: 'Production class', value: 'RetainedPanel' },
+      { label: 'Contract', value: 'Shared ordinary room panel with embedded border title' },
+    ],
+    usages: [
+      {
+        label: 'Room boxes and compact global chrome',
+        source: 'src/rendering/pixi/pages/workshop/RetainedPageKit.js',
+      },
+    ],
+    scenarios: [
+      { fixture: { label: 'Inventory', strong: false }, id: 'ordinary', label: 'Ordinary', mount: mountRetainedPanel },
+      { fixture: { label: 'Elara\'s Request', strong: true }, id: 'strong', label: 'Strong title', mount: mountRetainedPanel },
+      { fixture: { label: '', strong: false }, id: 'untitled', label: 'Untitled', mount: mountRetainedPanel },
+    ],
+  }),
   defineUiEditorIntegration({
     apiVersion: 1,
     folderPath: ['Settings'],
@@ -57,6 +87,54 @@ export default [
       { fixture: { enabled: true, value: false }, id: 'off', label: 'Off', mount: mountSettingsToggle },
       { fixture: { enabled: true, value: true }, id: 'on', label: 'On', mount: mountSettingsToggle },
       { fixture: { enabled: false, value: true }, id: 'disabled', label: 'Disabled', mount: mountSettingsToggle },
+    ],
+  }),
+  defineUiEditorIntegration({
+    apiVersion: 1,
+    createThumbnail: createDevicePreferenceRowThumbnail,
+    folderPath: ['Settings'],
+    id: 'compound.device-preference-row',
+    kind: 'widget',
+    label: 'Device Preference Row',
+    sectionId: FOUNDATION_SECTION,
+    properties: [
+      { label: 'Production class', value: 'RootRunDevicePreferenceRow' },
+      { label: 'Contract', value: 'Icon-led boolean preference row' },
+    ],
+    usages: [
+      {
+        label: 'Settings device and theme controls',
+        source: 'src/rendering/pixi/global/dialogs/PixiSettingsDialog.js',
+      },
+    ],
+    scenarios: [
+      { fixture: { enabled: true, key: 'sfx', text: 'SOUND', value: true }, id: 'on', label: 'On', mount: mountDevicePreferenceRow },
+      { fixture: { enabled: true, key: 'music', text: 'MUSIC', value: false }, id: 'off', label: 'Off', mount: mountDevicePreferenceRow },
+      { fixture: { enabled: false, key: 'haptics', text: 'VIBRATION', value: true }, id: 'disabled', label: 'Disabled', mount: mountDevicePreferenceRow },
+      { fixture: { enabled: true, key: 'theme', text: 'THEME', value: true }, id: 'theme', label: 'Day theme', mount: mountDevicePreferenceRow },
+    ],
+  }),
+  defineUiEditorIntegration({
+    apiVersion: 1,
+    createThumbnail: createDeviceIdentityFooterThumbnail,
+    folderPath: ['Settings'],
+    id: 'compound.device-identity-footer',
+    kind: 'widget',
+    label: 'Device Identity Footer',
+    sectionId: FOUNDATION_SECTION,
+    properties: [
+      { label: 'Production class', value: 'DeviceIdentityFooter' },
+      { label: 'Contract', value: 'Client version, compact identity, and copy state' },
+    ],
+    usages: [
+      {
+        label: 'Settings configuration footer',
+        source: 'src/rendering/pixi/global/dialogs/PixiSettingsDialog.js',
+      },
+    ],
+    scenarios: [
+      { fixture: { userId: '', version: '0.12.0' }, id: 'unavailable', label: 'Not connected', mount: mountDeviceIdentityFooter },
+      { fixture: { userId: 'c83af094129c4bbfa6e2b44c2e943acd', version: '0.12.0' }, id: 'ready', label: 'Ready to copy', mount: mountDeviceIdentityFooter },
     ],
   }),
   defineUiEditorIntegration({
@@ -109,6 +187,7 @@ export default [
   }),
   defineUiEditorIntegration({
     apiVersion: 1,
+    createThumbnail: createInlineTextThumbnail,
     folderPath: ['Text'],
     id: 'primitive.inline-text',
     kind: 'widget',
@@ -202,6 +281,7 @@ export default [
   }),
   defineUiEditorIntegration({
     apiVersion: 1,
+    createThumbnail: createDevicePreferencesThumbnail,
     folderPath: ['Settings'],
     id: 'compound.device-preferences',
     kind: 'widget',
@@ -247,6 +327,7 @@ export default [
   }),
   defineUiEditorIntegration({
     apiVersion: 1,
+    createThumbnail: createHudCurrencyThumbnail,
     folderPath: ['HUD'],
     id: 'compound.hud-currency-capsule',
     kind: 'widget',
@@ -296,6 +377,7 @@ export default [
   defineUiEditorIntegration({
     apiVersion: 1,
     childWidgetIds: ['compound.bottom-room-tab'],
+    createThumbnail: createBottomRoomTabsThumbnail,
     folderPath: ['Navigation'],
     id: 'compound.bottom-room-tabs',
     kind: 'widget',
@@ -358,6 +440,62 @@ async function mountSettingsToggle(context, fixture) {
       },
     };
   }
+}
+
+async function mountRetainedPanel(_context, fixture) {
+  return createUiEditorPixiSurface({
+    assetFilter: panelAssetFilter,
+    component: 'RetainedPanel',
+    createControl: ({ assets }) => createRetainedPanelControl({ assets, fixture }),
+  });
+}
+
+async function mountDevicePreferenceRow(context, fixture) {
+  const state = { ...fixture };
+  const surface = await createUiEditorPixiSurface({
+    assetFilter: settingsAssetFilter,
+    component: 'RootRunDevicePreferenceRow',
+    createControl: ({ assets, input }) => createDevicePreferenceRowControl({
+      assets,
+      fixture: state,
+      input,
+      onChange: (value) => {
+        state.value = value;
+        context.emit('preferenceChanged', { key: state.key, value });
+        return true;
+      },
+    }),
+  });
+  const row = surface.control.row;
+  return {
+    ...surface,
+    controls: [
+      checkboxControl('value', 'On', () => state.value, (value) => {
+        state.value = value;
+        row.bind({ enabled: state.enabled, value, onChange: () => true });
+      }),
+      checkboxControl('enabled', 'Enabled', () => state.enabled, (value) => {
+        state.enabled = value;
+        row.bind({ enabled: value, value: state.value, onChange: () => true });
+      }),
+    ],
+  };
+}
+
+async function mountDeviceIdentityFooter(context, fixture) {
+  return createUiEditorPixiSurface({
+    assetFilter: settingsAssetFilter,
+    component: 'DeviceIdentityFooter',
+    createControl: ({ assets, input }) => createDeviceIdentityFooterControl({
+      assets,
+      fixture,
+      input,
+      onCopy: (userId) => {
+        context.emit('identityCopied', { userId });
+        return true;
+      },
+    }),
+  });
 }
 
 async function mountTextField(_context, fixture) {
@@ -866,6 +1004,44 @@ function createSettingsToggleThumbnail() {
   });
 }
 
+function createRetainedPanelThumbnail() {
+  return createUiEditorPixiThumbnail({
+    assetFilter: panelAssetFilter,
+    component: 'RetainedPanel',
+    createControl: ({ assets }) => createRetainedPanelControl({
+      assets,
+      fixture: { label: 'Inventory', strong: false },
+    }),
+    id: 'primitive.retained-panel',
+  });
+}
+
+function createDevicePreferenceRowThumbnail() {
+  return createUiEditorPixiThumbnail({
+    assetFilter: settingsAssetFilter,
+    component: 'RootRunDevicePreferenceRow',
+    createControl: ({ assets }) => createDevicePreferenceRowControl({
+      assets,
+      fixture: { enabled: true, key: 'sfx', text: 'SOUND', value: true },
+      input: null,
+    }),
+    id: 'compound.device-preference-row',
+  });
+}
+
+function createDeviceIdentityFooterThumbnail() {
+  return createUiEditorPixiThumbnail({
+    assetFilter: settingsAssetFilter,
+    component: 'DeviceIdentityFooter',
+    createControl: ({ assets }) => createDeviceIdentityFooterControl({
+      assets,
+      fixture: { userId: 'c83af094129c4bbfa6e2b44c2e943acd', version: '0.12.0' },
+      input: null,
+    }),
+    id: 'compound.device-identity-footer',
+  });
+}
+
 function createTextFieldThumbnail() {
   return createUiEditorPixiThumbnail({
     assetFilter: textFieldAssetFilter,
@@ -893,6 +1069,78 @@ function createTextLabelThumbnail() {
     component: 'PixiTextLabel',
     createControl: () => createTextLabelControl({ text: 'Mana restored' }),
     id: 'primitive.text-label',
+  });
+}
+
+function createInlineTextThumbnail() {
+  return createUiEditorPixiThumbnail({
+    component: 'PixiInlineText',
+    createControl: ({ assets }) => {
+      const inline = new PixiInlineText({
+        runs: createInlineRuns(assets, 'Collect 25'),
+        style: inlineTextStyle(),
+        wrapWidth: 150,
+      });
+      return {
+        destroy: () => inline.destroy({ children: true }),
+        height: Math.max(18, inline.layoutHeight),
+        root: inline,
+        width: 150,
+      };
+    },
+    id: 'primitive.inline-text',
+  });
+}
+
+function createDevicePreferencesThumbnail() {
+  const state = { haptics: true, music: true, sound: true, theme: false };
+  return createUiEditorPixiThumbnail({
+    assetFilter: settingsAssetFilter,
+    component: 'RootRunDevicePreferencesPanel',
+    createControl: ({ assets }) => createDevicePreferencesControl({
+      assets,
+      input: null,
+      onChange: () => true,
+      state,
+    }),
+    id: 'compound.device-preferences',
+  });
+}
+
+function createHudCurrencyThumbnail() {
+  return createUiEditorPixiThumbnail({
+    assetFilter: hudAssetFilter,
+    component: 'RootRunHudCurrencyCapsule',
+    createControl: ({ assets }) => createHudCurrencyControl({
+      assets,
+      state: { amount: '12.4K', resource: 'coin' },
+    }),
+    id: 'compound.hud-currency-capsule',
+  });
+}
+
+function createBottomRoomTabsThumbnail() {
+  return createUiEditorPixiThumbnail({
+    assetFilter: bottomPanelAssetFilter,
+    component: 'PixiBottomPanelView',
+    createControl: ({ assets }) => {
+      const view = new PixiBottomPanelView({ assets, reducedMotion: true });
+      view.layout({ sourceHeight: 844, sourceWidth: 390 });
+      view.bind({
+        currentPageId: 'workshop',
+        notifications: {},
+        pages: ['brewing', 'garden', 'workshop', 'research', 'shop'].map((id) => ({ id, unlocked: true, visible: true })),
+        reveal: { rooms: true },
+      });
+      view.activate();
+      return {
+        destroy: () => view.destroy(),
+        height: 844,
+        root: view.root,
+        width: 390,
+      };
+    },
+    id: 'compound.bottom-room-tabs',
   });
 }
 
@@ -1060,6 +1308,81 @@ function createDevicePreferencesControl({ assets, input, state, onChange }) {
   };
 }
 
+function createRetainedPanelControl({ assets, fixture }) {
+  const panel = new RetainedPanel({
+    assetManager: assets,
+    label: fixture.label,
+    panelLabel: 'uiLabRetainedPanel',
+    strong: fixture.strong,
+  });
+  panel.setBounds(0, 0, 250, 74);
+  panel.applyTheme(DEFAULT_PIXI_THEME_SNAPSHOT);
+  const body = new PixiTextLabel({ text: 'Shared production panel content' });
+  body.position.set(10, 28);
+  panel.body.addChild(body);
+  return {
+    destroy: () => panel.destroy(),
+    height: 86,
+    panel,
+    root: panel.root,
+    width: 250,
+  };
+}
+
+function createDevicePreferenceRowControl({ assets, fixture, input, onChange = () => true }) {
+  const iconDefinition = resolvePreferenceIconDefinition(fixture.key);
+  const row = new RootRunDevicePreferenceRow({
+    assetManager: assets,
+    iconAssetId: iconDefinition.off,
+    inputRouter: input,
+    onIconAssetId: iconDefinition.on,
+    preferenceKey: fixture.key,
+    text: fixture.text,
+  });
+  row.setBounds(0, 0, 244);
+  row.bind({ enabled: fixture.enabled, onChange, value: fixture.value });
+  return {
+    destroy: () => row.destroy({ children: true }),
+    height: ROOT_RUN_DEVICE_PREFERENCE_ROW_HEIGHT,
+    root: row,
+    row,
+    width: 244,
+  };
+}
+
+function createDeviceIdentityFooterControl({ assets, fixture, input, onCopy = () => true }) {
+  const footer = new DeviceIdentityFooter({
+    assetManager: assets,
+    inputRouter: input,
+    width: 264,
+  });
+  footer.bind({ ...fixture, onCopy });
+  return {
+    destroy: () => footer.destroy({ children: true }),
+    footer,
+    height: footer.footerHeight,
+    root: footer,
+    width: 264,
+  };
+}
+
+function resolvePreferenceIconDefinition(key) {
+  if (key === 'theme') {
+    return {
+      off: PIXI_ROOT_RUN_ASSETS.settingsThemeNight,
+      on: PIXI_ROOT_RUN_ASSETS.settingsThemeDay,
+    };
+  }
+  return {
+    off: key === 'music'
+      ? PIXI_ROOT_RUN_ASSETS.settingsMusic
+      : key === 'haptics'
+        ? PIXI_ROOT_RUN_ASSETS.settingsVibration
+        : PIXI_ROOT_RUN_ASSETS.settingsSound,
+    on: null,
+  };
+}
+
 function createHudLevelControl({ assets, state }) {
   const wrapper = new Container({ label: 'uiLabHudLevelRail' });
   const rail = new RootRunHudLevelRail({ assets });
@@ -1120,6 +1443,10 @@ function inlineTextStyle() {
 
 function settingsAssetFilter({ id }) {
   return id.includes('/ui/root-run-settings/');
+}
+
+function panelAssetFilter({ id }) {
+  return String(id ?? '').includes('/ui/inner-section-panel-');
 }
 
 function textFieldAssetFilter({ id }) {

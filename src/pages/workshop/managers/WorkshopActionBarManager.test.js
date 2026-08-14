@@ -424,16 +424,16 @@ describe('WorkshopActionBarManager', () => {
     manager.unmount();
   });
 
-  it('moves the retained summon cost button down by half its height', () => {
+  it('lifts the retained summon cost button within the summon cluster', () => {
     const pixiSource = readFileSync(
       `${cwd()}/src/rendering/pixi/pages/workshop/WorkshopPixiPage.js`,
       'utf8',
     );
 
     expect(pixiSource).toContain('const SUMMON_BUTTON_HEIGHT = 52;');
-    expect(pixiSource).toContain('const SUMMON_BUTTON_DOWN_OFFSET = SUMMON_BUTTON_HEIGHT / 2;');
+    expect(pixiSource).toContain('const SUMMON_BUTTON_UP_OFFSET = 4;');
     expect(pixiSource).toMatch(
-      /this\.button\.setBounds\(\s*-SUMMON_BUTTON_WIDTH \/ 2,\s*-SUMMON_BUTTON_HEIGHT \/ 2 \+ SUMMON_BUTTON_DOWN_OFFSET,/,
+      /this\.button\.setBounds\(\s*-SUMMON_BUTTON_WIDTH \/ 2,\s*-SUMMON_BUTTON_UP_OFFSET,/,
     );
   });
 

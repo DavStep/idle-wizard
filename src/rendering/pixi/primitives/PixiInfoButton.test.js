@@ -32,8 +32,7 @@ describe('PixiInfoButton', () => {
     expect(getTexture).toHaveBeenCalledWith(PIXI_ROOT_RUN_ASSETS.info);
     expect(button.icon.width).toBe(18);
     expect(button.icon.height).toBe(18);
-    expect(button.textLabel.visible).toBe(false);
-    expect(button.textLabel.renderable).toBe(false);
+    expect(button.textLabel).toBeUndefined();
     expect(button.activate()).toBe(true);
     expect(firstAction).toHaveBeenCalledOnce();
 

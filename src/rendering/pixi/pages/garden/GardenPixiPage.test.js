@@ -5,7 +5,7 @@ import { Container, Texture } from "pixi.js";
 import { describe, expect, it, vi } from "vitest";
 
 import { PixiInputRouter } from "../../input/PixiInputRouter.js";
-import { PixiButton } from "../../primitives/PixiButton.js";
+import { PixiTextButton } from "../../primitives/PixiTextButton.js";
 import { PixiCostButton } from "../../primitives/PixiCostButton.js";
 import { PixiDialogFrame } from "../../primitives/PixiDialogFrame.js";
 import { PixiNineSliceFrame } from "../../primitives/PixiNineSliceFrame.js";
@@ -911,6 +911,88 @@ describe("GardenPixiPage", () => {
     harness.dispose();
   });
 
+  it("locks accelerated plot taps through the full local feedback sequence", () => {
+    let now = 100;
+    const activatePlot = vi.fn(() => ({
+      ok: true,
+      tileNumber: 1,
+      reducedSeconds: 1,
+      remainingMs: 4_000,
+      cooldownMs: 800,
+    }));
+    const harness = createHarness({ timeSource: () => now });
+    harness.page.bind(createGardenViewModel({ activatePlot }));
+    const plot = harness.page.plots.get("plot-1");
+    const frameChildren = plot.frame.children.length;
+
+    expect(plot.activate()).toMatchObject({ ok: true, reducedSeconds: 1 });
+    expect(plot.tapFeedbackStartedAt).toBe(100);
+    expect(plot.isActivationLocked(now)).toBe(true);
+
+    expect(plot.activate()).toMatchObject({
+      ok: false,
+      reason: "tap_cooldown",
+      retryAfterMs: 800,
+    });
+    expect(activatePlot).toHaveBeenCalledTimes(1);
+
+    now = 100 + 800 * 0.42;
+    harness.page.tick(now);
+    expect(plot.frame.scale.x).toBeCloseTo(0.985);
+    expect(plot.frame.scale.y).toBeCloseTo(1.025);
+    expect(plot.tapPlantMotion.y).toBeCloseTo(-7);
+    expect(plot.tapFeedback.visible).toBe(true);
+    expect(plot.tapFeedback.text).toBe("-1s");
+
+    now = 900;
+    harness.page.tick(now);
+    expect(plot.isActivationLocked(now)).toBe(false);
+    expect(plot.tapFeedbackStartedAt).toBeNull();
+    expect(plot.tapFeedback.visible).toBe(false);
+    expectPlotFrameAligned(plot);
+    expect(plot.frame.children).toHaveLength(frameChildren);
+
+    expect(plot.activate()).toMatchObject({ ok: true });
+    expect(activatePlot).toHaveBeenCalledTimes(2);
+
+    harness.page.destroy();
+    harness.dispose();
+  });
+
+  it("keeps the anti-spam lock but removes plot movement under reduced motion", () => {
+    let now = 0;
+    const activatePlot = vi.fn(() => ({
+      ok: true,
+      reducedSeconds: 1,
+      cooldownMs: 800,
+    }));
+    const harness = createHarness({
+      reducedMotion: true,
+      timeSource: () => now,
+    });
+    harness.page.bind(createGardenViewModel({ activatePlot }));
+    const plot = harness.page.plots.get("plot-1");
+
+    expect(plot.activate()).toMatchObject({ ok: true });
+    expect(plot.tapFeedback.visible).toBe(true);
+    expectPlotFrameAligned(plot);
+
+    now = 300;
+    harness.page.tick(now);
+    expect(plot.tapFeedback.visible).toBe(false);
+    expect(plot.isActivationLocked(now)).toBe(true);
+    expectPlotFrameAligned(plot);
+
+    expect(plot.activate()).toMatchObject({
+      ok: false,
+      reason: "tap_cooldown",
+    });
+    expect(activatePlot).toHaveBeenCalledTimes(1);
+
+    harness.page.destroy();
+    harness.dispose();
+  });
+
   it("animates the selected seed indicator only after successful seed use", () => {
     let now = 40;
     const plantAll = vi
@@ -1111,10 +1193,10 @@ describe("GardenPixiPage", () => {
     expect(swap.message.text).toBe("swap sage seed for thyme seed?");
     expect(swap.modal.panel.titleLabel.textObject.text).toBe("Swap Seed?");
     expect(swap.message.anchor).toMatchObject({ x: 0, y: 0.5 });
-    expect(swap.keep.button).toBeInstanceOf(PixiButton);
+    expect(swap.keep.button).toBeInstanceOf(PixiTextButton);
     expect(swap.keep.variant).toBe("yellow");
     expect(swap.keep.frame.visible).toBe(true);
-    expect(swap.confirm.button).toBeInstanceOf(PixiButton);
+    expect(swap.confirm.button).toBeInstanceOf(PixiTextButton);
     expect(swap.confirm.variant).toBe("yellow");
     expect(swap.keep.text.text).toBe("Keep");
     expect(swap.confirm.text.text).toBe("Swap");

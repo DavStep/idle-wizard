@@ -363,10 +363,25 @@ export class UiEditorHierarchyManager {
       target.element.setAttribute(SCENE_SELECTED_ATTRIBUTE, '');
       this.onSelectComponent?.(
         target.element.uiEditorGetInspectorComponent?.() ?? null,
+        target.element,
       );
     }
     this.refresh();
     return true;
+  }
+
+  selectRootComponent() {
+    const root = this.scene.firstElementChild;
+
+    if (!root || root.dataset.uiEditorHierarchy === 'hidden') {
+      return false;
+    }
+
+    const id = this.getElementId(root);
+    if (!this.elementsById.has(id)) {
+      this.refresh();
+    }
+    return this.selectComponent(id);
   }
 
   clearSelection() {
@@ -475,10 +490,14 @@ export class UiEditorHierarchyManager {
     row.append(disclosure, toggle, text, metadata);
     item.append(row);
 
+    const hasSemanticHierarchy =
+      typeof element.uiEditorGetAtomicComponents === 'function';
     const atomicComponents = normalizeAtomicComponents(
-      element.uiEditorGetAtomicComponents?.(),
+      hasSemanticHierarchy
+        ? element.uiEditorGetAtomicComponents()
+        : null,
     );
-    const children = atomicComponents.length
+    const children = hasSemanticHierarchy
       ? atomicComponents
       : [...element.children];
 

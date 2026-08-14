@@ -1356,7 +1356,7 @@ function createColorFilter({
   }
 }
 
-class FeatureUnlockFlyoutWidget {
+export class FeatureUnlockFlyoutWidget {
   constructor({ parent }) {
     this.root = new Container();
     this.root.label = 'bottomPanel:unlockFlyout';

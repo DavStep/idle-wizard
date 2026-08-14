@@ -102,7 +102,9 @@ selected. A compact red cauldron-over-`Empty` action sits to the right of that
 identity, immediately above the batch detail panel. It clears the selected
 recipe and every staged herb for the selected cauldron, stays visible but
 disabled when there is nothing to clear or a brew is active, and uses the
-shared retained-button release semantics. The empty preview does not repeat
+shared retained-button release semantics. Activating it opens the shared
+confirmation dialog; only the `Empty` confirmation clears the contents,
+while `Cancel` leaves the cauldron unchanged. The empty preview does not repeat
 `Choose Recipe`, and batch quantity
 appears only in the existing `xN` configuration control.
 
@@ -149,8 +151,11 @@ action panel aligns to the same `16px` room edges as World Chat, and the potion
 art uses the larger preview fit inside its existing well.
 
 The action section keeps existing retained button semantics. The single primary
-button follows the brewing state: manual idle is `Brew`, brewing and bottling
-are yellow `Cancel`, brewed is `Bottle`, and bottled is `Collect`. Auto mode
+button follows the brewing state: a truly empty cauldron is yellow
+`Choose Recipe` and opens the same retained recipe dialog as the compact
+top-right `Recipes` control; manual idle after a recipe or ingredient is staged
+is `Brew`, brewing and bottling are yellow `Cancel`, brewed is `Bottle`, and
+bottled is `Collect`. Auto mode
 shows `Collect` only while output is ready; otherwise it shows yellow `Cancel`.
 Idle Auto `Cancel` disables Auto, while active `Cancel` destroys the unfinished
 batch through the existing cancellation flow. Enabling Auto first copies the
@@ -163,7 +168,13 @@ bounded ghost pool. A successful manual Brew launches each visible ingredient
 from its orbit icon with a short outward/upward kick, then follows a high curved
 path into the visible center of the cauldron liquid. Flights use a readable
 Root Run-style `55ms` stagger and `420ms` per-item duration. Cauldron
-receive/recipe-receive/buy feedback reuses the cauldron display tree. Changing
+receive/recipe-receive/buy feedback reuses the cauldron display tree. Prepared
+liquid shows one sparse ripple; an active brew adds three bounded bubbles and a
+small highlight drift. A newly staged herb eases into its unchanged slot and
+lights its connector once. Brew completion adds one compact liquid ring and
+cauldron squash, primary action changes ease the replacement label into the
+existing button skin, and Collect lifts the potion art from the visible liquid
+before the shared reward layer reports it. Changing
 the selected cauldron through a chevron or swipe plays the same compact
 directional `240ms` settle without decorative trails or particles.
 Reduced motion switches instantly. Deactivation and pool reset clear every

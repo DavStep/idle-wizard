@@ -1531,6 +1531,14 @@ export class GameplayFacade {
     return result;
   }
 
+  accelerateGardenPlot(tileNumber) {
+    const result = this.gardenFacade.acceleratePlot(tileNumber);
+    if (result.ok) {
+      this.publishAndSaveSnapshot();
+    }
+    return result;
+  }
+
   cancelGardenPlanting(tileNumber) {
     const result = this.gardenFacade.cancelProgress(tileNumber);
     this.publishAndSaveSnapshot();

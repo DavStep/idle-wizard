@@ -155,9 +155,9 @@ export function createShop(options = {}) {
       uiActions,
     }),
     support: {
-      title: 'support',
+      title: 'Support',
       message:
-        'thank you for trying to support the project but the transactions are not yet available <3',
+        'Thank you for trying to support the project but the transactions are not yet available <3',
     },
     ...(options.dialogs ?? {}),
   };
@@ -526,28 +526,6 @@ function createStallDialog({
       }),
     actions: [
       {
-        id: 'clear',
-        label: 'Clear',
-        variant: 'red',
-        enabled: Boolean(
-          slot.sellItemTypeId ?? slot.futureItemTypeId,
-        ),
-        action: () =>
-          callFirstOr(
-            uiActions,
-            ['clearStall'],
-            [slotNumber],
-            () =>
-              selectAndCall(
-                [
-                  'clearSelectedShopShelfSlot',
-                  'clearSelectedShelfSlot',
-                ],
-                [],
-              ),
-          ),
-      },
-      {
         id: 'mark',
         label: `Mark x${targetQuantity}`,
         variant: 'green',
@@ -568,6 +546,28 @@ function createStallDialog({
                   'setSelectedShelfSlotQuantity',
                 ],
                 [selectedItem?.itemTypeId, targetQuantity],
+              ),
+          ),
+      },
+      {
+        id: 'clear',
+        label: 'Clear',
+        variant: 'red',
+        enabled: Boolean(
+          slot.sellItemTypeId ?? slot.futureItemTypeId,
+        ),
+        action: () =>
+          callFirstOr(
+            uiActions,
+            ['clearStall'],
+            [slotNumber],
+            () =>
+              selectAndCall(
+                [
+                  'clearSelectedShopShelfSlot',
+                  'clearSelectedShelfSlot',
+                ],
+                [],
               ),
           ),
       },
@@ -679,8 +679,12 @@ function createRequestDialog({
     : visibleSellKinds[0]?.kind ?? null;
   const quantity = positiveInteger(draft.quantity);
   const priceCoin = positiveInteger(draft.priceCoin);
+  const status = String(
+    uiState.requestStatusBySlot?.[slotNumber] ?? '',
+  );
   return {
     title: 'Request',
+    status,
     summaryRows: [
       {
         id: 'current',
@@ -751,7 +755,8 @@ function createRequestDialog({
           quantity !== null &&
           priceCoin !== null &&
           quantity <= PLAYER_MARKET_MAX_QUANTITY &&
-          priceCoin <= PLAYER_MARKET_MAX_PRICE_COIN,
+          priceCoin <= PLAYER_MARKET_MAX_PRICE_COIN &&
+          status !== 'requesting',
         action: async () => {
           const result = await callFirstOr(
             uiActions,
@@ -892,7 +897,7 @@ function createListingDialog({
       positiveInteger(draft.quantity) ?? 1,
     ),
   );
-  const priceCoin = positiveInteger(draft.priceCoin);
+  const priceCoin = positiveInteger(draft.priceCoin ?? 1);
   return {
     title: 'Sell',
     summaryRows: [
@@ -908,7 +913,7 @@ function createListingDialog({
     ],
     range: {
       enabled: Boolean(selectedItem) && availableQuantity > 0,
-      tone: 'root',
+      tone: 'yellow',
       min: 1,
       max: Math.max(1, availableQuantity),
       step: 1,
@@ -920,6 +925,7 @@ function createListingDialog({
           value,
         ]),
     },
+    status: uiState.listingStatusBySlot?.[slotNumber] ?? '',
     fields: [
       {
         id: 'priceCoin',
@@ -968,6 +974,32 @@ function createListingDialog({
       }),
     actions: [
       {
+        id: 'clear',
+        label: 'Clear',
+        variant: 'red',
+        enabled: true,
+        layoutWeight: 1,
+        action: async () => {
+          const result = await callFirstOr(
+            uiActions,
+            ['clearPlayerListing'],
+            [slotNumber],
+            () =>
+              slot.itemTypeId
+                ? clearPlayerListing({
+                    gameplayActions,
+                    playerShopActions,
+                    slotNumber,
+                  })
+                : { ok: false, reason: 'nothing_to_clear' },
+          );
+          if (result !== false && result?.ok !== false) {
+            callFirst(uiActions, ['closePlayerListingDialog'], [slotNumber]);
+          }
+          return result;
+        },
+      },
+      {
         id: 'list',
         label: 'Sell',
         variant: 'green',
@@ -976,6 +1008,7 @@ function createListingDialog({
           availableQuantity > 0 &&
           priceCoin !== null &&
           priceCoin <= PLAYER_MARKET_MAX_PRICE_COIN,
+        layoutWeight: 2,
         action: async () => {
           const result = await callFirstOr(
             uiActions,
@@ -1000,29 +1033,6 @@ function createListingDialog({
                 },
                 playerShopActions,
                 playerShelf,
-                slotNumber,
-              }),
-          );
-          if (result !== false && result?.ok !== false) {
-            callFirst(uiActions, ['closePlayerListingDialog'], [slotNumber]);
-          }
-          return result;
-        },
-      },
-      {
-        id: 'clear',
-        label: 'Clear',
-        variant: 'red',
-        enabled: Boolean(slot.itemTypeId),
-        action: async () => {
-          const result = await callFirstOr(
-            uiActions,
-            ['clearPlayerListing'],
-            [slotNumber],
-            () =>
-              clearPlayerListing({
-                gameplayActions,
-                playerShopActions,
                 slotNumber,
               }),
           );
@@ -1076,16 +1086,27 @@ function createLedgerDialog({
         detail: `stock ${displayCount(item.stock)} · buyers ${displayCount(
           item.npcNeed ?? item.sellNeed,
         )}`,
-        value: Number.isFinite(Number(item.buyCoin))
-          ? formatCoinPriceText(item.buyCoin)
-          : 'offline',
+        value: formatLedgerPrice(item.buyCoin),
         resourceKey: item.kind,
-        valueResourceKey: Number.isFinite(Number(item.buyCoin))
+        valueResourceKey: isPositiveCoinPrice(item.buyCoin) ? 'coin' : null,
+        stockLabel: formatLedgerCount(item.stock),
+        buyersLabel: formatLedgerCount(item.npcNeed ?? item.sellNeed),
+        buyPriceLabel: formatLedgerPrice(item.buyCoin),
+        buyPriceResourceKey: isPositiveCoinPrice(item.buyCoin)
           ? 'coin'
           : null,
+        sellPriceLabel: formatLedgerPrice(item.sellCoin),
+        sellPriceResourceKey: isPositiveCoinPrice(item.sellCoin)
+          ? 'coin'
+          : null,
+        availabilityLabel: formatLedgerAvailability(item),
         itemKey: item.key,
         itemKind: item.kind,
-        enabled: item.tradedHere !== false,
+        enabled:
+          item.tradedHere !== false &&
+          isPositiveCoinPrice(item.buyCoin) &&
+          Number(item.stock) > 0,
+        disabled: item.tradedHere === false,
         semanticId: `shop.ledger.item.${item.key ?? item.itemTypeId}`,
         action: () =>
           callFirstOr(
@@ -1559,6 +1580,43 @@ function clampInteger(value, min, max, fallback) {
 function displayCount(value) {
   const number = Number(value);
   return Number.isFinite(number) ? String(Math.max(0, number)) : '—';
+}
+
+function formatLedgerCount(value) {
+  const number = Math.max(0, Math.floor(Number(value)));
+  if (!Number.isFinite(number)) {
+    return '—';
+  }
+  if (number < 10_000) {
+    return new Intl.NumberFormat('en').format(number);
+  }
+  return new Intl.NumberFormat('en', {
+    notation: 'compact',
+    maximumFractionDigits: 1,
+  })
+    .format(number)
+    .toLowerCase();
+}
+
+function isPositiveCoinPrice(value) {
+  return Number.isFinite(Number(value)) && Number(value) > 0;
+}
+
+function formatLedgerPrice(value) {
+  return isPositiveCoinPrice(value)
+    ? formatCoinPriceText(value)
+    : 'Unavailable';
+}
+
+function formatLedgerAvailability(item = {}) {
+  const marketName = String(item.requiredMarket?.name ?? '').trim();
+  const rank = Math.max(
+    0,
+    Math.floor(Number(item.requiredMarket?.rank) || 0),
+  );
+  return marketName
+    ? `Trades at ${marketName}${rank > 0 ? ` ${'★'.repeat(rank)}` : ''}`
+    : 'Not traded in this market';
 }
 
 function toTitleCase(value) {

@@ -1,7 +1,7 @@
 import { Sprite } from 'pixi.js';
 
 import {
-  PixiButton,
+  PixiTextButton,
   PixiModalSurface,
   PixiTextLabel,
 } from '../../primitives/index.js';
@@ -76,7 +76,7 @@ export class PixiFreshStartChoiceView extends PixiModalSurface {
       wrapWidth: FRESH_START_COPY_WIDTH,
       label: 'freshStartChoice:status',
     });
-    this.connectButton = new PixiButton({
+    this.connectButton = new PixiTextButton({
       assetManager: assets,
       inputRouter,
       text: 'Connect Account',
@@ -84,7 +84,7 @@ export class PixiFreshStartChoiceView extends PixiModalSurface {
       variant: 'yellow',
       label: 'freshStartChoice:connect',
     });
-    this.freshButton = new PixiButton({
+    this.freshButton = new PixiTextButton({
       assetManager: assets,
       inputRouter,
       text: 'Start New',

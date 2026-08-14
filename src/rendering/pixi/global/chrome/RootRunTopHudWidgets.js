@@ -7,7 +7,7 @@ import {
 } from 'pixi.js';
 
 import {
-  PixiButton,
+  PixiBaseButton,
   PixiResourceLabel,
   PixiTextLabel,
 } from '../../primitives/index.js';
@@ -39,7 +39,6 @@ const LEVEL_HEIGHT = 93;
 const LEVEL_STAR_SIZE = 93;
 const LEVEL_TRACK_X = 20;
 const LEVEL_TRACK_Y = 21;
-const LEVEL_TRACK_WIDTH = 631;
 const LEVEL_TRACK_HEIGHT = 51;
 const LEVEL_TRACK_INSET = 3;
 const LEVEL_FILL_HEIGHT = 51;
@@ -127,7 +126,7 @@ export class RootRunAvatarWidget extends Container {
   }
 }
 
-export class RootRunHudAvatarButton extends PixiButton {
+export class RootRunHudAvatarButton extends PixiBaseButton {
   constructor({
     action = null,
     assets,
@@ -141,7 +140,6 @@ export class RootRunHudAvatarButton extends PixiButton {
       inputRouter,
       width: AVATAR_SIZE,
       height: AVATAR_SIZE,
-      text: '',
       variant: 'inline',
       label: 'topPanel:avatarViewport',
     });
@@ -174,13 +172,15 @@ export class RootRunHudCurrencyCapsule extends Container {
     assets,
     resource = 'coin',
     amount = '0',
+    width = CURRENCY_WIDTH,
     label = 'topPanel:currency',
   } = {}) {
     super({ label });
+    this.capsuleWidth = Math.max(CURRENCY_WIDTH, Number(width) || 0);
     this.background = createNineSlice({
       texture: assets.getTexture(HUD_ASSETS.currency),
       insets: { left: 21, top: 21, right: 21, bottom: 21 },
-      width: CURRENCY_WIDTH,
+      width: this.capsuleWidth,
       height: CURRENCY_HEIGHT,
       label: `${label}:background`,
     });
@@ -215,6 +215,13 @@ export class RootRunHudCurrencyCapsule extends Container {
     return this;
   }
 
+  setWidth(width) {
+    this.capsuleWidth = Math.max(CURRENCY_WIDTH, Number(width) || 0);
+    this.background.setSize(this.capsuleWidth, CURRENCY_HEIGHT);
+    this.layoutContent();
+    return this;
+  }
+
   applyTheme(theme) {
     this.resourceLabel.applyTheme(theme);
     this.resourceLabel.amountLabel
@@ -232,10 +239,13 @@ export class RootRunHudCurrencyCapsule extends Container {
     icon.position.set(13, CURRENCY_HEIGHT / 2);
 
     amountLabel.setAnchor(1, 0.5);
-    amountLabel.position.set(193, CURRENCY_HEIGHT / 2);
+    amountLabel.position.set(this.capsuleWidth - 15, CURRENCY_HEIGHT / 2);
     amountLabel.textObject.scale.set(1);
-    if (amountLabel.measuredWidth > 120) {
-      amountLabel.textObject.scale.set(120 / amountLabel.measuredWidth);
+    const availableAmountWidth = this.capsuleWidth - 88;
+    if (amountLabel.measuredWidth > availableAmountWidth) {
+      amountLabel.textObject.scale.set(
+        availableAmountWidth / amountLabel.measuredWidth,
+      );
     }
     return this;
   }
@@ -249,7 +259,7 @@ export class RootRunHudCurrencyCapsule extends Container {
   }
 }
 
-export class RootRunHudSquareIconButton extends PixiButton {
+export class RootRunHudSquareIconButton extends PixiBaseButton {
   constructor({
     action = null,
     assets,
@@ -263,7 +273,6 @@ export class RootRunHudSquareIconButton extends PixiButton {
       height: SETTINGS_SIZE,
       inputRouter,
       label,
-      text: '',
       variant: 'inline',
       width: SETTINGS_SIZE,
     });
@@ -285,19 +294,19 @@ export class RootRunHudSquareIconButton extends PixiButton {
     this.icon.width = 80;
     this.icon.height = 84;
     this.visual.addChild(this.background, this.icon);
-    this.textLabel.visible = false;
-    this.textLabel.renderable = false;
   }
 }
 
 export class RootRunHudLevelRail extends Container {
-  constructor({ assets } = {}) {
+  constructor({ assets, width = LEVEL_WIDTH } = {}) {
     super({
       label: 'topPanel:levelRail',
       eventMode: 'static',
     });
     this.cursor = 'pointer';
-    this.hitArea = new Rectangle(0, 0, LEVEL_WIDTH, LEVEL_HEIGHT);
+    this.levelWidth = Math.max(LEVEL_WIDTH, Number(width) || 0);
+    this.trackWidth = this.levelWidth - 31;
+    this.hitArea = new Rectangle(0, 0, this.levelWidth, LEVEL_HEIGHT);
     this.ratio = 0;
     this.total = 1;
     this.completed = 0;
@@ -306,8 +315,8 @@ export class RootRunHudLevelRail extends Container {
       label: 'topPanel:levelPressVisual',
       eventMode: 'none',
     });
-    this.pressVisual.pivot.set(LEVEL_WIDTH / 2, LEVEL_HEIGHT / 2);
-    this.pressVisual.position.set(LEVEL_WIDTH / 2, LEVEL_HEIGHT / 2);
+    this.pressVisual.pivot.set(this.levelWidth / 2, LEVEL_HEIGHT / 2);
+    this.pressVisual.position.set(this.levelWidth / 2, LEVEL_HEIGHT / 2);
     this.questVisuals = new Container({
       label: 'topPanel:questVisuals',
       eventMode: 'none',
@@ -315,7 +324,7 @@ export class RootRunHudLevelRail extends Container {
     this.panel = createNineSlice({
       texture: assets.getTexture(HUD_ASSETS.levelPanel),
       insets: { left: 31, top: 31, right: 31, bottom: 31 },
-      width: 656,
+      width: this.levelWidth - 6,
       height: 76,
       label: 'topPanel:levelPanel',
     });
@@ -325,7 +334,7 @@ export class RootRunHudLevelRail extends Container {
     this.track = createNineSlice({
       texture: assets.getTexture(HUD_ASSETS.levelTrack),
       insets: { left: 31, top: 0, right: 31, bottom: 0 },
-      width: LEVEL_TRACK_WIDTH,
+      width: this.trackWidth,
       height: LEVEL_TRACK_HEIGHT,
       label: 'topPanel:questTrack',
     });
@@ -404,11 +413,25 @@ export class RootRunHudLevelRail extends Container {
     this.questVisuals.visible = Boolean(visible);
     this.questVisuals.renderable = this.questVisuals.visible;
     const interactionWidth = this.questVisuals.visible
-      ? LEVEL_WIDTH
+      ? this.levelWidth
       : LEVEL_STAR_SIZE;
     this.hitArea.width = interactionWidth;
     this.pressVisual.pivot.x = interactionWidth / 2;
     this.pressVisual.position.x = interactionWidth / 2;
+    return this;
+  }
+
+  setWidth(width) {
+    this.levelWidth = Math.max(LEVEL_WIDTH, Number(width) || 0);
+    this.trackWidth = this.levelWidth - 31;
+    this.panel.setSize(this.levelWidth - 6, 76);
+    this.track.setSize(this.trackWidth, LEVEL_TRACK_HEIGHT);
+    this.setQuestVisible(this.questVisuals.visible);
+    this.renderProgress({
+      ratio: this.ratio,
+      total: this.total,
+      completed: this.completed,
+    });
     return this;
   }
 
@@ -432,7 +455,7 @@ export class RootRunHudLevelRail extends Container {
     const y =
       LEVEL_TRACK_Y +
       (LEVEL_TRACK_HEIGHT - LEVEL_FILL_HEIGHT) / 2;
-    const width = LEVEL_TRACK_WIDTH - LEVEL_TRACK_INSET * 2;
+    const width = this.trackWidth - LEVEL_TRACK_INSET * 2;
     const height = LEVEL_FILL_HEIGHT;
 
     const fillWidth = width * safeRatio;

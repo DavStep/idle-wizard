@@ -1,0 +1,52 @@
+import { describe, expect, it } from 'vitest';
+
+import chromeIntegrations from './chrome/GlobalChrome.ui-editor.js';
+import avatarIntegration from './dialogs/SettingsAvatarWidget.ui-editor.js';
+import loadingIntegration from './gates/PixiLoadingSplash.ui-editor.js';
+import badgeIntegration from './transient/PixiNotificationBadges.ui-editor.js';
+import rewardIntegration from './transient/PixiTransientEffectsLayer.ui-editor.js';
+import tutorialIntegration from './tutorial/TutorialPixiOverlay.ui-editor.js';
+
+describe('shared Pixi UI editor integrations', () => {
+  it('exposes each shared production widget with a passive library thumbnail', () => {
+    const integrations = [
+      ...chromeIntegrations,
+      avatarIntegration,
+      loadingIntegration,
+      badgeIntegration,
+      rewardIntegration,
+      tutorialIntegration,
+    ];
+
+    expect(integrations.map(({ id }) => id)).toEqual([
+      'compound.player-hud',
+      'compound.compact-world-chat',
+      'compound.settings-avatar-option',
+      'global.loading-splash',
+      'primitive.notification-badge',
+      'compound.reward-flyout',
+      'compound.tutorial-lesson-surface',
+    ]);
+    expect(
+      integrations.every(
+        ({ createThumbnail, kind, scenarios }) =>
+          kind === 'widget'
+          && typeof createThumbnail === 'function'
+          && scenarios.length > 0,
+      ),
+    ).toBe(true);
+  });
+
+  it('declares the independently selectable pieces used by compound chrome', () => {
+    expect(chromeIntegrations[0].childWidgetIds).toEqual([
+      'compound.player-avatar',
+      'compound.hud-level-rail',
+      'compound.hud-currency-capsule',
+      'hud-avatar-button',
+      'hud-settings-button',
+    ]);
+    expect(chromeIntegrations[1].childWidgetIds).toEqual([
+      'primitive.retained-panel',
+    ]);
+  });
+});

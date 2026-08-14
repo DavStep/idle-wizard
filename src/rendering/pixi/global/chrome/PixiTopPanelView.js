@@ -39,6 +39,18 @@ const TOP_HUD_X = 32 / ROOT_RUN_UI_SCALE;
 // canvas already starts below env(safe-area-inset-top), so keep only the
 // reference's 32 px content inset here.
 const TOP_HUD_Y = 32 / ROOT_RUN_UI_SCALE;
+const TOP_HUD_CONTENT_WIDTH =
+  PIXI_UI_GEOMETRY.sourceWidth * ROOT_RUN_UI_SCALE - 64;
+const SETTINGS_X = TOP_HUD_CONTENT_WIDTH - 122;
+const LEVEL_X = 203;
+const LEVEL_SETTINGS_GAP = 21;
+const LEVEL_WIDTH = SETTINGS_X - LEVEL_SETTINGS_GAP - LEVEL_X;
+const CURRENCY_X = 209;
+const CURRENCY_GAP = 17;
+const CURRENCY_SETTINGS_GAP = 21;
+const CURRENCY_WIDTH =
+  (SETTINGS_X - CURRENCY_SETTINGS_GAP - CURRENCY_X - CURRENCY_GAP * 2) /
+  3;
 const TOP_PANEL_BACKGROUND_HEIGHT =
   PIXI_UI_GEOMETRY.roomContentTop -
   PIXI_UI_GEOMETRY.topPanelContentGap;
@@ -166,18 +178,21 @@ export class PixiTopPanelView extends BasePixiRetainedView {
       assets,
       resource: 'coin',
       amount: '0',
+      width: CURRENCY_WIDTH,
       label: 'topPanel:coin',
     });
     this.contextCurrency = new RootRunHudCurrencyCapsule({
       assets,
       resource: 'crystal',
       amount: '0',
+      width: CURRENCY_WIDTH,
       label: 'topPanel:contextCurrency',
     });
     this.mana = new RootRunHudCurrencyCapsule({
       assets,
       resource: 'mana',
       amount: '0/0',
+      width: CURRENCY_WIDTH,
       label: 'topPanel:mana',
     });
     this.manaRate = new PixiTextLabel({
@@ -195,19 +210,31 @@ export class PixiTopPanelView extends BasePixiRetainedView {
     this.settingsControl = new RootRunHudSquareIconButton({
       assets,
     });
-    this.levelRail = new RootRunHudLevelRail({ assets });
+    this.levelRail = new RootRunHudLevelRail({
+      assets,
+      width: LEVEL_WIDTH,
+    });
     this.levelControl = this.levelRail.levelControl;
     this.levelStar = this.levelRail.levelStar;
     this.levelValue = this.levelRail.levelValue;
     this.levelMotionRoot = this.levelRail.levelMotionRoot;
     this.questRail = this.levelRail.questVisuals;
 
-    this.levelRail.position.set(203, 4);
-    this.coin.position.set(209, 108);
-    this.contextCurrency.position.set(433, 108);
-    this.mana.position.set(657, 108);
-    this.manaRate.position.set(761, 174);
-    this.settingsControl.position.set(886, 32);
+    this.levelRail.position.set(LEVEL_X, 4);
+    this.coin.position.set(CURRENCY_X, 108);
+    this.contextCurrency.position.set(
+      CURRENCY_X + CURRENCY_WIDTH + CURRENCY_GAP,
+      108,
+    );
+    this.mana.position.set(
+      CURRENCY_X + (CURRENCY_WIDTH + CURRENCY_GAP) * 2,
+      108,
+    );
+    this.manaRate.position.set(
+      this.mana.position.x + CURRENCY_WIDTH / 2,
+      174,
+    );
+    this.settingsControl.position.set(SETTINGS_X, 32);
     this.topHudRoot.addChild(
       this.levelRail,
       this.coin,

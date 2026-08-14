@@ -549,7 +549,7 @@ describe("PixiPagesFacade", () => {
     ).not.toHaveBeenCalled();
   });
 
-  it("empties the selected cauldron and clears its page-local recipe", () => {
+  it("confirms before emptying the selected cauldron and clearing its page-local recipe", () => {
     const gameplaySnapshot = createGameplaySnapshot();
     const recipe = {
       key: "manaTonic",
@@ -570,6 +570,11 @@ describe("PixiPagesFacade", () => {
       herbs: [],
     };
     const harness = createHarness({ gameplaySnapshot });
+    const globalDialogPresenter = {
+      mount: vi.fn(),
+      open: vi.fn(() => true),
+    };
+    harness.dependencies.globalDialogPresenter = globalDialogPresenter;
     harness.gameplayFacade.prepareBrewingRecipe.mockReturnValue({ ok: true });
     harness.gameplayFacade.clearBrewingCauldron.mockReturnValue({ ok: true });
     const pages = new PixiPagesFacade(harness.dependencies);
@@ -578,7 +583,26 @@ describe("PixiPagesFacade", () => {
     const brewing = harness.getBoundPage("brewing");
 
     expect(brewing.actions.selectRecipe(recipe, 0)).toEqual({ ok: true });
-    expect(brewing.actions.emptyCauldron(0)).toEqual({ ok: true });
+    expect(brewing.actions.emptyCauldron(0)).toBe(true);
+    expect(
+      harness.gameplayFacade.clearBrewingCauldron,
+    ).not.toHaveBeenCalled();
+    expect(globalDialogPresenter.open).toHaveBeenCalledWith(
+      "confirmation",
+      expect.objectContaining({
+        title: "Empty Cauldron?",
+        message: "Are you sure you want to empty the cauldron contents?",
+        cancelLabel: "Cancel",
+        confirmLabel: "Empty",
+        value: { cauldronIndex: 0 },
+        actions: { confirm: expect.any(Function) },
+      }),
+    );
+
+    const confirmation = globalDialogPresenter.open.mock.calls.at(-1)[1];
+    expect(confirmation.actions.confirm(confirmation.value)).toEqual({
+      ok: true,
+    });
     expect(
       harness.gameplayFacade.clearBrewingCauldron,
     ).toHaveBeenCalledWith(0);
@@ -794,14 +818,14 @@ describe("PixiPagesFacade", () => {
       value: "Sage Seed",
       quantityLabel: "x8",
     });
-    expect(dialog.actions[1]).toMatchObject({
+    expect(dialog.actions[0]).toMatchObject({
       label: "Mark x8",
       enabled: true,
     });
 
     dialog.range.onChange(2);
     dialog = harness.getBoundPage("shop").shop.traders.stalls[0].dialog;
-    expect(dialog.actions[1].label).toBe("Mark x2");
+    expect(dialog.actions[0].label).toBe("Mark x2");
 
     dialog.tabs.find((tab) => tab.id === "herb").action();
     dialog = harness.getBoundPage("shop").shop.traders.stalls[0].dialog;
@@ -809,7 +833,7 @@ describe("PixiPagesFacade", () => {
 
     dialog.tabs.find((tab) => tab.id === "seed").action();
     dialog = harness.getBoundPage("shop").shop.traders.stalls[0].dialog;
-    dialog.actions[1].action();
+    dialog.actions[0].action();
 
     expect(harness.gameplayFacade.selectShopShelfSlot).toHaveBeenCalledWith(1);
     expect(
@@ -894,6 +918,143 @@ describe("PixiPagesFacade", () => {
       "shop.listing",
       expect.objectContaining({ title: "Sell" }),
     );
+  });
+
+  it("submits retained player requests through backend then gameplay", async () => {
+    const gameplaySnapshot = createPlayerRequestGameplaySnapshot();
+    const harness = createHarness({ gameplaySnapshot });
+    harness.runtime.getOpenDialogIds.mockReturnValue(["shop.request"]);
+    harness.dependencies.playerShopFacade.setSlotRequest = vi.fn(async () => ({
+      ok: true,
+    }));
+    harness.dependencies.playerShopFacade.clearSlotRequest = vi.fn();
+    harness.gameplayFacade.setPlayerShopRequest = vi.fn(() => ({ ok: true }));
+    const pages = new PixiPagesFacade(harness.dependencies);
+    pages.mount();
+    pages.show("shop");
+
+    let dialog = harness.getBoundPage("shop").shop.players.requests.slots[0].dialog;
+    dialog.items[0].action();
+    dialog = harness.getBoundPage("shop").shop.players.requests.slots[0].dialog;
+    dialog.fields[0].onChange("1");
+    dialog = harness.getBoundPage("shop").shop.players.requests.slots[0].dialog;
+    dialog.fields[1].onChange("10");
+    dialog = harness.getBoundPage("shop").shop.players.requests.slots[0].dialog;
+
+    await dialog.actions[0].action();
+
+    expect(harness.dependencies.playerShopFacade.setSlotRequest).toHaveBeenCalledWith({
+      slotNumber: 1,
+      itemKey: "sageSeed",
+      itemLabel: "sage seed",
+      itemKind: "seed",
+      quantity: 10,
+      priceCoin: 1,
+    });
+    expect(harness.gameplayFacade.setPlayerShopRequest).toHaveBeenCalledWith(
+      1,
+      expect.objectContaining({
+        itemTypeId: 1,
+        quantity: 10,
+        priceCoin: 1,
+      }),
+    );
+    expect(harness.runtime.closeDialog).toHaveBeenCalledWith("shop.request");
+  });
+
+  it("sells a retained player listing through backend then gameplay", async () => {
+    const gameplaySnapshot = createPlayerListingGameplaySnapshot();
+    const harness = createHarness({ gameplaySnapshot });
+    harness.runtime.getOpenDialogIds.mockReturnValue(["shop.listing"]);
+    harness.dependencies.playerShopFacade.setSlotListing = vi.fn(async () => ({
+      ok: true,
+    }));
+    harness.dependencies.playerShopFacade.clearSlotListing = vi.fn();
+    harness.gameplayFacade.selectPlayerShopShelfSlot = vi.fn(() => ({ ok: true }));
+    harness.gameplayFacade.setSelectedPlayerShopShelfSlotListing = vi.fn(() => ({
+      ok: true,
+    }));
+    const pages = new PixiPagesFacade(harness.dependencies);
+    pages.mount();
+    pages.show("shop");
+
+    let dialog = harness.getBoundPage("shop").shop.players.market.slots[0].dialog;
+    dialog.items[0].action();
+    dialog = harness.getBoundPage("shop").shop.players.market.slots[0].dialog;
+
+    await dialog.actions.find((action) => action.id === "list").action();
+
+    expect(harness.dependencies.playerShopFacade.setSlotListing).toHaveBeenCalledWith({
+      slotNumber: 1,
+      itemKey: "sageSeed",
+      itemLabel: "sage seed",
+      itemKind: "seed",
+      quantity: 8,
+      priceCoin: 1,
+    });
+    expect(harness.gameplayFacade.selectPlayerShopShelfSlot).toHaveBeenCalledWith(1);
+    expect(
+      harness.gameplayFacade.setSelectedPlayerShopShelfSlotListing,
+    ).toHaveBeenCalledWith({
+      itemTypeId: 1,
+      quantity: 8,
+      priceCoin: 1,
+    });
+    expect(harness.runtime.closeDialog).toHaveBeenCalledWith("shop.listing");
+  });
+
+  it("keeps Clear active and shows a flyout when a player listing is empty", async () => {
+    const gameplaySnapshot = createPlayerListingGameplaySnapshot();
+    const harness = createHarness({ gameplaySnapshot });
+    harness.runtime.getOpenDialogIds.mockReturnValue(["shop.listing"]);
+    harness.dependencies.playerShopFacade.clearSlotListing = vi.fn();
+    const pages = new PixiPagesFacade(harness.dependencies);
+    pages.mount();
+    pages.show("shop");
+
+    const dialog = harness.getBoundPage("shop").shop.players.market.slots[0].dialog;
+    const clearAction = dialog.actions.find((action) => action.id === "clear");
+
+    expect(clearAction.enabled).toBe(true);
+    await clearAction.action();
+
+    expect(harness.transientEffects.emitReward).toHaveBeenCalledWith({
+      message: "Nothing to clear",
+      flyoutKey: "shop-listing-nothing-to-clear-1",
+    });
+    expect(
+      harness.dependencies.playerShopFacade.clearSlotListing,
+    ).not.toHaveBeenCalled();
+    expect(harness.runtime.closeDialog).not.toHaveBeenCalledWith("shop.listing");
+  });
+
+  it("keeps the request dialog open and explains backend failures", async () => {
+    const gameplaySnapshot = createPlayerRequestGameplaySnapshot();
+    const harness = createHarness({ gameplaySnapshot });
+    harness.runtime.getOpenDialogIds.mockReturnValue(["shop.request"]);
+    harness.dependencies.playerShopFacade.setSlotRequest = vi.fn(async () => ({
+      ok: false,
+      reason: "offline",
+    }));
+    harness.gameplayFacade.setPlayerShopRequest = vi.fn(() => ({ ok: true }));
+    const pages = new PixiPagesFacade(harness.dependencies);
+    pages.mount();
+    pages.show("shop");
+
+    let dialog = harness.getBoundPage("shop").shop.players.requests.slots[0].dialog;
+    dialog.items[0].action();
+    dialog = harness.getBoundPage("shop").shop.players.requests.slots[0].dialog;
+    dialog.fields[0].onChange("1");
+    dialog = harness.getBoundPage("shop").shop.players.requests.slots[0].dialog;
+    dialog.fields[1].onChange("10");
+    dialog = harness.getBoundPage("shop").shop.players.requests.slots[0].dialog;
+
+    await dialog.actions[0].action();
+
+    dialog = harness.getBoundPage("shop").shop.players.requests.slots[0].dialog;
+    expect(dialog.status).toBe("offline");
+    expect(harness.gameplayFacade.setPlayerShopRequest).not.toHaveBeenCalled();
+    expect(harness.runtime.closeDialog).not.toHaveBeenCalledWith("shop.request");
   });
 
   it("keeps unaffordable Brewing recipes unselected and leaves the book open", () => {
@@ -1130,6 +1291,56 @@ describe("PixiPagesFacade", () => {
       tileNumber: 1,
     });
     expect(harness.gardenHarvestSoundFacade.playHarvest).toHaveBeenCalledTimes(1);
+  });
+
+  it("accelerates active Garden plots while preserving an intentional seed swap", () => {
+    const gameplaySnapshot = createGameplaySnapshot();
+    gameplaySnapshot.garden.plot = {
+      maxTiles: 1,
+      tiles: [
+        {
+          id: "plot-1",
+          tileNumber: 1,
+          unlocked: true,
+          phase: "growing",
+          seedItemTypeId: 1,
+          process: { totalMs: 12_000, remainingMs: 8_000 },
+        },
+      ],
+    };
+    const harness = createHarness({ gameplaySnapshot });
+    harness.gameplayFacade.accelerateGardenPlot.mockReturnValue({
+      ok: true,
+      tileNumber: 1,
+      reducedSeconds: 1,
+      remainingMs: 7_000,
+      cooldownMs: 800,
+    });
+    const pages = new PixiPagesFacade(harness.dependencies);
+    pages.mount();
+    pages.show("garden");
+
+    let garden = harness.getBoundPage("garden");
+    expect(garden.actions.activatePlot(garden.garden.plots[0])).toMatchObject({
+      ok: true,
+      reducedSeconds: 1,
+    });
+    expect(harness.gameplayFacade.accelerateGardenPlot).toHaveBeenCalledWith(1);
+
+    gameplaySnapshot.garden.seeds = [
+      { itemTypeId: 2, key: "mintSeed", label: "mint seed", quantity: 1 },
+    ];
+    pages.gardenSelectedSeedItemTypeId = 2;
+    pages.refreshPage("garden");
+    garden = harness.getBoundPage("garden");
+    expect(garden.actions.activatePlot(garden.garden.plots[0])).toBe(true);
+    expect(harness.pageSurface.openDialog).toHaveBeenCalledWith(
+      "swap",
+      expect.objectContaining({
+        payload: expect.objectContaining({ seedTypeId: 2 }),
+      }),
+    );
+    expect(harness.gameplayFacade.accelerateGardenPlot).toHaveBeenCalledTimes(1);
   });
 
   it("projects Garden locked-slot affordability and blocks purchases until affordable", () => {
@@ -1694,6 +1905,7 @@ function createHarness({ gameplaySnapshot = createGameplaySnapshot() } = {}) {
     plantAllGardenSeeds: vi.fn(),
     replaceGardenSeed: vi.fn(),
     startGardenHarvest: vi.fn(),
+    accelerateGardenPlot: vi.fn(),
     startAllReadyGardenHarvests: vi.fn(),
     selectGardenSeed: vi.fn(),
     cancelBrewing: vi.fn(),
@@ -1753,6 +1965,62 @@ function createSnapshotFacade(snapshot) {
     getSnapshot: vi.fn(() => snapshot),
     subscribe: vi.fn(() => vi.fn()),
   };
+}
+
+function createPlayerRequestGameplaySnapshot() {
+  const gameplaySnapshot = createGameplaySnapshot();
+  gameplaySnapshot.research.completedResearchIds = ["unlockSeed:sageSeed"];
+  gameplaySnapshot.shop = {
+    shelf: {
+      sellKinds: [{ kind: "seed", label: "seeds" }],
+      sellItems: [
+        {
+          itemTypeId: 1,
+          key: "sageSeed",
+          kind: "seed",
+          label: "sage seed",
+          quantity: 8,
+        },
+      ],
+    },
+    playerRequests: {
+      slots: [{ slotNumber: 1, unlocked: true }],
+    },
+    playerShelf: {
+      sellKinds: [{ kind: "seed", label: "seeds" }],
+      sellItems: [],
+      slots: [{ slotNumber: 1, unlocked: true }],
+    },
+  };
+  return gameplaySnapshot;
+}
+
+function createPlayerListingGameplaySnapshot() {
+  const gameplaySnapshot = createGameplaySnapshot();
+  gameplaySnapshot.research.completedResearchIds = ["unlockSeed:sageSeed"];
+  gameplaySnapshot.shop = {
+    shelf: {
+      sellKinds: [{ kind: "seed", label: "seeds" }],
+      sellItems: [],
+    },
+    playerRequests: {
+      slots: [{ slotNumber: 1, unlocked: true }],
+    },
+    playerShelf: {
+      sellKinds: [{ kind: "seed", label: "seeds" }],
+      sellItems: [
+        {
+          itemTypeId: 1,
+          key: "sageSeed",
+          kind: "seed",
+          label: "sage seed",
+          quantity: 8,
+        },
+      ],
+      slots: [{ slotNumber: 1, unlocked: true }],
+    },
+  };
+  return gameplaySnapshot;
 }
 
 function createInventoryRows(kind, count) {

@@ -218,8 +218,8 @@
   --style-progress-blue-edge: #72c8ff;
   --style-progress-green-fill: #4aa83f;
   --style-progress-green-edge: #8bdc69;
-  --style-progress-yellow-fill: #d8ad32;
-  --style-progress-yellow-edge: #f6d86a;
+  --style-progress-yellow-fill: #f5c542;
+  --style-progress-yellow-edge: #ffee7d;
   --style-progress-fill-background: var(--style-progress-root-fill);
   --style-progress-fill-edge: var(--style-progress-root-edge);
   --style-progress-fill-shadow: inset 0 0 0 1px var(--style-progress-fill-edge);
@@ -1045,7 +1045,7 @@
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  gap: calc(21.243px / 3);
+  gap: var(--style-icon-label-gap);
   color: inherit;
   transform: translateY(calc(-7px / 3));
 }

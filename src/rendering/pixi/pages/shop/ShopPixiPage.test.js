@@ -26,7 +26,10 @@ import {
 } from '../../theme/PixiThemeTokens.js';
 import { SHOP_DIALOG_IDS } from './ShopDialogPixi.js';
 import { ShopPixiPage } from './ShopPixiPage.js';
-import { RetainedScrollArea } from '../workshop/RetainedPageKit.js';
+import {
+  RETAINED_DIALOG_LIST_GEOMETRY,
+  RetainedScrollArea,
+} from '../workshop/RetainedPageKit.js';
 
 globalThis.CanvasRenderingContext2D.prototype.createLinearGradient =
   () => ({
@@ -865,7 +868,7 @@ describe('ShopPixiPage', () => {
     inputRouter.destroy();
   });
 
-  it('keeps market ledger detail lines inside their retained rows', () => {
+  it('lays out player-centered market ledger facts inside reusable rows', () => {
     const assetManager = createPixiAssetManagerFake(Texture);
     assetManager.getAtlasTexture = vi.fn(() => new Texture());
     const harness = createHarness({ assetManager });
@@ -884,16 +887,24 @@ describe('ShopPixiPage', () => {
         {
           id: 'sage',
           label: 'Sage Seed',
-          detail: 'stock 4 · buyers 6',
-          value: '3 coin',
+          stockLabel: '4',
+          buyersLabel: '6',
+          buyPriceLabel: '3 coin',
+          buyPriceResourceKey: 'coin',
+          sellPriceLabel: '2 coin',
+          sellPriceResourceKey: 'coin',
           itemKind: 'seed',
           itemKey: 'sageSeed',
         },
         {
           id: 'mint',
           label: 'Mint Seed',
-          detail: 'stock 2 · buyers 5',
-          value: '4 coin',
+          stockLabel: '2',
+          buyersLabel: '5',
+          buyPriceLabel: '4 coin',
+          buyPriceResourceKey: 'coin',
+          sellPriceLabel: '3 coin',
+          sellPriceResourceKey: 'coin',
           itemKind: 'seed',
           itemKey: 'mintSeed',
         },
@@ -903,13 +914,18 @@ describe('ShopPixiPage', () => {
     const dialog = harness.dialogs.get(SHOP_DIALOG_IDS.LEDGER);
     const [firstRow, secondRow] = dialog.list.rows.getWidgets();
     const tabs = dialog.tabs.getWidgets();
-    const firstDetailBottom =
-      firstRow.detail.y + Math.ceil(firstRow.detail.measuredHeight);
 
     expect(dialog.panel.coreWidth).toBe(304);
     expect(dialog.panel.coreHeight).toBe(382);
-    expect(dialog.list.width).toBe(268);
-    expect(dialog.list.rowWidth).toBe(264);
+    expect(dialog.list.width).toBe(
+      RETAINED_DIALOG_LIST_GEOMETRY.rowFrameWidth +
+        RETAINED_DIALOG_LIST_GEOMETRY.scrollbarViewportOutset,
+    );
+    expect(dialog.list.rowWidth).toBe(
+      RETAINED_DIALOG_LIST_GEOMETRY.rowFrameWidth +
+        PIXI_ROOT_RUN_GEOMETRY.settings.rowGap,
+    );
+    expect(dialog.list.root.position.x).toBe(-9);
     expect(dialog.list.root.position.y).toBe(20);
     expect(dialog.list.height).toBe(298);
     expect(dialog.tabLayer.position.x).toBe(9);
@@ -918,9 +934,62 @@ describe('ShopPixiPage', () => {
       expect(tab.control.textLabel.fontSize).toBe(11);
     }
     expect(firstRow.itemIcon.visible).toBe(true);
-    expect(firstRow.itemIcon.x).toBeLessThan(firstRow.label.x);
-    expect(firstRow.detail.visible).toBe(true);
-    expect(secondRow.root.y).toBeGreaterThanOrEqual(firstDetailBottom);
+    expect(firstRow.background.frameWidth).toBe(
+      RETAINED_DIALOG_LIST_GEOMETRY.rowFrameWidth,
+    );
+    expect(firstRow.itemIcon.x).toBeLessThan(firstRow.title.x);
+    expect(firstRow.stockKey.text).toBe('Stock');
+    expect(firstRow.buyKey.text).toBe('Buy');
+    expect(firstRow.demandKey.text).toBe('Buyers');
+    expect(firstRow.sellKey.text).toBe('Sell');
+    expect(firstRow.buyResource.visible).toBe(true);
+    expect(firstRow.sellResource.visible).toBe(true);
+    expect(secondRow.root.y).toBeGreaterThanOrEqual(58);
+
+    harness.page.destroy();
+    harness.dispose();
+  });
+
+  it('reapplies the parchment theme to ledger rows recycled while scrolling', () => {
+    const assetManager = createPixiAssetManagerFake(Texture);
+    assetManager.getAtlasTexture = vi.fn(() => new Texture());
+    const harness = createHarness({ assetManager });
+    harness.page.bind(createShopViewModel());
+    harness.page.activate();
+    harness.page.openDialog(SHOP_DIALOG_IDS.LEDGER, {
+      title: 'Market Ledger',
+      selectedTabId: 'seed',
+      tabs: [
+        { id: 'seed', label: 'Seeds', selected: true },
+        { id: 'herb', label: 'Herbs', selected: false },
+      ],
+      items: Array.from({ length: 14 }, (_, index) => ({
+        id: `seed-${index}`,
+        label: `Seed ${index + 1}`,
+        stockLabel: String(index + 1),
+        buyersLabel: String(1_000 - index),
+        buyPriceLabel: `${index + 2} coin`,
+        buyPriceResourceKey: 'coin',
+        sellPriceLabel: `${index + 1} coin`,
+        sellPriceResourceKey: 'coin',
+        itemKind: 'seed',
+        itemKey: 'sageSeed',
+      })),
+    });
+
+    const dialog = harness.dialogs.get(SHOP_DIALOG_IDS.LEDGER);
+    dialog.list.scroll.scrollTo(420);
+
+    expect(dialog.list.rows.getWidgets()).not.toHaveLength(0);
+    for (const row of dialog.list.rows.getWidgets()) {
+      expect(row.theme.text).toBe(PIXI_DIALOG_PALETTE.ink);
+      expect(row.title.textObject.style.fill).toBe(
+        PIXI_DIALOG_PALETTE.ink,
+      );
+      expect(row.buyResource.amountLabel.textObject.style.fill).toBe(
+        PIXI_DIALOG_PALETTE.coin,
+      );
+    }
 
     harness.page.destroy();
     harness.dispose();
@@ -1004,15 +1073,15 @@ describe('ShopPixiPage', () => {
       ],
       actions: [
         {
-          id: 'clear',
-          label: 'clear',
-          variant: 'red',
-          enabled: true,
-        },
-        {
           id: 'mark',
           label: 'mark x2',
           variant: 'green',
+          enabled: true,
+        },
+        {
+          id: 'clear',
+          label: 'clear',
+          variant: 'red',
           enabled: true,
         },
       ],
@@ -1030,7 +1099,7 @@ describe('ShopPixiPage', () => {
 
     const dialog = harness.dialogs.get(SHOP_DIALOG_IDS.STALL);
     const [row] = dialog.list.rows.getWidgets();
-    const [clear, mark] = dialog.actions.getWidgets();
+    const [mark, clear] = dialog.actions.getWidgets();
     const [seedsTab, herbsTab] = dialog.tabs.getWidgets();
 
     expect(dialog.selectionSection.visible).toBe(true);
@@ -1076,7 +1145,7 @@ describe('ShopPixiPage', () => {
     ).toBeCloseTo(8);
     expect(mark.root.y).toBeLessThan(dialog.list.root.y);
     expect(dialog.rangeControl.progress.tone).toBe('yellow');
-    expect(dialog.rangeControl.progress.fillColor).toBe('#d8ad32');
+    expect(dialog.rangeControl.progress.fillColor).toBe('#f5c542');
     expect(mark.control.variant).toBe('green');
     expect(clear.control.variant).toBe('red');
     expect(clear.height).toBe(PIXI_UI_GEOMETRY.roomControlHeight);
@@ -1085,7 +1154,7 @@ describe('ShopPixiPage', () => {
       PIXI_ROOT_RUN_GEOMETRY.button.borderInsets.top +
         PIXI_ROOT_RUN_GEOMETRY.button.borderInsets.bottom,
     );
-    expect(clear.root.x).toBeLessThan(mark.root.x);
+    expect(mark.root.x).toBeLessThan(clear.root.x);
     expect(dialog.tabLayer.parent).toBe(dialog.panel);
     expect(
       dialog.panel.coreHeight +
@@ -1322,7 +1391,7 @@ describe('ShopPixiPage', () => {
       ],
       range: {
         enabled: true,
-        tone: 'root',
+        tone: 'yellow',
         min: 1,
         max: 12,
         step: 1,
@@ -1338,9 +1407,16 @@ describe('ShopPixiPage', () => {
       items: [item],
       actions: [
         {
+          id: 'clear',
+          label: 'Clear',
+          variant: 'red',
+          layoutWeight: 1,
+        },
+        {
           id: 'sell',
           label: 'Sell',
           variant: 'green',
+          layoutWeight: 2,
         },
       ],
       tabs,
@@ -1363,6 +1439,11 @@ describe('ShopPixiPage', () => {
     expect(
       listing.fieldLayer.y + listing.fields[0].root.y,
     ).toBeLessThan(listing.actions.getWidgets()[0].root.y);
+    const [clearButton, sellButton] = listing.actions.getWidgets();
+    expect(clearButton.text.text).toBe('Clear');
+    expect(sellButton.text.text).toBe('Sell');
+    expect(sellButton.width).toBeGreaterThan(clearButton.width);
+    expect(sellButton.root.x).toBeGreaterThan(clearButton.root.x);
     expect(listing.list.root.y).toBeGreaterThan(
       listing.selectionSectionBounds.height,
     );
@@ -1814,6 +1895,32 @@ describe('ShopPixiPage', () => {
     harness.page.destroy();
     harness.dispose();
     inputRouter.destroy();
+  });
+
+  it('centers sentence-case copy in the Support dialog', () => {
+    const harness = createHarness();
+    harness.page.bind(createShopViewModel());
+    harness.page.activate();
+    harness.page.openDialog(SHOP_DIALOG_IDS.SUPPORT, {});
+
+    const dialog = harness.dialogs.get(SHOP_DIALOG_IDS.SUPPORT);
+
+    expect(dialog.panel.titleLabel.text).toBe('Support');
+    expect(dialog.messageLabel.text).toBe(
+      'Thank you for trying to support the project but the transactions are not yet available <3',
+    );
+    expect(dialog.messageLabel.align).toBe('center');
+    expect(dialog.messageLabel.textObject.anchor.x).toBe(0.5);
+    expect(dialog.messageLabel.textObject.anchor.y).toBe(0.5);
+    expect(dialog.messageLabel.x).toBeCloseTo(
+      dialog.panel.contentBoxWidth / 2,
+    );
+    expect(dialog.messageLabel.y).toBeCloseTo(
+      dialog.panel.contentBoxHeight / 2,
+    );
+
+    harness.page.destroy();
+    harness.dispose();
   });
 });
 

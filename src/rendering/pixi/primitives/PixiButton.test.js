@@ -8,15 +8,28 @@ import {
   PIXI_ROOT_RUN_ASSETS,
   PIXI_UI_GEOMETRY,
 } from '../theme/PixiThemeTokens.js';
-import { PixiButton } from './PixiButton.js';
+import { PixiBaseButton } from './PixiBaseButton.js';
+import { PixiTextButton } from './PixiTextButton.js';
 import { getPixiButtonAssetId } from './PixiButtonStyle.js';
 
 installPixiPageTestCanvas();
 
-describe('PixiButton', () => {
+describe('PixiTextButton', () => {
+  it('extends the label-free stateful base button', () => {
+    const base = new PixiBaseButton();
+    const button = new PixiTextButton({ text: 'Continue' });
+
+    expect(base.textLabel).toBeUndefined();
+    expect(button).toBeInstanceOf(PixiBaseButton);
+    expect(button.textLabel.text).toBe('Continue');
+
+    base.destroy({ children: true });
+    button.destroy({ children: true });
+  });
+
   it('selects color and corner size independently from one base widget', () => {
     const getTexture = vi.fn(() => Texture.EMPTY);
-    const button = new PixiButton({
+    const button = new PixiTextButton({
       assetManager: { getTexture },
       color: 'blue',
       sizeTier: 30,
@@ -41,7 +54,7 @@ describe('PixiButton', () => {
 
   it('uses the current brown regular-button skin for the default variant', () => {
     const getTexture = vi.fn(() => Texture.EMPTY);
-    const button = new PixiButton({
+    const button = new PixiTextButton({
       assetManager: { getTexture },
     });
 
@@ -57,7 +70,7 @@ describe('PixiButton', () => {
     'uses the gray asset without a shader for disabled %s buttons',
     (variant) => {
       const getTexture = vi.fn(() => Texture.EMPTY);
-      const button = new PixiButton({
+      const button = new PixiTextButton({
         assetManager: { getTexture },
         variant,
       });
@@ -76,7 +89,7 @@ describe('PixiButton', () => {
 
   it('uses the red Root Run skin for enabled danger buttons', () => {
     const getTexture = vi.fn(() => Texture.EMPTY);
-    const button = new PixiButton({
+    const button = new PixiTextButton({
       assetManager: { getTexture },
       variant: 'red',
     });
@@ -90,7 +103,7 @@ describe('PixiButton', () => {
 
   it('keeps regular-button notifications tangent to the top-right edge', () => {
     const getTexture = vi.fn(() => Texture.EMPTY);
-    const button = new PixiButton({
+    const button = new PixiTextButton({
       assetManager: { getTexture },
       width: 100,
       height: 30,

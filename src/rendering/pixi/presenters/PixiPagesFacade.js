@@ -13,7 +13,10 @@ import {
   shouldShowItemInActionList,
 } from "../../../pages/shared/itemResearchStatus.js";
 import { formatCoinPriceText } from "../../../shared/coinPrice.js";
-import { PLAYER_MARKET_MAX_QUANTITY } from "../../../shared/playerMarketLimits.js";
+import {
+  PLAYER_MARKET_MAX_PRICE_COIN,
+  PLAYER_MARKET_MAX_QUANTITY,
+} from "../../../shared/playerMarketLimits.js";
 import { BrewingPixiPage } from "../pages/brewing/index.js";
 import { GardenPixiPage } from "../pages/garden/index.js";
 import {
@@ -188,8 +191,10 @@ export class PixiPagesFacade {
     this.shopSelectedListingSlotNumber = 1;
     this.shopRequestDraftBySlot = new Map();
     this.shopRequestItemKindBySlot = new Map();
+    this.shopRequestStatusBySlot = new Map();
     this.shopListingDraftBySlot = new Map();
     this.shopListingItemKindBySlot = new Map();
+    this.shopListingStatusBySlot = new Map();
     this.guildTabId = "hall";
     this.prestigeTabId = "main";
     this.gardenInventoryTabId = null;
@@ -680,9 +685,15 @@ export class PixiPagesFacade {
             requestItemKindBySlot: Object.fromEntries(
               this.shopRequestItemKindBySlot,
             ),
+            requestStatusBySlot: Object.fromEntries(
+              this.shopRequestStatusBySlot,
+            ),
             listingDraftBySlot: Object.fromEntries(this.shopListingDraftBySlot),
             listingItemKindBySlot: Object.fromEntries(
               this.shopListingItemKindBySlot,
+            ),
+            listingStatusBySlot: Object.fromEntries(
+              this.shopListingStatusBySlot,
             ),
           },
         });
@@ -1058,6 +1069,7 @@ export class PixiPagesFacade {
           if (item?.kind) {
             this.shopRequestItemKindBySlot.set(safeSlotNumber, item.kind);
           }
+          this.shopRequestStatusBySlot.delete(safeSlotNumber);
           this.refreshShopRequestDialog(safeSlotNumber);
           return true;
         },
@@ -1068,6 +1080,7 @@ export class PixiPagesFacade {
             { [field]: value },
             this.getShopRequestSlot(slotNumber),
           );
+          this.shopRequestStatusBySlot.delete(safeSlotNumber);
           this.refreshShopRequestDialog(safeSlotNumber);
           return true;
         },
@@ -1080,11 +1093,55 @@ export class PixiPagesFacade {
             safeSlotNumber,
             String(kind ?? ""),
           );
+          this.shopRequestStatusBySlot.delete(safeSlotNumber);
           this.refreshShopRequestDialog(safeSlotNumber);
           return true;
         },
+        submitPlayerRequest: async (slotNumber, request) => {
+          const safeSlotNumber = Math.max(
+            1,
+            Math.floor(Number(slotNumber) || 1),
+          );
+          this.shopRequestStatusBySlot.set(safeSlotNumber, "requesting");
+          this.refreshShopRequestDialog(safeSlotNumber);
+
+          const published = await this.playerShopFacade?.setSlotRequest?.({
+            slotNumber: safeSlotNumber,
+            itemKey: request?.itemKey,
+            itemLabel: request?.itemLabel,
+            itemKind: request?.itemKind,
+            quantity: request?.quantity,
+            priceCoin: request?.priceCoin,
+          });
+          if (published === false || published?.ok === false) {
+            this.shopRequestStatusBySlot.set(
+              safeSlotNumber,
+              formatPlayerRequestStatus(published),
+            );
+            this.refreshShopRequestDialog(safeSlotNumber);
+            return published;
+          }
+
+          const result = gameplay?.setPlayerShopRequest?.(
+            safeSlotNumber,
+            request,
+          );
+          if (result === false || result?.ok === false) {
+            await this.playerShopFacade?.clearSlotRequest?.(safeSlotNumber);
+            this.shopRequestStatusBySlot.set(
+              safeSlotNumber,
+              formatPlayerRequestStatus(result),
+            );
+            this.refreshShopRequestDialog(safeSlotNumber);
+            return result;
+          }
+
+          this.shopRequestStatusBySlot.delete(safeSlotNumber);
+          return result;
+        },
         closePlayerRequestDialog: (slotNumber) => {
           this.shopRequestDraftBySlot.delete(slotNumber);
+          this.shopRequestStatusBySlot.delete(slotNumber);
           this.requireRuntime().closeDialog(SHOP_DIALOG_IDS.REQUEST);
           this.refreshPage("shop");
           return true;
@@ -1141,6 +1198,7 @@ export class PixiPagesFacade {
           if (item?.kind) {
             this.shopListingItemKindBySlot.set(safeSlotNumber, item.kind);
           }
+          this.shopListingStatusBySlot.delete(safeSlotNumber);
           this.refreshShopListingDialog(safeSlotNumber);
           return true;
         },
@@ -1151,6 +1209,7 @@ export class PixiPagesFacade {
             { [field]: value },
             this.getShopListingSlot(slotNumber),
           );
+          this.shopListingStatusBySlot.delete(safeSlotNumber);
           this.refreshShopListingDialog(safeSlotNumber);
           return true;
         },
@@ -1163,11 +1222,101 @@ export class PixiPagesFacade {
             safeSlotNumber,
             String(kind ?? ""),
           );
+          this.shopListingStatusBySlot.delete(safeSlotNumber);
           this.refreshShopListingDialog(safeSlotNumber);
           return true;
         },
+        submitPlayerListing: async (slotNumber, listing) => {
+          const safeSlotNumber = Math.max(
+            1,
+            Math.floor(Number(slotNumber) || 1),
+          );
+          this.shopListingStatusBySlot.set(safeSlotNumber, "selling");
+          this.refreshShopListingDialog(safeSlotNumber);
+
+          const published = await this.playerShopFacade?.setSlotListing?.({
+            slotNumber: safeSlotNumber,
+            itemKey: listing?.itemKey,
+            itemLabel: listing?.itemLabel,
+            itemKind: listing?.itemKind,
+            quantity: listing?.quantity,
+            priceCoin: listing?.priceCoin,
+          });
+          if (published === false || published?.ok === false) {
+            this.shopListingStatusBySlot.set(
+              safeSlotNumber,
+              formatPlayerListingStatus(published),
+            );
+            this.refreshShopListingDialog(safeSlotNumber);
+            return published;
+          }
+
+          const selected = gameplay?.selectPlayerShopShelfSlot?.(safeSlotNumber);
+          const result =
+            selected === false || selected?.ok === false
+              ? selected
+              : gameplay?.setSelectedPlayerShopShelfSlotListing?.({
+                  itemTypeId: listing?.itemTypeId,
+                  quantity: listing?.quantity,
+                  priceCoin: listing?.priceCoin,
+                });
+          if (result === false || result?.ok === false) {
+            await this.playerShopFacade?.clearSlotListing?.(safeSlotNumber);
+            this.shopListingStatusBySlot.set(
+              safeSlotNumber,
+              formatPlayerListingStatus(result),
+            );
+            this.refreshShopListingDialog(safeSlotNumber);
+            return result;
+          }
+
+          this.shopListingStatusBySlot.delete(safeSlotNumber);
+          return result;
+        },
+        clearPlayerListing: async (slotNumber) => {
+          const safeSlotNumber = Math.max(
+            1,
+            Math.floor(Number(slotNumber) || 1),
+          );
+          if (!this.getShopListingSlot(safeSlotNumber)?.itemTypeId) {
+            this.experienceFacade?.transientEffects?.emitReward?.({
+              message: "Nothing to clear",
+              flyoutKey: `shop-listing-nothing-to-clear-${safeSlotNumber}`,
+            });
+            return { ok: false, reason: "nothing_to_clear" };
+          }
+
+          const published =
+            await this.playerShopFacade?.clearSlotListing?.(safeSlotNumber);
+          if (published === false || published?.ok === false) {
+            this.shopListingStatusBySlot.set(
+              safeSlotNumber,
+              formatPlayerListingStatus(published),
+            );
+            this.refreshShopListingDialog(safeSlotNumber);
+            return published;
+          }
+          const selected = gameplay?.selectPlayerShopShelfSlot?.(safeSlotNumber);
+          const result =
+            selected === false || selected?.ok === false
+              ? selected
+              : gameplay?.clearSelectedPlayerShopShelfSlotListing?.();
+          if (result === false || result?.ok === false) {
+            this.shopListingStatusBySlot.set(
+              safeSlotNumber,
+              formatPlayerListingStatus(result),
+            );
+            this.refreshShopListingDialog(safeSlotNumber);
+            return result;
+          }
+          this.shopListingDraftBySlot.delete(safeSlotNumber);
+          this.shopListingStatusBySlot.delete(safeSlotNumber);
+          this.refreshPage("shop");
+          return result;
+        },
         closePlayerListingDialog: (slotNumber) => {
           this.shopListingDraftBySlot.delete(slotNumber);
+          this.shopListingStatusBySlot.delete(slotNumber);
           this.requireRuntime().closeDialog(SHOP_DIALOG_IDS.LISTING);
           this.refreshPage("shop");
           return true;
@@ -1442,20 +1591,19 @@ export class PixiPagesFacade {
         return this.openGardenSeedDialog();
       }
       if (plot?.phase === "growing") {
-        if (!plot.toolbarSeedItemTypeId) {
-          return this.openGardenSeedDialog();
+        if (
+          plot.toolbarSeedItemTypeId &&
+          plot.toolbarSeedItemTypeId !== plot.seedItemTypeId
+        ) {
+          return this.openGardenConfirmDialog("swap", {
+            ...plot,
+            seedTypeId: plot.toolbarSeedItemTypeId,
+          });
         }
-        if (plot.toolbarSeedItemTypeId === plot.seedItemTypeId) {
-          return {
-            ok: false,
-            reason: "same_seed",
-            tileNumber: plot.tileNumber,
-          };
-        }
-        return this.openGardenConfirmDialog("swap", {
-          ...plot,
-          seedTypeId: plot.toolbarSeedItemTypeId,
-        });
+        return gameplay?.accelerateGardenPlot?.(plot.tileNumber) ?? false;
+      }
+      if (plot?.phase === "harvesting") {
+        return gameplay?.accelerateGardenPlot?.(plot.tileNumber) ?? false;
       }
       if (plot?.process) {
         return this.openGardenConfirmDialog("cancel", plot);
@@ -1881,9 +2029,37 @@ export class PixiPagesFacade {
 
   createBrewingActions() {
     const gameplay = this.gameplayFacade;
+    const performEmptyCauldron = (cauldronIndex = 0) => {
+      const result = gameplay?.clearBrewingCauldron?.(cauldronIndex);
+      if (result === true || result?.ok === true) {
+        this.selectedRecipeByCauldron.delete(cauldronIndex);
+      }
+      return result;
+    };
     const emptyCauldron = (cauldronIndex = 0) => {
-      this.selectedRecipeByCauldron.delete(cauldronIndex);
-      return gameplay?.clearBrewingCauldron?.(cauldronIndex);
+      const value = { cauldronIndex };
+      const confirmationModel = {
+        title: "Empty Cauldron?",
+        message: "Are you sure you want to empty the cauldron contents?",
+        cancelLabel: "Cancel",
+        confirmLabel: "Empty",
+        value,
+        actions: {
+          confirm: ({ cauldronIndex: confirmedIndex } = value) =>
+            performEmptyCauldron(confirmedIndex),
+        },
+      };
+      return (
+        this.globalDialogPresenter?.open?.(
+          "confirmation",
+          confirmationModel,
+        ) ??
+        this.requireRuntime().openDialog?.(
+          "global.confirmation",
+          confirmationModel,
+        ) ??
+        false
+      );
     };
     return {
       selectCauldron: (cauldronIndex) => {
@@ -2662,6 +2838,56 @@ function createGardenSelectedSeedModel(snapshot = {}, seed = {}) {
 function stripSeedSuffix(label) {
   const value = String(label ?? "").trim();
   return value ? value.replace(/\s+seed$/i, "") : null;
+}
+
+function formatPlayerRequestStatus(result) {
+  switch (result?.reason) {
+    case "slot_locked":
+      return "locked";
+    case "invalid_quantity":
+      return "bad quantity";
+    case "quantity_too_high":
+      return `max ${result.maxQuantity ?? PLAYER_MARKET_MAX_QUANTITY}`;
+    case "invalid_price":
+      return "bad value";
+    case "price_too_high":
+      return `max ${formatCoinPriceText(
+        result.maxPriceCoin ?? PLAYER_MARKET_MAX_PRICE_COIN,
+      )}`;
+    case "item_not_requestable":
+      return "bad item";
+    case "market_locked":
+      return "not traded here";
+    case "offline":
+      return "offline";
+    default:
+      return "request failed";
+  }
+}
+
+function formatPlayerListingStatus(result) {
+  switch (result?.reason) {
+    case "slot_locked":
+      return "locked";
+    case "invalid_quantity":
+      return "bad quantity";
+    case "quantity_too_high":
+      return `max ${result.maxQuantity ?? PLAYER_MARKET_MAX_QUANTITY}`;
+    case "invalid_price":
+      return "bad value";
+    case "price_too_high":
+      return `max ${formatCoinPriceText(
+        result.maxPriceCoin ?? PLAYER_MARKET_MAX_PRICE_COIN,
+      )}`;
+    case "item_not_sellable":
+      return "bad item";
+    case "market_locked":
+      return "not traded here";
+    case "offline":
+      return "offline";
+    default:
+      return "listing failed";
+  }
 }
 
 function findResearchSnapshot(researchSnapshot, researchId) {

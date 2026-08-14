@@ -12,6 +12,6 @@ Successful research purchases reuse Root Run's station-upgrade feedback: a `360m
 
 Each category uses the approved `Research Station Title Plaque`: the Root Run `header-red` horizontal nine-slice geometry, connected directly to the screen's left edge at `42px` source height while the research cards keep their `16px` inset. Plaque color follows the owning research tab: Regular is yellow, Automation is red, Advanced is emerald green, and Crystal is purple. The title is Title Case in `18px` Lilita One. Its width is the measured rendered label plus the fixed decorated-cap allowance, capped by the right content edge. Keep `18px` between the previous category's final row and the next plaque, then `5px` between the plaque and its first row.
 
-Open `/src/dev/uiRecipes/research-cost-buttons.html` for a non-persistent authored-surface recipe covering the large card layout, selected/deselected research tabs, and free, affordable coin, unaffordable crystal, completed, and locked states.
+Open `/src/dev/uiRecipes/research-cost-buttons.html` for a non-persistent authored-surface recipe covering the large card layout, selected/deselected research tabs, and free, affordable coin, unaffordable coin and crystal, completed, and locked states.
 
 Open `/src/dev/uiRecipes/research-level-stars-retained.html` for the retained-Pixi authored surface covering a badge-free single-level row, level `1/5` with one filled and two empty stars, and level `1/2` with one filled and one empty star.

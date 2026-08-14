@@ -43,6 +43,15 @@ jobs:
           VITE_SPACETIME_DATABASE: idle-wizard
         run: npm run build -- --base=/idle-wizard/
 
+      - name: Build Android live update bundle
+        env:
+          VITE_SPACETIME_URI: https://maincloud.spacetimedb.com
+          VITE_SPACETIME_DATABASE: idle-wizard
+        run: npm run build:ota
+
+      - name: Publish Android live update bundle
+        run: npm run ota:bundle
+
       - name: Upload artifact
         uses: actions/upload-pages-artifact@v5
         with:

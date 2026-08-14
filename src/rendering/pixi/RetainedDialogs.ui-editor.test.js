@@ -384,12 +384,24 @@ describe('retained dialog UI editor integrations', () => {
     expect(worldChatIntegration.childWidgetIds).toEqual([
       'compound.dialog-frame',
       'compound.world-chat-message-row',
+      'primitive.text-field',
+      'text-button',
     ]);
     const rowChildren = content.children.filter(
       ({ libraryEntryId }) =>
         libraryEntryId === 'compound.world-chat-message-row',
     );
     expect(rowChildren).toHaveLength(2);
+    expect(
+      content.children.find(
+        ({ libraryEntryId }) => libraryEntryId === 'primitive.text-field',
+      )?.label,
+    ).toBe('Composer:PixiTextField');
+    expect(
+      content.children.find(
+        ({ libraryEntryId }) => libraryEntryId === 'text-button',
+      )?.label,
+    ).toBe('Send:PixiTextButton');
     expect(
       rowChildren.map(({ label, libraryEntryId, children }) => ({
         children,

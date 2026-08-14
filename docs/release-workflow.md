@@ -8,6 +8,7 @@ and any required Maincloud backend publish is verified.
 
 - Player APK: Discord post with changelog and APK.
 - Web client: GitHub Pages deploy from `main`.
+- Android live update: checksum-bound web bundle from the same Pages deployment.
 - Backend: SpacetimeDB Maincloud publish when `spacetimedb/` changed.
 - Formal GitHub Release/tag: optional, not part of `npm run release` today.
 
@@ -86,6 +87,12 @@ The production Android sync builds into isolated `tmp/android-dist` and lets
 Capacitor copy that directory without rewriting image formats. Runtime raster
 assets remain PNG-only across web and Android; asset dimensions and content
 must be optimized without substituting another format.
+
+Pages also builds `tmp/ota-dist` with the Capacitor-safe `/` base, packages it
+under `/ota/bundles/`, and publishes `/ota/latest.json`. APKs from `0.3.49`
+onward check that manifest and stage compatible web updates for the next app
+restart. See `docs/ota-updates.md`. Raise `ota.config.json`'s
+`minimumNativeVersion` whenever the web bundle starts requiring a native change.
 
 The release preflight also requires the semantic version to increase Android's
 `versionCode`, and it verifies the built APK manifest before upload. The Android

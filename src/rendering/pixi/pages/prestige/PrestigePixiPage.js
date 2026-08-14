@@ -489,7 +489,7 @@ export class PrestigePixiPage extends BaseRetainedPixiPage {
   }
 }
 
-class PrestigeDescriptionPanel {
+export class PrestigeDescriptionPanel {
   constructor({ assetManager }) {
     this.assetManager = assetManager;
     this.root = new Container({ label: 'prestige-description' });
@@ -661,7 +661,7 @@ class PrestigeDescriptionPanel {
   }
 }
 
-class PrestigeRowWidget {
+export class PrestigeRowWidget {
   constructor({ page, assetManager }) {
     this.page = page;
     this.assetManager = assetManager;
@@ -1044,7 +1044,7 @@ class PrestigeRowWidget {
   }
 }
 
-class PrestigeConfirmPanel {
+export class PrestigeConfirmPanel {
   constructor({ assetManager, inputRouter, onCancel, onProceed }) {
     this.panel = new RetainedPanel({
       assetManager,
@@ -1114,7 +1114,7 @@ class PrestigeConfirmPanel {
   }
 }
 
-class PrestigeTooltip {
+export class PrestigeTooltip {
   constructor({ assetManager }) {
     this.panel = new RetainedPanel({
       assetManager,

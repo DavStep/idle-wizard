@@ -32,6 +32,7 @@
     <script type="module">
       import '@fontsource/lilita-one/400.css';
       import { PixiAssetManager } from '/src/rendering/pixi/assets/PixiAssetManager.js';
+      import { PixiTransientEffectsLayer } from '/src/rendering/pixi/global/transient/PixiTransientEffectsLayer.js';
       import { PixiInputRouter } from '/src/rendering/pixi/input/PixiInputRouter.js';
       import { SHOP_DIALOG_IDS } from '/src/rendering/pixi/pages/shop/ShopDialogPixi.js';
       import { ShopPixiPage } from '/src/rendering/pixi/pages/shop/ShopPixiPage.js';
@@ -219,6 +220,9 @@
           },
         },
       };
+      for (const item of gameplaySnapshot.shop.stock.items) {
+        item.sellCoin = Math.max(1, item.buyCoin - 2);
+      }
       const playerShopSnapshot = {
         connected: true,
         proceedsCoin: 42,
@@ -255,6 +259,9 @@
       const showLedgerDialog = dialogQuery === 'ledger';
       const showRequestDialog = dialogQuery === 'request';
       const showListingDialog = dialogQuery === 'listing';
+      const showListingReference =
+        query.get('listingState') === 'reference';
+      const requestStatus = query.get('requestStatus') ?? '';
       const showOverflowItems = query.get('items') === 'overflow';
       const loopSaleShine = query.get('saleShine') === 'loop';
       if (query.get('categories') === 'seed') {
@@ -267,6 +274,25 @@
             (kind) => kind.kind === 'seed',
           );
         }
+      }
+      if (showListingReference) {
+        gameplaySnapshot.research.completedResearchIds = [
+          'unlockSeed:sageSeed',
+          'unlockSeed:mintSeed',
+        ];
+        gameplaySnapshot.shop.playerShelf.sellItems = [
+          {
+            itemTypeId: 2,
+            key: 'mintSeed',
+            label: 'mint seed',
+            kind: 'seed',
+            quantity: 12,
+          },
+        ];
+        gameplaySnapshot.shop.playerShelf.slots[0] = {
+          slotNumber: 1,
+          unlocked: true,
+        };
       }
       const stallCount = Math.max(
         0,
@@ -334,6 +360,12 @@
         root: applicationManager.getApplication().stage,
         canvas,
       });
+      const transientEffects = new PixiTransientEffectsLayer({
+        assets: assetManager,
+        application: applicationManager.getApplication(),
+        parent: applicationManager.layers.transient,
+      });
+      transientEffects.activate();
 
       const dialogRegistry = new DialogRegistry();
       const page = new ShopPixiPage({
@@ -359,12 +391,12 @@
         priceCoin: 7,
       };
       let listingDraft = {
-        itemTypeId: 1,
-        itemKey: 'sageSeed',
-        itemLabel: 'sage seed',
+        itemTypeId: showListingReference ? 2 : 1,
+        itemKey: showListingReference ? 'mintSeed' : 'sageSeed',
+        itemLabel: showListingReference ? 'mint seed' : 'sage seed',
         itemKind: 'seed',
-        quantity: 5,
-        priceCoin: 9,
+        quantity: showListingReference ? 12 : 5,
+        priceCoin: showListingReference ? 10 : 9,
       };
       const rebindDialog = (dialogId) => {
         const nextViewModel = createViewModel();
@@ -401,6 +433,7 @@
               : {}),
             requestDraftBySlot: { 1: requestDraft },
             requestItemKindBySlot: { 1: requestItemKind },
+            requestStatusBySlot: { 1: requestStatus },
             listingDraftBySlot: { 1: listingDraft },
             listingItemKindBySlot: { 1: listingItemKind },
           },
@@ -487,6 +520,27 @@
                 listingItemKind = kind;
                 rebindDialog(SHOP_DIALOG_IDS.LISTING);
                 return true;
+              },
+              submitPlayerListing(slotNumber, listing) {
+                window.__marketRecipeLastListing = {
+                  slotNumber,
+                  ...listing,
+                };
+                return { ok: true };
+              },
+              clearPlayerListing(slotNumber) {
+                transientEffects.emitReward({
+                  message: 'Nothing to clear',
+                  flyoutKey: `shop-listing-nothing-to-clear-${slotNumber}`,
+                });
+                window.__marketRecipeLastClear = {
+                  slotNumber,
+                  result: 'nothing_to_clear',
+                };
+                return { ok: false, reason: 'nothing_to_clear' };
+              },
+              closePlayerListingDialog() {
+                return dialogRegistry.close(SHOP_DIALOG_IDS.LISTING);
               },
             },
           },

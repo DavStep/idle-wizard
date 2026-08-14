@@ -142,7 +142,7 @@ describe('DevUiCatalogManager', () => {
       expect.arrayContaining([
         expect.objectContaining({
           id: 'yellow',
-          widget: 'PixiButton',
+          widget: 'PixiTextButton',
           command: 'cheats.openWidget("button.yellow")',
         }),
         expect.objectContaining({

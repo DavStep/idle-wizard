@@ -88,6 +88,7 @@ describe('createShop', () => {
                 key: 'sageSeed',
                 kind: 'seed',
                 label: 'sage seed',
+                sellCoin: 2,
                 buyCoin: 3,
                 stock: 4,
                 npcNeed: 6,
@@ -174,15 +175,15 @@ describe('createShop', () => {
       semanticId: 'shop.stall.1.item.sageSeed',
       tutorialId: 'shop:sell:sageSeed',
     });
-    expect(model.shop.traders.stalls[0].dialog.actions[1]).toMatchObject({
+    expect(model.shop.traders.stalls[0].dialog.actions[0]).toMatchObject({
       label: 'Mark x2',
       enabled: false,
       semanticId: 'shop.stall.1.mark',
       tutorialId: 'shop:sell:mark',
     });
     expect(model.shop.traders.stalls[0].dialog.actions).toMatchObject([
-      { label: 'Clear', variant: 'red' },
       { label: 'Mark x2', variant: 'green' },
+      { label: 'Clear', variant: 'red' },
     ]);
     expect(model.shop.traders.stalls[0].dialog.tabs[0]).toMatchObject({
       label: 'Seeds',
@@ -211,6 +212,12 @@ describe('createShop', () => {
       label: 'Sage Seed',
       detail: 'stock 4 · buyers 6',
       value: '3 coin',
+      stockLabel: '4',
+      buyersLabel: '6',
+      buyPriceLabel: '3 coin',
+      buyPriceResourceKey: 'coin',
+      sellPriceLabel: '2 coin',
+      sellPriceResourceKey: 'coin',
       itemKey: 'sageSeed',
       itemKind: 'seed',
       semanticId: 'shop.ledger.item.sageSeed',
@@ -228,6 +235,11 @@ describe('createShop', () => {
     expect(model.shop.dialogs.market.items[0]).toMatchObject({
       id: 'listing-1',
       semanticId: 'shop.market.listing.listing-1',
+    });
+    expect(model.shop.dialogs.support).toEqual({
+      title: 'Support',
+      message:
+        'Thank you for trying to support the project but the transactions are not yet available <3',
     });
 
     model.shop.dialogs.ledger.items[0].action();
@@ -252,6 +264,73 @@ describe('createShop', () => {
     expect(gameplayActions.collectShopCoinOffer).toHaveBeenCalledTimes(
       1,
     );
+  });
+
+  it('projects player-centered ledger facts and honest unavailable states', () => {
+    const ledger = createShop({
+      gameplaySnapshot: {
+        playerLevel: { currentLevel: 4 },
+        research: {
+          completedResearchIds: [
+            'unlockSeed:sageSeed',
+            'unlockSeed:mintSeed',
+          ],
+        },
+        shop: {
+          stock: {
+            sellKinds: [{ kind: 'seed', label: 'seeds' }],
+            items: [
+              {
+                itemTypeId: 1,
+                key: 'sageSeed',
+                kind: 'seed',
+                label: 'sage seed',
+                stock: 0,
+                npcNeed: 1_000,
+                buyCoin: 0,
+                sellCoin: 2,
+                tradedHere: true,
+              },
+              {
+                itemTypeId: 2,
+                key: 'mintSeed',
+                kind: 'seed',
+                label: 'mint seed',
+                stock: null,
+                npcNeed: null,
+                buyCoin: null,
+                sellCoin: null,
+                tradedHere: false,
+                requiredMarket: {
+                  name: 'City Bazaar',
+                  rank: 2,
+                },
+              },
+            ],
+          },
+        },
+      },
+    }).shop.dialogs.ledger;
+
+    expect(ledger.items).toMatchObject([
+      {
+        label: 'Sage Seed',
+        stockLabel: '0',
+        buyersLabel: '1,000',
+        buyPriceLabel: 'Unavailable',
+        buyPriceResourceKey: null,
+        sellPriceLabel: '2 coin',
+        sellPriceResourceKey: 'coin',
+        enabled: false,
+        disabled: false,
+      },
+      {
+        label: 'Mint Seed',
+        availabilityLabel: 'Trades at City Bazaar ★★',
+        enabled: false,
+        disabled: true,
+      },
+    ]);
   });
 
   it('shows only unlocked stall tabs and researched stall items', () => {
@@ -611,7 +690,7 @@ describe('createShop', () => {
         max: 12,
         step: 1,
         value: 5,
-        tone: 'root',
+        tone: 'yellow',
       },
       fields: [
         {
@@ -622,14 +701,18 @@ describe('createShop', () => {
       ],
       actions: [
         {
+          id: 'clear',
+          label: 'Clear',
+          variant: 'red',
+          enabled: true,
+          layoutWeight: 1,
+        },
+        {
+          id: 'list',
           label: 'Sell',
           variant: 'green',
           enabled: true,
-        },
-        {
-          label: 'Clear',
-          variant: 'red',
-          enabled: false,
+          layoutWeight: 2,
         },
       ],
     });

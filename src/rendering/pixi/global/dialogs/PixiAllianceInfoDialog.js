@@ -1,7 +1,7 @@
 import { Container } from 'pixi.js';
 
 import {
-  PixiButton,
+  PixiTextButton,
   PixiScrollView,
   PixiTextLabel,
 } from '../../primitives/index.js';
@@ -76,7 +76,7 @@ export class PixiAllianceInfoDialog extends RetainedGlobalDialog {
       theme: this.theme,
     });
 
-    this.primaryAction = new PixiButton({
+    this.primaryAction = new PixiTextButton({
       assetManager: this.context.assets,
       inputRouter: this.context.inputRouter,
       semanticRegistry: this.context.semanticRegistry,

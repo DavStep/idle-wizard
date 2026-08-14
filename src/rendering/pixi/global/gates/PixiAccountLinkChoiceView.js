@@ -11,7 +11,7 @@ import {
 } from '../../../../player/playerFrames.js';
 import {
   createDialogPaperSection,
-  PixiButton,
+  PixiTextButton,
   PixiModalSurface,
   PixiResourceLabel,
   PixiTextLabel,
@@ -309,7 +309,7 @@ function createChoiceRow({
     includeResourceName: false,
     label: `${objectLabel}:ruby`,
   });
-  const button = new PixiButton({
+  const button = new PixiTextButton({
     assetManager: assets,
     inputRouter,
     text: 'Select',

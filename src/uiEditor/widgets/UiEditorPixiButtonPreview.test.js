@@ -8,7 +8,7 @@ let createAssetOptions;
 let createButtonInspectorFields;
 let resolveButtonBackgroundAtomAsset;
 let PIXI_ROOT_RUN_ASSETS;
-let getPixiPopupTabButtonSkin;
+let getPixiTabButtonSkin;
 
 describe('UiEditorPixiButtonPreview', () => {
   beforeAll(async () => {
@@ -16,7 +16,7 @@ describe('UiEditorPixiButtonPreview', () => {
     const [previewModule, themeModule, popupTabModule] = await Promise.all([
       import('./UiEditorPixiButtonPreview.js'),
       import('../../rendering/pixi/theme/PixiThemeTokens.js'),
-      import('../../rendering/pixi/primitives/PixiPopupTabButton.js'),
+      import('../../rendering/pixi/primitives/PixiTabButton.js'),
     ]);
     ({
       createAssetOptions,
@@ -25,7 +25,7 @@ describe('UiEditorPixiButtonPreview', () => {
       resolveButtonBackgroundAtomAsset,
     } = previewModule);
     ({ PIXI_ROOT_RUN_ASSETS } = themeModule);
-    ({ getPixiPopupTabButtonSkin } = popupTabModule);
+    ({ getPixiTabButtonSkin } = popupTabModule);
   }, 15_000);
 
   it('serializes thumbnail renders so expanding the library cannot fan out GPU contexts', async () => {
@@ -60,7 +60,7 @@ describe('UiEditorPixiButtonPreview', () => {
     const nextPreview = createUiEditorPixiButtonPreview({
       id: 'next-button',
       label: 'Next Button',
-      preview: {},
+      preview: { type: 'tab' },
     });
 
     expect(firstPreview.uiEditorAdoptPreview(nextPreview)).toBe(true);
@@ -70,13 +70,19 @@ describe('UiEditorPixiButtonPreview', () => {
     );
     expect(firstPreview.querySelector('canvas')).toBe(liveCanvas);
     expect(liveCanvas.getAttribute('aria-label')).toBe('Next Button');
+    expect(
+      firstPreview.querySelector('.ui-editor-game-screen-preview__viewport')
+        .getAttribute('aria-label'),
+    ).toBe(
+      'TabButton authored screen. Drag or use arrow keys to move.',
+    );
   });
 
   it('reuses the authored-screen zoom controls while keeping panning opt-in', () => {
     const preview = createUiEditorPixiButtonPreview({
       id: 'base-button',
-      label: 'Base / Text Button',
-      preview: {},
+      label: 'Base Button',
+      preview: { type: 'base' },
     });
     const pan = preview.querySelector(
       '.ui-editor-game-screen-preview__pan',
@@ -100,11 +106,11 @@ describe('UiEditorPixiButtonPreview', () => {
 
   it('bridges hierarchy selection into the live Pixi preview', () => {
     const preview = createUiEditorPixiButtonPreview({
-      id: 'base-button',
-      label: 'Base / Text Button',
+      id: 'text-button',
+      label: 'Text Button',
       preview: {
         text: 'Continue',
-        type: 'button',
+        type: 'text',
       },
     });
 
@@ -113,26 +119,26 @@ describe('UiEditorPixiButtonPreview', () => {
 
   it('scopes button controls to the selected hierarchy component', () => {
     const preview = createUiEditorPixiButtonPreview({
-      id: 'base-button',
-      label: 'Base / Text Button',
+      id: 'text-button',
+      label: 'Text Button',
       preview: {
         color: 'yellow',
         sizeTier: 50,
         text: 'Continue',
-        type: 'button',
-        variant: 'yellow',
+        type: 'text',
+        variant: 'regular',
       },
     });
     const state = preview.uiEditorGetButtonEditorState();
     expect(preview.uiEditorCreateInspector).toBeUndefined();
     expect(
-      createButtonInspectorFields(preview.uiEditorButtonPreviewDefinition.preview, state, 'background')
+      createButtonInspectorFields(preview.uiEditorButtonPreviewDefinition.preview, state, 'base')
         .map(({ id }) => id),
-    ).toEqual(['color', 'sizeTier']);
+    ).toEqual(['color', 'sizeTier', 'enabled']);
     expect(
       createButtonInspectorFields(preview.uiEditorButtonPreviewDefinition.preview, state, 'widget')
         .map(({ id }) => id),
-    ).toEqual(['enabled']);
+    ).toEqual([]);
   });
 
   it('keeps cost layout and state on the widget rather than its visual atoms', () => {
@@ -155,7 +161,7 @@ describe('UiEditorPixiButtonPreview', () => {
   });
 
   it('disables nine-slice skins that exceed the widget minimum size', () => {
-    const tabSkin = getPixiPopupTabButtonSkin({
+    const tabSkin = getPixiTabButtonSkin({
       height: 28,
       selected: false,
       sizeTier: 50,
@@ -171,7 +177,7 @@ describe('UiEditorPixiButtonPreview', () => {
           nineSlice: true,
           sourceInsets: tabSkin.sourceInsets,
         },
-        targetLabel: 'Popup Tab Button',
+        targetLabel: 'Tab Button',
         targetSize: {
           width: 92,
           height: 28,
@@ -188,13 +194,13 @@ describe('UiEditorPixiButtonPreview', () => {
     expect(regularButton).toMatchObject({
       disabled: true,
       reason:
-        'Requires at least 28×30; Popup Tab Button minimum is 92×28.',
+        'Requires at least 28×30; Tab Button minimum is 92×28.',
     });
     expect(sharedTab.disabled).toBe(false);
   });
 
-  it('inspects the popup tab active skin instead of its resting catalogue asset', () => {
-    const tabSkin = getPixiPopupTabButtonSkin({
+  it('inspects the tab active skin instead of its resting catalogue asset', () => {
+    const tabSkin = getPixiTabButtonSkin({
       height: 28,
       selected: true,
       sizeTier: 50,

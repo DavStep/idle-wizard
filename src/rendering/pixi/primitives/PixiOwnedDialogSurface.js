@@ -24,6 +24,7 @@ export class PixiOwnedDialogSurface extends PixiModalSurface {
     assetManager = null,
     title = '',
     titleVariant = 'default',
+    openMotion = 'center',
     onClose = null,
     backdropAlpha = 0.78,
     motionRuntime = null,
@@ -47,7 +48,7 @@ export class PixiOwnedDialogSurface extends PixiModalSurface {
       dismissOnOutside: () => close?.({ source: 'outside', dialogId: id }) ?? true,
       onBack: () => close?.({ source: 'back', dialogId: id }) ?? true,
       onEscape: () => close?.({ source: 'escape', dialogId: id }) ?? true,
-      openMotion: 'center',
+      openMotion,
       motionRuntime,
       label,
     });

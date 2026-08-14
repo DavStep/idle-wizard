@@ -11,14 +11,13 @@ This is the local style law for Idle Wizard UI. Use it before accepting any UI a
 
 ## Required Context
 
-Read these before deciding if a UI is consistent:
-
-- `experience.md`
-- `PRODUCT.md`
-- `DESIGN.md`
-- `docs/style.md`
-- `docs/ui-patterns.md`
-- `docs/ai-workflow.md`
+Always read `experience.md`, `docs/ai-workflow.md`,
+`docs/ui-patterns-index.md`, the touched feature README, and the closest widget
+entry. For a feature-local reuse/extension, search Product Shape and Style for
+the named surface and read the matching nearby lessons. Read complete
+`PRODUCT.md`, `DESIGN.md`, `docs/style.md`, and relevant full widget families
+only for a new/shared widget, page-wide redesign, reference-parity task,
+tutorial, or broad consistency audit.
 
 If the task is an audit or visual cleanup, also read the latest relevant file under `.impeccable/critique/` when present.
 
@@ -55,11 +54,12 @@ When reviewing UI consistency, report:
 
 ## Verification
 
-For UI implementation changes, run:
-
-- `npm run check:ui`
-- Focused tests for touched managers/components.
-- Screenshot QA at the authored `390x844` surface and at a fitted desktop viewport when runtime UI is affected.
-- For visual-reference work, follow `docs/visual-reference-qa.md`, inspect a native-pixel close crop, and generate the `npm run ui:compare` side-by-side/overlay artifact.
+For feature-local reuse/extension changes, run `npm run check:ui`, focused tests,
+and one authored `390x844` screenshot when visible pixels changed. Add fitted
+desktop evidence only when containment, responsive behavior, room chrome, or
+popup bounds can change. New/shared widgets and page-wide changes require both
+viewports; native crops are required when optical alignment or asset geometry
+changed. Visual-reference work still follows `docs/visual-reference-qa.md` and
+generates the `npm run ui:compare` artifact.
 
 Use `npm run check:ui -- --strict` only when the branch is ready to fail on all currently detected drift.

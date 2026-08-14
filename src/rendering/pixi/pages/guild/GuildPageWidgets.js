@@ -7,7 +7,7 @@ import {
   Texture,
 } from 'pixi.js';
 
-import { PixiButton } from '../../primitives/PixiButton.js';
+import { PixiTextButton } from '../../primitives/PixiTextButton.js';
 import { getPixiButtonSkin } from '../../primitives/PixiButtonStyle.js';
 import { PixiFrame } from '../../primitives/PixiFrame.js';
 import { PixiNineSliceFrame } from '../../primitives/PixiNineSliceFrame.js';
@@ -203,7 +203,7 @@ export class GuildCharterPanel {
       wordWrap: true,
       label: 'guild:charter:paragraph',
     });
-    this.button = new PixiButton({
+    this.button = new PixiTextButton({
       assetManager,
       inputRouter,
       semanticRegistry,
@@ -314,7 +314,7 @@ export class GuildSecretarySection {
       createFixedLabelPair('adventurers', 'guild:secretary:adventurers'),
       createFixedLabelPair('board', 'guild:secretary:board'),
     ];
-    this.button = new PixiButton({
+    this.button = new PixiTextButton({
       assetManager,
       inputRouter,
       semanticRegistry,
@@ -654,7 +654,7 @@ export class GuildPeopleSection {
   }
 }
 
-class GuildSectionRow {
+export class GuildSectionRow {
   constructor({
     assetManager,
     inputRouter,
@@ -964,7 +964,7 @@ class GuildSectionRow {
   }
 }
 
-class GuildQuestCard {
+export class GuildQuestCard {
   constructor({
     assetManager,
     inputRouter,
@@ -1176,7 +1176,7 @@ class GuildQuestCard {
   }
 }
 
-class GuildPersonRow {
+export class GuildPersonRow {
   constructor({
     assetManager,
     inputRouter,

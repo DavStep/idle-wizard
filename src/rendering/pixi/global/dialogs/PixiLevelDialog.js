@@ -2,7 +2,7 @@ import { Container, Sprite, Texture } from 'pixi.js';
 
 import {
   createDialogPaperSection,
-  PixiButton,
+  PixiTextButton,
   PIXI_DIALOG_SPLIT_PAPER_GEOMETRY,
   PixiTextLabel,
   resolveDialogPaperOutsets,
@@ -152,7 +152,7 @@ export class PixiLevelDialog extends RetainedGlobalDialog {
 
     this.pager = new Container();
     this.pager.label = `${dialogId}:pager`;
-    this.previousButton = new PixiButton({
+    this.previousButton = new PixiTextButton({
       assetManager: this.context.assets,
       inputRouter: this.context.inputRouter,
       semanticRegistry: this.context.semanticRegistry,
@@ -165,7 +165,7 @@ export class PixiLevelDialog extends RetainedGlobalDialog {
       action: () => this.selectLevel(this.selectedLevel - 1),
       label: `${dialogId}:previous`,
     });
-    this.nextButton = new PixiButton({
+    this.nextButton = new PixiTextButton({
       assetManager: this.context.assets,
       inputRouter: this.context.inputRouter,
       semanticRegistry: this.context.semanticRegistry,

@@ -3,7 +3,7 @@ import { Container } from 'pixi.js';
 import { defineUiEditorIntegration } from '../../../uiEditor/sdk/defineUiEditorIntegration.js';
 import { createUiEditorPixiSurface } from '../../../uiEditor/widgets/createUiEditorPixiSurface.js';
 import { createUiEditorPixiThumbnail } from '../../../uiEditor/widgets/createUiEditorPixiThumbnail.js';
-import { PixiButton } from './PixiButton.js';
+import { PixiTextButton } from './PixiTextButton.js';
 import { PixiDialogFrame } from './PixiDialogFrame.js';
 import { PixiTextLabel } from './PixiTextLabel.js';
 
@@ -54,7 +54,7 @@ export default [
     apiVersion: 1,
     childWidgetIds: [
       'compound.dialog-frame',
-      'base-button',
+      'text-button',
       'primitive.text-label',
     ],
     id: 'primitive.data-dialog',
@@ -168,7 +168,7 @@ async function mountDialog(context, fixture) {
         title: state.title,
         titleVariant: fixture.variant,
       });
-      const confirm = new PixiButton({
+      const confirm = new PixiTextButton({
         action: () => {
           context.emit('dialogConfirmed', {
             rowCount: state.rowCount,

@@ -9,8 +9,8 @@ import {
 import {
   ClickableWidget,
   DeviceIdentityFooter,
-  PixiButton,
-  PixiPopupTabButton,
+  PixiTextButton,
+  PixiTabButton,
   createDialogPaperSection,
   PixiNineSliceFrame,
   PixiScrollView,
@@ -288,6 +288,7 @@ export class PixiSettingsDialog extends RetainedGlobalDialog {
       width: 166,
       height: 34,
       variant: 'account-username',
+      inputKind: 'username',
       maxLength: 24,
       onChange: (value) => {
         this.accountDraft.username = value;
@@ -350,7 +351,7 @@ export class PixiSettingsDialog extends RetainedGlobalDialog {
       inputRouter: this.context.inputRouter,
       label: `${this.dialogId}:accountChoices`,
     });
-    this.accountSave = new PixiButton({
+    this.accountSave = new PixiTextButton({
       assetManager: this.context.assets,
       inputRouter: this.context.inputRouter,
       semanticRegistry: this.context.semanticRegistry,
@@ -385,7 +386,7 @@ export class PixiSettingsDialog extends RetainedGlobalDialog {
 
   buildReportPane() {
     this.feedbackKindButtons = FEEDBACK_KINDS.map(({ key, label }) => {
-      const button = new PixiPopupTabButton({
+      const button = new PixiTabButton({
         assetManager: this.context.assets,
         inputRouter: this.context.inputRouter,
         semanticRegistry: this.context.semanticRegistry,
@@ -420,7 +421,7 @@ export class PixiSettingsDialog extends RetainedGlobalDialog {
       color: 'muted',
       label: `${this.dialogId}:feedbackStatus`,
     });
-    this.feedbackSend = new PixiButton({
+    this.feedbackSend = new PixiTextButton({
       assetManager: this.context.assets,
       inputRouter: this.context.inputRouter,
       semanticRegistry: this.context.semanticRegistry,
@@ -507,7 +508,7 @@ export class PixiSettingsDialog extends RetainedGlobalDialog {
       anchor: { x: 0.5, y: 0 },
       label: `${this.dialogId}:accountStatus`,
     });
-    this.accountConnectButton = new PixiButton({
+    this.accountConnectButton = new PixiTextButton({
       assetManager: this.context.assets,
       inputRouter: this.context.inputRouter,
       semanticRegistry: this.context.semanticRegistry,
@@ -1356,7 +1357,7 @@ export class PixiSettingsDialog extends RetainedGlobalDialog {
   }
 }
 
-class SettingsAvatarWidget extends ClickableWidget {
+export class SettingsAvatarWidget extends ClickableWidget {
   constructor({
     assetManager,
     inputRouter,
