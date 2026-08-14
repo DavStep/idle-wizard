@@ -70,6 +70,13 @@
           enabled: true,
         },
         rows: [
+          ...Array.from({ length: 10 }, (_, index) => ({
+            id: `preview-history-${index}`,
+            type: 'system',
+            username: 'System',
+            body: `Wizard reached level ${index + 2}.`,
+            ageLabel: `${53 - index * 4}m ago`,
+          })),
           {
             id: 'preview-player',
             type: 'player',

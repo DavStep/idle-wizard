@@ -160,7 +160,7 @@ describe('PixiAnnouncementPresenter', () => {
         .rows.slice(1)
         .map(({ countUp }) => countUp),
     ).toEqual([
-      { from: 50, to: 100, suffix: '' },
+      { from: 50, to: 100, suffix: '', gain: 50 },
       { from: 1, to: 2, suffix: '/sec' },
       { from: 1, to: 2, suffix: '' },
     ]);
@@ -397,7 +397,7 @@ describe('PixiAnnouncementPresenter', () => {
         expect.objectContaining({
           label: 'Mana Capacity',
           value: '+50',
-          countUp: { from: 950, to: 1000 },
+          countUp: { from: 950, to: 1000, gain: 50 },
           icon: { frameName: 'resource:mana' },
         }),
         expect.objectContaining({

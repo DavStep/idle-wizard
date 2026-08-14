@@ -149,7 +149,7 @@ describe('PixiDialogFrame', () => {
     const geometry = PIXI_ROOT_RUN_GEOMETRY.dialog;
     const titleCenterY =
       -geometry.frameOutset -
-      geometry.titleOverhang +
+      4 -
       geometry.titleHeight / 2;
 
     expect(frame.headerLayout).toBe('edge');
@@ -161,6 +161,9 @@ describe('PixiDialogFrame', () => {
       frame.coreWidth + geometry.frameOutset,
     );
     expect(frame.closeControl.y).toBeCloseTo(titleCenterY);
+    expect(frame.titleFrame.y + frame.titleFrame.frameHeight).toBeCloseTo(
+      -geometry.frameOutset - 4,
+    );
 
     frame.setCoreSize(320, 120);
     expect(frame.titleFrame.x).toBe(-geometry.frameOutset);

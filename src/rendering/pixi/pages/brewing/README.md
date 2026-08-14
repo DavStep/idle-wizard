@@ -112,10 +112,12 @@ The framed action section begins with the predicted potion inside the shared
 Research-row art well. With no selected ingredients or recipe, the well stays
 present as an empty solid squircle. Phase/timer progress sits beside it.
 That batch-detail rail uses the shared default purple fill.
-The shortened panel is bottom-anchored directly above World Chat and ends with
-one wide primary button. Compact Recipes, Auto, and `xN` controls sit outside
-the panel in the carousel header, right-aligned beside the cauldron title
-plaque.
+The shortened panel is bottom-anchored `3px` above the World Chat title
+overhang and ends with one wide primary button. The expanded preview uses the
+freed height for the cauldron orbit and recipe identity; its first ingredient
+row starts `5px` below the compact configuration controls. Compact Recipes,
+Auto, and `xN` controls sit outside the panel in the carousel header,
+right-aligned beside the cauldron title plaque.
 
 Boundary chevrons are removed instead of showing a disabled arrow. Carousel
 dots contain every unlocked cauldron plus exactly one next purchasable locked

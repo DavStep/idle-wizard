@@ -2257,6 +2257,9 @@ describe('WorkshopPixiPage', () => {
       dialog.panel.titleFrame.y +
         dialog.panel.titleFrame.frameHeight / 2,
     );
+    expect(
+      dialog.panel.titleFrame.y + dialog.panel.titleFrame.frameHeight,
+    ).toBeCloseTo(-geometry.frameOutset - 4);
 
     dialog.layout({
       sourceWidth: 360,
@@ -2333,9 +2336,9 @@ describe('WorkshopPixiPage', () => {
     expect(dialog.composerField.x).toBeCloseTo(
       dialog.panel.paperFrame.x,
     );
-    expect(dialog.composerField.fieldWidth).toBeCloseTo(299 + 1 / 3);
+    expect(dialog.composerField.fieldWidth).toBeCloseTo(295 + 1 / 3);
     expect(dialog.composerField.fieldHeight).toBe(29);
-    expect(dialog.composerSubmit.root.x).toBeCloseTo(300 + 2 / 3);
+    expect(dialog.composerSubmit.root.x).toBeCloseTo(296 + 2 / 3);
     expect(dialog.composerSubmit.width).toBe(74);
     expect(dialog.composerSubmit.height).toBe(29);
     expect(
@@ -2346,8 +2349,10 @@ describe('WorkshopPixiPage', () => {
       dialog.composerSubmit.root.x + dialog.composerSubmit.width,
     ).toBeCloseTo(
       dialog.panel.paperFrame.x +
-        dialog.panel.paperFrame.frameWidth,
+        dialog.panel.paperFrame.frameWidth -
+        4,
     );
+    expect(dialog.scroll.width - playerRow.width).toBe(3);
     expect(dialog.panel.paperFrame.y + dialog.panel.paperFrame.frameHeight).toBeLessThan(
       dialog.composerField.y,
     );
@@ -2368,7 +2373,7 @@ describe('WorkshopPixiPage', () => {
     expect(playerRow.avatar.width).toBe(22);
     expect(dialog.scroll.root.x).toBe(8);
     expect(dialog.scroll.width).toBe(354);
-    expect(playerRow.root.hitArea.width).toBe(354);
+    expect(playerRow.root.hitArea.width).toBe(351);
     expect(playerRow.username.x - (playerRow.tag.x + playerRow.tag.width)).toBe(2);
     expect(playerRow.avatar.eventMode).toBe('static');
     expect(playerRow.username.eventMode).toBe('static');

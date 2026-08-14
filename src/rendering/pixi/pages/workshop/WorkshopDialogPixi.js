@@ -71,10 +71,12 @@ const WORLD_CHAT_SCROLL_PADDING_TOP = 8;
 const WORLD_CHAT_CONTENT_INSET_X = 8;
 const WORLD_CHAT_DIALOG_MIN_TOP = 18;
 const WORLD_CHAT_COMPOSER_GAP = 6;
+const WORLD_CHAT_COMPOSER_INSET_RIGHT = 4;
 const WORLD_CHAT_COMPOSER_HEIGHT = 34;
 const WORLD_CHAT_COMPOSER_FIELD_HEIGHT = 29;
 const WORLD_CHAT_COMPOSER_SEND_WIDTH = 74;
 const WORLD_CHAT_COMPOSER_SEND_HEIGHT = 29;
+const WORLD_CHAT_ROW_SCROLLBAR_GUTTER = 3;
 const WORLD_CHAT_AVATAR_SIZE = 22;
 const WORLD_CHAT_TEXT_X = 25;
 const WORLD_CHAT_HEADER_HEIGHT = 12;
@@ -584,7 +586,7 @@ export class WorkshopDialogPixi {
         0,
         y,
         this.isWorldChatDialog
-          ? this.scroll.width
+          ? this.scroll.width - WORLD_CHAT_ROW_SCROLLBAR_GUTTER
           : this.isWorldEventDialog &&
               this.viewModel.rowWidget === 'worldEventQuest'
             ? this.scroll.width
@@ -973,7 +975,9 @@ export class WorkshopDialogPixi {
         this.panel.paperFrame.x +
         this.panel.paperFrame.frameWidth;
       const sendX =
-        composerRight - WORLD_CHAT_COMPOSER_SEND_WIDTH;
+        composerRight -
+        WORLD_CHAT_COMPOSER_INSET_RIGHT -
+        WORLD_CHAT_COMPOSER_SEND_WIDTH;
       const composerY = height - 40;
       this.composerField.position.set(
         composerLeft,

@@ -238,6 +238,54 @@ describe('retained dialog UI editor integrations', () => {
     expect(mountedIds).toEqual(UI_EDITOR_RETAINED_DIALOG_IDS);
   });
 
+  it('previews Support with its production copy and centered message only', () => {
+    const dialogId = 'shop.support';
+    const parent = new Container();
+    const counters = new RetainedUiCounters();
+    const input = new PixiInputRouter();
+    const semanticRegistry = new SemanticTargetRegistry({ counters });
+    const fixture = createUiEditorDialogFixture(dialogId);
+    const dialog = createUiEditorDialog({
+      assets: createPixiAssetManagerFake(Texture),
+      close: () => false,
+      counters,
+      dialogId,
+      input,
+      model: fixture,
+      parent,
+      projection: PROJECTION,
+      semanticRegistry,
+    });
+
+    dialog.layout(PROJECTION);
+    dialog.activate();
+    const [content] = createRetainedDialogHierarchy(dialogId, dialog);
+    const supportIntegration = retainedDialogIntegrations.find(
+      ({ id }) => id === `dialog.${dialogId}`,
+    );
+
+    expect(fixture).toEqual({
+      title: 'Support',
+      message:
+        'Thank you for trying to support the project but the transactions are not yet available <3',
+    });
+    expect(dialog.panel.titleLabel.text).toBe('Support');
+    expect(dialog.messageLabel.align).toBe('center');
+    expect(dialog.messageLabel.textObject.anchor.x).toBe(0.5);
+    expect(dialog.messageLabel.textObject.anchor.y).toBe(0.5);
+    expect(dialog.rangeControl.visible).toBe(false);
+    expect(dialog.amountSelector.root.visible).toBe(false);
+    expect(content.children.map(({ label }) => label)).toEqual(['Message']);
+    expect(supportIntegration.childWidgetIds).toEqual([
+      'compound.dialog-frame',
+    ]);
+
+    dialog.destroy();
+    semanticRegistry.clear();
+    input.destroy();
+    parent.destroy({ children: true });
+  });
+
   it('renders Daily Tasks as split live-point sections with icon rewards and claim states', () => {
     const dialogId = 'workshop.personalTasks';
     const parent = new Container();

@@ -52,9 +52,9 @@ const LEVEL_REWARD_BANNER_TITLE_COLOR = '#ffffff';
 const LEVEL_REWARD_BANNER_TITLE_STROKE = '#160e19';
 const LEVEL_REWARD_CONTINUE_GAP = 26;
 const LEVEL_REWARD_CONTINUE_HEIGHT = 20;
-const LEVEL_REWARD_CONTINUE_DELAY_MS = 120;
+const LEVEL_REWARD_CONTINUE_DELAY_MS = 150;
 const LEVEL_REWARD_COUNT_DELAY_MS = 120;
-const LEVEL_REWARD_COUNT_DURATION_MS = 560;
+const LEVEL_REWARD_COUNT_DURATION_MS = 700;
 const CONFIRMATION_WIDTH = 260;
 const UNLOCK_ITEM_WIDTH = 72;
 const UNLOCK_ITEM_GAP_X = 4;
@@ -89,11 +89,11 @@ const ANNOUNCEMENT_MOTION_DEFAULTS = Object.freeze({
   overlayDurationMs: 225,
   panelDurationMs: 130,
   levelOverlayDurationMs: 140,
-  levelPanelDurationMs: 205,
+  levelPanelDurationMs: 250,
   levelTitleDelayMs: 1220,
   levelRowDelayMs: 1260,
-  levelRowStaggerMs: 55,
-  rowDurationMs: 215,
+  levelRowStaggerMs: 70,
+  rowDurationMs: 250,
   researchTitleDurationMs: 260,
   researchSilhouetteDurationMs: 380,
   researchIconDurationMs: 390,
@@ -2530,6 +2530,11 @@ function normalizeLevelRewardCountUp(data = {}) {
     from,
     to,
     suffix: String(data.countUp?.suffix ?? ''),
+    gain:
+      Number.isFinite(Number(data.countUp?.gain)) &&
+      Number(data.countUp.gain) > 0
+        ? Number(data.countUp.gain)
+        : null,
     precision: Math.max(
       getDecimalPrecision(from),
       getDecimalPrecision(to),
@@ -2549,7 +2554,20 @@ function formatLevelRewardCountUp(countUp, progress) {
   const formatted = fixed.includes('.')
     ? fixed.replace(/\.?0+$/, '')
     : fixed;
-  return `${formatted}${countUp.suffix}`;
+  const gain = Number.isFinite(countUp.gain)
+    ? ` +${formatNumberForPrecision(
+        countUp.gain,
+        getDecimalPrecision(countUp.gain),
+      )}`
+    : '';
+  return `${formatted}${countUp.suffix}${gain}`;
+}
+
+function formatNumberForPrecision(value, precision) {
+  const fixed = Number(value).toFixed(precision);
+  return fixed.includes('.')
+    ? fixed.replace(/\.?0+$/, '')
+    : fixed;
 }
 
 function getDecimalPrecision(value) {

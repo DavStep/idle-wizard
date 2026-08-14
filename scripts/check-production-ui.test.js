@@ -6,6 +6,7 @@ import {
   analyzeProductionUiSource,
   evaluateProductionUiFindings,
   runProductionUiGuard,
+  validateProductionFileNames,
   validateProductionHtml,
 } from './check-production-ui.mjs';
 
@@ -118,6 +119,31 @@ describe('production UI guard', () => {
         'production-html-canvas-count',
       ]),
     );
+  });
+
+  it('rejects blocker-sensitive production request filenames', () => {
+    expect(
+      validateProductionFileNames([
+        'assets/banner-purple-ribbon.9-abcd1234.png',
+        'assets/icon-alliance-banner-base-abcd1234.png',
+        'assets/analytics-abcd1234.js',
+        'assets/adventurer-abcd1234.png',
+        'assets/media-abcd1234.png',
+      ]),
+    ).toEqual([
+      expect.objectContaining({
+        relativePath: 'assets/banner-purple-ribbon.9-abcd1234.png',
+        ruleId: 'blocker-sensitive-file-name',
+      }),
+      expect.objectContaining({
+        relativePath: 'assets/icon-alliance-banner-base-abcd1234.png',
+        ruleId: 'blocker-sensitive-file-name',
+      }),
+      expect.objectContaining({
+        relativePath: 'assets/analytics-abcd1234.js',
+        ruleId: 'blocker-sensitive-file-name',
+      }),
+    ]);
   });
 
   it('follows the emitted production module graph and ignores unreachable legacy files', async () => {

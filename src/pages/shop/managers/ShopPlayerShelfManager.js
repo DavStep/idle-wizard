@@ -565,7 +565,7 @@ export class ShopPlayerShelfManager {
     });
 
     if (!publishResult?.ok) {
-      this.setListingStatus('listing failed');
+      this.setListingStatus(publishResult?.message || 'listing failed');
       return;
     }
 

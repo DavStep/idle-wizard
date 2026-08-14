@@ -44,6 +44,14 @@ export default defineConfig(() => {
       port: 55174,
       strictPort: true,
     },
+    build: {
+      rolldownOptions: {
+        output: {
+          assetFileNames: 'assets/media-[hash][extname]',
+          hashCharacters: 'hex',
+        },
+      },
+    },
   };
 });
 

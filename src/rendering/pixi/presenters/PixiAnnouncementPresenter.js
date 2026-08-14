@@ -343,7 +343,7 @@ export class PixiAnnouncementPresenter {
       {
         label: 'mana capacity',
         value: '+50 mana',
-        countUp: { from: 950, to: 1000 },
+        countUp: { from: 950, to: 1000, gain: 50 },
       },
       {
         label: 'mana regeneration',
@@ -1345,6 +1345,10 @@ function attachLevelCountUpTotals(
         to: afterTotals[totalKey],
         suffix:
           label === 'mana regeneration' ? '/sec' : '',
+        gain:
+          label === 'mana capacity'
+            ? parseLeadingNumber(row?.value)
+            : null,
       });
     }
     if (label !== 'bonus') {
@@ -1381,6 +1385,10 @@ function withCountUp(row, countUp) {
       from,
       to,
       suffix: String(countUp?.suffix ?? ''),
+      ...(Number.isFinite(Number(countUp?.gain)) &&
+      Number(countUp.gain) > 0
+        ? { gain: Number(countUp.gain) }
+        : {}),
     },
   };
 }

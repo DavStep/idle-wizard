@@ -54,10 +54,12 @@ export class PlayerShopListingManager {
       return {
         ok: true,
       };
-    } catch {
+    } catch (error) {
+      const message = getReducerFailureMessage(error);
       return {
         ok: false,
         reason: 'publish_failed',
+        ...(message ? { message } : {}),
       };
     }
   }
@@ -277,4 +279,21 @@ export class PlayerShopListingManager {
     const reducers = this.connection?.reducers;
     return reducers?.[camelName] ?? reducers?.[snakeName] ?? null;
   }
+}
+
+function getReducerFailureMessage(error) {
+  const rawMessage =
+    typeof error?.message === 'string'
+      ? error.message
+      : typeof error === 'string'
+        ? error
+        : '';
+  const firstLine = rawMessage
+    .split(/\r?\n/)
+    .find((line) => line.trim());
+
+  return String(firstLine ?? '')
+    .replace(/^(?:(?:sender|internal)?error:\s*)+/i, '')
+    .trim()
+    .slice(0, 160);
 }

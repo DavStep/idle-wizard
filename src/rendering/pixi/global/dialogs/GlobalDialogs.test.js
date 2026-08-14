@@ -1538,7 +1538,7 @@ describe('retained global Pixi dialogs', () => {
             id: 'mana',
             label: 'Mana Capacity',
             value: '+10',
-            countUp: { from: 90, to: 100 },
+            countUp: { from: 90, to: 100, gain: 10 },
             icon: { frameName: 'resource:mana' },
             color: '#ffffff',
             mutedLabel: false,
@@ -1605,12 +1605,18 @@ describe('retained global Pixi dialogs', () => {
       1800,
       announcement.announcementModel.animation,
     );
-    expect(Number(rewardRow.valueLabel.text)).toBeGreaterThan(90);
-    expect(Number(rewardRow.valueLabel.text)).toBeLessThan(100);
+    expect(Number.parseFloat(rewardRow.valueLabel.text)).toBeGreaterThan(90);
+    expect(Number.parseFloat(rewardRow.valueLabel.text)).toBeLessThan(100);
+    expect(rewardRow.valueLabel.text).toMatch(/ \+10$/);
+    announcement.applyLevelAnnouncementMotion(
+      2200,
+      announcement.announcementModel.animation,
+    );
+    expect(Number.parseFloat(rewardRow.valueLabel.text)).toBeLessThan(100);
     expect(announcement.requestClose('outside')).toBe(false);
 
     announcement.settleAnnouncementMotion();
-    expect(rewardRow.valueLabel.text).toBe('100');
+    expect(rewardRow.valueLabel.text).toBe('100 +10');
     expect(
       announcement.levelBannerTitle.position.y,
     ).toBeCloseTo(

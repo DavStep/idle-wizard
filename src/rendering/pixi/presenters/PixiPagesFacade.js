@@ -2866,6 +2866,11 @@ function formatPlayerRequestStatus(result) {
 }
 
 function formatPlayerListingStatus(result) {
+  const backendMessage = String(result?.message ?? '').trim();
+  if (backendMessage) {
+    return backendMessage;
+  }
+
   switch (result?.reason) {
     case "slot_locked":
       return "locked";

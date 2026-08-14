@@ -1295,11 +1295,11 @@ describe('BrewingPixiPage', () => {
         BREWING_HUD_GEOMETRY.carouselHeight,
     );
     expect(
-      BREWING_HUD_GEOMETRY.top +
-        BREWING_HUD_GEOMETRY.carouselHeight +
-        PIXI_UI_GEOMETRY.roomChatGap +
-        PIXI_UI_GEOMETRY.roomChatTitleOverhang,
-    ).toBeLessThanOrEqual(chatTop);
+      chatTop -
+        PIXI_UI_GEOMETRY.roomChatTitleOverhang -
+        (BREWING_HUD_GEOMETRY.top +
+          BREWING_HUD_GEOMETRY.carouselHeight),
+    ).toBe(BREWING_HUD_GEOMETRY.detailChatGap);
     expect(harness.page.hud.root.visible).toBe(true);
     expect(harness.page.worldViewport.visible).toBe(false);
     expect(harness.page.hud.carouselPanel.title.visible).toBe(false);
@@ -1416,6 +1416,13 @@ describe('BrewingPixiPage', () => {
     });
     const lowerLeftSlot = harness.page.hud.ingredientSlots[2];
     const lowerRightSlot = harness.page.hud.ingredientSlots[3];
+    const upperLeftSlot = harness.page.hud.ingredientSlots[0];
+    expect(
+      harness.page.hud.carouselPanel.root.y +
+        upperLeftSlot.root.y -
+        (harness.page.hud.recipes.root.y +
+          harness.page.hud.recipes.height),
+    ).toBe(BREWING_HUD_GEOMETRY.previewTopGap);
     const navigationCenterY =
       harness.page.hud.carouselPanel.root.y +
       lowerLeftSlot.root.y +
@@ -1430,11 +1437,9 @@ describe('BrewingPixiPage', () => {
         harness.page.hud.next.height / 2,
     ).toBe(navigationCenterY);
     expect(
-      BREWING_HUD_GEOMETRY.detailTop -
-        (harness.page.hud.carouselPanel.root.y +
-          lowerLeftSlot.root.y +
-          lowerLeftSlot.height),
-    ).toBe(55);
+      harness.page.hud.potionName.y -
+        (lowerLeftSlot.root.y + lowerLeftSlot.height),
+    ).toBe(BREWING_HUD_GEOMETRY.previewIdentityGap);
     expect(
       harness.page.hud.previous.root.x +
         harness.page.hud.previous.width,
@@ -1498,7 +1503,7 @@ describe('BrewingPixiPage', () => {
     expect(harness.page.hud.recipes.root.y).toBe(
       BREWING_HUD_GEOMETRY.top +
         BREWING_HUD_GEOMETRY.carouselContentOffset +
-        5,
+        BREWING_HUD_GEOMETRY.configurationTopOffset,
     );
     expect(
       harness.page.hud.cauldronTitlePlaque.frame.frameWidth,
@@ -1597,7 +1602,11 @@ describe('BrewingPixiPage', () => {
     expect(harness.page.hud.detailPanel.root.renderable).toBe(false);
     expect(harness.page.hud.unlockCostButton.position).toMatchObject({
       x: 149,
-      y: 473,
+      y:
+        BREWING_HUD_GEOMETRY.detailTop +
+        (BREWING_HUD_GEOMETRY.detailHeight -
+          harness.page.hud.unlockCostButton.buttonHeight) /
+          2,
     });
     expect(harness.page.hud.unlockCostButton.activate()).toBe(true);
     expect(model.actions.performCauldronAction).toHaveBeenCalledWith(

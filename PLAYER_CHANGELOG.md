@@ -5,6 +5,12 @@ upload script posts the section whose heading matches `package.json` `version`.
 Write these developer-to-player notes only in Idle Wizard terms. Do not mention
 other game names, source projects, ports, or implementation provenance.
 
+## 0.3.50
+
+- Expanded the Brewing cauldron view so ingredients, potion details, and the bottom action stay clearer and better spaced.
+- Polished World Chat, support dialogs, and level-up rewards with cleaner layouts and more readable feedback.
+- Improved Garden seed taps and Player Shop listing errors so actions respond more reliably and explain failures clearly.
+
 ## 0.3.49
 
 - Added automatic Android game updates. After installing this APK, compatible fixes and improvements can be prepared in the background and applied on restart.

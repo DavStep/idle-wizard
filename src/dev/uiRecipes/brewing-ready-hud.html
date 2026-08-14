@@ -40,6 +40,7 @@
     <script type="module">
       import '@fontsource/lilita-one/400.css';
       import { BrewingHudPixi } from '/src/rendering/pixi/pages/brewing/BrewingHudPixi.js';
+      import { PixiWorldChatView } from '/src/rendering/pixi/global/chrome/PixiWorldChatView.js';
       import { PixiInputRouter } from '/src/rendering/pixi/input/PixiInputRouter.js';
       import { PixiApplicationManager } from '/src/rendering/pixi/runtime/PixiApplicationManager.js';
       import { PixiUiRuntimeFacade } from '/src/rendering/pixi/runtime/PixiUiRuntimeFacade.js';
@@ -148,6 +149,36 @@
       };
       hud.bind(hudModel, hudActions);
       hud.layout(applicationManager.getProjection().sourceWidth);
+      const worldChat = new PixiWorldChatView({
+        assets: runtime.assetManager,
+        inputRouter,
+      });
+      applicationManager.getLayers().globalChrome.addChild(worldChat.root);
+      worldChat.layout(applicationManager.getProjection());
+      worldChat.applyTheme(runtime.themeManager.getSnapshot());
+      worldChat.bind({
+        label: 'World Chat',
+        messages: [
+          { body: 'Azalea reached level 11', username: 'system' },
+          { body: 'Wizteria reached level 6', username: 'system' },
+        ],
+        visible: true,
+      });
+      worldChat.activate();
+      const detailBottom =
+        hud.detailPanel.root.y + hud.detailPanel.height;
+      const chatTitleTop =
+        worldChat.panel.root.y -
+        worldChat.panel.root.pivot.y -
+        12;
+      recipeState.dataset.detailToChatGap = String(
+        chatTitleTop - detailBottom,
+      );
+      recipeState.dataset.previewTopGap = String(
+        hud.carouselPanel.root.y +
+          hud.ingredientSlots[0].root.y -
+          (hud.recipes.root.y + hud.recipes.height),
+      );
       if (parameters.get('repeatTheme') === 'true') {
         hud.applyTheme(runtime.themeManager.getSnapshot());
         hud.applyTheme(runtime.themeManager.getSnapshot());
@@ -168,6 +199,7 @@
         .filter(Boolean)
         .join(',');
       window.__brewingReadyHudRecipe = hud;
+      window.__brewingReadyWorldChatRecipe = worldChat;
     </script>
   </body>
 </html>

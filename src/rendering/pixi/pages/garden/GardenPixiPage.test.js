@@ -419,6 +419,40 @@ describe("GardenPixiPage", () => {
     harness.dispose();
   });
 
+  it("keeps the Seeds action available when the tutorial overlay owns the event path", () => {
+    const openSeedPicker = vi.fn(() => true);
+    const harness = createHarness();
+    harness.page.bind(createGardenViewModel({ openSeedPicker }));
+    harness.page.activate();
+
+    const seedsButton = harness.page.actionBar.seedsButton;
+    const registration = harness.inputRouter.store
+      .getRegistrations("press")
+      .find((entry) => entry.displayObject === seedsButton);
+    const tutorialOverlay = new Container({
+      label: "tutorial-overlay-garden-seeds-hit",
+    });
+    const bounds = seedsButton.getBounds();
+    const point = {
+      x: bounds.x + bounds.width / 2,
+      y: bounds.y + bounds.height / 2,
+    };
+
+    expect(registration?.fallbackHitTest).toBe(true);
+    harness.inputRouter.onPointerDown(
+      createPointerEvent(tutorialOverlay, "pointerdown", point, "touch"),
+    );
+    harness.inputRouter.onPointerUp(
+      createPointerEvent(tutorialOverlay, "pointerup", point, "touch"),
+    );
+
+    expect(openSeedPicker).toHaveBeenCalledTimes(1);
+
+    tutorialOverlay.destroy();
+    harness.page.destroy();
+    harness.dispose();
+  });
+
   it("keeps frozen Garden geometry and timer/ticker lifecycle in source space", () => {
     const ticker = {
       add: vi.fn(),
@@ -1257,12 +1291,17 @@ function expectPlotFrameAligned(plot) {
   expect(plot.frame.scale).toMatchObject({ x: 1, y: 1 });
 }
 
-function createPointerEvent(target, type, point = { x: 0, y: 0 }) {
+function createPointerEvent(
+  target,
+  type,
+  point = { x: 0, y: 0 },
+  pointerType = "mouse",
+) {
   return {
     type,
     target,
     pointerId: 1,
-    pointerType: "mouse",
+    pointerType,
     button: 0,
     global: point,
     clientX: point.x,

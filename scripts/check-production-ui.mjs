@@ -69,6 +69,8 @@ const AUTH_DOM_EXCEPTIONS = Object.freeze({
 
 const SCANNABLE_MODULE_PATTERN = /\.[cm]?[jt]sx?$/i;
 const PRODUCTION_HTML_ALLOWED_BODY_TAGS = new Set(['canvas', 'script']);
+const BLOCKER_SENSITIVE_FILE_TOKEN_PATTERN =
+  /(?:^|[./_-])(?:ads?|advert(?:ising|isement)?s?|analytics|banner|beacon|sponsors?|tracking)(?=$|[./_-])/i;
 
 /**
  * Parses one Vite-transformed production module and returns forbidden DOM
@@ -270,6 +272,29 @@ export function validateProductionHtml(source, { htmlPath = 'index.html' } = {})
 }
 
 /**
+ * Rejects semantic production filenames that content blockers commonly treat
+ * as advertising or tracking resources. Source filenames remain descriptive;
+ * only emitted request URLs need to be opaque.
+ */
+export function validateProductionFileNames(fileNames) {
+  return [...fileNames]
+    .filter((fileName) =>
+      BLOCKER_SENSITIVE_FILE_TOKEN_PATTERN.test(String(fileName ?? '')),
+    )
+    .map((fileName) => ({
+      moduleId: String(fileName),
+      relativePath: String(fileName),
+      ruleId: 'blocker-sensitive-file-name',
+      method: null,
+      argument: null,
+      message:
+        'Production request URLs must not contain advertising or tracking tokens that content blockers can reject.',
+      line: null,
+      column: null,
+    }));
+}
+
+/**
  * Runs an in-memory Vite production build and scans only modules rendered into
  * emitted entry/dynamic chunks. Unreachable legacy files and tests are outside
  * the guard by construction.
@@ -309,7 +334,12 @@ export async function runProductionUiGuard({
     canvasId: html.canvasId,
     devModulePrefixes,
   });
-  const violations = [...html.violations, ...evaluated.violations];
+  const fileNameViolations = validateProductionFileNames(graph.fileNames);
+  const violations = [
+    ...html.violations,
+    ...fileNameViolations,
+    ...evaluated.violations,
+  ];
 
   return {
     ok: violations.length === 0,
@@ -517,6 +547,7 @@ async function collectViteProductionGraph({
   const transformedModules = new Map();
   const emittedModuleIds = new Set();
   const entryModuleIds = new Set();
+  const fileNames = new Set();
   const collectorPlugin = {
     name: 'idle-wizard-production-ui-graph',
     apply: 'build',
@@ -531,6 +562,7 @@ async function collectViteProductionGraph({
     },
     generateBundle(_outputOptions, bundle) {
       for (const output of Object.values(bundle)) {
+        fileNames.add(output.fileName);
         if (output.type !== 'chunk') {
           continue;
         }
@@ -576,6 +608,7 @@ async function collectViteProductionGraph({
 
   return {
     entryModuleIds: [...entryModuleIds].sort(),
+    fileNames: [...fileNames].sort(),
     modules,
   };
 }

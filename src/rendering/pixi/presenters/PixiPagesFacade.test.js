@@ -1003,6 +1003,32 @@ describe("PixiPagesFacade", () => {
     expect(harness.runtime.closeDialog).toHaveBeenCalledWith("shop.listing");
   });
 
+  it("shows the backend reason when a retained player listing is rejected", async () => {
+    const gameplaySnapshot = createPlayerListingGameplaySnapshot();
+    const harness = createHarness({ gameplaySnapshot });
+    harness.runtime.getOpenDialogIds.mockReturnValue(["shop.listing"]);
+    harness.dependencies.playerShopFacade.setSlotListing = vi.fn(async () => ({
+      ok: false,
+      reason: "publish_failed",
+      message: "Player shop slot requires a higher market rank.",
+    }));
+    harness.gameplayFacade.selectPlayerShopShelfSlot = vi.fn(() => ({ ok: true }));
+    const pages = new PixiPagesFacade(harness.dependencies);
+    pages.mount();
+    pages.show("shop");
+
+    let dialog = harness.getBoundPage("shop").shop.players.market.slots[0].dialog;
+    dialog.items[0].action();
+    dialog = harness.getBoundPage("shop").shop.players.market.slots[0].dialog;
+
+    await dialog.actions.find((action) => action.id === "list").action();
+
+    dialog = harness.getBoundPage("shop").shop.players.market.slots[0].dialog;
+    expect(dialog.status).toBe("Player shop slot requires a higher market rank.");
+    expect(harness.gameplayFacade.selectPlayerShopShelfSlot).not.toHaveBeenCalled();
+    expect(harness.runtime.closeDialog).not.toHaveBeenCalledWith("shop.listing");
+  });
+
   it("keeps Clear active and shows a flyout when a player listing is empty", async () => {
     const gameplaySnapshot = createPlayerListingGameplaySnapshot();
     const harness = createHarness({ gameplaySnapshot });

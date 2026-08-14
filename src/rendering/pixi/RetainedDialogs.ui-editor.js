@@ -152,7 +152,7 @@ const DIALOG_CHILD_WIDGET_IDS = Object.freeze({
     'tab-button',
   ]),
   'shop.tradeHistory': Object.freeze(['compound.market-compact-row']),
-  'shop.support': Object.freeze(['compound.dialog-summary-row']),
+  'shop.support': Object.freeze([]),
   'guild.charter': Object.freeze([
     'compound.guild-profile-field',
     'primitive.guild-color-swatch',
@@ -217,7 +217,7 @@ const DIALOG_LABELS = Object.freeze({
   'shop.listing': 'Sell Listing',
   'shop.market': 'Player Market',
   'shop.tradeHistory': 'Trade History',
-  'shop.support': 'Market Support',
+  'shop.support': 'Support',
   'guild.charter': 'Guild Charter',
   'guild.settings': 'Guild Settings',
   'guild.request': 'Guild Request',
@@ -403,6 +403,13 @@ export function createUiEditorDialogFixture(dialogId, variantIndex = 0) {
   }
   if (dialogId === 'workshop.worldEvent') {
     return createWorldEventDialogFixture(variantIndex);
+  }
+  if (dialogId === SHOP_DIALOG_IDS.SUPPORT) {
+    return {
+      title: 'Support',
+      message:
+        'Thank you for trying to support the project but the transactions are not yet available <3',
+    };
   }
   return normalizeUiEditorDialogFixture(
     dialogId,

@@ -3,6 +3,34 @@ import { describe, expect, it, vi } from 'vitest';
 import { PlayerShopListingManager } from './PlayerShopListingManager.js';
 
 describe('PlayerShopListingManager', () => {
+  it('keeps the reducer reason when a player listing is rejected', async () => {
+    const setPlayerShopSlot = vi.fn(() =>
+      Promise.reject(new Error('Player shop slot requires a higher market rank.')),
+    );
+    const manager = new PlayerShopListingManager();
+
+    manager.connect({
+      reducers: {
+        setPlayerShopSlot,
+      },
+    });
+
+    await expect(
+      manager.setSlotListing({
+        slotNumber: 2,
+        itemKey: 'sageSeed',
+        itemLabel: 'sage seed',
+        itemKind: 'seed',
+        quantity: 4,
+        priceCoin: 200,
+      }),
+    ).resolves.toEqual({
+      ok: false,
+      reason: 'publish_failed',
+      message: 'Player shop slot requires a higher market rank.',
+    });
+  });
+
   it('clears player market listings and proceeds for a progress reset', async () => {
     const clearPlayerShopSlot = vi.fn(() => Promise.resolve());
     const claimPlayerShopProceeds = vi.fn(() => Promise.resolve());

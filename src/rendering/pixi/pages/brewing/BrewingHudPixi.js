@@ -44,10 +44,10 @@ import { ResearchStationTitlePlaque } from '../research/ResearchPixiPage.js';
 export const BREWING_HUD_GEOMETRY = Object.freeze({
   edge: 16,
   top: PIXI_UI_GEOMETRY.roomContentTop,
-  carouselHeight: 455,
-  previewHeight: 292,
-  detailTop: 439,
+  carouselHeight: 583,
+  detailTop: 567,
   detailHeight: 120,
+  detailChatGap: 3,
   detailInset: 0,
   detailContentInset: 10,
   recipeButtonWidth: 58,
@@ -69,7 +69,13 @@ export const BREWING_HUD_GEOMETRY = Object.freeze({
   quantityHitSize: 44,
   potionIconSize: 50,
   carouselContentOffset: 32,
-  previewVerticalOffset: 22,
+  configurationTopOffset: 5,
+  previewTopGap: 5,
+  ingredientRowGap: 88,
+  ingredientOrbitRadiusY: 125,
+  previewIdentityGap: 26,
+  previewIdentityLineGap: 19,
+  previewDotsBottomGap: 22,
   navigationButtonWidth: 34,
   navigationButtonHeight: 38,
   navigationSlotGap: 4,
@@ -898,12 +904,10 @@ export class BrewingHudPixi {
     this.sourceWidth = sourceWidth;
     const edge = BREWING_HUD_GEOMETRY.edge;
     const width = sourceWidth - edge * 2;
-    const previewVerticalOffset =
-      BREWING_HUD_GEOMETRY.previewVerticalOffset;
     const carouselContentOffset =
       BREWING_HUD_GEOMETRY.carouselContentOffset;
-    const cauldronCenterY =
-      136 + previewVerticalOffset + carouselContentOffset;
+    const ingredientPositions = resolveIngredientPositions(width);
+    const cauldronCenterY = resolveCauldronCenterY(ingredientPositions);
     this.carouselPanel.setBounds(
       edge,
       BREWING_HUD_GEOMETRY.top,
@@ -936,22 +940,23 @@ export class BrewingHudPixi {
     this.cauldronLiquidHighlight.position.set(0, 0);
     this.lockArt.position.set(
       width / 2,
-      135 + previewVerticalOffset + carouselContentOffset,
+      cauldronCenterY,
     );
     this.lockArt.alpha = 1;
     this.lockArt.width = 44;
     this.lockArt.height = 44;
     this.lockLabel.position.set(
       width / 2,
-      177 + previewVerticalOffset + carouselContentOffset,
+      cauldronCenterY + 42,
     );
     this.dots.position.set(
       width / 2,
-      223 + previewVerticalOffset + carouselContentOffset,
+      BREWING_HUD_GEOMETRY.detailTop -
+        BREWING_HUD_GEOMETRY.top -
+        BREWING_HUD_GEOMETRY.previewDotsBottomGap,
     );
     this.drawRecipeOrbit(width);
     this.captureCauldronChangeRestState();
-    const ingredientPositions = resolveIngredientPositions(width);
     const lowerLeftSlot = ingredientPositions[2];
     const lowerRightSlot = ingredientPositions[3];
     const navigationTop =
@@ -1008,16 +1013,19 @@ export class BrewingHudPixi {
     this.potionIcon.height = BREWING_HUD_GEOMETRY.potionIconSize;
     this.potionName.position.set(
       width / 2,
-      239 + previewVerticalOffset + carouselContentOffset,
+      lowerLeftSlot.y +
+        BREWING_HUD_GEOMETRY.ingredientSlotHeight +
+        BREWING_HUD_GEOMETRY.previewIdentityGap,
     );
     this.rarity.position.set(
       width / 2,
-      258 + previewVerticalOffset + carouselContentOffset,
+      this.potionName.y +
+        BREWING_HUD_GEOMETRY.previewIdentityLineGap,
     );
     this.ownedLabel.position.set(36, 72);
     this.batchLabel.position.set(
       width / 2,
-      274 + previewVerticalOffset + carouselContentOffset,
+      this.rarity.y + 16,
     );
     this.ingredientSlots.forEach((slot, index) => {
       const position = ingredientPositions[index];
@@ -1134,16 +1142,19 @@ export class BrewingHudPixi {
       return;
     }
     const centerX = width / 2;
-    const centerY =
-      136 +
-      BREWING_HUD_GEOMETRY.previewVerticalOffset +
-      BREWING_HUD_GEOMETRY.carouselContentOffset;
+    const ingredientPositions = resolveIngredientPositions(width);
+    const centerY = resolveCauldronCenterY(ingredientPositions);
     this.recipeOrbit.position.set(0, 0);
     this.recipeOrbit
       .clear()
-      .ellipse(centerX, centerY, 128, 87)
+      .ellipse(
+        centerX,
+        centerY,
+        128,
+        BREWING_HUD_GEOMETRY.ingredientOrbitRadiusY,
+      )
       .stroke({ color: 0x66596f, width: 1, alpha: 0.42 });
-    for (const position of resolveIngredientPositions(width)) {
+    for (const position of ingredientPositions) {
       this.recipeOrbit
         .moveTo(position.x + 28, position.y + 27)
         .lineTo(centerX, centerY)
@@ -1198,7 +1209,7 @@ export class BrewingHudPixi {
     const controlsTop =
       BREWING_HUD_GEOMETRY.top +
       BREWING_HUD_GEOMETRY.carouselContentOffset +
-      5;
+      BREWING_HUD_GEOMETRY.configurationTopOffset;
     let right =
       sourceWidth - BREWING_HUD_GEOMETRY.edge;
     const controls = [
@@ -1478,10 +1489,9 @@ export class BrewingHudPixi {
     };
     const center = {
       x: width / 2,
-      y:
-        136 +
-        BREWING_HUD_GEOMETRY.previewVerticalOffset +
-        BREWING_HUD_GEOMETRY.carouselContentOffset,
+      y: resolveCauldronCenterY(
+        resolveIngredientPositions(width),
+      ),
     };
     const eased = easeOutQuint(progress);
     const end = {
@@ -2256,17 +2266,28 @@ function normalizeRequirements(rows, herbs, stagedIngredients = []) {
 }
 
 function resolveIngredientPositions(width) {
-  const offset =
-    BREWING_HUD_GEOMETRY.previewVerticalOffset +
-    BREWING_HUD_GEOMETRY.carouselContentOffset;
+  const top =
+    BREWING_HUD_GEOMETRY.carouselContentOffset +
+    BREWING_HUD_GEOMETRY.configurationTopOffset +
+    BREWING_HUD_GEOMETRY.configurationButtonHeight +
+    BREWING_HUD_GEOMETRY.previewTopGap;
+  const middle = top + BREWING_HUD_GEOMETRY.ingredientRowGap;
+  const bottom = middle + BREWING_HUD_GEOMETRY.ingredientRowGap;
   return [
-    { x: 58, y: 52 + offset },
-    { x: 10, y: 112 + offset },
-    { x: 50, y: 172 + offset },
-    { x: width - 106, y: 172 + offset },
-    { x: width - 66, y: 112 + offset },
-    { x: width - 114, y: 52 + offset },
+    { x: 58, y: top },
+    { x: 10, y: middle },
+    { x: 50, y: bottom },
+    { x: width - 106, y: bottom },
+    { x: width - 66, y: middle },
+    { x: width - 114, y: top },
   ];
+}
+
+function resolveCauldronCenterY(ingredientPositions) {
+  return (
+    ingredientPositions[1].y +
+    BREWING_HUD_GEOMETRY.ingredientSlotHeight / 2
+  );
 }
 
 function colorFromHex(value, fallback) {

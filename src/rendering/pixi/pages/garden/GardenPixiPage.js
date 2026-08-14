@@ -516,6 +516,7 @@ export class GardenSeedActionBar {
       inputRouter,
       semanticRegistry: semanticTargets,
       semanticId: "garden.openSeeds",
+      fallbackHitTest: true,
       text: "Seeds",
       variant: "yellow",
       label: "garden-open-seeds",

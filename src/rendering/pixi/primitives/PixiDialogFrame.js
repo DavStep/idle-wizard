@@ -59,6 +59,7 @@ export const PIXI_DIALOG_FOOTER_TABS_GEOMETRY = Object.freeze({
 const TITLE_TEXT_PADDING_X = 89 / 3;
 const TITLE_MAX_INSET_X = 8;
 const TITLE_CLOSE_GAP = 4;
+const EDGE_HEADER_SHELL_GAP = 4;
 const SHADOW_OFFSET_X = 3;
 const SHADOW_OFFSET_Y = 4;
 const SHADOW_ALPHA = 0.42;
@@ -507,7 +508,9 @@ export class PixiDialogFrame extends Container {
     const titleX = usesEdgeHeader
       ? -geometry.frameOutset
       : (this.coreWidth - titleWidth) / 2;
-    const titleY = -geometry.frameOutset - geometry.titleOverhang;
+    const titleY = usesEdgeHeader
+      ? -geometry.frameOutset - geometry.titleHeight - EDGE_HEADER_SHELL_GAP
+      : -geometry.frameOutset - geometry.titleOverhang;
 
     this.titleFrame.position.set(titleX, titleY);
     this.titleFrame.setSize(
@@ -525,7 +528,8 @@ export class PixiDialogFrame extends Container {
   layoutCloseControl() {
     const geometry = PIXI_ROOT_RUN_GEOMETRY.dialog;
     if (this.headerLayout === EDGE_HEADER_LAYOUT) {
-      const titleY = -geometry.frameOutset - geometry.titleOverhang;
+      const titleY =
+        -geometry.frameOutset - geometry.titleHeight - EDGE_HEADER_SHELL_GAP;
       this.closeControl.position.set(
         this.coreWidth + geometry.frameOutset - geometry.closeSize / 2,
         titleY + geometry.titleHeight / 2,
