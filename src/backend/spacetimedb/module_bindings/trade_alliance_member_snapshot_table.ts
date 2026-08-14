@@ -14,6 +14,7 @@ export default __t.row({
   memberIdentity: __t.identity().primaryKey().name("member_identity"),
   allianceId: __t.uuid().name("alliance_id"),
   username: __t.string(),
+  character: __t.string(),
   playerLevel: __t.u32().name("player_level"),
   role: __t.string(),
   joinedAt: __t.timestamp().name("joined_at"),

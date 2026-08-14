@@ -2660,22 +2660,9 @@ describe("GameplayFacade", () => {
       completed: false,
       canResearch: false,
     });
-    expect(automationTab.boxes[1].researches[1]).toMatchObject({
-      id: automationResearchIds.autoPlantTile(2),
-      label: "automate plot 2",
-      value: "locked",
-      requiredResearchIds: [automationResearchIds.autoPlantTile(1)],
-      costCoin: 0,
-      costRuby: 2,
-      costCurrency: "ruby",
-      locked: true,
-    });
     expect(
       automationTab.boxes[1].researches.map((research) => research.id),
-    ).toEqual([
-      automationResearchIds.autoPlantTile(1),
-      automationResearchIds.autoPlantTile(2),
-    ]);
+    ).toEqual([automationResearchIds.autoPlantTile(1)]);
     expect(
       automationTab.boxes[2].researches.map((research) => research.id),
     ).toEqual([automationResearchIds.autoBrewCauldron(1)]);
@@ -2788,10 +2775,7 @@ describe("GameplayFacade", () => {
     });
     expect(
       advancedTab.boxes[7].researches.map((research) => research.id),
-    ).toEqual([
-      advancedResearchIds.plotGrowth(1, 1),
-      advancedResearchIds.plotGrowth(2, 1),
-    ]);
+    ).toEqual([advancedResearchIds.plotGrowth(1, 1)]);
     expect(crystalTab.label).toBe("crystal research");
     expect(crystalTab.boxes.map((box) => box.id)).toEqual([
       "plotPlanting",
@@ -2803,14 +2787,6 @@ describe("GameplayFacade", () => {
       value: "2 crystal",
       effect: "x2 herbs",
       costCoin: 0,
-      costCrystal: 2,
-      costCurrency: "crystal",
-    });
-    expect(crystalTab.boxes[0].researches[1]).toMatchObject({
-      id: emeraldResearchIds.plotPlanting(2, 2),
-      label: "plot 2 lvl 2",
-      value: "2 crystal",
-      requiredResearchIds: [],
       costCrystal: 2,
       costCurrency: "crystal",
     });
@@ -2930,7 +2906,7 @@ describe("GameplayFacade", () => {
     });
   });
 
-  it("hides tile and cauldron automation research above current level caps", () => {
+  it("hides plot and cauldron research until the matching room slot is unlocked", () => {
     const { gameplayFacade } = createGameplay();
     const getAutomationBoxResearchIds = (boxId) =>
       gameplayFacade
@@ -2941,7 +2917,6 @@ describe("GameplayFacade", () => {
 
     expect(getAutomationBoxResearchIds("autoPlantTiles")).toEqual([
       automationResearchIds.autoPlantTile(1),
-      automationResearchIds.autoPlantTile(2),
     ]);
     expect(getAutomationBoxResearchIds("autoBrewCauldrons")).toEqual([
       automationResearchIds.autoBrewCauldron(1),
@@ -2953,6 +2928,16 @@ describe("GameplayFacade", () => {
     finishCurrentTaskLevel(gameplayFacade);
 
     expect(gameplayFacade.getSnapshot().tasks.currentLevel).toBe(5);
+    expect(getAutomationBoxResearchIds("autoPlantTiles")).toEqual([
+      automationResearchIds.autoPlantTile(1),
+    ]);
+    expect(getAutomationBoxResearchIds("autoBrewCauldrons")).toEqual([
+      automationResearchIds.autoBrewCauldron(1),
+    ]);
+
+    buyGardenTilesThrough(gameplayFacade, 5);
+    buyCauldronsThrough(gameplayFacade, 2);
+
     expect(getAutomationBoxResearchIds("autoPlantTiles")).toEqual([
       automationResearchIds.autoPlantTile(1),
       automationResearchIds.autoPlantTile(2),

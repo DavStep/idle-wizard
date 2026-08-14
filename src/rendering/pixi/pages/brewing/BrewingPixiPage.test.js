@@ -468,6 +468,7 @@ describe('BrewingPixiPage', () => {
           ingredients: [
             {
               id: 'sage',
+              key: 'sageHerb',
               label: 'sage',
               quantity: 3,
               owned: 0,
@@ -496,15 +497,24 @@ describe('BrewingPixiPage', () => {
 
     expect(dialog.modal.panel.coreWidth).toBe(304);
     expect(dialog.modal.panel.outerFrame.frameWidth).toBe(324);
+    expect(dialog.modal.panel.paperFrame.visible).toBe(false);
     expect(dialog.book.hitArea.width).toBe(260);
-    expect(card.icon.width).toBe(56);
+    expect(card.icon.width).toBe(46);
+    expect(card.pageFrame.frameWidth).toBe(128);
+    expect(card.pageFrame.frameHeight).toBe(329);
+    expect(unavailableCard.root.x - (card.root.x + card.pageFrame.frameWidth)).toBe(4);
     expect(card.name.style.fill).toBe(contentTheme.text);
     expect(card.cost.style.fill).toBe(contentTheme.resourceColors.mana);
     expect(ingredient.required.style.fill).toBe(
       contentTheme.resourceColors.herb,
     );
-    expect(dialog.divider.getLocalBounds().width).toBeCloseTo(2);
-    expect(card.separator.getLocalBounds().height).toBeCloseTo(2);
+    expect(ingredient.icon.visible).toBe(true);
+    expect(ingredient.icon.width).toBe(14);
+    expect(card.separator.renderable).toBe(false);
+    expect(dialog.previous).toBeInstanceOf(PixiTextButton);
+    expect(dialog.previous.variant).toBe('yellow');
+    expect(dialog.previous.textLabel.text).toBe('Prev');
+    expect(dialog.next.textLabel.text).toBe('Next');
     expect(card.select).toBeInstanceOf(PixiTextButton);
     expect(card.select.variant).toBe('yellow');
     expect(card.select.textLabel.text).toBe('Research');
@@ -543,6 +553,7 @@ describe('BrewingPixiPage', () => {
       .get('brewing.recipes')
       .cards.getWidgets()[0];
 
+    expect(card.select.textLabel.text).toBe('Select');
     expect(card.select.enabled).toBe(false);
     expect(card.select.activate()).toBe(false);
     expect(selectRecipe).not.toHaveBeenCalled();
@@ -1365,6 +1376,10 @@ describe('BrewingPixiPage', () => {
           60,
       ),
     });
+    expect(harness.page.hud.cauldronTitlePlaque.root.scale).toMatchObject({
+      x: 0.75,
+      y: 0.75,
+    });
     expect(harness.page.hud.ingredientSlots).toHaveLength(6);
     expect(harness.page.hud.ingredientSlots[0].root.parent).toBe(
       harness.page.hud.carouselPanel.body,
@@ -1423,6 +1438,11 @@ describe('BrewingPixiPage', () => {
         (harness.page.hud.recipes.root.y +
           harness.page.hud.recipes.height),
     ).toBe(BREWING_HUD_GEOMETRY.previewTopGap);
+    expect(BREWING_HUD_GEOMETRY.previewTopGap).toBeGreaterThanOrEqual(
+      BREWING_HUD_GEOMETRY.ingredientSlotHeight,
+    );
+    const orbitBounds = harness.page.hud.recipeOrbit.getLocalBounds();
+    expect(orbitBounds.width / orbitBounds.height).toBeGreaterThan(1.4);
     const navigationCenterY =
       harness.page.hud.carouselPanel.root.y +
       lowerLeftSlot.root.y +

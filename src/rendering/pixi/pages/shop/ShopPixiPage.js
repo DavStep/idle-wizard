@@ -49,6 +49,7 @@ import {
   RESEARCH_WIDGET_SHINE_CORNER_RADIUS_SCALE,
   RESEARCH_WIDGET_SHINE_DURATION_MS,
   RESEARCH_WIDGET_SHINE_HEIGHT_SCALE,
+  RESEARCH_PIXI_GEOMETRY,
   ResearchStationTitlePlaque,
   updateResearchShine,
 } from '../research/ResearchPixiPage.js';
@@ -117,7 +118,7 @@ const STALL_ART_BORDER_INSETS = Object.freeze({
   bottom: 50 / 3,
   left: 49 / 3,
 });
-const STATION_TITLE_HEIGHT = 42;
+const STATION_TITLE_HEIGHT = RESEARCH_PIXI_GEOMETRY.categoryTitleHeight;
 const STATION_TITLE_ROW_GAP = 5;
 const MARKET_TITLE_HEIGHT =
   PIXI_ROOT_RUN_GEOMETRY.marketTitleRibbon.height;

@@ -683,13 +683,37 @@ describe("PixiPagesFacade", () => {
   it("projects recipe research availability and routes enabled research actions", () => {
     const gameplaySnapshot = createGameplaySnapshot();
     gameplaySnapshot.brewing = {
-      cauldrons: [],
-      herbs: [],
+      cauldrons: [
+        {
+          cauldronIndex: 1,
+          ingredients: [
+            {
+              itemTypeId: 1001,
+              key: "sageHerb",
+            },
+          ],
+        },
+      ],
+      herbs: [
+        {
+          itemTypeId: 1001,
+          key: "sageHerb",
+          quantity: 5,
+        },
+      ],
       recipes: [
         {
           key: "manaTonic",
           label: "mana tonic",
           unlocked: false,
+          ingredients: [
+            {
+              itemTypeId: 1001,
+              key: "sageHerb",
+              label: "sage",
+              quantity: 1,
+            },
+          ],
         },
         {
           key: "minorHealingPotion",
@@ -732,6 +756,12 @@ describe("PixiPagesFacade", () => {
         key: "manaTonic",
         researchId: "unlockRecipe:manaTonic",
         canResearch: true,
+        ingredients: [
+          expect.objectContaining({
+            key: "sageHerb",
+            owned: 4,
+          }),
+        ],
       }),
       expect.objectContaining({
         key: "minorHealingPotion",

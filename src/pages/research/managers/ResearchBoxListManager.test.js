@@ -550,9 +550,9 @@ describe('ResearchBoxListManager', () => {
       );
     }
     expect(titleRule).toContain('width: max-content;');
-    expect(titleRule).toContain('height: 42px;');
-    expect(titleRule).toContain('padding: 0 48px 0 12px;');
-    expect(titleRule).toContain('font-size: 18px;');
+    expect(titleRule).toContain('height: 31.5px;');
+    expect(titleRule).toContain('padding: 0 36px 0 9px;');
+    expect(titleRule).toContain('font-size: 13.5px;');
     expect(titleRule).toContain('white-space: nowrap;');
     expect(css).toMatch(
       /\.research-page__content\s*\{[^}]*left:\s*0;/,

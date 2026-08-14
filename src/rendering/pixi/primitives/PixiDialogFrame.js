@@ -184,6 +184,7 @@ export class PixiDialogFrame extends Container {
       width: PIXI_ROOT_RUN_GEOMETRY.dialog.closeSize,
       height: PIXI_ROOT_RUN_GEOMETRY.dialog.closeSize,
       action: (payload) => this.activateClose(payload),
+      fallbackHitTest: true,
       haptic: 'light',
       variant: 'image-only',
       label: `${label}:closeControl`,

@@ -464,8 +464,8 @@ export class ResearchFacade {
     return getId(safeTargetNumber);
   }
 
-  getSnapshot() {
-    return this.researchSnapshotManager.getSnapshot();
+  getSnapshot(options) {
+    return this.researchSnapshotManager.getSnapshot(options);
   }
 
   hasFrameTimerWork() {

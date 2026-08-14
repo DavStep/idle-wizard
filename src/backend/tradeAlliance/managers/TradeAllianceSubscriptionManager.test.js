@@ -264,6 +264,38 @@ describe('TradeAllianceSubscriptionManager', () => {
     });
   });
 
+  it('keeps the selected character on public alliance member rows', () => {
+    const manager = new TradeAllianceSubscriptionManager();
+
+    manager.publicDataActive = true;
+    manager.tables = {
+      overview: createTable(),
+      alliances: createTable(),
+      members: createTable([
+        {
+          allianceId: 'alliance-1',
+          memberIdentity: 'member-1',
+          username: 'Mira',
+          character: 'mira',
+          playerLevel: 12,
+          role: 'tradeMaster',
+        },
+      ]),
+      applications: createTable(),
+      quests: createTable(),
+      contributions: createTable(),
+      chat: createTable(),
+      rewards: createTable(),
+    };
+
+    manager.publishFromTables();
+
+    expect(manager.getSnapshot().members[0]).toMatchObject({
+      memberIdentity: 'member-1',
+      character: 'mira',
+    });
+  });
+
   it('keeps a known own alliance after a subscription error', () => {
     let onError = null;
     const manager = new TradeAllianceSubscriptionManager();

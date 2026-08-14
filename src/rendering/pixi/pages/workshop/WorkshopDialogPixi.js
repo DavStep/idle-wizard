@@ -31,6 +31,7 @@ import { PixiTextField } from '../../primitives/PixiTextField.js';
 import { normalizePixiTextStroke } from '../../primitives/PixiTextLabel.js';
 import { PooledCollection } from '../../retained/PooledCollection.js';
 import { WidgetPool } from '../../retained/WidgetPool.js';
+import { RootRunAvatarWidget } from '../../global/chrome/RootRunTopHudWidgets.js';
 import {
   DEFAULT_PIXI_THEME_SNAPSHOT,
   PIXI_ROOT_RUN_ASSETS,
@@ -70,6 +71,8 @@ const WORLD_CHAT_ROW_GAP = 3;
 const WORLD_CHAT_SCROLL_PADDING_TOP = 8;
 const WORLD_CHAT_CONTENT_INSET_X = 8;
 const WORLD_CHAT_DIALOG_MIN_TOP = 18;
+const WORLD_CHAT_DIALOG_HEIGHT = 382 * 1.5;
+const WORLD_CHAT_ROW_HEIGHT_SCALE = 1.3;
 const WORLD_CHAT_COMPOSER_GAP = 6;
 const WORLD_CHAT_COMPOSER_INSET_RIGHT = 4;
 const WORLD_CHAT_COMPOSER_HEIGHT = 34;
@@ -77,12 +80,17 @@ const WORLD_CHAT_COMPOSER_FIELD_HEIGHT = 29;
 const WORLD_CHAT_COMPOSER_SEND_WIDTH = 74;
 const WORLD_CHAT_COMPOSER_SEND_HEIGHT = 29;
 const WORLD_CHAT_ROW_SCROLLBAR_GUTTER = 3;
-const WORLD_CHAT_AVATAR_SIZE = 22;
-const WORLD_CHAT_TEXT_X = 25;
-const WORLD_CHAT_HEADER_HEIGHT = 12;
-const WORLD_CHAT_BODY_TOP = 12;
+const WORLD_CHAT_AVATAR_SIZE = 22 * WORLD_CHAT_ROW_HEIGHT_SCALE;
+const WORLD_CHAT_TEXT_X = 25 * WORLD_CHAT_ROW_HEIGHT_SCALE;
+const WORLD_CHAT_HEADER_HEIGHT = 12 * WORLD_CHAT_ROW_HEIGHT_SCALE;
+const WORLD_CHAT_HEADER_TOP = -1;
+const WORLD_CHAT_BODY_TOP = 12 * WORLD_CHAT_ROW_HEIGHT_SCALE;
 const WORLD_CHAT_BODY_FONT_SIZE = 11;
-const WORLD_CHAT_BODY_LINE_HEIGHT = 13;
+const WORLD_CHAT_BODY_LINE_HEIGHT = 13 * WORLD_CHAT_ROW_HEIGHT_SCALE;
+const WORLD_CHAT_PLAYER_MIN_HEIGHT = 27 * WORLD_CHAT_ROW_HEIGHT_SCALE;
+const WORLD_CHAT_SYSTEM_MIN_HEIGHT = 25 * WORLD_CHAT_ROW_HEIGHT_SCALE;
+const WORLD_CHAT_PLAYER_BOTTOM_INSET = 1 * WORLD_CHAT_ROW_HEIGHT_SCALE;
+const WORLD_CHAT_SYSTEM_BOTTOM_INSET = 3 * WORLD_CHAT_ROW_HEIGHT_SCALE;
 const WORLD_CHAT_TIMESTAMP_COLOR = '#946a2e';
 const WORLD_CHAT_SYSTEM_BACKGROUND = '#efd0a2';
 const WORLD_CHAT_SYSTEM_TITLE_COLOR = '#432d20';
@@ -110,7 +118,8 @@ const WORLD_CHAT_TAG_COLORS = Object.freeze({
   slate: '#596271',
 });
 const ALLIANCE_DIRECTORY_HEADER_HEIGHT = 30;
-const ALLIANCE_MEMBER_ROW_HEIGHT = 28;
+const ALLIANCE_MEMBER_ROW_HEIGHT = 40;
+const ALLIANCE_MEMBER_AVATAR_SIZE = 32;
 const ALLIANCE_MEMBER_VISIBLE_ROWS = 4.5;
 const ALLIANCE_MEMBER_VIEWPORT_HEIGHT =
   ALLIANCE_MEMBER_ROW_HEIGHT * ALLIANCE_MEMBER_VISIBLE_ROWS;
@@ -122,6 +131,16 @@ const ALLIANCE_DIRECTORY_EXPANDED_HEIGHT =
   8 +
   ALLIANCE_DIRECTORY_ACTION_HEIGHT +
   8;
+const OWNED_ALLIANCE_SECTION_GAP =
+  PIXI_DIALOG_SPLIT_PAPER_GEOMETRY.sectionGap;
+const OWNED_ALLIANCE_SECTION_CONTENT_TOP =
+  PIXI_DIALOG_SPLIT_PAPER_GEOMETRY.contentInsetTop;
+const OWNED_ALLIANCE_SECTION_CONTENT_BOTTOM =
+  PIXI_DIALOG_SPLIT_PAPER_GEOMETRY.contentInsetBottom;
+const OWNED_ALLIANCE_HEADER_HEIGHT = 18;
+const OWNED_ALLIANCE_MEMBER_ROW_INSET_X = 8;
+const OWNED_ALLIANCE_MEMBER_SCROLL_TOP = 22;
+const OWNED_ALLIANCE_MEMBER_SCROLLBAR_GUTTER = 4;
 const WORLD_EVENT_SECTION_GAP = 4;
 const WORLD_EVENT_MAX_QUEST_ROWS = 2;
 const WORLD_EVENT_QUEST_ROW_WIDTH = 314;
@@ -200,6 +219,55 @@ function createPersonalTaskSectionChrome(dialog, sectionId) {
     dividers,
     rowLayer,
   };
+}
+
+function createAllianceTradeSection(dialog) {
+  const root = new Container({
+    label: `${dialog.dialogId}-trade-info-section`,
+  });
+  const paper = createDialogPaperSection(
+    dialog.panel.paperFrame.texture,
+    `${root.label}:paper`,
+  );
+  const title = createText('Trade Info', RETAINED_TEXT_STYLES.bold);
+  const identity = createText('', RETAINED_TEXT_STYLES.bold);
+  const detail = createText('', {
+    ...RETAINED_TEXT_STYLES.border,
+    lineHeight: 14,
+    wordWrapWidth: WORKSHOP_DIALOG_CONTENT_WIDTH,
+  });
+  const rowsLayer = new Container({ label: `${root.label}:rows` });
+
+  root.addChild(paper, title, identity, detail, rowsLayer);
+  root.visible = false;
+  root.renderable = false;
+  return { root, paper, title, identity, detail, rowsLayer };
+}
+
+function createAllianceMembersSection(dialog) {
+  const root = new Container({
+    label: `${dialog.dialogId}-members-section`,
+  });
+  const paper = createDialogPaperSection(
+    dialog.panel.paperFrame.texture,
+    `${root.label}:paper`,
+  );
+  const title = createText('Members', RETAINED_TEXT_STYLES.bold);
+  const count = createText('', {
+    ...RETAINED_TEXT_STYLES.border,
+    align: 'right',
+  });
+  count.anchor.set(1, 0);
+  const scroll = new RetainedScrollArea({
+    assetManager: dialog.assetManager,
+    inputRouter: dialog.inputRouter,
+    label: `${root.label}:scroll`,
+  });
+
+  root.addChild(paper, title, count, scroll.root);
+  root.visible = false;
+  root.renderable = false;
+  return { root, paper, title, count, scroll };
 }
 
 /**
@@ -312,6 +380,13 @@ export class WorkshopDialogPixi {
       label: `${dialogId}-scroll`,
       inputRouter: this.inputRouter,
     });
+    this.ownedAllianceLayout = false;
+    this.allianceTradeSection = this.isAllianceDialog
+      ? createAllianceTradeSection(this)
+      : null;
+    this.allianceMembersSection = this.isAllianceDialog
+      ? createAllianceMembersSection(this)
+      : null;
     this.personalTaskSectionChrome = this.isPersonalTasksDialog
       ? new Map(
           ['daily', 'weekly'].map((sectionId) => [
@@ -344,6 +419,14 @@ export class WorkshopDialogPixi {
     }
     this.tabsLayer = new Container({ label: `${dialogId}-tabs` });
     this.panel.content.addChild(
+      ...(
+        this.isAllianceDialog
+          ? [
+              this.allianceTradeSection.root,
+              this.allianceMembersSection.root,
+            ]
+          : []
+      ),
       this.copy,
       this.headerHeadline,
       this.headerBody,
@@ -431,6 +514,28 @@ export class WorkshopDialogPixi {
           afterReconcile: (widgets) => this.orderRows(widgets),
         })
       : null;
+    this.allianceMemberRowPool = this.isAllianceDialog
+      ? new WidgetPool({
+          name: `${dialogId} owned alliance member row pool`,
+          counters,
+          create: () => new AllianceMemberRow({ dialog: this }),
+          reset: (row) => row.reset(),
+          dispose: (row) => row.destroy(),
+          maxSize: 50,
+        })
+      : null;
+    this.allianceMemberRows = this.allianceMemberRowPool
+      ? new PooledCollection({
+          name: `${dialogId} owned alliance member rows`,
+          pool: this.allianceMemberRowPool,
+          counters,
+          keyOf: (row, index) =>
+            row.id ?? row.memberIdentity ?? index,
+          bind: (widget, row) => widget.bind(row),
+          afterReconcile: (widgets) =>
+            this.orderOwnedAllianceMemberRows(widgets),
+        })
+      : null;
     this.worldEventRowPool = this.isWorldEventDialog
       ? new WidgetPool({
           name: `${dialogId} world event quest row pool`,
@@ -482,6 +587,9 @@ export class WorkshopDialogPixi {
 
   bind(viewModel) {
     this.viewModel = viewModel ?? {};
+    this.ownedAllianceLayout = Boolean(
+      this.isAllianceDialog && this.viewModel.ownedAlliance === true,
+    );
     this.modal.setTitle(
       this.viewModel.title ?? this.dialogId.split('.').at(-1),
     );
@@ -498,6 +606,35 @@ export class WorkshopDialogPixi {
     this.headerBody.visible = hasHeader;
     this.headerMeta.visible = hasHeader;
     this.boundStatus = this.viewModel.status ?? '';
+    if (this.isAllianceDialog) {
+      const tradeInfo = this.viewModel.tradeInfo ?? {};
+      const detail = [tradeInfo.description, tradeInfo.notice]
+        .map((value) => String(value ?? '').trim())
+        .filter(Boolean)
+        .join('\n');
+      setText(
+        this.allianceTradeSection.identity,
+        tradeInfo.identityLabel ?? '',
+      );
+      setText(this.allianceTradeSection.detail, detail);
+      setText(
+        this.allianceMembersSection.count,
+        tradeInfo.memberCountLabel ?? '',
+      );
+      this.allianceTradeSection.root.visible = this.ownedAllianceLayout;
+      this.allianceTradeSection.root.renderable = this.ownedAllianceLayout;
+      this.allianceMembersSection.root.visible = this.ownedAllianceLayout;
+      this.allianceMembersSection.root.renderable = this.ownedAllianceLayout;
+      this.scroll.root.visible = !this.ownedAllianceLayout;
+      this.scroll.root.renderable = !this.ownedAllianceLayout;
+      this.panel.setPaperVisible(!this.ownedAllianceLayout);
+      this.copy.visible = !this.ownedAllianceLayout && Boolean(this.copy.text);
+      this.copy.renderable = this.copy.visible;
+      this.headerHeadline.renderable = !this.ownedAllianceLayout && hasHeader;
+      this.headerBody.renderable = !this.ownedAllianceLayout && hasHeader;
+      this.headerMeta.renderable = !this.ownedAllianceLayout && hasHeader;
+      this.tabsLayer.renderable = !this.ownedAllianceLayout;
+    }
     this.bindComposer(this.viewModel.composer);
     this.updateStatus();
     this.tabs.reconcile(normalizeRows(this.viewModel.tabs));
@@ -515,12 +652,21 @@ export class WorkshopDialogPixi {
       this.rows.reconcile([]);
       this.rows = nextRows;
     }
-    const rows = normalizeRows(this.viewModel.rows);
+    const rows = normalizeRows(
+      this.ownedAllianceLayout
+        ? this.viewModel.tradeInfoRows
+        : this.viewModel.rows,
+    );
     this.rows.reconcile(
       this.isWorldEventDialog &&
         this.viewModel.rowWidget === 'worldEventQuest'
         ? rows.slice(0, WORLD_EVENT_MAX_QUEST_ROWS)
         : rows,
+    );
+    this.allianceMemberRows?.reconcile(
+      this.ownedAllianceLayout
+        ? normalizeRows(this.viewModel.members)
+        : [],
     );
     this.layout({
       sourceWidth: this.sourceWidth,
@@ -543,6 +689,10 @@ export class WorkshopDialogPixi {
   }
 
   orderRows(widgets) {
+    if (this.ownedAllianceLayout) {
+      this.orderOwnedAllianceTradeRows(widgets);
+      return;
+    }
     if (this.isPersonalTasksDialog) {
       this.orderPersonalTaskRows(widgets);
       return;
@@ -614,6 +764,48 @@ export class WorkshopDialogPixi {
     if (locksWorldEventQuestScroll) {
       this.scroll.scrollTo(0);
     }
+  }
+
+  orderOwnedAllianceTradeRows(widgets) {
+    const section = this.allianceTradeSection;
+    if (!section) {
+      return;
+    }
+    section.rowsLayer.removeChildren();
+    let y = 0;
+    for (const widget of widgets) {
+      const rowHeight = widget.getPreferredHeight();
+      section.rowsLayer.addChild(widget.root);
+      widget.setBounds(0, y, WORKSHOP_DIALOG_CONTENT_WIDTH, rowHeight);
+      y += rowHeight;
+    }
+    this.ownedAllianceTradeRowsHeight = y;
+  }
+
+  orderOwnedAllianceMemberRows(widgets) {
+    const scroll = this.allianceMembersSection?.scroll;
+    if (!scroll) {
+      return;
+    }
+    scroll.content.removeChildren();
+    let y = 0;
+    const rowWidth = Math.max(
+      0,
+      WORKSHOP_DIALOG_CONTENT_WIDTH -
+        OWNED_ALLIANCE_MEMBER_ROW_INSET_X * 2 -
+        OWNED_ALLIANCE_MEMBER_SCROLLBAR_GUTTER,
+    );
+    for (const widget of widgets) {
+      scroll.content.addChild(widget.root);
+      widget.setBounds(
+        OWNED_ALLIANCE_MEMBER_ROW_INSET_X,
+        y,
+        rowWidth,
+        ALLIANCE_MEMBER_ROW_HEIGHT,
+      );
+      y += ALLIANCE_MEMBER_ROW_HEIGHT;
+    }
+    scroll.setContentHeight(y);
   }
 
   orderPersonalTaskRows(widgets) {
@@ -770,6 +962,7 @@ export class WorkshopDialogPixi {
     const allRows = new Set([
       ...(this.defaultRows?.getWidgets?.() ?? []),
       ...(this.allianceRows?.getWidgets?.() ?? []),
+      ...(this.allianceMemberRows?.getWidgets?.() ?? []),
       ...(this.worldEventRows?.getWidgets?.() ?? []),
     ]);
     for (const row of allRows) {
@@ -800,6 +993,28 @@ export class WorkshopDialogPixi {
       chrome.progress.applyTheme(contentTheme);
     }
 
+    if (this.allianceTradeSection) {
+      applyTextTheme(this.allianceTradeSection.title, contentTheme, {
+        ...RETAINED_TEXT_STYLES.bold,
+      });
+      applyTextTheme(this.allianceTradeSection.identity, contentTheme, {
+        ...RETAINED_TEXT_STYLES.bold,
+      });
+      applyTextTheme(this.allianceTradeSection.detail, contentTheme, {
+        ...RETAINED_TEXT_STYLES.border,
+        lineHeight: 14,
+        wordWrapWidth: WORKSHOP_DIALOG_CONTENT_WIDTH,
+      });
+      applyTextTheme(this.allianceMembersSection.title, contentTheme, {
+        ...RETAINED_TEXT_STYLES.bold,
+      });
+      applyTextTheme(this.allianceMembersSection.count, contentTheme, {
+        ...RETAINED_TEXT_STYLES.border,
+        align: 'right',
+        fill: contentTheme.muted,
+      });
+    }
+
     this.composerField?.applyTheme(contentTheme);
     this.composerSubmit?.applyTheme(contentTheme);
   }
@@ -823,11 +1038,13 @@ export class WorkshopDialogPixi {
       this.composerField?.visible === true
         ? WORLD_CHAT_COMPOSER_HEIGHT
         : 0;
-    const height = this.isWorldEventDialog
-      ? Math.min(486, this.sourceHeight - 118)
-      : this.isPersonalTasksDialog
-        ? Math.min(470, this.sourceHeight - 118)
-        : Math.min(382, this.sourceHeight - 80);
+    const height = this.isWorldChatDialog
+      ? Math.min(WORLD_CHAT_DIALOG_HEIGHT, this.sourceHeight - 80)
+      : this.isWorldEventDialog
+        ? Math.min(486, this.sourceHeight - 118)
+        : this.isPersonalTasksDialog
+          ? Math.min(470, this.sourceHeight - 118)
+          : Math.min(382, this.sourceHeight - 80);
     const panelX = this.isWorldChatDialog
       ? frameOutset
       : (this.sourceWidth - width) / 2;
@@ -841,8 +1058,8 @@ export class WorkshopDialogPixi {
     const panelY = this.isWorldChatDialog
       ? Math.max(
           WORLD_CHAT_DIALOG_MIN_TOP,
-          this.sourceHeight - height - frameOutset + keyboardShift,
-        )
+          this.sourceHeight - height - frameOutset,
+        ) + keyboardShift
       : centeredPanelY;
     this.modal.layout(viewportProjection);
     this.modal.setBounds(
@@ -876,6 +1093,10 @@ export class WorkshopDialogPixi {
         tabs,
         footerTabLayout,
       });
+      return;
+    }
+    if (this.ownedAllianceLayout) {
+      this.layoutOwnedAllianceDialog({ width, height });
       return;
     }
     if (footerTabLayout) {
@@ -1042,6 +1263,115 @@ export class WorkshopDialogPixi {
     }
   }
 
+  layoutOwnedAllianceDialog({ height }) {
+    const trade = this.allianceTradeSection;
+    const members = this.allianceMembersSection;
+    if (!trade || !members) {
+      return;
+    }
+
+    this.panel.setPaperVisible(false);
+    this.copy.visible = false;
+    this.copy.renderable = false;
+    this.headerHeadline.visible = false;
+    this.headerHeadline.renderable = false;
+    this.headerBody.visible = false;
+    this.headerBody.renderable = false;
+    this.headerMeta.visible = false;
+    this.headerMeta.renderable = false;
+    this.scroll.root.visible = false;
+    this.scroll.root.renderable = false;
+    this.tabsLayer.visible = false;
+    this.tabsLayer.renderable = false;
+
+    const paperOutsets = resolveDialogPaperOutsets({
+      top: PIXI_UI_GEOMETRY.dialogPadding,
+      right: PIXI_UI_GEOMETRY.dialogPadding,
+      bottom: PIXI_UI_GEOMETRY.dialogPadding,
+      left: PIXI_UI_GEOMETRY.dialogPadding,
+    });
+    const contentX = PIXI_UI_GEOMETRY.dialogPadding;
+    const contentY = OWNED_ALLIANCE_SECTION_CONTENT_TOP;
+    const contentWidth = WORKSHOP_DIALOG_CONTENT_WIDTH;
+
+    trade.root.position.set(0, 0);
+    trade.title.position.set(contentX, contentY);
+    trade.identity.position.set(
+      contentX,
+      contentY + OWNED_ALLIANCE_HEADER_HEIGHT,
+    );
+    const detailY =
+      trade.identity.y + Math.ceil(trade.identity.height) + 2;
+    trade.detail.position.set(contentX, detailY);
+    trade.detail.style.wordWrap = true;
+    trade.detail.style.wordWrapWidth = contentWidth;
+    const rowsY =
+      detailY +
+      (trade.detail.text ? Math.ceil(trade.detail.height) + 4 : 0);
+    trade.rowsLayer.position.set(contentX, rowsY);
+    this.orderOwnedAllianceTradeRows(this.defaultRows.getWidgets());
+    const tradeContentHeight =
+      rowsY - contentY +
+      (this.ownedAllianceTradeRowsHeight ?? 0) +
+      OWNED_ALLIANCE_SECTION_CONTENT_BOTTOM;
+    setDialogPaperSectionBounds(
+      trade.paper,
+      {
+        x: contentX,
+        y: contentY,
+        width: contentWidth,
+        height: tradeContentHeight,
+      },
+      paperOutsets,
+    );
+    const tradeSectionHeight =
+      trade.paper.y + trade.paper.frameHeight;
+    const membersY =
+      tradeSectionHeight + OWNED_ALLIANCE_SECTION_GAP;
+    const membersHeight = Math.max(80, height - membersY);
+    const membersContentHeight = Math.max(
+      40,
+      membersHeight - contentY - paperOutsets.bottom,
+    );
+
+    members.root.position.set(0, membersY);
+    members.title.position.set(contentX, contentY);
+    members.count.position.set(
+      contentX + contentWidth,
+      contentY + 1,
+    );
+    const statusHeight = this.status.text ? 16 : 0;
+    members.scroll.setBounds(
+      contentX,
+      contentY + OWNED_ALLIANCE_MEMBER_SCROLL_TOP,
+      contentWidth,
+      Math.max(
+        ALLIANCE_MEMBER_ROW_HEIGHT,
+        membersContentHeight -
+          OWNED_ALLIANCE_MEMBER_SCROLL_TOP -
+          OWNED_ALLIANCE_SECTION_CONTENT_BOTTOM -
+          statusHeight,
+      ),
+    );
+    this.orderOwnedAllianceMemberRows(
+      this.allianceMemberRows?.getWidgets?.() ?? [],
+    );
+    setDialogPaperSectionBounds(
+      members.paper,
+      {
+        x: contentX,
+        y: contentY,
+        width: contentWidth,
+        height: membersContentHeight,
+      },
+      paperOutsets,
+    );
+    this.status.position.set(
+      contentX,
+      membersY + membersContentHeight - statusHeight,
+    );
+  }
+
   layoutWorldEventDialog({ width, height, tabs, footerTabLayout }) {
     this.panel.setPaperVisible(false);
     this.copy.visible = false;
@@ -1201,10 +1531,12 @@ export class WorkshopDialogPixi {
 
     this.defaultRows?.destroy();
     this.allianceRows?.destroy();
+    this.allianceMemberRows?.destroy();
     this.worldEventRows?.destroy();
     this.rows = null;
     this.defaultRows = null;
     this.allianceRows = null;
+    this.allianceMemberRows = null;
     this.worldEventRows = null;
     for (const chrome of this.personalTaskSectionChrome?.values?.() ?? []) {
       chrome.progress.destroy();
@@ -1215,10 +1547,13 @@ export class WorkshopDialogPixi {
     this.rowPool.destroy();
     this.allianceRowPool?.destroy();
     this.allianceRowPool = null;
+    this.allianceMemberRowPool?.destroy();
+    this.allianceMemberRowPool = null;
     this.worldEventRowPool?.destroy();
     this.worldEventRowPool = null;
     this.tabs.destroy();
     this.tabPool.destroy();
+    this.allianceMembersSection?.scroll.destroy();
     this.scroll.destroy();
     this.modal.destroy();
   }
@@ -1944,16 +2279,19 @@ export class WorldChatMessageRowPixi {
       .fill(WORLD_CHAT_SYSTEM_BACKGROUND);
     this.avatar.position.set(
       WORLD_CHAT_AVATAR_SIZE / 2,
-      WORLD_CHAT_AVATAR_SIZE / 2 + 1,
+      WORLD_CHAT_AVATAR_SIZE / 2 + WORLD_CHAT_ROW_HEIGHT_SCALE,
     );
     this.avatar.width = WORLD_CHAT_AVATAR_SIZE;
     this.avatar.height = WORLD_CHAT_AVATAR_SIZE;
-    this.tag.position.set(contentX, 0);
+    this.tag.position.set(contentX, WORLD_CHAT_HEADER_TOP);
     this.username.position.set(
       contentX + (this.tag.visible ? this.tag.width + 2 : 0),
-      0,
+      WORLD_CHAT_HEADER_TOP,
     );
-    this.timestamp.position.set(width - timestampInset, 1);
+    this.timestamp.position.set(
+      width - timestampInset,
+      WORLD_CHAT_ROW_HEIGHT_SCALE,
+    );
     this.systemPlayerUsername.position.set(contentX, WORLD_CHAT_BODY_TOP);
     const bodyX = this.systemPlayerUsername.visible
       ? contentX + this.systemPlayerUsername.width + 2
@@ -1987,8 +2325,14 @@ export class WorldChatMessageRowPixi {
       Math.ceil(this.body.layoutHeight),
     );
     return Math.max(
-      this.isSystem ? 25 : 27,
-      WORLD_CHAT_BODY_TOP + bodyHeight + (this.isSystem ? 3 : 1),
+      this.isSystem
+        ? WORLD_CHAT_SYSTEM_MIN_HEIGHT
+        : WORLD_CHAT_PLAYER_MIN_HEIGHT,
+      WORLD_CHAT_BODY_TOP +
+        bodyHeight +
+        (this.isSystem
+          ? WORLD_CHAT_SYSTEM_BOTTOM_INSET
+          : WORLD_CHAT_PLAYER_BOTTOM_INSET),
     );
   }
 
@@ -2137,11 +2481,23 @@ export class AllianceMemberRow {
       inputRouter: dialog.inputRouter,
       variant: 'inline',
     });
+    this.avatarWidget = new RootRunAvatarWidget({
+      assets: dialog.assetManager,
+      texture: Texture.EMPTY,
+      label: `${dialog.dialogId}-alliance-member-avatar`,
+    });
+    this.avatar = this.avatarWidget.portrait;
     this.username = createText('', RETAINED_TEXT_STYLES.body);
     this.role = createText('', RETAINED_TEXT_STYLES.border);
     this.level = createText('', RETAINED_TEXT_STYLES.border);
     this.level.anchor.set(1, 0);
-    this.root.addChild(this.hitTarget.root, this.username, this.role, this.level);
+    this.root.addChild(
+      this.hitTarget.root,
+      this.avatarWidget,
+      this.username,
+      this.role,
+      this.level,
+    );
   }
 
   bind(model) {
@@ -2149,8 +2505,11 @@ export class AllianceMemberRow {
     this.model = model ?? {};
     this.root.visible = true;
     setText(this.username, this.model.username ?? 'Wizard');
-    setText(this.role, this.model.roleLabel ?? 'trader');
+    setText(this.role, this.model.roleLabel ?? 'Trader');
     setText(this.level, this.model.levelLabel ?? 'Lv 1');
+    this.avatarWidget.setTexture(
+      resolveCharacterTexture(this.dialog.assetManager, this.model.character),
+    );
     const interactive = typeof this.model.onActivate === 'function';
     this.hitTarget.setModel({
       label: '',
@@ -2172,9 +2531,13 @@ export class AllianceMemberRow {
   setBounds(x, y, width, height = ALLIANCE_MEMBER_ROW_HEIGHT) {
     this.root.position.set(x, y);
     this.hitTarget.setBounds(0, 0, width, height);
-    this.username.position.set(6, 6);
-    this.role.position.set(100, 7);
-    this.level.position.set(width - 6, 7);
+    const avatarScale = ALLIANCE_MEMBER_AVATAR_SIZE / 186;
+    this.avatarWidget.scale.set(avatarScale);
+    this.avatarWidget.position.set(4, (height - ALLIANCE_MEMBER_AVATAR_SIZE) / 2);
+    const textX = ALLIANCE_MEMBER_AVATAR_SIZE + 10;
+    this.username.position.set(textX, 5);
+    this.role.position.set(textX, 21);
+    this.level.position.set(width - 6, 13);
     this.root.hitArea = new Rectangle(0, 0, width, height);
   }
 
@@ -2201,6 +2564,7 @@ export class AllianceMemberRow {
     this.unregisterTarget();
     this.model = null;
     this.root.visible = false;
+    this.avatarWidget.setTexture(Texture.EMPTY);
     this.hitTarget.setModel({ label: '', enabled: false });
   }
 

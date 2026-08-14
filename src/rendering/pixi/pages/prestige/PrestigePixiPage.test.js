@@ -141,10 +141,10 @@ describe('PrestigePixiPage', () => {
     const page = createPage();
     page.bind(createPrestigeViewModel());
 
-    expect(page.scroll.root.position).toMatchObject({ x: 0, y: 151 });
+    expect(page.scroll.root.position).toMatchObject({ x: 0, y: 140.5 });
     expect(page.scroll).toMatchObject({
       width: 374,
-      height: 483,
+      height: 493.5,
     });
     expect(page.tabsLayer.position).toMatchObject({
       x: 16,

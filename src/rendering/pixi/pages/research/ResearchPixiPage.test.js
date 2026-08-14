@@ -38,6 +38,8 @@ describe('ResearchPixiPage', () => {
       frameHeight: 42,
       frameWidth: plaque.width,
     });
+    expect(plaque.root.scale).toMatchObject({ x: 0.75, y: 0.75 });
+    expect(plaque.root.height).toBeCloseTo(31.5);
 
     plaque.root.destroy({ children: true });
   });
@@ -642,6 +644,7 @@ describe('ResearchPixiPage', () => {
     });
     expect(box.title.position).toMatchObject({ x: 12, y: 21 });
     expect(box.titlePlaque.root.position).toMatchObject({ x: 0, y: 0 });
+    expect(box.titlePlaque.root.scale).toMatchObject({ x: 0.75, y: 0.75 });
     expect(box.getPreferredHeight()).toBe(
       RESEARCH_PIXI_GEOMETRY.categoryTitleHeight +
         RESEARCH_PIXI_GEOMETRY.rowGap +

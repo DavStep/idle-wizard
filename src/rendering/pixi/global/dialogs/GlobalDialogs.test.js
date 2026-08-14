@@ -212,8 +212,19 @@ describe('retained global Pixi dialogs', () => {
     expect(player.panel.titleLabel.text).toBe('Player Info');
     expect(player.avatarWidget).toBeInstanceOf(RootRunAvatarWidget);
     expect(player.avatarWidget.parent).toBe(player.panel.content);
+    expect(player.panel.paperFrame.visible).toBe(false);
+    expect(player.summaryFrame).toBeInstanceOf(PixiNineSliceFrame);
+    expect(player.summaryFrame.parent).toBe(player.panel.content);
     expect(player.statsFrame).toBeInstanceOf(PixiNineSliceFrame);
     expect(player.statsFrame.parent).toBe(player.panel.content);
+    expect(
+      player.statsFrame.y -
+        (player.summaryFrame.y + player.summaryFrame.frameHeight),
+    ).toBeCloseTo(8);
+    expect(player.avatarWidget.y - player.summaryFrame.y).toBeGreaterThanOrEqual(8);
+    expect(player.levelLabel.y - player.name.y).toBeLessThanOrEqual(18);
+    expect(player.prestigeLabel.y - player.levelLabel.y).toBeLessThanOrEqual(18);
+    expect(player.allianceButton.textLabel.textObject.style.fill).toBe('#397a42');
     expect(player.prestigeStars).toBeInstanceOf(PixiStarLevelLabel);
     expect(player.prestigeStars.starCount).toBe(2);
     expect(player.totalCoinValue).toBeInstanceOf(PixiResourceLabel);
@@ -2099,6 +2110,7 @@ function createPlayer() {
     allianceId: 'alliance-one',
     allianceName: 'Moss Hall',
     allianceTag: 'MOSS',
+    allianceTagColor: 'green',
   };
 }
 

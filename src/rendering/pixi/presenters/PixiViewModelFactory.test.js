@@ -1083,6 +1083,59 @@ describe('PixiViewModelFactory', () => {
     ]);
   });
 
+  it('projects an owned trade alliance into separate trade info and member rows', () => {
+    const openPlayer = vi.fn();
+    const member = {
+      allianceId: 'shared-alliance',
+      memberIdentity: 'member-a',
+      username: 'Mira',
+      character: 'mira',
+      playerLevel: 12,
+      role: 'tradeMaster',
+    };
+    const alliance = new PixiViewModelFactory().createAllianceDialog(
+      {
+        connected: true,
+        ownAlliance: {
+          allianceId: 'shared-alliance',
+          name: 'Shared Alliance',
+          tag: 'SHARE',
+          joinMode: 'apply',
+          memberCount: 1,
+          seasonIncome: 84520,
+          description: 'Patient traders sharing one hall.',
+        },
+        members: [member],
+      },
+      null,
+      { openPlayer },
+    );
+
+    expect(alliance).toMatchObject({
+      title: 'Trade Alliance',
+      ownedAlliance: true,
+      tradeInfo: {
+        identityLabel: '[SHARE] Shared Alliance',
+        description: 'Patient traders sharing one hall.',
+      },
+    });
+    expect(alliance.tradeInfoRows).toEqual([
+      expect.objectContaining({ label: 'Members', value: '1/50' }),
+      expect.objectContaining({ label: 'Join Mode', value: 'Apply' }),
+      expect.objectContaining({ label: 'Season Income', resourceKey: 'coin' }),
+    ]);
+    expect(alliance.members[0]).toMatchObject({
+      id: 'member-a',
+      username: 'Mira',
+      character: 'mira',
+      roleLabel: 'Trade Master',
+      levelLabel: 'Lv 12',
+    });
+
+    alliance.members[0].onActivate();
+    expect(openPlayer).toHaveBeenCalledWith(member);
+  });
+
   it('projects expandable alliance directory rows with members, totals, and state actions', () => {
     const selectAlliance = vi.fn();
     const joinAlliance = vi.fn();
@@ -1167,7 +1220,7 @@ describe('PixiViewModelFactory', () => {
     });
     expect(dialog.rows[0].members[0]).toMatchObject({
       username: 'Wizard 0',
-      roleLabel: 'trade master',
+      roleLabel: 'Trade Master',
       levelLabel: 'Lv 18',
     });
     expect(dialog.rows[1].action).toMatchObject({

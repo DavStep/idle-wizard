@@ -22,7 +22,7 @@ Do not let the fantasy treatment turn into casino clutter, a generic card battle
 
 ## Design Principles
 
-- Preserve the Root Run-compatible `390x844` room surface and contain-fit it to device size.
+- Preserve the Root Run-compatible `390px` logical room width. Use `844px` as the reference QA height; portrait runtime height fills the remaining safe viewport, while wide desktop windows contain-fit the reference surface.
 - Let typography stay source-small and readable through viewport scaling.
 - Give each room one dominant illustrated landmark, one clear current action area, stable navigation, and compact supporting status.
 - Use motion only to explain state changes, page shifts, dialogs, and button feedback.

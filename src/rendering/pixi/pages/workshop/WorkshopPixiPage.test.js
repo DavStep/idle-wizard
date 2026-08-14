@@ -1894,7 +1894,7 @@ describe('WorkshopPixiPage', () => {
           members: Array.from({ length: 6 }, (_, index) => ({
             id: `member-${index}`,
             username: `Wizard ${index}`,
-            roleLabel: index === 0 ? 'trade master' : 'trader',
+            roleLabel: index === 0 ? 'Trade Master' : 'Trader',
             levelLabel: `Lv ${18 - index}`,
           })),
         },
@@ -1933,8 +1933,8 @@ describe('WorkshopPixiPage', () => {
     expect(row.getPreferredHeight()).toBeGreaterThan(30);
     expect(collapsedRow.getPreferredHeight()).toBe(30);
     expect(row.memberWidgets.size).toBe(6);
-    expect(row.memberViewport.height).toBe(28 * 4.5);
-    expect(row.memberViewport.contentHeight).toBe(28 * 6);
+    expect(row.memberViewport.height).toBe(40 * 4.5);
+    expect(row.memberViewport.contentHeight).toBe(40 * 6);
     expect(row.memberViewport.scrollbarTrack.visible).toBe(true);
     expect(row.action.text.text).toBe('Join Alliance');
     expect(row.action.control.variant).toBe('green');
@@ -1954,6 +1954,70 @@ describe('WorkshopPixiPage', () => {
 
     harness.page.destroy();
     harness.dispose();
+  });
+
+  it('renders owned alliance trade info and portrait member rows in separate papers', () => {
+    const miraTexture = new Texture();
+    const assetManager = createPixiAssetManagerFake(Texture);
+    assetManager.getTexture = vi.fn((assetId) =>
+      assetId === 'source:assets/avatars/mira.png'
+        ? miraTexture
+        : new Texture(),
+    );
+    const harness = createHarness({ assetManager });
+    const model = createWorkshopViewModel();
+    model.workshop.dialogs.alliance = {
+      title: 'Trade Alliance',
+      ownedAlliance: true,
+      tradeInfo: {
+        identityLabel: '[MOSS] Moss Hall',
+        description: 'A quiet hall for patient traders.',
+        memberCountLabel: '1/50',
+      },
+      tradeInfoRows: [
+        { id: 'members', label: 'Members', value: '1/50' },
+        { id: 'join-mode', label: 'Join Mode', value: 'Open' },
+        {
+          id: 'season-income',
+          label: 'Season Income',
+          value: '84.5k',
+          itemKind: 'resource',
+          itemKey: 'coin',
+          resourceKey: 'coin',
+        },
+      ],
+      members: [
+        {
+          id: 'member-1',
+          username: 'Mira',
+          character: 'mira',
+          roleLabel: 'Trade Master',
+          levelLabel: 'Lv 12',
+          onActivate: vi.fn(),
+        },
+      ],
+    };
+
+    harness.page.bind(model);
+    harness.page.openDialog('alliance');
+
+    const dialog = harness.dialogs.get('workshop.alliance');
+    const member = dialog.allianceMemberRows.get('member-1');
+    expect(dialog.panel.titleLabel.text).toBe('Trade Alliance');
+    expect(dialog.panel.paperFrame.visible).toBe(false);
+    expect(dialog.allianceTradeSection.root.visible).toBe(true);
+    expect(dialog.allianceMembersSection.root.visible).toBe(true);
+    expect(dialog.allianceTradeSection.title.text).toBe('Trade Info');
+    expect(dialog.allianceTradeSection.identity.text).toBe('[MOSS] Moss Hall');
+    expect(dialog.allianceMembersSection.title.text).toBe('Members');
+    expect(member.avatar.texture).toBe(miraTexture);
+    expect(member.role.text).toBe('Trade Master');
+    expect(member.level.text).toBe('Lv 12');
+    expect(member.root.parent).toBe(dialog.allianceMembersSection.scroll.content);
+
+    harness.page.destroy();
+    harness.dispose();
+    miraTexture.destroy();
   });
 
   it('renders complete potion discovery rows with item art and recipe metadata', () => {
@@ -2248,6 +2312,7 @@ describe('WorkshopPixiPage', () => {
         dialog.modal.fixedBounds.height +
         geometry.frameOutset,
     ).toBeCloseTo(dialog.sourceHeight);
+    expect(dialog.modal.fixedBounds.height).toBe(573);
     expect(dialog.panel.headerLayout).toBe('edge');
     expect(dialog.panel.titleFrame.x).toBe(-geometry.frameOutset);
     expect(
@@ -2264,10 +2329,16 @@ describe('WorkshopPixiPage', () => {
     dialog.layout({
       sourceWidth: 360,
       sourceHeight: 2170 / 3,
+      dialogShift: 0,
+    });
+    const restingPanelY = dialog.modal.fixedBounds.y;
+    dialog.layout({
+      sourceWidth: 360,
+      sourceHeight: 2170 / 3,
       dialogShift: -145,
     });
 
-    expect(dialog.modal.fixedBounds.y).toBeGreaterThanOrEqual(18);
+    expect(dialog.modal.fixedBounds.y).toBeCloseTo(restingPanelY - 290);
     expect(
       dialog.modal.fixedBounds.y +
         dialog.composerField.y +
@@ -2332,7 +2403,7 @@ describe('WorkshopPixiPage', () => {
     expect(dialog.composerSubmit.control.variant).toBe('yellow');
     expect(dialog.composerSubmit.text.text).toBe('Send');
     expect(dialog.composerSubmit.enabled).toBe(true);
-    expect(dialog.composerField.y).toBe(342);
+    expect(dialog.composerField.y).toBe(533);
     expect(dialog.composerField.x).toBeCloseTo(
       dialog.panel.paperFrame.x,
     );
@@ -2368,9 +2439,12 @@ describe('WorkshopPixiPage', () => {
     expect(playerRow.username.style.fill).toBe('#634934');
     expect(playerRow.username.style.stroke?.width ?? 0).toBe(0);
     expect(playerRow.body.x).toBe(playerRow.tag.x);
-    expect(playerRow.body.x).toBe(25);
+    expect(playerRow.body.x).toBeCloseTo(32.5);
     expect(playerRow.body.y).toBeGreaterThan(playerRow.username.y);
-    expect(playerRow.avatar.width).toBe(22);
+    expect(playerRow.tag.y).toBe(-1);
+    expect(playerRow.username.y).toBe(-1);
+    expect(playerRow.avatar.width).toBeCloseTo(28.6);
+    expect(playerRow.getPreferredHeight()).toBeCloseTo(35.1);
     expect(dialog.scroll.root.x).toBe(8);
     expect(dialog.scroll.width).toBe(354);
     expect(playerRow.root.hitArea.width).toBe(351);
@@ -2401,8 +2475,10 @@ describe('WorkshopPixiPage', () => {
     expect(systemRow.avatar.eventMode).toBe('none');
     expect(systemRow.username.eventMode).toBe('none');
     expect(systemRow.action).toBeUndefined();
-    expect(systemRow.getPreferredHeight()).toBeLessThanOrEqual(28);
-    expect(systemRow.root.y - playerRow.root.y).toBe(playerRow.getPreferredHeight() + 3);
+    expect(systemRow.getPreferredHeight()).toBeCloseTo(36.5);
+    expect(systemRow.root.y - playerRow.root.y).toBeCloseTo(
+      playerRow.getPreferredHeight() + 3,
+    );
 
     harness.page.destroy();
     harness.dispose();

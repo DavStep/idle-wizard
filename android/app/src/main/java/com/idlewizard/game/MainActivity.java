@@ -23,7 +23,7 @@ public class MainActivity extends BridgeActivity {
         registerPlugin(NativeAuthTokenStoragePlugin.class);
         super.onCreate(savedInstanceState);
         lockSoftKeyboardWindow();
-        lockWebViewZoom();
+        configureWebView();
         requestHighFrameRate();
     }
 
@@ -38,13 +38,14 @@ public class MainActivity extends BridgeActivity {
         getWindow().setSoftInputMode(SOFT_INPUT_MODE);
     }
 
-    private void lockWebViewZoom() {
+    private void configureWebView() {
         WebView webView = getBridge().getWebView();
 
         if (webView == null) {
             return;
         }
 
+        webView.setHapticFeedbackEnabled(false);
         WebSettings settings = webView.getSettings();
         settings.setSupportZoom(false);
         settings.setBuiltInZoomControls(false);

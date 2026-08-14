@@ -163,7 +163,7 @@ export class PixiGlobalDialogPresenter {
       if (!this.openRequests.has(dialogId)) {
         continue;
       }
-      runtime.openDialog(
+      runtime.refreshDialog(
         dialogId,
         this.createViewModel(
           dialogId,
@@ -543,7 +543,7 @@ export class PixiGlobalDialogPresenter {
       return false;
     }
     const request = this.openRequests.get(dialogId) ?? {};
-    this.requireRuntime().openDialog(
+    this.requireRuntime().refreshDialog(
       dialogId,
       this.createViewModel(dialogId, request),
     );

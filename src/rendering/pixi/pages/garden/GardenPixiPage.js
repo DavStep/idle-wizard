@@ -234,13 +234,21 @@ export class GardenPixiPage extends BaseRetainedPixiPage {
   syncDialogs(dialogs) {
     for (const kind of Object.keys(GARDEN_DIALOG_IDS)) {
       const model = dialogs[kind];
+      const dialogId = GARDEN_DIALOG_IDS[kind];
       if (model?.open === true) {
-        this.openDialog(kind, model);
+        if (this.dialogRegistry?.isOpen?.(dialogId)) {
+          this.dialogRegistry.refresh(
+            dialogId,
+            this.normalizeDialogModel(kind, model),
+          );
+        } else {
+          this.openDialog(kind, model);
+        }
       } else if (
         model?.open === false &&
-        this.dialogRegistry?.isOpen?.(GARDEN_DIALOG_IDS[kind])
+        this.dialogRegistry?.isOpen?.(dialogId)
       ) {
-        this.dialogRegistry.close(GARDEN_DIALOG_IDS[kind]);
+        this.dialogRegistry.close(dialogId);
       }
     }
   }

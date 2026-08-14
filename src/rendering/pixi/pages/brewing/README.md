@@ -80,6 +80,15 @@ quantities, timer endpoints, and result messages must come from the presenter.
 The small raw-snapshot fallbacks exist only to ease atomic cutover and do not
 perform writes or own game rules.
 
+The retained Recipes dialog is a two-page Expedition composition. Each visible
+`BrewingRecipeCard` reuses the shared dialog-paper nine-slice, the two page
+frames keep a compact `4px` source gap, and the pager stays on the brown shell
+below them. Unlocked recipe actions read `Select`; locked recipes retain the
+`Research` action. Ingredient `owned` values are presenter-projected available
+herb counts for the selected cauldron, after subtracting herbs staged in other
+cauldrons. Open `http://127.0.0.1:55173/?devUi=brewing.recipes` for the
+deterministic real-app visual-QA state.
+
 The production composition has two sections. The unframed preview keeps the
 image-backed fantasy chevrons, horizontal swipe, centered cauldron, and six
 compact ingredient requirement tiles in a subtle connected orbit. The preview
@@ -115,9 +124,12 @@ That batch-detail rail uses the shared default purple fill.
 The shortened panel is bottom-anchored `3px` above the World Chat title
 overhang and ends with one wide primary button. The expanded preview uses the
 freed height for the cauldron orbit and recipe identity; its first ingredient
-row starts `5px` below the compact configuration controls. Compact Recipes,
-Auto, and `xN` controls sit outside the panel in the carousel header,
-right-aligned beside the cauldron title plaque.
+row starts below the compact configuration controls so the complete cauldron
+composition sits in the lower half of the preview. The orbit remains a wide,
+vertically pressed ellipse; extra page height changes its vertical placement,
+not its proportions.
+Compact Recipes, Auto, and `xN` controls sit outside the panel in the carousel
+header, right-aligned beside the cauldron title plaque.
 
 Boundary chevrons are removed instead of showing a disabled arrow. Carousel
 dots contain every unlocked cauldron plus exactly one next purchasable locked

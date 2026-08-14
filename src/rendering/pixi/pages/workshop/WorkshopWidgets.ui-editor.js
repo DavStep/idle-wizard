@@ -161,15 +161,15 @@ function donationOptionControl({ assets, input, fixture = { state: 'available' }
 
 function allianceMemberControl({ assets, input, fixture = { state: 'leader' }, context }) {
   const control = new AllianceMemberRow({ dialog: dialogStub(assets, input) });
-  control.bind({ username: 'Elara', roleLabel: fixture.state === 'leader' ? 'leader' : 'trader', levelLabel: 'Lv 12', onActivate: fixture.state === 'passive' ? null : () => context?.emit('memberOpened') ?? true });
-  control.setBounds(0, 0, 236, 28);
-  return wrap(control, 236, 28);
+  control.bind({ username: 'Elara', character: 'elara', roleLabel: fixture.state === 'leader' ? 'Trade Master' : 'Trader', levelLabel: 'Lv 12', onActivate: fixture.state === 'passive' ? null : () => context?.emit('memberOpened') ?? true });
+  control.setBounds(0, 0, 236, 40);
+  return wrap(control, 236, 40);
 }
 
 function allianceDirectoryControl({ assets, input, fixture = { state: 'collapsed' }, context }) {
   const control = new AllianceDirectoryRow({ dialog: dialogStub(assets, input) });
   const expanded = fixture.state !== 'collapsed';
-  const members = Array.from({ length: fixture.state === 'full' ? 7 : 3 }, (_, index) => ({ id: index, username: ['Elara', 'Morrow', 'Thistle'][index % 3], roleLabel: index === 0 ? 'leader' : 'trader', levelLabel: `Lv ${12 - index}`, onActivate: () => true }));
+  const members = Array.from({ length: fixture.state === 'full' ? 7 : 3 }, (_, index) => ({ id: index, username: ['Elara', 'Morrow', 'Thistle'][index % 3], character: ['elara', 'mira', 'juniper'][index % 3], roleLabel: index === 0 ? 'Trade Master' : 'Trader', levelLabel: `Lv ${12 - index}`, onActivate: () => true }));
   control.bind({ tag: 'OWL', name: 'Night Owls', totalIncomeLabel: '12.4K', memberCount: members.length, memberCapacity: 50, expanded, members, onActivate: () => context?.emit('allianceExpanded') ?? true, action: { label: 'View Alliance', enabled: true, onActivate: () => true } });
   control.setBounds(0, 0, WIDTH, control.getPreferredHeight());
   return wrap(control, WIDTH, control.getPreferredHeight());

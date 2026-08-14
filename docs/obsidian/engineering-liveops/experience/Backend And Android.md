@@ -90,6 +90,7 @@ experience_type: backend-android
 - Gameplay save currency ceilings must cover every legitimate economy balance; a lower normalizer cap silently destroys the excess on the next save/reload round trip.
 - Client migrations must preserve newer branches present on lower-version server-normalized saves; Maincloud can return `version: 3` with `guild` state, and dropping it resets player guilds.
 - Android packaging uses Capacitor.
+- Keep Android WebView framework haptics disabled when the app owns touch feedback; otherwise WebView adds a native long-press pulse while retained Pixi controls are still held.
 - Android native text-entry submit events must apply the terminal editor value before running Pixi callbacks; the IME can commit composition only in that final payload.
 - Capacitor 8 Android builds require JDK 21 here.
 - Capacitor Android serves bundled assets as `https://localhost` by default; local `ws://` SpacetimeDB is blocked as mixed content unless `server.androidScheme` is `http` and cleartext is allowed, then the app is rebuilt/synced.

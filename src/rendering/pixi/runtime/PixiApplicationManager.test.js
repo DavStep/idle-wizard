@@ -131,6 +131,41 @@ describe('PixiApplicationManager', () => {
     );
   });
 
+  it('renders a tall mobile canvas at its full height without stretching', async () => {
+    const app = createFakeApplication();
+    const manager = new PixiApplicationManager({
+      canvas: createCanvas({ width: 390, height: 900 }),
+      createApplication: () => app,
+      windowTarget: {
+        innerWidth: 390,
+        innerHeight: 900,
+        addEventListener: vi.fn(),
+        removeEventListener: vi.fn(),
+      },
+      devicePixelRatio: () => 1,
+    });
+
+    await manager.initialize();
+
+    expect(manager.projection).toMatchObject({
+      fitScale: 1 / 3,
+      stageLogicalWidth: 1170,
+      stageLogicalHeight: 2700,
+      sourceHeight: 900,
+    });
+    expect(app.init).toHaveBeenCalledWith(
+      expect.objectContaining({
+        width: 1170,
+        height: 2700,
+        resolution: 1 / 3,
+      }),
+    );
+    expect(
+      manager.getLayers().backgroundGraphic.context.instructions[1].data.path
+        .instructions.at(-1).data.slice(0, 4),
+    ).toEqual([0, 0, 1170, 2700]);
+  });
+
   it('keeps authored layout stable and reports keyboard dialog shifts', async () => {
     const app = createFakeApplication();
     const canvas = createCanvas({ width: 1170, height: 2532 });

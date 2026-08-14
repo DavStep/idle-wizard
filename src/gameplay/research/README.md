@@ -8,6 +8,8 @@ Coin research follows an achievement curve. After the free Sage and Mint onboard
 
 Every timed research takes at least five seconds after research-time reductions. An explicit zero duration remains the internal instant-research sentinel.
 
-Capacity researches are advanced emerald studies. `plot 6-12 capacity` requires 1-7 completed prestiges, and `cauldron 3-5 capacity` requires 1-3 completed prestiges. Completed capacity research is permanent across prestige resets, permanently spends emerald, and makes that capacity buyable immediately in the run without waiting for the level cap. Slot-specific automation, speed, and crystal researches use the higher of the player-level cap and completed capacity research, so prestige slots get their matching rows. Speed research still resets with the run.
+Capacity researches are advanced emerald studies. `plot 6-12 capacity` requires 1-7 completed prestiges, and `cauldron 3-5 capacity` requires 1-3 completed prestiges. Completed capacity research is permanent across prestige resets, permanently spends emerald, and makes that capacity buyable immediately in the run without waiting for the level cap. Slot-specific automation, speed, and crystal researches are configured through the higher of the player-level cap and completed capacity research, so prestige slots can receive matching studies after purchase. Speed research still resets with the run.
+
+The player-facing research snapshot includes slot-specific plot and cauldron studies only for slots currently owned in that run. Reaching the level or capacity needed to buy a future slot does not reveal its automation, speed, or crystal rows early; capacity research itself remains visible so the next slot can still be unlocked.
 
 Timed researches can run concurrently without a slot limit. Prestige 5 gates advanced plot growth and cauldron brewing levels 6-10.

@@ -316,6 +316,11 @@ export class PixiUiRuntimeFacade {
     return view;
   }
 
+  refreshDialog(dialogId, viewModel) {
+    this.assertReady('refresh dialogs');
+    return this.dialogRegistry.refresh(dialogId, viewModel);
+  }
+
   closeDialog(dialogId) {
     this.assertReady('close dialogs');
     const view = this.dialogRegistry.get(dialogId);

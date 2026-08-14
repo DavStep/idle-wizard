@@ -39,6 +39,11 @@ describe('ViewportManager', () => {
     expect(canvasCss).toMatch(
       /#game-canvas\s*\{[^}]*top:\s*env\(safe-area-inset-top,\s*0px\);/s,
     );
+    const gameCanvasRule = canvasCss.match(
+      /#game-canvas\s*\{(?<body>[^}]*)\}/s,
+    )?.groups?.body;
+    expect(gameCanvasRule).toContain('100lvh');
+    expect(gameCanvasRule).not.toContain('100dvh');
     expect(canvasCss).toMatch(
       /#game-canvas\.is-splash-viewport\s*\{[^}]*top:\s*0;[^}]*left:\s*0;[^}]*width:\s*100vw;[^}]*height:\s*100dvh;/s,
     );

@@ -22,10 +22,13 @@ export class ResearchSnapshotManager {
     this.researchStateEntityManager = researchStateEntityManager;
   }
 
-  getSnapshot() {
+  getSnapshot({ unlockedPlotCount, unlockedCauldronCount } = {}) {
     const completedResearchIds = this.researchStateEntityManager.getCompletedResearchIds();
     const tabs = this.researchDefinitionManager
-      .getVisibleResearchTabs(completedResearchIds)
+      .getVisibleResearchTabs(completedResearchIds, {
+        unlockedPlotCount,
+        unlockedCauldronCount,
+      })
       .map((tab) => ({
         ...tab,
         boxes: tab.boxes.map((box) => this.getBoxSnapshot(box, completedResearchIds)),

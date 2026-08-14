@@ -109,6 +109,23 @@ export class DialogRegistry {
     return view;
   }
 
+  refresh(dialogId, viewModel) {
+    this.assertUsable('refresh dialogs');
+    const safeDialogId = validateId(dialogId);
+
+    if (!this.factories.has(safeDialogId)) {
+      throw new Error(`Unknown dialog: ${safeDialogId}`);
+    }
+
+    if (!this.isOpen(safeDialogId)) {
+      return false;
+    }
+
+    const lifecycle = this.dialogs.get(safeDialogId);
+    lifecycle.bind(viewModel);
+    return lifecycle.getView();
+  }
+
   close(dialogId) {
     this.assertUsable('close dialogs');
     const safeDialogId = validateId(dialogId);

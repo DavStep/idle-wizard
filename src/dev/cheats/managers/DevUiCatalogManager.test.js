@@ -126,6 +126,38 @@ describe('DevUiCatalogManager', () => {
     );
   });
 
+  it('provides a representative Brewing recipe-book preview for visual QA', () => {
+    const manager = new DevUiCatalogManager();
+    const runtime = {
+      initialized: true,
+      getDialogIds: () => ['brewing.recipes'],
+      closeAllDialogs: vi.fn(),
+      openDialog: vi.fn(),
+    };
+
+    manager.openRegisteredDialog(runtime, 'brewing.recipes');
+
+    expect(runtime.openDialog).toHaveBeenCalledWith(
+      'brewing.recipes',
+      expect.objectContaining({
+        title: 'Recipes',
+        recipes: expect.arrayContaining([
+          expect.objectContaining({
+            key: 'manaTonic',
+            unlocked: true,
+            ingredients: expect.arrayContaining([
+              expect.objectContaining({ key: 'sageHerb', owned: 7 }),
+            ]),
+          }),
+          expect.objectContaining({
+            key: 'minorHealingPotion',
+            canResearch: true,
+          }),
+        ]),
+      }),
+    );
+  });
+
   it('catalogs widgets and button variants with real preview surfaces', () => {
     const manager = new DevUiCatalogManager();
 

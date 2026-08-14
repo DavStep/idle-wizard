@@ -6462,6 +6462,7 @@ const tradeAllianceMemberSnapshotResult = t.array(
     memberIdentity: t.identity().primaryKey(),
     allianceId: t.uuid(),
     username: t.string(),
+    character: t.string(),
     playerLevel: t.u32(),
     role: t.string(),
     joinedAt: t.timestamp(),
@@ -6694,7 +6695,13 @@ export const trade_alliance_snapshot = spacetimedb.view(
 export const trade_alliance_member_snapshot = spacetimedb.view(
   { name: 'trade_alliance_member_snapshot', public: true },
   tradeAllianceMemberSnapshotResult,
-  (ctx) => Array.from(ctx.db.tradeAllianceMember.byJoinedAt.filter(new Range())),
+  (ctx) =>
+    Array.from(ctx.db.tradeAllianceMember.byJoinedAt.filter(new Range())).map((member) => ({
+      ...member,
+      character: normalizePlayerCharacter(
+        ctx.db.player.identity.find(member.memberIdentity)?.character ?? DEFAULT_PLAYER_CHARACTER,
+      ),
+    })),
 );
 
 export const trade_alliance_application_snapshot = spacetimedb.view(

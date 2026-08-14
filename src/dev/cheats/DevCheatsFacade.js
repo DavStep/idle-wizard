@@ -319,10 +319,14 @@ export class DevCheatsFacade {
       .replace(/[^a-z0-9]/gi, '')
       .toLowerCase();
     return Boolean(
-      surfaceId === 'accountlinkchoice' &&
+      (surfaceId === 'brewingrecipes' &&
         this.lifecycleManager &&
-        this.lifecycleManager.backendOnline !== true &&
-        !this.commandManager?.freshStartChoiceManager?.isChoosing?.(),
+        (this.lifecycleManager.backendOnline !== true ||
+          this.lifecycleManager.gameSurfacesMounted !== true)) ||
+        (surfaceId === 'accountlinkchoice' &&
+          this.lifecycleManager &&
+          this.lifecycleManager.backendOnline !== true &&
+          !this.commandManager?.freshStartChoiceManager?.isChoosing?.()),
     );
   }
 

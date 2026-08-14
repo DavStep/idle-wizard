@@ -466,7 +466,14 @@ export class BrewingPixiPage extends BaseRetainedPixiPage {
       const model = dialogs[kind];
       const dialogId = BREWING_DIALOG_IDS[kind];
       if (model?.open === true) {
-        this.openDialog(kind, model);
+        if (this.dialogRegistry?.isOpen?.(dialogId)) {
+          this.dialogRegistry.refresh(
+            dialogId,
+            this.normalizeDialogModel(kind, model),
+          );
+        } else {
+          this.openDialog(kind, model);
+        }
       } else if (
         model?.open === false &&
         this.dialogRegistry?.isOpen?.(dialogId)

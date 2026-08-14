@@ -86,6 +86,10 @@ export function createDialogViewModel(
     return createPersonalTasksDialogModel(key);
   }
 
+  if (dialogId === 'workshop.alliance') {
+    return createTradeAllianceDialogModel(key);
+  }
+
   if (dialogId.startsWith('workshop.')) {
     return {
       title: dialogId,
@@ -187,6 +191,66 @@ export function createDialogViewModel(
   }
 
   throw new Error(`Unknown retained acceptance dialog: ${dialogId}`);
+}
+
+function createTradeAllianceDialogModel(key) {
+  const members = [
+    {
+      id: `alliance-${key}-mira`,
+      memberIdentity: `identity-${key}-mira`,
+      username: 'Mira',
+      character: 'mira',
+      roleLabel: 'Trade Master',
+      levelLabel: 'Lv 24',
+      semanticId: `workshop.alliance.member.${key}.mira`,
+      onActivate: accept,
+    },
+    {
+      id: `alliance-${key}-juniper`,
+      memberIdentity: `identity-${key}-juniper`,
+      username: 'Juniper',
+      character: 'juniper',
+      roleLabel: 'Quartermaster',
+      levelLabel: 'Lv 18',
+      semanticId: `workshop.alliance.member.${key}.juniper`,
+      onActivate: accept,
+    },
+    {
+      id: `alliance-${key}-rowan`,
+      memberIdentity: `identity-${key}-rowan`,
+      username: 'Rowan',
+      character: 'rowan',
+      roleLabel: 'Trader',
+      levelLabel: 'Lv 12',
+      semanticId: `workshop.alliance.member.${key}.rowan`,
+      onActivate: accept,
+    },
+  ];
+
+  return {
+    title: 'Trade Alliance',
+    ownedAlliance: true,
+    tradeInfo: {
+      identityLabel: '[OWL] Night Owls',
+      description: 'Patient traders building a stronger market together.',
+      notice: 'Weekly goal: support every active member.',
+      memberCountLabel: `${members.length}/50`,
+    },
+    tradeInfoRows: [
+      { id: 'trade-info:members', label: 'Members', value: `${members.length}/50` },
+      { id: 'trade-info:join-mode', label: 'Join Mode', value: 'Apply' },
+      {
+        id: 'trade-info:season-income',
+        label: 'Season Income',
+        value: '84.5k',
+        itemKind: 'resource',
+        itemKey: 'coin',
+        resourceKey: 'coin',
+      },
+    ],
+    members,
+    rows: members,
+  };
 }
 
 function createPersonalTasksDialogModel(key) {

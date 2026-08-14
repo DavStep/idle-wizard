@@ -201,7 +201,7 @@ export class PixiApplicationManager {
         this.projection.authoredOffsetX,
         0,
         this.viewport.width,
-        this.viewport.height,
+        this.projection.stageLogicalHeight,
       )
       .fill(this.theme.surface);
   }

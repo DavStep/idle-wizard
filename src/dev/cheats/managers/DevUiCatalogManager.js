@@ -311,7 +311,81 @@ function createPreviewModel(dialogId) {
     };
   }
 
+  if (dialogId === 'brewing.recipes') {
+    return {
+      title: 'Recipes',
+      recipes: [
+        createRecipePreviewItem({
+          key: 'manaTonic',
+          label: 'Mana Tonic',
+          manaCost: 12,
+          brewDurationMs: 30_000,
+          unlocked: true,
+          canSelect: true,
+          ingredients: [
+            createRecipePreviewIngredient('sageHerb', 'Sage', 7, 'sage-1'),
+            createRecipePreviewIngredient('sageHerb', 'Sage', 7, 'sage-2'),
+            createRecipePreviewIngredient('mintHerb', 'Mint', 3),
+          ],
+        }),
+        createRecipePreviewItem({
+          key: 'minorHealingPotion',
+          label: 'Minor Healing Potion',
+          manaCost: 14,
+          brewDurationMs: 35_000,
+          unlocked: false,
+          canResearch: true,
+          ingredients: [
+            createRecipePreviewIngredient('sageHerb', 'Sage', 7),
+            createRecipePreviewIngredient('mintHerb', 'Mint', 3),
+          ],
+        }),
+        createRecipePreviewItem({
+          key: 'nettleVigor',
+          label: 'Nettle Vigor',
+          manaCost: 18,
+          brewDurationMs: 45_000,
+          unlocked: true,
+          canSelect: false,
+          ingredients: [
+            createRecipePreviewIngredient('nettleHerb', 'Nettle', 0),
+            createRecipePreviewIngredient('sageHerb', 'Sage', 7),
+          ],
+        }),
+        createRecipePreviewItem({
+          key: 'calmingDraught',
+          label: 'Calming Draught',
+          manaCost: 22,
+          brewDurationMs: 55_000,
+          unlocked: false,
+          canResearch: false,
+          ingredients: [
+            createRecipePreviewIngredient('lavenderHerb', 'Lavender', 1),
+            createRecipePreviewIngredient('mintHerb', 'Mint', 3),
+          ],
+        }),
+      ],
+    };
+  }
+
   return {};
+}
+
+function createRecipePreviewItem(recipe) {
+  return {
+    id: recipe.key,
+    ...recipe,
+  };
+}
+
+function createRecipePreviewIngredient(key, label, owned, id = key) {
+  return {
+    id,
+    key,
+    label,
+    quantity: 1,
+    owned,
+  };
 }
 
 function createLedgerPreviewItem(itemKey, label, stock, buyers, coin) {

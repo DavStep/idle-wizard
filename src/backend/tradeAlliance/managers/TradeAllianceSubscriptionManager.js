@@ -512,6 +512,9 @@ export class TradeAllianceSubscriptionManager {
       memberIdentity: this.toIdentityKey(row.memberIdentity ?? row.member_identity),
       allianceId: this.toId(row.allianceId ?? row.alliance_id),
       username: String(row.username ?? 'Wizard'),
+      character: normalizePlayerCharacter(
+        row.character ?? row.playerCharacter ?? row.player_character,
+      ),
       playerLevel: this.toPlayerLevel(row.playerLevel ?? row.player_level),
       role,
       roleRank: this.getRoleRank(role),

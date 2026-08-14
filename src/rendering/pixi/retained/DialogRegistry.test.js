@@ -67,6 +67,31 @@ describe('DialogRegistry', () => {
     expect(registry.getOpenDialogIds()).toEqual([]);
   });
 
+  it('refreshes an open dialog without changing the modal stack', () => {
+    const player = createView();
+    const alliance = createView();
+    const registry = new DialogRegistry({
+      dialogs: [
+        ['player', () => player],
+        ['alliance', () => alliance],
+      ],
+    });
+
+    registry.open('player', { username: 'mira' });
+    registry.open('alliance', { tag: 'MOSS' });
+
+    expect(registry.refresh('player', { username: 'mira', level: 5 })).toBe(
+      player,
+    );
+    expect(registry.getOpenDialogIds()).toEqual(['player', 'alliance']);
+    expect(registry.getTopDialogId()).toBe('alliance');
+    expect(player.bind).toHaveBeenLastCalledWith({
+      username: 'mira',
+      level: 5,
+    });
+    expect(player.activate).toHaveBeenCalledTimes(1);
+  });
+
   it('plays the open cue only when a dialog actually activates', () => {
     const onOpen = vi.fn();
     const registry = new DialogRegistry({

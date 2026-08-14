@@ -494,7 +494,7 @@ export class WorkshopPixiPage extends BaseRetainedPixiPage {
       const shortId = dialogId.slice('workshop.'.length);
       const model = this.prepareDialogModel(shortId, this.dialogModels[shortId]);
       if (model) {
-        this.dialogRegistry.open(dialogId, model);
+        this.dialogRegistry.refresh(dialogId, model);
         this.consumeAutoSummonUnlockReveal(shortId, model);
       }
     }

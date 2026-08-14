@@ -11,7 +11,8 @@ decorated `boxes[].researches[]`. Actions are supplied as `selectTab`,
 Category title plaques use the selected tab as their visual variant: Regular
 is yellow, Automation is red, Advanced is emerald green, and the `emerald`
 Crystal Research tab is purple. The visible category title remains the primary
-identifier.
+identifier. The shared plaque renders at `75%` of its authored nine-slice
+geometry in Research and every cross-room consumer.
 
 Rows and boxes are keyed and pooled. Research labels are passive; the cost
 button owns available purchases. Selecting a locked row keeps the requirement

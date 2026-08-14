@@ -196,12 +196,12 @@ function recipeCardControl({ assets, input, fixture = { state: 'available' }, co
     ingredients: [{ label: 'Mint', quantity: 2, owned: state === 'research' ? 0 : 5 }, { label: 'Sage', quantity: 1, owned: 3 }],
     known: state !== 'unknown', unknown: state === 'unknown', unlocked: !['research', 'unknown'].includes(state), canResearch: state === 'research', selected: state === 'selected',
   }, { selectRecipe: () => context?.emit('recipeSelected') ?? true, researchRecipe: () => context?.emit('recipeResearched') ?? true });
-  control.setBounds(0, 0, 124, 330);
-  return wrap(control, 124, 330);
+  control.setBounds(0, 0, 128, 329);
+  return wrap(control, 128, 329);
 }
 
-function recipeIngredientControl({ fixture = { state: 'available' } }) {
-  const control = new BrewingRecipeIngredientRow({ instanceId: 1 });
+function recipeIngredientControl({ assets, fixture = { state: 'available' } }) {
+  const control = new BrewingRecipeIngredientRow({ instanceId: 1, assetManager: assets });
   const unknown = fixture.state === 'unknown';
   control.bind({ label: 'Mint', quantity: 2, owned: fixture.state === 'missing' ? 0 : 5, available: fixture.state !== 'missing' }, { unknown });
   control.setBounds(0, 0, 180);

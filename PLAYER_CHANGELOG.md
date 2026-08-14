@@ -5,6 +5,12 @@ upload script posts the section whose heading matches `package.json` `version`.
 Write these developer-to-player notes only in Idle Wizard terms. Do not mention
 other game names, source projects, ports, or implementation provenance.
 
+## 0.3.51
+
+- Reworked the Brewing recipe book into clearer two-page cards and refined the cauldron layout so ingredients and actions stay easy to read across taller phones.
+- Improved Player Info, Trade Alliance member lists, World Chat, and stacked dialogs with clearer portraits, alliance details, and more reliable navigation.
+- Kept Research focused on plots and cauldrons you currently own, improved mobile keyboard and haptic behavior, and made portrait rooms use the available screen height more naturally.
+
 ## 0.3.50
 
 - Expanded the Brewing cauldron view so ingredients, potion details, and the bottom action stay clearer and better spaced.

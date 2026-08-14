@@ -1829,6 +1829,8 @@ export class PixiPagesFacade {
       0,
       Math.floor(Number(cauldronIndex) || 0),
     );
+    const { ownedByItemTypeId, ownedByKey } =
+      this.getBrewingOwnedIngredientQuantities(safeCauldronIndex);
     const selectedRecipe =
       this.selectedRecipeByCauldron.get(safeCauldronIndex) ?? null;
 
@@ -1839,6 +1841,12 @@ export class PixiPagesFacade {
         selected ||
         (recipe?.unlocked === true &&
           this.canSelectBrewingRecipe(recipe, safeCauldronIndex));
+      const ingredients = (recipe?.ingredients ?? []).map((ingredient) => ({
+        ...ingredient,
+        owned: Number.isInteger(ingredient?.itemTypeId)
+          ? ownedByItemTypeId.get(ingredient.itemTypeId) ?? 0
+          : ownedByKey.get(ingredient?.itemKey ?? ingredient?.key) ?? 0,
+      }));
 
       if (
         recipe?.unlocked === true ||
@@ -1848,6 +1856,7 @@ export class PixiPagesFacade {
       ) {
         return {
           ...recipe,
+          ingredients,
           canResearch: false,
           canSelect,
           selected,
@@ -1861,6 +1870,7 @@ export class PixiPagesFacade {
       );
       return {
         ...recipe,
+        ingredients,
         researchId,
         canResearch: research?.canResearch === true,
         canSelect: false,
@@ -1886,6 +1896,53 @@ export class PixiPagesFacade {
     const brewQuantity = Math.max(
       1,
       Math.floor(Number(cauldron?.brewQuantity) || 1),
+    );
+    const { ownedByItemTypeId, ownedByKey } =
+      this.getBrewingOwnedIngredientQuantities(safeCauldronIndex);
+
+    const requiredByItemTypeId = new Map();
+    const requiredByKey = new Map();
+
+    for (const ingredient of recipe?.ingredients ?? []) {
+      const requiredQuantity =
+        Math.max(1, Math.floor(Number(ingredient?.quantity) || 1)) *
+        brewQuantity;
+      if (Number.isInteger(ingredient?.itemTypeId)) {
+        requiredByItemTypeId.set(
+          ingredient.itemTypeId,
+          (requiredByItemTypeId.get(ingredient.itemTypeId) ?? 0) +
+            requiredQuantity,
+        );
+        continue;
+      }
+      const ingredientKey = ingredient?.itemKey ?? ingredient?.key;
+      if (typeof ingredientKey !== "string") {
+        return false;
+      }
+      requiredByKey.set(
+        ingredientKey,
+        (requiredByKey.get(ingredientKey) ?? 0) + requiredQuantity,
+      );
+    }
+
+    for (const [itemTypeId, requiredQuantity] of requiredByItemTypeId) {
+      if ((ownedByItemTypeId.get(itemTypeId) ?? 0) < requiredQuantity) {
+        return false;
+      }
+    }
+    for (const [key, requiredQuantity] of requiredByKey) {
+      if ((ownedByKey.get(key) ?? 0) < requiredQuantity) {
+        return false;
+      }
+    }
+    return true;
+  }
+
+  getBrewingOwnedIngredientQuantities(cauldronIndex = 0) {
+    const brewing = this.gameplaySnapshot.brewing ?? {};
+    const safeCauldronIndex = Math.max(
+      0,
+      Math.floor(Number(cauldronIndex) || 0),
     );
     const ownedByItemTypeId = new Map();
     const ownedByKey = new Map();
@@ -1928,43 +1985,7 @@ export class PixiPagesFacade {
         }
       }
     }
-
-    const requiredByItemTypeId = new Map();
-    const requiredByKey = new Map();
-
-    for (const ingredient of recipe?.ingredients ?? []) {
-      const requiredQuantity =
-        Math.max(1, Math.floor(Number(ingredient?.quantity) || 1)) *
-        brewQuantity;
-      if (Number.isInteger(ingredient?.itemTypeId)) {
-        requiredByItemTypeId.set(
-          ingredient.itemTypeId,
-          (requiredByItemTypeId.get(ingredient.itemTypeId) ?? 0) +
-            requiredQuantity,
-        );
-        continue;
-      }
-      const ingredientKey = ingredient?.itemKey ?? ingredient?.key;
-      if (typeof ingredientKey !== "string") {
-        return false;
-      }
-      requiredByKey.set(
-        ingredientKey,
-        (requiredByKey.get(ingredientKey) ?? 0) + requiredQuantity,
-      );
-    }
-
-    for (const [itemTypeId, requiredQuantity] of requiredByItemTypeId) {
-      if ((ownedByItemTypeId.get(itemTypeId) ?? 0) < requiredQuantity) {
-        return false;
-      }
-    }
-    for (const [key, requiredQuantity] of requiredByKey) {
-      if ((ownedByKey.get(key) ?? 0) < requiredQuantity) {
-        return false;
-      }
-    }
-    return true;
+    return { ownedByItemTypeId, ownedByKey };
   }
 
   openBrewingRecipesDialog(cauldronIndex = 0) {

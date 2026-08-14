@@ -9,7 +9,7 @@ const PIXI_AUTHORED_VIEWPORT = Object.freeze({
 
 export class ViewportProjectionManager {
   static explain =
-    'Maps the fixed 390x844 source UI and its 3x authored room into phones and wide desktop windows.';
+    'Keeps the 390-wide source UI fixed in portrait, fills the available height, and contain-fits wide desktop windows.';
 
   constructor({
     viewport = PIXI_AUTHORED_VIEWPORT,
@@ -33,15 +33,19 @@ export class ViewportProjectionManager {
   }) {
     const measured = this.normalizeViewport({ width, height });
     const layout = this.resolveLayoutViewport(measured, lockForTextEntry);
+    const usesFluidPortraitHeight = layout.height >= layout.width;
     const fitScale = Math.min(
       1,
       layout.width / this.viewport.width,
-      layout.height / this.viewport.height,
+      usesFluidPortraitHeight
+        ? Number.POSITIVE_INFINITY
+        : layout.height / this.viewport.height,
     );
     const authoredScreenWidth = this.viewport.width * fitScale;
     const authoredScreenHeight = this.viewport.height * fitScale;
     const stageScreenWidth = Math.max(authoredScreenWidth, layout.width);
     const stageLogicalWidth = stageScreenWidth / fitScale;
+    const stageLogicalHeight = layout.height / fitScale;
     const authoredOffsetX = (stageLogicalWidth - this.viewport.width) / 2;
     const uiScale = fitScale * this.sourceUiScale;
     const normalizedKeyboardInset = Math.max(0, Number(keyboardInset) || 0);
@@ -58,17 +62,17 @@ export class ViewportProjectionManager {
       authoredScreenWidth,
       authoredScreenHeight,
       stageLogicalWidth,
-      stageLogicalHeight: this.viewport.height,
+      stageLogicalHeight,
       stageScreenWidth,
-      stageScreenHeight: authoredScreenHeight,
+      stageScreenHeight: layout.height,
       authoredOffsetX,
       sourceOffsetX: authoredOffsetX / this.sourceUiScale,
       sourceWidth: this.viewport.width / this.sourceUiScale,
-      sourceHeight: this.viewport.height / this.sourceUiScale,
+      sourceHeight: stageLogicalHeight / this.sourceUiScale,
       isWide: stageLogicalWidth > this.viewport.width + 1 / fitScale,
       visibleStageHeight: Math.max(
         0,
-        Math.min(authoredScreenHeight, Number(visibleHeight) || 0),
+        Math.min(layout.height, Number(visibleHeight) || 0),
       ),
       keyboardInset: normalizedKeyboardInset,
       dialogShift,

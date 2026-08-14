@@ -49,11 +49,12 @@
 
       registerGlobalDialogFactories(runtime);
       await runtime.initialize();
-      runtime.openDialog(GLOBAL_DIALOG_IDS.PLAYER, {
+      const playerInfoModel = {
         player: {
           allianceId: 'moss-hall',
           allianceName: 'Moss Hall',
           allianceTag: 'MOSS',
+          allianceTagColor: 'green',
           character: 'mira',
           playerLevel: 12,
           prestigeCount: 2,
@@ -62,7 +63,40 @@
           totalHarvestedHerbs: 240,
           username: 'Mira',
         },
-      });
+        actions: {
+          openAlliance(alliance) {
+            runtime.openDialog(GLOBAL_DIALOG_IDS.ALLIANCE, {
+              alliance: {
+                ...alliance,
+                description: 'A friendly circle of woodland potion makers.',
+                joinMode: 'closed',
+                memberCount: 3,
+                seasonIncome: 4820,
+              },
+              members: [
+                {
+                  memberIdentity: 'mira-id',
+                  playerLevel: 12,
+                  role: 'tradeMaster',
+                  username: 'Mira',
+                },
+                {
+                  memberIdentity: 'rowan-id',
+                  playerLevel: 9,
+                  role: 'trader',
+                  username: 'Rowan',
+                },
+              ],
+            });
+            runtime.refreshDialog(
+              GLOBAL_DIALOG_IDS.PLAYER,
+              playerInfoModel,
+            );
+          },
+        },
+      };
+
+      runtime.openDialog(GLOBAL_DIALOG_IDS.PLAYER, playerInfoModel);
     </script>
   </body>
 </html>

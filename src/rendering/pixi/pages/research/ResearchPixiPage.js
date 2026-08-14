@@ -92,6 +92,7 @@ const ART_BORDER_INSETS = Object.freeze({
   left: 49 / 3,
 });
 const STATION_TITLE_SOURCE_HEIGHT = 117;
+const STATION_TITLE_RENDER_SCALE = 0.75;
 const STATION_TITLE_SOURCE_INSETS = Object.freeze({
   top: 0,
   right: 165,
@@ -99,6 +100,8 @@ const STATION_TITLE_SOURCE_INSETS = Object.freeze({
   left: 5,
 });
 const STATION_TITLE_HEIGHT = 42;
+const STATION_TITLE_RENDER_HEIGHT =
+  STATION_TITLE_HEIGHT * STATION_TITLE_RENDER_SCALE;
 const STATION_TITLE_SCALE =
   STATION_TITLE_HEIGHT / STATION_TITLE_SOURCE_HEIGHT;
 const STATION_TITLE_BORDER_INSETS = Object.freeze({
@@ -245,7 +248,7 @@ export const RESEARCH_PIXI_GEOMETRY = Object.freeze({
   contentOffsetY: 3,
   rowGap: 5,
   categoryGap: 18,
-  categoryTitleHeight: STATION_TITLE_HEIGHT,
+  categoryTitleHeight: STATION_TITLE_RENDER_HEIGHT,
   cardOffsetX: RESEARCH_CARD_OFFSET_X,
   artX: 13,
   artY: 14,
@@ -1066,6 +1069,7 @@ export class ResearchStationTitlePlaque {
     this.trailingContent = trailingContent;
     this.trailingGap = Math.max(0, Number(trailingGap) || 0);
     this.root = new Container({ label: 'research-station-title-plaque' });
+    this.root.scale.set(STATION_TITLE_RENDER_SCALE);
     this.frame = new PixiNineSliceFrame({
       texture: this.resolveTexture(this.assetId),
       sourceInsets: STATION_TITLE_SOURCE_INSETS,

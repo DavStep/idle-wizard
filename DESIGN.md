@@ -98,12 +98,12 @@ components:
 
 **Creative North Star: "The Wizard's Living Workbench"**
 
-Idle Wizard uses an illustrated fantasy HUD inside a fixed mobile game surface. Every room is organized around one large, recognizable production landmark, supported by compact status panels and tactile controls. The logical game resolution matches Root Run at 390x844; room UI is built in those logical pixels, then contain-fitted to the viewport. Do not make source text larger to solve mobile readability.
+Idle Wizard uses an illustrated fantasy HUD inside a portrait game surface with a fixed 390px logical width and a fluid logical height. Every room is organized around one large, recognizable production landmark, supported by compact status panels and tactile controls. The 390x844 surface remains the reference QA size; portrait devices width-fit the room and extend it to the remaining safe viewport height, while wide desktop windows contain-fit the reference surface. Do not make source text larger to solve mobile readability.
 
 The approved Brewing reference defines the default visual lane: dark navy layered surfaces, rendered fantasy props, rounded image-backed panel frames, warm brown/gold controls, colored resource and state cues, compact outlined Lilita One labels, and controlled shadows. The system rejects only decoration without a gameplay job: casino clutter, arbitrary glow, unrelated ornaments, inconsistent art families, and generic flat cards.
 
 **Key Characteristics:**
-- Fixed authored portrait room surface with scaled source UI.
+- Fixed authored portrait width with a viewport-filling height and scaled source UI.
 - Dark layered room surfaces with bright, high-contrast status text.
 - One dominant illustrated room landmark, image-backed panels, Root Run-framed dialogs, and tactile station tabs.
 - Colorful resource/item art and role-colored actions.

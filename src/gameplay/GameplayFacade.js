@@ -1586,6 +1586,8 @@ export class GameplayFacade {
     const guild = this.guildFacade.getSnapshot();
 
     const prestige = this.prestigeFacade.getSnapshot();
+    const brewing = this.brewingFacade.getSnapshot();
+    const garden = this.gardenFacade.getSnapshot();
     const snapshot = {
       mana: this.manaFacade.getSnapshot(),
       coin: this.coinFacade.getSnapshot(),
@@ -1597,7 +1599,7 @@ export class GameplayFacade {
       ingredientInventory: this.itemsFacade.getIngredientInventorySnapshot(),
       seedSummoning,
       automation,
-      brewing: this.brewingFacade.getSnapshot(),
+      brewing,
       discoveries: this.itemsFacade.getDiscoverySnapshot({
         getPotionDiscovery: (potionKey) =>
           this.potionDiscoveryFacade?.getDiscovery(potionKey) ?? null,
@@ -1620,10 +1622,13 @@ export class GameplayFacade {
           nextRun: this.getPrestigeNextRunPreview(milestone.level),
         })),
       },
-      research: this.researchFacade.getSnapshot(),
+      research: this.researchFacade.getSnapshot({
+        unlockedPlotCount: garden.plot?.unlockedTiles,
+        unlockedCauldronCount: brewing.unlockedCauldrons,
+      }),
       visualSettings: this.visualSettingsFacade.getSnapshot(),
       shop: this.shopFacade.getSnapshot(),
-      garden: this.gardenFacade.getSnapshot(),
+      garden,
     };
 
     if (this.snapshotCacheDepth > 0) {

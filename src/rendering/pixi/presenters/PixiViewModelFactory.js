@@ -42,11 +42,16 @@ const WORLD_EVENT_TABS = Object.freeze([
 ]);
 const WORLD_EVENT_MAX_QUEST_ROWS = 2;
 const TRADE_ALLIANCE_ROLE_LABELS = Object.freeze({
-  tradeMaster: 'trade master',
-  quartermaster: 'quartermaster',
-  factor: 'factor',
-  broker: 'broker',
-  trader: 'trader',
+  tradeMaster: 'Trade Master',
+  quartermaster: 'Quartermaster',
+  factor: 'Factor',
+  broker: 'Broker',
+  trader: 'Trader',
+});
+const TRADE_ALLIANCE_JOIN_MODE_LABELS = Object.freeze({
+  open: 'Open',
+  apply: 'Apply',
+  closed: 'Closed',
 });
 const SEED_DROP_PREFERENCES = Object.freeze([
   'none',
@@ -847,32 +852,79 @@ export class PixiViewModelFactory {
       };
     }
 
+    const allianceId = alliance.allianceId ?? alliance.id ?? '';
+    const memberRows = members.map((row, index) => ({
+      id:
+        String(
+          row.memberIdentity ??
+            row.identity ??
+            row.id ??
+            '',
+        ).trim() || `${allianceId || 'alliance'}:member:${index}`,
+      memberIdentity: row.memberIdentity ?? row.identity ?? '',
+      username:
+        row.username ??
+        row.name ??
+        row.allianceName ??
+        'Wizard',
+      character: row.character ?? 'elara',
+      roleLabel:
+        TRADE_ALLIANCE_ROLE_LABELS[row.role] ??
+        titleCaseTradeAllianceLabel(row.role ?? 'trader'),
+      levelLabel: `Lv ${normalizeVisibleLevel(row.playerLevel) ?? 1}`,
+      semanticId: `workshop.alliance.member.${
+        row.memberIdentity ?? row.identity ?? index
+      }`,
+      onActivate: () => actions.openPlayer?.(row),
+    }));
+    const memberCount = Math.max(
+      memberRows.length,
+      Math.floor(Number(alliance.memberCount) || 0),
+    );
+    const tag = String(alliance.tag ?? '').trim().toUpperCase();
+    const name = String(alliance.name ?? alliance.allianceName ?? 'Alliance').trim();
+    const joinMode = String(alliance.joinMode ?? 'closed');
+    const seasonIncome = alliance.seasonIncome ?? alliance.weeklyIncome ?? 0;
+    const memberCountLabel = `${memberCount}/50`;
+
     return {
-      title: 'trade alliance',
+      title: 'Trade Alliance',
+      ownedAlliance: true,
       status:
         tradeAlliance.connected === false
           ? 'connecting...'
           : '',
       copy: alliance?.description ?? '',
-      rows: members.map((row, index) => ({
-        id:
-          String(
-            row.memberIdentity ??
-              row.identity ??
-              row.id ??
-              '',
-          ).trim() || `${alliance.allianceId ?? 'alliance'}:member:${index}`,
-        label:
-          row.username ??
-          row.name ??
-          row.allianceName ??
-          'Wizard',
-        value:
-          row.roleLabel ??
-          row.role ??
-          row.tag ??
-          '',
-      })),
+      tradeInfo: {
+        identityLabel: `${tag ? `[${tag}] ` : ''}${name}`,
+        description: String(alliance.description ?? '').trim(),
+        notice: String(alliance.notice ?? '').trim(),
+        memberCountLabel,
+      },
+      tradeInfoRows: [
+        {
+          id: 'trade-info:members',
+          label: 'Members',
+          value: memberCountLabel,
+        },
+        {
+          id: 'trade-info:join-mode',
+          label: 'Join Mode',
+          value:
+            TRADE_ALLIANCE_JOIN_MODE_LABELS[joinMode] ??
+            titleCaseTradeAllianceLabel(joinMode),
+        },
+        {
+          id: 'trade-info:season-income',
+          label: 'Season Income',
+          value: formatCoinAmount(seasonIncome),
+          itemKind: 'resource',
+          itemKey: 'coin',
+          resourceKey: 'coin',
+        },
+      ],
+      members: memberRows,
+      rows: memberRows,
     };
   }
 
@@ -1530,6 +1582,14 @@ function normalizeLeaderboardRank(rank, index) {
 function normalizeVisibleLevel(value) {
   const level = Math.floor(Number(value));
   return Number.isFinite(level) && level >= 1 ? level : null;
+}
+
+function titleCaseTradeAllianceLabel(value) {
+  return String(value ?? '')
+    .replace(/([a-z])([A-Z])/g, '$1 $2')
+    .replace(/[_-]+/g, ' ')
+    .trim()
+    .replace(/\b\w/g, (character) => character.toUpperCase());
 }
 
 function createPersonalTaskPeriodSection(id, title, period) {

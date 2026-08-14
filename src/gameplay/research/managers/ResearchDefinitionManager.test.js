@@ -231,6 +231,44 @@ describe('ResearchDefinitionManager', () => {
     );
   });
 
+  it('limits visible slot researches to plots and cauldrons the player owns', () => {
+    const { manager } = createManager();
+    const tabs = manager.getVisibleResearchTabs([], {
+      unlockedPlotCount: 5,
+      unlockedCauldronCount: 2,
+    });
+    const getResearchIds = (tabId, boxId) =>
+      tabs
+        .find((tab) => tab.id === tabId)
+        ?.boxes.find((box) => box.id === boxId)
+        ?.researches.map((research) => research.id) ?? [];
+
+    expect(getResearchIds('automation', 'autoPlantTiles')).toContain(
+      automationResearchIds.autoPlantTile(5),
+    );
+    expect(getResearchIds('automation', 'autoPlantTiles')).not.toContain(
+      automationResearchIds.autoPlantTile(6),
+    );
+    expect(getResearchIds('automation', 'autoBrewCauldrons')).toContain(
+      automationResearchIds.autoBrewCauldron(2),
+    );
+    expect(getResearchIds('automation', 'autoBrewCauldrons')).not.toContain(
+      automationResearchIds.autoBrewCauldron(3),
+    );
+    expect(getResearchIds('advanced', 'plotGrowth')).not.toContain(
+      advancedResearchIds.plotGrowth(6, 1),
+    );
+    expect(getResearchIds('emerald', 'cauldronBrewing')).not.toContain(
+      emeraldResearchIds.cauldronBrewing(3, 2),
+    );
+    expect(getResearchIds('advanced', 'plotCapacity')).toContain(
+      capacityResearchIds.plot(6),
+    );
+    expect(getResearchIds('advanced', 'cauldronCapacity')).toContain(
+      capacityResearchIds.cauldron(3),
+    );
+  });
+
   it('adds staged research time reduction rows to advanced research', () => {
     const { manager } = createManager();
     const box = manager

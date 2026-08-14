@@ -520,7 +520,8 @@ describe('PixiGlobalDialogPresenter', () => {
     }
 
     harness.playerFacade.emit();
-    expect(harness.runtime.openDialog).toHaveBeenCalledTimes(2);
+    expect(harness.runtime.openDialog).toHaveBeenCalledTimes(1);
+    expect(harness.runtime.refreshDialog).toHaveBeenCalledTimes(1);
 
     expect(model.actions.deactivate()).toBe(true);
     expect(model.actions.deactivate()).toBe(false);
@@ -579,6 +580,38 @@ describe('PixiGlobalDialogPresenter', () => {
     expect(
       harness.tradeAllianceFacade.activeSubscriptions(),
     ).toBe(0);
+  });
+
+  it('keeps a newly opened alliance above player-info refreshes', () => {
+    const harness = createHarness();
+    harness.presenter.mount();
+    harness.presenter.open('player', {
+      player: { identity: 'mira-id', username: 'mira' },
+    });
+    const player = harness.getOpenModel(GLOBAL_DIALOG_IDS.PLAYER);
+    player.actions.activate();
+    player.actions.openAlliance({
+      allianceId: 'alliance-one',
+      tag: 'MOSS',
+    });
+    harness.runtime.refreshDialog.mockClear();
+
+    harness.playerInfoFacade.emit();
+
+    expect(harness.runtime.refreshDialog).toHaveBeenCalledWith(
+      GLOBAL_DIALOG_IDS.PLAYER,
+      expect.objectContaining({
+        player: expect.objectContaining({ username: 'mira' }),
+      }),
+    );
+    expect(harness.runtime.getOpenDialogIds()).toEqual([
+      GLOBAL_DIALOG_IDS.PLAYER,
+      GLOBAL_DIALOG_IDS.ALLIANCE,
+    ]);
+    expect(harness.runtime.closeDialog(GLOBAL_DIALOG_IDS.ALLIANCE)).toBe(true);
+    expect(harness.runtime.getOpenDialogIds()).toEqual([
+      GLOBAL_DIALOG_IDS.PLAYER,
+    ]);
   });
 
   it('selects, clamps, and refreshes level rows without owning progression rules', () => {
@@ -648,6 +681,13 @@ function createHarness({
       if (simulateDialogLifecycle && !alreadyOpen) {
         model.actions?.activate?.();
       }
+      return { dialogId };
+    }),
+    refreshDialog: vi.fn((dialogId, model) => {
+      if (!openIds.includes(dialogId)) {
+        return false;
+      }
+      openModels.set(dialogId, model);
       return { dialogId };
     }),
     closeDialog: vi.fn((dialogId) => {

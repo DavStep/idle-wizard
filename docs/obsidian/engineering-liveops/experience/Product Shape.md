@@ -17,7 +17,7 @@ experience_type: product-shape
 - Ignored local `public/qa-data` is still copied by Vite/Capacitor when present; move it out of `public/` before release builds or APK uploads can exceed Discord webhook limits.
 - Android dev builds that point at local SpacetimeDB need `adb reverse tcp:3000 tcp:3000`; without it, Pixel WebView loops on `connecting to server`.
 - Before wiping local SpacetimeDB progress, check `.env.local` for the active `VITE_SPACETIME_DATABASE`; the shared Vite app may use `idle-wizard-codex-run` while `npm run stdb:publish` still targets `idle-wizard`.
-- The logical game viewport matches Root Run at `390x844` and uses Root Run-style contain-fit scaling.
+- The logical game viewport keeps Root Run's `390px` width; `390x844` is the reference QA surface. Portrait runtime height fills the remaining safe viewport at the width-fitted scale, while wide desktop windows contain-fit the reference surface.
 - Full-screen loading splashes must temporarily expand the canvas across every safe-area inset; restore the normal gameplay inset as soon as the splash hides.
 - Game-stage text copy/paste suppression needs both CSS `user-select`/touch-callout rules and an app-level guard for clipboard, context menu, selectstart, and paste `beforeinput` events.
 - In-game UI no longer supports mouse hover; do not add `:hover` selectors or hover-only behavior. Press/focus states should keep `--style-active-surface` equal to the current surface, preserve font weight, and rely on border cues, never below-text line decoration.
@@ -72,6 +72,7 @@ experience_type: product-shape
 - Brewing herbs box uses the shared room chrome inset like the top panel and world chat; do not size it with `--style-main-box-width`.
 - Dialog open paths must reset pending enter/exit animation state before showing; stale animation classes can block reopen attempts.
 - Fresh retained-dialog opens must discard the previous entry point's tab while same-open refreshes preserve it; otherwise Settings can inherit the Wizard pane.
+- Retained-dialog snapshot refreshes must bind in place without raising the dialog; only explicit open actions may reorder the modal stack, so a nested Alliance Info dialog stays above Player Info until it closes.
 - Cauldron tap opens should fire from no-drag world pointerup when the press started on a cauldron; Android/WebView can retarget the native click to the world shell, especially from empty overlays.
 - Cauldron tap drift should use the tap-action tolerance, not the normal world-pan threshold; 4 source pixels can classify WebView finger jitter as a drag.
 - Cauldron action buttons sit inside the cauldron tap opener; stop/suppress action clicks so selected-recipe brews do not reopen the recipes dialog.
@@ -79,9 +80,10 @@ experience_type: product-shape
 - Popup forms in snapshot-rendered managers need local drafts captured before replacing content; otherwise timer/mana refreshes clear focused fields.
 - Snapshot-rendered popup forms with active text inputs should keep the same input DOM node mounted during refresh; replacing then refocusing can still close mobile keyboards.
 - Mobile keyboard fixes should preserve room scale and use visible-stage metrics to lift focused overlays.
+- Canvas-only text entry must keep the canvas CSS box on the large layout viewport as well as locking the retained projection; a base `100dvh` height can still compress the unchanged renderer when the Android IME opens.
 - Even with Android `adjustNothing`, WebView text focus can pan the document; keep the app shell fixed and reset document scroll while text entry is locked.
 - World chat dialog should use a fixed upper source-coordinate anchor; focus-within keyboard recentering makes it jump down when the keyboard closes.
-- The approved illustrated fantasy HUD and Root Run asset pipeline are the visual guidance; keep the fixed `390x844` logical resolution and contain-fit behavior.
+- The approved illustrated fantasy HUD and Root Run asset pipeline are the visual guidance; keep the fixed `390px` logical width, fluid portrait height, and wide-desktop contain-fit behavior.
 - FTUE hints should point at currently actionable controls; hide during timer waits and resume when the next button is ready.
 - Tutorial state is guidance only: never hide or disable gameplay controls, consume unrelated presses, activate suggested targets, or navigate for the player.
 - FTUE level-one sage guidance must resolve the turn-in task by item/action too; live configs may still use legacy `level1-sage-seeds` while defaults use `level1-turn-in-sage-seed`.

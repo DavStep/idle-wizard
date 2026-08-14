@@ -274,6 +274,8 @@ describe('PixiDialogFrame', () => {
     expect(frame.closeControl).toBeInstanceOf(PixiTextButton);
     expect(frame.closeControl.visible).toBe(false);
     expect(inputRegistrations[0].descriptor.enabled()).toBe(false);
+    expect(inputRegistrations[0].descriptor.fallbackHitTest).toBe(true);
+    expect(inputRegistrations[0].descriptor.haptic()).toBe('light');
 
     frame.setCloseAction(firstAction);
     expect(frame.closeControl.visible).toBe(true);

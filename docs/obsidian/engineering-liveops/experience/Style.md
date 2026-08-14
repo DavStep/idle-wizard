@@ -65,7 +65,7 @@ experience_type: style
 - Box titles stay transparent over the top border and use the shared near-black text stroke; dialog titles use the same stroke inside the separate Root Run purple title plaque.
 - Non-title labels that sit on a box border (counts, current controls, bottom-edge actions/tabs) use smaller text and a fixed line box centered on the border line.
 - Mobile readability comes from the room UI scale layer, not from changing the source font size upward.
-- Source UI scale must follow the fitted viewport scale, not stay fixed at `3`, so web and mobile views both fit.
+- Source UI scale must follow the portrait width-fit or wide-desktop contain-fit scale, not stay fixed at `3`, so web and mobile views both fit without stretching.
 - Fresh-start account gates need viewport-fixed positioning; stage-clipped absolute dialogs can be cut off on short desktop web viewports.
 - Mobile keyboard resize must not recompute scale from the shrunken visual height while text input is focused or while the keyboard is closing after focus leaves.
 - Text-entry viewport locks should start on press; some mobile WebViews resize for the keyboard before `focusin`.
@@ -224,7 +224,7 @@ experience_type: style
 - Mixed resource strings need separate marked spans when each semantic part needs its own icon; the spans still inherit surrounding text color.
 - Resource metadata owns the shared icon and semantic resource color, but disabled and locked component states override it with the normal muted treatment.
 - Shared top room chrome uses the `16px` source side inset from Research content. Bottom room tabs are the deliberate exception: their equal-width row fills the source width.
-- Research station title plaques connect to the screen's left edge while their cards, fixed tabs, and run-focus controls keep the shared `16px` content inset.
+- Research station title plaques connect to the screen's left edge while their cards, fixed tabs, and run-focus controls keep the shared `16px` content inset. Render the complete shared plaque at `75%` (`31.5px` source height), including its label and trailing status, in every room consumer.
 - Market stock batch buys quote marginal NPC sell prices across the backend need curve; never price large buys as one visible unit price times quantity.
 - NPC market reset must clear shared `npcStock` to `0` plus restore `npcNeed` to target; stock is server state and can survive player-data resets.
 - Global NPC market resets need a one-time server maintenance marker; do not tie shared market wipes to per-player progress reset hooks.
@@ -313,6 +313,7 @@ experience_type: style
 - Smooth timed progress bars with compositor `transform` transitions from the latest snapshot to completion; do not raise gameplay snapshot cadence just to reduce visible stepping.
 - Brewing selected recipe requirements render as stable one-herb orbit slots with item art and name only; do not show owned/required ratios.
 - Brewing selected recipe rows are correction targets through tap/ARIA only; do not reintroduce visible `next` or `remove` text into the cauldron body.
+- Reposition the retained Brewing orbit with its header gap; keep its `60px` ingredient-row pitch and `128x87px` ellipse radii independent so extra page height cannot stretch the orbit into a circle.
 - Garden plot `.is-empty` means the plot has no active plant, not that its selected seed label is unavailable; selected seed labels still follow the row's normal state color.
 - Research item-name spans may keep resource metadata for icons, but their text inherits the row's normal, completed, or unavailable state color.
 - Treat every new UI primitive, compound component, scroll behavior, box/dialog type, control pattern, or meaningfully different widget variant as a reusable project widget: define its contract before implementation, then catalog it with real-app evidence in `docs/ui-patterns.md`.

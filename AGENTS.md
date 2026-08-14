@@ -6,7 +6,7 @@ This repo is a JavaScript mobile game project for `Idle Wizard`.
 
 Use Ponytail-style engineering by default: read the touched flow first, then choose the smallest correct change. Prefer deleting, reusing existing project code, standard library/native platform features, and already-installed dependencies before adding new code or abstractions. Keep communication concise, technical, and no-filler. Stop only when the user asks for normal mode.
 
-The target game viewport matches Root Run at `390x844`. Treat that as the logical game surface, then contain-fit it to the user's device without changing the logical layout.
+The target game viewport uses Root Run's `390px` logical width. Treat `390x844` as the reference QA surface, not a fixed runtime height: portrait devices fit the width and extend the logical height to fill the remaining safe viewport; wide desktop windows retain the reference contain-fit behavior.
 
 Do not add seed, herb, potion, selling, economy, inventory, progression, or other gameplay code until the user explicitly requests that feature.
 
@@ -42,7 +42,7 @@ Legacy border-labeled blocks may keep transparent titles embedded over the top b
 
 Use Root Run's compact source UI proportions inside the room UI scale layer. Do not inflate the font directly to make mobile text readable.
 
-Source UI scale must follow Root Run's fitted viewport scale from the `390x844` logical surface, including desktop upscaling, so both web and mobile views fit.
+Source UI scale must follow the width-fitted portrait scale or the reference contain-fit desktop scale, including desktop upscaling, so both web and mobile views fit without stretching.
 
 Ordinary room panels use approved image-backed fantasy chrome with compact padding and controlled depth. Popup/dialog panels remain visually heavier than ordinary panels. The Workshop resource/action block is called `mana sphere`; the summon seed button sits outside it. Clicking `seeds` in it opens the seed inventory breakdown. Page names sit in the raised active bottom tab.
 

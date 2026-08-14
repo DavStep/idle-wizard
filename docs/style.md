@@ -106,10 +106,10 @@ The game should look like a polished fantasy workshop HUD: layered illustrated r
 
 ## Layout
 
-- Use fixed authored game dimensions, scaled by the viewport layer.
-- Keep the authored layout mobile-first at Root Run's `390x844` logical resolution.
-- Scale source UI directly by the Root Run-style contain-fit viewport scale, including desktop upscaling, so both web and mobile views fit.
-- Do not copy reference-image pixel dimensions; author at the fixed Root Run `390x844` logical surface.
+- Use a fixed `390px` authored width and derive portrait height from the available safe viewport.
+- Keep the authored layout mobile-first, using Root Run's `390x844` surface as the reference QA size rather than a fixed runtime height.
+- Scale source UI by portrait width-fit or wide-desktop contain-fit, including desktop upscaling, so both web and mobile views fit without stretching.
+- Do not copy reference-image pixel dimensions; author horizontal geometry at the fixed Root Run `390px` logical width and anchor vertical chrome to the projected source height.
 - Keep future page UI organized around one dominant illustrated landmark with compact supporting panels and actions.
 - Show all five room page icons in the bottom panel. Render each tab with the active theme's matching top-cap nine-slice at `83 91 73 1`; inactive tabs use the darker cap and the selected tab uses the lighter cap. Night uses the original midnight assets and Day uses exact warm-brown recolors. Fill the source width and keep an `8px` source safe gap below the complete frames. Keep unlocked icons at full color and opacity in every state, with non-selected icons rendered at `1.5x` their base artwork size. Selecting a tab applies its existing selected-icon treatment while lifting it `12px` into the raised active frame. Keep every tab at the same font weight; the selected tab shows its white Title Case page name while inactive tabs remain icon-only. Locked tabs replace the room icon with a larger lock centered lower in the inactive frame.
 - Keep category tabs and paired actions balanced within their approved image-backed strip or panel.

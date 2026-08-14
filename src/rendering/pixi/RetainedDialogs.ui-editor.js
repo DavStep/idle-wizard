@@ -81,6 +81,10 @@ const RESOURCE_LABEL_WIDGET_ID = 'primitive.resource-label';
 const STAR_LEVEL_WIDGET_ID = 'primitive.star-level-label';
 const WORLD_EVENT_QUEST_ROW_WIDGET_ID =
   'compound.world-event-quest-row';
+const ALLIANCE_DIRECTORY_ROW_WIDGET_ID =
+  'compound.alliance-directory-row';
+const ALLIANCE_MEMBER_ROW_WIDGET_ID =
+  'compound.alliance-member-row';
 
 const DIALOG_CHILD_WIDGET_IDS = Object.freeze({
   [GLOBAL_DIALOG_IDS.SETTINGS]: Object.freeze([
@@ -197,7 +201,7 @@ const DIALOG_LABELS = Object.freeze({
   'workshop.bag': 'Bag',
   'workshop.stats': 'Stats',
   'workshop.inbox': 'Workshop Inbox',
-  'workshop.alliance': 'Alliance Directory',
+  'workshop.alliance': 'Trade Alliance',
   'workshop.leaderboard': 'Leaderboard',
   'workshop.discoveries': 'Discoveries',
   'workshop.personalTasks': 'Daily Tasks',
@@ -404,6 +408,11 @@ export function createUiEditorDialogFixture(dialogId, variantIndex = 0) {
   if (dialogId === 'workshop.worldEvent') {
     return createWorldEventDialogFixture(variantIndex);
   }
+  if (dialogId === 'workshop.alliance') {
+    return variantIndex === 0
+      ? createDialogViewModel(dialogId, 'a')
+      : createTradeAllianceDirectoryFixture();
+  }
   if (dialogId === SHOP_DIALOG_IDS.SUPPORT) {
     return {
       title: 'Support',
@@ -424,6 +433,47 @@ function normalizeUiEditorDialogFixture(dialogId, fixture) {
   return {
     ...fixture,
     title: DIALOG_LABELS[dialogId] ?? titleCaseIdentifier(dialogId),
+  };
+}
+
+function createTradeAllianceDirectoryFixture() {
+  const members = [
+    ['Mira', 'mira', 'Trade Master', 'Lv 24'],
+    ['Juniper', 'juniper', 'Quartermaster', 'Lv 18'],
+    ['Rowan', 'rowan', 'Trader', 'Lv 12'],
+  ].map(([username, character, roleLabel, levelLabel], index) => ({
+    id: `directory-member-${index}`,
+    username,
+    character,
+    roleLabel,
+    levelLabel,
+    onActivate: () => true,
+  }));
+  return {
+    title: 'Trade Alliance',
+    directory: true,
+    status: 'Not in an alliance',
+    rows: [
+      {
+        id: 'night-owls',
+        type: 'allianceDirectory',
+        name: 'Night Owls',
+        tag: 'OWL',
+        tagColor: 'violet',
+        totalIncomeLabel: '12.4k',
+        memberCount: members.length,
+        memberCapacity: 50,
+        expanded: true,
+        members,
+        onActivate: () => true,
+        action: {
+          label: 'Apply',
+          variant: 'green',
+          enabled: true,
+          onActivate: () => true,
+        },
+      },
+    ],
   };
 }
 
@@ -843,6 +893,36 @@ function createReusableDialogContentHierarchy(dialogId, dialog) {
     );
   }
 
+  if (dialogId === 'workshop.alliance') {
+    const directoryRows = dialog.allianceRows?.getWidgets?.() ?? [];
+    const ownedMemberRows = dialog.allianceMemberRows?.getWidgets?.() ?? [];
+    const directoryMemberRows = directoryRows.flatMap((row) =>
+      Array.from(row.memberWidgets?.values?.() ?? []),
+    );
+    return [
+      ...directoryRows.map((row, index) =>
+        createUiEditorPixiHierarchyComponent({
+          displayObjects: [row.root],
+          id: `${dialogId}:directory:${row.model?.id ?? index}`,
+          label: 'AllianceDirectory:AllianceDirectoryRow',
+          libraryEntryId: ALLIANCE_DIRECTORY_ROW_WIDGET_ID,
+          primary: row.root,
+          type: 'widget',
+        }),
+      ),
+      ...[...ownedMemberRows, ...directoryMemberRows].map((row, index) =>
+        createUiEditorPixiHierarchyComponent({
+          displayObjects: [row.root],
+          id: `${dialogId}:member:${row.model?.id ?? index}`,
+          label: 'AllianceMember:AllianceMemberRow',
+          libraryEntryId: ALLIANCE_MEMBER_ROW_WIDGET_ID,
+          primary: row.root,
+          type: 'widget',
+        }),
+      ),
+    ];
+  }
+
   const inventoryChoiceConfig =
     INVENTORY_CHOICE_DIALOG_HIERARCHY[dialogId];
   if (!inventoryChoiceConfig) {
@@ -1036,6 +1116,7 @@ const GLOBAL_DIALOG_SCENARIOS = Object.freeze({
         allianceId: 'moss-hall',
         allianceName: 'Moss Hall',
         allianceTag: 'MOSS',
+        allianceTagColor: 'green',
         character: 'mira',
         playerLevel: 12,
         prestigeCount: 2,

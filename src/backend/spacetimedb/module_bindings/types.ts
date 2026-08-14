@@ -765,6 +765,7 @@ export const TradeAllianceMemberSnapshotResult = __t.object("TradeAllianceMember
   memberIdentity: __t.identity(),
   allianceId: __t.uuid(),
   username: __t.string(),
+  character: __t.string(),
   playerLevel: __t.u32(),
   role: __t.string(),
   joinedAt: __t.timestamp(),

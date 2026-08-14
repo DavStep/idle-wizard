@@ -3,30 +3,62 @@ import {
 } from 'pixi.js';
 
 import {
+  createDialogPaperSection,
+  PIXI_DIALOG_SPLIT_PAPER_GEOMETRY,
   PixiTextButton,
-  PixiNineSliceFrame,
   PixiResourceLabel,
   PixiStarLevelLabel,
   PixiTextLabel,
+  resolveDialogPaperOutsets,
+  setDialogPaperSectionBounds,
 } from '../../primitives/index.js';
 import {
-  PIXI_ROOT_RUN_ASSETS,
-  PIXI_ROOT_RUN_GEOMETRY,
   PIXI_UI_GEOMETRY,
 } from '../../theme/PixiThemeTokens.js';
+import { normalizeTradeAllianceTagColor } from '../../../../shared/tradeAllianceTagColors.js';
 import { RootRunAvatarWidget } from '../chrome/RootRunTopHudWidgets.js';
 import { RetainedGlobalDialog } from './GlobalDialogKit.js';
 
 const PLAYER_CONTENT_WIDTH = 260;
 const PORTRAIT_SIZE = 72;
 const SUMMARY_GAP = 12;
-const SUMMARY_HEIGHT = 72;
-const STATS_GAP = 8;
-const STATS_HEIGHT = 70;
+const SUMMARY_PADDING_TOP = 7;
+const SUMMARY_PADDING_BOTTOM = 5;
+const SUMMARY_HEIGHT =
+  SUMMARY_PADDING_TOP + PORTRAIT_SIZE + SUMMARY_PADDING_BOTTOM;
+const DETAIL_ROW_PITCH = 18;
+const STATS_HEIGHT =
+  PIXI_DIALOG_SPLIT_PAPER_GEOMETRY.contentInsetTop +
+  54 +
+  PIXI_DIALOG_SPLIT_PAPER_GEOMETRY.contentInsetBottom;
 const STATS_PADDING_X = 10;
-const STATS_PADDING_Y = 8;
+const STATS_PADDING_Y =
+  PIXI_DIALOG_SPLIT_PAPER_GEOMETRY.contentInsetTop;
 const STATS_ROW_PITCH = 18;
-const PLAYER_CONTENT_HEIGHT = SUMMARY_HEIGHT + STATS_GAP + STATS_HEIGHT;
+const PLAYER_PAPER_OUTSETS = resolveDialogPaperOutsets({
+  top: PIXI_UI_GEOMETRY.dialogPadding,
+  right: PIXI_UI_GEOMETRY.dialogPadding,
+  bottom: PIXI_UI_GEOMETRY.dialogPadding,
+  left: PIXI_UI_GEOMETRY.dialogPadding,
+});
+const STATS_Y =
+  SUMMARY_HEIGHT +
+  PLAYER_PAPER_OUTSETS.bottom +
+  PIXI_DIALOG_SPLIT_PAPER_GEOMETRY.sectionGap +
+  PLAYER_PAPER_OUTSETS.top;
+const PLAYER_CONTENT_HEIGHT = STATS_Y + STATS_HEIGHT;
+const PLAYER_INFO_TAG_COLORS = Object.freeze({
+  ink: '#634934',
+  red: '#9b3439',
+  amber: '#9a6d1f',
+  green: '#397a42',
+  teal: '#337b78',
+  blue: '#3e6392',
+  violet: '#74518e',
+  magenta: '#934a78',
+  brown: '#704b35',
+  slate: '#596271',
+});
 
 /**
  * Retained public player card. It consumes a renderer-neutral player snapshot
@@ -43,6 +75,11 @@ export class PixiPlayerInfoDialog extends RetainedGlobalDialog {
       placement: 'center',
       label: `${dialogId}:playerInfoDialog`,
     });
+    this.panel.setPaperVisible(false);
+    this.summaryFrame = createDialogPaperSection(
+      this.panel.paperFrame.texture,
+      `${dialogId}:summaryFrame`,
+    );
     this.avatarWidget = new RootRunAvatarWidget({
       assets: this.context.assets,
       texture: Texture.EMPTY,
@@ -87,18 +124,10 @@ export class PixiPlayerInfoDialog extends RetainedGlobalDialog {
       gap: 1,
       label: `${dialogId}:prestigeValue`,
     });
-    this.statsFrame = new PixiNineSliceFrame({
-      texture: this.context.assets.getTexture(
-        PIXI_ROOT_RUN_ASSETS.innerSectionPanelWhite,
-      ),
-      sourceInsets:
-        PIXI_ROOT_RUN_GEOMETRY.innerSectionPanelWhite.sourceInsets,
-      borderInsets:
-        PIXI_ROOT_RUN_GEOMETRY.innerSectionPanelWhite.borderInsets,
-      width: PLAYER_CONTENT_WIDTH,
-      height: STATS_HEIGHT,
-      label: `${dialogId}:statsFrame`,
-    });
+    this.statsFrame = createDialogPaperSection(
+      this.panel.paperFrame.texture,
+      `${dialogId}:statsFrame`,
+    );
     this.totalCoinLabel = new PixiTextLabel({
       text: 'Total Produced Coin',
       label: `${dialogId}:totalCoinLabel`,
@@ -132,6 +161,8 @@ export class PixiPlayerInfoDialog extends RetainedGlobalDialog {
       label: `${dialogId}:loading`,
     });
     this.panel.content.addChild(
+      this.summaryFrame,
+      this.statsFrame,
       this.avatarWidget,
       this.allianceButton,
       this.name,
@@ -139,7 +170,6 @@ export class PixiPlayerInfoDialog extends RetainedGlobalDialog {
       this.levelValue,
       this.prestigeLabel,
       this.prestigeStars,
-      this.statsFrame,
       this.totalCoinLabel,
       this.totalCoinValue,
       this.totalPotionsLabel,
@@ -157,6 +187,7 @@ export class PixiPlayerInfoDialog extends RetainedGlobalDialog {
     this.playerModel = normalizePlayerModel(viewModel);
     const loading = this.playerModel.loading;
     for (const object of [
+      this.summaryFrame,
       this.avatarWidget,
       this.allianceButton,
       this.name,
@@ -177,6 +208,7 @@ export class PixiPlayerInfoDialog extends RetainedGlobalDialog {
     }
     this.loadingLabel.visible = loading;
     this.loadingLabel.renderable = loading;
+    this.panel.setPaperVisible(loading);
 
     if (loading) {
       this.setPanelContentSize(PLAYER_CONTENT_WIDTH, 20);
@@ -211,6 +243,7 @@ export class PixiPlayerInfoDialog extends RetainedGlobalDialog {
               this.model.onOpenAlliance,
           ),
       );
+    this.applyAllianceTagColor();
     this.setPanelContentSize(PLAYER_CONTENT_WIDTH, PLAYER_CONTENT_HEIGHT);
     this.layoutDialog();
   }
@@ -259,7 +292,31 @@ export class PixiPlayerInfoDialog extends RetainedGlobalDialog {
     const rightX = PLAYER_CONTENT_WIDTH;
     const detailsX = PORTRAIT_SIZE + SUMMARY_GAP;
     const detailsWidth = PLAYER_CONTENT_WIDTH - detailsX;
-    this.avatarWidget.position.set(0, 0);
+    const paperOutsets = resolveDialogPaperOutsets(
+      this.panel.contentInsets,
+    );
+    setDialogPaperSectionBounds(
+      this.summaryFrame,
+      {
+        x: 0,
+        y: 0,
+        width: PLAYER_CONTENT_WIDTH,
+        height: SUMMARY_HEIGHT,
+      },
+      paperOutsets,
+    );
+    setDialogPaperSectionBounds(
+      this.statsFrame,
+      {
+        x: 0,
+        y: STATS_Y,
+        width: PLAYER_CONTENT_WIDTH,
+        height: STATS_HEIGHT,
+      },
+      paperOutsets,
+    );
+
+    this.avatarWidget.position.set(0, SUMMARY_PADDING_TOP);
     this.avatarWidget.scale.set(PORTRAIT_SIZE / 186);
 
     let nameX = detailsX;
@@ -267,51 +324,50 @@ export class PixiPlayerInfoDialog extends RetainedGlobalDialog {
       const allianceWidth = Math.ceil(
         this.allianceButton.textLabel.measuredWidth,
       );
-      this.allianceButton.position.set(detailsX, 0);
+      this.allianceButton.position.set(detailsX, SUMMARY_PADDING_TOP);
       this.allianceButton.setSize(allianceWidth, 18);
       this.allianceButton.textLabel.position.set(0, 9);
       nameX += allianceWidth + 4;
     }
-    this.name.position.set(nameX, 1);
+    this.name.position.set(nameX, SUMMARY_PADDING_TOP + 1);
     this.name.setWrapWidth(
       Math.max(0, PLAYER_CONTENT_WIDTH - nameX),
     );
 
-    this.levelLabel.position.set(detailsX, 25);
-    this.levelValue.position.set(rightX, 25);
-    this.prestigeLabel.position.set(detailsX, 47);
+    const levelY = SUMMARY_PADDING_TOP + 1 + DETAIL_ROW_PITCH;
+    const prestigeY = levelY + DETAIL_ROW_PITCH;
+    this.levelLabel.position.set(detailsX, levelY);
+    this.levelValue.position.set(rightX, levelY);
+    this.prestigeLabel.position.set(detailsX, prestigeY);
     this.prestigeStars.position.set(
       rightX - this.prestigeStars.measuredWidth,
-      47,
+      prestigeY,
     );
 
-    const statsY = SUMMARY_HEIGHT + STATS_GAP;
     const statsRightX = rightX - STATS_PADDING_X;
-    this.statsFrame.position.set(0, statsY);
-    this.statsFrame.setSize(PLAYER_CONTENT_WIDTH, STATS_HEIGHT);
     this.totalCoinLabel.position.set(
       STATS_PADDING_X,
-      statsY + STATS_PADDING_Y,
+      STATS_Y + STATS_PADDING_Y,
     );
     this.totalCoinValue.position.set(
       statsRightX - this.totalCoinValue.measuredWidth,
-      statsY + STATS_PADDING_Y,
+      STATS_Y + STATS_PADDING_Y,
     );
     this.totalPotionsLabel.position.set(
       STATS_PADDING_X,
-      statsY + STATS_PADDING_Y + STATS_ROW_PITCH,
+      STATS_Y + STATS_PADDING_Y + STATS_ROW_PITCH,
     );
     this.totalPotionsValue.position.set(
       statsRightX,
-      statsY + STATS_PADDING_Y + STATS_ROW_PITCH,
+      STATS_Y + STATS_PADDING_Y + STATS_ROW_PITCH,
     );
     this.totalHerbsLabel.position.set(
       STATS_PADDING_X,
-      statsY + STATS_PADDING_Y + STATS_ROW_PITCH * 2,
+      STATS_Y + STATS_PADDING_Y + STATS_ROW_PITCH * 2,
     );
     this.totalHerbsValue.position.set(
       statsRightX,
-      statsY + STATS_PADDING_Y + STATS_ROW_PITCH * 2,
+      STATS_Y + STATS_PADDING_Y + STATS_ROW_PITCH * 2,
     );
     this.levelLabel.setWrapWidth(
       Math.max(
@@ -319,6 +375,7 @@ export class PixiPlayerInfoDialog extends RetainedGlobalDialog {
         detailsWidth - this.levelValue.measuredWidth - 6,
       ),
     );
+    this.applyAllianceTagColor();
   }
 
   applyDialogTheme(theme) {
@@ -341,7 +398,17 @@ export class PixiPlayerInfoDialog extends RetainedGlobalDialog {
       iconMode: 'icons',
     });
     this.allianceButton?.applyTheme(theme);
+    this.applyAllianceTagColor();
     this.layoutDialog();
+  }
+
+  applyAllianceTagColor() {
+    const colorKey = normalizeTradeAllianceTagColor(
+      this.playerModel?.allianceTagColor,
+    );
+    this.allianceButton?.textLabel.setColor(
+      PLAYER_INFO_TAG_COLORS[colorKey] ?? PLAYER_INFO_TAG_COLORS.ink,
+    );
   }
 
   activateDialog() {

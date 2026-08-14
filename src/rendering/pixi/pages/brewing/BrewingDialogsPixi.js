@@ -6,13 +6,16 @@ import {
   Texture,
 } from 'pixi.js';
 
+import { getHerbIconFrameName } from '../../../../assets/items/herbs/herbIcons.js';
 import { getPotionIconFrameName } from '../../../../assets/items/potions/potionIcons.js';
+import { createDialogPaperSection } from '../../primitives/PixiDialogFrame.js';
 import { PixiTextButton } from '../../primitives/PixiTextButton.js';
 import { PixiOwnedDialogSurface } from '../../primitives/PixiOwnedDialogSurface.js';
 import { PooledCollection } from '../../retained/PooledCollection.js';
 import { WidgetPool } from '../../retained/WidgetPool.js';
 import {
   DEFAULT_PIXI_THEME_SNAPSHOT,
+  PIXI_ROOT_RUN_ASSETS,
   PIXI_UI_GEOMETRY,
 } from '../../theme/PixiThemeTokens.js';
 import {
@@ -30,13 +33,19 @@ const RECIPE_DIALOG_CONTENT_HEIGHT = 360;
 const RECIPE_DIALOG_OUTER_WIDTH = RECIPE_DIALOG_CONTENT_WIDTH + 44;
 const RECIPE_DIALOG_OUTER_HEIGHT = RECIPE_DIALOG_CONTENT_HEIGHT + 44;
 const RECIPE_BOOK_CONTROL_HEIGHT = 25;
-const RECIPE_PAGE_GAP = 12;
+const RECIPE_PAGE_GAP = 4;
 const RECIPE_CARD_WIDTH =
   (RECIPE_DIALOG_CONTENT_WIDTH - RECIPE_PAGE_GAP) / 2;
-const RECIPE_ICON_SIZE = 56;
+const RECIPE_CARD_CONTENT_INSET = 7;
+const RECIPE_CARD_HEIGHT =
+  RECIPE_DIALOG_CONTENT_HEIGHT - RECIPE_BOOK_CONTROL_HEIGHT - 6;
+const RECIPE_ICON_SIZE = 46;
 const RECIPE_HEADER_GAP = 5;
-const RECIPE_RULE_WIDTH = 2;
 const RECIPE_INGREDIENT_ROW_HEIGHT = 20;
+const RECIPE_PAGER_BUTTON_WIDTH = 52;
+const RECIPE_PAGER_BUTTON_HEIGHT = 28;
+const RECIPE_INGREDIENT_ICON_SIZE = 14;
+const RECIPE_INGREDIENT_ICON_GAP = 2;
 const RECIPE_CHOICE_CONTENT_WIDTH = 210;
 const RECIPE_CHOICE_OUTER_WIDTH = RECIPE_CHOICE_CONTENT_WIDTH + 44;
 
@@ -186,22 +195,34 @@ export class BrewingRecipeBookDialogPixi {
       theme,
     });
     this.root = this.modal.root;
+    this.modal.panel.setPaperVisible(false);
     this.book = new Container({ label: 'brewing-recipe-book' });
     this.book.eventMode = 'static';
-    this.divider = new Graphics({ label: 'brewing-recipe-book-divider' });
-    this.previous = new BrewingTextButton({
-      id: 'brewing.recipes.previous',
-      modalId: this.modal.id,
+    this.previous = new PixiTextButton({
+      assetManager,
       inputRouter,
-      label: 'prev',
+      semanticRegistry: semanticTargets,
+      semanticId: 'brewing.recipes.previous',
+      text: 'Prev',
+      width: RECIPE_PAGER_BUTTON_WIDTH,
+      height: RECIPE_PAGER_BUTTON_HEIGHT,
+      sizeTier: 30,
+      variant: 'yellow',
       action: () => this.showPreviousSpread(),
+      label: 'brewing.recipes.previous',
     });
-    this.next = new BrewingTextButton({
-      id: 'brewing.recipes.next',
-      modalId: this.modal.id,
+    this.next = new PixiTextButton({
+      assetManager,
       inputRouter,
-      label: 'next',
+      semanticRegistry: semanticTargets,
+      semanticId: 'brewing.recipes.next',
+      text: 'Next',
+      width: RECIPE_PAGER_BUTTON_WIDTH,
+      height: RECIPE_PAGER_BUTTON_HEIGHT,
+      sizeTier: 30,
+      variant: 'yellow',
       action: () => this.showNextSpread(),
+      label: 'brewing.recipes.next',
     });
     this.pageLabel = createText('', {
       ...RETAINED_TEXT_STYLES.border,
@@ -210,11 +231,10 @@ export class BrewingRecipeBookDialogPixi {
     this.pageLabel.anchor.set(0.5, 0);
     this.modal.panel.content.addChild(
       this.book,
-      this.previous.root,
-      this.next.root,
+      this.previous,
+      this.next,
       this.pageLabel,
     );
-    this.book.addChild(this.divider);
     this.model = {};
     this.actions = {};
     this.recipes = [];
@@ -329,9 +349,7 @@ export class BrewingRecipeBookDialogPixi {
   }
 
   orderCards(cards) {
-    const divider = this.divider;
     this.book.removeChildren();
-    this.book.addChild(divider);
     for (const card of cards) {
       this.book.addChild(card.root);
     }
@@ -344,7 +362,7 @@ export class BrewingRecipeBookDialogPixi {
         index === 0 ? 0 : RECIPE_CARD_WIDTH + RECIPE_PAGE_GAP,
         0,
         RECIPE_CARD_WIDTH,
-        RECIPE_DIALOG_CONTENT_HEIGHT - RECIPE_BOOK_CONTROL_HEIGHT,
+        RECIPE_CARD_HEIGHT,
       ),
     );
   }
@@ -355,22 +373,11 @@ export class BrewingRecipeBookDialogPixi {
     const contentTheme = this.modal.getContentTheme();
     this.previous.applyTheme(contentTheme);
     this.next.applyTheme(contentTheme);
-    applyTextTheme(this.pageLabel, contentTheme, {
+    applyTextTheme(this.pageLabel, this.theme, {
       ...RETAINED_TEXT_STYLES.border,
-      fill: contentTheme.muted,
+      fill: this.theme.text,
       align: 'center',
     });
-    this.divider
-      .clear()
-      .moveTo(RECIPE_DIALOG_CONTENT_WIDTH / 2, 0)
-      .lineTo(
-        RECIPE_DIALOG_CONTENT_WIDTH / 2,
-        RECIPE_DIALOG_CONTENT_HEIGHT - RECIPE_BOOK_CONTROL_HEIGHT,
-      )
-      .stroke({
-        color: contentTheme.stroke,
-        width: RECIPE_RULE_WIDTH,
-      });
     for (const card of this.cards?.getWidgets?.() ?? []) {
       card.applyTheme(contentTheme);
     }
@@ -394,20 +401,23 @@ export class BrewingRecipeBookDialogPixi {
       0,
       0,
       RECIPE_DIALOG_CONTENT_WIDTH,
-      RECIPE_DIALOG_CONTENT_HEIGHT - RECIPE_BOOK_CONTROL_HEIGHT,
+      RECIPE_CARD_HEIGHT,
     );
     const controlsY =
       bodyY + RECIPE_DIALOG_CONTENT_HEIGHT - RECIPE_BOOK_CONTROL_HEIGHT;
-    this.previous.setBounds(bodyX, controlsY + 5, 40, 20);
-    this.next.setBounds(
-      bodyX + RECIPE_DIALOG_CONTENT_WIDTH - 40,
-      controlsY + 5,
-      40,
-      20,
+    this.previous.position.set(bodyX + 4, controlsY + 1);
+    this.previous.setSize(
+      RECIPE_PAGER_BUTTON_WIDTH,
+      RECIPE_PAGER_BUTTON_HEIGHT,
     );
+    this.next.position.set(
+      bodyX + RECIPE_DIALOG_CONTENT_WIDTH - RECIPE_PAGER_BUTTON_WIDTH - 4,
+      controlsY + 1,
+    );
+    this.next.setSize(RECIPE_PAGER_BUTTON_WIDTH, RECIPE_PAGER_BUTTON_HEIGHT);
     this.pageLabel.position.set(
       bodyX + RECIPE_DIALOG_CONTENT_WIDTH / 2,
-      controlsY + 7,
+      controlsY + 8,
     );
     this.layoutCards();
     this.modal.layout(viewportProjection);
@@ -452,6 +462,11 @@ export class BrewingRecipeCard {
     this.actions = {};
     this.semanticId = null;
     this.root = new Container({ label: `brewing-recipe-card-${instanceId}` });
+    this.pageFrame = createDialogPaperSection(
+      this.assetManager?.getTexture?.(PIXI_ROOT_RUN_ASSETS.dialogPaper) ??
+        Texture.EMPTY,
+      `brewing-recipe-card-${instanceId}-paper`,
+    );
     this.icon = new Sprite(Texture.EMPTY);
     this.icon.label = `brewing-recipe-card-${instanceId}-icon`;
     this.name = createText('', {
@@ -482,6 +497,7 @@ export class BrewingRecipeCard {
       label: `brewing-recipe-card-${instanceId}-separator`,
     });
     this.root.addChild(
+      this.pageFrame,
       this.icon,
       this.name,
       this.info,
@@ -498,6 +514,7 @@ export class BrewingRecipeCard {
       create: () =>
         new BrewingRecipeIngredientRow({
           instanceId: `${instanceId}-${++this.ingredientSequence}`,
+          assetManager: this.assetManager,
         }),
       reset: (row) => row.reset(),
       dispose: (row) => row.destroy(),
@@ -560,13 +577,7 @@ export class BrewingRecipeCard {
     this.ingredients.reconcile(normalizeRows(this.model.ingredients));
     const selected = this.model.selected === true;
     this.select.setText(
-      selected
-        ? 'selected'
-        : unknown
-          ? 'unknown'
-          : locked
-            ? 'Research'
-            : this.model.actionLabel ?? 'select',
+      unknown ? 'Unknown' : locked ? 'Research' : 'Select',
     );
     const actionEnabled =
       !unknown &&
@@ -646,39 +657,49 @@ export class BrewingRecipeCard {
     this.root.position.set(x, y);
     this.width = width;
     this.height = height;
-    this.icon.position.set(0, 0);
+    this.pageFrame.position.set(0, 0);
+    this.pageFrame.setSize(width, height);
+    const contentWidth = Math.max(0, width - RECIPE_CARD_CONTENT_INSET * 2);
+    this.icon.position.set(
+      RECIPE_CARD_CONTENT_INSET,
+      RECIPE_CARD_CONTENT_INSET + 3,
+    );
     this.icon.width = RECIPE_ICON_SIZE;
     this.icon.height = RECIPE_ICON_SIZE;
-    this.name.position.set(RECIPE_ICON_SIZE + RECIPE_HEADER_GAP, 2);
-    this.info.position.set(0, RECIPE_ICON_SIZE + 6);
-    this.info.style.wordWrapWidth = width;
-    const ingredientsY = Math.max(
-      118,
-      RECIPE_ICON_SIZE + 6 + Math.ceil(this.info.height) + 6,
+    this.name.position.set(
+      RECIPE_CARD_CONTENT_INSET + RECIPE_ICON_SIZE + RECIPE_HEADER_GAP,
+      RECIPE_CARD_CONTENT_INSET + 5,
     );
-    this.ingredientsLayer.position.set(0, ingredientsY);
+    this.info.position.set(
+      RECIPE_CARD_CONTENT_INSET,
+      RECIPE_CARD_CONTENT_INSET + RECIPE_ICON_SIZE + 8,
+    );
+    this.info.style.wordWrapWidth = contentWidth;
+    const ingredientsY = Math.max(
+      82,
+      RECIPE_CARD_CONTENT_INSET +
+        RECIPE_ICON_SIZE +
+        8 +
+        Math.ceil(this.info.height) +
+        7,
+    );
+    this.ingredientsLayer.position.set(RECIPE_CARD_CONTENT_INSET, ingredientsY);
     this.ingredients.getWidgets().forEach((row, index) =>
-      row.setBounds(0, index * RECIPE_INGREDIENT_ROW_HEIGHT, width),
+      row.setBounds(0, index * RECIPE_INGREDIENT_ROW_HEIGHT, contentWidth),
     );
     const metaY = Math.min(
-      height - 92,
+      height - 86,
       ingredientsY +
         Math.max(1, this.ingredients.getWidgets().length) *
           RECIPE_INGREDIENT_ROW_HEIGHT +
         6,
     );
-    this.cost.position.set(0, metaY);
-    this.duration.position.set(0, metaY + 15);
-    this.select.position.set((width - 112) / 2, height - 38);
-    this.select.setSize(112, 30);
-    this.separator
-      .clear()
-      .moveTo(0, height - 1)
-      .lineTo(width, height - 1)
-      .stroke({
-        color: this.theme.stroke,
-        width: RECIPE_RULE_WIDTH,
-      });
+    this.cost.position.set(RECIPE_CARD_CONTENT_INSET, metaY);
+    this.duration.position.set(RECIPE_CARD_CONTENT_INSET, metaY + 15);
+    this.select.position.set(RECIPE_CARD_CONTENT_INSET, height - 38);
+    this.select.setSize(contentWidth, 30);
+    this.separator.visible = false;
+    this.separator.renderable = false;
     this.applyTheme(this.theme);
   }
 
@@ -692,6 +713,7 @@ export class BrewingRecipeCard {
       fill: masked ? this.theme.disabled : this.theme.text,
       wordWrapWidth:
         (this.width ?? RECIPE_CARD_WIDTH) -
+        RECIPE_CARD_CONTENT_INSET * 2 -
         RECIPE_ICON_SIZE -
         RECIPE_HEADER_GAP,
     });
@@ -742,17 +764,20 @@ export class BrewingRecipeCard {
 }
 
 export class BrewingRecipeIngredientRow {
-  constructor({ instanceId }) {
+  constructor({ instanceId, assetManager = null }) {
+    this.assetManager = assetManager;
     this.theme = DEFAULT_PIXI_THEME_SNAPSHOT;
     this.model = {};
     this.recipe = {};
     this.root = new Container({
       label: `brewing-recipe-ingredient-${instanceId}`,
     });
+    this.icon = new Sprite(Texture.EMPTY);
+    this.icon.label = `brewing-recipe-ingredient-${instanceId}-icon`;
     this.required = createText('', RETAINED_TEXT_STYLES.border);
     this.owned = createText('', RETAINED_TEXT_STYLES.border);
     this.owned.anchor.set(1, 0);
-    this.root.addChild(this.required, this.owned);
+    this.root.addChild(this.icon, this.required, this.owned);
   }
 
   bind(model, recipe) {
@@ -761,6 +786,14 @@ export class BrewingRecipeIngredientRow {
     const masked =
       this.recipe.unknown === true ||
       this.recipe.known === false;
+    const frameName = getHerbIconFrameName(
+      this.model.itemKey ?? this.model.key,
+    );
+    this.icon.texture = frameName
+      ? this.assetManager?.getAtlasTexture?.(frameName) ?? Texture.EMPTY
+      : Texture.EMPTY;
+    this.icon.visible = !masked && Boolean(frameName);
+    this.icon.renderable = this.icon.visible;
     setText(
       this.required,
       this.model.requiredText ??
@@ -780,7 +813,15 @@ export class BrewingRecipeIngredientRow {
 
   setBounds(x, y, width) {
     this.root.position.set(x, y);
-    this.required.position.set(0, 0);
+    this.icon.position.set(0, 1);
+    this.icon.width = RECIPE_INGREDIENT_ICON_SIZE;
+    this.icon.height = RECIPE_INGREDIENT_ICON_SIZE;
+    this.required.position.set(
+      this.icon.visible
+        ? RECIPE_INGREDIENT_ICON_SIZE + RECIPE_INGREDIENT_ICON_GAP
+        : 0,
+      0,
+    );
     this.owned.position.set(width, 0);
     this.root.hitArea = new Rectangle(
       0,
@@ -817,6 +858,9 @@ export class BrewingRecipeIngredientRow {
     this.recipe = {};
     this.root.visible = false;
     this.root.renderable = false;
+    this.icon.texture = Texture.EMPTY;
+    this.icon.visible = false;
+    this.icon.renderable = false;
     setText(this.required, '');
     setText(this.owned, '');
   }
@@ -921,12 +965,6 @@ class BrewingDialogButton {
   destroy() {
     releaseRegistration(this.registration);
     this.root.destroy({ children: true });
-  }
-}
-
-class BrewingTextButton extends BrewingDialogButton {
-  redraw() {
-    this.frame.clear();
   }
 }
 

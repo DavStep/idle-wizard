@@ -40,6 +40,32 @@ describe('ViewportProjectionManager', () => {
     });
   });
 
+  it.each([
+    { width: 390, height: 700, expectedSourceHeight: 700 },
+    { width: 390, height: 900, expectedSourceHeight: 900 },
+    { width: 360, height: 780, expectedSourceHeight: 845 },
+  ])(
+    'keeps the mobile width fixed and fills a $width x $height portrait viewport',
+    ({ width, height, expectedSourceHeight }) => {
+      const projection = new ViewportProjectionManager().project({
+        width,
+        height,
+      });
+
+      expect(projection.fitScale).toBeCloseTo(width / 1170);
+      expect(projection.uiScale).toBeCloseTo(width / 390);
+      expect(projection.stageLogicalWidth).toBeCloseTo(1170);
+      expect(projection.stageLogicalHeight).toBeCloseTo(
+        expectedSourceHeight * 3,
+      );
+      expect(projection.stageScreenWidth).toBe(width);
+      expect(projection.stageScreenHeight).toBe(height);
+      expect(projection.sourceWidth).toBe(390);
+      expect(projection.sourceHeight).toBeCloseTo(expectedSourceHeight);
+      expect(projection.isWide).toBe(false);
+    },
+  );
+
   it('centers the source room without stretching it in wide desktop gutters', () => {
     const projection = new ViewportProjectionManager().project({
       width: 1440,
