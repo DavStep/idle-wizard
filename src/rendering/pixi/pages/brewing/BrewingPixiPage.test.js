@@ -498,23 +498,46 @@ describe('BrewingPixiPage', () => {
     expect(dialog.modal.panel.coreWidth).toBe(304);
     expect(dialog.modal.panel.outerFrame.frameWidth).toBe(324);
     expect(dialog.modal.panel.paperFrame.visible).toBe(false);
-    expect(dialog.book.hitArea.width).toBe(260);
+    expect(dialog.book.x).toBe(-4);
+    expect(dialog.book.hitArea.width).toBe(312);
     expect(card.icon.width).toBe(46);
-    expect(card.pageFrame.frameWidth).toBe(128);
-    expect(card.pageFrame.frameHeight).toBe(329);
-    expect(unavailableCard.root.x - (card.root.x + card.pageFrame.frameWidth)).toBe(4);
+    expect(card.icon.x).toBe(3);
+    expect(card.pageFrame.frameWidth).toBe(155);
+    expect(card.pageFrame.frameHeight).toBe(341);
+    expect(unavailableCard.root.x - (card.root.x + card.pageFrame.frameWidth)).toBe(2);
     expect(card.name.style.fill).toBe(contentTheme.text);
-    expect(card.cost.style.fill).toBe(contentTheme.resourceColors.mana);
+    expect(card.cost.text).toBe('Required mana:');
+    expect(card.cost.style.fill).toBe(contentTheme.text);
+    expect(card.costValue.text).toBe('12');
+    expect(card.costValue.style.fill).toBe(contentTheme.resourceColors.mana);
+    expect(card.costIcon.x).toBeGreaterThan(card.costValue.x);
+    expect(card.duration.text).toBe('Required Time:');
+    expect(card.durationValue.text).toBe('30s');
+    expect(card.cost.y).toBe(unavailableCard.cost.y);
+    expect(card.duration.y).toBe(unavailableCard.duration.y);
     expect(ingredient.required.style.fill).toBe(
       contentTheme.resourceColors.herb,
     );
+    expect(ingredient.required.text).toBe('sage');
+    expect(ingredient.owned.text).toBe('0/3');
     expect(ingredient.icon.visible).toBe(true);
     expect(ingredient.icon.width).toBe(14);
+    expect(ingredient.icon.x).toBe(
+      ingredient.required.x + ingredient.required.width + 2,
+    );
     expect(card.separator.renderable).toBe(false);
     expect(dialog.previous).toBeInstanceOf(PixiTextButton);
     expect(dialog.previous.variant).toBe('yellow');
     expect(dialog.previous.textLabel.text).toBe('Prev');
     expect(dialog.next.textLabel.text).toBe('Next');
+    expect(dialog.previous.buttonWidth).toBe(72);
+    expect(dialog.next.buttonWidth).toBe(72);
+    expect(dialog.previous.x).toBe(dialog.book.x + card.root.x);
+    expect(dialog.next.x + dialog.next.buttonWidth).toBe(
+      dialog.book.x +
+        unavailableCard.root.x +
+        unavailableCard.pageFrame.frameWidth,
+    );
     expect(card.select).toBeInstanceOf(PixiTextButton);
     expect(card.select.variant).toBe('yellow');
     expect(card.select.textLabel.text).toBe('Research');
@@ -553,6 +576,7 @@ describe('BrewingPixiPage', () => {
       .get('brewing.recipes')
       .cards.getWidgets()[0];
 
+    expect(card.select.variant).toBe('green');
     expect(card.select.textLabel.text).toBe('Select');
     expect(card.select.enabled).toBe(false);
     expect(card.select.activate()).toBe(false);
@@ -1693,6 +1717,47 @@ describe('BrewingPixiPage', () => {
     expect(harness.page.openAutomationSettings()).toBe(true);
     const settings = harness.dialogs.get('brewing.automation-settings');
     expect(settings.toggle.text.text).toBe('auto collect off');
+
+    harness.page.destroy();
+    harness.dispose();
+  });
+
+  it('keeps the short portrait HUD above World Chat and separates wrapped potion labels', () => {
+    const harness = createHarness();
+    const model = createBrewingViewModel();
+    model.brewing.cauldrons[0].selectedRecipe = {
+      key: 'minorHealingPotion',
+      label: 'minor healing potion',
+      rarity: 'common',
+      ingredients: model.brewing.cauldrons[0].ingredients,
+    };
+    harness.page.bind(model);
+    harness.page.layout({ sourceWidth: 390, sourceHeight: 802 });
+
+    const hud = harness.page.hud;
+    const chatTitleTop =
+      harness.page.sourceHeight -
+      PIXI_UI_GEOMETRY.roomChatBottom -
+      PIXI_UI_GEOMETRY.roomChatHeight -
+      PIXI_UI_GEOMETRY.roomChatTitleOverhang;
+    const detailBottom =
+      hud.detailPanel.root.y + hud.detailPanel.height;
+
+    expect(chatTitleTop - detailBottom).toBe(
+      BREWING_HUD_GEOMETRY.detailChatGap,
+    );
+    expect(hud.ingredientSlots[0].root.y).toBeLessThan(
+      BREWING_HUD_GEOMETRY.carouselContentOffset +
+        BREWING_HUD_GEOMETRY.configurationTopOffset +
+        BREWING_HUD_GEOMETRY.configurationButtonHeight +
+        BREWING_HUD_GEOMETRY.previewTopGap,
+    );
+    expect(
+      hud.potionName.y + hud.potionName.height,
+    ).toBeLessThanOrEqual(hud.rarity.y);
+    expect(
+      hud.rarity.y + hud.rarity.height,
+    ).toBeLessThanOrEqual(hud.batchLabel.y);
 
     harness.page.destroy();
     harness.dispose();

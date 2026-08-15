@@ -1,3 +1,5 @@
+import { UPDATE_BACKGROUND_GRACE_MS } from '../../../../shared/updatePolicy.js';
+
 const DEFAULT_DEPLOY_VERSION_ENDPOINT =
   `${import.meta.env.BASE_URL ?? '/'}deploy-version.json`;
 const DEFAULT_DEPLOY_REFRESH_ENABLED = import.meta.env.PROD;
@@ -22,6 +24,8 @@ export class PixiDeployRefreshController {
     reload = null,
     beforeReload = null,
     beforeReloadTimeoutMs = 2_000,
+    minimumHiddenRefreshMs = UPDATE_BACKGROUND_GRACE_MS,
+    now = () => Date.now(),
   } = {}) {
     this.endpoint = endpoint;
     this.intervalMs = intervalMs;
@@ -33,6 +37,10 @@ export class PixiDeployRefreshController {
     this.reload = reload ?? (() => this.windowRef.location.reload());
     this.beforeReload = beforeReload;
     this.beforeReloadTimeoutMs = beforeReloadTimeoutMs;
+    this.minimumHiddenRefreshMs = Number.isFinite(minimumHiddenRefreshMs)
+      ? Math.max(0, minimumHiddenRefreshMs)
+      : UPDATE_BACKGROUND_GRACE_MS;
+    this.now = now;
     this.initialVersion = this.normalizeVersion(currentVersion);
     this.currentVersion = this.initialVersion;
     this.intervalId = null;
@@ -41,10 +49,22 @@ export class PixiDeployRefreshController {
     this.checking = false;
     this.reloading = false;
     this.previewing = false;
+    this.pendingVersion = null;
+    this.hiddenAtMs = null;
+    this.reloadAllowed = false;
     this.view = null;
     this.handleVisibilityChange = () => {
+      if (this.documentRef?.visibilityState === 'hidden') {
+        this.hiddenAtMs ??= this.now();
+        return;
+      }
       if (this.documentRef?.visibilityState === 'visible') {
-        void this.checkNow();
+        const hiddenAtMs = this.hiddenAtMs;
+        this.hiddenAtMs = null;
+        const allowReload =
+          Number.isFinite(hiddenAtMs) &&
+          this.now() - hiddenAtMs >= this.minimumHiddenRefreshMs;
+        void this.checkNow({ allowReload });
       }
     };
     this.handleFocus = () => void this.checkNow();
@@ -69,7 +89,8 @@ export class PixiDeployRefreshController {
     if (this.intervalId !== null) {
       return;
     }
-    void this.checkNow();
+    // A fresh launch is already a safe point to swap a stale web build.
+    void this.checkNow({ allowReload: true });
     this.intervalId = this.windowRef?.setInterval?.(
       () => void this.checkNow(),
       this.intervalMs,
@@ -93,7 +114,10 @@ export class PixiDeployRefreshController {
     this.windowRef?.removeEventListener?.('focus', this.handleFocus);
   }
 
-  async checkNow() {
+  async checkNow({ allowReload = false } = {}) {
+    if (allowReload) {
+      this.reloadAllowed = true;
+    }
     if (!this.enabled || this.checking || this.reloading) {
       return;
     }
@@ -101,17 +125,28 @@ export class PixiDeployRefreshController {
     try {
       const version = this.normalizeVersion(await this.fetchVersion());
       if (!version) {
+        this.reloadAllowed = false;
         return;
       }
       if (this.currentVersion === null) {
         this.currentVersion = version;
+        this.pendingVersion = null;
+        this.reloadAllowed = false;
         return;
       }
       if (version !== this.currentVersion) {
-        this.forceRefresh();
+        this.pendingVersion = version;
+        if (this.reloadAllowed) {
+          this.reloadAllowed = false;
+          this.forceRefresh();
+        }
+        return;
       }
+      this.pendingVersion = null;
+      this.reloadAllowed = false;
     } catch {
       // A deploy probe never interrupts play until a newer build is confirmed.
+      this.reloadAllowed = false;
     } finally {
       this.checking = false;
     }
@@ -253,5 +288,8 @@ export class PixiDeployRefreshController {
     this.checking = false;
     this.reloading = false;
     this.previewing = false;
+    this.pendingVersion = null;
+    this.hiddenAtMs = null;
+    this.reloadAllowed = false;
   }
 }

@@ -81,12 +81,20 @@ The small raw-snapshot fallbacks exist only to ease atomic cutover and do not
 perform writes or own game rules.
 
 The retained Recipes dialog is a two-page Expedition composition. Each visible
-`BrewingRecipeCard` reuses the shared dialog-paper nine-slice, the two page
-frames keep a compact `4px` source gap, and the pager stays on the brown shell
-below them. Unlocked recipe actions read `Select`; locked recipes retain the
-`Research` action. Ingredient `owned` values are presenter-projected available
-herb counts for the selected cauldron, after subtracting herbs staged in other
-cauldrons. Open `http://127.0.0.1:55173/?devUi=brewing.recipes` for the
+`BrewingRecipeCard` reuses the shared dialog-paper nine-slice, the two wider page
+frames use the regular dialog's `6px` visible shell inset with a compact `2px`
+source seam, and the wider pager stays aligned to their outer edges on the brown
+shell below them. Potion art is optically nudged `4px` toward the outer page
+edge while the recipe name keeps the regular content inset. Ingredient rows show
+the herb name and art on the left and `owned/required` on the right. Every card
+reserves six ingredient row-heights without drawing empty rows, so mana and time
+share one stable baseline across recipes with different ingredient counts. Those
+rows use aligned `Required mana:` / `Required Time:` labels and right-aligned
+values, with the canonical mana icon after its numeric value. Unlocked recipe actions read
+`Select` on the shared green positive-action skin; locked recipes retain the
+yellow `Research` action. Ingredient owned values are presenter-projected
+available herb counts for the selected cauldron, after subtracting herbs staged
+in other cauldrons. Open `http://127.0.0.1:55173/?devUi=brewing.recipes` for the
 deterministic real-app visual-QA state.
 
 The production composition has two sections. The unframed preview keeps the
@@ -204,7 +212,8 @@ Open
 `http://127.0.0.1:55173/src/dev/uiRecipes/brewing-ready-hud.html`
 for the non-persistent selected-potion batch card used to verify the potion
 well, `Ready to Brew` status, progress rail, and primary action without
-changing gameplay or save data.
+changing gameplay or save data. Add `?longName=true` to reopen the wrapped
+`Minor Healing Potion` identity used for short-portrait spacing QA.
 
 Add
 `?state=active&theme=black&repeatTheme=true&reducedMotion=true`

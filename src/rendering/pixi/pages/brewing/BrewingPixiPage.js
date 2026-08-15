@@ -1293,7 +1293,10 @@ export class BrewingPixiPage extends BaseRetainedPixiPage {
       buttonY,
     );
     this.layoutBrewing();
-    this.hud?.layout(sourceWidth, sourceHeight);
+    this.hud?.layout(sourceWidth, sourceHeight, {
+      worldChatVisible:
+        this.viewModel?.chrome?.worldChatVisible !== false,
+    });
   }
 
   layoutBrewing() {

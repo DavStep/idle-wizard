@@ -62,6 +62,7 @@
       });
       await runtime.initialize();
       const state = parameters.get('state');
+      const useLongPotionName = parameters.get('longName') === 'true';
       const activeBrew =
         state === 'active'
           ? {
@@ -90,8 +91,16 @@
             level: 1,
             unlocked: true,
             selectedRecipe: {
-              key: activeBrew?.key ?? 'manaTonic',
-              label: activeBrew?.label ?? 'mana tonic',
+              key:
+                activeBrew?.key ??
+                (useLongPotionName
+                  ? 'minorHealingPotion'
+                  : 'manaTonic'),
+              label:
+                activeBrew?.label ??
+                (useLongPotionName
+                  ? 'minor healing potion'
+                  : 'mana tonic'),
               rarity: 'common',
               ownedQuantity: 0,
               ingredients: [
@@ -148,13 +157,16 @@
         },
       };
       hud.bind(hudModel, hudActions);
-      hud.layout(applicationManager.getProjection().sourceWidth);
+      const projection = applicationManager.getProjection();
+      hud.layout(projection.sourceWidth, projection.sourceHeight, {
+        worldChatVisible: true,
+      });
       const worldChat = new PixiWorldChatView({
         assets: runtime.assetManager,
         inputRouter,
       });
       applicationManager.getLayers().globalChrome.addChild(worldChat.root);
-      worldChat.layout(applicationManager.getProjection());
+      worldChat.layout(projection);
       worldChat.applyTheme(runtime.themeManager.getSnapshot());
       worldChat.bind({
         label: 'World Chat',

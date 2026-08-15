@@ -17,7 +17,7 @@ import {
   PIXI_TOP_PANEL_BACKGROUND_SLICE,
   PixiTopPanelView,
 } from './PixiTopPanelView.js';
-import { RootRunAvatarWidget } from './RootRunTopHudWidgets.js';
+import { PlayerProfileWidget } from './PlayerProfileWidgets.js';
 import {
   QUEST_REQUEST_FEEDBACK_DURATION_MS,
   QUEST_REQUEST_FILL_DURATION_MS,
@@ -35,11 +35,14 @@ describe('PixiTopPanelView', () => {
     });
     const children = [...view.root.children];
 
-    view.applyTheme(createPixiThemeSnapshot({ theme: 'night' }));
+    view.applyTheme(
+      createPixiThemeSnapshot({ theme: 'night' }),
+    );
     view.activate();
     view.bind({
       username: 'mira',
       character: 'mira',
+      frameTint: 0xb54c40,
       mana: { current: 41.9, cap: 80, perSecond: 2.25 },
       coin: 1200,
       contextCurrency: {
@@ -59,10 +62,16 @@ describe('PixiTopPanelView', () => {
 
     expect(view.root.children).toEqual(children);
     expect(view.username.text).toBe('mira');
-    expect(view.username.textObject.style.fill).toBe('#fff4dc');
-    expect(view.username.textObject.style.stroke).toMatchObject({
+    expect(view.username.textObject.style.fill).toBe(
+      '#fff4dc',
+    );
+    expect(
+      view.username.textObject.style.stroke,
+    ).toMatchObject({
       color: PIXI_TEXT_STROKE_COLOR,
-      width: resolvePixiTextStrokeWidth(view.username.fontSize),
+      width: resolvePixiTextStrokeWidth(
+        view.username.fontSize,
+      ),
     });
     expect(view.mana.amount).toBe('41/80');
     expect(view.manaRate.text).toBe('+2.25/s');
@@ -82,9 +91,13 @@ describe('PixiTopPanelView', () => {
       x: -16,
       y: 178,
     });
-    expect(view.panelBackground).toBeInstanceOf(NineSliceSprite);
+    expect(view.panelBackground).toBeInstanceOf(
+      NineSliceSprite,
+    );
     expect(view.panelBackground.texture).toBe(
-      assets.getTexture(PIXI_ROOT_RUN_ASSETS.topPanelBackground),
+      assets.getTexture(
+        PIXI_ROOT_RUN_ASSETS.topPanelBackground,
+      ),
     );
     expect(PIXI_TOP_PANEL_BACKGROUND_SLICE).toEqual({
       leftWidth: 30,
@@ -113,7 +126,8 @@ describe('PixiTopPanelView', () => {
       y: PIXI_ROOM_TAB_FRAME_SCALE,
     });
     expect(
-      view.panelBackground.width * view.panelBackground.scale.x,
+      view.panelBackground.width *
+        view.panelBackground.scale.x,
     ).toBe(PIXI_UI_GEOMETRY.sourceWidth);
     expect(
       view.panelBackground.height *
@@ -122,26 +136,44 @@ describe('PixiTopPanelView', () => {
       PIXI_UI_GEOMETRY.roomContentTop -
         PIXI_UI_GEOMETRY.topPanelContentGap,
     );
-    expect(view.avatarViewport.avatarFrame).toBeInstanceOf(NineSliceSprite);
-    expect(view.avatarViewport.avatarWidget).toBeInstanceOf(
-      RootRunAvatarWidget,
+    expect(view.avatarViewport.avatarFrame).toBeInstanceOf(
+      NineSliceSprite,
     );
-    expect(view.coin.background).toBeInstanceOf(NineSliceSprite);
+    expect(
+      view.avatarViewport.profileWidget,
+    ).toBeInstanceOf(PlayerProfileWidget);
+    expect(
+      view.avatarViewport.profileWidget.backgroundWidget
+        .frame.tint,
+    ).toBe(0xb54c40);
+    expect(
+      view.avatarViewport.profileWidget.backgroundWidget
+        .decoration.tint,
+    ).toBe(0xb54c40);
+    expect(view.coin.background).toBeInstanceOf(
+      NineSliceSprite,
+    );
     expect(assets.getTexture).toHaveBeenCalledWith(
       'source:assets/ui/white-squircle/white-squircle-20.9.png',
     );
     expect(view.coin.background.tint).toBe(0x000000);
     expect(view.coin.background.alpha).toBe(0.4);
-    expect(view.settingsControl.background).toBeInstanceOf(NineSliceSprite);
+    expect(view.settingsControl.background).toBeInstanceOf(
+      NineSliceSprite,
+    );
     expect(assets.getTexture).toHaveBeenCalledWith(
       'source:assets/ui/white-squircle/white-squircle-40.9.png',
     );
-    expect(view.settingsControl.background.tint).toBe(0x000000);
+    expect(view.settingsControl.background.tint).toBe(
+      0x000000,
+    );
     expect(view.settingsControl.background.alpha).toBe(0.4);
     expect(assets.getTexture).toHaveBeenCalledWith(
       PIXI_ROOT_RUN_ASSETS.settingsGear,
     );
-    expect(view.levelRail.panel).toBeInstanceOf(NineSliceSprite);
+    expect(view.levelRail.panel).toBeInstanceOf(
+      NineSliceSprite,
+    );
     expect(assets.getTexture).toHaveBeenCalledWith(
       'source:assets/ui/white-squircle/white-squircle-30.9.png',
     );
@@ -164,28 +196,43 @@ describe('PixiTopPanelView', () => {
     const settingsRightInset =
       PIXI_UI_GEOMETRY.sourceWidth -
       view.topHudRoot.position.x -
-      (view.settingsControl.position.x + 122) * view.topHudRoot.scale.x;
-    expect(settingsRightInset).toBeCloseTo(avatarLeftInset, 8);
-    expect(view.levelRail.position.x + view.levelRail.hitArea.width).toBe(
+      (view.settingsControl.position.x + 122) *
+        view.topHudRoot.scale.x;
+    expect(settingsRightInset).toBeCloseTo(
+      avatarLeftInset,
+      8,
+    );
+    expect(
+      view.levelRail.position.x +
+        view.levelRail.hitArea.width,
+    ).toBe(
       view.mana.position.x + view.mana.background.width,
     );
-    expect(view.levelRail.track).toBeInstanceOf(NineSliceSprite);
+    expect(view.levelRail.track).toBeInstanceOf(
+      NineSliceSprite,
+    );
     expect(view.levelRail.track.tint).toBe(0x000000);
     expect(assets.getTexture).toHaveBeenCalledWith(
       'source:assets/ui/root-run-top-hud/level-progress-fill-mask.9.png',
     );
-    expect(view.levelRail.fill).toBeInstanceOf(NineSliceSprite);
+    expect(view.levelRail.fill).toBeInstanceOf(
+      NineSliceSprite,
+    );
     expect([
       view.levelRail.fill.leftWidth,
       view.levelRail.fill.topHeight,
       view.levelRail.fill.rightWidth,
       view.levelRail.fill.bottomHeight,
     ]).toEqual([26, 20, 26, 21]);
-    expect(semanticRegistry.get('top.coin')?.displayObject).toBe(view.coin);
-    expect(semanticRegistry.get('top.settings')?.displayObject).toBe(
-      view.settingsControl,
-    );
-    expect(semanticRegistry.resolve('top.coin')).toMatchObject({
+    expect(
+      semanticRegistry.get('top.coin')?.displayObject,
+    ).toBe(view.coin);
+    expect(
+      semanticRegistry.get('top.settings')?.displayObject,
+    ).toBe(view.settingsControl);
+    expect(
+      semanticRegistry.resolve('top.coin'),
+    ).toMatchObject({
       bounds: {
         width: expect.any(Number),
         height: expect.any(Number),
@@ -194,9 +241,13 @@ describe('PixiTopPanelView', () => {
         visible: true,
       },
     });
-    expect(semanticRegistry.getTutorialTarget('top:mana')).not.toBeNull();
+    expect(
+      semanticRegistry.getTutorialTarget('top:mana'),
+    ).not.toBeNull();
 
-    view.applyTheme(createPixiThemeSnapshot({ theme: 'day' }));
+    view.applyTheme(
+      createPixiThemeSnapshot({ theme: 'day' }),
+    );
     expect(assets.getTexture).toHaveBeenCalledWith(
       PIXI_ROOT_RUN_ASSETS.topPanelBackgroundDay,
     );
@@ -239,7 +290,9 @@ describe('PixiTopPanelView', () => {
     const settingsPress = registrations.find(
       ({ id }) => id === 'top.settings',
     );
-    expect(settingsPress?.displayObject).toBe(view.settingsControl);
+    expect(settingsPress?.displayObject).toBe(
+      view.settingsControl,
+    );
     expect(settingsPress?.onActivate()).toBeUndefined();
     expect(openSettings).toHaveBeenCalledTimes(1);
 
@@ -327,13 +380,17 @@ describe('PixiTopPanelView', () => {
       width: 760,
       height: 93,
     });
-    expect(semanticRegistry.get('top.level')?.displayObject).toBe(
-      view.levelRail,
-    );
+    expect(
+      semanticRegistry.get('top.level')?.displayObject,
+    ).toBe(view.levelRail);
 
     levelPress.onPressChange(true, { confirmed: false });
-    expect(view.levelRail.pressVisual.scale.x).toBeLessThan(1);
-    expect(view.levelRail.pressVisual.scale.y).toBeLessThan(1);
+    expect(view.levelRail.pressVisual.scale.x).toBeLessThan(
+      1,
+    );
+    expect(view.levelRail.pressVisual.scale.y).toBeLessThan(
+      1,
+    );
 
     levelPress.onPressChange(false, { confirmed: true });
     expect(view.levelRail.pressVisual.scale.x).toBe(1);
@@ -356,10 +413,12 @@ describe('PixiTopPanelView', () => {
       assets: createAssets(),
     });
 
-    view.applyTheme(createPixiThemeSnapshot({
-      theme: 'midnight',
-      progressBar: 'regular',
-    }));
+    view.applyTheme(
+      createPixiThemeSnapshot({
+        theme: 'midnight',
+        progressBar: 'regular',
+      }),
+    );
     view.activate();
     view.bind({
       level: 4,
@@ -371,7 +430,9 @@ describe('PixiTopPanelView', () => {
       },
     });
 
-    expect(view.levelRail.fill).toBeInstanceOf(NineSliceSprite);
+    expect(view.levelRail.fill).toBeInstanceOf(
+      NineSliceSprite,
+    );
     expect(view.levelRail.fill.position).toMatchObject({
       x: 23,
       y: 21,
@@ -408,7 +469,12 @@ describe('PixiTopPanelView', () => {
       [0xffffff, 0.08],
       [0xffffff, 0.68],
     ]);
-    expect(view.root.getChildByLabel('topPanel:questCaption', true)).toBeNull();
+    expect(
+      view.root.getChildByLabel(
+        'topPanel:questCaption',
+        true,
+      ),
+    ).toBeNull();
     expect(view.levelRail.total).toBe(4);
     expect(view.levelRail.completed).toBe(1);
 
@@ -448,10 +514,12 @@ describe('PixiTopPanelView', () => {
       assets: createAssets(),
     });
 
-    view.applyTheme(createPixiThemeSnapshot({
-      theme: 'midnight',
-      progressBar: 'notched',
-    }));
+    view.applyTheme(
+      createPixiThemeSnapshot({
+        theme: 'midnight',
+        progressBar: 'notched',
+      }),
+    );
 
     view.activate();
     view.bind({
@@ -464,7 +532,9 @@ describe('PixiTopPanelView', () => {
       },
     });
 
-    expect(view.levelRail.fill).toBeInstanceOf(NineSliceSprite);
+    expect(view.levelRail.fill).toBeInstanceOf(
+      NineSliceSprite,
+    );
     expect(view.levelRail.fill.tint).toBe(0xffdf41);
     expect(view.levelRail.fill.visible).toBe(true);
 
@@ -501,15 +571,19 @@ describe('PixiTopPanelView', () => {
       random: () => 0.5,
     });
     view.activate();
-    view.bind(createTopModel({
-      completed: 1,
-      loadRevision: 3,
-    }));
+    view.bind(
+      createTopModel({
+        completed: 1,
+        loadRevision: 3,
+      }),
+    );
 
-    view.bind(createTopModel({
-      completed: 2,
-      loadRevision: 3,
-    }));
+    view.bind(
+      createTopModel({
+        completed: 2,
+        loadRevision: 3,
+      }),
+    );
 
     expect(motion.requestFrame).toHaveBeenCalledTimes(1);
     expect(view.questFlightRoot.visible).toBe(false);
@@ -530,7 +604,9 @@ describe('PixiTopPanelView', () => {
     motion.runAt(requestFeedbackCompleteMs);
     expect(view.questFlightRoot.visible).toBe(true);
 
-    motion.runAt(requestFeedbackCompleteMs + durationMs / 2);
+    motion.runAt(
+      requestFeedbackCompleteMs + durationMs / 2,
+    );
     expect(view.questFlightRoot.position.x).toBeCloseTo(
       (start.x + destination.x) / 2,
       5,
@@ -542,7 +618,9 @@ describe('PixiTopPanelView', () => {
     expect(view.questFlightRoot.alpha).toBeCloseTo(0.96, 5);
     expect(view.levelRail.completed).toBe(1);
 
-    motion.runAt(requestFeedbackCompleteMs + durationMs - 1);
+    motion.runAt(
+      requestFeedbackCompleteMs + durationMs - 1,
+    );
     expect(view.levelRail.completed).toBe(1);
 
     motion.runAt(requestFeedbackCompleteMs + durationMs);
@@ -551,13 +629,22 @@ describe('PixiTopPanelView', () => {
     expect(view.questArrivalSparks).toHaveLength(8);
     expect(view.levelRail.completed).toBe(2);
 
-    motion.runAt(requestFeedbackCompleteMs + durationMs + 200);
-    expect(view.levelMotionRoot.scale.x).toBeCloseTo(1.1, 5);
+    motion.runAt(
+      requestFeedbackCompleteMs + durationMs + 200,
+    );
+    expect(view.levelMotionRoot.scale.x).toBeCloseTo(
+      1.1,
+      5,
+    );
 
-    motion.runAt(requestFeedbackCompleteMs + durationMs + 320);
+    motion.runAt(
+      requestFeedbackCompleteMs + durationMs + 320,
+    );
     expect(view.questArrivalRoot.visible).toBe(false);
 
-    motion.runAt(requestFeedbackCompleteMs + durationMs + 400);
+    motion.runAt(
+      requestFeedbackCompleteMs + durationMs + 400,
+    );
     expect(view.levelMotionRoot.scale.x).toBe(1);
     expect(motion.hasPendingFrame()).toBe(false);
 
@@ -574,26 +661,42 @@ describe('PixiTopPanelView', () => {
       timeSource: motion.timeSource,
     });
     view.activate();
-    view.bind(createTopModel({
-      level: 4,
-      completed: 3,
-      total: 4,
-    }));
+    view.bind(
+      createTopModel({
+        level: 4,
+        completed: 3,
+        total: 4,
+      }),
+    );
 
-    view.bind(createTopModel({
-      level: 5,
-      completed: 0,
-      total: 5,
-    }));
+    view.bind(
+      createTopModel({
+        level: 5,
+        completed: 0,
+        total: 5,
+      }),
+    );
 
     motion.runAt(230 * 0.46);
-    expect(view.levelMotionRoot.scale.x).toBeCloseTo(1.035, 5);
-    expect(view.levelMotionRoot.position.y).toBeCloseTo(37.5, 5);
+    expect(view.levelMotionRoot.scale.x).toBeCloseTo(
+      1.035,
+      5,
+    );
+    expect(view.levelMotionRoot.position.y).toBeCloseTo(
+      37.5,
+      5,
+    );
     expect(view.questRail.scale.y).toBe(1);
 
     motion.runAt(230 * 0.74);
-    expect(view.levelMotionRoot.scale.x).toBeCloseTo(0.994, 5);
-    expect(view.levelMotionRoot.position.y).toBeCloseTo(49.5, 5);
+    expect(view.levelMotionRoot.scale.x).toBeCloseTo(
+      0.994,
+      5,
+    );
+    expect(view.levelMotionRoot.position.y).toBeCloseTo(
+      49.5,
+      5,
+    );
 
     motion.runAt(230);
     expect(view.levelMotionRoot.scale.x).toBe(1);
@@ -615,19 +718,23 @@ describe('PixiTopPanelView', () => {
       random: () => 0.5,
     });
     view.activate();
-    view.bind(createTopModel({
-      level: 4,
-      completed: 3,
-      total: 4,
-      loadRevision: 2,
-    }));
+    view.bind(
+      createTopModel({
+        level: 4,
+        completed: 3,
+        total: 4,
+        loadRevision: 2,
+      }),
+    );
 
-    view.bind(createTopModel({
-      level: 5,
-      completed: 0,
-      total: 5,
-      loadRevision: 2,
-    }));
+    view.bind(
+      createTopModel({
+        level: 5,
+        completed: 0,
+        total: 5,
+        loadRevision: 2,
+      }),
+    );
 
     const { durationMs } = view.questCompletionMotion;
     expect(view.levelValue.text).toBe('4');
@@ -636,7 +743,8 @@ describe('PixiTopPanelView', () => {
     const requestFeedbackCompleteMs =
       QUEST_REQUEST_FILL_DURATION_MS +
       QUEST_REQUEST_FEEDBACK_DURATION_MS;
-    const arrivalMs = requestFeedbackCompleteMs + durationMs;
+    const arrivalMs =
+      requestFeedbackCompleteMs + durationMs;
     motion.runAt(requestFeedbackCompleteMs);
     motion.runAt(arrivalMs);
     expect(view.levelValue.text).toBe('4');
@@ -667,29 +775,37 @@ describe('PixiTopPanelView', () => {
       random: () => 0.5,
     });
     view.activate();
-    view.bind(createTopModel({
-      completed: 0,
-      loadRevision: 1,
-    }));
+    view.bind(
+      createTopModel({
+        completed: 0,
+        loadRevision: 1,
+      }),
+    );
 
-    view.bind(createTopModel({
-      completed: 2,
-      loadRevision: 2,
-    }));
+    view.bind(
+      createTopModel({
+        completed: 2,
+        loadRevision: 2,
+      }),
+    );
     expect(motion.requestFrame).not.toHaveBeenCalled();
 
     reduced = true;
-    view.bind(createTopModel({
-      completed: 3,
-      loadRevision: 2,
-    }));
+    view.bind(
+      createTopModel({
+        completed: 3,
+        loadRevision: 2,
+      }),
+    );
     expect(motion.requestFrame).not.toHaveBeenCalled();
 
     reduced = false;
-    view.bind(createTopModel({
-      completed: 4,
-      loadRevision: 2,
-    }));
+    view.bind(
+      createTopModel({
+        completed: 4,
+        loadRevision: 2,
+      }),
+    );
     motion.runAt(
       QUEST_REQUEST_FILL_DURATION_MS +
         QUEST_REQUEST_FEEDBACK_DURATION_MS,
@@ -788,7 +904,10 @@ function createMotionHarness() {
 }
 
 function readPath(instruction) {
-  return findPath(instruction, 'roundRect').data.slice(0, 5);
+  return findPath(instruction, 'roundRect').data.slice(
+    0,
+    5,
+  );
 }
 
 function readColorAndAlpha(instruction) {

@@ -16,9 +16,7 @@ import {
   GLOBAL_DIALOG_IDS,
   createGlobalDialogFactories,
 } from './global/dialogs/GlobalDialogFactories.js';
-import {
-  DEFAULT_PIXI_THEME_SNAPSHOT,
-} from './theme/PixiThemeTokens.js';
+import { DEFAULT_PIXI_THEME_SNAPSHOT } from './theme/PixiThemeTokens.js';
 import { RetainedUiCounters } from './retained/RetainedUiCounters.js';
 import { SemanticTargetRegistry } from './retained/SemanticTargetRegistry.js';
 import {
@@ -76,15 +74,12 @@ const INVENTORY_CHOICE_DIALOG_HIERARCHY = Object.freeze({
 
 const WORLD_CHAT_ROW_WIDGET_ID = 'compound.world-chat-message-row';
 const INBOX_MAIL_WIDGET_ID = 'compound.inbox-mail-widget';
-const PLAYER_AVATAR_WIDGET_ID = 'compound.player-avatar';
+const PLAYER_PROFILE_WIDGET_ID = 'compound.player-profile';
 const RESOURCE_LABEL_WIDGET_ID = 'primitive.resource-label';
 const STAR_LEVEL_WIDGET_ID = 'primitive.star-level-label';
-const WORLD_EVENT_QUEST_ROW_WIDGET_ID =
-  'compound.world-event-quest-row';
-const ALLIANCE_DIRECTORY_ROW_WIDGET_ID =
-  'compound.alliance-directory-row';
-const ALLIANCE_MEMBER_ROW_WIDGET_ID =
-  'compound.alliance-member-row';
+const WORLD_EVENT_QUEST_ROW_WIDGET_ID = 'compound.world-event-quest-row';
+const ALLIANCE_DIRECTORY_ROW_WIDGET_ID = 'compound.alliance-directory-row';
+const ALLIANCE_MEMBER_ROW_WIDGET_ID = 'compound.alliance-member-row';
 
 const DIALOG_CHILD_WIDGET_IDS = Object.freeze({
   [GLOBAL_DIALOG_IDS.SETTINGS]: Object.freeze([
@@ -92,7 +87,8 @@ const DIALOG_CHILD_WIDGET_IDS = Object.freeze({
     'primitive.text-field',
     'compound.device-preferences',
     'compound.device-identity-footer',
-    'compound.settings-avatar-option',
+    PLAYER_PROFILE_WIDGET_ID,
+    'compound.player-selectable-profile',
     'text-button',
   ]),
   [GLOBAL_DIALOG_IDS.FEEDBACK]: Object.freeze([
@@ -151,10 +147,7 @@ const DIALOG_CHILD_WIDGET_IDS = Object.freeze({
     'compound.amount-selector',
     'text-button',
   ]),
-  'shop.market': Object.freeze([
-    'compound.market-compact-row',
-    'tab-button',
-  ]),
+  'shop.market': Object.freeze(['compound.market-compact-row', 'tab-button']),
   'shop.tradeHistory': Object.freeze(['compound.market-compact-row']),
   'shop.support': Object.freeze([]),
   'guild.charter': Object.freeze([
@@ -266,11 +259,7 @@ function createDialogScenarios(dialogId) {
 async function mountRetainedDialog(context, dialogId, fixture) {
   const fixtureFactory =
     typeof fixture === 'function' ? fixture : () => fixture;
-  const model = instrumentFixture(
-    fixtureFactory?.() ?? {},
-    context,
-    dialogId,
-  );
+  const model = instrumentFixture(fixtureFactory?.() ?? {}, context, dialogId);
 
   return createUiEditorPixiSurface({
     assetFilter: dialogAssetFilter,
@@ -557,7 +546,8 @@ function createWorldEventDialogFixture(variantIndex) {
     rows: [
       {
         completed: alternate,
-        description: 'The coronation bells have people cheering, arguing, and fainting in the same street. Donate calming draughts so the crowd stays upright long enough for the heralds to finish.',
+        description:
+          'The coronation bells have people cheering, arguing, and fainting in the same street. Donate calming draughts so the crowd stays upright long enough for the heralds to finish.',
         donationOptions,
         id: 'quest:quiet-the-crowd',
         pointsLabel: alternate ? '1,240 points' : '0 points',
@@ -565,7 +555,8 @@ function createWorldEventDialogFixture(variantIndex) {
       },
       {
         completed: false,
-        description: 'The new seal is crossing town in a box that everyone wants to touch. Donate warding potions so the seal reaches the hall without a new scandal.',
+        description:
+          'The new seal is crossing town in a box that everyone wants to touch. Donate warding potions so the seal reaches the hall without a new scandal.',
         donationOptions: donationOptions.slice(0, 1).map((option) => ({
           ...option,
           id: 'briar-ward',
@@ -810,11 +801,11 @@ function createReusableDialogContentHierarchy(dialogId, dialog) {
   if (dialogId === GLOBAL_DIALOG_IDS.PLAYER) {
     return [
       createUiEditorPixiHierarchyComponent({
-        displayObjects: [dialog.avatarWidget],
-        id: `${dialogId}:avatar`,
-        label: 'PlayerAvatar:RootRunAvatarWidget',
-        libraryEntryId: PLAYER_AVATAR_WIDGET_ID,
-        primary: dialog.avatarWidget,
+        displayObjects: [dialog.profileWidget],
+        id: `${dialogId}:profile`,
+        label: 'PlayerProfile:PlayerProfileWidget',
+        libraryEntryId: PLAYER_PROFILE_WIDGET_ID,
+        primary: dialog.profileWidget,
         type: 'widget',
       }),
       createUiEditorPixiHierarchyComponent({
@@ -923,8 +914,7 @@ function createReusableDialogContentHierarchy(dialogId, dialog) {
     ];
   }
 
-  const inventoryChoiceConfig =
-    INVENTORY_CHOICE_DIALOG_HIERARCHY[dialogId];
+  const inventoryChoiceConfig = INVENTORY_CHOICE_DIALOG_HIERARCHY[dialogId];
   if (!inventoryChoiceConfig) {
     return [];
   }
@@ -1045,7 +1035,10 @@ const GLOBAL_DIALOG_SCENARIOS = Object.freeze({
       tabId: 'report',
     })),
     scenario('bug', 'Bug report', () => ({
-      feedback: { kind: 'bug', value: 'The collect button stopped responding.' },
+      feedback: {
+        kind: 'bug',
+        value: 'The collect button stopped responding.',
+      },
       kind: 'bug',
       tabId: 'report',
     })),
@@ -1139,9 +1132,24 @@ const GLOBAL_DIALOG_SCENARIOS = Object.freeze({
         tag: 'MOSS',
       },
       members: [
-        { memberIdentity: 'mira', playerLevel: 12, role: 'leader', username: 'Mira' },
-        { memberIdentity: 'rowan', playerLevel: 9, role: 'member', username: 'Rowan' },
-        { memberIdentity: 'juniper', playerLevel: 7, role: 'member', username: 'Juniper' },
+        {
+          memberIdentity: 'mira',
+          playerLevel: 12,
+          role: 'leader',
+          username: 'Mira',
+        },
+        {
+          memberIdentity: 'rowan',
+          playerLevel: 9,
+          role: 'member',
+          username: 'Rowan',
+        },
+        {
+          memberIdentity: 'juniper',
+          playerLevel: 7,
+          role: 'member',
+          username: 'Juniper',
+        },
       ],
     })),
     scenario('loading', 'Loading', () => ({ loading: true })),
@@ -1230,7 +1238,7 @@ function resolveDialogChildWidgetIds(dialogId) {
   if (dialogId === GLOBAL_DIALOG_IDS.PLAYER) {
     return [
       'compound.dialog-frame',
-      PLAYER_AVATAR_WIDGET_ID,
+      PLAYER_PROFILE_WIDGET_ID,
       STAR_LEVEL_WIDGET_ID,
       RESOURCE_LABEL_WIDGET_ID,
     ];
@@ -1267,6 +1275,8 @@ function scenario(id, label, fixture) {
 // corresponding editor entry.
 for (const dialogId of Object.values(DIALOG_IDS_BY_PAGE).flat()) {
   if (!UI_EDITOR_RETAINED_DIALOG_IDS.includes(dialogId)) {
-    throw new Error(`Retained dialog is missing from the UI editor: ${dialogId}`);
+    throw new Error(
+      `Retained dialog is missing from the UI editor: ${dialogId}`,
+    );
   }
 }

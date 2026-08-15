@@ -20,7 +20,10 @@ import {
   RootRunDevicePreferenceRow,
   RootRunDevicePreferencesPanel,
 } from '../../primitives/index.js';
-import { RootRunAvatarWidget } from '../chrome/RootRunTopHudWidgets.js';
+import {
+  PlayerProfileWidget,
+  PlayerSelectableProfileWidget,
+} from '../chrome/PlayerProfileWidgets.js';
 import {
   DialogRegistry,
   SemanticTargetRegistry,
@@ -41,6 +44,7 @@ import {
 import { GLOBAL_DIALOG_GEOMETRY } from './GlobalDialogKit.js';
 import { RetainedScrollArea } from '../../pages/workshop/RetainedPageKit.js';
 import { getPixiButtonSkin } from '../../primitives/PixiButtonStyle.js';
+import { getPlayerFrameTint } from '../../../../player/playerFrames.js';
 
 installPixiPageTestCanvas();
 
@@ -50,21 +54,13 @@ describe('retained global Pixi dialogs', () => {
     const registrar = { registerDialog };
     const factories = createGlobalDialogFactories();
 
-    expect(GLOBAL_DIALOG_IDS.BUG).toBe(
-      GLOBAL_DIALOG_IDS.FEEDBACK,
-    );
-    expect(GLOBAL_DIALOG_IDS.FEATURE).toBe(
-      GLOBAL_DIALOG_IDS.FEEDBACK,
-    );
-    expect(GLOBAL_DIALOG_IDS.MAIL).toBe(
-      GLOBAL_DIALOG_IDS.INBOX,
-    );
+    expect(GLOBAL_DIALOG_IDS.BUG).toBe(GLOBAL_DIALOG_IDS.FEEDBACK);
+    expect(GLOBAL_DIALOG_IDS.FEATURE).toBe(GLOBAL_DIALOG_IDS.FEEDBACK);
+    expect(GLOBAL_DIALOG_IDS.MAIL).toBe(GLOBAL_DIALOG_IDS.INBOX);
     expect(new Set(factories.map(([id]) => id)).size).toBe(8);
     expect(Object.isFrozen(factories)).toBe(true);
 
-    expect(registerGlobalDialogFactories(registrar)).toBe(
-      registrar,
-    );
+    expect(registerGlobalDialogFactories(registrar)).toBe(registrar);
     expect(registerDialog).toHaveBeenCalledTimes(8);
     expect(registerDialog.mock.calls.map(([id]) => id)).toEqual(
       factories.map(([id]) => id),
@@ -80,10 +76,7 @@ describe('retained global Pixi dialogs', () => {
     }
 
     for (const [dialogId] of createGlobalDialogFactories()) {
-      const first = harness.registry.open(
-        dialogId,
-        payloads[dialogId],
-      );
+      const first = harness.registry.open(dialogId, payloads[dialogId]);
       const root = first.root;
       harness.registry.close(dialogId);
 
@@ -93,10 +86,7 @@ describe('retained global Pixi dialogs', () => {
         visible: false,
       });
 
-      const second = harness.registry.open(
-        dialogId,
-        payloads[dialogId],
-      );
+      const second = harness.registry.open(dialogId, payloads[dialogId]);
       expect(second).toBe(first);
       expect(second.root).toBe(root);
       harness.registry.close(dialogId);
@@ -113,22 +103,15 @@ describe('retained global Pixi dialogs', () => {
   it('routes settings, feedback, player, alliance and confirmation actions', async () => {
     const harness = createHarness();
     const saveUsername = vi.fn(() => ({ ok: true }));
-    const sendFeedback = vi.fn(() =>
-      Promise.resolve({ ok: true }),
-    );
+    const sendFeedback = vi.fn(() => Promise.resolve({ ok: true }));
     const openAlliance = vi.fn(() => true);
     const openPlayer = vi.fn(() => true);
-    const confirm = vi.fn(() =>
-      Promise.resolve({ ok: true }),
-    );
+    const confirm = vi.fn(() => Promise.resolve({ ok: true }));
 
-    const settings = harness.registry.open(
-      GLOBAL_DIALOG_IDS.SETTINGS,
-      {
-        account: { username: 'old' },
-        actions: { saveUsername },
-      },
-    );
+    const settings = harness.registry.open(GLOBAL_DIALOG_IDS.SETTINGS, {
+      account: { username: 'old' },
+      actions: { saveUsername },
+    });
     expect(settings.usernameField.inputKind).toBe('username');
     settings.usernameField.setValue('mira', { notify: true });
     expect(settings.usernameSave.activate()).toEqual({
@@ -137,13 +120,10 @@ describe('retained global Pixi dialogs', () => {
     expect(saveUsername).toHaveBeenCalledWith('mira');
     harness.registry.close(GLOBAL_DIALOG_IDS.SETTINGS);
 
-    const feedback = harness.registry.open(
-      GLOBAL_DIALOG_IDS.FEEDBACK,
-      {
-        kind: 'bug',
-        actions: { sendFeedback },
-      },
-    );
+    const feedback = harness.registry.open(GLOBAL_DIALOG_IDS.FEEDBACK, {
+      kind: 'bug',
+      actions: { sendFeedback },
+    });
     feedback.feedbackField.setValue('button is stuck', {
       notify: true,
     });
@@ -155,63 +135,48 @@ describe('retained global Pixi dialogs', () => {
     expect(feedback.feedbackStatus.text).toBe('sent');
     harness.registry.close(GLOBAL_DIALOG_IDS.FEEDBACK);
 
-    const player = harness.registry.open(
-      GLOBAL_DIALOG_IDS.PLAYER,
-      {
-        player: createPlayer(),
-        actions: { openAlliance },
-      },
-    );
+    const player = harness.registry.open(GLOBAL_DIALOG_IDS.PLAYER, {
+      player: createPlayer(),
+      actions: { openAlliance },
+    });
     expect(player.allianceButton.activate()).toBe(true);
     expect(openAlliance).toHaveBeenCalledWith(
       expect.objectContaining({ tag: 'MOSS' }),
     );
     harness.registry.close(GLOBAL_DIALOG_IDS.PLAYER);
 
-    const alliance = harness.registry.open(
-      GLOBAL_DIALOG_IDS.ALLIANCE,
-      {
-        alliance: createAlliance(),
-        members: [createMember()],
-        actions: { openPlayer },
-      },
-    );
-    const memberWidget =
-      alliance.rows.collection.get('member:mira-id');
+    const alliance = harness.registry.open(GLOBAL_DIALOG_IDS.ALLIANCE, {
+      alliance: createAlliance(),
+      members: [createMember()],
+      actions: { openPlayer },
+    });
+    const memberWidget = alliance.rows.collection.get('member:mira-id');
     expect(memberWidget.activate()).toBe(true);
     expect(openPlayer).toHaveBeenCalledWith(
       expect.objectContaining({ username: 'mira' }),
     );
     harness.registry.close(GLOBAL_DIALOG_IDS.ALLIANCE);
 
-    const confirmation = harness.registry.open(
-      GLOBAL_DIALOG_IDS.CONFIRMATION,
-      {
-        message: 'continue?',
-        value: { id: 'one' },
-        actions: { confirm },
-      },
-    );
+    const confirmation = harness.registry.open(GLOBAL_DIALOG_IDS.CONFIRMATION, {
+      message: 'continue?',
+      value: { id: 'one' },
+      actions: { confirm },
+    });
     await confirmation.confirmButton.activate();
     expect(confirm).toHaveBeenCalledWith({ id: 'one' });
-    expect(
-      harness.registry.isOpen(
-        GLOBAL_DIALOG_IDS.CONFIRMATION,
-      ),
-    ).toBe(false);
+    expect(harness.registry.isOpen(GLOBAL_DIALOG_IDS.CONFIRMATION)).toBe(false);
     harness.dispose();
   });
 
   it('composes Player Info from the framed avatar and aligned lifetime stats', () => {
     const harness = createHarness();
-    const player = harness.registry.open(
-      GLOBAL_DIALOG_IDS.PLAYER,
-      { player: createPlayer() },
-    );
+    const player = harness.registry.open(GLOBAL_DIALOG_IDS.PLAYER, {
+      player: createPlayer(),
+    });
 
     expect(player.panel.titleLabel.text).toBe('Player Info');
-    expect(player.avatarWidget).toBeInstanceOf(RootRunAvatarWidget);
-    expect(player.avatarWidget.parent).toBe(player.panel.content);
+    expect(player.profileWidget).toBeInstanceOf(PlayerProfileWidget);
+    expect(player.profileWidget.parent).toBe(player.panel.content);
     expect(player.panel.paperFrame.visible).toBe(false);
     expect(player.summaryFrame).toBeInstanceOf(PixiNineSliceFrame);
     expect(player.summaryFrame.parent).toBe(player.panel.content);
@@ -221,10 +186,22 @@ describe('retained global Pixi dialogs', () => {
       player.statsFrame.y -
         (player.summaryFrame.y + player.summaryFrame.frameHeight),
     ).toBeCloseTo(8);
-    expect(player.avatarWidget.y - player.summaryFrame.y).toBeGreaterThanOrEqual(8);
+    expect(
+      player.profileWidget.y - player.summaryFrame.y,
+    ).toBeGreaterThanOrEqual(8);
+    expect(player.profileWidget.backgroundWidget.frame.tint).toBe(
+      getPlayerFrameTint('gnome'),
+    );
+    expect(player.profileWidget.backgroundWidget.decoration.tint).toBe(
+      getPlayerFrameTint('gnome'),
+    );
     expect(player.levelLabel.y - player.name.y).toBeLessThanOrEqual(18);
-    expect(player.prestigeLabel.y - player.levelLabel.y).toBeLessThanOrEqual(18);
-    expect(player.allianceButton.textLabel.textObject.style.fill).toBe('#397a42');
+    expect(player.prestigeLabel.y - player.levelLabel.y).toBeLessThanOrEqual(
+      18,
+    );
+    expect(player.allianceButton.textLabel.textObject.style.fill).toBe(
+      '#397a42',
+    );
     expect(player.prestigeStars).toBeInstanceOf(PixiStarLevelLabel);
     expect(player.prestigeStars.starCount).toBe(2);
     expect(player.totalCoinValue).toBeInstanceOf(PixiResourceLabel);
@@ -246,17 +223,14 @@ describe('retained global Pixi dialogs', () => {
 
   it('keeps the settings panel inside the modal input boundary', () => {
     const harness = createHarness();
-    const settings = harness.registry.open(
-      GLOBAL_DIALOG_IDS.SETTINGS,
-      {
-        preferences: {
-          haptics: true,
-          music: true,
-          sfx: true,
-          theme: false,
-        },
+    const settings = harness.registry.open(GLOBAL_DIALOG_IDS.SETTINGS, {
+      preferences: {
+        haptics: true,
+        music: true,
+        sfx: true,
+        theme: false,
       },
-    );
+    });
     const modal = harness.inputRouter.getTopModal();
 
     expect(
@@ -272,10 +246,9 @@ describe('retained global Pixi dialogs', () => {
 
   it('uses fitted base-button geometry for the feedback kind selectors', () => {
     const harness = createHarness();
-    const feedback = harness.registry.open(
-      GLOBAL_DIALOG_IDS.FEEDBACK,
-      { kind: 'feedback' },
-    );
+    const feedback = harness.registry.open(GLOBAL_DIALOG_IDS.FEEDBACK, {
+      kind: 'feedback',
+    });
     for (const { button } of feedback.feedbackKindButtons) {
       const baseSkin = getPixiButtonSkin({
         color: 'brown-dark',
@@ -292,41 +265,30 @@ describe('retained global Pixi dialogs', () => {
 
   it('does not dismiss settings when the backdrop receives a release inside the visible shell', () => {
     const harness = createHarness();
-    const settings = harness.registry.open(
-      GLOBAL_DIALOG_IDS.SETTINGS,
-      {
-        tabId: 'account',
-        account: { username: 'mira' },
-      },
-    );
+    const settings = harness.registry.open(GLOBAL_DIALOG_IDS.SETTINGS, {
+      tabId: 'account',
+      account: { username: 'mira' },
+    });
     const modal = harness.inputRouter.getTopModal();
     const shellLocalPoint = {
       x:
         settings.panel.coreWidth +
         PIXI_ROOT_RUN_GEOMETRY.dialog.frameOutset / 2,
       y:
-        settings.panel.titleFrame.y +
-        settings.panel.titleFrame.frameHeight / 2,
+        settings.panel.titleFrame.y + settings.panel.titleFrame.frameHeight / 2,
     };
     const shellPoint = settings.panel.toGlobal(shellLocalPoint);
 
     expect(settings.panel.eventMode).toBe('static');
     expect(
-      settings.panel.hitArea.contains(
-        shellLocalPoint.x,
-        shellLocalPoint.y,
-      ),
+      settings.panel.hitArea.contains(shellLocalPoint.x, shellLocalPoint.y),
     ).toBe(true);
     expect(modal?.onOutsidePress?.({ point: shellPoint })).toBe(false);
-    expect(
-      harness.registry.isOpen(GLOBAL_DIALOG_IDS.SETTINGS),
-    ).toBe(true);
+    expect(harness.registry.isOpen(GLOBAL_DIALOG_IDS.SETTINGS)).toBe(true);
 
     const backdropPoint = settings.panel.toGlobal({ x: -40, y: -40 });
     expect(modal?.onOutsidePress?.({ point: backdropPoint })).toBe(true);
-    expect(
-      harness.registry.isOpen(GLOBAL_DIALOG_IDS.SETTINGS),
-    ).toBe(false);
+    expect(harness.registry.isOpen(GLOBAL_DIALOG_IDS.SETTINGS)).toBe(false);
 
     harness.dispose();
   });
@@ -334,71 +296,62 @@ describe('retained global Pixi dialogs', () => {
   it('opens settings with device preferences, Google account connection, and identity details', async () => {
     const harness = createHarness();
     const togglePreference = vi.fn(() => true);
-    const connectAccount = vi.fn(() =>
-      Promise.resolve({ ok: true }),
-    );
+    const connectAccount = vi.fn(() => Promise.resolve({ ok: true }));
     const copyUserId = vi.fn(() => Promise.resolve(true));
     const userId = '1234567890abcdef1234567890abcdef';
-    const settings = harness.registry.open(
-      GLOBAL_DIALOG_IDS.SETTINGS,
-      {
-        account: {
-          accountStatus: 'not connected',
-          connectLabel: 'connect account',
-          connectEnabled: true,
-          version: '1.2.3',
-          userId,
-        },
-        preferences: {
-          haptics: true,
-          music: true,
-          sfx: true,
-        },
-        actions: {
-          togglePreference,
-          connectAccount,
-          copyUserId,
-        },
+    const settings = harness.registry.open(GLOBAL_DIALOG_IDS.SETTINGS, {
+      account: {
+        accountStatus: 'not connected',
+        connectLabel: 'connect account',
+        connectEnabled: true,
+        version: '1.2.3',
+        userId,
       },
-    );
+      preferences: {
+        haptics: true,
+        music: true,
+        sfx: true,
+      },
+      actions: {
+        togglePreference,
+        connectAccount,
+        copyUserId,
+      },
+    });
 
     expect(settings.selectedTab).toBe('configurations');
     expect(settings.panel.titleLabel.text).toBe('Settings');
-    expect(
-      settings.preferenceRows.map(({ key }) => key),
-    ).toEqual(['sfx', 'music', 'haptics', 'theme']);
+    expect(settings.preferenceRows.map(({ key }) => key)).toEqual([
+      'sfx',
+      'music',
+      'haptics',
+      'theme',
+    ]);
     expect(
       settings.preferenceRows.every(
-        ({ toggle }) =>
-          toggle instanceof RootRunSettingsTogglePixi,
+        ({ toggle }) => toggle instanceof RootRunSettingsTogglePixi,
       ),
     ).toBe(true);
-    expect(settings.devicePanel).toBeInstanceOf(
-      RootRunDevicePreferencesPanel,
-    );
-    expect(settings.themePanel).toBeInstanceOf(
-      RootRunDevicePreferencesPanel,
-    );
+    expect(settings.devicePanel).toBeInstanceOf(RootRunDevicePreferencesPanel);
+    expect(settings.themePanel).toBeInstanceOf(RootRunDevicePreferencesPanel);
     expect(settings.devicePanel.rows).toEqual(
-      settings.preferenceRows
-        .slice(0, 3)
-        .map(({ widget }) => widget),
+      settings.preferenceRows.slice(0, 3).map(({ widget }) => widget),
     );
     expect(settings.themePanel.rows).toEqual([
       settings.preferenceRows[3].widget,
     ]);
     expect(
       settings.preferenceRows.every(
-        ({ widget }) =>
-          widget instanceof RootRunDevicePreferenceRow,
+        ({ widget }) => widget instanceof RootRunDevicePreferenceRow,
       ),
     ).toBe(true);
-    expect(
-      settings.preferenceRows.map(({ label }) => label.text),
-    ).toEqual(['SOUND', 'MUSIC', 'VIBRATION', 'THEME']);
-    expect(settings.preferenceRows[0].label.colorToken).toBe(
-      '#735036',
-    );
+    expect(settings.preferenceRows.map(({ label }) => label.text)).toEqual([
+      'SOUND',
+      'MUSIC',
+      'VIBRATION',
+      'THEME',
+    ]);
+    expect(settings.preferenceRows[0].label.colorToken).toBe('#735036');
     expect(settings.configurationsLayer.children).toEqual([
       settings.devicePanel,
       settings.themePanel,
@@ -408,34 +361,22 @@ describe('retained global Pixi dialogs', () => {
       settings.accountConnectButton,
       settings.identityFooter,
     ]);
-    expect(settings.accountConnectionPanel).toBeInstanceOf(
-      PixiNineSliceFrame,
-    );
+    expect(settings.accountConnectionPanel).toBeInstanceOf(PixiNineSliceFrame);
     expect(settings.accountConnectionPanel).toMatchObject({
       frameWidth: 264,
       frameHeight: 92,
     });
-    expect(settings.accountConnectionLabel.text).toBe(
-      'GOOGLE ACCOUNT',
-    );
+    expect(settings.accountConnectionLabel.text).toBe('GOOGLE ACCOUNT');
     expect(settings.accountStatus.text).toBe('not connected');
     expect(settings.accountConnectButton.variant).toBe('yellow');
     expect(settings.accountConnectButton.textLabel.text).toBe(
       'connect account',
     );
     expect(settings.accountConnectButton.enabled).toBe(true);
-    expect(settings.identityFooter).toBeInstanceOf(
-      DeviceIdentityFooter,
-    );
-    expect(settings.identityFooter.versionLabel.text).toBe(
-      'v 1.2.3',
-    );
-    expect(settings.identityFooter.userIdLabel.text).toBe(
-      '12345678…90abcdef',
-    );
-    expect(settings.identityFooter.copyButton.variant).toBe(
-      'yellow',
-    );
+    expect(settings.identityFooter).toBeInstanceOf(DeviceIdentityFooter);
+    expect(settings.identityFooter.versionLabel.text).toBe('v 1.2.3');
+    expect(settings.identityFooter.userIdLabel.text).toBe('12345678…90abcdef');
+    expect(settings.identityFooter.copyButton.variant).toBe('yellow');
     expect(settings.scroll.maxScrollY).toBe(0);
     expect(
       settings.themePanel.y -
@@ -446,9 +387,7 @@ describe('retained global Pixi dialogs', () => {
         (settings.themePanel.y + settings.themePanel.panelHeight),
     ).toBe(8);
 
-    expect(settings.preferenceRows[0].toggle.activate()).toBe(
-      true,
-    );
+    expect(settings.preferenceRows[0].toggle.activate()).toBe(true);
     expect(togglePreference).toHaveBeenCalledWith('sfx', false);
     expect(settings.preferenceRows[3].toggle.activate()).toBe(true);
     expect(togglePreference).toHaveBeenCalledWith('theme', true);
@@ -456,25 +395,18 @@ describe('retained global Pixi dialogs', () => {
     expect(connectAccount).toHaveBeenCalledTimes(1);
     await settings.identityFooter.copyButton.activate();
     expect(copyUserId).toHaveBeenCalledWith(userId);
-    expect(settings.identityFooter.copyButton.textLabel.text).toBe(
-      'copied',
-    );
+    expect(settings.identityFooter.copyButton.textLabel.text).toBe('copied');
     harness.dispose();
   });
 
   it('uses the Root Run shell for dialogs and keeps announcement screens unframed', () => {
     const harness = createHarness();
-    const settings = harness.registry.open(
-      GLOBAL_DIALOG_IDS.SETTINGS,
-      {
-        account: { username: 'mira' },
-      },
-    );
+    const settings = harness.registry.open(GLOBAL_DIALOG_IDS.SETTINGS, {
+      account: { username: 'mira' },
+    });
 
     expect(settings.panel).toBeInstanceOf(PixiDialogFrame);
-    expect(settings.panel.outerWidth).toBe(
-      GLOBAL_DIALOG_GEOMETRY.maxCoreWidth,
-    );
+    expect(settings.panel.outerWidth).toBe(GLOBAL_DIALOG_GEOMETRY.maxCoreWidth);
     expect(settings.panel.content.position).toMatchObject({
       x: 20,
       y: 20,
@@ -489,21 +421,16 @@ describe('retained global Pixi dialogs', () => {
     expect(settings.panel.closeSprite.width).toBe(38);
     expect(settings.backdropAlpha).toBe(0.68);
     expect(
-      harness.semanticRegistry.has(
-        `${GLOBAL_DIALOG_IDS.SETTINGS}.close`,
-      ),
+      harness.semanticRegistry.has(`${GLOBAL_DIALOG_IDS.SETTINGS}.close`),
     ).toBe(true);
     harness.registry.close(GLOBAL_DIALOG_IDS.SETTINGS);
 
-    const announcement = harness.registry.open(
-      GLOBAL_DIALOG_IDS.ANNOUNCEMENT,
-      {
-        kind: 'unlock',
-        title: 'rewards',
-        dismissible: true,
-        showClose: false,
-      },
-    );
+    const announcement = harness.registry.open(GLOBAL_DIALOG_IDS.ANNOUNCEMENT, {
+      kind: 'unlock',
+      title: 'rewards',
+      dismissible: true,
+      showClose: false,
+    });
     expect(announcement.panel).toBeInstanceOf(PixiDialogFrame);
     expect(announcement.heading.text).toBe('rewards');
     expect(announcement.panel).toMatchObject({
@@ -543,12 +470,9 @@ describe('retained global Pixi dialogs', () => {
 
   it('preserves authored content boxes and padding', () => {
     const harness = createHarness();
-    const settings = harness.registry.open(
-      GLOBAL_DIALOG_IDS.SETTINGS,
-      {
-        account: { username: 'mira' },
-      },
-    );
+    const settings = harness.registry.open(GLOBAL_DIALOG_IDS.SETTINGS, {
+      account: { username: 'mira' },
+    });
     expect(settings.panel).toMatchObject({
       contentBoxWidth: 264,
       contentBoxHeight: 442,
@@ -560,26 +484,19 @@ describe('retained global Pixi dialogs', () => {
     );
     harness.registry.close(GLOBAL_DIALOG_IDS.SETTINGS);
 
-    const level = harness.registry.open(
-      GLOBAL_DIALOG_IDS.LEVEL,
-      {
-        currentLevel: 2,
-        maxLevel: 3,
-        levels: [
-          {
-            level: 1,
-            current: false,
-            unlocked: true,
-            addedRows: [
-              { id: 'mana', label: 'Mana Capacity', value: '+50' },
-            ],
-            totalRows: [
-              { id: 'total', label: 'Mana Capacity', value: '150' },
-            ],
-          },
-        ],
-      },
-    );
+    const level = harness.registry.open(GLOBAL_DIALOG_IDS.LEVEL, {
+      currentLevel: 2,
+      maxLevel: 3,
+      levels: [
+        {
+          level: 1,
+          current: false,
+          unlocked: true,
+          addedRows: [{ id: 'mana', label: 'Mana Capacity', value: '+50' }],
+          totalRows: [{ id: 'total', label: 'Mana Capacity', value: '150' }],
+        },
+      ],
+    });
 
     expect(level.panel).toMatchObject({
       contentBoxWidth: 264,
@@ -596,12 +513,8 @@ describe('retained global Pixi dialogs', () => {
     expect(level.previousButton.variant).toBe('yellow');
     expect(level.nextButton.variant).toBe('yellow');
     expect(level.nextButton.eventMode).toBe('static');
-    expect(level.addedSection.texture).toBe(
-      level.panel.paperFrame.texture,
-    );
-    expect(level.totalSection.texture).toBe(
-      level.panel.paperFrame.texture,
-    );
+    expect(level.addedSection.texture).toBe(level.panel.paperFrame.texture);
+    expect(level.totalSection.texture).toBe(level.panel.paperFrame.texture);
     expect(level.addedSection.x).toBeLessThan(0);
     expect(
       level.totalSection.y -
@@ -625,9 +538,7 @@ describe('retained global Pixi dialogs', () => {
       height: 22,
     });
     expect(level.previousButton.buttonWidth).toBe(96);
-    expect(
-      level.nextButton.x + level.nextButton.buttonWidth,
-    ).toBe(
+    expect(level.nextButton.x + level.nextButton.buttonWidth).toBe(
       level.panel.contentBoxWidth,
     );
     level.bind({
@@ -639,12 +550,8 @@ describe('retained global Pixi dialogs', () => {
           level: 20,
           current: true,
           unlocked: true,
-          addedRows: [
-            { id: 'mana', label: 'Mana Capacity', value: '+50' },
-          ],
-          totalRows: [
-            { id: 'total', label: 'Mana Capacity', value: '1000' },
-          ],
+          addedRows: [{ id: 'mana', label: 'Mana Capacity', value: '+50' }],
+          totalRows: [{ id: 'total', label: 'Mana Capacity', value: '1000' }],
         },
       ],
     });
@@ -654,15 +561,12 @@ describe('retained global Pixi dialogs', () => {
       level.previousButton.textLabel.x +
         level.previousButton.textLabel.measuredWidth / 2,
     ).toBeLessThanOrEqual(level.previousButton.buttonWidth);
-    expect(
-      level.nextIcon.x + level.nextIcon.width / 2,
-    ).toBeLessThanOrEqual(level.nextButton.buttonWidth);
+    expect(level.nextIcon.x + level.nextIcon.width / 2).toBeLessThanOrEqual(
+      level.nextButton.buttonWidth,
+    );
     harness.registry.close(GLOBAL_DIALOG_IDS.LEVEL);
 
-    const inbox = harness.registry.open(
-      GLOBAL_DIALOG_IDS.INBOX,
-      { mail: [] },
-    );
+    const inbox = harness.registry.open(GLOBAL_DIALOG_IDS.INBOX, { mail: [] });
 
     expect(inbox.panel).toMatchObject({
       contentBoxWidth: 264,
@@ -674,8 +578,7 @@ describe('retained global Pixi dialogs', () => {
       (GLOBAL_DIALOG_GEOMETRY.sourceWidth -
         GLOBAL_DIALOG_GEOMETRY.maxShellWidth) /
       2;
-    const inboxCoreLeft =
-      inbox.panel.x - inbox.panel.pivot.x;
+    const inboxCoreLeft = inbox.panel.x - inbox.panel.pivot.x;
     expect(inboxCoreLeft - inboxWrapperLeft).toBe(10);
     expect(
       GLOBAL_DIALOG_GEOMETRY.sourceWidth -
@@ -685,38 +588,29 @@ describe('retained global Pixi dialogs', () => {
     expect(inbox.panel.titleLabel.text).toBe('Inbox');
     expect(inbox.emptyLabel.text).toBe('No Mail');
     expect(inbox.emptyLabel.fontSize).toBe(20);
-    expect(inbox.emptyLabel.x).toBe(
-      inbox.panel.contentBoxWidth / 2,
+    expect(inbox.emptyLabel.x).toBe(inbox.panel.contentBoxWidth / 2);
+    expect(inbox.emptyLabel.y + inbox.scroll.content.y).toBe(
+      inbox.panel.contentBoxHeight / 2,
     );
-    expect(
-      inbox.emptyLabel.y + inbox.scroll.content.y,
-    ).toBe(inbox.panel.contentBoxHeight / 2);
     harness.dispose();
   });
 
   it('pins the Current badge to the top-right of the first level paper board', () => {
     const harness = createHarness();
-    const level = harness.registry.open(
-      GLOBAL_DIALOG_IDS.LEVEL,
-      {
-        currentLevel: 2,
-        maxLevel: 3,
-        selectedLevel: 2,
-        levels: [
-          {
-            level: 2,
-            current: true,
-            unlocked: true,
-            addedRows: [
-              { id: 'mana', label: 'Mana Capacity', value: '+50' },
-            ],
-            totalRows: [
-              { id: 'total', label: 'Mana Capacity', value: '150' },
-            ],
-          },
-        ],
-      },
-    );
+    const level = harness.registry.open(GLOBAL_DIALOG_IDS.LEVEL, {
+      currentLevel: 2,
+      maxLevel: 3,
+      selectedLevel: 2,
+      levels: [
+        {
+          level: 2,
+          current: true,
+          unlocked: true,
+          addedRows: [{ id: 'mana', label: 'Mana Capacity', value: '+50' }],
+          totalRows: [{ id: 'total', label: 'Mana Capacity', value: '150' }],
+        },
+      ],
+    });
 
     expect(level.currentBacking.parent).toBe(level.panel.content);
     expect(level.currentBacking).toMatchObject({
@@ -734,20 +628,12 @@ describe('retained global Pixi dialogs', () => {
       height: 27,
       y: 0,
     });
-    expect(level.currentBacking.y).toBe(
-      level.addedSection.y + 1,
-    );
-    expect(
-      level.currentBacking.x +
-        level.currentLabelBacking.width / 2,
-    ).toBe(
-      level.addedSection.x +
-        level.addedSection.frameWidth -
-        14,
+    expect(level.currentBacking.y).toBe(level.addedSection.y + 1);
+    expect(level.currentBacking.x + level.currentLabelBacking.width / 2).toBe(
+      level.addedSection.x + level.addedSection.frameWidth - 14,
     );
     expect(level.currentBacking.x).toBeGreaterThan(
-      level.addedSectionTitle.x +
-        level.addedSectionTitle.measuredWidth,
+      level.addedSectionTitle.x + level.addedSectionTitle.measuredWidth,
     );
 
     harness.dispose();
@@ -770,12 +656,9 @@ describe('retained global Pixi dialogs', () => {
 
   it('uses the shared green Claim button for inbox rewards', () => {
     const harness = createHarness();
-    const inbox = harness.registry.open(
-      GLOBAL_DIALOG_IDS.INBOX,
-      {
-        mail: [createMail('claimable')],
-      },
-    );
+    const inbox = harness.registry.open(GLOBAL_DIALOG_IDS.INBOX, {
+      mail: [createMail('claimable')],
+    });
     const mail = inbox.mailRows.getWidgets()[0];
 
     expect(mail.claimButton.variant).toBe('green');
@@ -791,13 +674,10 @@ describe('retained global Pixi dialogs', () => {
   it('shows claimed state immediately after a successful inbox claim', async () => {
     const harness = createHarness();
     const claimReward = vi.fn(() => Promise.resolve({ ok: true }));
-    const inbox = harness.registry.open(
-      GLOBAL_DIALOG_IDS.INBOX,
-      {
-        actions: { claimReward },
-        mail: [createMail('claimable')],
-      },
-    );
+    const inbox = harness.registry.open(GLOBAL_DIALOG_IDS.INBOX, {
+      actions: { claimReward },
+      mail: [createMail('claimable')],
+    });
     const mail = inbox.mailRows.getWidgets()[0];
 
     await mail.claimButton.activate();
@@ -822,25 +702,21 @@ describe('retained global Pixi dialogs', () => {
       }),
     });
     const harness = createHarness({ characterTexture });
-    const settings = harness.registry.open(
-      GLOBAL_DIALOG_IDS.SETTINGS,
-      {
-        tabId: 'avatar',
-        selections: { character: 'elara' },
-        categories: [
-          {
-            key: 'character',
-            options: [{ key: 'elara', label: 'elara' }],
-          },
-        ],
-      },
-    );
+    const settings = harness.registry.open(GLOBAL_DIALOG_IDS.SETTINGS, {
+      tabId: 'avatar',
+      selections: { character: 'elara' },
+      categories: [
+        {
+          key: 'character',
+          options: [{ key: 'elara', label: 'elara' }],
+        },
+      ],
+    });
     const avatar = settings.avatars.getWidgets()[0];
 
-    expect(avatar.sprite.width / avatar.sprite.height).toBe(1);
-    expect(avatar.sprite.x).toBeCloseTo(
-      (avatar.root.hitArea.width - avatar.sprite.width) / 2,
-    );
+    const portrait = avatar.profileWidget.avatarWidget.portrait;
+    expect(portrait.width / portrait.height).toBe(1);
+    expect(portrait.x).toBeCloseTo((186 - portrait.width) / 2);
 
     harness.dispose();
     characterTexture.destroy();
@@ -848,16 +724,9 @@ describe('retained global Pixi dialogs', () => {
 
   it('reuses warmed mail and member widgets without new allocations', () => {
     const harness = createHarness();
-    const inbox = harness.registry.open(
-      GLOBAL_DIALOG_IDS.INBOX,
-      {
-        mail: [
-          createMail('one'),
-          createMail('two'),
-          createMail('three'),
-        ],
-      },
-    );
+    const inbox = harness.registry.open(GLOBAL_DIALOG_IDS.INBOX, {
+      mail: [createMail('one'), createMail('two'), createMail('three')],
+    });
     const mailHighWater = inbox.getPoolStats().pool.allocated;
     inbox.bind({ mail: [createMail('one')] });
     inbox.bind({
@@ -867,24 +736,18 @@ describe('retained global Pixi dialogs', () => {
         createMail('next-three'),
       ],
     });
-    expect(inbox.getPoolStats().pool.allocated).toBe(
-      mailHighWater,
-    );
+    expect(inbox.getPoolStats().pool.allocated).toBe(mailHighWater);
     harness.registry.close(GLOBAL_DIALOG_IDS.INBOX);
 
-    const alliance = harness.registry.open(
-      GLOBAL_DIALOG_IDS.ALLIANCE,
-      {
-        alliance: createAlliance(),
-        members: [
-          createMember('one'),
-          createMember('two'),
-          createMember('three'),
-        ],
-      },
-    );
-    const memberHighWater =
-      alliance.getPoolStats().pool.allocated;
+    const alliance = harness.registry.open(GLOBAL_DIALOG_IDS.ALLIANCE, {
+      alliance: createAlliance(),
+      members: [
+        createMember('one'),
+        createMember('two'),
+        createMember('three'),
+      ],
+    });
+    const memberHighWater = alliance.getPoolStats().pool.allocated;
     alliance.bind({
       alliance: createAlliance(),
       members: [createMember('one')],
@@ -897,45 +760,40 @@ describe('retained global Pixi dialogs', () => {
         createMember('next-three'),
       ],
     });
-    expect(alliance.getPoolStats().pool.allocated).toBe(
-      memberHighWater,
-    );
+    expect(alliance.getPoolStats().pool.allocated).toBe(memberHighWater);
     harness.dispose();
   });
 
   it('keeps the equipped checkmark fixed while the account draft selection moves', () => {
     const saveAccount = vi.fn(() => ({ ok: true }));
     const harness = createHarness();
-    const settings = harness.registry.open(
-      GLOBAL_DIALOG_IDS.SETTINGS,
-      {
-        tabId: 'account',
-        account: { username: 'wizard' },
-        selections: { character: 'elara', frame: 'classic' },
-        researched: {
-          character: { elara: true, mira: true, bramble: false },
-          frame: { classic: true, emerald: true },
-        },
-        categories: [
-          {
-            key: 'character',
-            options: [
-              { key: 'elara', label: 'elara' },
-              { key: 'mira', label: 'mira' },
-              { key: 'bramble', label: 'bramble' },
-            ],
-          },
-          {
-            key: 'frame',
-            options: [
-              { key: 'classic', label: 'classic', tint: 0xffffff },
-              { key: 'emerald', label: 'emerald', tint: 0x2ed46f },
-            ],
-          },
-        ],
-        actions: { saveAccount },
+    const settings = harness.registry.open(GLOBAL_DIALOG_IDS.SETTINGS, {
+      tabId: 'account',
+      account: { username: 'wizard' },
+      selections: { character: 'elara', frame: 'classic' },
+      researched: {
+        character: { elara: true, mira: true, bramble: false },
+        frame: { classic: true, emerald: true },
       },
-    );
+      categories: [
+        {
+          key: 'character',
+          options: [
+            { key: 'elara', label: 'elara' },
+            { key: 'mira', label: 'mira' },
+            { key: 'bramble', label: 'bramble' },
+          ],
+        },
+        {
+          key: 'frame',
+          options: [
+            { key: 'classic', label: 'classic', tint: 0xffffff },
+            { key: 'emerald', label: 'emerald', tint: 0x2ed46f },
+          ],
+        },
+      ],
+      actions: { saveAccount },
+    });
 
     settings.selectAccountOption(settings.settingsModel.avatars[1]);
     const [equipped, draft, locked] = settings.avatars.getWidgets();
@@ -948,7 +806,9 @@ describe('retained global Pixi dialogs', () => {
     expect(locked.lockOverlay.visible).toBe(true);
     expect(locked.status.visible).toBe(true);
     expect(locked.status.y).toBe(1);
-    expect(settings.selectAccountOption(settings.settingsModel.avatars[2])).toBe(false);
+    expect(
+      settings.selectAccountOption(settings.settingsModel.avatars[2]),
+    ).toBe(false);
     expect(settings.accountDraft.character).toBe('mira');
 
     settings.accountSave.activate();
@@ -961,37 +821,91 @@ describe('retained global Pixi dialogs', () => {
     harness.dispose();
   });
 
+  it('uses the shared profile hierarchy for the account preview and selectable choices', () => {
+    const harness = createHarness();
+    const settings = harness.registry.open(GLOBAL_DIALOG_IDS.SETTINGS, {
+      tabId: 'account',
+      account: { username: 'wizard' },
+      selections: { character: 'elara', frame: 'classic' },
+      researched: {
+        character: { elara: true, mira: true },
+        frame: { classic: true, emerald: true },
+      },
+      categories: [
+        {
+          key: 'character',
+          options: [
+            { key: 'elara', label: 'elara' },
+            { key: 'mira', label: 'mira' },
+          ],
+        },
+        {
+          key: 'frame',
+          options: [
+            { key: 'classic', label: 'classic', tint: 0xffffff },
+            { key: 'emerald', label: 'emerald', tint: 0x2ed46f },
+          ],
+        },
+      ],
+    });
+
+    expect(settings.accountPreviewProfile).toBeInstanceOf(PlayerProfileWidget);
+    expect(settings.avatars.getWidgets()[0]).toBeInstanceOf(
+      PlayerSelectableProfileWidget,
+    );
+    expect(settings.avatars.getWidgets()[0].profileWidget).toBeInstanceOf(
+      PlayerProfileWidget,
+    );
+
+    settings.selectAccountOption(settings.settingsModel.frames[1]);
+    const emeraldTint = getPlayerFrameTint('emerald');
+
+    expect(settings.accountPreviewProfile.backgroundWidget.frame.tint).toBe(
+      emeraldTint,
+    );
+    expect(
+      settings.accountPreviewProfile.backgroundWidget.decoration.tint,
+    ).toBe(emeraldTint);
+    for (const choice of settings.avatars.getWidgets()) {
+      expect(choice.profileWidget.backgroundWidget.frame.tint).toBe(
+        emeraldTint,
+      );
+      expect(choice.profileWidget.backgroundWidget.decoration.tint).toBe(
+        emeraldTint,
+      );
+    }
+
+    harness.dispose();
+  });
+
   it('gives enabled avatar choices shared press feedback while selected and locked choices stay silent', () => {
     const harness = createHarness();
-    const settings = harness.registry.open(
-      GLOBAL_DIALOG_IDS.SETTINGS,
-      {
-        tabId: 'account',
-        account: { username: 'wizard' },
-        selections: { character: 'elara', frame: 'classic' },
-        researched: {
-          character: { elara: true, mira: true, bramble: false },
-          frame: { classic: true, emerald: true },
-        },
-        categories: [
-          {
-            key: 'character',
-            options: [
-              { key: 'elara', label: 'elara' },
-              { key: 'mira', label: 'mira' },
-              { key: 'bramble', label: 'bramble' },
-            ],
-          },
-          {
-            key: 'frame',
-            options: [
-              { key: 'classic', label: 'classic', tint: 0xffffff },
-              { key: 'emerald', label: 'emerald', tint: 0x2ed46f },
-            ],
-          },
-        ],
+    const settings = harness.registry.open(GLOBAL_DIALOG_IDS.SETTINGS, {
+      tabId: 'account',
+      account: { username: 'wizard' },
+      selections: { character: 'elara', frame: 'classic' },
+      researched: {
+        character: { elara: true, mira: true, bramble: false },
+        frame: { classic: true, emerald: true },
       },
-    );
+      categories: [
+        {
+          key: 'character',
+          options: [
+            { key: 'elara', label: 'elara' },
+            { key: 'mira', label: 'mira' },
+            { key: 'bramble', label: 'bramble' },
+          ],
+        },
+        {
+          key: 'frame',
+          options: [
+            { key: 'classic', label: 'classic', tint: 0xffffff },
+            { key: 'emerald', label: 'emerald', tint: 0x2ed46f },
+          ],
+        },
+      ],
+    });
     const [selected, available, locked] = settings.avatars.getWidgets();
 
     expect(available).toBeInstanceOf(ClickableWidget);
@@ -1001,9 +915,7 @@ describe('retained global Pixi dialogs', () => {
     const availablePress = harness.inputRouter.store.get(
       available.registration.id,
     );
-    const lockedPress = harness.inputRouter.store.get(
-      locked.registration.id,
-    );
+    const lockedPress = harness.inputRouter.store.get(locked.registration.id);
 
     expect(selectedPress.enabled()).toBe(false);
     expect(lockedPress.enabled()).toBe(false);
@@ -1042,36 +954,29 @@ describe('retained global Pixi dialogs', () => {
 
   it('places fixed tabs on the paper below the choice board and keeps a wide save control close to the dialog bottom', () => {
     const harness = createHarness();
-    const settings = harness.registry.open(
-      GLOBAL_DIALOG_IDS.SETTINGS,
-      {
-        tabId: 'account',
-        account: { username: 'wizard' },
-        selections: { character: 'elara', frame: 'classic' },
-        researched: {
-          character: { elara: true },
-          frame: { classic: true },
-        },
-        categories: [
-          {
-            key: 'character',
-            options: [{ key: 'elara', label: 'elara' }],
-          },
-          {
-            key: 'frame',
-            options: [
-              { key: 'classic', label: 'classic', tint: 0xffffff },
-            ],
-          },
-        ],
+    const settings = harness.registry.open(GLOBAL_DIALOG_IDS.SETTINGS, {
+      tabId: 'account',
+      account: { username: 'wizard' },
+      selections: { character: 'elara', frame: 'classic' },
+      researched: {
+        character: { elara: true },
+        frame: { classic: true },
       },
-    );
+      categories: [
+        {
+          key: 'character',
+          options: [{ key: 'elara', label: 'elara' }],
+        },
+        {
+          key: 'frame',
+          options: [{ key: 'classic', label: 'classic', tint: 0xffffff }],
+        },
+      ],
+    });
 
     expect(settings.panel.titleLabel.text).toBe('Wizard');
     expect(settings.usernameBacking.texture).toBe(
-      harness.assets.getTexture(
-        PIXI_ROOT_RUN_ASSETS.accountUsername,
-      ),
+      harness.assets.getTexture(PIXI_ROOT_RUN_ASSETS.accountUsername),
     );
     expect(PIXI_ROOT_RUN_ASSETS.accountUsername).toBe(
       'source:assets/ui/white-squircle/white-squircle-40.9.png',
@@ -1091,8 +996,7 @@ describe('retained global Pixi dialogs', () => {
       ),
       join: 'round',
     });
-    const usernameMaskBounds =
-      settings.usernameField.textMask.getLocalBounds();
+    const usernameMaskBounds = settings.usernameField.textMask.getLocalBounds();
     const usernameRenderedHeight =
       settings.usernameField.textLabel.fontSize +
       settings.usernameField.textLabel.stroke.width * 2;
@@ -1106,8 +1010,7 @@ describe('retained global Pixi dialogs', () => {
     expect(
       settings.usernameEdit.y + settings.usernameEdit.height / 2,
     ).toBeCloseTo(
-      settings.usernameBacking.y +
-        settings.usernameBacking.frameHeight / 2,
+      settings.usernameBacking.y + settings.usernameBacking.frameHeight / 2,
     );
 
     expect(settings.accountHeader.frameWidth).toBeCloseTo(298);
@@ -1130,12 +1033,8 @@ describe('retained global Pixi dialogs', () => {
     expect(settings.avatarTabButton.buttonHeight).toBe(28);
     expect(settings.avatarTabButton.textLabel.fontSize).toBe(13);
     expect(settings.avatarTabButton.variant).toBe('tab');
-    expect(settings.avatarTabButton.resolveRootRunVariant()).toBe(
-      'brown',
-    );
-    expect(settings.frameTabButton.resolveRootRunVariant()).toBe(
-      'brown-dark',
-    );
+    expect(settings.avatarTabButton.resolveRootRunVariant()).toBe('brown');
+    expect(settings.frameTabButton.resolveRootRunVariant()).toBe('brown-dark');
 
     expect(settings.accountSave.buttonWidth).toBeCloseTo(456 * (298 / 925));
     expect(settings.accountSave.buttonHeight).toBe(52);
@@ -1152,26 +1051,20 @@ describe('retained global Pixi dialogs', () => {
     expect(settings.accountSave.resolveRootRunVariant()).toBe('green');
 
     const choiceBoardBottom =
-      settings.accountChoiceBoard.y +
-      settings.accountChoiceBoard.frameHeight;
+      settings.accountChoiceBoard.y + settings.accountChoiceBoard.frameHeight;
     const choiceViewportBottom =
-      settings.accountChoiceScroll.root.y +
-      settings.accountChoiceScroll.height;
+      settings.accountChoiceScroll.root.y + settings.accountChoiceScroll.height;
     const tabsTop = settings.avatarTab.root.y;
-    const tabsBottom =
-      settings.avatarTab.root.y +
-      settings.avatarTab.height;
+    const tabsBottom = settings.avatarTab.root.y + settings.avatarTab.height;
     const choiceSectionBottom =
       settings.accountChoiceSection.y +
       settings.accountChoiceSection.frameHeight;
     const paperOutsets = resolveDialogPaperOutsets(
       settings.panel.contentInsets,
     );
-    const choiceContentBottom =
-      choiceSectionBottom - paperOutsets.bottom;
+    const choiceContentBottom = choiceSectionBottom - paperOutsets.bottom;
     const saveBottom =
-      settings.accountSave.y +
-      settings.accountSave.buttonHeight;
+      settings.accountSave.y + settings.accountSave.buttonHeight;
 
     expect(tabsTop).toBeGreaterThan(choiceViewportBottom);
     expect(tabsTop - choiceBoardBottom).toBeCloseTo(
@@ -1195,44 +1088,37 @@ describe('retained global Pixi dialogs', () => {
       label: `frame ${index}`,
       tint: 0xffffff,
     }));
-    const settings = harness.registry.open(
-      GLOBAL_DIALOG_IDS.SETTINGS,
-      {
-        tabId: 'account',
-        account: { username: 'wizard' },
-        selections: {
-          character: avatarOptions[0].key,
-          frame: frameOptions[0].key,
-        },
-        researched: {
-          character: Object.fromEntries(
-            avatarOptions.map(({ key }) => [key, true]),
-          ),
-          frame: Object.fromEntries(
-            frameOptions.map(({ key }) => [key, true]),
-          ),
-        },
-        categories: [
-          {
-            key: 'character',
-            options: avatarOptions,
-          },
-          {
-            key: 'frame',
-            options: frameOptions,
-          },
-        ],
+    const settings = harness.registry.open(GLOBAL_DIALOG_IDS.SETTINGS, {
+      tabId: 'account',
+      account: { username: 'wizard' },
+      selections: {
+        character: avatarOptions[0].key,
+        frame: frameOptions[0].key,
       },
-    );
+      researched: {
+        character: Object.fromEntries(
+          avatarOptions.map(({ key }) => [key, true]),
+        ),
+        frame: Object.fromEntries(frameOptions.map(({ key }) => [key, true])),
+      },
+      categories: [
+        {
+          key: 'character',
+          options: avatarOptions,
+        },
+        {
+          key: 'frame',
+          options: frameOptions,
+        },
+      ],
+    });
 
     const avatarWidgets = settings.avatars.getWidgets();
     const firstTile = avatarWidgets[0];
     const lastColumnTile = avatarWidgets[3];
     const lastTile = avatarWidgets.at(-1);
-    const selectionLeft =
-      firstTile.root.x + firstTile.selectionFrame.x;
-    const selectionTop =
-      firstTile.root.y + firstTile.selectionFrame.y;
+    const selectionLeft = firstTile.root.x + firstTile.selectionFrame.x;
+    const selectionTop = firstTile.root.y + firstTile.selectionFrame.y;
     const selectionRight =
       settings.accountChoiceScroll.root.x +
       lastColumnTile.root.x +
@@ -1258,9 +1144,9 @@ describe('retained global Pixi dialogs', () => {
     expect(settings.accountChoiceScroll.scrollbarTrack.visible).toBe(true);
     expect(selectionLeft).toBeCloseTo(0);
     expect(selectionTop).toBeCloseTo(0);
-    expect(
-      selectionRight - settings.accountChoiceScroll.root.x,
-    ).toBeCloseTo(settings.accountChoiceScroll.width);
+    expect(selectionRight - settings.accountChoiceScroll.root.x).toBeCloseTo(
+      settings.accountChoiceScroll.width,
+    );
     expect(selectionBottom).toBeCloseTo(
       settings.accountChoiceScroll.contentHeight,
     );
@@ -1324,17 +1210,13 @@ describe('retained global Pixi dialogs', () => {
         assetId: 'source:assets/icons/icon-research-tab.png',
       },
     };
-    const announcement = harness.registry.open(
-      GLOBAL_DIALOG_IDS.ANNOUNCEMENT,
-      {
-        kind: 'unlock',
-        title: 'garden unlocked',
-        dismissible: true,
-        items: [gardenUnlock],
-      },
-    );
-    const firstWidget =
-      announcement.unlockItems.collection.getWidgets()[0];
+    const announcement = harness.registry.open(GLOBAL_DIALOG_IDS.ANNOUNCEMENT, {
+      kind: 'unlock',
+      title: 'garden unlocked',
+      dismissible: true,
+      items: [gardenUnlock],
+    });
+    const firstWidget = announcement.unlockItems.collection.getWidgets()[0];
 
     expect(announcement.rowsLayer).toMatchObject({
       visible: false,
@@ -1359,8 +1241,7 @@ describe('retained global Pixi dialogs', () => {
       dismissible: true,
       items: [gardenUnlock, researchUnlock],
     });
-    const compactWidgets =
-      announcement.unlockItems.collection.getWidgets();
+    const compactWidgets = announcement.unlockItems.collection.getWidgets();
 
     expect(compactWidgets[0]).toBe(firstWidget);
     for (const widget of compactWidgets) {
@@ -1369,8 +1250,7 @@ describe('retained global Pixi dialogs', () => {
         height: 64,
       });
     }
-    const warmedAllocation =
-      announcement.unlockItems.pool.getStats().allocated;
+    const warmedAllocation = announcement.unlockItems.pool.getStats().allocated;
     expect(warmedAllocation).toBe(2);
 
     announcement.bind({
@@ -1391,9 +1271,9 @@ describe('retained global Pixi dialogs', () => {
       highWaterMark: 2,
       active: 2,
     });
-    expect(
-      announcement.unlockItems.collection.getWidgets()[0],
-    ).toBe(firstWidget);
+    expect(announcement.unlockItems.collection.getWidgets()[0]).toBe(
+      firstWidget,
+    );
     harness.dispose();
   });
 
@@ -1408,25 +1288,21 @@ describe('retained global Pixi dialogs', () => {
         prefersReducedMotion: () => false,
       },
     });
-    const announcement = harness.registry.open(
-      GLOBAL_DIALOG_IDS.ANNOUNCEMENT,
-      {
-        kind: 'unlock',
-        title: 'garden unlocked',
-        items: [
-          {
-            id: 'unlock:garden',
-            feature: 'garden',
-            pageId: 'garden',
-            label: 'garden',
-            icon: {
-              assetId:
-                'source:assets/icons/icon-garden-plot-tab.png',
-            },
+    const announcement = harness.registry.open(GLOBAL_DIALOG_IDS.ANNOUNCEMENT, {
+      kind: 'unlock',
+      title: 'garden unlocked',
+      items: [
+        {
+          id: 'unlock:garden',
+          feature: 'garden',
+          pageId: 'garden',
+          label: 'garden',
+          icon: {
+            assetId: 'source:assets/icons/icon-garden-plot-tab.png',
           },
-        ],
-      },
-    );
+        },
+      ],
+    });
 
     expect(requestFrame).toHaveBeenCalledTimes(1);
     expect(announcement.announcementMotionFrame).toBe(41);
@@ -1474,8 +1350,7 @@ describe('retained global Pixi dialogs', () => {
     expect(reducedAnnouncement.panel.alpha).toBe(1);
     expect(reducedAnnouncement.continuePrompt.alpha).toBe(1);
     expect(
-      reducedAnnouncement.rows.collection.getWidgets()[0]
-        .valueLabel.text,
+      reducedAnnouncement.rows.collection.getWidgets()[0].valueLabel.text,
     ).toBe('20');
     expect(reducedAnnouncement.levelAdvanceReady).toBe(true);
     reducedHarness.dispose();
@@ -1490,14 +1365,11 @@ describe('retained global Pixi dialogs', () => {
         prefersReducedMotion: () => false,
       },
     });
-    const announcement = harness.registry.open(
-      GLOBAL_DIALOG_IDS.ANNOUNCEMENT,
-      {
-        kind: 'unlock',
-        title: 'garden unlocked',
-        items: [],
-      },
-    );
+    const announcement = harness.registry.open(GLOBAL_DIALOG_IDS.ANNOUNCEMENT, {
+      kind: 'unlock',
+      title: 'garden unlocked',
+      items: [],
+    });
 
     announcement.bind({
       kind: 'level',
@@ -1536,43 +1408,36 @@ describe('retained global Pixi dialogs', () => {
       }),
     });
     const harness = createHarness({ announcementTexture });
-    const announcement = harness.registry.open(
-      GLOBAL_DIALOG_IDS.ANNOUNCEMENT,
-      {
-        kind: 'level',
-        title: 'Level Up!',
-        dismissible: true,
-        continueLabel: 'Tap to continue',
-        animation: { kind: 'level-rewards' },
-        rows: [
-          {
-            id: 'mana',
-            label: 'Mana Capacity',
-            value: '+10',
-            countUp: { from: 90, to: 100, gain: 10 },
-            icon: { frameName: 'resource:mana' },
-            color: '#ffffff',
-            mutedLabel: false,
-          },
-        ],
-      },
-    );
+    const announcement = harness.registry.open(GLOBAL_DIALOG_IDS.ANNOUNCEMENT, {
+      kind: 'level',
+      title: 'Level Up!',
+      dismissible: true,
+      continueLabel: 'Tap to continue',
+      animation: { kind: 'level-rewards' },
+      rows: [
+        {
+          id: 'mana',
+          label: 'Mana Capacity',
+          value: '+10',
+          countUp: { from: 90, to: 100, gain: 10 },
+          icon: { frameName: 'resource:mana' },
+          color: '#ffffff',
+          mutedLabel: false,
+        },
+      ],
+    });
 
     expect(announcement.backdropAlpha).toBe(0.88);
     expect(announcement.backdrop.tint).toBe(0x000000);
     expect(announcement.levelBannerLayer.visible).toBe(true);
     expect(announcement.levelBannerFrame.texture).toBe(
-      harness.assets.getTexture(
-        PIXI_ROOT_RUN_ASSETS.marketTitleRibbon,
-      ),
+      harness.assets.getTexture(PIXI_ROOT_RUN_ASSETS.marketTitleRibbon),
     );
     expect(announcement.levelBannerTitle).toMatchObject({
       text: 'Level Up!',
-      fontSize:
-        PIXI_ROOT_RUN_GEOMETRY.marketTitleRibbon.titleFontSize,
+      fontSize: PIXI_ROOT_RUN_GEOMETRY.marketTitleRibbon.titleFontSize,
       fontWeight: 'normal',
-      lineHeight:
-        PIXI_ROOT_RUN_GEOMETRY.marketTitleRibbon.titleLineHeight,
+      lineHeight: PIXI_ROOT_RUN_GEOMETRY.marketTitleRibbon.titleLineHeight,
       colorToken: '#ffffff',
       stroke: {
         color: PIXI_TEXT_STROKE_COLOR,
@@ -1581,15 +1446,14 @@ describe('retained global Pixi dialogs', () => {
         ),
       },
     });
-    expect(
-      announcement.levelBannerTitle.textObject.anchor,
-    ).toMatchObject({ x: 0.5, y: 0.5 });
-    expect(
-      announcement.levelBannerTitle.position.x,
-    ).toBeCloseTo(announcement.levelBannerFrame.frameWidth / 2);
-    expect(announcement.continuePrompt.text).toBe(
-      'Tap to continue',
+    expect(announcement.levelBannerTitle.textObject.anchor).toMatchObject({
+      x: 0.5,
+      y: 0.5,
+    });
+    expect(announcement.levelBannerTitle.position.x).toBeCloseTo(
+      announcement.levelBannerFrame.frameWidth / 2,
     );
+    expect(announcement.continuePrompt.text).toBe('Tap to continue');
     expect(announcement.continuePrompt.colorToken).toBe('muted');
     expect(announcement.continuePrompt.position.x).toBeCloseTo(
       announcement.announcementModel.width / 2,
@@ -1599,18 +1463,15 @@ describe('retained global Pixi dialogs', () => {
     );
     expect(announcement.levelRewardRowBackings).toHaveLength(1);
     expect(
-      announcement.rows.collection.getWidgets()[0].keyLabel
-        .stroke,
+      announcement.rows.collection.getWidgets()[0].keyLabel.stroke,
     ).toEqual({
       color: PIXI_TEXT_STROKE_COLOR,
       width: resolvePixiTextStrokeWidth(
-        announcement.rows.collection.getWidgets()[0].keyLabel
-          .fontSize,
+        announcement.rows.collection.getWidgets()[0].keyLabel.fontSize,
       ),
       join: 'round',
     });
-    const rewardRow =
-      announcement.rows.collection.getWidgets()[0];
+    const rewardRow = announcement.rows.collection.getWidgets()[0];
     expect(rewardRow.valueLabel.text).toBe('+10');
     announcement.applyLevelAnnouncementMotion(
       1800,
@@ -1628,12 +1489,9 @@ describe('retained global Pixi dialogs', () => {
 
     announcement.settleAnnouncementMotion();
     expect(rewardRow.valueLabel.text).toBe('100 +10');
-    expect(
-      announcement.levelBannerTitle.position.y,
-    ).toBeCloseTo(
+    expect(announcement.levelBannerTitle.position.y).toBeCloseTo(
       announcement.levelBannerFrame.frameHeight / 2 +
-        PIXI_ROOT_RUN_GEOMETRY.marketTitleRibbon
-          .contentOffsetY,
+        PIXI_ROOT_RUN_GEOMETRY.marketTitleRibbon.contentOffsetY,
     );
     expect(announcement.requestClose('outside')).toBe(true);
 
@@ -1670,19 +1528,13 @@ describe('retained global Pixi dialogs', () => {
     expect(announcement.backdropAlpha).toBe(0.88);
     expect(announcement.backdrop.tint).toBe(0x000000);
     expect(announcement.levelBannerLayer.visible).toBe(true);
-    expect(announcement.levelBannerTitle.text).toBe(
-      'Research Complete!',
-    );
+    expect(announcement.levelBannerTitle.text).toBe('Research Complete!');
     expect(announcement.rowsLayer.visible).toBe(true);
     expect(announcement.researchItemLayer.visible).toBe(true);
     expect(announcement.researchItem.icon.visible).toBe(true);
-    expect(announcement.researchItem.icon.width).toBeGreaterThanOrEqual(
-      70,
-    );
+    expect(announcement.researchItem.icon.width).toBeGreaterThanOrEqual(70);
     expect(announcement.researchItem.label.text).toBe('');
-    expect(
-      announcement.researchItemLayer.position.x,
-    ).toBeLessThan(
+    expect(announcement.researchItemLayer.position.x).toBeLessThan(
       announcement.rowsLayer.position.x,
     );
     expect(announcement.rowsLayer.position.y).toBeGreaterThan(
@@ -1692,13 +1544,11 @@ describe('retained global Pixi dialogs', () => {
     expect(announcement.continuePrompt.visible).toBe(false);
     expect(announcement.levelRewardRowBackings).toHaveLength(1);
     expect(
-      announcement.rows.collection.getWidgets()[0].keyLabel
-        .stroke,
+      announcement.rows.collection.getWidgets()[0].keyLabel.stroke,
     ).toEqual({
       color: PIXI_TEXT_STROKE_COLOR,
       width: resolvePixiTextStrokeWidth(
-        announcement.rows.collection.getWidgets()[0].keyLabel
-          .fontSize,
+        announcement.rows.collection.getWidgets()[0].keyLabel.fontSize,
       ),
       join: 'round',
     });
@@ -1719,8 +1569,7 @@ describe('retained global Pixi dialogs', () => {
     expect(announcement.backdropAlpha).toBe(0.68);
     expect(announcement.backdrop.tint).toBe(0xffffff);
     expect(
-      announcement.rows.collection.getWidgets()[0]?.keyLabel
-        .stroke ?? null,
+      announcement.rows.collection.getWidgets()[0]?.keyLabel.stroke ?? null,
     ).toBeNull();
 
     harness.dispose();
@@ -1736,24 +1585,21 @@ describe('retained global Pixi dialogs', () => {
         prefersReducedMotion: () => true,
       },
     });
-    const announcement = harness.registry.open(
-      GLOBAL_DIALOG_IDS.ANNOUNCEMENT,
-      {
-        kind: 'level',
-        title: 'Level Up!',
-        dismissible: true,
-        continueLabel: 'Tap to continue',
-        animation: { kind: 'level-rewards' },
-        actions: { advance },
-        rows: [
-          {
-            id: 'mana',
-            label: 'Mana Capacity',
-            value: '+10',
-          },
-        ],
-      },
-    );
+    const announcement = harness.registry.open(GLOBAL_DIALOG_IDS.ANNOUNCEMENT, {
+      kind: 'level',
+      title: 'Level Up!',
+      dismissible: true,
+      continueLabel: 'Tap to continue',
+      animation: { kind: 'level-rewards' },
+      actions: { advance },
+      rows: [
+        {
+          id: 'mana',
+          label: 'Mana Capacity',
+          value: '+10',
+        },
+      ],
+    });
     const modal = harness.inputRouter.getTopModal();
     const promptPoint = announcement.continuePrompt.toGlobal({
       x: 0,
@@ -1766,49 +1612,42 @@ describe('retained global Pixi dialogs', () => {
     expect(advance).toHaveBeenCalledWith(
       expect.objectContaining({ source: 'outside' }),
     );
-    expect(
-      harness.registry.isOpen(GLOBAL_DIALOG_IDS.ANNOUNCEMENT),
-    ).toBe(false);
+    expect(harness.registry.isOpen(GLOBAL_DIALOG_IDS.ANNOUNCEMENT)).toBe(false);
 
     harness.dispose();
   });
 
   it('wraps long level reward values inside the main two-column row contract', () => {
     const harness = createHarness();
-    const announcement = harness.registry.open(
-      GLOBAL_DIALOG_IDS.ANNOUNCEMENT,
-      {
-        kind: 'level',
-        title: 'rewards',
-        rows: [
-          {
-            id: 'level:20:unlocks',
-            label: 'unlocked',
-            value:
-              'brewing / guild / prestige / leaderboard / discoveries / alliance / inbox',
-            valueLines: [
-              'brewing',
-              'guild',
-              'prestige',
-              'leaderboard',
-              'discoveries',
-              'alliance',
-              'inbox',
-            ],
-            mutedLabel: true,
-            boldValue: true,
-          },
-        ],
-      },
-    );
+    const announcement = harness.registry.open(GLOBAL_DIALOG_IDS.ANNOUNCEMENT, {
+      kind: 'level',
+      title: 'rewards',
+      rows: [
+        {
+          id: 'level:20:unlocks',
+          label: 'unlocked',
+          value:
+            'brewing / guild / prestige / leaderboard / discoveries / alliance / inbox',
+          valueLines: [
+            'brewing',
+            'guild',
+            'prestige',
+            'leaderboard',
+            'discoveries',
+            'alliance',
+            'inbox',
+          ],
+          mutedLabel: true,
+          boldValue: true,
+        },
+      ],
+    });
     const row = announcement.rows.collection.getWidgets()[0];
 
     expect(row.keyLabel.wrapWidth).toBeCloseTo(101.6);
     expect(row.valueLabel.wrapWidth).toBeCloseTo(152.4);
     expect(row.valueLabel.align).toBe('right');
-    expect(row.rowHeight).toBeGreaterThan(
-      GLOBAL_DIALOG_GEOMETRY.rowHeight,
-    );
+    expect(row.rowHeight).toBeGreaterThan(GLOBAL_DIALOG_GEOMETRY.rowHeight);
     expect(row.valueLabel.measuredWidth).toBeLessThanOrEqual(
       row.valueLabel.wrapWidth,
     );
@@ -1817,66 +1656,63 @@ describe('retained global Pixi dialogs', () => {
 
   it('keeps while-away values inside the paper with regular ink and right-side icons', () => {
     const harness = createHarness();
-    const announcement = harness.registry.open(
-      GLOBAL_DIALOG_IDS.ANNOUNCEMENT,
-      {
-        kind: 'whileAway',
-        title: 'While Away',
-        framed: true,
-        dismissible: true,
-        showClose: true,
-        rows: [
-          {
-            id: 'whileAway:auto_seed_summoned:0',
-            kind: 'row',
-            label: 'Seeds Summoned',
-            value: '8',
-            valueColor: 'text',
-            mutedLabel: false,
-            icon: {
-              frameName: 'seed:pack',
-              kind: 'seed',
-            },
+    const announcement = harness.registry.open(GLOBAL_DIALOG_IDS.ANNOUNCEMENT, {
+      kind: 'whileAway',
+      title: 'While Away',
+      framed: true,
+      dismissible: true,
+      showClose: true,
+      rows: [
+        {
+          id: 'whileAway:auto_seed_summoned:0',
+          kind: 'row',
+          label: 'Seeds Summoned',
+          value: '8',
+          valueColor: 'text',
+          mutedLabel: false,
+          icon: {
+            frameName: 'seed:pack',
+            kind: 'seed',
           },
-          {
-            id: 'whileAway:garden_harvested:0',
-            kind: 'row',
-            label: 'Herbs Harvested',
-            value: '12',
-            valueColor: 'text',
-            mutedLabel: false,
-            icon: {
-              frameName: 'herb:bloodroseHerb',
-              kind: 'herb',
-            },
+        },
+        {
+          id: 'whileAway:garden_harvested:0',
+          kind: 'row',
+          label: 'Herbs Harvested',
+          value: '12',
+          valueColor: 'text',
+          mutedLabel: false,
+          icon: {
+            frameName: 'herb:bloodroseHerb',
+            kind: 'herb',
           },
-          {
-            id: 'whileAway:brewing_complete:0',
-            kind: 'row',
-            label: 'Potions Brewed',
-            value: '2',
-            valueColor: 'text',
-            mutedLabel: false,
-            icon: {
-              frameName: 'potion:manaTonic',
-              kind: 'potion',
-            },
+        },
+        {
+          id: 'whileAway:brewing_complete:0',
+          kind: 'row',
+          label: 'Potions Brewed',
+          value: '2',
+          valueColor: 'text',
+          mutedLabel: false,
+          icon: {
+            frameName: 'potion:manaTonic',
+            kind: 'potion',
           },
-          {
-            id: 'whileAway:npc_market_sold:0',
-            kind: 'row',
-            label: 'Traders Bought',
-            value: '40',
-            valueColor: 'text',
-            mutedLabel: false,
-            icon: {
-              frameName: 'resource:coin',
-              kind: 'resource',
-            },
+        },
+        {
+          id: 'whileAway:npc_market_sold:0',
+          kind: 'row',
+          label: 'Traders Bought',
+          value: '40',
+          valueColor: 'text',
+          mutedLabel: false,
+          icon: {
+            frameName: 'resource:coin',
+            kind: 'resource',
           },
-        ],
-      },
-    );
+        },
+      ],
+    });
     const rows = announcement.rows.collection.getWidgets();
     const lastRow = rows.at(-1);
     const rowsBottom =
@@ -1924,17 +1760,14 @@ describe('retained global Pixi dialogs', () => {
         kind: 'herb',
       },
     }));
-    const announcement = harness.registry.open(
-      GLOBAL_DIALOG_IDS.ANNOUNCEMENT,
-      {
-        kind: 'whileAway',
-        title: 'While Away',
-        framed: true,
-        dismissible: true,
-        showClose: true,
-        rows,
-      },
-    );
+    const announcement = harness.registry.open(GLOBAL_DIALOG_IDS.ANNOUNCEMENT, {
+      kind: 'whileAway',
+      title: 'While Away',
+      framed: true,
+      dismissible: true,
+      showClose: true,
+      rows,
+    });
 
     expect(announcement.panel.contentBoxHeight).toBe(128);
     expect(announcement.reportScroll.width).toBe(264);
@@ -1951,9 +1784,7 @@ describe('retained global Pixi dialogs', () => {
         .every((row) => row.rowWidth === 260),
     ).toBe(true);
 
-    announcement.reportScroll.scrollTo(
-      announcement.reportScroll.contentHeight,
-    );
+    announcement.reportScroll.scrollTo(announcement.reportScroll.contentHeight);
     expect(announcement.reportScroll.offsetY).toBeGreaterThan(0);
     harness.dispose();
   });
@@ -1973,15 +1804,9 @@ describe('retained global Pixi dialogs', () => {
       ],
     });
 
-    expect(harness.inputRouter.getTopModal()?.id).toBe(
-      GLOBAL_DIALOG_IDS.LEVEL,
-    );
-    expect(harness.inputRouter.handleBack({ source: 'native' })).toBe(
-      true,
-    );
-    expect(
-      harness.registry.isOpen(GLOBAL_DIALOG_IDS.LEVEL),
-    ).toBe(false);
+    expect(harness.inputRouter.getTopModal()?.id).toBe(GLOBAL_DIALOG_IDS.LEVEL);
+    expect(harness.inputRouter.handleBack({ source: 'native' })).toBe(true);
+    expect(harness.registry.isOpen(GLOBAL_DIALOG_IDS.LEVEL)).toBe(false);
     expect(harness.inputRouter.getTopModal()).toBeNull();
     harness.dispose();
   });
@@ -2001,9 +1826,7 @@ function createHarness({
   }
   if (characterTexture) {
     assets.getTexture = vi.fn((assetId) =>
-      String(assetId).includes('/avatars/')
-        ? characterTexture
-        : Texture.EMPTY,
+      String(assetId).includes('/avatars/') ? characterTexture : Texture.EMPTY,
     );
   }
   const context = {
@@ -2102,6 +1925,7 @@ function createPlayer() {
     identity: 'mira-id',
     username: 'mira',
     character: 'mira',
+    frame: 'gnome',
     playerLevel: 4,
     prestigeCount: 2,
     totalProducedCoin: 1200,

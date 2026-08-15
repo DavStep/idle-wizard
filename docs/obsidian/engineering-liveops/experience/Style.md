@@ -118,9 +118,10 @@ experience_type: style
 - Shared image-backed cost buttons must wrap plain labels such as `free` or `locked` in a positioned label above the skin pseudo-element; resource-cost labels already own that foreground layer.
 - Research name clicks open a `style-dialog` info popup; keep explanation text on the research definition snapshot.
 - Brewing recipe popup hides locked recipes; recipe names are bold, ingredient rows align flush with names, and `time:` details stay muted.
-- Brewing recipe popup ingredient rows show one ordered slot on the left (`- sage`) and owned count on the right (`owned 31`); repeated herbs use repeated rows.
+- Brewing recipe popup ingredient rows show one ordered slot on the left (`sage` followed by its herb icon) and `owned/required` on the right; repeated herbs use repeated rows.
+- Brewing recipe cards reserve six ingredient row-heights without drawing empty rows; mana and time stay on the same cross-card baseline regardless of ingredient count.
 - Brewing recipe popup uses only the dialog title `recipes`; do not add a second inner `recipes` group title or extra list top padding.
-- Brewing recipe popup select rows need a fixed checkbox slot; `[ ]` to `[x]` must not reflow the row, and focus or selection must not change font weight.
+- Brewing recipe cards use the green positive-action skin for `Select`; locked `Research` remains yellow, and focus or selection must not change font weight.
 - Brewing recipe page-turn ghosts must stretch recipe rows like live pages; otherwise bottom select buttons jump upward during the animation.
 - Brewing active brew timer text belongs next to the active brew label, not inside the progress rail.
 - Brewing completion flows brew timer -> manual start bottling action -> bottling timer -> collect-ready state; potion inventory is granted only by the collect action.

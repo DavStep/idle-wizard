@@ -169,6 +169,11 @@ export class AppFacade {
       return this.startPromise;
     }
 
+    void this.liveUpdateManager.notifyAppReady().catch(() => {
+      // Mark OTA bundles ready before heavy rendering work can hit the native
+      // rollback deadline. A later start() call retries transient failures.
+    });
+
     this.startPromise = this.renderFacade
       .initialize({ playerFacade: this.playerFacade })
       .then(() => {

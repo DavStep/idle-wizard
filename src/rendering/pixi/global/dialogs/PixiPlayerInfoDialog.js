@@ -1,6 +1,4 @@
-import {
-  Texture,
-} from 'pixi.js';
+import { Texture } from 'pixi.js';
 
 import {
   createDialogPaperSection,
@@ -12,11 +10,10 @@ import {
   resolveDialogPaperOutsets,
   setDialogPaperSectionBounds,
 } from '../../primitives/index.js';
-import {
-  PIXI_UI_GEOMETRY,
-} from '../../theme/PixiThemeTokens.js';
+import { PIXI_UI_GEOMETRY } from '../../theme/PixiThemeTokens.js';
 import { normalizeTradeAllianceTagColor } from '../../../../shared/tradeAllianceTagColors.js';
-import { RootRunAvatarWidget } from '../chrome/RootRunTopHudWidgets.js';
+import { getPlayerFrameTint } from '../../../../player/playerFrames.js';
+import { PlayerProfileWidget } from '../chrome/PlayerProfileWidgets.js';
 import { RetainedGlobalDialog } from './GlobalDialogKit.js';
 
 const PLAYER_CONTENT_WIDTH = 260;
@@ -32,8 +29,7 @@ const STATS_HEIGHT =
   54 +
   PIXI_DIALOG_SPLIT_PAPER_GEOMETRY.contentInsetBottom;
 const STATS_PADDING_X = 10;
-const STATS_PADDING_Y =
-  PIXI_DIALOG_SPLIT_PAPER_GEOMETRY.contentInsetTop;
+const STATS_PADDING_Y = PIXI_DIALOG_SPLIT_PAPER_GEOMETRY.contentInsetTop;
 const STATS_ROW_PITCH = 18;
 const PLAYER_PAPER_OUTSETS = resolveDialogPaperOutsets({
   top: PIXI_UI_GEOMETRY.dialogPadding,
@@ -80,13 +76,13 @@ export class PixiPlayerInfoDialog extends RetainedGlobalDialog {
       this.panel.paperFrame.texture,
       `${dialogId}:summaryFrame`,
     );
-    this.avatarWidget = new RootRunAvatarWidget({
+    this.profileWidget = new PlayerProfileWidget({
       assets: this.context.assets,
       texture: Texture.EMPTY,
-      label: `${dialogId}:avatarWidget`,
+      label: `${dialogId}:profileWidget`,
     });
-    this.avatarWidget.scale.set(PORTRAIT_SIZE / 186);
-    this.character = this.avatarWidget.portrait;
+    this.profileWidget.scale.set(PORTRAIT_SIZE / 186);
+    this.character = this.profileWidget.portrait;
     this.name = new PixiTextLabel({
       fontWeight: 'bold',
       label: `${dialogId}:name`,
@@ -163,7 +159,7 @@ export class PixiPlayerInfoDialog extends RetainedGlobalDialog {
     this.panel.content.addChild(
       this.summaryFrame,
       this.statsFrame,
-      this.avatarWidget,
+      this.profileWidget,
       this.allianceButton,
       this.name,
       this.levelLabel,
@@ -188,7 +184,7 @@ export class PixiPlayerInfoDialog extends RetainedGlobalDialog {
     const loading = this.playerModel.loading;
     for (const object of [
       this.summaryFrame,
-      this.avatarWidget,
+      this.profileWidget,
       this.allianceButton,
       this.name,
       this.levelLabel,
@@ -215,12 +211,11 @@ export class PixiPlayerInfoDialog extends RetainedGlobalDialog {
       return;
     }
 
-    this.avatarWidget.setTexture(
-      getCharacterTexture(
-        this.context.assets,
-        this.playerModel.character,
-      ),
-    );
+    this.profileWidget
+      .setTexture(
+        getCharacterTexture(this.context.assets, this.playerModel.character),
+      )
+      .setBackgroundTint(getPlayerFrameTint(this.playerModel.frame));
     this.name.setText(this.playerModel.username);
     this.levelValue.setText(this.playerModel.playerLevel);
     this.prestigeStars.setLevel(this.playerModel.prestigeCount);
@@ -231,17 +226,10 @@ export class PixiPlayerInfoDialog extends RetainedGlobalDialog {
     this.allianceButton.visible = showAlliance;
     this.allianceButton.renderable = showAlliance;
     this.allianceButton
-      .setText(
-        showAlliance
-          ? `[${this.playerModel.allianceTag}]`
-          : '',
-      )
+      .setText(showAlliance ? `[${this.playerModel.allianceTag}]` : '')
       .setEnabled(
         showAlliance &&
-          Boolean(
-            this.actions.openAlliance ??
-              this.model.onOpenAlliance,
-          ),
+          Boolean(this.actions.openAlliance ?? this.model.onOpenAlliance),
       );
     this.applyAllianceTagColor();
     this.setPanelContentSize(PLAYER_CONTENT_WIDTH, PLAYER_CONTENT_HEIGHT);
@@ -266,16 +254,10 @@ export class PixiPlayerInfoDialog extends RetainedGlobalDialog {
     if (!this.closeControl || !this.panel) {
       return;
     }
-    const width = Math.max(
-      32,
-      Math.ceil(this.closeControl.textWidth + 8),
-    );
+    const width = Math.max(32, Math.ceil(this.closeControl.textWidth + 8));
     this.closeControl.setBounds(
-      this.panel.outerWidth -
-        PIXI_UI_GEOMETRY.dialogPadding -
-        width,
-      this.panel.outerHeight -
-        PIXI_UI_GEOMETRY.borderLabelLineHeight / 2,
+      this.panel.outerWidth - PIXI_UI_GEOMETRY.dialogPadding - width,
+      this.panel.outerHeight - PIXI_UI_GEOMETRY.borderLabelLineHeight / 2,
       width,
       PIXI_UI_GEOMETRY.borderLabelLineHeight,
     );
@@ -292,9 +274,7 @@ export class PixiPlayerInfoDialog extends RetainedGlobalDialog {
     const rightX = PLAYER_CONTENT_WIDTH;
     const detailsX = PORTRAIT_SIZE + SUMMARY_GAP;
     const detailsWidth = PLAYER_CONTENT_WIDTH - detailsX;
-    const paperOutsets = resolveDialogPaperOutsets(
-      this.panel.contentInsets,
-    );
+    const paperOutsets = resolveDialogPaperOutsets(this.panel.contentInsets);
     setDialogPaperSectionBounds(
       this.summaryFrame,
       {
@@ -316,8 +296,8 @@ export class PixiPlayerInfoDialog extends RetainedGlobalDialog {
       paperOutsets,
     );
 
-    this.avatarWidget.position.set(0, SUMMARY_PADDING_TOP);
-    this.avatarWidget.scale.set(PORTRAIT_SIZE / 186);
+    this.profileWidget.position.set(0, SUMMARY_PADDING_TOP);
+    this.profileWidget.scale.set(PORTRAIT_SIZE / 186);
 
     let nameX = detailsX;
     if (this.allianceButton.visible) {
@@ -330,9 +310,7 @@ export class PixiPlayerInfoDialog extends RetainedGlobalDialog {
       nameX += allianceWidth + 4;
     }
     this.name.position.set(nameX, SUMMARY_PADDING_TOP + 1);
-    this.name.setWrapWidth(
-      Math.max(0, PLAYER_CONTENT_WIDTH - nameX),
-    );
+    this.name.setWrapWidth(Math.max(0, PLAYER_CONTENT_WIDTH - nameX));
 
     const levelY = SUMMARY_PADDING_TOP + 1 + DETAIL_ROW_PITCH;
     const prestigeY = levelY + DETAIL_ROW_PITCH;
@@ -370,10 +348,7 @@ export class PixiPlayerInfoDialog extends RetainedGlobalDialog {
       STATS_Y + STATS_PADDING_Y + STATS_ROW_PITCH * 2,
     );
     this.levelLabel.setWrapWidth(
-      Math.max(
-        0,
-        detailsWidth - this.levelValue.measuredWidth - 6,
-      ),
+      Math.max(0, detailsWidth - this.levelValue.measuredWidth - 6),
     );
     this.applyAllianceTagColor();
   }
@@ -423,8 +398,7 @@ export class PixiPlayerInfoDialog extends RetainedGlobalDialog {
 function normalizePlayerModel(model = {}) {
   const source = model.player ?? model;
   const loading =
-    Boolean(model.loading ?? source.loading) ||
-    source.state === 'loading';
+    Boolean(model.loading ?? source.loading) || source.state === 'loading';
   const prestigeCount = nonNegativeInteger(
     source.prestigeCount ?? source.prestige,
     0,
@@ -432,27 +406,15 @@ function normalizePlayerModel(model = {}) {
   return {
     loading,
     identity: String(source.identity ?? ''),
-    username: String(
-      source.username ?? source.name ?? '',
-    ).trim(),
-    allianceId: String(
-      source.allianceId ?? source.alliance_id ?? '',
-    ),
-    allianceName: String(
-      source.allianceName ?? source.alliance_name ?? '',
-    ),
-    allianceTag: normalizeTag(
-      source.allianceTag ?? source.alliance_tag,
-    ),
+    username: String(source.username ?? source.name ?? '').trim(),
+    allianceId: String(source.allianceId ?? source.alliance_id ?? ''),
+    allianceName: String(source.allianceName ?? source.alliance_name ?? ''),
+    allianceTag: normalizeTag(source.allianceTag ?? source.alliance_tag),
     allianceTagColor:
       source.allianceTagColor ?? source.alliance_tag_color ?? '',
     character: String(source.character ?? 'elara'),
-    playerLevel: String(
-      positiveInteger(
-        source.playerLevel ?? source.level,
-        1,
-      ),
-    ),
+    frame: String(source.frame ?? 'classic'),
+    playerLevel: String(positiveInteger(source.playerLevel ?? source.level, 1)),
     prestigeCount,
     totalProducedCoin: String(
       nonNegativeInteger(
@@ -486,27 +448,19 @@ function normalizeTag(value) {
 
 function positiveInteger(value, fallback) {
   const number = Math.floor(Number(value));
-  return Number.isFinite(number) && number >= 1
-    ? number
-    : fallback;
+  return Number.isFinite(number) && number >= 1 ? number : fallback;
 }
 
 function nonNegativeInteger(value, fallback) {
   const number = Math.floor(Number(value));
-  return Number.isFinite(number) && number >= 0
-    ? number
-    : fallback;
+  return Number.isFinite(number) && number >= 0 ? number : fallback;
 }
 
 function getCharacterTexture(assetManager, key) {
   try {
     return (
-      assetManager?.getTexture?.(
-        `source:assets/avatars/${key}.png`,
-      ) ??
-      assetManager?.getTexture?.(
-        'source:assets/avatars/elara.png',
-      ) ??
+      assetManager?.getTexture?.(`source:assets/avatars/${key}.png`) ??
+      assetManager?.getTexture?.('source:assets/avatars/elara.png') ??
       Texture.EMPTY
     );
   } catch {

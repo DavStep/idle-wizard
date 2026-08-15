@@ -1183,6 +1183,24 @@ describe('WorkshopPixiPage', () => {
     row.options[1].action.activate();
     expect(donate).toHaveBeenCalledOnce();
 
+    const questsViewModel = model.workshop.dialogs.worldEvent;
+    model.workshop.dialogs.worldEvent = {
+      ...questsViewModel,
+      selectedTabId: 'leaderboard',
+      rowWidget: 'default',
+      rows: [{ id: 'leaderboard:1', label: '1. Wizard', value: '320' }],
+    };
+    harness.page.bind(model);
+    model.workshop.dialogs.worldEvent = questsViewModel;
+    harness.page.bind(model);
+
+    const reboundRow = dialog.rows.get('quest:crowd');
+    expect(reboundRow.options[1].action.visible).toBe(true);
+    expect(reboundRow.options[1].action.renderable).toBe(true);
+    expect(reboundRow.options[1].action.enabled).toBe(true);
+    reboundRow.options[1].action.activate();
+    expect(donate).toHaveBeenCalledTimes(2);
+
     harness.page.destroy();
     harness.dispose();
   });
@@ -2409,6 +2427,21 @@ describe('WorkshopPixiPage', () => {
     );
     expect(dialog.composerField.fieldWidth).toBeCloseTo(295 + 1 / 3);
     expect(dialog.composerField.fieldHeight).toBe(29);
+    const longDraft =
+      'The latest part of this long World Chat draft must remain visible while the player keeps typing.';
+    dialog.composerField.applySessionSnapshot({
+      active: true,
+      selectionEnd: longDraft.length,
+      selectionStart: longDraft.length,
+      value: longDraft,
+    });
+    const composerCaretBounds =
+      dialog.composerField.caretGraphic.getLocalBounds();
+    expect(composerCaretBounds.x).toBeGreaterThanOrEqual(0);
+    expect(
+      composerCaretBounds.x + composerCaretBounds.width,
+    ).toBeLessThanOrEqual(dialog.composerField.textAreaWidth);
+    expect(dialog.composerField.textLabel.x).toBeLessThan(0);
     expect(dialog.composerSubmit.root.x).toBeCloseTo(296 + 2 / 3);
     expect(dialog.composerSubmit.width).toBe(74);
     expect(dialog.composerSubmit.height).toBe(29);

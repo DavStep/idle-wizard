@@ -10,9 +10,7 @@ import {
 import { PixiInputRouter } from './input/PixiInputRouter.js';
 import { RetainedUiCounters } from './retained/RetainedUiCounters.js';
 import { SemanticTargetRegistry } from './retained/SemanticTargetRegistry.js';
-import {
-  createUiEditorPixiAtomicComponents,
-} from '../../uiEditor/widgets/createUiEditorPixiSurface.js';
+import { createUiEditorPixiAtomicComponents } from '../../uiEditor/widgets/createUiEditorPixiSurface.js';
 import retainedDialogIntegrations, {
   UI_EDITOR_RETAINED_DIALOG_IDS,
   createUiEditorDialog,
@@ -23,7 +21,7 @@ import inventoryChoiceRowIntegration from './pages/shared/RootRunInventoryChoice
 import worldChatMessageRowIntegration from './pages/workshop/WorldChatMessageRowPixi.ui-editor.js';
 import worldEventQuestRowIntegration from './pages/workshop/WorldEventQuestRow.ui-editor.js';
 import inboxMailWidgetIntegration from './global/dialogs/InboxMailWidget.ui-editor.js';
-import playerAvatarIntegration from './global/chrome/RootRunAvatarWidget.ui-editor.js';
+import playerProfileIntegration from './global/chrome/PlayerProfileWidget.ui-editor.js';
 
 installPixiPageTestCanvas();
 
@@ -60,26 +58,31 @@ describe('retained dialog UI editor integrations', () => {
     const components = createUiEditorPixiAtomicComponents(dialog.getRoot());
     const labels = components.map(({ label }) => label);
 
-    expect(labels).toEqual(expect.arrayContaining([
-      'Title',
-      'Message',
-      'Cancel button',
-      'Confirm button',
-    ]));
+    expect(labels).toEqual(
+      expect.arrayContaining([
+        'Title',
+        'Message',
+        'Cancel button',
+        'Confirm button',
+      ]),
+    );
     expect(labels.some((label) => /slice/i.test(label))).toBe(false);
     expect(
-      components.find(({ label }) => label === 'Message')
+      components
+        .find(({ label }) => label === 'Message')
         .getFields()
         .map(({ id }) => id),
-    ).toEqual(expect.arrayContaining([
-      'text',
-      'fontFamily',
-      'positionMode',
-      'x',
-      'y',
-      'anchor',
-      'paddingTop',
-    ]));
+    ).toEqual(
+      expect.arrayContaining([
+        'text',
+        'fontFamily',
+        'positionMode',
+        'x',
+        'y',
+        'anchor',
+        'paddingTop',
+      ]),
+    );
 
     dialog.destroy();
     semanticRegistry.clear();
@@ -98,42 +101,39 @@ describe('retained dialog UI editor integrations', () => {
         'Feedback send button',
       ],
     ],
-    [
-      'global.confirmation',
-      ['Message', 'Cancel button', 'Confirm button'],
-    ],
-  ])('shows the populated semantic content for %s in the hierarchy', (
-    dialogId,
-    expectedLabels,
-  ) => {
-    const parent = new Container();
-    const counters = new RetainedUiCounters();
-    const input = new PixiInputRouter();
-    const semanticRegistry = new SemanticTargetRegistry({ counters });
-    const dialog = createUiEditorDialog({
-      assets: createPixiAssetManagerFake(Texture),
-      close: () => false,
-      counters,
-      dialogId,
-      input,
-      model: createUiEditorDialogFixture(dialogId),
-      parent,
-      projection: PROJECTION,
-      semanticRegistry,
-    });
+    ['global.confirmation', ['Message', 'Cancel button', 'Confirm button']],
+  ])(
+    'shows the populated semantic content for %s in the hierarchy',
+    (dialogId, expectedLabels) => {
+      const parent = new Container();
+      const counters = new RetainedUiCounters();
+      const input = new PixiInputRouter();
+      const semanticRegistry = new SemanticTargetRegistry({ counters });
+      const dialog = createUiEditorDialog({
+        assets: createPixiAssetManagerFake(Texture),
+        close: () => false,
+        counters,
+        dialogId,
+        input,
+        model: createUiEditorDialogFixture(dialogId),
+        parent,
+        projection: PROJECTION,
+        semanticRegistry,
+      });
 
-    dialog.layout(PROJECTION);
-    dialog.activate();
-    const [content] = createRetainedDialogHierarchy(dialogId, dialog);
-    const labels = content.children.map(({ label }) => label);
+      dialog.layout(PROJECTION);
+      dialog.activate();
+      const [content] = createRetainedDialogHierarchy(dialogId, dialog);
+      const labels = content.children.map(({ label }) => label);
 
-    expect(labels).toEqual(expect.arrayContaining(expectedLabels));
+      expect(labels).toEqual(expect.arrayContaining(expectedLabels));
 
-    dialog.destroy();
-    semanticRegistry.clear();
-    input.destroy();
-    parent.destroy({ children: true });
-  });
+      dialog.destroy();
+      semanticRegistry.clear();
+      input.destroy();
+      parent.destroy({ children: true });
+    },
+  );
 
   it('constructs and binds both editor fixtures for every retained dialog', () => {
     const mountedIds = [];
@@ -175,10 +175,9 @@ describe('retained dialog UI editor integrations', () => {
           ).toBe(expectedTitle);
         }
         if (dialogId.startsWith('workshop.')) {
-          expect(
-            renderedTitle,
-            `${dialogId}:${variantIndex}:title`,
-          ).toBe(expectedTitle);
+          expect(renderedTitle, `${dialogId}:${variantIndex}:title`).toBe(
+            expectedTitle,
+          );
         }
         const root =
           dialog.getRoot?.() ?? dialog.getDisplayObject?.() ?? dialog.root;
@@ -205,8 +204,10 @@ describe('retained dialog UI editor integrations', () => {
         ).toBeGreaterThan(0);
         for (const child of hierarchy[0]?.children ?? []) {
           if (child.libraryEntryId) {
-            expect(child.type, `${dialogId}:${variantIndex}:${child.label}:type`)
-              .toBe('widget');
+            expect(
+              child.type,
+              `${dialogId}:${variantIndex}:${child.label}:type`,
+            ).toBe('widget');
             expect(
               declaredChildWidgetIds.has(child.libraryEntryId),
               `${dialogId}:${variantIndex}:${child.label}:library-entry`,
@@ -350,56 +351,50 @@ describe('retained dialog UI editor integrations', () => {
   it.each([
     ['garden.seed', 'ChooseSeedRow:InventoryChoiceRow'],
     ['brewing.herbs', 'ChooseHerbRow:InventoryChoiceRow'],
-  ])('models %s as BaseDialog content with reusable row instances', (
-    dialogId,
-    expectedRowLabel,
-  ) => {
-    const parent = new Container();
-    const counters = new RetainedUiCounters();
-    const input = new PixiInputRouter();
-    const semanticRegistry = new SemanticTargetRegistry({ counters });
-    const dialog = createUiEditorDialog({
-      assets: createPixiAssetManagerFake(Texture),
-      close: () => false,
-      counters,
-      dialogId,
-      input,
-      model: createUiEditorDialogFixture(dialogId),
-      parent,
-      projection: PROJECTION,
-      semanticRegistry,
-    });
+  ])(
+    'models %s as BaseDialog content with reusable row instances',
+    (dialogId, expectedRowLabel) => {
+      const parent = new Container();
+      const counters = new RetainedUiCounters();
+      const input = new PixiInputRouter();
+      const semanticRegistry = new SemanticTargetRegistry({ counters });
+      const dialog = createUiEditorDialog({
+        assets: createPixiAssetManagerFake(Texture),
+        close: () => false,
+        counters,
+        dialogId,
+        input,
+        model: createUiEditorDialogFixture(dialogId),
+        parent,
+        projection: PROJECTION,
+        semanticRegistry,
+      });
 
-    dialog.layout(PROJECTION);
-    dialog.activate();
-    const [content] = createRetainedDialogHierarchy(dialogId, dialog);
+      dialog.layout(PROJECTION);
+      dialog.activate();
+      const [content] = createRetainedDialogHierarchy(dialogId, dialog);
 
-    expect([content.label, content.type]).toEqual(['Content', '9-slice']);
-    expect(content.children).toHaveLength(2);
-    expect(
-      content.children.map(({ label, libraryEntryId }) => [
-        label,
-        libraryEntryId,
-      ]),
-    ).toEqual([
-      [
-        expectedRowLabel,
-        'compound.inventory-choice-row',
-      ],
-      [
-        expectedRowLabel,
-        'compound.inventory-choice-row',
-      ],
-    ]);
-    expect(content.children.every(({ children }) => children.length === 0)).toBe(
-      true,
-    );
+      expect([content.label, content.type]).toEqual(['Content', '9-slice']);
+      expect(content.children).toHaveLength(2);
+      expect(
+        content.children.map(({ label, libraryEntryId }) => [
+          label,
+          libraryEntryId,
+        ]),
+      ).toEqual([
+        [expectedRowLabel, 'compound.inventory-choice-row'],
+        [expectedRowLabel, 'compound.inventory-choice-row'],
+      ]);
+      expect(
+        content.children.every(({ children }) => children.length === 0),
+      ).toBe(true);
 
-    dialog.destroy();
-    semanticRegistry.clear();
-    input.destroy();
-    parent.destroy({ children: true });
-  });
+      dialog.destroy();
+      semanticRegistry.clear();
+      input.destroy();
+      parent.destroy({ children: true });
+    },
+  );
 
   it('uses a readable World Chat title and exposes production chat rows as leaves', () => {
     const dialogId = 'workshop.worldChat';
@@ -498,9 +493,9 @@ describe('retained dialog UI editor integrations', () => {
     expect(typeof inventoryChoiceRowIntegration.createThumbnail).toBe(
       'function',
     );
-    expect(
-      inventoryChoiceRowIntegration.scenarios.map(({ id }) => id),
-    ).toEqual(['unselected', 'selected', 'pressed', 'disabled']);
+    expect(inventoryChoiceRowIntegration.scenarios.map(({ id }) => id)).toEqual(
+      ['unselected', 'selected', 'pressed', 'disabled'],
+    );
   });
 
   it('registers the production World Chat row as a drill-in widget with states', () => {
@@ -550,9 +545,9 @@ describe('retained dialog UI editor integrations', () => {
     expect(typeof worldEventQuestRowIntegration.createThumbnail).toBe(
       'function',
     );
-    expect(
-      worldEventQuestRowIntegration.scenarios.map(({ id }) => id),
-    ).toEqual(['available', 'unavailable', 'completed']);
+    expect(worldEventQuestRowIntegration.scenarios.map(({ id }) => id)).toEqual(
+      ['available', 'unavailable', 'completed'],
+    );
 
     dialog.destroy();
     semanticRegistry.clear();
@@ -570,12 +565,12 @@ describe('retained dialog UI editor integrations', () => {
       'compound.inbox-mail-widget',
     ]);
     expect(inboxMailWidgetIntegration.kind).toBe('widget');
-    expect(typeof inboxMailWidgetIntegration.createThumbnail).toBe(
-      'function',
-    );
-    expect(
-      inboxMailWidgetIntegration.scenarios.map(({ id }) => id),
-    ).toEqual(['claimable', 'claimed', 'message']);
+    expect(typeof inboxMailWidgetIntegration.createThumbnail).toBe('function');
+    expect(inboxMailWidgetIntegration.scenarios.map(({ id }) => id)).toEqual([
+      'claimable',
+      'claimed',
+      'message',
+    ]);
   });
 
   it('registers the framed player avatar as a production-backed drill-in widget', () => {
@@ -585,14 +580,15 @@ describe('retained dialog UI editor integrations', () => {
 
     expect(playerIntegration.childWidgetIds).toEqual([
       'compound.dialog-frame',
-      'compound.player-avatar',
+      'compound.player-profile',
       'primitive.star-level-label',
       'primitive.resource-label',
     ]);
-    expect(playerAvatarIntegration.kind).toBe('widget');
-    expect(typeof playerAvatarIntegration.createThumbnail).toBe('function');
-    expect(
-      playerAvatarIntegration.scenarios.map(({ id }) => id),
-    ).toEqual(['mira', 'tinted-frame']);
+    expect(playerProfileIntegration.kind).toBe('widget');
+    expect(typeof playerProfileIntegration.createThumbnail).toBe('function');
+    expect(playerProfileIntegration.scenarios.map(({ id }) => id)).toEqual([
+      'mira',
+      'tinted-background',
+    ]);
   });
 });

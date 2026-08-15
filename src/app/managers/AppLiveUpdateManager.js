@@ -1,6 +1,8 @@
 import { Capacitor } from '@capacitor/core';
 import { CapacitorUpdater } from '@capgo/capacitor-updater';
 
+import { UPDATE_BACKGROUND_GRACE_MS } from '../../shared/updatePolicy.js';
+
 const DEFAULT_MANIFEST_URL =
   import.meta.env.VITE_OTA_MANIFEST_URL ??
   'https://davstep.github.io/idle-wizard/ota/latest.json';
@@ -28,7 +30,24 @@ export class AppLiveUpdateManager {
     this.isNativePlatform = isNativePlatform;
     this.getPlatform = getPlatform;
     this.now = now;
+    this.appReadyPromise = null;
     this.startPromise = null;
+  }
+
+  notifyAppReady() {
+    if (!this.enabled || !this.isNativePlatform()) {
+      return Promise.resolve({ status: 'disabled' });
+    }
+
+    if (this.appReadyPromise) {
+      return this.appReadyPromise;
+    }
+
+    this.appReadyPromise = this.updaterPlugin.notifyAppReady().catch((error) => {
+      this.appReadyPromise = null;
+      throw error;
+    });
+    return this.appReadyPromise;
   }
 
   start() {
@@ -45,7 +64,7 @@ export class AppLiveUpdateManager {
       return { status: 'disabled' };
     }
 
-    await this.updaterPlugin.notifyAppReady();
+    await this.notifyAppReady();
     return this.checkForUpdate();
   }
 
@@ -92,6 +111,14 @@ export class AppLiveUpdateManager {
               checksum: manifest.checksum,
             });
 
+      await this.updaterPlugin.setMultiDelay({
+        delayConditions: [
+          {
+            kind: 'background',
+            value: String(UPDATE_BACKGROUND_GRACE_MS),
+          },
+        ],
+      });
       await this.updaterPlugin.next({ id: bundle.id });
       return { status: 'staged', version: manifest.version };
     } catch {

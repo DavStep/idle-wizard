@@ -158,7 +158,7 @@ export default [
     scenarios: [
       { fixture: { placeholder: 'Enter message', value: '' }, id: 'empty', label: 'Empty', mount: mountTextField },
       { fixture: { placeholder: 'Enter message', value: 'Ready to brew' }, id: 'value', label: 'With value', mount: mountTextField },
-      { fixture: { height: 64, multiline: true, placeholder: 'Write feedback', value: 'The room feels great.' }, id: 'multiline', label: 'Multiline', mount: mountTextField },
+      { fixture: { height: 64, multiline: true, placeholder: 'Write feedback', value: 'The workshop button disappears after I write a longer report that wraps onto several visible lines.' }, id: 'multiline', label: 'Multiline overflow', mount: mountTextField },
     ],
   }),
   defineUiEditorIntegration({

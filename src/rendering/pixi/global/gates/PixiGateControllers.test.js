@@ -792,7 +792,7 @@ describe('retained Pixi gate controllers', () => {
     });
   });
 
-  it('shows the deploy lock only after a confirmed newer version and saves first', async () => {
+  it('shows the deploy lock at a safe refresh point and saves first', async () => {
     const events = [];
     const view = createView();
     const windowRef = createWindowRef();
@@ -808,7 +808,73 @@ describe('retained Pixi gate controllers', () => {
     });
     controller.attach(view);
 
+    await controller.checkNow({ allowReload: true });
+    await flushAsyncWork();
+
+    expect(view.bind).toHaveBeenCalledWith({
+      title: 'New Version',
+      message: 'Refreshing...',
+    });
+    expect(events).toEqual(['save', 'reload']);
+  });
+
+  it('keeps a newer deploy pending after a brief tab switch', async () => {
+    let nowMs = 1_000;
+    const events = [];
+    const view = createView();
+    const documentRef = createDocumentRef();
+    const controller = new PixiDeployRefreshController({
+      enabled: true,
+      currentVersion: 'old',
+      fetchVersion: vi.fn().mockResolvedValue({ version: 'new' }),
+      beforeReload: vi.fn(async () => events.push('save')),
+      reload: () => events.push('reload'),
+      reloadDelayMs: 0,
+      now: () => nowMs,
+      windowRef: createWindowRef(),
+      documentRef,
+    });
+    controller.attach(view);
+
+    documentRef.visibilityState = 'hidden';
+    controller.handleVisibilityChange();
+    nowMs += 1_000;
+    documentRef.visibilityState = 'visible';
+    controller.handleVisibilityChange();
+    await flushAsyncWork();
+
+    expect(controller.pendingVersion).toBe('new');
+    expect(view.bind).not.toHaveBeenCalled();
+    expect(events).toEqual([]);
+  });
+
+  it('refreshes a pending deploy after five minutes in the background', async () => {
+    let nowMs = 1_000;
+    const events = [];
+    const view = createView();
+    const documentRef = createDocumentRef();
+    const controller = new PixiDeployRefreshController({
+      enabled: true,
+      currentVersion: 'old',
+      fetchVersion: vi.fn().mockResolvedValue({ version: 'new' }),
+      beforeReload: vi.fn(async () => events.push('save')),
+      reload: () => events.push('reload'),
+      reloadDelayMs: 0,
+      now: () => nowMs,
+      windowRef: createWindowRef(),
+      documentRef,
+    });
+    controller.attach(view);
+
     await controller.checkNow();
+    expect(controller.pendingVersion).toBe('new');
+    expect(events).toEqual([]);
+
+    documentRef.visibilityState = 'hidden';
+    controller.handleVisibilityChange();
+    nowMs += 300_000;
+    documentRef.visibilityState = 'visible';
+    controller.handleVisibilityChange();
     await flushAsyncWork();
 
     expect(view.bind).toHaveBeenCalledWith({

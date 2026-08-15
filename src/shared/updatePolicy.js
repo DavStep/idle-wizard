@@ -1,0 +1,1 @@
+export const UPDATE_BACKGROUND_GRACE_MS = 5 * 60 * 1_000;

@@ -25,6 +25,7 @@ import { normalizeSaveSelectedNumber } from './saveSelectedNumberNormalizer';
 import { assertMarketScope, getMarketScopedKey, normalizeMarketId } from './marketScope';
 import {
   appendMissingItemConfigRows as appendMissingItemConfigRowsByKey,
+  normalizeLegacyPotionSellPrices,
   normalizeLegacySeedSummonCosts,
 } from './itemConfigRows';
 import {
@@ -9313,6 +9314,18 @@ function normalizeItemsGameConfigJson(
       normalizedConfig[key] = normalizedList;
       changed = true;
     }
+  }
+
+  const normalizedPotions = normalizeLegacyPotionSellPrices(
+    normalizedConfig.potions,
+    normalizedConfig.herbs,
+    potionRecipeCatalog,
+    (row) => normalizeNpcMarketItemKey(String(row.key ?? '')),
+  );
+
+  if (normalizedPotions !== normalizedConfig.potions) {
+    normalizedConfig.potions = normalizedPotions;
+    changed = true;
   }
 
   return changed ? JSON.stringify(normalizedConfig) : originalJson;

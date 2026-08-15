@@ -10,6 +10,7 @@ import android.view.Gravity;
 import android.view.KeyEvent;
 import android.view.View;
 import android.view.ViewGroup;
+import android.view.WindowManager;
 import android.view.inputmethod.EditorInfo;
 import android.view.inputmethod.InputMethodManager;
 import android.widget.EditText;
@@ -168,6 +169,7 @@ public class IdleWizardTextEntryPlugin extends Plugin {
         int selectionEnd,
         boolean shouldSubmitOnEnter
     ) {
+        enforceKeyboardOverlayWindow(activity);
         View contentView = activity.findViewById(android.R.id.content);
         if (!(contentView instanceof ViewGroup)) {
             throw new IllegalStateException("Android content root is unavailable.");
@@ -176,7 +178,7 @@ public class IdleWizardTextEntryPlugin extends Plugin {
         ViewGroup root = (ViewGroup) contentView;
         SessionEditText nextEditor = new SessionEditText(activity);
         FrameLayout.LayoutParams layoutParams = new FrameLayout.LayoutParams(1, 1);
-        layoutParams.gravity = Gravity.BOTTOM | Gravity.END;
+        layoutParams.gravity = Gravity.TOP | Gravity.END;
 
         activeSessionId = sessionId;
         editor = nextEditor;
@@ -417,7 +419,13 @@ public class IdleWizardTextEntryPlugin extends Plugin {
             return;
         }
 
-        InputMethodManager inputMethodManager = (InputMethodManager) getContext()
+        Activity activity = getActivity();
+        if (activity == null) {
+            return;
+        }
+
+        enforceKeyboardOverlayWindow(activity);
+        InputMethodManager inputMethodManager = (InputMethodManager) activity
             .getSystemService(Activity.INPUT_METHOD_SERVICE);
         if (inputMethodManager != null) {
             inputMethodManager.showSoftInput(
@@ -425,6 +433,14 @@ public class IdleWizardTextEntryPlugin extends Plugin {
                 InputMethodManager.SHOW_IMPLICIT
             );
         }
+    }
+
+    private static void enforceKeyboardOverlayWindow(Activity activity) {
+        int softInputMode = activity.getWindow().getAttributes().softInputMode;
+        int overlaySoftInputMode =
+            (softInputMode & ~WindowManager.LayoutParams.SOFT_INPUT_MASK_ADJUST) |
+            WindowManager.LayoutParams.SOFT_INPUT_ADJUST_NOTHING;
+        activity.getWindow().setSoftInputMode(overlaySoftInputMode);
     }
 
     private void hideKeyboard(EditText targetEditor) {

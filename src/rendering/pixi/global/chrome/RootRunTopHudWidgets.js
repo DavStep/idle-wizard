@@ -15,10 +15,9 @@ import {
   PIXI_ROOT_RUN_ASSETS,
   PIXI_UI_GEOMETRY,
 } from '../../theme/PixiThemeTokens.js';
+import { PlayerProfileWidget } from './PlayerProfileWidgets.js';
 
 const HUD_ASSETS = Object.freeze({
-  avatarFrame: PIXI_ROOT_RUN_ASSETS.topHudAvatarFrame,
-  avatarHead: PIXI_ROOT_RUN_ASSETS.topHudAvatarHead,
   currency: PIXI_ROOT_RUN_ASSETS.topHudCurrency,
   settings: PIXI_ROOT_RUN_ASSETS.topHudSettings,
   settingsGear: PIXI_ROOT_RUN_ASSETS.settingsGear,
@@ -29,8 +28,6 @@ const HUD_ASSETS = Object.freeze({
 });
 
 const AVATAR_SIZE = 186;
-const AVATAR_INSET = 19;
-const AVATAR_PORTRAIT_SIZE = 148;
 const CURRENCY_WIDTH = 208;
 const CURRENCY_HEIGHT = 66;
 const SETTINGS_SIZE = 122;
@@ -59,80 +56,8 @@ const LEVEL_TEXT_STROKE = Object.freeze({
   scale: PIXI_UI_GEOMETRY.sourceScale,
 });
 
-/**
- * Shared framed player portrait. Interaction belongs to the composing control;
- * this widget owns only the production frame, backing, mask, and portrait.
- */
-export class RootRunAvatarWidget extends Container {
-  constructor({
-    assets,
-    texture,
-    label = 'playerAvatar',
-  } = {}) {
-    super({ label });
-    this.avatarFrame = createNineSlice({
-      texture: assets.getTexture(HUD_ASSETS.avatarFrame),
-      insets: { left: 54, top: 54, right: 55, bottom: 55 },
-      width: AVATAR_SIZE,
-      height: AVATAR_SIZE,
-      label: `${label}:frame`,
-    });
-    this.headBackground = new Sprite({
-      texture: assets.getTexture(HUD_ASSETS.avatarHead),
-      label: `${label}:background`,
-      roundPixels: true,
-    });
-    this.headBackground.position.set(AVATAR_INSET, AVATAR_INSET);
-    this.headBackground.width = AVATAR_PORTRAIT_SIZE;
-    this.headBackground.height = AVATAR_PORTRAIT_SIZE + 1;
-
-    this.portraitMask = new Graphics()
-      .rect(
-        AVATAR_INSET,
-        AVATAR_INSET,
-        AVATAR_PORTRAIT_SIZE,
-        AVATAR_PORTRAIT_SIZE,
-      )
-      .fill('#ffffff');
-    this.portraitMask.label = `${label}:mask`;
-    this.portrait = new Sprite({
-      texture,
-      label: `${label}:portrait`,
-      roundPixels: true,
-    });
-    this.portrait.mask = this.portraitMask;
-    this.addChild(
-      this.avatarFrame,
-      this.headBackground,
-      this.portrait,
-      this.portraitMask,
-    );
-    this.setTexture(texture);
-  }
-
-  setTexture(texture) {
-    if (texture) {
-      this.portrait.texture = texture;
-    }
-    this.portrait.width = AVATAR_PORTRAIT_SIZE;
-    this.portrait.height = AVATAR_PORTRAIT_SIZE;
-    this.portrait.position.set(AVATAR_INSET, AVATAR_INSET);
-    return this;
-  }
-
-  setFrameTint(tint = 0xffffff) {
-    this.avatarFrame.tint = Number(tint) || 0xffffff;
-    return this;
-  }
-}
-
 export class RootRunHudAvatarButton extends PixiBaseButton {
-  constructor({
-    action = null,
-    assets,
-    inputRouter = null,
-    texture,
-  } = {}) {
+  constructor({ action = null, assets, inputRouter = null, texture } = {}) {
     super({
       action,
       assetManager: assets,
@@ -144,25 +69,27 @@ export class RootRunHudAvatarButton extends PixiBaseButton {
       label: 'topPanel:avatarViewport',
     });
 
-    this.avatarWidget = new RootRunAvatarWidget({
+    this.profileWidget = new PlayerProfileWidget({
       assets,
       texture,
-      label: 'topPanel:avatarWidget',
+      label: 'topPanel:profileWidget',
     });
-    this.visual.addChild(this.avatarWidget);
-    this.avatarFrame = this.avatarWidget.avatarFrame;
-    this.headBackground = this.avatarWidget.headBackground;
-    this.portraitMask = this.avatarWidget.portraitMask;
-    this.portrait = this.avatarWidget.portrait;
+    this.visual.addChild(this.profileWidget);
+    this.avatarWidget = this.profileWidget.avatarWidget;
+    this.backgroundWidget = this.profileWidget.backgroundWidget;
+    this.avatarFrame = this.profileWidget.avatarFrame;
+    this.headBackground = this.profileWidget.headBackground;
+    this.portraitMask = this.profileWidget.portraitMask;
+    this.portrait = this.profileWidget.portrait;
   }
 
   setTexture(texture) {
-    this.avatarWidget.setTexture(texture);
+    this.profileWidget.setTexture(texture);
     return this;
   }
 
   setFrameTint(tint = 0xffffff) {
-    this.avatarWidget.setFrameTint(tint);
+    this.profileWidget.setBackgroundTint(tint);
     return this;
   }
 }
@@ -383,21 +310,12 @@ export class RootRunHudLevelRail extends Container {
       stroke: LEVEL_TEXT_STROKE,
       label: 'topPanel:levelValue',
     });
-    this.levelValue.position.set(
-      LEVEL_STAR_SIZE / 2,
-      LEVEL_STAR_SIZE / 2,
-    );
+    this.levelValue.position.set(LEVEL_STAR_SIZE / 2, LEVEL_STAR_SIZE / 2);
     this.levelMotionRoot = new Container({
       label: 'topPanel:levelMotion',
     });
-    this.levelMotionRoot.pivot.set(
-      LEVEL_STAR_SIZE / 2,
-      LEVEL_STAR_SIZE / 2,
-    );
-    this.levelMotionRoot.position.set(
-      LEVEL_STAR_SIZE / 2,
-      LEVEL_STAR_SIZE / 2,
-    );
+    this.levelMotionRoot.pivot.set(LEVEL_STAR_SIZE / 2, LEVEL_STAR_SIZE / 2);
+    this.levelMotionRoot.position.set(LEVEL_STAR_SIZE / 2, LEVEL_STAR_SIZE / 2);
     this.levelMotionRoot.addChild(this.levelStar, this.levelValue);
     this.levelControl.addChild(this.levelMotionRoot);
     this.pressVisual.addChild(this.questVisuals, this.levelControl);
@@ -452,9 +370,7 @@ export class RootRunHudLevelRail extends Container {
     this.total = safeTotal;
     this.completed = safeCompleted;
     const x = LEVEL_TRACK_X + LEVEL_TRACK_INSET;
-    const y =
-      LEVEL_TRACK_Y +
-      (LEVEL_TRACK_HEIGHT - LEVEL_FILL_HEIGHT) / 2;
+    const y = LEVEL_TRACK_Y + (LEVEL_TRACK_HEIGHT - LEVEL_FILL_HEIGHT) / 2;
     const width = this.trackWidth - LEVEL_TRACK_INSET * 2;
     const height = LEVEL_FILL_HEIGHT;
 
@@ -481,35 +397,17 @@ export class RootRunHudLevelRail extends Container {
       const dividerHeight = height - 18;
       const complete = index <= safeCompleted;
       this.dividers
-        .roundRect(
-          dividerX - 3,
-          dividerY,
-          3,
-          dividerHeight,
-          1.5,
-        )
+        .roundRect(dividerX - 3, dividerY, 3, dividerHeight, 1.5)
         .fill({
           color: complete ? '#ffffff' : '#000000',
           alpha: complete ? 0.12 : 0.44,
         })
-        .roundRect(
-          dividerX + 3,
-          dividerY,
-          3,
-          dividerHeight,
-          1.5,
-        )
+        .roundRect(dividerX + 3, dividerY, 3, dividerHeight, 1.5)
         .fill({
           color: complete ? '#000000' : '#ffffff',
           alpha: complete ? 0.42 : 0.08,
         })
-        .roundRect(
-          dividerX,
-          dividerY,
-          3,
-          dividerHeight,
-          1.5,
-        )
+        .roundRect(dividerX, dividerY, 3, dividerHeight, 1.5)
         .fill({
           color: complete ? '#201331' : '#ffffff',
           alpha: complete ? 0.82 : 0.68,
@@ -520,9 +418,7 @@ export class RootRunHudLevelRail extends Container {
 
   applyTheme(theme) {
     this.levelValue.applyTheme(theme);
-    this.levelValue
-      .setColor('#ffffff')
-      .setStroke(LEVEL_TEXT_STROKE);
+    this.levelValue.setColor('#ffffff').setStroke(LEVEL_TEXT_STROKE);
     return this;
   }
 
@@ -542,13 +438,7 @@ export const ROOT_RUN_TOP_HUD_GEOMETRY = Object.freeze({
   levelHeight: LEVEL_HEIGHT,
 });
 
-function createNineSlice({
-  texture,
-  insets,
-  width,
-  height,
-  label,
-}) {
+function createNineSlice({ texture, insets, width, height, label }) {
   const sprite = new NineSliceSprite({
     texture,
     leftWidth: insets.left,

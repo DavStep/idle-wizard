@@ -123,4 +123,72 @@ describe('PixiTextField', () => {
 
     field.destroy({ children: true });
   });
+
+  it('wraps multiline text and keeps the active caret inside the visible writing area', () => {
+    const field = new PixiTextField({
+      assetManager: { getTexture: () => Texture.EMPTY },
+      width: 120,
+      height: 48,
+      multiline: true,
+    });
+    const value =
+      'The send button disappears after I type a long report about the workshop.';
+
+    field.applySessionSnapshot({
+      active: true,
+      selectionEnd: value.length,
+      selectionStart: value.length,
+      value,
+    });
+
+    expect(field.textLabel.textObject.style.wordWrap).toBe(true);
+    expect(field.textLabel.textObject.style.breakWords).toBe(true);
+    expect(field.textLabel.textObject.style.whiteSpace).toBe('pre-wrap');
+    expect(field.textLabel.measuredHeight).toBeGreaterThan(
+      field.textMask.getLocalBounds().height,
+    );
+
+    const caretBounds = field.caretGraphic.getLocalBounds();
+    const visibleHeight = field.textMask.getLocalBounds().height;
+    expect(caretBounds.y).toBeGreaterThanOrEqual(0);
+    expect(caretBounds.y + caretBounds.height).toBeLessThanOrEqual(visibleHeight);
+
+    field.destroy({ children: true });
+  });
+
+  it('scrolls a long single-line value to keep the active caret visible', () => {
+    const field = new PixiTextField({
+      assetManager: { getTexture: () => Texture.EMPTY },
+      width: 120,
+      height: 29,
+    });
+    const value =
+      'This long world chat message should keep the newest text visible.';
+
+    field.applySessionSnapshot({
+      active: true,
+      selectionEnd: value.length,
+      selectionStart: value.length,
+      value,
+    });
+
+    const caretBounds = field.caretGraphic.getLocalBounds();
+    expect(caretBounds.x).toBeGreaterThanOrEqual(0);
+    expect(caretBounds.x + caretBounds.width).toBeLessThanOrEqual(
+      field.textAreaWidth,
+    );
+    expect(field.textLabel.x).toBeLessThan(0);
+
+    field.applySessionSnapshot({
+      active: true,
+      selectionEnd: 0,
+      selectionStart: 0,
+      value,
+    });
+
+    expect(field.textScrollX).toBe(0);
+    expect(field.caretGraphic.getLocalBounds().x).toBe(0);
+
+    field.destroy({ children: true });
+  });
 });

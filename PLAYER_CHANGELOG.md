@@ -5,6 +5,12 @@ upload script posts the section whose heading matches `package.json` `version`.
 Write these developer-to-player notes only in Idle Wizard terms. Do not mention
 other game names, source projects, ports, or implementation provenance.
 
+## 0.3.52
+
+- Refreshed player profiles across the top panel, Account, and Player Info with clearer portraits and softer selectable background colors.
+- Improved Brewing spacing on taller phones and before World Chat unlocks, with cleaner potion name, rarity, ingredient, and action placement.
+- Fixed Android text entry so the keyboard stays over the game, corrected legacy potion sale values, and made live updates safer to stage and apply.
+
 ## 0.3.51
 
 - Reworked the Brewing recipe book into clearer two-page cards and refined the cauldron layout so ingredients and actions stay easy to read across taller phones.

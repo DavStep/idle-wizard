@@ -74,7 +74,6 @@ export const BREWING_HUD_GEOMETRY = Object.freeze({
   ingredientRowGap: 60,
   ingredientOrbitRadiusY: 87,
   previewIdentityGap: 26,
-  previewIdentityLineGap: 19,
   previewDotsBottomGap: 22,
   navigationButtonWidth: 34,
   navigationButtonHeight: 38,
@@ -183,6 +182,7 @@ export class BrewingHudPixi {
     this.completionMotionStart = null;
     this.primaryActionMotionStart = null;
     this.ingredientOrbitMotion = null;
+    this.previewOffsetY = 0;
     this.lastMotionCauldronKey = null;
     this.boundMotionStates = new Map();
     this.root = new Container({ label: 'brewing-fantasy-hud' });
@@ -900,24 +900,41 @@ export class BrewingHudPixi {
     });
   }
 
-  layout(sourceWidth) {
+  layout(
+    sourceWidth,
+    sourceHeight = PIXI_UI_GEOMETRY.sourceHeight,
+    { worldChatVisible = true } = {},
+  ) {
     this.sourceWidth = sourceWidth;
+    this.sourceHeight = sourceHeight;
     const edge = BREWING_HUD_GEOMETRY.edge;
     const width = sourceWidth - edge * 2;
     const carouselContentOffset =
       BREWING_HUD_GEOMETRY.carouselContentOffset;
-    const ingredientPositions = resolveIngredientPositions(width);
+    const detailTop = resolveBrewingDetailTop(
+      sourceHeight,
+      worldChatVisible,
+    );
+    this.previewOffsetY = detailTop - BREWING_HUD_GEOMETRY.detailTop;
+    const carouselHeight =
+      detailTop +
+      BREWING_HUD_GEOMETRY.detailHeight -
+      BREWING_HUD_GEOMETRY.top;
+    const ingredientPositions = resolveIngredientPositions(
+      width,
+      this.previewOffsetY,
+    );
     const cauldronCenterY = resolveCauldronCenterY(ingredientPositions);
     this.carouselPanel.setBounds(
       edge,
       BREWING_HUD_GEOMETRY.top,
       width,
-      BREWING_HUD_GEOMETRY.carouselHeight,
+      carouselHeight,
     );
     this.hidePreviewPanelChrome();
     this.detailPanel.setBounds(
       edge + BREWING_HUD_GEOMETRY.detailInset,
-      BREWING_HUD_GEOMETRY.detailTop,
+      detailTop,
       width - BREWING_HUD_GEOMETRY.detailInset * 2,
       BREWING_HUD_GEOMETRY.detailHeight,
     );
@@ -951,7 +968,7 @@ export class BrewingHudPixi {
     );
     this.dots.position.set(
       width / 2,
-      BREWING_HUD_GEOMETRY.detailTop -
+      detailTop -
         BREWING_HUD_GEOMETRY.top -
         BREWING_HUD_GEOMETRY.previewDotsBottomGap,
     );
@@ -995,7 +1012,7 @@ export class BrewingHudPixi {
     );
     this.unlockCostButton.setBounds(
       (sourceWidth - PIXI_COST_BUTTON_GEOMETRY.stackedWidth) / 2,
-      BREWING_HUD_GEOMETRY.detailTop +
+      detailTop +
         (BREWING_HUD_GEOMETRY.detailHeight -
           PIXI_COST_BUTTON_GEOMETRY.stackedHeight) /
           2,
@@ -1020,12 +1037,17 @@ export class BrewingHudPixi {
     this.rarity.position.set(
       width / 2,
       this.potionName.y +
-        BREWING_HUD_GEOMETRY.previewIdentityLineGap,
+        (this.potionName.visible
+          ? this.potionName.height + 1
+          : 0),
     );
     this.ownedLabel.position.set(36, 72);
     this.batchLabel.position.set(
       width / 2,
-      this.rarity.y + 16,
+      this.rarity.y +
+        (this.rarity.visible
+          ? this.rarity.height + 1
+          : 0),
     );
     this.ingredientSlots.forEach((slot, index) => {
       const position = ingredientPositions[index];
@@ -1045,7 +1067,7 @@ export class BrewingHudPixi {
       sourceWidth -
         edge -
         BREWING_HUD_GEOMETRY.emptyButtonWidth,
-      BREWING_HUD_GEOMETRY.detailTop -
+      detailTop -
         BREWING_HUD_GEOMETRY.emptyButtonHeight -
         BREWING_HUD_GEOMETRY.emptyButtonGapAboveDetail,
       BREWING_HUD_GEOMETRY.emptyButtonWidth,
@@ -1057,7 +1079,7 @@ export class BrewingHudPixi {
       edge +
         BREWING_HUD_GEOMETRY.detailInset +
         BREWING_HUD_GEOMETRY.detailContentInset,
-      BREWING_HUD_GEOMETRY.detailTop + 72,
+      detailTop + 72,
       detailWidth -
         BREWING_HUD_GEOMETRY.detailContentInset * 2,
       38,
@@ -1142,7 +1164,10 @@ export class BrewingHudPixi {
       return;
     }
     const centerX = width / 2;
-    const ingredientPositions = resolveIngredientPositions(width);
+    const ingredientPositions = resolveIngredientPositions(
+      width,
+      this.previewOffsetY,
+    );
     const centerY = resolveCauldronCenterY(ingredientPositions);
     this.recipeOrbit.position.set(0, 0);
     this.recipeOrbit
@@ -1479,7 +1504,10 @@ export class BrewingHudPixi {
     if (!Number.isFinite(width) || width <= 0) {
       return;
     }
-    const position = resolveIngredientPositions(width)[index];
+    const position = resolveIngredientPositions(
+      width,
+      this.previewOffsetY,
+    )[index];
     if (!position) {
       return;
     }
@@ -1490,7 +1518,7 @@ export class BrewingHudPixi {
     const center = {
       x: width / 2,
       y: resolveCauldronCenterY(
-        resolveIngredientPositions(width),
+        resolveIngredientPositions(width, this.previewOffsetY),
       ),
     };
     const eased = easeOutQuint(progress);
@@ -2265,12 +2293,13 @@ function normalizeRequirements(rows, herbs, stagedIngredients = []) {
     });
 }
 
-function resolveIngredientPositions(width) {
+function resolveIngredientPositions(width, offsetY = 0) {
   const top =
     BREWING_HUD_GEOMETRY.carouselContentOffset +
     BREWING_HUD_GEOMETRY.configurationTopOffset +
     BREWING_HUD_GEOMETRY.configurationButtonHeight +
-    BREWING_HUD_GEOMETRY.previewTopGap;
+    BREWING_HUD_GEOMETRY.previewTopGap +
+    offsetY;
   const middle = top + BREWING_HUD_GEOMETRY.ingredientRowGap;
   const bottom = middle + BREWING_HUD_GEOMETRY.ingredientRowGap;
   return [
@@ -2281,6 +2310,20 @@ function resolveIngredientPositions(width) {
     { x: width - 66, y: middle },
     { x: width - 114, y: top },
   ];
+}
+
+function resolveBrewingDetailTop(sourceHeight, worldChatVisible) {
+  const chatHeight = worldChatVisible
+    ? PIXI_UI_GEOMETRY.roomChatHeight +
+      PIXI_UI_GEOMETRY.roomChatTitleOverhang
+    : 0;
+  return (
+    sourceHeight -
+    PIXI_UI_GEOMETRY.roomChatBottom -
+    chatHeight -
+    BREWING_HUD_GEOMETRY.detailChatGap -
+    BREWING_HUD_GEOMETRY.detailHeight
+  );
 }
 
 function resolveCauldronCenterY(ingredientPositions) {

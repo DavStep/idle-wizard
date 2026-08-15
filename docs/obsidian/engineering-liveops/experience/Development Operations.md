@@ -77,9 +77,10 @@ experience_type: development-operations
 - Pixi startup preloads must contain the loading splash art, its shared progress-rail textures, and the game font only. Mount that splash before fetching the remaining production manifest, but keep pages and dialogs gated on the full preload.
 - If `build` delegates to `build:prod`, keep `build` as `npm run build:prod --` so Pages' `--base=/idle-wizard/` reaches Vite.
 - `DavStep/idle-wizard` is public and GitHub Pages deploys at `https://davstep.github.io/idle-wizard/`.
-- Web deploy freshness uses `/deploy-version.json`; Vite emits it per build and the app polls it with `no-store`, then reloads on version change.
+- Web deploy freshness uses `/deploy-version.json`; Vite emits it per build and the app polls it with `no-store`. A fresh launch may refresh a stale build immediately, but an active tab keeps the new version pending until it returns from at least five minutes hidden.
 - `/deploy-version.json` can include `releaseVersion`, but deploy refresh should compare only the generated deploy `version` build id.
 - Android OTA bundles need a separate production build with base `/`; the GitHub Pages build uses `/idle-wizard/` and its absolute asset URLs do not work inside Capacitor's local origin.
+- Android OTA staging must configure a five-minute background delay before calling Capacitor Updater `next`; if delay configuration fails, leave the bundle downloaded but unqueued so a brief app switch cannot reload gameplay.
 - Deploy-triggered page refresh should only load compatible new code after migrations/sanitizers preserve player saves; refresh must not write defaults over hydrated user data.
 - Deploy refresh must call gameplay save-and-flush before `location.reload()` so open tabs persist current progress before swapping bundles.
 - Production web builds should set `VITE_SPACETIME_URI=https://maincloud.spacetimedb.com` and publish the module with `npm run stdb:publish:maincloud`.
@@ -92,6 +93,8 @@ experience_type: development-operations
 - Optional Google login is controlled by `VITE_GOOGLE_AUTH_CLIENT_ID`; the Google OAuth client ID is public config and can live in `.env.production`.
 - Browser Google login must use Google Identity Services to receive a Google-signed ID token in a JavaScript callback; Google code flow needs backend token exchange and `oidc-client-ts` rejects legacy implicit `id_token`.
 - Current player APK release automation must keep using the OAuth-compatible Android debug certificate until a true release keystore SHA-1 is registered and account connect/restore is device-tested.
+- Call Capacitor Updater `notifyAppReady()` at app-entry startup before renderer asset preloads or backend work; waiting for full initialization lets slow devices hit `appReadyTimeout` and roll back healthy OTA bundles.
+- Do not deliver the release APK to Discord until the published OTA manifest matches the package version and the hosted bundle's size and SHA-256 checksum verify; a successful Pages workflow alone does not prove the player update artifact.
 - Android native splash density assets follow the project-wide PNG-only policy. Keep their dimensions/content lean enough for the signed APK upload limit.
 - Android `versionCode` must reserve three digits each for minor and patch values; a two-digit mapping made `0.3.0` older than `0.2.104`, causing Android to reject the release as a downgrade.
 - OIDC redirect state must use persistent `localStorage` through `stateStore`; default session storage can disappear on Android/new-tab OAuth returns and produce callback state errors.

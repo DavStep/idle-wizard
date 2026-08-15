@@ -62,6 +62,27 @@ describe('ViewportManager', () => {
     expect(mainActivity).toContain('settings.setDisplayZoomControls(false);');
   });
 
+  it('keeps native Android text entry over the game instead of resizing it', () => {
+    const manifest = readFileSync(
+      `${cwd()}/android/app/src/main/AndroidManifest.xml`,
+      'utf8',
+    );
+    const textEntryPlugin = readFileSync(
+      `${cwd()}/android/app/src/main/java/com/idlewizard/game/IdleWizardTextEntryPlugin.java`,
+      'utf8',
+    );
+
+    expect(manifest).toContain('android:windowSoftInputMode="adjustNothing"');
+    expect(textEntryPlugin).toContain(
+      'layoutParams.gravity = Gravity.TOP | Gravity.END;',
+    );
+    expect(textEntryPlugin.match(/enforceKeyboardOverlayWindow\(activity\);/g))
+      .toHaveLength(2);
+    expect(textEntryPlugin).toContain(
+      'WindowManager.LayoutParams.SOFT_INPUT_ADJUST_NOTHING',
+    );
+  });
+
   it('uses the splash color during launch and the top-panel color in game', () => {
     const androidStyles = readFileSync(
       `${cwd()}/android/app/src/main/res/values/styles.xml`,

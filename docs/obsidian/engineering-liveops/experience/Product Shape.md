@@ -80,7 +80,7 @@ experience_type: product-shape
 - Popup forms in snapshot-rendered managers need local drafts captured before replacing content; otherwise timer/mana refreshes clear focused fields.
 - Snapshot-rendered popup forms with active text inputs should keep the same input DOM node mounted during refresh; replacing then refocusing can still close mobile keyboards.
 - Mobile keyboard fixes should preserve room scale and use visible-stage metrics to lift focused overlays.
-- Canvas-only text entry must keep the canvas CSS box on the large layout viewport as well as locking the retained projection; a base `100dvh` height can still compress the unchanged renderer when the Android IME opens.
+- Canvas-only Android text entry must reassert `adjustNothing` at native focus and keep its transparent editor outside the IME overlap; CSS viewport units and retained projection locks cannot prevent native focused-view accommodation.
 - Even with Android `adjustNothing`, WebView text focus can pan the document; keep the app shell fixed and reset document scroll while text entry is locked.
 - World chat dialog should use a fixed upper source-coordinate anchor; focus-within keyboard recentering makes it jump down when the keyboard closes.
 - The approved illustrated fantasy HUD and Root Run asset pipeline are the visual guidance; keep the fixed `390px` logical width, fluid portrait height, and wide-desktop contain-fit behavior.

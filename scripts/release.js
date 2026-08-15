@@ -25,6 +25,7 @@ import {
 import { shouldPublishBackend } from './release-backend-policy.js';
 import { waitForReleaseWorkflows } from './release-github-actions.js';
 import { shouldHostApkInGithubRelease } from './release-apk-delivery.js';
+import { waitForPublishedOta } from './verify-published-ota.mjs';
 
 const rootDir = process.cwd();
 const options = parseOptions(process.argv.slice(2));
@@ -135,6 +136,17 @@ if (!skipGit) {
         watchWorkflowRun: watchGithubWorkflowRun,
         log: (message) => console.log(message),
       });
+    } catch (error) {
+      fail(error.message);
+    }
+
+    step('published android live update');
+    try {
+      const ota = await waitForPublishedOta({
+        expectedVersion: packageInfo.version,
+        log: (message) => console.log(message),
+      });
+      console.log(`Verified OTA ${ota.version} at ${ota.bundleUrl}`);
     } catch (error) {
       fail(error.message);
     }

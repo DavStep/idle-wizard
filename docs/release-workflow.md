@@ -79,12 +79,15 @@ This performs:
 8. git commit and push from `main`
 9. wait for the pushed commit's `Checks` and `Deploy GitHub Pages` workflows to
    succeed
-10. host an oversized APK in a versioned GitHub Release when needed
-11. Discord changelog, optional feature spotlight, and APK attachment or link
+10. download and checksum-verify that release's published Android live-update
+    manifest and bundle
+11. host an oversized APK in a versioned GitHub Release when needed
+12. Discord changelog, optional feature spotlight, and APK attachment or link
 
 Discord is the final release action. If either required GitHub Actions workflow
-fails or does not start, the command exits without posting any Discord messages
-or APK.
+fails or does not start, or the published OTA manifest/bundle does not match the
+release version and checksum, the command exits without posting any Discord
+messages or APK.
 
 The production Android sync builds into isolated `tmp/android-dist` and lets
 Capacitor copy that directory without rewriting image formats. Runtime raster
@@ -178,6 +181,13 @@ Confirm the APK exists locally:
 
 ```sh
 find android/app/build/outputs/apk -type f -name '*.apk' -print -exec ls -lh {} \;
+```
+
+Re-run the same published Android live-update verification used by the release
+gate when diagnosing CDN or player update reports:
+
+```sh
+npm run ota:verify
 ```
 
 Confirm Discord manually by checking the target channel for the changelog and APK

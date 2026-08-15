@@ -34,6 +34,7 @@ function createUpdater(overrides = {}) {
     download: vi.fn(() =>
       Promise.resolve({ id: 'downloaded-1', version: '0.3.49', status: 'success' }),
     ),
+    setMultiDelay: vi.fn(() => Promise.resolve()),
     next: vi.fn(() => Promise.resolve({})),
     ...overrides,
   };
@@ -86,7 +87,43 @@ describe('AppLiveUpdateManager', () => {
       version: '0.3.49',
       checksum: 'a'.repeat(64),
     });
+    expect(updater.setMultiDelay).toHaveBeenCalledWith({
+      delayConditions: [{ kind: 'background', value: '300000' }],
+    });
     expect(updater.next).toHaveBeenCalledWith({ id: 'downloaded-1' });
+    expect(
+      updater.setMultiDelay.mock.invocationCallOrder[0],
+    ).toBeLessThan(updater.next.mock.invocationCallOrder[0]);
+  });
+
+  it('lets the app mark a launched OTA bundle ready before heavy startup work', async () => {
+    const updater = createUpdater();
+    const manager = createManager({ updater });
+
+    await expect(manager.notifyAppReady()).resolves.toEqual({});
+    await expect(manager.notifyAppReady()).resolves.toEqual({});
+
+    expect(updater.notifyAppReady).toHaveBeenCalledOnce();
+    expect(updater.current).not.toHaveBeenCalled();
+
+    await manager.start();
+
+    expect(updater.notifyAppReady).toHaveBeenCalledOnce();
+    expect(updater.current).toHaveBeenCalledOnce();
+  });
+
+  it('retries marking the app ready after a transient native plugin failure', async () => {
+    const updater = createUpdater({
+      notifyAppReady: vi.fn()
+        .mockRejectedValueOnce(new Error('bridge not ready'))
+        .mockResolvedValueOnce({}),
+    });
+    const manager = createManager({ updater });
+
+    await expect(manager.notifyAppReady()).rejects.toThrow('bridge not ready');
+    await expect(manager.notifyAppReady()).resolves.toEqual({});
+
+    expect(updater.notifyAppReady).toHaveBeenCalledTimes(2);
   });
 
   it('does nothing in a browser build', async () => {
@@ -131,6 +168,17 @@ describe('AppLiveUpdateManager', () => {
       version: '0.3.49',
     });
     expect(updater.download).not.toHaveBeenCalled();
+  });
+
+  it('does not stage an update when the background grace cannot be configured', async () => {
+    const updater = createUpdater({
+      setMultiDelay: vi.fn(() => Promise.reject(new Error('delay unavailable'))),
+    });
+    const manager = createManager({ updater });
+
+    await expect(manager.start()).resolves.toEqual({ status: 'unavailable' });
+
+    expect(updater.next).not.toHaveBeenCalled();
   });
 
   it('rejects untrusted bundle locations and malformed checksums', () => {

@@ -3,12 +3,15 @@
 Idle Wizard Android builds use a free, self-hosted Capacitor live-update path.
 The APK always contains a working production web bundle. Newer compatible web
 bundles are published with GitHub Pages, downloaded in the background, and
-activated the next time the app backgrounds or restarts.
+queued with a five-minute background grace before activation. Brief app switches
+therefore resume the current session instead of reloading the WebView.
 
 ## Player Flow
 
 - Players must install version `0.3.49` or newer once to receive live updates.
 - HTML, CSS, JavaScript, and bundled assets can update without another APK.
+- A queued bundle activates only after the app has remained backgrounded for at
+  least five minutes; short app switches do not apply it.
 - Android/Capacitor native code, permissions, plugins, and configuration still
   require a newly signed APK.
 - A bundle that fails to start before `notifyAppReady()` is automatically rolled
@@ -39,7 +42,14 @@ npm run ota:bundle
 
 The ordinary `npm run release` flow remains the source of package versions,
 player notes, checks, signed APKs, GitHub Pages deployment, and Discord delivery.
-The release APK is still required whenever native code changes.
+After Pages succeeds, that command downloads and checksum-verifies the exact
+published manifest and bundle before posting the APK to Discord. The release APK
+is still required whenever native code changes.
+
+The app calls `notifyAppReady()` immediately when startup begins, before the
+renderer's asset preload. Keep this call ahead of network or heavy initialization
+so slow devices cannot hit the native rollback deadline before marking a good
+bundle healthy.
 
 ## Native Compatibility
 

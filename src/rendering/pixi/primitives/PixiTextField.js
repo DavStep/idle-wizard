@@ -1,4 +1,10 @@
-import { Container, Graphics, Rectangle, Texture } from 'pixi.js';
+import {
+  CanvasTextMetrics,
+  Container,
+  Graphics,
+  Rectangle,
+  Texture,
+} from 'pixi.js';
 
 import {
   DEFAULT_PIXI_THEME_SNAPSHOT,
@@ -13,6 +19,8 @@ import { PixiTextLabel } from './PixiTextLabel.js';
 const BROWN_INSET_TEXT = '#ffe7c8';
 const BROWN_INSET_PLACEHOLDER = '#c8a67a';
 const BROWN_INSET_FOCUS = '#f1b84b';
+const MULTILINE_LINE_HEIGHT = 16;
+const CARET_WIDTH = 1;
 
 export class PixiTextField extends Container {
   constructor({
@@ -50,6 +58,10 @@ export class PixiTextField extends Container {
     this.value = '';
     this.selectionStart = 0;
     this.selectionEnd = 0;
+    this.textScrollX = 0;
+    this.textScrollY = 0;
+    this.textAreaWidth = 0;
+    this.textAreaHeight = 0;
     this.focused = false;
     this.session = null;
     this.sessionUnsubscribe = null;
@@ -234,19 +246,21 @@ export class PixiTextField extends Container {
       : 0;
     this.insetFrame.visible = brownInset;
     this.textViewport.position.set(textInsetX, textInsetY);
+    this.textAreaWidth = Math.max(
+      0,
+      this.fieldWidth - textInsetX * 2 + textStrokeBleed * 2,
+    );
+    this.textAreaHeight = Math.max(
+      0,
+      this.fieldHeight - textInsetY * 2 + textStrokeBleed * 2,
+    );
     this.textMask
       .clear()
       .rect(
         textInsetX - textStrokeBleed,
         textInsetY - textStrokeBleed,
-        Math.max(
-          0,
-          this.fieldWidth - textInsetX * 2 + textStrokeBleed * 2,
-        ),
-        Math.max(
-          0,
-          this.fieldHeight - textInsetY * 2 + textStrokeBleed * 2,
-        ),
+        this.textAreaWidth,
+        this.textAreaHeight,
       )
       .fill('#ffffff');
     this.hitArea = new Rectangle(0, 0, this.fieldWidth, this.fieldHeight);
@@ -285,11 +299,12 @@ export class PixiTextField extends Container {
         .setFontSize(PIXI_UI_GEOMETRY.bodyFontSize)
         .setStroke(null);
     }
-    this.textLabel.position.set(0, 0);
+    this.configureTextLayout();
     this.selectionGraphic.clear();
     this.caretGraphic.clear();
     this.focusGraphic.clear();
     if (!this.focused) {
+      this.textLabel.position.set(-this.textScrollX, -this.textScrollY);
       return;
     }
 
@@ -309,28 +324,30 @@ export class PixiTextField extends Container {
           join: 'round',
         });
     }
-    const beforeStart = this.value.slice(0, this.selectionStart);
-    const beforeEnd = this.value.slice(0, this.selectionEnd);
-    const startX = measurePrefix(this.textLabel, beforeStart);
-    const endX = measurePrefix(this.textLabel, beforeEnd);
-    const textHeight = Math.max(
+    const startPosition = this.measureCaretPosition(this.selectionStart);
+    const endPosition = this.measureCaretPosition(this.selectionEnd);
+    const caretHeight = Math.max(
       PIXI_UI_GEOMETRY.bodyFontSize + 2,
-      this.textLabel.measuredHeight,
+      endPosition.lineHeight,
     );
-    if (endX > startX) {
-      this.selectionGraphic
-        .rect(startX, 0, endX - startX, textHeight)
-        .fill({
-          color: accountUsername
-            ? '#ffffff'
-            : brownInset
-              ? BROWN_INSET_TEXT
-              : this.theme.text,
-          alpha: 0.25,
-        });
-    }
+    this.keepCaretVisible(endPosition, caretHeight);
+    this.textLabel.position.set(-this.textScrollX, -this.textScrollY);
+    this.drawSelection(
+      startPosition,
+      endPosition,
+      accountUsername
+        ? '#ffffff'
+        : brownInset
+          ? BROWN_INSET_TEXT
+          : this.theme.text,
+    );
     this.caretGraphic
-      .rect(endX, 0, 1, textHeight)
+      .rect(
+        endPosition.x - this.textScrollX,
+        endPosition.y - this.textScrollY,
+        CARET_WIDTH,
+        caretHeight,
+      )
       .fill(
         accountUsername
           ? '#ffffff'
@@ -338,6 +355,148 @@ export class PixiTextField extends Container {
             ? BROWN_INSET_TEXT
             : this.theme.text,
       );
+  }
+
+  configureTextLayout() {
+    const multiline = this.multiline && this.variant !== 'account-username';
+    const style = this.textLabel.textObject.style;
+    style.wordWrap = multiline;
+    style.breakWords = multiline;
+    style.whiteSpace = multiline ? 'pre-wrap' : 'pre';
+    style.wordWrapWidth = multiline ? Math.max(1, this.textAreaWidth) : 0;
+    style.lineHeight = multiline ? MULTILINE_LINE_HEIGHT : 0;
+    if (multiline) {
+      this.textScrollX = 0;
+    } else {
+      this.textScrollY = 0;
+    }
+  }
+
+  measureCaretPosition(index) {
+    if (!this.multiline || this.variant === 'account-username') {
+      return {
+        line: 0,
+        lineHeight: PIXI_UI_GEOMETRY.bodyFontSize + 2,
+        x: measurePrefix(this.textLabel, this.value.slice(0, index)),
+        y: 0,
+      };
+    }
+
+    const prefix = this.value.slice(0, index);
+    const { text, trailingLineBreaks } = stripTrailingLineBreaks(prefix);
+    const metrics = CanvasTextMetrics.measureText(
+      text,
+      this.textLabel.textObject.style,
+    );
+    const line = Math.max(0, metrics.lines.length - 1) + trailingLineBreaks;
+    return {
+      line,
+      lineHeight: metrics.lineHeight || MULTILINE_LINE_HEIGHT,
+      x:
+        trailingLineBreaks > 0
+          ? 0
+          : (metrics.lineWidths.at(-1) ?? 0),
+      y: line * (metrics.lineHeight || MULTILINE_LINE_HEIGHT),
+    };
+  }
+
+  keepCaretVisible(caret, caretHeight) {
+    if (!this.multiline || this.variant === 'account-username') {
+      this.textScrollY = 0;
+      if (this.textAreaWidth <= 0) {
+        this.textScrollX = 0;
+        return;
+      }
+
+      let nextScrollX = this.textScrollX;
+      if (caret.x < nextScrollX) {
+        nextScrollX = caret.x;
+      } else if (
+        caret.x + CARET_WIDTH >
+        nextScrollX + this.textAreaWidth
+      ) {
+        nextScrollX = caret.x + CARET_WIDTH - this.textAreaWidth;
+      }
+      const contentWidth = Math.max(
+        this.textLabel.measuredWidth,
+        caret.x + CARET_WIDTH,
+      );
+      this.textScrollX = Math.max(
+        0,
+        Math.min(nextScrollX, contentWidth - this.textAreaWidth),
+      );
+      return;
+    }
+
+    this.textScrollX = 0;
+    if (this.textAreaHeight <= 0) {
+      this.textScrollY = 0;
+      return;
+    }
+
+    let nextScrollY = this.textScrollY;
+    if (caret.y < nextScrollY) {
+      nextScrollY = caret.y;
+    } else if (caret.y + caretHeight > nextScrollY + this.textAreaHeight) {
+      nextScrollY = caret.y + caretHeight - this.textAreaHeight;
+    }
+    const contentHeight = Math.max(
+      this.textLabel.measuredHeight,
+      caret.y + caretHeight,
+    );
+    this.textScrollY = Math.max(
+      0,
+      Math.min(nextScrollY, contentHeight - this.textAreaHeight),
+    );
+  }
+
+  drawSelection(start, end, color) {
+    if (
+      this.selectionStart === this.selectionEnd ||
+      end.line < start.line
+    ) {
+      return;
+    }
+
+    const lineHeight = Math.max(start.lineHeight, end.lineHeight);
+    if (start.line === end.line) {
+      this.selectionGraphic
+        .rect(
+          start.x - this.textScrollX,
+          start.y - this.textScrollY,
+          Math.max(0, end.x - start.x),
+          lineHeight,
+        )
+        .fill({ color, alpha: 0.25 });
+      return;
+    }
+
+    this.selectionGraphic
+      .rect(
+        start.x - this.textScrollX,
+        start.y - this.textScrollY,
+        Math.max(0, this.textAreaWidth - start.x),
+        lineHeight,
+      )
+      .fill({ color, alpha: 0.25 });
+    for (let line = start.line + 1; line < end.line; line += 1) {
+      this.selectionGraphic
+        .rect(
+          0,
+          line * lineHeight - this.textScrollY,
+          this.textAreaWidth,
+          lineHeight,
+        )
+        .fill({ color, alpha: 0.25 });
+    }
+    this.selectionGraphic
+      .rect(
+        0,
+        end.y - this.textScrollY,
+        Math.max(0, end.x),
+        lineHeight,
+      )
+      .fill({ color, alpha: 0.25 });
   }
 
   destroy(options) {
@@ -355,4 +514,18 @@ function measurePrefix(label, prefix) {
   const width = label.measuredWidth;
   label.setText(original);
   return width;
+}
+
+function stripTrailingLineBreaks(value) {
+  let text = String(value ?? '');
+  let trailingLineBreaks = 0;
+  while (text.endsWith('\n') || text.endsWith('\r')) {
+    if (text.endsWith('\r\n')) {
+      text = text.slice(0, -2);
+    } else {
+      text = text.slice(0, -1);
+    }
+    trailingLineBreaks += 1;
+  }
+  return { text, trailingLineBreaks };
 }

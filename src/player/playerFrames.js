@@ -2,11 +2,11 @@ export const DEFAULT_PLAYER_FRAME = 'classic';
 
 export const PLAYER_FRAME_OPTIONS = Object.freeze([
   Object.freeze({ key: 'classic', label: 'classic', tint: 0xffffff }),
-  Object.freeze({ key: 'emerald', label: 'emerald', tint: 0x2ed46f }),
-  Object.freeze({ key: 'gnome', label: 'gnome', tint: 0xd41414 }),
-  Object.freeze({ key: 'sun', label: 'sun', tint: 0xffd642 }),
-  Object.freeze({ key: 'violet', label: 'violet', tint: 0xd974f4 }),
-  Object.freeze({ key: 'bronze', label: 'bronze', tint: 0xb07b00 }),
+  Object.freeze({ key: 'emerald', label: 'emerald', tint: 0xa3f6b2 }),
+  Object.freeze({ key: 'gnome', label: 'gnome', tint: 0xffaaa0 }),
+  Object.freeze({ key: 'sun', label: 'sun', tint: 0xffe08a }),
+  Object.freeze({ key: 'violet', label: 'violet', tint: 0xddb6ff }),
+  Object.freeze({ key: 'bronze', label: 'bronze', tint: 0xe8b982 }),
 ]);
 
 const PLAYER_FRAME_BY_KEY = new Map(

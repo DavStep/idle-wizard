@@ -2,6 +2,7 @@ import { describe, expect, it } from 'vitest';
 
 import {
   appendMissingItemConfigRows,
+  normalizeLegacyPotionSellPrices,
   normalizeLegacySeedSummonCosts,
 } from './itemConfigRows';
 
@@ -77,6 +78,73 @@ describe('normalizeLegacySeedSummonCosts', () => {
       normalizeLegacySeedSummonCosts(
         storedRows,
         defaultRows,
+        (row) => String(row.key ?? ''),
+      ),
+    ).toBe(storedRows);
+  });
+});
+
+describe('normalizeLegacyPotionSellPrices', () => {
+  const herbRows = [
+    { key: 'sageHerb', baseSellPrice: 6.4 },
+    { key: 'mintHerb', baseSellPrice: 7.2 },
+    { key: 'sunrootHerb', baseSellPrice: 20 },
+    { key: 'dragonpepperHerb', baseSellPrice: 52 },
+    { key: 'belladonnaHerb', baseSellPrice: 192 },
+    { key: 'pearlrootHerb', baseSellPrice: 328 },
+  ];
+  const recipes = [
+    {
+      potionKey: 'manaTonic',
+      ingredients: [{ itemKey: 'sageHerb', quantity: 3 }],
+    },
+    {
+      potionKey: 'minorHealingPotion',
+      ingredients: [
+        { itemKey: 'sageHerb', quantity: 2 },
+        { itemKey: 'mintHerb', quantity: 1 },
+      ],
+    },
+    {
+      potionKey: 'pearlrootDraught',
+      ingredients: [
+        { itemKey: 'pearlrootHerb', quantity: 1 },
+        { itemKey: 'dragonpepperHerb', quantity: 1 },
+        { itemKey: 'belladonnaHerb', quantity: 1 },
+        { itemKey: 'sunrootHerb', quantity: 1 },
+      ],
+    },
+  ];
+
+  it('reprices legacy potions to four times their current herb inputs', () => {
+    expect(
+      normalizeLegacyPotionSellPrices(
+        [
+          { key: 'manaTonic', baseSellPrice: 55.2 },
+          { key: 'minorHealingPotion', baseSellPrice: 60 },
+          { key: 'pearlrootDraught', baseSellPrice: 740 },
+          { key: 'wastedPotion', baseSellPrice: 0.8 },
+        ],
+        herbRows,
+        recipes,
+        (row) => String(row.key ?? ''),
+      ),
+    ).toEqual([
+      { key: 'manaTonic', baseSellPrice: 76.8 },
+      { key: 'minorHealingPotion', baseSellPrice: 80 },
+      { key: 'pearlrootDraught', baseSellPrice: 2_368 },
+      { key: 'wastedPotion', baseSellPrice: 0.8 },
+    ]);
+  });
+
+  it('preserves intentional non-legacy potion overrides', () => {
+    const storedRows = [{ key: 'manaTonic', baseSellPrice: 56 }];
+
+    expect(
+      normalizeLegacyPotionSellPrices(
+        storedRows,
+        herbRows,
+        recipes,
         (row) => String(row.key ?? ''),
       ),
     ).toBe(storedRows);
