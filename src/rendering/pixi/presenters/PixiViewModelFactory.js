@@ -7,6 +7,11 @@ import { formatRemainingTime } from '../../../pages/shared/timerDisplay.js';
 import { parseWorldChatSystemPlayerAnnouncement } from '../../../pages/workshop/worldChatSystemAnnouncement.js';
 import { getPlayerFrameTint } from '../../../player/playerFrames.js';
 import { marketLicences } from '../../../shared/marketLicence.js';
+import {
+  getOwnTradeAllianceQuestContribution,
+  getTradeAllianceQuestParticipationLock,
+  isTradeAllianceQuestClaimable,
+} from '../../../pages/workshop/managers/tradeAllianceQuestStatus.js';
 
 const BAG_TABS = Object.freeze([
   Object.freeze({ id: 'currencies', label: 'Currencies' }),
@@ -87,6 +92,12 @@ const TRADE_ALLIANCE_JOIN_MODE_LABELS = Object.freeze({
   apply: 'Apply',
   closed: 'Closed',
 });
+const TRADE_ALLIANCE_MEMBER_TABS = Object.freeze([
+  Object.freeze({ id: 'home', label: 'Home' }),
+  Object.freeze({ id: 'quests', label: 'Quests' }),
+  Object.freeze({ id: 'members', label: 'Members' }),
+  Object.freeze({ id: 'settings', label: 'Settings' }),
+]);
 const SEED_DROP_PREFERENCES = Object.freeze([
   'none',
   'low',
@@ -339,6 +350,7 @@ export class PixiViewModelFactory {
             tradeAlliance,
             dialogState.allianceExpandedId,
             actions,
+            dialogState.allianceTabId,
           ),
           leaderboard: this.createLeaderboardDialog(
             leaderboard,
@@ -558,6 +570,10 @@ export class PixiViewModelFactory {
           selectedTabId === 'points'
             ? {
                 starLevel: completedPointCount,
+                headline: `${completedPointCount} ${pluralize(completedPointCount, 'Prestige Point')}`,
+                nextRunLabel: nextPointCount
+                  ? `Next reward at ${nextPointCount} ${pluralize(nextPointCount, 'Point')}`
+                  : 'All listed rewards unlocked',
                 flow: `${completedPointCount} ${pluralize(completedPointCount, 'Prestige Point')} Earned`,
                 lines: [
                   `${completedPointCount} ${pluralize(completedPointCount, 'Prestige Point')} Earned`,
@@ -565,13 +581,18 @@ export class PixiViewModelFactory {
               }
             : {
                 starLevel: completedPointCount,
+                headline: summaryMilestone?.canComplete
+                  ? `Ready at Level ${summaryMilestone.level}`
+                  : `Reach Level ${getSummaryTargetLevel(summaryMilestone, currentLevel)}`,
+                nextRunLabel: `New run starts at Level ${Math.max(
+                  1,
+                  Math.floor(Number(summaryMilestone?.nextRun?.level) || 1),
+                )}`,
                 flow: formatLevelFlow(
                   currentLevel,
                   getSummaryTargetLevel(summaryMilestone, currentLevel),
                 ),
-                resourceLead: summaryMilestone?.canComplete
-                  ? 'On Prestige'
-                  : 'Next Prestige',
+                resourceLead: 'Starting Resources',
                 resources: summaryResources,
                 lines: [
                   formatLevelFlow(
@@ -788,6 +809,7 @@ export class PixiViewModelFactory {
     tradeAlliance = {},
     expandedAllianceId = null,
     actions = {},
+    selectedTabId = 'home',
   ) {
     const alliance =
       tradeAlliance.alliance ??
@@ -909,6 +931,7 @@ export class PixiViewModelFactory {
         row.allianceName ??
         'Wizard',
       character: row.character ?? 'elara',
+      frame: row.frame ?? 'plain',
       roleLabel:
         TRADE_ALLIANCE_ROLE_LABELS[row.role] ??
         titleCaseTradeAllianceLabel(row.role ?? 'trader'),
@@ -927,10 +950,71 @@ export class PixiViewModelFactory {
     const joinMode = String(alliance.joinMode ?? 'closed');
     const seasonIncome = alliance.seasonIncome ?? alliance.weeklyIncome ?? 0;
     const memberCountLabel = `${memberCount}/50`;
+    const safeTabId = TRADE_ALLIANCE_MEMBER_TABS.some(
+      (tab) => tab.id === selectedTabId,
+    )
+      ? selectedTabId
+      : 'home';
+    const ownMember = tradeAlliance.ownMember ?? null;
+    const canLeave =
+      ownMember?.role !== 'tradeMaster' || memberCount <= 1;
+    const tabs = TRADE_ALLIANCE_MEMBER_TABS.map((tab) => ({
+      ...tab,
+      selected: tab.id === safeTabId,
+      notification:
+        tab.id === 'quests' &&
+        (tradeAlliance.quests ?? []).some((quest) =>
+          isTradeAllianceQuestClaimable(tradeAlliance, quest),
+        ),
+      onSelect: () => actions.selectAllianceTab?.(tab.id),
+    }));
+    const tradeInfoRows = [
+      {
+        id: 'trade-info:members',
+        label: 'Members',
+        value: memberCountLabel,
+      },
+      {
+        id: 'trade-info:join-mode',
+        label: 'Join Mode',
+        value:
+          TRADE_ALLIANCE_JOIN_MODE_LABELS[joinMode] ??
+          titleCaseTradeAllianceLabel(joinMode),
+      },
+      {
+        id: 'trade-info:season-income',
+        label: 'Season Income',
+        value: formatCoinAmount(seasonIncome),
+        itemKind: 'resource',
+        itemKey: 'coin',
+        resourceKey: 'coin',
+      },
+      {
+        id: 'trade-info:membership',
+        label: 'Membership',
+        value: canLeave ? '' : 'Remove Members First',
+        actionLabel: 'Leave',
+        actionVariant: 'red',
+        actionWidth: 58,
+        actionHeight: 28,
+        enabled: canLeave,
+        semanticId: 'workshop.alliance.leave',
+        onActivate: canLeave ? () => actions.leaveAlliance?.() : null,
+      },
+    ];
+    const questRows = createTradeAllianceQuestRows(
+      tradeAlliance,
+      allianceId,
+      actions,
+    );
 
     return {
       title: 'Trade Alliance',
       ownedAlliance: true,
+      ownedAllianceHome: safeTabId === 'home',
+      ownedAllianceMembers: safeTabId === 'members',
+      selectedTabId: safeTabId,
+      tabs,
       status:
         tradeAlliance.connected === false
           ? 'connecting...'
@@ -942,30 +1026,30 @@ export class PixiViewModelFactory {
         notice: String(alliance.notice ?? '').trim(),
         memberCountLabel,
       },
-      tradeInfoRows: [
-        {
-          id: 'trade-info:members',
-          label: 'Members',
-          value: memberCountLabel,
-        },
-        {
-          id: 'trade-info:join-mode',
-          label: 'Join Mode',
-          value:
-            TRADE_ALLIANCE_JOIN_MODE_LABELS[joinMode] ??
-            titleCaseTradeAllianceLabel(joinMode),
-        },
-        {
-          id: 'trade-info:season-income',
-          label: 'Season Income',
-          value: formatCoinAmount(seasonIncome),
-          itemKind: 'resource',
-          itemKey: 'coin',
-          resourceKey: 'coin',
-        },
-      ],
+      tradeInfoRows,
       members: memberRows,
-      rows: memberRows,
+      rows: safeTabId === 'quests' ? questRows : memberRows,
+      emptyLabel:
+        safeTabId === 'quests' && questRows.length === 0
+          ? 'No Alliance Quests'
+          : '',
+      settings:
+        safeTabId === 'settings'
+          ? {
+              allianceId,
+              name,
+              tag,
+              tagColor: alliance.tagColor ?? 'ink',
+              description: String(alliance.description ?? ''),
+              notice: String(alliance.notice ?? ''),
+              joinMode,
+              editable: tradeAlliance.canEditSettings === true,
+              canDisband: memberCount <= 1,
+              onSave: (profile) => actions.updateAllianceProfile?.(profile),
+              onDisband:
+                memberCount <= 1 ? () => actions.leaveAlliance?.() : null,
+            }
+          : null,
     };
   }
 
@@ -1466,31 +1550,23 @@ export class PixiViewModelFactory {
     return {
       title: questTitle,
       status: canDonate ? '' : 'Not enough resources.',
+      featuredItem: {
+        id: 'giving',
+        label: toTitleCase(option.label ?? ''),
+        detail: 'Owned',
+        value: formatWorldEventNumber(maximum),
+        itemKind,
+        itemKey: option.itemKey,
+        resourceKey: isCoinDonation ? 'coin' : null,
+        iconSize: 36,
+      },
       summaryRows: [
-        {
-          id: 'giving',
-          label: toTitleCase(option.label ?? ''),
-          value: '',
-          itemKind,
-          itemKey: option.itemKey,
-          leadingResourceKey: isCoinDonation ? 'coin' : null,
-          iconLeading: true,
-          fontSize: 14,
-          layoutHeight: 34,
-        },
-        {
-          id: 'owned',
-          label: 'Owned',
-          value: formatWorldEventNumber(maximum),
-          layoutInset: 38,
-        },
         {
           id: 'total',
           label: 'Already Donated',
           value:
             option.collectedPointText ??
             `${formatWorldEventNumber(option.contributionPoints)} points`,
-          layoutInset: 38,
         },
         {
           id: 'amount',
@@ -1693,6 +1769,84 @@ function titleCaseTradeAllianceLabel(value) {
     .replace(/[_-]+/g, ' ')
     .trim()
     .replace(/\b\w/g, (character) => character.toUpperCase());
+}
+
+function createTradeAllianceQuestRows(tradeAlliance, allianceId, actions) {
+  const participationLock = getTradeAllianceQuestParticipationLock(tradeAlliance);
+  return (tradeAlliance.quests ?? [])
+    .filter(
+      (quest) =>
+        String(quest.allianceId ?? '').trim() === String(allianceId ?? '').trim(),
+    )
+    .map((quest, index) => ({ quest, index }))
+    .sort((left, right) => {
+      const claimedDifference =
+        Number(Boolean(left.quest.claimed)) -
+        Number(Boolean(right.quest.claimed));
+      return claimedDifference || left.index - right.index;
+    })
+    .map(({ quest, index }) => {
+      const contribution = getOwnTradeAllianceQuestContribution(
+        tradeAlliance,
+        quest,
+      );
+      const itemFillQuest =
+        quest.questType === 'itemFill' && Boolean(quest.itemKey);
+      const remainingProgress = Math.max(
+        0,
+        Number(quest.target ?? 0) - Number(quest.progress ?? 0),
+      );
+      const remainingContribution = Math.max(
+        0,
+        Number(quest.minContribution ?? 0) - contribution,
+      );
+      const needsFill =
+        itemFillQuest && Math.max(remainingProgress, remainingContribution) > 0;
+      const locked = Boolean(participationLock);
+      const claimed = quest.claimed === true;
+      const claimable = isTradeAllianceQuestClaimable(tradeAlliance, quest, {
+        locked,
+      });
+      const actionLabel = claimed
+        ? 'Claimed'
+        : locked
+          ? 'Locked'
+          : needsFill
+            ? 'Fill'
+            : 'Claim';
+      const canFill =
+        needsFill && actions.canFillAllianceQuest?.(quest) !== false;
+      const enabled = !claimed && !locked && (canFill || claimable);
+      const routeLabel = itemFillQuest ? 'Your Fill' : 'Your Route';
+
+      return {
+        id: quest.questId ?? `alliance-quest-${index}`,
+        label: `${quest.label ?? 'Alliance Quest'}\n${routeLabel} ${formatWholeNumber(
+          contribution,
+        )}/${formatWholeNumber(quest.minContribution)}`,
+        value: `${formatWholeNumber(quest.progress)}/${formatWholeNumber(
+          quest.target,
+        )}\n${formatWholeNumber(quest.crystalReward)} Crystal`,
+        height: 48,
+        actionLabel,
+        actionVariant: enabled ? 'green' : 'gray',
+        actionWidth: 58,
+        actionHeight: 28,
+        enabled,
+        notification: claimable,
+        semanticId: `workshop.alliance.quest.${quest.questId ?? index}`,
+        onActivate: enabled
+          ? () =>
+              needsFill
+                ? actions.fillAllianceQuest?.(quest)
+                : actions.claimAllianceQuest?.(quest.questId)
+          : null,
+      };
+    });
+}
+
+function formatWholeNumber(value) {
+  return Math.max(0, Math.floor(Number(value) || 0)).toLocaleString('en-US');
 }
 
 function createPersonalTaskPeriodSection(id, title, period) {
@@ -2715,6 +2869,11 @@ function createPrestigePointRewards({
         status: completed ? 'unlocked' : next ? 'next' : 'locked',
         completed,
         locked: !completed && !next,
+        rewardText:
+          reward.marketLicence?.name ??
+          reward.label ??
+          reward.rewards[0] ??
+          '',
         rewardLines: [...new Set(rewardLines)],
         tooltip: reward.marketLicence
           ? {

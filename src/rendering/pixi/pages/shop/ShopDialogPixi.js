@@ -13,6 +13,9 @@ import {
   getPotionIconFrameName,
 } from '../../../../assets/items/potions/potionIcons.js';
 import {
+  getIngredientIconFrameName,
+} from '../../../../assets/items/ingredients/ingredientIcons.js';
+import {
   getSeedPackBaseFrameName,
   getSeedPackItemFrameName,
 } from '../../../../assets/items/seeds/seedIconFrames.js';
@@ -39,6 +42,7 @@ import {
   RootRunSettingsTogglePixi,
 } from '../../primitives/PixiSettingsControls.js';
 import { PixiResourceLabel } from '../../primitives/PixiResourceLabel.js';
+import { PixiStarLevelLabel } from '../../primitives/PixiStarLevelLabel.js';
 import { PixiTextField } from '../../primitives/PixiTextField.js';
 import { PixiTextLabel } from '../../primitives/PixiTextLabel.js';
 import { PixiNotificationBadge } from '../../global/transient/PixiNotificationBadges.js';
@@ -251,12 +255,13 @@ const DIALOG_CONFIG = Object.freeze({
     width: DEFAULT_DIALOG_WIDTH,
     height: 218,
     rowHeight: PIXI_ROOT_RUN_GEOMETRY.settings.rowPitch,
-    summaryLeadingIconSize: 30,
+    featuredItemRowHeight: PIXI_ROOT_RUN_GEOMETRY.settings.rowPitch,
     rangeAfterSummaryRowId: 'amount',
     rangeTopGap: 2,
     rangeBottomGap: 8,
-    rangeHorizontalOutset: 9,
+    rangeHorizontalOutset: 12,
     actionVariant: 'green',
+    actionLabelOpticalOffsetY: 1,
   }),
 });
 
@@ -460,6 +465,19 @@ export class ShopDialogPixi extends BasePixiRetainedView {
       label: `${dialogId}:list`,
     });
 
+    this.featuredItemRow = new RootRunInventoryChoiceRowPixi({
+      assetManager,
+      inputRouter,
+      semanticRegistry,
+      useSettingsStyle: true,
+      requestFrame: this.requestFrame,
+      cancelFrame: this.cancelFrame,
+      timeSource: this.timeSource,
+      reducedMotion: this.reducedMotion,
+      label: `${dialogId}:featuredItem`,
+    });
+    this.featuredItemRow.reset();
+
     this.summaryPool = new WidgetPool({
       name: `${dialogId} summary row pool`,
       counters,
@@ -581,6 +599,7 @@ export class ShopDialogPixi extends BasePixiRetainedView {
     const bodyChildren = [
       this.selectionSection,
       this.itemSection,
+      this.featuredItemRow.root,
       this.summaryLayer,
       this.messageLabel,
       this.rangeControl,
@@ -635,6 +654,14 @@ export class ShopDialogPixi extends BasePixiRetainedView {
     this.statusLabel.setText(this.model.status ?? '');
     this.statusLabel.visible = Boolean(this.model.status);
     this.summaryRows.reconcile(this.model.summaryRows);
+    if (this.model.featuredItem) {
+      this.featuredItemRow.bind(
+        this.model.featuredItem.id ?? 'featured-item',
+        this.model.featuredItem,
+      );
+    } else {
+      this.featuredItemRow.reset();
+    }
     this.clearButtonSemanticTargets();
     this.actions.reconcile(this.model.actions);
     this.tabs.reconcile(this.model.tabs);
@@ -659,6 +686,7 @@ export class ShopDialogPixi extends BasePixiRetainedView {
       button.applyTheme(this.contentTheme ?? this.theme);
     }
     this.list.applyTheme(this.contentTheme ?? this.theme);
+    this.featuredItemRow.applyTheme(this.contentTheme ?? this.theme);
 
     this.relayout();
     if (shouldRevealAutoSummon && this.active) {
@@ -681,6 +709,7 @@ export class ShopDialogPixi extends BasePixiRetainedView {
     this.manaSettingsSlider?.applyTheme(contentTheme);
     this.dropSettingsSlider?.applyTheme(contentTheme);
     this.list?.applyTheme(contentTheme);
+    this.featuredItemRow?.applyTheme(contentTheme);
 
     for (const field of this.fields ?? []) {
       field.applyTheme(contentTheme);
@@ -691,6 +720,7 @@ export class ShopDialogPixi extends BasePixiRetainedView {
     for (const button of this.actions?.getWidgets?.() ?? []) {
       button.applyTheme(contentTheme);
     }
+    this.applyActionLabelOpticalOffset();
     for (const button of this.tabs?.getWidgets?.() ?? []) {
       button.applyTheme(this.theme);
     }
@@ -887,6 +917,23 @@ export class ShopDialogPixi extends BasePixiRetainedView {
     this.itemSection.renderable = false;
     let y = 0;
 
+    if (this.featuredItemRow.root.visible) {
+      const featuredItemRowHeight = Math.max(
+        PIXI_UI_GEOMETRY.rowMinHeight,
+        finiteOr(
+          this.config.featuredItemRowHeight,
+          PIXI_ROOT_RUN_GEOMETRY.settings.rowPitch,
+        ),
+      );
+      this.featuredItemRow.setBounds(
+        0,
+        y,
+        bodyWidth,
+        featuredItemRowHeight,
+      );
+      y += featuredItemRowHeight;
+    }
+
     let rangeLaidOut = false;
     const layoutRange = () => {
       if (!this.rangeControl.visible || rangeLaidOut) {
@@ -1008,6 +1055,7 @@ export class ShopDialogPixi extends BasePixiRetainedView {
     if (actionHeight > 0) {
       bottomY -= actionHeight;
       layoutButtons(actionButtons, 0, bottomY, bodyWidth, actionHeight, 6);
+      this.applyActionLabelOpticalOffset();
     }
 
     this.relayoutTabs(footerTabLayout);
@@ -1185,6 +1233,7 @@ export class ShopDialogPixi extends BasePixiRetainedView {
       splitPaper.actionHeight,
       5,
     );
+    this.applyActionLabelOpticalOffset();
 
     if (statusHeight > 0) {
       this.statusLabel.position.set(
@@ -1219,6 +1268,20 @@ export class ShopDialogPixi extends BasePixiRetainedView {
         bodyWidth,
         selectionHeight,
       );
+    }
+  }
+
+  applyActionLabelOpticalOffset() {
+    const offsetY = finiteOr(this.config.actionLabelOpticalOffsetY, 0);
+    for (const button of this.actions?.getWidgets?.() ?? []) {
+      const control = button.control;
+      if (!control?.textLabel) {
+        continue;
+      }
+      control.textLabel.y =
+        control.buttonHeight / 2 +
+        finiteOr(control.activeSkin?.contentOffsetY, 0) +
+        offsetY;
     }
   }
 
@@ -1401,6 +1464,7 @@ export class ShopDialogPixi extends BasePixiRetainedView {
     this.tabs.destroy();
     this.tabPool.destroy();
     this.list.destroy();
+    this.featuredItemRow.destroy();
     this.amountSelector.destroy();
     this.rangeControl.destroy();
     this.settingsToggle.destroy();
@@ -2430,6 +2494,12 @@ export class MarketLedgerRowPixi extends ClickableWidget {
       color: 'disabled',
       label: `${label}:availability`,
     });
+    this.availabilityStars = new PixiStarLevelLabel({
+      assetManager,
+      size: 8,
+      gap: 0,
+      label: `${label}:availabilityStars`,
+    });
     this.visual.addChild(
       this.background,
       this.itemIcon,
@@ -2446,6 +2516,7 @@ export class MarketLedgerRowPixi extends ClickableWidget {
       this.sellValue,
       this.sellResource,
       this.availability,
+      this.availabilityStars,
     );
     this.root.addChild(this.visual);
     this.semanticRegistry = semanticRegistry;
@@ -2473,6 +2544,11 @@ export class MarketLedgerRowPixi extends ClickableWidget {
       .setText(item.availabilityLabel ?? 'Not traded in this market');
     this.availability.visible = this.disabled;
     this.availability.renderable = this.disabled;
+    this.availabilityStars.setLevel(item.requiredMarketRank ?? 0);
+    this.availabilityStars.visible =
+      this.disabled && this.availabilityStars.level > 0;
+    this.availabilityStars.renderable = this.availabilityStars.visible;
+    this.availabilityStars.alpha = 0.68;
     this.setFactsVisible(!this.disabled);
     bindLedgerPrice({
       disabled: this.disabled,
@@ -2589,7 +2665,24 @@ export class MarketLedgerRowPixi extends ClickableWidget {
     this.title.position.set(contentLeft, titleY);
     this.title.setWrapWidth(Math.max(0, contentRight - contentLeft));
     this.availability.position.set(contentLeft, 28);
-    this.availability.setWrapWidth(Math.max(0, contentRight - contentLeft));
+    const availabilityStarGap = this.availabilityStars.visible ? 4 : 0;
+    const availabilityStarsWidth = this.availabilityStars.visible
+      ? this.availabilityStars.measuredWidth
+      : 0;
+    const availabilityTextWidth = Math.max(
+      0,
+      contentRight -
+        contentLeft -
+        availabilityStarGap -
+        availabilityStarsWidth,
+    );
+    this.availability.setWrapWidth(availabilityTextWidth);
+    this.availabilityStars.position.set(
+      contentLeft +
+        Math.min(this.availability.measuredWidth, availabilityTextWidth) +
+        availabilityStarGap,
+      30,
+    );
     layoutLedgerFact(
       this.stockKey,
       this.stockValue,
@@ -2671,6 +2764,9 @@ export class MarketLedgerRowPixi extends ClickableWidget {
     this.buyResource.renderable = false;
     this.sellResource.visible = false;
     this.sellResource.renderable = false;
+    this.availabilityStars.setLevel(0);
+    this.availabilityStars.visible = false;
+    this.availabilityStars.renderable = false;
     this.root.visible = false;
     this.root.renderable = false;
   }
@@ -2909,7 +3005,10 @@ export class RootRunInventoryChoiceRowPixi extends ClickableWidget {
       : this.value.measuredWidth;
     if (!this.useSettingsStyle) {
       const hasItemIcon = this.itemIcon.visible;
-      const itemIconSize = 28;
+      const itemIconSize = Math.max(
+        1,
+        finiteOr(this.item?.iconSize, STALL_ITEM_ICON_SIZE),
+      );
       const contentLeft = hasItemIcon ? itemIconSize + 6 : 0;
       if (hasItemIcon) {
         setSeedPackCompositeBounds(
@@ -2950,6 +3049,10 @@ export class RootRunInventoryChoiceRowPixi extends ClickableWidget {
     }
 
     const hasItemIcon = this.itemIcon.visible;
+    const itemIconSize = Math.max(
+      1,
+      finiteOr(this.item?.iconSize, STALL_ITEM_ICON_SIZE),
+    );
     const rowPadding = PIXI_ROOT_RUN_GEOMETRY.settings.rowPadding;
     const rowGap = PIXI_ROOT_RUN_GEOMETRY.settings.rowGap;
     const backgroundWidth = Math.max(0, width - rowGap);
@@ -2962,9 +3065,9 @@ export class RootRunInventoryChoiceRowPixi extends ClickableWidget {
       PIXI_ROOT_RUN_GEOMETRY.settings.rowBorderInsets,
     );
     const iconCenterX =
-      rowPadding + STALL_ITEM_ICON_SIZE / 2;
+      rowPadding + itemIconSize / 2;
     const contentLeft = hasItemIcon
-      ? rowPadding + STALL_ITEM_ICON_SIZE + rowPadding
+      ? rowPadding + itemIconSize + rowPadding
       : rowPadding;
     const contentRight = Math.max(
       contentLeft,
@@ -2978,7 +3081,7 @@ export class RootRunInventoryChoiceRowPixi extends ClickableWidget {
         this.itemIconOverlay,
         iconCenterX,
         summaryHeight / 2,
-        STALL_ITEM_ICON_SIZE,
+        itemIconSize,
         0,
       );
     }
@@ -3300,6 +3403,19 @@ function resolveItemIconFrames(model = {}) {
   if (itemKind === 'potion') {
     return {
       base: getPotionIconFrameName(itemKey),
+      overlay: null,
+    };
+  }
+  if (itemKind === 'ingredient') {
+    return {
+      base: getIngredientIconFrameName(itemKey),
+      overlay: null,
+    };
+  }
+  if (itemKind === 'resource' || model.resourceKey) {
+    const resourceKey = model.resourceKey ?? itemKey;
+    return {
+      base: resourceKey ? `resource:${resourceKey}` : null,
       overlay: null,
     };
   }

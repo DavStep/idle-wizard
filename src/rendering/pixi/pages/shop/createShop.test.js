@@ -326,7 +326,8 @@ describe('createShop', () => {
       },
       {
         label: 'Mint Seed',
-        availabilityLabel: 'Trades at City Bazaar ★★',
+        availabilityLabel: 'Trades at City Bazaar',
+        requiredMarketRank: 2,
         enabled: false,
         disabled: true,
       },

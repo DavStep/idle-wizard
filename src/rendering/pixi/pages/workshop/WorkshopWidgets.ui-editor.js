@@ -29,7 +29,7 @@ export default [
   widget('compound.root-run-side-action', 'Root Run Side Action', ['primitive.notification-badge'], sideActionControl, variants(['left', 'right', 'disabled', 'notified', 'timed'])),
   widget('compound.world-event-donation-option-row', 'World Event Donation Option Row', ['cost-button'], donationOptionControl, variants(['available', 'unavailable', 'seed-pack'])),
   widget('compound.alliance-directory-row', 'Alliance Directory Row', ['compound.alliance-member-row', 'primitive.managed-scroll-area', 'text-button'], allianceDirectoryControl, variants(['collapsed', 'expanded', 'full'])),
-  widget('compound.alliance-member-row', 'Alliance Member Row', ['text-button'], allianceMemberControl, variants(['leader', 'member', 'passive'])),
+  widget('compound.alliance-member-row', 'Alliance Member Row', ['compound.player-profile', 'text-button'], allianceMemberControl, variants(['leader', 'member', 'passive'])),
   widget('compound.leaderboard-row', 'Leaderboard Row', ['compound.player-profile', 'primitive.star-level-label', 'primitive.resource-label'], leaderboardRowControl, variants(['player', 'current-player', 'alliance'])),
   widget('compound.potion-discovery-row', 'Potion Discovery Row', [], potionDiscoveryControl, variants(['discovered', 'undiscovered', 'long-recipe'])),
   widget('compound.workshop-dialog-row', 'Workshop Dialog Row', ['text-button', 'primitive.inline-text'], dialogRowControl, variants(['value', 'resource', 'action', 'locked'])),
@@ -165,8 +165,8 @@ function donationOptionControl({ assets, input, fixture = { state: 'available' }
 function allianceMemberControl({ assets, input, fixture = { state: 'leader' }, context }) {
   const control = new AllianceMemberRow({ dialog: dialogStub(assets, input) });
   control.bind({ username: 'Elara', character: 'elara', roleLabel: fixture.state === 'leader' ? 'Trade Master' : 'Trader', levelLabel: 'Lv 12', onActivate: fixture.state === 'passive' ? null : () => context?.emit('memberOpened') ?? true });
-  control.setBounds(0, 0, 236, 40);
-  return wrap(control, 236, 40);
+  control.setBounds(0, 0, 282, 50);
+  return wrap(control, 282, 50);
 }
 
 function leaderboardRowControl({ assets, input, fixture = { state: 'player' }, context }) {

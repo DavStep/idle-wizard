@@ -35,7 +35,7 @@ export default [
   widget('compound.market-compact-row', 'Market Compact Row', ['text-button', 'primitive.notification-badge'], compactRowControl, [scenario('value', 'Label and value', { mode: 'value' }), scenario('action', 'Inline action', { mode: 'action' }), scenario('disabled', 'Disabled', { mode: 'value', disabled: true })]),
   widget('compound.market-stalls-section', 'Market Stalls Section', ['compound.market-stall'], stallsSectionControl, [scenario('loaded', 'Loaded stalls', {}), scenario('empty', 'Empty stall', { empty: true })]),
   widget('compound.market-rows-section', 'Market Rows Section', ['compound.market-compact-row'], rowsSectionControl, [scenario('requests', 'Requests', {}), scenario('empty', 'Empty', { empty: true })]),
-  widget('compound.market-ledger-row', 'Market Ledger Row', ['primitive.resource-label'], ledgerRowControl, [scenario('available', 'Available to buy', { state: 'available' }), scenario('no-stock', 'No trader stock', { state: 'no-stock' }), scenario('other-market', 'Different market', { state: 'other-market' })]),
+  widget('compound.market-ledger-row', 'Market Ledger Row', ['primitive.resource-label', 'primitive.star-level-label'], ledgerRowControl, [scenario('available', 'Available to buy', { state: 'available' }), scenario('no-stock', 'No trader stock', { state: 'no-stock' }), scenario('other-market', 'Different market', { state: 'other-market' })]),
   widget('compound.dialog-summary-row', 'Dialog Summary Row', [], summaryRowControl, [scenario('plain', 'Plain', {}), scenario('resource', 'Resource value', { resource: true }), scenario('item', 'Item icon', { item: true })]),
   widget('compound.dialog-field', 'Dialog Field', ['primitive.text-field'], fieldControl, [scenario('integer', 'Integer', { inputKind: 'integer' }), scenario('text', 'Text', { inputKind: 'text' }), scenario('multiline', 'Multiline', { inputKind: 'text', multiline: true })]),
   widget('compound.amount-selector', 'Amount Selector', ['text-button', 'primitive.text-field'], amountControl, [scenario('enabled', 'Enabled', {}), scenario('disabled', 'Disabled', { disabled: true })]),
@@ -131,7 +131,8 @@ function ledgerRowControl({ assets, input, fixture }) {
     itemKey: 'sageSeed',
     enabled: !noStock && !otherMarket,
     disabled: otherMarket,
-    availabilityLabel: 'Trades at City Bazaar ★★',
+    availabilityLabel: 'Trades at City Bazaar',
+    requiredMarketRank: 3,
     action: () => true,
   });
   control.setBounds(0, 0, LEDGER_ROW_WIDTH, 58);

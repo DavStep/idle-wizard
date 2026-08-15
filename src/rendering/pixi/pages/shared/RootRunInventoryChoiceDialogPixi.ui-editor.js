@@ -24,7 +24,7 @@ export default defineUiEditorIntegration({
     },
     {
       label: 'Contract',
-      value: 'Shared seed and herb inventory choice row',
+      value: 'Shared inventory item row with optional detail, value, and icon sizing',
     },
   ],
   scenarios: [
@@ -52,6 +52,19 @@ export default defineUiEditorIntegration({
       label: 'Herb, unavailable',
       mount: mountInventoryChoiceRow,
     },
+    {
+      fixture: createHerbFixture({
+        detail: 'Owned',
+        iconSize: 36,
+        itemKind: 'potion',
+        key: 'calmingDraught',
+        label: 'Calming Draught',
+        value: '12',
+      }),
+      id: 'donation',
+      label: 'Donation item',
+      mount: mountInventoryChoiceRow,
+    },
   ],
   sectionId: 'composite-widgets',
   usages: [
@@ -62,6 +75,10 @@ export default defineUiEditorIntegration({
     {
       label: 'Choose Seed dialog row',
       source: 'src/rendering/pixi/pages/garden/GardenDialogPixi.js',
+    },
+    {
+      label: 'World Event donation item row',
+      source: 'src/rendering/pixi/pages/shop/ShopDialogPixi.js',
     },
   ],
 });
@@ -128,14 +145,14 @@ function createInventoryChoiceRowHierarchy(row) {
     createUiEditorPixiHierarchyComponent({
       displayObjects: [row.itemIcon, row.itemIconOverlay],
       id: 'inventory-choice-row:icon',
-      label: 'Herb icon',
+      label: 'Item icon',
       primary: row.itemIcon,
       type: 'image',
     }),
     createUiEditorPixiHierarchyComponent({
       displayObjects: [row.label],
       id: 'inventory-choice-row:name',
-      label: 'Herb name label',
+      label: 'Item name label',
       primary: row.label,
       textTarget: row.label,
       type: 'label',
@@ -143,9 +160,17 @@ function createInventoryChoiceRowHierarchy(row) {
     createUiEditorPixiHierarchyComponent({
       displayObjects: [row.detail],
       id: 'inventory-choice-row:available',
-      label: 'Available herb label',
+      label: 'Item detail label',
       primary: row.detail,
       textTarget: row.detail,
+      type: 'label',
+    }),
+    createUiEditorPixiHierarchyComponent({
+      displayObjects: [row.value, row.valueResource],
+      id: 'inventory-choice-row:value',
+      label: 'Item value label',
+      primary: row.value,
+      textTarget: row.value,
       type: 'label',
     }),
     createUiEditorPixiHierarchyComponent({

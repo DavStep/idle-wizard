@@ -391,8 +391,12 @@ export class PixiGlobalDialogPresenter {
       ...normalizedRequest,
       ...(livePlayer ?? {}),
     };
+    const ownPlayer =
+      this.isOwnPlayerRequest(normalizedRequest) ||
+      this.isOwnPlayerRequest(player);
     return {
       connected: snapshot.connected !== false,
+      ownPlayer,
       loading: Boolean(
         this.playerInfoFacade &&
           normalizedRequest.username &&
@@ -406,8 +410,21 @@ export class PixiGlobalDialogPresenter {
           this.stopDialogSubscriptions(GLOBAL_DIALOG_IDS.PLAYER),
         openAlliance: (alliance) =>
           this.open(GLOBAL_DIALOG_IDS.ALLIANCE, { alliance }),
+        ...(ownPlayer
+          ? {
+              openCosmetics: () => this.openOwnPlayerCosmetics(),
+            }
+          : {}),
       },
     };
+  }
+
+  openOwnPlayerCosmetics() {
+    this.requireRuntime().closeDialog(GLOBAL_DIALOG_IDS.PLAYER);
+    return this.open(GLOBAL_DIALOG_IDS.SETTINGS, {
+      tab: 'account',
+      tabId: 'account',
+    });
   }
 
   createAllianceModel(request = {}) {

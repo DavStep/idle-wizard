@@ -46,7 +46,7 @@ import {
 } from './RetainedPageKit.js';
 import { WorkshopDialogPixi } from './WorkshopDialogPixi.js';
 import {
-  QUEST_REQUEST_BOINK_DURATION_MS,
+  QUEST_REQUEST_BOX_BOINK_DURATION_MS,
   QUEST_REQUEST_SHINE_DURATION_MS,
 } from '../../managers/QuestCompletionMotionCoordinator.js';
 
@@ -399,6 +399,10 @@ export class WorkshopPixiPage extends BaseRetainedPixiPage {
               counters,
               onClose: () => this.dialogRegistry.close(dialogId),
               theme: this.theme,
+              requestFrame: this.requestFrame,
+              cancelFrame: this.cancelFrame,
+              timeSource: this.timeSource,
+              reducedMotion: this.reducedMotion,
             }),
       );
     }
@@ -980,6 +984,16 @@ export class WorkshopTaskPanel {
 
     this.height = 34;
     this.pendingModel = null;
+    this.completionBoink = null;
+    this.motionFrame = null;
+    this.handleMotionFrame = (timestamp) => {
+      this.motionFrame = null;
+      this.updateMotion(
+        Number.isFinite(timestamp)
+          ? timestamp
+          : this.page.timeSource(),
+      );
+    };
     this.questMotionUnsubscribe =
       this.page.questCompletionMotionCoordinator?.subscribe?.(
         (snapshot) => this.handleQuestCompletionMotion(snapshot),
@@ -1044,11 +1058,16 @@ export class WorkshopTaskPanel {
       return;
     }
     if (snapshot?.phase === 'complete') {
+      const previousTaskId = row?.model?.id ?? null;
       row?.holdCompletedProgress();
       if (this.pendingModel) {
         const pendingModel = this.pendingModel;
+        const nextTaskId = getRequestTaskId(pendingModel);
         this.pendingModel = null;
         this.applyModel(pendingModel);
+        if (nextTaskId && nextTaskId !== previousTaskId) {
+          this.startCompletionBoink();
+        }
       }
     }
   }
@@ -1058,15 +1077,82 @@ export class WorkshopTaskPanel {
   }
 
   pauseMotion() {
+    this.stopMotionFrame();
+    this.applyCompletionBoinkScale(1);
     for (const row of this.rows.getWidgets()) {
       row.pauseMotion();
     }
   }
 
   resumeMotion() {
+    this.updateMotion(this.page.timeSource());
     for (const row of this.rows.getWidgets()) {
       row.resumeMotion();
     }
+  }
+
+  startCompletionBoink(startedAtMs = this.page.timeSource()) {
+    if (
+      this.page.reducedMotion?.() === true ||
+      !this.page.root.visible
+    ) {
+      this.completionBoink = null;
+      this.applyCompletionBoinkScale(1);
+      return;
+    }
+    this.completionBoink = { startedAtMs };
+    this.updateMotion(startedAtMs);
+  }
+
+  updateMotion(now = this.page.timeSource()) {
+    if (!this.page.root.visible || this.page.reducedMotion?.() === true) {
+      this.stopMotionFrame();
+      this.completionBoink = null;
+      this.applyCompletionBoinkScale(1);
+      return false;
+    }
+    if (!this.completionBoink) {
+      this.applyCompletionBoinkScale(1);
+      return false;
+    }
+    const progress = clampUnit(
+      (now - this.completionBoink.startedAtMs) /
+        QUEST_REQUEST_BOX_BOINK_DURATION_MS,
+    );
+    this.applyCompletionBoinkScale(getRequestBoinkScale(progress));
+    if (progress >= 1) {
+      this.completionBoink = null;
+      this.applyCompletionBoinkScale(1);
+      return false;
+    }
+    this.scheduleMotionFrame();
+    return true;
+  }
+
+  scheduleMotionFrame() {
+    if (this.motionFrame !== null || !this.page.root.visible) {
+      return;
+    }
+    this.motionFrame = this.page.requestFrame(this.handleMotionFrame);
+  }
+
+  stopMotionFrame() {
+    if (this.motionFrame === null) {
+      return;
+    }
+    this.page.cancelFrame(this.motionFrame);
+    this.motionFrame = null;
+  }
+
+  applyCompletionBoinkScale(scale) {
+    const safeScale = Number.isFinite(scale) ? scale : 1;
+    const width = this.width ?? this.panel.width;
+    const height = this.height ?? this.panel.height;
+    const x = this.x ?? this.root.x;
+    const y = this.y ?? this.root.y;
+    this.root.pivot.set(width / 2, height / 2);
+    this.root.position.set(x + width / 2, y + height / 2);
+    this.root.scale.set(safeScale);
   }
 
   orderRows(rows) {
@@ -1085,6 +1171,8 @@ export class WorkshopTaskPanel {
   }
 
   setBounds(x, y, width) {
+    this.x = x;
+    this.y = y;
     this.width = width;
     let contentY = 8;
     this.next.position.set(10, contentY);
@@ -1112,6 +1200,7 @@ export class WorkshopTaskPanel {
     );
     this.panel.frame.visible = false;
     this.panel.fallback.visible = false;
+    this.applyCompletionBoinkScale(this.root.scale.x);
     applyWorkshopRequestTitleTheme(this.panel.title, this.page.theme);
     this.pinButton.setBounds(8, this.height - 7, 42, 14);
     this.expandButton.setBounds(width / 2 - 30, this.height - 7, 60, 14);
@@ -1152,6 +1241,7 @@ export class WorkshopTaskPanel {
   }
 
   destroy() {
+    this.stopMotionFrame();
     this.questMotionUnsubscribe?.();
     this.questMotionUnsubscribe = null;
     this.rows.destroy();
@@ -1342,11 +1432,6 @@ export class WorkshopTaskRow {
     this.root.hitArea = new Rectangle(0, 0, width, height);
     this.visual.pivot.set(width / 2, height / 2);
     this.visual.position.set(width / 2, height / 2);
-    this.progressBounds = {
-      x: 0,
-      y: 22,
-    };
-    this.applyProgressFeedbackScale(this.progress.root.scale.x);
     this.layoutProgressShine();
     this.updateShineVisibility();
     if (this.progressFeedback) {
@@ -1395,7 +1480,6 @@ export class WorkshopTaskRow {
     this.progressMotion = null;
     this.progressFeedback = null;
     this.setProgressImmediate(0);
-    this.applyProgressFeedbackScale(1);
     this.model = null;
     this.icon.texture = Texture.EMPTY;
     this.icon.visible = false;
@@ -1464,7 +1548,6 @@ export class WorkshopTaskRow {
       completion,
     };
     this.progressFeedback = null;
-    this.applyProgressFeedbackScale(1);
     this.updateShineVisibility();
     this.scheduleMotionFrame();
   }
@@ -1532,7 +1615,6 @@ export class WorkshopTaskRow {
       !this.page.root.visible
     ) {
       this.progressFeedback = null;
-      this.applyProgressFeedbackScale(1);
       return;
     }
     this.progressFeedback = {
@@ -1546,7 +1628,6 @@ export class WorkshopTaskRow {
   updateProgressFeedback(now) {
     const feedback = this.progressFeedback;
     if (!feedback) {
-      this.applyProgressFeedbackScale(1);
       return;
     }
     const elapsedMs = Math.max(0, now - feedback.startedAtMs);
@@ -1565,22 +1646,8 @@ export class WorkshopTaskRow {
       this.progressShineRoot.visible = false;
       this.progressShineRoot.renderable = false;
     }
-    const pingProgress = clampUnit(
-      (elapsedMs - QUEST_REQUEST_SHINE_DURATION_MS) /
-        QUEST_REQUEST_BOINK_DURATION_MS,
-    );
-    this.applyProgressFeedbackScale(
-      elapsedMs < QUEST_REQUEST_SHINE_DURATION_MS
-        ? 1
-        : getRequestProgressBoinkScale(pingProgress),
-    );
-    if (
-      elapsedMs >=
-      QUEST_REQUEST_SHINE_DURATION_MS +
-        QUEST_REQUEST_BOINK_DURATION_MS
-    ) {
+    if (elapsedMs >= QUEST_REQUEST_SHINE_DURATION_MS) {
       this.progressFeedback = null;
-      this.applyProgressFeedbackScale(1);
     }
   }
 
@@ -1644,7 +1711,6 @@ export class WorkshopTaskRow {
     this.stopMotionFrame();
     this.progressShineRoot.visible = false;
     this.progressShineRoot.renderable = false;
-    this.applyProgressFeedbackScale(1);
   }
 
   resumeMotion() {
@@ -1654,16 +1720,6 @@ export class WorkshopTaskRow {
     }
   }
 
-  applyProgressFeedbackScale(scale) {
-    const safeScale = Number.isFinite(scale) ? scale : 1;
-    this.progress.root.scale.set(safeScale);
-    this.progress.root.position.set(
-      (this.progressBounds?.x ?? 0) +
-        (this.progress.width * (1 - safeScale)) / 2,
-      (this.progressBounds?.y ?? 22) +
-        (this.progress.height * (1 - safeScale)) / 2,
-    );
-  }
 }
 
 export class WorkshopSummonControl {
@@ -2488,7 +2544,7 @@ function interpolate(from, to, progress) {
   return from + (to - from) * progress;
 }
 
-function getRequestProgressBoinkScale(progress) {
+function getRequestBoinkScale(progress) {
   const value = clampUnit(progress);
   if (value <= 0.35) {
     return interpolate(1, 1.04, easeOutQuart(value / 0.35));

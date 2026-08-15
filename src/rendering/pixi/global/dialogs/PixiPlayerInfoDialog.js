@@ -43,6 +43,25 @@ const STATS_Y =
   PIXI_DIALOG_SPLIT_PAPER_GEOMETRY.sectionGap +
   PLAYER_PAPER_OUTSETS.top;
 const PLAYER_CONTENT_HEIGHT = STATS_Y + STATS_HEIGHT;
+const COSMETICS_ACTION_GAP = 8;
+const COSMETICS_ACTION_HEIGHT = 30;
+const COSMETICS_ACTION_SIDE_INSET = 2;
+const COSMETICS_ACTION_BOTTOM_INSET = 10;
+const COSMETICS_ACTION_X =
+  -PLAYER_PAPER_OUTSETS.left + COSMETICS_ACTION_SIDE_INSET;
+const COSMETICS_ACTION_WIDTH =
+  PLAYER_CONTENT_WIDTH +
+  PLAYER_PAPER_OUTSETS.left +
+  PLAYER_PAPER_OUTSETS.right -
+  COSMETICS_ACTION_SIDE_INSET * 2;
+const COSMETICS_ACTION_Y =
+  PLAYER_CONTENT_HEIGHT +
+  PLAYER_PAPER_OUTSETS.bottom +
+  COSMETICS_ACTION_GAP;
+const OWN_PLAYER_CONTENT_HEIGHT =
+  COSMETICS_ACTION_Y +
+  COSMETICS_ACTION_HEIGHT -
+  (PIXI_UI_GEOMETRY.dialogPadding - COSMETICS_ACTION_BOTTOM_INSET);
 const PLAYER_INFO_TAG_COLORS = Object.freeze({
   ink: '#634934',
   red: '#9b3439',
@@ -172,6 +191,19 @@ export class PixiPlayerInfoDialog extends RetainedGlobalDialog {
       color: 'muted',
       label: `${dialogId}:loading`,
     });
+    this.cosmeticsButton = new PixiTextButton({
+      assetManager: this.context.assets,
+      inputRouter: this.context.inputRouter,
+      semanticRegistry: this.context.semanticRegistry,
+      semanticId: `${dialogId}.cosmetics`,
+      text: 'Cosmetics',
+      width: COSMETICS_ACTION_WIDTH,
+      height: COSMETICS_ACTION_HEIGHT,
+      sizeTier: 50,
+      variant: 'yellow',
+      action: () => this.openCosmetics(),
+      label: `${dialogId}:cosmetics`,
+    });
     this.panel.content.addChild(
       this.summaryFrame,
       this.statsFrame,
@@ -193,6 +225,7 @@ export class PixiPlayerInfoDialog extends RetainedGlobalDialog {
       this.timePlayedLabel,
       this.timePlayedValue,
       this.loadingLabel,
+      this.cosmeticsButton,
     );
     this.applyTheme(this.context.theme);
     this.bind({});
@@ -228,6 +261,9 @@ export class PixiPlayerInfoDialog extends RetainedGlobalDialog {
     }
     this.loadingLabel.visible = loading;
     this.loadingLabel.renderable = loading;
+    this.cosmeticsButton.visible = false;
+    this.cosmeticsButton.renderable = false;
+    this.cosmeticsButton.setEnabled(false);
     this.panel.setPaperVisible(loading);
 
     if (loading) {
@@ -261,8 +297,17 @@ export class PixiPlayerInfoDialog extends RetainedGlobalDialog {
         showAlliance &&
           Boolean(this.actions.openAlliance ?? this.model.onOpenAlliance),
       );
+    const showCosmetics = this.playerModel.ownPlayer;
+    this.cosmeticsButton.visible = showCosmetics;
+    this.cosmeticsButton.renderable = showCosmetics;
+    this.cosmeticsButton.setEnabled(
+      showCosmetics && Boolean(this.actions.openCosmetics),
+    );
     this.applyAllianceTagColor();
-    this.setPanelContentSize(PLAYER_CONTENT_WIDTH, PLAYER_CONTENT_HEIGHT);
+    this.setPanelContentSize(
+      PLAYER_CONTENT_WIDTH,
+      showCosmetics ? OWN_PLAYER_CONTENT_HEIGHT : PLAYER_CONTENT_HEIGHT,
+    );
     this.layoutDialog();
   }
 
@@ -278,6 +323,10 @@ export class PixiPlayerInfoDialog extends RetainedGlobalDialog {
       this.model.onOpenAlliance?.(alliance) ??
       false
     );
+  }
+
+  openCosmetics() {
+    return this.actions.openCosmetics?.() ?? false;
   }
 
   layoutCloseControl() {
@@ -393,6 +442,11 @@ export class PixiPlayerInfoDialog extends RetainedGlobalDialog {
       statsRightX,
       STATS_Y + STATS_PADDING_Y + STATS_ROW_PITCH * 4,
     );
+    this.cosmeticsButton.position.set(COSMETICS_ACTION_X, COSMETICS_ACTION_Y);
+    this.cosmeticsButton.setSize(
+      COSMETICS_ACTION_WIDTH,
+      COSMETICS_ACTION_HEIGHT,
+    );
     this.levelLabel.setWrapWidth(
       Math.max(0, detailsWidth - this.levelValue.measuredWidth - 6),
     );
@@ -423,6 +477,7 @@ export class PixiPlayerInfoDialog extends RetainedGlobalDialog {
       iconMode: 'icons',
     });
     this.allianceButton?.applyTheme(theme);
+    this.cosmeticsButton?.applyTheme(theme);
     this.applyAllianceTagColor();
     this.layoutDialog();
   }
@@ -455,6 +510,7 @@ function normalizePlayerModel(model = {}) {
   );
   return {
     loading,
+    ownPlayer: Boolean(model.ownPlayer ?? source.ownPlayer),
     identity: String(source.identity ?? ''),
     username: String(source.username ?? source.name ?? '').trim(),
     allianceId: String(source.allianceId ?? source.alliance_id ?? ''),

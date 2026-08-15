@@ -66,24 +66,30 @@ describe('retained dialog UI editor integrations', () => {
 
     expect(dialog).toBeInstanceOf(ShopDialogPixi);
     expect(dialog.panel.titleLabel.textObject.text).toBe('Quiet The Crowd');
-    expect(dialog.summaryRows.getWidgets()).toHaveLength(5);
-    expect(dialog.summaryRows.get('giving').keyLabel.fontSize).toBe(14);
-    expect(dialog.summaryRows.get('owned').root.x).toBe(38);
+    expect(dialog.summaryRows.getWidgets()).toHaveLength(3);
+    expect(dialog.featuredItemRow.detail.text).toBe('Owned');
+    expect(dialog.featuredItemRow.value.text).toBe('12');
+    expect(dialog.featuredItemRow.itemIcon.width).toBe(36);
+    expect(dialog.summaryRows.get('total').root.x).toBe(0);
     expect(dialog.rangeControl).toMatchObject({
       enabled: true,
       min: 1,
       max: 12,
       tone: 'root',
     });
-    expect(dialog.rangeControl.x).toBe(-9);
+    expect(dialog.rangeControl.x).toBe(-12);
     expect(dialog.rangeControl.controlWidth).toBeGreaterThan(
       dialog.panel.contentBoxWidth,
     );
-    expect(dialog.actions.get('confirm').variant).toBe('green');
+    const confirm = dialog.actions.get('confirm');
+    expect(confirm.variant).toBe('green');
+    expect(confirm.control.textLabel.y).toBeCloseTo(
+      confirm.height / 2 + confirm.control.activeSkin.contentOffsetY + 1,
+    );
     expect(integration.childWidgetIds).toEqual([
       'compound.dialog-frame',
+      'compound.inventory-choice-row',
       'compound.dialog-summary-row',
-      'primitive.resource-label',
       'primitive.settings-slider',
       'text-button',
     ]);
@@ -342,8 +348,9 @@ describe('retained dialog UI editor integrations', () => {
     expect(firstRowTop - dialog.panel.paperFrame.y).toBeCloseTo(
       PIXI_UI_GEOMETRY.dialogScrollPaddingTop,
     );
-    expect(firstRow.rank.anchor.x).toBe(1);
-    expect(firstRow.avatarWidget.x - firstRow.rank.x).toBe(4);
+    expect(dialog.scroll.root.x).toBe(7);
+    expect(firstRow.rank.anchor.x).toBe(0.5);
+    expect(firstRow.rank.x * 2).toBeCloseTo(firstRow.avatarWidget.x);
     expect(firstRow.prestigeStars).toBeInstanceOf(PixiStarLevelLabel);
     expect(firstRow.prestigeStars.level).toBe(3);
     expect(firstRow.prestigeStars.tone).toBe('yellow');
@@ -624,7 +631,7 @@ describe('retained dialog UI editor integrations', () => {
       'function',
     );
     expect(inventoryChoiceRowIntegration.scenarios.map(({ id }) => id)).toEqual(
-      ['unselected', 'selected', 'pressed', 'disabled'],
+      ['unselected', 'selected', 'pressed', 'disabled', 'donation'],
     );
   });
 
@@ -713,6 +720,7 @@ describe('retained dialog UI editor integrations', () => {
       'compound.player-profile',
       'primitive.star-level-label',
       'primitive.resource-label',
+      'text-button',
     ]);
     expect(playerProfileIntegration.kind).toBe('widget');
     expect(typeof playerProfileIntegration.createThumbnail).toBe('function');

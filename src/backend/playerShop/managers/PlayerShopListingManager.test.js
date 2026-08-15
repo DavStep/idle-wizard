@@ -31,6 +31,74 @@ describe('PlayerShopListingManager', () => {
     });
   });
 
+  it('does not expose an opaque internal server error as the listing reason', async () => {
+    const internalError = new Error('The instance encountered a fatal error.');
+    internalError.name = 'InternalError';
+    const setPlayerShopSlot = vi.fn(() => Promise.reject(internalError));
+    const manager = new PlayerShopListingManager();
+
+    manager.connect({
+      reducers: {
+        setPlayerShopSlot,
+      },
+    });
+
+    await expect(
+      manager.setSlotListing({
+        slotNumber: 1,
+        itemKey: 'sageSeed',
+        itemLabel: 'sage seed',
+        itemKind: 'seed',
+        quantity: 1_000,
+        priceCoin: 99,
+      }),
+    ).resolves.toEqual({
+      ok: false,
+      reason: 'server_error',
+      message: 'Server error. Nothing was sold. Please try again.',
+    });
+  });
+
+  it('keeps actionable request errors and hides opaque internal request failures', async () => {
+    const setPlayerShopRequest = vi
+      .fn()
+      .mockRejectedValueOnce(
+        new Error('Market licence does not match the active market.'),
+      )
+      .mockRejectedValueOnce(
+        Object.assign(new Error('The instance encountered a fatal error.'), {
+          name: 'InternalError',
+        }),
+      );
+    const manager = new PlayerShopListingManager();
+
+    manager.connect({
+      reducers: {
+        setPlayerShopRequest,
+      },
+    });
+
+    const request = {
+      slotNumber: 1,
+      itemKey: 'sageSeed',
+      itemLabel: 'sage seed',
+      itemKind: 'seed',
+      quantity: 99,
+      priceCoin: 999,
+    };
+
+    await expect(manager.setSlotRequest(request)).resolves.toEqual({
+      ok: false,
+      reason: 'publish_failed',
+      message: 'Market licence does not match the active market.',
+    });
+    await expect(manager.setSlotRequest(request)).resolves.toEqual({
+      ok: false,
+      reason: 'server_error',
+      message: 'Server error. Request was not placed. Please try again.',
+    });
+  });
+
   it('clears player market listings and proceeds for a progress reset', async () => {
     const clearPlayerShopSlot = vi.fn(() => Promise.resolve());
     const claimPlayerShopProceeds = vi.fn(() => Promise.resolve());

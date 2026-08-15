@@ -4,6 +4,7 @@ import {
   table,
   t,
   Range,
+  SenderError,
   type ReducerCtx,
   type InferSchema,
 } from 'spacetimedb/server';
@@ -7585,7 +7586,16 @@ function assertActiveMarket(ctx: IdleWizardReducerCtx, marketId: string): string
   const completedStars = readSavedPrestigeCompletedLevels(
     ctx.db.playerGameplaySave.identity.find(ctx.sender)?.saveJson,
   )?.length ?? 0;
-  return assertMarketScope(completedStars, String(marketId ?? ''));
+
+  try {
+    return assertMarketScope(completedStars, String(marketId ?? ''));
+  } catch (error) {
+    if (error instanceof Error) {
+      throw new SenderError(error.message);
+    }
+
+    throw error;
+  }
 }
 
 function getMarketScopedItemKey(marketId: string, itemKey: string): string {
@@ -7605,7 +7615,7 @@ function assertMarketCatalogItemAccess<
   marketId: string,
 ): T {
   if (!isItemGradeTradedInMarket(catalogItem.marketGrade ?? 1, marketId)) {
-    throw new Error('Item is not traded in this market.');
+    throw new SenderError('Item is not traded in this market.');
   }
 
   return catalogItem;
@@ -7616,7 +7626,7 @@ function getPlayerShopCatalogItem(itemKey: string, marketId: string) {
   const catalogItem = npcMarketCatalogByItemKey.get(safeItemKey);
 
   if (!catalogItem) {
-    throw new Error('Unknown player shop item.');
+    throw new SenderError('Unknown player shop item.');
   }
 
   return assertMarketCatalogItemAccess(catalogItem, marketId);
@@ -7630,7 +7640,7 @@ function validatePlayerShopQuantity(quantity: number): number {
     safeQuantity < 1 ||
     safeQuantity > MAX_PLAYER_SHOP_LISTING_QUANTITY
   ) {
-    throw new Error('Invalid player shop quantity.');
+    throw new SenderError('Invalid player shop quantity.');
   }
 
   return safeQuantity;
@@ -7646,7 +7656,7 @@ function validatePlayerShopPriceGold(priceGold: bigint | number): number {
     safePriceGold < 1 ||
     safePriceGold > MAX_PLAYER_SHOP_PRICE_GOLD
   ) {
-    throw new Error('Invalid player shop price.');
+    throw new SenderError('Invalid player shop price.');
   }
 
   return safePriceGold;
@@ -7739,7 +7749,7 @@ function addClaimablePlayerShopGold(
 
   if (nextProceedsGold > MAX_PLAYER_SHOP_PROCEEDS_GOLD) {
     if (!clampToCap) {
-      throw new Error('Player shop proceeds are too high.');
+      throw new SenderError('Player shop proceeds are too high.');
     }
 
     nextProceedsGold = MAX_PLAYER_SHOP_PROCEEDS_GOLD;
@@ -8113,7 +8123,7 @@ function validatePlayerShopSlotNumber(slotNumber: number): number {
   const safeSlotNumber = Math.floor(Number(slotNumber));
 
   if (safeSlotNumber < 1 || safeSlotNumber > MAX_PLAYER_SHOP_SLOTS) {
-    throw new Error('Invalid player shop slot.');
+    throw new SenderError('Invalid player shop slot.');
   }
 
   return safeSlotNumber;
@@ -8123,7 +8133,7 @@ function validatePlayerShopSlotNumberForMarket(slotNumber: number, marketId: str
   const safeSlotNumber = validatePlayerShopSlotNumber(slotNumber);
 
   if (safeSlotNumber > getMarketRank(marketId)) {
-    throw new Error('Player shop slot requires a higher market rank.');
+    throw new SenderError('Player shop slot requires a higher market rank.');
   }
 
   return safeSlotNumber;
@@ -12716,7 +12726,7 @@ function assertActivePlayerSession(
   { allowMaintenanceDrainSave = false } = {},
 ) {
   if (!isActivePlayerSession(ctx)) {
-    throw new Error('Account is open on another device.');
+    throw new SenderError('Account is open on another device.');
   }
 
   const maintenance = getMaintenanceConfig(ctx);
@@ -12727,7 +12737,7 @@ function assertActivePlayerSession(
     return;
   }
 
-  throw new Error('Server maintenance is active.');
+  throw new SenderError('Server maintenance is active.');
 }
 
 function assertClientSaveDoesNotDowngradeProgress(
@@ -20099,7 +20109,7 @@ export const set_player_shop_slot = spacetimedb.reducer(
     assertActivePlayerSession(ctx);
 
     if (!ENABLE_PLAYER_SHOP_EXCHANGE) {
-      throw new Error('Player shop exchange requires server inventory.');
+      throw new SenderError('Player shop exchange requires server inventory.');
     }
 
     const activeMarketId = assertActiveMarket(ctx, marketId);
@@ -20115,7 +20125,7 @@ export const set_player_shop_slot = spacetimedb.reducer(
       normalizePlayerShopText(itemLabel, MAX_ITEM_LABEL_LENGTH) !== safeItemLabel ||
       normalizePlayerShopText(itemKind, MAX_ITEM_KIND_LENGTH) !== safeItemKind
     ) {
-      throw new Error('Player shop item is required.');
+      throw new SenderError('Player shop item is required.');
     }
 
     const player = ensurePlayer(ctx);
@@ -20177,7 +20187,7 @@ export const set_player_shop_request = spacetimedb.reducer(
     assertActivePlayerSession(ctx);
 
     if (!ENABLE_PLAYER_SHOP_EXCHANGE) {
-      throw new Error('Player shop exchange requires server inventory.');
+      throw new SenderError('Player shop exchange requires server inventory.');
     }
 
     const activeMarketId = assertActiveMarket(ctx, marketId);
@@ -20193,7 +20203,7 @@ export const set_player_shop_request = spacetimedb.reducer(
       normalizePlayerShopText(itemLabel, MAX_ITEM_LABEL_LENGTH) !== safeItemLabel ||
       normalizePlayerShopText(itemKind, MAX_ITEM_KIND_LENGTH) !== safeItemKind
     ) {
-      throw new Error('Player shop item is required.');
+      throw new SenderError('Player shop item is required.');
     }
 
     const player = ensurePlayer(ctx);
@@ -20247,7 +20257,7 @@ export const buy_player_shop_listing = spacetimedb.reducer(
     assertActivePlayerSession(ctx);
 
     if (!ENABLE_PLAYER_SHOP_EXCHANGE) {
-      throw new Error('Player shop exchange requires server inventory.');
+      throw new SenderError('Player shop exchange requires server inventory.');
     }
 
     const safeListingKey = normalizePlayerShopText(listingKey, 120);
@@ -20255,21 +20265,21 @@ export const buy_player_shop_listing = spacetimedb.reducer(
     const listing = ctx.db.playerShopListing.listingKey.find(safeListingKey);
 
     if (!listing) {
-      throw new Error('Player shop listing no longer exists.');
+      throw new SenderError('Player shop listing no longer exists.');
     }
 
     if (getRowMarketId(listing) !== activeMarketId) {
-      throw new Error('Player shop listing belongs to another market.');
+      throw new SenderError('Player shop listing belongs to another market.');
     }
 
     getPlayerShopCatalogItem(listing.itemKey, activeMarketId);
 
     if (listing.sellerIdentity.isEqual(ctx.sender)) {
-      throw new Error('Cannot buy your own player shop listing.');
+      throw new SenderError('Cannot buy your own player shop listing.');
     }
 
     if (quantity < 1 || quantity > listing.quantity) {
-      throw new Error('Player shop listing does not have enough quantity.');
+      throw new SenderError('Player shop listing does not have enough quantity.');
     }
 
     const buyer = ensurePlayer(ctx);
@@ -20280,13 +20290,13 @@ export const buy_player_shop_listing = spacetimedb.reducer(
     );
 
     if (listingPriceGold === null || listingPriceGold <= 0) {
-      throw new Error('Player shop listing price is invalid.');
+      throw new SenderError('Player shop listing price is invalid.');
     }
 
     const proceedsGold = roundGoldPrice(listingPriceGold * quantity);
 
     if (proceedsGold > MAX_PLAYER_SHOP_TRADE_TOTAL_GOLD) {
-      throw new Error('Player shop trade total is too high.');
+      throw new SenderError('Player shop trade total is too high.');
     }
 
     ctx.db.playerShopListing.listingKey.update({
@@ -20330,7 +20340,7 @@ export const claim_player_shop_proceeds = spacetimedb.reducer(
     assertActivePlayerSession(ctx);
 
     if (!ENABLE_PLAYER_SHOP_EXCHANGE) {
-      throw new Error('Player shop exchange requires server inventory.');
+      throw new SenderError('Player shop exchange requires server inventory.');
     }
 
     const activeMarketId = assertActiveMarket(ctx, marketId);

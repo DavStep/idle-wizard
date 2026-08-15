@@ -2,6 +2,7 @@ import { DEFAULT_PAGE_SWIPE_ORDER } from "../../../pages/managers/pageOrder.js";
 import { PageUnlockManager } from "../../../pages/managers/PageUnlockManager.js";
 import { automationResearchIds } from "../../../gameplay/automation/automationResearchIds.js";
 import { WORKSHOP_SECONDARY_ACTION_UNLOCK_LEVEL } from "../../../pages/workshop/managers/WorkshopSecondaryActionGateManager.js";
+import { getOwnTradeAllianceQuestContribution } from "../../../pages/workshop/managers/tradeAllianceQuestStatus.js";
 import {
   PageNotificationStateManager,
   getGardenNotificationContext,
@@ -71,6 +72,12 @@ const WORKSHOP_BAG_TAB_IDS = new Set([
   "ingredients",
 ]);
 const WORKSHOP_STATS_TAB_IDS = new Set(["seeds", "herbs", "potions", "coin"]);
+const WORKSHOP_ALLIANCE_TAB_IDS = new Set([
+  "home",
+  "quests",
+  "members",
+  "settings",
+]);
 const WORKSHOP_LEADERBOARD_TAB_IDS = new Set(["singlePlayer", "alliance"]);
 const WORKSHOP_LEADERBOARD_PERIOD_IDS = new Set([
   "daily",
@@ -182,6 +189,7 @@ export class PixiPagesFacade {
     this.questProgressPreview = null;
     this.workshopBagTabId = "currencies";
     this.workshopStatsTabId = "seeds";
+    this.workshopAllianceTabId = "home";
     this.workshopLeaderboardTabId = "singlePlayer";
     this.workshopLeaderboardPeriodId = "allTime";
     this.workshopPersonalTasksTabId = "tasks";
@@ -672,6 +680,7 @@ export class PixiPagesFacade {
             bagTabId: this.workshopBagTabId,
             statsTabId: this.workshopStatsTabId,
             allianceExpandedId: this.workshopAllianceExpandedId,
+            allianceTabId: this.workshopAllianceTabId,
             leaderboardTabId: this.workshopLeaderboardTabId,
             leaderboardPeriodId: this.workshopLeaderboardPeriodId,
             personalTasksTabId: this.workshopPersonalTasksTabId,
@@ -940,12 +949,62 @@ export class PixiPagesFacade {
           this.refreshPage("workshop");
           return true;
         },
+        selectAllianceTab: (tabId) => {
+          this.workshopAllianceTabId = normalizeWorkshopTabId(
+            tabId,
+            WORKSHOP_ALLIANCE_TAB_IDS,
+            "home",
+          );
+          this.refreshPage("workshop");
+          return true;
+        },
         joinAlliance: (allianceId) =>
           this.tradeAllianceFacade?.joinAlliance?.(allianceId),
         applyAlliance: (allianceId) =>
           this.tradeAllianceFacade?.applyAlliance?.(allianceId),
         cancelAllianceApplication: (applicationKey) =>
           this.tradeAllianceFacade?.cancelApplication?.(applicationKey),
+        leaveAlliance: () => this.tradeAllianceFacade?.leaveAlliance?.(),
+        updateAllianceProfile: (profile) =>
+          this.tradeAllianceFacade?.updateProfile?.(profile),
+        claimAllianceQuest: (questId) =>
+          this.tradeAllianceFacade?.claimQuestReward?.(questId),
+        canFillAllianceQuest: (quest) => {
+          if (!quest?.itemKey) {
+            return false;
+          }
+          try {
+            const item = gameplay?.itemsFacade?.getItemDefinitionByKey?.(
+              quest.itemKey,
+            );
+            return item
+              ? gameplay.itemsFacade.getItemQuantity(item.id) > 0
+              : false;
+          } catch {
+            return false;
+          }
+        },
+        fillAllianceQuest: async (quest) => {
+          const fill = gameplay?.fillTradeAllianceItemQuest?.({
+            ...quest,
+            ownContribution: getOwnTradeAllianceQuestContribution(
+              this.tradeAllianceSnapshot,
+              quest,
+            ),
+          });
+          if (!fill?.ok) {
+            return fill ?? { ok: false, reason: "not_enough_items" };
+          }
+          const result = await this.tradeAllianceFacade?.fillItemQuest?.({
+            questId: quest?.questId,
+            itemKey: fill.item?.key,
+            quantity: fill.quantity,
+          });
+          if (!result?.ok) {
+            gameplay?.refundTradeAllianceItemQuestFill?.(fill);
+          }
+          return result ?? { ok: false, reason: "offline" };
+        },
         selectLeaderboardTab: (tabId) => {
           this.workshopLeaderboardTabId = normalizeWorkshopTabId(
             tabId,
@@ -3026,6 +3085,11 @@ function stripSeedSuffix(label) {
 }
 
 function formatPlayerRequestStatus(result) {
+  const backendMessage = String(result?.message ?? '').trim();
+  if (backendMessage) {
+    return backendMessage;
+  }
+
   switch (result?.reason) {
     case "slot_locked":
       return "locked";

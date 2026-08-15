@@ -7,19 +7,15 @@ import { PixiInfoButton } from '../../primitives/PixiInfoButton.js';
 import { PixiNineSliceFrame } from '../../primitives/PixiNineSliceFrame.js';
 import { PixiResourceLabel } from '../../primitives/PixiResourceLabel.js';
 import { PixiStarLevelLabel } from '../../primitives/PixiStarLevelLabel.js';
-import { normalizePixiTextStroke } from '../../primitives/PixiTextLabel.js';
 import {
   DEFAULT_PIXI_THEME_SNAPSHOT,
   PIXI_ROOT_RUN_ASSETS,
   PIXI_ROOT_RUN_GEOMETRY,
-  PIXI_SQUIRCLE_TINTS,
 } from '../../theme/PixiThemeTokens.js';
 import {
   RESEARCH_PAPER_INK,
   RESEARCH_PIXI_GEOMETRY,
   RESEARCH_PROGRESS_INK,
-  RESEARCH_RANK_FONT,
-  RESEARCH_RANK_INK,
   RESEARCH_ROW_TEXT,
   ResearchStationTitlePlaque,
 } from '../research/ResearchPixiPage.js';
@@ -39,10 +35,10 @@ import {
 } from '../workshop/RetainedPageKit.js';
 
 export const PRESTIGE_DESCRIPTION_LINES = Object.freeze([
-  'Start a new run at the level and resource totals shown above.',
-  'Mana, Coin, Crystal, Items, ordinary Research, Garden, Brewing, and level tasks reset; daily and weekly tasks keep their timer.',
-  'Claiming a milestone also credits lower unclaimed milestones and earns 1 Prestige Point.',
-  'Prestige Points permanently unlock Market licences at 1, 3, 6, and 10 points; the highest licence stays active.',
+  'Resets Mana, Coin, Crystal, items, ordinary Research, Garden, Brewing, and level tasks.',
+  'Daily and weekly task timers continue.',
+  'Lower unclaimed milestones are credited automatically.',
+  'Prestige Points permanently unlock Market licences.',
 ]);
 
 const DEFAULT_TABS = Object.freeze([
@@ -54,7 +50,8 @@ const PRESTIGE_ICON_ASSET_ID =
   'source:assets/icons/icon-prestige-star.png';
 const PRESTIGE_CARD_INK = RESEARCH_PAPER_INK;
 const PRESTIGE_CARD_MUTED_INK = RESEARCH_PROGRESS_INK;
-const PRESTIGE_ROW_HEIGHT = RESEARCH_PIXI_GEOMETRY.rowHeight;
+const PRESTIGE_SUMMARY_MIN_HEIGHT = 64;
+const PRESTIGE_MILESTONE_ROW_HEIGHT = 48;
 const PRESTIGE_ROW_GAP = RESEARCH_PIXI_GEOMETRY.rowGap;
 const PRESTIGE_SECTION_GAP = 12;
 const PRESTIGE_TITLE_GAP = 5;
@@ -64,18 +61,10 @@ const PRESTIGE_CARD_SOURCE_INSETS =
   PIXI_ROOT_RUN_GEOMETRY.researchCard.sourceInsets;
 const PRESTIGE_CARD_BORDER_INSETS =
   PIXI_ROOT_RUN_GEOMETRY.researchCard.borderInsets;
-const PRESTIGE_ART_SOURCE_INSETS = Object.freeze({
-  top: 41,
-  right: 41,
-  bottom: 41,
-  left: 41,
-});
-const PRESTIGE_ART_BORDER_INSETS = Object.freeze({
-  top: 49 / 3,
-  right: 50 / 3,
-  bottom: 50 / 3,
-  left: 49 / 3,
-});
+const PRESTIGE_ROW_MARKER_X = 26;
+const PRESTIGE_ROW_CONTENT_X = 48;
+const PRESTIGE_ROW_ACTION_WIDTH = 68;
+const PRESTIGE_ROW_ACTION_HEIGHT = 32;
 
 export class PrestigePixiPage extends BaseRetainedPixiPage {
   constructor({
@@ -107,13 +96,15 @@ export class PrestigePixiPage extends BaseRetainedPixiPage {
     this.descriptionTitle = new ResearchStationTitlePlaque({
       assetManager: this.assetManager,
     });
-    this.descriptionTitle.bind('Description', 'regular');
+    this.descriptionTitle.bind('Next Prestige', 'regular');
     this.progressionTitle = new ResearchStationTitlePlaque({
       assetManager: this.assetManager,
     });
-    this.progressionTitle.bind('Progression', 'crystal');
+    this.progressionTitle.bind('Milestones', 'crystal');
     this.description = new PrestigeDescriptionPanel({
       assetManager: this.assetManager,
+      inputRouter: this.inputRouter,
+      onDetails: (model, target) => this.showTooltip(model, target),
     });
     this.confirm = new PrestigeConfirmPanel({
       assetManager: this.assetManager,
@@ -196,18 +187,32 @@ export class PrestigePixiPage extends BaseRetainedPixiPage {
       'Prestige',
       prestige.starLevel ?? summary.starLevel ?? 0,
     );
+    const isPointsTab = this.selectedTabId === 'points';
+    this.descriptionTitle.bind(
+      isPointsTab ? 'Prestige Points' : 'Next Prestige',
+      'regular',
+    );
+    this.progressionTitle.bind(
+      isPointsTab ? 'Point Rewards' : 'Milestones',
+      'crystal',
+    );
     this.description.bind({
-      flow: summary.flow,
+      headline: summary.headline ?? summary.flow,
+      nextRunLabel: summary.nextRunLabel,
       resourceLead: summary.resourceLead,
       resources: summary.resources,
       summaryLines:
         summary.lines ??
         [summary.flow, summary.receive].filter(Boolean),
-      descriptionLines: prestige.descriptionLines ?? PRESTIGE_DESCRIPTION_LINES,
+      detailsLines: isPointsTab
+        ? summary.detailsLines
+        : summary.detailsLines ??
+          prestige.descriptionLines ??
+          PRESTIGE_DESCRIPTION_LINES,
     });
 
     const rows =
-      this.selectedTabId === 'points'
+      isPointsTab
         ? normalizeRows(prestige.pointRewards ?? prestige.points)
         : normalizeRows(prestige.milestones);
     this.rows.reconcile(
@@ -486,15 +491,16 @@ export class PrestigePixiPage extends BaseRetainedPixiPage {
 }
 
 export class PrestigeDescriptionPanel {
-  constructor({ assetManager }) {
+  constructor({ assetManager, inputRouter = null, onDetails = null }) {
     this.assetManager = assetManager;
+    this.onDetails = onDetails;
     this.root = new Container({ label: 'prestige-description' });
     this.card = new PixiNineSliceFrame({
       texture: Texture.EMPTY,
       sourceInsets: PRESTIGE_CARD_SOURCE_INSETS,
       borderInsets: PRESTIGE_CARD_BORDER_INSETS,
       width: RESEARCH_PIXI_GEOMETRY.cardWidth,
-      height: PRESTIGE_ROW_HEIGHT,
+      height: PRESTIGE_SUMMARY_MIN_HEIGHT,
       label: 'prestige-description-card',
     });
     this.flow = createText('', {
@@ -527,34 +533,37 @@ export class PrestigeDescriptionPanel {
       wordWrapWidth: 292,
     });
     this.summary.label = 'prestige-description-summary-fallback';
-    this.description = createText('', {
-      fontSize: 10,
-      lineHeight: 12,
-      fill: PRESTIGE_CARD_INK,
-      wordWrapWidth: 294,
+    this.details = new PixiInfoButton({
+      assetManager,
+      inputRouter,
+      label: 'prestige-description-details',
+      size: 18,
+      action: () => this.onDetails?.(this.detailsModel, this.details),
     });
-    this.description.label = 'prestige-description-copy';
     this.root.addChild(
       this.card,
       this.flow,
       this.resourceLead,
       ...this.resources,
       this.summary,
-      this.description,
+      this.details,
     );
     this.height = 0;
     this.applyTheme(DEFAULT_PIXI_THEME_SNAPSHOT);
   }
 
   bind({
+    headline,
     flow,
+    nextRunLabel,
     resourceLead,
     resources,
     summaryLines,
+    detailsLines,
     descriptionLines,
   }) {
     const fallbackLines = normalizeRows(summaryLines).filter(Boolean);
-    setText(this.flow, flow ?? fallbackLines[0] ?? '');
+    setText(this.flow, headline ?? flow ?? fallbackLines[0] ?? '');
     setText(this.resourceLead, resourceLead ?? '');
     const resourceRows = normalizeRows(resources);
     this.resources.forEach((label, index) => {
@@ -569,51 +578,61 @@ export class PrestigeDescriptionPanel {
     });
     setText(
       this.summary,
-      flow || resourceRows.length > 0
-        ? ''
-        : fallbackLines.slice(1).join('\n'),
+      nextRunLabel ??
+        (headline || flow || resourceRows.length > 0
+          ? ''
+          : fallbackLines.slice(1).join('\n')),
     );
-    setText(
-      this.description,
-      normalizeRows(descriptionLines).map((line) => `• ${line}`).join('\n'),
+    const detailRows = normalizeRows(detailsLines ?? descriptionLines).filter(
+      Boolean,
     );
+    this.detailsModel = detailRows.length > 0
+      ? { text: detailRows.map((line) => `• ${line}`).join('\n') }
+      : null;
+    this.details.visible = Boolean(this.detailsModel);
+    this.details.renderable = this.details.visible;
+    this.details.setModel({
+      enabled: this.details.visible,
+      action: () => this.onDetails?.(this.detailsModel, this.details),
+    });
   }
 
   setBounds(x, y, width) {
     this.root.position.set(x, y);
     const inset = 14;
-    const copyWidth = Math.max(0, width - inset * 2);
+    const detailsReserve = this.details.visible ? 25 : 0;
+    const copyWidth = Math.max(0, width - inset * 2 - detailsReserve);
     this.flow.style.wordWrap = true;
     this.flow.style.wordWrapWidth = copyWidth;
     this.flow.position.set(inset, 10);
+    if (this.details.visible) {
+      this.details.setBounds(width - inset - 18, 8, 18, 18);
+    }
 
     let headerBottom = this.flow.y + this.flow.height;
+    this.summary.style.wordWrapWidth = copyWidth;
+    this.summary.position.set(inset, headerBottom + 2);
+    if (this.summary.text) {
+      headerBottom = this.summary.y + this.summary.height;
+    }
     const hasResources = this.resources.some((label) => label.visible);
     this.resourceLead.visible = hasResources;
     this.resourceLead.renderable = hasResources;
     if (hasResources) {
-      this.resourceLead.position.set(inset, headerBottom + 4);
+      this.resourceLead.position.set(inset, headerBottom + 5);
       let resourceX = inset + this.resourceLead.width + 6;
       for (const label of this.resources) {
         if (!label.visible) {
           continue;
         }
-        label.position.set(resourceX, headerBottom + 3);
+        label.position.set(resourceX, headerBottom + 4);
         resourceX += label.measuredWidth + 9;
       }
       headerBottom += 16;
     }
-
-    this.summary.style.wordWrapWidth = copyWidth;
-    this.summary.position.set(inset, headerBottom + 3);
-    if (this.summary.text) {
-      headerBottom = this.summary.y + this.summary.height;
-    }
-    this.description.style.wordWrapWidth = copyWidth;
-    this.description.position.set(inset, headerBottom + 7);
     this.height = Math.max(
-      PRESTIGE_ROW_HEIGHT,
-      Math.ceil(this.description.y + this.description.height + 11),
+      PRESTIGE_SUMMARY_MIN_HEIGHT,
+      Math.ceil(headerBottom + 11),
     );
     this.card.setSize(width, this.height, PRESTIGE_CARD_BORDER_INSETS);
   }
@@ -642,12 +661,6 @@ export class PrestigeDescriptionPanel {
       fill: PRESTIGE_CARD_MUTED_INK,
       wordWrapWidth: 292,
     });
-    applyTextTheme(this.description, theme, {
-      fontSize: 10,
-      lineHeight: 12,
-      fill: PRESTIGE_CARD_INK,
-      wordWrapWidth: 294,
-    });
     for (const label of this.resources) {
       label.applyTheme(theme);
       label.amountLabel.setColor(PRESTIGE_CARD_INK);
@@ -655,6 +668,7 @@ export class PrestigeDescriptionPanel {
   }
 
   destroy() {
+    this.details.destroy();
     this.root.destroy({ children: true });
   }
 }
@@ -669,18 +683,9 @@ export class PrestigeRowWidget {
       sourceInsets: PRESTIGE_CARD_SOURCE_INSETS,
       borderInsets: PRESTIGE_CARD_BORDER_INSETS,
       width: RESEARCH_PIXI_GEOMETRY.cardWidth,
-      height: PRESTIGE_ROW_HEIGHT,
+      height: PRESTIGE_MILESTONE_ROW_HEIGHT,
       label: 'prestige-row-card',
     });
-    this.artWell = new PixiNineSliceFrame({
-      texture: Texture.EMPTY,
-      sourceInsets: PRESTIGE_ART_SOURCE_INSETS,
-      borderInsets: PRESTIGE_ART_BORDER_INSETS,
-      width: RESEARCH_PIXI_GEOMETRY.artWidth,
-      height: RESEARCH_PIXI_GEOMETRY.artHeight,
-      label: 'prestige-row-art-well',
-    });
-    this.artWell.tint = PIXI_SQUIRCLE_TINTS.artWell;
     this.stateIcon = new Sprite({
       texture: Texture.EMPTY,
       label: 'prestige-row-state-icon',
@@ -700,12 +705,6 @@ export class PrestigeRowWidget {
       wordWrapWidth: RESEARCH_PIXI_GEOMETRY.nameMaxWidth,
     });
     this.title.label = 'prestige-row-title';
-    this.rewardLead = createText('Reward', {
-      fontSize: 10,
-      lineHeight: 12,
-      fill: PRESTIGE_CARD_MUTED_INK,
-    });
-    this.rewardLead.label = 'prestige-row-reward-lead';
     this.reward = createText('', {
       fontSize: 10,
       lineHeight: 12,
@@ -724,25 +723,13 @@ export class PrestigeRowWidget {
         label: `prestige-row-resource-${index}`,
       }),
     );
-    this.rank = new Sprite({
-      texture: Texture.EMPTY,
-      label: 'prestige-row-rank',
-      roundPixels: true,
-    });
-    this.rankLabel = createText('', {
-      fontFamily: RESEARCH_RANK_FONT,
-      fontSize: RESEARCH_ROW_TEXT.rankFontSize,
-      lineHeight: RESEARCH_ROW_TEXT.rankLineHeight,
-      align: 'center',
-      fill: RESEARCH_RANK_INK,
-    });
-    this.rankLabel.anchor.set(0.5);
     this.action = new PixiCostButton({
       assetManager,
       inputRouter: this.page.inputRouter,
-      research: true,
-      width: RESEARCH_PIXI_GEOMETRY.costWidth,
-      height: RESEARCH_PIXI_GEOMETRY.costHeight,
+      research: false,
+      width: PRESTIGE_ROW_ACTION_WIDTH,
+      height: PRESTIGE_ROW_ACTION_HEIGHT,
+      contentScale: 0.78,
       label: 'prestige-row-action',
     });
     this.help = new PixiInfoButton({
@@ -756,7 +743,7 @@ export class PrestigeRowWidget {
       sourceInsets: PRESTIGE_CARD_SOURCE_INSETS,
       borderInsets: PRESTIGE_CARD_BORDER_INSETS,
       width: RESEARCH_PIXI_GEOMETRY.cardWidth,
-      height: PRESTIGE_ROW_HEIGHT,
+      height: PRESTIGE_MILESTONE_ROW_HEIGHT,
       label: 'prestige-row-locked-overlay',
     });
     this.lockedOverlay.tint = 0x000000;
@@ -764,15 +751,11 @@ export class PrestigeRowWidget {
     this.lockedOverlay.eventMode = 'none';
     this.root.addChild(
       this.card,
-      this.artWell,
       this.stateIcon,
       this.pointStars,
       this.title,
-      this.rewardLead,
       this.reward,
       ...this.rewardResources,
-      this.rank,
-      this.rankLabel,
       this.action,
       this.help,
       this.lockedOverlay,
@@ -795,7 +778,6 @@ export class PrestigeRowWidget {
       model.status ??
       model.state ??
       (model.completed ? 'completed' : model.locked ? 'locked' : '');
-    setText(this.rankLabel, formatPrestigeTitle(status));
     const rewardLines = normalizeRows(model.rewardLines ?? model.rewards);
     const rewardResources = normalizeRows(model.rewardResources);
     this.reward.style.wordWrapWidth =
@@ -878,84 +860,64 @@ export class PrestigeRowWidget {
             this.assetManager,
             PRESTIGE_ICON_ASSET_ID,
           );
-    fitPrestigeIcon(this.stateIcon, 42, 42);
-    this.stateIcon.visible = true;
-    this.stateIcon.renderable = true;
+    fitPrestigeIcon(this.stateIcon, 26, 26);
+    const isPoint = this.model?.kind === 'point';
+    this.stateIcon.visible = !isPoint;
+    this.stateIcon.renderable = !isPoint;
   }
 
   setBounds(x, y, width, height) {
     this.root.position.set(x, y);
     this.card.setSize(width, height, PRESTIGE_CARD_BORDER_INSETS);
-    this.artWell.position.set(
-      RESEARCH_PIXI_GEOMETRY.artX,
-      RESEARCH_PIXI_GEOMETRY.artY + RESEARCH_PIXI_GEOMETRY.contentOffsetY,
-    );
-    this.artWell.setSize(
-      RESEARCH_PIXI_GEOMETRY.artWidth,
-      RESEARCH_PIXI_GEOMETRY.artHeight,
-      PRESTIGE_ART_BORDER_INSETS,
-    );
-    const artCenterX =
-      RESEARCH_PIXI_GEOMETRY.artX + RESEARCH_PIXI_GEOMETRY.artWidth / 2;
-    const artCenterY =
-      RESEARCH_PIXI_GEOMETRY.artY +
-      RESEARCH_PIXI_GEOMETRY.contentOffsetY +
-      RESEARCH_PIXI_GEOMETRY.artHeight / 2;
-    this.stateIcon.position.set(artCenterX, artCenterY - 3);
+    const isPoint = this.model?.kind === 'point';
+    const markerY = height / 2;
+    this.stateIcon.position.set(PRESTIGE_ROW_MARKER_X, markerY);
     this.pointStars.position.set(
-      artCenterX - this.pointStars.measuredWidth / 2,
-      artCenterY + 17,
+      PRESTIGE_ROW_MARKER_X - this.pointStars.measuredWidth / 2,
+      markerY - 5,
     );
-    this.title.position.set(
-      RESEARCH_PIXI_GEOMETRY.nameX,
-      RESEARCH_PIXI_GEOMETRY.nameY +
-        RESEARCH_PIXI_GEOMETRY.contentOffsetY,
-    );
-    this.rewardLead.position.set(RESEARCH_PIXI_GEOMETRY.descriptionX, 29);
-    this.reward.position.set(RESEARCH_PIXI_GEOMETRY.descriptionX, 43);
-    let resourceX =
-      RESEARCH_PIXI_GEOMETRY.descriptionX + this.rewardLead.width + 5;
+    this.title.position.set(PRESTIGE_ROW_CONTENT_X, 17);
+    const actionX = width - 10 - PRESTIGE_ROW_ACTION_WIDTH;
+    const helpX = isPoint
+      ? width - 30
+      : Math.min(
+          actionX - 26,
+          PRESTIGE_ROW_CONTENT_X + this.title.width + 4,
+        );
+    const contentRight = this.action.visible
+      ? actionX - 8
+      : this.help.visible
+        ? helpX - 5
+        : width - 12;
+    let resourceX = PRESTIGE_ROW_CONTENT_X + this.title.width + 9;
+    const resourceY = 16;
     for (const label of this.rewardResources) {
       if (!label.visible) {
         continue;
       }
-      label.position.set(resourceX, 28);
+      label.position.set(resourceX, resourceY);
       resourceX += label.measuredWidth + 8;
     }
-    this.rank.position.set(
-      width -
-        RESEARCH_PIXI_GEOMETRY.rankRight -
-        RESEARCH_PIXI_GEOMETRY.rankWidth,
+    const rewardX = isPoint
+      ? PRESTIGE_ROW_CONTENT_X + this.title.width + 9
+      : PRESTIGE_ROW_CONTENT_X;
+    this.reward.style.wordWrapWidth = Math.max(
       0,
+      contentRight - rewardX,
     );
-    this.rank.width = RESEARCH_PIXI_GEOMETRY.rankWidth;
-    this.rank.height = RESEARCH_PIXI_GEOMETRY.rankHeight;
-    this.rankLabel.position.set(
-      this.rank.x + RESEARCH_PIXI_GEOMETRY.rankWidth / 2,
-      RESEARCH_PIXI_GEOMETRY.rankHeight / 2 + 0.5,
-    );
+    this.reward.position.set(rewardX, isPoint ? 18 : 30);
     this.action.setBounds(
-      width -
-        RESEARCH_PIXI_GEOMETRY.actionRight -
-        RESEARCH_PIXI_GEOMETRY.costWidth,
-      31,
-      RESEARCH_PIXI_GEOMETRY.costWidth,
-      RESEARCH_PIXI_GEOMETRY.costHeight,
+      actionX,
+      (height - PRESTIGE_ROW_ACTION_HEIGHT) / 2,
+      PRESTIGE_ROW_ACTION_WIDTH,
+      PRESTIGE_ROW_ACTION_HEIGHT,
     );
-    this.help.setBounds(
-      Math.min(
-        width - RESEARCH_PIXI_GEOMETRY.valueWidth - 4,
-        RESEARCH_PIXI_GEOMETRY.nameX + this.title.width + 3,
-      ),
-      7,
-      18,
-      18,
-    );
+    this.help.setBounds(helpX, 15, 18, 18);
     this.lockedOverlay.setSize(width, height, PRESTIGE_CARD_BORDER_INSETS);
   }
 
   getPreferredHeight() {
-    return PRESTIGE_ROW_HEIGHT;
+    return PRESTIGE_MILESTONE_ROW_HEIGHT;
   }
 
   applyTheme(theme) {
@@ -965,13 +927,6 @@ export class PrestigeRowWidget {
         PIXI_ROOT_RUN_ASSETS.researchCard,
       ),
       PRESTIGE_CARD_SOURCE_INSETS,
-    );
-    this.artWell.setTexture(
-      resolvePrestigeTexture(
-        this.assetManager,
-        PIXI_ROOT_RUN_ASSETS.researchArt,
-      ),
-      PRESTIGE_ART_SOURCE_INSETS,
     );
     this.lockedOverlay.setTexture(
       resolvePrestigeTexture(
@@ -986,11 +941,6 @@ export class PrestigeRowWidget {
       fill: PRESTIGE_CARD_INK,
       wordWrapWidth: RESEARCH_PIXI_GEOMETRY.nameMaxWidth,
     });
-    applyTextTheme(this.rewardLead, theme, {
-      fontSize: 10,
-      lineHeight: 12,
-      fill: PRESTIGE_CARD_MUTED_INK,
-    });
     applyTextTheme(this.reward, theme, {
       fontSize: 10,
       lineHeight: 12,
@@ -1000,25 +950,11 @@ export class PrestigeRowWidget {
           ? 230
           : 156,
     });
-    applyTextTheme(this.rankLabel, theme, {
-      fontFamily: RESEARCH_RANK_FONT,
-      fontSize: RESEARCH_ROW_TEXT.rankFontSize,
-      lineHeight: RESEARCH_ROW_TEXT.rankLineHeight,
-      align: 'center',
-      fill: RESEARCH_RANK_INK,
-    });
-    this.rankLabel.style.stroke = normalizePixiTextStroke({
-      color: '#0a0a0a',
-    }, this.rankLabel.style.fontSize);
     this.action.applyTheme(theme);
     for (const label of this.rewardResources) {
       label.applyTheme(theme);
       label.amountLabel.setColor(PRESTIGE_CARD_INK);
     }
-    this.rank.texture = resolvePrestigeTexture(
-      this.assetManager,
-      PIXI_ROOT_RUN_ASSETS.researchRank,
-    );
   }
 
   reset() {

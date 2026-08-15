@@ -50,6 +50,7 @@
       registerGlobalDialogFactories(runtime);
       await runtime.initialize();
       const playerInfoModel = {
+        ownPlayer: true,
         player: {
           allianceId: 'moss-hall',
           allianceName: 'Moss Hall',
@@ -95,6 +96,13 @@
               GLOBAL_DIALOG_IDS.PLAYER,
               playerInfoModel,
             );
+          },
+          openCosmetics() {
+            runtime.closeDialog(GLOBAL_DIALOG_IDS.PLAYER);
+            runtime.openDialog(GLOBAL_DIALOG_IDS.SETTINGS, {
+              title: 'Wizard',
+              tabId: 'account',
+            });
           },
         },
       };

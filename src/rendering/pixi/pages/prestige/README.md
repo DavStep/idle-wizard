@@ -5,13 +5,16 @@ point-reward rows, confirmation panel, and licence tooltip in one retained Pixi
 tree. Milestone and reward rows are keyed and pooled.
 
 The identity ribbon reuses `MarketTitleRibbon` and binds its three-slot star
-group to completed Prestige Points. `Description` and `Progression` reuse
-`ResearchStationTitlePlaque`; the description block and `PrestigeRowWidget`
-extend the Research paper-card visual contract. Generated milestone rows bind
-crystal/ruby rewards through `PixiResourceLabel`, status art uses existing
-prestige/check/lock icons, and the available action uses the Research
-`PixiCostButton` geometry. Player-facing headings, statuses, and tab labels use
-Title Case while explanatory copy remains sentence case.
+group to completed Prestige Points. `Next Prestige` and `Milestones` reuse
+`ResearchStationTitlePlaque`. The compact summary card shows the target level,
+new-run starting level, and starting resources; reset details open from the
+shared info button. `PrestigeRowWidget` extends the Research paper-card visual
+contract as a dense numbered row: a small state marker, one-line level and
+icon-led reward content, plus a fixed right action only when available. It does
+not repeat the Research art well, rank badge, or a `Reward` label. Point rewards
+use the shared star-level marker and keep the threshold and licence on one line.
+Currency icons retain their identity color while amount text uses the common
+paper ink. Locked future rows keep the same geometry under a quiet overlay.
 
 The page consumes presenter output. It does not calculate milestone eligibility,
 credited levels, reset contents, point unlocks, or market licences. Supply those

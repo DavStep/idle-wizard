@@ -63,6 +63,9 @@ describe('ViewportManager', () => {
   });
 
   it('keeps native Android text entry over the game instead of resizing it', () => {
+    const capacitorConfig = JSON.parse(
+      readFileSync(`${cwd()}/capacitor.config.json`, 'utf8'),
+    );
     const manifest = readFileSync(
       `${cwd()}/android/app/src/main/AndroidManifest.xml`,
       'utf8',
@@ -77,6 +80,7 @@ describe('ViewportManager', () => {
     );
 
     expect(manifest).toContain('android:windowSoftInputMode="adjustNothing"');
+    expect(capacitorConfig.plugins?.SystemBars?.insetsHandling).toBe('disable');
     expect(mainActivity).toContain(
       'WindowCompat.setDecorFitsSystemWindows(getWindow(), false);',
     );

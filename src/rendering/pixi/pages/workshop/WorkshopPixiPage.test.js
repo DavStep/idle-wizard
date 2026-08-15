@@ -21,7 +21,10 @@ import {
   resolvePixiTextStrokeWidth,
 } from '../../theme/PixiThemeTokens.js';
 import { ShopDialogPixi } from '../shop/ShopDialogPixi.js';
-import { RETAINED_DIALOG_LIST_GEOMETRY } from './RetainedPageKit.js';
+import {
+  RETAINED_DIALOG_LIST_GEOMETRY,
+  RETAINED_DIALOG_SCROLL_GEOMETRY,
+} from './RetainedPageKit.js';
 import { QuestCompletionMotionCoordinator } from '../../managers/QuestCompletionMotionCoordinator.js';
 import {
   ROOT_RUN_SIDE_ACTION_GEOMETRY,
@@ -103,27 +106,19 @@ describe('WorkshopPixiPage', () => {
     const model = createWorkshopViewModel();
     model.workshop.dialogs.worldEventDonate = {
       title: 'Post Road Bounties',
+      featuredItem: {
+        id: 'giving',
+        label: 'Coin',
+        detail: 'Owned',
+        value: '100',
+        resourceKey: 'coin',
+        iconSize: 36,
+      },
       summaryRows: [
-        {
-          id: 'giving',
-          label: 'Coin',
-          value: '',
-          leadingResourceKey: 'coin',
-          iconLeading: true,
-          fontSize: 14,
-          layoutHeight: 34,
-        },
-        {
-          id: 'owned',
-          label: 'Owned',
-          value: '100',
-          layoutInset: 38,
-        },
         {
           id: 'total',
           label: 'Already Donated',
           value: '25 points',
-          layoutInset: 38,
         },
         {
           id: 'amount',
@@ -172,22 +167,30 @@ describe('WorkshopPixiPage', () => {
       value: 25,
       tone: 'root',
     });
-    expect(dialog.summaryRows.get('giving').leadingResource.icon.visible).toBe(true);
-    expect(dialog.summaryRows.get('giving').keyLabel.fontSize).toBe(14);
-    expect(dialog.summaryRows.get('giving').root.hitArea.height).toBe(34);
-    expect(dialog.summaryRows.get('owned').root.x).toBe(38);
+    expect(dialog.featuredItemRow.background.visible).toBe(true);
+    expect(dialog.featuredItemRow.detail.text).toBe('Owned');
+    expect(dialog.featuredItemRow.value.text).toBe('100');
+    expect(dialog.featuredItemRow.itemIcon.width).toBe(36);
+    expect(dialog.featuredItemRow.root.hitArea.height).toBe(50);
+    expect(dialog.summaryRows.get('total').root.x).toBe(0);
+    expect(assetManager.getTexture).toHaveBeenCalledWith(
+      PIXI_ROOT_RUN_ASSETS.settingsRow,
+    );
     expect(dialog.summaryRows.get('amount').root.y).toBeLessThan(
       dialog.rangeControl.y,
     );
     expect(dialog.rangeControl.y).toBeLessThan(
       dialog.summaryRows.get('points').root.y,
     );
-    expect(dialog.rangeControl.x).toBe(-9);
+    expect(dialog.rangeControl.x).toBe(-12);
     expect(dialog.rangeControl.controlWidth).toBeGreaterThan(
       dialog.panel.contentBoxWidth,
     );
     const confirm = dialog.actions.get('confirm');
     expect(confirm.variant).toBe('green');
+    expect(confirm.control.textLabel.y).toBeCloseTo(
+      confirm.height / 2 + confirm.control.activeSkin.contentOffsetY + 1,
+    );
     expect(assetManager.getTexture).toHaveBeenCalledWith(
       getPixiButtonAssetId('green', 30),
     );
@@ -287,7 +290,7 @@ describe('WorkshopPixiPage', () => {
     harness.dispose();
   });
 
-  it('fills to the reached point, then shines, then boinks', () => {
+  it('fills to the reached point and keeps the white shine without boinking the rail', () => {
     const motion = createWorkshopMotionHarness();
     const questCompletionMotionCoordinator =
       new QuestCompletionMotionCoordinator();
@@ -327,9 +330,6 @@ describe('WorkshopPixiPage', () => {
 
     motion.runAt(540);
     expect(outgoingRow.progressShineRoot.visible).toBe(false);
-    expect(outgoingRow.progress.root.scale.x).toBeGreaterThan(1);
-
-    motion.runAt(660);
     expect(outgoingRow.progress.root.scale.x).toBe(1);
   });
 
@@ -374,18 +374,56 @@ describe('WorkshopPixiPage', () => {
     expect(outgoingRow.progressShineRoot.visible).toBe(false);
     expect(outgoingRow.progress.root.scale.x).toBe(1);
 
-    motion.runAt(600);
-    expect(outgoingRow.progress.root.scale.x).toBeGreaterThan(1);
-
-    motion.runAt(700);
-    expect(outgoingRow.progress.root.scale.x).toBe(1);
-
     questCompletionMotionCoordinator.startFlight(transitionId);
     expect(harness.page.tasks.rows.get('request-1')).toBe(outgoingRow);
 
     questCompletionMotionCoordinator.complete(transitionId);
     expect(harness.page.tasks.rows.get('request-1')).toBeNull();
     expect(harness.page.tasks.rows.get('request-2')).toBeDefined();
+    expect(harness.page.tasks.root.scale.x).toBe(1);
+    expect(harness.page.tasks.rows.get('request-2').progress.root.scale.x).toBe(1);
+
+    motion.runAt(609);
+    expect(harness.page.tasks.root.scale.x).toBeGreaterThan(1);
+    expect(harness.page.tasks.rows.get('request-2').progress.root.scale.x).toBe(1);
+
+    motion.runAt(700);
+    expect(harness.page.tasks.root.scale.x).toBe(1);
+
+    harness.page.destroy();
+    questCompletionMotionCoordinator.destroy();
+    harness.dispose();
+  });
+
+  it('reveals the next request without a box boink for reduced motion', () => {
+    const questCompletionMotionCoordinator =
+      new QuestCompletionMotionCoordinator();
+    const harness = createHarness({
+      questCompletionMotionCoordinator,
+      reducedMotion: () => true,
+    });
+    harness.page.activate();
+    harness.page.bind(createWorkshopViewModel());
+
+    const transitionId = questCompletionMotionCoordinator.begin({
+      previousTaskId: 'request-1',
+      nextTaskId: 'request-2',
+    });
+    const nextModel = createWorkshopViewModel();
+    nextModel.workshop.tasks.rows = [{
+      id: 'request-2',
+      label: 'brew mana tonic',
+      current: 0,
+      required: 1,
+    }];
+    harness.page.bind(nextModel);
+
+    questCompletionMotionCoordinator.complete(transitionId);
+
+    expect(harness.page.tasks.rows.get('request-1')).toBeNull();
+    expect(harness.page.tasks.rows.get('request-2')).toBeDefined();
+    expect(harness.page.tasks.completionBoink).toBeNull();
+    expect(harness.page.tasks.root.scale.x).toBe(1);
 
     harness.page.destroy();
     questCompletionMotionCoordinator.destroy();
@@ -2083,8 +2121,8 @@ describe('WorkshopPixiPage', () => {
     expect(row.getPreferredHeight()).toBeGreaterThan(30);
     expect(collapsedRow.getPreferredHeight()).toBe(30);
     expect(row.memberWidgets.size).toBe(6);
-    expect(row.memberViewport.height).toBe(40 * 4.5);
-    expect(row.memberViewport.contentHeight).toBe(40 * 6);
+    expect(row.memberViewport.height).toBe(50 * 4.5);
+    expect(row.memberViewport.contentHeight).toBe(50 * 6);
     expect(row.memberViewport.scrollbarTrack.visible).toBe(true);
     expect(row.action.text.text).toBe('Join Alliance');
     expect(row.action.control.variant).toBe('green');
@@ -2119,6 +2157,14 @@ describe('WorkshopPixiPage', () => {
     model.workshop.dialogs.alliance = {
       title: 'Trade Alliance',
       ownedAlliance: true,
+      ownedAllianceHome: true,
+      selectedTabId: 'home',
+      tabs: ['home', 'quests', 'members', 'settings'].map((id) => ({
+        id,
+        label: id[0].toUpperCase() + id.slice(1),
+        selected: id === 'home',
+        onSelect: vi.fn(),
+      })),
       tradeInfo: {
         identityLabel: '[MOSS] Moss Hall',
         description: 'A quiet hall for patient traders.',
@@ -2157,17 +2203,85 @@ describe('WorkshopPixiPage', () => {
     expect(dialog.panel.paperFrame.visible).toBe(false);
     expect(dialog.allianceTradeSection.root.visible).toBe(true);
     expect(dialog.allianceMembersSection.root.visible).toBe(true);
-    expect(dialog.allianceTradeSection.title.text).toBe('Trade Info');
+    expect(dialog.allianceTradeSection.title.visible).toBe(false);
+    expect(dialog.allianceTradeSection.identity.y).toBe(12);
     expect(dialog.allianceTradeSection.identity.text).toBe('[MOSS] Moss Hall');
-    expect(dialog.allianceMembersSection.title.text).toBe('Members');
+    expect(dialog.allianceMembersSection.title.visible).toBe(false);
+    expect(dialog.allianceMembersSection.count.visible).toBe(false);
+    expect(dialog.allianceMembersSection.scroll.root.y).toBe(12);
     expect(member.avatar.texture).toBe(miraTexture);
     expect(member.role.text).toBe('Trade Master');
     expect(member.level.text).toBe('Lv 12');
+    expect(member.background.frameHeight).toBe(44);
     expect(member.root.parent).toBe(dialog.allianceMembersSection.scroll.content);
+    expect(dialog.tabs.getWidgets()).toHaveLength(4);
+    expect(dialog.tabsLayer.visible).toBe(true);
+    expect(dialog.tabsLayer.y).toBeLessThan(dialog.panel.coreHeight);
 
     harness.page.destroy();
     harness.dispose();
     miraTexture.destroy();
+  });
+
+  it('renders retained alliance settings fields inside the shared footer tabs', async () => {
+    const onSave = vi.fn(async () => ({ ok: true }));
+    const harness = createHarness();
+    const model = createWorkshopViewModel();
+    model.workshop.dialogs.alliance = {
+      title: 'Trade Alliance',
+      ownedAlliance: true,
+      selectedTabId: 'settings',
+      tabs: ['home', 'quests', 'members', 'settings'].map((id) => ({
+        id,
+        label: id[0].toUpperCase() + id.slice(1),
+        selected: id === 'settings',
+        onSelect: vi.fn(),
+      })),
+      settings: {
+        allianceId: 'moss',
+        name: 'Moss Hall',
+        tag: 'MOSS',
+        tagColor: 'green',
+        description: 'Patient traders.',
+        notice: 'Help one another.',
+        joinMode: 'apply',
+        editable: true,
+        canDisband: true,
+        onSave,
+        onDisband: vi.fn(),
+      },
+      rows: [],
+      members: [],
+    };
+
+    harness.page.bind(model);
+    harness.page.openDialog('alliance');
+
+    const dialog = harness.dialogs.get('workshop.alliance');
+    const pane = dialog.allianceSettingsPane;
+    expect(pane.root.visible).toBe(true);
+    expect(pane.fields.get('name').value).toBe('Moss Hall');
+    expect(pane.fields.get('notice').value).toBe('Help one another.');
+    expect(dialog.tabs.getWidgets()).toHaveLength(4);
+    expect(dialog.panel.paperFrame.visible).toBe(true);
+    expect(pane.root.y).toBe(
+      dialog.panel.paperFrame.y +
+        RETAINED_DIALOG_SCROLL_GEOMETRY.contentPaddingTop,
+    );
+
+    pane.selectJoinMode('open');
+    await pane.save();
+    expect(onSave).toHaveBeenCalledWith(
+      expect.objectContaining({
+        name: 'Moss Hall',
+        tag: 'MOSS',
+        tagColor: 'green',
+        joinMode: 'open',
+      }),
+    );
+
+    harness.page.destroy();
+    harness.dispose();
   });
 
   it('renders complete potion discovery rows with item art and recipe metadata', () => {
@@ -2425,7 +2539,9 @@ describe('WorkshopPixiPage', () => {
     const paperTop = dialog.panel.paperFrame.y;
 
     expect(dialog.scroll.offsetY).toBeGreaterThan(0);
-    expect(dialog.scroll.offsetY).toBe(dialog.scroll.contentHeight - dialog.scroll.height);
+    expect(dialog.scroll.offsetY).toBeCloseTo(
+      dialog.scroll.contentHeight - dialog.scroll.height,
+    );
     expect(dialog.scroll.root.y - paperTop).toBeGreaterThanOrEqual(7);
 
     harness.page.destroy();
@@ -2493,7 +2609,7 @@ describe('WorkshopPixiPage', () => {
   });
 
   it('anchors World Chat to the stage edges and keeps its composer above the keyboard', () => {
-    const harness = createHarness();
+    const harness = createHarness({ reducedMotion: true });
     const model = createWorkshopViewModel();
     model.workshop.dialogs.worldChat = {
       title: 'World Chat',
@@ -2542,18 +2658,146 @@ describe('WorkshopPixiPage', () => {
       worldChatShift: 0,
     });
     const restingPanelY = dialog.modal.fixedBounds.y;
+    const restingPanelHeight = dialog.modal.fixedBounds.height;
+    const restingScrollHeight = dialog.scroll.height;
+    const restingComposerWidth = dialog.composerField.fieldWidth;
     dialog.layout({
       sourceWidth: 360,
       sourceHeight: 2170 / 3,
       worldChatShift: -290,
     });
 
-    expect(dialog.modal.fixedBounds.y).toBeCloseTo(restingPanelY - 290);
+    expect(
+      dialog.modal.fixedBounds.y + dialog.panel.titleFrame.y,
+    ).toBeCloseTo(18);
+    expect(
+      dialog.modal.fixedBounds.y +
+        dialog.panel.closeControl.y -
+        geometry.closeSize / 2,
+    ).toBeGreaterThanOrEqual(18);
+    expect(dialog.modal.fixedBounds.y).toBeGreaterThan(restingPanelY - 290);
+    expect(dialog.modal.fixedBounds.height).toBeLessThan(restingPanelHeight);
+    expect(dialog.scroll.height).toBeLessThan(restingScrollHeight);
+    expect(dialog.composerField.fieldWidth).toBe(restingComposerWidth);
+    expect(dialog.composerField.fieldHeight).toBe(29);
+    expect(
+      dialog.modal.fixedBounds.y +
+        dialog.modal.fixedBounds.height +
+        geometry.frameOutset,
+    ).toBeCloseTo(dialog.sourceHeight - 290);
     expect(
       dialog.modal.fixedBounds.y +
         dialog.composerField.y +
         dialog.composerField.fieldHeight,
     ).toBeLessThan(1300 / 3);
+
+    const keyboardPanelHeight = dialog.modal.fixedBounds.height;
+    harness.page.bind(model);
+    expect(
+      dialog.modal.fixedBounds.y + dialog.panel.titleFrame.y,
+    ).toBeCloseTo(18);
+    expect(dialog.modal.fixedBounds.height).toBeCloseTo(keyboardPanelHeight);
+    expect(
+      dialog.modal.fixedBounds.y +
+        dialog.modal.fixedBounds.height +
+        geometry.frameOutset,
+    ).toBeCloseTo(dialog.sourceHeight - 290);
+
+    harness.page.destroy();
+    harness.dispose();
+  });
+
+  it('extends World Chat from a compact sheet and follows keyboard height changes without scaling content', () => {
+    const motion = createWorkshopMotionHarness();
+    const harness = createHarness({
+      requestFrame: motion.requestFrame,
+      cancelFrame: motion.cancelFrame,
+      timeSource: motion.timeSource,
+      reducedMotion: false,
+    });
+    const model = createWorkshopViewModel();
+    model.workshop.dialogs.worldChat = {
+      title: 'World Chat',
+      composer: {
+        placeholder: 'Message',
+        maxLength: 160,
+        enabled: true,
+      },
+      rows: [
+        {
+          id: 'player-1',
+          type: 'player',
+          username: 'Rowan',
+          body: 'The sheet should move, while this row keeps its size.',
+          ageLabel: 'now',
+        },
+      ],
+      onSubmit: vi.fn(),
+    };
+    harness.page.bind(model);
+    harness.page.openDialog('worldChat');
+
+    const dialog = harness.dialogs.get('workshop.worldChat');
+    const geometry = PIXI_ROOT_RUN_GEOMETRY.dialog;
+    const row = dialog.rows.get('player-1');
+    const restingBottom = dialog.sourceHeight - geometry.frameOutset;
+    const rowHeight = row.getPreferredHeight();
+    const composerSize = {
+      width: dialog.composerField.fieldWidth,
+      height: dialog.composerField.fieldHeight,
+    };
+
+    expect(dialog.modal.fixedBounds.height).toBeCloseTo(190);
+    expect(
+      dialog.modal.fixedBounds.y + dialog.modal.fixedBounds.height,
+    ).toBeCloseTo(restingBottom);
+
+    motion.runAt(140);
+    expect(dialog.modal.fixedBounds.height).toBeGreaterThan(190);
+    expect(dialog.modal.fixedBounds.height).toBeLessThan(573);
+    expect(dialog.panel.scale.x).toBe(1);
+    expect(row.root.scale.x).toBe(1);
+    expect(
+      dialog.modal.fixedBounds.y + dialog.modal.fixedBounds.height,
+    ).toBeCloseTo(restingBottom);
+
+    motion.runAt(280);
+    expect(dialog.modal.fixedBounds.height).toBeCloseTo(573);
+    expect(row.getPreferredHeight()).toBeCloseTo(rowHeight);
+    expect(dialog.composerField.fieldWidth).toBeCloseTo(composerSize.width);
+    expect(dialog.composerField.fieldHeight).toBeCloseTo(composerSize.height);
+
+    const keyboardProjection = {
+      sourceWidth: dialog.sourceWidth,
+      sourceHeight: dialog.sourceHeight,
+      worldChatShift: -290,
+    };
+    dialog.layout(keyboardProjection);
+    const fullHeight = dialog.modal.fixedBounds.height;
+    motion.runAt(400);
+    expect(dialog.modal.fixedBounds.height).toBeLessThan(fullHeight);
+    expect(dialog.panel.scale.x).toBe(1);
+    expect(row.root.scale.x).toBe(1);
+    const contractingHeight = dialog.modal.fixedBounds.height;
+    motion.runAt(520);
+    const keyboardHeight = dialog.modal.fixedBounds.height;
+    expect(keyboardHeight).toBeLessThan(contractingHeight);
+    expect(
+      dialog.modal.fixedBounds.y + dialog.panel.titleFrame.y,
+    ).toBeCloseTo(18);
+
+    dialog.layout({
+      ...keyboardProjection,
+      worldChatShift: 0,
+    });
+    motion.runAt(640);
+    expect(dialog.modal.fixedBounds.height).toBeGreaterThan(keyboardHeight);
+    expect(dialog.modal.fixedBounds.height).toBeLessThan(573);
+    motion.runAt(760);
+    expect(dialog.modal.fixedBounds.height).toBeCloseTo(573);
+    expect(row.getPreferredHeight()).toBeCloseTo(rowHeight);
+    expect(dialog.composerField.fieldWidth).toBeCloseTo(composerSize.width);
+    expect(dialog.composerField.fieldHeight).toBeCloseTo(composerSize.height);
 
     harness.page.destroy();
     harness.dispose();
@@ -2571,7 +2815,7 @@ describe('WorkshopPixiPage', () => {
       }),
       pushModal: vi.fn(() => ({ unregister: vi.fn() })),
     };
-    const harness = createHarness({ inputRouter });
+    const harness = createHarness({ inputRouter, reducedMotion: true });
     const model = createWorkshopViewModel();
     model.workshop.dialogs.worldChat = {
       title: 'World Chat',

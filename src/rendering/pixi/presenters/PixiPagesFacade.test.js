@@ -1180,7 +1180,8 @@ describe("PixiPagesFacade", () => {
     harness.runtime.getOpenDialogIds.mockReturnValue(["shop.request"]);
     harness.dependencies.playerShopFacade.setSlotRequest = vi.fn(async () => ({
       ok: false,
-      reason: "offline",
+      reason: "publish_failed",
+      message: "Market licence does not match the active market.",
     }));
     harness.gameplayFacade.setPlayerShopRequest = vi.fn(() => ({ ok: true }));
     const pages = new PixiPagesFacade(harness.dependencies);
@@ -1198,7 +1199,7 @@ describe("PixiPagesFacade", () => {
     await dialog.actions[0].action();
 
     dialog = harness.getBoundPage("shop").shop.players.requests.slots[0].dialog;
-    expect(dialog.status).toBe("offline");
+    expect(dialog.status).toBe("Market licence does not match the active market.");
     expect(harness.gameplayFacade.setPlayerShopRequest).not.toHaveBeenCalled();
     expect(harness.runtime.closeDialog).not.toHaveBeenCalledWith("shop.request");
   });

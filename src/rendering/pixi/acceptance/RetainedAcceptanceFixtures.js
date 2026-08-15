@@ -97,28 +97,20 @@ export function createDialogViewModel(
     const amount = key === 'a' ? 3 : 8;
     return {
       title: 'Quiet The Crowd',
+      featuredItem: {
+        id: 'giving',
+        label: 'Calming Draught',
+        detail: 'Owned',
+        value: '12',
+        itemKind: 'potion',
+        itemKey: 'calmingDraught',
+        iconSize: 36,
+      },
       summaryRows: [
-        {
-          id: 'giving',
-          label: 'Calming Draught',
-          value: '',
-          itemKind: 'potion',
-          itemKey: 'calmingDraught',
-          iconLeading: true,
-          fontSize: 14,
-          layoutHeight: 34,
-        },
-        {
-          id: 'owned',
-          label: 'Owned',
-          value: '12',
-          layoutInset: 38,
-        },
         {
           id: 'total',
           label: 'Already Donated',
           value: '360 points',
-          layoutInset: 38,
         },
         {
           id: 'amount',
@@ -263,6 +255,7 @@ function createTradeAllianceDialogModel(key) {
       memberIdentity: `identity-${key}-mira`,
       username: 'Mira',
       character: 'mira',
+      frame: 'sun',
       roleLabel: 'Trade Master',
       levelLabel: 'Lv 24',
       semanticId: `workshop.alliance.member.${key}.mira`,
@@ -273,6 +266,7 @@ function createTradeAllianceDialogModel(key) {
       memberIdentity: `identity-${key}-juniper`,
       username: 'Juniper',
       character: 'juniper',
+      frame: 'emerald',
       roleLabel: 'Quartermaster',
       levelLabel: 'Lv 18',
       semanticId: `workshop.alliance.member.${key}.juniper`,
@@ -283,6 +277,7 @@ function createTradeAllianceDialogModel(key) {
       memberIdentity: `identity-${key}-rowan`,
       username: 'Rowan',
       character: 'rowan',
+      frame: 'classic',
       roleLabel: 'Trader',
       levelLabel: 'Lv 12',
       semanticId: `workshop.alliance.member.${key}.rowan`,
@@ -293,6 +288,14 @@ function createTradeAllianceDialogModel(key) {
   return {
     title: 'Trade Alliance',
     ownedAlliance: true,
+    ownedAllianceHome: true,
+    selectedTabId: 'home',
+    tabs: ['home', 'quests', 'members', 'settings'].map((id) => ({
+      id,
+      label: id[0].toUpperCase() + id.slice(1),
+      selected: id === 'home',
+      onSelect: accept,
+    })),
     tradeInfo: {
       identityLabel: '[OWL] Night Owls',
       description: 'Patient traders building a stronger market together.',
@@ -309,6 +312,14 @@ function createTradeAllianceDialogModel(key) {
         itemKind: 'resource',
         itemKey: 'coin',
         resourceKey: 'coin',
+      },
+      {
+        id: 'trade-info:membership',
+        label: 'Membership',
+        actionLabel: 'Leave',
+        actionVariant: 'red',
+        enabled: true,
+        onActivate: accept,
       },
     ],
     members,

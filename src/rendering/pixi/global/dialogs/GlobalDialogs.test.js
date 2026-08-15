@@ -105,6 +105,7 @@ describe('retained global Pixi dialogs', () => {
     const saveUsername = vi.fn(() => ({ ok: true }));
     const sendFeedback = vi.fn(() => Promise.resolve({ ok: true }));
     const openAlliance = vi.fn(() => true);
+    const openCosmetics = vi.fn(() => true);
     const openPlayer = vi.fn(() => true);
     const confirm = vi.fn(() => Promise.resolve({ ok: true }));
 
@@ -136,13 +137,16 @@ describe('retained global Pixi dialogs', () => {
     harness.registry.close(GLOBAL_DIALOG_IDS.FEEDBACK);
 
     const player = harness.registry.open(GLOBAL_DIALOG_IDS.PLAYER, {
+      ownPlayer: true,
       player: createPlayer(),
-      actions: { openAlliance },
+      actions: { openAlliance, openCosmetics },
     });
     expect(player.allianceButton.activate()).toBe(true);
     expect(openAlliance).toHaveBeenCalledWith(
       expect.objectContaining({ tag: 'MOSS' }),
     );
+    expect(player.cosmeticsButton.activate()).toBe(true);
+    expect(openCosmetics).toHaveBeenCalledOnce();
     harness.registry.close(GLOBAL_DIALOG_IDS.PLAYER);
 
     const alliance = harness.registry.open(GLOBAL_DIALOG_IDS.ALLIANCE, {
@@ -229,7 +233,9 @@ describe('retained global Pixi dialogs', () => {
   it('composes Player Info from the framed avatar and aligned lifetime stats', () => {
     const harness = createHarness();
     const player = harness.registry.open(GLOBAL_DIALOG_IDS.PLAYER, {
+      ownPlayer: true,
       player: createPlayer(),
+      actions: { openCosmetics: vi.fn(() => true) },
     });
 
     expect(player.panel.titleLabel.text).toBe('Player Info');
@@ -279,6 +285,29 @@ describe('retained global Pixi dialogs', () => {
     ).toBeCloseTo(250);
     expect(player.totalPotionsValue.x).toBe(250);
     expect(player.totalHerbsValue.x).toBe(250);
+    expect(player.cosmeticsButton.textLabel.text).toBe('Cosmetics');
+    expect(player.cosmeticsButton.variant).toBe('yellow');
+    expect(player.cosmeticsButton.x - player.summaryFrame.x).toBe(2);
+    expect(player.cosmeticsButton.buttonWidth).toBe(
+      player.summaryFrame.frameWidth - 4,
+    );
+    expect(player.cosmeticsButton.buttonHeight).toBe(30);
+    expect(
+      player.cosmeticsButton.y -
+        (player.statsFrame.y + player.statsFrame.frameHeight),
+    ).toBeCloseTo(8);
+    expect(
+      player.panel.outerHeight -
+        (player.panel.content.y +
+          player.cosmeticsButton.y +
+          player.cosmeticsButton.buttonHeight),
+    ).toBe(10);
+
+    player.bind({
+      player: createPlayer(),
+    });
+    expect(player.cosmeticsButton.visible).toBe(false);
+    expect(player.cosmeticsButton.enabled).toBe(false);
 
     harness.dispose();
   });

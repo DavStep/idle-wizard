@@ -727,27 +727,20 @@ describe('PixiViewModelFactory', () => {
     expect(donation).toMatchObject({
       title: 'Quiet The Crowd',
       status: '',
+      featuredItem: {
+        id: 'giving',
+        label: 'Calming Draught',
+        detail: 'Owned',
+        value: '2',
+        itemKind: 'potion',
+        itemKey: 'calmingDraught',
+        iconSize: 36,
+      },
       summaryRows: expect.arrayContaining([
-        expect.objectContaining({
-          id: 'giving',
-          label: 'Calming Draught',
-          itemKind: 'potion',
-          itemKey: 'calmingDraught',
-          iconLeading: true,
-          fontSize: 14,
-          layoutHeight: 34,
-        }),
-        expect.objectContaining({
-          id: 'owned',
-          label: 'Owned',
-          value: '2',
-          layoutInset: 38,
-        }),
         expect.objectContaining({
           id: 'total',
           label: 'Already Donated',
           value: '80 points',
-          layoutInset: 38,
         }),
         expect.objectContaining({
           id: 'amount',
@@ -779,8 +772,6 @@ describe('PixiViewModelFactory', () => {
       ]),
     });
     expect(donation.summaryRows.map((row) => row.id)).toEqual([
-      'giving',
-      'owned',
       'total',
       'amount',
       'points',
@@ -1254,6 +1245,7 @@ describe('PixiViewModelFactory', () => {
 
   it('projects an owned trade alliance into separate trade info and member rows', () => {
     const openPlayer = vi.fn();
+    const selectAllianceTab = vi.fn();
     const member = {
       allianceId: 'shared-alliance',
       memberIdentity: 'member-a',
@@ -1285,7 +1277,7 @@ describe('PixiViewModelFactory', () => {
         members: [member, outsider],
       },
       null,
-      { openPlayer },
+      { openPlayer, selectAllianceTab },
     );
 
     expect(alliance).toMatchObject({
@@ -1300,6 +1292,14 @@ describe('PixiViewModelFactory', () => {
       expect.objectContaining({ label: 'Members', value: '1/50' }),
       expect.objectContaining({ label: 'Join Mode', value: 'Apply' }),
       expect.objectContaining({ label: 'Season Income', resourceKey: 'coin' }),
+      expect.objectContaining({ label: 'Membership', actionLabel: 'Leave' }),
+    ]);
+    expect(alliance.selectedTabId).toBe('home');
+    expect(alliance.tabs.map((tab) => tab.label)).toEqual([
+      'Home',
+      'Quests',
+      'Members',
+      'Settings',
     ]);
     expect(alliance.members[0]).toMatchObject({
       id: 'member-a',
@@ -1313,6 +1313,77 @@ describe('PixiViewModelFactory', () => {
 
     alliance.members[0].onActivate();
     expect(openPlayer).toHaveBeenCalledWith(member);
+    alliance.tabs[1].onSelect();
+    expect(selectAllianceTab).toHaveBeenCalledWith('quests');
+  });
+
+  it('projects owned alliance quests with retained fill and claim actions', () => {
+    const fillAllianceQuest = vi.fn();
+    const claimAllianceQuest = vi.fn();
+    const snapshot = {
+      ownAlliance: {
+        allianceId: 'alliance-1',
+        name: 'Moss Hall',
+        tag: 'MOSS',
+        memberCount: 1,
+      },
+      ownMember: {
+        memberIdentity: 'member-1',
+        allianceId: 'alliance-1',
+        role: 'trader',
+        dayKey: '1',
+      },
+      quests: [
+        {
+          allianceId: 'alliance-1',
+          questId: 'fill-seeds',
+          dayKey: '1',
+          label: 'Fill Sage Seeds',
+          questType: 'itemFill',
+          itemKey: 'sageSeed',
+          progress: 2,
+          target: 10,
+          minContribution: 3,
+          crystalReward: 2,
+        },
+        {
+          allianceId: 'alliance-1',
+          questId: 'earn-coin',
+          dayKey: '1',
+          label: 'Earn Coin',
+          questType: 'allianceIncome',
+          progress: 100,
+          target: 100,
+          minContribution: 10,
+          crystalReward: 4,
+        },
+      ],
+      contributions: [
+        {
+          allianceId: 'alliance-1',
+          contributorIdentity: 'member-1',
+          questId: 'earn-coin',
+          dayKey: '1',
+          contribution: 10,
+        },
+      ],
+    };
+    const dialog = new PixiViewModelFactory().createAllianceDialog(
+      snapshot,
+      null,
+      { fillAllianceQuest, claimAllianceQuest },
+      'quests',
+    );
+
+    expect(dialog.ownedAllianceHome).toBe(false);
+    expect(dialog.selectedTabId).toBe('quests');
+    expect(dialog.rows.map((row) => row.actionLabel)).toEqual(['Fill', 'Claim']);
+    expect(dialog.tabs.find((tab) => tab.id === 'quests')?.notification).toBe(true);
+
+    dialog.rows[0].onActivate();
+    dialog.rows[1].onActivate();
+    expect(fillAllianceQuest).toHaveBeenCalledWith(snapshot.quests[0]);
+    expect(claimAllianceQuest).toHaveBeenCalledWith('earn-coin');
   });
 
   it('projects expandable alliance directory rows with members, totals, and state actions', () => {
@@ -1823,6 +1894,11 @@ describe('PixiViewModelFactory', () => {
       'Level 10 > Level 5',
       'on prestige: 12 crystal 1 ruby 0 emerald total',
     ]);
+    expect(prestige.prestige.summary).toMatchObject({
+      headline: 'Ready at Level 10',
+      nextRunLabel: 'New run starts at Level 5',
+      resourceLead: 'Starting Resources',
+    });
     expect(prestige.prestige.milestones[0]).toMatchObject({
       id: 'level-10',
       title: 'Level 10',
@@ -1841,6 +1917,7 @@ describe('PixiViewModelFactory', () => {
     expect(prestige.prestige.pointRewards[0]).toMatchObject({
       count: 1,
       title: '1 Point',
+      rewardText: 'Crossroads Market',
       rewardLines: ['Crossroads Market', 'Village Market'],
     });
   });

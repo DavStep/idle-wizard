@@ -125,8 +125,8 @@ const DIALOG_CHILD_WIDGET_IDS = Object.freeze({
     'text-button',
   ]),
   'workshop.worldEventDonate': Object.freeze([
+    'compound.inventory-choice-row',
     'compound.dialog-summary-row',
-    'primitive.resource-label',
     'primitive.settings-slider',
     'text-button',
   ]),
@@ -1337,6 +1337,7 @@ function resolveDialogChildWidgetIds(dialogId) {
       PLAYER_PROFILE_WIDGET_ID,
       STAR_LEVEL_WIDGET_ID,
       RESOURCE_LABEL_WIDGET_ID,
+      'text-button',
     ];
   }
   if (dialogId === GLOBAL_DIALOG_IDS.INBOX) {

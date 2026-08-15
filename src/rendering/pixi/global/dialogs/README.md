@@ -71,9 +71,9 @@ inbox
   actions.{markVisibleRead,claimReward}
 
 player
-  loading, player.{username,character,playerLevel,prestigeCount,
+  loading, ownPlayer, player.{username,character,playerLevel,prestigeCount,
   totalProducedCoin,allianceId,allianceName,allianceTag,allianceTagColor}
-  actions.openAlliance
+  actions.{openAlliance,openCosmetics}
 
 alliance
   connected, loading, alliance, members[], ownAlliance

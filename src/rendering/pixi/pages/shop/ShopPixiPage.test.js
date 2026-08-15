@@ -15,6 +15,7 @@ import {
   PixiDialogFrame,
 } from '../../primitives/PixiDialogFrame.js';
 import { PixiNineSliceFrame } from '../../primitives/PixiNineSliceFrame.js';
+import { PixiStarLevelLabel } from '../../primitives/PixiStarLevelLabel.js';
 import {
   PIXI_PROGRESS_VISUALS,
   PIXI_ROOT_RUN_ASSETS,
@@ -945,6 +946,44 @@ describe('ShopPixiPage', () => {
     expect(firstRow.buyResource.visible).toBe(true);
     expect(firstRow.sellResource.visible).toBe(true);
     expect(secondRow.root.y).toBeGreaterThanOrEqual(58);
+
+    harness.page.destroy();
+    harness.dispose();
+  });
+
+  it('renders locked-market rank with the shared star-level widget', () => {
+    const assetManager = createPixiAssetManagerFake(Texture);
+    const harness = createHarness({ assetManager });
+    harness.page.bind(createShopViewModel());
+    harness.page.activate();
+
+    harness.page.openDialog(SHOP_DIALOG_IDS.LEDGER, {
+      title: 'Market Ledger',
+      items: [
+        {
+          id: 'night-orchard',
+          label: 'Night Orchard Tonic',
+          itemKind: 'potion',
+          itemKey: 'nightOrchardTonic',
+          availabilityLabel: 'Trades at Grand Exchange',
+          requiredMarketRank: 4,
+          enabled: false,
+          disabled: true,
+        },
+      ],
+    });
+
+    const dialog = harness.dialogs.get(SHOP_DIALOG_IDS.LEDGER);
+    const [row] = dialog.list.rows.getWidgets();
+
+    expect(row.availability.text).toBe('Trades at Grand Exchange');
+    expect(row.availability.text).not.toContain('★');
+    expect(row.availabilityStars).toBeInstanceOf(PixiStarLevelLabel);
+    expect(row.availabilityStars.visible).toBe(true);
+    expect(row.availabilityStars.level).toBe(4);
+    expect(row.availabilityStars.tone).toBe('orange');
+    expect(row.availabilityStars.starCount).toBe(1);
+    expect(row.availabilityStars.x).toBeGreaterThan(row.availability.x);
 
     harness.page.destroy();
     harness.dispose();

@@ -161,28 +161,20 @@
         const points = donationAmount * 120;
         return {
           title: 'Quiet The Crowd',
+          featuredItem: {
+            id: 'giving',
+            label: 'Calming Draught',
+            detail: 'Owned',
+            value: '12',
+            itemKind: 'potion',
+            itemKey: 'calmingDraught',
+            iconSize: 36,
+          },
           summaryRows: [
-            {
-              id: 'giving',
-              label: 'Calming Draught',
-              value: '',
-              itemKind: 'potion',
-              itemKey: 'calmingDraught',
-              iconLeading: true,
-              fontSize: 14,
-              layoutHeight: 34,
-            },
-            {
-              id: 'owned',
-              label: 'Owned',
-              value: '12',
-              layoutInset: 38,
-            },
             {
               id: 'total',
               label: 'Already Donated',
               value: '0 points',
-              layoutInset: 38,
             },
             {
               id: 'amount',

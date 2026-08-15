@@ -88,6 +88,7 @@ experience_type: backend-android
 - Coin balances and market prices are whole numbers. Use the shared coin-price helpers so positive fractional legacy values round up and every positive price stays at least `1` coin.
 - Player shop sale proceeds live in `player_shop_proceeds` until the seller claims them into local coin.
 - Player shop trade history is server-backed through `player_shop_trade`; clients should tolerate older backends missing the table by showing empty history.
+- Expected SpacetimeDB reducer rejections must throw `SenderError`; a plain `Error` becomes an opaque internal failure and hides the actionable reason from the player.
 - Maincloud currently has no full action-log table; balance reads can only infer behavior from `player`, `leaderboard`, `world_chat`, player-shop tables, `npc_market_price`, and potion discoveries until analytics exists.
 - Gameplay save raw JSON must stay below the server cap before reducer normalization; cap noisy client branches like logs and do not persist full future task catalogs.
 - Gameplay save currency ceilings must cover every legitimate economy balance; a lower normalizer cap silently destroys the excess on the next save/reload round trip.
@@ -95,6 +96,7 @@ experience_type: backend-android
 - Android packaging uses Capacitor.
 - Keep Android WebView framework haptics disabled when the app owns touch feedback; otherwise WebView adds a native long-press pulse while retained Pixi controls are still held.
 - Android native text-entry submit events must apply the terminal editor value before running Pixi callbacks; the IME can commit composition only in that final payload.
+- Keep Capacitor `SystemBars.insetsHandling` disabled while native text entry owns IME insets; its CSS mode pads the WebView parent by the keyboard height and compresses the entire Pixi game even when the activity uses `adjustNothing`.
 - Capacitor 8 Android builds require JDK 21 here.
 - Capacitor Android serves bundled assets as `https://localhost` by default; local `ws://` SpacetimeDB is blocked as mixed content unless `server.androidScheme` is `http` and cleartext is allowed, then the app is rebuilt/synced.
 - Capacitor 8 iOS should use CocoaPods here (`npx cap add ios --packagemanager CocoaPods`); the SPM path can hide core APIs like `CAPPluginCall.reject`.

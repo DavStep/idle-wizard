@@ -69,7 +69,9 @@ experience_type: style
 - Fresh-start account gates need viewport-fixed positioning; stage-clipped absolute dialogs can be cut off on short desktop web viewports.
 - Mobile keyboard resize must not recompute scale from the shrunken visual height while text input is focused or while the keyboard is closing after focus leaves.
 - Text-entry viewport locks should start on press; some mobile WebViews resize for the keyboard before `focusin`.
-- Native keyboard inset translation belongs only to the open World Chat panel; the stage, room chrome, and every other dialog keep their resting geometry.
+- Native keyboard adaptation belongs only to the open World Chat panel: keep its detached header below an `18px` source-space top clearance, shorten only its message viewport, and leave the stage, room chrome, composer scale, row scale, and every other dialog at resting geometry.
+- Animate World Chat keyboard/open transitions by interpolating its bottom-anchored panel bounds; scaling the dialog also scales text, rows, and composer and recreates the squished appearance.
+- Retained dialog data rebinds must reuse the complete last viewport projection; rebuilding layout from source width and height alone drops transient keyboard insets and lets live refreshes undo the focused layout.
 - Text-entry focus should use `preventScroll` so mobile browsers do not pan the game surface.
 - Text-entry dialogs should sit high enough that the mobile keyboard does not cover save/cancel actions.
 - Text-entry dialog save buttons should save on `pointerdown` so keyboard blur cannot move the scaled layout before click submit.
@@ -170,7 +172,7 @@ experience_type: style
 - Top panel maps Root Run's qUIck main HUD through the shared `/3` source scale: avatar at left with username centered underneath, level star/rail above three equal coin/context/mana capsules, mana rate under mana, and the square settings gear at right. During FTUE, keep the entire request rail hidden until Elara reveals requests. The badge replaces duplicate level text, and XP is not player-facing.
 - The top-panel quest rail uses Root Run's image-backed rounded track, exact star/panel geometry, and authored yellow fill texture. Drive the live right edge so both caps stay round, preserve quest dividers as a separate layer, and render no fraction or remaining-count copy.
 - Main-request completion snaps Elara's request box while reusing Root Run's research-XP flyout exactly: one 68px Root Run source star travels from the request surface to the level star on the distance-timed direct 96px source arc, the rail advances only on arrival, eight sparks burst at the destination, and the star receives the 400ms impact scale. Retained Pixi maps the Root Run measurements through the shared `/3` source scale; the legacy DOM path derives presentation scale from the level target. On rollover, complete the old rail before the badge jumps, changes level, and resets. Cap active particles, skip motion when reduced motion is requested, and reset the diff baseline on persistence load.
-- Elara request progress feedback fills to the reached point, then runs one clipped left-to-right shine followed by one centered rail boink. Hide it after the far edge; never reverse or idle-loop the shine.
+- Elara request progress feedback fills to the reached point, then runs one clipped left-to-right shine with no rail boink. Hide it after the far edge; never reverse or idle-loop the shine. When completion reveals the next request, boink the entire request box once.
 - Hidden top-panel context currency needs an explicit `[hidden]` display rule because resource flex CSS can otherwise override the browser default.
 - Top panel resources should shrink their source font before falling back to ellipsis; keep shrink local to that row.
 - Top panel coin should keep amount and `coin` in the same fitted value span; a separate suffix can leave clipped values like `308... coin`.

@@ -1100,6 +1100,10 @@ function createLedgerDialog({
           ? 'coin'
           : null,
         availabilityLabel: formatLedgerAvailability(item),
+        requiredMarketRank: Math.max(
+          0,
+          Math.floor(Number(item.requiredMarket?.rank) || 0),
+        ),
         itemKey: item.key,
         itemKind: item.kind,
         enabled:
@@ -1610,12 +1614,8 @@ function formatLedgerPrice(value) {
 
 function formatLedgerAvailability(item = {}) {
   const marketName = String(item.requiredMarket?.name ?? '').trim();
-  const rank = Math.max(
-    0,
-    Math.floor(Number(item.requiredMarket?.rank) || 0),
-  );
   return marketName
-    ? `Trades at ${marketName}${rank > 0 ? ` ${'★'.repeat(rank)}` : ''}`
+    ? `Trades at ${marketName}`
     : 'Not traded in this market';
 }
 

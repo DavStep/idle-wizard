@@ -765,6 +765,11 @@ export class ShopPlayerRequestManager {
   }
 
   getRequestResultStatus(result) {
+    const backendMessage = String(result?.message ?? '').trim();
+    if (backendMessage) {
+      return backendMessage;
+    }
+
     if (result?.reason === 'slot_locked') {
       return 'locked';
     }

@@ -11,6 +11,9 @@
     "path": "android"
   },
   "plugins": {
+    "SystemBars": {
+      "insetsHandling": "disable"
+    },
     "CapacitorUpdater": {
       "appReadyTimeout": 30000,
       "autoDeleteFailed": false,

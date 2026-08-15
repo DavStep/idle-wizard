@@ -10,20 +10,17 @@ import { PageRegistry } from '../../retained/PageRegistry.js';
 import { SemanticTargetRegistry } from '../../retained/SemanticTargetRegistry.js';
 import { PixiCostButton } from '../../primitives/PixiCostButton.js';
 import { PixiInfoButton } from '../../primitives/PixiInfoButton.js';
-import { resolvePixiTextStrokeWidth } from '../../theme/PixiThemeTokens.js';
 import {
   PRESTIGE_DESCRIPTION_LINES,
   PrestigePixiPage,
 } from './PrestigePixiPage.js';
 import {
   RESEARCH_PAPER_INK,
-  RESEARCH_PIXI_GEOMETRY,
-  RESEARCH_RANK_INK,
 } from '../research/ResearchPixiPage.js';
 import { RETAINED_PAGE_GEOMETRY } from '../workshop/RetainedPageKit.js';
 
 describe('PrestigePixiPage', () => {
-  it('retains keyed milestone rows and the exact frozen explanation copy', () => {
+  it('retains keyed milestone rows and moves reset details behind the info control', () => {
     const semanticTargets = new SemanticTargetRegistry();
     const page = createPage({ semanticTargets });
     const pages = new PageRegistry({
@@ -43,29 +40,26 @@ describe('PrestigePixiPage', () => {
       active: 1,
       highWaterMark: 1,
     });
-    expect(page.description.description.text).toBe(
+    expect(page.description.detailsModel.text).toBe(
       PRESTIGE_DESCRIPTION_LINES.map((line) => `• ${line}`).join('\n'),
     );
+    expect(page.description.details).toBeInstanceOf(PixiInfoButton);
+    expect(page.description.flow.text).toBe('Reach Level 10');
+    expect(page.description.summary.text).toBe('New run starts at Level 1');
     expect(row.reward.text).toBe('+12 crystal');
     expect(page.titleRibbon.title.text).toBe('Prestige');
     expect(page.titleRibbon.stars.level).toBe(0);
-    expect(page.descriptionTitle.title.text).toBe('Description');
-    expect(page.progressionTitle.title.text).toBe('Progression');
+    expect(page.descriptionTitle.title.text).toBe('Next Prestige');
+    expect(page.progressionTitle.title.text).toBe('Milestones');
     expect(page.tabs.get('main').control.textLabel.text).toBe('Main');
     expect(page.tabs.get('points').control.textLabel.text).toBe('Points');
     expect(row.title.position).toMatchObject({
-      x: RESEARCH_PIXI_GEOMETRY.nameX,
-      y:
-        RESEARCH_PIXI_GEOMETRY.nameY +
-        RESEARCH_PIXI_GEOMETRY.contentOffsetY,
+      x: 48,
+      y: 17,
     });
-    expect(row.rankLabel.style.fill).toBe(RESEARCH_RANK_INK);
-    expect(row.rankLabel.style.stroke).toMatchObject({
-      color: '#0a0a0a',
-      width: resolvePixiTextStrokeWidth(
-        row.rankLabel.style.fontSize,
-      ),
-    });
+    expect(row.getPreferredHeight()).toBe(48);
+    expect(row.artWell).toBeUndefined();
+    expect(row.rewardLead).toBeUndefined();
 
     pages.destroy();
   });
@@ -107,13 +101,13 @@ describe('PrestigePixiPage', () => {
     });
     const row = page.rows.get('level-10');
     expect(row.action).toBeInstanceOf(PixiCostButton);
-    expect(row.action.research).toBe(true);
+    expect(row.action.research).toBe(false);
     expect(row.action.amount).toBe('Prestige');
     expect(row.help).toBeInstanceOf(PixiInfoButton);
     expect(row.help.textLabel).toBeUndefined();
     expect(page.confirm.cancel.control.variant).toBe('regular');
     expect(page.confirm.proceed.control.variant).toBe('regular');
-    expect(page.scroll.offsetY).toBeGreaterThan(0);
+    expect(page.scroll.offsetY).toBeGreaterThanOrEqual(0);
     expect(
       page.confirm.root.y +
         page.confirm.height -
@@ -194,6 +188,42 @@ describe('PrestigePixiPage', () => {
 
     page.destroy();
   });
+
+  it('keeps point thresholds and licence rewards on one compact line', () => {
+    const page = createPage();
+    page.bind({
+      prestige: {
+        selectedTabId: 'points',
+        summary: {
+          headline: '2 Prestige Points',
+          nextRunLabel: 'Next reward at 3 Points',
+        },
+        pointRewards: [
+          {
+            id: 'point-3',
+            kind: 'point',
+            count: 3,
+            title: '3 Points',
+            rewardText: 'Village Market',
+            locked: true,
+            tooltip: { text: 'Permanent market licence reward.' },
+          },
+        ],
+      },
+    });
+
+    const row = page.rows.get('point-3');
+    expect(row.getPreferredHeight()).toBe(48);
+    expect(row.title.position).toMatchObject({ x: 48, y: 17 });
+    expect(row.reward.position.y).toBe(18);
+    expect(row.reward.position.x).toBeGreaterThan(
+      row.title.position.x + row.title.width,
+    );
+    expect(row.help.position.x).toBeGreaterThan(row.reward.position.x);
+    expect(row.lockedOverlay.visible).toBe(true);
+
+    page.destroy();
+  });
 });
 
 function createPage({ semanticTargets = null } = {}) {
@@ -212,7 +242,8 @@ function createPrestigeViewModel({
     prestige: {
       selectedTabId: 'main',
       summary: {
-        lines: ['level 10 → level 1', 'receive 10 crystal'],
+        headline: 'Reach Level 10',
+        nextRunLabel: 'New run starts at Level 1',
       },
       milestones: [
         {

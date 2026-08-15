@@ -455,6 +455,42 @@ describe('PixiGlobalDialogPresenter', () => {
     );
   });
 
+  it('routes only the current player from Player Info to Wizard cosmetics', () => {
+    const harness = createHarness();
+    harness.presenter.mount();
+
+    harness.presenter.open(GLOBAL_DIALOG_IDS.PLAYER, {
+      player: {
+        identity: 'identity-mira',
+        username: 'mira',
+      },
+    });
+    const ownPlayer = harness.getOpenModel(GLOBAL_DIALOG_IDS.PLAYER);
+
+    expect(ownPlayer.ownPlayer).toBe(true);
+    expect(ownPlayer.actions.openCosmetics()).toEqual({
+      dialogId: GLOBAL_DIALOG_IDS.SETTINGS,
+    });
+    expect(harness.runtime.getOpenDialogIds()).toEqual([
+      GLOBAL_DIALOG_IDS.SETTINGS,
+    ]);
+    expect(harness.getOpenModel(GLOBAL_DIALOG_IDS.SETTINGS)).toMatchObject({
+      title: 'Wizard',
+      tabId: 'account',
+    });
+
+    harness.presenter.close(GLOBAL_DIALOG_IDS.SETTINGS);
+    harness.presenter.open(GLOBAL_DIALOG_IDS.PLAYER, {
+      player: {
+        identity: 'identity-rowan',
+        username: 'rowan',
+      },
+    });
+    const otherPlayer = harness.getOpenModel(GLOBAL_DIALOG_IDS.PLAYER);
+    expect(otherPlayer.ownPlayer).toBe(false);
+    expect(otherPlayer.actions.openCosmetics).toBeUndefined();
+  });
+
   it('connects Google from settings with the current gameplay save', async () => {
     const harness = createHarness();
     harness.authFacade.signInWithGoogle = vi.fn(() =>

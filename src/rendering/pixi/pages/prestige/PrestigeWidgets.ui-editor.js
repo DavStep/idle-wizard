@@ -15,7 +15,7 @@ const WIDTH = RESEARCH_PIXI_GEOMETRY.cardWidth;
 const assetsFilter = ({ id }) => id.includes('/ui/') || id.includes('/icons/');
 
 export default [
-  integration('compound.prestige-description', 'Prestige Description', [], descriptionControl, states(['summary', 'fallback'])),
+  integration('compound.prestige-description', 'Prestige Description', ['info-button'], descriptionControl, states(['summary', 'fallback'])),
   integration('compound.prestige-row', 'Prestige Row', ['cost-button', 'info-button', 'primitive.star-level-label'], rowControl, states(['available', 'completed', 'locked', 'point'])),
   integration('compound.prestige-confirm-panel', 'Prestige Confirm Panel', ['text-button'], confirmControl, states(['milestone', 'long-copy'])),
   integration('compound.prestige-tooltip', 'Prestige Tooltip', [], tooltipControl, states(['licence', 'reward'])),
@@ -40,9 +40,9 @@ function integration(id, label, childWidgetIds, factory, scenarios) {
   });
 }
 
-function descriptionControl({ assets, fixture }) {
-  const control = new PrestigeDescriptionPanel({ assetManager: assets });
-  control.bind(fixture.state === 'summary' ? { flow: 'Level 10 → Level 1', resourceLead: 'Receive', resources: [{ amount: 10, resource: 'crystal' }], descriptionLines: PRESTIGE_DESCRIPTION_LINES } : { summaryLines: ['Level 10 → Level 1', 'Receive 10 crystal'], descriptionLines: PRESTIGE_DESCRIPTION_LINES.slice(0, 2) });
+function descriptionControl({ assets, input, fixture }) {
+  const control = new PrestigeDescriptionPanel({ assetManager: assets, inputRouter: input, onDetails() {} });
+  control.bind(fixture.state === 'summary' ? { headline: 'Reach Level 10', nextRunLabel: 'New run starts at Level 1', resourceLead: 'Starting Resources', resources: [{ amount: 5, resource: 'crystal' }, { amount: 1, resource: 'ruby' }, { amount: 2, resource: 'emerald' }], detailsLines: PRESTIGE_DESCRIPTION_LINES } : { summaryLines: ['Reach Level 10', 'New run starts at Level 1'], descriptionLines: PRESTIGE_DESCRIPTION_LINES.slice(0, 2) });
   control.setBounds(0, 0, WIDTH);
   return wrap(control, WIDTH, control.height);
 }
@@ -58,7 +58,7 @@ function rowControl({ assets, input, fixture }) {
   };
   const control = new PrestigeRowWidget({ page, assetManager: assets });
   const point = fixture.state === 'point';
-  control.bind({ canComplete: fixture.state === 'available', completed: fixture.state === 'completed', count: point ? 3 : undefined, kind: point ? 'point' : 'milestone', level: point ? undefined : 10, locked: fixture.state === 'locked', rewardResources: [{ amount: point ? 1 : 10, resource: point ? 'coin' : 'crystal' }], state: fixture.state, title: point ? '3 Points' : 'Level 10', tooltip: { text: 'Permanent market licence reward.' } }, {});
+  control.bind({ canComplete: fixture.state === 'available', completed: fixture.state === 'completed', count: point ? 3 : undefined, kind: point ? 'point' : 'milestone', level: point ? undefined : 10, locked: fixture.state === 'locked', rewardResources: point ? [] : [{ amount: 10, resource: 'crystal' }], rewardText: point ? 'Village Market' : '', state: fixture.state, title: point ? '3 Points' : 'Level 10', tooltip: { text: 'Permanent market licence reward.' } }, {});
   control.setBounds(0, 0, WIDTH, control.getPreferredHeight());
   return wrap(control, WIDTH, control.getPreferredHeight());
 }

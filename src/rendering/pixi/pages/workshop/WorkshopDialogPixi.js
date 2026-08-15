@@ -10,6 +10,7 @@ import {
 import { PixiCostButton } from '../../primitives/PixiCostButton.js';
 import { ClickableWidget } from '../../primitives/ClickableWidget.js';
 import {
+  PIXI_DIALOG_BASE_GEOMETRY,
   PIXI_DIALOG_FOOTER_TABS_GEOMETRY,
   PIXI_DIALOG_SPLIT_PAPER_GEOMETRY,
   createDialogPaperSection,
@@ -75,12 +76,17 @@ const LEADERBOARD_LIST_TOP = DIALOG_PAPER_TOP;
 const LEADERBOARD_ROW_HEIGHT = PIXI_ROOT_RUN_GEOMETRY.settings.rowPitch;
 const LEADERBOARD_AVATAR_SIZE = 37;
 const LEADERBOARD_IDENTITY_X = 29;
-const LEADERBOARD_RANK_TO_IDENTITY_GAP = 4;
+const LEADERBOARD_LIST_LEFT_EXPANSION = 4;
 const WORLD_CHAT_ROW_GAP = 3;
 const WORLD_CHAT_SCROLL_PADDING_TOP = 8;
 const WORLD_CHAT_CONTENT_INSET_X = 8;
 const WORLD_CHAT_DIALOG_MIN_TOP = 18;
+const WORLD_CHAT_HEADER_SHELL_GAP = 4;
 const WORLD_CHAT_DIALOG_HEIGHT = 382 * 1.5;
+const WORLD_CHAT_OPEN_START_HEIGHT = 190;
+const WORLD_CHAT_OPEN_DURATION_MS = 280;
+const WORLD_CHAT_RESIZE_DURATION_MS = 240;
+const WORLD_CHAT_MOTION_EPSILON = 0.01;
 const WORLD_CHAT_ROW_HEIGHT_SCALE = 1.3;
 const WORLD_CHAT_COMPOSER_GAP = 6;
 const WORLD_CHAT_COMPOSER_INSET_RIGHT = 4;
@@ -126,8 +132,8 @@ const WORLD_CHAT_TAG_COLORS = Object.freeze({
   slate: '#596271',
 });
 const ALLIANCE_DIRECTORY_HEADER_HEIGHT = 30;
-const ALLIANCE_MEMBER_ROW_HEIGHT = 40;
-const ALLIANCE_MEMBER_AVATAR_SIZE = 32;
+const ALLIANCE_MEMBER_ROW_HEIGHT = PIXI_ROOT_RUN_GEOMETRY.settings.rowPitch;
+const ALLIANCE_MEMBER_AVATAR_SIZE = LEADERBOARD_AVATAR_SIZE;
 const ALLIANCE_MEMBER_VISIBLE_ROWS = 4.5;
 const ALLIANCE_MEMBER_VIEWPORT_HEIGHT =
   ALLIANCE_MEMBER_ROW_HEIGHT * ALLIANCE_MEMBER_VISIBLE_ROWS;
@@ -141,13 +147,10 @@ const ALLIANCE_DIRECTORY_EXPANDED_HEIGHT =
   8;
 const OWNED_ALLIANCE_SECTION_GAP = PIXI_DIALOG_SPLIT_PAPER_GEOMETRY.sectionGap;
 const OWNED_ALLIANCE_SECTION_CONTENT_TOP =
-  PIXI_DIALOG_SPLIT_PAPER_GEOMETRY.contentInsetTop;
+  RETAINED_DIALOG_SCROLL_GEOMETRY.contentPaddingTop;
 const OWNED_ALLIANCE_SECTION_CONTENT_BOTTOM =
   PIXI_DIALOG_SPLIT_PAPER_GEOMETRY.contentInsetBottom;
-const OWNED_ALLIANCE_HEADER_HEIGHT = 18;
-const OWNED_ALLIANCE_MEMBER_ROW_INSET_X = 8;
 const OWNED_ALLIANCE_MEMBER_SCROLL_TOP = 22;
-const OWNED_ALLIANCE_MEMBER_SCROLLBAR_GUTTER = 4;
 const WORLD_EVENT_SECTION_GAP = 4;
 const WORLD_EVENT_MAX_QUEST_ROWS = 2;
 const WORLD_EVENT_QUEST_ROW_WIDTH = 314;
@@ -294,6 +297,10 @@ export class WorkshopDialogPixi {
     counters = null,
     onClose = null,
     theme = DEFAULT_PIXI_THEME_SNAPSHOT,
+    requestFrame = defaultRequestFrame,
+    cancelFrame = defaultCancelFrame,
+    timeSource = defaultTimeSource,
+    reducedMotion = prefersReducedMotion,
   } = {}) {
     if (!dialogId || !parent?.addChild) {
       throw new Error(
@@ -309,6 +316,15 @@ export class WorkshopDialogPixi {
     this.semanticTargets = semanticTargets;
     this.onClose = onClose;
     this.theme = theme;
+    this.requestFrame = requestFrame;
+    this.cancelFrame = cancelFrame;
+    this.timeSource = timeSource;
+    this.reducedMotion =
+      typeof reducedMotion === 'function'
+        ? reducedMotion
+        : () => Boolean(reducedMotion);
+    this.worldChatMotion = null;
+    this.handleWorldChatMotionFrame = () => this.tickWorldChatMotion();
     this.registeredTargetIds = new Set();
     this.viewModel = {};
     this.sourceWidth = RETAINED_PAGE_GEOMETRY.width;
@@ -352,7 +368,7 @@ export class WorkshopDialogPixi {
       title: dialogId.split('.').at(-1),
       onClose: () => this.onClose?.(),
       theme,
-      openMotion: this.isWorldChatDialog ? 'top' : 'center',
+      openMotion: this.isWorldChatDialog ? false : 'center',
       label: `${dialogId}-dialog`,
     });
     this.root = this.modal.root;
@@ -394,6 +410,9 @@ export class WorkshopDialogPixi {
     this.allianceMembersSection = this.isAllianceDialog
       ? createAllianceMembersSection(this)
       : null;
+    this.allianceSettingsPane = this.isAllianceDialog
+      ? new AllianceSettingsPane({ dialog: this })
+      : null;
     this.personalTaskSectionChrome = this.isPersonalTasksDialog
       ? new Map(
           ['daily', 'weekly'].map((sectionId) => [
@@ -430,7 +449,11 @@ export class WorkshopDialogPixi {
       : null;
     this.panel.content.addChild(
       ...(this.isAllianceDialog
-        ? [this.allianceTradeSection.root, this.allianceMembersSection.root]
+        ? [
+            this.allianceTradeSection.root,
+            this.allianceMembersSection.root,
+            this.allianceSettingsPane.root,
+          ]
         : []),
       this.copy,
       this.headerHeadline,
@@ -611,10 +634,12 @@ export class WorkshopDialogPixi {
         })
       : null;
     this.applyTheme(theme);
-    this.layout({
-      sourceWidth: this.sourceWidth,
-      sourceHeight: this.sourceHeight,
-    });
+    this.layout(
+      this.viewportProjection ?? {
+        sourceWidth: this.sourceWidth,
+        sourceHeight: this.sourceHeight,
+      },
+    );
   }
 
   bind(viewModel) {
@@ -624,9 +649,17 @@ export class WorkshopDialogPixi {
       this.scroll.offsetY >=
         Math.max(0, this.scroll.contentHeight - this.scroll.height) - 0.5;
     this.viewModel = viewModel ?? {};
-    this.ownedAllianceLayout = Boolean(
-      this.isAllianceDialog && this.viewModel.ownedAlliance === true,
+    this.ownedAllianceHomeLayout = Boolean(
+      this.isAllianceDialog &&
+        (this.viewModel.ownedAllianceHome === true ||
+          (this.viewModel.ownedAlliance === true &&
+            this.viewModel.selectedTabId == null)),
     );
+    this.ownedAllianceMembersLayout = Boolean(
+      this.isAllianceDialog && this.viewModel.ownedAllianceMembers === true,
+    );
+    this.ownedAllianceLayout =
+      this.ownedAllianceHomeLayout || this.ownedAllianceMembersLayout;
     this.modal.setTitle(
       this.viewModel.title ?? this.dialogId.split('.').at(-1),
     );
@@ -641,6 +674,8 @@ export class WorkshopDialogPixi {
     this.headerBody.visible = hasHeader;
     this.headerMeta.visible = hasHeader;
     this.boundStatus = this.viewModel.status ?? '';
+    this.status.visible = true;
+    this.status.renderable = true;
     if (this.isAllianceDialog) {
       const tradeInfo = this.viewModel.tradeInfo ?? {};
       const detail = [tradeInfo.description, tradeInfo.notice]
@@ -656,19 +691,21 @@ export class WorkshopDialogPixi {
         this.allianceMembersSection.count,
         tradeInfo.memberCountLabel ?? '',
       );
-      this.allianceTradeSection.root.visible = this.ownedAllianceLayout;
-      this.allianceTradeSection.root.renderable = this.ownedAllianceLayout;
+      this.allianceTradeSection.root.visible = this.ownedAllianceHomeLayout;
+      this.allianceTradeSection.root.renderable = this.ownedAllianceHomeLayout;
       this.allianceMembersSection.root.visible = this.ownedAllianceLayout;
       this.allianceMembersSection.root.renderable = this.ownedAllianceLayout;
-      this.scroll.root.visible = !this.ownedAllianceLayout;
-      this.scroll.root.renderable = !this.ownedAllianceLayout;
+      const settingsVisible = Boolean(this.viewModel.settings);
+      this.allianceSettingsPane.bind(this.viewModel.settings);
+      this.scroll.root.visible = !this.ownedAllianceLayout && !settingsVisible;
+      this.scroll.root.renderable = !this.ownedAllianceLayout && !settingsVisible;
       this.panel.setPaperVisible(!this.ownedAllianceLayout);
       this.copy.visible = !this.ownedAllianceLayout && Boolean(this.copy.text);
       this.copy.renderable = this.copy.visible;
       this.headerHeadline.renderable = !this.ownedAllianceLayout && hasHeader;
       this.headerBody.renderable = !this.ownedAllianceLayout && hasHeader;
       this.headerMeta.renderable = !this.ownedAllianceLayout && hasHeader;
-      this.tabsLayer.renderable = !this.ownedAllianceLayout;
+      this.tabsLayer.renderable = true;
     }
     this.bindComposer(this.viewModel.composer);
     this.tabs.reconcile(normalizeRows(this.viewModel.tabs));
@@ -688,7 +725,7 @@ export class WorkshopDialogPixi {
       this.rows = nextRows;
     }
     const rows = normalizeRows(
-      this.ownedAllianceLayout
+      this.ownedAllianceHomeLayout
         ? this.viewModel.tradeInfoRows
         : this.viewModel.rows,
     );
@@ -704,10 +741,12 @@ export class WorkshopDialogPixi {
     this.allianceMemberRows?.reconcile(
       this.ownedAllianceLayout ? normalizeRows(this.viewModel.members) : [],
     );
-    this.layout({
-      sourceWidth: this.sourceWidth,
-      sourceHeight: this.sourceHeight,
-    });
+    this.layout(
+      this.viewportProjection ?? {
+        sourceWidth: this.sourceWidth,
+        sourceHeight: this.sourceHeight,
+      },
+    );
     if (keepWorldChatPinnedToNewest) {
       this.scroll.scrollTo(
         Math.max(0, this.scroll.contentHeight - this.scroll.height),
@@ -840,16 +879,12 @@ export class WorkshopDialogPixi {
     }
     scroll.content.removeChildren();
     let y = 0;
-    const rowWidth = Math.max(
-      0,
-      WORKSHOP_DIALOG_CONTENT_WIDTH -
-        OWNED_ALLIANCE_MEMBER_ROW_INSET_X * 2 -
-        OWNED_ALLIANCE_MEMBER_SCROLLBAR_GUTTER,
-    );
+    const rowWidth = this.allianceMemberRowWidth ?? WORKSHOP_DIALOG_CONTENT_WIDTH;
+    const rowX = this.allianceMemberRowX ?? 0;
     for (const widget of widgets) {
       scroll.content.addChild(widget.root);
       widget.setBounds(
-        OWNED_ALLIANCE_MEMBER_ROW_INSET_X,
+        rowX,
         y,
         rowWidth,
         ALLIANCE_MEMBER_ROW_HEIGHT,
@@ -1030,6 +1065,7 @@ export class WorkshopDialogPixi {
     for (const button of this.periodTabs?.getWidgets?.() ?? []) {
       button.applyTheme(contentTheme);
     }
+    this.allianceSettingsPane?.applyTheme(contentTheme);
 
     for (const chrome of this.personalTaskSectionChrome?.values?.() ?? []) {
       applyTextTheme(chrome.title, contentTheme, {
@@ -1078,6 +1114,13 @@ export class WorkshopDialogPixi {
   }
 
   layout(viewportProjection) {
+    this.viewportProjection =
+      viewportProjection ?? this.viewportProjection ?? {};
+    viewportProjection = this.viewportProjection;
+    const keepWorldChatPinnedToNewest =
+      this.isWorldChatDialog &&
+      this.scroll.offsetY >=
+        Math.max(0, this.scroll.contentHeight - this.scroll.height) - 0.5;
     this.sourceWidth =
       Number(viewportProjection?.sourceWidth) || PIXI_UI_GEOMETRY.sourceWidth;
     this.sourceHeight =
@@ -1103,7 +1146,7 @@ export class WorkshopDialogPixi {
     const viewportReserve = this.isWorldChatDialog ? 80 : 118;
     const hasPrimaryVerticalScroll =
       !this.isWorldEventDialog && !this.ownedAllianceLayout;
-    const height = hasPrimaryVerticalScroll
+    let height = hasPrimaryVerticalScroll
       ? resolveAdaptiveDialogHeight({
           viewportHeight: this.sourceHeight,
           baseHeight,
@@ -1119,12 +1162,37 @@ export class WorkshopDialogPixi {
     const keyboardShift = this.isWorldChatDialog
       ? Math.min(0, Number(viewportProjection?.worldChatShift) || 0)
       : 0;
-    const panelY = this.isWorldChatDialog
+    let panelY = this.isWorldChatDialog
       ? Math.max(
           WORLD_CHAT_DIALOG_MIN_TOP,
           this.sourceHeight - height - frameOutset,
         ) + keyboardShift
       : centeredPanelY;
+    if (this.isWorldChatDialog && keyboardShift < 0) {
+      const keyboardPanelY =
+        WORLD_CHAT_DIALOG_MIN_TOP +
+        frameOutset +
+        PIXI_ROOT_RUN_GEOMETRY.dialog.titleHeight +
+        WORLD_CHAT_HEADER_SHELL_GAP;
+      const keyboardCoreBottom =
+        this.sourceHeight + keyboardShift - frameOutset;
+      height = Math.min(
+        height,
+        Math.max(
+          PIXI_DIALOG_BASE_GEOMETRY.minCoreHeight,
+          keyboardCoreBottom - keyboardPanelY,
+        ),
+      );
+      panelY = Math.min(keyboardPanelY, keyboardCoreBottom - height);
+    }
+    if (this.isWorldChatDialog) {
+      const animatedBounds = this.resolveWorldChatMotionBounds({
+        y: panelY,
+        height,
+      });
+      panelY = animatedBounds.y;
+      height = animatedBounds.height;
+    }
     this.modal.layout(viewportProjection);
     this.modal.setBounds(panelX, panelY, width, height);
     let shellFooterPaperReduction = 0;
@@ -1155,7 +1223,12 @@ export class WorkshopDialogPixi {
       return;
     }
     if (this.ownedAllianceLayout) {
-      this.layoutOwnedAllianceDialog({ width, height });
+      this.layoutOwnedAllianceDialog({
+        width,
+        height,
+        tabs,
+        footerTabLayout,
+      });
       return;
     }
     if (footerTabLayout) {
@@ -1165,6 +1238,14 @@ export class WorkshopDialogPixi {
       );
       const defaultPaperBottom = height - DIALOG_PAPER_BOTTOM_INSET;
       shellFooterPaperReduction = Math.max(0, defaultPaperBottom - paperBottom);
+    }
+    if (this.isAllianceDialog && this.viewModel.settings) {
+      this.layoutAllianceSettingsDialog({
+        height,
+        tabs,
+        footerTabLayout,
+      });
+      return;
     }
     if (this.isLeaderboardDialog) {
       this.layoutLeaderboardDialog({
@@ -1269,6 +1350,178 @@ export class WorkshopDialogPixi {
         WORLD_CHAT_COMPOSER_SEND_HEIGHT,
       );
     }
+    if (keepWorldChatPinnedToNewest) {
+      this.scroll.scrollTo(
+        Math.max(0, this.scroll.contentHeight - this.scroll.height),
+      );
+    }
+  }
+
+  resolveWorldChatMotionBounds(target) {
+    const normalizedTarget = {
+      y: Number(target?.y) || 0,
+      height: Math.max(
+        PIXI_DIALOG_BASE_GEOMETRY.minCoreHeight,
+        Number(target?.height) || 0,
+      ),
+    };
+    const motion = this.worldChatMotion;
+    if (
+      !this.modal.active ||
+      this.reducedMotion() ||
+      !motion
+    ) {
+      this.stopWorldChatMotion();
+      this.worldChatMotion = createSettledWorldChatMotion(normalizedTarget);
+      return normalizedTarget;
+    }
+
+    const now = this.timeSource();
+    this.sampleWorldChatMotion(now);
+    if (!sameWorldChatBounds(motion.target, normalizedTarget)) {
+      motion.from = { ...motion.current };
+      motion.target = normalizedTarget;
+      motion.startedAt = now;
+      motion.duration = WORLD_CHAT_RESIZE_DURATION_MS;
+      motion.active = !sameWorldChatBounds(motion.from, motion.target);
+    }
+    this.sampleWorldChatMotion(now);
+    if (motion.active) {
+      this.scheduleWorldChatMotionFrame();
+    }
+    return { ...motion.current };
+  }
+
+  startWorldChatOpenMotion() {
+    const target = this.modal.fixedBounds
+      ? {
+          y: this.modal.fixedBounds.y,
+          height: this.modal.fixedBounds.height,
+        }
+      : null;
+    if (!target || this.reducedMotion()) {
+      this.stopWorldChatMotion();
+      this.worldChatMotion = target
+        ? createSettledWorldChatMotion(target)
+        : null;
+      return;
+    }
+
+    const startHeight = Math.min(
+      target.height,
+      Math.max(
+        PIXI_DIALOG_BASE_GEOMETRY.minCoreHeight,
+        WORLD_CHAT_OPEN_START_HEIGHT,
+      ),
+    );
+    const bottom = target.y + target.height;
+    const from = {
+      y: bottom - startHeight,
+      height: startHeight,
+    };
+    this.stopWorldChatMotion();
+    this.worldChatMotion = {
+      active: !sameWorldChatBounds(from, target),
+      current: { ...from },
+      from,
+      target: { ...target },
+      startedAt: this.timeSource(),
+      duration: WORLD_CHAT_OPEN_DURATION_MS,
+      frameId: 0,
+    };
+  }
+
+  sampleWorldChatMotion(now = this.timeSource()) {
+    const motion = this.worldChatMotion;
+    if (!motion?.active) {
+      return motion?.current ?? null;
+    }
+    const progress = Math.max(
+      0,
+      Math.min(1, (now - motion.startedAt) / motion.duration),
+    );
+    const eased = easeOutQuart(progress);
+    motion.current = {
+      y: interpolate(motion.from.y, motion.target.y, eased),
+      height: interpolate(motion.from.height, motion.target.height, eased),
+    };
+    if (progress >= 1) {
+      motion.active = false;
+      motion.current = { ...motion.target };
+    }
+    return motion.current;
+  }
+
+  scheduleWorldChatMotionFrame() {
+    const motion = this.worldChatMotion;
+    if (!motion?.active || motion.frameId) {
+      return;
+    }
+    motion.frameId = this.requestFrame(this.handleWorldChatMotionFrame);
+  }
+
+  tickWorldChatMotion() {
+    const motion = this.worldChatMotion;
+    if (!motion) {
+      return;
+    }
+    motion.frameId = 0;
+    if (!this.modal.active || !motion.active) {
+      return;
+    }
+    this.layout(this.viewportProjection);
+  }
+
+  stopWorldChatMotion() {
+    const frameId = this.worldChatMotion?.frameId;
+    if (frameId) {
+      this.cancelFrame(frameId);
+    }
+    if (this.worldChatMotion) {
+      this.worldChatMotion.frameId = 0;
+      this.worldChatMotion.active = false;
+    }
+  }
+
+  layoutAllianceSettingsDialog({ height, tabs, footerTabLayout }) {
+    const pane = this.allianceSettingsPane;
+    if (!pane) {
+      return;
+    }
+    this.copy.visible = false;
+    this.copy.renderable = false;
+    this.headerHeadline.visible = false;
+    this.headerBody.visible = false;
+    this.headerMeta.visible = false;
+    this.status.visible = false;
+    this.status.renderable = false;
+    const paneTop =
+      this.panel.paperFrame.y +
+      RETAINED_DIALOG_SCROLL_GEOMETRY.contentPaddingTop;
+    const paperBottom =
+      footerTabLayout?.paperBottom ?? height - DIALOG_PAPER_BOTTOM_INSET;
+    pane.setBounds(
+      PIXI_UI_GEOMETRY.dialogPadding,
+      paneTop,
+      WORKSHOP_DIALOG_CONTENT_WIDTH,
+      Math.max(0, paperBottom - paneTop),
+    );
+    this.tabsLayer.position.set(
+      footerTabLayout?.rowX ?? 152,
+      footerTabLayout?.rowY ?? height,
+    );
+    this.tabsLayer.visible = tabs.length > 0;
+    this.tabsLayer.renderable = this.tabsLayer.visible;
+    const gap = footerTabLayout?.gap ?? 0;
+    const tabWidth = footerTabLayout?.tabWidth ?? 0;
+    tabs.forEach((button, index) => {
+      button.setBounds(
+        index * (tabWidth + gap),
+        0,
+        tabWidth,
+        PIXI_DIALOG_FOOTER_TABS_GEOMETRY.rowHeight,
+      );
+    });
   }
 
   layoutLeaderboardDialog({ footerTabLayout, height, tabs }) {
@@ -1339,11 +1592,12 @@ export class WorkshopDialogPixi {
       rowFrameWidth: RETAINED_DIALOG_LIST_GEOMETRY.rowFrameWidth,
     });
     const statusHeight = this.status.text ? 18 : 0;
-    this.leaderboardRowWidth = listLayout.rowWidth;
+    this.leaderboardRowWidth =
+      listLayout.rowWidth + LEADERBOARD_LIST_LEFT_EXPANSION;
     this.scroll.setBounds(
-      20 + listLayout.x,
+      20 + listLayout.x - LEADERBOARD_LIST_LEFT_EXPANSION,
       LEADERBOARD_LIST_TOP,
-      listLayout.viewportWidth,
+      listLayout.viewportWidth + LEADERBOARD_LIST_LEFT_EXPANSION,
       Math.max(
         LEADERBOARD_ROW_HEIGHT,
         paperBottom - LEADERBOARD_LIST_TOP - 7 - statusHeight,
@@ -1417,7 +1671,7 @@ export class WorkshopDialogPixi {
     }
   }
 
-  layoutOwnedAllianceDialog({ height }) {
+  layoutOwnedAllianceDialog({ height, tabs, footerTabLayout }) {
     const trade = this.allianceTradeSection;
     const members = this.allianceMembersSection;
     if (!trade || !members) {
@@ -1435,8 +1689,8 @@ export class WorkshopDialogPixi {
     this.headerMeta.renderable = false;
     this.scroll.root.visible = false;
     this.scroll.root.renderable = false;
-    this.tabsLayer.visible = false;
-    this.tabsLayer.renderable = false;
+    this.tabsLayer.visible = tabs.length > 0;
+    this.tabsLayer.renderable = this.tabsLayer.visible;
 
     const paperOutsets = resolveDialogPaperOutsets({
       top: PIXI_UI_GEOMETRY.dialogPadding,
@@ -1449,11 +1703,10 @@ export class WorkshopDialogPixi {
     const contentWidth = WORKSHOP_DIALOG_CONTENT_WIDTH;
 
     trade.root.position.set(0, 0);
+    trade.title.visible = false;
+    trade.title.renderable = false;
     trade.title.position.set(contentX, contentY);
-    trade.identity.position.set(
-      contentX,
-      contentY + OWNED_ALLIANCE_HEADER_HEIGHT,
-    );
+    trade.identity.position.set(contentX, contentY);
     const detailY = trade.identity.y + Math.ceil(trade.identity.height) + 2;
     trade.detail.position.set(contentX, detailY);
     trade.detail.style.wordWrap = true;
@@ -1478,25 +1731,43 @@ export class WorkshopDialogPixi {
       paperOutsets,
     );
     const tradeSectionHeight = trade.paper.y + trade.paper.frameHeight;
-    const membersY = tradeSectionHeight + OWNED_ALLIANCE_SECTION_GAP;
-    const membersHeight = Math.max(80, height - membersY);
+    const membersY = this.ownedAllianceHomeLayout
+      ? tradeSectionHeight + OWNED_ALLIANCE_SECTION_GAP
+      : 0;
+    const paperBottom = footerTabLayout?.paperBottom ?? height;
+    const membersHeight = Math.max(80, paperBottom - membersY);
     const membersContentHeight = Math.max(
       40,
       membersHeight - contentY - paperOutsets.bottom,
     );
 
     members.root.position.set(0, membersY);
+    const memberHeaderVisible = !this.ownedAllianceHomeLayout;
+    members.title.visible = memberHeaderVisible;
+    members.title.renderable = memberHeaderVisible;
+    members.count.visible = memberHeaderVisible;
+    members.count.renderable = memberHeaderVisible;
     members.title.position.set(contentX, contentY);
     members.count.position.set(contentX + contentWidth, contentY + 1);
+    const memberScrollTop = memberHeaderVisible
+      ? OWNED_ALLIANCE_MEMBER_SCROLL_TOP
+      : 0;
     const statusHeight = this.status.text ? 16 : 0;
+    const listLayout = resolveRetainedDialogListLayout({
+      bodyWidth: contentWidth,
+      paperRight: contentWidth + contentX + 14 / 3,
+      rowFrameWidth: RETAINED_DIALOG_LIST_GEOMETRY.rowFrameWidth,
+    });
+    this.allianceMemberRowX = 0;
+    this.allianceMemberRowWidth = listLayout.rowWidth;
     members.scroll.setBounds(
-      contentX,
-      contentY + OWNED_ALLIANCE_MEMBER_SCROLL_TOP,
-      contentWidth,
+      contentX + listLayout.x,
+      contentY + memberScrollTop,
+      listLayout.viewportWidth,
       Math.max(
         ALLIANCE_MEMBER_ROW_HEIGHT,
         membersContentHeight -
-          OWNED_ALLIANCE_MEMBER_SCROLL_TOP -
+          memberScrollTop -
           OWNED_ALLIANCE_SECTION_CONTENT_BOTTOM -
           statusHeight,
       ),
@@ -1518,6 +1789,20 @@ export class WorkshopDialogPixi {
       contentX,
       membersY + membersContentHeight - statusHeight,
     );
+    this.tabsLayer.position.set(
+      footerTabLayout?.rowX ?? 152,
+      footerTabLayout?.rowY ?? height,
+    );
+    const gap = footerTabLayout?.gap ?? 0;
+    const tabWidth = footerTabLayout?.tabWidth ?? 0;
+    tabs.forEach((button, index) => {
+      button.setBounds(
+        index * (tabWidth + gap),
+        0,
+        tabWidth,
+        PIXI_DIALOG_FOOTER_TABS_GEOMETRY.rowHeight,
+      );
+    });
   }
 
   layoutWorldEventDialog({ width, height, tabs, footerTabLayout }) {
@@ -1640,8 +1925,12 @@ export class WorkshopDialogPixi {
   }
 
   activate() {
+    if (this.isWorldChatDialog) {
+      this.startWorldChatOpenMotion();
+    }
     this.modal.activate();
     if (this.isWorldChatDialog) {
+      this.layout(this.viewportProjection);
       this.scroll.scrollTo(
         Math.max(0, this.scroll.contentHeight - this.scroll.height),
       );
@@ -1649,6 +1938,7 @@ export class WorkshopDialogPixi {
   }
 
   deactivate() {
+    this.stopWorldChatMotion();
     this.composerSubmissionToken += 1;
     this.composerSubmitting = false;
     this.composerStatus = '';
@@ -1659,6 +1949,7 @@ export class WorkshopDialogPixi {
   }
 
   destroy() {
+    this.stopWorldChatMotion();
     this.clearTargets();
     this.composerSubmissionToken += 1;
     this.composerField?.destroy({ children: true });
@@ -1694,6 +1985,8 @@ export class WorkshopDialogPixi {
     this.periodTabPool?.destroy();
     this.periodTabs = null;
     this.periodTabPool = null;
+    this.allianceSettingsPane?.destroy();
+    this.allianceSettingsPane = null;
     this.allianceMembersSection?.scroll.destroy();
     this.scroll.destroy();
     this.modal.destroy();
@@ -2612,6 +2905,263 @@ export class WorldChatMessageRowPixi {
   }
 }
 
+class AllianceSettingsPane {
+  constructor({ dialog }) {
+    this.dialog = dialog;
+    this.model = null;
+    this.draft = null;
+    this.draftAllianceId = null;
+    this.dirty = false;
+    this.saving = false;
+    this.statusText = '';
+    this.root = new Container({ label: `${dialog.dialogId}-settings` });
+    this.root.visible = false;
+    this.root.renderable = false;
+    this.fieldSpecs = [
+      ['name', 'Name', 24],
+      ['tag', 'Tag', 5],
+      ['description', 'Description', 120],
+      ['notice', 'Notice', 160],
+    ];
+    this.labels = new Map();
+    this.fields = new Map();
+    for (const [key, label, maxLength] of this.fieldSpecs) {
+      const labelText = createText(label, RETAINED_TEXT_STYLES.border);
+      const field = new PixiTextField({
+        assetManager: dialog.assetManager,
+        inputRouter: dialog.inputRouter,
+        textEntryService: dialog.textEntryService,
+        inputKind: 'text',
+        maxLength,
+        label: `${dialog.dialogId}-settings-${key}`,
+        onChange: (value) => {
+          if (!this.draft) {
+            return;
+          }
+          this.draft[key] = key === 'tag' ? value.toUpperCase() : value;
+          this.dirty = true;
+        },
+      });
+      this.labels.set(key, labelText);
+      this.fields.set(key, field);
+      this.root.addChild(labelText, field);
+    }
+    this.joinModeLabel = createText('Join Mode', RETAINED_TEXT_STYLES.border);
+    this.joinModeButtons = ['open', 'apply', 'closed'].map(
+      (joinMode) =>
+        new RetainedButton({
+          assetManager: dialog.assetManager,
+          buttonLabel: `${dialog.dialogId}-settings-${joinMode}`,
+          inputRouter: dialog.inputRouter,
+          variant: 'tab',
+        }),
+    );
+    this.saveButton = new RetainedButton({
+      assetManager: dialog.assetManager,
+      buttonLabel: `${dialog.dialogId}-settings-save`,
+      inputRouter: dialog.inputRouter,
+      sizeTier: 30,
+      variant: 'green',
+    });
+    this.disbandButton = new RetainedButton({
+      assetManager: dialog.assetManager,
+      buttonLabel: `${dialog.dialogId}-settings-disband`,
+      inputRouter: dialog.inputRouter,
+      sizeTier: 30,
+      variant: 'red',
+    });
+    this.status = createText('', {
+      ...RETAINED_TEXT_STYLES.border,
+      align: 'center',
+    });
+    this.root.addChild(
+      this.joinModeLabel,
+      ...this.joinModeButtons.map((button) => button.root),
+      this.saveButton.root,
+      this.disbandButton.root,
+      this.status,
+    );
+  }
+
+  bind(model) {
+    this.model = model ?? null;
+    const visible = Boolean(this.model);
+    this.root.visible = visible;
+    this.root.renderable = visible;
+    if (!visible) {
+      for (const field of this.fields.values()) {
+        field.blur();
+      }
+      return;
+    }
+    const allianceId = String(this.model.allianceId ?? '');
+    const allianceChanged = this.draftAllianceId !== allianceId;
+    if (allianceChanged || !this.dirty) {
+      this.draftAllianceId = allianceId;
+      if (allianceChanged) {
+        this.statusText = '';
+      }
+      this.draft = {
+        name: this.model.name ?? '',
+        tag: this.model.tag ?? '',
+        tagColor: this.model.tagColor ?? 'ink',
+        description: this.model.description ?? '',
+        notice: this.model.notice ?? '',
+        joinMode: this.model.joinMode ?? 'apply',
+      };
+      for (const [key, field] of this.fields) {
+        field.setValue(this.draft[key] ?? '');
+      }
+    }
+    const editable = this.model.editable === true;
+    for (const [key, field] of this.fields) {
+      const label = this.labels.get(key);
+      field.visible = editable;
+      field.renderable = editable;
+      label.visible = editable;
+      label.renderable = editable;
+      if (!editable) {
+        field.blur();
+      }
+    }
+    this.joinModeLabel.visible = editable;
+    this.joinModeLabel.renderable = editable;
+    this.joinModeButtons.forEach((button, index) => {
+      const joinMode = ['open', 'apply', 'closed'][index];
+      button.root.visible = editable;
+      button.root.renderable = editable;
+      button.setModel({
+        label: joinMode[0].toUpperCase() + joinMode.slice(1),
+        selected: this.draft?.joinMode === joinMode,
+        enabled: editable && !this.saving,
+        action: () => this.selectJoinMode(joinMode),
+      });
+    });
+    this.saveButton.root.visible = editable;
+    this.saveButton.root.renderable = editable;
+    this.saveButton.setModel({
+      label: this.saving ? 'Saving' : 'Save',
+      enabled: editable && !this.saving,
+      action: () => this.save(),
+    });
+    this.disbandButton.root.visible = editable;
+    this.disbandButton.root.renderable = editable;
+    this.disbandButton.setModel({
+      label: this.model.canDisband ? 'Disband' : 'Remove Members First',
+      enabled:
+        editable && this.model.canDisband === true && !this.saving,
+      action: () => this.model?.onDisband?.(),
+    });
+    if (!editable) {
+      this.statusText = 'Trade Master Only';
+    }
+    setText(this.status, this.statusText);
+  }
+
+  selectJoinMode(joinMode) {
+    if (!this.draft || this.saving) {
+      return false;
+    }
+    this.draft.joinMode = joinMode;
+    this.dirty = true;
+    this.bind(this.model);
+    return true;
+  }
+
+  async save() {
+    if (this.saving || !this.draft || this.model?.editable !== true) {
+      return false;
+    }
+    this.saving = true;
+    this.statusText = 'Saving';
+    this.bind(this.model);
+    let result;
+    try {
+      result = await this.model.onSave?.({ ...this.draft });
+    } catch {
+      result = { ok: false };
+    }
+    this.saving = false;
+    this.dirty = result?.ok !== true;
+    this.statusText = result?.ok === true ? 'Saved' : 'Not Saved';
+    this.bind(this.model);
+    return result?.ok === true;
+  }
+
+  setBounds(x, y, width) {
+    this.root.position.set(x, y);
+    if (this.model?.editable !== true) {
+      this.status.position.set(0, 8);
+      return;
+    }
+    const fieldHeight = 40;
+    this.fieldSpecs.forEach(([key], index) => {
+      const fieldY = index * fieldHeight;
+      this.labels.get(key).position.set(0, fieldY);
+      const field = this.fields.get(key);
+      field.position.set(0, fieldY + 13);
+      field.setSize(width, 25);
+    });
+    const joinY = this.fieldSpecs.length * fieldHeight;
+    this.joinModeLabel.position.set(0, joinY);
+    const joinButtonY = joinY + 13;
+    const joinGap = 6;
+    const joinWidth = (width - joinGap * 2) / 3;
+    this.joinModeButtons.forEach((button, index) => {
+      button.setBounds(
+        index * (joinWidth + joinGap),
+        joinButtonY,
+        joinWidth,
+        28,
+      );
+    });
+    const actionY = joinButtonY + 34;
+    const actionGap = 8;
+    const actionWidth = (width - actionGap) / 2;
+    this.saveButton.setBounds(0, actionY, actionWidth, 28);
+    this.disbandButton.setBounds(
+      actionWidth + actionGap,
+      actionY,
+      actionWidth,
+      28,
+    );
+    this.status.position.set(0, actionY + 32);
+  }
+
+  applyTheme(theme) {
+    const resolvedTheme = theme ?? DEFAULT_PIXI_THEME_SNAPSHOT;
+    for (const label of this.labels.values()) {
+      applyTextTheme(label, resolvedTheme, RETAINED_TEXT_STYLES.border);
+    }
+    for (const field of this.fields.values()) {
+      field.applyTheme(resolvedTheme);
+    }
+    applyTextTheme(
+      this.joinModeLabel,
+      resolvedTheme,
+      RETAINED_TEXT_STYLES.border,
+    );
+    applyTextTheme(this.status, resolvedTheme, {
+      ...RETAINED_TEXT_STYLES.border,
+      align: 'center',
+      fill: resolvedTheme.muted,
+    });
+    this.joinModeButtons.forEach((button) => button.applyTheme(resolvedTheme));
+    this.saveButton.applyTheme(resolvedTheme);
+    this.disbandButton.applyTheme(resolvedTheme);
+  }
+
+  destroy() {
+    for (const field of this.fields.values()) {
+      field.destroy({ children: true });
+    }
+    this.joinModeButtons.forEach((button) => button.destroy());
+    this.saveButton.destroy();
+    this.disbandButton.destroy();
+    this.root.destroy({ children: true });
+  }
+}
+
 export class AllianceMemberRow {
   constructor({ dialog }) {
     this.dialog = dialog;
@@ -2626,6 +3176,17 @@ export class AllianceMemberRow {
       inputRouter: dialog.inputRouter,
       variant: 'inline',
     });
+    this.visual = new Container({
+      label: `${dialog.dialogId}-alliance-member-visual`,
+    });
+    this.background = new PixiNineSliceFrame({
+      texture:
+        dialog.assetManager?.getTexture?.(PIXI_ROOT_RUN_ASSETS.settingsRow) ??
+        Texture.EMPTY,
+      sourceInsets: PIXI_ROOT_RUN_GEOMETRY.settings.rowSourceInsets,
+      borderInsets: PIXI_ROOT_RUN_GEOMETRY.settings.rowBorderInsets,
+      label: `${dialog.dialogId}-alliance-member-background`,
+    });
     this.avatarWidget = new PlayerProfileWidget({
       assets: dialog.assetManager,
       texture: Texture.EMPTY,
@@ -2636,13 +3197,14 @@ export class AllianceMemberRow {
     this.role = createText('', RETAINED_TEXT_STYLES.border);
     this.level = createText('', RETAINED_TEXT_STYLES.border);
     this.level.anchor.set(1, 0);
-    this.root.addChild(
-      this.hitTarget.root,
+    this.visual.addChild(
+      this.background,
       this.avatarWidget,
       this.username,
       this.role,
       this.level,
     );
+    this.root.addChild(this.hitTarget.root, this.visual);
   }
 
   bind(model) {
@@ -2678,17 +3240,28 @@ export class AllianceMemberRow {
   setBounds(x, y, width, height = ALLIANCE_MEMBER_ROW_HEIGHT) {
     this.root.position.set(x, y);
     this.hitTarget.setBounds(0, 0, width, height);
+    const rowGap = PIXI_ROOT_RUN_GEOMETRY.settings.rowGap;
+    const backgroundWidth = Math.max(0, width - rowGap);
+    const backgroundHeight = Math.max(0, height - rowGap);
+    this.visual.pivot.set(width / 2, height / 2);
+    this.visual.position.set(width / 2, height / 2);
+    this.background.position.set(0, rowGap / 2);
+    this.background.setSize(
+      backgroundWidth,
+      backgroundHeight,
+      PIXI_ROOT_RUN_GEOMETRY.settings.rowBorderInsets,
+    );
     const avatarScale = ALLIANCE_MEMBER_AVATAR_SIZE / 186;
     this.avatarWidget.scale.set(avatarScale);
     this.avatarWidget.position.set(
-      4,
+      6,
       (height - ALLIANCE_MEMBER_AVATAR_SIZE) / 2,
     );
-    const textX = ALLIANCE_MEMBER_AVATAR_SIZE + 10;
-    this.username.position.set(textX, 5);
-    this.role.position.set(textX, 21);
-    this.level.position.set(width - 6, 13);
-    this.root.hitArea = new Rectangle(0, 0, width, height);
+    const textX = ALLIANCE_MEMBER_AVATAR_SIZE + 12;
+    this.username.position.set(textX, 8);
+    this.role.position.set(textX, 27);
+    this.level.position.set(backgroundWidth - 8, 18);
+    this.root.hitArea = new Rectangle(0, 0, backgroundWidth, height);
   }
 
   applyTheme(theme) {
@@ -2708,6 +3281,12 @@ export class AllianceMemberRow {
       fill: resolvedTheme.text,
     });
     this.hitTarget.applyTheme(resolvedTheme);
+    this.background.setTexture(
+      this.dialog.assetManager?.getTexture?.(
+        PIXI_ROOT_RUN_ASSETS.settingsRow,
+      ) ?? Texture.EMPTY,
+      PIXI_ROOT_RUN_GEOMETRY.settings.rowSourceInsets,
+    );
   }
 
   reset() {
@@ -3542,7 +4121,7 @@ export class LeaderboardRowPixi extends ClickableWidget {
     });
     this.currentOutline = new Graphics({ label: `${this.root.label}:current` });
     this.rank = createText('', RETAINED_TEXT_STYLES.bold);
-    this.rank.anchor.set(1, 0);
+    this.rank.anchor.set(0.5, 0);
     this.avatarWidget = new PlayerProfileWidget({
       assets: dialog.assetManager,
       texture: Texture.EMPTY,
@@ -3673,11 +4252,9 @@ export class LeaderboardRowPixi extends ClickableWidget {
       .clear()
       .roundRect(1, rowGap / 2 + 1, backgroundWidth - 2, backgroundHeight - 2, 5)
       .stroke({ color: this.dialog.contentTheme?.accent ?? '#a864d9', width: 1.5, alpha: this.model.current ? 0.9 : 0 });
-    const identityX = LEADERBOARD_IDENTITY_X;
-    this.rank.position.set(
-      identityX - LEADERBOARD_RANK_TO_IDENTITY_GAP,
-      17,
-    );
+    const identityX =
+      LEADERBOARD_IDENTITY_X + LEADERBOARD_LIST_LEFT_EXPANSION;
+    this.rank.position.set(identityX / 2, 17);
     const avatarScale = LEADERBOARD_AVATAR_SIZE / 186;
     this.avatarWidget.scale.set(avatarScale);
     this.avatarWidget.position.set(identityX, (height - LEADERBOARD_AVATAR_SIZE) / 2);
@@ -4180,4 +4757,63 @@ function disposeInputRegistration(registration) {
     return;
   }
   registration?.unregister?.();
+}
+
+function createSettledWorldChatMotion(bounds) {
+  const current = { ...bounds };
+  return {
+    active: false,
+    current,
+    from: { ...current },
+    target: { ...current },
+    startedAt: 0,
+    duration: 0,
+    frameId: 0,
+  };
+}
+
+function sameWorldChatBounds(left, right) {
+  return Boolean(
+    left &&
+      right &&
+      Math.abs(left.y - right.y) <= WORLD_CHAT_MOTION_EPSILON &&
+      Math.abs(left.height - right.height) <= WORLD_CHAT_MOTION_EPSILON,
+  );
+}
+
+function interpolate(from, to, progress) {
+  return from + (to - from) * progress;
+}
+
+function easeOutQuart(progress) {
+  const clamped = Math.max(0, Math.min(1, Number(progress) || 0));
+  return 1 - (1 - clamped) ** 4;
+}
+
+function prefersReducedMotion() {
+  return Boolean(
+    globalThis.matchMedia?.('(prefers-reduced-motion: reduce)')?.matches,
+  );
+}
+
+function defaultRequestFrame(callback) {
+  if (typeof globalThis.requestAnimationFrame === 'function') {
+    return globalThis.requestAnimationFrame(callback);
+  }
+  return globalThis.setTimeout?.(
+    () => callback(defaultTimeSource()),
+    16,
+  ) ?? 0;
+}
+
+function defaultCancelFrame(frameId) {
+  if (typeof globalThis.cancelAnimationFrame === 'function') {
+    globalThis.cancelAnimationFrame(frameId);
+  } else {
+    globalThis.clearTimeout?.(frameId);
+  }
+}
+
+function defaultTimeSource() {
+  return globalThis.performance?.now?.() ?? Date.now();
 }

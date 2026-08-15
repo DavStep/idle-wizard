@@ -55,12 +55,10 @@ export class PlayerShopListingManager {
         ok: true,
       };
     } catch (error) {
-      const message = getReducerFailureMessage(error);
-      return {
-        ok: false,
-        reason: 'publish_failed',
-        ...(message ? { message } : {}),
-      };
+      return getReducerFailureResult(
+        error,
+        'Server error. Nothing was sold. Please try again.',
+      );
     }
   }
 
@@ -124,11 +122,11 @@ export class PlayerShopListingManager {
       return {
         ok: true,
       };
-    } catch {
-      return {
-        ok: false,
-        reason: 'publish_failed',
-      };
+    } catch (error) {
+      return getReducerFailureResult(
+        error,
+        'Server error. Request was not placed. Please try again.',
+      );
     }
   }
 
@@ -296,4 +294,29 @@ function getReducerFailureMessage(error) {
     .replace(/^(?:(?:sender|internal)?error:\s*)+/i, '')
     .trim()
     .slice(0, 160);
+}
+
+function getReducerFailureResult(error, internalMessage) {
+  const message = getReducerFailureMessage(error);
+
+  if (isInternalReducerFailure(error, message)) {
+    return {
+      ok: false,
+      reason: 'server_error',
+      message: internalMessage,
+    };
+  }
+
+  return {
+    ok: false,
+    reason: 'publish_failed',
+    ...(message ? { message } : {}),
+  };
+}
+
+function isInternalReducerFailure(error, message) {
+  return (
+    error?.name === 'InternalError' ||
+    /(?:instance encountered a fatal error|unexpected reducer result)/i.test(message)
+  );
 }

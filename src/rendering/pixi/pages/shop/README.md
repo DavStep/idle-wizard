@@ -90,7 +90,8 @@ component-level ribbon state. Open
 stall renderer with loaded Sage and Briar Seed rows, without gameplay,
 account, or tutorial gates. Add `?dialog=stall` to open the loader with enabled
 mark and clear actions. Add `?dialog=ledger` to open the Bag-sized Market
-Ledger with overflow rows, item icons, and unlocked category tabs.
+Ledger with overflow rows, item icons, unlocked category tabs, and locked Grand
+Exchange potion rows that exercise the shared market-rank star widget.
 Add `&categories=seed` to retain only the always-available Seeds category for
 single-category dialog and reclaimed-footer QA.
 Add `?stalls=empty-notified` to render one actionable empty stall with the

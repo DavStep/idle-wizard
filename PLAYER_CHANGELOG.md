@@ -5,6 +5,13 @@ upload script posts the section whose heading matches `package.json` `version`.
 Write these developer-to-player notes only in Idle Wizard terms. Do not mention
 other game names, source projects, ports, or implementation provenance.
 
+## 0.3.58
+
+- Redesigned Prestige with a clearer next-reset summary, compact milestones, and easier-to-scan rewards and licence progress.
+- Expanded Trade Alliances into dedicated Home, Quests, Members, and Settings tabs, and refined Market Ledger ranks and weekly World Event donation layouts.
+- Added a direct Cosmetics action to your Player Info dialog and improved Player Shop error messages when a listing or request cannot be completed.
+- Improved World Chat opening and keyboard transitions so messages, controls, and the game keep their intended size on Android.
+
 ## 0.3.57
 
 - Added online status, last-seen time, and total playtime to player profiles, and carried player frames into World Chat.

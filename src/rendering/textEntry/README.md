@@ -14,9 +14,12 @@ Android uses the registered `IdleWizardTextEntry` Capacitor plugin. The plugin
 adds one transparent one-pixel native `EditText` for the active session so the
 Android IME owns composition. The editor stays at the top overlay edge, outside
 the IME overlap, and the plugin reasserts the activity's full-window
-`adjustNothing` mode before focus and keyboard display. It reports keyboard
-insets in CSS pixels so World Chat can translate its panel without resizing or
-moving the rest of the game.
+`adjustNothing` mode before focus and keyboard display. Capacitor System Bars
+inset handling stays disabled because its Android listener otherwise pads the
+WebView parent by the IME height, compressing the complete game surface before
+Pixi receives the inset. The native plugin reports keyboard insets in CSS pixels
+so World Chat alone can translate without resizing or moving the rest of the
+game.
 
 ```js
 const service = new TextEntryService({ canvas });

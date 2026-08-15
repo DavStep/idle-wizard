@@ -39,6 +39,12 @@
 
       const PRESTIGE_ICON_ASSET =
         'source:assets/icons/icon-prestige-star.png';
+      const keyboardInset = Math.max(
+        0,
+        Number(
+          new URLSearchParams(window.location.search).get('keyboardInset'),
+        ) || 0,
+      );
       const canvas = document.querySelector('canvas');
       const applicationManager = new PixiApplicationManager({ canvas });
       const assetManager = new PixiAssetManager();
@@ -136,7 +142,15 @@
         ],
         onSubmit: async () => ({ ok: false, reason: 'offline' }),
       });
-      dialog.layout(applicationManager.projection);
+      let projection = applicationManager.projection;
+      if (keyboardInset > 0) {
+        applicationManager.setTextEntryActive(true);
+        projection = applicationManager.setKeyboardMetrics({
+          keyboardInset,
+          visibleHeight: Math.max(0, canvas.clientHeight - keyboardInset),
+        });
+      }
+      dialog.layout(projection);
       dialog.activate();
 
       window.__worldChatPrestigeRecipe = {
