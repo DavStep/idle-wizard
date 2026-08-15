@@ -65,14 +65,20 @@ describe('retained dialog UI editor integrations', () => {
     dialog.activate();
 
     expect(dialog).toBeInstanceOf(ShopDialogPixi);
-    expect(dialog.panel.titleLabel.textObject.text).toBe('Donate');
+    expect(dialog.panel.titleLabel.textObject.text).toBe('Quiet The Crowd');
     expect(dialog.summaryRows.getWidgets()).toHaveLength(5);
+    expect(dialog.summaryRows.get('giving').keyLabel.fontSize).toBe(14);
+    expect(dialog.summaryRows.get('owned').root.x).toBe(38);
     expect(dialog.rangeControl).toMatchObject({
       enabled: true,
       min: 1,
       max: 12,
       tone: 'root',
     });
+    expect(dialog.rangeControl.x).toBe(-9);
+    expect(dialog.rangeControl.controlWidth).toBeGreaterThan(
+      dialog.panel.contentBoxWidth,
+    );
     expect(dialog.actions.get('confirm').variant).toBe('green');
     expect(integration.childWidgetIds).toEqual([
       'compound.dialog-frame',
@@ -212,9 +218,13 @@ describe('retained dialog UI editor integrations', () => {
 
         dialog.layout(PROJECTION);
         dialog.activate();
-        const expectedTitle = retainedDialogIntegrations.find(
+        const integrationTitle = retainedDialogIntegrations.find(
           ({ id }) => id === `dialog.${dialogId}`,
         )?.label;
+        const expectedTitle =
+          dialogId === 'workshop.worldEventDonate'
+            ? fixture.title
+            : integrationTitle;
         const panel = dialog.modal?.panel ?? dialog.panel;
         const renderedTitle = panel?.titleLabel?.textObject?.text ?? '';
         expect(

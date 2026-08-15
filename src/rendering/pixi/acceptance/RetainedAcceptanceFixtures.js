@@ -96,16 +96,29 @@ export function createDialogViewModel(
   if (dialogId === WORKSHOP_WORLD_EVENT_DONATE_DIALOG_ID) {
     const amount = key === 'a' ? 3 : 8;
     return {
-      title: 'Donate',
+      title: 'Quiet The Crowd',
       summaryRows: [
-        { id: 'quest', label: 'Quest', value: 'Quiet The Crowd' },
         {
           id: 'giving',
-          label: 'Give',
-          value: 'Calming Draught',
+          label: 'Calming Draught',
+          value: '',
           itemKind: 'potion',
           itemKey: 'calmingDraught',
-          quantityLabel: '12 owned',
+          iconLeading: true,
+          fontSize: 14,
+          layoutHeight: 34,
+        },
+        {
+          id: 'owned',
+          label: 'Owned',
+          value: '12',
+          layoutInset: 38,
+        },
+        {
+          id: 'total',
+          label: 'Already Donated',
+          value: '360 points',
+          layoutInset: 38,
         },
         {
           id: 'amount',
@@ -117,11 +130,6 @@ export function createDialogViewModel(
           label: 'Earn',
           value: `+${amount * 120} points`,
           valueTone: 'root',
-        },
-        {
-          id: 'total',
-          label: 'Item Total',
-          value: '360 points',
         },
       ],
       range: {

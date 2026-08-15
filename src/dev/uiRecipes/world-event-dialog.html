@@ -160,16 +160,29 @@
       function createDonationModel() {
         const points = donationAmount * 120;
         return {
-          title: 'Donate',
+          title: 'Quiet The Crowd',
           summaryRows: [
-            { id: 'quest', label: 'Quest', value: 'Quiet The Crowd' },
             {
               id: 'giving',
-              label: 'Give',
-              value: 'Calming Draught',
+              label: 'Calming Draught',
+              value: '',
               itemKind: 'potion',
               itemKey: 'calmingDraught',
-              quantityLabel: '12 owned',
+              iconLeading: true,
+              fontSize: 14,
+              layoutHeight: 34,
+            },
+            {
+              id: 'owned',
+              label: 'Owned',
+              value: '12',
+              layoutInset: 38,
+            },
+            {
+              id: 'total',
+              label: 'Already Donated',
+              value: '0 points',
+              layoutInset: 38,
             },
             {
               id: 'amount',
@@ -181,11 +194,6 @@
               label: 'Earn',
               value: `+${points} points`,
               valueTone: 'root',
-            },
-            {
-              id: 'total',
-              label: 'Item Total',
-              value: '0 points',
             },
           ],
           range: {

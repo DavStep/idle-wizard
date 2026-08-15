@@ -725,15 +725,29 @@ describe('PixiViewModelFactory', () => {
       },
     );
     expect(donation).toMatchObject({
-      title: 'Donate',
+      title: 'Quiet The Crowd',
       status: '',
       summaryRows: expect.arrayContaining([
         expect.objectContaining({
           id: 'giving',
-          label: 'Give',
+          label: 'Calming Draught',
           itemKind: 'potion',
           itemKey: 'calmingDraught',
-          quantityLabel: '2 owned',
+          iconLeading: true,
+          fontSize: 14,
+          layoutHeight: 34,
+        }),
+        expect.objectContaining({
+          id: 'owned',
+          label: 'Owned',
+          value: '2',
+          layoutInset: 38,
+        }),
+        expect.objectContaining({
+          id: 'total',
+          label: 'Already Donated',
+          value: '80 points',
+          layoutInset: 38,
         }),
         expect.objectContaining({
           id: 'amount',
@@ -745,11 +759,6 @@ describe('PixiViewModelFactory', () => {
           label: 'Earn',
           value: '+240 points',
           valueTone: 'root',
-        }),
-        expect.objectContaining({
-          id: 'total',
-          label: 'Item Total',
-          value: '80 points',
         }),
       ]),
       range: expect.objectContaining({
@@ -770,15 +779,12 @@ describe('PixiViewModelFactory', () => {
       ]),
     });
     expect(donation.summaryRows.map((row) => row.id)).toEqual([
-      'quest',
       'giving',
+      'owned',
+      'total',
       'amount',
       'points',
-      'total',
     ]);
-    expect(donation.summaryRows.find((row) => row.id === 'total')).not.toHaveProperty(
-      'valueTone',
-    );
     donation.range.onChange(1);
     expect(adjustWorldEventDonationAmount).toHaveBeenCalledWith(-1);
     donation.actions.find((action) => action.id === 'confirm').action();

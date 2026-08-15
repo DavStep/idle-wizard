@@ -102,15 +102,28 @@ describe('WorkshopPixiPage', () => {
     const harness = createHarness({ assetManager });
     const model = createWorkshopViewModel();
     model.workshop.dialogs.worldEventDonate = {
-      title: 'Donate',
+      title: 'Post Road Bounties',
       summaryRows: [
-        { id: 'quest', label: 'Quest', value: 'Post Road Bounties' },
         {
           id: 'giving',
-          label: 'Give',
-          value: 'Coin',
-          valueIconResourceKey: 'coin',
-          quantityLabel: '100 owned',
+          label: 'Coin',
+          value: '',
+          leadingResourceKey: 'coin',
+          iconLeading: true,
+          fontSize: 14,
+          layoutHeight: 34,
+        },
+        {
+          id: 'owned',
+          label: 'Owned',
+          value: '100',
+          layoutInset: 38,
+        },
+        {
+          id: 'total',
+          label: 'Already Donated',
+          value: '25 points',
+          layoutInset: 38,
         },
         {
           id: 'amount',
@@ -149,7 +162,7 @@ describe('WorkshopPixiPage', () => {
 
     const dialog = harness.dialogs.get('workshop.worldEventDonate');
     expect(dialog).toBeInstanceOf(ShopDialogPixi);
-    expect(dialog.panel.titleLabel.textObject.text).toBe('Donate');
+    expect(dialog.panel.titleLabel.textObject.text).toBe('Post Road Bounties');
     expect(dialog.model.items).toEqual([]);
     expect(dialog.rangeControl).toMatchObject({
       visible: true,
@@ -159,15 +172,19 @@ describe('WorkshopPixiPage', () => {
       value: 25,
       tone: 'root',
     });
-    expect(dialog.summaryRows.get('giving').valueResource.icon.visible).toBe(true);
-    expect(dialog.summaryRows.get('giving').quantityLabel.textObject.text).toBe(
-      '100 owned',
-    );
+    expect(dialog.summaryRows.get('giving').leadingResource.icon.visible).toBe(true);
+    expect(dialog.summaryRows.get('giving').keyLabel.fontSize).toBe(14);
+    expect(dialog.summaryRows.get('giving').root.hitArea.height).toBe(34);
+    expect(dialog.summaryRows.get('owned').root.x).toBe(38);
     expect(dialog.summaryRows.get('amount').root.y).toBeLessThan(
       dialog.rangeControl.y,
     );
     expect(dialog.rangeControl.y).toBeLessThan(
       dialog.summaryRows.get('points').root.y,
+    );
+    expect(dialog.rangeControl.x).toBe(-9);
+    expect(dialog.rangeControl.controlWidth).toBeGreaterThan(
+      dialog.panel.contentBoxWidth,
     );
     const confirm = dialog.actions.get('confirm');
     expect(confirm.variant).toBe('green');
