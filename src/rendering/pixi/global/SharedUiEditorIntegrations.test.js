@@ -47,6 +47,7 @@ describe('shared Pixi UI editor integrations', () => {
     ]);
     expect(chromeIntegrations[1].childWidgetIds).toEqual([
       'primitive.retained-panel',
+      'compound.player-profile',
     ]);
   });
 });

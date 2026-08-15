@@ -29,6 +29,7 @@ describe('identity-only player reset', () => {
       connected: false,
       createdAt: resetAt,
       lastSeenAt: resetAt,
+      totalPlayTimeMicros: 0n,
       playerLevel: 1,
       theme: 'night',
       colorMode: 'resources',

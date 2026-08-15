@@ -23,4 +23,5 @@ export default __t.row({
   font: __t.string(),
   character: __t.string(),
   frame: __t.string(),
+  totalPlayTimeMicros: __t.u64().name("total_play_time_micros"),
 });

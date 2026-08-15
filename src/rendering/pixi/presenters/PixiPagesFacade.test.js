@@ -145,6 +145,40 @@ describe("PixiPagesFacade", () => {
     });
   });
 
+  it("opens Player Info for the current player from the top avatar", () => {
+    const gameplaySnapshot = createGameplaySnapshot({ level: 12 });
+    gameplaySnapshot.prestige.completedLevels = [10];
+    const harness = createHarness({ gameplaySnapshot });
+    const globalDialogPresenter = {
+      mount: vi.fn(),
+      open: vi.fn(() => true),
+    };
+    harness.dependencies.globalDialogPresenter = globalDialogPresenter;
+    harness.dependencies.authFacade = {
+      getSnapshot: vi.fn(() => ({ identity: "own-player" })),
+    };
+    const pages = new PixiPagesFacade(harness.dependencies);
+    pages.mount();
+
+    const topPanel = harness.getBoundGlobal("chrome.top");
+    expect(topPanel.actions.openAvatar()).toMatchObject({
+      ok: true,
+      dialogId: "player",
+    });
+    expect(globalDialogPresenter.open).toHaveBeenCalledWith(
+      "global.player",
+      {
+        player: {
+          identity: "own-player",
+          username: "elara",
+          character: "elara",
+          playerLevel: 12,
+          prestigeCount: 1,
+        },
+      },
+    );
+  });
+
   it.each([
     ["research", "research"],
     ["summon", "workshop"],

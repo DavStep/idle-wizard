@@ -247,6 +247,39 @@
       ]
     },
     {
+      "id": "app.live-update",
+      "label": "mandatory Android live-update gate",
+      "kind": "app-gate",
+      "production": true,
+      "coverage": {
+        "globalOwners": ["liveUpdateGateManager"],
+        "devUi": ["liveUpdate"]
+      },
+      "recipe": {
+        "kind": "devUi",
+        "surfaceId": "liveUpdate"
+      },
+      "states": [
+        { "id": "available" },
+        {
+          "id": "downloading",
+          "recipe": {
+            "kind": "devUi",
+            "surfaceId": "liveUpdate",
+            "options": { "phase": "downloading" }
+          }
+        },
+        {
+          "id": "failed",
+          "recipe": {
+            "kind": "devUi",
+            "surfaceId": "liveUpdate",
+            "options": { "phase": "failed" }
+          }
+        }
+      ]
+    },
+    {
       "id": "intro.first-run",
       "label": "first-run cutscene",
       "kind": "intro",

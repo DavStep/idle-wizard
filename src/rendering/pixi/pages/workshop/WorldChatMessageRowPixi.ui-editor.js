@@ -12,6 +12,7 @@ const ROW_WIDTH = 288;
 
 export default defineUiEditorIntegration({
   apiVersion: 1,
+  childWidgetIds: ['compound.player-profile'],
   createThumbnail: createWorldChatMessageRowThumbnail,
   folderPath: ['Workshop'],
   id: 'compound.world-chat-message-row',
@@ -138,7 +139,7 @@ function createWorldChatMessageRowHierarchy(row) {
     createUiEditorPixiHierarchyComponent({
       displayObjects: [row.avatar],
       id: 'world-chat-message-row:avatar',
-      label: 'Player avatar',
+      label: 'Player profile',
       primary: row.avatar,
       type: 'image',
     }),
@@ -192,6 +193,7 @@ function createPlayerFixture(overrides = {}) {
     body: 'Anyone joining the next expedition?',
     character: 'mira',
     enabled: true,
+    frame: 'violet',
     id: 'world-chat-player',
     username: 'Mira',
     ...overrides,
@@ -214,5 +216,6 @@ function createSystemFixture(overrides = {}) {
 function worldChatAssetFilter({ id }) {
   return String(id ?? '').startsWith('source:assets/avatars/')
     || String(id ?? '').startsWith('source:assets/characters/')
-    || String(id ?? '').startsWith('source:assets/icons/');
+    || String(id ?? '').startsWith('source:assets/icons/')
+    || String(id ?? '').startsWith('source:assets/ui/root-run-top-hud/');
 }

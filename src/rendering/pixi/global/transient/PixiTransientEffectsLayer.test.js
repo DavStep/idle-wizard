@@ -610,14 +610,14 @@ describe('reward flyout presenter', () => {
       expect.objectContaining({
         kind: 'potion',
         frameName: 'potion:briarWard',
-        anchorId: 'brewing.cauldron.1',
-        anchorYRatio: 0.62,
+        anchorId: 'brewing.cauldron.liquid',
+        anchorYRatio: 91.5 / 486,
       }),
       expect.objectContaining({
         kind: 'potion',
         frameName: 'potion:briarWard',
-        anchorId: 'brewing.cauldron.1',
-        anchorYRatio: 0.62,
+        anchorId: 'brewing.cauldron.liquid',
+        anchorYRatio: 91.5 / 486,
       }),
     ]);
   });

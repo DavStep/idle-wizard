@@ -35,6 +35,10 @@ export function getMarketRank(marketId) {
   return getMarketLicenceById(marketId).rank;
 }
 
+export function usesDynamicNpcMarketPricing(marketId) {
+  return getMarketRank(marketId) > defaultMarketLicence.rank;
+}
+
 export function getMarketGradeForCatalogIndex(index, catalogLength) {
   const safeIndex = Math.max(0, Math.floor(Number(index) || 0));
   const safeLength = Math.max(1, Math.floor(Number(catalogLength) || 1));

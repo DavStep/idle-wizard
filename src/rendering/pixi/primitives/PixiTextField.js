@@ -21,6 +21,7 @@ const BROWN_INSET_PLACEHOLDER = '#c8a67a';
 const BROWN_INSET_FOCUS = '#f1b84b';
 const MULTILINE_LINE_HEIGHT = 16;
 const CARET_WIDTH = 1;
+const CARET_BLINK_HALF_CYCLE_MS = 530;
 
 export class PixiTextField extends Container {
   constructor({
@@ -37,6 +38,7 @@ export class PixiTextField extends Container {
     onCancel = null,
     onChange = null,
     onKeyboardInset = null,
+    motionRuntime = null,
     variant = 'brown-inset',
     label = 'textField',
   } = {}) {
@@ -67,6 +69,13 @@ export class PixiTextField extends Container {
     this.sessionUnsubscribe = null;
     this.focusRequestToken = 0;
     this.fieldDestroying = false;
+    this.requestFrame = motionRuntime?.requestFrame ?? requestFrame;
+    this.cancelFrame = motionRuntime?.cancelFrame ?? cancelFrame;
+    this.timeSource = motionRuntime?.now ?? now;
+    this.reducedMotion =
+      motionRuntime?.prefersReducedMotion ?? prefersReducedMotion;
+    this.caretBlinkFrame = null;
+    this.caretBlinkStartedAt = null;
     this.insetFrame = new PixiNineSliceFrame({
       texture:
         assetManager?.getTexture?.(PIXI_ROOT_RUN_ASSETS.textFieldBrownInset) ??
@@ -126,10 +135,16 @@ export class PixiTextField extends Container {
 
   setValue(value, { notify = false } = {}) {
     this.value = String(value ?? '');
-    this.selectionStart = Math.min(this.selectionStart, this.value.length);
-    this.selectionEnd = Math.min(this.selectionEnd, this.value.length);
+    if (this.focused) {
+      this.selectionStart = Math.min(this.selectionStart, this.value.length);
+      this.selectionEnd = Math.min(this.selectionEnd, this.value.length);
+    } else {
+      this.selectionStart = this.value.length;
+      this.selectionEnd = this.value.length;
+    }
     void Promise.resolve(this.session?.setValue?.(this.value)).catch(() => {});
     this.redrawTextState();
+    this.restartCaretBlink();
     if (notify) {
       this.onChange?.(this.value);
     }
@@ -142,6 +157,8 @@ export class PixiTextField extends Container {
     }
     const requestToken = ++this.focusRequestToken;
     this.focused = true;
+    this.redrawTextState();
+    this.restartCaretBlink();
     const session = await this.textEntryService.open({
       value: this.value,
       selectionStart: this.selectionStart,
@@ -195,6 +212,7 @@ export class PixiTextField extends Container {
     this.sessionUnsubscribe = null;
     this.session = null;
     this.focused = false;
+    this.stopCaretBlink();
     if (!this.fieldDestroying) {
       this.redrawTextState();
     }
@@ -210,6 +228,7 @@ export class PixiTextField extends Container {
       : this.selectionEnd;
     this.focused = snapshot?.active !== false;
     this.redrawTextState();
+    this.restartCaretBlink();
   }
 
   setSize(width, height = this.fieldHeight) {
@@ -355,6 +374,37 @@ export class PixiTextField extends Container {
             ? BROWN_INSET_TEXT
             : this.theme.text,
       );
+    this.caretGraphic.alpha = 1;
+  }
+
+  restartCaretBlink() {
+    this.stopCaretBlink();
+    this.caretGraphic.alpha = 1;
+    if (!this.focused || this.reducedMotion()) {
+      return;
+    }
+
+    this.caretBlinkStartedAt = this.timeSource();
+    const tick = () => {
+      if (!this.focused || this.fieldDestroying) {
+        this.stopCaretBlink();
+        return;
+      }
+      const elapsed = Math.max(0, this.timeSource() - this.caretBlinkStartedAt);
+      const phase = Math.floor(elapsed / CARET_BLINK_HALF_CYCLE_MS);
+      this.caretGraphic.alpha = phase % 2 === 0 ? 1 : 0;
+      this.caretBlinkFrame = this.requestFrame(tick);
+    };
+    this.caretBlinkFrame = this.requestFrame(tick);
+  }
+
+  stopCaretBlink() {
+    if (this.caretBlinkFrame !== null) {
+      this.cancelFrame(this.caretBlinkFrame);
+    }
+    this.caretBlinkFrame = null;
+    this.caretBlinkStartedAt = null;
+    this.caretGraphic.alpha = 1;
   }
 
   configureTextLayout() {
@@ -376,7 +426,7 @@ export class PixiTextField extends Container {
     if (!this.multiline || this.variant === 'account-username') {
       return {
         line: 0,
-        lineHeight: PIXI_UI_GEOMETRY.bodyFontSize + 2,
+        lineHeight: this.textLabel.fontSize + 2,
         x: measurePrefix(this.textLabel, this.value.slice(0, index)),
         y: 0,
       };
@@ -501,11 +551,32 @@ export class PixiTextField extends Container {
 
   destroy(options) {
     this.fieldDestroying = true;
+    this.stopCaretBlink();
     this.registration?.();
     this.registration = null;
     this.blur();
     super.destroy(options);
   }
+}
+
+function prefersReducedMotion() {
+  return Boolean(
+    globalThis.matchMedia?.('(prefers-reduced-motion: reduce)')?.matches,
+  );
+}
+
+function requestFrame(callback) {
+  return typeof globalThis.requestAnimationFrame === 'function'
+    ? globalThis.requestAnimationFrame(callback)
+    : null;
+}
+
+function cancelFrame(frameId) {
+  globalThis.cancelAnimationFrame?.(frameId);
+}
+
+function now() {
+  return globalThis.performance?.now?.() ?? Date.now();
 }
 
 function measurePrefix(label, prefix) {

@@ -16,6 +16,7 @@ export function createIdentityOnlyPlayerReset<
     connected: false,
     createdAt: resetAt,
     lastSeenAt: resetAt,
+    totalPlayTimeMicros: 0n,
     playerLevel: DEFAULT_PLAYER_LEVEL,
     theme: DEFAULT_PLAYER_THEME,
     colorMode: DEFAULT_PLAYER_COLOR_MODE,

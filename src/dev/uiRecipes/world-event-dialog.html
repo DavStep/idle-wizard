@@ -165,18 +165,16 @@
             { id: 'quest', label: 'Quest', value: 'Quiet The Crowd' },
             {
               id: 'giving',
-              label: 'Giving',
+              label: 'Give',
               value: 'Calming Draught',
               itemKind: 'potion',
               itemKey: 'calmingDraught',
-              quantityLabel: `x${donationAmount}`,
+              quantityLabel: '12 owned',
             },
             {
-              id: 'owned',
-              label: 'Owned',
-              value: '12',
-              itemKind: 'potion',
-              itemKey: 'calmingDraught',
+              id: 'amount',
+              label: 'Amount',
+              value: `${donationAmount} / 12`,
             },
             {
               id: 'points',
@@ -186,9 +184,8 @@
             },
             {
               id: 'total',
-              label: 'Contributed',
+              label: 'Item Total',
               value: '0 points',
-              valueTone: 'root',
             },
           ],
           range: {

@@ -147,11 +147,15 @@ describe('UiClickSoundManager', () => {
     vi.clearAllMocks();
   });
 
-  it('plays the exact Root Run button sample at its authored gain', async () => {
+  it('plays the Idle Outpost button release bank at the shared click gain', async () => {
     const { AudioContextConstructor, stats } = makeFakeAudioContextConstructor();
     const fetch = makeFakeFetch();
     const manager = new UiClickSoundManager({
-      clickSampleUrl: '/ui-click-pop.wav',
+      clickSampleUrls: [
+        '/button-touch-up-1.wav',
+        '/button-touch-up-2.wav',
+        '/button-touch-up-3.wav',
+      ],
       dialogOpenSampleUrls: [],
       purchaseSampleUrls: [],
       random: () => 0.5,
@@ -165,8 +169,10 @@ describe('UiClickSoundManager', () => {
     manager.playClick();
     await flushPromises();
 
-    expect(fetch).toHaveBeenCalledWith('/ui-click-pop.wav');
-    expect(stats.decodeCount).toBe(1);
+    expect(fetch).toHaveBeenCalledWith('/button-touch-up-1.wav');
+    expect(fetch).toHaveBeenCalledWith('/button-touch-up-2.wav');
+    expect(fetch).toHaveBeenCalledWith('/button-touch-up-3.wav');
+    expect(stats.decodeCount).toBe(3);
     expect(stats.sourceStartCount).toBe(1);
     expect(stats.oscillatorStartCount).toBe(0);
     expect(stats.lastSourcePlaybackRate).toBe(1);

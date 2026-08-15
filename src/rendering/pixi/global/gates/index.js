@@ -20,6 +20,10 @@ export {
 export { PixiOnlineGateController } from './PixiOnlineGateController.js';
 export { PixiLoadingSplash } from './PixiLoadingSplash.js';
 export {
+  PixiLiveUpdateController,
+  formatMegabytes,
+} from './PixiLiveUpdateController.js';
+export {
   PixiOnlineGateView,
   sampleSplashProgress,
 } from './PixiOnlineGateView.js';

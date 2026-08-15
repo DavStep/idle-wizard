@@ -110,6 +110,7 @@ experience_type: gameplay-economy
 - Player market request item pickers should source catalog/inventory snapshots, not NPC price or sell rows.
 - NPC stalls and player listing/request slots equal active market rank; keep inaccessible legacy slot data saved but inactive.
 - Market item grades gate NPC sell/buy and player listings/requests alike; never let player trading bypass the active licence catalogue.
+- Small Town keeps fixed configured NPC prices even while shared need and stock change; demand pressure and base-price auto-tuning begin with Crossroads after the first Prestige star.
 - Hourly price history is backend-authored per market and item; the ledger may show missing points but must not fabricate them.
 - Player market request data is local gameplay-save state mirrored to backend request rows; local saves still preserve own slots across reload/server restart.
 - Player market browse dialog groups listings by seller and lets buyers choose quantity per listing before buying.

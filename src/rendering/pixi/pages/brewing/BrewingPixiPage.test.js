@@ -142,7 +142,7 @@ describe('BrewingPixiPage', () => {
         BREWING_HUD_GEOMETRY.edge -
         BREWING_HUD_GEOMETRY.emptyButtonWidth,
       y:
-        BREWING_HUD_GEOMETRY.detailTop -
+        harness.page.hud.detailPanel.root.y -
         BREWING_HUD_GEOMETRY.emptyButtonHeight -
         BREWING_HUD_GEOMETRY.emptyButtonGapAboveDetail,
     });
@@ -243,6 +243,36 @@ describe('BrewingPixiPage', () => {
     };
     harness.page.bind(model);
     expect(harness.page.hud.phaseLabel.text).toBe('Need Mana');
+
+    harness.page.destroy();
+    harness.dispose();
+  });
+
+  it('leaves used recipe ingredients as faint slot ghosts during an active brew', () => {
+    const harness = createHarness();
+    const model = createBrewingViewModel();
+    const cauldron = model.brewing.cauldrons[0];
+    const slot = harness.page.hud.ingredientSlots[0];
+
+    harness.page.bind(model);
+    expect(slot.contentMotion.alpha).toBe(1);
+
+    cauldron.activeBrew = {
+      key: 'manaTonic',
+      label: 'Mana Tonic',
+      phase: 'brewing',
+      durationMs: 10_000,
+      endTimeMs: 10_000,
+    };
+    harness.page.bind(model);
+
+    expect(slot.contentMotion.alpha).toBeLessThan(0.5);
+    expect(slot.frame.alpha).toBe(1);
+    expect(slot.enabled).toBe(false);
+
+    cauldron.activeBrew = null;
+    harness.page.bind(model);
+    expect(slot.contentMotion.alpha).toBe(1);
 
     harness.page.destroy();
     harness.dispose();
@@ -632,11 +662,19 @@ describe('BrewingPixiPage', () => {
     });
     expect(harness.page.herbsButton.root.position).toMatchObject({
       x: 16,
-      y: PIXI_UI_GEOMETRY.sourceHeight - 162 - 6 - 80.25,
+      y:
+        PIXI_UI_GEOMETRY.sourceHeight -
+        BREWING_PIXI_GEOMETRY.worldBottom -
+        6 -
+        80.25,
     });
     expect(harness.page.potionsButton.root.position).toMatchObject({
       x: 328.5,
-      y: PIXI_UI_GEOMETRY.sourceHeight - 162 - 6 - 80.25,
+      y:
+        PIXI_UI_GEOMETRY.sourceHeight -
+        BREWING_PIXI_GEOMETRY.worldBottom -
+        6 -
+        80.25,
     });
     expect(harness.page.worldZoom).toBeCloseTo(358 / 516);
     expect(cauldron.progress.progress).toBeCloseTo(0.5);
@@ -1105,7 +1143,7 @@ describe('BrewingPixiPage', () => {
     harness.dispose();
   });
 
-  it('keeps prepared and active liquid stateful without moving the cauldron at rest', () => {
+  it('keeps prepared and active liquid registered inside the moving cauldron', () => {
     let now = 0;
     const harness = createHarness({ timeSource: () => now });
     const model = createBrewingViewModel();
@@ -1125,7 +1163,8 @@ describe('BrewingPixiPage', () => {
     now = 360;
     harness.page.tick(now);
     expect(harness.page.hud.cauldronMotionMode).toBe('prepared');
-    expect(harness.page.hud.cauldronArt.position).toMatchObject(restArt);
+    expect(harness.page.hud.cauldronArt.y).not.toBe(restArt.y);
+    expectContainedCauldronRegistration(harness.page.hud);
     expect(
       harness.page.hud.cauldronStateFx.getLocalBounds().width,
     ).toBeGreaterThan(0);
@@ -1146,9 +1185,7 @@ describe('BrewingPixiPage', () => {
     expect(
       harness.page.hud.cauldronStateFx.getLocalBounds().height,
     ).toBeGreaterThan(0);
-    expect(harness.page.hud.cauldronLiquid.y).not.toBe(
-      harness.page.hud.cauldronChangeRestState.liquid.y,
-    );
+    expectContainedCauldronRegistration(harness.page.hud);
 
     vi.stubGlobal(
       'matchMedia',
@@ -1160,13 +1197,14 @@ describe('BrewingPixiPage', () => {
       x: harness.page.hud.cauldronChangeRestState.liquid.x,
       y: harness.page.hud.cauldronChangeRestState.liquid.y,
     });
+    expect(harness.page.hud.cauldronArt.position).toMatchObject(restArt);
     vi.unstubAllGlobals();
 
     harness.page.destroy();
     harness.dispose();
   });
 
-  it('punctuates brew completion and lifts collected potion art from the liquid', () => {
+  it('punctuates brew completion and leaves collected potion art to the shared reward effect', () => {
     let now = 0;
     const harness = createHarness({ timeSource: () => now });
     const model = createBrewingViewModel();
@@ -1205,6 +1243,7 @@ describe('BrewingPixiPage', () => {
     expect(harness.page.hud.cauldronArt.scale.y).toBeLessThan(
       harness.page.hud.cauldronChangeRestState.art.scaleY,
     );
+    expectContainedCauldronRegistration(harness.page.hud);
     expect(
       harness.page.hud.cauldronStateFx.getLocalBounds().width,
     ).toBeGreaterThan(0);
@@ -1217,8 +1256,7 @@ describe('BrewingPixiPage', () => {
     const collectMotion = [...harness.page.activeGhostMotions].find(
       (motion) => motion.kind === 'collect',
     );
-    expect(collectMotion).toBeDefined();
-    expect(collectMotion.target.y).toBeLessThan(collectMotion.start.y);
+    expect(collectMotion).toBeUndefined();
 
     now = 1_100;
     harness.page.tick(now);
@@ -1232,6 +1270,28 @@ describe('BrewingPixiPage', () => {
     );
 
     harness.page.destroy();
+    harness.dispose();
+  });
+
+  it('registers the shared potion reward anchor on the visible HUD cauldron', () => {
+    const harness = createHarness();
+    harness.page.bind(createBrewingViewModel());
+
+    const rewardAnchor = harness.semanticTargets.get(
+      'brewing.cauldron.liquid',
+    );
+    expect(rewardAnchor?.displayObject).toBe(
+      harness.page.hud.cauldronArt,
+    );
+    expect(rewardAnchor?.state()).toMatchObject({
+      active: true,
+      visible: true,
+    });
+
+    harness.page.destroy();
+    expect(
+      harness.semanticTargets.has('brewing.cauldron.liquid'),
+    ).toBe(false);
     harness.dispose();
   });
 
@@ -1339,20 +1399,20 @@ describe('BrewingPixiPage', () => {
       PIXI_UI_GEOMETRY.roomContentTop,
     );
     expect(
-      BREWING_HUD_GEOMETRY.detailTop,
+      harness.page.hud.detailPanel.root.y,
     ).toBeGreaterThan(BREWING_HUD_GEOMETRY.top);
     expect(
-      BREWING_HUD_GEOMETRY.detailTop +
-        BREWING_HUD_GEOMETRY.detailHeight,
+      harness.page.hud.detailPanel.root.y +
+        harness.page.hud.detailPanel.height,
     ).toBe(
       BREWING_HUD_GEOMETRY.top +
-        BREWING_HUD_GEOMETRY.carouselHeight,
+        harness.page.hud.carouselPanel.height,
     );
     expect(
       chatTop -
         PIXI_UI_GEOMETRY.roomChatTitleOverhang -
         (BREWING_HUD_GEOMETRY.top +
-          BREWING_HUD_GEOMETRY.carouselHeight),
+          harness.page.hud.carouselPanel.height),
     ).toBe(BREWING_HUD_GEOMETRY.detailChatGap);
     expect(harness.page.hud.root.visible).toBe(true);
     expect(harness.page.worldViewport.visible).toBe(false);
@@ -1480,7 +1540,10 @@ describe('BrewingPixiPage', () => {
         upperLeftSlot.root.y -
         (harness.page.hud.recipes.root.y +
           harness.page.hud.recipes.height),
-    ).toBe(BREWING_HUD_GEOMETRY.previewTopGap);
+    ).toBe(
+      BREWING_HUD_GEOMETRY.previewTopGap +
+        harness.page.hud.previewOffsetY,
+    );
     expect(BREWING_HUD_GEOMETRY.previewTopGap).toBeGreaterThanOrEqual(
       BREWING_HUD_GEOMETRY.ingredientSlotHeight,
     );
@@ -1488,9 +1551,9 @@ describe('BrewingPixiPage', () => {
     expect(orbitBounds.width / orbitBounds.height).toBeGreaterThan(1.4);
     const navigationCenterY =
       harness.page.hud.carouselPanel.root.y +
-      lowerLeftSlot.root.y +
-      lowerLeftSlot.height / 2 +
-      BREWING_HUD_GEOMETRY.navigationVerticalOffset;
+      harness.page.hud.potionName.y +
+      harness.page.hud.potionName.height / 2 +
+      BREWING_HUD_GEOMETRY.navigationPotionNameOpticalNudge;
     expect(
       harness.page.hud.previous.root.y +
         harness.page.hud.previous.height / 2,
@@ -1575,7 +1638,7 @@ describe('BrewingPixiPage', () => {
         BREWING_HUD_GEOMETRY.configurationGap,
     );
     expect(harness.page.hud.brew.root.y).toBe(
-      BREWING_HUD_GEOMETRY.detailTop + 72,
+      harness.page.hud.detailPanel.root.y + 72,
     );
     const autoIcon = harness.page.hud.actionIcons.autoBrew;
     const autoLabel = harness.page.hud.autoBrew.control.textLabel;
@@ -1666,7 +1729,7 @@ describe('BrewingPixiPage', () => {
     expect(harness.page.hud.unlockCostButton.position).toMatchObject({
       x: 149,
       y:
-        BREWING_HUD_GEOMETRY.detailTop +
+        harness.page.hud.detailPanel.root.y +
         (BREWING_HUD_GEOMETRY.detailHeight -
           harness.page.hud.unlockCostButton.buttonHeight) /
           2,
@@ -2234,6 +2297,22 @@ describe('BrewingPixiPage', () => {
     harness.dispose();
   });
 });
+
+function expectContainedCauldronRegistration(hud) {
+  const rest = hud.cauldronChangeRestState;
+  expect(hud.cauldronLiquid.x - rest.liquid.x).toBeCloseTo(
+    hud.cauldronArt.x - rest.art.x,
+  );
+  expect(hud.cauldronLiquid.y - rest.liquid.y).toBeCloseTo(
+    hud.cauldronArt.y - rest.art.y,
+  );
+  expect(hud.cauldronLiquid.scale.x / rest.liquid.scaleX).toBeCloseTo(
+    hud.cauldronArt.scale.x / rest.art.scaleX,
+  );
+  expect(hud.cauldronLiquid.scale.y / rest.liquid.scaleY).toBeCloseTo(
+    hud.cauldronArt.scale.y / rest.art.scaleY,
+  );
+}
 
 function createHarness({ ticker = null, timeSource = () => 0 } = {}) {
   const dialogLayer = new Container();

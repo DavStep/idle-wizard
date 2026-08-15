@@ -22,10 +22,12 @@ import {
   PixiFreshStartChoiceView,
   PixiFreshStartChoiceController,
   PixiLoadingSplash,
+  PixiLiveUpdateController,
   PixiOnlineGateView,
   PixiOnlineGateController,
   sampleAccountDialogOpenScale,
   sampleSplashProgress,
+  formatMegabytes,
 } from './index.js';
 
 installPixiPageTestCanvas();
@@ -556,6 +558,66 @@ describe('retained Pixi gate controllers', () => {
     expect(sampleSplashProgress(0.54)).toBe(0.72);
     expect(sampleSplashProgress(0.82)).toBe(0.92);
     expect(sampleSplashProgress(1)).toBe(1);
+  });
+
+  it('uses exact native progress for a live-update splash', () => {
+    const application = {
+      ticker: { add: vi.fn(), remove: vi.fn() },
+    };
+    const view = new PixiOnlineGateView({
+      application,
+      assets: createAssets(),
+      modalId: 'gate.liveUpdate',
+      label: 'liveUpdate',
+    });
+
+    view.activate();
+    application.ticker.add.mockClear();
+    view.bind({
+      presentation: 'splash',
+      message: 'Updating 6.0 MB / 24.0 MB',
+      progressValue: 0.25,
+    });
+
+    expect(view.splashProgressValue).toBe(0.25);
+    expect(view.splash.loadingLabel.text).toBe('Updating 6.0 MB / 24.0 MB');
+    expect(application.ticker.add).not.toHaveBeenCalled();
+    view.destroy();
+  });
+
+  it('projects mandatory update states through the shared gate view', () => {
+    const view = createView();
+    const controller = new PixiLiveUpdateController();
+    const onUpdate = vi.fn();
+    controller.attach(view);
+
+    controller.showAvailable({
+      size: 24 * 1024 * 1024,
+      version: '0.4.0',
+      onUpdate,
+    });
+    expect(view.bind).toHaveBeenLastCalledWith({
+      presentation: 'dialog',
+      title: 'Update Ready',
+      message: 'Version 0.4.0 is ready. Download size: 24.0 MB.',
+      progress: false,
+      actionLabel: 'Update Game',
+      actionVariant: 'green',
+      onAction: onUpdate,
+    });
+
+    controller.showDownloading({
+      downloadedBytes: 6 * 1024 * 1024,
+      totalBytes: 24 * 1024 * 1024,
+      progress: 0.25,
+    });
+    expect(view.bind).toHaveBeenLastCalledWith({
+      presentation: 'splash',
+      message: 'Updating 6.0 MB / 24.0 MB',
+      progress: true,
+      progressValue: 0.25,
+    });
+    expect(formatMegabytes(10.5 * 1024 * 1024)).toBe('10.5 MB');
   });
 
   it('keeps the deploy-refresh gate at a fixed height with centered copy', () => {

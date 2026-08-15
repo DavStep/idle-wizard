@@ -43,7 +43,7 @@ import {
 
 export const GARDEN_PIXI_GEOMETRY = Object.freeze({
   plotListTop: 120,
-  plotListBottom: 162,
+  plotListBottom: RETAINED_PAGE_GEOMETRY.chatClearance,
   gridPaddingTop: 24,
   gridPaddingBottom: 24,
   gridPaddingX: 32,
@@ -57,7 +57,7 @@ export const GARDEN_PIXI_GEOMETRY = Object.freeze({
   buyButtonHeight: 48,
   progressWidth: 80,
   progressHeight: PIXI_UI_GEOMETRY.progressTotalHeight,
-  actionBarBottom: 162,
+  actionBarBottom: RETAINED_PAGE_GEOMETRY.chatClearance,
   actionButtonHeight: PIXI_UI_GEOMETRY.roomControlHeight,
   actionButtonGap: 8,
   soloSeedsButtonWidth: 220,

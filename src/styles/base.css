@@ -280,7 +280,7 @@
     calc(var(--app-source-ui-screen-width, 100vw) * 0.078),
     84px
   );
-  --style-room-chat-bottom: 125px;
+  --style-room-chat-bottom: 116px;
   --style-room-chat-source-height: calc(
     (
         var(--style-world-chat-row-height) *

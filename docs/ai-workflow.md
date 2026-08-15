@@ -64,6 +64,12 @@ When a feature change would be meaningfully faster or safer with a repo-local he
   `cheats.openUi("serverRequired")`. The legacy preview id holds the splash's
   connecting state so
   live backend events cannot replace it during screenshot QA.
+- For the live-update prompt, open
+  `http://127.0.0.1:55173/?devUi=liveUpdate` or run
+  `cheats.openUi("liveUpdate")`. Use
+  `cheats.openUi("liveUpdate", { phase: "downloading" })` for the exact-progress
+  splash and `{ phase: "failed" }` for the retry state. URL captures can pass
+  `&devUiPhase=downloading` or `&devUiPhase=failed`.
 - For Figma-authored qUIck screens, dialogs, HUDs, components, or nine-slices, export the ZIP to `qUIck-inbox/`, run `npm run import:quick-ui`, and use `docs/quick-ui-workflow.md`; never manually extract the ZIP.
 - At the atomic retained-Pixi cutover, run `npm run check:production-ui`.
   It follows Vite's emitted production module graph, requires the single

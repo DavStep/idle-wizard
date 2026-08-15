@@ -918,6 +918,7 @@ export class WorkshopWorldChatManager {
       senderIdentity: 'local',
       username: player.username || 'Wizard',
       character: player.character,
+      frame: player.frame,
       playerLevel,
       body,
       allianceTag: ownAlliance?.tag ?? '',

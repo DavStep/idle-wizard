@@ -107,16 +107,15 @@ describe('WorkshopPixiPage', () => {
         { id: 'quest', label: 'Quest', value: 'Post Road Bounties' },
         {
           id: 'giving',
-          label: 'Giving',
+          label: 'Give',
           value: 'Coin',
           valueIconResourceKey: 'coin',
-          quantityLabel: 'x25',
+          quantityLabel: '100 owned',
         },
         {
-          id: 'owned',
-          label: 'Owned',
-          value: '23,417',
-          valueIconResourceKey: 'coin',
+          id: 'amount',
+          label: 'Amount',
+          value: '25 / 100',
         },
         {
           id: 'points',
@@ -161,7 +160,15 @@ describe('WorkshopPixiPage', () => {
       tone: 'root',
     });
     expect(dialog.summaryRows.get('giving').valueResource.icon.visible).toBe(true);
-    expect(dialog.summaryRows.get('owned').valueResource.icon.visible).toBe(true);
+    expect(dialog.summaryRows.get('giving').quantityLabel.textObject.text).toBe(
+      '100 owned',
+    );
+    expect(dialog.summaryRows.get('amount').root.y).toBeLessThan(
+      dialog.rangeControl.y,
+    );
+    expect(dialog.rangeControl.y).toBeLessThan(
+      dialog.summaryRows.get('points').root.y,
+    );
     const confirm = dialog.actions.get('confirm');
     expect(confirm.variant).toBe('green');
     expect(assetManager.getTexture).toHaveBeenCalledWith(
@@ -2565,6 +2572,7 @@ describe('WorkshopPixiPage', () => {
           allianceTag: 'MOSS',
           allianceTagColor: 'green',
           character: 'mira',
+          frame: 'emerald',
           ageLabel: '3m ago',
           onActivate: openPlayer,
         },
@@ -2583,6 +2591,8 @@ describe('WorkshopPixiPage', () => {
     const dialog = harness.dialogs.get('workshop.worldChat');
     const playerRow = dialog.rows.get('player-1');
     const systemRow = dialog.rows.get('system-1');
+
+    expect(playerRow.avatarWidget.avatarFrame.tint).toBe(0xa3f6b2);
 
     expect(dialog.composerField.variant).toBe('brown-inset');
     expect(dialog.composerField.placeholder).toBe('Message');
@@ -2900,9 +2910,9 @@ describe('WorkshopPixiPage', () => {
       x: PIXI_UI_GEOMETRY.sourceWidth / 2,
       y:
         PIXI_UI_GEOMETRY.sourceHeight -
-        101 -
-        41 -
-        52 -
+        PIXI_UI_GEOMETRY.roomChatBottom -
+        PIXI_UI_GEOMETRY.roomChatHeight -
+        harness.page.summon.button.buttonHeight -
         128 +
         4,
     });
@@ -2918,6 +2928,7 @@ describe('WorkshopPixiPage', () => {
       harness.page.summon.root.y +
       harness.page.summon.button.y +
       harness.page.summon.button.buttonHeight;
+    expect(PIXI_UI_GEOMETRY.roomChatBottom - 82).toBe(10);
     expect(worldChatTop - summonButtonBottom).toBe(128);
     expect(harness.page.bagButton.root.position).toMatchObject({
       x: ROOT_RUN_SIDE_ACTION_GEOMETRY.stageEdge,
@@ -2991,9 +3002,9 @@ describe('WorkshopPixiPage', () => {
       x: PIXI_UI_GEOMETRY.sourceWidth / 2,
       y:
         PIXI_UI_GEOMETRY.sourceHeight -
-        101 -
-        41 -
-        52 -
+        PIXI_UI_GEOMETRY.roomChatBottom -
+        PIXI_UI_GEOMETRY.roomChatHeight -
+        harness.page.summon.button.buttonHeight -
         128 +
         4,
     });

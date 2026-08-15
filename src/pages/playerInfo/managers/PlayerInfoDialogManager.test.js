@@ -31,6 +31,8 @@ describe('PlayerInfoDialogManager', () => {
           totalProducedCoin: 1234,
           playerLevel: 14,
           prestigeCount: 2,
+          connected: true,
+          totalPlayTimeSeconds: 45_000,
         },
       ],
     };
@@ -73,6 +75,12 @@ describe('PlayerInfoDialogManager', () => {
     );
     expect(popup.querySelector('.room-player-info-rows')?.textContent).toContain(
       'total produced coin1234',
+    );
+    expect(popup.querySelector('.room-player-info-rows')?.textContent).toContain(
+      'last seenonline now',
+    );
+    expect(popup.querySelector('.room-player-info-rows')?.textContent).toContain(
+      'time played12.5 hours',
     );
 
     document.dispatchEvent(new window.KeyboardEvent('keydown', { key: 'Escape', bubbles: true }));

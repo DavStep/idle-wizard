@@ -1,4 +1,5 @@
 import { normalizeCoinPrice, normalizePositiveCoinPrice } from '../../../shared/coinPrice.js';
+import { usesDynamicNpcMarketPricing } from '../../../shared/marketLicence.js';
 
 export const NPC_MARKET_BUY_BPS = 8_000;
 export const NPC_MARKET_SELL_BPS = 12_000;
@@ -36,6 +37,7 @@ const DEMAND_WAVE_BPS_BY_SLOT = [
 export function getNpcMarketPriceFromNeed({
   basePriceCoin,
   itemKind,
+  marketId,
   npcNeed,
   targetNeed,
   volatilityBps,
@@ -51,6 +53,10 @@ export function getNpcMarketPriceFromNeed({
     safeTargetNeed <= 0
   ) {
     return null;
+  }
+
+  if (!usesDynamicNpcMarketPricing(marketId)) {
+    return safeBasePriceCoin;
   }
 
   const softness = Math.max(1, (safeTargetNeed * NPC_MARKET_SOFTNESS_BPS) / 10_000);
@@ -139,6 +145,7 @@ export function getNpcMarketPriceState(priceState, nowMs = Date.now()) {
   const marketPriceCoin = getNpcMarketPriceFromNeed({
     basePriceCoin: priceState.basePriceCoin,
     itemKind: priceState.itemKind,
+    marketId: priceState.marketId,
     npcNeed,
     targetNeed,
     volatilityBps: priceState.volatilityBps,

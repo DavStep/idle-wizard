@@ -13,6 +13,7 @@ export function resolveMarketLicence(completedPrestigeStars?: number): MarketLic
 export function isMarketId(marketId: unknown): boolean;
 export function getMarketLicenceById(marketId: unknown): MarketLicence;
 export function getMarketRank(marketId: unknown): number;
+export function usesDynamicNpcMarketPricing(marketId: unknown): boolean;
 export function getMarketGradeForCatalogIndex(index: number, catalogLength: number): number;
 export function getRequiredMarketLicence(itemGrade?: number): MarketLicence;
 export function isItemGradeTradedInMarket(itemGrade: number, marketId: unknown): boolean;

@@ -4,6 +4,7 @@ import { PixiDeployRefreshController } from './pixi/global/gates/PixiDeployRefre
 import { PixiDeployRefreshView } from './pixi/global/gates/PixiDeployRefreshView.js';
 import { PixiFreshStartChoiceController } from './pixi/global/gates/PixiFreshStartChoiceController.js';
 import { PixiFreshStartChoiceView } from './pixi/global/gates/PixiFreshStartChoiceView.js';
+import { PixiLiveUpdateController } from './pixi/global/gates/PixiLiveUpdateController.js';
 import { PixiOnlineGateController } from './pixi/global/gates/PixiOnlineGateController.js';
 import { PixiOnlineGateView } from './pixi/global/gates/PixiOnlineGateView.js';
 import { PixiLoadingSplash } from './pixi/global/gates/PixiLoadingSplash.js';
@@ -41,6 +42,7 @@ export class RenderFacade {
     accountLinkChoiceManager = null,
     freshStartChoiceManager = null,
     deployRefreshManager = null,
+    liveUpdateGateManager = null,
     // Compatibility-only injected managers. Production never creates these.
     canvasManager = null,
     fpsDisplayManager = null,
@@ -109,6 +111,8 @@ export class RenderFacade {
       new PixiDeployRefreshController({
         beforeReload: beforeDeployReload,
       });
+    this.liveUpdateGateManager =
+      liveUpdateGateManager ?? new PixiLiveUpdateController();
 
     this.registerCoreSurfaces();
   }
@@ -149,6 +153,19 @@ export class RenderFacade {
           new PixiDeployRefreshView({
             assets: context.assets,
             inputRouter: context.inputRouter,
+          }),
+        ),
+      )
+      .registerGlobalSurface('gate.liveUpdate', (context) =>
+        this.liveUpdateGateManager.attach(
+          new PixiOnlineGateView({
+            assets: context.assets,
+            inputRouter: context.inputRouter,
+            application: context.application,
+            modalId: 'gate.liveUpdate',
+            label: 'liveUpdate',
+            onSplashViewportChange: (active) =>
+              this.applicationManager.setSplashViewportActive(active),
           }),
         ),
       )
@@ -332,6 +349,10 @@ export class RenderFacade {
 
   getDeployRefreshManager() {
     return this.deployRefreshManager ?? null;
+  }
+
+  getLiveUpdateGateManager() {
+    return this.liveUpdateGateManager ?? null;
   }
 
   isAlwaysReady() {

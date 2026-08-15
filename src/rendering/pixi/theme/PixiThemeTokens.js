@@ -43,7 +43,7 @@ export const PIXI_UI_GEOMETRY = Object.freeze({
   roomChromeEdge: 16,
   roomContentEdge: 16,
   roomContentTop: 104,
-  roomChatBottom: 101,
+  roomChatBottom: 92,
   roomChatHeight: 41,
   roomChatTitleOverhang: 12,
   roomChatGap: 8,

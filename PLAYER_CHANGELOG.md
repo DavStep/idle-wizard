@@ -5,6 +5,13 @@ upload script posts the section whose heading matches `package.json` `version`.
 Write these developer-to-player notes only in Idle Wizard terms. Do not mention
 other game names, source projects, ports, or implementation provenance.
 
+## 0.3.57
+
+- Added online status, last-seen time, and total playtime to player profiles, and carried player frames into World Chat.
+- Improved Android live updates with a clear download prompt, visible progress, retry handling, and an explicit restart when the update is ready.
+- Kept Small Town trader prices stable while preserving demand-driven pricing in later markets.
+- Refined Brewing layouts and interactions, and added more varied button-tap sounds.
+
 ## 0.3.56
 
 - Redesigned the Leaderboard with clearer player and Trade Alliance rankings, time-period filters, profile details, and prestige information.

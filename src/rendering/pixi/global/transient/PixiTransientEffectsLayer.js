@@ -938,17 +938,14 @@ export function createRewardVisualPresentation(event) {
       potion?.key ??
       getPotionIconKeyByLabel(potion?.label);
     const frameName = getPotionIconFrameName(key);
-    const cauldronIndex = Number.isInteger(event.cauldronIndex)
-      ? event.cauldronIndex
-      : 0;
     return frameName
       ? {
           itemDrops: createRepeatedItemDrops({
             event,
             kind: 'potion',
             frameName,
-            anchorId: `brewing.cauldron.${cauldronIndex}`,
-            anchorYRatio: 0.62,
+            anchorId: 'brewing.cauldron.liquid',
+            anchorYRatio: 91.5 / 486,
           }),
         }
       : {};

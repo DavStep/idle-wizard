@@ -171,6 +171,31 @@ describe('PixiGlobalDialogPresenter', () => {
     ).toHaveLength(1);
   });
 
+  it('opens an explicitly unnamed current player directly by identity', () => {
+    const harness = createHarness({
+      playerSnapshot: { hasExplicitUsername: false },
+    });
+    harness.presenter.mount();
+
+    expect(
+      harness.presenter.open('global.player', {
+        player: {
+          identity: 'identity-mira',
+          username: 'Wizard',
+        },
+      }),
+    ).toEqual({ dialogId: GLOBAL_DIALOG_IDS.PLAYER });
+    expect(harness.runtime.getOpenDialogIds()).toEqual([
+      GLOBAL_DIALOG_IDS.PLAYER,
+    ]);
+    expect(
+      harness.getOpenModel(GLOBAL_DIALOG_IDS.PLAYER).player,
+    ).toMatchObject({
+      identity: 'identity-mira',
+      username: 'Wizard',
+    });
+  });
+
   it('keeps an explicitly unnamed alliance request pending after a failed save', () => {
     const harness = createHarness({
       playerSnapshot: { hasExplicitUsername: false },

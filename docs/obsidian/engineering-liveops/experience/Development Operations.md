@@ -80,7 +80,7 @@ experience_type: development-operations
 - Web deploy freshness uses `/deploy-version.json`; Vite emits it per build and the app polls it with `no-store`. A fresh launch may refresh a stale build immediately, but an active tab keeps the new version pending until it returns from at least five minutes hidden.
 - `/deploy-version.json` can include `releaseVersion`, but deploy refresh should compare only the generated deploy `version` build id.
 - Android OTA bundles need a separate production build with base `/`; the GitHub Pages build uses `/idle-wizard/` and its absolute asset URLs do not work inside Capacitor's local origin.
-- Android OTA staging must configure a five-minute background delay before calling Capacitor Updater `next`; if delay configuration fails, leave the bundle downloaded but unqueued so a brief app switch cannot reload gameplay.
+- Android OTA must remain unqueued until the player accepts the blocking in-game update prompt. Listen to native download progress for the splash, save-and-flush gameplay after download, then activate with Capacitor Updater `set`; never let `next` or an ordinary app switch replace a healthy WebView.
 - Deploy-triggered page refresh should only load compatible new code after migrations/sanitizers preserve player saves; refresh must not write defaults over hydrated user data.
 - Deploy refresh must call gameplay save-and-flush before `location.reload()` so open tabs persist current progress before swapping bundles.
 - Production web builds should set `VITE_SPACETIME_URI=https://maincloud.spacetimedb.com` and publish the module with `npm run stdb:publish:maincloud`.

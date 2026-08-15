@@ -530,7 +530,10 @@ export class PixiPagesFacade {
         researchTabId: this.researchTabId,
         questPreview: this.questProgressPreview,
         actions: {
-          openAvatar: () => this.openDialog("settings", { tab: "account" }),
+          openAvatar: () =>
+            this.openDialog("player", {
+              player: this.createOwnPlayerInfoRequest(),
+            }),
           openAccount: () => this.openDialog("settings", { tab: "account" }),
           openSettings: () => this.openDialog("settings"),
           openLevel: () => this.openDialog("level"),
@@ -559,6 +562,36 @@ export class PixiPagesFacade {
         onActivate: () => this.openWorldChat(),
       }),
     );
+  }
+
+  createOwnPlayerInfoRequest() {
+    const currentLevel = Math.max(
+      1,
+      Math.floor(
+        Number(
+          this.gameplaySnapshot.tasks?.currentLevel ??
+            this.gameplaySnapshot.playerLevel?.currentLevel,
+        ) || 1,
+      ),
+    );
+    const completedPrestigeLevels = Array.isArray(
+      this.gameplaySnapshot.prestige?.completedLevels,
+    )
+      ? this.gameplaySnapshot.prestige.completedLevels.length
+      : 0;
+
+    return {
+      ...this.playerSnapshot,
+      identity: this.authFacade?.getSnapshot?.()?.identity ?? "",
+      playerLevel: currentLevel,
+      prestigeCount: Math.max(
+        0,
+        Math.floor(
+          Number(this.gameplaySnapshot.prestige?.completedCount) ||
+            completedPrestigeLevels,
+        ),
+      ),
+    };
   }
 
   isWorldChatUnlocked() {

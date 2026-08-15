@@ -267,9 +267,13 @@ describe('retained global Pixi dialogs', () => {
     expect(player.totalCoinValue.icon.visible).toBe(true);
     expect(player.totalPotionsValue.text).toBe('86');
     expect(player.totalHerbsValue.text).toBe('240');
+    expect(player.lastSeenValue.text).toBe('Online Now');
+    expect(player.timePlayedValue.text).toBe('12.5 Hours');
     expect(player.totalCoinLabel.text).toBe('Total Produced Coin');
     expect(player.totalPotionsLabel.text).toBe('Total Brewed Potions');
     expect(player.totalHerbsLabel.text).toBe('Total Harvested Herbs');
+    expect(player.lastSeenLabel.text).toBe('Last Seen');
+    expect(player.timePlayedLabel.text).toBe('Time Played');
     expect(
       player.totalCoinValue.x + player.totalCoinValue.measuredWidth,
     ).toBeCloseTo(250);
@@ -1059,6 +1063,15 @@ describe('retained global Pixi dialogs', () => {
     const usernameRenderedHeight =
       settings.usernameField.textLabel.fontSize +
       settings.usernameField.textLabel.stroke.width * 2;
+    settings.usernameField.applySessionSnapshot({
+      active: true,
+      selectionEnd: 'wizard'.length,
+      selectionStart: 'wizard'.length,
+      value: 'wizard',
+    });
+    expect(
+      settings.usernameField.caretGraphic.getLocalBounds().height,
+    ).toBeGreaterThan(settings.usernameField.textLabel.fontSize);
     expect(
       usernameMaskBounds.y + usernameMaskBounds.height,
     ).toBeGreaterThanOrEqual(
@@ -1066,11 +1079,37 @@ describe('retained global Pixi dialogs', () => {
     );
     expect(settings.usernameEdit.width).toBeCloseTo(64 / 3);
     expect(settings.usernameEdit.height).toBeCloseTo(64 / 3);
+    expect(settings.usernameEdit.eventMode).toBe('static');
+    expect(settings.usernameEdit.cursor).toBe('pointer');
+    expect(settings.usernameEdit.hitArea).toMatchObject({
+      height: 32,
+      width: 32,
+    });
     expect(
       settings.usernameEdit.y + settings.usernameEdit.height / 2,
     ).toBeCloseTo(
       settings.usernameBacking.y + settings.usernameBacking.frameHeight / 2,
     );
+    const usernameEditPress = harness.inputRouter.store.get(
+      settings.usernameEditRegistration.id,
+    );
+    const focusUsername = vi
+      .spyOn(settings.usernameField, 'focus')
+      .mockResolvedValue(null);
+    const blurUsername = vi.spyOn(settings.usernameField, 'blur');
+    expect(usernameEditPress.fallbackHitTest).toBe(true);
+    expect(usernameEditPress.excludePageSwipe).toBe(true);
+    usernameEditPress.onPressChange(true);
+    expect(settings.usernameEdit.alpha).toBe(0.72);
+    usernameEditPress.onPressChange(false);
+    expect(settings.usernameEdit.alpha).toBe(1);
+    usernameEditPress.onActivate();
+    expect(focusUsername).toHaveBeenCalledTimes(1);
+    usernameEditPress.onFocusChange(false);
+    expect(blurUsername).toHaveBeenCalledTimes(1);
+    expect(
+      harness.semanticRegistry.has('global.settings.account.editUsername'),
+    ).toBe(true);
 
     expect(settings.accountHeader.frameWidth).toBeCloseTo(298);
     expect(settings.panel.paperFrame.visible).toBe(false);
@@ -1991,6 +2030,9 @@ function createPlayer() {
     totalProducedCoin: 1200,
     totalBrewedPotions: 86,
     totalHarvestedHerbs: 240,
+    connected: true,
+    lastSeenAtMs: 1_690_000_000_000,
+    totalPlayTimeSeconds: 45_000,
     allianceId: 'alliance-one',
     allianceName: 'Moss Hall',
     allianceTag: 'MOSS',

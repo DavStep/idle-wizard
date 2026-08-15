@@ -120,8 +120,8 @@ describe('WorkshopPageFacade requirement feedback', () => {
       bottomTabBleed +
       bottomTabRowGap;
     const gap = chatBottom + borderWidth - bottomTabsTop;
-    expect(gap).toBeGreaterThanOrEqual(43);
-    expect(gap).toBeLessThanOrEqual(45);
+    expect(gap).toBeGreaterThanOrEqual(34);
+    expect(gap).toBeLessThanOrEqual(36);
   });
 
   it('keeps task and notice actions in their declared side slots', () => {

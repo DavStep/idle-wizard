@@ -730,15 +730,26 @@ describe('PixiViewModelFactory', () => {
       summaryRows: expect.arrayContaining([
         expect.objectContaining({
           id: 'giving',
+          label: 'Give',
           itemKind: 'potion',
           itemKey: 'calmingDraught',
-          quantityLabel: 'x2',
+          quantityLabel: '2 owned',
+        }),
+        expect.objectContaining({
+          id: 'amount',
+          label: 'Amount',
+          value: '2 / 2',
         }),
         expect.objectContaining({
           id: 'points',
           label: 'Earn',
           value: '+240 points',
           valueTone: 'root',
+        }),
+        expect.objectContaining({
+          id: 'total',
+          label: 'Item Total',
+          value: '80 points',
         }),
       ]),
       range: expect.objectContaining({
@@ -758,6 +769,16 @@ describe('PixiViewModelFactory', () => {
         }),
       ]),
     });
+    expect(donation.summaryRows.map((row) => row.id)).toEqual([
+      'quest',
+      'giving',
+      'amount',
+      'points',
+      'total',
+    ]);
+    expect(donation.summaryRows.find((row) => row.id === 'total')).not.toHaveProperty(
+      'valueTone',
+    );
     donation.range.onChange(1);
     expect(adjustWorldEventDonationAmount).toHaveBeenCalledWith(-1);
     donation.actions.find((action) => action.id === 'confirm').action();
@@ -1072,6 +1093,25 @@ describe('PixiViewModelFactory', () => {
     );
     expect(offline.composer.enabled).toBe(false);
     expect(offline.onSubmit).toBeNull();
+  });
+
+  it('preserves player frames in World Chat dialog and preview models', () => {
+    const factory = new PixiViewModelFactory();
+    const worldChat = {
+      connected: true,
+      messages: [
+        {
+          id: 'framed-player',
+          username: 'Mira',
+          character: 'mira',
+          frame: 'violet',
+          body: 'The frame should travel with me.',
+        },
+      ],
+    };
+
+    expect(factory.createWorldChatDialog(worldChat).rows[0].frame).toBe('violet');
+    expect(factory.createWorldChatPreview(worldChat).messages[0].frame).toBe('violet');
   });
 
   it('gives duplicate-named leaderboard players and alliance members stable unique row ids', () => {

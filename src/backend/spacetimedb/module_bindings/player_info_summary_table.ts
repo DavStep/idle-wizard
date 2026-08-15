@@ -20,6 +20,9 @@ export default __t.row({
   totalHarvestedHerbs: __t.u64().name("total_harvested_herbs"),
   playerLevel: __t.u32().name("player_level"),
   prestigeCount: __t.u32().name("prestige_count"),
+  connected: __t.bool(),
+  lastSeenAt: __t.timestamp().name("last_seen_at"),
+  totalPlayTimeSeconds: __t.u64().name("total_play_time_seconds"),
   updatedAt: __t.timestamp().name("updated_at"),
   character: __t.string(),
 });

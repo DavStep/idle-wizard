@@ -1492,14 +1492,14 @@ describe('ShopPixiPage', () => {
     expect(tradersScroll.root.y).toBe(164);
     expect(harness.page.tabLayer.position).toMatchObject({
       x: 16,
-      y: 640,
+      y: 649,
     });
     expect(harness.page.tabButtons.get('traders')).toMatchObject({
       buttonHeight: PIXI_UI_GEOMETRY.roomControlHeight,
     });
     expect(
       tradersScroll.height,
-    ).toBeCloseTo(470, 10);
+    ).toBeCloseTo(479, 10);
 
     harness.page.destroy();
     harness.dispose();

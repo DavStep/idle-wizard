@@ -1,4 +1,4 @@
-import { Container, Sprite, Texture } from 'pixi.js';
+import { Container, Rectangle, Sprite, Texture } from 'pixi.js';
 
 import {
   DeviceIdentityFooter,
@@ -45,6 +45,7 @@ const SETTINGS_STANDARD_CONTENT_HEIGHT = 410;
 const SETTINGS_STANDARD_SCROLL_HEIGHT = 390;
 const ACCOUNT_HEADER_WIDTH = PIXI_ROOT_RUN_GEOMETRY.dialog.innerBoardWidth;
 const ACCOUNT_HEADER_HEIGHT = 281 / 3;
+const ACCOUNT_USERNAME_EDIT_HIT_SIZE = 32;
 const ACCOUNT_SCROLL_X = (SETTINGS_CONTENT_WIDTH - ACCOUNT_HEADER_WIDTH) / 2;
 const ACCOUNT_SECTION_CONTENT_X =
   (ACCOUNT_HEADER_WIDTH - SETTINGS_CONTENT_WIDTH) / 2;
@@ -286,14 +287,41 @@ export class PixiSettingsDialog extends RetainedGlobalDialog {
     this.usernameEdit = new Sprite({
       texture: this.context.assets.getTexture(PIXI_ROOT_RUN_ASSETS.accountEdit),
       roundPixels: true,
-      label: `${this.dialogId}:usernameEdit`,
+      label: `${this.dialogId}:editUsername`,
     });
+    this.usernameEdit.eventMode = 'static';
+    this.usernameEdit.cursor = 'pointer';
     this.usernameEditRegistration =
       this.context.inputRouter?.registerPressTarget?.(this.usernameEdit, {
         enabled: () =>
-          this.accountLayer.visible && this.accountLayer.renderable,
+          this.selectedTab === 'account' &&
+          this.accountLayer.visible &&
+          this.accountLayer.renderable,
+        onPressChange: (pressed) => {
+          this.usernameEdit.alpha = pressed ? 0.72 : 1;
+        },
         onActivate: () => this.usernameField.focus(),
+        onFocusChange: (focused) => {
+          if (!focused) {
+            this.usernameField.blur();
+          }
+        },
+        fallbackHitTest: true,
+        excludePageSwipe: true,
         haptic: 'selection',
+      }) ?? null;
+    this.usernameEditSemanticId = `${this.dialogId}.account.editUsername`;
+    this.usernameEditSemanticDefinition =
+      this.context.semanticRegistry?.register?.({
+        semanticId: this.usernameEditSemanticId,
+        displayObject: this.usernameEdit,
+        state: () => ({
+          active: !this.usernameEdit.destroyed,
+          enabled: this.selectedTab === 'account',
+          interactive: this.usernameEdit.eventMode !== 'none',
+          visible: this.usernameEdit.visible && this.usernameEdit.renderable,
+        }),
+        activate: () => this.usernameField.focus(),
       }) ?? null;
     this.usernameStatus = new PixiTextLabel({
       color: 'disabled',
@@ -821,6 +849,16 @@ export class PixiSettingsDialog extends RetainedGlobalDialog {
     );
     this.usernameEdit.width = username.editSize;
     this.usernameEdit.height = username.editSize;
+    const usernameEditHitOutset = Math.max(
+      0,
+      (ACCOUNT_USERNAME_EDIT_HIT_SIZE - username.editSize) / 2,
+    );
+    this.usernameEdit.hitArea = new Rectangle(
+      -usernameEditHitOutset,
+      -usernameEditHitOutset,
+      ACCOUNT_USERNAME_EDIT_HIT_SIZE,
+      ACCOUNT_USERNAME_EDIT_HIT_SIZE,
+    );
     this.usernameStatus.position.set(
       this.usernameField.x,
       this.usernameBacking.y + username.height + 2,
@@ -1259,6 +1297,10 @@ export class PixiSettingsDialog extends RetainedGlobalDialog {
       this.usernameEditRegistration?.unregister?.();
     }
     this.usernameEditRegistration = null;
+    this.context.semanticRegistry?.unregister?.(this.usernameEditSemanticId, {
+      displayObject: this.usernameEdit,
+    });
+    this.usernameEditSemanticDefinition = null;
     this.avatars?.destroy();
     this.avatarPool?.destroy();
     this.frames?.destroy();

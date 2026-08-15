@@ -63,6 +63,11 @@ export class AppFacade {
       beforeDeployReload: () =>
         this.gameplayFacade.savePersistenceSnapshotAndFlush(),
     });
+    this.liveUpdateGateManager =
+      this.renderFacade.getLiveUpdateGateManager();
+    this.liveUpdateCheckResult = null;
+    this.liveUpdateInProgress = false;
+    this.playable = false;
     this.experienceFacade = new PixiExperienceFacade({
       renderFacade: this.renderFacade,
       gameplayFacade: this.gameplayFacade,
@@ -154,6 +159,8 @@ export class AppFacade {
       freshStartChoiceManager:
         this.renderFacade.getFreshStartChoiceManager(),
       deployRefreshManager: this.renderFacade.getDeployRefreshManager(),
+      liveUpdateGateManager: this.liveUpdateGateManager,
+      onPlayable: () => this.handlePlayable(),
       interactionLockManager: this.interactionLockManager,
       textClipboardGuardManager: this.textClipboardGuardManager,
       appVisibilityManager: new AppVisibilityManager({ appPlugin: CapacitorApp }),
@@ -183,13 +190,86 @@ export class AppFacade {
         if (!this.disposed) {
           this.backgroundMusicFacade?.start?.();
           this.lifecycleManager.start();
-          void this.liveUpdateManager.start().catch(() => {
-            // Live updates are best-effort; the bundled APK remains playable.
-          });
+          void this.checkForLiveUpdate();
         }
         return this;
       });
     return this.startPromise;
+  }
+
+  async checkForLiveUpdate() {
+    try {
+      this.liveUpdateCheckResult = await this.liveUpdateManager.start();
+      this.presentLiveUpdateIfReady();
+    } catch {
+      // A failed update probe never blocks a playable bundled APK.
+    }
+  }
+
+  handlePlayable() {
+    this.playable = true;
+    this.presentLiveUpdateIfReady();
+  }
+
+  presentLiveUpdateIfReady() {
+    if (!this.playable || this.disposed || this.liveUpdateInProgress) {
+      return false;
+    }
+
+    const result = this.liveUpdateCheckResult;
+    if (result?.status === 'failed_bundle') {
+      this.liveUpdateGateManager?.showError({
+        onRetry: () => void this.installLiveUpdate(),
+      });
+      return true;
+    }
+
+    if (result?.status !== 'available' && result?.status !== 'ready') {
+      return false;
+    }
+
+    this.liveUpdateGateManager?.showAvailable({
+      size: result.size,
+      version: result.version,
+      onUpdate: () => void this.installLiveUpdate(),
+    });
+    return true;
+  }
+
+  async installLiveUpdate() {
+    if (this.liveUpdateInProgress || this.disposed) {
+      return false;
+    }
+
+    this.liveUpdateInProgress = true;
+    const result = this.liveUpdateCheckResult;
+    this.liveUpdateGateManager?.showDownloading({
+      downloadedBytes: result?.status === 'ready' ? result.size : 0,
+      totalBytes: result?.size ?? 0,
+      progress: result?.status === 'ready' ? 1 : 0,
+    });
+
+    try {
+      await this.liveUpdateManager.downloadUpdate({
+        onProgress: (progress) =>
+          this.liveUpdateGateManager?.showDownloading(progress),
+      });
+      this.liveUpdateGateManager?.showPreparing();
+      const saved = await Promise.resolve(
+        this.gameplayFacade.savePersistenceSnapshotAndFlush(),
+      );
+      if (!saved) {
+        throw new Error('Gameplay save was not acknowledged before update.');
+      }
+      await this.liveUpdateManager.activateUpdate();
+      return true;
+    } catch {
+      this.liveUpdateInProgress = false;
+      this.liveUpdateGateManager?.showError({
+        onRetry: () => void this.installLiveUpdate(),
+      });
+      return false;
+    }
   }
 
   async stop() {

@@ -113,6 +113,12 @@ export class PlayerInfoSubscriptionManager {
         row.prestigeCount ?? row.prestige_count,
         { fallback: 0, min: 0 },
       ),
+      connected: Boolean(row.connected),
+      lastSeenAtMs: this.toTimestampMs(row.lastSeenAt ?? row.last_seen_at),
+      totalPlayTimeSeconds: this.toPositiveInteger(
+        row.totalPlayTimeSeconds ?? row.total_play_time_seconds,
+        { fallback: 0, min: 0 },
+      ),
       updatedAtMs: this.toTimestampMs(row.updatedAt ?? row.updated_at),
     };
   }

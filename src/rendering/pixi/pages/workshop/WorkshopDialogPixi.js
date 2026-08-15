@@ -28,7 +28,10 @@ import { PixiStarLevelLabel } from '../../primitives/PixiStarLevelLabel.js';
 import { PixiTextField } from '../../primitives/PixiTextField.js';
 import { PooledCollection } from '../../retained/PooledCollection.js';
 import { WidgetPool } from '../../retained/WidgetPool.js';
-import { PlayerProfileWidget } from '../../global/chrome/PlayerProfileWidgets.js';
+import {
+  PLAYER_PROFILE_SIZE,
+  PlayerProfileWidget,
+} from '../../global/chrome/PlayerProfileWidgets.js';
 import { getPlayerFrameTint } from '../../../../player/playerFrames.js';
 import {
   DEFAULT_PIXI_THEME_SNAPSHOT,
@@ -2267,9 +2270,13 @@ export class WorldChatMessageRowPixi {
     this.systemBackground = new Graphics({
       label: `${dialog.dialogId}-message-row:system-background`,
     });
-    this.avatar = new Sprite(Texture.EMPTY);
-    this.avatar.label = `${dialog.dialogId}-message-row:avatar`;
-    this.avatar.anchor.set(0.5);
+    this.avatarWidget = new PlayerProfileWidget({
+      assets: dialog.assetManager,
+      texture: Texture.EMPTY,
+      label: `${dialog.dialogId}-message-row:avatar`,
+    });
+    this.avatarWidget.pivot.set(PLAYER_PROFILE_SIZE / 2);
+    this.avatar = this.avatarWidget;
     this.tag = createText('', {
       fontSize: 11,
       lineHeight: WORLD_CHAT_HEADER_HEIGHT,
@@ -2356,9 +2363,13 @@ export class WorldChatMessageRowPixi {
       this.model.bodyIcon,
     );
     setText(this.timestamp, this.model.ageLabel ?? '');
-    this.avatar.texture = this.isSystem
-      ? Texture.EMPTY
-      : resolveCharacterTexture(this.dialog.assetManager, this.model.character);
+    this.avatarWidget
+      .setTexture(
+        this.isSystem
+          ? Texture.EMPTY
+          : resolveCharacterTexture(this.dialog.assetManager, this.model.character),
+      )
+      .setBackgroundTint(getPlayerFrameTint(this.model.frame));
     this.avatar.visible = !this.isSystem;
     this.avatar.renderable = !this.isSystem;
     this.systemBackground.visible = this.isSystem;
@@ -2405,8 +2416,7 @@ export class WorldChatMessageRowPixi {
         : WORLD_CHAT_AVATAR_SIZE / 2,
       WORLD_CHAT_AVATAR_SIZE / 2 + WORLD_CHAT_ROW_HEIGHT_SCALE,
     );
-    this.avatar.width = WORLD_CHAT_AVATAR_SIZE;
-    this.avatar.height = WORLD_CHAT_AVATAR_SIZE;
+    this.avatar.scale.set(WORLD_CHAT_AVATAR_SIZE / PLAYER_PROFILE_SIZE);
     const headerWidth =
       (this.tag.visible ? this.tag.width + 2 : 0) + this.username.width;
     const headerX = this.isOwn
@@ -2438,10 +2448,10 @@ export class WorldChatMessageRowPixi {
       WORLD_CHAT_BODY_TOP,
     );
     this.avatar.hitArea = new Rectangle(
-      -WORLD_CHAT_AVATAR_SIZE / 2,
-      -WORLD_CHAT_AVATAR_SIZE / 2,
-      WORLD_CHAT_AVATAR_SIZE,
-      WORLD_CHAT_AVATAR_SIZE,
+      0,
+      0,
+      PLAYER_PROFILE_SIZE,
+      PLAYER_PROFILE_SIZE,
     );
     this.username.hitArea = new Rectangle(
       0,
@@ -2581,7 +2591,7 @@ export class WorldChatMessageRowPixi {
     this.model = null;
     this.isSystem = false;
     this.isOwn = false;
-    this.avatar.texture = Texture.EMPTY;
+    this.avatarWidget.setTexture(Texture.EMPTY).setBackgroundTint(0xffffff);
     this.body.setRuns([]);
     setText(this.systemPlayerUsername, '');
     this.root.visible = false;

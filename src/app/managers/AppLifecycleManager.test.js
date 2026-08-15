@@ -22,6 +22,7 @@ function createLifecycle({
   gameplayFacade,
   maintenanceFacade,
   now,
+  onPlayable,
   pagesFacade,
   playerFacade,
   reload,
@@ -167,6 +168,11 @@ function createLifecycle({
       mount: vi.fn(),
       unmount: vi.fn(),
     },
+    liveUpdateGateManager: {
+      mount: vi.fn(),
+      unmount: vi.fn(),
+    },
+    onPlayable,
     reload: reload ?? vi.fn(),
     now: now ?? (() => Date.now()),
   });
@@ -213,6 +219,21 @@ describe('AppLifecycleManager', () => {
     expect(lifecycle.interactionLockManager.unlock).toHaveBeenCalledTimes(1);
     expect(lifecycle.gameplayTickManager.start).toHaveBeenCalledTimes(1);
     expect(lifecycle.renderFacade.startFrameLoop).not.toHaveBeenCalled();
+  });
+
+  it('announces the first playable state once', async () => {
+    const onPlayable = vi.fn();
+    const { lifecycle, getBackendCallbacks, hideApp, showApp } = createLifecycle({
+      onPlayable,
+    });
+
+    lifecycle.start();
+    await flushPromises();
+    getBackendCallbacks().onOnline();
+    hideApp();
+    showApp();
+
+    expect(onPlayable).toHaveBeenCalledOnce();
   });
 
   it('runs gameplay ticks from the sleeping tick manager and wakes on gameplay changes', async () => {

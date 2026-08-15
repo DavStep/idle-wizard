@@ -1,0 +1,87 @@
+<!doctype html>
+<html
+  lang="en"
+  data-style-theme="night"
+  data-style-font="lilita-one"
+  data-style-icons="icons"
+>
+  <head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Idle Wizard account dialog recipe</title>
+    <style>
+      html,
+      body {
+        width: 100%;
+        height: 100%;
+        margin: 0;
+        overflow: hidden;
+        background: #1c1e26;
+      }
+
+      canvas {
+        display: block;
+        width: 100%;
+        height: 100%;
+      }
+    </style>
+  </head>
+  <body>
+    <canvas aria-label="Wizard account dialog visual recipe"></canvas>
+
+    <script type="module">
+      import '@fontsource/lilita-one/400.css';
+      import { PixiInputRouter } from '/src/rendering/pixi/input/PixiInputRouter.js';
+      import {
+        GLOBAL_DIALOG_IDS,
+        registerGlobalDialogFactories,
+      } from '/src/rendering/pixi/global/dialogs/index.js';
+      import { PixiApplicationManager } from '/src/rendering/pixi/runtime/PixiApplicationManager.js';
+      import { PixiUiRuntimeFacade } from '/src/rendering/pixi/runtime/PixiUiRuntimeFacade.js';
+      import { TextEntryService } from '/src/rendering/textEntry/TextEntryService.js';
+
+      const canvas = document.querySelector('canvas');
+      const inputRouter = new PixiInputRouter();
+      const textEntryService = new TextEntryService({ canvas });
+      const applicationManager = new PixiApplicationManager({ canvas });
+      const runtime = new PixiUiRuntimeFacade({
+        applicationManager,
+        inputRouter,
+        textEntryService,
+      });
+
+      registerGlobalDialogFactories(runtime);
+      await runtime.initialize();
+      runtime.openDialog(GLOBAL_DIALOG_IDS.SETTINGS, {
+        tabId: 'account',
+        account: { username: 'StepWizzard' },
+        selections: { character: 'elara', frame: 'classic' },
+        researched: {
+          character: { elara: true, mira: true, rowan: true, juniper: true },
+          frame: { classic: true, forest: true },
+        },
+        categories: [
+          {
+            key: 'character',
+            options: [
+              { key: 'elara', label: 'Elara' },
+              { key: 'mira', label: 'Mira' },
+              { key: 'rowan', label: 'Rowan' },
+              { key: 'juniper', label: 'Juniper' },
+            ],
+          },
+          {
+            key: 'frame',
+            options: [
+              { key: 'classic', label: 'Classic', tint: 0xffffff },
+              { key: 'forest', label: 'Forest', tint: 0x79b93f },
+            ],
+          },
+        ],
+        actions: {
+          saveAccount: () => ({ ok: true }),
+        },
+      });
+    </script>
+  </body>
+</html>

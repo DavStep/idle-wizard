@@ -17,6 +17,7 @@ function createManifest(overrides = {}) {
     bundleUrl:
       'https://davstep.github.io/idle-wizard/ota/bundles/idle-wizard-0.3.49.zip',
     checksum: 'a'.repeat(64),
+    size: 24 * 1024 * 1024,
     ...overrides,
   };
 }
@@ -33,6 +34,11 @@ function createUpdater(overrides = {}) {
     list: vi.fn(() => Promise.resolve({ bundles: [] })),
     download: vi.fn(() =>
       Promise.resolve({ id: 'downloaded-1', version: '0.3.49', status: 'success' }),
+    ),
+    set: vi.fn(() => Promise.resolve({})),
+    delete: vi.fn(() => Promise.resolve({})),
+    addListener: vi.fn(() =>
+      Promise.resolve({ remove: vi.fn(() => Promise.resolve()) }),
     ),
     setMultiDelay: vi.fn(() => Promise.resolve()),
     next: vi.fn(() => Promise.resolve({})),
@@ -59,7 +65,7 @@ function createManager({ manifest = createManifest(), updater, ...overrides } = 
 }
 
 describe('AppLiveUpdateManager', () => {
-  it('marks the active bundle ready before checking for and staging an update', async () => {
+  it('marks the active bundle ready before detecting an available update', async () => {
     const events = [];
     const updater = createUpdater({
       notifyAppReady: vi.fn(() => {
@@ -77,23 +83,80 @@ describe('AppLiveUpdateManager', () => {
     const manager = createManager({ updater });
 
     await expect(manager.start()).resolves.toEqual({
-      status: 'staged',
+      size: 24 * 1024 * 1024,
+      status: 'available',
       version: '0.3.49',
     });
 
     expect(events).toEqual(['ready', 'current']);
-    expect(updater.download).toHaveBeenCalledWith({
-      url: createManifest().bundleUrl,
+    expect(updater.download).not.toHaveBeenCalled();
+    expect(updater.set).not.toHaveBeenCalled();
+    expect(updater.setMultiDelay).not.toHaveBeenCalled();
+    expect(updater.next).not.toHaveBeenCalled();
+  });
+
+  it('reports an already-downloaded update without activating it during startup', async () => {
+    const updater = createUpdater({
+      list: vi.fn(() =>
+        Promise.resolve({
+          bundles: [
+            {
+              id: 'downloaded-1',
+              version: '0.3.49',
+              status: 'success',
+            },
+          ],
+        }),
+      ),
+    });
+    const manager = createManager({ updater });
+
+    await expect(manager.start()).resolves.toEqual({
+      size: 24 * 1024 * 1024,
+      status: 'ready',
       version: '0.3.49',
-      checksum: 'a'.repeat(64),
     });
-    expect(updater.setMultiDelay).toHaveBeenCalledWith({
-      delayConditions: [{ kind: 'background', value: '300000' }],
+
+    expect(updater.download).not.toHaveBeenCalled();
+    expect(updater.set).not.toHaveBeenCalled();
+    expect(updater.setMultiDelay).not.toHaveBeenCalled();
+    expect(updater.next).not.toHaveBeenCalled();
+  });
+
+  it('reports native download progress in bytes and activates only when requested', async () => {
+    let onDownload;
+    const remove = vi.fn(() => Promise.resolve());
+    const updater = createUpdater({
+      addListener: vi.fn((_event, listener) => {
+        onDownload = listener;
+        return Promise.resolve({ remove });
+      }),
     });
-    expect(updater.next).toHaveBeenCalledWith({ id: 'downloaded-1' });
-    expect(
-      updater.setMultiDelay.mock.invocationCallOrder[0],
-    ).toBeLessThan(updater.next.mock.invocationCallOrder[0]);
+    const manager = createManager({ updater });
+    const onProgress = vi.fn();
+
+    await manager.start();
+    const downloadPromise = manager.downloadUpdate({ onProgress });
+    onDownload({
+      percent: 25,
+      bundle: { version: '0.3.49' },
+    });
+    await expect(downloadPromise).resolves.toMatchObject({
+      id: 'downloaded-1',
+    });
+
+    expect(onProgress).toHaveBeenCalledWith({
+      downloadedBytes: 6 * 1024 * 1024,
+      percent: 25,
+      progress: 0.25,
+      totalBytes: 24 * 1024 * 1024,
+      version: '0.3.49',
+    });
+    expect(remove).toHaveBeenCalledOnce();
+    expect(updater.set).not.toHaveBeenCalled();
+
+    await manager.activateUpdate();
+    expect(updater.set).toHaveBeenCalledWith({ id: 'downloaded-1' });
   });
 
   it('lets the app mark a launched OTA bundle ready before heavy startup work', async () => {
@@ -164,21 +227,11 @@ describe('AppLiveUpdateManager', () => {
     const manager = createManager({ updater });
 
     await expect(manager.start()).resolves.toEqual({
+      size: 24 * 1024 * 1024,
       status: 'failed_bundle',
       version: '0.3.49',
     });
     expect(updater.download).not.toHaveBeenCalled();
-  });
-
-  it('does not stage an update when the background grace cannot be configured', async () => {
-    const updater = createUpdater({
-      setMultiDelay: vi.fn(() => Promise.reject(new Error('delay unavailable'))),
-    });
-    const manager = createManager({ updater });
-
-    await expect(manager.start()).resolves.toEqual({ status: 'unavailable' });
-
-    expect(updater.next).not.toHaveBeenCalled();
   });
 
   it('rejects untrusted bundle locations and malformed checksums', () => {
@@ -191,6 +244,9 @@ describe('AppLiveUpdateManager', () => {
     ).toBeNull();
     expect(
       manager.normalizeManifest(createManifest({ checksum: 'not-a-hash' })),
+    ).toBeNull();
+    expect(
+      manager.normalizeManifest(createManifest({ size: 0 })),
     ).toBeNull();
   });
 

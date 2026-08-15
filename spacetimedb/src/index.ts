@@ -40,6 +40,11 @@ import {
   DEFAULT_USERNAME,
 } from './playerIdentityReset';
 import {
+  addPlayerSessionPlaytimeMicros,
+  combinePlayerPlaytimeMicros,
+  playtimeMicrosToWholeSeconds,
+} from './playerPlaytime';
+import {
   isTradeAllianceUnlocked,
   TRADE_ALLIANCE_UNLOCK_LEVEL,
 } from './tradeAllianceAccess';
@@ -54,6 +59,7 @@ import {
   isItemGradeTradedInMarket,
   marketLicences,
   resolveMarketLicence,
+  usesDynamicNpcMarketPricing,
 } from '../../src/shared/marketLicence.js';
 
 const DEFAULT_PLAYER_LEVEL_CRYSTAL_PER_LEVEL = 1;
@@ -202,6 +208,7 @@ const PLAYER_DATA_RESET_GUARD_MICROS = 1_781_298_268_808_000n;
 const STARTUP_MAINTENANCE_STATE_KEY = 'startup-maintenance:direct-sell-stands-v2';
 const PLAYER_LEVEL_MANA_REGEN_BACKFILL_STATE_KEY = 'game-config:player-level-mana-regen-v2';
 const PLAYER_LEVEL_CAULDRON_CAP_BACKFILL_STATE_KEY = 'game-config:player-level-cauldron-cap-v1';
+const SMALL_TOWN_FIXED_PRICE_BACKFILL_STATE_KEY = 'npc-market:small-town-fixed-prices-v1';
 const PLAYER_LEVEL_MANA_PER_SECOND_PER_LEVEL_RANGES = [
   { fromLevel: 2, toLevel: 5, amount: 1 },
   { fromLevel: 6, toLevel: 10, amount: 0.5 },
@@ -5549,6 +5556,7 @@ const spacetimedb = schema({
       font: t.string().default(DEFAULT_PLAYER_FONT),
       character: t.string().default(DEFAULT_PLAYER_CHARACTER),
       frame: t.string().default(DEFAULT_PLAYER_FRAME),
+      totalPlayTimeMicros: t.u64().default(0n),
     },
   ),
   playerGameplaySave: table(
@@ -6272,6 +6280,9 @@ const playerInfoSummaryResult = t.array(
     totalHarvestedHerbs: t.u64(),
     playerLevel: t.u32(),
     prestigeCount: t.u32(),
+    connected: t.bool(),
+    lastSeenAt: t.timestamp(),
+    totalPlayTimeSeconds: t.u64(),
     updatedAt: t.timestamp(),
     character: t.string(),
   }),
@@ -6342,6 +6353,7 @@ const worldChatRecentResult = t.array(
     senderIdentity: t.identity(),
     username: t.string(),
     character: t.string(),
+    frame: t.string(),
     playerLevel: t.u32(),
     body: t.string(),
     sentAt: t.timestamp(),
@@ -6992,6 +7004,7 @@ export const world_chat_recent = spacetimedb.view(
         senderIdentity: message.senderIdentity,
         username: message.username,
         character: getPlayerCharacterForIdentity(ctx, message.senderIdentity),
+        frame: getPlayerFrameForIdentity(ctx, message.senderIdentity),
         playerLevel: message.playerLevel,
         body: message.body,
         sentAt: message.sentAt,
@@ -7121,6 +7134,12 @@ function normalizePlayerFrame(frame: unknown): string {
 function getPlayerCharacterForIdentity(ctx: { db: any }, identity: Identity): string {
   return normalizePlayerCharacter(
     ctx.db.player.identity.find(identity)?.character ?? DEFAULT_PLAYER_CHARACTER,
+  );
+}
+
+function getPlayerFrameForIdentity(ctx: { db: any }, identity: Identity): string {
+  return normalizePlayerFrame(
+    ctx.db.player.identity.find(identity)?.frame ?? DEFAULT_PLAYER_FRAME,
   );
 }
 
@@ -12659,6 +12678,29 @@ function upsertPlayerSession(ctx: IdleWizardReducerCtx) {
     : ctx.db.playerSession.insert(nextSession);
 }
 
+function settleExistingPlayerSessionPlaytime(ctx: IdleWizardReducerCtx) {
+  const player = ctx.db.player.identity.find(ctx.sender);
+  const session = ctx.db.playerSession.identity.find(ctx.sender);
+
+  if (!player || !session || !player.connected) {
+    return player;
+  }
+
+  const totalPlayTimeMicros = addPlayerSessionPlaytimeMicros(
+    player.totalPlayTimeMicros,
+    session.updatedAt,
+    ctx.timestamp,
+  );
+  if (totalPlayTimeMicros === player.totalPlayTimeMicros) {
+    return player;
+  }
+
+  return ctx.db.player.identity.update({
+    ...player,
+    totalPlayTimeMicros,
+  });
+}
+
 function isActivePlayerSession(ctx: IdleWizardReducerCtx): boolean {
   const connectionId = ctx.connectionId;
   if (!connectionId) {
@@ -14763,6 +14805,7 @@ function getPlayerInfoSummaryRows(ctx: any) {
 
 function createPlayerInfoSummaryRow(ctx: any, identity: Identity) {
   const player = ctx.db.player.identity.find(identity);
+  const session = ctx.db.playerSession.identity.find(identity);
   const leaderboard = ctx.db.leaderboard.identity.find(identity);
   const save = ctx.db.playerGameplaySave.identity.find(identity);
   const savedLevel = readSavedCurrentLevel(save?.saveJson);
@@ -14770,6 +14813,20 @@ function createPlayerInfoSummaryRow(ctx: any, identity: Identity) {
   const savedTotalBrewedPotions = readSavedStatsTotal(save?.saveJson, 'potions');
   const savedTotalHarvestedHerbs = readSavedStatsTotal(save?.saveJson, 'herbs');
   const prestigeCount = readSavedPrestigeCompletedLevels(save?.saveJson)?.length ?? 0;
+  const connected = Boolean(player?.connected);
+  const totalPlayTimeMicros =
+    connected && session
+      ? addPlayerSessionPlaytimeMicros(
+          player?.totalPlayTimeMicros,
+          session.updatedAt,
+          ctx.timestamp,
+        )
+      : player?.totalPlayTimeMicros ?? 0n;
+  const lastSeenAt =
+    player?.lastSeenAt ??
+    leaderboard?.updatedAt ??
+    save?.updatedAt ??
+    new Timestamp(getContextTimestampMicros(ctx));
 
   return {
     identity,
@@ -14783,11 +14840,10 @@ function createPlayerInfoSummaryRow(ctx: any, identity: Identity) {
       player?.playerLevel ?? leaderboard?.playerLevel ?? savedLevel ?? DEFAULT_PLAYER_LEVEL,
     ),
     prestigeCount: Math.max(0, Math.floor(Number(prestigeCount) || 0)),
-    updatedAt:
-      leaderboard?.updatedAt ??
-      player?.lastSeenAt ??
-      save?.updatedAt ??
-      new Timestamp(getContextTimestampMicros(ctx)),
+    connected,
+    lastSeenAt,
+    totalPlayTimeSeconds: playtimeMicrosToWholeSeconds(totalPlayTimeMicros),
+    updatedAt: leaderboard?.updatedAt ?? lastSeenAt,
     character: normalizePlayerCharacter(player?.character ?? DEFAULT_PLAYER_CHARACTER),
   };
 }
@@ -14928,11 +14984,17 @@ function getNpcMarketStock(row: any): bigint {
 }
 
 function getNpcMarketPriceFromNeed(
-  marketConfig: Pick<(typeof npcMarketCatalog)[number], 'basePriceGold' | 'volatilityBps'>,
+  marketConfig: Pick<(typeof npcMarketCatalog)[number], 'basePriceGold' | 'volatilityBps'> & {
+    marketId?: string;
+  },
   npcNeed: bigint,
   targetNeed: bigint,
   _maxNeed: bigint,
 ): number {
+  if (!usesDynamicNpcMarketPricing(marketConfig.marketId)) {
+    return roundGoldPrice(marketConfig.basePriceGold);
+  }
+
   const safeNeed = Number(npcNeed > 0n ? npcNeed : 0n);
   const safeTargetNeed = Number(targetNeed > 0n ? targetNeed : 1n);
   const softness = Math.max(1, (safeTargetNeed * NPC_MARKET_SOFTNESS_BPS) / 10_000);
@@ -15067,7 +15129,9 @@ function getNpcMarketDemandWaveAmount(targetNeed: bigint, waveIndex: bigint): bi
 }
 
 function getNpcMarketSellTotalGold(
-  marketConfig: Pick<(typeof npcMarketCatalog)[number], 'basePriceGold' | 'volatilityBps'>,
+  marketConfig: Pick<(typeof npcMarketCatalog)[number], 'basePriceGold' | 'volatilityBps'> & {
+    marketId?: string;
+  },
   needState: ReturnType<typeof getNpcMarketNeedState>,
   quantity: number,
 ): number {
@@ -15101,6 +15165,14 @@ function applyNpcMarketAutoTune(
   demandScore: bigint,
   supplyScore: bigint,
 ) {
+  if (!usesDynamicNpcMarketPricing(marketConfig.marketId)) {
+    return {
+      marketConfig,
+      demandScore: 0n,
+      supplyScore: 0n,
+    };
+  }
+
   const totalSignal = demandScore + supplyScore;
 
   if (totalSignal < getNpcMarketAutoTuneThreshold(marketConfig.targetStock)) {
@@ -15792,6 +15864,62 @@ function runPlayerLevelCauldronCapBackfillOnce(ctx: IdleWizardReducerCtx) {
   });
 }
 
+function runSmallTownFixedPriceBackfillOnce(ctx: IdleWizardReducerCtx) {
+  if (ctx.db.maintenanceState.stateKey.find(SMALL_TOWN_FIXED_PRICE_BACKFILL_STATE_KEY)) {
+    return;
+  }
+
+  for (const catalogItem of npcMarketCatalog) {
+    if (!isItemGradeTradedInMarket(catalogItem.marketGrade, defaultMarketId)) {
+      continue;
+    }
+
+    const storageKey = getMarketScopedItemKey(defaultMarketId, catalogItem.itemKey);
+    const existingConfig = ctx.db.npcMarketItemConfig.itemKey.find(storageKey);
+
+    if (!existingConfig) {
+      continue;
+    }
+
+    const defaultBasePriceGold = normalizeNpcMarketBasePriceGold(
+      existingConfig.defaultBasePriceGold,
+      catalogItem.basePriceGold,
+      existingConfig.priceScale,
+    );
+
+    if (
+      decodeStoredGoldPrice(existingConfig.basePriceGold, existingConfig.priceScale) !==
+      defaultBasePriceGold
+    ) {
+      ctx.db.npcMarketItemConfig.itemKey.update({
+        ...existingConfig,
+        basePriceGold: toStoredGoldPrice(defaultBasePriceGold),
+        priceScale: GOLD_PRICE_SCALE,
+        updatedAt: ctx.timestamp,
+      });
+    }
+
+    if (existingConfig.enabled === false) {
+      continue;
+    }
+
+    const marketRow = ensureNpcMarketItem(ctx, catalogItem.itemKey, defaultMarketId);
+    if (marketRow.demandScore !== 0n || marketRow.supplyScore !== 0n) {
+      ctx.db.npcMarketPrice.itemKey.update({
+        ...marketRow,
+        demandScore: 0n,
+        supplyScore: 0n,
+        updatedAt: ctx.timestamp,
+      });
+    }
+  }
+
+  ctx.db.maintenanceState.insert({
+    stateKey: SMALL_TOWN_FIXED_PRICE_BACKFILL_STATE_KEY,
+    appliedAt: ctx.timestamp,
+  });
+}
+
 function backfillPlayerLevelManaRegen(ctx: IdleWizardReducerCtx) {
   const row = ctx.db.gameConfig.configKey.find('playerLevel');
   if (!row) {
@@ -16151,6 +16279,7 @@ function ensurePlayer(
     connected: true,
     createdAt: ctx.timestamp,
     lastSeenAt: ctx.timestamp,
+    totalPlayTimeMicros: 0n,
   });
 }
 
@@ -17966,6 +18095,7 @@ export const onConnect = spacetimedb.clientConnected((ctx) => {
   runPlayerLevelManaRegenBackfillOnce(ctx);
   runPlayerLevelCauldronCapBackfillOnce(ctx);
   ensureNpcMarketCatalog(ctx);
+  runSmallTownFixedPriceBackfillOnce(ctx);
   ensureWorldEventRewardSettlementTick(ctx);
   settleEndedWorldEventInboxRewards(ctx);
 
@@ -17973,6 +18103,7 @@ export const onConnect = spacetimedb.clientConnected((ctx) => {
     return;
   }
 
+  settleExistingPlayerSessionPlaytime(ctx);
   upsertPlayerSession(ctx);
   if (!ENABLE_CLIENT_POTION_DISCOVERY) {
     deleteAllPotionDiscoveries(ctx);
@@ -18005,6 +18136,7 @@ export const init = spacetimedb.init((ctx) => {
   runPlayerLevelManaRegenBackfillOnce(ctx);
   runPlayerLevelCauldronCapBackfillOnce(ctx);
   ensureNpcMarketCatalog(ctx);
+  runSmallTownFixedPriceBackfillOnce(ctx);
   ensureWorldEventRewardSettlementTick(ctx);
   settleEndedWorldEventInboxRewards(ctx);
 });
@@ -18036,6 +18168,11 @@ export const onDisconnect = spacetimedb.clientDisconnected((ctx) => {
     ...existingPlayer,
     connected: false,
     lastSeenAt: ctx.timestamp,
+    totalPlayTimeMicros: addPlayerSessionPlaytimeMicros(
+      existingPlayer.totalPlayTimeMicros,
+      existingSession?.updatedAt,
+      ctx.timestamp,
+    ),
   });
 });
 
@@ -18077,6 +18214,7 @@ export const set_username = spacetimedb.reducer({ username: t.string() }, (ctx, 
       connected: true,
       createdAt: ctx.timestamp,
       lastSeenAt: ctx.timestamp,
+      totalPlayTimeMicros: 0n,
     });
   }
 
@@ -18153,6 +18291,7 @@ export const set_player_profile = spacetimedb.reducer(
         connected: true,
         createdAt: ctx.timestamp,
         lastSeenAt: ctx.timestamp,
+        totalPlayTimeMicros: 0n,
       });
     }
 
@@ -18359,6 +18498,10 @@ export const admin_merge_player_accounts = spacetimedb.reducer(
         targetUsername !== DEFAULT_USERNAME,
       connected: false,
       lastSeenAt: ctx.timestamp,
+      totalPlayTimeMicros: combinePlayerPlaytimeMicros(
+        targetPlayer.totalPlayTimeMicros,
+        sourcePlayer.totalPlayTimeMicros,
+      ),
     });
 
     moveAdminPlayerGameplaySave(ctx, sourcePlayer.identity, nextTargetPlayer.identity);

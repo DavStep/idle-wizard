@@ -26,7 +26,9 @@ related:
 
 Small Town Market is the starting licence at **0 permanent Prestige stars** and remains active until Crossroads Market unlocks at 1 star.
 
-- It scopes NPC demand, quotes, stock, price tuning, player listings, requests, and proceeds.
+- It scopes NPC demand, fixed quotes, stock, player listings, requests, and proceeds.
+- Its configured prices do not respond to demand and do not auto-tune from player trades.
+- Dynamic NPC pricing begins in Crossroads after the first Prestige star.
 - It uses the same source-default item catalog and balance as the other licences.
 - Its economy pool is isolated from every other licence.
 - Both the client and server derive the active licence independently.

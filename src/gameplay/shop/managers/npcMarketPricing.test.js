@@ -2,6 +2,7 @@ import { describe, expect, it } from 'vitest';
 
 import {
   getNpcMarketPriceFromNeed,
+  getNpcMarketPriceState,
   getRecoveredNpcNeed,
   getNpcMarketDemandRecoveryWindow,
   getNextNpcDemandWaveInfo,
@@ -89,5 +90,44 @@ describe('npcMarketPricing', () => {
 
     expect(price).toBeGreaterThanOrEqual(1);
     expect(Number.isInteger(price)).toBe(true);
+  });
+
+  it('keeps Small Town prices fixed while prestige markets follow demand', () => {
+    const fixedPrice = getNpcMarketPriceFromNeed({
+      basePriceCoin: 75,
+      itemKind: 'potion',
+      marketId: 'smallTown',
+      npcNeed: 0,
+      targetNeed: 300,
+    });
+    const dynamicPrice = getNpcMarketPriceFromNeed({
+      basePriceCoin: 75,
+      itemKind: 'potion',
+      marketId: 'crossroads',
+      npcNeed: 0,
+      targetNeed: 300,
+    });
+
+    expect(fixedPrice).toBe(75);
+    expect(dynamicPrice).toBeLessThan(75);
+  });
+
+  it('projects fixed Small Town quotes from the configured base', () => {
+    expect(
+      getNpcMarketPriceState({
+        basePriceCoin: 75,
+        itemKind: 'potion',
+        marketId: 'smallTown',
+        marketPriceCoin: 5,
+        npcBuyPriceCoin: 4,
+        npcSellPriceCoin: 6,
+        npcNeed: 0,
+        targetNeed: 300,
+      }),
+    ).toMatchObject({
+      marketPriceCoin: 75,
+      npcBuyPriceCoin: 60,
+      npcSellPriceCoin: 90,
+    });
   });
 });

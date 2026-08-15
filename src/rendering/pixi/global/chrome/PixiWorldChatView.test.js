@@ -6,6 +6,7 @@ import { describe, expect, it, vi } from 'vitest';
 import { installPixiPageTestCanvas } from '../../pages/workshop/PixiPageTestHarness.js';
 import {
   createPixiThemeSnapshot,
+  PIXI_UI_GEOMETRY,
   resolvePixiTextStrokeWidth,
 } from '../../theme/PixiThemeTokens.js';
 import { PixiWorldChatView } from './PixiWorldChatView.js';
@@ -35,6 +36,7 @@ describe('PixiWorldChatView', () => {
           allianceTagColor: 'violet',
           body: 'second',
           character: 'mira',
+          frame: 'violet',
           playerLevel: 4,
           username: 'Second',
         },
@@ -59,7 +61,12 @@ describe('PixiWorldChatView', () => {
     });
     expect(view.panel.root.position).toMatchObject({
       x: 180,
-      y: expect.closeTo(601.833333, 5),
+      y: expect.closeTo(
+        723.333333 -
+          PIXI_UI_GEOMETRY.roomChatBottom -
+          PIXI_UI_GEOMETRY.roomChatHeight / 2,
+        5,
+      ),
     });
     expect(view.panel.root.pivot).toMatchObject({ x: 164, y: 20.5 });
     expect(view.preview.text).toBe('[ARC] Second: second\nThird: third');
@@ -74,6 +81,7 @@ describe('PixiWorldChatView', () => {
       height: 14,
       width: 14,
     });
+    expect(view.previewRows[0].avatarWidget.avatarFrame.tint).toBe(0xddb6ff);
     expect(assets.getTexture).toHaveBeenCalledWith(
       'source:assets/avatars/mira.png',
     );

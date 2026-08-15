@@ -2,10 +2,10 @@ import {
   Container,
   Graphics,
   Rectangle,
-  Sprite,
   Texture,
 } from 'pixi.js';
 
+import { getPlayerFrameTint } from '../../../../player/playerFrames.js';
 import { BasePixiRetainedView } from '../../primitives/BasePixiRetainedView.js';
 import { normalizePixiTextStroke } from '../../primitives/PixiTextLabel.js';
 import {
@@ -20,6 +20,10 @@ import {
   normalizeRows,
   setText,
 } from '../../pages/workshop/RetainedPageKit.js';
+import {
+  PLAYER_PROFILE_SIZE,
+  PlayerProfileWidget,
+} from './PlayerProfileWidgets.js';
 
 const WORLD_CHAT_TITLE = 'World Chat';
 const WORLD_CHAT_TITLE_STROKE = '#0a0a0a';
@@ -313,9 +317,13 @@ class CompactWorldChatPreviewRow {
     this.model = {};
     this.theme = DEFAULT_PIXI_THEME_SNAPSHOT;
     this.root = new Container({ label: 'global-world-chat-preview-row' });
-    this.avatar = new Sprite(Texture.EMPTY);
-    this.avatar.label = 'global-world-chat-preview-row:avatar';
-    this.avatar.anchor.set(0.5);
+    this.avatarWidget = new PlayerProfileWidget({
+      assets,
+      texture: Texture.EMPTY,
+      label: 'global-world-chat-preview-row:avatar',
+    });
+    this.avatarWidget.pivot.set(PLAYER_PROFILE_SIZE / 2);
+    this.avatar = this.avatarWidget;
     this.tag = createText('', {
       fontSize: 12,
       fontWeight: '700',
@@ -344,9 +352,13 @@ class CompactWorldChatPreviewRow {
       `${this.isSystem ? 'System' : this.model.username || 'Wizard'}:`,
     );
     setText(this.body, this.model.body ?? '');
-    this.avatar.texture = this.isSystem
-      ? Texture.EMPTY
-      : resolvePreviewCharacterTexture(this.assets, this.model.character);
+    this.avatarWidget
+      .setTexture(
+        this.isSystem
+          ? Texture.EMPTY
+          : resolvePreviewCharacterTexture(this.assets, this.model.character),
+      )
+      .setBackgroundTint(getPlayerFrameTint(this.model.frame));
     this.avatar.visible = !this.isSystem;
     this.avatar.renderable = !this.isSystem;
     this.tag.visible = Boolean(tag);
@@ -362,8 +374,9 @@ class CompactWorldChatPreviewRow {
       WORLD_CHAT_PREVIEW_AVATAR_SIZE / 2,
       height / 2,
     );
-    this.avatar.width = WORLD_CHAT_PREVIEW_AVATAR_SIZE;
-    this.avatar.height = WORLD_CHAT_PREVIEW_AVATAR_SIZE;
+    this.avatar.scale.set(
+      WORLD_CHAT_PREVIEW_AVATAR_SIZE / PLAYER_PROFILE_SIZE,
+    );
     let contentX = this.avatar.visible
       ? WORLD_CHAT_PREVIEW_AVATAR_SIZE + 3
       : 0;
@@ -407,7 +420,7 @@ class CompactWorldChatPreviewRow {
   reset() {
     this.model = {};
     this.isSystem = false;
-    this.avatar.texture = Texture.EMPTY;
+    this.avatarWidget.setTexture(Texture.EMPTY).setBackgroundTint(0xffffff);
     setText(this.tag, '');
     setText(this.username, '');
     setText(this.body, '');
@@ -426,6 +439,7 @@ function normalizePreviewMessage(message = {}) {
     username: isSystem ? 'System' : sourceName,
     body: message.body ?? message.message ?? message.text ?? '',
     character: message.character ?? 'elara',
+    frame: message.frame ?? 'classic',
     allianceTag: message.allianceTag ?? message.alliance_tag ?? '',
     allianceTagColor:
       message.allianceTagColor ?? message.alliance_tag_color ?? 'ink',

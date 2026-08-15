@@ -78,7 +78,7 @@ export const BREWING_HUD_GEOMETRY = Object.freeze({
   navigationButtonWidth: 34,
   navigationButtonHeight: 38,
   navigationSlotGap: 4,
-  navigationVerticalOffset: 8,
+  navigationPotionNameOpticalNudge: 2,
   navigationIconOpticalNudge: 0.7,
   ingredientSlotWidth: 56,
   ingredientSlotHeight: 54,
@@ -126,6 +126,8 @@ const BREWING_DETAIL_TEXT_STYLE = Object.freeze({
   small: Object.freeze({ fontSize: 9, lineHeight: 11 }),
 });
 const POTION_PREVIEW_BACKGROUND_COLOR = 0x0e1016;
+const BREWING_CAULDRON_REWARD_ANCHOR_ID =
+  'brewing.cauldron.liquid';
 const BREWING_STATUS_TEXTURE_PADDING = 1;
 const RETAINED_INGREDIENT_NAME_STYLE = Object.freeze({
   fontSize: 10,
@@ -156,6 +158,10 @@ const CAULDRON_INGREDIENT_IMPACT_DURATION_MS = 220;
 const CAULDRON_COMPLETION_MOTION_DURATION_MS = 320;
 const PREPARED_LIQUID_CYCLE_MS = 2_400;
 const BREWING_LIQUID_CYCLE_MS = 1_100;
+const CAULDRON_AMBIENT_TRAVEL = 0.45;
+const CAULDRON_AMBIENT_SCALE_X = 0.006;
+const CAULDRON_AMBIENT_SCALE_Y = 0.004;
+const USED_INGREDIENT_CONTENT_ALPHA = 0.34;
 
 export class BrewingHudPixi {
   constructor({
@@ -228,6 +234,18 @@ export class BrewingHudPixi {
     this.cauldronArt = new Sprite(getTexture(assetManager, ASSETS.cauldron));
     this.cauldronArt.anchor.set(0.5);
     this.cauldronArt.label = 'brewing-carousel-cauldron-art';
+    this.semanticTargets?.register?.({
+      semanticId: BREWING_CAULDRON_REWARD_ANCHOR_ID,
+      displayObject: this.cauldronArt,
+      state: () => ({
+        visible:
+          this.root.visible &&
+          this.root.renderable &&
+          this.cauldronArt.visible &&
+          this.cauldronArt.renderable,
+        active: !this.root.destroyed,
+      }),
+    });
     this.cauldronLiquid = new Sprite(
       getTexture(assetManager, ASSETS.cauldronLiquidMask),
     );
@@ -716,6 +734,7 @@ export class BrewingHudPixi {
       const startedArrival = slot.bind(requirements[index] ?? null, {
         enabled: ingredientSelectionEnabled,
         showMissing: Boolean(recipe && !active),
+        used: Boolean(active),
         animate: animateTransitions,
         now,
         reducedMotion: this.page?.prefersReducedMotion?.() === true,
@@ -795,10 +814,6 @@ export class BrewingHudPixi {
       state.id === 'brew'
         ? this.captureIngredientMotionSources()
         : [];
-    const collectedPotionSource =
-      state.id === 'collect'
-        ? this.page?.captureHudPotionMotionSource?.(this)
-        : null;
     let result;
     switch (state.id) {
       case 'recipes':
@@ -840,13 +855,6 @@ export class BrewingHudPixi {
       result?.ok !== false
     ) {
       this.page?.animateHudBrewIngredients?.(this, brewSources);
-    }
-    if (
-      state.id === 'collect' &&
-      result !== false &&
-      result?.ok !== false
-    ) {
-      this.page?.animateHudCollectedPotion?.(collectedPotionSource);
     }
     return result;
   }
@@ -980,11 +988,17 @@ export class BrewingHudPixi {
     this.captureCauldronChangeRestState();
     const lowerLeftSlot = ingredientPositions[2];
     const lowerRightSlot = ingredientPositions[3];
+    const potionIdentityY =
+      lowerLeftSlot.y +
+      BREWING_HUD_GEOMETRY.ingredientSlotHeight +
+      BREWING_HUD_GEOMETRY.previewIdentityGap;
+    const potionNameLineCenterY =
+      potionIdentityY +
+      BREWING_DETAIL_TEXT_STYLE.title.lineHeight / 2 +
+      BREWING_HUD_GEOMETRY.navigationPotionNameOpticalNudge;
     const navigationTop =
       BREWING_HUD_GEOMETRY.top +
-      lowerLeftSlot.y +
-      BREWING_HUD_GEOMETRY.ingredientSlotHeight / 2 +
-      BREWING_HUD_GEOMETRY.navigationVerticalOffset -
+      potionNameLineCenterY -
       BREWING_HUD_GEOMETRY.navigationButtonHeight / 2;
     this.previous.setBounds(
       edge +
@@ -1034,9 +1048,7 @@ export class BrewingHudPixi {
     this.potionIcon.height = BREWING_HUD_GEOMETRY.potionIconSize;
     this.potionName.position.set(
       width / 2,
-      lowerLeftSlot.y +
-        BREWING_HUD_GEOMETRY.ingredientSlotHeight +
-        BREWING_HUD_GEOMETRY.previewIdentityGap,
+      potionIdentityY,
     );
     this.rarity.position.set(
       width / 2,
@@ -1617,13 +1629,18 @@ export class BrewingHudPixi {
     ) {
       const strength =
         this.cauldronMotionMode === 'brewing' ? 1 : 0.45;
-      this.cauldronLiquid.y = rest.liquid.y + wave * 0.55 * strength;
-      this.cauldronLiquid.scale.set(
-        rest.liquid.scaleX * (1 + wave * 0.012 * strength),
-        rest.liquid.scaleY * (1 - wave * 0.007 * strength),
+      const offsetY = wave * CAULDRON_AMBIENT_TRAVEL * strength;
+      const scaleX = 1 + wave * CAULDRON_AMBIENT_SCALE_X * strength;
+      const scaleY = 1 - wave * CAULDRON_AMBIENT_SCALE_Y * strength;
+      applyContainedCauldronMotion(
+        this.cauldronArt,
+        this.cauldronLiquid,
+        rest,
+        { offsetY, scaleX, scaleY },
       );
       this.cauldronLiquidHighlight.x =
         rest.highlightX + wave * 2.2 * strength;
+      this.cauldronLiquidHighlight.y = rest.highlightY + offsetY;
       this.cauldronLiquidHighlight.alpha =
         rest.highlightAlpha * (0.82 + (wave + 1) * 0.09);
     }
@@ -1639,16 +1656,18 @@ export class BrewingHudPixi {
       );
       const pulse = Math.sin(Math.PI * impactProgress);
       const strength = impact.kind === 'completion' ? 1 : 0.58;
-      this.cauldronArt.scale.set(
-        rest.art.scaleX * (1 + pulse * 0.035 * strength),
-        rest.art.scaleY * (1 - pulse * 0.065 * strength),
+      const offsetY = pulse * 2.2 * strength;
+      applyContainedCauldronMotion(
+        this.cauldronArt,
+        this.cauldronLiquid,
+        rest,
+        {
+          offsetY,
+          scaleX: 1 + pulse * 0.035 * strength,
+          scaleY: 1 - pulse * 0.065 * strength,
+        },
       );
-      this.cauldronArt.y = rest.art.y + pulse * 2.2 * strength;
-      this.cauldronLiquid.scale.set(
-        rest.liquid.scaleX * (1 + pulse * 0.045 * strength),
-        rest.liquid.scaleY * (1 - pulse * 0.08 * strength),
-      );
-      this.cauldronLiquid.y = rest.liquid.y + pulse * 2.2 * strength;
+      this.cauldronLiquidHighlight.y = rest.highlightY + offsetY;
       if (impactProgress >= 1) {
         this.cauldronImpactMotion = null;
         if (impact.kind === 'completion') {
@@ -1666,8 +1685,12 @@ export class BrewingHudPixi {
       return;
     }
     const rest = this.cauldronChangeRestState;
-    const centerX = rest.art.x;
-    const liquidY = rest.art.y - 94 * 0.312;
+    const relativeLiquidScaleY = rest.liquid.scaleY
+      ? this.cauldronLiquid.scale.y / rest.liquid.scaleY
+      : 1;
+    const centerX = this.cauldronLiquid.x;
+    const liquidY =
+      this.cauldronLiquid.y - 94 * 0.312 * relativeLiquidScaleY;
     if (this.cauldronMotionMode === 'prepared') {
       const phase = (elapsed % PREPARED_LIQUID_CYCLE_MS) /
         PREPARED_LIQUID_CYCLE_MS;
@@ -1891,6 +1914,10 @@ export class BrewingHudPixi {
   destroy() {
     this.resetStateMotion();
     this.resetCauldronChangeMotion();
+    this.semanticTargets?.unregister?.(
+      BREWING_CAULDRON_REWARD_ANCHOR_ID,
+      { displayObject: this.cauldronArt },
+    );
     releaseRegistration(this.swipeRegistration);
     for (const button of [
       this.previous,
@@ -2089,6 +2116,8 @@ export class BrewingIngredientPickerSlot {
     this.hasBoundModel = false;
     this.stagedSignature = '';
     this.arrivalMotionStart = null;
+    this.used = false;
+    this.contentRestAlpha = 1;
     this.frameInsets = null;
     this.width = BREWING_HUD_GEOMETRY.ingredientSlotWidth;
     this.height = BREWING_HUD_GEOMETRY.ingredientSlotHeight;
@@ -2102,6 +2131,7 @@ export class BrewingIngredientPickerSlot {
       decorative = false,
       enabled = true,
       showMissing = false,
+      used = false,
       animate = false,
       now = 0,
       reducedMotion = false,
@@ -2117,6 +2147,11 @@ export class BrewingIngredientPickerSlot {
       nextStagedSignature !== this.stagedSignature;
     this.model = model;
     this.enabled = enabled === true;
+    this.used = Boolean(model) && used === true;
+    this.contentRestAlpha = this.used
+      ? USED_INGREDIENT_CONTENT_ALPHA
+      : 1;
+    this.contentMotion.alpha = this.contentRestAlpha;
     this.control.setEnabled(this.enabled);
     this.icon.texture = getAtlasTexture(
       this.assetManager,
@@ -2224,7 +2259,8 @@ export class BrewingIngredientPickerSlot {
     );
     const eased = easeOutQuint(progress);
     const direction = this.index % 2 === 0 ? -1 : 1;
-    this.contentMotion.alpha = 0.58 + eased * 0.42;
+    this.contentMotion.alpha =
+      this.contentRestAlpha * (0.58 + eased * 0.42);
     this.contentMotion.scale.set(0.78 + eased * 0.22);
     this.contentMotion.rotation =
       direction * 0.075 * (1 - eased);
@@ -2237,7 +2273,7 @@ export class BrewingIngredientPickerSlot {
 
   resetArrivalMotion() {
     this.arrivalMotionStart = null;
-    this.contentMotion.alpha = 1;
+    this.contentMotion.alpha = this.contentRestAlpha;
     this.contentMotion.scale.set(1);
     this.contentMotion.rotation = 0;
     this.frame.alpha = this.decorative ? 0.72 : 1;
@@ -2499,6 +2535,24 @@ function applyCauldronSettle(
     rest.scaleY * scaleY,
   );
   displayObject.rotation = rest.rotation + rotation;
+}
+
+function applyContainedCauldronMotion(
+  art,
+  liquid,
+  rest,
+  { offsetY = 0, scaleX = 1, scaleY = 1 } = {},
+) {
+  art.y = rest.art.y + offsetY;
+  art.scale.set(
+    rest.art.scaleX * scaleX,
+    rest.art.scaleY * scaleY,
+  );
+  liquid.y = rest.liquid.y + offsetY;
+  liquid.scale.set(
+    rest.liquid.scaleX * scaleX,
+    rest.liquid.scaleY * scaleY,
+  );
 }
 
 function isBrewingQuantityActionVisible(cauldron = {}) {

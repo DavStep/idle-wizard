@@ -114,6 +114,25 @@ describe('DevCheatsFacade', () => {
     );
   });
 
+  it('reads a deterministic live-update preview phase from the URL', () => {
+    const { app } = createApp();
+    const facade = new DevCheatsFacade({
+      app,
+      target: {
+        location: {
+          search: '?devUi=liveUpdate&devUiPhase=downloading',
+          hash: '',
+        },
+      },
+      logger: null,
+    });
+
+    expect(facade.readRequestedUiSurface()).toEqual({
+      surfaceId: 'liveUpdate',
+      options: { phase: 'downloading' },
+    });
+  });
+
   it('opens the retained account choice through a non-persistent preview', () => {
     const freshStartChoiceManager = {
       choose: vi.fn(() => new Promise(() => {})),
@@ -700,6 +719,30 @@ describe('DevCheatsFacade', () => {
     });
 
     expect(deployRefreshManager.showPreview).toHaveBeenCalledOnce();
+  });
+
+  it('opens deterministic live-update dialog and progress previews', () => {
+    const liveUpdateGateManager = {
+      showPreview: vi.fn(),
+    };
+    const renderFacade = {
+      getLiveUpdateGateManager: () => liveUpdateGateManager,
+    };
+    const { app } = createApp({ renderFacade });
+    const target = {};
+    const facade = new DevCheatsFacade({ app, target, logger: null });
+
+    facade.mount();
+    expect(
+      target.cheats.openUi('liveUpdate', { phase: 'downloading' }),
+    ).toMatchObject({
+      ok: true,
+      surfaceId: 'liveUpdate',
+    });
+
+    expect(liveUpdateGateManager.showPreview).toHaveBeenCalledWith({
+      phase: 'downloading',
+    });
   });
 
   it('sets event, guild, timer, stress, and dialog states for UI QA', () => {

@@ -26,7 +26,7 @@ const SUMMARY_HEIGHT =
 const DETAIL_ROW_PITCH = 18;
 const STATS_HEIGHT =
   PIXI_DIALOG_SPLIT_PAPER_GEOMETRY.contentInsetTop +
-  54 +
+  90 +
   PIXI_DIALOG_SPLIT_PAPER_GEOMETRY.contentInsetBottom;
 const STATS_PADDING_X = 10;
 const STATS_PADDING_Y = PIXI_DIALOG_SPLIT_PAPER_GEOMETRY.contentInsetTop;
@@ -151,6 +151,22 @@ export class PixiPlayerInfoDialog extends RetainedGlobalDialog {
       anchor: { x: 1, y: 0 },
       label: `${dialogId}:totalHerbsValue`,
     });
+    this.lastSeenLabel = new PixiTextLabel({
+      text: 'Last Seen',
+      label: `${dialogId}:lastSeenLabel`,
+    });
+    this.lastSeenValue = new PixiTextLabel({
+      anchor: { x: 1, y: 0 },
+      label: `${dialogId}:lastSeenValue`,
+    });
+    this.timePlayedLabel = new PixiTextLabel({
+      text: 'Time Played',
+      label: `${dialogId}:timePlayedLabel`,
+    });
+    this.timePlayedValue = new PixiTextLabel({
+      anchor: { x: 1, y: 0 },
+      label: `${dialogId}:timePlayedValue`,
+    });
     this.loadingLabel = new PixiTextLabel({
       text: 'Loading Player Info',
       color: 'muted',
@@ -172,6 +188,10 @@ export class PixiPlayerInfoDialog extends RetainedGlobalDialog {
       this.totalPotionsValue,
       this.totalHerbsLabel,
       this.totalHerbsValue,
+      this.lastSeenLabel,
+      this.lastSeenValue,
+      this.timePlayedLabel,
+      this.timePlayedValue,
       this.loadingLabel,
     );
     this.applyTheme(this.context.theme);
@@ -198,6 +218,10 @@ export class PixiPlayerInfoDialog extends RetainedGlobalDialog {
       this.totalPotionsValue,
       this.totalHerbsLabel,
       this.totalHerbsValue,
+      this.lastSeenLabel,
+      this.lastSeenValue,
+      this.timePlayedLabel,
+      this.timePlayedValue,
     ]) {
       object.visible = !loading;
       object.renderable = !loading;
@@ -222,6 +246,12 @@ export class PixiPlayerInfoDialog extends RetainedGlobalDialog {
     this.totalCoinValue.setAmount(this.playerModel.totalProducedCoin);
     this.totalPotionsValue.setText(this.playerModel.totalBrewedPotions);
     this.totalHerbsValue.setText(this.playerModel.totalHarvestedHerbs);
+    this.lastSeenValue.setText(
+      formatLastSeen(this.playerModel.connected, this.playerModel.lastSeenAtMs),
+    );
+    this.timePlayedValue.setText(
+      formatPlayedHours(this.playerModel.totalPlayTimeSeconds),
+    );
     const showAlliance = Boolean(this.playerModel.allianceTag);
     this.allianceButton.visible = showAlliance;
     this.allianceButton.renderable = showAlliance;
@@ -347,6 +377,22 @@ export class PixiPlayerInfoDialog extends RetainedGlobalDialog {
       statsRightX,
       STATS_Y + STATS_PADDING_Y + STATS_ROW_PITCH * 2,
     );
+    this.lastSeenLabel.position.set(
+      STATS_PADDING_X,
+      STATS_Y + STATS_PADDING_Y + STATS_ROW_PITCH * 3,
+    );
+    this.lastSeenValue.position.set(
+      statsRightX,
+      STATS_Y + STATS_PADDING_Y + STATS_ROW_PITCH * 3,
+    );
+    this.timePlayedLabel.position.set(
+      STATS_PADDING_X,
+      STATS_Y + STATS_PADDING_Y + STATS_ROW_PITCH * 4,
+    );
+    this.timePlayedValue.position.set(
+      statsRightX,
+      STATS_Y + STATS_PADDING_Y + STATS_ROW_PITCH * 4,
+    );
     this.levelLabel.setWrapWidth(
       Math.max(0, detailsWidth - this.levelValue.measuredWidth - 6),
     );
@@ -364,6 +410,10 @@ export class PixiPlayerInfoDialog extends RetainedGlobalDialog {
       this.totalPotionsValue,
       this.totalHerbsLabel,
       this.totalHerbsValue,
+      this.lastSeenLabel,
+      this.lastSeenValue,
+      this.timePlayedLabel,
+      this.timePlayedValue,
       this.loadingLabel,
     ]) {
       label?.applyTheme(theme);
@@ -436,6 +486,15 @@ function normalizePlayerModel(model = {}) {
         0,
       ),
     ),
+    connected: source.connected === true,
+    lastSeenAtMs: nonNegativeNumber(
+      source.lastSeenAtMs ?? source.last_seen_at_ms,
+      0,
+    ),
+    totalPlayTimeSeconds: nonNegativeInteger(
+      source.totalPlayTimeSeconds ?? source.total_play_time_seconds,
+      0,
+    ),
   };
 }
 
@@ -454,6 +513,45 @@ function positiveInteger(value, fallback) {
 function nonNegativeInteger(value, fallback) {
   const number = Math.floor(Number(value));
   return Number.isFinite(number) && number >= 0 ? number : fallback;
+}
+
+function nonNegativeNumber(value, fallback) {
+  const number = Number(value);
+  return Number.isFinite(number) && number >= 0 ? number : fallback;
+}
+
+function formatLastSeen(connected, lastSeenAtMs, nowMs = Date.now()) {
+  if (connected) {
+    return 'Online Now';
+  }
+
+  const timestamp = nonNegativeNumber(lastSeenAtMs, 0);
+  if (timestamp <= 0) {
+    return 'Unknown';
+  }
+
+  const elapsedMinutes = Math.max(0, Math.floor((nowMs - timestamp) / 60_000));
+  if (elapsedMinutes < 1) {
+    return 'Just Now';
+  }
+  if (elapsedMinutes < 60) {
+    return `${elapsedMinutes}m Ago`;
+  }
+
+  const elapsedHours = Math.floor(elapsedMinutes / 60);
+  if (elapsedHours < 48) {
+    return `${elapsedHours}h Ago`;
+  }
+
+  return `${Math.floor(elapsedHours / 24)}d Ago`;
+}
+
+function formatPlayedHours(totalSeconds) {
+  const hours = nonNegativeNumber(totalSeconds, 0) / 3600;
+  return `${hours.toLocaleString('en', {
+    minimumFractionDigits: 1,
+    maximumFractionDigits: 1,
+  })} Hours`;
 }
 
 function getCharacterTexture(assetManager, key) {

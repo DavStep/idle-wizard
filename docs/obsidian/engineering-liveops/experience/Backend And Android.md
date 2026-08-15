@@ -49,7 +49,9 @@ experience_type: backend-android
 - SpacetimeDB startup and reconnect states keep the full-screen loading splash visible until online. Transient `connect_error`/`disconnect` states still retry; presentation must not bring back a server-required dialog.
 - Generated SpacetimeDB bindings belong in `src/backend/spacetimedb/module_bindings/`.
 - App must still build when generated SpacetimeDB bindings are missing; load them dynamically and fail soft.
+- Append new fields to the end of existing SpacetimeDB table definitions; inserting a field between hosted columns is treated as a destructive reorder and blocks Maincloud publish.
 - Server tables own shared `player` identity/profile rows, `player_gameplay_save` rows, and `leaderboard` rows; client syncs profile fields and gameplay save JSON, but not trusted public level/rank state.
+- Lifetime playtime is server-owned: settle the prior `player_session` interval before reconnect/session takeover and again on disconnect, then project the still-active interval through `player_info_summary` without trusting a client timer.
 - On reconnect, discard a hydrated pending gameplay save when the server row is at least as new; resending it can roll back unrelated coin or cauldron batch settings.
 - Gameplay-save journal reconciliation must also discard a pending save that lowers the hydrated server level unless it adds a prestige completion; revision lineage alone can otherwise replay a stale runtime snapshot forever.
 - A resolved SpacetimeDB reducer promise is not gameplay-save durability proof; keep the own-save subscription live and clear the local journal only after observing the exact client session/sequence in the server row.

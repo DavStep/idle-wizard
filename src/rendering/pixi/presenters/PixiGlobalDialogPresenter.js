@@ -129,7 +129,7 @@ export class PixiGlobalDialogPresenter {
     };
     if (
       isPlayerSurfaceDialogId(canonicalId) &&
-      this.requiresPlayerSurfaceUsername()
+      this.requiresPlayerSurfaceUsername(canonicalId, request)
     ) {
       return this.deferPlayerSurfaceOpen(canonicalId, request);
     }
@@ -584,12 +584,30 @@ export class PixiGlobalDialogPresenter {
     return result ?? true;
   }
 
-  requiresPlayerSurfaceUsername() {
+  requiresPlayerSurfaceUsername(dialogId, request = {}) {
+    if (
+      dialogId === GLOBAL_DIALOG_IDS.PLAYER &&
+      this.isOwnPlayerRequest(request.player ?? request)
+    ) {
+      return false;
+    }
     const snapshot = this.playerFacade?.getSnapshot?.();
     return Boolean(
       snapshot &&
         Object.hasOwn(snapshot, 'hasExplicitUsername') &&
         snapshot.hasExplicitUsername === false,
+    );
+  }
+
+  isOwnPlayerRequest(player = {}) {
+    const requestedIdentity = normalizeId(
+      player.identity ?? player.playerIdentity,
+    );
+    const ownIdentity = normalizeId(
+      this.authFacade?.getSnapshot?.()?.identity,
+    );
+    return Boolean(
+      requestedIdentity && ownIdentity && requestedIdentity === ownIdentity,
     );
   }
 

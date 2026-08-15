@@ -191,4 +191,99 @@ describe('PixiTextField', () => {
 
     field.destroy({ children: true });
   });
+
+  it('opens a populated field with the caret at the end of its value', async () => {
+    const open = vi.fn(async (options) => ({
+      close: vi.fn(),
+      getSnapshot: () => ({
+        active: true,
+        selectionEnd: options.selectionEnd,
+        selectionStart: options.selectionStart,
+        value: options.value,
+      }),
+      subscribe: () => vi.fn(),
+    }));
+    const field = new PixiTextField({ textEntryService: { open } });
+
+    field.setValue('StepWizzard');
+    await field.focus();
+
+    expect(open).toHaveBeenCalledWith(
+      expect.objectContaining({
+        selectionEnd: 'StepWizzard'.length,
+        selectionStart: 'StepWizzard'.length,
+        value: 'StepWizzard',
+      }),
+    );
+    expect(field.caretGraphic.getLocalBounds().x).toBeGreaterThan(0);
+
+    field.destroy({ children: true });
+  });
+
+  it('blinks the focused caret and keeps it steady under reduced motion', async () => {
+    let now = 0;
+    let nextFrameId = 1;
+    const frames = new Map();
+    const motionRuntime = {
+      cancelFrame: (frameId) => frames.delete(frameId),
+      now: () => now,
+      prefersReducedMotion: () => false,
+      requestFrame: (callback) => {
+        const frameId = nextFrameId++;
+        frames.set(frameId, () => {
+          frames.delete(frameId);
+          callback();
+        });
+        return frameId;
+      },
+    };
+    const createTextEntryService = () => ({
+      open: async (options) => ({
+        close: vi.fn(),
+        getSnapshot: () => ({
+          active: true,
+          selectionEnd: options.selectionEnd,
+          selectionStart: options.selectionStart,
+          value: options.value,
+        }),
+        subscribe: () => vi.fn(),
+      }),
+    });
+    const field = new PixiTextField({
+      motionRuntime,
+      textEntryService: createTextEntryService(),
+    });
+
+    field.setValue('Mira');
+    await field.focus();
+    expect(field.caretGraphic.alpha).toBe(1);
+    expect(frames.size).toBe(1);
+
+    now = 600;
+    [...frames.values()][0]();
+    expect(field.caretGraphic.alpha).toBe(0);
+
+    now = 1_100;
+    [...frames.values()].at(-1)();
+    expect(field.caretGraphic.alpha).toBe(1);
+    field.destroy({ children: true });
+    expect(frames.size).toBe(0);
+
+    const reducedFrames = [];
+    const reducedField = new PixiTextField({
+      motionRuntime: {
+        cancelFrame: vi.fn(),
+        now: () => 0,
+        prefersReducedMotion: () => true,
+        requestFrame: (callback) => reducedFrames.push(callback),
+      },
+      textEntryService: createTextEntryService(),
+    });
+    reducedField.setValue('Mira');
+    await reducedField.focus();
+
+    expect(reducedField.caretGraphic.alpha).toBe(1);
+    expect(reducedFrames).toHaveLength(0);
+    reducedField.destroy({ children: true });
+  });
 });

@@ -1,8 +1,6 @@
 import { Capacitor } from '@capacitor/core';
 import { CapacitorUpdater } from '@capgo/capacitor-updater';
 
-import { UPDATE_BACKGROUND_GRACE_MS } from '../../shared/updatePolicy.js';
-
 const DEFAULT_MANIFEST_URL =
   import.meta.env.VITE_OTA_MANIFEST_URL ??
   'https://davstep.github.io/idle-wizard/ota/latest.json';
@@ -32,6 +30,9 @@ export class AppLiveUpdateManager {
     this.now = now;
     this.appReadyPromise = null;
     this.startPromise = null;
+    this.pendingManifest = null;
+    this.pendingBundle = null;
+    this.failedBundle = null;
   }
 
   notifyAppReady() {
@@ -93,37 +94,111 @@ export class AppLiveUpdateManager {
         return { status: 'up_to_date', version: currentVersion };
       }
 
+      this.pendingManifest = manifest;
+
       const bundles = (await this.updaterPlugin.list()).bundles ?? [];
       const existingBundle = bundles.find(
         (bundle) => bundle.version === manifest.version,
       );
 
       if (existingBundle?.status === 'error') {
-        return { status: 'failed_bundle', version: manifest.version };
+        this.failedBundle = existingBundle;
+        return {
+          status: 'failed_bundle',
+          size: manifest.size,
+          version: manifest.version,
+        };
       }
 
-      const bundle =
-        existingBundle?.status === 'success' || existingBundle?.status === 'pending'
-          ? existingBundle
-          : await this.updaterPlugin.download({
-              url: manifest.bundleUrl,
-              version: manifest.version,
-              checksum: manifest.checksum,
-            });
+      if (
+        existingBundle?.status === 'success' ||
+        existingBundle?.status === 'pending'
+      ) {
+        this.pendingBundle = existingBundle;
+        return {
+          status: 'ready',
+          size: manifest.size,
+          version: manifest.version,
+        };
+      }
 
-      await this.updaterPlugin.setMultiDelay({
-        delayConditions: [
-          {
-            kind: 'background',
-            value: String(UPDATE_BACKGROUND_GRACE_MS),
-          },
-        ],
-      });
-      await this.updaterPlugin.next({ id: bundle.id });
-      return { status: 'staged', version: manifest.version };
+      return {
+        status: 'available',
+        size: manifest.size,
+        version: manifest.version,
+      };
     } catch {
       return { status: 'unavailable' };
     }
+  }
+
+  async downloadUpdate({ onProgress } = {}) {
+    const manifest = this.pendingManifest;
+    if (!manifest) {
+      throw new Error('No compatible live update is ready to download.');
+    }
+
+    if (this.pendingBundle) {
+      this.emitProgress(onProgress, 100);
+      return this.pendingBundle;
+    }
+
+    if (this.failedBundle) {
+      await this.updaterPlugin.delete?.({ id: this.failedBundle.id });
+      this.failedBundle = null;
+    }
+
+    const listener = await this.updaterPlugin.addListener?.(
+      'download',
+      ({ percent, bundle } = {}) => {
+        if (!bundle?.version || bundle.version === manifest.version) {
+          this.emitProgress(onProgress, percent);
+        }
+      },
+    );
+
+    this.emitProgress(onProgress, 0);
+    try {
+      this.pendingBundle = await this.updaterPlugin.download({
+        url: manifest.bundleUrl,
+        version: manifest.version,
+        checksum: manifest.checksum,
+      });
+      this.emitProgress(onProgress, 100);
+      return this.pendingBundle;
+    } finally {
+      await listener?.remove?.();
+    }
+  }
+
+  activateUpdate() {
+    if (!this.pendingBundle?.id) {
+      return Promise.reject(
+        new Error('The live update has not finished downloading.'),
+      );
+    }
+
+    return this.updaterPlugin.set({ id: this.pendingBundle.id });
+  }
+
+  emitProgress(onProgress, percent) {
+    if (typeof onProgress !== 'function' || !this.pendingManifest) {
+      return;
+    }
+
+    const normalizedPercent = Math.max(
+      0,
+      Math.min(100, Number(percent) || 0),
+    );
+    const progress = normalizedPercent / 100;
+    const totalBytes = this.pendingManifest.size;
+    onProgress({
+      downloadedBytes: Math.round(totalBytes * progress),
+      percent: normalizedPercent,
+      progress,
+      totalBytes,
+      version: this.pendingManifest.version,
+    });
   }
 
   async fetchManifest() {
@@ -145,6 +220,8 @@ export class AppLiveUpdateManager {
       !VERSION_PATTERN.test(payload.version ?? '') ||
       !VERSION_PATTERN.test(payload.minimumNativeVersion ?? '') ||
       !SHA_256_PATTERN.test(payload.checksum ?? '') ||
+      !Number.isSafeInteger(payload.size) ||
+      payload.size <= 0 ||
       !Array.isArray(payload.platforms)
     ) {
       return null;
@@ -175,6 +252,7 @@ export class AppLiveUpdateManager {
       platforms: payload.platforms.filter(
         (platform) => typeof platform === 'string',
       ),
+      size: payload.size,
       version: payload.version,
     };
   }

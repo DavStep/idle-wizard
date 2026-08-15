@@ -5,6 +5,7 @@ import { QaDataFacade } from '../qaData/QaDataFacade.js';
 import { DevConsoleFacade } from '../console/DevConsoleFacade.js';
 
 const DEV_UI_QUERY_KEYS = ['devUi', 'uiSurface'];
+const DEV_UI_PHASE_QUERY_KEY = 'devUiPhase';
 const DEV_LEVEL_QUERY_KEY = 'devLevel';
 const DEV_UI_RETRY_MS = 250;
 const DEV_UI_MAX_ATTEMPTS = 80;
@@ -33,6 +34,9 @@ export class DevCheatsFacade {
     const deployRefreshManager =
       app?.deployRefreshManager ??
       app?.renderFacade?.getDeployRefreshManager?.();
+    const liveUpdateGateManager =
+      app?.liveUpdateGateManager ??
+      app?.renderFacade?.getLiveUpdateGateManager?.();
     const freshStartChoiceManager =
       app?.freshStartChoiceManager ??
       app?.renderFacade?.getFreshStartChoiceManager?.();
@@ -48,6 +52,7 @@ export class DevCheatsFacade {
       deployRefreshManager,
       freshStartChoiceManager,
       gameplayFacade: app?.gameplayFacade,
+      liveUpdateGateManager,
       onlineGateManager,
       pagesFacade: app?.pagesFacade,
       playerFacade: app?.playerFacade,
@@ -233,7 +238,12 @@ export class DevCheatsFacade {
       const surfaceId = params.get(key) ?? hashParams.get(key);
 
       if (surfaceId) {
-        return { surfaceId };
+        const phase = params.get(DEV_UI_PHASE_QUERY_KEY)
+          ?? hashParams.get(DEV_UI_PHASE_QUERY_KEY);
+        return {
+          surfaceId,
+          options: phase ? { phase } : {},
+        };
       }
     }
 
@@ -271,7 +281,10 @@ export class DevCheatsFacade {
     let result;
 
     try {
-      result = this.commandManager.openUi(this.devUiRequest.surfaceId);
+      result = this.commandManager.openUi(
+        this.devUiRequest.surfaceId,
+        this.devUiRequest.options,
+      );
     } catch (error) {
       result = {
         ok: false,

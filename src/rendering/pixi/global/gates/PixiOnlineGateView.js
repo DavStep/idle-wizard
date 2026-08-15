@@ -27,6 +27,8 @@ export class PixiOnlineGateView extends PixiModalSurface {
     assets,
     inputRouter,
     application,
+    modalId = 'gate.online',
+    label = 'onlineGate',
     onSplashViewportChange = null,
     reload = () => globalThis.location?.reload?.(),
   } = {}) {
@@ -37,8 +39,8 @@ export class PixiOnlineGateView extends PixiModalSurface {
       contentHeight: 16,
       opaqueBackdrop: true,
       inputRouter,
-      modalId: 'gate.online',
-      label: 'onlineGate',
+      modalId,
+      label,
     });
     this.application = application;
     this.onSplashViewportChange =
@@ -52,11 +54,12 @@ export class PixiOnlineGateView extends PixiModalSurface {
     this.presentation = ONLINE_GATE_PRESENTATION_DIALOG;
     this.elapsedMs = 0;
     this.splashProgressValue = 0;
+    this.explicitSplashProgress = false;
     this.splash = new PixiLoadingSplash({ assets });
     this.root.removeChild(this.panel);
     this.root.addChild(this.splash, this.panel);
     this.message = new PixiTextLabel({
-      label: 'onlineGate:message',
+      label: `${label}:message`,
       align: 'center',
       anchor: { x: 0.5, y: 0 },
       wordWrap: true,
@@ -65,7 +68,7 @@ export class PixiOnlineGateView extends PixiModalSurface {
     this.progress = new PixiProgressBar({
       assetManager: assets,
       width: ONLINE_GATE_CONTENT_WIDTH,
-      label: 'onlineGate:progress',
+      label: `${label}:progress`,
     });
     this.action = new PixiTextButton({
       assetManager: assets,
@@ -73,7 +76,7 @@ export class PixiOnlineGateView extends PixiModalSurface {
       text: '',
       width: ONLINE_GATE_CONTENT_WIDTH,
       variant: 'yellow',
-      label: 'onlineGate:action',
+      label: `${label}:action`,
     });
     this.panel.content.addChild(this.message, this.progress, this.action);
     this.handleTick = (ticker) => this.tick(ticker.deltaMS);
@@ -90,9 +93,18 @@ export class PixiOnlineGateView extends PixiModalSurface {
 
     if (this.presentation === ONLINE_GATE_PRESENTATION_SPLASH) {
       this.splash.setText(viewModel.message ?? 'Loading game');
+      this.explicitSplashProgress = Number.isFinite(viewModel.progressValue);
+      if (this.explicitSplashProgress) {
+        this.splashProgressValue = Math.max(
+          0,
+          Math.min(1, Number(viewModel.progressValue)),
+        );
+        this.splash.setProgress(this.splashProgressValue);
+      }
       if (
-        previousPresentation !== ONLINE_GATE_PRESENTATION_SPLASH ||
-        !this.shown
+        !this.explicitSplashProgress &&
+        (previousPresentation !== ONLINE_GATE_PRESENTATION_SPLASH ||
+          !this.shown)
       ) {
         this.elapsedMs = 0;
         this.splashProgressValue = prefersReducedMotion() ? 1 : 0;
@@ -105,12 +117,14 @@ export class PixiOnlineGateView extends PixiModalSurface {
     }
 
     this.panel.setTitle(viewModel.title ?? '');
+    this.explicitSplashProgress = false;
     this.message.setText(viewModel.message ?? '');
     this.progress.visible = viewModel.progress === true;
     this.progress.renderable = this.progress.visible;
     this.action.visible = Boolean(viewModel.actionLabel && viewModel.onAction);
     this.action.renderable = this.action.visible;
     this.action
+      .setVariant(viewModel.actionVariant ?? 'yellow')
       .setText(viewModel.actionLabel ?? '')
       .setAction(viewModel.onAction ?? null)
       .setEnabled(this.action.visible);
@@ -268,8 +282,9 @@ export class PixiOnlineGateView extends PixiModalSurface {
     if (
       this.active &&
       this.shown &&
-      (this.presentation === ONLINE_GATE_PRESENTATION_SPLASH ||
-        this.progress.visible)
+      (this.presentation === ONLINE_GATE_PRESENTATION_SPLASH
+        ? !this.explicitSplashProgress
+        : this.progress.visible)
     ) {
       this.application?.ticker?.add?.(this.handleTick);
     }

@@ -4,6 +4,7 @@ import {
   getMarketGradeForCatalogIndex,
   getRequiredMarketLicence,
   isItemGradeTradedInMarket,
+  usesDynamicNpcMarketPricing,
 } from './marketLicence.js';
 
 describe('market licence access', () => {
@@ -26,5 +27,11 @@ describe('market licence access', () => {
       name: 'City Bazaar',
       rank: 3,
     });
+  });
+
+  it('keeps Small Town prices fixed and enables dynamic pricing after prestige', () => {
+    expect(usesDynamicNpcMarketPricing('smallTown')).toBe(false);
+    expect(usesDynamicNpcMarketPricing('crossroads')).toBe(true);
+    expect(usesDynamicNpcMarketPricing('arcaneExchange')).toBe(true);
   });
 });

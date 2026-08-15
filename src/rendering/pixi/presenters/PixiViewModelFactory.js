@@ -1459,45 +1459,48 @@ export class PixiViewModelFactory {
       typeof actions.confirmWorldEventDonation === 'function';
     const itemKind = getWorldEventDonationItemKind(option);
     const isCoinDonation = option.resourceType === 'coin';
+    const questTitle = toTitleCase(
+      request.title ?? request.label ?? 'Donate',
+    );
 
     return {
-      title: 'Donate',
+      title: questTitle,
       status: canDonate ? '' : 'Not enough resources.',
       summaryRows: [
         {
-          id: 'quest',
-          label: 'Quest',
-          value: toTitleCase(request.title ?? request.label ?? ''),
-        },
-        {
           id: 'giving',
-          label: 'Giving',
-          value: toTitleCase(option.label ?? ''),
+          label: toTitleCase(option.label ?? ''),
+          value: '',
           itemKind,
           itemKey: option.itemKey,
-          valueIconResourceKey: isCoinDonation ? 'coin' : null,
-          quantityLabel: amount > 0 ? `x${formatWorldEventNumber(amount)}` : '',
+          leadingResourceKey: isCoinDonation ? 'coin' : null,
+          iconLeading: true,
+          fontSize: 14,
+          layoutHeight: 34,
         },
         {
           id: 'owned',
           label: 'Owned',
           value: formatWorldEventNumber(maximum),
-          itemKind: isCoinDonation ? null : itemKind,
-          itemKey: isCoinDonation ? null : option.itemKey,
-          valueIconResourceKey: isCoinDonation ? 'coin' : null,
+          layoutInset: 38,
+        },
+        {
+          id: 'total',
+          label: 'Already Donated',
+          value:
+            option.collectedPointText ??
+            `${formatWorldEventNumber(option.contributionPoints)} points`,
+          layoutInset: 38,
+        },
+        {
+          id: 'amount',
+          label: 'Amount',
+          value: `${formatWorldEventNumber(amount)} / ${formatWorldEventNumber(maximum)}`,
         },
         {
           id: 'points',
           label: 'Earn',
           value: `+${formatWorldEventNumber(points)} points`,
-          valueTone: 'root',
-        },
-        {
-          id: 'total',
-          label: 'Contributed',
-          value:
-            option.collectedPointText ??
-            `${formatWorldEventNumber(option.contributionPoints)} points`,
           valueTone: 'root',
         },
       ],
@@ -1575,6 +1578,7 @@ export class PixiViewModelFactory {
           allianceTagColor:
             message.allianceTagColor ?? message.alliance_tag_color ?? 'ink',
           character: message.character ?? 'elara',
+          frame: message.frame ?? 'classic',
           ageLabel: formatWorldChatMessageAge(message.sentAtMs),
           semanticId: canOpenPlayer
             ? `${isSystem ? 'world-chat-system-player' : 'world-chat-player'}:${id}`

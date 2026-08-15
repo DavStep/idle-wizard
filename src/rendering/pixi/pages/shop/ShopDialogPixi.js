@@ -251,6 +251,11 @@ const DIALOG_CONFIG = Object.freeze({
     width: DEFAULT_DIALOG_WIDTH,
     height: 218,
     rowHeight: PIXI_ROOT_RUN_GEOMETRY.settings.rowPitch,
+    summaryLeadingIconSize: 30,
+    rangeAfterSummaryRowId: 'amount',
+    rangeTopGap: 2,
+    rangeBottomGap: 8,
+    rangeHorizontalOutset: 9,
     actionVariant: 'green',
   }),
 });
@@ -467,7 +472,9 @@ export class ShopDialogPixi extends BasePixiRetainedView {
             config.splitPaper?.summaryFontSize ??
             PIXI_UI_GEOMETRY.bodyFontSize,
           leadingIconSize:
-            config.splitPaper?.leadingIconSize ?? 22,
+            config.summaryLeadingIconSize ??
+            config.splitPaper?.leadingIconSize ??
+            22,
           label: `${dialogId}:summaryRow`,
         }),
       reset: (row) => row.reset(),
@@ -880,9 +887,37 @@ export class ShopDialogPixi extends BasePixiRetainedView {
     this.itemSection.renderable = false;
     let y = 0;
 
+    let rangeLaidOut = false;
+    const layoutRange = () => {
+      if (!this.rangeControl.visible || rangeLaidOut) {
+        return;
+      }
+      const horizontalOutset = Math.max(
+        0,
+        finiteOr(this.config.rangeHorizontalOutset, 0),
+      );
+      y += finiteOr(this.config.rangeTopGap, 0);
+      this.rangeControl.setBounds(
+        -horizontalOutset,
+        y,
+        bodyWidth + horizontalOutset * 2,
+        16,
+      );
+      y += 16 + finiteOr(this.config.rangeBottomGap, CONTENT_GAP);
+      rangeLaidOut = true;
+    };
+
     for (const row of this.summaryRows?.getWidgets?.() ?? []) {
-      row.setBounds(0, y, bodyWidth, PIXI_UI_GEOMETRY.rowMinHeight);
-      y += PIXI_UI_GEOMETRY.rowMinHeight;
+      const rowInset = Math.max(0, finiteOr(row.layoutInset, 0));
+      const rowHeight = Math.max(
+        PIXI_UI_GEOMETRY.rowMinHeight,
+        finiteOr(row.layoutHeight, PIXI_UI_GEOMETRY.rowMinHeight),
+      );
+      row.setBounds(rowInset, y, bodyWidth - rowInset, rowHeight);
+      y += rowHeight;
+      if (row.key === this.config.rangeAfterSummaryRowId) {
+        layoutRange();
+      }
     }
 
     if (this.messageLabel.visible) {
@@ -902,10 +937,7 @@ export class ShopDialogPixi extends BasePixiRetainedView {
       }
     }
 
-    if (this.rangeControl.visible) {
-      this.rangeControl.setBounds(0, y, bodyWidth, 16);
-      y += 16 + CONTENT_GAP;
-    }
+    layoutRange();
 
     if (this.amountSelector.root.visible) {
       this.amountSelector.setBounds(0, y, bodyWidth, 22);
@@ -1392,6 +1424,7 @@ export class DialogSummaryRow {
     this.root = new Container();
     this.root.label = label;
     this.assetManager = assetManager;
+    this.defaultFontSize = fontSize;
     this.fontSize = fontSize;
     this.leadingIconSize = leadingIconSize;
     this.keyLabel = new PixiTextLabel({
@@ -1414,6 +1447,15 @@ export class DialogSummaryRow {
     });
     this.valueResource.visible = false;
     this.valueResource.renderable = false;
+    this.leadingResource = new PixiResourceLabel({
+      assetManager,
+      resource: 'coin',
+      fontSize: leadingIconSize,
+      includeResourceName: false,
+      label: `${label}:leadingResource`,
+    });
+    this.leadingResource.visible = false;
+    this.leadingResource.renderable = false;
     this.quantityLabel = new PixiTextLabel({
       fontSize,
       lineHeight: fontSize,
@@ -1428,6 +1470,7 @@ export class DialogSummaryRow {
       this.keyLabel,
       this.valueLabel,
       this.valueResource,
+      this.leadingResource,
       this.quantityLabel,
       this.itemIcon,
       this.itemIconOverlay,
@@ -1454,6 +1497,19 @@ export class DialogSummaryRow {
     this.unregisterSemantic();
     this.root.visible = true;
     this.root.renderable = true;
+    this.fontSize = Math.max(
+      1,
+      finiteOr(row.fontSize, this.defaultFontSize),
+    );
+    for (const label of [
+      this.keyLabel,
+      this.valueLabel,
+      this.quantityLabel,
+    ]) {
+      label.setFontSize(this.fontSize);
+      label.setLineHeight(this.fontSize);
+    }
+    this.keyLabel.setFontWeight(row.fontWeight ?? 'normal');
     this.keyLabel.setText(row.label ?? row.keyText ?? '');
     this.valueLabel.setText(row.value ?? row.valueText ?? '');
     const valueIconResourceKey = row.valueIconResourceKey ?? null;
@@ -1466,6 +1522,16 @@ export class DialogSummaryRow {
       this.valueResource.bind(key, {
         resource: valueIconResourceKey,
         amount: row.value ?? row.valueText ?? '',
+        includeResourceName: false,
+      });
+    }
+    const leadingResourceKey = row.leadingResourceKey ?? null;
+    this.leadingResource.visible = Boolean(leadingResourceKey);
+    this.leadingResource.renderable = this.leadingResource.visible;
+    if (leadingResourceKey) {
+      this.leadingResource.bind(key, {
+        resource: leadingResourceKey,
+        amount: '',
         includeResourceName: false,
       });
     }
@@ -1508,6 +1574,8 @@ export class DialogSummaryRow {
     this.action = row.action ?? row.onActivate ?? null;
     this.enabled = row.enabled !== false && row.disabled !== true;
     this.iconLeading = row.iconLeading === true;
+    this.layoutHeight = finiteOr(row.layoutHeight, null);
+    this.layoutInset = finiteOr(row.layoutInset, 0);
     this.root.eventMode = this.action && this.enabled ? 'static' : 'none';
     this.semanticId = row.semanticId ?? null;
     if (this.semanticId && this.semanticRegistry) {
@@ -1539,47 +1607,63 @@ export class DialogSummaryRow {
     if (this.valueResource.visible) {
       this.valueResource.position.set(width - valueWidth, textY);
     }
-    if (this.itemIcon.visible) {
-      const iconSize = this.iconLeading ? this.leadingIconSize : 18;
-      const iconCenterX = this.iconLeading ? iconSize / 2 : 55;
-      const iconCenterY = height / 2;
+    const hasLeadingVisual =
+      this.iconLeading &&
+      (this.itemIcon.visible || this.leadingResource.visible);
+    if (hasLeadingVisual) {
+      const iconSize = this.leadingIconSize;
+      if (this.itemIcon.visible) {
+        setSeedPackCompositeBounds(
+          this.itemIcon,
+          this.itemIconOverlay,
+          iconSize / 2,
+          height / 2,
+          iconSize,
+          0,
+        );
+        this.itemIcon.width *= this.itemIconAspectRatio;
+      }
+      if (this.leadingResource.visible) {
+        this.leadingResource.position.set(
+          0,
+          Math.max(0, (height - iconSize) / 2),
+        );
+      }
+      const labelX = iconSize + PIXI_UI_GEOMETRY.rowColumnGap;
+      this.keyLabel.position.set(labelX, textY);
+      this.keyLabel.setWrapWidth(
+        Math.max(
+          0,
+          width -
+            labelX -
+            valueWidth -
+            PIXI_UI_GEOMETRY.rowColumnGap,
+        ),
+      );
+      this.valueLabel.setAnchor(1, 0);
+      this.valueLabel.position.set(width, textY);
+    } else if (this.itemIcon.visible) {
       setSeedPackCompositeBounds(
         this.itemIcon,
         this.itemIconOverlay,
-        iconCenterX,
-        iconCenterY,
-        iconSize,
-        this.iconLeading ? 0 : 0.5,
+        55,
+        height / 2,
+        18,
+        0.5,
       );
       this.itemIcon.width *= this.itemIconAspectRatio;
-      if (this.iconLeading) {
-        const labelX = iconSize + PIXI_UI_GEOMETRY.rowColumnGap;
-        this.keyLabel.position.set(labelX, textY);
-        this.keyLabel.setWrapWidth(
-          Math.max(
-            0,
-            width -
-              labelX -
-              valueWidth -
-              PIXI_UI_GEOMETRY.rowColumnGap,
-          ),
-        );
-        this.valueLabel.setAnchor(1, 0);
-        this.valueLabel.position.set(width, textY);
-      } else {
-        this.valueLabel.setAnchor(0, 0);
-        this.valueLabel.position.set(67, textY);
-        this.valueLabel.setWrapWidth(
-          Math.max(
-            0,
-            width -
-              67 -
-              quantityWidth -
-              PIXI_UI_GEOMETRY.rowColumnGap,
-          ),
-        );
-        this.keyLabel.setWrapWidth(46);
-      }
+      this.valueLabel.setAnchor(0, 0);
+      this.valueLabel.position.set(67, textY);
+      this.valueLabel.setWrapWidth(
+        Math.max(
+          0,
+          width -
+            67 -
+            quantityWidth -
+            PIXI_UI_GEOMETRY.rowColumnGap,
+        ),
+      );
+      this.keyLabel.setWrapWidth(46);
     } else {
       this.valueLabel.setAnchor(1, 0);
       this.valueLabel.position.set(
@@ -1605,6 +1689,7 @@ export class DialogSummaryRow {
     this.keyLabel.applyTheme(theme);
     this.valueLabel.applyTheme(theme);
     this.valueResource.applyTheme(theme);
+    this.leadingResource.applyTheme(theme);
     this.quantityLabel.applyTheme(theme);
   }
 
@@ -1613,10 +1698,22 @@ export class DialogSummaryRow {
     this.action = null;
     this.enabled = false;
     this.iconLeading = false;
+    this.layoutHeight = null;
+    this.layoutInset = 0;
+    this.fontSize = this.defaultFontSize;
+    this.keyLabel.setFontSize(this.defaultFontSize);
+    this.keyLabel.setLineHeight(this.defaultFontSize);
+    this.keyLabel.setFontWeight('normal');
+    this.valueLabel.setFontSize(this.defaultFontSize);
+    this.valueLabel.setLineHeight(this.defaultFontSize);
+    this.quantityLabel.setFontSize(this.defaultFontSize);
+    this.quantityLabel.setLineHeight(this.defaultFontSize);
     this.itemIconAspectRatio = 1;
     this.key = null;
     this.valueResource.visible = false;
     this.valueResource.renderable = false;
+    this.leadingResource.visible = false;
+    this.leadingResource.renderable = false;
     this.itemIcon.texture = Texture.EMPTY;
     this.itemIcon.visible = false;
     this.itemIconOverlay.texture = Texture.EMPTY;

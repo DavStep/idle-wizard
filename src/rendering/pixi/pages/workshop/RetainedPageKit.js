@@ -38,7 +38,11 @@ export const RETAINED_PAGE_GEOMETRY = Object.freeze({
   height: PIXI_UI_GEOMETRY.sourceHeight,
   contentTop: PIXI_UI_GEOMETRY.roomContentTop,
   contentEdge: 16,
-  chatClearance: 162,
+  chatClearance:
+    PIXI_UI_GEOMETRY.roomChatBottom +
+    PIXI_UI_GEOMETRY.roomChatHeight +
+    PIXI_UI_GEOMETRY.roomChatTitleOverhang +
+    PIXI_UI_GEOMETRY.roomChatGap,
   rowHeight: 20,
   researchRowHeight: 22,
   tabHeight: PIXI_UI_GEOMETRY.roomControlHeight,

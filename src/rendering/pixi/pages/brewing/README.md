@@ -101,10 +101,10 @@ deterministic real-app visual-QA state.
 The production composition has two sections. The unframed preview keeps the
 image-backed fantasy chevrons, horizontal swipe, centered cauldron, and six
 compact ingredient requirement tiles in a subtle connected orbit. The preview
-composition sits below the title/configuration row. The chevrons sit just
-outside the two lower ingredient tiles and slightly below their centers, so
-they read as balanced carousel navigation without interrupting the cauldron or
-the middle orbit row. All six cells are real gameplay ingredient slots; recipes
+composition sits below the title/configuration row. The chevrons keep their
+horizontal anchors just outside the two lower ingredient tiles and share the
+potion-name Y axis, so navigation sits beside the selected recipe identity.
+All six cells are real gameplay ingredient slots; recipes
 may continue using fewer. Ingredient slots reuse the ordinary room-panel skin
 and show item art, name, and a compact `owned/required` count. Repeated herbs
 allocate owned stock across their ordered slots, so three Sage requirements with
@@ -196,14 +196,18 @@ reuse the row transform, ingredient drag, return, and brew flyouts use one
 bounded ghost pool. A successful manual Brew launches each visible ingredient
 from its orbit icon with a short outward/upward kick, then follows a high curved
 path into the visible center of the cauldron liquid. Flights use a readable
-Root Run-style `55ms` stagger and `420ms` per-item duration. Cauldron
+Root Run-style `55ms` stagger and `420ms` per-item duration. Once the batch is
+active, each source slot keeps only a faint used-ingredient ghost of its herb
+art and name; the full-strength ingredient exists only in the flight. Cauldron
 receive/recipe-receive/buy feedback reuses the cauldron display tree. Prepared
 liquid shows one sparse ripple; an active brew adds three bounded bubbles and a
-small highlight drift. A newly staged herb eases into its unchanged slot and
-lights its connector once. Brew completion adds one compact liquid ring and
-cauldron squash, primary action changes ease the replacement label into the
-existing button skin, and Collect lifts the potion art from the visible liquid
-before the shared reward layer reports it. Changing
+small highlight drift. The ambient cycle moves and scales the cauldron and its
+source liquid mask together, keeping the liquid registered below the rim. A
+newly staged herb eases into its unchanged slot and lights its connector once.
+Brew completion adds one compact liquid ring and a contained cauldron-and-liquid
+squash, and primary action changes ease the replacement label into the
+existing button skin. Collect uses only the shared reward drop, anchored to the
+visible center of the cauldron liquid. Changing
 the selected cauldron through a chevron or swipe plays the same compact
 directional `240ms` settle without decorative trails or particles.
 Reduced motion switches instantly. Deactivation and pool reset clear every
@@ -221,9 +225,17 @@ for the non-persistent selected-potion batch card used to verify the potion
 well, `Ready to Brew` status, progress rail, and primary action without
 changing gameplay or save data. Add `?longName=true` to reopen the wrapped
 `Minor Healing Potion` identity used for short-portrait spacing QA.
+Add `?cauldrons=3&selectedCauldron=2` to show both carousel chevrons around the
+middle cauldron for navigation alignment QA.
+Add `?state=collect&frame=mid` to freeze the production shared potion reward
+drop at mid-flight from the visible cauldron liquid. The hidden recipe output
+reports `data-reward-drops="1"` and `data-active-reward-drops="1"` when exactly
+one visual drop was emitted.
 
 Add
 `?state=active&theme=black&repeatTheme=true&reducedMotion=true`
 to reopen the active-brew regression state. It reapplies the selected theme,
 keeps reduced motion enabled, and exposes the live rail value through
 `#brewing-ready-hud-recipe-state[data-progress]`.
+Use `?state=active&motionMs=275` to freeze the active cauldron at the liquid
+cycle's highest point for reproducible containment screenshots.

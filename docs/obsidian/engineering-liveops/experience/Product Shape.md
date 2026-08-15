@@ -366,6 +366,7 @@ experience_type: product-shape
 - Reward flyouts are page-owned: filter events against the active room, never replay hidden-room reward events on resume, and clear active transients when the room changes.
 - With reward events enabled, Workshop summon item text comes from `subscribeRewardEvents`; the action bar only adds the mana-spend flyout.
 - Claim-button reward flyouts should publish before the claim snapshot rebuilds, so the original button can still anchor the motion.
+- Retained reward effects must anchor to the currently visible production display object; hidden legacy room trees can keep stale semantic bounds and send item drops off-stage.
 - Haptics are app-level device feedback: keep the preference in local storage and route pulses through `HapticsFacade`. Every enabled touch control gets a mild pulse on touch-down, no second pulse on quick release, and a mild second pulse only after a validated release following a `350ms` hold; actions and click sounds remain release-confirmed.
 - Holding a button must never activate or repeat its action before release; Workshop summon follows the same release-only rule as tabs, regular buttons, icon buttons, and dialog close controls.
 - Android tap haptics should prefer the `IdleWizardHaptics` constant pulse (`5ms`, `0.35` amplitude); Capacitor `Haptics.vibrate()` uses default amplitude and feels harsher.

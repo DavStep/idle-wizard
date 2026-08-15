@@ -12,7 +12,7 @@ export default defineUiEditorIntegration({
   folderPath: ['Global'],
   id: WIDGET_ID,
   kind: 'widget',
-  label: 'Backend Loading Splash',
+  label: 'App Loading Splash',
   properties: [
     { label: 'Production class', value: 'PixiLoadingSplash' },
     { label: 'Contract', value: 'Safe-area loading art, status label, and shared progress rail' },
@@ -20,11 +20,12 @@ export default defineUiEditorIntegration({
   scenarios: [
     { fixture: { progress: 0.2, text: 'Connecting to server' }, id: 'connecting', label: 'Connecting', mount: mountLoadingSplash },
     { fixture: { progress: 0.68, text: 'Loading game' }, id: 'loading', label: 'Loading', mount: mountLoadingSplash },
+    { fixture: { progress: 0.42, text: 'Updating 10.1 MB / 24.0 MB' }, id: 'updating', label: 'Updating', mount: mountLoadingSplash },
     { fixture: { progress: 1, text: 'Ready' }, id: 'ready', label: 'Ready', mount: mountLoadingSplash },
   ],
   sectionId: 'composite-widgets',
   usages: [
-    { label: 'App startup and backend reconnect gate', source: 'src/rendering/pixi/global/gates/PixiLoadingSplash.js' },
+    { label: 'App startup, backend reconnect, and live-update progress', source: 'src/rendering/pixi/global/gates/PixiLoadingSplash.js' },
   ],
 });
 

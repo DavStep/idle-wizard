@@ -177,6 +177,12 @@ const UI_SURFACE_DEFINITIONS = Object.freeze([
     setup: 'deployRefresh',
     aliases: ['refreshingGate'],
   },
+  {
+    id: 'liveUpdate',
+    kind: 'preview',
+    setup: 'liveUpdate',
+    aliases: ['gameUpdate', 'updateGate'],
+  },
   { id: 'workshop', kind: 'page', pageId: 'workshop' },
   { id: 'brewing', kind: 'page', pageId: 'brewing' },
   { id: 'garden', kind: 'page', pageId: 'garden' },
@@ -310,6 +316,7 @@ export class DevCheatCommandManager {
     deployRefreshManager,
     freshStartChoiceManager,
     gameplayFacade,
+    liveUpdateGateManager,
     onlineGateManager,
     pagesFacade,
     playerFacade,
@@ -322,6 +329,7 @@ export class DevCheatCommandManager {
     this.deployRefreshManager = deployRefreshManager;
     this.freshStartChoiceManager = freshStartChoiceManager;
     this.gameplayFacade = gameplayFacade;
+    this.liveUpdateGateManager = liveUpdateGateManager;
     this.onlineGateManager = onlineGateManager;
     this.pagesFacade = pagesFacade;
     this.playerFacade = playerFacade;
@@ -2025,6 +2033,10 @@ export class DevCheatCommandManager {
       return this.openDeployRefreshSurface(surface);
     }
 
+    if (surface.setup === 'liveUpdate') {
+      return this.openLiveUpdateSurface(surface, options);
+    }
+
     const resolvedOptions = { ...(surface.options ?? {}), ...(options ?? {}) };
     const result =
       surface.kind === 'page'
@@ -2202,6 +2214,19 @@ export class DevCheatCommandManager {
       this.deployRefreshManager.showPreview(),
       surface,
     );
+  }
+
+  openLiveUpdateSurface(surface, options = {}) {
+    if (typeof this.liveUpdateGateManager?.showPreview !== 'function') {
+      return this.decorateUiResult(
+        surface.id,
+        { ok: false, reason: 'live_update_gate_missing' },
+        surface,
+      );
+    }
+
+    this.liveUpdateGateManager.showPreview(options);
+    return this.decorateUiResult(surface.id, { ok: true }, surface);
   }
 
   openGuildQuestPostingSurface(surface, options = {}) {

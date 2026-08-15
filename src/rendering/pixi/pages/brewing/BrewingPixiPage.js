@@ -53,7 +53,7 @@ import { RootRunInventoryChoiceDialogPixi } from '../shared/RootRunInventoryChoi
 
 export const BREWING_PIXI_GEOMETRY = Object.freeze({
   worldTop: 88,
-  worldBottom: 162,
+  worldBottom: RETAINED_PAGE_GEOMETRY.chatClearance,
   worldWidth: 670,
   worldHeight: 1960,
   worldEdgeExtension: 16,
@@ -92,9 +92,6 @@ const BREWING_CAULDRON_DROP_MS = 220;
 const BREWING_BREW_DROP_MS = 420;
 const BREWING_BREW_DROP_STAGGER_MS = 55;
 const BREWING_HUD_BREW_GHOST_SIZE = 30;
-const BREWING_HUD_COLLECT_GHOST_SIZE = 34;
-const BREWING_HUD_COLLECT_MOTION_MS = 460;
-const BREWING_HUD_COLLECT_LIFT = 58;
 const BREWING_LIQUID_VISIBLE_CENTER_Y_RATIO = 91.5 / 486;
 const BREWING_CAULDRON_RECEIVE_MS = 205;
 const BREWING_RECIPE_RECEIVE_MS = 140;
@@ -873,49 +870,6 @@ export class BrewingPixiPage extends BaseRetainedPixiPage {
       ghostSize: BREWING_HUD_BREW_GHOST_SIZE,
       onArrival: () =>
         hud.startIngredientReceiveMotion?.(this.timeSource()),
-    });
-  }
-
-  captureHudPotionMotionSource(hud) {
-    if (
-      !hud?.potionIcon?.visible ||
-      hud.potionIcon.texture === Texture.EMPTY
-    ) {
-      return null;
-    }
-    return {
-      texture: hud.potionIcon.texture,
-      key:
-        hud.getSelectedCauldron?.()?.activeBrew?.key ??
-        hud.getSelectedCauldron?.()?.selectedRecipe?.key ??
-        'potion',
-      position: this.getDisplayObjectCenter(
-        hud.cauldronArt,
-        BREWING_LIQUID_VISIBLE_CENTER_Y_RATIO,
-      ),
-    };
-  }
-
-  animateHudCollectedPotion(source) {
-    if (!source || this.prefersReducedMotion()) {
-      return;
-    }
-    const ghost = this.motionGhostPool.acquire();
-    ghost.bind({
-      texture: source.texture,
-      itemKind: 'potion',
-      itemKey: source.key ?? 'potion',
-      size: BREWING_HUD_COLLECT_GHOST_SIZE,
-    });
-    this.motionLayer.addChild(ghost.root);
-    ghost.setPosition(source.position.x, source.position.y);
-    this.startGhostMotion(ghost, {
-      target: {
-        x: source.position.x,
-        y: source.position.y - BREWING_HUD_COLLECT_LIFT,
-      },
-      durationMs: BREWING_HUD_COLLECT_MOTION_MS,
-      kind: 'collect',
     });
   }
 
@@ -3510,18 +3464,15 @@ function applyGhostMotion(motion, progress) {
   const midpoint = 0.58;
   const cauldronDrop =
     motion.kind === 'cauldron' || motion.kind === 'brew';
-  const collect = motion.kind === 'collect';
-  const midLift = collect
-    ? -26
-    : cauldronDrop
+  const midLift = cauldronDrop
     ? motion.kind === 'brew'
       ? -22
       : -18
     : -8;
-  const midScale = collect ? 1.06 : cauldronDrop ? 0.92 : 0.96;
-  const endScale = collect ? 0.72 : cauldronDrop ? 0.58 : 0.72;
-  const endAlpha = collect || cauldronDrop ? 0 : 0.35;
-  const midRotation = collect ? 6 : cauldronDrop ? 4 : -3;
+  const midScale = cauldronDrop ? 0.92 : 0.96;
+  const endScale = cauldronDrop ? 0.58 : 0.72;
+  const endAlpha = cauldronDrop ? 0 : 0.35;
+  const midRotation = cauldronDrop ? 4 : -3;
   const mid = {
     x: lerp(motion.start.x, motion.target.x, midpoint),
     y:

@@ -101,18 +101,16 @@ export function createDialogViewModel(
         { id: 'quest', label: 'Quest', value: 'Quiet The Crowd' },
         {
           id: 'giving',
-          label: 'Giving',
+          label: 'Give',
           value: 'Calming Draught',
           itemKind: 'potion',
           itemKey: 'calmingDraught',
-          quantityLabel: `x${amount}`,
+          quantityLabel: '12 owned',
         },
         {
-          id: 'owned',
-          label: 'Owned',
-          value: '12',
-          itemKind: 'potion',
-          itemKey: 'calmingDraught',
+          id: 'amount',
+          label: 'Amount',
+          value: `${amount} / 12`,
         },
         {
           id: 'points',
@@ -122,9 +120,8 @@ export function createDialogViewModel(
         },
         {
           id: 'total',
-          label: 'Contributed',
+          label: 'Item Total',
           value: '360 points',
-          valueTone: 'root',
         },
       ],
       range: {

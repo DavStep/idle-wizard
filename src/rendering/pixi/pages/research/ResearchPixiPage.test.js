@@ -340,10 +340,17 @@ describe('ResearchPixiPage', () => {
     );
     harness.page.bind(model);
 
+    const contentHeight =
+      PIXI_UI_GEOMETRY.sourceHeight -
+      RETAINED_PAGE_GEOMETRY.contentTop -
+      RETAINED_PAGE_GEOMETRY.chatClearance;
+    const tabClearance =
+      RETAINED_PAGE_GEOMETRY.tabHeight +
+      RETAINED_PAGE_GEOMETRY.scrollCut * 2;
     expect(harness.page.scroll.root.position).toMatchObject({ x: 0, y: 104 });
     expect(harness.page.scroll).toMatchObject({
       width: 374,
-      height: 530,
+      height: contentHeight - tabClearance,
     });
     const box = harness.page.boxes.get('herbs');
     expect(box.root.position.x).toBe(0);
@@ -353,7 +360,11 @@ describe('ResearchPixiPage', () => {
     expect(box.rows.get('mint').card.position.x).toBe(-2);
     expect(harness.page.tabsLayer.position).toMatchObject({
       x: 16,
-      y: 640,
+      y:
+        RETAINED_PAGE_GEOMETRY.contentTop +
+        contentHeight -
+        6 -
+        RETAINED_PAGE_GEOMETRY.tabHeight,
     });
     const tabs = harness.page.tabs.getWidgets();
     expect(tabs.map((tab) => tab.control.textLabel.text)).toEqual([
@@ -457,11 +468,22 @@ describe('ResearchPixiPage', () => {
     const releasedClearance =
       RETAINED_PAGE_GEOMETRY.chatClearance -
       PIXI_UI_GEOMETRY.roomChatBottom;
+    const visibleScrollHeight =
+      PIXI_UI_GEOMETRY.sourceHeight -
+      RETAINED_PAGE_GEOMETRY.contentTop -
+      RETAINED_PAGE_GEOMETRY.chatClearance -
+      RETAINED_PAGE_GEOMETRY.tabHeight -
+      RETAINED_PAGE_GEOMETRY.scrollCut * 2;
+    const visibleTabsY =
+      PIXI_UI_GEOMETRY.sourceHeight -
+      RETAINED_PAGE_GEOMETRY.chatClearance -
+      6 -
+      RETAINED_PAGE_GEOMETRY.tabHeight;
     expect(harness.page.scroll.height).toBeCloseTo(
-      530 + releasedClearance,
+      visibleScrollHeight + releasedClearance,
     );
     expect(harness.page.tabsLayer.position.y).toBeCloseTo(
-      640 + releasedClearance,
+      visibleTabsY + releasedClearance,
     );
 
     harness.page.destroy();

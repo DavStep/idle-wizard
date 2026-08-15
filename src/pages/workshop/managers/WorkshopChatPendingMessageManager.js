@@ -1,3 +1,5 @@
+import { normalizePlayerFrame } from '../../../player/playerFrames.js';
+
 export const WORKSHOP_CHAT_PENDING_STORAGE_KEY =
   'idle-wizard:workshop-chat-pending:v1';
 
@@ -112,6 +114,7 @@ export class WorkshopChatPendingMessageManager {
       senderIdentity: String(message?.senderIdentity ?? 'local'),
       username: String(message?.username || 'Wizard'),
       character: message?.character,
+      frame: normalizePlayerFrame(message?.frame),
       playerLevel: this.normalizePlayerLevel(message?.playerLevel),
       body,
       allianceTag: String(message?.allianceTag ?? ''),

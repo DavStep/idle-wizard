@@ -1,7 +1,17 @@
-const BUTTON_CLICK_SAMPLE_URL = new URL(
-  '../../../../assets/game/source/audio/root-run/button-click.wav',
-  import.meta.url,
-).href;
+const BUTTON_CLICK_SAMPLE_URLS = Object.freeze([
+  new URL(
+    '../../../../assets/game/source/audio/idle-outpost/button-touch-up-1.wav',
+    import.meta.url,
+  ).href,
+  new URL(
+    '../../../../assets/game/source/audio/idle-outpost/button-touch-up-2.wav',
+    import.meta.url,
+  ).href,
+  new URL(
+    '../../../../assets/game/source/audio/idle-outpost/button-touch-up-3.wav',
+    import.meta.url,
+  ).href,
+]);
 const PURCHASE_SAMPLE_URLS = Object.freeze([
   new URL(
     '../../../../assets/game/source/audio/root-run/sell-1.wav',
@@ -76,7 +86,8 @@ function createCue({
 
 export class UiClickSoundManager {
   constructor({
-    clickSampleUrl = BUTTON_CLICK_SAMPLE_URL,
+    clickSampleUrls = BUTTON_CLICK_SAMPLE_URLS,
+    clickSampleUrl,
     purchaseSampleUrls = PURCHASE_SAMPLE_URLS,
     dialogOpenSampleUrls = DIALOG_OPEN_SAMPLE_URLS,
     windowRef = typeof window === 'undefined' ? null : window,
@@ -103,7 +114,10 @@ export class UiClickSoundManager {
       [
         'click',
         createCue({
-          urls: [clickSampleUrl],
+          urls:
+            clickSampleUrl === undefined
+              ? [...clickSampleUrls]
+              : [clickSampleUrl],
           gain: CLICK_GAIN,
           minIntervalMs: CLICK_MIN_INTERVAL_MS,
         }),

@@ -8,6 +8,12 @@ const sageSeed = {
   label: 'sage seed',
   kind: 'seed',
 };
+const manaTonic = {
+  id: 2001,
+  key: 'manaTonic',
+  label: 'mana tonic',
+  kind: 'potion',
+};
 
 describe('ShopNpcSellQuoteManager', () => {
   it('quotes direct NPC sells from marginal market prices', () => {
@@ -17,6 +23,7 @@ describe('ShopNpcSellQuoteManager', () => {
         getNpcNeed: () => 1000,
         getNpcPrice: () => ({
           basePriceCoin: 1,
+          marketId: 'crossroads',
           npcNeed: 1000,
           targetNeed: 1000,
         }),
@@ -56,6 +63,7 @@ describe('ShopNpcSellQuoteManager', () => {
         getNpcNeed: () => 1000,
         getNpcPrice: () => ({
           basePriceCoin: 1,
+          marketId: 'crossroads',
           npcNeed: 1000,
           targetNeed: 1000,
         }),
@@ -82,6 +90,27 @@ describe('ShopNpcSellQuoteManager', () => {
       ok: true,
       quantity: 3,
       totalPriceCoin: 3,
+    });
+  });
+
+  it('keeps Small Town batch sale prices fixed', () => {
+    const manager = new ShopNpcSellQuoteManager({
+      shopNpcPriceManager: {
+        getNpcBuyPriceCoin: () => 60,
+        getNpcNeed: () => 300,
+        getNpcPrice: () => ({
+          basePriceCoin: 75,
+          marketId: 'smallTown',
+          npcNeed: 300,
+          targetNeed: 300,
+        }),
+      },
+    });
+
+    expect(manager.quoteItem({ item: manaTonic, quantity: 3 })).toMatchObject({
+      ok: true,
+      priceCoin: 60,
+      totalPriceCoin: 180,
     });
   });
 });

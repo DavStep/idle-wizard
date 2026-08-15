@@ -16,6 +16,7 @@ import {
   PrestigePixiPage,
 } from './PrestigePixiPage.js';
 import {
+  RESEARCH_PAPER_INK,
   RESEARCH_PIXI_GEOMETRY,
   RESEARCH_RANK_INK,
 } from '../research/ResearchPixiPage.js';
@@ -148,12 +149,49 @@ describe('PrestigePixiPage', () => {
     expect(page.scroll.root.position).toMatchObject({ x: 0, y: 164 });
     expect(page.scroll).toMatchObject({
       width: 374,
-      height: 470,
+      height: 479,
     });
     expect(page.tabsLayer.position).toMatchObject({
       x: 16,
-      y: 640,
+      y: 649,
     });
+    page.destroy();
+  });
+
+  it('keeps Prestige currency amounts in the surrounding paper ink', () => {
+    const page = createPage();
+    const viewModel = createPrestigeViewModel();
+    viewModel.prestige.summary = {
+      flow: 'Level 8 → Level 10',
+      resourceLead: 'Next Prestige',
+      resources: [
+        { amount: 5, resource: 'crystal' },
+        { amount: 1, resource: 'ruby' },
+        { amount: 2, resource: 'emerald' },
+      ],
+    };
+    viewModel.prestige.milestones[0].rewardResources = [
+      { amount: 5, resource: 'crystal' },
+      { amount: 1, resource: 'ruby' },
+    ];
+
+    page.bind(viewModel);
+
+    expect(
+      page.description.resources.map(
+        (resource) => resource.amountLabel.textObject.style.fill,
+      ),
+    ).toEqual([
+      RESEARCH_PAPER_INK,
+      RESEARCH_PAPER_INK,
+      RESEARCH_PAPER_INK,
+    ]);
+    expect(
+      page.rows.get('level-10').rewardResources
+        .filter((resource) => resource.visible)
+        .map((resource) => resource.amountLabel.textObject.style.fill),
+    ).toEqual([RESEARCH_PAPER_INK, RESEARCH_PAPER_INK]);
+
     page.destroy();
   });
 });

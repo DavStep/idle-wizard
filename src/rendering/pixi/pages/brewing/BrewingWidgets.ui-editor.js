@@ -33,7 +33,7 @@ export default [
   widget('compound.brewing-recipe-card', 'Brewing Recipe Card', ['text-button', 'compound.brewing-recipe-ingredient-row'], recipeCardControl, variants(['available', 'selected', 'research', 'unknown'])),
   widget('compound.brewing-recipe-ingredient-row', 'Brewing Recipe Ingredient Row', [], recipeIngredientControl, variants(['available', 'missing', 'unknown'])),
   widget('compound.brewing-batch-detail', 'Brewing Batch Detail', ['compound.brewing-ingredient-picker-slot', 'primitive.progress-bar'], batchDetailControl, variants(['ready', 'brewing', 'complete'])),
-  widget('compound.brewing-ingredient-picker-slot', 'Brewing Ingredient Picker Slot', ['text-button'], ingredientSlotControl, variants(['filled', 'missing', 'empty'])),
+  widget('compound.brewing-ingredient-picker-slot', 'Brewing Ingredient Picker Slot', ['text-button'], ingredientSlotControl, variants(['filled', 'used', 'missing', 'empty'])),
   widget('compound.brewing-automation-toggle', 'Brewing Automation Toggle', ['text-button'], automationToggleControl, variants(['off', 'on', 'unavailable'])),
 ];
 
@@ -226,7 +226,7 @@ function batchDetailControl({ assets, input, fixture = { state: 'ready' }, conte
 function ingredientSlotControl({ assets, input, fixture = { state: 'filled' }, context }) {
   const control = new BrewingIngredientPickerSlot({ index: 0, assetManager: assets, inputRouter: input, onActivate: () => context?.emit('ingredientSlotActivated') ?? true });
   const empty = fixture.state === 'empty';
-  control.bind(empty ? null : { itemKey: 'mintHerb', label: 'Mint', quantity: 2, owned: fixture.state === 'missing' ? 0 : 5 }, { decorative: empty, enabled: true, showMissing: !empty });
+  control.bind(empty ? null : { itemKey: 'mintHerb', label: 'Mint', quantity: 2, owned: fixture.state === 'missing' ? 0 : 5 }, { decorative: empty, enabled: fixture.state !== 'used', showMissing: !empty && fixture.state !== 'used', used: fixture.state === 'used' });
   control.applyTheme(DEFAULT_PIXI_THEME_SNAPSHOT);
   control.setBounds(0, 0, BREWING_HUD_GEOMETRY.ingredientSlotWidth, BREWING_HUD_GEOMETRY.ingredientSlotHeight);
   return wrap(control, BREWING_HUD_GEOMETRY.ingredientSlotWidth, BREWING_HUD_GEOMETRY.ingredientSlotHeight);

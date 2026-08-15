@@ -39,7 +39,12 @@
 
     <script type="module">
       import '@fontsource/lilita-one/400.css';
+      import {
+        PixiTransientEffectsLayer,
+        createRewardFlyoutPresentation,
+      } from '/src/rendering/pixi/global/transient/PixiTransientEffectsLayer.js';
       import { BrewingHudPixi } from '/src/rendering/pixi/pages/brewing/BrewingHudPixi.js';
+      import { PixiBottomPanelView } from '/src/rendering/pixi/global/chrome/PixiBottomPanelView.js';
       import { PixiWorldChatView } from '/src/rendering/pixi/global/chrome/PixiWorldChatView.js';
       import { PixiInputRouter } from '/src/rendering/pixi/input/PixiInputRouter.js';
       import { PixiApplicationManager } from '/src/rendering/pixi/runtime/PixiApplicationManager.js';
@@ -61,9 +66,28 @@
         inputRouter,
       });
       await runtime.initialize();
+      const transientEffects = new PixiTransientEffectsLayer({
+        assets: runtime.assetManager,
+        application: applicationManager.getApplication(),
+        parent: applicationManager.getLayers().transient,
+        semanticRegistry: runtime.semanticRegistry,
+      });
+      transientEffects.applyTheme(runtime.themeManager.getSnapshot());
+      transientEffects.activate();
       const state = parameters.get('state');
       const missingIngredients = parameters.get('availability') === 'missing';
       const useLongPotionName = parameters.get('longName') === 'true';
+      const cauldronCount = Math.min(
+        5,
+        Math.max(1, Math.floor(Number(parameters.get('cauldrons')) || 1)),
+      );
+      const selectedCauldronIndex = Math.min(
+        cauldronCount - 1,
+        Math.max(
+          0,
+          Math.floor(Number(parameters.get('selectedCauldron')) || 1) - 1,
+        ),
+      );
       const activeBrew =
         state === 'active'
           ? {
@@ -74,7 +98,17 @@
               remainingMs: 57_000,
               progress: 0.05,
             }
-          : null;
+          : state === 'collect'
+            ? {
+                key: 'manaTonic',
+                label: 'mana tonic',
+                phase: 'ready',
+                canCollect: true,
+                totalMs: 60_000,
+                remainingMs: 0,
+                progress: 1,
+              }
+            : null;
 
       const hud = new BrewingHudPixi({
         assetManager: runtime.assetManager,
@@ -83,75 +117,98 @@
         theme: runtime.themeManager.getSnapshot(),
       });
       applicationManager.getLayers().pageUi.addChild(hud.root);
+      const cauldronModel = {
+        cauldronNumber: 1,
+        level: 1,
+        unlocked: true,
+        selectedRecipe: {
+          key:
+            activeBrew?.key ??
+            (useLongPotionName
+              ? 'minorHealingPotion'
+              : 'manaTonic'),
+          label:
+            activeBrew?.label ??
+            (useLongPotionName
+              ? 'minor healing potion'
+              : 'mana tonic'),
+          rarity: 'common',
+          ownedQuantity: 0,
+          ingredients: [
+            {
+              slotIndex: 0,
+              itemTypeId: 1001,
+              itemKey: 'sageHerb',
+              key: 'sageHerb',
+              label: 'sage',
+              quantity: 1,
+              owned: 1,
+            },
+            {
+              slotIndex: 1,
+              itemTypeId: 1001,
+              itemKey: 'sageHerb',
+              key: 'sageHerb',
+              label: 'sage',
+              quantity: 1,
+              owned: 1,
+            },
+            {
+              slotIndex: 2,
+              itemTypeId: 1001,
+              itemKey: 'sageHerb',
+              key: 'sageHerb',
+              label: 'sage',
+              quantity: 1,
+              owned: missingIngredients ? 0 : 1,
+            },
+          ],
+        },
+        ingredients: [],
+        activeBrew,
+        recipeReadiness: {
+          hasEnoughIngredients: !missingIngredients,
+          hasEnoughMana: true,
+        },
+        canAddIngredient: true,
+        canSelectRecipe: true,
+        acceptsHerbDrop: true,
+        primaryAction: {
+          id: 'brew',
+          label: 'Brew',
+          enabled: !missingIngredients,
+        },
+      };
       const hudModel = {
-        selectedCauldronIndex: 0,
+        selectedCauldronIndex,
         configuredMaxCauldrons: 5,
-        cauldrons: [
-          {
-            cauldronNumber: 1,
-            level: 1,
-            unlocked: true,
-            selectedRecipe: {
-              key:
-                activeBrew?.key ??
-                (useLongPotionName
-                  ? 'minorHealingPotion'
-                  : 'manaTonic'),
-              label:
-                activeBrew?.label ??
-                (useLongPotionName
-                  ? 'minor healing potion'
-                  : 'mana tonic'),
-              rarity: 'common',
-              ownedQuantity: 0,
-              ingredients: [
-                {
-                  slotIndex: 0,
-                  itemTypeId: 1001,
-                  itemKey: 'sageHerb',
-                  key: 'sageHerb',
-                  label: 'sage',
-                  quantity: 1,
-                  owned: 1,
-                },
-                {
-                  slotIndex: 1,
-                  itemTypeId: 1001,
-                  itemKey: 'sageHerb',
-                  key: 'sageHerb',
-                  label: 'sage',
-                  quantity: 1,
-                  owned: 1,
-                },
-                {
-                  slotIndex: 2,
-                  itemTypeId: 1001,
-                  itemKey: 'sageHerb',
-                  key: 'sageHerb',
-                  label: 'sage',
-                  quantity: 1,
-                  owned: missingIngredients ? 0 : 1,
-                },
-              ],
-            },
-            ingredients: [],
-            activeBrew,
-            recipeReadiness: {
-              hasEnoughIngredients: !missingIngredients,
-              hasEnoughMana: true,
-            },
-            canAddIngredient: true,
-            canSelectRecipe: true,
-            acceptsHerbDrop: true,
-            primaryAction: {
-              id: 'brew',
-              label: 'Brew',
-              enabled: !missingIngredients,
-            },
-          },
-        ],
+        cauldrons: Array.from({ length: cauldronCount }, (_, index) => ({
+          ...cauldronModel,
+          cauldronNumber: index + 1,
+        })),
       };
       const hudActions = {
+        collectBrew: () => {
+          const result = transientEffects.emitReward(
+            createRewardFlyoutPresentation({
+              id: 'brewing-ready-hud-potion',
+              type: 'potion_collected',
+              cauldronIndex: selectedCauldronIndex,
+              potion: {
+                key: activeBrew?.key ?? 'manaTonic',
+                label: activeBrew?.label ?? 'mana tonic',
+              },
+              quantity: 1,
+            }),
+          );
+          recipeState.dataset.collects = String(
+            Number(recipeState.dataset.collects ?? 0) + 1,
+          );
+          recipeState.dataset.rewardDrops = String(
+            result.visualCount,
+          );
+          return { ok: true };
+        },
         performCauldronAction: () => {
           if (missingIngredients) {
             return false;
@@ -162,7 +219,7 @@
           return true;
         },
         emptyCauldron: () => {
-          const cauldron = hudModel.cauldrons[0];
+          const cauldron = hudModel.cauldrons[selectedCauldronIndex];
           cauldron.selectedRecipe = null;
           cauldron.ingredients = [];
           recipeState.dataset.empty = 'true';
@@ -175,6 +232,7 @@
       hud.layout(projection.sourceWidth, projection.sourceHeight, {
         worldChatVisible: true,
       });
+      transientEffects.layout(projection);
       const worldChat = new PixiWorldChatView({
         assets: runtime.assetManager,
         inputRouter,
@@ -191,6 +249,21 @@
         visible: true,
       });
       worldChat.activate();
+      const bottomPanel = new PixiBottomPanelView({
+        assets: runtime.assetManager,
+        inputRouter,
+        semanticRegistry: runtime.semanticRegistry,
+      });
+      applicationManager.getLayers().globalChrome.addChild(bottomPanel.root);
+      bottomPanel.layout(projection);
+      bottomPanel.applyTheme(runtime.themeManager.getSnapshot());
+      bottomPanel.bind({
+        currentPageId: 'brewing',
+        pages: ['brewing', 'garden', 'workshop', 'research', 'shop'].map(
+          (id) => ({ id, unlocked: true, visible: true }),
+        ),
+      });
+      bottomPanel.activate();
       const detailBottom =
         hud.detailPanel.root.y + hud.detailPanel.height;
       const chatTitleTop =
@@ -199,6 +272,13 @@
         12;
       recipeState.dataset.detailToChatGap = String(
         chatTitleTop - detailBottom,
+      );
+      const chatBottom =
+        worldChat.panel.root.y -
+        worldChat.panel.root.pivot.y +
+        worldChat.panel.height;
+      recipeState.dataset.chatToTabsGap = String(
+        bottomPanel.tabsRoot.y - chatBottom,
       );
       recipeState.dataset.previewTopGap = String(
         hud.carouselPanel.root.y +
@@ -210,13 +290,50 @@
         hud.applyTheme(runtime.themeManager.getSnapshot());
       }
       if (activeBrew) {
-        applicationManager.getApplication().ticker.add(() => {
-          hud.updateMotion(Date.now(), {
+        const requestedMotionFrame = parameters.get('motionMs');
+        const requestedMotionMs = Number(requestedMotionFrame);
+        const hasRequestedMotionFrame =
+          requestedMotionFrame !== null &&
+          Number.isFinite(requestedMotionMs);
+        const updateHudMotion = (now) => {
+          hud.updateMotion(now, {
             active: true,
             reducedMotion: parameters.get('reducedMotion') === 'true',
           });
           recipeState.dataset.progress = hud.progress.progress.toFixed(4);
-        });
+        };
+        if (hasRequestedMotionFrame) {
+          applicationManager.getApplication().ticker.stop();
+          updateHudMotion(
+            hud.cauldronMotionModeStartedAt + requestedMotionMs,
+          );
+          const rest = hud.cauldronChangeRestState;
+          recipeState.dataset.cauldronArtOffsetY = String(
+            hud.cauldronArt.y - rest.art.y,
+          );
+          recipeState.dataset.cauldronLiquidOffsetY = String(
+            hud.cauldronLiquid.y - rest.liquid.y,
+          );
+          recipeState.dataset.cauldronArtScaleX = String(
+            hud.cauldronArt.scale.x / rest.art.scaleX,
+          );
+          recipeState.dataset.cauldronLiquidScaleX = String(
+            hud.cauldronLiquid.scale.x / rest.liquid.scaleX,
+          );
+          recipeState.dataset.cauldronArtScaleY = String(
+            hud.cauldronArt.scale.y / rest.art.scaleY,
+          );
+          recipeState.dataset.cauldronLiquidScaleY = String(
+            hud.cauldronLiquid.scale.y / rest.liquid.scaleY,
+          );
+          applicationManager.getApplication().renderer.render(
+            applicationManager.getApplication().stage,
+          );
+        } else {
+          applicationManager.getApplication().ticker.add(() => {
+            updateHudMotion(Date.now());
+          });
+        }
       }
       recipeState.dataset.state = state ?? 'ready';
       recipeState.dataset.phase = hud.phaseLabel.text;
@@ -229,8 +346,24 @@
         .map((slot) => `${slot.missingCount.text}${slot.requiredCount.text}`)
         .filter(Boolean)
         .join(',');
+      if (
+        state === 'collect' &&
+        parameters.get('frame') === 'mid'
+      ) {
+        applicationManager.getApplication().ticker.stop();
+        hud.activatePrimaryAction();
+        transientEffects.tick(260);
+        recipeState.dataset.activeRewardDrops = String(
+          transientEffects.getStats().active.item,
+        );
+        applicationManager.getApplication().renderer.render(
+          applicationManager.getApplication().stage,
+        );
+      }
       window.__brewingReadyHudRecipe = hud;
       window.__brewingReadyWorldChatRecipe = worldChat;
+      window.__brewingReadyTransientEffectsRecipe = transientEffects;
+      window.__brewingReadyBottomPanelRecipe = bottomPanel;
     </script>
   </body>
 </html>

@@ -565,6 +565,7 @@ export class PrestigeDescriptionPanel {
         includeResourceName: false,
         hidden: !resource,
       });
+      label.amountLabel.setColor(PRESTIGE_CARD_INK);
     });
     setText(
       this.summary,
@@ -649,6 +650,7 @@ export class PrestigeDescriptionPanel {
     });
     for (const label of this.resources) {
       label.applyTheme(theme);
+      label.amountLabel.setColor(PRESTIGE_CARD_INK);
     }
   }
 
@@ -806,6 +808,7 @@ export class PrestigeRowWidget {
         includeResourceName: false,
         hidden: !resource,
       });
+      label.amountLabel.setColor(PRESTIGE_CARD_INK);
     });
     setText(
       this.reward,
@@ -1010,6 +1013,7 @@ export class PrestigeRowWidget {
     this.action.applyTheme(theme);
     for (const label of this.rewardResources) {
       label.applyTheme(theme);
+      label.amountLabel.setColor(PRESTIGE_CARD_INK);
     }
     this.rank.texture = resolvePrestigeTexture(
       this.assetManager,

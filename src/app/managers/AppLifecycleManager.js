@@ -30,7 +30,9 @@ export class AppLifecycleManager {
     gameplayTickManager = new AppGameplayTickManager(),
     appVisibilityManager = new AppVisibilityManager(),
     deployRefreshManager,
+    liveUpdateGateManager,
     appThemeManager,
+    onPlayable = null,
     reload = () => window.location.reload(),
     now = () => Date.now(),
   }) {
@@ -52,7 +54,9 @@ export class AppLifecycleManager {
     this.gameplayTickManager = gameplayTickManager;
     this.appVisibilityManager = appVisibilityManager;
     this.deployRefreshManager = deployRefreshManager;
+    this.liveUpdateGateManager = liveUpdateGateManager;
     this.appThemeManager = appThemeManager;
+    this.onPlayable = typeof onPlayable === 'function' ? onPlayable : null;
     this.reload = reload;
     this.now = now;
     this.started = false;
@@ -76,6 +80,7 @@ export class AppLifecycleManager {
     this.maintenanceFlushPromise = null;
     this.maintenanceFlushKey = '';
     this.reloadAfterLockedMaintenance = false;
+    this.playableNotified = false;
   }
 
   start() {
@@ -95,6 +100,7 @@ export class AppLifecycleManager {
     this.accountLinkChoiceManager.mount(stage);
     this.freshStartChoiceManager.mount(stage);
     this.deployRefreshManager?.mount(stage);
+    this.liveUpdateGateManager?.mount(stage);
     this.appVisible = true;
     this.hiddenOfflineReason = null;
     this.hiddenAtMs = null;
@@ -829,7 +835,16 @@ export class AppLifecycleManager {
       this.interactionLockManager.unlock();
       this.applyAwayCatchupAfterHiddenIfNeeded();
       this.startFrameLoop();
+      this.notifyPlayable();
     }
+  }
+
+  notifyPlayable() {
+    if (this.playableNotified) {
+      return;
+    }
+    this.playableNotified = true;
+    this.onPlayable?.();
   }
 
   applyAwayCatchupAfterHiddenIfNeeded() {
@@ -958,6 +973,7 @@ export class AppLifecycleManager {
     this.hiddenOfflineReason = null;
     this.hiddenAtMs = null;
     this.reloadAfterLockedMaintenance = false;
+    this.playableNotified = false;
     this.maintenanceUnsubscribe?.();
     this.maintenanceUnsubscribe = null;
     this.connectionRetryManager.clear();
@@ -965,6 +981,7 @@ export class AppLifecycleManager {
     this.gameplayFacade.shutdown();
     this.backendFacade.stop();
     this.deployRefreshManager?.unmount();
+    this.liveUpdateGateManager?.unmount();
     this.freshStartChoiceManager.unmount();
     this.accountLinkChoiceManager.unmount();
     this.onlineGateManager.unmount();

@@ -401,6 +401,7 @@ export const Player = __t.object("Player", {
   font: __t.string(),
   character: __t.string(),
   frame: __t.string(),
+  totalPlayTimeMicros: __t.u64(),
 });
 export type Player = __Infer<typeof Player>;
 
@@ -461,6 +462,9 @@ export const PlayerInfoSummaryResult = __t.object("PlayerInfoSummaryResult", {
   totalHarvestedHerbs: __t.u64(),
   playerLevel: __t.u32(),
   prestigeCount: __t.u32(),
+  connected: __t.bool(),
+  lastSeenAt: __t.timestamp(),
+  totalPlayTimeSeconds: __t.u64(),
   updatedAt: __t.timestamp(),
   character: __t.string(),
 });
@@ -898,6 +902,7 @@ export const WorldChatRecentResult = __t.object("WorldChatRecentResult", {
   senderIdentity: __t.identity(),
   username: __t.string(),
   character: __t.string(),
+  frame: __t.string(),
   playerLevel: __t.u32(),
   body: __t.string(),
   sentAt: __t.timestamp(),

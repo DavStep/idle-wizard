@@ -102,6 +102,7 @@ export class ShopStockPriceQuoteManager {
       const marketPriceCoin = getNpcMarketPriceFromNeed({
         basePriceCoin,
         itemKind: priceState?.itemKind ?? item?.kind,
+        marketId: priceState?.marketId,
         npcNeed: npcNeed + offset,
         targetNeed,
         volatilityBps: priceState?.volatilityBps,

@@ -195,6 +195,8 @@ export class PlayerInfoDialogManager {
     );
     this.refs.rows.replaceChildren(
       this.createTextRow('total produced coin', this.formatNumber(player.totalProducedCoin)),
+      this.createTextRow('last seen', this.formatLastSeen(player)),
+      this.createTextRow('time played', this.formatPlayedHours(player.totalPlayTimeSeconds)),
     );
     this.refs.summary.replaceChildren(this.refs.character, this.refs.mainRows);
     this.refs.details.replaceChildren(this.refs.rows);
@@ -321,6 +323,12 @@ export class PlayerInfoDialogManager {
         fallback: 0,
         min: 0,
       }),
+      connected: player.connected === true,
+      lastSeenAtMs: this.normalizeMetric(player.lastSeenAtMs, player.last_seen_at_ms),
+      totalPlayTimeSeconds: this.normalizePositiveInteger(
+        player.totalPlayTimeSeconds ?? player.total_play_time_seconds,
+        { fallback: 0, min: 0 },
+      ),
     };
   }
 
@@ -364,6 +372,38 @@ export class PlayerInfoDialogManager {
   formatPrestige(value) {
     const count = Math.floor(this.normalizeMetric(value));
     return `${count} ${count === 1 ? 'time' : 'times'}`;
+  }
+
+  formatLastSeen(player) {
+    if (player.connected) {
+      return 'online now';
+    }
+
+    const timestamp = this.normalizeMetric(player.lastSeenAtMs);
+    if (timestamp <= 0) {
+      return 'unknown';
+    }
+
+    const elapsedMinutes = Math.max(0, Math.floor((Date.now() - timestamp) / 60_000));
+    if (elapsedMinutes < 1) {
+      return 'just now';
+    }
+    if (elapsedMinutes < 60) {
+      return `${elapsedMinutes}m ago`;
+    }
+
+    const elapsedHours = Math.floor(elapsedMinutes / 60);
+    return elapsedHours < 48
+      ? `${elapsedHours}h ago`
+      : `${Math.floor(elapsedHours / 24)}d ago`;
+  }
+
+  formatPlayedHours(totalSeconds) {
+    const hours = this.normalizeMetric(totalSeconds) / 3600;
+    return `${hours.toLocaleString('en', {
+      minimumFractionDigits: 1,
+      maximumFractionDigits: 1,
+    })} hours`;
   }
 
   applyVisibility() {

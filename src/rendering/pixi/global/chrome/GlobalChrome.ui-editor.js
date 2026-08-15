@@ -69,7 +69,7 @@ export default [
   }),
   defineUiEditorIntegration({
     apiVersion: 1,
-    childWidgetIds: ['primitive.retained-panel'],
+    childWidgetIds: ['primitive.retained-panel', 'compound.player-profile'],
     createThumbnail: createWorldChatThumbnail,
     folderPath: ['HUD'],
     id: CHAT_ID,
@@ -92,6 +92,7 @@ export default [
               allianceTagColor: 'violet',
               body: 'Ready for the event?',
               character: 'mira',
+              frame: 'violet',
               playerLevel: 7,
               username: 'Mira',
             },
@@ -146,6 +147,7 @@ function createWorldChatThumbnail() {
             {
               body: 'Ready for the event?',
               character: 'mira',
+              frame: 'violet',
               playerLevel: 7,
               username: 'Mira',
             },

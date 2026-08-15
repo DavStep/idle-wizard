@@ -29,7 +29,7 @@ See [[mechanics/market/NPC Market|NPC Market]] and [[mechanics/market/Trader Sta
 | herb | 800 | 10% |
 | potion | 300 | 8% |
 
-Need is capped at 150% of target. Six-hour buyer waves recover demand, the Monday boundary resets it, and auto-tuning moves base price by at most 2.5% per window.
+Small Town prices are fixed even while shared need and stock continue to change. In Crossroads and higher Prestige markets, need is capped at 150% of target, six-hour buyer waves recover demand, the Monday boundary resets it, and auto-tuning moves base price by at most 2.5% per window.
 
 See [[mechanics/market/Demand And Pricing|Demand and Pricing]].
 
