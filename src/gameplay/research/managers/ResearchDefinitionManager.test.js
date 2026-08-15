@@ -414,7 +414,7 @@ describe('ResearchDefinitionManager', () => {
       starLevel: 1,
       starMaxLevel: 4,
       description:
-        'levels plot 1 to lvl 2: it uses 2 seeds and harvests 2 herbs in one growth timer.',
+        'multi-grow: plot 1 now grows 2 herbs at once.',
     });
     expect(cauldronBox).toMatchObject({
       label: 'cauldron level up',
@@ -428,7 +428,7 @@ describe('ResearchDefinitionManager', () => {
       starLevel: 1,
       starMaxLevel: 4,
       description:
-        'sets cauldron 1 to ★: it uses 2 recipe inputs and mana costs to bottle 2 potions in one brew timer.',
+        'multibrew: cauldron 1 now brews 2 potions at once.',
     });
   });
 });

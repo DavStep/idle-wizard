@@ -8901,6 +8901,8 @@ div.workshop-page__discovery-row {
 .workshop-page__alliance-tag {
   color: var(--workshop-alliance-tag-color, var(--style-text));
   font-weight: bold;
+  -webkit-text-stroke: 0;
+  text-shadow: none;
 }
 
 .shop-page__trade-history-username {

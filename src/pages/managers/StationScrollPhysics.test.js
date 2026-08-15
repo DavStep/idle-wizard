@@ -19,6 +19,21 @@ describe('StationScrollPhysics', () => {
     expect(scroll.velocity).toBeGreaterThan(0);
   });
 
+  it('does not reverse release inertia from high-frequency finger jitter', () => {
+    const scroll = new StationScrollPhysics();
+    scroll.setMaxOffset(1000);
+    scroll.beginDrag(600, 0);
+    scroll.dragTo(500, 40);
+    scroll.dragTo(506, 44);
+    const releasedOffset = scroll.offset;
+
+    scroll.endDrag();
+    scroll.update(1 / 60);
+
+    expect(scroll.velocity).toBeGreaterThan(0);
+    expect(scroll.offset).toBeGreaterThan(releasedOffset);
+  });
+
   it('uses the exact progressive rubber-band formula at both edges', () => {
     const scroll = new StationScrollPhysics();
     scroll.setMaxOffset(1000);
@@ -108,7 +123,7 @@ describe('StationScrollPhysics', () => {
     const scroll = new StationScrollPhysics();
     scroll.setMaxOffset(10_000);
     scroll.beginDrag(600, 0);
-    scroll.dragTo(500, 100);
+    scroll.dragTo(600 - 1000 / 60, 1000 / 60);
 
     expect(scroll.velocity).toBeCloseTo(680, 10);
   });

@@ -29,7 +29,6 @@ import {
   emeraldResearchIds,
   emeraldResearchMaxMultiplier,
   emeraldResearchMinMultiplier,
-  formatEmeraldResearchStars,
   getEmeraldResearchStarLevel,
 } from '../emeraldResearchIds.js';
 import {
@@ -531,7 +530,7 @@ export class ResearchDefinitionManager {
           effect: (multiplier) => `x${multiplier} herbs`,
           starLevel: (multiplier) => getEmeraldResearchStarLevel(multiplier),
           description: (plotNumber, multiplier) =>
-            `levels plot ${plotNumber} to lvl ${multiplier}: it uses ${multiplier} seeds and harvests ${multiplier} herbs in one growth timer.`,
+            `multi-grow: plot ${plotNumber} now grows ${multiplier} herbs at once.`,
         }),
       },
       {
@@ -549,9 +548,7 @@ export class ResearchDefinitionManager {
           effect: (multiplier) => `x${multiplier} potions`,
           starLevel: (multiplier) => getEmeraldResearchStarLevel(multiplier),
           description: (cauldronNumber, multiplier) =>
-            `sets cauldron ${cauldronNumber} to ${formatEmeraldResearchStars(
-              multiplier,
-            )}: it uses ${multiplier} recipe inputs and mana costs to bottle ${multiplier} potions in one brew timer.`,
+            `multibrew: cauldron ${cauldronNumber} now brews ${multiplier} potions at once.`,
         }),
       },
     ];

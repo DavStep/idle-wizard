@@ -60,9 +60,6 @@ const PRESTIGE_SECTION_GAP = 12;
 const PRESTIGE_TITLE_GAP = 5;
 const PRESTIGE_BANNER_HEIGHT =
   PIXI_ROOT_RUN_GEOMETRY.marketTitleRibbon.height;
-const PRESTIGE_BANNER_TOP_OVERHANG =
-  PRESTIGE_BANNER_HEIGHT -
-  RESEARCH_PIXI_GEOMETRY.categoryTitleHeight;
 const PRESTIGE_CARD_SOURCE_INSETS =
   PIXI_ROOT_RUN_GEOMETRY.researchCard.sourceInsets;
 const PRESTIGE_CARD_BORDER_INSETS =
@@ -368,15 +365,14 @@ export class PrestigePixiPage extends BaseRetainedPixiPage {
       RETAINED_PAGE_GEOMETRY.tabHeight + RETAINED_PAGE_GEOMETRY.scrollCut * 2;
     const panelTop =
       RETAINED_PAGE_GEOMETRY.contentTop +
-      RESEARCH_PIXI_GEOMETRY.categoryTitleHeight +
+      PRESTIGE_BANNER_HEIGHT +
       PRESTIGE_TITLE_GAP;
     this.contentWidth = width;
     this.contentEdge = edge;
     this.scrollWidth = scrollWidth;
     this.identityLayer.position.set(
       0,
-      RETAINED_PAGE_GEOMETRY.contentTop -
-        PRESTIGE_BANNER_TOP_OVERHANG,
+      RETAINED_PAGE_GEOMETRY.contentTop,
     );
     this.titleRibbon.setMaxWidth(sourceWidth);
     this.titleRibbon.root.position.set(

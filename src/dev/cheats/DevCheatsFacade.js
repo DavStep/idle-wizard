@@ -318,8 +318,12 @@ export class DevCheatsFacade {
     const surfaceId = String(this.devUiRequest?.surfaceId ?? '')
       .replace(/[^a-z0-9]/gi, '')
       .toLowerCase();
+    const requiresMountedGameSurfaces =
+      surfaceId === 'brewingrecipes' ||
+      surfaceId === 'globalconfirmation' ||
+      surfaceId === 'dialogglobalconfirmation';
     return Boolean(
-      (surfaceId === 'brewingrecipes' &&
+      (requiresMountedGameSurfaces &&
         this.lifecycleManager &&
         (this.lifecycleManager.backendOnline !== true ||
           this.lifecycleManager.gameSurfacesMounted !== true)) ||

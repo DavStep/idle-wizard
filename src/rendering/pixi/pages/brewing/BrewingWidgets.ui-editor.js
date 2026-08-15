@@ -226,7 +226,7 @@ function batchDetailControl({ assets, input, fixture = { state: 'ready' }, conte
 function ingredientSlotControl({ assets, input, fixture = { state: 'filled' }, context }) {
   const control = new BrewingIngredientPickerSlot({ index: 0, assetManager: assets, inputRouter: input, onActivate: () => context?.emit('ingredientSlotActivated') ?? true });
   const empty = fixture.state === 'empty';
-  control.bind(empty ? null : { itemKey: 'mintHerb', label: 'Mint', quantity: 2, owned: fixture.state === 'missing' ? 0 : 5 }, { decorative: empty, enabled: true, showMissing: fixture.state === 'missing' });
+  control.bind(empty ? null : { itemKey: 'mintHerb', label: 'Mint', quantity: 2, owned: fixture.state === 'missing' ? 0 : 5 }, { decorative: empty, enabled: true, showMissing: !empty });
   control.applyTheme(DEFAULT_PIXI_THEME_SNAPSHOT);
   control.setBounds(0, 0, BREWING_HUD_GEOMETRY.ingredientSlotWidth, BREWING_HUD_GEOMETRY.ingredientSlotHeight);
   return wrap(control, BREWING_HUD_GEOMETRY.ingredientSlotWidth, BREWING_HUD_GEOMETRY.ingredientSlotHeight);

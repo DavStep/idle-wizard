@@ -593,7 +593,9 @@ describe("PixiPagesFacade", () => {
         title: "Empty Cauldron?",
         message: "Are you sure you want to empty the cauldron contents?",
         cancelLabel: "Cancel",
+        cancelColor: "yellow",
         confirmLabel: "Empty",
+        confirmColor: "yellow",
         value: { cauldronIndex: 0 },
         actions: { confirm: expect.any(Function) },
       }),
@@ -609,11 +611,59 @@ describe("PixiPagesFacade", () => {
     expect(brewing.actions.clearRecipe).toBe(
       brewing.actions.emptyCauldron,
     );
-    pages.refreshPage("brewing");
     expect(
       harness.getBoundPage("brewing").brewing.cauldrons[0]
         .selectedRecipe,
     ).toBeNull();
+  });
+
+  it("confirms before cancelling an active brew", () => {
+    const gameplaySnapshot = createGameplaySnapshot();
+    gameplaySnapshot.brewing = {
+      cauldrons: [
+        {
+          cauldronIndex: 0,
+          cauldronNumber: 1,
+          activeBrew: { phase: "brewing" },
+        },
+      ],
+      recipes: [],
+      herbs: [],
+    };
+    const harness = createHarness({ gameplaySnapshot });
+    const globalDialogPresenter = {
+      mount: vi.fn(),
+      open: vi.fn(() => true),
+    };
+    harness.dependencies.globalDialogPresenter = globalDialogPresenter;
+    harness.gameplayFacade.cancelBrewing.mockReturnValue({ ok: true });
+    const pages = new PixiPagesFacade(harness.dependencies);
+    pages.mount();
+    pages.show("brewing");
+    const brewing = harness.getBoundPage("brewing");
+
+    expect(brewing.actions.cancelBrew(0)).toBe(true);
+    expect(harness.gameplayFacade.cancelBrewing).not.toHaveBeenCalled();
+    expect(globalDialogPresenter.open).toHaveBeenCalledWith(
+      "confirmation",
+      expect.objectContaining({
+        title: "Cancel Brewing?",
+        message:
+          "Cancel this brew? The unfinished potion, herbs, and mana will be lost.",
+        cancelLabel: "Keep Brewing",
+        cancelColor: "yellow",
+        confirmLabel: "Cancel Brew",
+        confirmColor: "yellow",
+        value: { cauldronIndex: 0 },
+        actions: { confirm: expect.any(Function) },
+      }),
+    );
+
+    const confirmation = globalDialogPresenter.open.mock.calls.at(-1)[1];
+    expect(confirmation.actions.confirm(confirmation.value)).toEqual({
+      ok: true,
+    });
+    expect(harness.gameplayFacade.cancelBrewing).toHaveBeenCalledWith(0);
   });
 
   it("copies the selected recipe into Auto Brew before enabling it", () => {
@@ -1181,6 +1231,93 @@ describe("PixiPagesFacade", () => {
     expect(
       harness.getBoundPage("brewing").brewing.cauldrons[0].selectedRecipe,
     ).toBeNull();
+  });
+
+  it("reuses a selected recipe after collection and projects per-slot availability", () => {
+    const gameplaySnapshot = createGameplaySnapshot();
+    gameplaySnapshot.mana.current = 20;
+    const recipe = {
+      key: "manaTonic",
+      label: "mana tonic",
+      unlocked: true,
+      manaCost: 5,
+      ingredients: Array.from({ length: 3 }, () => ({
+        itemTypeId: 1001,
+        key: "sageHerb",
+        label: "sage",
+        quantity: 1,
+      })),
+    };
+    gameplaySnapshot.brewing = {
+      cauldrons: [
+        {
+          cauldronIndex: 0,
+          cauldronNumber: 1,
+          brewQuantity: 1,
+          maxBrewQuantity: 1,
+          ingredients: [],
+          canAddIngredient: true,
+          canBrew: false,
+        },
+      ],
+      recipes: [recipe],
+      herbs: [
+        {
+          itemTypeId: 1001,
+          key: "sageHerb",
+          quantity: 3,
+        },
+      ],
+    };
+    const harness = createHarness({ gameplaySnapshot });
+    harness.gameplayFacade.prepareBrewingRecipe.mockReturnValue({ ok: true });
+    harness.gameplayFacade.brewCauldron.mockReturnValue({ ok: true });
+    const pages = new PixiPagesFacade(harness.dependencies);
+    pages.mount();
+    pages.show("brewing");
+
+    expect(
+      harness.getBoundPage("brewing").actions.selectRecipe(recipe, 0),
+    ).toEqual({ ok: true });
+    pages.refreshPage("brewing");
+
+    let cauldron = harness.getBoundPage("brewing").brewing.cauldrons[0];
+    expect(cauldron.selectedRecipe.ingredients).toEqual([
+      expect.objectContaining({ owned: 1, quantity: 1 }),
+      expect.objectContaining({ owned: 1, quantity: 1 }),
+      expect.objectContaining({ owned: 1, quantity: 1 }),
+    ]);
+    expect(cauldron.recipeReadiness).toEqual({
+      hasEnoughIngredients: true,
+      hasEnoughMana: true,
+    });
+    expect(cauldron.primaryAction).toMatchObject({
+      id: "brew",
+      enabled: true,
+      prepareRecipeKey: "manaTonic",
+    });
+
+    expect(
+      harness.getBoundPage("brewing").actions.performCauldronAction(
+        cauldron,
+        cauldron.primaryAction,
+      ),
+    ).toEqual({ ok: true });
+    expect(
+      harness.gameplayFacade.prepareBrewingRecipe,
+    ).toHaveBeenLastCalledWith("manaTonic", 0);
+    expect(harness.gameplayFacade.brewCauldron).toHaveBeenCalledWith(0);
+
+    gameplaySnapshot.brewing.herbs[0].quantity = 2;
+    pages.refreshPage("brewing");
+    cauldron = harness.getBoundPage("brewing").brewing.cauldrons[0];
+    expect(cauldron.selectedRecipe.ingredients).toEqual([
+      expect.objectContaining({ owned: 1, quantity: 1 }),
+      expect.objectContaining({ owned: 1, quantity: 1 }),
+      expect.objectContaining({ owned: 0, quantity: 1 }),
+    ]);
+    expect(cauldron.recipeReadiness.hasEnoughIngredients).toBe(false);
+    expect(cauldron.primaryAction.enabled).toBe(false);
   });
 
   it("rejects locked navigation and delegates the lock surface to retained chrome", () => {
@@ -1970,6 +2107,7 @@ function createHarness({ gameplaySnapshot = createGameplaySnapshot() } = {}) {
     clearBrewingCauldron: vi.fn(),
     setBrewingIngredientSlotQuantity: vi.fn(),
     prepareBrewingRecipe: vi.fn(),
+    brewCauldron: vi.fn(),
     setBrewingAutoBrewRecipe: vi.fn(),
     setBrewingAutoBrewEnabled: vi.fn(),
     toggleBrewingAutoBrewEnabled: vi.fn(),

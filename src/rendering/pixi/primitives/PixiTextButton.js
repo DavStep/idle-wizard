@@ -47,10 +47,15 @@ export class PixiTextButton extends PixiBaseButton {
         width: visualGeometry.textStroke,
       });
       this.textLabel.setColor(visualGeometry.textColor);
+      this.textLabel.position.set(
+        this.buttonWidth / 2,
+        this.buttonHeight / 2 + visualGeometry.contentOffsetY,
+      );
     } else {
       this.textLabel.setFontFamily(null);
       this.textLabel.setStroke(null);
       this.textLabel.setColor(this.enabled ? 'text' : 'disabled');
+      this.layoutContent();
     }
   }
 

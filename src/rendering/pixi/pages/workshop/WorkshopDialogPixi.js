@@ -22,7 +22,6 @@ import { PixiOwnedDialogSurface } from '../../primitives/PixiOwnedDialogSurface.
 import { PixiInlineText } from '../../primitives/PixiInlineText.js';
 import { layoutPixiSeedPackIcon } from '../../primitives/PixiSeedPackIcon.js';
 import { PixiTextField } from '../../primitives/PixiTextField.js';
-import { normalizePixiTextStroke } from '../../primitives/PixiTextLabel.js';
 import { PooledCollection } from '../../retained/PooledCollection.js';
 import { WidgetPool } from '../../retained/WidgetPool.js';
 import { PlayerProfileWidget } from '../../global/chrome/PlayerProfileWidgets.js';
@@ -90,7 +89,6 @@ const WORLD_CHAT_TIMESTAMP_COLOR = '#946a2e';
 const WORLD_CHAT_SYSTEM_BACKGROUND = '#efd0a2';
 const WORLD_CHAT_SYSTEM_TITLE_COLOR = '#432d20';
 const WORLD_CHAT_SYSTEM_PLAYER_COLOR = '#72533a';
-const WORLD_CHAT_TAG_STROKE = '#2b1912';
 const DISCOVERY_ROW_GAP = 6;
 const DISCOVERY_MAX_INGREDIENTS = 6;
 const DISCOVERY_ICON_SIZE = 44;
@@ -570,6 +568,11 @@ export class WorkshopDialogPixi {
   }
 
   bind(viewModel) {
+    const keepWorldChatPinnedToNewest =
+      this.isWorldChatDialog &&
+      this.modal.shown === true &&
+      this.scroll.offsetY >=
+        Math.max(0, this.scroll.contentHeight - this.scroll.height) - 0.5;
     this.viewModel = viewModel ?? {};
     this.ownedAllianceLayout = Boolean(
       this.isAllianceDialog && this.viewModel.ownedAlliance === true,
@@ -651,6 +654,11 @@ export class WorkshopDialogPixi {
       sourceWidth: this.sourceWidth,
       sourceHeight: this.sourceHeight,
     });
+    if (keepWorldChatPinnedToNewest) {
+      this.scroll.scrollTo(
+        Math.max(0, this.scroll.contentHeight - this.scroll.height),
+      );
+    }
   }
 
   bindTab(button, tab) {
@@ -2253,12 +2261,6 @@ export class WorldChatMessageRowPixi {
           normalizeWorldChatTagColor(this.model?.allianceTagColor)
         ] ?? WORLD_CHAT_TAG_COLORS.ink,
     });
-    this.tag.style.stroke = normalizePixiTextStroke(
-      {
-        color: WORLD_CHAT_TAG_STROKE,
-      },
-      this.tag.style.fontSize,
-    );
     applyTextTheme(this.username, resolvedTheme, {
       fontSize: 11,
       lineHeight: WORLD_CHAT_HEADER_HEIGHT,
@@ -2725,7 +2727,6 @@ export class AllianceDirectoryRow {
         WORLD_CHAT_TAG_COLORS[
           normalizeWorldChatTagColor(this.model?.tagColor)
         ] ?? WORLD_CHAT_TAG_COLORS.ink,
-      stroke: { color: WORLD_CHAT_TAG_STROKE, width: 2, join: 'round' },
     });
     applyTextTheme(this.name, resolvedTheme, {
       ...RETAINED_TEXT_STYLES.body,

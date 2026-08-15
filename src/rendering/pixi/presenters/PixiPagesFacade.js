@@ -1775,18 +1775,59 @@ export class PixiPagesFacade {
   decorateCauldron(cauldron, brewing) {
     const index = Math.max(0, Math.floor(Number(cauldron?.cauldronIndex) || 0));
     const selectedRecipe = this.selectedRecipeByCauldron.get(index) ?? null;
-    const herbsByKey = new Map(
-      (brewing.herbs ?? []).map((herb) => [herb.key, herb]),
+    const brewQuantity = Math.max(
+      1,
+      Math.floor(Number(cauldron?.brewQuantity) || 1),
     );
+    const { ownedByItemTypeId, ownedByKey } =
+      this.getBrewingOwnedIngredientQuantities(index);
+    const remainingByItemTypeId = new Map(ownedByItemTypeId);
+    const remainingByKey = new Map(ownedByKey);
     const decoratedRecipe = selectedRecipe
       ? {
           ...selectedRecipe,
-          ingredients: (selectedRecipe.ingredients ?? []).map((ingredient) => ({
-            ...ingredient,
-            owned:
-              herbsByKey.get(ingredient.itemKey ?? ingredient.key)?.quantity ??
-              0,
-          })),
+          ingredients: (selectedRecipe.ingredients ?? []).map((ingredient) => {
+            const quantity =
+              Math.max(1, Math.floor(Number(ingredient?.quantity) || 1)) *
+              brewQuantity;
+            const itemTypeId = ingredient?.itemTypeId;
+            const key = ingredient?.itemKey ?? ingredient?.key;
+            const remaining = Number.isInteger(itemTypeId)
+              ? remainingByItemTypeId.get(itemTypeId) ?? 0
+              : remainingByKey.get(key) ?? 0;
+            const owned = Math.min(quantity, remaining);
+            if (Number.isInteger(itemTypeId)) {
+              remainingByItemTypeId.set(itemTypeId, remaining - owned);
+            } else if (typeof key === "string") {
+              remainingByKey.set(key, remaining - owned);
+            }
+            return {
+              ...ingredient,
+              quantity,
+              owned,
+            };
+          }),
+        }
+      : null;
+    const hasSelectedRecipeIngredients = selectedRecipe
+      ? this.canSelectBrewingRecipe(selectedRecipe, index)
+      : false;
+    const selectedRecipeManaCost =
+      Number(selectedRecipe?.manaCost) * brewQuantity;
+    const hasSelectedRecipeMana =
+      !selectedRecipe ||
+      !Number.isFinite(selectedRecipeManaCost) ||
+      Number(this.gameplaySnapshot.mana?.current ?? 0) >=
+        selectedRecipeManaCost;
+    const cauldronIsEmpty = (cauldron?.ingredients?.length ?? 0) === 0;
+    const recipeReadiness = selectedRecipe
+      ? {
+          hasEnoughIngredients: cauldronIsEmpty
+            ? hasSelectedRecipeIngredients
+            : cauldron.hasEnoughIngredients !== false,
+          hasEnoughMana: cauldronIsEmpty
+            ? hasSelectedRecipeMana
+            : cauldron.hasEnoughMana !== false,
         }
       : null;
     const completedResearchIds = new Set(
@@ -1803,6 +1844,15 @@ export class PixiPagesFacade {
           label: "bottle",
           enabled: true,
         }
+      : selectedRecipe && cauldronIsEmpty
+        ? {
+            id: "brew",
+            label: "brew",
+            enabled:
+              recipeReadiness.hasEnoughIngredients &&
+              recipeReadiness.hasEnoughMana,
+            prepareRecipeKey: selectedRecipe.key ?? selectedRecipe.id,
+          }
       : {
           id: "brew",
           label: `brew x${cauldron.brewQuantity ?? 1}`,
@@ -1814,6 +1864,7 @@ export class PixiPagesFacade {
       unlocked: true,
       autoBrewAvailable,
       selectedRecipe: decoratedRecipe,
+      recipeReadiness,
       primaryAction,
       recipesDialog: {
         title: "recipes",
@@ -2050,10 +2101,21 @@ export class PixiPagesFacade {
 
   createBrewingActions() {
     const gameplay = this.gameplayFacade;
+    const performCancelBrew = (cauldronIndex = 0) => {
+      const result = gameplay?.cancelBrewing?.(cauldronIndex);
+      if (result?.ok === false) {
+        this.experienceFacade?.transientEffects?.emitReward?.({
+          message: "No potion is brewing to cancel",
+          flyoutKey: "brewing-cancel-empty",
+        });
+      }
+      return result;
+    };
     const performEmptyCauldron = (cauldronIndex = 0) => {
       const result = gameplay?.clearBrewingCauldron?.(cauldronIndex);
       if (result === true || result?.ok === true) {
         this.selectedRecipeByCauldron.delete(cauldronIndex);
+        this.refreshPage("brewing");
       }
       return result;
     };
@@ -2063,7 +2125,9 @@ export class PixiPagesFacade {
         title: "Empty Cauldron?",
         message: "Are you sure you want to empty the cauldron contents?",
         cancelLabel: "Cancel",
+        cancelColor: "yellow",
         confirmLabel: "Empty",
+        confirmColor: "yellow",
         value,
         actions: {
           confirm: ({ cauldronIndex: confirmedIndex } = value) =>
@@ -2157,6 +2221,15 @@ export class PixiPagesFacade {
             index,
           );
         }
+        if (action?.prepareRecipeKey) {
+          const prepared = gameplay?.prepareBrewingRecipe?.(
+            action.prepareRecipeKey,
+            index,
+          );
+          if (prepared !== true && prepared?.ok !== true) {
+            return prepared ?? false;
+          }
+        }
         return gameplay?.brewCauldron?.(index);
       },
       selectBrewQuantity: (quantity, cauldronIndex) =>
@@ -2196,14 +2269,41 @@ export class PixiPagesFacade {
       toggleAutoCollect: (cauldronIndex) =>
         gameplay?.toggleBrewingAutoCollectEnabled?.(cauldronIndex),
       cancelBrew: (cauldronIndex) => {
-        const result = gameplay?.cancelBrewing?.(cauldronIndex);
-        if (result?.ok === false) {
-          this.experienceFacade?.transientEffects?.emitReward?.({
-            message: "No potion is brewing to cancel",
-            flyoutKey: "brewing-cancel-empty",
-          });
+        const activeBrew = (this.gameplaySnapshot.brewing?.cauldrons ?? []).find(
+          (cauldron) => Number(cauldron?.cauldronIndex) === cauldronIndex,
+        )?.activeBrew;
+        if (
+          activeBrew?.phase !== "brewing" &&
+          activeBrew?.phase !== "bottling"
+        ) {
+          return performCancelBrew(cauldronIndex);
         }
-        return result;
+        const value = { cauldronIndex };
+        const confirmationModel = {
+          title: "Cancel Brewing?",
+          message:
+            "Cancel this brew? The unfinished potion, herbs, and mana will be lost.",
+          cancelLabel: "Keep Brewing",
+          cancelColor: "yellow",
+          confirmLabel: "Cancel Brew",
+          confirmColor: "yellow",
+          value,
+          actions: {
+            confirm: ({ cauldronIndex: confirmedIndex } = value) =>
+              performCancelBrew(confirmedIndex),
+          },
+        };
+        return (
+          this.globalDialogPresenter?.open?.(
+            "confirmation",
+            confirmationModel,
+          ) ??
+          this.requireRuntime().openDialog?.(
+            "global.confirmation",
+            confirmationModel,
+          ) ??
+          false
+        );
       },
       collectBrew: (cauldronIndex) => {
         const result = gameplay?.collectBrewing?.(cauldronIndex);

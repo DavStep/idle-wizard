@@ -12,4 +12,14 @@ describe('Android haptics integration', () => {
 
     expect(mainActivity).toContain('webView.setHapticFeedbackEnabled(false);');
   });
+
+  it('keeps the native fallback pulse aligned with the subtle UI tap contract', () => {
+    const nativePlugin = readFileSync(
+      `${cwd()}/android/app/src/main/java/com/idlewizard/game/IdleWizardHapticsPlugin.java`,
+      'utf8',
+    );
+
+    expect(nativePlugin).toContain('DEFAULT_DURATION_MS = 5;');
+    expect(nativePlugin).toContain('DEFAULT_AMPLITUDE = 0.35;');
+  });
 });

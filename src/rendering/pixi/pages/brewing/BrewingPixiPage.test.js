@@ -186,7 +186,7 @@ describe('BrewingPixiPage', () => {
     harness.dispose();
   });
 
-  it('shows a red zero for a missing selected-recipe ingredient slot', () => {
+  it('shows owned/required on every selected-recipe ingredient slot', () => {
     const harness = createHarness();
     const model = createBrewingViewModel();
     model.brewing.cauldrons[0].ingredients = [];
@@ -220,10 +220,29 @@ describe('BrewingPixiPage', () => {
         quantity: 1,
       },
     ];
+    model.brewing.cauldrons[0].selectedRecipe.ingredients[0].owned = 1;
     harness.page.bind(model);
 
-    expect(slot.missingCount.visible).toBe(false);
-    expect(slot.requiredCount.visible).toBe(false);
+    expect(slot.missingCount.text).toBe('1');
+    expect(slot.missingCount.style.fill).toBe('#d4d4d4');
+    expect(slot.requiredCount.text).toBe('/1');
+    expect(slot.missingCount.visible).toBe(true);
+    expect(slot.requiredCount.visible).toBe(true);
+
+    model.brewing.cauldrons[0].ingredients = [];
+    model.brewing.cauldrons[0].recipeReadiness = {
+      hasEnoughIngredients: false,
+      hasEnoughMana: true,
+    };
+    harness.page.bind(model);
+    expect(harness.page.hud.phaseLabel.text).toBe('Need Herbs');
+
+    model.brewing.cauldrons[0].recipeReadiness = {
+      hasEnoughIngredients: true,
+      hasEnoughMana: false,
+    };
+    harness.page.bind(model);
+    expect(harness.page.hud.phaseLabel.text).toBe('Need Mana');
 
     harness.page.destroy();
     harness.dispose();

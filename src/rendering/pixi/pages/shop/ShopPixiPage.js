@@ -122,8 +122,6 @@ const STATION_TITLE_HEIGHT = RESEARCH_PIXI_GEOMETRY.categoryTitleHeight;
 const STATION_TITLE_ROW_GAP = 5;
 const MARKET_TITLE_HEIGHT =
   PIXI_ROOT_RUN_GEOMETRY.marketTitleRibbon.height;
-const MARKET_TITLE_TOP_OVERHANG =
-  MARKET_TITLE_HEIGHT - STATION_TITLE_HEIGHT;
 
 /**
  * Renderer-neutral retained Shop page.
@@ -602,12 +600,10 @@ export class ShopPixiPage extends BasePixiRetainedView {
     }
     const edge = PIXI_UI_GEOMETRY.roomContentEdge;
     const contentWidth = this.sourceWidth - edge * 2;
-    const identityY =
-      PIXI_UI_GEOMETRY.roomContentTop -
-      MARKET_TITLE_TOP_OVERHANG;
+    const identityY = PIXI_UI_GEOMETRY.roomContentTop;
     const panelTop =
       PIXI_UI_GEOMETRY.roomContentTop +
-      STATION_TITLE_HEIGHT +
+      MARKET_TITLE_HEIGHT +
       STATION_TITLE_ROW_GAP;
     const tabY =
       this.sourceHeight -

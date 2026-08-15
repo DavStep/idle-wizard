@@ -853,7 +853,13 @@ export class PixiViewModelFactory {
     }
 
     const allianceId = alliance.allianceId ?? alliance.id ?? '';
-    const memberRows = members.map((row, index) => ({
+    const ownedMembers = tradeAlliance.members
+      ? members.filter(
+          (member) =>
+            String(member.allianceId ?? '').trim() === String(allianceId).trim(),
+        )
+      : members;
+    const memberRows = ownedMembers.map((row, index) => ({
       id:
         String(
           row.memberIdentity ??

@@ -46,6 +46,9 @@ Open `?devUi=researchCompleteAnnouncement` to inspect the retained
 research-complete ribbon, centered research icon, and row composition without
 completing research or publishing gameplay state.
 
+Open `?devUi=global.confirmation` to inspect the production confirmation shell,
+centered message area, and paired actions after the game surfaces mount.
+
 The views accept renderer-neutral view models. Common fields are:
 
 ```text
@@ -74,8 +77,13 @@ announcement
   title, copy/body, rows, kind/variant, framed, dismissible, actions
 
 confirmation
-  title, message, rows, status, cancelLabel, confirmLabel, value, actions
+  title, message, rows, status, cancelLabel, cancelColor,
+  confirmLabel, confirmColor, value, actions
 ```
+
+Confirmation copy is centered inside the body area above the actions. The
+paper keeps a `124px` minimum content height, and callers may select any shared
+regular-button color for each action without changing the button contract.
 
 Repeated settings choices, avatars, level rows, mail cards, alliance members,
 announcement rows, and confirmation rows use bounded keyed pools. Input

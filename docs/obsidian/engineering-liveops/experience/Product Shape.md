@@ -153,6 +153,7 @@ experience_type: product-shape
 - Player market tab entry should retain only public listings/requests; trade history subscriptions and DOM rows stay lazy until the `trade history` popup opens.
 - Market tab panels use the shared vertical scrollbar directly on the absolute scrolling panel; never append a sibling progress rail.
 - All managed scroll panels, including full-page rooms, dialogs, popups, and bounded lists, use `style-page-scroll` on the actual scrolling element; wrapper-level scrollbar styling misses overflow, and a second scroll class lets behavior drift.
+- Scroll release velocity filtering must normalize its sample blend by elapsed time; a fixed per-event blend lets high-frequency final finger jitter reverse inertia away from an overscroll edge.
 - Page swipe direction lock should wait for a clear axis ratio, and `style-page-scroll` roots need `touch-action: pan-y`; otherwise tiny early vertical drift inside scroll pages can steal horizontal swipes.
 - Scaled full-page UI layers should stay unscrolled; put an inner source-positioned scroll root inside them, or content can visibly pass under top/bottom chrome before clipping.
 - Garden's inner scroll root should stop at `--style-room-chat-clearance` only; adding bottom tab clearance double-counts the shared world-chat gap.
@@ -366,7 +367,7 @@ experience_type: product-shape
 - Claim-button reward flyouts should publish before the claim snapshot rebuilds, so the original button can still anchor the motion.
 - Haptics are app-level device feedback: keep the preference in local storage and route pulses through `HapticsFacade`. Every enabled touch control gets a mild pulse on touch-down, no second pulse on quick release, and a mild second pulse only after a validated release following a `350ms` hold; actions and click sounds remain release-confirmed.
 - Holding a button must never activate or repeat its action before release; Workshop summon follows the same release-only rule as tabs, regular buttons, icon buttons, and dialog close controls.
-- Android tap haptics should prefer the `IdleWizardHaptics` constant pulse (`5ms`, `0.5` amplitude); Capacitor `Haptics.vibrate()` uses default amplitude and feels harsher.
+- Android tap haptics should prefer the `IdleWizardHaptics` constant pulse (`5ms`, `0.35` amplitude); Capacitor `Haptics.vibrate()` uses default amplitude and feels harsher.
 - Retained Brewing state motion must reapply cauldron, liquid, and highlight effects from captured rest transforms each tick; otherwise ambient brewing motion, carousel settling, completion impacts, and reduced-motion resets accumulate visual drift.
 - Retained room scroll height must derive from visible rendered rows, not maximum feature capacity; hidden future Garden plots otherwise create blank scroll travel and a misleading overflow rail.
 - Whole-row retained controls use `ClickableWidget` for their single press target and compact release feedback; do not gate that interaction contract behind feature-list constructor flags.

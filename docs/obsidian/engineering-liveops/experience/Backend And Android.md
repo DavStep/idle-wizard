@@ -31,6 +31,7 @@ experience_type: backend-android
 - World chat rows store `allianceTag` at send time; chat display should format tagged senders as `[TAG] username(lvl)`.
 - Trade alliance weekly quests are configured by `game_config.tradeAlliance.weeklyQuests`; legacy `dailyQuests` config is still accepted, and current server-verified source is capped `allianceIncome`.
 - Trade alliance member `dailyContribution` is a legacy column name; it now stores current weekly contribution and resets with weekly quest progress.
+- Public trade alliance member snapshots contain every alliance; owned-roster projections must filter members by the viewer's current alliance id before rendering or counting them.
 - Trade alliance chat and reward inbox stay private base tables with sender-scoped `own_trade_alliance_*` views; do not subscribe clients to private base tables.
 - Trade alliance reward inbox processing must wait until gameplay save hydration finishes; otherwise local crystal can be granted then overwritten by the loaded save while the server reward is collected.
 - Server inbox rewards should mark mail collected only after the local reward save is force-flushed; otherwise a reload can lose the grant while the server hides the claim.

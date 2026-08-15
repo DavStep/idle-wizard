@@ -168,6 +168,38 @@ describe('retained global Pixi dialogs', () => {
     harness.dispose();
   });
 
+  it('centers confirmation copy in a taller paper above yellow actions', () => {
+    const harness = createHarness();
+    const confirmation = harness.registry.open(
+      GLOBAL_DIALOG_IDS.CONFIRMATION,
+      {
+        title: 'Empty Cauldron?',
+        message: 'Are you sure you want to empty the cauldron contents?',
+        cancelLabel: 'Cancel',
+        cancelColor: 'yellow',
+        confirmLabel: 'Empty',
+        confirmColor: 'yellow',
+      },
+    );
+
+    expect(confirmation.contentHeight).toBe(124);
+    expect(confirmation.message.align).toBe('center');
+    expect(confirmation.message.textObject.anchor).toMatchObject({
+      x: 0.5,
+      y: 0.5,
+    });
+    expect(confirmation.message.x).toBe(130);
+    expect(confirmation.message.y * 2).toBeCloseTo(
+      confirmation.cancelButton.y - 10,
+    );
+    expect(confirmation.cancelButton.color).toBe('yellow');
+    expect(confirmation.confirmButton.color).toBe('yellow');
+    expect(confirmation.cancelButton.y).toBe(94);
+    expect(confirmation.confirmButton.y).toBe(94);
+
+    harness.dispose();
+  });
+
   it('composes Player Info from the framed avatar and aligned lifetime stats', () => {
     const harness = createHarness();
     const player = harness.registry.open(GLOBAL_DIALOG_IDS.PLAYER, {
@@ -1045,7 +1077,8 @@ describe('retained global Pixi dialogs', () => {
       join: 'round',
     });
     expect(settings.accountSave.textLabel.y).toBe(
-      settings.accountSave.buttonHeight / 2,
+      settings.accountSave.buttonHeight / 2
+        + settings.accountSave.activeSkin.contentOffsetY,
     );
     expect(settings.accountSave.variant).toBe('green');
     expect(settings.accountSave.resolveRootRunVariant()).toBe('green');

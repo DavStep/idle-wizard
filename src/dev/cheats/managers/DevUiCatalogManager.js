@@ -177,10 +177,15 @@ function readOwner(dialogId) {
 function createPreviewModel(dialogId) {
   if (dialogId === 'global.confirmation') {
     return {
-      title: 'confirmation',
-      message: 'preview confirmation dialog',
-      cancelLabel: 'cancel',
-      confirmLabel: 'confirm',
+      title: 'Empty Cauldron?',
+      message: 'Are you sure you want to empty the cauldron contents?',
+      cancelLabel: 'Cancel',
+      cancelColor: 'yellow',
+      confirmLabel: 'Empty',
+      confirmColor: 'yellow',
+      actions: {
+        confirm: () => ({ ok: true }),
+      },
     };
   }
 

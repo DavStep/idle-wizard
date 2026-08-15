@@ -38,6 +38,15 @@ const TAB_OUTPUT_INSETS_50 = Object.freeze({
   left: 20,
 });
 
+// Every regular-button tier includes an authored cast shadow at the bottom.
+// Keep label/content centering tied to that rendered shadow instead of the
+// complete rectangular texture bounds.
+const BUTTON_BOTTOM_SHADOW_HEIGHT = Object.freeze({
+  50: 20,
+  30: 12,
+  15: 6,
+});
+
 export function isPixiButtonColor(value) {
   return Object.hasOwn(BUTTON_ASSET_COLOR, String(value ?? ''));
 }
@@ -93,14 +102,32 @@ export function getPixiButtonSkin({
         outputInsets: naturalOutputInsets,
         targetSize: { width, height },
       });
+  const contentOffsetY = resolveButtonContentOffsetY({
+    borderInsets,
+    sizeTier: normalizedSize,
+    sourceInsets,
+  });
 
   return Object.freeze({
     assetId,
     borderInsets,
+    contentOffsetY,
     minimumCenter,
     sizeTier: normalizedSize,
     sourceInsets,
   });
+}
+
+function resolveButtonContentOffsetY({
+  borderInsets,
+  sizeTier,
+  sourceInsets,
+}) {
+  const sourceShadowHeight = BUTTON_BOTTOM_SHADOW_HEIGHT[sizeTier] ?? 0;
+  const renderedBottomScale = sourceInsets.bottom > 0
+    ? borderInsets.bottom / sourceInsets.bottom
+    : 0;
+  return -(sourceShadowHeight * renderedBottomScale) / 2;
 }
 
 function scaleInsets(insets, scale) {

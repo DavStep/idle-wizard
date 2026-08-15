@@ -1193,11 +1193,12 @@ const GLOBAL_DIALOG_SCENARIOS = Object.freeze({
   ]),
   [GLOBAL_DIALOG_IDS.CONFIRMATION]: Object.freeze([
     scenario('default', 'Default', () => ({
-      cancelLabel: 'Keep brewing',
-      confirmLabel: 'Reset cauldron',
-      message: 'Reset this cauldron and return its ingredients?',
-      rows: [{ id: 'cost', label: 'Mana returned', value: '24' }],
-      title: 'Reset Cauldron?',
+      cancelColor: 'yellow',
+      cancelLabel: 'Cancel',
+      confirmColor: 'yellow',
+      confirmLabel: 'Empty',
+      message: 'Are you sure you want to empty the cauldron contents?',
+      title: 'Empty Cauldron?',
     })),
     scenario('pending', 'Pending', () => ({
       cancelEnabled: false,

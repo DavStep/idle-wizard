@@ -20,6 +20,7 @@ The preferred renderer-neutral view model is:
       selectedRecipe: {
         key, label, ingredients: [{ itemKey, quantity, owned }]
       },
+      recipeReadiness: { hasEnoughIngredients, hasEnoughMana },
       autoCollectEnabled,
       guideRows: [{ id, quantity, label, valueText, fulfilled }],
       activeBrew: {
@@ -105,8 +106,9 @@ outside the two lower ingredient tiles and slightly below their centers, so
 they read as balanced carousel navigation without interrupting the cauldron or
 the middle orbit row. All six cells are real gameplay ingredient slots; recipes
 may continue using fewer. Ingredient slots reuse the ordinary room-panel skin
-and show item art and name only, with no quantity ratio because every occupied
-slot represents one herb. Pressing an available slot opens `Choose Herb`, the
+and show item art, name, and a compact `owned/required` count. Repeated herbs
+allocate owned stock across their ordered slots, so three Sage requirements with
+two owned herbs read `1/1`, `1/1`, and `0/1`. Pressing an available slot opens `Choose Herb`, the
 same retained inventory-choice dialog used by Garden `Choose Seed`, with herb
 art and availability rows in one continuous paper. It has no selected-herb
 summary or quantity controls. Choosing a herb replaces the target slot with
@@ -179,8 +181,13 @@ top-right `Recipes` control; manual idle after a recipe or ingredient is staged
 is `Brew`, brewing and bottling are yellow `Cancel`, brewed is `Bottle`, and
 bottled is `Collect`. Auto mode
 shows `Collect` only while output is ready; otherwise it shows yellow `Cancel`.
+After Collect, a retained selected recipe keeps `Brew` as the one-tap repeat
+action: when enough herbs and mana remain, it restages the recipe and starts the
+next batch. Otherwise the action is disabled and the phase reads `Need Herbs`
+or `Need Mana` while the slot counts explain the shortage.
 Idle Auto `Cancel` disables Auto, while active `Cancel` destroys the unfinished
-batch through the existing cancellation flow. Enabling Auto first copies the
+batch only after the shared confirmation dialog warns that the unfinished
+potion, herbs, and mana will be lost. Enabling Auto first copies the
 retained page's selected recipe into the authoritative Auto recipe, then enables
 the mode. Cancel has no icon.
 

@@ -56,6 +56,9 @@ const LEVEL_REWARD_CONTINUE_DELAY_MS = 150;
 const LEVEL_REWARD_COUNT_DELAY_MS = 120;
 const LEVEL_REWARD_COUNT_DURATION_MS = 700;
 const CONFIRMATION_WIDTH = 260;
+const CONFIRMATION_MIN_CONTENT_HEIGHT = 124;
+const CONFIRMATION_BUTTON_HEIGHT = 30;
+const CONFIRMATION_BODY_TO_ACTION_GAP = 10;
 const UNLOCK_ITEM_WIDTH = 72;
 const UNLOCK_ITEM_GAP_X = 4;
 const UNLOCK_ITEM_GAP_Y = 10;
@@ -1980,6 +1983,8 @@ export class PixiConfirmationDialog extends RetainedGlobalDialog {
     });
     this.pending = false;
     this.message = new PixiTextLabel({
+      align: 'center',
+      anchor: { x: 0.5, y: 0.5 },
       wordWrap: true,
       wrapWidth: CONFIRMATION_WIDTH,
       label: `${dialogId}:message`,
@@ -1987,6 +1992,8 @@ export class PixiConfirmationDialog extends RetainedGlobalDialog {
     this.rowsLayer = new Container();
     this.rowsLayer.label = `${dialogId}:rows`;
     this.status = new PixiTextLabel({
+      align: 'center',
+      anchor: { x: 0.5, y: 0 },
       color: 'muted',
       label: `${dialogId}:status`,
     });
@@ -2040,6 +2047,7 @@ export class PixiConfirmationDialog extends RetainedGlobalDialog {
     this.status.setText(this.confirmationModel.status);
     this.cancelButton
       .setText(this.confirmationModel.cancelLabel)
+      .setColor(this.confirmationModel.cancelColor)
       .setEnabled(
         !this.pending &&
           this.confirmationModel.cancelEnabled,
@@ -2050,6 +2058,7 @@ export class PixiConfirmationDialog extends RetainedGlobalDialog {
           ? '...'
           : this.confirmationModel.confirmLabel,
       )
+      .setColor(this.confirmationModel.confirmColor)
       .setEnabled(
         !this.pending &&
           this.confirmationModel.confirmEnabled,
@@ -2138,36 +2147,70 @@ export class PixiConfirmationDialog extends RetainedGlobalDialog {
       return;
     }
     this.message.setWrapWidth(CONFIRMATION_WIDTH);
-    this.message.position.set(0, 0);
-    let y = this.message.text
-      ? Math.ceil(this.message.measuredHeight) + 10
+    const messageHeight = this.message.text
+      ? Math.ceil(this.message.measuredHeight)
       : 0;
-    this.rowsLayer.position.set(0, y);
+    let bodyHeight = messageHeight;
     const rowsHeight = this.rows.layout(
       CONFIRMATION_WIDTH,
       { gap: 4 },
     );
-    y += rowsHeight;
+    let rowsY = bodyHeight;
+    if (rowsHeight > 0) {
+      if (bodyHeight > 0) {
+        rowsY += 10;
+      }
+      bodyHeight = rowsY + rowsHeight;
+    }
+    let statusY = bodyHeight;
     if (this.status.text) {
-      y += rowsHeight > 0 ? 8 : 0;
-      this.status.position.set(0, y);
-      y += Math.ceil(this.status.measuredHeight) + 8;
-    } else {
-      y += rowsHeight > 0 ? 10 : 0;
+      if (bodyHeight > 0) {
+        statusY += 8;
+      }
+      bodyHeight =
+        statusY + Math.ceil(this.status.measuredHeight);
     }
     const buttonGap = 8;
     const buttonWidth =
       (CONFIRMATION_WIDTH - buttonGap) / 2;
-    this.cancelButton.position.set(0, y);
-    this.cancelButton.setSize(buttonWidth, 30);
+    const contentHeight = Math.max(
+      CONFIRMATION_MIN_CONTENT_HEIGHT,
+      bodyHeight +
+        (bodyHeight > 0 ? CONFIRMATION_BODY_TO_ACTION_GAP : 0) +
+        CONFIRMATION_BUTTON_HEIGHT,
+    );
+    const buttonY = contentHeight - CONFIRMATION_BUTTON_HEIGHT;
+    const bodyRegionHeight = Math.max(
+      0,
+      buttonY -
+        (bodyHeight > 0 ? CONFIRMATION_BODY_TO_ACTION_GAP : 0),
+    );
+    const bodyOffsetY = Math.max(
+      0,
+      (bodyRegionHeight - bodyHeight) / 2,
+    );
+    this.message.position.set(
+      CONFIRMATION_WIDTH / 2,
+      bodyOffsetY + messageHeight / 2,
+    );
+    this.rowsLayer.position.set(0, bodyOffsetY + rowsY);
+    this.status.position.set(
+      CONFIRMATION_WIDTH / 2,
+      bodyOffsetY + statusY,
+    );
+    this.cancelButton.position.set(0, buttonY);
+    this.cancelButton.setSize(buttonWidth, CONFIRMATION_BUTTON_HEIGHT);
     this.confirmButton.position.set(
       buttonWidth + buttonGap,
-      y,
+      buttonY,
     );
-    this.confirmButton.setSize(buttonWidth, 30);
+    this.confirmButton.setSize(
+      buttonWidth,
+      CONFIRMATION_BUTTON_HEIGHT,
+    );
     this.setPanelContentSize(
       CONFIRMATION_WIDTH,
-      Math.max(70, y + 30),
+      contentHeight,
     );
     this.positionPanel();
   }
@@ -2260,9 +2303,11 @@ function normalizeConfirmationModel(model = {}) {
     rows: normalizeRows(model.rows),
     status: String(model.status ?? ''),
     cancelLabel: String(model.cancelLabel ?? 'cancel'),
+    cancelColor: String(model.cancelColor ?? 'brown'),
     confirmLabel: String(
       model.confirmLabel ?? model.actionLabel ?? 'confirm',
     ),
+    confirmColor: String(model.confirmColor ?? 'brown'),
     cancelEnabled: model.cancelEnabled !== false,
     confirmEnabled: model.confirmEnabled !== false,
     pending: Boolean(model.pending),

@@ -3,7 +3,7 @@ import { Haptics } from '@capacitor/haptics';
 import { IdleWizardHapticsPlugin } from '../nativeHapticsPlugin.js';
 
 export const UI_TAP_HAPTIC_DURATION_MS = 5;
-export const UI_TAP_HAPTIC_AMPLITUDE = 0.5;
+export const UI_TAP_HAPTIC_AMPLITUDE = 0.35;
 export const HAPTIC_MIN_INTERVAL_MS = 40;
 
 export class HapticPulseManager {

@@ -1093,6 +1093,14 @@ describe('PixiViewModelFactory', () => {
       playerLevel: 12,
       role: 'tradeMaster',
     };
+    const outsider = {
+      allianceId: 'other-alliance',
+      memberIdentity: 'member-b',
+      username: 'Nox',
+      character: 'rowan',
+      playerLevel: 9,
+      role: 'trader',
+    };
     const alliance = new PixiViewModelFactory().createAllianceDialog(
       {
         connected: true,
@@ -1105,7 +1113,7 @@ describe('PixiViewModelFactory', () => {
           seasonIncome: 84520,
           description: 'Patient traders sharing one hall.',
         },
-        members: [member],
+        members: [member, outsider],
       },
       null,
       { openPlayer },
@@ -1131,6 +1139,8 @@ describe('PixiViewModelFactory', () => {
       roleLabel: 'Trade Master',
       levelLabel: 'Lv 12',
     });
+    expect(alliance.members).toHaveLength(1);
+    expect(alliance.rows).toHaveLength(1);
 
     alliance.members[0].onActivate();
     expect(openPlayer).toHaveBeenCalledWith(member);

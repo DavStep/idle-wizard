@@ -1945,6 +1945,7 @@ describe('WorkshopPixiPage', () => {
     const row = dialog.rows.get('dbp');
     const collapsedRow = dialog.rows.get('solo');
     expect(row.tag.text).toBe('[DBP]');
+    expect(row.tag.style.stroke?.width ?? 0).toBe(0);
     expect(row.name.text).toBe('Dominion of Bug Players');
     expect(row.total.text).toBe('12.4k');
     expect(row.coin.visible).toBe(true);
@@ -2300,6 +2301,66 @@ describe('WorkshopPixiPage', () => {
     harness.dispose();
   });
 
+  it('keeps World Chat pinned to the newest message when a wrapped row arrives', () => {
+    const harness = createHarness();
+    const model = createWorkshopViewModel();
+    const rows = Array.from({ length: 20 }, (_, index) => ({
+      id: `system-${index}`,
+      type: 'system',
+      username: 'System',
+      body: `Message ${index}`,
+      ageLabel: `${20 - index}m ago`,
+    }));
+    model.workshop.dialogs.worldChat = {
+      title: 'World Chat',
+      composer: {
+        placeholder: 'Message',
+        maxLength: 160,
+        enabled: true,
+      },
+      rows,
+      onSubmit: vi.fn(),
+    };
+    harness.page.bind(model);
+    harness.page.openDialog('worldChat');
+    const dialog = harness.dialogs.get('workshop.worldChat');
+    const previousBottom = dialog.scroll.offsetY;
+
+    rows.push({
+      id: 'player-wrapped',
+      type: 'player',
+      username: 'Mira',
+      body:
+        'This newly arrived message wraps onto multiple lines and must remain completely visible.',
+      ageLabel: 'now',
+    });
+    harness.page.bind(model);
+
+    const wrappedRow = dialog.rows.get('player-wrapped');
+    expect(wrappedRow.getPreferredHeight()).toBeGreaterThan(35.1);
+    expect(dialog.scroll.contentHeight - dialog.scroll.height).toBeGreaterThan(
+      previousBottom,
+    );
+    expect(dialog.scroll.offsetY).toBeCloseTo(
+      dialog.scroll.contentHeight - dialog.scroll.height,
+    );
+
+    dialog.scroll.scrollTo(dialog.scroll.offsetY - 80);
+    const readingOffset = dialog.scroll.offsetY;
+    rows.push({
+      id: 'player-newer',
+      type: 'player',
+      username: 'Rowan',
+      body: 'This newer message should not pull a reader away from older chat.',
+      ageLabel: 'now',
+    });
+    harness.page.bind(model);
+    expect(dialog.scroll.offsetY).toBeCloseTo(readingOffset);
+
+    harness.page.destroy();
+    harness.dispose();
+  });
+
   it('anchors World Chat to the stage edges and keeps its composer above the keyboard', () => {
     const harness = createHarness();
     const model = createWorkshopViewModel();
@@ -2462,12 +2523,7 @@ describe('WorkshopPixiPage', () => {
     );
 
     expect(playerRow.tag.text).toBe('[MOSS]');
-    expect(playerRow.tag.style.stroke).toMatchObject({
-      color: PIXI_TEXT_STROKE_COLOR,
-      width: resolvePixiTextStrokeWidth(
-        playerRow.tag.style.fontSize,
-      ),
-    });
+    expect(playerRow.tag.style.stroke?.width ?? 0).toBe(0);
     expect(playerRow.username.text).toBe('Mira');
     expect(playerRow.username.style.fill).toBe('#634934');
     expect(playerRow.username.style.stroke?.width ?? 0).toBe(0);

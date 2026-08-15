@@ -735,7 +735,11 @@ export class BrewingHudPixi {
           ? 'Ready to Collect'
           : toTitleCase(active.phase)
         : recipe
-          ? 'Ready to Brew'
+          ? cauldron.recipeReadiness?.hasEnoughIngredients === false
+            ? 'Need Herbs'
+            : cauldron.recipeReadiness?.hasEnoughMana === false
+              ? 'Need Mana'
+              : 'Ready to Brew'
           : '',
     );
     this.syncActiveTimer(active, now);
@@ -2080,6 +2084,8 @@ export class BrewingIngredientPickerSlot {
     );
     this.control.visual.addChild(this.frame, this.contentMotion);
     this.model = null;
+    this.theme = null;
+    this.countMissing = false;
     this.hasBoundModel = false;
     this.stagedSignature = '';
     this.arrivalMotionStart = null;
@@ -2126,17 +2132,23 @@ export class BrewingIngredientPickerSlot {
     const required = Math.max(1, Math.floor(Number(model?.quantity) || 1));
     const owned = Math.max(0, Math.floor(Number(model?.owned) || 0));
     const missing = Boolean(model) && showMissing && owned < required;
-    setText(this.missingCount, missing ? String(Math.min(owned, required)) : '');
-    setText(this.requiredCount, missing ? `/${required}` : '');
-    this.countGroup.visible = missing;
-    this.countGroup.renderable = missing;
-    this.missingCount.visible = missing;
-    this.missingCount.renderable = missing;
-    this.requiredCount.visible = missing;
-    this.requiredCount.renderable = missing;
+    const showCount = Boolean(model) && showMissing;
+    this.countMissing = missing;
+    setText(
+      this.missingCount,
+      showCount ? String(Math.min(owned, required)) : '',
+    );
+    setText(this.requiredCount, showCount ? `/${required}` : '');
+    this.countGroup.visible = showCount;
+    this.countGroup.renderable = showCount;
+    this.missingCount.visible = showCount;
+    this.missingCount.renderable = showCount;
+    this.requiredCount.visible = showCount;
+    this.requiredCount.renderable = showCount;
     this.decorative = decorative && !model;
     this.hasBoundModel = true;
     this.stagedSignature = nextStagedSignature;
+    this.applyCountTheme();
     this.layoutCount();
     this.redraw();
     if (shouldAnimateArrival) {
@@ -2232,6 +2244,7 @@ export class BrewingIngredientPickerSlot {
   }
 
   applyTheme(theme) {
+    this.theme = theme;
     this.control.applyTheme(theme);
     const sourceInsets = theme?.frames?.panelSourceInsets ?? null;
     this.frameInsets = INGREDIENT_SLOT_BORDER_INSETS;
@@ -2244,15 +2257,21 @@ export class BrewingIngredientPickerSlot {
       ...RETAINED_INGREDIENT_NAME_STYLE,
       fill: theme?.text ?? '#d4d4d4',
     });
-    applyTextTheme(this.missingCount, theme, {
-      ...RETAINED_INGREDIENT_COUNT_STYLE,
-      fill: theme?.notificationRed ?? '#c1121f',
-    });
+    this.applyCountTheme();
     applyTextTheme(this.requiredCount, theme, {
       ...RETAINED_INGREDIENT_COUNT_STYLE,
       fill: theme?.text ?? '#d4d4d4',
     });
     this.layoutCount();
+  }
+
+  applyCountTheme() {
+    applyTextTheme(this.missingCount, this.theme, {
+      ...RETAINED_INGREDIENT_COUNT_STYLE,
+      fill: this.countMissing
+        ? this.theme?.notificationRed ?? '#c1121f'
+        : this.theme?.text ?? '#d4d4d4',
+    });
   }
 
   destroy() {

@@ -5,6 +5,12 @@ upload script posts the section whose heading matches `package.json` `version`.
 Write these developer-to-player notes only in Idle Wizard terms. Do not mention
 other game names, source projects, ports, or implementation provenance.
 
+## 0.3.54
+
+- Added a confirmation before canceling an active brew, with clearer confirmation layouts and actions.
+- Improved room banners, button-label alignment, alliance tags, and World Chat so the newest messages stay in view.
+- Smoothed room scrolling, softened tap feedback, and clarified multigrow and multibrew research descriptions.
+
 ## 0.3.53
 
 - Added a quiet looping soundtrack that follows the Music setting and pauses while the game is in the background.

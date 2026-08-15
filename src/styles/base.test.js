@@ -29,6 +29,15 @@ function findRuleBody(pattern, predicate) {
 }
 
 describe('base styles', () => {
+  it('keeps alliance tags free of inherited text strokes', () => {
+    const allianceTagRule = getRuleBody(
+      /\.workshop-page__alliance-tag\s*\{(?<body>[^}]*)\}/,
+    );
+
+    expect(allianceTagRule).toContain('-webkit-text-stroke: 0;');
+    expect(allianceTagRule).toContain('text-shadow: none;');
+  });
+
   it('opens dialogs with a fast full-alpha rubber snap', () => {
     const rootRule = getRuleBody(/:root\s*\{(?<body>[^}]*)\}/);
     const dialogKeyframes = baseCss.match(

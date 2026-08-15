@@ -12,4 +12,5 @@ Every enabled touch control uses the shared press lifecycle: one mild pulse on
 touch-down, no extra pulse for a quick release, and one mild release pulse
 after a hold of at least `350ms`. Actions still activate only on a validated
 release over the original control. Holding a button never activates or repeats
-its action before release.
+its action before release. The default Android pulse is `5ms` at `0.35`
+amplitude so repeated button taps stay subtle.

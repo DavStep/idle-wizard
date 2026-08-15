@@ -11,6 +11,7 @@ const MAX_DELTA_SECONDS = 0.05;
 const SETTLE_DISTANCE = 0.35;
 const SETTLE_VELOCITY = 6;
 const VELOCITY_SAMPLE_BLEND = 0.68;
+const VELOCITY_REFERENCE_FRAME_MS = 1000 / 60;
 
 export const ROOT_RUN_SCROLL_SOURCE_WIDTH = 1080;
 export const IDLE_WIZARD_SCROLL_SOURCE_WIDTH = 390;
@@ -136,9 +137,10 @@ export class StationScrollPhysics {
 
     if (elapsedMs > 0) {
       const sampleVelocity = (nextOffset - this.lastSampleOffset) / (elapsedMs / 1000);
+      const sampleBlend = velocitySampleBlend(elapsedMs);
       this.velocity = clamp(
-        this.velocity * (1 - VELOCITY_SAMPLE_BLEND) +
-          sampleVelocity * VELOCITY_SAMPLE_BLEND,
+        this.velocity * (1 - sampleBlend) +
+          sampleVelocity * sampleBlend,
         -MAX_RELEASE_VELOCITY,
         MAX_RELEASE_VELOCITY,
       );
@@ -250,6 +252,16 @@ function rubberBand(distance, resistance, maxOverscroll) {
   return (
     (direction * maxOverscroll * resistedDistance) /
     (maxOverscroll + resistedDistance)
+  );
+}
+
+function velocitySampleBlend(elapsedMs) {
+  return (
+    1 -
+    Math.pow(
+      1 - VELOCITY_SAMPLE_BLEND,
+      elapsedMs / VELOCITY_REFERENCE_FRAME_MS,
+    )
   );
 }
 

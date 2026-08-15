@@ -8,6 +8,11 @@ import {
 } from './HapticPulseManager.js';
 
 describe('HapticPulseManager', () => {
+  it('keeps the shared button pulse short and subtle', () => {
+    expect(UI_TAP_HAPTIC_DURATION_MS).toBe(5);
+    expect(UI_TAP_HAPTIC_AMPLITUDE).toBe(0.35);
+  });
+
   it('uses native constant-amplitude haptics before Capacitor and web vibration', () => {
     const nativeConstantHaptics = { playConstant: vi.fn(() => Promise.resolve()) };
     const nativeHaptics = { vibrate: vi.fn(() => Promise.resolve()) };

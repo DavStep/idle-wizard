@@ -1458,8 +1458,12 @@ describe('ShopPixiPage', () => {
     const tradersScroll =
       harness.page.panelScrolls.get('traders');
 
+    expect(harness.page.identityLayer.x).toBe(0);
+    expect(harness.page.identityLayer.y).toBe(
+      PIXI_UI_GEOMETRY.roomContentTop,
+    );
     expect(tradersScroll.root.x).toBe(0);
-    expect(tradersScroll.root.y).toBe(140.5);
+    expect(tradersScroll.root.y).toBe(164);
     expect(harness.page.tabLayer.position).toMatchObject({
       x: 16,
       y: 640,
@@ -1469,7 +1473,7 @@ describe('ShopPixiPage', () => {
     });
     expect(
       tradersScroll.height,
-    ).toBeCloseTo(493.5, 10);
+    ).toBeCloseTo(470, 10);
 
     harness.page.destroy();
     harness.dispose();

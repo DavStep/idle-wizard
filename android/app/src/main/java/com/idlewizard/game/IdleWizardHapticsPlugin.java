@@ -15,7 +15,7 @@ import com.getcapacitor.annotation.CapacitorPlugin;
 @CapacitorPlugin(name = "IdleWizardHaptics")
 public class IdleWizardHapticsPlugin extends Plugin {
     private static final int DEFAULT_DURATION_MS = 5;
-    private static final double DEFAULT_AMPLITUDE = 0.5;
+    private static final double DEFAULT_AMPLITUDE = 0.35;
     private static final int MIN_DURATION_MS = 1;
     private static final int MAX_DURATION_MS = 1000;
     private static final int MIN_ANDROID_AMPLITUDE = 1;

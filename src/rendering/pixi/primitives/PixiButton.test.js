@@ -66,6 +66,42 @@ describe('PixiTextButton', () => {
     button.destroy({ children: true });
   });
 
+  it.each([
+    { sizeTier: 50, width: 58, height: 36, expectedY: 15.916667 },
+    { sizeTier: 30, width: 72, height: 42, expectedY: 19 },
+    { sizeTier: 15, width: 46, height: 28, expectedY: 13 },
+  ])(
+    'centers tier-$sizeTier text above the authored bottom shadow',
+    ({ sizeTier, width, height, expectedY }) => {
+      const button = new PixiTextButton({
+        assetManager: { getTexture: vi.fn(() => Texture.EMPTY) },
+        text: 'Recipes',
+        variant: 'yellow',
+        sizeTier,
+        width,
+        height,
+      });
+
+      expect(button.textLabel.y).toBeCloseTo(expectedY, 5);
+      expect(button.textLabel.y).toBeLessThan(height / 2);
+
+      button.destroy({ children: true });
+    },
+  );
+
+  it('keeps assetless inline labels geometrically centered', () => {
+    const button = new PixiTextButton({
+      text: 'Inline',
+      variant: 'inline',
+      width: 80,
+      height: 30,
+    });
+
+    expect(button.textLabel.position).toMatchObject({ x: 40, y: 15 });
+
+    button.destroy({ children: true });
+  });
+
   it.each(['yellow', 'green', 'red', 'gray', 'brown-dark', 'brown-light'])(
     'uses the gray asset without a shader for disabled %s buttons',
     (variant) => {

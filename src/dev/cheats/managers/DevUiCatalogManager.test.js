@@ -46,10 +46,15 @@ describe('DevUiCatalogManager', () => {
     });
     expect(runtime.closeAllDialogs).toHaveBeenCalledOnce();
     expect(runtime.openDialog).toHaveBeenCalledWith('global.confirmation', {
-      title: 'confirmation',
+      title: 'Empty Cauldron?',
       message: 'custom preview',
-      cancelLabel: 'cancel',
-      confirmLabel: 'confirm',
+      cancelLabel: 'Cancel',
+      cancelColor: 'yellow',
+      confirmLabel: 'Empty',
+      confirmColor: 'yellow',
+      actions: {
+        confirm: expect.any(Function),
+      },
     });
   });
 

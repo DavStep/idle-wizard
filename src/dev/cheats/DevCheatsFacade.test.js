@@ -267,23 +267,26 @@ describe('DevCheatsFacade', () => {
     );
   });
 
-  it('waits for mounted online game surfaces before opening the recipe-book QA state', () => {
-    const lifecycleManager = {
-      backendOnline: false,
-      gameSurfacesMounted: false,
-    };
-    const { app } = createApp();
-    app.lifecycleManager = lifecycleManager;
-    const facade = new DevCheatsFacade({ app, target: {}, logger: null });
-    facade.devUiRequest = { surfaceId: 'brewing.recipes', attempts: 0 };
+  it.each(['brewing.recipes', 'global.confirmation'])(
+    'waits for mounted online game surfaces before opening the %s QA state',
+    (surfaceId) => {
+      const lifecycleManager = {
+        backendOnline: false,
+        gameSurfacesMounted: false,
+      };
+      const { app } = createApp();
+      app.lifecycleManager = lifecycleManager;
+      const facade = new DevCheatsFacade({ app, target: {}, logger: null });
+      facade.devUiRequest = { surfaceId, attempts: 0 };
 
-    expect(facade.shouldWaitForRequestedUiSurface()).toBe(true);
+      expect(facade.shouldWaitForRequestedUiSurface()).toBe(true);
 
-    lifecycleManager.backendOnline = true;
-    lifecycleManager.gameSurfacesMounted = true;
+      lifecycleManager.backendOnline = true;
+      lifecycleManager.gameSurfacesMounted = true;
 
-    expect(facade.shouldWaitForRequestedUiSurface()).toBe(false);
-  });
+      expect(facade.shouldWaitForRequestedUiSurface()).toBe(false);
+    },
+  );
 
   it('mutates gameplay through explicit cheat commands', () => {
     const { app } = createApp();

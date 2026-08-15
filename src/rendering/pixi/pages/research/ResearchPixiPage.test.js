@@ -711,7 +711,7 @@ describe('ResearchPixiPage', () => {
     harness.dispose();
   });
 
-  it('shows plot upgrade stars in the title and fits long descriptions inside the row', () => {
+  it('shows plot upgrade stars in the title and fits concise descriptions inside the row', () => {
     const harness = createHarness();
     const model = createResearchViewModel();
     Object.assign(
@@ -720,8 +720,7 @@ describe('ResearchPixiPage', () => {
         displayName: 'plot 1',
         starLevel: 1,
         starMaxLevel: 5,
-        description:
-          'levels plot 1 to lvl 2: it uses 2 seeds and harvests 2 herbs in one growth timer.',
+        description: 'multi-grow: plot 1 now grows 2 herbs at once.',
       },
     );
 
@@ -739,7 +738,7 @@ describe('ResearchPixiPage', () => {
     });
     expect(row.nameStars.slots.filter((slot) => slot.fill.visible)).toHaveLength(1);
     expect(row.nameStars.slots.filter((slot) => slot.root.visible)).toHaveLength(3);
-    expect(row.description.style.fontSize).toBeLessThan(11);
+    expect(row.description.style.fontSize).toBe(11);
     expect(row.description.style.fontSize).toBeGreaterThanOrEqual(8);
     expect(row.description.width).toBeLessThanOrEqual(
       RESEARCH_PIXI_GEOMETRY.descriptionWidth + 0.5,
@@ -747,9 +746,6 @@ describe('ResearchPixiPage', () => {
     expect(row.description.position.y).toBeGreaterThanOrEqual(
       RESEARCH_PIXI_GEOMETRY.descriptionY +
         RESEARCH_PIXI_GEOMETRY.descriptionOpticalOffsetY,
-    );
-    expect(row.description.position.y).toBeLessThan(
-      RESEARCH_PIXI_GEOMETRY.descriptionY,
     );
     expect(descriptionBottom).toBeLessThanOrEqual(
       RESEARCH_PIXI_GEOMETRY.rowHeight -
