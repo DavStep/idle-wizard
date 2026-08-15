@@ -2006,6 +2006,46 @@ describe('BrewingPixiPage', () => {
     harness.dispose();
   });
 
+  it('keeps a retained recipe brewable after collecting the previous batch', () => {
+    const harness = createHarness();
+    const model = createBrewingViewModel();
+    const cauldron = model.brewing.cauldrons[0];
+    const performCauldronAction = vi.fn(() => ({ ok: true }));
+    cauldron.ingredients = [];
+    cauldron.canBrew = false;
+    cauldron.selectedRecipe = {
+      key: 'sage-tonic',
+      label: 'sage tonic',
+      ingredients: [
+        { key: 'sage', label: 'sage', quantity: 1, owned: 1 },
+      ],
+    };
+    cauldron.recipeReadiness = {
+      hasEnoughIngredients: true,
+      hasEnoughMana: true,
+    };
+    cauldron.primaryAction = {
+      id: 'brew',
+      label: 'brew',
+      enabled: true,
+      prepareRecipeKey: 'sage-tonic',
+    };
+    model.actions.performCauldronAction = performCauldronAction;
+
+    harness.page.bind(model);
+
+    expect(harness.page.hud.phaseLabel.text).toBe('Ready to Brew');
+    expect(harness.page.hud.brew.enabled).toBe(true);
+    expect(harness.page.hud.brew.handleTap()).toEqual({ ok: true });
+    expect(performCauldronAction).toHaveBeenCalledWith(
+      cauldron,
+      cauldron.primaryAction,
+    );
+
+    harness.page.destroy();
+    harness.dispose();
+  });
+
   it('routes the single primary button through cancel, bottle, and collect actions', () => {
     const harness = createHarness();
     const model = createBrewingViewModel();

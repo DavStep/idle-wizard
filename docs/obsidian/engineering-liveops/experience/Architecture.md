@@ -100,6 +100,7 @@ experience_type: architecture
 - Client release version comes from `package.json` `version`, starts at `0.0.0`, and should be bumped with `package-lock.json` before each deploy.
 - Android release `versionName` and `versionCode` should derive from `package.json` so APK metadata matches web release labels.
 - Keep gameplay rules separate from DOM/canvas rendering and SpacetimeDB transport.
+- Retained action renderers must honor an explicit presenter `action.enabled`; do not conjoin stale raw snapshot flags, because actions such as repeat Brew prepare an empty cauldron before starting.
 - bitECS 0.4 component calls use entity-first order: `addComponent(world, eid, component)`.
 - Player-facing event logs belong in gameplay/logs; page code should only render snapshot logs.
 - Completion logs for timed systems should come from system-manager callbacks, not from page button clicks.

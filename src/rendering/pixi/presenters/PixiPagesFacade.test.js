@@ -1318,6 +1318,16 @@ describe("PixiPagesFacade", () => {
     ]);
     expect(cauldron.recipeReadiness.hasEnoughIngredients).toBe(false);
     expect(cauldron.primaryAction.enabled).toBe(false);
+
+    gameplaySnapshot.brewing.herbs[0].quantity = 3;
+    gameplaySnapshot.mana.current = 4;
+    pages.refreshPage("brewing");
+    cauldron = harness.getBoundPage("brewing").brewing.cauldrons[0];
+    expect(cauldron.recipeReadiness).toEqual({
+      hasEnoughIngredients: true,
+      hasEnoughMana: false,
+    });
+    expect(cauldron.primaryAction.enabled).toBe(false);
   });
 
   it("rejects locked navigation and delegates the lock surface to retained chrome", () => {

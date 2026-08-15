@@ -105,6 +105,45 @@ describe('BackgroundMusicManager', () => {
     manager.destroy();
     vi.useRealTimers();
   });
+
+  it('uses browser timers without changing their required receiver', async () => {
+    const originalSetTimeout = globalThis.setTimeout;
+    const originalClearTimeout = globalThis.clearTimeout;
+    const setTimeoutSpy = vi.fn(function setBrowserTimeout() {
+      if (this !== globalThis) {
+        throw new TypeError('Illegal invocation');
+      }
+      return 41;
+    });
+    const clearTimeoutSpy = vi.fn(function clearBrowserTimeout() {
+      if (this !== globalThis) {
+        throw new TypeError('Illegal invocation');
+      }
+    });
+    globalThis.setTimeout = setTimeoutSpy;
+    globalThis.clearTimeout = clearTimeoutSpy;
+
+    try {
+      const audio = createAudio();
+      const manager = new BackgroundMusicManager({
+        audioFactory: () => audio,
+        documentRef: createDocument(),
+      });
+
+      manager.start();
+      await Promise.resolve();
+      audio.dispatch('ended');
+      manager.setEnabled(false);
+
+      expect(setTimeoutSpy).toHaveBeenCalledTimes(1);
+      expect(clearTimeoutSpy).toHaveBeenCalledWith(41);
+
+      manager.destroy();
+    } finally {
+      globalThis.setTimeout = originalSetTimeout;
+      globalThis.clearTimeout = originalClearTimeout;
+    }
+  });
 });
 
 function createAudio() {

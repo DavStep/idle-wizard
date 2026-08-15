@@ -503,10 +503,7 @@ export class RootRunSettingsTogglePixi extends Container {
     this.registration =
       inputRouter?.registerPressTarget?.(this, {
         enabled: () => this.isInteractive(),
-        onPressChange: (pressed) => {
-          this.pressed = pressed;
-          this.redraw();
-        },
+        onPressChange: (pressed) => this.setPressed(pressed),
         onActivate: () => this.activate(),
         haptic: 'selection',
       }) ?? null;
@@ -582,6 +579,12 @@ export class RootRunSettingsTogglePixi extends Container {
     this.value = next;
     this.redraw();
     return this.action?.(next) ?? true;
+  }
+
+  setPressed(pressed) {
+    this.pressed = Boolean(pressed);
+    this.redraw();
+    return this;
   }
 
   applyTheme(theme) {

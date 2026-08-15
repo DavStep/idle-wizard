@@ -5,6 +5,11 @@ upload script posts the section whose heading matches `package.json` `version`.
 Write these developer-to-player notes only in Idle Wizard terms. Do not mention
 other game names, source projects, ports, or implementation provenance.
 
+## 0.3.55
+
+- Fixed repeat Brewing so the Brew action stays available when the cauldron is ready to prepare the previous recipe again.
+- Made each Settings preference row respond across its full width, so Sound, Music, Vibration, and Theme are easier to toggle.
+
 ## 0.3.54
 
 - Added a confirmation before canceling an active brew, with clearer confirmation layouts and actions.

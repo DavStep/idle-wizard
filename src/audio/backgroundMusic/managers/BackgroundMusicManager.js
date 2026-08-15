@@ -22,8 +22,9 @@ export class BackgroundMusicManager {
     musicUrl = DEFAULT_BACKGROUND_MUSIC_URL,
     audioFactory = defaultAudioFactory,
     documentRef = globalThis.document ?? null,
-    setTimeoutFn = globalThis.setTimeout,
-    clearTimeoutFn = globalThis.clearTimeout,
+    setTimeoutFn = (callback, delayMs) =>
+      globalThis.setTimeout(callback, delayMs),
+    clearTimeoutFn = (timerId) => globalThis.clearTimeout(timerId),
     random = Math.random,
     logger = null,
   } = {}) {

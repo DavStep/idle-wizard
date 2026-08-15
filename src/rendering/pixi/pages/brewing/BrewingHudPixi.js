@@ -2643,9 +2643,9 @@ export function resolveBrewingPrimaryState(cauldron = {}) {
     id: 'brew',
     label: 'Brew',
     enabled:
-      primary.enabled !== false &&
       primary.disabled !== true &&
-      cauldron.canBrew !== false,
+      (primary.enabled === true ||
+        (primary.enabled !== false && cauldron.canBrew !== false)),
     variant: 'green',
   };
 }

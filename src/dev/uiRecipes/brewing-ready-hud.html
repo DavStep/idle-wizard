@@ -62,6 +62,7 @@
       });
       await runtime.initialize();
       const state = parameters.get('state');
+      const missingIngredients = parameters.get('availability') === 'missing';
       const useLongPotionName = parameters.get('longName') === 'true';
       const activeBrew =
         state === 'active'
@@ -111,7 +112,7 @@
                   key: 'sageHerb',
                   label: 'sage',
                   quantity: 1,
-                  owned: 44,
+                  owned: 1,
                 },
                 {
                   slotIndex: 1,
@@ -120,7 +121,7 @@
                   key: 'sageHerb',
                   label: 'sage',
                   quantity: 1,
-                  owned: 44,
+                  owned: 1,
                 },
                 {
                   slotIndex: 2,
@@ -129,24 +130,37 @@
                   key: 'sageHerb',
                   label: 'sage',
                   quantity: 1,
-                  owned: 44,
+                  owned: missingIngredients ? 0 : 1,
                 },
               ],
             },
             ingredients: [],
             activeBrew,
+            recipeReadiness: {
+              hasEnoughIngredients: !missingIngredients,
+              hasEnoughMana: true,
+            },
             canAddIngredient: true,
             canSelectRecipe: true,
             acceptsHerbDrop: true,
             primaryAction: {
               id: 'brew',
               label: 'Brew',
-              enabled: true,
+              enabled: !missingIngredients,
             },
           },
         ],
       };
       const hudActions = {
+        performCauldronAction: () => {
+          if (missingIngredients) {
+            return false;
+          }
+          recipeState.dataset.brewStarts = String(
+            Number(recipeState.dataset.brewStarts ?? 0) + 1,
+          );
+          return true;
+        },
         emptyCauldron: () => {
           const cauldron = hudModel.cauldrons[0];
           cauldron.selectedRecipe = null;
@@ -205,9 +219,14 @@
         });
       }
       recipeState.dataset.state = state ?? 'ready';
+      recipeState.dataset.phase = hud.phaseLabel.text;
       recipeState.dataset.empty = 'false';
       recipeState.dataset.visibleSlotText = hud.ingredientSlots
         .map((slot) => slot.name.text)
+        .filter(Boolean)
+        .join(',');
+      recipeState.dataset.visibleSlotCounts = hud.ingredientSlots
+        .map((slot) => `${slot.missingCount.text}${slot.requiredCount.text}`)
         .filter(Boolean)
         .join(',');
       window.__brewingReadyHudRecipe = hud;

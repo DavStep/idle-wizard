@@ -179,6 +179,14 @@ export class RootRunDevicePreferenceRow extends Container {
       label: `${label}:toggle`,
     });
     this.addChild(this.icon, this.textLabel, this.toggle);
+    this.rowRegistration =
+      inputRouter?.registerPressTarget?.(this, {
+        enabled: () => this.isInteractive(),
+        focusable: false,
+        onPressChange: (pressed) => this.toggle.setPressed(pressed),
+        onActivate: () => this.activate(),
+        haptic: 'selection',
+      }) ?? null;
   }
 
   bind({ value, enabled = true, onChange = null } = {}) {
@@ -191,7 +199,16 @@ export class RootRunDevicePreferenceRow extends Container {
       enabled,
       onChange,
     });
+    this.eventMode = this.isInteractive() ? 'static' : 'none';
     return this;
+  }
+
+  activate() {
+    return this.toggle.activate();
+  }
+
+  isInteractive() {
+    return this.toggle.isInteractive();
   }
 
   setBounds(
@@ -243,6 +260,12 @@ export class RootRunDevicePreferenceRow extends Container {
 
   get labelText() {
     return this.textLabel.text;
+  }
+
+  destroy(options) {
+    this.rowRegistration?.();
+    this.rowRegistration = null;
+    super.destroy(options);
   }
 }
 
