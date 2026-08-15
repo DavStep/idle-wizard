@@ -20,8 +20,12 @@ import retainedDialogIntegrations, {
 import inventoryChoiceRowIntegration from './pages/shared/RootRunInventoryChoiceDialogPixi.ui-editor.js';
 import worldChatMessageRowIntegration from './pages/workshop/WorldChatMessageRowPixi.ui-editor.js';
 import worldEventQuestRowIntegration from './pages/workshop/WorldEventQuestRow.ui-editor.js';
+import { ShopDialogPixi } from './pages/shop/ShopDialogPixi.js';
 import inboxMailWidgetIntegration from './global/dialogs/InboxMailWidget.ui-editor.js';
 import playerProfileIntegration from './global/chrome/PlayerProfileWidget.ui-editor.js';
+import { PIXI_DIALOG_FOOTER_TABS_GEOMETRY } from './primitives/PixiDialogFrame.js';
+import { PixiStarLevelLabel } from './primitives/PixiStarLevelLabel.js';
+import { PIXI_UI_GEOMETRY } from './theme/PixiThemeTokens.js';
 
 installPixiPageTestCanvas();
 
@@ -35,6 +39,55 @@ const PROJECTION = Object.freeze({
 });
 
 describe('retained dialog UI editor integrations', () => {
+  it('previews World Event Donate through the production slider dialog composition', () => {
+    const dialogId = 'workshop.worldEventDonate';
+    const parent = new Container();
+    const counters = new RetainedUiCounters();
+    const input = new PixiInputRouter();
+    const semanticRegistry = new SemanticTargetRegistry({ counters });
+    const fixture = createUiEditorDialogFixture(dialogId);
+    const dialog = createUiEditorDialog({
+      assets: createPixiAssetManagerFake(Texture),
+      close: () => false,
+      counters,
+      dialogId,
+      input,
+      model: fixture,
+      parent,
+      projection: PROJECTION,
+      semanticRegistry,
+    });
+    const integration = retainedDialogIntegrations.find(
+      ({ id }) => id === `dialog.${dialogId}`,
+    );
+
+    dialog.layout(PROJECTION);
+    dialog.activate();
+
+    expect(dialog).toBeInstanceOf(ShopDialogPixi);
+    expect(dialog.panel.titleLabel.textObject.text).toBe('Donate');
+    expect(dialog.summaryRows.getWidgets()).toHaveLength(5);
+    expect(dialog.rangeControl).toMatchObject({
+      enabled: true,
+      min: 1,
+      max: 12,
+      tone: 'root',
+    });
+    expect(dialog.actions.get('confirm').variant).toBe('green');
+    expect(integration.childWidgetIds).toEqual([
+      'compound.dialog-frame',
+      'compound.dialog-summary-row',
+      'primitive.resource-label',
+      'primitive.settings-slider',
+      'text-button',
+    ]);
+
+    dialog.destroy();
+    semanticRegistry.clear();
+    input.destroy();
+    parent.destroy({ children: true });
+  });
+
   it('exposes editable confirmation content without renderer internals', () => {
     const dialogId = 'global.confirmation';
     const parent = new Container();
@@ -237,6 +290,73 @@ describe('retained dialog UI editor integrations', () => {
     }
 
     expect(mountedIds).toEqual(UI_EDITOR_RETAINED_DIALOG_IDS);
+  });
+
+  it('keeps Leaderboard period and scope tabs in a stacked shell footer', () => {
+    const dialogId = 'workshop.leaderboard';
+    const parent = new Container();
+    const counters = new RetainedUiCounters();
+    const input = new PixiInputRouter();
+    const semanticRegistry = new SemanticTargetRegistry({ counters });
+    const dialog = createUiEditorDialog({
+      assets: createPixiAssetManagerFake(Texture),
+      close: () => false,
+      counters,
+      dialogId,
+      input,
+      model: createUiEditorDialogFixture(dialogId),
+      parent,
+      projection: PROJECTION,
+      semanticRegistry,
+    });
+
+    dialog.layout(PROJECTION);
+
+    const paperBottom =
+      dialog.panel.paperFrame.y + dialog.panel.paperFrame.frameHeight;
+    expect(dialog.periodTabsLayer.parent).toBe(dialog.panel);
+    expect(dialog.tabsLayer.parent).toBe(dialog.panel);
+    expect(dialog.periodTabsLayer.y - paperBottom).toBe(
+      PIXI_DIALOG_FOOTER_TABS_GEOMETRY.paperGap,
+    );
+    expect(
+      dialog.tabsLayer.y -
+        (dialog.periodTabsLayer.y +
+          PIXI_DIALOG_FOOTER_TABS_GEOMETRY.rowHeight),
+    ).toBe(4);
+    const firstRow = dialog.rows.getWidgets()[0];
+    const firstRowTop = dialog.scroll.root.y + firstRow.root.y;
+    expect(dialog.scroll.root.y).toBeGreaterThanOrEqual(
+      Math.floor(dialog.panel.paperFrame.y),
+    );
+    expect(firstRowTop - dialog.panel.paperFrame.y).toBeCloseTo(
+      PIXI_UI_GEOMETRY.dialogScrollPaddingTop,
+    );
+    expect(firstRow.rank.anchor.x).toBe(1);
+    expect(firstRow.avatarWidget.x - firstRow.rank.x).toBe(4);
+    expect(firstRow.prestigeStars).toBeInstanceOf(PixiStarLevelLabel);
+    expect(firstRow.prestigeStars.level).toBe(3);
+    expect(firstRow.prestigeStars.tone).toBe('yellow');
+    expect(firstRow.prestigeStars.starCount).toBe(3);
+    expect(firstRow.prestigeStars.visible).toBe(true);
+    expect(dialog.rows.getWidgets()[2].prestigeStars.visible).toBe(false);
+    const periodTabs = dialog.periodTabs.getWidgets();
+    const scopeTabs = dialog.tabs.getWidgets();
+    expect(periodTabs).toHaveLength(4);
+    expect(scopeTabs).toHaveLength(2);
+    expect(periodTabs[0].root.x).toBe(scopeTabs[0].root.x);
+    expect(periodTabs[1].root.x + periodTabs[1].width).toBe(
+      scopeTabs[0].root.x + scopeTabs[0].width,
+    );
+    expect(periodTabs[2].root.x).toBe(scopeTabs[1].root.x);
+    expect(periodTabs[3].root.x + periodTabs[3].width).toBe(
+      scopeTabs[1].root.x + scopeTabs[1].width,
+    );
+
+    dialog.destroy();
+    semanticRegistry.clear();
+    input.destroy();
+    parent.destroy({ children: true });
   });
 
   it('previews Support with its production copy and centered message only', () => {
@@ -505,7 +625,7 @@ describe('retained dialog UI editor integrations', () => {
     );
     expect(
       worldChatMessageRowIntegration.scenarios.map(({ id }) => id),
-    ).toEqual(['player', 'system', 'disabled']);
+    ).toEqual(['player', 'own-player', 'system', 'disabled']);
   });
 
   it('registers World Event quest sections as production-backed drill-in widgets', () => {

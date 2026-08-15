@@ -102,7 +102,7 @@ To publish the backend to SpacetimeDB Maincloud:
 npm run stdb:publish:maincloud
 ```
 
-Optional Google login is enabled when `VITE_GOOGLE_AUTH_CLIENT_ID` is set. For GitHub Pages, store that value as the Actions repository variable `GOOGLE_AUTH_CLIENT_ID`.
+Google login uses the official public client ID bundled with the app. `VITE_GOOGLE_AUTH_CLIENT_ID` can override it for another deployment; for GitHub Pages, the matching Actions repository variable is `GOOGLE_AUTH_CLIENT_ID`.
 
 SpacetimeDB requires the `spacetime` CLI:
 

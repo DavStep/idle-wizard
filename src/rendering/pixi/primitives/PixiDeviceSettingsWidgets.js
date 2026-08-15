@@ -309,7 +309,7 @@ export class DeviceIdentityFooter extends Container {
       inputRouter,
       semanticRegistry,
       semanticId,
-      text: 'copy',
+      text: 'Copy',
       width: DEVICE_IDENTITY_COPY_WIDTH,
       height: DEVICE_IDENTITY_COPY_HEIGHT,
       sizeTier: 30,
@@ -340,10 +340,10 @@ export class DeviceIdentityFooter extends Container {
     this.userIdLabel.setText(
       this.userId
         ? compactIdentity(this.userId)
-        : 'not connected',
+        : 'Not Connected',
     );
     this.copyButton
-      .setText('copy')
+      .setText('Copy')
       .setEnabled(Boolean(this.userId && this.copyAction));
     this.relayout();
     return this;
@@ -373,7 +373,7 @@ export class DeviceIdentityFooter extends Container {
     }
     this.copyPending = false;
     this.copyButton
-      .setText(copied ? 'copied' : 'retry')
+      .setText(copied ? 'Copied' : 'Retry')
       .setEnabled(true);
     return copied;
   }

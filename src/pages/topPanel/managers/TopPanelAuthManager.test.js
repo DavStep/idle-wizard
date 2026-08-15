@@ -125,7 +125,7 @@ describe('TopPanelAuthManager', () => {
     await Promise.resolve();
     await Promise.resolve();
 
-    expect(refs.authStatus.textContent).toBe('login cancelled');
+    expect(refs.authStatus.textContent).toBe('Login Cancelled');
   });
 
   it('shows pending-save failures without starting a redirect', async () => {
@@ -163,7 +163,7 @@ describe('TopPanelAuthManager', () => {
     await Promise.resolve();
 
     expect(refs.authStatus.textContent).toBe(
-      'login error: could not save device data',
+      'Login Error: could not save device data',
     );
   });
 
@@ -197,7 +197,7 @@ describe('TopPanelAuthManager', () => {
     await Promise.resolve();
     await Promise.resolve();
 
-    expect(refs.authStatus.textContent).toBe('login unavailable');
+    expect(refs.authStatus.textContent).toBe('Login Unavailable');
   });
 
   it('shows a remembered account token as connected', () => {
@@ -224,7 +224,7 @@ describe('TopPanelAuthManager', () => {
 
     manager.mount(refs);
 
-    expect(refs.authButton.textContent).toBe('disconnect account');
+    expect(refs.authButton.textContent).toBe('Disconnect Account');
     expect(refs.authStatus.textContent).toBe('Dav');
   });
 
@@ -250,6 +250,6 @@ describe('TopPanelAuthManager', () => {
 
     manager.mount(refs);
 
-    expect(refs.authStatus.textContent).toBe('login unavailable');
+    expect(refs.authStatus.textContent).toBe('Login Unavailable');
   });
 });

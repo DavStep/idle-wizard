@@ -93,7 +93,8 @@ describe('ViewportProjectionManager', () => {
 
     expect(projection.viewportPx.height).toBe(2532);
     expect(projection.fitScale).toBe(1);
-    expect(projection.dialogShift).toBe(-145);
-    expect(projection.topDialogShift).toBe(-56);
+    expect(projection.dialogShift).toBe(0);
+    expect(projection.topDialogShift).toBe(0);
+    expect(projection.worldChatShift).toBe(-290);
   });
 });

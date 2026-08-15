@@ -97,6 +97,10 @@ seed indicator one `220ms` use response: the seed-pack icon drops `6px` while
 the complete row compresses slightly from its center, then both settle through
 one restrained snap. Failed actions do not animate, and reduced motion keeps
 the indicator at rest.
+Successful single-plot planting and harvesting use the dedicated Garden action
+sound banks instead of the generic click. Plot registrations suppress the
+router click; purchases, dialogs, and timer acceleration retain their existing
+action-specific feedback, while rejected plot taps stay silent.
 Open `/src/dev/uiRecipes/garden-seed-picker.html` for the deterministic,
 non-persistent four-row visual-reference state.
 Open `/src/dev/uiRecipes/garden-plots.html` for the deterministic,

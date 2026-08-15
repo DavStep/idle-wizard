@@ -2,7 +2,7 @@
 
 import { describe, expect, it, vi } from 'vitest';
 
-import { GardenHarvestSoundManager } from './GardenHarvestSoundManager.js';
+import { GardenSoundManager } from './GardenSoundManager.js';
 
 function createAudioHarness() {
   const templates = [];
@@ -13,18 +13,13 @@ function createAudioHarness() {
     const clip = {
       url,
       currentTime: 5,
-      playbackRate: 1,
-      preservesPitch: true,
+      playbackRate: 0,
       preload: '',
-      volume: 1,
+      volume: 0,
       addEventListener: vi.fn((type, listener) => listeners.set(type, listener)),
       pause: vi.fn(),
       play: vi.fn(() => Promise.resolve()),
       removeEventListener: vi.fn((type) => listeners.delete(type)),
-      webkitPreservesPitch: true,
-      finish(type = 'ended') {
-        listeners.get(type)?.();
-      },
     };
     clips.push(clip);
     return clip;
@@ -45,49 +40,54 @@ function createAudioHarness() {
   return { audioFactory, clips, templates };
 }
 
-describe('GardenHarvestSoundManager', () => {
-  it('preloads every Root Run wheat-cut variant and plays one at the matching gain', () => {
+describe('GardenSoundManager', () => {
+  it('preloads both action banks and plays their authored samples', () => {
     const { audioFactory, clips, templates } = createAudioHarness();
-    const manager = new GardenHarvestSoundManager({
+    const manager = new GardenSoundManager({
       audioFactory,
-      random: () => 0.5,
-      sampleUrls: ['cut-1.wav', 'cut-2.wav', 'cut-3.wav', 'cut-4.wav', 'cut-5.wav'],
+      random: () => 0,
+      plantSampleUrls: ['plant-1.wav', 'plant-2.wav'],
+      harvestSampleUrls: ['harvest-1.wav', 'harvest-2.wav'],
     });
 
-    expect(audioFactory).toHaveBeenCalledTimes(5);
+    expect(audioFactory).toHaveBeenCalledTimes(4);
     expect(templates.every((template) => template.preload === 'auto')).toBe(true);
     expect(templates.every((template) => template.load.mock.calls.length === 1)).toBe(true);
 
+    expect(manager.playPlant()).toBe(true);
     expect(manager.playHarvest()).toBe(true);
-    expect(clips).toHaveLength(1);
-    expect(clips[0]).toMatchObject({
-      currentTime: 0,
-      playbackRate: 1.05,
-      preservesPitch: false,
-      volume: 0.6336,
-      webkitPreservesPitch: false,
-    });
-    expect(clips[0].play).toHaveBeenCalledTimes(1);
+    expect(clips.map((clip) => clip.url)).toEqual([
+      'plant-1.wav',
+      'harvest-1.wav',
+    ]);
+    expect(clips.every((clip) => clip.currentTime === 0)).toBe(true);
+    expect(clips.every((clip) => clip.playbackRate === 1)).toBe(true);
+    expect(clips.every((clip) => clip.volume === 1)).toBe(true);
   });
 
-  it('avoids an immediate repeat and stops active harvest audio when muted', () => {
+  it('avoids immediate repeats per cue and stops active audio when muted', () => {
     const { audioFactory, clips, templates } = createAudioHarness();
-    const randomValues = [0, 0.5, 0, 0, 0.5];
-    const manager = new GardenHarvestSoundManager({
+    const manager = new GardenSoundManager({
       audioFactory,
-      random: () => randomValues.shift() ?? 0,
-      sampleUrls: ['cut-1.wav', 'cut-2.wav', 'cut-3.wav'],
+      random: () => 0,
+      plantSampleUrls: ['plant-1.wav', 'plant-2.wav'],
+      harvestSampleUrls: ['harvest-1.wav', 'harvest-2.wav'],
     });
 
+    manager.playPlant();
+    manager.playPlant();
     manager.playHarvest();
     manager.playHarvest();
 
     expect(templates[0].cloneNode).toHaveBeenCalledTimes(1);
     expect(templates[1].cloneNode).toHaveBeenCalledTimes(1);
+    expect(templates[2].cloneNode).toHaveBeenCalledTimes(1);
+    expect(templates[3].cloneNode).toHaveBeenCalledTimes(1);
 
     manager.setEnabled(false);
 
     expect(clips.every((clip) => clip.pause.mock.calls.length === 1)).toBe(true);
+    expect(manager.playPlant()).toBe(false);
     expect(manager.playHarvest()).toBe(false);
   });
 });

@@ -93,6 +93,90 @@ describe('WorkshopPixiPage', () => {
     harness.dispose();
   });
 
+  it('renders World Event donation with the retained icon, slider, and green confirm flow', () => {
+    const assetManager = createPixiAssetManagerFake(Texture);
+    assetManager.getTexture = vi.fn(() => Texture.EMPTY);
+    assetManager.getAtlasTexture = vi.fn(() => new Texture());
+    const onChange = vi.fn();
+    const donate = vi.fn();
+    const harness = createHarness({ assetManager });
+    const model = createWorkshopViewModel();
+    model.workshop.dialogs.worldEventDonate = {
+      title: 'Donate',
+      summaryRows: [
+        { id: 'quest', label: 'Quest', value: 'Post Road Bounties' },
+        {
+          id: 'giving',
+          label: 'Giving',
+          value: 'Coin',
+          valueIconResourceKey: 'coin',
+          quantityLabel: 'x25',
+        },
+        {
+          id: 'owned',
+          label: 'Owned',
+          value: '23,417',
+          valueIconResourceKey: 'coin',
+        },
+        {
+          id: 'points',
+          label: 'Earn',
+          value: '+25 points',
+          valueTone: 'root',
+        },
+      ],
+      range: {
+        enabled: true,
+        tone: 'root',
+        min: 1,
+        max: 100,
+        step: 1,
+        value: 25,
+        onChange,
+      },
+      actions: [
+        {
+          id: 'confirm',
+          label: 'Donate x25',
+          variant: 'green',
+          enabled: true,
+          action: donate,
+        },
+      ],
+    };
+
+    harness.page.bind(model);
+    harness.page.openDialog('worldEventDonate');
+
+    const dialog = harness.dialogs.get('workshop.worldEventDonate');
+    expect(dialog).toBeInstanceOf(ShopDialogPixi);
+    expect(dialog.panel.titleLabel.textObject.text).toBe('Donate');
+    expect(dialog.model.items).toEqual([]);
+    expect(dialog.rangeControl).toMatchObject({
+      visible: true,
+      enabled: true,
+      min: 1,
+      max: 100,
+      value: 25,
+      tone: 'root',
+    });
+    expect(dialog.summaryRows.get('giving').valueResource.icon.visible).toBe(true);
+    expect(dialog.summaryRows.get('owned').valueResource.icon.visible).toBe(true);
+    const confirm = dialog.actions.get('confirm');
+    expect(confirm.variant).toBe('green');
+    expect(assetManager.getTexture).toHaveBeenCalledWith(
+      getPixiButtonAssetId('green', 30),
+    );
+
+    dialog.rangeControl.commitRange(30);
+    confirm.control.activate();
+    expect(onChange).toHaveBeenCalledWith(30);
+    expect(donate).toHaveBeenCalledOnce();
+
+    harness.page.destroy();
+    harness.dispose();
+  });
+
   it("keeps the Elara's Request title passive and does not register an info dialog", () => {
     const harness = createHarness();
 
@@ -894,6 +978,29 @@ describe('WorkshopPixiPage', () => {
     expect(harness.dialogs.get('workshop.bag')).toBe(dialog);
     expect(dialog.rows.get('sage').label.text).toBe('sage seed');
     expect(harness.dialogs.getStats().constructed).toBe(1);
+    harness.page.destroy();
+    harness.dispose();
+  });
+
+  it('uses extra portrait height for primary-scroll Workshop dialogs', () => {
+    const harness = createHarness();
+    harness.page.bind(createWorkshopViewModel());
+    harness.page.activate();
+    harness.page.openDialog('bag', {
+      title: 'Bag',
+      rows: Array.from({ length: 12 }, (_, index) => ({
+        id: `item-${index}`,
+        label: `Item ${index + 1}`,
+        value: String(index + 1),
+      })),
+    });
+    const dialog = harness.dialogs.get('workshop.bag');
+
+    dialog.layout({ sourceWidth: 390, sourceHeight: 944 });
+
+    expect(dialog.modal.fixedBounds.height).toBe(482);
+    expect(dialog.scroll.height).toBeGreaterThan(300);
+
     harness.page.destroy();
     harness.dispose();
   });
@@ -2408,13 +2515,13 @@ describe('WorkshopPixiPage', () => {
     dialog.layout({
       sourceWidth: 360,
       sourceHeight: 2170 / 3,
-      dialogShift: 0,
+      worldChatShift: 0,
     });
     const restingPanelY = dialog.modal.fixedBounds.y;
     dialog.layout({
       sourceWidth: 360,
       sourceHeight: 2170 / 3,
-      dialogShift: -145,
+      worldChatShift: -290,
     });
 
     expect(dialog.modal.fixedBounds.y).toBeCloseTo(restingPanelY - 290);
@@ -2568,6 +2675,50 @@ describe('WorkshopPixiPage', () => {
     expect(systemRow.root.y - playerRow.root.y).toBeCloseTo(
       playerRow.getPreferredHeight() + 3,
     );
+
+    harness.page.destroy();
+    harness.dispose();
+  });
+
+  it('mirrors the connected player\'s World Chat row to the right', () => {
+    const harness = createHarness();
+    const model = createWorkshopViewModel();
+    model.workshop.dialogs.worldChat = {
+      title: 'World Chat',
+      composer: {
+        placeholder: 'Message',
+        maxLength: 160,
+        enabled: true,
+      },
+      rows: [
+        {
+          id: 'own-player-1',
+          type: 'player',
+          isOwn: true,
+          username: 'Mira',
+          body: 'I will join the expedition.',
+          allianceTag: 'MOSS',
+          allianceTagColor: 'green',
+          character: 'mira',
+          ageLabel: 'now',
+        },
+      ],
+      onSubmit: vi.fn(),
+    };
+
+    harness.page.bind(model);
+    harness.page.openDialog('worldChat');
+
+    const dialog = harness.dialogs.get('workshop.worldChat');
+    const row = dialog.rows.get('own-player-1');
+    const textRight = row.width - 32.5;
+
+    expect(row.isOwn).toBe(true);
+    expect(row.avatar.x).toBeCloseTo(row.width - row.avatar.width / 2);
+    expect(row.username.x + row.username.width).toBeCloseTo(textRight);
+    expect(row.body.x + row.body.layoutWidth).toBeCloseTo(textRight);
+    expect(row.timestamp.anchor.x).toBe(0);
+    expect(row.timestamp.x).toBe(0);
 
     harness.page.destroy();
     harness.dispose();
@@ -2752,11 +2903,11 @@ describe('WorkshopPixiPage', () => {
         101 -
         41 -
         52 -
-        32 +
+        128 +
         4,
     });
     expect(harness.page.summon.button.position).toMatchObject({
-      x: -46,
+      x: -60,
       y: -4,
     });
     const worldChatTop =
@@ -2767,7 +2918,7 @@ describe('WorkshopPixiPage', () => {
       harness.page.summon.root.y +
       harness.page.summon.button.y +
       harness.page.summon.button.buttonHeight;
-    expect(worldChatTop - summonButtonBottom).toBe(32);
+    expect(worldChatTop - summonButtonBottom).toBe(128);
     expect(harness.page.bagButton.root.position).toMatchObject({
       x: ROOT_RUN_SIDE_ACTION_GEOMETRY.stageEdge,
       y: 175 + ROOT_RUN_SIDE_ACTION_GEOMETRY.rowPitch * 3,
@@ -2843,7 +2994,7 @@ describe('WorkshopPixiPage', () => {
         101 -
         41 -
         52 -
-        32 +
+        128 +
         4,
     });
 
@@ -2966,6 +3117,28 @@ describe('WorkshopPixiPage', () => {
     harness.dispose();
   });
 
+  it('primes summon feedback before the synchronous gameplay action publishes', () => {
+    let summonAlphaDuringAction = null;
+    const harness = createHarness({
+      reducedMotion: false,
+      timeSource: () => 100,
+      requestFrame: vi.fn(() => 1),
+      cancelFrame: vi.fn(),
+    });
+    const summonSeed = vi.fn(() => {
+      summonAlphaDuringAction = harness.page.summon.circle.alpha;
+      return { ok: true };
+    });
+    harness.page.bind(createWorkshopViewModel({ summonSeed }));
+    harness.page.activate();
+
+    expect(harness.semanticTargets.activate('workshop.summon')).toBe(true);
+    expect(summonAlphaDuringAction).toBeCloseTo(0.84, 5);
+
+    harness.page.destroy();
+    harness.dispose();
+  });
+
   it('renders projected summon notifications on the retained cost button', () => {
     const harness = createHarness();
     const activeModel = createWorkshopViewModel();
@@ -2975,7 +3148,7 @@ describe('WorkshopPixiPage', () => {
     const badge = harness.page.summon.notification;
     const retainedRoot = badge.root;
     expect(badge.root.parent).toBe(harness.page.summon.button);
-    expect(badge.root.position.x).toBe(86);
+    expect(badge.root.position.x).toBe(114);
     expect(badge.root.position.y).toBe(6);
     expect(badge.root.visible).toBe(true);
     expect(badge.root.renderable).toBe(true);
@@ -3022,7 +3195,7 @@ describe('WorkshopPixiPage', () => {
       stacked: true,
       tone: 'purple',
       sizeTier: 50,
-      buttonWidth: 92,
+      buttonWidth: 120,
       buttonHeight: 52,
     });
     expect(harness.page.summon.button.background.texture).toBe(summonTexture);
@@ -3139,7 +3312,7 @@ describe('WorkshopPixiPage', () => {
       hitArea: {
         x: 0,
         y: 0,
-        width: 92,
+        width: 120,
         height: 52,
       },
     });
@@ -3191,7 +3364,7 @@ describe('WorkshopPixiPage', () => {
     expect(harness.page.summon.button.hitArea).toMatchObject({
       x: 0,
       y: 0,
-      width: 92,
+      width: 120,
       height: 52,
     });
     expect(harness.page.summon.button.eventMode).toBe('none');

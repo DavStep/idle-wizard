@@ -100,7 +100,7 @@ describe('WorldChatSubscriptionManager', () => {
       onSnapshot: (snapshot) => snapshots.push(snapshot),
     });
 
-    manager.connect(createConnection(table));
+    manager.connect(createConnection(table), 'sender-a');
 
     expect(manager.getSnapshot()).toEqual({
       connected: true,
@@ -108,6 +108,7 @@ describe('WorldChatSubscriptionManager', () => {
         {
           id: 'a',
           senderIdentity: 'sender-a',
+          isOwn: true,
           username: 'Ada',
           character: 'elara',
           playerLevel: 2,
@@ -119,6 +120,7 @@ describe('WorldChatSubscriptionManager', () => {
         {
           id: 'b',
           senderIdentity: 'sender-b',
+          isOwn: false,
           username: 'Mira',
           character: 'mira',
           playerLevel: 4,
@@ -150,6 +152,7 @@ describe('WorldChatSubscriptionManager', () => {
       username: 'Ada',
       character: 'elara',
       playerLevel: 1,
+      isOwn: false,
     });
   });
 

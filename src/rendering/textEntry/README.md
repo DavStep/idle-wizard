@@ -13,9 +13,10 @@ mobile-web soft keyboards are intentionally unsupported.
 Android uses the registered `IdleWizardTextEntry` Capacitor plugin. The plugin
 adds one transparent one-pixel native `EditText` for the active session so the
 Android IME owns composition. The editor stays at the top overlay edge, outside
-the IME overlap, and the plugin reasserts the activity's `adjustNothing` mode
-before focus and keyboard display. It reports keyboard insets in CSS pixels so
-the retained field owner can translate its panel without resizing the game.
+the IME overlap, and the plugin reasserts the activity's full-window
+`adjustNothing` mode before focus and keyboard display. It reports keyboard
+insets in CSS pixels so World Chat can translate its panel without resizing or
+moving the rest of the game.
 
 ```js
 const service = new TextEntryService({ canvas });

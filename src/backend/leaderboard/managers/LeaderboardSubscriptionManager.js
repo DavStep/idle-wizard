@@ -1,4 +1,5 @@
 import { normalizePlayerCharacter } from '../../../player/playerCharacters.js';
+import { normalizePlayerFrame } from '../../../player/playerFrames.js';
 import { normalizeTradeAllianceTagColor } from '../../../shared/tradeAllianceTagColors.js';
 
 const TOP_USER_LIMIT = 100;
@@ -104,6 +105,16 @@ export class LeaderboardSubscriptionManager {
           row.allianceTagColor ?? row.alliance_tag_color,
         ),
         ...(row.character ? { character: normalizePlayerCharacter(row.character) } : {}),
+        ...(row.frame
+          ? { frame: normalizePlayerFrame(row.frame) }
+          : {}),
+        ...((row.prestigeCount ?? row.prestige_count) !== undefined
+          ? {
+              prestigeCount: this.toCount(
+                row.prestigeCount ?? row.prestige_count,
+              ),
+            }
+          : {}),
         playerLevel: this.toPlayerLevel(row.playerLevel ?? row.player_level),
         income: this.toNumber(row.income),
         dailyIncome: this.toNumber(row.dailyIncome ?? row.daily_income),
@@ -198,6 +209,14 @@ export class LeaderboardSubscriptionManager {
       totalIncome: user.totalIncome,
     };
 
+    if (user.frame) {
+      snapshotUser.frame = user.frame;
+    }
+
+    if (user.prestigeCount !== undefined) {
+      snapshotUser.prestigeCount = user.prestigeCount;
+    }
+
     if (user.identity) {
       snapshotUser.identity = user.identity;
     }
@@ -239,6 +258,11 @@ export class LeaderboardSubscriptionManager {
     }
 
     return Math.floor(rank);
+  }
+
+  toCount(value) {
+    const count = this.toNumber(value);
+    return Number.isFinite(count) && count > 0 ? Math.floor(count) : 0;
   }
 
   toAllianceTag(value) {

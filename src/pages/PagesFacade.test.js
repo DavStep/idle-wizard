@@ -5117,10 +5117,10 @@ describe('PagesFacade', () => {
     ]);
     expect(stage.querySelector('.room-top-panel__auth-section')?.hidden).toBe(false);
     expect(stage.querySelector('.room-top-panel__auth-status')?.textContent).toBe(
-      'login unavailable',
+      'Login Unavailable',
     );
     expect(stage.querySelector('.room-top-panel__auth-button')?.textContent).toBe(
-      'connect account',
+      'Connect Account',
     );
     expect(stage.querySelector('.room-top-panel__auth-button')?.disabled).toBe(true);
     expect(stage.querySelector('.room-top-panel__version-value')?.textContent).toBe(
@@ -5624,8 +5624,8 @@ describe('PagesFacade', () => {
     const authButton = stage.querySelector('.room-top-panel__auth-button');
 
     expect(authSection.hidden).toBe(false);
-    expect(stage.querySelector('.room-top-panel__auth-status')?.textContent).toBe('not connected');
-    expect(authButton.textContent).toBe('connect account');
+    expect(stage.querySelector('.room-top-panel__auth-status')?.textContent).toBe('Not Connected');
+    expect(authButton.textContent).toBe('Connect Account');
 
     authButton.dispatchEvent(new window.MouseEvent('click', { bubbles: true }));
     await Promise.resolve();
@@ -5658,7 +5658,7 @@ describe('PagesFacade', () => {
       .dispatchEvent(new window.MouseEvent('click', { bubbles: true }));
 
     expect(stage.querySelector('.room-top-panel__auth-status')?.textContent).toBe(
-      'login error: NoCredentialException',
+      'Login Error: NoCredentialException',
     );
   });
 
@@ -5680,7 +5680,7 @@ describe('PagesFacade', () => {
       .dispatchEvent(new window.MouseEvent('click', { bubbles: true }));
 
     expect(stage.querySelector('.room-top-panel__auth-status')?.textContent).toBe(
-      'login cancelled',
+      'Login Cancelled',
     );
   });
 
@@ -8421,8 +8421,10 @@ describe('PagesFacade', () => {
 
     expect(popup.hidden).toBe(true);
     expect(box.textContent).not.toContain('old hello');
-    expect(box.textContent).toContain('Lin(4): second hello');
-    expect(box.textContent).toContain('Mo(5): third hello');
+    expect(box.textContent).toContain('Lin: second hello');
+    expect(box.textContent).toContain('Mo: third hello');
+    expect(box.textContent).not.toContain('(4)');
+    expect(box.textContent).not.toContain('(5)');
     expect(box.querySelectorAll('.workshop-page__world-chat-message')).toHaveLength(2);
     expect(box.querySelectorAll('.workshop-page__world-chat-character-icon')).toHaveLength(2);
     expect(box.querySelector('.room-player-info-link')).toBeNull();
@@ -8455,8 +8457,8 @@ describe('PagesFacade', () => {
     expect(input.value).toBe('');
     expect(box.textContent).not.toContain('old hello');
     expect(box.textContent).not.toContain('second hello');
-    expect(box.textContent).toContain('Mo(5): third hello');
-    expect(box.textContent).toContain('wizard(1): hello room');
+    expect(box.textContent).toContain('Mo: third hello');
+    expect(box.textContent).toContain('wizard: hello room');
     expect(popup.querySelectorAll('.workshop-page__world-chat-message')).toHaveLength(4);
     expect(popup.textContent).toContain('old hello');
     expect(popup.textContent).toContain('Lin(4): second hello');

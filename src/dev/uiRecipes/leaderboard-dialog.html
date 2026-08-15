@@ -1,0 +1,153 @@
+<!doctype html>
+<html
+  lang="en"
+  data-style-theme="night"
+  data-style-font="lilita-one"
+  data-style-icons="icons"
+>
+  <head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Idle Wizard Leaderboard recipe</title>
+    <style>
+      html,
+      body {
+        width: 100%;
+        height: 100%;
+        margin: 0;
+        overflow: hidden;
+        background: #1c1e26;
+      }
+
+      canvas {
+        display: block;
+        width: 100%;
+        height: 100%;
+      }
+    </style>
+  </head>
+  <body>
+    <canvas aria-label="Leaderboard visual recipe"></canvas>
+
+    <script type="module">
+      import '@fontsource/lilita-one/400.css';
+      import { PixiAssetManager } from '/src/rendering/pixi/assets/PixiAssetManager.js';
+      import { PixiInputRouter } from '/src/rendering/pixi/input/PixiInputRouter.js';
+      import { WorkshopDialogPixi } from '/src/rendering/pixi/pages/workshop/WorkshopDialogPixi.js';
+      import { SemanticTargetRegistry } from '/src/rendering/pixi/retained/SemanticTargetRegistry.js';
+      import { PixiApplicationManager } from '/src/rendering/pixi/runtime/PixiApplicationManager.js';
+
+      const canvas = document.querySelector('canvas');
+      const applicationManager = new PixiApplicationManager({ canvas });
+      const assetManager = new PixiAssetManager();
+      const inputRouter = new PixiInputRouter();
+
+      await Promise.all([
+        applicationManager.initialize(),
+        assetManager.loadAll(),
+      ]);
+      inputRouter.mount({
+        root: applicationManager.getApplication().stage,
+        canvas,
+      });
+
+      const semanticTargets = new SemanticTargetRegistry();
+      const dialog = new WorkshopDialogPixi({
+        dialogId: 'workshop.leaderboard',
+        assetManager,
+        inputRouter,
+        onClose: () => false,
+        parent: applicationManager.layers.dialogsSource,
+        semanticTargets,
+      });
+      const periods = ['Daily', 'Weekly', 'Monthly', 'All Time'];
+      const players = [
+        ['Ftwizard', 'elara', 'sun', 'SUN', 'amber', 48, 4, '13.9m'],
+        ['Trix', 'mira', 'emerald', 'MOON', 'violet', 32, 2, '707k'],
+        ['Gandalf The Green', 'bramble', 'classic', 'ROOT', 'green', 17, 1, '613k'],
+        ['StepWizzard', 'corvin', 'violet', 'ASH', 'red', 14, 3, '93.3k'],
+        ['Squeak69', 'juniper', 'bronze', 'SUN', 'amber', 12, 0, '57.8k'],
+        ['c00p', 'rowan', 'gnome', 'MOON', 'violet', 25, 2, '53.5k'],
+        ['Mothglass', 'mira', 'classic', 'ROOT', 'green', 11, 0, '42.1k'],
+      ].map((entry, index) => ({
+        id: `player-${index}`,
+        type: 'leaderboardPlayer',
+        rank: index + 1,
+        username: entry[0],
+        character: entry[1],
+        frame: entry[2],
+        allianceTag: entry[3],
+        allianceTagColor: entry[4],
+        playerLevel: entry[5],
+        prestigeCount: entry[6],
+        current: index === 3,
+        totalCoinLabel: entry[7],
+        semanticId: `leaderboard:player:${index}`,
+        onActivate: () => true,
+      }));
+      const alliances = [
+        ['Night Owls', 'OWL', 'violet', 48, '13.9m'],
+        ['Sun Circle', 'SUN', 'amber', 42, '707k'],
+        ['Root Keepers', 'ROOT', 'green', 37, '613k'],
+        ['Ashen Pact', 'ASH', 'red', 31, '93.3k'],
+        ['Moon Garden', 'MOON', 'blue', 28, '57.8k'],
+        ['Copper Circle', 'COP', 'brown', 22, '53.5k'],
+      ].map((entry, index) => ({
+        id: `alliance-${index}`,
+        type: 'leaderboardAlliance',
+        rank: index + 1,
+        name: entry[0],
+        allianceTag: entry[1],
+        allianceTagColor: entry[2],
+        memberCount: entry[3],
+        totalCoinLabel: entry[4],
+        semanticId: `leaderboard:alliance:${index}`,
+        onActivate: () => true,
+      }));
+      let selectedScopeId = 'singlePlayer';
+      let selectedPeriodId = 'allTime';
+
+      function bindDialog() {
+        const alliance = selectedScopeId === 'alliance';
+        dialog.bind({
+          title: 'Leaderboard',
+          rowWidget: 'leaderboard',
+          selectedTabId: selectedScopeId,
+          selectedPeriodId,
+          emptyLabel: alliance ? 'No alliances yet' : 'No players yet',
+          tabs: [
+            { id: 'singlePlayer', label: 'Players', selected: !alliance },
+            { id: 'alliance', label: 'Alliances', selected: alliance },
+          ],
+          periodTabs: periods.map((label) => {
+            const id = label === 'All Time'
+              ? 'allTime'
+              : label.toLowerCase();
+            return { id, label, selected: id === selectedPeriodId };
+          }),
+          rows: alliance ? alliances : players,
+          onSelectTab: (id) => {
+            selectedScopeId = id;
+            bindDialog();
+            return true;
+          },
+          onSelectPeriod: (id) => {
+            selectedPeriodId = id;
+            bindDialog();
+            return true;
+          },
+        });
+      }
+
+      bindDialog();
+      dialog.layout(applicationManager.projection);
+      dialog.activate();
+
+      window.__leaderboardRecipe = {
+        applicationManager,
+        dialog,
+        semanticTargets,
+      };
+    </script>
+  </body>
+</html>

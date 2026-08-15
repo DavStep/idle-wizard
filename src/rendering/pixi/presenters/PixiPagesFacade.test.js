@@ -118,6 +118,12 @@ describe("PixiPagesFacade", () => {
     workshopModel.actions.summonSeed();
     expect(harness.gameplayFacade.summonSeed).toHaveBeenCalledTimes(1);
 
+    workshopModel.actions.selectLeaderboardPeriod("weekly");
+    expect(
+      harness.getBoundPage("workshop").workshop.dialogs.leaderboard
+        .selectedPeriodId,
+    ).toBe("weekly");
+
     expect(pages.show("research")).toBe(true);
     const researchModel = harness.getBoundPage("research");
     researchModel.actions.buyResearch("mana-tonic");
@@ -1486,14 +1492,14 @@ describe("PixiPagesFacade", () => {
       ok: true,
       tileNumber: 1,
     });
-    expect(harness.gardenHarvestSoundFacade.playHarvest).toHaveBeenCalledTimes(1);
+    expect(harness.gardenSoundFacade.playHarvest).toHaveBeenCalledTimes(1);
 
     expect(harness.getBoundPage("garden").actions.activatePlot(plot)).toEqual({
       ok: false,
       reason: "not_ready",
       tileNumber: 1,
     });
-    expect(harness.gardenHarvestSoundFacade.playHarvest).toHaveBeenCalledTimes(1);
+    expect(harness.gardenSoundFacade.playHarvest).toHaveBeenCalledTimes(1);
   });
 
   it("accelerates active Garden plots while preserving an intentional seed swap", () => {
@@ -1700,10 +1706,16 @@ describe("PixiPagesFacade", () => {
       ],
     };
     const harness = createHarness({ gameplaySnapshot });
-    harness.gameplayFacade.plantGardenSeed.mockReturnValue({
-      ok: true,
-      tileNumber: 1,
-    });
+    harness.gameplayFacade.plantGardenSeed
+      .mockReturnValueOnce({
+        ok: true,
+        tileNumber: 1,
+      })
+      .mockReturnValueOnce({
+        ok: false,
+        reason: "not_enough_seed",
+        tileNumber: 1,
+      });
     const pages = new PixiPagesFacade(harness.dependencies);
     pages.mount();
     pages.show("garden");
@@ -1754,6 +1766,15 @@ describe("PixiPagesFacade", () => {
       tileNumber: 1,
     });
     expect(harness.gameplayFacade.plantGardenSeed).toHaveBeenCalledWith(1, 1);
+    expect(harness.gardenSoundFacade.playPlant).toHaveBeenCalledTimes(1);
+    expect(
+      selectedGarden.actions.activatePlot(selectedGarden.garden.plots[0]),
+    ).toEqual({
+      ok: false,
+      reason: "not_enough_seed",
+      tileNumber: 1,
+    });
+    expect(harness.gardenSoundFacade.playPlant).toHaveBeenCalledTimes(1);
 
     gameplaySnapshot.garden.plot.tiles[0] = {
       ...gameplaySnapshot.garden.plot.tiles[0],
@@ -1881,6 +1902,7 @@ describe("PixiPagesFacade", () => {
       tileNumber: 1,
     });
     expect(harness.gameplayFacade.plantGardenSeed).not.toHaveBeenCalled();
+    expect(harness.gardenSoundFacade.playPlant).not.toHaveBeenCalled();
     expect(harness.pageSurface.openDialog).not.toHaveBeenCalled();
     expect(harness.transientEffects.emitReward).toHaveBeenCalledWith({
       message: "no seed",
@@ -2141,7 +2163,7 @@ function createHarness({ gameplaySnapshot = createGameplaySnapshot() } = {}) {
   const dependencies = {
     renderFacade,
     experienceFacade: { transientEffects },
-    gardenHarvestSoundFacade: { playHarvest: vi.fn() },
+    gardenSoundFacade: { playHarvest: vi.fn(), playPlant: vi.fn() },
     gameplayFacade,
     playerFacade,
     worldChatFacade: createSnapshotFacade({ connected: true, messages: [] }),
@@ -2154,7 +2176,7 @@ function createHarness({ gameplaySnapshot = createGameplaySnapshot() } = {}) {
     factories,
     runtime,
     gameplayFacade,
-    gardenHarvestSoundFacade: dependencies.gardenHarvestSoundFacade,
+    gardenSoundFacade: dependencies.gardenSoundFacade,
     transientEffects,
     bottomSurface,
     pageSurface,

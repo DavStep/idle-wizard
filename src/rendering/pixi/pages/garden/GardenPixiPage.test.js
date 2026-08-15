@@ -46,6 +46,9 @@ describe("GardenPixiPage", () => {
     expect(harness.page.getDisplayObject()).toBe(root);
     expect(harness.page.plots.get("plot-1")).toBe(plot);
     expect(harness.page.actionBar).toBe(actionBar);
+    expect(
+      harness.inputRouter.store.get(plot.pressRegistration.id)?.sound,
+    ).toBe(false);
     expect(harness.page.plotPool.getStats()).toMatchObject({
       allocated: 1,
       active: 1,

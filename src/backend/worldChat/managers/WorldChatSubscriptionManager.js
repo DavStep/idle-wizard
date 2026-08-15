@@ -12,15 +12,17 @@ export class WorldChatSubscriptionManager {
   constructor({ onSnapshot } = {}) {
     this.onSnapshot = onSnapshot;
     this.connection = null;
+    this.identityKey = '';
     this.table = null;
     this.subscription = null;
     this.snapshot = { ...EMPTY_SNAPSHOT };
     this.handleTableChange = () => this.publishFromTable();
   }
 
-  connect(connection) {
+  connect(connection, identity = null) {
     this.disconnect();
     this.connection = connection;
+    this.identityKey = this.toId(identity);
     this.table =
       connection?.db?.worldChatRecent ??
       connection?.db?.world_chat_recent ??
@@ -57,6 +59,7 @@ export class WorldChatSubscriptionManager {
     }
 
     this.connection = null;
+    this.identityKey = '';
     this.table = null;
     this.subscription = null;
     this.publish({ ...EMPTY_SNAPSHOT });
@@ -91,9 +94,15 @@ export class WorldChatSubscriptionManager {
   }
 
   mapRow(row) {
+    const senderIdentity = this.toId(
+      row.senderIdentity ?? row.sender_identity,
+    );
     return {
       id: this.toId(row.messageId ?? row.message_id),
-      senderIdentity: this.toId(row.senderIdentity ?? row.sender_identity),
+      senderIdentity,
+      isOwn: Boolean(
+        senderIdentity && this.identityKey && senderIdentity === this.identityKey,
+      ),
       username: typeof row.username === 'string' ? row.username : 'Wizard',
       character: normalizePlayerCharacter(
         row.character ?? row.playerCharacter ?? row.player_character,

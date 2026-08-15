@@ -46,7 +46,7 @@ experience_type: architecture
 - `herbIcons` label entries need matching atlas frames; missing herb frames can render stray `null` text in rich item labels.
 - Production Android builds need `VITE_SPACETIME_URI=https://maincloud.spacetimedb.com` and `VITE_SPACETIME_DATABASE=idle-wizard`; otherwise client defaults point at local SpacetimeDB.
 - `capacitor.config.json` must not set `server.url` for packaged APK QA; Capacitor loads that remote page instead of bundled `dist`, hiding local UI/CSS changes.
-- Android Activity soft input mode must stay `adjustNothing`; otherwise the OS can pan/resize the whole WebView when the keyboard opens, before CSS dialog lifting runs.
+- Android Activity soft input mode must stay `adjustNothing` and explicitly set decor to full-window layout on resume and native text focus; otherwise affected devices can pan/resize the whole WebView when the keyboard opens.
 - Android WebView press feedback should not rely on CSS `:active` alone; mirror it with a pointer-driven `.is-pressing` class for stable touch scale.
 - Android WebView touch actions should activate from validated `pointerup` and suppress the following native click; long holds can otherwise show press feedback but drop the action.
 - When running the game locally, verify the local SpacetimeDB backend is running on `http://127.0.0.1:3000` before debugging client offline/auth behavior.

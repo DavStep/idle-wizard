@@ -727,21 +727,40 @@ describe('PixiViewModelFactory', () => {
     expect(donation).toMatchObject({
       title: 'Donate',
       status: '',
-      rows: expect.arrayContaining([
+      summaryRows: expect.arrayContaining([
         expect.objectContaining({
-          id: 'points',
-          value: '+240',
+          id: 'giving',
+          itemKind: 'potion',
+          itemKey: 'calmingDraught',
+          quantityLabel: 'x2',
         }),
         expect.objectContaining({
+          id: 'points',
+          label: 'Earn',
+          value: '+240 points',
+          valueTone: 'root',
+        }),
+      ]),
+      range: expect.objectContaining({
+        enabled: true,
+        tone: 'root',
+        min: 1,
+        max: 2,
+        step: 1,
+        value: 2,
+      }),
+      actions: expect.arrayContaining([
+        expect.objectContaining({
           id: 'confirm',
-          actionLabel: 'Donate x2',
+          label: 'Donate x2',
+          variant: 'green',
           enabled: true,
         }),
       ]),
     });
-    donation.rows.find((row) => row.id === 'amount:-1').onActivate();
+    donation.range.onChange(1);
     expect(adjustWorldEventDonationAmount).toHaveBeenCalledWith(-1);
-    donation.rows.find((row) => row.id === 'confirm').onActivate();
+    donation.actions.find((action) => action.id === 'confirm').action();
     expect(confirmWorldEventDonation).toHaveBeenCalledWith(
       'weekly-1:new-crown:crowd',
       'calmingDraught',
@@ -926,6 +945,7 @@ describe('PixiViewModelFactory', () => {
     const selectBagTab = vi.fn();
     const selectStatsTab = vi.fn();
     const selectLeaderboardTab = vi.fn();
+    const selectLeaderboardPeriod = vi.fn();
     const openAlliance = vi.fn();
     const sendWorldChat = vi.fn(() => ({ ok: true }));
     const openInbox = vi.fn(() => true);
@@ -976,11 +996,13 @@ describe('PixiViewModelFactory', () => {
         bagTabId: 'seeds',
         statsTabId: 'herbs',
         leaderboardTabId: 'alliance',
+        leaderboardPeriodId: 'allTime',
       },
       actions: {
         selectBagTab,
         selectStatsTab,
         selectLeaderboardTab,
+        selectLeaderboardPeriod,
         openAlliance,
         openInbox,
         sendWorldChat,
@@ -1010,12 +1032,20 @@ describe('PixiViewModelFactory', () => {
       ],
     });
     expect(dialogs.leaderboard).toMatchObject({
+      title: 'Leaderboard',
       selectedTabId: 'alliance',
+      selectedPeriodId: 'allTime',
+      tabs: [
+        { id: 'singlePlayer', label: 'Players', selected: false },
+        { id: 'alliance', label: 'Alliances', selected: true },
+      ],
       rows: [
         {
           id: 'moon',
-          label: '1. Moon',
-          actionLabel: 'open',
+          type: 'leaderboardAlliance',
+          rank: 1,
+          name: 'Moon',
+          totalCoinLabel: '25',
         },
       ],
     });
@@ -1023,10 +1053,12 @@ describe('PixiViewModelFactory', () => {
     dialogs.bag.onSelectTab('herbs');
     dialogs.stats.onSelectTab('coin');
     dialogs.leaderboard.onSelectTab('singlePlayer');
+    dialogs.leaderboard.onSelectPeriod('weekly');
     dialogs.leaderboard.rows[0].onActivate();
     expect(selectBagTab).toHaveBeenCalledWith('herbs');
     expect(selectStatsTab).toHaveBeenCalledWith('coin');
     expect(selectLeaderboardTab).toHaveBeenCalledWith('singlePlayer');
+    expect(selectLeaderboardPeriod).toHaveBeenCalledWith('weekly');
     expect(openAlliance).toHaveBeenCalledWith(
       expect.objectContaining({ allianceId: 'moon' }),
     );
@@ -1081,6 +1113,97 @@ describe('PixiViewModelFactory', () => {
       'member-a',
       'member-b',
     ]);
+  });
+
+  it('projects rich weekly player rows, colored tags, profile progression, and the current player', () => {
+    const openPlayer = vi.fn();
+    const factory = new PixiViewModelFactory();
+    const dialog = factory.createLeaderboardDialog(
+      {
+        topWeeklyUsers: [
+          {
+            identity: 'top-player',
+            username: 'Elara',
+            allianceTag: 'OWL',
+            allianceTagColor: 'violet',
+            character: 'mira',
+            frame: 'sun',
+            playerLevel: 48,
+            prestigeCount: 3,
+            weeklyIncome: 707_000,
+            rank: 2,
+          },
+        ],
+        currentWeeklyUser: {
+          identity: 'current-player',
+          username: 'You',
+          character: 'juniper',
+          frame: 'emerald',
+          playerLevel: 19,
+          prestigeCount: 1,
+          weeklyIncome: 12_000,
+          rank: 34,
+        },
+      },
+      {},
+      'singlePlayer',
+      { openPlayer },
+      'weekly',
+    );
+
+    expect(dialog).toMatchObject({
+      title: 'Leaderboard',
+      rowWidget: 'leaderboard',
+      selectedPeriodId: 'weekly',
+      emptyLabel: 'No players yet',
+      periodTabs: [
+        { id: 'daily', label: 'Daily', selected: false },
+        { id: 'weekly', label: 'Weekly', selected: true },
+        { id: 'monthly', label: 'Monthly', selected: false },
+        { id: 'allTime', label: 'All Time', selected: false },
+      ],
+      rows: [
+        {
+          id: 'top-player',
+          type: 'leaderboardPlayer',
+          rank: 2,
+          username: 'Elara',
+          allianceTag: 'OWL',
+          allianceTagColor: 'violet',
+          character: 'mira',
+          frame: 'sun',
+          playerLevel: 48,
+          prestigeCount: 3,
+          current: false,
+          totalCoinLabel: '707k',
+        },
+        {
+          id: 'current-player',
+          rank: 34,
+          current: true,
+          totalCoinLabel: '12k',
+        },
+      ],
+    });
+
+    dialog.rows[0].onActivate();
+    expect(openPlayer).toHaveBeenCalledWith(
+      expect.objectContaining({ identity: 'top-player' }),
+    );
+  });
+
+  it('uses explicit empty copy for an empty alliance period', () => {
+    const factory = new PixiViewModelFactory();
+    const dialog = factory.createLeaderboardDialog(
+      {},
+      { topDailyAlliances: [] },
+      'alliance',
+      {},
+      'daily',
+    );
+
+    expect(dialog.rows).toEqual([]);
+    expect(dialog.emptyLabel).toBe('No alliances yet');
   });
 
   it('projects an owned trade alliance into separate trade info and member rows', () => {
@@ -1260,6 +1383,7 @@ describe('PixiViewModelFactory', () => {
     const openPlayer = vi.fn();
     const playerMessage = {
       id: 'mira-1',
+      isOwn: true,
       username: 'Mira',
       playerLevel: 20,
       body: 'Hello from the moon garden.',
@@ -1298,6 +1422,7 @@ describe('PixiViewModelFactory', () => {
       expect(dialog.composer.placeholder).toBe('Message');
       expect(dialog.rows[0]).toMatchObject({
         id: 'mira-1',
+        isOwn: true,
         type: 'player',
         username: 'Mira',
         body: 'Hello from the moon garden.',

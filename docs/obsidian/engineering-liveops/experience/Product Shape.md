@@ -355,6 +355,7 @@ experience_type: product-shape
 - Generic `.style-button` active CSS must exclude `[aria-disabled="true"]`; aria-disabled real buttons can still get native `:active` and paint transparent art hitboxes.
 - Pixel/WebView taps need forgiving touch slop in `PressFeedbackManager`; a 12px move threshold can treat normal finger drift as a drag and suppress the valid click.
 - Workshop summon is release-only; do not restore its former hold-to-repeat timer or any pointerdown action path.
+- Prime Workshop summon success feedback before its synchronous gameplay publish/rebind, then cancel it on failure; starting the glow only after that work makes a confirmed release feel delayed.
 - Workshop side-control hit areas must partition on the `52.25px` row pitch; using the taller visual widget bounds lets the next control steal taps from labels such as `Leaderboard`.
 - Retained dialog presenters must preserve the full feature record instead of flattening rich data into generic label/value rows; potion discovery projection includes art key, discoverer, timestamp, ingredients, mana, duration, and royalty.
 - Retained Pixi tutorial overlays can report the stage root for a guided room press even when the pointer is inside the control bounds; opt only the affected registration into geometric fallback hit-testing and gate that fallback on the control's normal visibility and interactivity.

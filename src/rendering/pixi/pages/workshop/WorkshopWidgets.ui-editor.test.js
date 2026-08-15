@@ -12,6 +12,7 @@ describe('Workshop widget UI editor integrations', () => {
       'compound.world-event-donation-option-row',
       'compound.alliance-directory-row',
       'compound.alliance-member-row',
+      'compound.leaderboard-row',
       'compound.potion-discovery-row',
       'compound.workshop-dialog-row',
     ]);
@@ -19,5 +20,13 @@ describe('Workshop widget UI editor integrations', () => {
       kind === 'widget' && scenarios.length > 0 &&
       scenarios.every(({ mount }) => typeof mount === 'function')),
     ).toBe(true);
+    expect(
+      integrations.find(({ id }) => id === 'compound.leaderboard-row')
+        ?.childWidgetIds,
+    ).toEqual([
+      'compound.player-profile',
+      'primitive.star-level-label',
+      'primitive.resource-label',
+    ]);
   });
 });

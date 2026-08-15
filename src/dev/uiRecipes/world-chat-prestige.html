@@ -121,6 +121,17 @@
             ],
             ageLabel: 'now',
           },
+          {
+            id: 'preview-own-player',
+            type: 'player',
+            isOwn: true,
+            username: 'You',
+            body: 'I will join the next expedition from the moon garden.',
+            allianceTag: 'ARC',
+            allianceTagColor: 'violet',
+            character: 'elara',
+            ageLabel: 'now',
+          },
         ],
         onSubmit: async () => ({ ok: false, reason: 'offline' }),
       });

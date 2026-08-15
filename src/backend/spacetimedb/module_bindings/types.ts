@@ -77,6 +77,8 @@ export const LeaderboardSummaryResult = __t.object("LeaderboardSummaryResult", {
   allianceTag: __t.string(),
   allianceTagColor: __t.string(),
   character: __t.string(),
+  frame: __t.string(),
+  prestigeCount: __t.u32(),
   totalIncome: __t.u64(),
   income: __t.u64(),
   dailyIncome: __t.u64(),

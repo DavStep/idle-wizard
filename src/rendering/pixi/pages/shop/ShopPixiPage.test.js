@@ -995,6 +995,32 @@ describe('ShopPixiPage', () => {
     harness.dispose();
   });
 
+  it('uses extra portrait height for list dialogs without stretching Support', () => {
+    const harness = createHarness();
+    harness.page.bind(createShopViewModel());
+    harness.page.activate();
+    harness.page.openDialog(SHOP_DIALOG_IDS.LEDGER, {
+      title: 'Market Ledger',
+      items: Array.from({ length: 12 }, (_, index) => ({
+        id: `seed-${index}`,
+        label: `Seed ${index + 1}`,
+      })),
+    });
+    harness.page.openDialog(SHOP_DIALOG_IDS.SUPPORT, {});
+    const ledger = harness.dialogs.get(SHOP_DIALOG_IDS.LEDGER);
+    const support = harness.dialogs.get(SHOP_DIALOG_IDS.SUPPORT);
+
+    ledger.layout({ sourceWidth: 390, sourceHeight: 944 });
+    support.layout({ sourceWidth: 390, sourceHeight: 944 });
+
+    expect(ledger.panel.coreHeight).toBe(482);
+    expect(ledger.list.height).toBeGreaterThan(298);
+    expect(support.panel.coreHeight).toBe(126);
+
+    harness.page.destroy();
+    harness.dispose();
+  });
+
   it('hides a lone Market Ledger tab and gives its footer space to the list', () => {
     const harness = createHarness();
     harness.page.bind(createShopViewModel());

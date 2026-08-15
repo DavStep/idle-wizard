@@ -6,6 +6,7 @@ import {
   PixiTextLabel,
 } from '../../primitives/index.js';
 import { PIXI_UI_GEOMETRY } from '../../theme/PixiThemeTokens.js';
+import { resolveAdaptiveDialogHeight } from '../../primitives/PixiDialogFrame.js';
 import {
   GLOBAL_DIALOG_GEOMETRY,
   PooledDialogRows,
@@ -299,15 +300,23 @@ export class PixiAllianceInfoDialog extends RetainedGlobalDialog {
     );
   }
 
-  layoutDialog() {
+  layoutDialog(projection = this.viewportProjection) {
     if (!this.rows || !this.allianceModel) {
       return;
     }
+    const contentHeight = resolveAdaptiveDialogHeight({
+      viewportHeight: projection?.sourceHeight,
+      baseHeight: ALLIANCE_CONTENT_HEIGHT,
+      minimumHeight: 240,
+      maximumHeight: Math.max(240, (projection?.sourceHeight ?? 844) - 200),
+      hasPrimaryVerticalScroll: true,
+    });
+    this.setPanelContentSize(ALLIANCE_CONTENT_WIDTH, contentHeight);
     const showAction = this.primaryAction.visible;
     const actionBlock = showAction ? 36 : 0;
     const statusHeight = 20;
     const viewportHeight =
-      ALLIANCE_CONTENT_HEIGHT -
+      contentHeight -
       actionBlock -
       statusHeight;
     this.scroll.position.set(0, 0);

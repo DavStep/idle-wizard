@@ -237,11 +237,11 @@ export class PixiGlobalDialogPresenter {
           this.authStatusOverride || getAuthStatusText(auth),
         connectLabel: this.authBusy
           ? authenticated
-            ? 'disconnecting'
-            : 'connecting'
+            ? 'Disconnecting'
+            : 'Connecting'
           : authenticated
-            ? 'disconnect account'
-            : 'connect account',
+            ? 'Disconnect Account'
+            : 'Connect Account',
         connectEnabled: !this.authBusy && oidc.enabled !== false,
         version: getClientReleaseVersion(),
         userId: normalizeId(
@@ -670,8 +670,8 @@ export class PixiGlobalDialogPresenter {
     );
     this.authBusy = true;
     this.authStatusOverride = authenticated
-      ? 'disconnecting'
-      : 'connecting';
+      ? 'Disconnecting'
+      : 'Connecting';
     this.refreshDialog(dialogId);
     try {
       if (authenticated) {
@@ -692,7 +692,7 @@ export class PixiGlobalDialogPresenter {
       }
       return result ?? { ok: false, reason: 'offline' };
     } catch (error) {
-      this.authStatusOverride = `login error: ${getErrorText(error)}`;
+      this.authStatusOverride = `Login Error: ${getErrorText(error)}`;
       return { ok: false, reason: 'exception' };
     } finally {
       this.authBusy = false;
@@ -1073,20 +1073,20 @@ function findAlliance(alliances = [], request = {}) {
 function getAuthStatusText(snapshot = {}) {
   const oidc = snapshot.oidc ?? {};
   if (oidc.cancelled) {
-    return 'login cancelled';
+    return 'Login Cancelled';
   }
   if (oidc.error) {
     return getLoginErrorStatusText(oidc.error);
   }
   if (oidc.authenticated || (snapshot.hasToken && oidc.remembered)) {
-    return oidc.displayName || oidc.email || 'connected';
+    return oidc.displayName || oidc.email || 'Connected';
   }
-  return oidc.enabled === false ? 'login unavailable' : 'not connected';
+  return oidc.enabled === false ? 'Login Unavailable' : 'Not Connected';
 }
 
 function getAuthResultStatusText(result = {}) {
   if (String(result.reason ?? '').includes('cancelled')) {
-    return 'login cancelled';
+    return 'Login Cancelled';
   }
   return getLoginErrorStatusText(
     result.message ?? result.reason ?? 'unknown error',
@@ -1107,8 +1107,8 @@ function getLoginErrorStatusText(reason) {
   ]);
   const text = String(reason ?? '').trim();
   return unavailable.has(text)
-    ? 'login unavailable'
-    : `login error: ${getErrorText(text)}`;
+    ? 'Login Unavailable'
+    : `Login Error: ${getErrorText(text)}`;
 }
 
 function normalizeGlobalDialogId(dialogId) {

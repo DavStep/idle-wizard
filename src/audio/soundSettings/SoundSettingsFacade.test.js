@@ -11,13 +11,13 @@ describe('SoundSettingsFacade', () => {
     const uiClickSoundFacade = {
       setEnabled: vi.fn(),
     };
-    const gardenHarvestSoundFacade = {
+    const gardenSoundFacade = {
       setEnabled: vi.fn(),
     };
     const facade = new SoundSettingsFacade({
       preferenceManager: new SoundPreferenceManager({ storage: memoryStorage() }),
       backgroundMusicFacade,
-      gardenHarvestSoundFacade,
+      gardenSoundFacade,
       uiClickSoundFacade,
     });
 
@@ -29,10 +29,10 @@ describe('SoundSettingsFacade', () => {
     expect(uiClickSoundFacade.setEnabled).toHaveBeenNthCalledWith(1, true);
     expect(uiClickSoundFacade.setEnabled).toHaveBeenNthCalledWith(2, false);
     expect(uiClickSoundFacade.setEnabled).toHaveBeenNthCalledWith(3, true);
-    expect(gardenHarvestSoundFacade.setEnabled).toHaveBeenCalledTimes(3);
-    expect(gardenHarvestSoundFacade.setEnabled).toHaveBeenNthCalledWith(1, true);
-    expect(gardenHarvestSoundFacade.setEnabled).toHaveBeenNthCalledWith(2, false);
-    expect(gardenHarvestSoundFacade.setEnabled).toHaveBeenNthCalledWith(3, true);
+    expect(gardenSoundFacade.setEnabled).toHaveBeenCalledTimes(3);
+    expect(gardenSoundFacade.setEnabled).toHaveBeenNthCalledWith(1, true);
+    expect(gardenSoundFacade.setEnabled).toHaveBeenNthCalledWith(2, false);
+    expect(gardenSoundFacade.setEnabled).toHaveBeenNthCalledWith(3, true);
     expect(backgroundMusicFacade.setEnabled).toHaveBeenCalledTimes(2);
     expect(backgroundMusicFacade.setEnabled).toHaveBeenNthCalledWith(1, true);
     expect(backgroundMusicFacade.setEnabled).toHaveBeenNthCalledWith(2, false);

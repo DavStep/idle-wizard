@@ -18,7 +18,7 @@ import {
 } from '../rendering/pixi/runtime/PixiLifecycleAdapters.js';
 import { SoundSettingsFacade } from '../audio/soundSettings/SoundSettingsFacade.js';
 import { BackgroundMusicFacade } from '../audio/backgroundMusic/BackgroundMusicFacade.js';
-import { GardenHarvestSoundFacade } from '../audio/gardenHarvest/GardenHarvestSoundFacade.js';
+import { GardenSoundFacade } from '../audio/gardenSounds/GardenSoundFacade.js';
 import { UiClickSoundFacade } from '../audio/uiClicks/UiClickSoundFacade.js';
 import { AppLifecycleManager } from './managers/AppLifecycleManager.js';
 import { AppLiveUpdateManager } from './managers/AppLiveUpdateManager.js';
@@ -39,11 +39,11 @@ export class AppFacade {
     this.hapticsFacade = new HapticsFacade();
     this.playerFacade = new PlayerFacade();
     this.backgroundMusicFacade = new BackgroundMusicFacade();
-    this.gardenHarvestSoundFacade = new GardenHarvestSoundFacade();
+    this.gardenSoundFacade = new GardenSoundFacade();
     this.uiClickSoundFacade = new UiClickSoundFacade();
     this.soundSettingsFacade = new SoundSettingsFacade({
       backgroundMusicFacade: this.backgroundMusicFacade,
-      gardenHarvestSoundFacade: this.gardenHarvestSoundFacade,
+      gardenSoundFacade: this.gardenSoundFacade,
       uiClickSoundFacade: this.uiClickSoundFacade,
     });
     this.backendFacade = new BackendFacade();
@@ -81,7 +81,6 @@ export class AppFacade {
       playerFacade: this.playerFacade,
       authFacade: this.backendFacade.getAuthFacade(),
       feedbackFacade: this.backendFacade.getFeedbackFacade(),
-      gardenHarvestSoundFacade: this.gardenHarvestSoundFacade,
       playerInboxFacade: this.backendFacade.getPlayerInboxFacade(),
       playerInfoFacade: this.backendFacade.getPlayerInfoFacade(),
       tradeAllianceFacade:
@@ -121,6 +120,7 @@ export class AppFacade {
       worldChatFacade: this.backendFacade.getWorldChatFacade(),
       tradeAllianceFacade: this.backendFacade.getTradeAllianceFacade(),
       feedbackFacade: this.backendFacade.getFeedbackFacade(),
+      gardenSoundFacade: this.gardenSoundFacade,
       playerInboxFacade: this.backendFacade.getPlayerInboxFacade(),
       playerInfoFacade: this.backendFacade.getPlayerInfoFacade(),
       playerShopFacade: this.backendFacade.getPlayerShopFacade(),
@@ -206,7 +206,7 @@ export class AppFacade {
     this.renderFacade.destroy();
     this.soundSettingsFacade.destroy();
     this.backgroundMusicFacade.destroy();
-    this.gardenHarvestSoundFacade.destroy();
+    this.gardenSoundFacade.destroy();
     this.uiClickSoundFacade.destroy();
     this.hapticsFacade.destroy();
     return true;

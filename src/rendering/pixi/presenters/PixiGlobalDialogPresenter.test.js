@@ -445,8 +445,8 @@ describe('PixiGlobalDialogPresenter', () => {
     );
 
     expect(model.account).toMatchObject({
-      accountStatus: 'not connected',
-      connectLabel: 'connect account',
+      accountStatus: 'Not Connected',
+      connectLabel: 'Connect Account',
       connectEnabled: true,
     });
     expect(await model.actions.connectAccount()).toEqual({
@@ -464,9 +464,28 @@ describe('PixiGlobalDialogPresenter', () => {
     expect(
       harness.getOpenModel(GLOBAL_DIALOG_IDS.SETTINGS).account,
     ).toMatchObject({
-      accountStatus: 'login cancelled',
-      connectLabel: 'connect account',
+      accountStatus: 'Login Cancelled',
+      connectLabel: 'Connect Account',
       connectEnabled: true,
+    });
+  });
+
+  it('shows an unavailable Google login as a disabled Title Case action', () => {
+    const harness = createHarness();
+    harness.authFacade.getSnapshot.mockReturnValue({
+      hasToken: false,
+      identity: 'identity-mira',
+      oidc: { enabled: false },
+    });
+    harness.presenter.mount();
+    harness.presenter.open('settings');
+
+    expect(
+      harness.getOpenModel(GLOBAL_DIALOG_IDS.SETTINGS).account,
+    ).toMatchObject({
+      accountStatus: 'Login Unavailable',
+      connectLabel: 'Connect Account',
+      connectEnabled: false,
     });
   });
 

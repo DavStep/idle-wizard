@@ -18,6 +18,12 @@ shell outsets and dialog padding, retained global dialog content is at most
 `264px` wide. Feature dialogs reflow their content inside that cap rather than
 scaling or stretching the display tree.
 
+Dialogs whose main body is a vertical scroll viewport use the shared adaptive
+height resolver. The authored `844px` logical surface keeps its exact baseline
+height; taller portrait surfaces add the available logical-height delta to the
+scroll viewport, while fixed-content dialogs and compact nested scroll regions
+keep their authored height.
+
 Register the suite before the Pixi runtime is initialized:
 
 ```js

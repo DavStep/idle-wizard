@@ -200,6 +200,32 @@ describe('retained global Pixi dialogs', () => {
     harness.dispose();
   });
 
+  it('expands a primary dialog scroll viewport without stretching fixed confirmations', () => {
+    const harness = createHarness();
+    const inbox = harness.registry.open(GLOBAL_DIALOG_IDS.INBOX, {
+      mail: [],
+    });
+    const confirmation = harness.registry.open(
+      GLOBAL_DIALOG_IDS.CONFIRMATION,
+      { message: 'Continue?' },
+    );
+
+    harness.registry.layout({
+      sourceWidth: 390,
+      sourceHeight: 944,
+      sourceScale: 1,
+      sourceOffsetX: 0,
+      stageLogicalWidth: 390,
+      dialogShift: 0,
+    });
+
+    expect(inbox.contentHeight).toBe(460);
+    expect(inbox.scroll.viewportHeight).toBe(460);
+    expect(confirmation.contentHeight).toBe(124);
+
+    harness.dispose();
+  });
+
   it('composes Player Info from the framed avatar and aligned lifetime stats', () => {
     const harness = createHarness();
     const player = harness.registry.open(GLOBAL_DIALOG_IDS.PLAYER, {
@@ -333,8 +359,8 @@ describe('retained global Pixi dialogs', () => {
     const userId = '1234567890abcdef1234567890abcdef';
     const settings = harness.registry.open(GLOBAL_DIALOG_IDS.SETTINGS, {
       account: {
-        accountStatus: 'not connected',
-        connectLabel: 'connect account',
+        accountStatus: 'Not Connected',
+        connectLabel: 'Connect Account',
         connectEnabled: true,
         version: '1.2.3',
         userId,
@@ -399,14 +425,15 @@ describe('retained global Pixi dialogs', () => {
       frameHeight: 92,
     });
     expect(settings.accountConnectionLabel.text).toBe('GOOGLE ACCOUNT');
-    expect(settings.accountStatus.text).toBe('not connected');
+    expect(settings.accountStatus.text).toBe('Not Connected');
     expect(settings.accountConnectButton.variant).toBe('yellow');
     expect(settings.accountConnectButton.textLabel.text).toBe(
-      'connect account',
+      'Connect Account',
     );
     expect(settings.accountConnectButton.enabled).toBe(true);
     expect(settings.identityFooter).toBeInstanceOf(DeviceIdentityFooter);
     expect(settings.identityFooter.versionLabel.text).toBe('v 1.2.3');
+    expect(settings.identityFooter.copyButton.textLabel.text).toBe('Copy');
     expect(settings.identityFooter.userIdLabel.text).toBe('12345678…90abcdef');
     expect(settings.identityFooter.copyButton.variant).toBe('yellow');
     expect(settings.scroll.maxScrollY).toBe(0);
@@ -427,7 +454,7 @@ describe('retained global Pixi dialogs', () => {
     expect(connectAccount).toHaveBeenCalledTimes(1);
     await settings.identityFooter.copyButton.activate();
     expect(copyUserId).toHaveBeenCalledWith(userId);
-    expect(settings.identityFooter.copyButton.textLabel.text).toBe('copied');
+    expect(settings.identityFooter.copyButton.textLabel.text).toBe('Copied');
     harness.dispose();
   });
 

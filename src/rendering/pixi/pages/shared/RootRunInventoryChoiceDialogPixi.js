@@ -1,4 +1,5 @@
 import { PixiOwnedDialogSurface } from '../../primitives/PixiOwnedDialogSurface.js';
+import { resolveAdaptiveDialogHeight } from '../../primitives/PixiDialogFrame.js';
 import {
   DEFAULT_PIXI_THEME_SNAPSHOT,
   PIXI_ROOT_RUN_GEOMETRY,
@@ -120,8 +121,16 @@ export class RootRunInventoryChoiceDialogPixi {
       Number(viewportProjection?.sourceHeight) ||
       RETAINED_PAGE_GEOMETRY.height;
     const rowCount = this.list?.items?.length ?? 0;
+    const adaptiveMaximumHeight = resolveAdaptiveDialogHeight({
+      viewportHeight: this.sourceHeight,
+      baseHeight: CONTENT_MAX_HEIGHT,
+      minimumHeight: CONTENT_MIN_HEIGHT,
+      maximumHeight:
+        this.sourceHeight - DIALOG_PADDING * 2 - 118,
+      hasPrimaryVerticalScroll: true,
+    });
     this.listHeight = Math.min(
-      CONTENT_MAX_HEIGHT,
+      adaptiveMaximumHeight,
       Math.max(
         CONTENT_MIN_HEIGHT,
         rowCount * ROW_HEIGHT + CONTENT_PADDING_TOP,

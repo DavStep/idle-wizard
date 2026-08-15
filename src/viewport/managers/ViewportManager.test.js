@@ -67,14 +67,24 @@ describe('ViewportManager', () => {
       `${cwd()}/android/app/src/main/AndroidManifest.xml`,
       'utf8',
     );
+    const mainActivity = readFileSync(
+      `${cwd()}/android/app/src/main/java/com/idlewizard/game/MainActivity.java`,
+      'utf8',
+    );
     const textEntryPlugin = readFileSync(
       `${cwd()}/android/app/src/main/java/com/idlewizard/game/IdleWizardTextEntryPlugin.java`,
       'utf8',
     );
 
     expect(manifest).toContain('android:windowSoftInputMode="adjustNothing"');
+    expect(mainActivity).toContain(
+      'WindowCompat.setDecorFitsSystemWindows(getWindow(), false);',
+    );
     expect(textEntryPlugin).toContain(
       'layoutParams.gravity = Gravity.TOP | Gravity.END;',
+    );
+    expect(textEntryPlugin).toContain(
+      'WindowCompat.setDecorFitsSystemWindows(activity.getWindow(), false);',
     );
     expect(textEntryPlugin.match(/enforceKeyboardOverlayWindow\(activity\);/g))
       .toHaveLength(2);

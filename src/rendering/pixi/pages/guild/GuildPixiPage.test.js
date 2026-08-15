@@ -148,6 +148,32 @@ describe('GuildPixiPage', () => {
     harness.dispose();
   });
 
+  it('expands scrollable Guild cards on tall devices but keeps fixed forms authored', () => {
+    const harness = createHarness();
+    harness.page.bind(createGuildViewModel());
+    harness.page.activate();
+    harness.page.openDialog(
+      GUILD_DIALOG_IDS.ADVENTURER,
+      createGuildDialogPayload(GUILD_DIALOG_IDS.ADVENTURER),
+    );
+    harness.page.openDialog(
+      GUILD_DIALOG_IDS.CHARTER,
+      createGuildDialogPayload(GUILD_DIALOG_IDS.CHARTER),
+    );
+    const card = harness.dialogs.get(GUILD_DIALOG_IDS.ADVENTURER);
+    const charter = harness.dialogs.get(GUILD_DIALOG_IDS.CHARTER);
+
+    card.layout({ sourceWidth: 390, sourceHeight: 944 });
+    charter.layout({ sourceWidth: 390, sourceHeight: 944 });
+
+    expect(card.panel.coreHeight).toBe(464);
+    expect(card.detailScroll.viewportHeight).toBeGreaterThan(200);
+    expect(charter.panel.coreHeight).toBe(230);
+
+    harness.page.destroy();
+    harness.dispose();
+  });
+
   it('routes semantic quest/person actions and keeps source anchors', () => {
     const harness = createHarness();
     harness.page.bind(createGuildViewModel());

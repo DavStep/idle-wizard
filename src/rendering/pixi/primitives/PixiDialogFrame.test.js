@@ -17,6 +17,7 @@ import {
   PIXI_DIALOG_FOOTER_TABS_GEOMETRY,
   PIXI_DIALOG_PALETTE,
   PixiDialogFrame,
+  resolveAdaptiveDialogHeight,
   resolveDialogFooterTabLayout,
   setDialogPaperAboveFooterTabs,
 } from './PixiDialogFrame.js';
@@ -82,6 +83,44 @@ function applyColorMatrix(matrix, [red, green, blue]) {
 }
 
 describe('PixiDialogFrame', () => {
+  it('gives extra device height only to dialogs with a primary vertical scroll', () => {
+    const referenceHeight = 844;
+    const tallHeight = 944;
+
+    expect(
+      resolveAdaptiveDialogHeight({
+        viewportHeight: tallHeight,
+        baseHeight: 382,
+        minimumHeight: 240,
+        maximumHeight: tallHeight - 118,
+        hasPrimaryVerticalScroll: true,
+      }),
+    ).toBe(482);
+    expect(
+      resolveAdaptiveDialogHeight({
+        viewportHeight: tallHeight,
+        baseHeight: 382,
+        hasPrimaryVerticalScroll: false,
+      }),
+    ).toBe(382);
+    expect(
+      resolveAdaptiveDialogHeight({
+        viewportHeight: referenceHeight,
+        baseHeight: 382,
+        minimumHeight: 240,
+        hasPrimaryVerticalScroll: true,
+      }),
+    ).toBe(382);
+    expect(
+      resolveAdaptiveDialogHeight({
+        viewportHeight: 700,
+        baseHeight: 382,
+        minimumHeight: 260,
+        hasPrimaryVerticalScroll: true,
+      }),
+    ).toBe(260);
+  });
+
   it('uses the fixed base width and minimum height contract', () => {
     const frame = new PixiDialogFrame();
 

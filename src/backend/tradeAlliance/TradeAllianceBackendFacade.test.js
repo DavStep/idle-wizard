@@ -3,6 +3,28 @@ import { describe, expect, it, vi } from 'vitest';
 import { TradeAllianceBackendFacade } from './TradeAllianceBackendFacade.js';
 
 describe('TradeAllianceBackendFacade', () => {
+  it('can publish and clear a reversible development snapshot', () => {
+    const facade = new TradeAllianceBackendFacade();
+    const liveSnapshot = { topAllTimeAlliances: [] };
+    facade.subscriptionManager.getSnapshot = vi.fn(() => liveSnapshot);
+    const listener = vi.fn();
+    facade.subscribe(listener);
+    const devSnapshot = {
+      topAllTimeAlliances: [{ allianceId: 'owl', name: 'Night Owls' }],
+    };
+
+    expect(facade.setDevSnapshot(devSnapshot)).toEqual({ ok: true });
+    expect(facade.getSnapshot()).toBe(devSnapshot);
+    expect(listener).toHaveBeenLastCalledWith(devSnapshot);
+
+    expect(facade.clearDevSnapshot()).toEqual({
+      ok: true,
+      snapshot: liveSnapshot,
+    });
+    expect(facade.getSnapshot()).toBe(liveSnapshot);
+    expect(listener).toHaveBeenLastCalledWith(liveSnapshot);
+  });
+
   it('reapplies retained quest data after connect', () => {
     const facade = new TradeAllianceBackendFacade();
     const subscriptionManager = {

@@ -28,8 +28,42 @@ const STATS_TABS = Object.freeze([
 ]);
 
 const LEADERBOARD_TABS = Object.freeze([
-  Object.freeze({ id: 'singlePlayer', label: 'single player' }),
-  Object.freeze({ id: 'alliance', label: 'alliance' }),
+  Object.freeze({ id: 'singlePlayer', label: 'Players' }),
+  Object.freeze({ id: 'alliance', label: 'Alliances' }),
+]);
+const LEADERBOARD_PERIODS = Object.freeze([
+  Object.freeze({
+    id: 'daily',
+    label: 'Daily',
+    valueKey: 'dailyIncome',
+    userListKey: 'topDailyUsers',
+    currentUserKey: 'currentDailyUser',
+    allianceListKey: 'topDailyAlliances',
+  }),
+  Object.freeze({
+    id: 'weekly',
+    label: 'Weekly',
+    valueKey: 'weeklyIncome',
+    userListKey: 'topWeeklyUsers',
+    currentUserKey: 'currentWeeklyUser',
+    allianceListKey: 'topWeeklyAlliances',
+  }),
+  Object.freeze({
+    id: 'monthly',
+    label: 'Monthly',
+    valueKey: 'monthlyIncome',
+    userListKey: 'topMonthlyUsers',
+    currentUserKey: 'currentMonthlyUser',
+    allianceListKey: 'topMonthlyAlliances',
+  }),
+  Object.freeze({
+    id: 'allTime',
+    label: 'All Time',
+    valueKey: 'totalIncome',
+    userListKey: 'topAllTimeUsers',
+    currentUserKey: 'currentAllTimeUser',
+    allianceListKey: 'topAllTimeAlliances',
+  }),
 ]);
 const PERSONAL_TASK_TABS = Object.freeze([
   Object.freeze({ id: 'tasks', label: 'Tasks' }),
@@ -311,6 +345,7 @@ export class PixiViewModelFactory {
             tradeAlliance,
             dialogState.leaderboardTabId,
             actions,
+            dialogState.leaderboardPeriodId,
           ),
           discoveries: this.createDiscoveriesDialog(gameplay, actions),
           personalTasks: this.createPersonalTasksDialog(
@@ -939,14 +974,20 @@ export class PixiViewModelFactory {
     tradeAlliance = {},
     selectedTabId = 'singlePlayer',
     actions = {},
+    selectedPeriodId = 'allTime',
   ) {
     const safeTabId = LEADERBOARD_TABS.some(
       (tab) => tab.id === selectedTabId,
     )
       ? selectedTabId
       : 'singlePlayer';
-    const users = getLeaderboardUsers(leaderboard);
-    const alliances = getLeaderboardAlliances(tradeAlliance);
+    const period =
+      LEADERBOARD_PERIODS.find((candidate) => candidate.id === selectedPeriodId) ??
+      LEADERBOARD_PERIODS.at(-1);
+    const users = getLeaderboardUsers(leaderboard, period);
+    const currentUser = getLeaderboardCurrentUser(leaderboard, period);
+    const visibleUsers = appendCurrentLeaderboardUser(users.slice(0, 100), currentUser);
+    const alliances = getLeaderboardAlliances(tradeAlliance, period);
     const rows =
       safeTabId === 'alliance'
         ? alliances.slice(0, 10).map((alliance, index) => ({
@@ -955,35 +996,53 @@ export class PixiViewModelFactory {
               alliance.id ??
               alliance.name ??
               index,
-            label: formatLeaderboardAllianceLabel(alliance, index),
-            value: formatCoinPriceText(
-              alliance.totalIncome ??
+            type: 'leaderboardAlliance',
+            rank: normalizeLeaderboardRank(alliance.rank, index),
+            name: alliance.name ?? alliance.allianceName ?? 'Alliance',
+            allianceTag: String(alliance.tag ?? alliance.allianceTag ?? '').trim(),
+            allianceTagColor:
+              alliance.tagColor ?? alliance.allianceTagColor ?? 'ink',
+            memberCount: Math.max(0, Math.floor(Number(alliance.memberCount) || 0)),
+            totalCoinLabel: formatCoinAmount(
+              alliance[period.valueKey] ??
+                alliance.totalIncome ??
                 alliance.totalGeneratedCoin ??
                 alliance.income ??
                 0,
             ),
-            resourceKey: 'coin',
-            actionLabel:
-              typeof actions.openAlliance === 'function' ? 'open' : '',
             onActivate:
               typeof actions.openAlliance === 'function'
                 ? () => actions.openAlliance(alliance)
                 : null,
           }))
-        : users.slice(0, 100).map((user, index) => ({
+        : visibleUsers.map((user, index) => ({
             id:
               String(user.identity ?? '').trim() ||
               `${user.name ?? user.username ?? 'Wizard'}:${index}`,
-            label: formatLeaderboardUserLabel(user, index),
-            value: formatCoinPriceText(
-              user.totalIncome ??
+            type: 'leaderboardPlayer',
+            rank: normalizeLeaderboardRank(user.rank, index),
+            username: user.name ?? user.username ?? 'Wizard',
+            allianceTag: String(user.allianceTag ?? user.alliance_tag ?? '').trim(),
+            allianceTagColor:
+              user.allianceTagColor ?? user.alliance_tag_color ?? 'ink',
+            character: user.character ?? 'elara',
+            frame: user.frame ?? 'classic',
+            playerLevel: Math.max(
+              1,
+              Math.floor(Number(user.playerLevel ?? user.player_level) || 1),
+            ),
+            prestigeCount: Math.max(
+              0,
+              Math.floor(Number(user.prestigeCount ?? user.prestige_count) || 0),
+            ),
+            current: user === currentUser || user.current === true,
+            totalCoinLabel: formatCoinAmount(
+              user[period.valueKey] ??
+                user.totalIncome ??
                 user.totalGeneratedCoin ??
                 user.income ??
                 0,
             ),
-            resourceKey: 'coin',
-            actionLabel:
-              typeof actions.openPlayer === 'function' ? 'open' : '',
             onActivate:
               typeof actions.openPlayer === 'function'
                 ? () => actions.openPlayer(user)
@@ -991,12 +1050,23 @@ export class PixiViewModelFactory {
           }));
 
     return {
-      title: 'leaderboard',
+      title: 'Leaderboard',
+      rowWidget: 'leaderboard',
+      emptyLabel:
+        safeTabId === 'alliance' ? 'No alliances yet' : 'No players yet',
       selectedTabId: safeTabId,
+      selectedPeriodId: period.id,
       onSelectTab: (tabId) => actions.selectLeaderboardTab?.(tabId),
+      onSelectPeriod: (periodId) =>
+        actions.selectLeaderboardPeriod?.(periodId),
       tabs: LEADERBOARD_TABS.map((tab) => ({
         ...tab,
         selected: tab.id === safeTabId,
+      })),
+      periodTabs: LEADERBOARD_PERIODS.map((candidate) => ({
+        id: candidate.id,
+        label: candidate.label,
+        selected: candidate.id === period.id,
       })),
       rows,
     };
@@ -1387,76 +1457,78 @@ export class PixiViewModelFactory {
     const canDonate =
       maximum > 0 &&
       typeof actions.confirmWorldEventDonation === 'function';
-    const createStepRow = (delta) => ({
-      id: `amount:${delta}`,
-      label: delta < 0 ? 'Decrease Amount' : 'Increase Amount',
-      value: String(amount),
-      actionLabel: `${delta > 0 ? '+' : ''}${delta}`,
-      enabled:
-        typeof actions.adjustWorldEventDonationAmount === 'function' &&
-        amount + delta >= 1 &&
-        amount + delta <= maximum,
-      onActivate: () =>
-        actions.adjustWorldEventDonationAmount?.(delta),
-    });
+    const itemKind = getWorldEventDonationItemKind(option);
+    const isCoinDonation = option.resourceType === 'coin';
 
     return {
       title: 'Donate',
       status: canDonate ? '' : 'Not enough resources.',
-      rows: [
+      summaryRows: [
         {
           id: 'quest',
           label: 'Quest',
           value: toTitleCase(request.title ?? request.label ?? ''),
-          height: 32,
         },
         {
           id: 'giving',
           label: 'Giving',
           value: toTitleCase(option.label ?? ''),
-          itemKind: getWorldEventDonationItemKind(option),
+          itemKind,
           itemKey: option.itemKey,
-          resourceKey:
-            option.resourceType === 'coin'
-              ? 'coin'
-              : getWorldEventDonationItemKind(option),
-        },
-        {
-          id: 'total',
-          label: 'Total Contributed',
-          value:
-            option.collectedPointText ??
-            `${formatWorldEventNumber(option.contributionPoints)} points`,
+          valueIconResourceKey: isCoinDonation ? 'coin' : null,
+          quantityLabel: amount > 0 ? `x${formatWorldEventNumber(amount)}` : '',
         },
         {
           id: 'owned',
           label: 'Owned',
           value: formatWorldEventNumber(maximum),
+          itemKind: isCoinDonation ? null : itemKind,
+          itemKey: isCoinDonation ? null : option.itemKey,
+          valueIconResourceKey: isCoinDonation ? 'coin' : null,
         },
         {
           id: 'points',
-          label: 'Points',
-          value: `+${formatWorldEventNumber(points)}`,
+          label: 'Earn',
+          value: `+${formatWorldEventNumber(points)} points`,
+          valueTone: 'root',
         },
-        createStepRow(-10),
-        createStepRow(-1),
-        createStepRow(1),
-        createStepRow(10),
+        {
+          id: 'total',
+          label: 'Contributed',
+          value:
+            option.collectedPointText ??
+            `${formatWorldEventNumber(option.contributionPoints)} points`,
+          valueTone: 'root',
+        },
+      ],
+      range: {
+        enabled:
+          maximum > 0 &&
+          typeof actions.adjustWorldEventDonationAmount === 'function',
+        tone: 'root',
+        min: maximum > 0 ? 1 : 0,
+        max: maximum,
+        step: 1,
+        value: amount,
+        onChange: (quantity) =>
+          actions.adjustWorldEventDonationAmount?.(quantity - amount),
+      },
+      actions: [
         {
           id: 'confirm',
-          label: `${formatWorldEventNumber(amount)} ${
-            option.label ?? 'resource'
-          }`,
-          value: `${formatWorldEventNumber(points)} points`,
-          actionLabel: `Donate x${formatWorldEventNumber(amount)}`,
+          label:
+            amount > 0
+              ? `Donate x${formatWorldEventNumber(amount)}`
+              : 'Donate',
+          variant: 'green',
           enabled: canDonate,
-          onActivate: () =>
+          semanticId: `workshop.worldEvent.donate.${request.requestId}.${option.optionKey}`,
+          action: () =>
             actions.confirmWorldEventDonation?.(
               request.requestId,
               option.optionKey,
               amount,
             ),
-          height: 32,
         },
       ],
     };
@@ -1490,6 +1562,7 @@ export class PixiViewModelFactory {
         return {
           id,
           type: isSystem ? 'system' : 'player',
+          isOwn: !isSystem && message.isOwn === true,
           username: isSystem ? 'System' : username,
           body,
           systemPlayerUsername: systemPlayer?.username ?? '',
@@ -1538,10 +1611,11 @@ export class PixiViewModelFactory {
   }
 }
 
-function getLeaderboardUsers(leaderboard = {}) {
+function getLeaderboardUsers(leaderboard = {}, period = LEADERBOARD_PERIODS.at(-1)) {
   const source = leaderboard.leaderboard ?? leaderboard;
   const users =
-    source.topAllTimeUsers ??
+    source[period.userListKey] ??
+    (period.id === 'allTime' ? source.topAllTimeUsers : null) ??
     source.topGeneratedCoinUsers ??
     source.topUsers ??
     source.topIncomeUsers ??
@@ -1549,33 +1623,52 @@ function getLeaderboardUsers(leaderboard = {}) {
   return Array.isArray(users) ? users : [];
 }
 
-function getLeaderboardAlliances(tradeAlliance = {}) {
+function getLeaderboardCurrentUser(
+  leaderboard = {},
+  period = LEADERBOARD_PERIODS.at(-1),
+) {
+  const source = leaderboard.leaderboard ?? leaderboard;
+  return (
+    source[period.currentUserKey] ??
+    (period.id === 'allTime'
+      ? source.currentGeneratedCoinUser ?? source.currentUser
+      : null) ??
+    null
+  );
+}
+
+function appendCurrentLeaderboardUser(users, currentUser) {
+  if (!currentUser) {
+    return users;
+  }
+  const currentIdentity = String(currentUser.identity ?? '').trim();
+  const currentAlreadyVisible = users.some((user) =>
+    currentIdentity
+      ? String(user.identity ?? '').trim() === currentIdentity
+      : user === currentUser,
+  );
+  if (currentAlreadyVisible) {
+    return users.map((user) =>
+      (currentIdentity && String(user.identity ?? '').trim() === currentIdentity) ||
+      user === currentUser
+        ? { ...user, current: true }
+        : user,
+    );
+  }
+  return [...users, { ...currentUser, current: true }];
+}
+
+function getLeaderboardAlliances(
+  tradeAlliance = {},
+  period = LEADERBOARD_PERIODS.at(-1),
+) {
   const alliances =
-    tradeAlliance.topAllTimeAlliances ??
+    tradeAlliance[period.allianceListKey] ??
+    (period.id === 'allTime' ? tradeAlliance.topAllTimeAlliances : null) ??
     tradeAlliance.topAlliances ??
     tradeAlliance.alliances ??
     [];
   return Array.isArray(alliances) ? alliances : [];
-}
-
-function formatLeaderboardUserLabel(user = {}, index = 0) {
-  const rank = normalizeLeaderboardRank(user.rank, index);
-  const allianceTag = String(
-    user.allianceTag ?? user.alliance_tag ?? '',
-  ).trim();
-  const name = user.name ?? user.username ?? 'Wizard';
-  const level = Math.max(
-    1,
-    Math.floor(Number(user.playerLevel ?? user.player_level) || 1),
-  );
-  return `${rank}. ${allianceTag ? `[${allianceTag}] ` : ''}${name} (${level})`;
-}
-
-function formatLeaderboardAllianceLabel(alliance = {}, index = 0) {
-  const rank = normalizeLeaderboardRank(alliance.rank, index);
-  const name = alliance.name ?? alliance.allianceName ?? 'alliance';
-  const tag = String(alliance.tag ?? alliance.allianceTag ?? '').trim();
-  return `${rank}. ${name}${tag ? ` [${tag}]` : ''}`;
 }
 
 function normalizeLeaderboardRank(rank, index) {

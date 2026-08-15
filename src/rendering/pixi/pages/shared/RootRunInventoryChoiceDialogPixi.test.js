@@ -1,6 +1,6 @@
 // @vitest-environment jsdom
 
-import { Texture } from 'pixi.js';
+import { Container, Texture } from 'pixi.js';
 import { describe, expect, it, vi } from 'vitest';
 
 import {
@@ -8,6 +8,10 @@ import {
 } from '../workshop/PixiPageTestHarness.js';
 import { ClickableWidget } from '../../primitives/ClickableWidget.js';
 import { RootRunInventoryChoiceRowPixi } from '../shop/ShopDialogPixi.js';
+import {
+  ROOT_RUN_INVENTORY_CHOICE_DIALOG_GEOMETRY,
+  RootRunInventoryChoiceDialogPixi,
+} from './RootRunInventoryChoiceDialogPixi.js';
 
 globalThis.CanvasRenderingContext2D.prototype.createLinearGradient =
   () => ({
@@ -101,5 +105,42 @@ describe('RootRunInventoryChoiceRowPixi', () => {
 
     row.destroy();
     expect(unregister).toHaveBeenCalledOnce();
+  });
+});
+
+describe('RootRunInventoryChoiceDialogPixi', () => {
+  it('shows more list rows on a taller portrait viewport', () => {
+    const dialog = new RootRunInventoryChoiceDialogPixi({
+      id: 'test.inventory',
+      title: 'Choose Item',
+      itemKind: 'seed',
+      selectActionName: 'select',
+      listLabel: 'test-inventory-list',
+      parent: new Container(),
+      assetManager: createPixiAssetManagerFake(Texture),
+    });
+    dialog.bind({
+      rows: Array.from({ length: 10 }, (_, index) => ({
+        id: `seed-${index}`,
+        key: `seed-${index}`,
+        label: `Seed ${index + 1}`,
+        quantity: index + 1,
+      })),
+    });
+
+    dialog.layout({ sourceWidth: 390, sourceHeight: 844 });
+    expect(dialog.listHeight).toBe(
+      ROOT_RUN_INVENTORY_CHOICE_DIALOG_GEOMETRY.contentMaxHeight,
+    );
+
+    dialog.layout({ sourceWidth: 390, sourceHeight: 944 });
+    expect(dialog.listHeight).toBe(
+      ROOT_RUN_INVENTORY_CHOICE_DIALOG_GEOMETRY.contentMaxHeight + 100,
+    );
+    expect(dialog.modal.fixedBounds.height).toBe(
+      dialog.listHeight + 40,
+    );
+
+    dialog.destroy();
   });
 });

@@ -35,6 +35,12 @@ export default defineUiEditorIntegration({
       mount: mountWorldChatMessageRow,
     },
     {
+      fixture: createPlayerFixture({ isOwn: true, username: 'You' }),
+      id: 'own-player',
+      label: 'Own player message',
+      mount: mountWorldChatMessageRow,
+    },
+    {
       fixture: createSystemFixture(),
       id: 'system',
       label: 'System message',

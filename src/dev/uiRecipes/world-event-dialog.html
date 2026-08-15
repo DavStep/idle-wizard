@@ -61,8 +61,19 @@
         inputRouter,
         semanticTargets,
       });
+      let donationAmount = 1;
       const model = {
         workshop: {
+          tasks: {
+            rows: [
+              {
+                id: 'recipe-task',
+                label: 'Brew Calming Draught',
+                current: 4,
+                required: 24,
+              },
+            ],
+          },
           dialogs: {
             worldEvent: {
               header: {
@@ -136,23 +147,7 @@
               ],
               title: 'World Event',
             },
-            worldEventDonate: {
-              rows: [
-                { id: 'quest', label: 'Quest', value: 'Quiet The Crowd' },
-                { id: 'giving', label: 'Giving', value: 'Calming Draught' },
-                { id: 'owned', label: 'Owned', value: '12' },
-                { id: 'points', label: 'Points', value: '+120' },
-                {
-                  actionLabel: 'Donate x1',
-                  enabled: true,
-                  id: 'confirm',
-                  label: '1 calming draught',
-                  onActivate: () => true,
-                  value: '120 points',
-                },
-              ],
-              title: 'Donate',
-            },
+            worldEventDonate: createDonationModel(),
           },
         },
       };
@@ -162,11 +157,79 @@
         return true;
       }
 
+      function createDonationModel() {
+        const points = donationAmount * 120;
+        return {
+          title: 'Donate',
+          summaryRows: [
+            { id: 'quest', label: 'Quest', value: 'Quiet The Crowd' },
+            {
+              id: 'giving',
+              label: 'Giving',
+              value: 'Calming Draught',
+              itemKind: 'potion',
+              itemKey: 'calmingDraught',
+              quantityLabel: `x${donationAmount}`,
+            },
+            {
+              id: 'owned',
+              label: 'Owned',
+              value: '12',
+              itemKind: 'potion',
+              itemKey: 'calmingDraught',
+            },
+            {
+              id: 'points',
+              label: 'Earn',
+              value: `+${points} points`,
+              valueTone: 'root',
+            },
+            {
+              id: 'total',
+              label: 'Contributed',
+              value: '0 points',
+              valueTone: 'root',
+            },
+          ],
+          range: {
+            enabled: true,
+            tone: 'root',
+            min: 1,
+            max: 12,
+            step: 1,
+            value: donationAmount,
+            onChange: setDonationAmount,
+          },
+          actions: [
+            {
+              id: 'confirm',
+              label: `Donate x${donationAmount}`,
+              variant: 'green',
+              enabled: true,
+              action: confirmDonation,
+            },
+          ],
+        };
+      }
+
+      function setDonationAmount(nextAmount) {
+        donationAmount = Math.max(1, Math.min(12, Math.round(nextAmount)));
+        model.workshop.dialogs.worldEventDonate = createDonationModel();
+        page.bind(model);
+        return true;
+      }
+
+      function confirmDonation() {
+        dialogRegistry.close('workshop.worldEventDonate');
+        return true;
+      }
+
       page.layout(applicationManager.projection);
       page.bind(model);
       page.activate();
       applicationManager.layers.pageUi.addChild(page.root);
-      page.openDialog('worldEvent');
+      const requestedDialog = new URLSearchParams(window.location.search).get('dialog');
+      page.openDialog(requestedDialog === 'donate' ? 'worldEventDonate' : 'worldEvent');
 
       window.__worldEventRecipe = {
         applicationManager,

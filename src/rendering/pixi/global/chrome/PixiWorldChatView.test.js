@@ -62,7 +62,7 @@ describe('PixiWorldChatView', () => {
       y: expect.closeTo(601.833333, 5),
     });
     expect(view.panel.root.pivot).toMatchObject({ x: 164, y: 20.5 });
-    expect(view.preview.text).toBe('[ARC] Second(4): second\nThird(5): third');
+    expect(view.preview.text).toBe('[ARC] Second: second\nThird: third');
     expect(view.preview.anchor).toMatchObject({ x: 0, y: 0.5 });
     expect(view.preview.position).toMatchObject({ x: 10, y: 22.5 });
     expect(view.preview.style.align).toBe('left');
@@ -78,13 +78,13 @@ describe('PixiWorldChatView', () => {
       'source:assets/avatars/mira.png',
     );
     expect(view.previewRows[0].tag.text).toBe('[ARC]');
-    expect(view.previewRows[0].username.text).toBe('Second(4):');
+    expect(view.previewRows[0].username.text).toBe('Second:');
     expect(view.previewRows[0].body.text).toBe('second');
     expect(view.previewRows[0].username.style.fill).toBe('#d4d4d4');
     expect(view.previewRows[0].body.style.fill).toBe('#a6a6a6');
     expect(view.previewRows[0].root.position.x).toBe(10);
     expect(view.previewRows[0].root.position.y).toBe(6.5);
-    expect(view.previewRows[1].username.text).toBe('Third(5):');
+    expect(view.previewRows[1].username.text).toBe('Third:');
     expect(view.previewRows[1].root.position.y).toBe(22.5);
     expect(view.previewContent.mask).toBe(view.previewClip);
     expect(view.previewRows[0].root.hitArea.width).toBe(308);

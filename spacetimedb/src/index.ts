@@ -6230,6 +6230,8 @@ const leaderboardSummaryResult = t.array(
     allianceTag: t.string(),
     allianceTagColor: t.string(),
     character: t.string(),
+    frame: t.string(),
+    prestigeCount: t.u32(),
     totalIncome: t.u64(),
     income: t.u64(),
     dailyIncome: t.u64(),
@@ -14567,14 +14569,21 @@ function getLeaderboardSummaryRows(ctx: any) {
       allTimeRank: 0,
     };
 
+    const player = ctx.db.player.identity.find(entry.identity);
+    const save = ctx.db.playerGameplaySave.identity.find(entry.identity);
+    const prestigeCount =
+      readSavedPrestigeCompletedLevels(save?.saveJson)?.length ?? 0;
+
     return {
       identity: entry.identity,
       username: entry.username,
       allianceTag: getSenderTradeAllianceTag(ctx, entry.identity),
       allianceTagColor: getSenderTradeAllianceTagColor(ctx, entry.identity),
       character: normalizePlayerCharacter(
-        ctx.db.player.identity.find(entry.identity)?.character ?? DEFAULT_PLAYER_CHARACTER,
+        player?.character ?? DEFAULT_PLAYER_CHARACTER,
       ),
+      frame: normalizePlayerFrame(player?.frame ?? DEFAULT_PLAYER_FRAME),
+      prestigeCount: Math.max(0, Math.floor(Number(prestigeCount) || 0)),
       totalIncome: toBigInt(entry.totalIncome),
       income: toBigInt(entry.totalIncome),
       dailyIncome: toBigInt(entry.dailyIncome),

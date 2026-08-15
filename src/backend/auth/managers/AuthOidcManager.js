@@ -7,6 +7,8 @@ import { AuthGoogleTokenManager } from './AuthGoogleTokenManager.js';
 const DEFAULT_AUTHORITY = 'https://accounts.google.com';
 const DEFAULT_SCOPE = 'openid profile email';
 const DEFAULT_RESPONSE_TYPE = 'code';
+const DEFAULT_GOOGLE_AUTH_CLIENT_ID =
+  '193171642557-9vu9lr832b7r4d58f6tirq2sqd4iaiin.apps.googleusercontent.com';
 const GOOGLE_IDENTITY_SCRIPT_SRC = 'https://accounts.google.com/gsi/client';
 const DEFAULT_MOBILE_REDIRECT_URI = 'https://davstep.github.io/idle-wizard/?native_auth=1';
 const WEB_GOOGLE_USER_STORAGE_KEY = 'idle-wizard.web-google.user';
@@ -19,7 +21,9 @@ const DEFAULT_WEB_PROMPT_TIMEOUT_MS = 90_000;
 export class AuthOidcManager {
   constructor({
     authority = import.meta.env.VITE_GOOGLE_AUTH_AUTHORITY ?? DEFAULT_AUTHORITY,
-    clientId = import.meta.env.VITE_GOOGLE_AUTH_CLIENT_ID,
+    clientId =
+      import.meta.env.VITE_GOOGLE_AUTH_CLIENT_ID ||
+      DEFAULT_GOOGLE_AUTH_CLIENT_ID,
     redirectUri = import.meta.env.VITE_GOOGLE_AUTH_REDIRECT_URI,
     postLogoutRedirectUri = import.meta.env.VITE_GOOGLE_AUTH_POST_LOGOUT_REDIRECT_URI,
     mobileRedirectUri = import.meta.env.VITE_GOOGLE_AUTH_MOBILE_REDIRECT_URI ??

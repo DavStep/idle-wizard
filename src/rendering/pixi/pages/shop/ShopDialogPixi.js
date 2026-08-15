@@ -27,6 +27,7 @@ import {
   resolveDialogFooterPaperReduction,
   resolveDialogFooterTabLayout,
   resolveDialogPaperOutsets,
+  resolveAdaptiveDialogHeight,
   setDialogPaperAboveFooterTabs,
   setDialogPaperSectionBounds,
 } from '../../primitives/PixiDialogFrame.js';
@@ -68,6 +69,8 @@ export const SHOP_DIALOG_IDS = Object.freeze({
 });
 
 export const WORKSHOP_SUMMON_INFO_DIALOG_ID = 'workshop.summonInfo';
+export const WORKSHOP_WORLD_EVENT_DONATE_DIALOG_ID =
+  'workshop.worldEventDonate';
 
 const AMOUNT_DELTAS = Object.freeze([-100, -10, -1, 1, 10, 100]);
 const DEFAULT_DIALOG_WIDTH = 304;
@@ -128,6 +131,7 @@ const DIALOG_CONFIG = Object.freeze({
     width: DEFAULT_DIALOG_WIDTH,
     height: DEFAULT_DIALOG_HEIGHT,
     rowHeight: PIXI_ROOT_RUN_GEOMETRY.settings.rowPitch,
+    hasPrimaryVerticalScroll: true,
     splitPaper: Object.freeze({
       selectionHeight: STALL_SELECTION_HEIGHT,
       selectionStatusHeight:
@@ -146,6 +150,7 @@ const DIALOG_CONFIG = Object.freeze({
     width: LEDGER_DIALOG_WIDTH,
     height: LEDGER_DIALOG_HEIGHT,
     rowHeight: LEDGER_ROW_HEIGHT,
+    hasPrimaryVerticalScroll: true,
     listFrameWidth: RETAINED_DIALOG_LIST_GEOMETRY.rowFrameWidth,
     scrollViewportBottomInset:
       LEDGER_SCROLL_VIEWPORT_BOTTOM_INSET,
@@ -157,6 +162,7 @@ const DIALOG_CONFIG = Object.freeze({
     width: DEFAULT_DIALOG_WIDTH,
     height: DEFAULT_DIALOG_HEIGHT,
     rowHeight: PIXI_ROOT_RUN_GEOMETRY.settings.rowPitch,
+    hasPrimaryVerticalScroll: true,
     splitPaper: Object.freeze({
       selectionHeight: PLAYER_REQUEST_SELECTION_HEIGHT,
       selectionStatusHeight:
@@ -176,6 +182,7 @@ const DIALOG_CONFIG = Object.freeze({
     width: DEFAULT_DIALOG_WIDTH,
     height: DEFAULT_DIALOG_HEIGHT,
     rowHeight: PIXI_ROOT_RUN_GEOMETRY.settings.rowPitch,
+    hasPrimaryVerticalScroll: true,
     splitPaper: Object.freeze({
       selectionHeight: PLAYER_LISTING_SELECTION_HEIGHT,
       selectionStatusHeight:
@@ -197,12 +204,14 @@ const DIALOG_CONFIG = Object.freeze({
     width: WIDE_DIALOG_WIDTH,
     height: DEFAULT_DIALOG_HEIGHT,
     rowHeight: 48,
+    hasPrimaryVerticalScroll: true,
   }),
   [SHOP_DIALOG_IDS.TRADE_HISTORY]: Object.freeze({
     title: 'trade history',
     width: WIDE_DIALOG_WIDTH,
     height: DEFAULT_DIALOG_HEIGHT,
     rowHeight: 36,
+    hasPrimaryVerticalScroll: true,
   }),
   [SHOP_DIALOG_IDS.SUPPORT]: Object.freeze({
     title: 'Support',
@@ -216,6 +225,7 @@ const DIALOG_CONFIG = Object.freeze({
     width: DEFAULT_DIALOG_WIDTH,
     height: 382,
     rowHeight: PIXI_ROOT_RUN_GEOMETRY.settings.rowPitch,
+    hasPrimaryVerticalScroll: true,
     actionVariant: 'brown-dark',
     selectedActionVariant: 'brown-light',
     splitPaper: Object.freeze({
@@ -235,6 +245,13 @@ const DIALOG_CONFIG = Object.freeze({
       actionHeight: 26,
       statusY: 89,
     }),
+  }),
+  [WORKSHOP_WORLD_EVENT_DONATE_DIALOG_ID]: Object.freeze({
+    title: 'Donate',
+    width: DEFAULT_DIALOG_WIDTH,
+    height: 218,
+    rowHeight: PIXI_ROOT_RUN_GEOMETRY.settings.rowPitch,
+    actionVariant: 'green',
   }),
 });
 
@@ -793,7 +810,22 @@ export class ShopDialogPixi extends BasePixiRetainedView {
     }
 
     const panelWidth = this.config.width;
-    const panelHeight = this.config.height;
+    const panelHeight = resolveAdaptiveDialogHeight({
+      viewportHeight: this.sourceHeight,
+      baseHeight: this.config.height,
+      minimumHeight: Math.min(
+        this.config.height,
+        this.config.splitPaper ? 320 : 240,
+      ),
+      maximumHeight: this.sourceHeight - 118,
+      hasPrimaryVerticalScroll:
+        this.config.hasPrimaryVerticalScroll === true,
+    });
+    this.panel.setContentBoxSize(
+      panelWidth - PIXI_UI_GEOMETRY.dialogPadding * 2,
+      panelHeight - PIXI_UI_GEOMETRY.dialogPadding * 2,
+      PIXI_UI_GEOMETRY.dialogPadding,
+    );
     const centerY = this.sourceHeight / 2;
     const tabCount = this.tabs?.getWidgets?.().length ?? 0;
     const shift = finiteOr(

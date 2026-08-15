@@ -345,6 +345,27 @@ describe('LeaderboardSubscriptionManager', () => {
     });
   });
 
+  it('publishes player frames and prestige counts for leaderboard profiles', () => {
+    const rows = [
+      {
+        username: 'Prestigious Mage',
+        playerLevel: 22,
+        totalIncome: 12n,
+        frame: 'sun',
+        prestigeCount: 4,
+      },
+    ];
+    const manager = new LeaderboardSubscriptionManager();
+
+    manager.connect(createConnection(createLeaderboardTable(rows)));
+
+    expect(manager.getSnapshot().topUsers[0]).toMatchObject({
+      name: 'Prestigious Mage',
+      frame: 'sun',
+      prestigeCount: 4,
+    });
+  });
+
   it('publishes the connected player rank when they are outside a top list', () => {
     const rows = Array.from({ length: 101 }, (_value, index) => ({
       identity: `other-${index + 1}`,

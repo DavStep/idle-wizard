@@ -5,6 +5,13 @@ upload script posts the section whose heading matches `package.json` `version`.
 Write these developer-to-player notes only in Idle Wizard terms. Do not mention
 other game names, source projects, ports, or implementation provenance.
 
+## 0.3.56
+
+- Redesigned the Leaderboard with clearer player and Trade Alliance rankings, time-period filters, profile details, and prestige information.
+- Improved World Chat so your own messages are easier to distinguish and player and alliance details stay consistent across chat and ranking views.
+- Added richer Garden action sounds and refined Inbox, Guild, Shop, event, and other scrollable dialogs to use tall phone screens more naturally.
+- Improved Android keyboard layout and account connection reliability.
+
 ## 0.3.55
 
 - Fixed repeat Brewing so the Brew action stays available when the cauldron is ready to prepare the previous recipe again.

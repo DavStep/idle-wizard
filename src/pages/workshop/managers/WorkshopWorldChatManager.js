@@ -453,7 +453,11 @@ export class WorkshopWorldChatManager {
 
   createMessage(
     message,
-    { interactiveSender = true, elementTag = 'div' } = {},
+    {
+      interactiveSender = true,
+      elementTag = 'div',
+      showPlayerLevel = true,
+    } = {},
   ) {
     const row = document.createElement(elementTag);
     row.className = 'workshop-page__world-chat-message';
@@ -470,7 +474,10 @@ export class WorkshopWorldChatManager {
     const name = document.createElement('span');
     name.className = 'workshop-page__world-chat-name';
     name.append(
-      ...this.createSenderContent(message, { interactiveSender }),
+      ...this.createSenderContent(message, {
+        interactiveSender,
+        showPlayerLevel,
+      }),
       document.createTextNode(': '),
     );
 
@@ -619,6 +626,7 @@ export class WorkshopWorldChatManager {
         this.createMessage(message, {
           interactiveSender: false,
           elementTag: 'span',
+          showPlayerLevel: false,
         }),
       ),
     );
@@ -627,7 +635,9 @@ export class WorkshopWorldChatManager {
       `${channel.label}, latest messages: ${messages
         .map((message) => {
           const age = this.formatMessageAge(message);
-          return `${this.formatSender(message)}: ${message.body}${age ? `, ${age}` : ''}`;
+          return `${this.formatSender(message, { showPlayerLevel: false })}: ${
+            message.body
+          }${age ? `, ${age}` : ''}`;
         })
         .join('; ')}`,
     );
@@ -718,7 +728,7 @@ export class WorkshopWorldChatManager {
     );
   }
 
-  formatSender(message) {
+  formatSender(message, { showPlayerLevel = true } = {}) {
     const username = message?.username || 'Wizard';
     const displayUsername = this.isSystemMessage(message)
       ? 'System'
@@ -728,7 +738,7 @@ export class WorkshopWorldChatManager {
     const allianceTag = this.normalizeAllianceTag(message?.allianceTag);
     const prefix = allianceTag ? `[${allianceTag}] ` : '';
 
-    if (!playerLevel) {
+    if (!showPlayerLevel || !playerLevel) {
       return `${prefix}${displayUsername}`;
     }
 
@@ -739,7 +749,10 @@ export class WorkshopWorldChatManager {
     return normalizeAllianceTag(tag);
   }
 
-  createSenderContent(message, { interactiveSender = true } = {}) {
+  createSenderContent(
+    message,
+    { interactiveSender = true, showPlayerLevel = true } = {},
+  ) {
     const username = message?.username || 'Wizard';
     const fallbackLevel = this.isSystemMessage(message) ? null : 1;
     const playerLevel = this.normalizePlayerLevel(message?.playerLevel, fallbackLevel);
@@ -787,7 +800,7 @@ export class WorkshopWorldChatManager {
       nodes.push(document.createTextNode(username));
     }
 
-    if (playerLevel) {
+    if (showPlayerLevel && playerLevel) {
       nodes.push(document.createTextNode(`(${playerLevel})`));
     }
 

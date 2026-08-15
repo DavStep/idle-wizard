@@ -8,19 +8,23 @@ import {
   getSeedPackItemFrameName,
 } from '../../../../assets/items/seeds/seedIconFrames.js';
 import { PixiCostButton } from '../../primitives/PixiCostButton.js';
+import { ClickableWidget } from '../../primitives/ClickableWidget.js';
 import {
   PIXI_DIALOG_FOOTER_TABS_GEOMETRY,
   PIXI_DIALOG_SPLIT_PAPER_GEOMETRY,
   createDialogPaperSection,
   resolveDialogFooterTabLayout,
   resolveDialogPaperOutsets,
+  resolveAdaptiveDialogHeight,
   setDialogPaperAboveFooterTabs,
   setDialogPaperSectionBounds,
 } from '../../primitives/PixiDialogFrame.js';
 import { PixiNineSliceFrame } from '../../primitives/PixiNineSliceFrame.js';
+import { PixiResourceLabel } from '../../primitives/PixiResourceLabel.js';
 import { PixiOwnedDialogSurface } from '../../primitives/PixiOwnedDialogSurface.js';
 import { PixiInlineText } from '../../primitives/PixiInlineText.js';
 import { layoutPixiSeedPackIcon } from '../../primitives/PixiSeedPackIcon.js';
+import { PixiStarLevelLabel } from '../../primitives/PixiStarLevelLabel.js';
 import { PixiTextField } from '../../primitives/PixiTextField.js';
 import { PooledCollection } from '../../retained/PooledCollection.js';
 import { WidgetPool } from '../../retained/WidgetPool.js';
@@ -34,6 +38,7 @@ import {
 } from '../../theme/PixiThemeTokens.js';
 import {
   RETAINED_DIALOG_SCROLL_GEOMETRY,
+  RETAINED_DIALOG_LIST_GEOMETRY,
   RETAINED_PAGE_GEOMETRY,
   RETAINED_TEXT_STYLES,
   RetainedButton,
@@ -42,6 +47,7 @@ import {
   applyTextTheme,
   createText,
   normalizeRows,
+  resolveRetainedDialogListLayout,
   setText,
 } from './RetainedPageKit.js';
 
@@ -61,6 +67,12 @@ const BAG_SCROLL_VIEWPORT_TOP_INSET =
 const BAG_ROW_VALUE_INSET_RIGHT = 2;
 const STATS_SCROLL_VIEWPORT_TOP_INSET = 6;
 const STATS_SCROLLBAR_SHIFT_RIGHT = 4;
+const LEADERBOARD_FOOTER_ROW_GAP = 4;
+const LEADERBOARD_LIST_TOP = DIALOG_PAPER_TOP;
+const LEADERBOARD_ROW_HEIGHT = PIXI_ROOT_RUN_GEOMETRY.settings.rowPitch;
+const LEADERBOARD_AVATAR_SIZE = 37;
+const LEADERBOARD_IDENTITY_X = 29;
+const LEADERBOARD_RANK_TO_IDENTITY_GAP = 4;
 const WORLD_CHAT_ROW_GAP = 3;
 const WORLD_CHAT_SCROLL_PADDING_TOP = 8;
 const WORLD_CHAT_CONTENT_INSET_X = 8;
@@ -300,6 +312,7 @@ export class WorkshopDialogPixi {
     this.sourceHeight = RETAINED_PAGE_GEOMETRY.height;
     this.isBagDialog = this.dialogId === 'workshop.bag';
     this.isStatsDialog = this.dialogId === 'workshop.stats';
+    this.isLeaderboardDialog = this.dialogId === 'workshop.leaderboard';
     this.isWorldChatDialog = this.dialogId === 'workshop.worldChat';
     this.isDiscoveriesDialog = this.dialogId === 'workshop.discoveries';
     this.isAllianceDialog = this.dialogId === 'workshop.alliance';
@@ -409,6 +422,9 @@ export class WorkshopDialogPixi {
       this.panel.setPaperVisible(false);
     }
     this.tabsLayer = new Container({ label: `${dialogId}-tabs` });
+    this.periodTabsLayer = this.isLeaderboardDialog
+      ? new Container({ label: `${dialogId}-period-tabs` })
+      : null;
     this.panel.content.addChild(
       ...(this.isAllianceDialog
         ? [this.allianceTradeSection.root, this.allianceMembersSection.root]
@@ -420,7 +436,10 @@ export class WorkshopDialogPixi {
       this.scroll.root,
       this.status,
     );
-    this.panel.addChild(this.tabsLayer);
+    this.panel.addChild(
+      ...(this.periodTabsLayer ? [this.periodTabsLayer] : []),
+      this.tabsLayer,
+    );
     this.composerField = null;
     this.composerSubmit = null;
     this.composerSubmitting = false;
@@ -463,7 +482,9 @@ export class WorkshopDialogPixi {
           ? new WorldChatMessageRowPixi({ dialog: this })
           : this.isDiscoveriesDialog
             ? new PotionDiscoveryRowPixi({ dialog: this })
-            : new WorkshopDialogRow({ dialog: this }),
+            : this.isLeaderboardDialog
+              ? new LeaderboardRowPixi({ dialog: this })
+              : new WorkshopDialogRow({ dialog: this }),
       reset: (row) => row.reset(),
       dispose: (row) => row.destroy(),
       maxSize: 30,
@@ -560,6 +581,32 @@ export class WorkshopDialogPixi {
       bind: (button, tab) => this.bindTab(button, tab),
       afterReconcile: (buttons) => this.orderTabs(buttons),
     });
+    this.periodTabPool = this.isLeaderboardDialog
+      ? new WidgetPool({
+          name: `${dialogId} period tab pool`,
+          counters,
+          create: () =>
+            new RetainedButton({
+              assetManager: this.assetManager,
+              buttonLabel: `${dialogId}-period-tab`,
+              inputRouter: this.inputRouter,
+              variant: 'tab',
+            }),
+          reset: (button) => button.setModel({ label: '', enabled: false }),
+          dispose: (button) => button.destroy(),
+          maxSize: 4,
+        })
+      : null;
+    this.periodTabs = this.periodTabPool
+      ? new PooledCollection({
+          name: `${dialogId} period tabs`,
+          pool: this.periodTabPool,
+          counters,
+          keyOf: (tab) => tab.id,
+          bind: (button, tab) => this.bindPeriodTab(button, tab),
+          afterReconcile: (buttons) => this.orderPeriodTabs(buttons),
+        })
+      : null;
     this.applyTheme(theme);
     this.layout({
       sourceWidth: this.sourceWidth,
@@ -621,8 +668,8 @@ export class WorkshopDialogPixi {
       this.tabsLayer.renderable = !this.ownedAllianceLayout;
     }
     this.bindComposer(this.viewModel.composer);
-    this.updateStatus();
     this.tabs.reconcile(normalizeRows(this.viewModel.tabs));
+    this.periodTabs?.reconcile(normalizeRows(this.viewModel.periodTabs));
     const nextRows =
       this.isAllianceDialog &&
       this.viewModel.directory === true &&
@@ -642,6 +689,10 @@ export class WorkshopDialogPixi {
         ? this.viewModel.tradeInfoRows
         : this.viewModel.rows,
     );
+    if (!this.boundStatus && rows.length === 0) {
+      this.boundStatus = this.viewModel.emptyLabel ?? '';
+    }
+    this.updateStatus();
     this.rows.reconcile(
       this.isWorldEventDialog && this.viewModel.rowWidget === 'worldEventQuest'
         ? rows.slice(0, WORLD_EVENT_MAX_QUEST_ROWS)
@@ -675,6 +726,19 @@ export class WorkshopDialogPixi {
     button.control.textLabel.setFontSize(PIXI_UI_GEOMETRY.borderLabelFontSize);
   }
 
+  bindPeriodTab(button, tab) {
+    button.applyTheme(this.contentTheme ?? this.theme);
+    button.setModel({
+      label: tab.label ?? tab.id,
+      selected:
+        tab.selected === true || tab.id === this.viewModel.selectedPeriodId,
+      enabled: tab.enabled !== false,
+      action: () =>
+        tab.onSelect?.(tab.id) ?? this.viewModel.onSelectPeriod?.(tab.id),
+    });
+    button.control.textLabel.setFontSize(PIXI_UI_GEOMETRY.borderLabelFontSize);
+  }
+
   orderRows(widgets) {
     if (this.ownedAllianceLayout) {
       this.orderOwnedAllianceTradeRows(widgets);
@@ -697,7 +761,9 @@ export class WorkshopDialogPixi {
         : this.isWorldEventDialog &&
             this.viewModel.rowWidget === 'worldEventQuest'
           ? WORLD_EVENT_SECTION_GAP
-          : 4;
+          : this.isLeaderboardDialog
+            ? 0
+            : 4;
     const preferredHeights = widgets.map((widget) =>
       widget.getPreferredHeight(),
     );
@@ -720,7 +786,9 @@ export class WorkshopDialogPixi {
           : this.isWorldEventDialog &&
               this.viewModel.rowWidget === 'worldEventQuest'
             ? this.scroll.width
-            : WORKSHOP_DIALOG_CONTENT_WIDTH,
+            : this.isLeaderboardDialog
+              ? this.leaderboardRowWidth ?? WORKSHOP_DIALOG_CONTENT_WIDTH
+              : WORKSHOP_DIALOG_CONTENT_WIDTH,
         rowHeight,
       );
       y += rowHeight + rowGap;
@@ -904,6 +972,16 @@ export class WorkshopDialogPixi {
     }
   }
 
+  orderPeriodTabs(buttons) {
+    if (!this.periodTabsLayer) {
+      return;
+    }
+    this.periodTabsLayer.removeChildren();
+    for (const button of buttons) {
+      this.periodTabsLayer.addChild(button.root);
+    }
+  }
+
   applyTheme(themeSnapshot) {
     this.theme = themeSnapshot ?? DEFAULT_PIXI_THEME_SNAPSHOT;
     this.modal.applyTheme(this.theme);
@@ -944,6 +1022,9 @@ export class WorkshopDialogPixi {
     }
 
     for (const button of this.tabs?.getWidgets?.() ?? []) {
+      button.applyTheme(contentTheme);
+    }
+    for (const button of this.periodTabs?.getWidgets?.() ?? []) {
       button.applyTheme(contentTheme);
     }
 
@@ -1009,19 +1090,31 @@ export class WorkshopDialogPixi {
     const tabsInShellFooter = tabs.length > 0;
     const composerHeight =
       this.composerField?.visible === true ? WORLD_CHAT_COMPOSER_HEIGHT : 0;
-    const height = this.isWorldChatDialog
-      ? Math.min(WORLD_CHAT_DIALOG_HEIGHT, this.sourceHeight - 80)
+    const baseHeight = this.isWorldChatDialog
+      ? WORLD_CHAT_DIALOG_HEIGHT
       : this.isWorldEventDialog
-        ? Math.min(486, this.sourceHeight - 118)
+        ? 486
         : this.isPersonalTasksDialog
-          ? Math.min(470, this.sourceHeight - 118)
-          : Math.min(382, this.sourceHeight - 80);
+          ? 470
+          : 382;
+    const viewportReserve = this.isWorldChatDialog ? 80 : 118;
+    const hasPrimaryVerticalScroll =
+      !this.isWorldEventDialog && !this.ownedAllianceLayout;
+    const height = hasPrimaryVerticalScroll
+      ? resolveAdaptiveDialogHeight({
+          viewportHeight: this.sourceHeight,
+          baseHeight,
+          minimumHeight: this.isWorldChatDialog ? 360 : 260,
+          maximumHeight: this.sourceHeight - viewportReserve,
+          hasPrimaryVerticalScroll: true,
+        })
+      : Math.min(baseHeight, this.sourceHeight - viewportReserve);
     const panelX = this.isWorldChatDialog
       ? frameOutset
       : (this.sourceWidth - width) / 2;
     const centeredPanelY = (this.sourceHeight - height) / 2;
     const keyboardShift = this.isWorldChatDialog
-      ? Math.min(0, (Number(viewportProjection?.dialogShift) || 0) * 2)
+      ? Math.min(0, Number(viewportProjection?.worldChatShift) || 0)
       : 0;
     const panelY = this.isWorldChatDialog
       ? Math.max(
@@ -1069,6 +1162,14 @@ export class WorkshopDialogPixi {
       );
       const defaultPaperBottom = height - DIALOG_PAPER_BOTTOM_INSET;
       shellFooterPaperReduction = Math.max(0, defaultPaperBottom - paperBottom);
+    }
+    if (this.isLeaderboardDialog) {
+      this.layoutLeaderboardDialog({
+        footerTabLayout,
+        height,
+        tabs,
+      });
+      return;
     }
     if (!tabsInShellFooter && this.isWorldChatDialog && composerHeight > 0) {
       const paperBottom = height - 52;
@@ -1165,6 +1266,108 @@ export class WorkshopDialogPixi {
         WORLD_CHAT_COMPOSER_SEND_HEIGHT,
       );
     }
+  }
+
+  layoutLeaderboardDialog({ footerTabLayout, height, tabs }) {
+    this.copy.visible = false;
+    this.copy.renderable = false;
+    this.headerHeadline.visible = false;
+    this.headerHeadline.renderable = false;
+    this.headerBody.visible = false;
+    this.headerBody.renderable = false;
+    this.headerMeta.visible = false;
+    this.headerMeta.renderable = false;
+
+    const periodTabs = this.periodTabs?.getWidgets?.() ?? [];
+    const basePeriodTabLayout = resolveDialogFooterTabLayout({
+      coreWidth: this.panel.coreWidth,
+      coreHeight: this.panel.coreHeight,
+      tabCount: periodTabs.length,
+    });
+    const periodRowY =
+      (footerTabLayout?.rowY ?? basePeriodTabLayout.rowY) -
+      PIXI_DIALOG_FOOTER_TABS_GEOMETRY.rowHeight -
+      LEADERBOARD_FOOTER_ROW_GAP;
+    const periodTabLayout = {
+      ...basePeriodTabLayout,
+      rowY: periodRowY,
+      paperBottom:
+        periodRowY - PIXI_DIALOG_FOOTER_TABS_GEOMETRY.paperGap,
+    };
+    const paperBottom = setDialogPaperAboveFooterTabs(
+      this.panel,
+      periodTabLayout,
+    );
+    this.periodTabsLayer.position.set(
+      periodTabLayout.rowX,
+      periodTabLayout.rowY,
+    );
+    this.periodTabsLayer.visible = periodTabs.length > 0;
+    this.periodTabsLayer.renderable = this.periodTabsLayer.visible;
+    const alignPeriodPairsToScopeTabs =
+      periodTabs.length === 4 && tabs.length === 2 && footerTabLayout;
+    const periodPairWidth = alignPeriodPairsToScopeTabs
+      ? footerTabLayout.tabWidth
+      : 0;
+    const periodTabWidth = alignPeriodPairsToScopeTabs
+      ? (periodPairWidth - periodTabLayout.gap) / 2
+      : periodTabLayout.tabWidth;
+    periodTabs.forEach((button, index) => {
+      const pairIndex = Math.floor(index / 2);
+      const indexInPair = index % 2;
+      const buttonX = alignPeriodPairsToScopeTabs
+        ? pairIndex * (periodPairWidth + footerTabLayout.gap) +
+          indexInPair * (periodTabWidth + periodTabLayout.gap)
+        : index * (periodTabLayout.tabWidth + periodTabLayout.gap);
+      button.setBounds(
+        buttonX,
+        0,
+        periodTabWidth,
+        PIXI_DIALOG_FOOTER_TABS_GEOMETRY.rowHeight,
+      );
+    });
+
+    const listLayout = resolveRetainedDialogListLayout({
+      bodyWidth: WORKSHOP_DIALOG_CONTENT_WIDTH,
+      paperRight:
+        WORKSHOP_DIALOG_CONTENT_WIDTH +
+        PIXI_UI_GEOMETRY.dialogPadding +
+        14 / 3,
+      rowFrameWidth: RETAINED_DIALOG_LIST_GEOMETRY.rowFrameWidth,
+    });
+    const statusHeight = this.status.text ? 18 : 0;
+    this.leaderboardRowWidth = listLayout.rowWidth;
+    this.scroll.setBounds(
+      20 + listLayout.x,
+      LEADERBOARD_LIST_TOP,
+      listLayout.viewportWidth,
+      Math.max(
+        LEADERBOARD_ROW_HEIGHT,
+        paperBottom - LEADERBOARD_LIST_TOP - 7 - statusHeight,
+      ),
+    );
+    this.orderRows(this.rows.getWidgets());
+
+    this.status.position.set(
+      28,
+      LEADERBOARD_LIST_TOP + Math.max(16, (this.scroll.height - statusHeight) / 2),
+    );
+    this.tabsLayer.position.set(
+      footerTabLayout?.rowX ?? 152,
+      footerTabLayout?.rowY ?? height,
+    );
+    this.tabsLayer.visible = tabs.length > 0;
+    this.tabsLayer.renderable = this.tabsLayer.visible;
+    const gap = footerTabLayout?.gap ?? 0;
+    const tabWidth = footerTabLayout?.tabWidth ?? 0;
+    tabs.forEach((button, index) => {
+      button.setBounds(
+        index * (tabWidth + gap),
+        0,
+        tabWidth,
+        PIXI_DIALOG_FOOTER_TABS_GEOMETRY.rowHeight,
+      );
+    });
   }
 
   layoutPersonalTasksDialog({ width, height, tabs, footerTabLayout }) {
@@ -1484,6 +1687,10 @@ export class WorkshopDialogPixi {
     this.worldEventRowPool = null;
     this.tabs.destroy();
     this.tabPool.destroy();
+    this.periodTabs?.destroy();
+    this.periodTabPool?.destroy();
+    this.periodTabs = null;
+    this.periodTabPool = null;
     this.allianceMembersSection?.scroll.destroy();
     this.scroll.destroy();
     this.modal.destroy();
@@ -2128,6 +2335,7 @@ export class WorldChatMessageRowPixi {
     this.model = model ?? {};
     this.root.visible = true;
     this.isSystem = this.model.type === 'system';
+    this.isOwn = !this.isSystem && this.model.isOwn === true;
     const tag = normalizeWorldChatTag(this.model.allianceTag);
     setText(this.tag, tag ? `[${tag}]` : '');
     setText(
@@ -2192,26 +2400,43 @@ export class WorldChatMessageRowPixi {
       .roundRect(0, 0, width, height, 5)
       .fill(WORLD_CHAT_SYSTEM_BACKGROUND);
     this.avatar.position.set(
-      WORLD_CHAT_AVATAR_SIZE / 2,
+      this.isOwn
+        ? width - WORLD_CHAT_AVATAR_SIZE / 2
+        : WORLD_CHAT_AVATAR_SIZE / 2,
       WORLD_CHAT_AVATAR_SIZE / 2 + WORLD_CHAT_ROW_HEIGHT_SCALE,
     );
     this.avatar.width = WORLD_CHAT_AVATAR_SIZE;
     this.avatar.height = WORLD_CHAT_AVATAR_SIZE;
-    this.tag.position.set(contentX, WORLD_CHAT_HEADER_TOP);
+    const headerWidth =
+      (this.tag.visible ? this.tag.width + 2 : 0) + this.username.width;
+    const headerX = this.isOwn
+      ? Math.max(0, width - WORLD_CHAT_TEXT_X - headerWidth)
+      : contentX;
+    this.tag.position.set(headerX, WORLD_CHAT_HEADER_TOP);
     this.username.position.set(
-      contentX + (this.tag.visible ? this.tag.width + 2 : 0),
+      headerX + (this.tag.visible ? this.tag.width + 2 : 0),
       WORLD_CHAT_HEADER_TOP,
     );
+    this.timestamp.anchor.set(this.isOwn ? 0 : 1, 0);
     this.timestamp.position.set(
-      width - timestampInset,
+      this.isOwn ? 0 : width - timestampInset,
       WORLD_CHAT_ROW_HEIGHT_SCALE,
     );
     this.systemPlayerUsername.position.set(contentX, WORLD_CHAT_BODY_TOP);
     const bodyX = this.systemPlayerUsername.visible
       ? contentX + this.systemPlayerUsername.width + 2
       : contentX;
-    this.body.position.set(bodyX, WORLD_CHAT_BODY_TOP);
-    this.body.setWrapWidth(Math.max(0, width - bodyX));
+    const bodyWrapWidth = Math.max(
+      0,
+      this.isOwn ? width - WORLD_CHAT_TEXT_X : width - bodyX,
+    );
+    this.body.setWrapWidth(bodyWrapWidth);
+    this.body.position.set(
+      this.isOwn
+        ? Math.max(0, width - WORLD_CHAT_TEXT_X - this.body.layoutWidth)
+        : bodyX,
+      WORLD_CHAT_BODY_TOP,
+    );
     this.avatar.hitArea = new Rectangle(
       -WORLD_CHAT_AVATAR_SIZE / 2,
       -WORLD_CHAT_AVATAR_SIZE / 2,
@@ -2355,6 +2580,7 @@ export class WorldChatMessageRowPixi {
     this.targetId = null;
     this.model = null;
     this.isSystem = false;
+    this.isOwn = false;
     this.avatar.texture = Texture.EMPTY;
     this.body.setRuns([]);
     setText(this.systemPlayerUsername, '');
@@ -3278,6 +3504,251 @@ export class PotionDiscoveryRowPixi {
   }
 }
 
+/**
+ * Image-backed leaderboard identity row shared by player and alliance scopes.
+ * The complete row is the profile/details action; no repeated Open button is
+ * needed, and the right column remains reserved for the selected coin total.
+ */
+export class LeaderboardRowPixi extends ClickableWidget {
+  constructor({ dialog }) {
+    super({
+      enabled: false,
+      inputRouter: dialog.inputRouter,
+      label: `${dialog.dialogId}-leaderboard-row`,
+      pressScale: 0.98,
+    });
+    this.dialog = dialog;
+    this.model = {};
+    this.targetId = null;
+    this.visual = new Container({ label: `${this.root.label}:visual` });
+    this.setClickableVisual(this.visual);
+    this.background = new PixiNineSliceFrame({
+      texture:
+        dialog.assetManager?.getTexture?.(PIXI_ROOT_RUN_ASSETS.settingsRow) ??
+        Texture.EMPTY,
+      sourceInsets: PIXI_ROOT_RUN_GEOMETRY.settings.rowSourceInsets,
+      borderInsets: PIXI_ROOT_RUN_GEOMETRY.settings.rowBorderInsets,
+      label: `${this.root.label}:background`,
+    });
+    this.currentOutline = new Graphics({ label: `${this.root.label}:current` });
+    this.rank = createText('', RETAINED_TEXT_STYLES.bold);
+    this.rank.anchor.set(1, 0);
+    this.avatarWidget = new PlayerProfileWidget({
+      assets: dialog.assetManager,
+      texture: Texture.EMPTY,
+      label: `${this.root.label}:profile`,
+    });
+    this.allianceIcon = new Sprite(Texture.EMPTY);
+    this.allianceIcon.label = `${this.root.label}:alliance-icon`;
+    this.allianceIcon.anchor.set(0.5);
+    this.tag = createText('', {
+      ...RETAINED_TEXT_STYLES.border,
+      fontWeight: '700',
+    });
+    this.name = createText('', RETAINED_TEXT_STYLES.bold);
+    this.level = createText('', RETAINED_TEXT_STYLES.border);
+    this.prestigeStars = new PixiStarLevelLabel({
+      assetManager: dialog.assetManager,
+      size: 8,
+      gap: 0,
+      label: `${this.root.label}:prestige-stars`,
+    });
+    this.detail = createText('', RETAINED_TEXT_STYLES.border);
+    this.total = new PixiResourceLabel({
+      assetManager: dialog.assetManager,
+      resource: 'coin',
+      includeResourceName: false,
+      fontSize: PIXI_UI_GEOMETRY.bodyFontSize,
+      fontWeight: 'bold',
+      label: `${this.root.label}:total`,
+    });
+    this.visual.addChild(
+      this.background,
+      this.currentOutline,
+      this.rank,
+      this.avatarWidget,
+      this.allianceIcon,
+      this.tag,
+      this.name,
+      this.level,
+      this.prestigeStars,
+      this.detail,
+      this.total,
+    );
+    this.root.addChild(this.visual);
+  }
+
+  bind(model) {
+    this.unregisterTarget();
+    this.model = model ?? {};
+    const player = this.model.type !== 'leaderboardAlliance';
+    this.root.visible = true;
+    this.root.renderable = true;
+    setText(this.rank, `${Math.max(1, Math.floor(Number(this.model.rank) || 1))}.`);
+    setText(this.tag, normalizeWorldChatTag(this.model.allianceTag)
+      ? `[${normalizeWorldChatTag(this.model.allianceTag)}]`
+      : '');
+    setText(
+      this.name,
+      player ? this.model.username ?? 'Wizard' : this.model.name ?? 'Alliance',
+    );
+    setText(this.level, player ? `Lv ${Math.max(1, Number(this.model.playerLevel) || 1)}` : '');
+    const prestigeCount = Math.max(0, Math.floor(Number(this.model.prestigeCount) || 0));
+    this.prestigeStars.setLevel(prestigeCount);
+    setText(
+      this.detail,
+      player
+        ? this.model.current === true
+          ? 'Your Rank'
+          : ''
+        : this.model.memberCount > 0
+          ? `${this.model.memberCount} Members`
+          : 'Trade Alliance',
+    );
+    this.avatarWidget.visible = player;
+    this.avatarWidget.renderable = player;
+    if (player) {
+      this.avatarWidget
+        .setTexture(
+          resolveCharacterTexture(this.dialog.assetManager, this.model.character),
+        )
+        .setBackgroundTint(getPlayerFrameTint(this.model.frame));
+    }
+    this.allianceIcon.texture =
+      this.dialog.assetManager?.getTexture?.(
+        'source:assets/icons/icon-side-alliance-root-run.png',
+      ) ?? Texture.EMPTY;
+    this.allianceIcon.visible = !player && this.allianceIcon.texture !== Texture.EMPTY;
+    this.allianceIcon.renderable = this.allianceIcon.visible;
+    this.prestigeStars.visible = player && prestigeCount > 0;
+    this.prestigeStars.renderable = this.prestigeStars.visible;
+    this.total.bind(this.model.id, {
+      amount: this.model.totalCoinLabel ?? '0',
+      includeResourceName: false,
+      resource: 'coin',
+    });
+    this.setClickableState({
+      enabled: typeof this.model.onActivate === 'function',
+      action: () => this.model.onActivate?.(this.model),
+    });
+    this.targetId = this.model.semanticId ?? null;
+    if (this.targetId) {
+      this.dialog.registerTarget({
+        semanticId: this.targetId,
+        displayObject: this.root,
+        state: () => ({
+          enabled: this.enabled,
+          interactive: Boolean(this.action),
+        }),
+        activate: () => this.model.onActivate?.(this.model) ?? false,
+      });
+    }
+    this.applyTheme(this.dialog.contentTheme ?? this.dialog.theme);
+  }
+
+  setBounds(x, y, width, height = LEADERBOARD_ROW_HEIGHT) {
+    this.root.position.set(x, y);
+    const rowGap = PIXI_ROOT_RUN_GEOMETRY.settings.rowGap;
+    const backgroundWidth = Math.max(0, width - rowGap);
+    const backgroundHeight = Math.max(0, height - rowGap);
+    this.visual.pivot.set(width / 2, height / 2);
+    this.visual.position.set(width / 2, height / 2);
+    this.background.position.set(0, rowGap / 2);
+    this.background.setSize(
+      backgroundWidth,
+      backgroundHeight,
+      PIXI_ROOT_RUN_GEOMETRY.settings.rowBorderInsets,
+    );
+    this.currentOutline
+      .clear()
+      .roundRect(1, rowGap / 2 + 1, backgroundWidth - 2, backgroundHeight - 2, 5)
+      .stroke({ color: this.dialog.contentTheme?.accent ?? '#a864d9', width: 1.5, alpha: this.model.current ? 0.9 : 0 });
+    const identityX = LEADERBOARD_IDENTITY_X;
+    this.rank.position.set(
+      identityX - LEADERBOARD_RANK_TO_IDENTITY_GAP,
+      17,
+    );
+    const avatarScale = LEADERBOARD_AVATAR_SIZE / 186;
+    this.avatarWidget.scale.set(avatarScale);
+    this.avatarWidget.position.set(identityX, (height - LEADERBOARD_AVATAR_SIZE) / 2);
+    this.allianceIcon.position.set(identityX + LEADERBOARD_AVATAR_SIZE / 2, height / 2);
+    this.allianceIcon.width = LEADERBOARD_AVATAR_SIZE - 2;
+    this.allianceIcon.height = LEADERBOARD_AVATAR_SIZE - 2;
+    const textX = identityX + LEADERBOARD_AVATAR_SIZE + 5;
+    this.tag.position.set(textX, 7);
+    this.name.position.set(textX + (this.tag.text ? this.tag.width + 3 : 0), 6);
+    const totalRight = backgroundWidth - 8;
+    this.total.position.set(totalRight - this.total.measuredWidth, 17);
+    const maxNameRight = Math.max(textX + 24, this.total.x - 7);
+    fitLeaderboardText(this.name, maxNameRight - this.name.x);
+    this.level.position.set(textX, 27);
+    const prestigeX = textX + this.level.width + 6;
+    this.prestigeStars.position.set(prestigeX, 30);
+    this.detail.position.set(
+      this.prestigeStars.visible
+        ? prestigeX + this.prestigeStars.measuredWidth + 5
+        : textX + this.level.width + 7,
+      27,
+    );
+    this.root.hitArea = new Rectangle(0, 0, backgroundWidth, height);
+  }
+
+  getPreferredHeight() {
+    return LEADERBOARD_ROW_HEIGHT;
+  }
+
+  applyTheme(theme) {
+    const resolvedTheme = theme ?? DEFAULT_PIXI_THEME_SNAPSHOT;
+    applyTextTheme(this.rank, resolvedTheme, {
+      ...RETAINED_TEXT_STYLES.bold,
+      fill: resolvedTheme.text,
+    });
+    applyTextTheme(this.tag, resolvedTheme, {
+      ...RETAINED_TEXT_STYLES.border,
+      fontWeight: '700',
+      fill:
+        WORLD_CHAT_TAG_COLORS[
+          normalizeWorldChatTagColor(this.model.allianceTagColor)
+        ] ?? WORLD_CHAT_TAG_COLORS.ink,
+    });
+    applyTextTheme(this.name, resolvedTheme, {
+      ...RETAINED_TEXT_STYLES.bold,
+      fill: resolvedTheme.text,
+    });
+    applyTextTheme(this.level, resolvedTheme, {
+      ...RETAINED_TEXT_STYLES.border,
+      fill: resolvedTheme.muted,
+    });
+    applyTextTheme(this.detail, resolvedTheme, {
+      ...RETAINED_TEXT_STYLES.border,
+      fill: this.model.current ? resolvedTheme.accent : resolvedTheme.muted,
+    });
+    this.total.applyTheme(resolvedTheme);
+  }
+
+  reset() {
+    this.unregisterTarget();
+    this.model = {};
+    this.root.visible = false;
+    this.root.renderable = false;
+    this.avatarWidget.setTexture(Texture.EMPTY);
+    this.prestigeStars.reset();
+    this.resetClickableState();
+  }
+
+  unregisterTarget() {
+    if (this.targetId) {
+      this.dialog.unregisterTarget(this.targetId);
+    }
+    this.targetId = null;
+  }
+
+  destroy() {
+    this.unregisterTarget();
+    super.destroy({ children: true });
+  }
+}
+
 export class WorkshopDialogRow {
   constructor({ dialog }) {
     this.dialog = dialog;
@@ -3683,6 +4154,14 @@ function normalizeWorldChatTagColor(color) {
     .trim()
     .toLowerCase();
   return normalized in WORLD_CHAT_TAG_COLORS ? normalized : 'ink';
+}
+
+function fitLeaderboardText(text, maxWidth) {
+  text.scale.set(1);
+  const width = Math.max(0, Number(maxWidth) || 0);
+  if (width > 0 && text.width > width) {
+    text.scale.set(Math.max(0.72, width / text.width));
+  }
 }
 
 function disposeInputRegistration(registration) {

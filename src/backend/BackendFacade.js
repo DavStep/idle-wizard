@@ -204,7 +204,7 @@ export class BackendFacade {
 
         this.leaderboardFacade.connect(connection, identity);
         this.worldEventLeaderboardFacade.connect(connection, identity);
-        this.worldChatFacade.connect(connection);
+        this.worldChatFacade.connect(connection, identity);
         this.feedbackFacade.connect(connection);
         this.npcMarketFacade.connect(connection);
         this.playerInfoFacade.connect(connection);

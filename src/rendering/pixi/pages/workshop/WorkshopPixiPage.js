@@ -25,7 +25,11 @@ import {
   PIXI_ROOT_RUN_GEOMETRY,
   PIXI_UI_GEOMETRY,
 } from '../../theme/PixiThemeTokens.js';
-import { ShopDialogPixi, WORKSHOP_SUMMON_INFO_DIALOG_ID } from '../shop/ShopDialogPixi.js';
+import {
+  ShopDialogPixi,
+  WORKSHOP_SUMMON_INFO_DIALOG_ID,
+  WORKSHOP_WORLD_EVENT_DONATE_DIALOG_ID,
+} from '../shop/ShopDialogPixi.js';
 import {
   BaseRetainedPixiPage,
   RETAINED_PAGE_GEOMETRY,
@@ -129,10 +133,10 @@ const WORKSHOP_FEATURE_PRESENTATIONS = Object.freeze({
 });
 
 const SUMMON_EFFECT_DURATION_MS = 520;
-const SUMMON_BUTTON_WIDTH = 92;
+const SUMMON_BUTTON_WIDTH = 120;
 const SUMMON_BUTTON_HEIGHT = 52;
 const SUMMON_BUTTON_UP_OFFSET = 4;
-const SUMMON_CHAT_GAP = 32;
+const SUMMON_CHAT_GAP = 128;
 export const WORKSHOP_WINDOW_ASSET_ID =
   'source:assets/rooms/workshop/workshop-window.png';
 export const WORKSHOP_WINDOW_GEOMETRY = Object.freeze({
@@ -368,7 +372,8 @@ export class WorkshopPixiPage extends BaseRetainedPixiPage {
       }
 
       this.dialogRegistry.register(dialogId, () =>
-        dialogId === WORKSHOP_SUMMON_INFO_DIALOG_ID
+        dialogId === WORKSHOP_SUMMON_INFO_DIALOG_ID ||
+        dialogId === WORKSHOP_WORLD_EVENT_DONATE_DIALOG_ID
           ? new ShopDialogPixi({
               dialogId,
               parent: this.dialogLayer,
@@ -1774,8 +1779,8 @@ export class WorkshopSummonControl {
       bounds: {
         x: 0,
         y: 0,
-        width: 92,
-        height: 52,
+        width: SUMMON_BUTTON_WIDTH,
+        height: SUMMON_BUTTON_HEIGHT,
       },
     });
     this.applyTheme(this.page.theme);
@@ -1843,10 +1848,25 @@ export class WorkshopSummonControl {
     if (!this.pressEnabled) {
       return false;
     }
-    const result = this.actions?.summon?.();
+    this.playSummonEffect();
+    let result;
+    try {
+      result = this.actions?.summon?.();
+    } catch (error) {
+      this.stopSummonEffect();
+      this.setCircleEffectFrame({
+        alpha: this.enabled ? 1 : 0.38,
+        scale: 1,
+      });
+      throw error;
+    }
     const succeeded = result !== false && result?.ok !== false;
-    if (succeeded) {
-      this.playSummonEffect();
+    if (!succeeded) {
+      this.stopSummonEffect();
+      this.setCircleEffectFrame({
+        alpha: this.enabled ? 1 : 0.38,
+        scale: 1,
+      });
     }
     return succeeded;
   }

@@ -484,7 +484,7 @@ export class PixiSettingsDialog extends RetainedGlobalDialog {
       label: `${this.dialogId}:accountConnectionLabel`,
     });
     this.accountStatus = new PixiTextLabel({
-      text: 'not connected',
+      text: 'Not Connected',
       fontSize: 12,
       color: 'muted',
       anchor: { x: 0.5, y: 0 },
@@ -495,7 +495,7 @@ export class PixiSettingsDialog extends RetainedGlobalDialog {
       inputRouter: this.context.inputRouter,
       semanticRegistry: this.context.semanticRegistry,
       semanticId: `${this.dialogId}.account.connect`,
-      text: 'connect account',
+      text: 'Connect Account',
       width: DEVICE_ACCOUNT_BUTTON_WIDTH,
       height: DEVICE_ACCOUNT_BUTTON_HEIGHT,
       variant: 'yellow',
@@ -1325,9 +1325,9 @@ function normalizeSettingsModel(
         settings.usernamePromptMode === true,
       status: String(account.status ?? account.usernameError ?? ''),
       accountStatus: String(
-        account.accountStatus ?? account.authStatus ?? 'not connected',
+        account.accountStatus ?? account.authStatus ?? 'Not Connected',
       ),
-      connectLabel: String(account.connectLabel ?? 'connect account'),
+      connectLabel: String(account.connectLabel ?? 'Connect Account'),
       connectEnabled:
         account.connectEnabled !== false && account.loginAvailable !== false,
       version: String(

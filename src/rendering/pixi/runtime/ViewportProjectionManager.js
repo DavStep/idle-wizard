@@ -49,8 +49,10 @@ export class ViewportProjectionManager {
     const authoredOffsetX = (stageLogicalWidth - this.viewport.width) / 2;
     const uiScale = fitScale * this.sourceUiScale;
     const normalizedKeyboardInset = Math.max(0, Number(keyboardInset) || 0);
-    const dialogShift = uiScale > 0
-      ? roundSource(-normalizedKeyboardInset / uiScale / 2)
+    // The keyboard overlays the unchanged stage. World Chat alone owns an
+    // inset translation so unrelated dialogs and room chrome never move.
+    const worldChatShift = uiScale > 0
+      ? roundSource(-normalizedKeyboardInset / uiScale)
       : 0;
     const projection = Object.freeze({
       viewportPx: Object.freeze({ ...layout }),
@@ -75,8 +77,9 @@ export class ViewportProjectionManager {
         Math.min(layout.height, Number(visibleHeight) || 0),
       ),
       keyboardInset: normalizedKeyboardInset,
-      dialogShift,
-      topDialogShift: Math.max(dialogShift, -56),
+      dialogShift: 0,
+      topDialogShift: 0,
+      worldChatShift,
       safeInsets: Object.freeze({
         top: Math.max(0, Number(safeInsets.top) || 0),
         right: Math.max(0, Number(safeInsets.right) || 0),

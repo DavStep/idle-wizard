@@ -69,6 +69,7 @@ experience_type: style
 - Fresh-start account gates need viewport-fixed positioning; stage-clipped absolute dialogs can be cut off on short desktop web viewports.
 - Mobile keyboard resize must not recompute scale from the shrunken visual height while text input is focused or while the keyboard is closing after focus leaves.
 - Text-entry viewport locks should start on press; some mobile WebViews resize for the keyboard before `focusin`.
+- Native keyboard inset translation belongs only to the open World Chat panel; the stage, room chrome, and every other dialog keep their resting geometry.
 - Text-entry focus should use `preventScroll` so mobile browsers do not pan the game surface.
 - Text-entry dialogs should sit high enough that the mobile keyboard does not cover save/cancel actions.
 - Text-entry dialog save buttons should save on `pointerdown` so keyboard blur cannot move the scaled layout before click submit.
@@ -246,6 +247,7 @@ experience_type: style
 - Scrollbars belong to the actual scrolling element. Do not append horizontal progress rails, bottom fades, or reserved bottom-rail gaps.
 - Shared scrollbar styling must not override positioned room containers; absolute content panels must keep their authored top/right/bottom/left insets.
 - Dialog scroll panes keep normal dialog padding and their full content height; fixed tabs and actions remain outside the viewport.
+- Primary dialog scroll viewports absorb the logical height difference from the authored `844px` surface within safe bounds; fixed-content dialogs and deliberately compact nested scroll regions keep their authored height.
 - Dialog scroll top-inset changes must update both the DOM scroll viewport and retained Pixi row origin; CSS padding alone does not move the production retained render.
 - Room-background changes must update both the DOM room material and retained Pixi background renderer; production Pixi does not read page CSS. Night stays on the unchanged solid `#17191f` surface. Day uses the exact `#e8bc8c` base under one deterministic low-contrast warm paper-fiber treatment. Keep the fitted `.game-stage` frameless; do not introduce room-specific material variants or let the texture change layout or focal hierarchy.
 - Custom non-scroll popups that reuse `.guild-page__popup-content` must suppress the inherited scrollbar and reserve explicit slots only for their real progress rails or action buttons.
@@ -274,6 +276,7 @@ experience_type: style
 - Snapshot-derived UI managers should treat startup snapshots as nullable; backend/player-shop subscriptions can publish before gameplay emits.
 - Gameplay state `subscribe` is passive; managers that diff state must seed their baseline from `gameplayFacade.getSnapshot()` on mount.
 - World chat compact chrome uses the shared room-panel skin and one full-surface press target: the title, preview rows (including the centered empty state), padding, and frame all open the dialog through the shared confirmed press, haptic, and release-feedback path.
+- Full World Chat mirrors rows sent by the connected identity to the right; keep the two-row compact preview left-aligned, and never infer ownership from the mutable display name.
 - World chat system rows keep their original parchment surface. Use a darker brown for the `System` title and a subtly lighter brown than body copy for the announced-player name; make only the announced player name interactive.
 - Successful world/alliance chat sends should render a local sent row until the matching subscription row arrives; reducer success can precede the table/view echo.
 - Compact world chat preview height is exactly two source rows, and room content clearance must use the same source-line variables; otherwise lower room content can overlap it.

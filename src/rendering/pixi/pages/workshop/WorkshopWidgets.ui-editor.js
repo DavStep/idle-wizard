@@ -6,6 +6,7 @@ import { DEFAULT_PIXI_THEME_SNAPSHOT, PIXI_ROOT_RUN_ASSETS } from '../../theme/P
 import {
   AllianceDirectoryRow,
   AllianceMemberRow,
+  LeaderboardRowPixi,
   PotionDiscoveryRowPixi,
   WorkshopDialogRow,
   WorldEventDonationOptionRow,
@@ -29,6 +30,7 @@ export default [
   widget('compound.world-event-donation-option-row', 'World Event Donation Option Row', ['cost-button'], donationOptionControl, variants(['available', 'unavailable', 'seed-pack'])),
   widget('compound.alliance-directory-row', 'Alliance Directory Row', ['compound.alliance-member-row', 'primitive.managed-scroll-area', 'text-button'], allianceDirectoryControl, variants(['collapsed', 'expanded', 'full'])),
   widget('compound.alliance-member-row', 'Alliance Member Row', ['text-button'], allianceMemberControl, variants(['leader', 'member', 'passive'])),
+  widget('compound.leaderboard-row', 'Leaderboard Row', ['compound.player-profile', 'primitive.star-level-label', 'primitive.resource-label'], leaderboardRowControl, variants(['player', 'current-player', 'alliance'])),
   widget('compound.potion-discovery-row', 'Potion Discovery Row', [], potionDiscoveryControl, variants(['discovered', 'undiscovered', 'long-recipe'])),
   widget('compound.workshop-dialog-row', 'Workshop Dialog Row', ['text-button', 'primitive.inline-text'], dialogRowControl, variants(['value', 'resource', 'action', 'locked'])),
 ];
@@ -73,6 +75,7 @@ function productionClass(id) {
     'compound.world-event-donation-option-row': 'WorldEventDonationOptionRow',
     'compound.alliance-directory-row': 'AllianceDirectoryRow',
     'compound.alliance-member-row': 'AllianceMemberRow',
+    'compound.leaderboard-row': 'LeaderboardRowPixi',
     'compound.potion-discovery-row': 'PotionDiscoveryRowPixi',
     'compound.workshop-dialog-row': 'WorkshopDialogRow',
   })[id];
@@ -164,6 +167,42 @@ function allianceMemberControl({ assets, input, fixture = { state: 'leader' }, c
   control.bind({ username: 'Elara', character: 'elara', roleLabel: fixture.state === 'leader' ? 'Trade Master' : 'Trader', levelLabel: 'Lv 12', onActivate: fixture.state === 'passive' ? null : () => context?.emit('memberOpened') ?? true });
   control.setBounds(0, 0, 236, 40);
   return wrap(control, 236, 40);
+}
+
+function leaderboardRowControl({ assets, input, fixture = { state: 'player' }, context }) {
+  const control = new LeaderboardRowPixi({ dialog: dialogStub(assets, input) });
+  const alliance = fixture.state === 'alliance';
+  control.bind(
+    alliance
+      ? {
+          id: 'night-owls',
+          type: 'leaderboardAlliance',
+          rank: 2,
+          name: 'Night Owls',
+          allianceTag: 'OWL',
+          allianceTagColor: 'violet',
+          memberCount: 34,
+          totalCoinLabel: '707k',
+          onActivate: () => context?.emit('allianceOpened') ?? true,
+        }
+      : {
+          id: 'elara',
+          type: 'leaderboardPlayer',
+          rank: fixture.state === 'current-player' ? 34 : 1,
+          username: fixture.state === 'current-player' ? 'StepWizzard' : 'Elara',
+          allianceTag: 'OWL',
+          allianceTagColor: 'violet',
+          character: 'elara',
+          frame: fixture.state === 'current-player' ? 'emerald' : 'sun',
+          playerLevel: 48,
+          prestigeCount: 3,
+          current: fixture.state === 'current-player',
+          totalCoinLabel: fixture.state === 'current-player' ? '57.8k' : '13.9m',
+          onActivate: () => context?.emit('playerOpened') ?? true,
+        },
+  );
+  control.setBounds(0, 0, 258, 50);
+  return wrap(control, 258, 50);
 }
 
 function allianceDirectoryControl({ assets, input, fixture = { state: 'collapsed' }, context }) {

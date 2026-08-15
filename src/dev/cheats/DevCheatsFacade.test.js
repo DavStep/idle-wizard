@@ -715,11 +715,15 @@ describe('DevCheatsFacade', () => {
     const potionDiscoveryFacade = {
       setDevSnapshot: vi.fn((snapshot) => ({ ok: true, snapshot })),
     };
+    const tradeAllianceFacade = {
+      setDevSnapshot: vi.fn((snapshot) => ({ ok: true, snapshot })),
+    };
     const backendFacade = {
       getLeaderboardFacade: () => leaderboardFacade,
       getWorldEventLeaderboardFacade: () => worldEventLeaderboardFacade,
       getPlayerShopFacade: () => playerShopFacade,
       getPotionDiscoveryFacade: () => potionDiscoveryFacade,
+      getTradeAllianceFacade: () => tradeAllianceFacade,
     };
     const pagesFacade = {
       openDialog: vi.fn((dialogId, options) => ({ ok: true, dialogId, options })),
@@ -975,6 +979,20 @@ describe('DevCheatsFacade', () => {
       }),
     );
     expect(pagesFacade.openDialog).toHaveBeenLastCalledWith('discoveries', {});
+
+    expect(target.cheats.openUi('leaderboard')).toMatchObject({
+      ok: true,
+      surfaceId: 'leaderboard',
+    });
+    expect(leaderboardFacade.setDevSnapshot).toHaveBeenCalled();
+    expect(tradeAllianceFacade.setDevSnapshot).toHaveBeenCalledWith(
+      expect.objectContaining({
+        topAllTimeAlliances: expect.arrayContaining([
+          expect.objectContaining({ name: 'Night Owls' }),
+        ]),
+      }),
+    );
+    expect(pagesFacade.openDialog).toHaveBeenLastCalledWith('leaderboard', {});
 
     expect(target.cheats.setStressText()).toMatchObject({
       ok: true,

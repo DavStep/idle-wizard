@@ -72,6 +72,12 @@ const WORKSHOP_BAG_TAB_IDS = new Set([
 ]);
 const WORKSHOP_STATS_TAB_IDS = new Set(["seeds", "herbs", "potions", "coin"]);
 const WORKSHOP_LEADERBOARD_TAB_IDS = new Set(["singlePlayer", "alliance"]);
+const WORKSHOP_LEADERBOARD_PERIOD_IDS = new Set([
+  "daily",
+  "weekly",
+  "monthly",
+  "allTime",
+]);
 const WORKSHOP_PERSONAL_TASK_TAB_IDS = new Set(["tasks", "rewards"]);
 const WORKSHOP_WORLD_EVENT_TAB_IDS = new Set([
   "tasks",
@@ -101,7 +107,7 @@ export class PixiPagesFacade {
     worldEventLeaderboardFacade = null,
     worldChatFacade = null,
     feedbackFacade = null,
-    gardenHarvestSoundFacade = null,
+    gardenSoundFacade = null,
     playerInboxFacade = null,
     playerInfoFacade = null,
     playerShopFacade = null,
@@ -133,7 +139,7 @@ export class PixiPagesFacade {
     this.worldEventLeaderboardFacade = worldEventLeaderboardFacade;
     this.worldChatFacade = worldChatFacade;
     this.feedbackFacade = feedbackFacade;
-    this.gardenHarvestSoundFacade = gardenHarvestSoundFacade;
+    this.gardenSoundFacade = gardenSoundFacade;
     this.playerInboxFacade = playerInboxFacade;
     this.playerInfoFacade = playerInfoFacade;
     this.playerShopFacade = playerShopFacade;
@@ -177,6 +183,7 @@ export class PixiPagesFacade {
     this.workshopBagTabId = "currencies";
     this.workshopStatsTabId = "seeds";
     this.workshopLeaderboardTabId = "singlePlayer";
+    this.workshopLeaderboardPeriodId = "allTime";
     this.workshopPersonalTasksTabId = "tasks";
     this.workshopWorldEventTabId = "tasks";
     this.workshopAllianceExpandedId = null;
@@ -633,6 +640,7 @@ export class PixiPagesFacade {
             statsTabId: this.workshopStatsTabId,
             allianceExpandedId: this.workshopAllianceExpandedId,
             leaderboardTabId: this.workshopLeaderboardTabId,
+            leaderboardPeriodId: this.workshopLeaderboardPeriodId,
             personalTasksTabId: this.workshopPersonalTasksTabId,
             worldEventTabId: this.workshopWorldEventTabId,
             worldEventDonation: this.worldEventDonationDraft,
@@ -910,6 +918,15 @@ export class PixiPagesFacade {
             tabId,
             WORKSHOP_LEADERBOARD_TAB_IDS,
             "singlePlayer",
+          );
+          this.refreshPage("workshop");
+          return true;
+        },
+        selectLeaderboardPeriod: (periodId) => {
+          this.workshopLeaderboardPeriodId = normalizeWorkshopTabId(
+            periodId,
+            WORKSHOP_LEADERBOARD_PERIOD_IDS,
+            "allTime",
           );
           this.refreshPage("workshop");
           return true;
@@ -1566,7 +1583,7 @@ export class PixiPagesFacade {
       if (plot?.phase === "ready") {
         const result = gameplay?.startGardenHarvest?.(plot.tileNumber);
         if (result?.ok === true) {
-          this.gardenHarvestSoundFacade?.playHarvest?.();
+          this.gardenSoundFacade?.playHarvest?.();
         }
         return result;
       }
@@ -1583,10 +1600,14 @@ export class PixiPagesFacade {
               tileNumber: plot.tileNumber,
             };
           }
-          return gameplay?.plantGardenSeed?.(
+          const result = gameplay?.plantGardenSeed?.(
             plot.tileNumber,
             plot.toolbarSeedItemTypeId,
           );
+          if (result?.ok === true) {
+            this.gardenSoundFacade?.playPlant?.();
+          }
+          return result;
         }
         return this.openGardenSeedDialog();
       }
@@ -1600,10 +1621,20 @@ export class PixiPagesFacade {
             seedTypeId: plot.toolbarSeedItemTypeId,
           });
         }
-        return gameplay?.accelerateGardenPlot?.(plot.tileNumber) ?? false;
+        const result =
+          gameplay?.accelerateGardenPlot?.(plot.tileNumber) ?? false;
+        if (result?.ok === true) {
+          this.uiClickSoundFacade?.playClick?.();
+        }
+        return result;
       }
       if (plot?.phase === "harvesting") {
-        return gameplay?.accelerateGardenPlot?.(plot.tileNumber) ?? false;
+        const result =
+          gameplay?.accelerateGardenPlot?.(plot.tileNumber) ?? false;
+        if (result?.ok === true) {
+          this.uiClickSoundFacade?.playClick?.();
+        }
+        return result;
       }
       if (plot?.process) {
         return this.openGardenConfirmDialog("cancel", plot);

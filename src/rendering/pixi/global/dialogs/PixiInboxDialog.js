@@ -21,7 +21,10 @@ import {
   PIXI_ROOT_RUN_GEOMETRY,
   PIXI_UI_GEOMETRY,
 } from '../../theme/PixiThemeTokens.js';
-import { PIXI_DIALOG_PALETTE } from '../../primitives/PixiDialogFrame.js';
+import {
+  PIXI_DIALOG_PALETTE,
+  resolveAdaptiveDialogHeight,
+} from '../../primitives/PixiDialogFrame.js';
 import {
   GLOBAL_DIALOG_GEOMETRY,
   RetainedGlobalDialog,
@@ -186,7 +189,7 @@ export class PixiInboxDialog extends RetainedGlobalDialog {
     const contentHeight = Math.max(0, y - MAIL_GAP);
     this.emptyLabel.position.set(
       INBOX_CONTENT_WIDTH / 2,
-      INBOX_CONTENT_HEIGHT / 2 - this.scroll.contentPaddingTop,
+      this.contentHeight / 2 - this.scroll.contentPaddingTop,
     );
     this.scroll.setContentHeight(contentHeight);
   }
@@ -199,11 +202,19 @@ export class PixiInboxDialog extends RetainedGlobalDialog {
     }
   }
 
-  layoutDialog() {
+  layoutDialog(projection = this.viewportProjection) {
+    const contentHeight = resolveAdaptiveDialogHeight({
+      viewportHeight: projection?.sourceHeight,
+      baseHeight: INBOX_CONTENT_HEIGHT,
+      minimumHeight: 240,
+      maximumHeight: Math.max(240, (projection?.sourceHeight ?? 844) - 200),
+      hasPrimaryVerticalScroll: true,
+    });
+    this.setPanelContentSize(INBOX_CONTENT_WIDTH, contentHeight);
     this.scroll?.position.set(0, 0);
     this.scroll?.setViewportSize(
       INBOX_CONTENT_WIDTH,
-      INBOX_CONTENT_HEIGHT,
+      contentHeight,
     );
     this.layoutRows();
   }

@@ -195,7 +195,13 @@ const UI_SURFACE_DEFINITIONS = Object.freeze([
   { id: 'potions', kind: 'dialog', dialogId: 'potions' },
   { id: 'stats', kind: 'dialog', dialogId: 'stats', aliases: ['workshopStats'] },
   { id: 'summonInfo', kind: 'dialog', dialogId: 'summonInfo', aliases: ['summon'] },
-  { id: 'leaderboard', kind: 'dialog', dialogId: 'leaderboard', aliases: ['leaderboards'] },
+  {
+    id: 'leaderboard',
+    kind: 'dialog',
+    dialogId: 'leaderboard',
+    setup: 'leaderboard',
+    aliases: ['leaderboards'],
+  },
   { id: 'alliance', kind: 'dialog', dialogId: 'alliance', aliases: ['alliances'] },
   {
     id: 'discoveries',
@@ -2002,6 +2008,15 @@ export class DevCheatCommandManager {
       return this.openPotionDiscoveriesSurface(surface, options);
     }
 
+    if (surface.setup === 'leaderboard') {
+      this.setDummyLeaderboard({ count: 24 });
+      return this.decorateUiResult(
+        surface.id,
+        this.openDialog(surface.dialogId, options),
+        surface,
+      );
+    }
+
     if (surface.setup === 'onlineConnecting') {
       return this.openOnlineConnectingSurface(surface);
     }
@@ -2317,6 +2332,8 @@ export class DevCheatCommandManager {
     const eventSnapshot = this.createDummyWorldEventLeaderboardSnapshot(users);
     const leaderboardFacade = this.backendFacade?.getLeaderboardFacade?.();
     const eventLeaderboardFacade = this.backendFacade?.getWorldEventLeaderboardFacade?.();
+    const tradeAllianceFacade = this.backendFacade?.getTradeAllianceFacade?.();
+    const allianceSnapshot = this.createDummyAllianceLeaderboardSnapshot(count);
     const leaderboardApplied =
       typeof leaderboardFacade?.setDevSnapshot === 'function'
         ? leaderboardFacade.setDevSnapshot(snapshot)
@@ -2325,19 +2342,29 @@ export class DevCheatCommandManager {
       typeof eventLeaderboardFacade?.setDevSnapshot === 'function'
         ? eventLeaderboardFacade.setDevSnapshot(eventSnapshot)
         : { ok: false, reason: 'world_event_leaderboard_missing' };
+    const tradeAllianceApplied =
+      typeof tradeAllianceFacade?.setDevSnapshot === 'function'
+        ? tradeAllianceFacade.setDevSnapshot(allianceSnapshot)
+        : { ok: false, reason: 'trade_alliance_missing' };
 
     return {
-      ok: leaderboardApplied.ok !== false || worldEventApplied.ok !== false,
+      ok:
+        leaderboardApplied.ok !== false ||
+        worldEventApplied.ok !== false ||
+        tradeAllianceApplied.ok !== false,
       leaderboard: leaderboardApplied,
       worldEventLeaderboard: worldEventApplied,
+      tradeAlliance: tradeAllianceApplied,
       snapshot,
       eventSnapshot,
+      allianceSnapshot,
     };
   }
 
   clearDummyLeaderboard() {
     const leaderboardFacade = this.backendFacade?.getLeaderboardFacade?.();
     const eventLeaderboardFacade = this.backendFacade?.getWorldEventLeaderboardFacade?.();
+    const tradeAllianceFacade = this.backendFacade?.getTradeAllianceFacade?.();
     const leaderboard =
       typeof leaderboardFacade?.clearDevSnapshot === 'function'
         ? leaderboardFacade.clearDevSnapshot()
@@ -2346,11 +2373,19 @@ export class DevCheatCommandManager {
       typeof eventLeaderboardFacade?.clearDevSnapshot === 'function'
         ? eventLeaderboardFacade.clearDevSnapshot()
         : { ok: false, reason: 'world_event_leaderboard_missing' };
+    const tradeAlliance =
+      typeof tradeAllianceFacade?.clearDevSnapshot === 'function'
+        ? tradeAllianceFacade.clearDevSnapshot()
+        : { ok: false, reason: 'trade_alliance_missing' };
 
     return {
-      ok: leaderboard.ok !== false || worldEventLeaderboard.ok !== false,
+      ok:
+        leaderboard.ok !== false ||
+        worldEventLeaderboard.ok !== false ||
+        tradeAlliance.ok !== false,
       leaderboard,
       worldEventLeaderboard,
+      tradeAlliance,
     };
   }
 
@@ -3770,6 +3805,9 @@ export class DevCheatCommandManager {
       'Ashrook',
     ];
     const allianceTags = ['SUN', 'MOON', 'ROOT', 'ASH'];
+    const allianceTagColors = ['amber', 'violet', 'green', 'red'];
+    const characters = ['elara', 'mira', 'bramble', 'corvin', 'juniper', 'rowan'];
+    const frames = ['sun', 'emerald', 'classic', 'violet', 'bronze', 'gnome'];
 
     return Array.from({ length: count }, (_unused, index) => {
       const rank = index + 1;
@@ -3788,9 +3826,11 @@ export class DevCheatCommandManager {
         totalIncome,
         points: (count - index) * 137,
         rank,
-        character: index % 2 === 0 ? 'wizard' : 'witch',
+        character: characters[index % characters.length],
+        frame: frames[index % frames.length],
+        prestigeCount: index % 5,
         allianceTag: allianceTags[index % allianceTags.length],
-        allianceTagColor: 'black',
+        allianceTagColor: allianceTagColors[index % allianceTagColors.length],
       };
     });
   }
@@ -3813,6 +3853,40 @@ export class DevCheatCommandManager {
       currentWeeklyUser: currentUser,
       currentMonthlyUser: currentUser,
       currentAllTimeUser: currentUser,
+    };
+  }
+
+  createDummyAllianceLeaderboardSnapshot(count) {
+    const names = ['Night Owls', 'Sun Circle', 'Root Keepers', 'Ashen Pact'];
+    const tags = ['OWL', 'SUN', 'ROOT', 'ASH'];
+    const colors = ['violet', 'amber', 'green', 'red'];
+    const alliances = Array.from(
+      { length: Math.min(10, Math.max(1, count)) },
+      (_unused, index) => {
+        const totalIncome = (count - index) * 98_765;
+        return {
+          allianceId: `dev-alliance-${index + 1}`,
+          id: `dev-alliance-${index + 1}`,
+          name: names[index % names.length],
+          tag: tags[index % tags.length],
+          tagColor: colors[index % colors.length],
+          memberCount: 50 - index * 3,
+          rank: index + 1,
+          dailyIncome: Math.floor(totalIncome / 6),
+          weeklyIncome: Math.floor(totalIncome / 3),
+          monthlyIncome: Math.floor(totalIncome / 2),
+          totalIncome,
+        };
+      },
+    );
+    return {
+      connected: true,
+      alliances,
+      topAlliances: alliances,
+      topDailyAlliances: alliances,
+      topWeeklyAlliances: alliances,
+      topMonthlyAlliances: alliances,
+      topAllTimeAlliances: alliances,
     };
   }
 
@@ -3842,6 +3916,7 @@ export class DevCheatCommandManager {
 
   createLeaderboardUserSnapshot(user) {
     return {
+      identity: user.identity,
       name: user.name,
       playerLevel: user.playerLevel,
       income: user.income,
@@ -3852,6 +3927,8 @@ export class DevCheatCommandManager {
       totalIncome: user.totalIncome,
       rank: user.rank,
       character: user.character,
+      frame: user.frame,
+      prestigeCount: user.prestigeCount,
       allianceTag: user.allianceTag,
       allianceTagColor: user.allianceTagColor,
     };

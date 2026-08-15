@@ -15,12 +15,15 @@ export class TradeAllianceBackendFacade {
     });
     this.subscriptionManager = new TradeAllianceSubscriptionManager({
       onSnapshot: (snapshot) => {
-        this.stateObserverManager.publish(snapshot);
+        if (!this.devSnapshot) {
+          this.stateObserverManager.publish(snapshot);
+        }
         this.rewardManager.processSnapshot(snapshot);
       },
     });
     this.publicDataRetainCount = 0;
     this.questDataRetainCount = 0;
+    this.devSnapshot = null;
   }
 
   setGameplayFacade(gameplayFacade) {
@@ -47,11 +50,24 @@ export class TradeAllianceBackendFacade {
   }
 
   getSnapshot() {
-    return this.subscriptionManager.getSnapshot();
+    return this.devSnapshot ?? this.subscriptionManager.getSnapshot();
   }
 
   subscribe(listener) {
     return this.stateObserverManager.subscribe(listener);
+  }
+
+  setDevSnapshot(snapshot) {
+    this.devSnapshot = snapshot;
+    this.stateObserverManager.publish(snapshot);
+    return { ok: true };
+  }
+
+  clearDevSnapshot() {
+    this.devSnapshot = null;
+    const snapshot = this.subscriptionManager.getSnapshot();
+    this.stateObserverManager.publish(snapshot);
+    return { ok: true, snapshot };
   }
 
   retainPublicData() {

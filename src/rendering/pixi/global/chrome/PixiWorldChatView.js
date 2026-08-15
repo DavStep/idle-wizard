@@ -338,13 +338,10 @@ class CompactWorldChatPreviewRow {
     this.model = model ?? {};
     this.isSystem = this.model.type === 'system';
     const tag = normalizePreviewAllianceTag(this.model.allianceTag);
-    const level = normalizePreviewPlayerLevel(this.model.playerLevel);
     setText(this.tag, tag ? `[${tag}]` : '');
     setText(
       this.username,
-      `${this.isSystem ? 'System' : this.model.username || 'Wizard'}${
-        !this.isSystem && level ? `(${level})` : ''
-      }:`,
+      `${this.isSystem ? 'System' : this.model.username || 'Wizard'}:`,
     );
     setText(this.body, this.model.body ?? '');
     this.avatar.texture = this.isSystem
@@ -429,7 +426,6 @@ function normalizePreviewMessage(message = {}) {
     username: isSystem ? 'System' : sourceName,
     body: message.body ?? message.message ?? message.text ?? '',
     character: message.character ?? 'elara',
-    playerLevel: message.playerLevel ?? message.player_level,
     allianceTag: message.allianceTag ?? message.alliance_tag ?? '',
     allianceTagColor:
       message.allianceTagColor ?? message.alliance_tag_color ?? 'ink',
@@ -438,10 +434,7 @@ function normalizePreviewMessage(message = {}) {
 
 function formatPreviewMessage(message) {
   const tag = normalizePreviewAllianceTag(message.allianceTag);
-  const level = normalizePreviewPlayerLevel(message.playerLevel);
-  const sender = `${tag ? `[${tag}] ` : ''}${message.username}${
-    message.type !== 'system' && level ? `(${level})` : ''
-  }`;
+  const sender = `${tag ? `[${tag}] ` : ''}${message.username}`;
   return `${sender}: ${message.body}`;
 }
 
@@ -458,11 +451,6 @@ function normalizePreviewAllianceTagColor(color) {
   return normalized in WORLD_CHAT_PREVIEW_TAG_COLORS
     ? normalized
     : 'ink';
-}
-
-function normalizePreviewPlayerLevel(level) {
-  const normalized = Math.floor(Number(level));
-  return Number.isFinite(normalized) && normalized > 0 ? normalized : null;
 }
 
 function resolvePreviewCharacterTexture(assets, character) {

@@ -10,6 +10,7 @@ import {
   DEFAULT_PIXI_THEME_SNAPSHOT,
   PIXI_ROOT_RUN_ASSETS,
   PIXI_ROOT_RUN_GEOMETRY,
+  PIXI_UI_GEOMETRY,
 } from '../theme/PixiThemeTokens.js';
 import { PixiNineSliceFrame } from './PixiNineSliceFrame.js';
 import { PixiTextButton } from './PixiTextButton.js';
@@ -54,6 +55,10 @@ export const PIXI_DIALOG_FOOTER_TABS_GEOMETRY = Object.freeze({
   maxGap: 10,
   gapStep: 2,
   referenceCount: 5,
+});
+
+export const PIXI_ADAPTIVE_DIALOG_GEOMETRY = Object.freeze({
+  referenceViewportHeight: PIXI_UI_GEOMETRY.sourceHeight,
 });
 
 const TITLE_TEXT_PADDING_X = 89 / 3;
@@ -580,6 +585,38 @@ export class PixiDialogFrame extends Container {
     this.dangerTitleFilter = null;
     super.destroy(options);
   }
+}
+
+/**
+ * Lets a dialog's primary vertical viewport consume the extra logical height
+ * available on taller portrait devices. Fixed-content dialogs keep their
+ * authored height by leaving `hasPrimaryVerticalScroll` false.
+ */
+export function resolveAdaptiveDialogHeight({
+  viewportHeight,
+  baseHeight,
+  minimumHeight = 0,
+  maximumHeight = Number.POSITIVE_INFINITY,
+  hasPrimaryVerticalScroll = false,
+} = {}) {
+  const authoredHeight = Math.max(0, Number(baseHeight) || 0);
+  if (!hasPrimaryVerticalScroll) {
+    return authoredHeight;
+  }
+
+  const sourceHeight = Number(viewportHeight);
+  const viewportDelta = Number.isFinite(sourceHeight)
+    ? sourceHeight - PIXI_ADAPTIVE_DIALOG_GEOMETRY.referenceViewportHeight
+    : 0;
+  const lowerBound = Math.max(0, Number(minimumHeight) || 0);
+  const requestedUpperBound = Number(maximumHeight);
+  const upperBound = Number.isFinite(requestedUpperBound)
+    ? Math.max(lowerBound, requestedUpperBound)
+    : Number.POSITIVE_INFINITY;
+  return Math.min(
+    upperBound,
+    Math.max(lowerBound, authoredHeight + viewportDelta),
+  );
 }
 
 function normalizeHeaderLayout(layout) {

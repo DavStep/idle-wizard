@@ -17,6 +17,7 @@ import { PixiTextButton } from '../../primitives/PixiTextButton.js';
 import {
   PIXI_DIALOG_FOOTER_TABS_GEOMETRY,
   PixiDialogFrame,
+  resolveAdaptiveDialogHeight,
   resolveDialogFooterTabLayout,
   setDialogPaperAboveFooterTabs,
 } from '../../primitives/PixiDialogFrame.js';
@@ -541,7 +542,12 @@ export class GuildDialogPixi extends BasePixiRetainedView {
     if (!this.panel) {
       return;
     }
-    const size = getDialogSize(this.dialogId);
+    const size = getDialogSize(this.dialogId, this.sourceHeight);
+    this.panel.setContentBoxSize(
+      size.width - PIXI_UI_GEOMETRY.dialogPadding * 2,
+      size.height - PIXI_UI_GEOMETRY.dialogPadding * 2,
+      PIXI_UI_GEOMETRY.dialogPadding,
+    );
     const centerY = getDialogCenterY(this.sourceHeight);
     const shift = finiteOr(this.viewportProjection?.dialogShift, 0);
     const x = Math.round((this.sourceWidth - size.width) / 2);
@@ -560,8 +566,8 @@ export class GuildDialogPixi extends BasePixiRetainedView {
       this.requestPaper.setBounds(
         0,
         0,
-        this.panel.contentWidth,
-        this.panel.contentHeight,
+        this.panel.contentBoxWidth,
+        this.panel.contentBoxHeight,
       );
     } else {
       this.layoutCard();
@@ -570,7 +576,7 @@ export class GuildDialogPixi extends BasePixiRetainedView {
   }
 
   layoutProfile() {
-    const width = this.panel.contentWidth;
+    const width = this.panel.contentBoxWidth;
     this.nameField.setBounds(0, 0, width, 38);
     this.tagField.setBounds(0, 44, width, 38);
     this.colorLabel.position.set(0, 88);
@@ -588,7 +594,7 @@ export class GuildDialogPixi extends BasePixiRetainedView {
   }
 
   layoutCard() {
-    const width = this.panel.contentWidth;
+    const width = this.panel.contentBoxWidth;
     const footerTabLayout = resolveDialogFooterTabLayout({
       coreWidth: this.panel.coreWidth,
       coreHeight: this.panel.coreHeight,
@@ -598,7 +604,7 @@ export class GuildDialogPixi extends BasePixiRetainedView {
     const height = Math.max(
       0,
       Math.min(
-        this.panel.contentHeight,
+        this.panel.contentBoxHeight,
         footerTabLayout.paperBottom - this.panel.content.y,
       ),
     );
@@ -1885,7 +1891,7 @@ class GuildQuestButton {
   }
 }
 
-function getDialogSize(dialogId) {
+function getDialogSize(dialogId, sourceHeight = PIXI_UI_GEOMETRY.sourceHeight) {
   if (dialogId === GUILD_DIALOG_IDS.CHARTER) {
     return { width: CHARTER_DIALOG_WIDTH, height: 230 };
   }
@@ -1898,7 +1904,16 @@ function getDialogSize(dialogId) {
       height: REQUEST_DIALOG_HEIGHT,
     };
   }
-  return { width: CARD_DIALOG_WIDTH, height: CARD_DIALOG_HEIGHT };
+  return {
+    width: CARD_DIALOG_WIDTH,
+    height: resolveAdaptiveDialogHeight({
+      viewportHeight: sourceHeight,
+      baseHeight: CARD_DIALOG_HEIGHT,
+      minimumHeight: 260,
+      maximumHeight: sourceHeight - 160,
+      hasPrimaryVerticalScroll: true,
+    }),
+  };
 }
 
 function resolveThemeColor(token) {

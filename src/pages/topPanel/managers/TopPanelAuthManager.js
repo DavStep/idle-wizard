@@ -34,13 +34,13 @@ export class TopPanelAuthManager {
       return;
     }
 
-    this.setBusy(true, this.authenticated ? 'disconnecting' : 'connecting');
+    this.setBusy(true, this.authenticated ? 'Disconnecting' : 'Connecting');
     if (this.authenticated) {
       try {
         await this.authFacade.signOut();
         this.reload();
       } catch (error) {
-        this.setStatusOverride(`login error: ${this.getErrorText(error)}`);
+        this.setStatusOverride(`Login Error: ${this.getErrorText(error)}`);
         this.setBusy(false);
       }
       return;
@@ -62,7 +62,7 @@ export class TopPanelAuthManager {
         this.statusOverride = null;
       }
     } catch (error) {
-      this.setStatusOverride(`login error: ${this.getErrorText(error)}`);
+      this.setStatusOverride(`Login Error: ${this.getErrorText(error)}`);
     } finally {
       this.setBusy(false);
     }
@@ -94,8 +94,8 @@ export class TopPanelAuthManager {
       this.statusOverride && this.busy
         ? this.statusOverride
         : this.authenticated
-          ? 'disconnect account'
-          : 'connect account';
+          ? 'Disconnect Account'
+          : 'Connect Account';
     button.setAttribute(
       'aria-label',
       this.authenticated ? 'disconnect google account' : 'connect google account',
@@ -110,7 +110,7 @@ export class TopPanelAuthManager {
   getStatusText(snapshot = {}) {
     const oidc = snapshot?.oidc ?? {};
     if (oidc.cancelled) {
-      return 'login cancelled';
+      return 'Login Cancelled';
     }
 
     if (oidc.error) {
@@ -118,18 +118,18 @@ export class TopPanelAuthManager {
     }
 
     if (oidc.authenticated) {
-      return oidc.displayName || oidc.email || 'connected';
+      return oidc.displayName || oidc.email || 'Connected';
     }
 
     if (snapshot?.hasToken && oidc.remembered) {
-      return oidc.displayName || oidc.email || 'connected';
+      return oidc.displayName || oidc.email || 'Connected';
     }
 
     if (!oidc.enabled) {
-      return 'login unavailable';
+      return 'Login Unavailable';
     }
 
-    return 'not connected';
+    return 'Not Connected';
   }
 
   getErrorText(error) {
@@ -138,11 +138,11 @@ export class TopPanelAuthManager {
 
   getResultStatusText(result = {}) {
     if (result.reason?.includes('cancelled')) {
-      return 'login cancelled';
+      return 'Login Cancelled';
     }
 
     if (!result.message && this.isLoginUnavailableReason(result.reason)) {
-      return 'login unavailable';
+      return 'Login Unavailable';
     }
 
     return this.getLoginErrorStatusText(
@@ -152,10 +152,10 @@ export class TopPanelAuthManager {
 
   getLoginErrorStatusText(error) {
     if (this.isLoginUnavailableReason(error)) {
-      return 'login unavailable';
+      return 'Login Unavailable';
     }
 
-    return `login error: ${this.getErrorText(error)}`;
+    return `Login Error: ${this.getErrorText(error)}`;
   }
 
   isLoginUnavailableReason(reason) {

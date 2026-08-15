@@ -37,6 +37,7 @@ import { RootRunInventoryChoiceDialogPixi } from './pages/shared/RootRunInventor
 import {
   SHOP_DIALOG_IDS,
   WORKSHOP_SUMMON_INFO_DIALOG_ID,
+  WORKSHOP_WORLD_EVENT_DONATE_DIALOG_ID,
   ShopDialogPixi,
 } from './pages/shop/ShopDialogPixi.js';
 import { WorkshopDialogPixi } from './pages/workshop/WorkshopDialogPixi.js';
@@ -110,7 +111,13 @@ const DIALOG_CHILD_WIDGET_IDS = Object.freeze({
     'compound.alliance-directory-row',
     'compound.alliance-member-row',
   ]),
-  'workshop.leaderboard': Object.freeze(['compound.workshop-dialog-row']),
+  'workshop.leaderboard': Object.freeze([
+    'compound.leaderboard-row',
+    'compound.player-profile',
+    'primitive.star-level-label',
+    'primitive.resource-label',
+    'tab-button',
+  ]),
   'workshop.discoveries': Object.freeze(['compound.potion-discovery-row']),
   'workshop.personalTasks': Object.freeze([
     'compound.workshop-dialog-row',
@@ -118,7 +125,10 @@ const DIALOG_CHILD_WIDGET_IDS = Object.freeze({
     'text-button',
   ]),
   'workshop.worldEventDonate': Object.freeze([
-    'compound.world-event-donation-option-row',
+    'compound.dialog-summary-row',
+    'primitive.resource-label',
+    'primitive.settings-slider',
+    'text-button',
   ]),
   'garden.cancel': Object.freeze(['text-button']),
   'garden.swap': Object.freeze(['text-button']),
@@ -199,7 +209,7 @@ const DIALOG_LABELS = Object.freeze({
   'workshop.discoveries': 'Discoveries',
   'workshop.personalTasks': 'Daily Tasks',
   'workshop.worldEvent': 'World Event',
-  'workshop.worldEventDonate': 'World Event Donation',
+  'workshop.worldEventDonate': 'Donate',
   'workshop.worldChat': 'World Chat',
   'garden.seed': 'Choose Seed',
   'garden.cancel': 'Cancel Garden Progress',
@@ -397,10 +407,19 @@ export function createUiEditorDialogFixture(dialogId, variantIndex = 0) {
   if (dialogId === 'workshop.worldEvent') {
     return createWorldEventDialogFixture(variantIndex);
   }
+  if (dialogId === WORKSHOP_WORLD_EVENT_DONATE_DIALOG_ID) {
+    return createDialogViewModel(
+      dialogId,
+      variantIndex === 0 ? 'a' : 'b',
+    );
+  }
   if (dialogId === 'workshop.alliance') {
     return variantIndex === 0
       ? createDialogViewModel(dialogId, 'a')
       : createTradeAllianceDirectoryFixture();
+  }
+  if (dialogId === 'workshop.leaderboard') {
+    return createLeaderboardDialogFixture(variantIndex);
   }
   if (dialogId === SHOP_DIALOG_IDS.SUPPORT) {
     return {
@@ -413,6 +432,73 @@ export function createUiEditorDialogFixture(dialogId, variantIndex = 0) {
     dialogId,
     createDialogViewModel(dialogId, variantIndex === 0 ? 'a' : 'b'),
   );
+}
+
+function createLeaderboardDialogFixture(variantIndex = 0) {
+  const alliance = variantIndex === 1;
+  return {
+    title: 'Leaderboard',
+    rowWidget: 'leaderboard',
+    selectedTabId: alliance ? 'alliance' : 'singlePlayer',
+    selectedPeriodId: 'allTime',
+    emptyLabel: alliance ? 'No alliances yet' : 'No players yet',
+    tabs: [
+      { id: 'singlePlayer', label: 'Players', selected: !alliance },
+      { id: 'alliance', label: 'Alliances', selected: alliance },
+    ],
+    periodTabs: [
+      { id: 'daily', label: 'Daily' },
+      { id: 'weekly', label: 'Weekly' },
+      { id: 'monthly', label: 'Monthly' },
+      { id: 'allTime', label: 'All Time', selected: true },
+    ],
+    rows: alliance
+      ? [
+          {
+            id: 'night-owls',
+            type: 'leaderboardAlliance',
+            rank: 1,
+            name: 'Night Owls',
+            allianceTag: 'OWL',
+            allianceTagColor: 'violet',
+            memberCount: 34,
+            totalCoinLabel: '13.9m',
+            onActivate: () => true,
+          },
+          {
+            id: 'sun-circle',
+            type: 'leaderboardAlliance',
+            rank: 2,
+            name: 'Sun Circle',
+            allianceTag: 'SUN',
+            allianceTagColor: 'amber',
+            memberCount: 28,
+            totalCoinLabel: '707k',
+            onActivate: () => true,
+          },
+        ]
+      : [
+          ['Elara', 'mira', 'sun', 'OWL', 'violet', 48, 3, '13.9m'],
+          ['Trix', 'juniper', 'emerald', 'SUN', 'amber', 32, 1, '707k'],
+          ['Gandalf The Green', 'elara', 'classic', 'DBP', 'green', 17, 0, '613k'],
+          ['StepWizzard', 'rowan', 'violet', 'OWL', 'violet', 14, 2, '93.3k'],
+          ['Squeak69', 'mira', 'bronze', 'SUN', 'amber', 12, 0, '57.8k'],
+        ].map(([username, character, frame, allianceTag, allianceTagColor, playerLevel, prestigeCount, totalCoinLabel], index) => ({
+          id: `leaderboard-player-${index}`,
+          type: 'leaderboardPlayer',
+          rank: index + 1,
+          username,
+          character,
+          frame,
+          allianceTag,
+          allianceTagColor,
+          playerLevel,
+          prestigeCount,
+          current: index === 3,
+          totalCoinLabel,
+          onActivate: () => true,
+        })),
+  };
 }
 
 function normalizeUiEditorDialogFixture(dialogId, fixture) {
@@ -486,6 +572,7 @@ function createWorldChatDialogFixture(variantIndex) {
         character: alternate ? 'juniper' : 'mira',
         enabled: true,
         id: `world-chat-player-${variantIndex}`,
+        isOwn: !alternate,
         onActivate: () => true,
         username: alternate ? 'Juniper' : 'Mira',
       },
@@ -633,7 +720,10 @@ export function createUiEditorOwnedDialog({
   };
 
   if (dialogId.startsWith('workshop.')) {
-    if (dialogId === WORKSHOP_SUMMON_INFO_DIALOG_ID) {
+    if (
+      dialogId === WORKSHOP_SUMMON_INFO_DIALOG_ID ||
+      dialogId === WORKSHOP_WORLD_EVENT_DONATE_DIALOG_ID
+    ) {
       return new ShopDialogPixi({
         ...common,
         dialogId,
@@ -964,7 +1054,8 @@ function resolveDialogSource(dialogId) {
     return 'src/rendering/pixi/global/dialogs/';
   }
   if (dialogId.startsWith('workshop.')) {
-    return dialogId === WORKSHOP_SUMMON_INFO_DIALOG_ID
+    return dialogId === WORKSHOP_SUMMON_INFO_DIALOG_ID ||
+      dialogId === WORKSHOP_WORLD_EVENT_DONATE_DIALOG_ID
       ? 'src/rendering/pixi/pages/shop/ShopDialogPixi.js'
       : 'src/rendering/pixi/pages/workshop/WorkshopDialogPixi.js';
   }
@@ -991,8 +1082,8 @@ const GLOBAL_DIALOG_SCENARIOS = Object.freeze({
   [GLOBAL_DIALOG_IDS.SETTINGS]: Object.freeze([
     scenario('device', 'Device preferences', () => ({
       account: {
-        accountStatus: 'connected as mira@example.com',
-        connectLabel: 'Disconnect',
+        accountStatus: 'mira@example.com',
+        connectLabel: 'Disconnect Account',
         userId: 'c5b53a9f2e6484af',
         username: 'Mira',
         version: '0.9.0',

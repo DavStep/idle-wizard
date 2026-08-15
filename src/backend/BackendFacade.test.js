@@ -129,6 +129,10 @@ describe('BackendFacade', () => {
 
     expect(gameplayFacade.consumeProgressResetPending).toHaveBeenCalledTimes(1);
     expect(clearOwnProgress).toHaveBeenCalledTimes(1);
+    expect(backendFacade.worldChatFacade.connect).toHaveBeenCalledWith(
+      {},
+      'identity-1',
+    );
   });
 
   it('leaves server player-market progress alone without a reset marker', async () => {

@@ -20,8 +20,8 @@ export class WorldChatBackendFacade {
     this.researchAnnouncementManager = new WorldChatResearchAnnouncementManager();
   }
 
-  connect(connection) {
-    this.subscriptionManager.connect(connection);
+  connect(connection, identity) {
+    this.subscriptionManager.connect(connection, identity);
     this.sendManager.connect(connection);
     this.levelUpAnnouncementManager.connect(connection);
     this.prestigeAnnouncementManager.connect(connection);

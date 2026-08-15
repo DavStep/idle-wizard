@@ -19,6 +19,7 @@ import android.widget.TextView;
 
 import androidx.core.graphics.Insets;
 import androidx.core.view.ViewCompat;
+import androidx.core.view.WindowCompat;
 import androidx.core.view.WindowInsetsCompat;
 
 import com.getcapacitor.JSObject;
@@ -436,6 +437,7 @@ public class IdleWizardTextEntryPlugin extends Plugin {
     }
 
     private static void enforceKeyboardOverlayWindow(Activity activity) {
+        WindowCompat.setDecorFitsSystemWindows(activity.getWindow(), false);
         int softInputMode = activity.getWindow().getAttributes().softInputMode;
         int overlaySoftInputMode =
             (softInputMode & ~WindowManager.LayoutParams.SOFT_INPUT_MASK_ADJUST) |

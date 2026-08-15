@@ -7,6 +7,8 @@ import android.view.WindowManager;
 import android.webkit.WebSettings;
 import android.webkit.WebView;
 
+import androidx.core.view.WindowCompat;
+
 import com.getcapacitor.BridgeActivity;
 
 public class MainActivity extends BridgeActivity {
@@ -22,6 +24,7 @@ public class MainActivity extends BridgeActivity {
         registerPlugin(NativeGoogleAuthPlugin.class);
         registerPlugin(NativeAuthTokenStoragePlugin.class);
         super.onCreate(savedInstanceState);
+        configureFullWindowLayout();
         lockSoftKeyboardWindow();
         configureWebView();
         requestHighFrameRate();
@@ -30,8 +33,13 @@ public class MainActivity extends BridgeActivity {
     @Override
     public void onResume() {
         super.onResume();
+        configureFullWindowLayout();
         lockSoftKeyboardWindow();
         requestHighFrameRate();
+    }
+
+    private void configureFullWindowLayout() {
+        WindowCompat.setDecorFitsSystemWindows(getWindow(), false);
     }
 
     private void lockSoftKeyboardWindow() {

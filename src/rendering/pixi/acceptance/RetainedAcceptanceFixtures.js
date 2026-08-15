@@ -1,5 +1,8 @@
 import { GUILD_DIALOG_IDS } from '../pages/guild/GuildDialogPixi.js';
-import { SHOP_DIALOG_IDS } from '../pages/shop/ShopDialogPixi.js';
+import {
+  SHOP_DIALOG_IDS,
+  WORKSHOP_WORLD_EVENT_DONATE_DIALOG_ID,
+} from '../pages/shop/ShopDialogPixi.js';
 
 export const RETAINED_PAGE_IDS = Object.freeze([
   'workshop',
@@ -88,6 +91,61 @@ export function createDialogViewModel(
 
   if (dialogId === 'workshop.alliance') {
     return createTradeAllianceDialogModel(key);
+  }
+
+  if (dialogId === WORKSHOP_WORLD_EVENT_DONATE_DIALOG_ID) {
+    const amount = key === 'a' ? 3 : 8;
+    return {
+      title: 'Donate',
+      summaryRows: [
+        { id: 'quest', label: 'Quest', value: 'Quiet The Crowd' },
+        {
+          id: 'giving',
+          label: 'Giving',
+          value: 'Calming Draught',
+          itemKind: 'potion',
+          itemKey: 'calmingDraught',
+          quantityLabel: `x${amount}`,
+        },
+        {
+          id: 'owned',
+          label: 'Owned',
+          value: '12',
+          itemKind: 'potion',
+          itemKey: 'calmingDraught',
+        },
+        {
+          id: 'points',
+          label: 'Earn',
+          value: `+${amount * 120} points`,
+          valueTone: 'root',
+        },
+        {
+          id: 'total',
+          label: 'Contributed',
+          value: '360 points',
+          valueTone: 'root',
+        },
+      ],
+      range: {
+        enabled: true,
+        tone: 'root',
+        min: 1,
+        max: 12,
+        step: 1,
+        value: amount,
+        onChange: accept,
+      },
+      actions: [
+        {
+          id: 'confirm',
+          label: `Donate x${amount}`,
+          variant: 'green',
+          enabled: true,
+          action: accept,
+        },
+      ],
+    };
   }
 
   if (dialogId.startsWith('workshop.')) {

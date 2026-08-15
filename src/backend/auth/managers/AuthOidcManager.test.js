@@ -53,6 +53,20 @@ function createFakeJwt({
 }
 
 describe('AuthOidcManager', () => {
+  it('keeps Google login available when the build omits the optional client id', () => {
+    const manager = new AuthOidcManager({
+      windowRef: {},
+      storage: createMemoryStorage(),
+    });
+
+    expect(manager.clientId).toBeTruthy();
+    expect(manager.getSnapshot()).toMatchObject({
+      enabled: true,
+      authenticated: false,
+      disabledReason: null,
+    });
+  });
+
   it('stays disabled without a Google client id', async () => {
     const manager = new AuthOidcManager({
       clientId: '',

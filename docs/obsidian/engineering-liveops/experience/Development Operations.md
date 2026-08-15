@@ -90,7 +90,7 @@ experience_type: development-operations
 - For safe Maincloud schema deploys, append new columns to existing tables, give them `default(...)`, and publish with `--delete-data=never`; otherwise existing player/account rows may block migration.
 - SpacetimeDB table column order matters; adding a column before existing fields is treated as a reorder/manual migration, so append new fields at the end.
 - Maincloud energy usage is dashboard-only at `/settings/energy-usage`; the SpacetimeDB CLI token can list/publish DBs but does not authenticate that dashboard loader.
-- Optional Google login is controlled by `VITE_GOOGLE_AUTH_CLIENT_ID`; the Google OAuth client ID is public config and can live in `.env.production`.
+- The official Google OAuth client ID is public config and must have a source fallback so an empty build environment cannot disable account linking; `VITE_GOOGLE_AUTH_CLIENT_ID` remains an optional deployment override.
 - Browser Google login must use Google Identity Services to receive a Google-signed ID token in a JavaScript callback; Google code flow needs backend token exchange and `oidc-client-ts` rejects legacy implicit `id_token`.
 - Current player APK release automation must keep using the OAuth-compatible Android debug certificate until a true release keystore SHA-1 is registered and account connect/restore is device-tested.
 - Call Capacitor Updater `notifyAppReady()` at app-entry startup before renderer asset preloads or backend work; waiting for full initialization lets slow devices hit `appReadyTimeout` and roll back healthy OTA bundles.

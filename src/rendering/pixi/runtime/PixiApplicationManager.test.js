@@ -166,7 +166,7 @@ describe('PixiApplicationManager', () => {
     ).toEqual([0, 0, 1170, 2700]);
   });
 
-  it('keeps authored layout stable and reports keyboard dialog shifts', async () => {
+  it('keeps authored layout stable and reports a chat-only keyboard shift', async () => {
     const app = createFakeApplication();
     const canvas = createCanvas({ width: 1170, height: 2532 });
     const manager = new PixiApplicationManager({
@@ -188,7 +188,9 @@ describe('PixiApplicationManager', () => {
     });
 
     expect(projection.viewportPx.height).toBe(2532);
-    expect(projection.dialogShift).toBe(-145);
+    expect(projection.dialogShift).toBe(0);
+    expect(projection.topDialogShift).toBe(0);
+    expect(projection.worldChatShift).toBe(-290);
     expect(app.renderer.resize).toHaveBeenLastCalledWith(1170, 2532, 1);
   });
 

@@ -86,8 +86,9 @@ Fallback native OIDC account linking uses `https://davstep.github.io/idle-wizard
 as the Google redirect URI, then the hosted page forwards OIDC callback params
 to the installed app with `com.idlewizard.game://auth/callback`.
 
-The Google OAuth client ID is public configuration, not a secret. Hosted and
-production builds read:
+The Google OAuth client ID is public configuration, not a secret. The official
+client ID is bundled as a fail-safe, while hosted and production builds may
+override it with:
 
 ```txt
 VITE_GOOGLE_AUTH_CLIENT_ID=<google-client-id>

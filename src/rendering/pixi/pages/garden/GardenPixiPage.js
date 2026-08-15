@@ -940,6 +940,7 @@ export class GardenPlotWidget {
         enabled: () =>
           this.enabled && !this.isActivationLocked(this.page.timeSource()),
         slop: 12,
+        sound: false,
         onPressChange: (pressed) => this.setPressed(pressed),
         onActivate: () => this.activate(),
       }) ?? null;
