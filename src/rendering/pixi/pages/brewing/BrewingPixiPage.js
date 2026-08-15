@@ -617,11 +617,6 @@ export class BrewingPixiPage extends BaseRetainedPixiPage {
       cauldronNumber:
         cauldron.cauldronNumber ?? this.selectedCauldronIndex + 1,
       autoBrewEnabled: cauldron.autoBrewEnabled === true,
-      autoCollectEnabled: cauldron.autoCollectEnabled === true,
-      actions: {
-        toggleAutoCollect: (cauldronIndex) =>
-          this.currentActions?.toggleAutoCollect?.(cauldronIndex),
-      },
     });
   }
 

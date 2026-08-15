@@ -4534,6 +4534,15 @@ describe("GameplayFacade", () => {
       autoBrewArmed: false,
     });
     first.gameplayFacade.savePersistenceSnapshot();
+    const legacySave = JSON.parse(
+      persistenceStorage.getItem("idle-wizard.gameplay.save"),
+    );
+    legacySave.brewing.autoCollectEnabled = false;
+    legacySave.brewing.cauldrons[0].autoCollectEnabled = false;
+    persistenceStorage.setItem(
+      "idle-wizard.gameplay.save",
+      JSON.stringify(legacySave),
+    );
     first.ecsFacade.destroyWorld();
 
     const second = createGameplay({ persistenceStorage });
@@ -4548,6 +4557,7 @@ describe("GameplayFacade", () => {
       autoBrewEnabled: true,
       autoBrewArmed: true,
       autoBrewRecipeKey: "manaTonic",
+      autoCollectEnabled: true,
     });
     expect(snapshot.brewing.cauldrons[1]).toMatchObject({
       brewQuantity: 1,
@@ -4611,10 +4621,6 @@ describe("GameplayFacade", () => {
       ok: true,
       autoBrewEnabled: true,
       autoBrewArmed: false,
-    });
-    expect(gameplayFacade.setBrewingAutoCollectEnabled(true)).toMatchObject({
-      ok: true,
-      autoCollectEnabled: true,
     });
     gameplayFacade.itemsFacade.addItem(1001, 6);
     ecsFacade.update({ deltaSeconds: 12 });
@@ -5689,7 +5695,7 @@ describe("GameplayFacade", () => {
       initialSellItems.find((item) => item.key === "manaTonic"),
     ).toMatchObject({
       quantity: 0,
-      sellCoin: 60,
+      sellCoin: 38,
     });
     expect(
       initialSellItems.find((item) => item.key === "pearlrootDraught"),

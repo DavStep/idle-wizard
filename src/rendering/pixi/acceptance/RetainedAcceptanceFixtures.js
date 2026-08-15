@@ -230,10 +230,6 @@ export function createDialogViewModel(
       cauldronIndex: key === 'a' ? 0 : 1,
       cauldronNumber: key === 'a' ? 1 : 2,
       autoBrewEnabled: true,
-      autoCollectEnabled: key === 'b',
-      actions: {
-        toggleAutoCollect: accept,
-      },
     };
   }
 
@@ -290,7 +286,7 @@ function createTradeAllianceDialogModel(key) {
     ownedAlliance: true,
     ownedAllianceHome: true,
     selectedTabId: 'home',
-    tabs: ['home', 'quests', 'members', 'settings'].map((id) => ({
+    tabs: ['home', 'quests', 'settings'].map((id) => ({
       id,
       label: id[0].toUpperCase() + id.slice(1),
       selected: id === 'home',

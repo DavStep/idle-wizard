@@ -1367,6 +1367,7 @@ describe('BrewingPixiPage', () => {
     model.brewing.cauldrons[0].level = 1;
     model.brewing.cauldrons[0].autoBrewAvailable = true;
     model.brewing.cauldrons[0].autoBrewEnabled = true;
+    model.brewing.cauldrons[0].autoBrewArmed = true;
     model.brewing.cauldrons[0].autoCollectEnabled = false;
     model.brewing.cauldrons[0].primaryAction.label = 'brew x1';
     model.brewing.cauldrons[0].ingredients = Array.from(
@@ -1798,7 +1799,8 @@ describe('BrewingPixiPage', () => {
 
     expect(harness.page.openAutomationSettings()).toBe(true);
     const settings = harness.dialogs.get('brewing.automation-settings');
-    expect(settings.toggle.text.text).toBe('auto collect off');
+    expect(settings.toggle.text.text).toBe('included with autobrew');
+    expect(settings.toggle.enabled).toBe(false);
 
     harness.page.destroy();
     harness.dispose();
@@ -2015,7 +2017,7 @@ describe('BrewingPixiPage', () => {
         true,
       ],
       [
-        { autoBrewEnabled: true },
+        { autoBrewEnabled: true, autoBrewArmed: true },
         'cancel',
         'Cancel',
         'yellow',
@@ -2024,6 +2026,7 @@ describe('BrewingPixiPage', () => {
       [
         {
           autoBrewEnabled: true,
+          autoBrewArmed: true,
           activeBrew: { phase: 'ready', canCollect: true },
         },
         'collect',
@@ -2041,6 +2044,22 @@ describe('BrewingPixiPage', () => {
         enabled,
       });
     }
+  });
+
+  it('keeps Brew available while newly enabled auto brewing is not armed', () => {
+    expect(
+      resolveBrewingPrimaryState({
+        autoBrewEnabled: true,
+        autoBrewArmed: false,
+        selectedRecipe: { key: 'mana-tonic' },
+        primaryAction: { id: 'brew', enabled: true },
+      }),
+    ).toMatchObject({
+      id: 'brew',
+      label: 'Brew',
+      enabled: true,
+      variant: 'green',
+    });
   });
 
   it('opens Recipes from the primary action when the cauldron is empty', () => {
@@ -2119,6 +2138,17 @@ describe('BrewingPixiPage', () => {
     model.actions.performCauldronAction = vi.fn(() => true);
 
     cauldron.autoBrewEnabled = true;
+    cauldron.autoBrewArmed = false;
+    harness.page.bind(model);
+    expect(harness.page.hud.brew.text.text).toBe('Brew');
+    expect(harness.page.hud.brew.handleTap()).toBe(true);
+    expect(model.actions.performCauldronAction).toHaveBeenCalledWith(
+      cauldron,
+      cauldron.primaryAction,
+    );
+    expect(model.actions.toggleAutoBrew).not.toHaveBeenCalled();
+
+    cauldron.autoBrewArmed = true;
     harness.page.bind(model);
     expect(harness.page.hud.brew.text.text).toBe('Cancel');
     expect(harness.page.hud.brew.handleTap()).toBe(true);

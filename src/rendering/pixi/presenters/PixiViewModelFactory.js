@@ -95,7 +95,6 @@ const TRADE_ALLIANCE_JOIN_MODE_LABELS = Object.freeze({
 const TRADE_ALLIANCE_MEMBER_TABS = Object.freeze([
   Object.freeze({ id: 'home', label: 'Home' }),
   Object.freeze({ id: 'quests', label: 'Quests' }),
-  Object.freeze({ id: 'members', label: 'Members' }),
   Object.freeze({ id: 'settings', label: 'Settings' }),
 ]);
 const SEED_DROP_PREFERENCES = Object.freeze([
@@ -1012,7 +1011,7 @@ export class PixiViewModelFactory {
       title: 'Trade Alliance',
       ownedAlliance: true,
       ownedAllianceHome: safeTabId === 'home',
-      ownedAllianceMembers: safeTabId === 'members',
+      rowWidget: safeTabId === 'quests' ? 'allianceQuest' : null,
       selectedTabId: safeTabId,
       tabs,
       status:
@@ -1821,6 +1820,15 @@ function createTradeAllianceQuestRows(tradeAlliance, allianceId, actions) {
 
       return {
         id: quest.questId ?? `alliance-quest-${index}`,
+        title: quest.label ?? 'Alliance Quest',
+        contributionLabel: `${routeLabel} ${formatWholeNumber(
+          contribution,
+        )}/${formatWholeNumber(quest.minContribution)}`,
+        progressLabel: `${formatWholeNumber(quest.progress)}/${formatWholeNumber(
+          quest.target,
+        )}`,
+        rewardAmountLabel: formatWholeNumber(quest.crystalReward),
+        rewardResource: 'crystal',
         label: `${quest.label ?? 'Alliance Quest'}\n${routeLabel} ${formatWholeNumber(
           contribution,
         )}/${formatWholeNumber(quest.minContribution)}`,

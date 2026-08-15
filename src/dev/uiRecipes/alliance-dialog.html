@@ -67,8 +67,11 @@
       const questRows = [
         {
           id: 'quest-herbs',
-          label: 'Gather Silverleaf',
-          value: '18 / 40 donated',
+          title: 'Gather Silverleaf',
+          contributionLabel: 'Your Fill 8/10',
+          progressLabel: '18/40',
+          rewardAmountLabel: '3',
+          rewardResource: 'crystal',
           actionLabel: 'Fill',
           actionVariant: 'green',
           actionWidth: 58,
@@ -78,8 +81,11 @@
         },
         {
           id: 'quest-market',
-          label: 'Supply The Market',
-          value: '50 / 50 donated',
+          title: 'Supply The Market',
+          contributionLabel: 'Your Route 12/12',
+          progressLabel: '50/50',
+          rewardAmountLabel: '5',
+          rewardResource: 'crystal',
           actionLabel: 'Claim',
           actionVariant: 'yellow',
           actionWidth: 58,
@@ -116,7 +122,7 @@
           selectedTabId,
           tabs,
           ownedAllianceHome: selectedTabId === 'home',
-          ownedAllianceMembers: selectedTabId === 'members',
+          rowWidget: selectedTabId === 'quests' ? 'allianceQuest' : null,
           rows: selectedTabId === 'quests' ? questRows : homeModel.members,
           settings: selectedTabId === 'settings' ? settings : null,
         });

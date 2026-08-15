@@ -166,6 +166,57 @@ describe('PixiApplicationManager', () => {
     ).toEqual([0, 0, 1170, 2700]);
   });
 
+  it('uses the visible browser height for layout without shrinking the stable canvas', async () => {
+    const app = createFakeApplication();
+    const visualViewport = {
+      width: 390,
+      height: 700,
+      offsetTop: 0,
+      addEventListener: vi.fn(),
+      removeEventListener: vi.fn(),
+    };
+    const manager = new PixiApplicationManager({
+      canvas: createCanvas({ width: 390, height: 844 }),
+      createApplication: () => app,
+      windowTarget: {
+        innerWidth: 390,
+        innerHeight: 844,
+        visualViewport,
+        addEventListener: vi.fn(),
+        removeEventListener: vi.fn(),
+      },
+      devicePixelRatio: () => 1,
+    });
+
+    await manager.initialize();
+
+    expect(manager.projection).toMatchObject({
+      fitScale: 1 / 3,
+      stageLogicalHeight: 2532,
+      stageScreenHeight: 844,
+      visibleStageHeight: 700,
+      sourceWidth: 390,
+      sourceHeight: 700,
+    });
+    expect(app.init).toHaveBeenCalledWith(
+      expect.objectContaining({
+        width: 1170,
+        height: 2532,
+        resolution: 1 / 3,
+      }),
+    );
+
+    visualViewport.height = 760;
+    const expandedProjection = manager.resizeNow();
+
+    expect(expandedProjection).toMatchObject({
+      stageLogicalHeight: 2532,
+      visibleStageHeight: 760,
+      sourceHeight: 760,
+    });
+    expect(app.renderer.resize).toHaveBeenLastCalledWith(1170, 2532, 1 / 3);
+  });
+
   it('keeps authored layout stable and reports a chat-only keyboard shift', async () => {
     const app = createFakeApplication();
     const canvas = createCanvas({ width: 1170, height: 2532 });
@@ -197,9 +248,16 @@ describe('PixiApplicationManager', () => {
   it('locks the authored layout before keyboard resize and through keyboard dismissal', async () => {
     const app = createFakeApplication();
     const canvas = createCanvas({ width: 1170, height: 2532 });
+    let releaseProjection = null;
     const manager = new PixiApplicationManager({
       canvas,
       createApplication: () => app,
+      setTimer: (callback, delay) => {
+        expect(delay).toBe(500);
+        releaseProjection = callback;
+        return 1;
+      },
+      clearTimer: vi.fn(),
       windowTarget: {
         innerWidth: 1170,
         innerHeight: 2532,
@@ -218,6 +276,14 @@ describe('PixiApplicationManager', () => {
 
     canvas.clientHeight = 2532;
     expect(manager.resizeNow().viewportPx.height).toBe(2532);
+
+    canvas.clientWidth = 780;
+    canvas.clientHeight = 1662;
+    expect(manager.resizeNow().viewportPx).toEqual({ width: 1170, height: 2532 });
+
+    canvas.clientWidth = 1170;
+    canvas.clientHeight = 2532;
+    releaseProjection();
 
     canvas.clientHeight = 1662;
     expect(manager.resizeNow().viewportPx.height).toBe(1662);

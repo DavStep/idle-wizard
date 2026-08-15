@@ -18,7 +18,7 @@ Project rules and local specialist skills remain authoritative. For UI work, sti
    - Include platform assumptions: browser, Android WebView, touch, mouse, keyboard, or tutorial-gated state.
 
 2. Trace the event path in order:
-   - `pointerdown`, `pointermove`, `pointerup`, `click`, synthetic click helpers, backdrop handlers, and dialog open/close paths. Button-like actions must remain release-only.
+   - `pointerdown`, `pointermove`, `pointerup`, `click`, synthetic click helpers, backdrop handlers, and dialog open/close paths. Button-like actions remain release-only unless the feature contract explicitly defines a true hold action, currently Workshop summon.
    - Check page swipe blockers, scroll roots, pannable world handlers, drag thresholds, and tap slop.
 
 3. Map state reads and writes:

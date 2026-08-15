@@ -75,7 +75,6 @@ const WORKSHOP_STATS_TAB_IDS = new Set(["seeds", "herbs", "potions", "coin"]);
 const WORKSHOP_ALLIANCE_TAB_IDS = new Set([
   "home",
   "quests",
-  "members",
   "settings",
 ]);
 const WORKSHOP_LEADERBOARD_TAB_IDS = new Set(["singlePlayer", "alliance"]);

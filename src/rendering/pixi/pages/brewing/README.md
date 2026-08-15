@@ -21,7 +21,6 @@ The preferred renderer-neutral view model is:
         key, label, ingredients: [{ itemKey, quantity, owned }]
       },
       recipeReadiness: { hasEnoughIngredients, hasEnoughMana },
-      autoCollectEnabled,
       guideRows: [{ id, quantity, label, valueText, fulfilled }],
       activeBrew: {
         key, label, text, durationMs, remainingMs, endTimeMs, progress
@@ -59,14 +58,14 @@ The preferred renderer-neutral view model is:
         }]
       },
       choice: { open, title, cauldronIndex, onClearRecipe, onChooseAnother },
-      settings: { open, cauldronIndex, autoBrewEnabled, autoCollectEnabled }
+      settings: { open, cauldronIndex, autoBrewEnabled }
     }
   },
   actions: {
     selectCauldron, openRecipes, selectRecipe,
     openHerbPicker, selectHerb,
     performCauldronAction, primaryAction,
-    selectBrewQuantity, toggleAutoBrew, toggleAutoCollect,
+    selectBrewQuantity, toggleAutoBrew,
     cancelBrew, collectBrew,
     addHerb, dropHerb, addIngredient, removeIngredient, emptyCauldron,
     toggleInventory, toggleInventoryExpanded, inspectPotion,
@@ -179,13 +178,14 @@ button follows the brewing state: a truly empty cauldron is yellow
 `Choose Recipe` and opens the same retained recipe dialog as the compact
 top-right `Recipes` control; manual idle after a recipe or ingredient is staged
 is `Brew`, brewing and bottling are yellow `Cancel`, brewed is `Bottle`, and
-bottled is `Collect`. Auto mode
-shows `Collect` only while output is ready; otherwise it shows yellow `Cancel`.
+bottled is `Collect`. Newly enabled Auto remains unarmed and keeps the normal
+`Brew` action available; a successful first brew arms the repeating loop. Armed
+Auto shows `Collect` only while output is ready; otherwise it shows yellow `Cancel`.
 After Collect, a retained selected recipe keeps `Brew` as the one-tap repeat
 action: when enough herbs and mana remain, it restages the recipe and starts the
 next batch. Otherwise the action is disabled and the phase reads `Need Herbs`
 or `Need Mana` while the slot counts explain the shortage.
-Idle Auto `Cancel` disables Auto, while active `Cancel` destroys the unfinished
+Armed idle Auto `Cancel` disables Auto, while active `Cancel` destroys the unfinished
 batch only after the shared confirmation dialog warns that the unfinished
 potion, herbs, and mana will be lost. Enabling Auto first copies the
 retained page's selected recipe into the authoritative Auto recipe, then enables

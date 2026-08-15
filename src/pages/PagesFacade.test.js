@@ -8088,11 +8088,11 @@ describe('PagesFacade', () => {
       .dispatchEvent(new window.MouseEvent('click', { bubbles: true }));
 
     const popup = stage.querySelector('.workshop-page__trade-alliance-popup');
-    const membersTab = [
-      ...popup.querySelectorAll('.workshop-page__trade-alliance-tab-button'),
-    ].find((button) => button.textContent === 'members');
-
-    membersTab.dispatchEvent(new window.MouseEvent('click', { bubbles: true }));
+    expect(
+      [...popup.querySelectorAll('.workshop-page__trade-alliance-tab-button')].map(
+        (button) => button.textContent,
+      ),
+    ).toEqual(['home', 'quests', 'settings']);
 
     const memberPopup = popup.querySelector('.workshop-page__trade-alliance-member-popup');
     const memberRows = [...popup.querySelectorAll('.workshop-page__trade-alliance-member-row')];

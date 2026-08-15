@@ -2159,7 +2159,7 @@ describe('WorkshopPixiPage', () => {
       ownedAlliance: true,
       ownedAllianceHome: true,
       selectedTabId: 'home',
-      tabs: ['home', 'quests', 'members', 'settings'].map((id) => ({
+      tabs: ['home', 'quests', 'settings'].map((id) => ({
         id,
         label: id[0].toUpperCase() + id.slice(1),
         selected: id === 'home',
@@ -2204,23 +2204,168 @@ describe('WorkshopPixiPage', () => {
     expect(dialog.allianceTradeSection.root.visible).toBe(true);
     expect(dialog.allianceMembersSection.root.visible).toBe(true);
     expect(dialog.allianceTradeSection.title.visible).toBe(false);
-    expect(dialog.allianceTradeSection.identity.y).toBe(12);
+    expect(dialog.allianceTradeSection.paper.y).toBeCloseTo(
+      PIXI_ROOT_RUN_GEOMETRY.dialog.paperInsetTop -
+        PIXI_ROOT_RUN_GEOMETRY.dialog.frameOutset,
+    );
+    expect(dialog.allianceTradeSection.identity.y).toBe(
+      PIXI_UI_GEOMETRY.dialogPadding + 5,
+    );
     expect(dialog.allianceTradeSection.identity.text).toBe('[MOSS] Moss Hall');
     expect(dialog.allianceMembersSection.title.visible).toBe(false);
     expect(dialog.allianceMembersSection.count.visible).toBe(false);
-    expect(dialog.allianceMembersSection.scroll.root.y).toBe(12);
+    expect(dialog.allianceMembersSection.scroll.root.y).toBe(
+      PIXI_UI_GEOMETRY.dialogPadding + 5,
+    );
+    const tradePaperBottom =
+      dialog.allianceTradeSection.paper.y +
+      dialog.allianceTradeSection.paper.frameHeight;
+    const membersPaperTop =
+      dialog.allianceMembersSection.root.y +
+      dialog.allianceMembersSection.paper.y;
+    expect(membersPaperTop - tradePaperBottom).toBe(8);
     expect(member.avatar.texture).toBe(miraTexture);
     expect(member.role.text).toBe('Trade Master');
     expect(member.level.text).toBe('Lv 12');
     expect(member.background.frameHeight).toBe(44);
     expect(member.root.parent).toBe(dialog.allianceMembersSection.scroll.content);
-    expect(dialog.tabs.getWidgets()).toHaveLength(4);
+    expect(dialog.tabs.getWidgets()).toHaveLength(3);
     expect(dialog.tabsLayer.visible).toBe(true);
     expect(dialog.tabsLayer.y).toBeLessThan(dialog.panel.coreHeight);
 
     harness.page.destroy();
     harness.dispose();
     miraTexture.destroy();
+  });
+
+  it('renders owned alliance quests as framed rows with icon-backed rewards', () => {
+    const crystalTexture = new Texture();
+    const assetManager = createPixiAssetManagerFake(Texture);
+    assetManager.getAtlasTexture = vi.fn((frame) =>
+      frame === 'resource:crystal' ? crystalTexture : new Texture(),
+    );
+    const harness = createHarness({ assetManager });
+    const model = createWorkshopViewModel();
+    model.workshop.dialogs.alliance = {
+      title: 'Trade Alliance',
+      ownedAlliance: true,
+      rowWidget: 'allianceQuest',
+      selectedTabId: 'quests',
+      tabs: ['home', 'quests', 'settings'].map((id) => ({
+        id,
+        label: id[0].toUpperCase() + id.slice(1),
+        selected: id === 'quests',
+        onSelect: vi.fn(),
+      })),
+      rows: [
+        {
+          id: 'gather-silverleaf',
+          title: 'Gather Silverleaf',
+          contributionLabel: 'Your Fill 8/10',
+          progressLabel: '18/40',
+          rewardAmountLabel: '3',
+          rewardResource: 'crystal',
+          actionLabel: 'Fill',
+          actionVariant: 'green',
+          actionWidth: 58,
+          actionHeight: 28,
+          enabled: true,
+          onActivate: vi.fn(),
+        },
+      ],
+      members: [],
+    };
+
+    harness.page.bind(model);
+    harness.page.openDialog('alliance');
+
+    const dialog = harness.dialogs.get('workshop.alliance');
+    const quest = dialog.allianceQuestRows.get('gather-silverleaf');
+    const tabs = dialog.tabs.getWidgets();
+    expect(dialog.rows).toBe(dialog.allianceQuestRows);
+    expect(quest.background.frameHeight).toBe(44);
+    expect(quest.title.text).toBe('Gather Silverleaf');
+    expect(quest.progress.text).toBe('18/40');
+    expect(quest.reward.icon.texture).toBe(crystalTexture);
+    expect(quest.reward.amountLabel.textObject.text).toBe('3');
+    expect(quest.action.text.text).toBe('Fill');
+    expect(tabs[1].root.x - (tabs[0].root.x + tabs[0].width)).toBe(8);
+    expect(
+      dialog.tabsLayer.y -
+        (dialog.panel.paperFrame.y + dialog.panel.paperFrame.frameHeight),
+    ).toBe(6);
+
+    harness.page.destroy();
+    harness.dispose();
+    crystalTexture.destroy();
+  });
+
+  it('keeps the larger adaptive Trade Alliance height stable across tabs', () => {
+    const harness = createHarness();
+    const model = createWorkshopViewModel();
+    const tabIds = ['home', 'quests', 'settings'];
+    const createAllianceModel = (selectedTabId) => ({
+      title: 'Trade Alliance',
+      ownedAlliance: true,
+      ownedAllianceHome: selectedTabId === 'home',
+      selectedTabId,
+      tabs: tabIds.map((id) => ({
+        id,
+        label: id[0].toUpperCase() + id.slice(1),
+        selected: id === selectedTabId,
+        onSelect: vi.fn(),
+      })),
+      tradeInfo: {
+        identityLabel: '[MOSS] Moss Hall',
+        memberCountLabel: '1/50',
+      },
+      tradeInfoRows: [
+        { id: 'members', label: 'Members', value: '1/50' },
+        { id: 'join-mode', label: 'Join Mode', value: 'Apply' },
+        { id: 'season-income', label: 'Season Income', value: '84.5k' },
+        {
+          id: 'membership',
+          label: 'Membership',
+          actionLabel: 'Leave',
+          enabled: true,
+        },
+      ],
+      members: [],
+      rows:
+        selectedTabId === 'quests'
+          ? [{ id: 'quest', label: 'Supply The Market', value: '4/10' }]
+          : [],
+      settings:
+        selectedTabId === 'settings'
+          ? {
+              allianceId: 'moss',
+              name: 'Moss Hall',
+              tag: 'MOSS',
+              joinMode: 'apply',
+              editable: true,
+              canDisband: false,
+            }
+          : null,
+    });
+
+    model.workshop.dialogs.alliance = createAllianceModel('home');
+    harness.page.bind(model);
+    harness.page.openDialog('alliance');
+    const dialog = harness.dialogs.get('workshop.alliance');
+
+    const heightsAt = (sourceHeight) =>
+      tabIds.map((tabId) => {
+        model.workshop.dialogs.alliance = createAllianceModel(tabId);
+        harness.page.bind(model);
+        dialog.layout({ sourceWidth: 390, sourceHeight });
+        return dialog.modal.fixedBounds.height;
+      });
+
+    expect(heightsAt(844)).toEqual([470, 470, 470]);
+    expect(heightsAt(944)).toEqual([570, 570, 570]);
+
+    harness.page.destroy();
+    harness.dispose();
   });
 
   it('renders retained alliance settings fields inside the shared footer tabs', async () => {
@@ -2231,7 +2376,7 @@ describe('WorkshopPixiPage', () => {
       title: 'Trade Alliance',
       ownedAlliance: true,
       selectedTabId: 'settings',
-      tabs: ['home', 'quests', 'members', 'settings'].map((id) => ({
+      tabs: ['home', 'quests', 'settings'].map((id) => ({
         id,
         label: id[0].toUpperCase() + id.slice(1),
         selected: id === 'settings',
@@ -2262,7 +2407,7 @@ describe('WorkshopPixiPage', () => {
     expect(pane.root.visible).toBe(true);
     expect(pane.fields.get('name').value).toBe('Moss Hall');
     expect(pane.fields.get('notice').value).toBe('Help one another.');
-    expect(dialog.tabs.getWidgets()).toHaveLength(4);
+    expect(dialog.tabs.getWidgets()).toHaveLength(3);
     expect(dialog.panel.paperFrame.visible).toBe(true);
     expect(pane.root.y).toBe(
       dialog.panel.paperFrame.y +
@@ -3561,7 +3706,7 @@ describe('WorkshopPixiPage', () => {
     expect(inputRouter.store.getRegistrations()).toHaveLength(0);
   });
 
-  it('keeps summon release-only when the tutorial overlay owns the event path', () => {
+  it('summons repeatedly while held through the tutorial overlay and stops on release', () => {
     vi.useFakeTimers();
     const inputRouter = new PixiInputRouter();
     const summonSeed = vi.fn(() => ({ ok: true }));
@@ -3599,11 +3744,110 @@ describe('WorkshopPixiPage', () => {
     };
     inputRouter.onPointerDown(createPointerEvent(overlayTarget, 'pointerdown', summonPoint));
     expect(harness.page.summon.button.pressed).toBe(true);
-    vi.advanceTimersByTime(500);
+    vi.advanceTimersByTime(99);
     expect(summonSeed).not.toHaveBeenCalled();
+    vi.advanceTimersByTime(1);
+    expect(summonSeed).toHaveBeenCalledTimes(1);
+    vi.advanceTimersByTime(200);
+    expect(summonSeed).toHaveBeenCalledTimes(3);
     inputRouter.onPointerUp(createPointerEvent(overlayTarget, 'pointerup', summonPoint));
     expect(harness.page.summon.button.pressed).toBe(false);
+    expect(summonSeed).toHaveBeenCalledTimes(3);
+    vi.advanceTimersByTime(300);
+    expect(summonSeed).toHaveBeenCalledTimes(3);
+
+    overlayTarget.destroy();
+    harness.page.destroy();
+    harness.dispose();
+    vi.useRealTimers();
+  });
+
+  it('keeps a quick summon press release-confirmed through the tutorial overlay', () => {
+    vi.useFakeTimers();
+    const inputRouter = new PixiInputRouter();
+    const summonSeed = vi.fn(() => ({ ok: true }));
+    const harness = createHarness({ inputRouter });
+    harness.page.bind(createWorkshopViewModel({ summonSeed }));
+    harness.page.activate();
+
+    const summonBounds = harness.page.summon.button.getBounds();
+    const summonPoint = {
+      x: summonBounds.x + summonBounds.width / 2,
+      y: summonBounds.y + summonBounds.height / 2,
+    };
+    const overlayTarget = new Container({ label: 'tutorial-overlay-quick-tap' });
+
+    inputRouter.onPointerDown(createPointerEvent(overlayTarget, 'pointerdown', summonPoint));
+    vi.advanceTimersByTime(50);
+    expect(summonSeed).not.toHaveBeenCalled();
+    inputRouter.onPointerUp(createPointerEvent(overlayTarget, 'pointerup', summonPoint));
     expect(summonSeed).toHaveBeenCalledTimes(1);
+
+    overlayTarget.destroy();
+    harness.page.destroy();
+    harness.dispose();
+    vi.useRealTimers();
+  });
+
+  it('stops held summoning when a summon attempt fails', () => {
+    vi.useFakeTimers();
+    const inputRouter = new PixiInputRouter();
+    const summonSeed = vi
+      .fn()
+      .mockReturnValueOnce({ ok: true })
+      .mockReturnValueOnce({ ok: false, reason: 'not_enough_mana' });
+    const harness = createHarness({ inputRouter });
+    harness.page.bind(createWorkshopViewModel({ summonSeed }));
+    harness.page.activate();
+
+    const summonBounds = harness.page.summon.button.getBounds();
+    const summonPoint = {
+      x: summonBounds.x + summonBounds.width / 2,
+      y: summonBounds.y + summonBounds.height / 2,
+    };
+    const overlayTarget = new Container({ label: 'tutorial-overlay-failed-hold' });
+
+    inputRouter.onPointerDown(createPointerEvent(overlayTarget, 'pointerdown', summonPoint));
+    vi.advanceTimersByTime(500);
+    expect(summonSeed).toHaveBeenCalledTimes(2);
+    inputRouter.onPointerUp(createPointerEvent(overlayTarget, 'pointerup', summonPoint));
+    expect(summonSeed).toHaveBeenCalledTimes(2);
+
+    overlayTarget.destroy();
+    harness.page.destroy();
+    harness.dispose();
+    vi.useRealTimers();
+  });
+
+  it('cancels held summoning when the press leaves input slop', () => {
+    vi.useFakeTimers();
+    const inputRouter = new PixiInputRouter();
+    const summonSeed = vi.fn(() => ({ ok: true }));
+    const harness = createHarness({ inputRouter });
+    harness.page.bind(createWorkshopViewModel({ summonSeed }));
+    harness.page.activate();
+
+    const summonBounds = harness.page.summon.button.getBounds();
+    const summonPoint = {
+      x: summonBounds.x + summonBounds.width / 2,
+      y: summonBounds.y + summonBounds.height / 2,
+    };
+    const outsideSlopPoint = {
+      x: summonPoint.x + 30,
+      y: summonPoint.y,
+    };
+    const overlayTarget = new Container({ label: 'tutorial-overlay-cancelled-hold' });
+
+    inputRouter.onPointerDown(createPointerEvent(overlayTarget, 'pointerdown', summonPoint));
+    vi.advanceTimersByTime(50);
+    inputRouter.onPointerMove(
+      createPointerEvent(overlayTarget, 'pointermove', outsideSlopPoint),
+    );
+    vi.advanceTimersByTime(300);
+    inputRouter.onPointerUp(
+      createPointerEvent(overlayTarget, 'pointerup', outsideSlopPoint),
+    );
+    expect(summonSeed).not.toHaveBeenCalled();
 
     overlayTarget.destroy();
     harness.page.destroy();

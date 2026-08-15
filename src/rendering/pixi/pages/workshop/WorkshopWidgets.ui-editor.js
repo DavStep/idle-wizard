@@ -4,6 +4,7 @@ import { createUiEditorPixiThumbnail } from '../../../../uiEditor/widgets/create
 import { createDialogContentTheme } from '../../primitives/PixiDialogFrame.js';
 import { DEFAULT_PIXI_THEME_SNAPSHOT, PIXI_ROOT_RUN_ASSETS } from '../../theme/PixiThemeTokens.js';
 import {
+  AllianceQuestRow,
   AllianceDirectoryRow,
   AllianceMemberRow,
   LeaderboardRowPixi,
@@ -30,6 +31,7 @@ export default [
   widget('compound.world-event-donation-option-row', 'World Event Donation Option Row', ['cost-button'], donationOptionControl, variants(['available', 'unavailable', 'seed-pack'])),
   widget('compound.alliance-directory-row', 'Alliance Directory Row', ['compound.alliance-member-row', 'primitive.managed-scroll-area', 'text-button'], allianceDirectoryControl, variants(['collapsed', 'expanded', 'full'])),
   widget('compound.alliance-member-row', 'Alliance Member Row', ['compound.player-profile', 'text-button'], allianceMemberControl, variants(['leader', 'member', 'passive'])),
+  widget('compound.alliance-quest-row', 'Alliance Quest Row', ['primitive.resource-label', 'text-button'], allianceQuestControl, variants(['fill', 'claim', 'claimed'])),
   widget('compound.leaderboard-row', 'Leaderboard Row', ['compound.player-profile', 'primitive.star-level-label', 'primitive.resource-label'], leaderboardRowControl, variants(['player', 'current-player', 'alliance'])),
   widget('compound.potion-discovery-row', 'Potion Discovery Row', [], potionDiscoveryControl, variants(['discovered', 'undiscovered', 'long-recipe'])),
   widget('compound.workshop-dialog-row', 'Workshop Dialog Row', ['text-button', 'primitive.inline-text'], dialogRowControl, variants(['value', 'resource', 'action', 'locked'])),
@@ -75,6 +77,7 @@ function productionClass(id) {
     'compound.world-event-donation-option-row': 'WorldEventDonationOptionRow',
     'compound.alliance-directory-row': 'AllianceDirectoryRow',
     'compound.alliance-member-row': 'AllianceMemberRow',
+    'compound.alliance-quest-row': 'AllianceQuestRow',
     'compound.leaderboard-row': 'LeaderboardRowPixi',
     'compound.potion-discovery-row': 'PotionDiscoveryRowPixi',
     'compound.workshop-dialog-row': 'WorkshopDialogRow',
@@ -167,6 +170,25 @@ function allianceMemberControl({ assets, input, fixture = { state: 'leader' }, c
   control.bind({ username: 'Elara', character: 'elara', roleLabel: fixture.state === 'leader' ? 'Trade Master' : 'Trader', levelLabel: 'Lv 12', onActivate: fixture.state === 'passive' ? null : () => context?.emit('memberOpened') ?? true });
   control.setBounds(0, 0, 282, 50);
   return wrap(control, 282, 50);
+}
+
+function allianceQuestControl({ assets, input, fixture = { state: 'fill' }, context }) {
+  const control = new AllianceQuestRow({ dialog: dialogStub(assets, input) });
+  const claimed = fixture.state === 'claimed';
+  control.bind({
+    id: 'gather-silverleaf',
+    title: 'Gather Silverleaf',
+    contributionLabel: 'Your Fill 8/10',
+    progressLabel: fixture.state === 'fill' ? '18/40' : '40/40',
+    rewardAmountLabel: '3',
+    rewardResource: 'crystal',
+    actionLabel: claimed ? 'Claimed' : fixture.state === 'claim' ? 'Claim' : 'Fill',
+    actionVariant: claimed ? 'gray' : 'green',
+    enabled: !claimed,
+    onActivate: claimed ? null : () => context?.emit('allianceQuestActivated') ?? true,
+  });
+  control.setBounds(0, 0, 252, 50);
+  return wrap(control, 252, 50);
 }
 
 function leaderboardRowControl({ assets, input, fixture = { state: 'player' }, context }) {

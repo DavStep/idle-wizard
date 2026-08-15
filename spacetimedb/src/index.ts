@@ -26,9 +26,13 @@ import { normalizeSaveSelectedNumber } from './saveSelectedNumberNormalizer';
 import { assertMarketScope, getMarketScopedKey, normalizeMarketId } from './marketScope';
 import {
   appendMissingItemConfigRows as appendMissingItemConfigRowsByKey,
-  normalizeLegacyPotionSellPrices,
   normalizeLegacySeedSummonCosts,
+  rebaseVersionedItemConfigSellPrices,
 } from './itemConfigRows';
+import {
+  rebaseNpcMarketCatalogConfig,
+  resetNpcMarketTuningScores,
+} from './npcMarketPriceRebase';
 import {
   createIdentityOnlyPlayerReset,
   createInvalidatedPlayerSession,
@@ -62,6 +66,10 @@ import {
   resolveMarketLicence,
   usesDynamicNpcMarketPricing,
 } from '../../src/shared/marketLicence.js';
+import {
+  createPotionSellPrices,
+  ITEM_SELL_PRICE_BALANCE_VERSION,
+} from '../../src/shared/itemPriceBalance.js';
 
 const DEFAULT_PLAYER_LEVEL_CRYSTAL_PER_LEVEL = 1;
 const DEFAULT_GAMEPLAY_SAVE_CURRENT_LEVEL = 0;
@@ -210,6 +218,7 @@ const STARTUP_MAINTENANCE_STATE_KEY = 'startup-maintenance:direct-sell-stands-v2
 const PLAYER_LEVEL_MANA_REGEN_BACKFILL_STATE_KEY = 'game-config:player-level-mana-regen-v2';
 const PLAYER_LEVEL_CAULDRON_CAP_BACKFILL_STATE_KEY = 'game-config:player-level-cauldron-cap-v1';
 const SMALL_TOWN_FIXED_PRICE_BACKFILL_STATE_KEY = 'npc-market:small-town-fixed-prices-v1';
+const NPC_MARKET_CATALOG_PRICE_REBASE_STATE_KEY = 'npc-market:catalog-prices-2-5x-v1';
 const PLAYER_LEVEL_MANA_PER_SECOND_PER_LEVEL_RANGES = [
   { fromLevel: 2, toLevel: 5, amount: 1 },
   { fromLevel: 6, toLevel: 10, amount: 0.5 },
@@ -4170,54 +4179,10 @@ const herbSellPriceGoldByKey: Record<string, number> = {
   pearlroot: 41_943_040,
 };
 
-const potionSellPriceGoldByKey: Record<string, number> = {
-  manaTonic: 60,
-  minorHealingPotion: 80,
-  nettleVigor: 180,
-  calmingDraught: 240,
-  simpleAntidote: 820,
-  venomDraught: 2_080,
-  briarWard: 680,
-  lanternTonic: 1_320,
-  healingPotion: 1_320,
-  moonlitFocus: 5_440,
-  sunrootStamina: 5_280,
-  frostmossCleanse: 11_520,
-  sleepDraught: 25_920,
-  elixirOfLife: 14_080,
-  starLuckPhiltre: 51_280,
-  dragonCourage: 169_120,
-  deepDreamVision: 92_160,
-  pactWard: 92_800,
-  ashenMemory: 10_420,
-  silverleafQuiet: 5_800,
-  emberSight: 204_820,
-  thornSleep: 20_960,
-  glassMoonElixir: 61_440,
-  rootboundResolve: 4_480,
-  nightOrchardTonic: 102_480,
-  starlessCourage: 248_400,
-  frostveinDraught: 21_840,
-  bloodlightWard: 83_540,
-  silverleafSalve: 5_898_260,
-  yarrowPoultice: 1_310_920,
-  hyssopClarity: 2_627_200,
-  valerianRest: 5_263_520,
-  comfreyBalm: 10_489_600,
-  nightshadeVeil: 10_577_920,
-  belladonnaSight: 21_013_760,
-  wormwoodPurge: 41_953_440,
-  snowdropBreath: 84_224_000,
-  pearlrootDraught: 188_910_080,
-};
-
 const seedMarketBasePriceGoldByHerbKey = getNpcMarketBasePrices(
   seedSellPriceGoldByHerbKey,
 );
 const herbMarketBasePriceGoldByKey = getNpcMarketBasePrices(herbSellPriceGoldByKey);
-const potionMarketBasePriceGoldByKey = getNpcMarketBasePrices(
-  potionSellPriceGoldByKey,
-);
 
 function getNpcMarketBasePrices(
   sellPrices: Record<string, number>,
@@ -5000,6 +4965,19 @@ const potionRecipeCatalog = [
   ),
 }));
 
+const potionSellPriceGoldByKey = createPotionSellPrices(
+  potionRecipeCatalog,
+  Object.fromEntries(
+    Object.entries(herbSellPriceGoldByKey).map(([herbKey, sellPrice]) => [
+      `${herbKey}Herb`,
+      sellPrice,
+    ]),
+  ),
+);
+const potionMarketBasePriceGoldByKey = getNpcMarketBasePrices(
+  potionSellPriceGoldByKey,
+);
+
 const unknownPotionCatalogByKey = new Map(
   unknownPotionCatalog.map((potion) => [potion.key, potion]),
 );
@@ -5281,6 +5259,7 @@ function removeLegacySplitAutomationEntries(
 
 function getDefaultItemsConfig() {
   return {
+    sellPriceVersion: ITEM_SELL_PRICE_BALANCE_VERSION,
     seeds: herbCatalog.map((herb, index) => ({
       id: index + 1,
       key: `${herb.key}Seed`,
@@ -9318,7 +9297,7 @@ function normalizeItemsGameConfigJson(
   originalJson: string,
 ): string {
   const defaultConfig = JSON.parse(DEFAULT_ITEMS_CONFIG_JSON) as Record<string, unknown>;
-  const normalizedConfig = { ...parsedConfig };
+  let normalizedConfig = { ...parsedConfig };
   let changed = false;
 
   for (const key of ['seeds', 'herbs', 'potions', 'ingredients']) {
@@ -9347,15 +9326,15 @@ function normalizeItemsGameConfigJson(
     }
   }
 
-  const normalizedPotions = normalizeLegacyPotionSellPrices(
-    normalizedConfig.potions,
-    normalizedConfig.herbs,
-    potionRecipeCatalog,
+  const priceRebasedConfig = rebaseVersionedItemConfigSellPrices(
+    normalizedConfig,
+    defaultConfig,
+    ITEM_SELL_PRICE_BALANCE_VERSION,
     (row) => normalizeNpcMarketItemKey(String(row.key ?? '')),
   );
 
-  if (normalizedPotions !== normalizedConfig.potions) {
-    normalizedConfig.potions = normalizedPotions;
+  if (priceRebasedConfig !== normalizedConfig) {
+    normalizedConfig = priceRebasedConfig;
     changed = true;
   }
 
@@ -15930,6 +15909,51 @@ function runSmallTownFixedPriceBackfillOnce(ctx: IdleWizardReducerCtx) {
   });
 }
 
+function runNpcMarketCatalogPriceRebaseOnce(ctx: IdleWizardReducerCtx) {
+  if (ctx.db.maintenanceState.stateKey.find(NPC_MARKET_CATALOG_PRICE_REBASE_STATE_KEY)) {
+    return;
+  }
+
+  for (const market of marketLicences) {
+    for (const catalogItem of npcMarketCatalog) {
+      if (!isItemGradeTradedInMarket(catalogItem.marketGrade, market.id)) {
+        continue;
+      }
+
+      const storageKey = getMarketScopedItemKey(market.id, catalogItem.itemKey);
+      const existingConfig = ctx.db.npcMarketItemConfig.itemKey.find(storageKey);
+
+      if (!existingConfig) {
+        continue;
+      }
+
+      const rebasedConfig = rebaseNpcMarketCatalogConfig(existingConfig, {
+        storedCatalogBasePriceGold: toStoredGoldPrice(catalogItem.basePriceGold),
+        priceScale: GOLD_PRICE_SCALE,
+        updatedAt: ctx.timestamp,
+      });
+      ctx.db.npcMarketItemConfig.itemKey.update(rebasedConfig);
+
+      if (existingConfig.enabled === false) {
+        continue;
+      }
+
+      const marketRow = ensureNpcMarketItem(ctx, catalogItem.itemKey, market.id);
+
+      if (marketRow.demandScore !== 0n || marketRow.supplyScore !== 0n) {
+        ctx.db.npcMarketPrice.itemKey.update(
+          resetNpcMarketTuningScores(marketRow, ctx.timestamp),
+        );
+      }
+    }
+  }
+
+  ctx.db.maintenanceState.insert({
+    stateKey: NPC_MARKET_CATALOG_PRICE_REBASE_STATE_KEY,
+    appliedAt: ctx.timestamp,
+  });
+}
+
 function backfillPlayerLevelManaRegen(ctx: IdleWizardReducerCtx) {
   const row = ctx.db.gameConfig.configKey.find('playerLevel');
   if (!row) {
@@ -18106,6 +18130,7 @@ export const onConnect = spacetimedb.clientConnected((ctx) => {
   runPlayerLevelCauldronCapBackfillOnce(ctx);
   ensureNpcMarketCatalog(ctx);
   runSmallTownFixedPriceBackfillOnce(ctx);
+  runNpcMarketCatalogPriceRebaseOnce(ctx);
   ensureWorldEventRewardSettlementTick(ctx);
   settleEndedWorldEventInboxRewards(ctx);
 
@@ -18147,6 +18172,7 @@ export const init = spacetimedb.init((ctx) => {
   runPlayerLevelCauldronCapBackfillOnce(ctx);
   ensureNpcMarketCatalog(ctx);
   runSmallTownFixedPriceBackfillOnce(ctx);
+  runNpcMarketCatalogPriceRebaseOnce(ctx);
   ensureWorldEventRewardSettlementTick(ctx);
   settleEndedWorldEventInboxRewards(ctx);
 });

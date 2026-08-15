@@ -1,4 +1,4 @@
-const recipeCatalog = [
+export const defaultPotionRecipeCatalog = [
   {
     potionKey: 'manaTonic',
     manaCost: 12,
@@ -385,7 +385,7 @@ function normalizeRecipeIngredientSlots(recipe) {
 export class PotionRecipeManager {
   constructor({ itemDefinitionManager }) {
     this.itemDefinitionManager = itemDefinitionManager;
-    this.recipeCatalog = recipeCatalog;
+    this.recipeCatalog = defaultPotionRecipeCatalog;
   }
 
   setRuntimeConfig(config = {}) {

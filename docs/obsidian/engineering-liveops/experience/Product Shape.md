@@ -354,7 +354,7 @@ experience_type: product-shape
 - Workshop summon sign/circle art is visual only; the real summon hit box must be the bordered `summon seed` label box.
 - Generic `.style-button` active CSS must exclude `[aria-disabled="true"]`; aria-disabled real buttons can still get native `:active` and paint transparent art hitboxes.
 - Pixel/WebView taps need forgiving touch slop in `PressFeedbackManager`; a 12px move threshold can treat normal finger drift as a drag and suppress the valid click.
-- Workshop summon is release-only; do not restore its former hold-to-repeat timer or any pointerdown action path.
+- Workshop summon is the intentional hold-action exception: quick presses summon once on validated release, while an enabled hold waits `100ms` and then repeats every `100ms` until release, cancellation, input-slop escape, page deactivation, disabled state, or summon failure; never add a final release summon after repeats began.
 - Prime Workshop summon success feedback before its synchronous gameplay publish/rebind, then cancel it on failure; starting the glow only after that work makes a confirmed release feel delayed.
 - Workshop side-control hit areas must partition on the `52.25px` row pitch; using the taller visual widget bounds lets the next control steal taps from labels such as `Leaderboard`.
 - Retained dialog presenters must preserve the full feature record instead of flattening rich data into generic label/value rows; potion discovery projection includes art key, discoverer, timestamp, ingredients, mana, duration, and royalty.
@@ -368,7 +368,7 @@ experience_type: product-shape
 - Claim-button reward flyouts should publish before the claim snapshot rebuilds, so the original button can still anchor the motion.
 - Retained reward effects must anchor to the currently visible production display object; hidden legacy room trees can keep stale semantic bounds and send item drops off-stage.
 - Haptics are app-level device feedback: keep the preference in local storage and route pulses through `HapticsFacade`. Every enabled touch control gets a mild pulse on touch-down, no second pulse on quick release, and a mild second pulse only after a validated release following a `350ms` hold; actions and click sounds remain release-confirmed.
-- Holding a button must never activate or repeat its action before release; Workshop summon follows the same release-only rule as tabs, regular buttons, icon buttons, and dialog close controls.
+- Ordinary buttons never activate or repeat before release. Workshop summon is the sole documented exception and keeps its hold timer inside the feature-local Pixi control rather than changing the shared button or input-router contract.
 - Android tap haptics should prefer the `IdleWizardHaptics` constant pulse (`5ms`, `0.35` amplitude); Capacitor `Haptics.vibrate()` uses default amplitude and feels harsher.
 - Retained Brewing state motion must reapply cauldron, liquid, and highlight effects from captured rest transforms each tick; otherwise ambient brewing motion, carousel settling, completion impacts, and reduced-motion resets accumulate visual drift.
 - Retained room scroll height must derive from visible rendered rows, not maximum feature capacity; hidden future Garden plots otherwise create blank scroll travel and a misleading overflow rail.

@@ -74,7 +74,6 @@ export class BrewingFacade {
     this.autoBrewEnabledByCauldron = new Map();
     this.autoBrewRecipeKeysByCauldron = new Map();
     this.autoBrewArmedByCauldron = new Map();
-    this.autoCollectEnabledByCauldron = new Map();
     this.brewQuantityByCauldron = new Map();
     this.onBrewComplete = onBrewComplete;
     this.brewingSnapshotManager = new BrewingSnapshotManager({
@@ -203,7 +202,7 @@ export class BrewingFacade {
     return this.autoBrewArmedByCauldron.get(this.normalizeCauldronIndex(cauldronIndex)) === true;
   }
 
-  setAutoCollectEnabled(enabled, cauldronIndex = 0) {
+  setAutoCollectEnabled(_enabled, cauldronIndex = 0) {
     const safeCauldronIndex = this.normalizeCauldronIndex(cauldronIndex);
 
     if (!this.brewingCauldronEntityManager.isCauldronUnlocked(safeCauldronIndex)) {
@@ -215,7 +214,7 @@ export class BrewingFacade {
       };
     }
 
-    if (enabled === true && !this.getAutoBrewEnabled(safeCauldronIndex)) {
+    if (!this.getAutoBrewEnabled(safeCauldronIndex)) {
       return {
         ok: false,
         reason: 'auto_brew_required',
@@ -224,12 +223,7 @@ export class BrewingFacade {
       };
     }
 
-    if (enabled === true) {
-      this.autoCollectEnabledByCauldron.set(safeCauldronIndex, true);
-    } else {
-      this.autoCollectEnabledByCauldron.delete(safeCauldronIndex);
-    }
-
+    // Compatibility for older callers and saves: collection now follows Auto Brew.
     return {
       ok: true,
       autoCollectEnabled: this.getAutoCollectEnabled(safeCauldronIndex),
@@ -247,11 +241,7 @@ export class BrewingFacade {
   }
 
   getAutoCollectEnabled(cauldronIndex = 0) {
-    return (
-      this.autoCollectEnabledByCauldron.get(
-        this.normalizeCauldronIndex(cauldronIndex),
-      ) === true
-    );
+    return this.getAutoBrewEnabled(cauldronIndex);
   }
 
   armAutoBrew(cauldronIndex = 0) {
@@ -550,8 +540,7 @@ export class BrewingFacade {
       .filter(
         (activeBrew) =>
           activeBrew?.canCollect === true &&
-          this.getAutoBrewEnabled(activeBrew.cauldronIndex) &&
-          this.getAutoCollectEnabled(activeBrew.cauldronIndex),
+          this.getAutoBrewEnabled(activeBrew.cauldronIndex),
       );
     const collected = [];
 
@@ -663,7 +652,6 @@ export class BrewingFacade {
       }
       this.restoreBrewQuantity(savedCauldron, snapshot, cauldronIndex);
       this.restoreAutoBrew(savedCauldron, snapshot, cauldronIndex);
-      this.restoreAutoCollect(savedCauldron, snapshot, cauldronIndex);
       this.restoreCauldronItems(savedCauldron?.cauldronItemKeys, itemsFacade, cauldronIndex);
       this.restoreActiveBrew(savedCauldron?.activeBrew, itemsFacade, cauldronIndex);
     }
@@ -770,25 +758,10 @@ export class BrewingFacade {
     }
   }
 
-  restoreAutoCollect(savedCauldron, snapshot, cauldronIndex = 0) {
-    const safeCauldronIndex = this.normalizeCauldronIndex(cauldronIndex);
-    const enabled =
-      typeof savedCauldron?.autoCollectEnabled === 'boolean'
-        ? savedCauldron.autoCollectEnabled
-        : safeCauldronIndex === 0
-          ? snapshot?.autoCollectEnabled === true
-          : false;
-
-    if (enabled && this.getAutoBrewEnabled(safeCauldronIndex)) {
-      this.setAutoCollectEnabled(true, safeCauldronIndex);
-    }
-  }
-
   clearAutoBrewState() {
     this.autoBrewEnabledByCauldron.clear();
     this.autoBrewRecipeKeysByCauldron.clear();
     this.autoBrewArmedByCauldron.clear();
-    this.autoCollectEnabledByCauldron.clear();
     this.brewQuantityByCauldron.clear();
   }
 

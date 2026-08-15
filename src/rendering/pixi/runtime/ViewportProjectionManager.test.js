@@ -66,6 +66,26 @@ describe('ViewportProjectionManager', () => {
     },
   );
 
+  it('keeps the 390-wide scale while fitting room layout to visible browser height', () => {
+    const projection = new ViewportProjectionManager().project({
+      width: 390,
+      height: 844,
+      visibleHeight: 700,
+    });
+
+    expect(projection).toMatchObject({
+      fitScale: 1 / 3,
+      uiScale: 1,
+      stageLogicalWidth: 1170,
+      stageLogicalHeight: 2532,
+      stageScreenWidth: 390,
+      stageScreenHeight: 844,
+      visibleStageHeight: 700,
+      sourceWidth: 390,
+      sourceHeight: 700,
+    });
+  });
+
   it('centers the source room without stretching it in wide desktop gutters', () => {
     const projection = new ViewportProjectionManager().project({
       width: 1440,
@@ -96,5 +116,38 @@ describe('ViewportProjectionManager', () => {
     expect(projection.dialogShift).toBe(0);
     expect(projection.topDialogShift).toBe(0);
     expect(projection.worldChatShift).toBe(-290);
+    expect(projection.sourceHeight).toBe(844);
+  });
+
+  it('rejects transient width and height samples until text-entry projection is explicitly released', () => {
+    const manager = new ViewportProjectionManager();
+    manager.project({ width: 1170, height: 2532 });
+    manager.lockTextEntry();
+
+    const keyboardProjection = manager.project({
+      width: 1170,
+      height: 1662,
+      visibleHeight: 1662,
+      keyboardInset: 870,
+    });
+    manager.unlockTextEntry();
+    manager.project({ width: 1170, height: 2532 });
+    const dismissFlashProjection = manager.project({
+      width: 780,
+      height: 1662,
+      visibleHeight: 1662,
+      keyboardInset: 0,
+    });
+
+    expect(keyboardProjection.viewportPx).toEqual({ width: 1170, height: 2532 });
+    expect(dismissFlashProjection.viewportPx).toEqual({
+      width: 1170,
+      height: 2532,
+    });
+    expect(dismissFlashProjection.fitScale).toBe(1);
+
+    manager.unlockTextEntry({ force: true });
+    const releasedProjection = manager.project({ width: 780, height: 1662 });
+    expect(releasedProjection.viewportPx).toEqual({ width: 780, height: 1662 });
   });
 });

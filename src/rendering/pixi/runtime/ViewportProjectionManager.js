@@ -28,11 +28,20 @@ export class ViewportProjectionManager {
     height,
     visibleHeight = height,
     safeInsets = {},
-    keyboardInset = Math.max(0, height - visibleHeight),
+    keyboardInset = 0,
     lockForTextEntry = this.textEntryLocked,
   }) {
     const measured = this.normalizeViewport({ width, height });
     const layout = this.resolveLayoutViewport(measured, lockForTextEntry);
+    const normalizedVisibleHeight = Math.max(
+      0,
+      Math.min(layout.height, Number(visibleHeight) || 0),
+    );
+    const normalizedKeyboardInset = Math.max(0, Number(keyboardInset) || 0);
+    const contentScreenHeight =
+      lockForTextEntry || normalizedKeyboardInset > 0
+        ? layout.height
+        : normalizedVisibleHeight;
     const usesFluidPortraitHeight = layout.height >= layout.width;
     const fitScale = Math.min(
       1,
@@ -46,9 +55,9 @@ export class ViewportProjectionManager {
     const stageScreenWidth = Math.max(authoredScreenWidth, layout.width);
     const stageLogicalWidth = stageScreenWidth / fitScale;
     const stageLogicalHeight = layout.height / fitScale;
+    const contentLogicalHeight = contentScreenHeight / fitScale;
     const authoredOffsetX = (stageLogicalWidth - this.viewport.width) / 2;
     const uiScale = fitScale * this.sourceUiScale;
-    const normalizedKeyboardInset = Math.max(0, Number(keyboardInset) || 0);
     // The keyboard overlays the unchanged stage. World Chat alone owns an
     // inset translation so unrelated dialogs and room chrome never move.
     const worldChatShift = uiScale > 0
@@ -70,12 +79,9 @@ export class ViewportProjectionManager {
       authoredOffsetX,
       sourceOffsetX: authoredOffsetX / this.sourceUiScale,
       sourceWidth: this.viewport.width / this.sourceUiScale,
-      sourceHeight: stageLogicalHeight / this.sourceUiScale,
+      sourceHeight: contentLogicalHeight / this.sourceUiScale,
       isWide: stageLogicalWidth > this.viewport.width + 1 / fitScale,
-      visibleStageHeight: Math.max(
-        0,
-        Math.min(layout.height, Number(visibleHeight) || 0),
-      ),
+      visibleStageHeight: normalizedVisibleHeight,
       keyboardInset: normalizedKeyboardInset,
       dialogShift: 0,
       topDialogShift: 0,
@@ -115,22 +121,14 @@ export class ViewportProjectionManager {
       return measured;
     }
 
-    const widthChanged = Math.abs(measured.width - this.layoutViewport.width) > 1;
-    const heightShrank = measured.height < this.layoutViewport.height;
-    if (widthChanged) {
-      this.layoutViewport = measured;
-      this.textEntryLocked = this.textEntryActive;
-      return measured;
-    }
-
-    if (lockForTextEntry && heightShrank && !widthChanged) {
+    // Android can emit a one-frame width-and-height viewport candidate while
+    // its IME surface is being removed. Freeze the complete canvas projection,
+    // not only height shrinkage, until the runtime explicitly releases it.
+    if (lockForTextEntry) {
       return this.layoutViewport;
     }
 
     this.layoutViewport = measured;
-    if (this.textEntryLocked && !this.textEntryActive) {
-      this.textEntryLocked = false;
-    }
     return measured;
   }
 

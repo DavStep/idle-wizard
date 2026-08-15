@@ -49,6 +49,8 @@
 
       registerGlobalDialogFactories(runtime);
       await runtime.initialize();
+      const loading =
+        new URLSearchParams(window.location.search).get('state') === 'loading';
       const playerInfoModel = {
         ownPlayer: true,
         player: {
@@ -107,7 +109,17 @@
         },
       };
 
-      runtime.openDialog(GLOBAL_DIALOG_IDS.PLAYER, playerInfoModel);
+      runtime.openDialog(
+        GLOBAL_DIALOG_IDS.PLAYER,
+        loading
+          ? {
+              ...playerInfoModel,
+              ownPlayer: true,
+              loading: true,
+              player: { username: 'Mira' },
+            }
+          : playerInfoModel,
+      );
     </script>
   </body>
 </html>

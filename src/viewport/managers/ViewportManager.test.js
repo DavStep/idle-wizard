@@ -95,6 +95,9 @@ describe('ViewportManager', () => {
     expect(textEntryPlugin).toContain(
       'WindowManager.LayoutParams.SOFT_INPUT_ADJUST_NOTHING',
     );
+    expect(textEntryPlugin).toMatch(
+      /keyCode == KeyEvent\.KEYCODE_BACK\s*&&\s*onBack != null[\s\S]*?event\.getAction\(\) == KeyEvent\.ACTION_UP[\s\S]*?onBack\.run\(\);[\s\S]*?return true;/,
+    );
   });
 
   it('uses the splash color during launch and the top-panel color in game', () => {

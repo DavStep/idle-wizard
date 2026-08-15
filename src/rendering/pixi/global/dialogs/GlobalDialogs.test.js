@@ -312,6 +312,71 @@ describe('retained global Pixi dialogs', () => {
     harness.dispose();
   });
 
+
+  it('keeps the loaded Player Info geometry while player data is loading', () => {
+    const harness = createHarness();
+    const openCosmetics = vi.fn(() => true);
+    const loadedPlayer = harness.registry.open(GLOBAL_DIALOG_IDS.PLAYER, {
+      ownPlayer: true,
+      player: createPlayer(),
+      actions: { openCosmetics },
+    });
+    const loadedOuterHeight = loadedPlayer.panel.outerHeight;
+    const loadedSummaryBounds = {
+      x: loadedPlayer.summaryFrame.x,
+      y: loadedPlayer.summaryFrame.y,
+      width: loadedPlayer.summaryFrame.frameWidth,
+      height: loadedPlayer.summaryFrame.frameHeight,
+    };
+    const loadedStatsBounds = {
+      x: loadedPlayer.statsFrame.x,
+      y: loadedPlayer.statsFrame.y,
+      width: loadedPlayer.statsFrame.frameWidth,
+      height: loadedPlayer.statsFrame.frameHeight,
+    };
+
+    loadedPlayer.bind({
+      ownPlayer: true,
+      loading: true,
+      player: { username: 'StepWizzard' },
+      actions: { openCosmetics },
+    });
+
+    expect(loadedPlayer.panel.outerHeight).toBe(loadedOuterHeight);
+    expect(loadedPlayer.panel.paperFrame.visible).toBe(false);
+    expect(loadedPlayer.summaryFrame.visible).toBe(true);
+    expect(loadedPlayer.statsFrame.visible).toBe(true);
+    expect({
+      x: loadedPlayer.summaryFrame.x,
+      y: loadedPlayer.summaryFrame.y,
+      width: loadedPlayer.summaryFrame.frameWidth,
+      height: loadedPlayer.summaryFrame.frameHeight,
+    }).toEqual(loadedSummaryBounds);
+    expect({
+      x: loadedPlayer.statsFrame.x,
+      y: loadedPlayer.statsFrame.y,
+      width: loadedPlayer.statsFrame.frameWidth,
+      height: loadedPlayer.statsFrame.frameHeight,
+    }).toEqual(loadedStatsBounds);
+    expect(loadedPlayer.loadingLabel.text).toBe('Loading player info');
+    expect(loadedPlayer.loadingLabel.textObject.anchor.x).toBe(0.5);
+    expect(loadedPlayer.loadingLabel.textObject.anchor.y).toBe(0.5);
+    expect(loadedPlayer.loadingLabel.x).toBeCloseTo(
+      loadedPlayer.summaryFrame.x + loadedPlayer.summaryFrame.frameWidth / 2,
+    );
+    expect(loadedPlayer.loadingLabel.y).toBeCloseTo(
+      loadedPlayer.summaryFrame.y + loadedPlayer.summaryFrame.frameHeight / 2,
+    );
+    expect(loadedPlayer.profileWidget.visible).toBe(false);
+    expect(loadedPlayer.totalCoinLabel.visible).toBe(false);
+    expect(loadedPlayer.cosmeticsButton.visible).toBe(true);
+    expect(loadedPlayer.cosmeticsButton.enabled).toBe(true);
+    expect(loadedPlayer.cosmeticsButton.activate()).toBe(true);
+    expect(openCosmetics).toHaveBeenCalledOnce();
+
+    harness.dispose();
+  });
+
   it('keeps the settings panel inside the modal input boundary', () => {
     const harness = createHarness();
     const settings = harness.registry.open(GLOBAL_DIALOG_IDS.SETTINGS, {
@@ -1992,7 +2057,6 @@ function createHarness({
     },
   };
 }
-
 function createPayloads() {
   return {
     [GLOBAL_DIALOG_IDS.SETTINGS]: {

@@ -68,6 +68,7 @@ experience_type: style
 - Source UI scale must follow the portrait width-fit or wide-desktop contain-fit scale, not stay fixed at `3`, so web and mobile views both fit without stretching.
 - Fresh-start account gates need viewport-fixed positioning; stage-clipped absolute dialogs can be cut off on short desktop web viewports.
 - Mobile keyboard resize must not recompute scale from the shrunken visual height while text input is focused or while the keyboard is closing after focus leaves.
+- Mobile browser chrome occlusion is not a keyboard inset: keep the `100lvh` Pixi canvas stable, but derive the unlocked room `sourceHeight` from its intersection with `visualViewport` so bottom chrome stays visible without changing the 390-wide scale.
 - Text-entry viewport locks should start on press; some mobile WebViews resize for the keyboard before `focusin`.
 - Native keyboard adaptation belongs only to the open World Chat panel: keep its detached header below an `18px` source-space top clearance, shorten only its message viewport, and leave the stage, room chrome, composer scale, row scale, and every other dialog at resting geometry.
 - Animate World Chat keyboard/open transitions by interpolating its bottom-anchored panel bounds; scaling the dialog also scales text, rows, and composer and recreates the squished appearance.
@@ -141,6 +142,7 @@ experience_type: style
 - Brewing active brew state belongs only in the active brew/progress row; keep cauldron status blank while brewing, brewed, bottling, or bottled.
 - Brewing cauldron action controls sit outside the bordered box in a right-side stack; keep button dimensions synced, and target hidden/disabled action CSS outside `.style-box` scope.
 - Brewing `recipes`/primary/quantity/auto controls use the shared yellow regular-button skin; cauldron purchase prices compose the green regular-button nine-slice at the same compact dimensions. Do not reintroduce feature-local player-card button frames that override those color modifiers.
+- Brewing primary-action projection must distinguish Auto enabled from Auto armed: enabled-but-unarmed keeps `Brew` available for the first manual batch, while only armed idle Auto may show `Cancel`.
 - Brewing locked/research cauldron placeholders are only the dotted locked frame; hide the normal cauldron title/count and style-box frame/background.
 - Brewing cauldron staged ingredients and selected-recipe requirements use one herb per ordered slot; do not collapse adjacent duplicates into quantity groups or show visible action words.
 - A retained Brewing recipe must allocate inventory across repeated ordered slots and show `owned/required` on every slot; after Collect, one-tap `Brew` restages and starts an affordable recipe, while shortages replace `Ready to Brew` with `Need Herbs` or `Need Mana`.

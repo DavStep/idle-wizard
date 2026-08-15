@@ -16,6 +16,8 @@ const PIXI_AUTHORED_VIEWPORT = Object.freeze({
   height: PIXI_UI_GEOMETRY.authoredHeight,
 });
 
+const TEXT_ENTRY_PROJECTION_RELEASE_DELAY_MS = 500;
+
 function defaultSpineRuntimeImporter() {
   return import('@esotericsoftware/spine-pixi-v8');
 }
@@ -40,6 +42,8 @@ export class PixiApplicationManager {
     prepareSpineRuntime = defaultSpineRuntimeImporter,
     windowTarget = globalThis.window ?? null,
     devicePixelRatio = () => globalThis.devicePixelRatio || 1,
+    setTimer = (callback, delay) => globalThis.setTimeout(callback, delay),
+    clearTimer = (timer) => globalThis.clearTimeout(timer),
   } = {}) {
     if (!canvas) {
       throw new Error('PixiApplicationManager requires the production canvas.');
@@ -51,12 +55,15 @@ export class PixiApplicationManager {
     this.prepareSpineRuntime = prepareSpineRuntime;
     this.windowTarget = windowTarget;
     this.devicePixelRatio = devicePixelRatio;
+    this.setTimer = setTimer;
+    this.clearTimer = clearTimer;
     this.app = null;
     this.layers = null;
     this.projection = null;
     this.theme = DEFAULT_PIXI_THEME_SNAPSHOT;
     this.initializePromise = null;
     this.resizeFrame = null;
+    this.textEntryProjectionReleaseTimer = null;
     this.listeners = new Set();
     this.keyboardInset = 0;
     this.visibleHeight = null;
@@ -207,24 +214,61 @@ export class PixiApplicationManager {
   }
 
   setKeyboardMetrics({ keyboardInset = 0, visibleHeight = null } = {}) {
+    const previousKeyboardInset = this.keyboardInset;
     this.keyboardInset = Math.max(0, Number(keyboardInset) || 0);
     this.visibleHeight = Number.isFinite(visibleHeight) ? visibleHeight : null;
     if (this.keyboardInset > 0) {
+      this.cancelTextEntryProjectionRelease();
       this.projectionManager.lockTextEntry();
     } else if (!this.textEntryActive) {
       this.projectionManager.unlockTextEntry();
+      if (
+        previousKeyboardInset > 0 ||
+        this.textEntryProjectionReleaseTimer !== null
+      ) {
+        this.scheduleTextEntryProjectionRelease();
+      }
     }
     return this.resizeNow();
   }
 
   setTextEntryActive(active) {
+    const wasTextEntryActive = this.textEntryActive;
     this.textEntryActive = active === true;
     if (this.textEntryActive) {
+      this.cancelTextEntryProjectionRelease();
       this.projectionManager.lockTextEntry();
     } else {
       this.projectionManager.unlockTextEntry();
+      if (
+        wasTextEntryActive ||
+        this.keyboardInset > 0 ||
+        this.textEntryProjectionReleaseTimer !== null
+      ) {
+        this.scheduleTextEntryProjectionRelease();
+      }
     }
     return this.resizeNow();
+  }
+
+  scheduleTextEntryProjectionRelease() {
+    this.cancelTextEntryProjectionRelease();
+    this.textEntryProjectionReleaseTimer = this.setTimer(() => {
+      this.textEntryProjectionReleaseTimer = null;
+      if (this.destroyed || this.textEntryActive || this.keyboardInset > 0) {
+        return;
+      }
+      this.projectionManager.unlockTextEntry({ force: true });
+      this.resizeNow();
+    }, TEXT_ENTRY_PROJECTION_RELEASE_DELAY_MS);
+  }
+
+  cancelTextEntryProjectionRelease() {
+    if (this.textEntryProjectionReleaseTimer === null) {
+      return;
+    }
+    this.clearTimer(this.textEntryProjectionReleaseTimer);
+    this.textEntryProjectionReleaseTimer = null;
   }
 
   setSplashViewportActive(active) {
@@ -279,9 +323,37 @@ export class PixiApplicationManager {
     return this.projectionManager.project({
       width,
       height,
-      visibleHeight: this.visibleHeight ?? height - this.keyboardInset,
+      visibleHeight: this.resolveVisibleViewportHeight(height),
       keyboardInset: this.keyboardInset,
     });
+  }
+
+  resolveVisibleViewportHeight(canvasHeight) {
+    if (Number.isFinite(this.visibleHeight)) {
+      return Math.max(0, Math.min(canvasHeight, this.visibleHeight));
+    }
+
+    const visualViewport = this.windowTarget?.visualViewport;
+    const visualHeight = Number(visualViewport?.height);
+    if (!(visualHeight > 0)) {
+      return Math.max(0, canvasHeight - this.keyboardInset);
+    }
+
+    const canvasRect = this.canvas.getBoundingClientRect?.();
+    if (canvasRect && Number(canvasRect.height) > 0) {
+      const visualTop = Number(visualViewport.offsetTop) || 0;
+      const visualBottom = visualTop + visualHeight;
+      const canvasTop = Number(canvasRect.top) || 0;
+      const canvasBottom = canvasTop + Number(canvasRect.height);
+      const intersectionHeight =
+        Math.min(canvasBottom, visualBottom) - Math.max(canvasTop, visualTop);
+
+      if (intersectionHeight > 0) {
+        return Math.min(canvasHeight, intersectionHeight);
+      }
+    }
+
+    return Math.min(canvasHeight, visualHeight);
   }
 
   applyProjection(projection) {
@@ -360,6 +432,7 @@ export class PixiApplicationManager {
     }
     this.destroyed = true;
     this.textEntryActive = false;
+    this.cancelTextEntryProjectionRelease();
     this.projectionManager.unlockTextEntry({ force: true });
     this.splashViewportActive = false;
     this.canvas.classList?.remove('is-splash-viewport');

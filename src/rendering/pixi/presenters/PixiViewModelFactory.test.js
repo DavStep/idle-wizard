@@ -1298,7 +1298,6 @@ describe('PixiViewModelFactory', () => {
     expect(alliance.tabs.map((tab) => tab.label)).toEqual([
       'Home',
       'Quests',
-      'Members',
       'Settings',
     ]);
     expect(alliance.members[0]).toMatchObject({
@@ -1376,8 +1375,16 @@ describe('PixiViewModelFactory', () => {
     );
 
     expect(dialog.ownedAllianceHome).toBe(false);
+    expect(dialog.rowWidget).toBe('allianceQuest');
     expect(dialog.selectedTabId).toBe('quests');
     expect(dialog.rows.map((row) => row.actionLabel)).toEqual(['Fill', 'Claim']);
+    expect(dialog.rows[0]).toMatchObject({
+      title: 'Fill Sage Seeds',
+      contributionLabel: 'Your Fill 0/3',
+      progressLabel: '2/10',
+      rewardAmountLabel: '2',
+      rewardResource: 'crystal',
+    });
     expect(dialog.tabs.find((tab) => tab.id === 'quests')?.notification).toBe(true);
 
     dialog.rows[0].onActivate();

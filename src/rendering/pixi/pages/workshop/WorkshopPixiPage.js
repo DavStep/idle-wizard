@@ -133,6 +133,7 @@ const WORKSHOP_FEATURE_PRESENTATIONS = Object.freeze({
 });
 
 const SUMMON_EFFECT_DURATION_MS = 520;
+const SUMMON_HOLD_REPEAT_MS = 100;
 const SUMMON_BUTTON_WIDTH = 120;
 const SUMMON_BUTTON_HEIGHT = 52;
 const SUMMON_BUTTON_UP_OFFSET = 4;
@@ -1757,6 +1758,9 @@ export class WorkshopSummonControl {
     this.notification = new PixiNotificationBadge({ assetManager });
     this.notification.root.label = 'workshop-summon-notification';
     this.root.addChild(this.circle, this.button, this.info);
+    this.holdPointerId = null;
+    this.holdTriggered = false;
+    this.holdTimer = null;
     this.requestFrame = requestFrame;
     this.cancelFrame = cancelFrame;
     this.timeSource = timeSource;
@@ -1768,19 +1772,40 @@ export class WorkshopSummonControl {
     this.effectFrame = 0;
     this.effectStart = 0;
     this.effectTick = (time) => this.tickSummonEffect(time);
-    this.handlePointerDown = () => {
+    this.beginHold = (pointerId) => {
+      if (!this.active || !this.enabled || this.holdPointerId !== null) {
+        return;
+      }
+
+      this.holdPointerId = pointerId;
+      this.holdTriggered = false;
+      this.scheduleHold();
+    };
+    this.handlePointerDown = (event) => {
       this.button.setPressed(true);
+      this.beginHold(event.pointerId);
     };
     this.handlePointerEnd = (event) => {
       this.button.setPressed(false, {
         confirmed: event.type === 'pointerup',
       });
+      if (event.pointerId === this.holdPointerId) {
+        this.stopHold();
+      }
     };
     this.handlePressChange = (pressed, context) => {
       this.button.setPressed(pressed, context);
+      if (pressed) {
+        this.beginHold(context?.pointerId ?? 'router');
+      } else if (
+        context?.pointerId == null ||
+        context.pointerId === this.holdPointerId
+      ) {
+        this.stopHold();
+      }
     };
     this.handleTap = () => {
-      if (this.pressEnabled) {
+      if (this.pressEnabled && !this.holdTriggered) {
         return this.activateSummon();
       }
 
@@ -1893,9 +1918,47 @@ export class WorkshopSummonControl {
     this.circle.alpha = this.enabled ? 1 : 0.38;
   }
 
+  scheduleHold() {
+    this.clearHoldTimer();
+    this.holdTimer = globalThis.setTimeout(() => {
+      this.holdTimer = null;
+
+      if (
+        this.holdPointerId === null ||
+        !this.active ||
+        !this.enabled
+      ) {
+        this.stopHold();
+        return;
+      }
+
+      this.holdTriggered = true;
+      const shouldContinue = this.activateSummon();
+
+      if (shouldContinue !== false && this.enabled) {
+        this.scheduleHold();
+      } else {
+        this.stopHold();
+      }
+    }, SUMMON_HOLD_REPEAT_MS);
+  }
+
+  stopHold() {
+    this.clearHoldTimer();
+    this.holdPointerId = null;
+  }
+
+  clearHoldTimer() {
+    if (this.holdTimer !== null) {
+      globalThis.clearTimeout(this.holdTimer);
+      this.holdTimer = null;
+    }
+  }
+
   setActive(active) {
     this.active = Boolean(active);
     if (!this.active) {
+      this.stopHold();
       this.stopSummonEffect();
     }
   }
@@ -1972,6 +2035,7 @@ export class WorkshopSummonControl {
   }
 
   destroy() {
+    this.stopHold();
     this.stopSummonEffect();
     this.inputRegistration?.unregister?.();
     this.inputRegistration = null;

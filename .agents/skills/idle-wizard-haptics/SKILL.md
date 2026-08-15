@@ -11,7 +11,7 @@ description: "Use for Idle Wizard haptic feedback work: adding, reviewing, tunin
 2. For any visible settings/UI change, also use `impeccable` and follow `PRODUCT.md`, `DESIGN.md`, `docs/style.md`, and `docs/ui-patterns.md`.
 3. Keep haptics app-level. Do not put vibration state in ECS gameplay, SpacetimeDB, backend profile sync, or player progression.
 4. Wire tactile feedback through `src/app/haptics/HapticsFacade.js`; other features should call named facade methods, not native haptic APIs directly.
-5. Use the shared touch contract for every enabled control: mild haptic on pointer-down, no extra haptic for a quick release, and one mild haptic after a validated release following a `350ms` hold. Actions and click sounds remain release-confirmed.
+5. Use the shared touch contract for every enabled control: mild haptic on pointer-down, no extra haptic for a quick release, and one mild haptic after a validated release following a `350ms` hold. Actions and click sounds remain release-confirmed except for Workshop summon's documented feature-local hold-to-repeat action; do not generalize that exception into the shared input router.
 6. Verify with focused tests first; run broader checks when touching shared app/page lifecycle.
 
 ## Marble Master Pattern
@@ -31,7 +31,7 @@ For Idle Wizard, use the official `@capacitor/haptics` plugin unless there is a 
 
 - Keep default tap haptic subtle: `5ms`.
 - Keep a short cooldown, currently `40ms`, to avoid double buzzes from synthetic/native click paths.
-- Keep actions release-only. Holding a button must never activate or repeat it before pointer-up.
+- Keep ordinary actions release-only. Workshop summon is the sole documented hold-to-repeat exception and keeps that timer in its feature-local Pixi control.
 - Default haptics on, but expose a plain settings row to disable them.
 - Store haptic preference under local storage only. Treat it like a device preference, not account/profile data.
 - Do not add color, icons, animations, or gameplay copy just to announce haptics.

@@ -18,7 +18,7 @@ experience_type: gameplay-economy
 - Seed drop preferences multiply base seed `dropWeight` at roll time (`none` 0, `low` 1, `medium` 2, `high` 3); keep config `dropWeight` unchanged and use effective weight for odds.
 - Prestige keeps seed drop preferences while ordinary seed unlock research resets; preserve an explicit all-`none` setup and keep summoning unavailable until the player re-enables one researched seed.
 - Seeds produce herbs, and herbs have growth duration.
-- Default sell values compound through production: each seed tier is `2x` the prior tier, herb value is `5x` its matching seed, and a valid potion is `4x` the combined value of its herb inputs; wasted potion remains `1`.
+- Default sell values compound through production: each seed tier is `2x` the prior tier, herb value is `5x` its matching seed, and a valid potion is `2.5x` the combined value of its herb inputs; wasted potion remains `1`.
 - Coin research uses an achievement curve: post-onboarding seed unlocks cost `100x` seed sell value, recipe unlocks climb monotonically by roughly `1.75x` per catalog step, and summon multipliers cost `1k`, `10k`, `100k`, then `1m`.
 - Ingredients are inventory-only catalog entries with six rarity tiers; do not invent prices, drop sources, recipes, or progression gates until those rules are explicitly requested.
 - Garden page herb inventory should read owned counts from `snapshot.garden.herbs`; Brewing's herb snapshot can subtract staged cauldron ingredients.
@@ -79,6 +79,7 @@ experience_type: gameplay-economy
 - Auto brew recipe/enabled state is per cauldron; selecting a recipe in cauldron 2+ must not rewrite cauldron 1 automation.
 - Auto brew enable UI must set `autoBrewRecipeKey` from the selected recipe before enabling; `BrewingFacade` rejects enabled auto-brew without a recipe key.
 - Auto/manual cauldron UI only enables or disables future automation; auto brew stays unarmed until a successful manual brew, then repeats future cycles.
+- Enabled Auto Brew owns the full loop: bottle, collect the ready potion, and start the next batch. Legacy auto-collect save flags must not stall that loop.
 - Manual fast sell is removed; trader stands always use the full marginal NPC quote.
 - Fresh games start with 0 coin. No player level may require or spend coin. Task `coinBudget` values scale daily/world content only; legacy `completionCostCoin` and `completionCostGold` inputs must normalize into that budget and stay out of level-completion snapshots.
 - Research unlock gates for task requirements must be no higher than `target task level - 1`; e.g. nettle seed must unlock at level 5 because it is a level 6 requirement shown while the player is level 5.

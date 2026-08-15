@@ -34,7 +34,7 @@ export default [
   widget('compound.brewing-recipe-ingredient-row', 'Brewing Recipe Ingredient Row', [], recipeIngredientControl, variants(['available', 'missing', 'unknown'])),
   widget('compound.brewing-batch-detail', 'Brewing Batch Detail', ['compound.brewing-ingredient-picker-slot', 'primitive.progress-bar'], batchDetailControl, variants(['ready', 'brewing', 'complete'])),
   widget('compound.brewing-ingredient-picker-slot', 'Brewing Ingredient Picker Slot', ['text-button'], ingredientSlotControl, variants(['filled', 'used', 'missing', 'empty'])),
-  widget('compound.brewing-automation-toggle', 'Brewing Automation Toggle', ['text-button'], automationToggleControl, variants(['off', 'on', 'unavailable'])),
+  widget('compound.brewing-automation-toggle', 'Brewing Automation Inclusion', ['text-button'], automationToggleControl, variants(['included', 'unavailable'])),
 ];
 
 function widget(id, label, childWidgetIds, factory, scenarios) {
@@ -232,10 +232,10 @@ function ingredientSlotControl({ assets, input, fixture = { state: 'filled' }, c
   return wrap(control, BREWING_HUD_GEOMETRY.ingredientSlotWidth, BREWING_HUD_GEOMETRY.ingredientSlotHeight);
 }
 
-function automationToggleControl({ assets, input, fixture = { state: 'off' }, context }) {
+function automationToggleControl({ assets, input, fixture = { state: 'included' } }) {
   const parent = new Container();
   const dialog = new BrewingAutomationSettingsDialogPixi({ parent, inputRouter: input, assetManager: assets });
-  dialog.bind({ cauldronNumber: 1, autoBrewEnabled: fixture.state !== 'unavailable', autoCollectEnabled: fixture.state === 'on', actions: { toggleAutoCollect: () => context?.emit('autoCollectToggled') ?? true } });
+  dialog.bind({ cauldronNumber: 1, autoBrewEnabled: fixture.state !== 'unavailable' });
   dialog.toggle.root.position.set(0, 0);
   const root = new Container({ label: 'brewing-automation-toggle-preview' });
   root.addChild(dialog.toggle.root);

@@ -34,6 +34,6 @@ and Donate-to-donation-dialog interaction without depending on a gameplay save
 or backend account session.
 
 Pass the shared `PixiInputRouter` when constructing the page. Buttons,
-release-only summoning, scrolling, dialog backdrops, Escape/Android back, and
+quick-release and hold-to-repeat summoning, scrolling, dialog backdrops, Escape/Android back, and
 modal blocking register once through that router; their registrations are
 removed only when the retained view is destroyed.

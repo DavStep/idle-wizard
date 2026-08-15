@@ -44,7 +44,7 @@ describe('ItemDefinitionManager', () => {
       key: 'manaTonic',
       label: 'mana tonic',
       kind: 'potion',
-      baseSellPrice: 60,
+      baseSellPrice: 37.5,
       marketGrade: 1,
     });
     expect(manager.getPotionDefinitions()).toContainEqual({
@@ -52,7 +52,7 @@ describe('ItemDefinitionManager', () => {
       key: 'pactWard',
       label: 'pact ward',
       kind: 'potion',
-      baseSellPrice: 92_800,
+      baseSellPrice: 58_000,
       marketGrade: 3,
     });
     expect(manager.getPotionDefinitions()).toContainEqual({
@@ -65,7 +65,7 @@ describe('ItemDefinitionManager', () => {
       unknown: true,
       known: false,
       researchable: false,
-      baseSellPrice: 10_420,
+      baseSellPrice: 6_512.5,
       marketGrade: 3,
     });
     expect(manager.getPotionDefinitions()).toContainEqual({
@@ -82,7 +82,7 @@ describe('ItemDefinitionManager', () => {
       key: 'pearlrootDraught',
       label: 'pearlroot draught',
       kind: 'potion',
-      baseSellPrice: 188_910_080,
+      baseSellPrice: 118_068_800,
       marketGrade: 5,
     });
     expect(manager.getRecipePotionDefinitions()).toHaveLength(28);
@@ -90,7 +90,7 @@ describe('ItemDefinitionManager', () => {
     expect(manager.getDefinition(2001).kind).toBe('potion');
   });
 
-  it('uses compounding seed and herb values and makes brewing worth four inputs', () => {
+  it('uses compounding seed and herb values and makes brewing worth 2.5 inputs', () => {
     const manager = new ItemDefinitionManager();
     const recipes = new PotionRecipeManager({
       itemDefinitionManager: manager,
@@ -118,7 +118,7 @@ describe('ItemDefinitionManager', () => {
       );
 
       expect(manager.getDefinitionByKey(recipe.key).baseSellPrice).toBe(
-        ingredientValue * 4,
+        ingredientValue * 2.5,
       );
     }
   });

@@ -48,7 +48,6 @@ const SOLO_TABS = [
 const MEMBER_TABS = [
   { id: 'home', label: 'home' },
   { id: 'quests', label: 'quests' },
-  { id: 'members', label: 'members' },
   { id: 'settings', label: 'settings' },
 ];
 const ITEM_FILL_QUEST_TYPE = 'itemFill';
@@ -583,11 +582,6 @@ export class WorkshopTradeAllianceManager {
       return;
     }
 
-    if (tabId === 'members') {
-      this.renderMembersView();
-      return;
-    }
-
     if (tabId === 'settings') {
       this.renderSettingsView();
       return;
@@ -617,6 +611,12 @@ export class WorkshopTradeAllianceManager {
     if (alliance.notice) {
       root.append(this.createParagraph(alliance.notice));
     }
+
+    const allianceId = alliance.allianceId;
+    const members = (this.lastSnapshot.members ?? []).filter(
+      (member) => member.allianceId === allianceId,
+    );
+    root.append(...members.map((member) => this.createMemberRow(member)));
 
     const leave = document.createElement('button');
     leave.className = 'style-button workshop-page__trade-alliance-wide-button';

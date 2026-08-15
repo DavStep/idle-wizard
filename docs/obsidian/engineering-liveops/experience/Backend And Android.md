@@ -85,6 +85,7 @@ experience_type: backend-android
 - Current NPC/player exchange mutates shared backend market state while player inventory and coin remain client-owned; treat it as coordinated shared state, not full server-authoritative escrow.
 - NPC market auto-sell must reserve/decrement visible demand locally across same-item stands, aggregate reports per item, and split reducer calls at 10,000; otherwise stale demand snapshots or oversized calls fail `sell_to_npc`.
 - NPC market base prices are DB-owned in `npc_market_item_config`; use `claim_npc_market_admin` once, then `set_npc_market_item_base_price` to change them without another deploy. `npc_market_price` remains the derived live quote table.
+- Catalog-wide price-curve changes must use a versioned rebase of both `defaultBasePriceGold` and `basePriceGold` across every market; preserving previously auto-tuned bases during a scale change mixes incompatible old and new prices.
 - Coin balances and market prices are whole numbers. Use the shared coin-price helpers so positive fractional legacy values round up and every positive price stays at least `1` coin.
 - Player shop sale proceeds live in `player_shop_proceeds` until the seller claims them into local coin.
 - Player shop trade history is server-backed through `player_shop_trade`; clients should tolerate older backends missing the table by showing empty history.
@@ -97,6 +98,7 @@ experience_type: backend-android
 - Keep Android WebView framework haptics disabled when the app owns touch feedback; otherwise WebView adds a native long-press pulse while retained Pixi controls are still held.
 - Android native text-entry submit events must apply the terminal editor value before running Pixi callbacks; the IME can commit composition only in that final payload.
 - Keep Capacitor `SystemBars.insetsHandling` disabled while native text entry owns IME insets; its CSS mode pads the WebView parent by the keyboard height and compresses the entire Pixi game even when the activity uses `adjustNothing`.
+- Keep the complete Pixi canvas projection locked through Android IME dismissal, then release it after the surface settles; WebView can emit a transient width-and-height sample that magnifies the whole game for one frame.
 - Capacitor 8 Android builds require JDK 21 here.
 - Capacitor Android serves bundled assets as `https://localhost` by default; local `ws://` SpacetimeDB is blocked as mixed content unless `server.androidScheme` is `http` and cleartext is allowed, then the app is rebuilt/synced.
 - Capacitor 8 iOS should use CocoaPods here (`npx cap add ios --packagemanager CocoaPods`); the SPM path can hide core APIs like `CAPPluginCall.reject`.

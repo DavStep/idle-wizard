@@ -1964,7 +1964,7 @@ export class BrewingAutomationSettingsDialogPixi {
     });
     this.root = this.modal.root;
     this.copy = createText(
-      'Collect finished batches automatically\nwhile autobrew is on.',
+      'Auto Brew collects finished batches\nand starts the next batch.',
       {
         ...RETAINED_TEXT_STYLES.body,
         wordWrap: true,
@@ -1975,14 +1975,12 @@ export class BrewingAutomationSettingsDialogPixi {
     this.toggle = new RetainedButton({
       assetManager,
       inputRouter,
-      label: 'auto collect off',
+      label: 'included with autobrew',
       buttonLabel: 'brewing-auto-collect-toggle',
       variant: 'green',
-      onActivate: () => this.toggleAutoCollect(),
     });
     this.modal.panel.content.addChild(this.copy, this.toggle.root);
     this.model = {};
-    this.actions = {};
     this.applyTheme(theme);
     this.layout({
       sourceWidth: RETAINED_PAGE_GEOMETRY.width,
@@ -1992,27 +1990,13 @@ export class BrewingAutomationSettingsDialogPixi {
 
   bind(model = {}) {
     this.model = model;
-    this.actions = model.actions ?? {};
     this.modal.setTitle(model.title ?? `cauldron ${model.cauldronNumber ?? 1} settings`);
     const available = model.autoBrewEnabled === true;
-    const enabled = model.autoCollectEnabled === true;
     this.toggle.setModel({
-      label: available
-        ? `auto collect ${enabled ? 'on' : 'off'}`
-        : 'enable autobrew first',
-      enabled: available,
-      selected: enabled,
-      action: () => this.toggleAutoCollect(),
+      label: available ? 'included with autobrew' : 'enable autobrew first',
+      enabled: false,
+      selected: available,
     });
-  }
-
-  toggleAutoCollect() {
-    const result = this.actions.toggleAutoCollect?.(this.model.cauldronIndex ?? 0);
-    if (result?.ok !== false) {
-      this.model.autoCollectEnabled = !this.model.autoCollectEnabled;
-      this.bind(this.model);
-    }
-    return result ?? true;
   }
 
   layout(projection = {}) {
@@ -2627,7 +2611,9 @@ function resolveCauldronMotionMode(cauldron = {}, primaryState = {}) {
 
 export function resolveBrewingPrimaryState(cauldron = {}) {
   const active = cauldron.activeBrew ?? null;
-  const auto = cauldron.autoBrewEnabled === true;
+  const auto =
+    cauldron.autoBrewEnabled === true &&
+    cauldron.autoBrewArmed === true;
 
   if (auto) {
     if (active?.canCollect === true) {

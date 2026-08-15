@@ -5,6 +5,13 @@ upload script posts the section whose heading matches `package.json` `version`.
 Write these developer-to-player notes only in Idle Wizard terms. Do not mention
 other game names, source projects, ports, or implementation provenance.
 
+## 0.3.59
+
+- Added hold-to-repeat summoning in the Workshop, so you can summon seeds continuously while mana is available.
+- Simplified Auto Brew so it automatically bottles finished batches and starts the next batch after the first brew arms the loop.
+- Refined Trade Alliance home and quest layouts, kept Cosmetics available while your Player Info loads, and improved profile loading presentation.
+- Rebalanced potion sale values from their ingredients, refreshed NPC market prices consistently, and stabilized Android keyboard dismissal so the game keeps its intended scale.
+
 ## 0.3.58
 
 - Redesigned Prestige with a clearer next-reset summary, compact milestones, and easier-to-scan rewards and licence progress.

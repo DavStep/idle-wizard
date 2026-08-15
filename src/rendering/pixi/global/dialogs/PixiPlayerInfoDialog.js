@@ -187,7 +187,8 @@ export class PixiPlayerInfoDialog extends RetainedGlobalDialog {
       label: `${dialogId}:timePlayedValue`,
     });
     this.loadingLabel = new PixiTextLabel({
-      text: 'Loading Player Info',
+      text: 'Loading player info',
+      anchor: { x: 0.5, y: 0.5 },
       color: 'muted',
       label: `${dialogId}:loading`,
     });
@@ -235,8 +236,8 @@ export class PixiPlayerInfoDialog extends RetainedGlobalDialog {
   bindDialog(viewModel) {
     this.playerModel = normalizePlayerModel(viewModel);
     const loading = this.playerModel.loading;
+    const showCosmetics = this.playerModel.ownPlayer;
     for (const object of [
-      this.summaryFrame,
       this.profileWidget,
       this.allianceButton,
       this.name,
@@ -244,7 +245,6 @@ export class PixiPlayerInfoDialog extends RetainedGlobalDialog {
       this.levelValue,
       this.prestigeLabel,
       this.prestigeStars,
-      this.statsFrame,
       this.totalCoinLabel,
       this.totalCoinValue,
       this.totalPotionsLabel,
@@ -261,13 +261,21 @@ export class PixiPlayerInfoDialog extends RetainedGlobalDialog {
     }
     this.loadingLabel.visible = loading;
     this.loadingLabel.renderable = loading;
-    this.cosmeticsButton.visible = false;
-    this.cosmeticsButton.renderable = false;
-    this.cosmeticsButton.setEnabled(false);
-    this.panel.setPaperVisible(loading);
+    this.cosmeticsButton.visible = showCosmetics;
+    this.cosmeticsButton.renderable = showCosmetics;
+    this.cosmeticsButton.setEnabled(
+      showCosmetics && Boolean(this.actions.openCosmetics),
+    );
+    this.panel.setPaperVisible(false);
 
     if (loading) {
-      this.setPanelContentSize(PLAYER_CONTENT_WIDTH, 20);
+      this.setPanelContentSize(
+        PLAYER_CONTENT_WIDTH,
+        this.playerModel.ownPlayer
+          ? OWN_PLAYER_CONTENT_HEIGHT
+          : PLAYER_CONTENT_HEIGHT,
+      );
+      this.layoutDialog();
       return;
     }
 
@@ -297,12 +305,6 @@ export class PixiPlayerInfoDialog extends RetainedGlobalDialog {
         showAlliance &&
           Boolean(this.actions.openAlliance ?? this.model.onOpenAlliance),
       );
-    const showCosmetics = this.playerModel.ownPlayer;
-    this.cosmeticsButton.visible = showCosmetics;
-    this.cosmeticsButton.renderable = showCosmetics;
-    this.cosmeticsButton.setEnabled(
-      showCosmetics && Boolean(this.actions.openCosmetics),
-    );
     this.applyAllianceTagColor();
     this.setPanelContentSize(
       PLAYER_CONTENT_WIDTH,
@@ -346,10 +348,6 @@ export class PixiPlayerInfoDialog extends RetainedGlobalDialog {
     if (!this.playerModel) {
       return;
     }
-    if (this.playerModel.loading) {
-      this.loadingLabel.position.set(0, 0);
-      return;
-    }
     const rightX = PLAYER_CONTENT_WIDTH;
     const detailsX = PORTRAIT_SIZE + SUMMARY_GAP;
     const detailsWidth = PLAYER_CONTENT_WIDTH - detailsX;
@@ -374,6 +372,19 @@ export class PixiPlayerInfoDialog extends RetainedGlobalDialog {
       },
       paperOutsets,
     );
+    this.cosmeticsButton.position.set(COSMETICS_ACTION_X, COSMETICS_ACTION_Y);
+    this.cosmeticsButton.setSize(
+      COSMETICS_ACTION_WIDTH,
+      COSMETICS_ACTION_HEIGHT,
+    );
+
+    if (this.playerModel.loading) {
+      this.loadingLabel.position.set(
+        this.summaryFrame.x + this.summaryFrame.frameWidth / 2,
+        this.summaryFrame.y + this.summaryFrame.frameHeight / 2,
+      );
+      return;
+    }
 
     this.profileWidget.position.set(0, SUMMARY_PADDING_TOP);
     this.profileWidget.scale.set(PORTRAIT_SIZE / 186);
@@ -442,11 +453,6 @@ export class PixiPlayerInfoDialog extends RetainedGlobalDialog {
       statsRightX,
       STATS_Y + STATS_PADDING_Y + STATS_ROW_PITCH * 4,
     );
-    this.cosmeticsButton.position.set(COSMETICS_ACTION_X, COSMETICS_ACTION_Y);
-    this.cosmeticsButton.setSize(
-      COSMETICS_ACTION_WIDTH,
-      COSMETICS_ACTION_HEIGHT,
-    );
     this.levelLabel.setWrapWidth(
       Math.max(0, detailsWidth - this.levelValue.measuredWidth - 6),
     );
@@ -499,7 +505,6 @@ export class PixiPlayerInfoDialog extends RetainedGlobalDialog {
     this.actions.deactivate?.(this.playerModel);
   }
 }
-
 function normalizePlayerModel(model = {}) {
   const source = model.player ?? model;
   const loading =

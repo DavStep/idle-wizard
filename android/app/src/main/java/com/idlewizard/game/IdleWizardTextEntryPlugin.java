@@ -642,10 +642,11 @@ public class IdleWizardTextEntryPlugin extends Plugin {
         public boolean onKeyPreIme(int keyCode, KeyEvent event) {
             if (
                 keyCode == KeyEvent.KEYCODE_BACK &&
-                event.getAction() == KeyEvent.ACTION_UP &&
                 onBack != null
             ) {
-                onBack.run();
+                if (event.getAction() == KeyEvent.ACTION_UP) {
+                    onBack.run();
+                }
                 return true;
             }
 

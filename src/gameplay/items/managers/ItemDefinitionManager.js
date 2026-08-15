@@ -5,6 +5,8 @@ import {
   retiredIngredientKeys,
 } from '../ingredientCatalog.js';
 import { getMarketGradeForCatalogIndex } from '../../../shared/marketLicence.js';
+import { createPotionSellPrices } from '../../../shared/itemPriceBalance.js';
+import { defaultPotionRecipeCatalog } from './PotionRecipeManager.js';
 
 const HERB_TYPE_ID_START = 1001;
 const POTION_TYPE_ID_START = 2001;
@@ -145,46 +147,15 @@ const herbSellPricesByKey = {
   pearlroot: 41_943_040,
 };
 
-const potionSellPricesByKey = {
-  manaTonic: 60,
-  minorHealingPotion: 80,
-  nettleVigor: 180,
-  calmingDraught: 240,
-  simpleAntidote: 820,
-  venomDraught: 2_080,
-  briarWard: 680,
-  lanternTonic: 1_320,
-  healingPotion: 1_320,
-  moonlitFocus: 5_440,
-  sunrootStamina: 5_280,
-  frostmossCleanse: 11_520,
-  sleepDraught: 25_920,
-  elixirOfLife: 14_080,
-  starLuckPhiltre: 51_280,
-  dragonCourage: 169_120,
-  deepDreamVision: 92_160,
-  pactWard: 92_800,
-  ashenMemory: 10_420,
-  silverleafQuiet: 5_800,
-  emberSight: 204_820,
-  thornSleep: 20_960,
-  glassMoonElixir: 61_440,
-  rootboundResolve: 4_480,
-  nightOrchardTonic: 102_480,
-  starlessCourage: 248_400,
-  frostveinDraught: 21_840,
-  bloodlightWard: 83_540,
-  silverleafSalve: 5_898_260,
-  yarrowPoultice: 1_310_920,
-  hyssopClarity: 2_627_200,
-  valerianRest: 5_263_520,
-  comfreyBalm: 10_489_600,
-  nightshadeVeil: 10_577_920,
-  belladonnaSight: 21_013_760,
-  wormwoodPurge: 41_953_440,
-  snowdropBreath: 84_224_000,
-  pearlrootDraught: 188_910_080,
-};
+const potionSellPricesByKey = createPotionSellPrices(
+  defaultPotionRecipeCatalog,
+  Object.fromEntries(
+    Object.entries(herbSellPricesByKey).map(([herbKey, sellPrice]) => [
+      `${herbKey}Herb`,
+      sellPrice,
+    ]),
+  ),
+);
 
 const potionCatalog = [
   ...knownPotionCatalog,

@@ -81,6 +81,7 @@ const STAR_LEVEL_WIDGET_ID = 'primitive.star-level-label';
 const WORLD_EVENT_QUEST_ROW_WIDGET_ID = 'compound.world-event-quest-row';
 const ALLIANCE_DIRECTORY_ROW_WIDGET_ID = 'compound.alliance-directory-row';
 const ALLIANCE_MEMBER_ROW_WIDGET_ID = 'compound.alliance-member-row';
+const ALLIANCE_QUEST_ROW_WIDGET_ID = 'compound.alliance-quest-row';
 
 const DIALOG_CHILD_WIDGET_IDS = Object.freeze({
   [GLOBAL_DIALOG_IDS.SETTINGS]: Object.freeze([
@@ -110,6 +111,10 @@ const DIALOG_CHILD_WIDGET_IDS = Object.freeze({
   'workshop.alliance': Object.freeze([
     'compound.alliance-directory-row',
     'compound.alliance-member-row',
+    ALLIANCE_QUEST_ROW_WIDGET_ID,
+    'primitive.resource-label',
+    'tab-button',
+    'text-button',
   ]),
   'workshop.leaderboard': Object.freeze([
     'compound.leaderboard-row',

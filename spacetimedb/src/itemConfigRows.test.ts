@@ -2,8 +2,9 @@ import { describe, expect, it } from 'vitest';
 
 import {
   appendMissingItemConfigRows,
-  normalizeLegacyPotionSellPrices,
   normalizeLegacySeedSummonCosts,
+  rebaseItemConfigSellPrices,
+  rebaseVersionedItemConfigSellPrices,
 } from './itemConfigRows';
 
 describe('appendMissingItemConfigRows', () => {
@@ -84,69 +85,83 @@ describe('normalizeLegacySeedSummonCosts', () => {
   });
 });
 
-describe('normalizeLegacyPotionSellPrices', () => {
-  const herbRows = [
-    { key: 'sageHerb', baseSellPrice: 6.4 },
-    { key: 'mintHerb', baseSellPrice: 7.2 },
-    { key: 'sunrootHerb', baseSellPrice: 20 },
-    { key: 'dragonpepperHerb', baseSellPrice: 52 },
-    { key: 'belladonnaHerb', baseSellPrice: 192 },
-    { key: 'pearlrootHerb', baseSellPrice: 328 },
-  ];
-  const recipes = [
-    {
-      potionKey: 'manaTonic',
-      ingredients: [{ itemKey: 'sageHerb', quantity: 3 }],
-    },
-    {
-      potionKey: 'minorHealingPotion',
-      ingredients: [
-        { itemKey: 'sageHerb', quantity: 2 },
-        { itemKey: 'mintHerb', quantity: 1 },
-      ],
-    },
-    {
-      potionKey: 'pearlrootDraught',
-      ingredients: [
-        { itemKey: 'pearlrootHerb', quantity: 1 },
-        { itemKey: 'dragonpepperHerb', quantity: 1 },
-        { itemKey: 'belladonnaHerb', quantity: 1 },
-        { itemKey: 'sunrootHerb', quantity: 1 },
-      ],
-    },
-  ];
-
-  it('reprices legacy potions to four times their current herb inputs', () => {
+describe('rebaseItemConfigSellPrices', () => {
+  it('replaces every old price while preserving catalog row identity and metadata', () => {
     expect(
-      normalizeLegacyPotionSellPrices(
+      rebaseItemConfigSellPrices(
         [
-          { key: 'manaTonic', baseSellPrice: 55.2 },
-          { key: 'minorHealingPotion', baseSellPrice: 60 },
-          { key: 'pearlrootDraught', baseSellPrice: 740 },
-          { key: 'wastedPotion', baseSellPrice: 0.8 },
+          { id: 2015, key: 'starLuckPhiltre', label: 'star-luck', baseSellPrice: 393.6 },
+          { id: 2016, key: 'dragonCourage', label: 'dragon', baseSellPrice: 300 },
         ],
-        herbRows,
-        recipes,
+        [
+          { key: 'starLuckPhiltre', baseSellPrice: 32_050 },
+          { key: 'dragonCourage', baseSellPrice: 105_700 },
+        ],
         (row) => String(row.key ?? ''),
       ),
     ).toEqual([
-      { key: 'manaTonic', baseSellPrice: 76.8 },
-      { key: 'minorHealingPotion', baseSellPrice: 80 },
-      { key: 'pearlrootDraught', baseSellPrice: 2_368 },
-      { key: 'wastedPotion', baseSellPrice: 0.8 },
+      { id: 2015, key: 'starLuckPhiltre', label: 'star-luck', baseSellPrice: 32_050 },
+      { id: 2016, key: 'dragonCourage', label: 'dragon', baseSellPrice: 105_700 },
     ]);
   });
 
-  it('preserves intentional non-legacy potion overrides', () => {
-    const storedRows = [{ key: 'manaTonic', baseSellPrice: 56 }];
+  it('returns the original rows when every price already matches', () => {
+    const storedRows = [{ key: 'starLuckPhiltre', baseSellPrice: 32_050 }];
 
     expect(
-      normalizeLegacyPotionSellPrices(
+      rebaseItemConfigSellPrices(
         storedRows,
-        herbRows,
-        recipes,
+        [{ key: 'starLuckPhiltre', baseSellPrice: 32_050 }],
         (row) => String(row.key ?? ''),
       ),
     ).toBe(storedRows);
+  });
+});
+
+describe('rebaseVersionedItemConfigSellPrices', () => {
+  const defaults = {
+    seeds: [{ key: 'starAniseSeed', baseSellPrice: 2_048 }],
+    herbs: [{ key: 'starAniseHerb', baseSellPrice: 10_240 }],
+    potions: [{ key: 'starLuckPhiltre', baseSellPrice: 32_050 }],
+  };
+
+  it('upgrades every hosted item price list together and records the version', () => {
+    expect(
+      rebaseVersionedItemConfigSellPrices(
+        {
+          seeds: [{ key: 'starAniseSeed', baseSellPrice: 1 }],
+          herbs: [{ key: 'starAniseHerb', baseSellPrice: 36 }],
+          potions: [{ key: 'starLuckPhiltre', baseSellPrice: 393.6 }],
+          ingredients: [{ key: 'ratTail', rarity: 'common' }],
+        },
+        defaults,
+        2,
+        (row) => String(row.key ?? ''),
+      ),
+    ).toEqual({
+      sellPriceVersion: 2,
+      seeds: [{ key: 'starAniseSeed', baseSellPrice: 2_048 }],
+      herbs: [{ key: 'starAniseHerb', baseSellPrice: 10_240 }],
+      potions: [{ key: 'starLuckPhiltre', baseSellPrice: 32_050 }],
+      ingredients: [{ key: 'ratTail', rarity: 'common' }],
+    });
+  });
+
+  it('preserves intentional overrides after the current price version is installed', () => {
+    const currentConfig = {
+      sellPriceVersion: 2,
+      seeds: [{ key: 'starAniseSeed', baseSellPrice: 3_000 }],
+      herbs: [{ key: 'starAniseHerb', baseSellPrice: 12_000 }],
+      potions: [{ key: 'starLuckPhiltre', baseSellPrice: 40_000 }],
+    };
+
+    expect(
+      rebaseVersionedItemConfigSellPrices(
+        currentConfig,
+        defaults,
+        2,
+        (row) => String(row.key ?? ''),
+      ),
+    ).toBe(currentConfig);
   });
 });
