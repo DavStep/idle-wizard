@@ -4,7 +4,10 @@ import { SoundPreferenceManager } from './managers/SoundPreferenceManager.js';
 import { SoundSettingsFacade } from './SoundSettingsFacade.js';
 
 describe('SoundSettingsFacade', () => {
-  it('syncs the sfx preference to ui click and garden harvest audio', () => {
+  it('syncs music and sfx preferences to their audio features', () => {
+    const backgroundMusicFacade = {
+      setEnabled: vi.fn(),
+    };
     const uiClickSoundFacade = {
       setEnabled: vi.fn(),
     };
@@ -13,6 +16,7 @@ describe('SoundSettingsFacade', () => {
     };
     const facade = new SoundSettingsFacade({
       preferenceManager: new SoundPreferenceManager({ storage: memoryStorage() }),
+      backgroundMusicFacade,
       gardenHarvestSoundFacade,
       uiClickSoundFacade,
     });
@@ -29,6 +33,9 @@ describe('SoundSettingsFacade', () => {
     expect(gardenHarvestSoundFacade.setEnabled).toHaveBeenNthCalledWith(1, true);
     expect(gardenHarvestSoundFacade.setEnabled).toHaveBeenNthCalledWith(2, false);
     expect(gardenHarvestSoundFacade.setEnabled).toHaveBeenNthCalledWith(3, true);
+    expect(backgroundMusicFacade.setEnabled).toHaveBeenCalledTimes(2);
+    expect(backgroundMusicFacade.setEnabled).toHaveBeenNthCalledWith(1, true);
+    expect(backgroundMusicFacade.setEnabled).toHaveBeenNthCalledWith(2, false);
 
     facade.destroy();
   });

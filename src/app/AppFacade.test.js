@@ -31,6 +31,9 @@ describe('AppFacade live-update startup ordering', () => {
     app.lifecycleManager = {
       start: vi.fn(() => events.push('lifecycle-start')),
     };
+    app.backgroundMusicFacade = {
+      start: vi.fn(() => events.push('music-start')),
+    };
 
     const startPromise = app.start();
 
@@ -41,6 +44,7 @@ describe('AppFacade live-update startup ordering', () => {
     expect(events).toEqual([
       'app-ready',
       'render-initialize',
+      'music-start',
       'lifecycle-start',
       'update-check',
     ]);

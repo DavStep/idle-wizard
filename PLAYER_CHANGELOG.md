@@ -5,6 +5,11 @@ upload script posts the section whose heading matches `package.json` `version`.
 Write these developer-to-player notes only in Idle Wizard terms. Do not mention
 other game names, source projects, ports, or implementation provenance.
 
+## 0.3.53
+
+- Added a quiet looping soundtrack that follows the Music setting and pauses while the game is in the background.
+- Improved account recovery on fresh Android installs so an existing connected account is restored without showing the new-wizard choice again.
+
 ## 0.3.52
 
 - Refreshed player profiles across the top panel, Account, and Player Info with clearer portraits and softer selectable background colors.

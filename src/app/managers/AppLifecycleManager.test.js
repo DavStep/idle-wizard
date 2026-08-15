@@ -610,17 +610,11 @@ describe('AppLifecycleManager', () => {
     lifecycle.stop();
   });
 
-  it('shows the fresh-start gate when native auth appears during prepare on fresh app data', async () => {
+  it('uses native auth recovered during prepare after web storage is cleared', async () => {
     let authenticated = false;
-    let resolveChoice;
     const freshStartChoiceManager = {
       mount: vi.fn(),
-      choose: vi.fn(
-        () =>
-          new Promise((resolve) => {
-            resolveChoice = resolve;
-          }),
-      ),
+      choose: vi.fn(() => Promise.resolve(FRESH_START_CHOICE_START_FRESH)),
       render: vi.fn(),
       hide: vi.fn(),
       unmount: vi.fn(),
@@ -643,12 +637,7 @@ describe('AppLifecycleManager', () => {
     lifecycle.start();
     await flushPromises();
 
-    expect(freshStartChoiceManager.choose).toHaveBeenCalledTimes(1);
-    expect(lifecycle.backendFacade.start).not.toHaveBeenCalled();
-
-    resolveChoice(FRESH_START_CHOICE_START_FRESH);
-    await flushPromises();
-
+    expect(freshStartChoiceManager.choose).not.toHaveBeenCalled();
     expect(lifecycle.backendFacade.start).toHaveBeenCalledTimes(1);
   });
 

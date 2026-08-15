@@ -6,15 +6,18 @@ export class SoundSettingsFacade {
 
   constructor({
     preferenceManager,
+    backgroundMusicFacade = null,
     gardenHarvestSoundFacade = null,
     uiClickSoundFacade = null,
   } = {}) {
     this.preferenceManager = preferenceManager ?? new SoundPreferenceManager();
+    this.backgroundMusicFacade = backgroundMusicFacade;
     this.gardenHarvestSoundFacade = gardenHarvestSoundFacade;
     this.uiClickSoundFacade = uiClickSoundFacade;
+    this.lastMusicEnabled = null;
     this.lastSfxEnabled = null;
     this.preferenceUnsubscribe = this.preferenceManager.subscribe((snapshot) =>
-      this.syncSfxPreference(snapshot),
+      this.syncPreferences(snapshot),
     );
   }
 
@@ -50,8 +53,14 @@ export class SoundSettingsFacade {
     return this.preferenceManager.subscribe(listener);
   }
 
-  syncSfxPreference(snapshot = this.getSnapshot()) {
+  syncPreferences(snapshot = this.getSnapshot()) {
+    const musicEnabled = snapshot.musicEnabled !== false;
     const enabled = snapshot.sfxEnabled !== false;
+
+    if (this.lastMusicEnabled !== musicEnabled) {
+      this.lastMusicEnabled = musicEnabled;
+      this.backgroundMusicFacade?.setEnabled?.(musicEnabled);
+    }
 
     if (this.lastSfxEnabled === enabled) {
       return;

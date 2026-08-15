@@ -340,7 +340,12 @@ export class AppLifecycleManager {
   ) {
     const hadConnectableAccountAtLaunch =
       hadConnectableAccountBeforePrepare ?? this.hasConnectableAccount(authSnapshot);
-    return !hadConnectableAccountAtLaunch && !this.freshStartConfirmed;
+    const recoveredConnectableAccount = this.hasConnectableAccount(authSnapshot);
+    return (
+      !hadConnectableAccountAtLaunch &&
+      !recoveredConnectableAccount &&
+      !this.freshStartConfirmed
+    );
   }
 
   shouldRestoreConnectedAccountBeforeInitialConnect(

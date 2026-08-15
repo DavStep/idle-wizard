@@ -17,6 +17,7 @@ import {
   PixiInteractionLockManager,
 } from '../rendering/pixi/runtime/PixiLifecycleAdapters.js';
 import { SoundSettingsFacade } from '../audio/soundSettings/SoundSettingsFacade.js';
+import { BackgroundMusicFacade } from '../audio/backgroundMusic/BackgroundMusicFacade.js';
 import { GardenHarvestSoundFacade } from '../audio/gardenHarvest/GardenHarvestSoundFacade.js';
 import { UiClickSoundFacade } from '../audio/uiClicks/UiClickSoundFacade.js';
 import { AppLifecycleManager } from './managers/AppLifecycleManager.js';
@@ -37,9 +38,11 @@ export class AppFacade {
     this.gameplayFacade = new GameplayFacade();
     this.hapticsFacade = new HapticsFacade();
     this.playerFacade = new PlayerFacade();
+    this.backgroundMusicFacade = new BackgroundMusicFacade();
     this.gardenHarvestSoundFacade = new GardenHarvestSoundFacade();
     this.uiClickSoundFacade = new UiClickSoundFacade();
     this.soundSettingsFacade = new SoundSettingsFacade({
+      backgroundMusicFacade: this.backgroundMusicFacade,
       gardenHarvestSoundFacade: this.gardenHarvestSoundFacade,
       uiClickSoundFacade: this.uiClickSoundFacade,
     });
@@ -178,6 +181,7 @@ export class AppFacade {
       .initialize({ playerFacade: this.playerFacade })
       .then(() => {
         if (!this.disposed) {
+          this.backgroundMusicFacade?.start?.();
           this.lifecycleManager.start();
           void this.liveUpdateManager.start().catch(() => {
             // Live updates are best-effort; the bundled APK remains playable.
@@ -201,6 +205,7 @@ export class AppFacade {
     this.lifecycleManager.stop();
     this.renderFacade.destroy();
     this.soundSettingsFacade.destroy();
+    this.backgroundMusicFacade.destroy();
     this.gardenHarvestSoundFacade.destroy();
     this.uiClickSoundFacade.destroy();
     this.hapticsFacade.destroy();
