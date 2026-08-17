@@ -10631,6 +10631,15 @@ div.workshop-page__discovery-row {
   font-size: var(--style-font-size);
 }
 
+.research-page__box-heading {
+  display: flex;
+  flex: 0 0 auto;
+  align-items: center;
+  justify-content: space-between;
+  width: 100%;
+  min-height: 31.5px;
+}
+
 .research-page__box-title {
   --research-station-title-scale: calc(31.5 / 117);
   --research-station-title-image: url("../../assets/game/source/ui/banners/banner-yellow-right.9.png");
@@ -10691,48 +10700,42 @@ div.workshop-page__discovery-row {
   --research-station-title-image: url("../../assets/game/source/ui/banners/banner-purple-right.9.png");
 }
 
-.research-page__run-focus {
-  flex: 0 0 auto;
-  margin-left: var(--style-room-content-edge);
-  min-height: var(--style-row-min-height);
-  color: var(--style-muted);
-  font-size: var(--style-box-border-label-font-size);
-  line-height: var(--style-box-border-label-line-height);
-}
-
-.research-page__run-focus {
+.research-page__completed-toggle {
   display: grid;
-  grid-template-columns: max-content minmax(0, 1fr);
-  gap: 3px var(--style-row-column-gap);
-  align-items: center;
-}
-
-.research-page__run-focus-label {
-  color: var(--style-text);
-  font-weight: 700;
-}
-
-.research-page__run-focus-controls {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 3px;
-  justify-content: flex-end;
-  min-width: 0;
-}
-
-.style-button.research-page__run-focus-button {
-  width: auto;
-  min-width: 0;
-  min-height: var(--style-row-min-height);
-  padding: 0 4px;
+  flex: 0 0 28px;
+  width: 28px;
+  height: 28px;
+  padding: 2px;
   margin: 0;
-  font-size: var(--style-tiny-font-size);
-  line-height: var(--style-row-min-height);
+  overflow: visible;
+  cursor: pointer;
+  background: transparent;
+  border: 0;
+  place-items: center;
+  transition:
+    opacity 120ms var(--style-motion-ease-soft),
+    transform 120ms var(--style-motion-ease-soft);
 }
 
-.research-page__run-focus-helper {
-  grid-column: 1 / -1;
-  text-align: right;
+.research-page__completed-toggle[aria-pressed="false"] {
+  opacity: 0.52;
+}
+
+.research-page__completed-toggle:active {
+  transform: scale(0.94);
+}
+
+.research-page__completed-toggle:focus-visible {
+  outline: var(--style-border);
+  outline-offset: 1px;
+}
+
+.research-page__completed-toggle-icon {
+  display: block;
+  width: 24px;
+  height: 24px;
+  pointer-events: none;
+  object-fit: contain;
 }
 
 .research-page__research-label {

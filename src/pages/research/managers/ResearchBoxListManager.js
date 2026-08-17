@@ -86,6 +86,10 @@ const RESEARCH_FALLBACK_ARTWORK = new URL(
   '../../../../assets/game/source/icons/icon-research.png',
   import.meta.url,
 ).href;
+const RESEARCH_VISIBILITY_EYE = new URL(
+  '../../../../assets/game/source/icons/icon-research-visibility-eye.png',
+  import.meta.url,
+).href;
 
 function formatResearchSectionTitle(value) {
   return String(value ?? '').replace(
@@ -119,6 +123,7 @@ export class ResearchBoxListManager {
     this.unsubscribe = null;
     this.signature = '';
     this.selectedTabId = 'regular';
+    this.completedSectionIds = new Set();
     this.tabButtons = new Map();
     this.boxRefs = new Map();
     this.rowRefs = new Map();
@@ -195,18 +200,14 @@ export class ResearchBoxListManager {
   render(snapshot) {
     const tabs = this.getTabs(snapshot);
     const selectedTab = this.getSelectedTab(tabs);
-    const runFocus = this.getRunFocus(snapshot);
     const boxes = this.decorateBoxes({
       boxes: selectedTab?.boxes ?? [],
       playerLevel: snapshot?.playerLevel?.currentLevel ?? 1,
       prestigeCount: snapshot?.prestige?.completedLevels?.length ?? 0,
-      runFocus,
       researchById: this.getResearchById(tabs),
       completedResearchIds: this.getCompletedResearchIds(snapshot, tabs),
     });
-    const signature = `${selectedTab?.id ?? 'none'}|${runFocus.unlocked}:${
-      runFocus.selected
-    }:${runFocus.options.map((option) => option.id).join(',')}|${tabs
+    const signature = `${selectedTab?.id ?? 'none'}|${tabs
       .map((tab) => `${tab.id}:${tab.label}`)
       .join(',')}|${boxes
       .map(
@@ -233,14 +234,13 @@ export class ResearchBoxListManager {
     this.nextRowIds.clear();
     for (const box of boxes) {
       this.nextBoxIds.add(box.id);
-      for (const research of this.getDisplayedResearches(box.researches)) {
+      for (const research of this.getDisplayedResearches(box.researches, box.id)) {
         this.nextRowIds.add(research.id);
       }
     }
     this.releaseUnusedBoxWidgets();
     this.releaseUnusedRowWidgets();
     this.boxesRoot.replaceChildren(
-      ...this.createStatusRows({ runFocus }),
       ...boxes.map((box) => this.createBox(box)),
     );
     this.syncResearchProgress(boxes);
@@ -279,73 +279,38 @@ export class ResearchBoxListManager {
     boxes = [],
     playerLevel = 1,
     prestigeCount = 0,
-    runFocus,
     researchById,
     completedResearchIds,
   }) {
     const decoratedBoxes = boxes.map((box) => ({
       ...box,
-      researches: (box.researches ?? []).map((research) => ({
-        ...research,
-        lockReason: this.getResearchLockReason({
-          research,
-          playerLevel,
-          prestigeCount,
-          researchById,
-          completedResearchIds,
-        }),
-      })),
+      researches: this.orderResearchesNewestFirst(
+        (box.researches ?? []).map((research) => ({
+          ...research,
+          lockReason: this.getResearchLockReason({
+            research,
+            playerLevel,
+            prestigeCount,
+            researchById,
+            completedResearchIds,
+          }),
+        })),
+      ),
     }));
 
-    return this.orderBoxesByRunFocus(decoratedBoxes, runFocus?.selected);
+    return decoratedBoxes;
   }
 
-  getRunFocus(snapshot = {}) {
-    const runFocus = snapshot?.prestige?.runFocus;
-    const options = Array.isArray(runFocus?.options) ? runFocus.options : [];
-
-    return {
-      unlocked: runFocus?.unlocked === true,
-      selected: typeof runFocus?.selected === 'string' ? runFocus.selected : 'none',
-      options,
-    };
-  }
-
-  orderBoxesByRunFocus(boxes = [], selectedFocus = 'none') {
-    if (!selectedFocus || selectedFocus === 'none') {
-      return boxes;
-    }
-
-    return boxes
-      .map((box, index) => ({
-        box,
-        index,
-        priority: this.getRunFocusBoxPriority(box, selectedFocus),
-      }))
-      .sort((left, right) => right.priority - left.priority || left.index - right.index)
-      .map(({ box }) => box);
-  }
-
-  getRunFocusBoxPriority(box = {}, selectedFocus = 'none') {
-    const id = String(box.id ?? '').toLowerCase();
-
-    if (selectedFocus === 'capacity') {
-      return /capacity|plotgrowth|cauldronbrewing/.test(id) ? 1 : 0;
-    }
-
-    if (selectedFocus === 'automation') {
-      return /^auto|automationreserve/.test(id) ? 1 : 0;
-    }
-
-    if (selectedFocus === 'research') {
-      return /researchcost|researchtime/.test(id) ? 1 : 0;
-    }
-
-    if (selectedFocus === 'market') {
-      return /fastsell/.test(id) ? 1 : 0;
-    }
-
-    return 0;
+  orderResearchesNewestFirst(researches = []) {
+    return researches
+      .map((research, index) => ({ research, index }))
+      .sort(
+        (left, right) =>
+          Number(left.research.completed === true) -
+            Number(right.research.completed === true) ||
+          left.index - right.index,
+      )
+      .map(({ research }) => research);
   }
 
   getResearchById(tabs = []) {
@@ -515,55 +480,6 @@ export class ResearchBoxListManager {
     this.render(this.gameplayFacade.getSnapshot());
   }
 
-  createStatusRows({ runFocus }) {
-    const rows = [];
-
-    if (runFocus.unlocked) {
-      rows.push(this.createRunFocusControls(runFocus));
-    }
-
-    return rows;
-  }
-
-  createRunFocusControls(runFocus) {
-    const row = document.createElement('div');
-    row.className = 'research-page__run-focus';
-
-    const label = document.createElement('span');
-    label.className = 'research-page__run-focus-label';
-    label.textContent = 'run focus';
-
-    const controls = document.createElement('span');
-    controls.className = 'research-page__run-focus-controls';
-
-    for (const option of runFocus.options) {
-      const button = document.createElement('button');
-      button.className = 'style-button research-page__run-focus-button';
-      button.type = 'button';
-      button.textContent = option.label ?? option.id;
-      button.setAttribute(
-        'aria-pressed',
-        option.id === runFocus.selected ? 'true' : 'false',
-      );
-      button.addEventListener('click', () => this.setRunFocus(option.id));
-      controls.append(button);
-    }
-
-    const helper = document.createElement('span');
-    helper.className = 'research-page__run-focus-helper';
-    helper.textContent =
-      runFocus.selected === 'none'
-        ? 'standard order'
-        : `${runFocus.selected} boxes first`;
-
-    row.append(label, controls, helper);
-    return row;
-  }
-
-  setRunFocus(focusId) {
-    this.gameplayFacade.setPrestigeRunFocus?.(focusId);
-  }
-
   createBox(box) {
     this.nextBoxIds.add(box.id);
     let ref = this.boxRefs.get(box.id);
@@ -573,7 +489,7 @@ export class ResearchBoxListManager {
       this.boxRefs.set(box.id, ref);
     }
 
-    const { section, title } = ref;
+    const { section, heading, title, toggle } = ref;
     section.className = `research-page__box research-page__box--${box.id}`;
     section.setAttribute('aria-label', box.label);
     title.className =
@@ -581,9 +497,16 @@ export class ResearchBoxListManager {
         getResearchStationTitleVariant(this.selectedTabId)
       }`;
     title.textContent = formatResearchSectionTitle(box.label);
+    ref.boxId = box.id;
+    const showingCompleted = this.isShowingCompletedResearches(box.id);
+    toggle.setAttribute('aria-pressed', showingCompleted ? 'true' : 'false');
+    toggle.setAttribute(
+      'aria-label',
+      `${showingCompleted ? 'Hide' : 'Show'} researched ${formatResearchSectionTitle(box.label)}`,
+    );
     section.replaceChildren(
-      title,
-      ...this.getDisplayedResearches(box.researches).map((research) =>
+      heading,
+      ...this.getDisplayedResearches(box.researches, box.id).map((research) =>
         this.createRow(research, box.id),
       ),
     );
@@ -593,17 +516,35 @@ export class ResearchBoxListManager {
 
   createBoxWidget() {
     const section = document.createElement('section');
+    const heading = document.createElement('div');
+    heading.className = 'research-page__box-heading';
     const title = document.createElement('div');
     title.className = 'research-page__box-title';
-    section.append(title);
-    return { section, title };
+    const toggle = document.createElement('button');
+    toggle.className = 'research-page__completed-toggle';
+    toggle.type = 'button';
+    const icon = document.createElement('img');
+    icon.className = 'research-page__completed-toggle-icon';
+    icon.alt = '';
+    icon.setAttribute('aria-hidden', 'true');
+    icon.src = RESEARCH_VISIBILITY_EYE;
+    toggle.append(icon);
+    const ref = { section, heading, title, toggle, icon, boxId: null };
+    toggle.addEventListener('click', () => this.toggleCompletedResearches(ref.boxId));
+    heading.append(title, toggle);
+    section.append(heading);
+    return ref;
   }
 
   resetBoxWidget(ref) {
     ref.section.remove();
     ref.section.className = 'research-page__box';
     ref.section.removeAttribute('aria-label');
-    ref.section.replaceChildren(ref.title);
+    ref.boxId = null;
+    ref.toggle.removeAttribute('aria-label');
+    ref.toggle.setAttribute('aria-pressed', 'false');
+    ref.heading.replaceChildren(ref.title, ref.toggle);
+    ref.section.replaceChildren(ref.heading);
     ref.title.className =
       'research-page__box-title research-page__box-title--regular';
     ref.title.textContent = '';
@@ -625,17 +566,41 @@ export class ResearchBoxListManager {
     }
   }
 
-  getDisplayedResearches(researches = []) {
+  getDisplayedResearches(researches = [], boxId = '') {
     let lockedResearchCount = 0;
 
-    return researches.filter((research) => {
-      if (!research.locked) {
-        return true;
-      }
+    return researches
+      .filter((research) => {
+        if (!research.locked) {
+          return true;
+        }
 
-      lockedResearchCount += 1;
-      return lockedResearchCount <= maxLockedResearchesPerBox;
-    });
+        lockedResearchCount += 1;
+        return lockedResearchCount <= maxLockedResearchesPerBox;
+      })
+      .filter(
+        (research) =>
+          this.isShowingCompletedResearches(boxId) ||
+          research.completed !== true,
+      );
+  }
+
+  isShowingCompletedResearches(boxId) {
+    return this.completedSectionIds.has(`${this.selectedTabId}:${boxId}`);
+  }
+
+  toggleCompletedResearches(boxId) {
+    if (!boxId) {
+      return;
+    }
+    const sectionId = `${this.selectedTabId}:${boxId}`;
+    if (this.completedSectionIds.has(sectionId)) {
+      this.completedSectionIds.delete(sectionId);
+    } else {
+      this.completedSectionIds.add(sectionId);
+    }
+    this.signature = '';
+    this.render(this.gameplayFacade.getSnapshot());
   }
 
   createRow(research, boxId = '') {

@@ -671,6 +671,7 @@ describe('retained dialog UI editor integrations', () => {
     expect(dialogIntegration.childWidgetIds).toEqual([
       'compound.dialog-frame',
       'compound.world-event-quest-row',
+      'compound.leaderboard-row',
     ]);
     expect(
       content.children.filter(
@@ -685,6 +686,20 @@ describe('retained dialog UI editor integrations', () => {
     expect(worldEventQuestRowIntegration.scenarios.map(({ id }) => id)).toEqual(
       ['available', 'unavailable', 'completed'],
     );
+    expect(dialogIntegration.scenarios.map(({ id }) => id)).toEqual([
+      'quests',
+      'unavailable',
+      'leaderboard',
+    ]);
+    const leaderboardFixture = createUiEditorDialogFixture(dialogId, 2);
+    expect(leaderboardFixture).toMatchObject({
+      rowWidget: 'leaderboard',
+      selectedTabId: 'leaderboard',
+    });
+    expect(leaderboardFixture.rows[0]).toMatchObject({
+      type: 'leaderboardPlayer',
+      totalMetric: 'points',
+    });
 
     dialog.destroy();
     semanticRegistry.clear();

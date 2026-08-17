@@ -29,6 +29,10 @@ import {
   GardenSeedDialogPixi,
 } from './pages/garden/GardenDialogPixi.js';
 import {
+  PRESTIGE_INFO_DIALOG_ID,
+  PrestigeInfoDialogPixi,
+} from './pages/prestige/PrestigeDialogPixi.js';
+import {
   GUILD_DIALOG_IDS,
   GuildDialogPixi,
   GuildRequestStackDialogPixi,
@@ -137,6 +141,7 @@ const DIALOG_CHILD_WIDGET_IDS = Object.freeze({
   ]),
   'garden.cancel': Object.freeze(['text-button']),
   'garden.swap': Object.freeze(['text-button']),
+  [PRESTIGE_INFO_DIALOG_ID]: Object.freeze([]),
   'brewing.recipes': Object.freeze([
     'compound.brewing-recipe-card',
     'compound.brewing-recipe-ingredient-row',
@@ -219,6 +224,7 @@ const DIALOG_LABELS = Object.freeze({
   'garden.seed': 'Choose Seed',
   'garden.cancel': 'Cancel Garden Progress',
   'garden.swap': 'Swap Garden Seed',
+  [PRESTIGE_INFO_DIALOG_ID]: 'Info',
   'brewing.herbs': 'Choose Herb',
   'brewing.recipes': 'Recipe Book',
   'brewing.recipe-choice': 'Selected Recipe',
@@ -248,6 +254,25 @@ function createDialogScenarios(dialogId) {
   if (globalScenarios) {
     return globalScenarios.map((scenario) => ({
       ...scenario,
+      mount: (context, fixture) =>
+        mountRetainedDialog(context, dialogId, fixture),
+    }));
+  }
+  if (dialogId === 'workshop.worldEvent') {
+    return [
+      scenario('quests', 'Quests', () => createWorldEventDialogFixture(0)),
+      scenario(
+        'unavailable',
+        'Unavailable donations',
+        () => createWorldEventDialogFixture(1),
+      ),
+      scenario(
+        'leaderboard',
+        'Leaderboard',
+        () => createWorldEventDialogFixture(2),
+      ),
+    ].map((entry) => ({
+      ...entry,
       mount: (context, fixture) =>
         mountRetainedDialog(context, dialogId, fixture),
     }));
@@ -601,6 +626,45 @@ function createWorldChatDialogFixture(variantIndex) {
 }
 
 function createWorldEventDialogFixture(variantIndex) {
+  if (variantIndex === 2) {
+    return {
+      header: {
+        body:
+          'Bells ring from towers that disagreed yesterday.\nNew clerks ask every workshop to prove the town still moves.',
+        headline: 'New King Crowned',
+        meta: '1,302,270 points · 5h',
+      },
+      rowWidget: 'leaderboard',
+      rows: [
+        ['c00p', 'mira', 'violet', 'DBP', 'violet', 30, 3, '1,302,270'],
+        ['ftwizard', 'elara', 'sun', 'DBP', 'amber', 30, 2, '1,162,530'],
+        ['Azalea', 'juniper', 'emerald', 'SW', 'green', 15, 1, '1,129,463'],
+        ['ShaeZard', 'rowan', 'classic', '', 'ink', 21, 0, '32,821'],
+        ['Gandalf The Green', 'bramble', 'classic', '', 'ink', 17, 0, '2,391'],
+      ].map((entry, index) => ({
+        id: `world-event-player-${index}`,
+        type: 'leaderboardPlayer',
+        rank: index + 1,
+        username: entry[0],
+        character: entry[1],
+        frame: entry[2],
+        allianceTag: entry[3],
+        allianceTagColor: entry[4],
+        playerLevel: entry[5],
+        prestigeCount: entry[6],
+        current: index === 0,
+        totalMetric: 'points',
+        totalLabel: entry[7],
+      })),
+      selectedTabId: 'leaderboard',
+      tabs: [
+        { id: 'tasks', label: 'Quests' },
+        { id: 'leaderboard', label: 'Leaderboard', selected: true },
+        { id: 'rewards', label: 'Rewards' },
+      ],
+      title: 'World Event',
+    };
+  }
   const alternate = variantIndex > 0;
   const donationOptions = [
     {
@@ -766,6 +830,13 @@ export function createUiEditorOwnedDialog({
       confirmLabel: 'Swap',
       id: dialogId,
       title: 'Swap Seed?',
+    });
+  }
+
+  if (dialogId === PRESTIGE_INFO_DIALOG_ID) {
+    return new PrestigeInfoDialogPixi({
+      ...common,
+      semanticRegistry,
     });
   }
 
@@ -968,12 +1039,22 @@ function createReusableDialogContentHierarchy(dialogId, dialog) {
   }
 
   if (dialogId === 'workshop.worldEvent') {
-    return (dialog.worldEventRows?.getWidgets?.() ?? []).map((row, index) =>
+    const leaderboard = dialog.viewModel?.rowWidget === 'leaderboard';
+    const rows = leaderboard
+      ? dialog.worldEventLeaderboardRows?.getWidgets?.() ?? []
+      : dialog.worldEventRows?.getWidgets?.() ?? [];
+    return rows.map((row, index) =>
       createUiEditorPixiHierarchyComponent({
         displayObjects: [row.root],
-        id: `${dialogId}:quest:${row.model?.id ?? index}`,
-        label: 'WorldEventQuest:WorldEventQuestRow',
-        libraryEntryId: WORLD_EVENT_QUEST_ROW_WIDGET_ID,
+        id: `${dialogId}:${leaderboard ? 'leaderboard' : 'quest'}:${
+          row.model?.id ?? index
+        }`,
+        label: leaderboard
+          ? 'WorldEventLeaderboard:LeaderboardRowPixi'
+          : 'WorldEventQuest:WorldEventQuestRow',
+        libraryEntryId: leaderboard
+          ? 'compound.leaderboard-row'
+          : WORLD_EVENT_QUEST_ROW_WIDGET_ID,
         primary: row.root,
         type: 'widget',
       }),
@@ -1067,6 +1148,9 @@ function resolveDialogSource(dialogId) {
   }
   if (dialogId.startsWith('garden.')) {
     return 'src/rendering/pixi/pages/garden/GardenDialogPixi.js';
+  }
+  if (dialogId.startsWith('prestige.')) {
+    return 'src/rendering/pixi/pages/prestige/PrestigeDialogPixi.js';
   }
   if (dialogId.startsWith('brewing.')) {
     return 'src/rendering/pixi/pages/brewing/';
@@ -1357,7 +1441,11 @@ function resolveDialogChildWidgetIds(dialogId) {
     ];
   }
   if (dialogId === 'workshop.worldEvent') {
-    return ['compound.dialog-frame', WORLD_EVENT_QUEST_ROW_WIDGET_ID];
+    return [
+      'compound.dialog-frame',
+      WORLD_EVENT_QUEST_ROW_WIDGET_ID,
+      'compound.leaderboard-row',
+    ];
   }
   if (INVENTORY_CHOICE_DIALOG_HIERARCHY[dialogId]) {
     return ['compound.dialog-frame', 'compound.inventory-choice-row'];

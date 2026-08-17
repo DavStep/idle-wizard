@@ -151,6 +151,63 @@
           },
         },
       };
+      const worldEventQuestRows = model.workshop.dialogs.worldEvent.rows;
+      const worldEventLeaderboardRows = [
+        ['c00p', 'mira', 'violet', 'DBP', 'violet', 30, 3, '1,302,270'],
+        ['ftwizard', 'elara', 'sun', 'DBP', 'amber', 30, 2, '1,162,530'],
+        ['Azalea', 'juniper', 'emerald', 'SW', 'green', 15, 1, '1,129,463'],
+        ['ShaeZard', 'rowan', 'classic', '', 'ink', 21, 0, '32,821'],
+        ['Gandalf The Green', 'bramble', 'classic', '', 'ink', 17, 0, '2,391'],
+        ['notinvi', 'corvin', 'bronze', '', 'ink', 9, 0, '539'],
+        ['DageTheEvil', 'juniper', 'classic', '', 'ink', 5, 0, '55'],
+        ['StepWizzard', 'mira', 'emerald', 'WIZ', 'blue', 34, 3, '12'],
+      ].map((entry, index) => ({
+        id: `world-event-player-${index}`,
+        type: 'leaderboardPlayer',
+        rank: index + 1,
+        username: entry[0],
+        character: entry[1],
+        frame: entry[2],
+        allianceTag: entry[3],
+        allianceTagColor: entry[4],
+        playerLevel: entry[5],
+        prestigeCount: entry[6],
+        current: index === 0,
+        totalMetric: 'points',
+        totalLabel: entry[7],
+      }));
+      const worldEventRewardRows = [
+        { id: 'qualification', label: 'Leaderboard Rewards', value: 'Qualified' },
+        { id: 'rank-1', label: 'Rank 1', value: '5 emerald · 10 crystal' },
+        { id: 'rank-2', label: 'Rank 2', value: '3 emerald · 7 crystal' },
+      ];
+
+      function selectWorldEventTab(tabId) {
+        const dialog = model.workshop.dialogs.worldEvent;
+        dialog.selectedTabId = tabId;
+        dialog.rowWidget = tabId === 'tasks'
+          ? 'worldEventQuest'
+          : tabId === 'leaderboard'
+            ? 'leaderboard'
+            : 'default';
+        dialog.rows = tabId === 'tasks'
+          ? worldEventQuestRows
+          : tabId === 'leaderboard'
+            ? worldEventLeaderboardRows
+            : worldEventRewardRows;
+        dialog.tabs = dialog.tabs.map((tab) => ({
+          ...tab,
+          selected: tab.id === tabId,
+          onSelect: selectWorldEventTab,
+        }));
+        page.bind(model);
+        return true;
+      }
+      model.workshop.dialogs.worldEvent.tabs =
+        model.workshop.dialogs.worldEvent.tabs.map((tab) => ({
+          ...tab,
+          onSelect: selectWorldEventTab,
+        }));
 
       function openDonation() {
         page.openDialog('worldEventDonate');
@@ -222,10 +279,15 @@
       }
 
       page.layout(applicationManager.projection);
+      const searchParams = new URLSearchParams(window.location.search);
+      const requestedTab = searchParams.get('tab');
+      if (['tasks', 'leaderboard', 'rewards'].includes(requestedTab)) {
+        selectWorldEventTab(requestedTab);
+      }
       page.bind(model);
       page.activate();
       applicationManager.layers.pageUi.addChild(page.root);
-      const requestedDialog = new URLSearchParams(window.location.search).get('dialog');
+      const requestedDialog = searchParams.get('dialog');
       page.openDialog(requestedDialog === 'donate' ? 'worldEventDonate' : 'worldEvent');
 
       window.__worldEventRecipe = {

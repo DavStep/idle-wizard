@@ -9,6 +9,10 @@ const MUTATING_ACTIONS = new Set([
   'drain',
   'locked',
   'off',
+  'player-drain',
+  'player-locked',
+  'player-off',
+  'merge-player-accounts',
   'migrate',
   'publish',
   'reset-progress',
@@ -20,6 +24,10 @@ const MUTATING_ACTIONS = new Set([
 ]);
 const SCHEMA_NAMES = [
   'set_maintenance_mode',
+  'admin_set_player_maintenance',
+  'admin_merge_player_accounts',
+  'own_player_maintenance',
+  'player_maintenance',
   'migrate_player_gameplay_saves',
   'admin_reset_player_progression_data',
   'admin_reset_player_progression_by_identity',
@@ -32,10 +40,12 @@ const SCHEMA_NAMES = [
 ];
 const DEFAULT_DATABASE = 'idle-wizard';
 const DEFAULT_MESSAGE = 'maintenance in progress';
+const DEFAULT_PLAYER_MESSAGE = 'account maintenance in progress';
 const PLAYER_PROGRESSION_RESET_TABLES = [
   'player',
   'player_gameplay_save',
   'player_session',
+  'player_maintenance',
   'player_inbox_mail',
   'player_feedback',
   'leaderboard',
@@ -91,6 +101,9 @@ switch (action) {
   case 'status':
     runSql("SELECT config_key, config_json, updated_at FROM game_config WHERE config_key = 'maintenance'");
     break;
+  case 'player-status':
+    showPlayerMaintenanceStatus();
+    break;
   case 'drain':
     callReducer('set_maintenance_mode', ['drain', message]);
     break;
@@ -99,6 +112,18 @@ switch (action) {
     break;
   case 'off':
     callReducer('set_maintenance_mode', ['off', message]);
+    break;
+  case 'player-drain':
+    setPlayerMaintenance('drain');
+    break;
+  case 'player-locked':
+    setPlayerMaintenance('locked');
+    break;
+  case 'player-off':
+    setPlayerMaintenance('off');
+    break;
+  case 'merge-player-accounts':
+    mergePlayerAccounts();
     break;
   case 'backup':
     backupPlayerGameplaySave();
@@ -189,8 +214,13 @@ function printHelp() {
   node scripts/maintenance.js plan
   node scripts/maintenance.js schema [--server local|maincloud] [--database idle-wizard]
   node scripts/maintenance.js status [--server local|maincloud] [--database idle-wizard]
+  node scripts/maintenance.js player-status --identity <hex>
   node scripts/maintenance.js drain --confirm-live [--message "..."]
   node scripts/maintenance.js locked --confirm-live
+  node scripts/maintenance.js player-drain --identity <hex> --confirm-live [--message "..."]
+  node scripts/maintenance.js player-locked --identity <hex> --confirm-live [--message "..."]
+  node scripts/maintenance.js player-off --identity <hex> --confirm-live
+  node scripts/maintenance.js merge-player-accounts --source-identity <hex> --target-identity <hex> --confirm-live
   node scripts/maintenance.js backup
   node scripts/maintenance.js backup-reset
   node scripts/maintenance.js backup-player-data-wipe
@@ -371,6 +401,10 @@ function backupSinglePlayerProgressionResetData() {
     ],
     ['player_session', `SELECT * FROM player_session WHERE identity = ${identitySql}`],
     [
+      'player_maintenance',
+      `SELECT * FROM player_maintenance WHERE identity = ${identitySql}`,
+    ],
+    [
       'trade_alliance_member',
       `SELECT * FROM trade_alliance_member WHERE member_identity = ${identitySql}`,
     ],
@@ -426,6 +460,7 @@ function verifyPlayerProgressionReset() {
   runSql('SELECT COUNT(*) AS connected_player_count FROM player WHERE connected = true');
   runSql('SELECT COUNT(*) AS above_level_1 FROM player WHERE player_level > 1');
   runSql('SELECT COUNT(*) AS invalidated_session_guard_count FROM player_session');
+  runSql('SELECT COUNT(*) AS player_maintenance_count FROM player_maintenance');
   runSql('SELECT COUNT(*) AS save_count FROM player_gameplay_save');
   runSql('SELECT COUNT(*) AS inbox_mail_count FROM player_inbox_mail');
   runSql('SELECT COUNT(*) AS player_feedback_count FROM player_feedback');
@@ -454,6 +489,7 @@ function verifyPlayerProgressionReset() {
 function verifyAllPlayerDataWipe() {
   runSql('SELECT COUNT(*) AS player_count FROM player');
   runSql('SELECT COUNT(*) AS player_session_count FROM player_session');
+  runSql('SELECT COUNT(*) AS player_maintenance_count FROM player_maintenance');
   runSql('SELECT COUNT(*) AS player_feedback_count FROM player_feedback');
   runSql('SELECT COUNT(*) AS save_count FROM player_gameplay_save');
   runSql('SELECT COUNT(*) AS inbox_mail_count FROM player_inbox_mail');
@@ -547,6 +583,46 @@ function migratePlayerGameplaySaves() {
   }
 
   callReducer('migrate_player_gameplay_saves', [migrationKey]);
+}
+
+function showPlayerMaintenanceStatus() {
+  const identityHex = getIdentityHex();
+  runSql(
+    `SELECT identity, mode, message, updated_at FROM player_maintenance WHERE identity = ${getIdentitySqlLiteral(identityHex)}`,
+  );
+}
+
+function setPlayerMaintenance(mode) {
+  const identityHex = getIdentityHex();
+  const playerMessage = options.message ?? DEFAULT_PLAYER_MESSAGE;
+
+  if (options['dry-run']) {
+    console.log(
+      `Dry run: would call admin_set_player_maintenance ${shellQuote(identityHex)} ${shellQuote(mode)} ${shellQuote(playerMessage)}`,
+    );
+    return;
+  }
+
+  callReducer('admin_set_player_maintenance', [identityHex, mode, playerMessage]);
+}
+
+function mergePlayerAccounts() {
+  const sourceIdentityHex = getNamedIdentityHex('source-identity');
+  const targetIdentityHex = getNamedIdentityHex('target-identity');
+
+  if (sourceIdentityHex === targetIdentityHex) {
+    console.error('Source and target identities must differ.');
+    process.exit(1);
+  }
+
+  if (options['dry-run']) {
+    console.log(
+      `Dry run: would call admin_merge_player_accounts ${shellQuote(sourceIdentityHex)} ${shellQuote(targetIdentityHex)}`,
+    );
+    return;
+  }
+
+  callReducer('admin_merge_player_accounts', [sourceIdentityHex, targetIdentityHex]);
 }
 
 async function resetPlayerProgressionData() {
@@ -653,6 +729,17 @@ function getIdentityHex() {
 
   if (!/^[0-9a-f]{64}$/.test(safeIdentityHex)) {
     console.error('Missing or invalid identity. Pass --identity <64 hex chars>.');
+    process.exit(1);
+  }
+
+  return safeIdentityHex;
+}
+
+function getNamedIdentityHex(name) {
+  const safeIdentityHex = normalizeIdentityHex(options[name]);
+
+  if (!/^[0-9a-f]{64}$/.test(safeIdentityHex)) {
+    console.error(`Missing or invalid identity. Pass --${name} <64 hex chars>.`);
     process.exit(1);
   }
 

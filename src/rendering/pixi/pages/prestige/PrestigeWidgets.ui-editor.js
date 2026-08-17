@@ -8,7 +8,6 @@ import {
   PrestigeConfirmPanel,
   PrestigeDescriptionPanel,
   PrestigeRowWidget,
-  PrestigeTooltip,
 } from './PrestigePixiPage.js';
 
 const WIDTH = RESEARCH_PIXI_GEOMETRY.cardWidth;
@@ -18,7 +17,6 @@ export default [
   integration('compound.prestige-description', 'Prestige Description', ['info-button'], descriptionControl, states(['summary', 'fallback'])),
   integration('compound.prestige-row', 'Prestige Row', ['cost-button', 'info-button', 'primitive.star-level-label'], rowControl, states(['available', 'completed', 'locked', 'point'])),
   integration('compound.prestige-confirm-panel', 'Prestige Confirm Panel', ['text-button'], confirmControl, states(['milestone', 'long-copy'])),
-  integration('compound.prestige-tooltip', 'Prestige Tooltip', [], tooltipControl, states(['licence', 'reward'])),
 ];
 
 function states(ids) { return ids.map((id) => ({ fixture: { state: id }, id, label: id.charAt(0).toUpperCase() + id.slice(1).replace('-', ' ') })); }
@@ -52,7 +50,7 @@ function rowControl({ assets, input, fixture }) {
     inputRouter: input,
     registerSemanticTarget() {},
     requestPrestige() {},
-    showTooltip() {},
+    openInfoDialog() {},
     theme: DEFAULT_PIXI_THEME_SNAPSHOT,
     unregisterSemanticTarget() {},
   };
@@ -68,13 +66,6 @@ function confirmControl({ assets, input, fixture }) {
   control.bind({ lines: fixture.state === 'long-copy' ? ['This resets Mana, Coin, items, research, Garden, Brewing, and level tasks.', 'Daily and weekly task timers continue.'] : ['Return to level 1 and receive 10 crystal?'] });
   control.applyTheme(DEFAULT_PIXI_THEME_SNAPSHOT); control.setBounds(0, 0, WIDTH);
   return wrap(control, WIDTH, control.height);
-}
-
-function tooltipControl({ assets, fixture }) {
-  const control = new PrestigeTooltip({ assetManager: assets });
-  control.bind({ text: fixture.state === 'licence' ? 'Unlocks one additional Market stall and the next trade grade.' : 'Awards all lower unclaimed milestone rewards.' });
-  control.applyTheme(DEFAULT_PIXI_THEME_SNAPSHOT); control.show({ x: 0, y: 0 });
-  return wrap(control, 180, control.height);
 }
 
 function wrap(control, width, height) { return { control, destroy: () => control.destroy(), height, root: control.root, width }; }

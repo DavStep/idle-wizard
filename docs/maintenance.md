@@ -115,6 +115,78 @@ PATH="$HOME/.local/bin:$PATH" spacetime sql \
   "SELECT identity, current_gold, current_crystal, updated_at FROM admin_player_gameplay_save LIMIT 10"
 ```
 
+## Single-Account Support And Account Migration
+
+Use player-scoped maintenance when an admin operation changes only one account.
+It reuses the normal Maintenance blocker for the affected identity while every
+other player keeps playing. Deploy both the backend schema and the client
+`own_player_maintenance` subscription before live use.
+
+For an account migration, drain and lock both the source and target identities.
+Use the migration-specific message so the affected player sees `Account
+migration in progress` instead of a generic server-maintenance notice:
+
+```sh
+SOURCE_IDENTITY="<old-account-identity>"
+TARGET_IDENTITY="<new-account-identity>"
+
+node scripts/maintenance.js player-drain \
+  --server "$SPACETIME_SERVER" --database "$SPACETIME_DATABASE" \
+  --identity "$SOURCE_IDENTITY" \
+  --message "account migration in progress" --confirm-live
+node scripts/maintenance.js player-drain \
+  --server "$SPACETIME_SERVER" --database "$SPACETIME_DATABASE" \
+  --identity "$TARGET_IDENTITY" \
+  --message "account migration in progress" --confirm-live
+```
+
+Allow the final save flush to finish, then lock both accounts. Locking closes
+only those player sessions and rejects any later writes from them:
+
+```sh
+node scripts/maintenance.js player-locked \
+  --server "$SPACETIME_SERVER" --database "$SPACETIME_DATABASE" \
+  --identity "$SOURCE_IDENTITY" \
+  --message "account migration in progress" --confirm-live
+node scripts/maintenance.js player-locked \
+  --server "$SPACETIME_SERVER" --database "$SPACETIME_DATABASE" \
+  --identity "$TARGET_IDENTITY" \
+  --message "account migration in progress" --confirm-live
+```
+
+Back up both identities, verify their resolved usernames, then merge source into
+target:
+
+```sh
+node scripts/maintenance.js backup-player-reset \
+  --server "$SPACETIME_SERVER" --database "$SPACETIME_DATABASE" \
+  --identity "$SOURCE_IDENTITY"
+node scripts/maintenance.js backup-player-reset \
+  --server "$SPACETIME_SERVER" --database "$SPACETIME_DATABASE" \
+  --identity "$TARGET_IDENTITY"
+
+node scripts/maintenance.js merge-player-accounts \
+  --server "$SPACETIME_SERVER" --database "$SPACETIME_DATABASE" \
+  --source-identity "$SOURCE_IDENTITY" \
+  --target-identity "$TARGET_IDENTITY" --confirm-live
+```
+
+The merge deletes the source maintenance row with the source account. After
+verifying the target save and confirming the source is absent, unlock only the
+surviving target identity; its blocked client reloads authoritative server
+state:
+
+```sh
+node scripts/maintenance.js player-off \
+  --server "$SPACETIME_SERVER" --database "$SPACETIME_DATABASE" \
+  --identity "$TARGET_IDENTITY" --confirm-live
+```
+
+Global `locked` maintenance remains valid as a fallback and is still required
+for bulk, schema-wide, or all-player operations. Single-player admin mutations
+accept either a locked player-scoped row for every changed identity or global
+locked maintenance.
+
 ## Full Player Reset (Preserve Identity)
 
 Use this only when intentionally making every player start over while preserving

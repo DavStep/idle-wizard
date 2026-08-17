@@ -11495,6 +11495,13 @@ describe('PagesFacade', () => {
 
     expect(gameplayFacade.getSnapshot().coin.current).toBe(5);
     expect(stage.querySelector('.room-top-panel')?.textContent).toContain('5 coin');
+    expect(stage.querySelector('.research-page__content')?.textContent).not.toContain('Researched');
+
+    const completedToggle = [...stage.querySelectorAll('.research-page__completed-toggle')].find(
+      (button) => button.getAttribute('aria-label')?.startsWith('Show researched Summon Seeds'),
+    );
+    completedToggle.dispatchEvent(new window.MouseEvent('click', { bubbles: true }));
+
     expect(stage.querySelector('.research-page__content')?.textContent).toContain('Researched');
   });
 

@@ -50,7 +50,7 @@ describe('Market, Guild, and Prestige UI editor coverage', () => {
       'compound.prestige-description',
       'compound.prestige-row',
       'compound.prestige-confirm-panel',
-      'compound.prestige-tooltip',
+      'dialog.prestige.info',
     ];
     const allEntries = [
       ...createIdleWizardButtonEntries(),

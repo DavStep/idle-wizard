@@ -1109,7 +1109,6 @@ export class PixiPagesFacade {
           this.refreshChrome();
           return true;
         },
-        setRunFocus: (focusId) => gameplay?.setPrestigeRunFocus?.(focusId),
       },
       prestige: {
         selectTab: (tabId) => {

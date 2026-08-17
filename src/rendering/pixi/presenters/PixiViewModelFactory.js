@@ -482,20 +482,16 @@ export class PixiViewModelFactory {
             : 0),
       ),
     );
-    const runFocus = createResearchRunFocus(gameplay.prestige?.runFocus);
     const tabs = sourceTabs.map((tab) => {
       const requiredLevel = RESEARCH_TAB_UNLOCK_LEVELS[tab.id] ?? 1;
       const unlocked = highestReachedLevel >= requiredLevel;
-      const boxes = orderResearchBoxesByRunFocus(
-        (tab.boxes ?? []).map((box) =>
-          createResearchBoxModel(box, {
-            completedResearchIds,
-            playerLevel,
-            prestigeCount,
-            researchById,
-          }),
-        ),
-        runFocus.selected,
+      const boxes = (tab.boxes ?? []).map((box) =>
+        createResearchBoxModel(box, {
+          completedResearchIds,
+          playerLevel,
+          prestigeCount,
+          researchById,
+        }),
       );
 
       return {
@@ -528,7 +524,6 @@ export class PixiViewModelFactory {
         selectedTab,
         tabs,
         notification: tabs.some((tab) => tab.notification),
-        runFocus,
       },
       actions,
     };
@@ -1336,27 +1331,45 @@ export class PixiViewModelFactory {
     let rows = [];
 
     if (safeTabId === 'leaderboard') {
-      rows = [
-        {
-          id: 'leaderboard:header',
-          label: 'Wizard',
-          value: 'Points',
-          muted: true,
-        },
-        ...leaderboardRows.map((user, index) => ({
+      rows = leaderboardRows.map((user, index) => {
+        const identity = String(user.identity ?? '').trim();
+        const currentIdentity = String(
+          currentLeaderboardUser?.identity ?? '',
+        ).trim();
+
+        return {
           id: `leaderboard:${user.rank ?? index + 1}:${
             user.identity ?? user.name ?? index
           }`,
-          label: `${user.rank ?? index + 1}. ${
-            user.name ?? player.username ?? 'Wizard'
-          }${
-            Number.isFinite(Number(user.playerLevel))
-              ? ` (${Math.floor(Number(user.playerLevel))})`
-              : ''
-          }`,
-          value: formatWorldEventNumber(user.points),
-        })),
-      ];
+          type: 'leaderboardPlayer',
+          rank: normalizeLeaderboardRank(user.rank, index),
+          username:
+            user.name ?? user.username ?? player.username ?? 'Wizard',
+          allianceTag: String(
+            user.allianceTag ?? user.alliance_tag ?? '',
+          ).trim(),
+          allianceTagColor:
+            user.allianceTagColor ?? user.alliance_tag_color ?? 'ink',
+          character: user.character ?? 'elara',
+          frame: user.frame ?? 'classic',
+          playerLevel: Math.max(
+            1,
+            Math.floor(Number(user.playerLevel ?? user.player_level) || 1),
+          ),
+          prestigeCount: Math.max(
+            0,
+            Math.floor(
+              Number(user.prestigeCount ?? user.prestige_count) || 0,
+            ),
+          ),
+          current:
+            user.current === true ||
+            user === currentLeaderboardUser ||
+            Boolean(identity && currentIdentity && identity === currentIdentity),
+          totalMetric: 'points',
+          totalLabel: formatWorldEventNumber(user.points),
+        };
+      });
     } else if (safeTabId === 'rewards') {
       const remaining = Math.max(
         0,
@@ -1472,7 +1485,12 @@ export class PixiViewModelFactory {
         ? ''
         : `Unlocks at level ${notice.unlockLevel ?? 4}`,
       selectedTabId: safeTabId,
-      rowWidget: safeTabId === 'tasks' ? 'worldEventQuest' : 'default',
+      rowWidget:
+        safeTabId === 'tasks'
+          ? 'worldEventQuest'
+          : safeTabId === 'leaderboard'
+            ? 'leaderboard'
+            : 'default',
       header: current
         ? {
             headline: toTitleCase(current.headline ?? 'World Event'),
@@ -1717,24 +1735,38 @@ function getLeaderboardCurrentUser(
 }
 
 function appendCurrentLeaderboardUser(users, currentUser) {
+  const seenIdentities = new Set();
+  const uniqueUsers = users.filter((user) => {
+    const identity = String(user.identity ?? '').trim().toLowerCase();
+    if (!identity) {
+      return true;
+    }
+    if (seenIdentities.has(identity)) {
+      return false;
+    }
+    seenIdentities.add(identity);
+    return true;
+  });
+
   if (!currentUser) {
-    return users;
+    return uniqueUsers;
   }
-  const currentIdentity = String(currentUser.identity ?? '').trim();
-  const currentAlreadyVisible = users.some((user) =>
+  const currentIdentity = String(currentUser.identity ?? '').trim().toLowerCase();
+  const currentAlreadyVisible = uniqueUsers.some((user) =>
     currentIdentity
-      ? String(user.identity ?? '').trim() === currentIdentity
+      ? String(user.identity ?? '').trim().toLowerCase() === currentIdentity
       : user === currentUser,
   );
   if (currentAlreadyVisible) {
-    return users.map((user) =>
-      (currentIdentity && String(user.identity ?? '').trim() === currentIdentity) ||
+    return uniqueUsers.map((user) =>
+      (currentIdentity &&
+        String(user.identity ?? '').trim().toLowerCase() === currentIdentity) ||
       user === currentUser
         ? { ...user, current: true }
         : user,
     );
   }
-  return [...users, { ...currentUser, current: true }];
+  return [...uniqueUsers, { ...currentUser, current: true }];
 }
 
 function getLeaderboardAlliances(
@@ -1817,10 +1849,11 @@ function createTradeAllianceQuestRows(tradeAlliance, allianceId, actions) {
         needsFill && actions.canFillAllianceQuest?.(quest) !== false;
       const enabled = !claimed && !locked && (canFill || claimable);
       const routeLabel = itemFillQuest ? 'Your Fill' : 'Your Route';
+      const title = toSentenceCase(quest.label ?? 'Alliance Quest');
 
       return {
         id: quest.questId ?? `alliance-quest-${index}`,
-        title: quest.label ?? 'Alliance Quest',
+        title,
         contributionLabel: `${routeLabel} ${formatWholeNumber(
           contribution,
         )}/${formatWholeNumber(quest.minContribution)}`,
@@ -1829,7 +1862,7 @@ function createTradeAllianceQuestRows(tradeAlliance, allianceId, actions) {
         )}`,
         rewardAmountLabel: formatWholeNumber(quest.crystalReward),
         rewardResource: 'crystal',
-        label: `${quest.label ?? 'Alliance Quest'}\n${routeLabel} ${formatWholeNumber(
+        label: `${title}\n${routeLabel} ${formatWholeNumber(
           contribution,
         )}/${formatWholeNumber(quest.minContribution)}`,
         value: `${formatWholeNumber(quest.progress)}/${formatWholeNumber(
@@ -2225,7 +2258,9 @@ function createResearchBoxModel(
       researchById,
     }),
   );
-  const researches = getDisplayedResearches(allResearches);
+  const researches = orderResearchesNewestFirst(
+    getDisplayedResearches(allResearches),
+  );
 
   return {
     ...box,
@@ -2441,60 +2476,16 @@ function createCompletedResearchIds(research = {}, tabs = []) {
   return completedResearchIds;
 }
 
-function createResearchRunFocus(runFocus = {}) {
-  return {
-    unlocked: runFocus?.unlocked === true,
-    selected:
-      typeof runFocus?.selected === 'string'
-        ? runFocus.selected
-        : 'none',
-    options: Array.isArray(runFocus?.options) ? runFocus.options : [],
-    helper:
-      runFocus?.helper ??
-      (runFocus?.selected && runFocus.selected !== 'none'
-        ? `${runFocus.selected} boxes first`
-        : 'standard order'),
-  };
-}
-
-function orderResearchBoxesByRunFocus(boxes = [], selectedFocus = 'none') {
-  if (!selectedFocus || selectedFocus === 'none') {
-    return boxes;
-  }
-
-  return boxes
-    .map((box, index) => ({
-      box,
-      index,
-      priority: getRunFocusBoxPriority(box, selectedFocus),
-    }))
+function orderResearchesNewestFirst(researches = []) {
+  return researches
+    .map((research, index) => ({ research, index }))
     .sort(
       (left, right) =>
-        right.priority - left.priority || left.index - right.index,
+        Number(left.research.completed === true) -
+          Number(right.research.completed === true) ||
+        left.index - right.index,
     )
-    .map(({ box }) => box);
-}
-
-function getRunFocusBoxPriority(box = {}, selectedFocus = 'none') {
-  const id = String(box.id ?? '').toLowerCase();
-
-  if (selectedFocus === 'capacity') {
-    return /capacity|plotgrowth|cauldronbrewing/.test(id) ? 1 : 0;
-  }
-
-  if (selectedFocus === 'automation') {
-    return /^auto|automationreserve/.test(id) ? 1 : 0;
-  }
-
-  if (selectedFocus === 'research') {
-    return /researchcost|researchtime/.test(id) ? 1 : 0;
-  }
-
-  if (selectedFocus === 'market') {
-    return /fastsell/.test(id) ? 1 : 0;
-  }
-
-  return 0;
+    .map(({ research }) => research);
 }
 
 function getDisplayedResearches(researches = []) {

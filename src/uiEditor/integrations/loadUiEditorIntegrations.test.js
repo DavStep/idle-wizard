@@ -133,7 +133,7 @@ describe('loadUiEditorIntegrations', () => {
       (dialogId) => `dialog.${dialogId}`,
     );
 
-    expect(dialogs).toHaveLength(39);
+    expect(dialogs).toHaveLength(expectedIds.length);
     expect(dialogs.map(({ id }) => id).sort()).toEqual(
       [...expectedIds].sort(),
     );
@@ -147,6 +147,7 @@ describe('loadUiEditorIntegrations', () => {
         'Brewing',
         'Market',
         'Guild',
+        'Prestige',
       ]),
     );
     expect(

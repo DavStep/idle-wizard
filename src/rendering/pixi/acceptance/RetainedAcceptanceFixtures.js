@@ -3,6 +3,7 @@ import {
   SHOP_DIALOG_IDS,
   WORKSHOP_WORLD_EVENT_DONATE_DIALOG_ID,
 } from '../pages/shop/ShopDialogPixi.js';
+import { PRESTIGE_INFO_DIALOG_ID } from '../pages/prestige/PrestigeDialogPixi.js';
 
 export const RETAINED_PAGE_IDS = Object.freeze([
   'workshop',
@@ -29,7 +30,7 @@ export const DIALOG_IDS_BY_PAGE = Object.freeze({
     'workshop.worldChat',
   ]),
   research: Object.freeze([]),
-  prestige: Object.freeze([]),
+  prestige: Object.freeze([PRESTIGE_INFO_DIALOG_ID]),
   garden: Object.freeze([
     'garden.seed',
     'garden.cancel',
@@ -172,6 +173,21 @@ export function createDialogViewModel(
         dialogId === 'garden.cancel' ? 'empty' : 'swap',
       payload: { key },
       onConfirm: accept,
+    };
+  }
+
+  if (dialogId === PRESTIGE_INFO_DIALOG_ID) {
+    return {
+      text:
+        key === 'a'
+          ? [
+              '• Resets Mana, Coin, Crystal, items, ordinary Research, Garden, Brewing, and level tasks.',
+              '• Daily and weekly task timers continue.',
+              '• Lower unclaimed milestones are credited automatically.',
+              '• Prestige Points permanently unlock Market licences.',
+            ].join('\n')
+          : 'Prestige Points permanently unlock Market licences.',
+      title: 'Info',
     };
   }
 

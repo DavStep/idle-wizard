@@ -31,8 +31,8 @@ export default [
   widget('compound.world-event-donation-option-row', 'World Event Donation Option Row', ['cost-button'], donationOptionControl, variants(['available', 'unavailable', 'seed-pack'])),
   widget('compound.alliance-directory-row', 'Alliance Directory Row', ['compound.alliance-member-row', 'primitive.managed-scroll-area', 'text-button'], allianceDirectoryControl, variants(['collapsed', 'expanded', 'full'])),
   widget('compound.alliance-member-row', 'Alliance Member Row', ['compound.player-profile', 'text-button'], allianceMemberControl, variants(['leader', 'member', 'passive'])),
-  widget('compound.alliance-quest-row', 'Alliance Quest Row', ['primitive.resource-label', 'text-button'], allianceQuestControl, variants(['fill', 'claim', 'claimed'])),
-  widget('compound.leaderboard-row', 'Leaderboard Row', ['compound.player-profile', 'primitive.star-level-label', 'primitive.resource-label'], leaderboardRowControl, variants(['player', 'current-player', 'alliance'])),
+  widget('compound.alliance-quest-row', 'Alliance Quest Row', ['primitive.resource-label', 'text-button'], allianceQuestControl, variants(['fill', 'claim', 'claimed', 'overflow'])),
+  widget('compound.leaderboard-row', 'Leaderboard Row', ['compound.player-profile', 'primitive.star-level-label', 'primitive.resource-label'], leaderboardRowControl, variants(['player', 'current-player', 'alliance', 'world-event-points'])),
   widget('compound.potion-discovery-row', 'Potion Discovery Row', [], potionDiscoveryControl, variants(['discovered', 'undiscovered', 'long-recipe'])),
   widget('compound.workshop-dialog-row', 'Workshop Dialog Row', ['text-button', 'primitive.inline-text'], dialogRowControl, variants(['value', 'resource', 'action', 'locked'])),
 ];
@@ -177,7 +177,9 @@ function allianceQuestControl({ assets, input, fixture = { state: 'fill' }, cont
   const claimed = fixture.state === 'claimed';
   control.bind({
     id: 'gather-silverleaf',
-    title: 'Gather Silverleaf',
+    title: fixture.state === 'overflow'
+      ? 'Fill 5000 Moonflower Seeds Before The Eclipse Ends'
+      : 'Gather Silverleaf',
     contributionLabel: 'Your Fill 8/10',
     progressLabel: fixture.state === 'fill' ? '18/40' : '40/40',
     rewardAmountLabel: '3',
@@ -187,13 +189,15 @@ function allianceQuestControl({ assets, input, fixture = { state: 'fill' }, cont
     enabled: !claimed,
     onActivate: claimed ? null : () => context?.emit('allianceQuestActivated') ?? true,
   });
-  control.setBounds(0, 0, 252, 50);
-  return wrap(control, 252, 50);
+  const height = control.getPreferredHeight(252);
+  control.setBounds(0, 0, 252, height);
+  return wrap(control, 252, height);
 }
 
 function leaderboardRowControl({ assets, input, fixture = { state: 'player' }, context }) {
   const control = new LeaderboardRowPixi({ dialog: dialogStub(assets, input) });
   const alliance = fixture.state === 'alliance';
+  const worldEvent = fixture.state === 'world-event-points';
   control.bind(
     alliance
       ? {
@@ -219,7 +223,12 @@ function leaderboardRowControl({ assets, input, fixture = { state: 'player' }, c
           playerLevel: 48,
           prestigeCount: 3,
           current: fixture.state === 'current-player',
-          totalCoinLabel: fixture.state === 'current-player' ? '57.8k' : '13.9m',
+          ...(worldEvent
+            ? { totalMetric: 'points', totalLabel: '1,302,270' }
+            : {
+                totalCoinLabel:
+                  fixture.state === 'current-player' ? '57.8k' : '13.9m',
+              }),
           onActivate: () => context?.emit('playerOpened') ?? true,
         },
   );

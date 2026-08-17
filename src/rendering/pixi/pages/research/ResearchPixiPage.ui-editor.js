@@ -9,6 +9,7 @@ export default defineUiEditorIntegration({
     'compound.research-row',
     'compound.research-station-title',
     'compound.research-lock-tooltip',
+    'base-button',
     'text-button',
   ],
   folderPath: ['Research'],
@@ -82,6 +83,9 @@ async function mountResearch(context, fixture) {
       });
       page.layout(projection);
       page.bind(viewModel());
+      if (fixture.state === 'completed') {
+        page.toggleCompletedResearches('herbs');
+      }
       page.activate();
       return {
         destroy: () => page.destroy(),

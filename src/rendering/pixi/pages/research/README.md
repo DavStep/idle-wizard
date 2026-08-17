@@ -4,15 +4,20 @@
 research view model; research costs, prerequisites, lock reasons, ordering, and
 completion rules remain outside rendering.
 
-Expected view-model fields are `tabs`, `selectedTabId`, optional `runFocus`, and
-decorated `boxes[].researches[]`. Actions are supplied as `selectTab`,
-`setRunFocus`, `buyResearch`, and `showLockedReason`.
+Expected view-model fields are `tabs`, `selectedTabId`, and decorated
+`boxes[].researches[]`. Actions are supplied as `selectTab`, `buyResearch`, and
+`showLockedReason`.
 
 Category title plaques use the selected tab as their visual variant: Regular
 is yellow, Automation is red, Advanced is emerald green, and the `emerald`
 Crystal Research tab is purple. The visible category title remains the primary
 identifier. The shared plaque renders at `75%` of its authored nine-slice
 geometry in Research and every cross-room consumer.
+
+Each station section places a shared label-free base button at the far right of
+its title row. The generated painted eye icon is dimmed while off. Completed
+research is hidden by default; pressing that section's eye reveals completed
+rows below all newer, incomplete rows without changing another section.
 
 Rows and boxes are keyed and pooled. Research labels are passive; the cost
 button owns available purchases. Selecting a locked row keeps the requirement

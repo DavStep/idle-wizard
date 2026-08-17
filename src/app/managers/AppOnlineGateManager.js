@@ -98,14 +98,20 @@ export class AppOnlineGateManager {
 
   showMaintenance({ mode = 'drain', message = 'maintenance in progress', saving = false } = {}) {
     const normalizedMessage = String(message || 'maintenance in progress').trim();
+    const displayMessage = normalizedMessage.replace(/^[a-z]/, (letter) =>
+      letter.toUpperCase(),
+    );
+    const sentence = /[.!?]$/.test(displayMessage)
+      ? displayMessage
+      : `${displayMessage}.`;
     const gateMessage = saving
-      ? 'maintenance active. saving progress...'
+      ? `${sentence} Saving progress...`
       : mode === 'locked'
-        ? normalizedMessage
-        : `${normalizedMessage}. progress is saved.`;
+        ? displayMessage
+        : `${sentence} Progress is saved.`;
 
     this.show({
-      title: 'maintenance',
+      title: 'Maintenance',
       message: gateMessage,
       progress: saving,
     });

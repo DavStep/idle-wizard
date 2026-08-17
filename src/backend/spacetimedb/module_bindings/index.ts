@@ -47,6 +47,7 @@ import AdminResetPlayerProgressionDataReducer from "./admin_reset_player_progres
 import AdminSendPlayerInboxBroadcastReducer from "./admin_send_player_inbox_broadcast_reducer";
 import AdminSendPlayerInboxMailReducer from "./admin_send_player_inbox_mail_reducer";
 import AdminSetPlayerLevelByIdentityReducer from "./admin_set_player_level_by_identity_reducer";
+import AdminSetPlayerMaintenanceReducer from "./admin_set_player_maintenance_reducer";
 import AdminSetPlayerPlotCapacityResearchByIdentityReducer from "./admin_set_player_plot_capacity_research_by_identity_reducer";
 import AdminSetTradeAllianceMemberRoleReducer from "./admin_set_trade_alliance_member_role_reducer";
 import AdminSettleWorldEventInboxRewardsReducer from "./admin_settle_world_event_inbox_rewards_reducer";
@@ -115,6 +116,7 @@ import NpcMarketAdminRow from "./npc_market_admin_table";
 import NpcMarketPriceSnapshotRow from "./npc_market_price_snapshot_table";
 import OwnPlayerGameplaySaveRow from "./own_player_gameplay_save_table";
 import OwnPlayerInboxMailRow from "./own_player_inbox_mail_table";
+import OwnPlayerMaintenanceRow from "./own_player_maintenance_table";
 import OwnPlayerProfileRow from "./own_player_profile_table";
 import OwnPlayerSessionRow from "./own_player_session_table";
 import OwnPlayerShopListingRow from "./own_player_shop_listing_table";
@@ -434,6 +436,13 @@ const tablesSchema = __schema({
     constraints: [
     ],
   }, OwnPlayerInboxMailRow),
+  own_player_maintenance: __table({
+    name: 'own_player_maintenance',
+    indexes: [
+    ],
+    constraints: [
+    ],
+  }, OwnPlayerMaintenanceRow),
   own_player_profile: __table({
     name: 'own_player_profile',
     indexes: [
@@ -612,6 +621,7 @@ const reducersSchema = __reducers(
   __reducerSchema("admin_send_player_inbox_broadcast", AdminSendPlayerInboxBroadcastReducer),
   __reducerSchema("admin_send_player_inbox_mail", AdminSendPlayerInboxMailReducer),
   __reducerSchema("admin_set_player_level_by_identity", AdminSetPlayerLevelByIdentityReducer),
+  __reducerSchema("admin_set_player_maintenance", AdminSetPlayerMaintenanceReducer),
   __reducerSchema("admin_set_player_plot_capacity_research_by_identity", AdminSetPlayerPlotCapacityResearchByIdentityReducer),
   __reducerSchema("admin_set_trade_alliance_member_role", AdminSetTradeAllianceMemberRoleReducer),
   __reducerSchema("admin_settle_world_event_inbox_rewards", AdminSettleWorldEventInboxRewardsReducer),

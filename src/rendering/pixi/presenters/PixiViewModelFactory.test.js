@@ -682,11 +682,16 @@ describe('PixiViewModelFactory', () => {
       expect.arrayContaining([
         expect.objectContaining({
           id: 'leaderboard:1:Mira',
-          label: '1. Mira (4)',
-          value: '450',
+          type: 'leaderboardPlayer',
+          rank: 1,
+          username: 'Mira',
+          playerLevel: 4,
+          totalMetric: 'points',
+          totalLabel: '450',
         }),
       ]),
     );
+    expect(leaderboard.rowWidget).toBe('leaderboard');
 
     const rewards = factory.createWorldEventDialog(
       gameplay,
@@ -1152,6 +1157,32 @@ describe('PixiViewModelFactory', () => {
     ]);
   });
 
+  it('renders one leaderboard row per player identity', () => {
+    const factory = new PixiViewModelFactory();
+    const dialog = factory.createLeaderboardDialog({
+      topAllTimeUsers: [
+        { identity: 'wizard-a', name: 'Wizard', totalIncome: 12 },
+        { identity: 'wizard-a', name: 'Renamed Wizard', totalIncome: 12 },
+        { identity: 'wizard-b', name: 'Wizard', totalIncome: 8 },
+      ],
+      currentAllTimeUser: {
+        identity: 'wizard-a',
+        name: 'Wizard',
+        totalIncome: 12,
+        rank: 1,
+      },
+    });
+
+    expect(dialog.rows.map((row) => row.id)).toEqual([
+      'wizard-a',
+      'wizard-b',
+    ]);
+    expect(dialog.rows[0]).toMatchObject({
+      username: 'Wizard',
+      current: true,
+    });
+  });
+
   it('projects rich weekly player rows, colored tags, profile progression, and the current player', () => {
     const openPlayer = vi.fn();
     const factory = new PixiViewModelFactory();
@@ -1337,7 +1368,7 @@ describe('PixiViewModelFactory', () => {
           allianceId: 'alliance-1',
           questId: 'fill-seeds',
           dayKey: '1',
-          label: 'Fill Sage Seeds',
+          label: 'fill 5000 moonflower seed',
           questType: 'itemFill',
           itemKey: 'sageSeed',
           progress: 2,
@@ -1379,7 +1410,7 @@ describe('PixiViewModelFactory', () => {
     expect(dialog.selectedTabId).toBe('quests');
     expect(dialog.rows.map((row) => row.actionLabel)).toEqual(['Fill', 'Claim']);
     expect(dialog.rows[0]).toMatchObject({
-      title: 'Fill Sage Seeds',
+      title: 'Fill 5000 moonflower seed',
       contributionLabel: 'Your Fill 0/3',
       progressLabel: '2/10',
       rewardAmountLabel: '2',
@@ -2186,7 +2217,7 @@ describe('PixiViewModelFactory', () => {
     });
   });
 
-  it('orders boxes for run focus, limits locked previews, and notifies tabs', () => {
+  it('keeps standard box order, limits locked previews, and notifies tabs', () => {
     const factory = new PixiViewModelFactory();
     const lockedResearches = Array.from({ length: 4 }, (_value, index) => ({
       id: `locked-${index + 1}`,
@@ -2240,11 +2271,12 @@ describe('PixiViewModelFactory', () => {
 
     const [tab] = model.research.tabs;
     expect(tab.boxes.map((box) => box.id)).toEqual([
+      'seedUnlocks',
       'plotGrowth',
       'cauldronCapacity',
-      'seedUnlocks',
       'researchTime',
     ]);
+    expect(model.research.runFocus).toBeUndefined();
     const lockedBox = tab.boxes.find((box) => box.id === 'seedUnlocks');
     expect(lockedBox.researches).toHaveLength(3);
     expect(lockedBox.allResearches).toHaveLength(4);

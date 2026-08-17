@@ -23,15 +23,30 @@ export class MaintenanceStateManager {
     const row = Array.isArray(snapshot?.gameConfigs)
       ? snapshot.gameConfigs.find((config) => config?.configKey === MAINTENANCE_CONFIG_KEY)
       : null;
-    const config = this.parseConfig(row?.configJson);
-    const mode = this.normalizeMode(config.mode);
-    const message = this.normalizeMessage(config.message);
+    const globalConfig = this.parseConfig(row?.configJson);
+    const globalMaintenance = {
+      mode: this.normalizeMode(globalConfig.mode),
+      message: this.normalizeMessage(globalConfig.message),
+      updatedAtMs: Number.isFinite(row?.updatedAtMs) ? row.updatedAtMs : 0,
+    };
+    const playerMaintenance = {
+      mode: this.normalizeMode(snapshot?.playerMaintenance?.mode),
+      message: this.normalizeMessage(snapshot?.playerMaintenance?.message),
+      updatedAtMs: Number.isFinite(snapshot?.playerMaintenance?.updatedAtMs)
+        ? snapshot.playerMaintenance.updatedAtMs
+        : 0,
+    };
+    const maintenance =
+      this.getModeRank(playerMaintenance.mode) >
+      this.getModeRank(globalMaintenance.mode)
+        ? playerMaintenance
+        : globalMaintenance;
 
     this.publish({
-      mode,
-      message,
-      active: mode !== 'off',
-      updatedAtMs: Number.isFinite(row?.updatedAtMs) ? row.updatedAtMs : 0,
+      mode: maintenance.mode,
+      message: maintenance.message,
+      active: maintenance.mode !== 'off',
+      updatedAtMs: maintenance.updatedAtMs,
     });
   }
 
@@ -89,5 +104,9 @@ export class MaintenanceStateManager {
   normalizeMessage(message) {
     const value = String(message ?? DEFAULT_MESSAGE).trim();
     return value || DEFAULT_MESSAGE;
+  }
+
+  getModeRank(mode) {
+    return mode === 'locked' ? 2 : mode === 'drain' ? 1 : 0;
   }
 }

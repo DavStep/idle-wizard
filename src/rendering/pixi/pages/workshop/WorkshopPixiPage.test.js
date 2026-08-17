@@ -1356,10 +1356,32 @@ describe('WorkshopPixiPage', () => {
     model.workshop.dialogs.worldEvent = {
       ...questsViewModel,
       selectedTabId: 'leaderboard',
-      rowWidget: 'default',
-      rows: [{ id: 'leaderboard:1', label: '1. Wizard', value: '320' }],
+      rowWidget: 'leaderboard',
+      rows: [
+        {
+          id: 'leaderboard:1',
+          type: 'leaderboardPlayer',
+          rank: 1,
+          username: 'Wizard',
+          character: 'elara',
+          frame: 'classic',
+          playerLevel: 12,
+          prestigeCount: 2,
+          totalMetric: 'points',
+          totalLabel: '320',
+        },
+      ],
     };
     harness.page.bind(model);
+    const [leaderboardRow] = dialog.rows.getWidgets();
+    expect(dialog.rows).toBe(dialog.worldEventLeaderboardRows);
+    expect(leaderboardRow.name.text).toBe('Wizard');
+    expect(leaderboardRow.pointsTotal.text).toBe('320');
+    expect(leaderboardRow.total.visible).toBe(false);
+    expect(leaderboardRow.background.visible).toBe(true);
+    expect(leaderboardRow.root.hitArea.width).toBe(
+      dialog.leaderboardRowWidth - PIXI_ROOT_RUN_GEOMETRY.settings.rowGap,
+    );
     model.workshop.dialogs.worldEvent = questsViewModel;
     harness.page.bind(model);
 
@@ -2298,6 +2320,56 @@ describe('WorkshopPixiPage', () => {
     harness.page.destroy();
     harness.dispose();
     crystalTexture.destroy();
+  });
+
+  it('grows alliance quest rows to clear wrapped titles', () => {
+    const harness = createHarness();
+    const model = createWorkshopViewModel();
+    model.workshop.dialogs.alliance = {
+      title: 'Trade Alliance',
+      ownedAlliance: true,
+      rowWidget: 'allianceQuest',
+      selectedTabId: 'quests',
+      tabs: [],
+      rows: [
+        {
+          id: 'fill-moonflower',
+          title: 'Fill 5000 moonflower seed',
+          contributionLabel: 'Your Fill 0/250',
+          progressLabel: '1,358/5,000',
+          rewardAmountLabel: '5',
+          rewardResource: 'crystal',
+          actionLabel: 'Locked',
+          actionVariant: 'gray',
+          actionWidth: 58,
+          actionHeight: 28,
+          enabled: false,
+        },
+      ],
+      members: [],
+    };
+
+    harness.page.bind(model);
+    harness.page.openDialog('alliance');
+
+    const dialog = harness.dialogs.get('workshop.alliance');
+    const quest = dialog.allianceQuestRows.get('fill-moonflower');
+    const preferredHeight = quest.getPreferredHeight();
+    expect(quest.title.style.whiteSpace).toBe('normal');
+    expect(quest.title.height).toBeGreaterThan(16);
+    expect(preferredHeight).toBeGreaterThan(50);
+    expect(quest.contribution.y).toBeGreaterThan(27);
+    expect(quest.contribution.y).toBeGreaterThanOrEqual(
+      quest.title.y + quest.title.height + 5,
+    );
+    expect(quest.title.x + quest.title.width).toBeLessThan(
+      quest.progress.x - quest.progress.width,
+    );
+    expect(quest.background.frameHeight).toBeCloseTo(preferredHeight - 6);
+    expect(quest.action.root.y).toBeCloseTo((preferredHeight - 28) / 2);
+
+    harness.page.destroy();
+    harness.dispose();
   });
 
   it('keeps the larger adaptive Trade Alliance height stable across tabs', () => {

@@ -57,8 +57,10 @@ experience_type: backend-android
 - A resolved SpacetimeDB reducer promise is not gameplay-save durability proof; keep the own-save subscription live and clear the local journal only after observing the exact client session/sequence in the server row.
 - An authoritative empty gameplay-save row must replace stale runtime with the canonical fresh state, then persist and observe that baseline before gameplay opens.
 - Missing own-session rows and session subscription errors must fail closed; treating them as active lets invalidated clients continue writing, while observation errors should reconnect without deleting the gameplay-save journal.
+- Player-scoped maintenance is private server state exposed only through `own_player_maintenance`; the strictest scoped/global mode wins, locked scope closes that identity's session, and removing a locked row must force the same authoritative reload as global locked maintenance.
 - Cauldron batch, recipe, and auto-brew choices must force-flush instead of waiting for the normal save throttle; a reload can otherwise restore the prior option values.
 - Leaderboard own-rank display should match the connected SpacetimeDB identity from the full subscribed leaderboard, not username or top-ten rows.
+- Leaderboard player rows are keyed and deduplicated by SpacetimeDB identity; usernames are presentation-only and may be shared or changed.
 - Shared player level displays use server `playerLevel`; do not trust `tasks.currentLevel` for other players until task completion is server-authoritative.
 - Fresh gameplay saves use `tasks.currentLevel: 0` while the public server player level defaults to `1`; task-save normalization must preserve level 0 as the state working toward level 1.
 - Player level milestones come from SpacetimeDB `game_config.playerLevel`; they unlock permission to buy higher caps, never grant the tile/stand for free.

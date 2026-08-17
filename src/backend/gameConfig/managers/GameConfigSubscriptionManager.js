@@ -4,10 +4,12 @@ const LEGACY_RESEARCH_CONFIG_QUERY = 'SELECT * FROM research_config';
 const LEGACY_GAME_CONFIG_QUERY = 'SELECT * FROM game_config';
 const MAINTENANCE_CONFIG_KEY = 'maintenance';
 const MAINTENANCE_QUERY = `SELECT * FROM game_config WHERE "configKey" = '${MAINTENANCE_CONFIG_KEY}'`;
+const PLAYER_MAINTENANCE_QUERY = 'SELECT * FROM own_player_maintenance';
 const EMPTY_SNAPSHOT = {
   connected: false,
   researchConfigs: [],
   gameConfigs: [],
+  playerMaintenance: null,
 };
 
 export class GameConfigSubscriptionManager {
@@ -17,6 +19,7 @@ export class GameConfigSubscriptionManager {
     this.researchConfigTable = null;
     this.gameConfigTable = null;
     this.maintenanceTable = null;
+    this.playerMaintenanceTable = null;
     this.bootstrapResearchConfigs = [];
     this.bootstrapGameConfigs = [];
     this.subscriptions = [];
@@ -51,12 +54,23 @@ export class GameConfigSubscriptionManager {
       fallbackSnakeName: 'game_config_snapshot',
       query: MAINTENANCE_QUERY,
     });
+    const playerMaintenanceSource = this.findLiveTableSource({
+      preferredCamelName: 'ownPlayerMaintenance',
+      preferredSnakeName: 'own_player_maintenance',
+      query: PLAYER_MAINTENANCE_QUERY,
+    });
 
     this.researchConfigTable = researchConfigSource.table;
     this.gameConfigTable = gameConfigSource.table;
     this.maintenanceTable = maintenanceSource.table;
+    this.playerMaintenanceTable = playerMaintenanceSource.table;
 
-    if (!this.researchConfigTable && !this.gameConfigTable && !this.maintenanceTable) {
+    if (
+      !this.researchConfigTable &&
+      !this.gameConfigTable &&
+      !this.maintenanceTable &&
+      !this.playerMaintenanceTable
+    ) {
       this.publish({ ...EMPTY_SNAPSHOT });
       return;
     }
@@ -77,13 +91,18 @@ export class GameConfigSubscriptionManager {
       this.maintenanceTable
         ? this.subscribeLiveQuery(maintenanceSource.query, () => this.publishFromTables())
         : null,
+      this.playerMaintenanceTable
+        ? this.subscribeLiveQuery(playerMaintenanceSource.query, () => this.publishFromTables())
+        : null,
     ].filter(Boolean);
     this.bindTable(this.maintenanceTable);
+    this.bindTable(this.playerMaintenanceTable);
     this.publishFromTables();
   }
 
   disconnect() {
     this.unbindTable(this.maintenanceTable);
+    this.unbindTable(this.playerMaintenanceTable);
 
     for (const subscription of this.subscriptions) {
       this.unsubscribeOnce(subscription);
@@ -93,6 +112,7 @@ export class GameConfigSubscriptionManager {
     this.researchConfigTable = null;
     this.gameConfigTable = null;
     this.maintenanceTable = null;
+    this.playerMaintenanceTable = null;
     this.bootstrapResearchConfigs = [];
     this.bootstrapGameConfigs = [];
     this.subscriptions = [];
@@ -216,19 +236,22 @@ export class GameConfigSubscriptionManager {
     if (
       this.bootstrapResearchConfigs.length <= 0 &&
       this.bootstrapGameConfigs.length <= 0 &&
-      !this.maintenanceTable
+      !this.maintenanceTable &&
+      !this.playerMaintenanceTable
     ) {
       this.publish({ ...EMPTY_SNAPSHOT });
       return;
     }
 
     const maintenanceRow = this.readFirstRow(this.maintenanceTable);
+    const playerMaintenanceRow = this.readFirstRow(this.playerMaintenanceTable);
     const gameConfigs = this.mergeMaintenanceGameConfig(maintenanceRow);
 
     this.publish({
       connected: true,
       researchConfigs: this.bootstrapResearchConfigs,
       gameConfigs,
+      playerMaintenance: this.mapPlayerMaintenance(playerMaintenanceRow),
     });
   }
 
@@ -288,6 +311,18 @@ export class GameConfigSubscriptionManager {
     return {
       configKey: String(row.configKey ?? row.config_key ?? ''),
       configJson: String(row.configJson ?? row.config_json ?? ''),
+      updatedAtMs: this.toTimestampMs(row.updatedAt ?? row.updated_at),
+    };
+  }
+
+  mapPlayerMaintenance(row) {
+    if (!row) {
+      return null;
+    }
+
+    return {
+      mode: String(row.mode ?? 'off'),
+      message: String(row.message ?? ''),
       updatedAtMs: this.toTimestampMs(row.updatedAt ?? row.updated_at),
     };
   }

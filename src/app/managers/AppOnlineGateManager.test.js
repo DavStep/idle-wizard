@@ -62,16 +62,30 @@ describe('AppOnlineGateManager', () => {
       message: 'maintenance in progress',
       saving: true,
     });
-    expect(gate.textContent).toContain('maintenance');
-    expect(gate.textContent).toContain('saving progress');
+    expect(gate.querySelector('.style-box__title').textContent).toBe('Maintenance');
+    expect(gate.querySelector('.app-online-gate__message').textContent).toBe(
+      'Maintenance in progress. Saving progress...',
+    );
     expect(progress.hidden).toBe(false);
 
     manager.showMaintenance({
-      mode: 'locked',
-      message: 'maintenance in progress',
+      mode: 'drain',
+      message: 'brief account maintenance',
     });
-    expect(gate.textContent).toContain('maintenance in progress');
+    expect(gate.querySelector('.style-box__title').textContent).toBe('Maintenance');
+    expect(gate.querySelector('.app-online-gate__message').textContent).toBe(
+      'Brief account maintenance. Progress is saved.',
+    );
     expect(progress.hidden).toBe(true);
+
+    manager.showMaintenance({
+      mode: 'drain',
+      message: 'account migration in progress',
+      saving: true,
+    });
+    expect(gate.querySelector('.app-online-gate__message').textContent).toBe(
+      'Account migration in progress. Saving progress...',
+    );
 
     manager.hide();
     expect(gate.hidden).toBe(true);

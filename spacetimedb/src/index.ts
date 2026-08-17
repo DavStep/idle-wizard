@@ -5561,6 +5561,18 @@ const spacetimedb = schema({
       updatedAt: t.timestamp(),
     },
   ),
+  playerMaintenance: table(
+    {
+      name: 'player_maintenance',
+      public: false,
+    },
+    {
+      identity: t.identity().primaryKey(),
+      mode: t.string(),
+      message: t.string(),
+      updatedAt: t.timestamp(),
+    },
+  ),
   worldEventRewardSettlementTick,
   playerInboxMail: table(
     {
@@ -6158,6 +6170,14 @@ const playerSessionResult = t.option(
     updatedAt: t.timestamp(),
   }),
 );
+const playerMaintenanceResult = t.option(
+  t.row('PlayerMaintenanceResult', {
+    identity: t.identity().primaryKey(),
+    mode: t.string(),
+    message: t.string(),
+    updatedAt: t.timestamp(),
+  }),
+);
 const ownPlayerInboxMailResult = t.array(
   t.row('OwnPlayerInboxMailResult', {
     mailKey: t.string().primaryKey(),
@@ -6589,6 +6609,12 @@ export const own_player_session = spacetimedb.view(
   { name: 'own_player_session', public: true },
   playerSessionResult,
   (ctx) => ctx.db.playerSession.identity.find(ctx.sender) ?? undefined,
+);
+
+export const own_player_maintenance = spacetimedb.view(
+  { name: 'own_player_maintenance', public: true },
+  playerMaintenanceResult,
+  (ctx) => ctx.db.playerMaintenance.identity.find(ctx.sender) ?? undefined,
 );
 
 export const own_player_profile = spacetimedb.view(
@@ -11823,6 +11849,38 @@ function getMaintenanceConfig(ctx: IdleWizardReducerCtx) {
   };
 }
 
+function getPlayerMaintenanceConfig(ctx: IdleWizardReducerCtx, identity: Identity) {
+  const row = ctx.db.playerMaintenance.identity.find(identity);
+
+  return row
+    ? {
+        mode: normalizeMaintenanceMode(row.mode),
+        message: normalizeMaintenanceMessage(row.message),
+      }
+    : {
+        mode: MAINTENANCE_MODE_OFF,
+        message: 'maintenance in progress',
+      };
+}
+
+function getEffectiveMaintenanceConfig(
+  ctx: IdleWizardReducerCtx,
+  identity: Identity = ctx.sender,
+) {
+  const globalMaintenance = getMaintenanceConfig(ctx);
+  const playerMaintenance = getPlayerMaintenanceConfig(ctx, identity);
+  const rank = (mode: string) =>
+    mode === MAINTENANCE_MODE_LOCKED
+      ? 2
+      : mode === MAINTENANCE_MODE_DRAIN
+        ? 1
+        : 0;
+
+  return rank(playerMaintenance.mode) > rank(globalMaintenance.mode)
+    ? playerMaintenance
+    : globalMaintenance;
+}
+
 type TradeAllianceWeeklyQuestConfig = {
   id: string;
   label: string;
@@ -12708,7 +12766,7 @@ function assertActivePlayerSession(
     throw new SenderError('Account is open on another device.');
   }
 
-  const maintenance = getMaintenanceConfig(ctx);
+  const maintenance = getEffectiveMaintenanceConfig(ctx);
   if (
     maintenance.mode === MAINTENANCE_MODE_OFF ||
     (allowMaintenanceDrainSave && maintenance.mode === MAINTENANCE_MODE_DRAIN)
@@ -16563,6 +16621,12 @@ function deleteAllPlayerSessions(ctx: IdleWizardReducerCtx) {
   }
 }
 
+function deleteAllPlayerMaintenance(ctx: IdleWizardReducerCtx) {
+  for (const maintenance of Array.from(ctx.db.playerMaintenance.iter())) {
+    ctx.db.playerMaintenance.delete(maintenance);
+  }
+}
+
 function invalidateAllPlayerSessions(ctx: IdleWizardReducerCtx) {
   const maintenanceConnectionId = ctx.connectionId;
   if (!maintenanceConnectionId) {
@@ -16728,6 +16792,7 @@ function deletePlayerDataForIdentity(ctx: IdleWizardReducerCtx, identity: Identi
   deletePotionDiscoveriesForIdentity(ctx, identity);
   deletePlayerFeedbackForIdentity(ctx, identity);
   deleteAdminPlayerSession(ctx, identity);
+  deletePlayerMaintenanceForIdentity(ctx, identity);
 
   const player = ctx.db.player.identity.find(identity);
   if (player) {
@@ -16754,6 +16819,7 @@ function deletePlayerDataForIdentities(ctx: IdleWizardReducerCtx, identities: Id
     deleteLeaderboardForIdentity(ctx, identity);
     deleteWorldEventLeaderboardForIdentity(ctx, identity);
     deleteAdminPlayerSession(ctx, identity);
+    deletePlayerMaintenanceForIdentity(ctx, identity);
   }
 
   for (const row of Array.from(ctx.db.worldChat.iter())) {
@@ -17570,6 +17636,43 @@ function deleteAdminPlayerSession(ctx: IdleWizardReducerCtx, identity: Identity)
   }
 }
 
+function deletePlayerMaintenanceForIdentity(
+  ctx: IdleWizardReducerCtx,
+  identity: Identity,
+) {
+  const maintenance = ctx.db.playerMaintenance.identity.find(identity);
+  if (maintenance) {
+    ctx.db.playerMaintenance.delete(maintenance);
+  }
+}
+
+function closeAdminPlayerSession(
+  ctx: IdleWizardReducerCtx,
+  player: ReturnType<typeof findPlayerByIdentityHex>,
+) {
+  const session = ctx.db.playerSession.identity.find(player.identity);
+  if (!session && !player.connected) {
+    return player;
+  }
+
+  const totalPlayTimeMicros =
+    session && player.connected
+      ? addPlayerSessionPlaytimeMicros(
+          player.totalPlayTimeMicros,
+          session.updatedAt,
+          ctx.timestamp,
+        )
+      : player.totalPlayTimeMicros;
+
+  deleteAdminPlayerSession(ctx, player.identity);
+  return ctx.db.player.identity.update({
+    ...player,
+    connected: false,
+    lastSeenAt: ctx.timestamp,
+    totalPlayTimeMicros,
+  });
+}
+
 function kickAdminPlayerSession(ctx: IdleWizardReducerCtx, identity: Identity) {
   const activeConnectionId = ctx.connectionId;
   if (!activeConnectionId) {
@@ -18122,6 +18225,27 @@ function assertMaintenanceLocked(ctx: IdleWizardReducerCtx) {
   throw new Error('Maintenance must be locked.');
 }
 
+function assertPlayerMaintenanceLocked(
+  ctx: IdleWizardReducerCtx,
+  identities: Identity[],
+) {
+  if (getMaintenanceConfig(ctx).mode === MAINTENANCE_MODE_LOCKED) {
+    return;
+  }
+
+  if (
+    identities.length > 0 &&
+    identities.every(
+      (identity) =>
+        getPlayerMaintenanceConfig(ctx, identity).mode === MAINTENANCE_MODE_LOCKED,
+    )
+  ) {
+    return;
+  }
+
+  throw new Error('Player maintenance must be locked.');
+}
+
 export const onConnect = spacetimedb.clientConnected((ctx) => {
   ensureResearchConfigCatalog(ctx);
   ensureGameConfigCatalog(ctx);
@@ -18134,7 +18258,7 @@ export const onConnect = spacetimedb.clientConnected((ctx) => {
   ensureWorldEventRewardSettlementTick(ctx);
   settleEndedWorldEventInboxRewards(ctx);
 
-  if (getMaintenanceConfig(ctx).mode === MAINTENANCE_MODE_LOCKED) {
+  if (getEffectiveMaintenanceConfig(ctx).mode === MAINTENANCE_MODE_LOCKED) {
     return;
   }
 
@@ -18367,6 +18491,7 @@ export const set_admin_player_data = spacetimedb.reducer(
     assertGameConfigAdmin(ctx);
 
     const player = findPlayerByIdentityHex(ctx, identityHex);
+    assertPlayerMaintenanceLocked(ctx, [player.identity]);
     const normalizedUsername = normalizeUsername(username);
     const safePlayerLevel = validateAdminPlayerLevel(playerLevel);
     const safeTotalIncome = toBigInt(totalIncome);
@@ -18443,6 +18568,7 @@ export const admin_set_player_level_by_identity = spacetimedb.reducer(
     assertGameConfigAdmin(ctx);
 
     const player = findPlayerByIdentityHex(ctx, identityHex);
+    assertPlayerMaintenanceLocked(ctx, [player.identity]);
     const safePlayerLevel = validateAdminPlayerLevel(playerLevel);
     const existingSave = ctx.db.playerGameplaySave.identity.find(player.identity) ?? undefined;
     const safeSaveJson = createAdminPlayerLevelSaveJson(
@@ -18508,7 +18634,6 @@ export const admin_merge_player_accounts = spacetimedb.reducer(
   },
   (ctx, { sourceIdentityHex, targetIdentityHex }) => {
     assertGameConfigAdmin(ctx);
-    assertMaintenanceLocked(ctx);
 
     const sourcePlayer = findPlayerByIdentityHex(ctx, sourceIdentityHex);
     const targetPlayer = findPlayerByIdentityHex(ctx, targetIdentityHex);
@@ -18516,6 +18641,7 @@ export const admin_merge_player_accounts = spacetimedb.reducer(
       throw new Error('Source and target players must differ.');
     }
 
+    assertPlayerMaintenanceLocked(ctx, [sourcePlayer.identity, targetPlayer.identity]);
     assertAdminMergeAccountsInactive(ctx, sourcePlayer.identity, targetPlayer.identity);
 
     const targetUsername = normalizeUsername(targetPlayer.username);
@@ -18592,6 +18718,7 @@ export const admin_merge_player_accounts = spacetimedb.reducer(
     );
 
     deleteAdminPlayerSession(ctx, sourcePlayer.identity);
+    deletePlayerMaintenanceForIdentity(ctx, sourcePlayer.identity);
     ctx.db.player.delete(sourcePlayer);
   },
 );
@@ -18610,6 +18737,7 @@ export const admin_copy_player_progression = spacetimedb.reducer(
       throw new Error('Source and target players must differ.');
     }
 
+    assertPlayerMaintenanceLocked(ctx, [targetPlayer.identity]);
     const sourceSave = ctx.db.playerGameplaySave.identity.find(sourcePlayer.identity);
     if (!sourceSave) {
       throw new Error('Cannot copy missing source player save.');
@@ -18671,6 +18799,7 @@ export const admin_set_player_plot_capacity_research_by_identity = spacetimedb.r
     assertGameConfigAdmin(ctx);
 
     const player = findPlayerByIdentityHex(ctx, identityHex);
+    assertPlayerMaintenanceLocked(ctx, [player.identity]);
     const identityKey = getIdentityHex(player.identity);
     const stateKey =
       `player-plot-capacity-correction:${identityKey}:` +
@@ -20892,6 +21021,45 @@ export const set_maintenance_mode = spacetimedb.reducer(
   },
 );
 
+export const admin_set_player_maintenance = spacetimedb.reducer(
+  {
+    identityHex: t.string(),
+    mode: t.string(),
+    message: t.string(),
+  },
+  (ctx, { identityHex, mode, message }) => {
+    assertGameConfigAdmin(ctx);
+
+    const player = findPlayerByIdentityHex(ctx, identityHex);
+    const safeMode = normalizeMaintenanceMode(mode);
+    const existingMaintenance = ctx.db.playerMaintenance.identity.find(player.identity);
+
+    if (safeMode === MAINTENANCE_MODE_OFF) {
+      if (existingMaintenance) {
+        ctx.db.playerMaintenance.delete(existingMaintenance);
+      }
+      return;
+    }
+
+    const nextMaintenance = {
+      identity: player.identity,
+      mode: safeMode,
+      message: normalizeMaintenanceMessage(message),
+      updatedAt: ctx.timestamp,
+    };
+
+    if (existingMaintenance) {
+      ctx.db.playerMaintenance.identity.update(nextMaintenance);
+    } else {
+      ctx.db.playerMaintenance.insert(nextMaintenance);
+    }
+
+    if (safeMode === MAINTENANCE_MODE_LOCKED) {
+      closeAdminPlayerSession(ctx, player);
+    }
+  },
+);
+
 export const migrate_player_gameplay_saves = spacetimedb.reducer(
   { migrationKey: t.string() },
   (ctx, { migrationKey }) => {
@@ -20943,6 +21111,7 @@ export const admin_reset_player_progression_data = spacetimedb.reducer(
     deleteAllPlayerShopState(ctx);
     deleteAllPotionDiscoveries(ctx);
     deleteAllPlayerFeedback(ctx);
+    deleteAllPlayerMaintenance(ctx);
     invalidateAllPlayerSessions(ctx);
     resetNpcMarketRows(ctx, { resetStock: true });
     resetAllPlayersToFreshProfiles(ctx);
@@ -20973,6 +21142,7 @@ export const admin_wipe_all_player_data = spacetimedb.reducer(
     deleteAllPlayerShopState(ctx);
     deleteAllPotionDiscoveries(ctx);
     deleteAllPlayerFeedback(ctx);
+    deleteAllPlayerMaintenance(ctx);
     deleteAllPlayerSessions(ctx);
     deleteAllPlayerRows(ctx);
     resetNpcMarketRows(ctx, { resetStock: true });
@@ -21046,6 +21216,7 @@ export const admin_grant_player_currency_by_identity = spacetimedb.reducer(
     assertGameConfigAdmin(ctx);
 
     const player = findPlayerByIdentityHex(ctx, identityHex);
+    assertPlayerMaintenanceLocked(ctx, [player.identity]);
     const identityKey = getIdentityHex(player.identity);
     const grantKey = normalizeMaintenanceKey(resetKey);
     const stateKey = `player-currency-grant:${identityKey}:${grantKey}`;
@@ -21112,9 +21283,9 @@ export const admin_reset_player_progression_by_identity = spacetimedb.reducer(
   },
   (ctx, { identityHex, resetKey }) => {
     assertGameConfigAdmin(ctx);
-    assertMaintenanceLocked(ctx);
 
     const player = findPlayerByIdentityHex(ctx, identityHex);
+    assertPlayerMaintenanceLocked(ctx, [player.identity]);
     const identityKey = getIdentityHex(player.identity);
     const stateKey = `player-progression-reset:${identityKey}:${normalizeMaintenanceKey(resetKey)}`;
     if (ctx.db.maintenanceState.stateKey.find(stateKey)) {

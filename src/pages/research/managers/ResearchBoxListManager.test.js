@@ -119,6 +119,10 @@ describe('ResearchBoxListManager', () => {
 
     manager.mount(stage);
 
+    const toggle = stage.querySelector('.research-page__completed-toggle');
+    expect(toggle?.getAttribute('aria-pressed')).toBe('false');
+    toggle?.dispatchEvent(new window.MouseEvent('click', { bubbles: true }));
+
     const rows = [...stage.querySelectorAll('.research-page__row')];
     const researchedNames = rows
       .filter((row) => row.textContent?.includes('Researched'))
@@ -184,7 +188,7 @@ describe('ResearchBoxListManager', () => {
     const content = stage.querySelector('.research-page__content');
     const list = stage.querySelector('.research-page__box-list');
     const box = stage.querySelector('.research-page__box');
-    const rows = [...stage.querySelectorAll('.research-page__row')];
+    let rows = [...stage.querySelectorAll('.research-page__row')];
 
     expect(content).not.toBeNull();
     expect(list?.classList.contains('style-page-scroll')).toBe(true);
@@ -197,13 +201,25 @@ describe('ResearchBoxListManager', () => {
     expect(box?.querySelector('.research-page__box-title')?.textContent).toBe(
       'Seed Unlock Researches',
     );
-    expect(rows).toHaveLength(3);
+    expect(rows).toHaveLength(2);
     expect(rows.map((row) => row.className)).toEqual([
-      'research-page__row is-completed',
       'research-page__row is-available',
       'research-page__row is-unavailable is-locked',
     ]);
-    const researchedButton = rows[0]?.querySelector(
+    const toggle = stage.querySelector('.research-page__completed-toggle');
+    expect(toggle?.getAttribute('aria-pressed')).toBe('false');
+    expect(toggle?.getAttribute('aria-label')).toBe(
+      'Show researched Seed Unlock Researches',
+    );
+    toggle?.dispatchEvent(new window.MouseEvent('click', { bubbles: true }));
+    rows = [...stage.querySelectorAll('.research-page__row')];
+    expect(rows).toHaveLength(3);
+    expect(rows.map((row) => row.className)).toEqual([
+      'research-page__row is-available',
+      'research-page__row is-unavailable is-locked',
+      'research-page__row is-completed',
+    ]);
+    const researchedButton = rows[2]?.querySelector(
       '.research-page__research-button--completed',
     );
     expect(researchedButton?.textContent).toBe('Researched');
@@ -213,16 +229,16 @@ describe('ResearchBoxListManager', () => {
       researchedButton?.classList.contains('style-cost-button--yellow'),
     ).toBe(true);
     expect(
-      rows[1]?.querySelector('.research-page__research-description')?.textContent,
+      rows[0]?.querySelector('.research-page__research-description')?.textContent,
     ).toBe('Allows mint seed to drop from summon seed.');
-    const mintArtwork = rows[1]?.querySelector(
+    const mintArtwork = rows[0]?.querySelector(
       '.research-page__research-art-image',
     );
     expect(mintArtwork?.dataset.assetAtlasFrame).toBe('seed:pack');
     expect(mintArtwork?.dataset.seedPackItemFrame).toBe('herb:mintHerb');
     expect(stage.querySelector('.research-page__research-rank')).toBeNull();
     expect(
-      rows[1]?.querySelector('.style-cost-button__plain-label')?.textContent,
+      rows[0]?.querySelector('.style-cost-button__plain-label')?.textContent,
     ).toBe('Free');
     expect(stage.querySelector('.research-page__research-summary')).toBeNull();
   });
@@ -427,6 +443,9 @@ describe('ResearchBoxListManager', () => {
     const stage = document.createElement('section');
 
     manager.mount(stage);
+    stage
+      .querySelector('.research-page__completed-toggle')
+      ?.dispatchEvent(new window.MouseEvent('click', { bubbles: true }));
 
     const completedRow = [...stage.querySelectorAll('.research-page__row')].find((row) =>
       row.textContent?.includes('auto plant tile 1'),
@@ -456,6 +475,9 @@ describe('ResearchBoxListManager', () => {
     ).toBe(true);
 
     manager.onSelectTab('emerald');
+    stage
+      .querySelector('.research-page__completed-toggle')
+      ?.dispatchEvent(new window.MouseEvent('click', { bubbles: true }));
 
     const completedEmeraldRow = [...stage.querySelectorAll('.research-page__row')].find((row) =>
       row.textContent?.includes('x2 potions'),
@@ -1145,7 +1167,7 @@ describe('ResearchBoxListManager', () => {
     stage.remove();
   });
 
-  it('pins run-focus matching research boxes first', () => {
+  it('removes the legacy run-focus controls and keeps standard box order', () => {
     const setPrestigeRunFocus = vi.fn(() => ({ ok: true }));
     const snapshot = {
       playerLevel: {
@@ -1188,16 +1210,12 @@ describe('ResearchBoxListManager', () => {
     manager.mount(stage);
 
     const boxes = [...stage.querySelectorAll('.research-page__box')];
-    expect(stage.querySelector('.research-page__run-focus')?.textContent).toContain(
-      'capacity boxes first',
-    );
-    expect(boxes[0]?.getAttribute('aria-label')).toBe('plot capacity research');
-
-    stage
-      .querySelector('.research-page__run-focus-button[aria-pressed="false"]')
-      ?.dispatchEvent(new window.MouseEvent('click', { bubbles: true }));
-
-    expect(setPrestigeRunFocus).toHaveBeenCalledWith('none');
+    expect(stage.querySelector('.research-page__run-focus')).toBeNull();
+    expect(boxes.map((box) => box.getAttribute('aria-label'))).toEqual([
+      'research time research',
+      'plot capacity research',
+    ]);
+    expect(setPrestigeRunFocus).not.toHaveBeenCalled();
 
     manager.unmount();
     stage.remove();

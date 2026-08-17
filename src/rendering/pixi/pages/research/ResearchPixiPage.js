@@ -10,6 +10,7 @@ import {
 import { formatRemainingTime } from '../../../../pages/shared/timerDisplay.js';
 import { getPotionIconFrameName } from '../../../../assets/items/potions/potionIcons.js';
 import { PixiCostButton } from '../../primitives/PixiCostButton.js';
+import { PixiBaseButton } from '../../primitives/PixiBaseButton.js';
 import { PixiNineSliceFrame } from '../../primitives/PixiNineSliceFrame.js';
 import {
   createTimedProgressWindow,
@@ -67,6 +68,8 @@ export const RESEARCH_WIDGET_SHINE_ALPHA = 0.5;
 export const RESEARCH_WIDGET_SHINE_CORNER_RADIUS_SCALE = 0.16;
 const RESEARCH_TAB_LOCK_WIDTH = 18;
 const RESEARCH_TAB_LOCK_HEIGHT = 20.5;
+const RESEARCH_VISIBILITY_BUTTON_SIZE = 28;
+const RESEARCH_VISIBILITY_ICON_SIZE = 24;
 export const RESEARCH_RANK_FONT =
   '"Lilita One", "Arial Black", Arial, sans-serif';
 const RESOURCE_WORD_MATCH_PATTERN =
@@ -359,6 +362,8 @@ export class ResearchPixiPage extends BaseRetainedPixiPage {
     this.prefersReducedMotion = prefersReducedMotion;
     this.actions = actions;
     this.selectedTabId = 'regular';
+    this.completedSectionIds = new Set();
+    this.currentResearchBoxes = [];
     this.active = false;
     this.tickHandler = () => this.tick();
 
@@ -368,10 +373,6 @@ export class ResearchPixiPage extends BaseRetainedPixiPage {
       inputRouter: this.inputRouter,
     });
     this.tabsLayer = new Container({ label: 'research-page-tabs' });
-    this.runFocusLayer = new Container({ label: 'research-run-focus' });
-    this.runFocusLabel = createText('run focus', RETAINED_TEXT_STYLES.bold);
-    this.runFocusHelper = createText('', RETAINED_TEXT_STYLES.border);
-    this.runFocusLayer.addChild(this.runFocusLabel, this.runFocusHelper);
     this.lockTooltip = new ResearchLockTooltip({
       assetManager: this.assetManager,
     });
@@ -466,29 +467,6 @@ export class ResearchPixiPage extends BaseRetainedPixiPage {
       afterReconcile: (buttons) => this.orderTabButtons(buttons),
     });
 
-    this.runFocusPool = new WidgetPool({
-      name: 'research run focus pool',
-      counters,
-      create: () =>
-        new RetainedButton({
-          assetManager: this.assetManager,
-          buttonLabel: 'research-run-focus-button',
-          inputRouter: this.inputRouter,
-          sizeTier: 30,
-        }),
-      reset: (button) => button.setModel({ label: '', enabled: false }),
-      dispose: (button) => button.destroy(),
-      maxSize: 4,
-    });
-    this.runFocusButtons = new PooledCollection({
-      name: 'research run focus buttons',
-      pool: this.runFocusPool,
-      counters,
-      keyOf: (option) => option.id,
-      bind: (button, option) => this.bindRunFocusButton(button, option),
-      afterReconcile: (buttons) => this.orderRunFocusButtons(buttons),
-    });
-
     this.applyTheme(theme);
     this.layoutPage(this.sourceWidth, this.sourceHeight);
   }
@@ -532,24 +510,11 @@ export class ResearchPixiPage extends BaseRetainedPixiPage {
     this.tabs.reconcile(tabs);
     this.tabsLayer.visible = tabs.length > 1;
 
-    const runFocus = research.runFocus ?? {};
-    this.runFocusLayer.visible = runFocus.unlocked === true;
-    setText(
-      this.runFocusHelper,
-      runFocus.helper ??
-        (runFocus.selected && runFocus.selected !== 'none'
-          ? `${runFocus.selected} boxes first`
-          : 'standard order'),
-    );
-    this.currentRunFocus = runFocus;
-    this.runFocusButtons.reconcile(
-      runFocus.unlocked === true ? normalizeRows(runFocus.options) : [],
-    );
-
     const boxes = normalizeRows(selectedTab?.boxes);
+    this.currentResearchBoxes = boxes;
     this.boxes.reconcile(boxes);
     const rows = boxes.flatMap((box) =>
-      getDisplayedResearches(box).map((item) => ({
+      getOrderedResearches(box).map((item) => ({
         boxId: box.id,
         research: {
           ...item,
@@ -690,15 +655,6 @@ export class ResearchPixiPage extends BaseRetainedPixiPage {
     return true;
   }
 
-  bindRunFocusButton(button, option) {
-    button.applyTheme(this.theme);
-    button.setModel({
-      label: option.label ?? option.id,
-      selected: option.id === this.currentRunFocus?.selected,
-      action: () => this.currentActions?.setRunFocus?.(option.id),
-    });
-  }
-
   orderTabButtons(buttons) {
     this.tabsLayer.removeChildren();
     for (const button of buttons) {
@@ -706,19 +662,8 @@ export class ResearchPixiPage extends BaseRetainedPixiPage {
     }
   }
 
-  orderRunFocusButtons(buttons) {
-    this.runFocusLayer.removeChildren();
-    this.runFocusLayer.addChild(this.runFocusLabel, this.runFocusHelper);
-    for (const button of buttons) {
-      this.runFocusLayer.addChild(button.root);
-    }
-  }
-
   orderBoxWidgets(widgets) {
     this.scroll.content.removeChildren();
-    if (this.runFocusLayer.visible) {
-      this.scroll.content.addChild(this.runFocusLayer);
-    }
     for (const widget of widgets) {
       this.scroll.content.addChild(widget.root);
     }
@@ -730,7 +675,10 @@ export class ResearchPixiPage extends BaseRetainedPixiPage {
       if (!boxWidget) {
         continue;
       }
-      const rowWidgets = getDisplayedResearches(box)
+      const rowWidgets = getVisibleResearches(
+        box,
+        this.isShowingCompletedResearches(box.id),
+      )
         .map((item) => this.rows.get(item.id))
         .filter(Boolean);
       boxWidget.setRows(rowWidgets);
@@ -738,18 +686,6 @@ export class ResearchPixiPage extends BaseRetainedPixiPage {
   }
 
   applyThemeToChildren(theme) {
-    if (this.runFocusLabel) {
-      applyTextTheme(
-        this.runFocusLabel,
-        theme,
-        RETAINED_TEXT_STYLES.bold,
-      );
-      applyTextTheme(
-        this.runFocusHelper,
-        theme,
-        RETAINED_TEXT_STYLES.border,
-      );
-    }
     for (const widget of this.boxes?.getWidgets?.() ?? []) {
       widget.applyTheme(theme);
     }
@@ -757,9 +693,6 @@ export class ResearchPixiPage extends BaseRetainedPixiPage {
       row.applyTheme(theme);
     }
     for (const button of this.tabs?.getWidgets?.() ?? []) {
-      button.applyTheme(theme);
-    }
-    for (const button of this.runFocusButtons?.getWidgets?.() ?? []) {
       button.applyTheme(theme);
     }
     this.lockTooltip?.applyTheme(theme);
@@ -804,28 +737,6 @@ export class ResearchPixiPage extends BaseRetainedPixiPage {
       return;
     }
     let y = RETAINED_PAGE_GEOMETRY.scrollCut;
-
-    if (this.runFocusLayer.visible) {
-      this.runFocusLayer.position.set(this.contentEdge, y);
-      this.runFocusLabel.position.set(0, 1);
-      let buttonX = 76;
-      const focusButtons = this.runFocusButtons.getWidgets();
-      const availableWidth = Math.max(0, this.contentWidth - buttonX);
-      const buttonWidth =
-        focusButtons.length > 0
-          ? (availableWidth - (focusButtons.length - 1) * 3) /
-            focusButtons.length
-          : 0;
-      for (const button of focusButtons) {
-        button.setBounds(buttonX, 0, buttonWidth, 20);
-        buttonX += buttonWidth + 3;
-      }
-      this.runFocusHelper.position.set(
-        this.contentWidth - this.runFocusHelper.width,
-        22,
-      );
-      y += 38;
-    }
 
     for (const box of this.boxes.getWidgets()) {
       box.setBounds(
@@ -917,9 +828,27 @@ export class ResearchPixiPage extends BaseRetainedPixiPage {
     this.boxPool?.destroy();
     this.tabs?.destroy();
     this.tabPool?.destroy();
-    this.runFocusButtons?.destroy();
-    this.runFocusPool?.destroy();
     this.scroll?.destroy();
+  }
+
+  getCompletedSectionId(boxId) {
+    return `${this.selectedTabId}:${boxId}`;
+  }
+
+  isShowingCompletedResearches(boxId) {
+    return this.completedSectionIds.has(this.getCompletedSectionId(boxId));
+  }
+
+  toggleCompletedResearches(boxId) {
+    const sectionId = this.getCompletedSectionId(boxId);
+    if (this.completedSectionIds.has(sectionId)) {
+      this.completedSectionIds.delete(sectionId);
+    } else {
+      this.completedSectionIds.add(sectionId);
+    }
+    this.attachRowsToBoxes(this.currentResearchBoxes);
+    this.layoutResearchContent();
+    return true;
   }
 }
 
@@ -983,8 +912,37 @@ export class ResearchBoxWidget {
       assetManager: page.assetManager,
     });
     this.title = this.titlePlaque.title;
+    this.visibilityButton = new PixiBaseButton({
+      assetManager: page.assetManager,
+      fallbackHitTest: true,
+      height: RESEARCH_VISIBILITY_BUTTON_SIZE,
+      inputRouter: page.inputRouter,
+      label: 'research-completed-toggle',
+      variant: 'inline',
+      width: RESEARCH_VISIBILITY_BUTTON_SIZE,
+    });
+    this.visibilityIcon = new Sprite({
+      label: 'research-completed-toggle:icon',
+      roundPixels: true,
+      texture:
+        page.assetManager?.getTexture?.(
+          PIXI_ROOT_RUN_ASSETS.researchVisibilityEye,
+        ) ?? Texture.EMPTY,
+    });
+    this.visibilityIcon.anchor.set(0.5);
+    this.visibilityIcon.position.set(
+      RESEARCH_VISIBILITY_BUTTON_SIZE / 2,
+      RESEARCH_VISIBILITY_BUTTON_SIZE / 2,
+    );
+    this.visibilityIcon.width = RESEARCH_VISIBILITY_ICON_SIZE;
+    this.visibilityIcon.height = RESEARCH_VISIBILITY_ICON_SIZE;
+    this.visibilityButton.visual.addChild(this.visibilityIcon);
     this.rowsLayer = new Container({ label: 'research-box-rows' });
-    this.root.addChild(this.titlePlaque.root, this.rowsLayer);
+    this.root.addChild(
+      this.titlePlaque.root,
+      this.visibilityButton,
+      this.rowsLayer,
+    );
     this.rowWidgets = [];
     this.preferredHeight = RESEARCH_PIXI_GEOMETRY.categoryTitleHeight;
     this.rows = {
@@ -997,8 +955,25 @@ export class ResearchBoxWidget {
   }
 
   bind(box) {
+    this.unregisterVisibilityTarget();
     this.box = box;
     this.titlePlaque.bind(box.label ?? '', this.page.selectedTabId);
+    this.visibilityTargetId =
+      `research.completed.${this.page.selectedTabId}.${box.id}`;
+    this.visibilityButton
+      .setEnabled(true)
+      .setAction(() => this.page.toggleCompletedResearches(box.id));
+    this.page.registerSemanticTarget({
+      semanticId: this.visibilityTargetId,
+      displayObject: this.visibilityButton,
+      state: () => ({
+        enabled: true,
+        interactive: this.visibilityButton.eventMode !== 'none',
+        pressed: this.page.isShowingCompletedResearches(box.id),
+      }),
+      activate: () => this.visibilityButton.activate(),
+    });
+    this.syncVisibilityToggle();
     this.applyTheme(this.page.theme);
   }
 
@@ -1017,12 +992,19 @@ export class ResearchBoxWidget {
       RESEARCH_PIXI_GEOMETRY.categoryTitleHeight +
       (rows.length > 0 ? RESEARCH_PIXI_GEOMETRY.rowGap + y -
         RESEARCH_PIXI_GEOMETRY.rowGap : 0);
+    this.syncVisibilityToggle();
   }
 
   setBounds(x, y, width, rowInsetX = 0) {
     this.root.position.set(x, y);
     this.width = width;
     this.titlePlaque.setMaxWidth(width);
+    this.visibilityButton.position.set(
+      width - RESEARCH_VISIBILITY_BUTTON_SIZE,
+      (RESEARCH_PIXI_GEOMETRY.categoryTitleHeight -
+        RESEARCH_VISIBILITY_BUTTON_SIZE) /
+        2,
+    );
     this.rowsLayer.position.set(
       rowInsetX,
       RESEARCH_PIXI_GEOMETRY.categoryTitleHeight +
@@ -1036,21 +1018,41 @@ export class ResearchBoxWidget {
 
   applyTheme(theme) {
     this.theme = theme;
+    this.visibilityButton.applyTheme(theme);
     for (const row of this.rowWidgets) {
       row.applyTheme(theme);
     }
   }
 
   reset() {
+    this.unregisterVisibilityTarget();
     this.rowsLayer.removeChildren();
     this.rowWidgets = [];
     this.box = null;
     this.titlePlaque.bind('', 'regular');
+    this.visibilityButton.setAction(null).setEnabled(false);
     this.preferredHeight = RESEARCH_PIXI_GEOMETRY.categoryTitleHeight;
   }
 
   destroy() {
+    this.unregisterVisibilityTarget();
     this.root.destroy({ children: true });
+  }
+
+  syncVisibilityToggle() {
+    const showing = this.box
+      ? this.page.isShowingCompletedResearches(this.box.id)
+      : false;
+    this.visibilityIcon.alpha = showing ? 1 : 0.45;
+    this.visibilityButton.alpha = showing ? 1 : 0.72;
+  }
+
+  unregisterVisibilityTarget() {
+    if (!this.visibilityTargetId) {
+      return;
+    }
+    this.page.unregisterSemanticTarget(this.visibilityTargetId);
+    this.visibilityTargetId = null;
   }
 }
 
@@ -2138,16 +2140,31 @@ export class ResearchRowWidget {
   }
 }
 
-function getDisplayedResearches(box = {}) {
+function getOrderedResearches(box = {}) {
   const source = normalizeRows(box.researches ?? box.rows ?? box.allResearches);
   let lockedCount = 0;
-  return source.filter((research) => {
-    if (research.locked !== true) {
-      return true;
-    }
-    lockedCount += 1;
-    return lockedCount <= MAX_LOCKED_ROWS_PER_BOX;
-  });
+  return source
+    .filter((research) => {
+      if (research.locked !== true) {
+        return true;
+      }
+      lockedCount += 1;
+      return lockedCount <= MAX_LOCKED_ROWS_PER_BOX;
+    })
+    .map((research, index) => ({ research, index }))
+    .sort(
+      (left, right) =>
+        Number(left.research.completed === true) -
+          Number(right.research.completed === true) ||
+        left.index - right.index,
+    )
+    .map(({ research }) => research);
+}
+
+function getVisibleResearches(box = {}, showCompleted = false) {
+  return getOrderedResearches(box).filter(
+    (research) => showCompleted || research.completed !== true,
+  );
 }
 
 function normalizeResearchState(research = {}) {

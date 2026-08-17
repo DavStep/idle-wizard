@@ -1,8 +1,9 @@
 # Retained Pixi Prestige Page
 
 `PrestigePixiPage` keeps the main/points tabs, description, milestone rows,
-point-reward rows, confirmation panel, and licence tooltip in one retained Pixi
-tree. Milestone and reward rows are keyed and pooled.
+point-reward rows, and confirmation panel in one retained Pixi tree. Milestone
+and reward rows are keyed and pooled. Summary and reward info controls open the
+page-owned `PrestigeInfoDialogPixi` through the shared retained dialog registry.
 
 The identity ribbon reuses `MarketTitleRibbon` and binds its three-slot star
 group to completed Prestige Points. `Next Prestige` and `Milestones` reuse
@@ -22,6 +23,7 @@ as decorated `milestones`, `pointRewards`, `summary`, and `confirm` fields, with
 actions for tab selection and prestige completion.
 
 The runtime supplies the shared input router, Pixi theme/assets, viewport
-projection, and semantic-target registry. The renderer keeps confirmation and
-tooltip state in the retained tree but receives all player-facing content and
-eligibility from its presenter.
+projection, semantic-target registry, and dialog registry. The renderer keeps
+confirmation state in the retained tree but receives all player-facing content
+and eligibility from its presenter. The info dialog derives its height from the
+wrapped copy and centers that copy on both axes inside the shared shell.

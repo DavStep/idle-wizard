@@ -5,6 +5,12 @@ upload script posts the section whose heading matches `package.json` `version`.
 Write these developer-to-player notes only in Idle Wizard terms. Do not mention
 other game names, source projects, ports, or implementation provenance.
 
+## 0.3.60
+
+- Made Research easier to scan by keeping unfinished studies first, hiding completed studies by default, and adding a per-category control to reveal them.
+- Refined Prestige details and World Event leaderboards with clearer, more consistent dialog presentation.
+- Improved account-migration maintenance so affected players receive a focused status screen while everyone else can keep playing.
+
 ## 0.3.59
 
 - Added hold-to-repeat summoning in the Workshop, so you can summon seeds continuously while mana is available.

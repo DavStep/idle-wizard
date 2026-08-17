@@ -4,7 +4,7 @@ import { PrestigePixiPage } from './PrestigePixiPage.js';
 
 export default defineUiEditorIntegration({
   apiVersion: 1,
-  childWidgetIds: ['compound.market-title-ribbon', 'compound.research-station-title', 'compound.prestige-description', 'compound.prestige-row', 'compound.prestige-confirm-panel', 'compound.prestige-tooltip', 'text-button'],
+  childWidgetIds: ['compound.market-title-ribbon', 'compound.research-station-title', 'compound.prestige-description', 'compound.prestige-row', 'compound.prestige-confirm-panel', 'text-button'],
   folderPath: ['Prestige'],
   id: 'feature.prestige-room',
   kind: 'scene',

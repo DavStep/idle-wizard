@@ -172,6 +172,12 @@ const UI_SURFACE_DEFINITIONS = Object.freeze([
     aliases: ['connectingGate', 'onlineGate'],
   },
   {
+    id: 'accountMigrationMaintenance',
+    kind: 'preview',
+    setup: 'onlineMaintenance',
+    aliases: ['accountMigration', 'playerMaintenance'],
+  },
+  {
     id: 'deployRefresh',
     kind: 'preview',
     setup: 'deployRefresh',
@@ -2029,6 +2035,10 @@ export class DevCheatCommandManager {
       return this.openOnlineConnectingSurface(surface);
     }
 
+    if (surface.setup === 'onlineMaintenance') {
+      return this.openOnlineMaintenanceSurface(surface, options);
+    }
+
     if (surface.setup === 'deployRefresh') {
       return this.openDeployRefreshSurface(surface);
     }
@@ -2198,6 +2208,24 @@ export class DevCheatCommandManager {
       { ok: true },
       surface,
     );
+  }
+
+  openOnlineMaintenanceSurface(surface, options = {}) {
+    if (typeof this.onlineGateManager?.showMaintenance !== 'function') {
+      return this.decorateUiResult(
+        surface.id,
+        { ok: false, reason: 'online_gate_missing' },
+        surface,
+      );
+    }
+
+    this.onlineGateManager.showMaintenance({
+      mode: options.mode === 'locked' ? 'locked' : 'drain',
+      message: options.message ?? 'account migration in progress',
+      saving: Boolean(options.saving),
+      preview: true,
+    });
+    return this.decorateUiResult(surface.id, { ok: true }, surface);
   }
 
   openDeployRefreshSurface(surface) {

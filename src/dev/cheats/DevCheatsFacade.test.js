@@ -633,6 +633,7 @@ describe('DevCheatsFacade', () => {
     const onlineGateManager = {
       hide: vi.fn(),
       showConnecting: vi.fn(),
+      showMaintenance: vi.fn(),
       showOffline: vi.fn(),
     };
     const { app } = createApp({ backendFacade, onlineGateManager });
@@ -681,6 +682,7 @@ describe('DevCheatsFacade', () => {
     const onlineGateManager = {
       hide: vi.fn(),
       showConnecting: vi.fn(),
+      showMaintenance: vi.fn(),
       showOffline: vi.fn(),
     };
     const renderFacade = {
@@ -697,6 +699,19 @@ describe('DevCheatsFacade', () => {
     });
 
     expect(onlineGateManager.showConnecting).toHaveBeenCalledWith({
+      preview: true,
+    });
+
+    expect(target.cheats.openUi('accountMigrationMaintenance', {
+      saving: true,
+    })).toMatchObject({
+      ok: true,
+      surfaceId: 'accountMigrationMaintenance',
+    });
+    expect(onlineGateManager.showMaintenance).toHaveBeenCalledWith({
+      mode: 'drain',
+      message: 'account migration in progress',
+      saving: true,
       preview: true,
     });
   });
@@ -883,6 +898,10 @@ describe('DevCheatsFacade', () => {
         expect.objectContaining({
           id: 'serverRequired',
           command: 'cheats.openUi("serverRequired")',
+        }),
+        expect.objectContaining({
+          id: 'accountMigrationMaintenance',
+          command: 'cheats.openUi("accountMigrationMaintenance")',
         }),
         expect.objectContaining({
           id: 'deployRefresh',

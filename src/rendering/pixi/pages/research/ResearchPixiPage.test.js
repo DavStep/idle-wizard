@@ -162,6 +162,46 @@ describe('ResearchPixiPage', () => {
     harness.dispose();
   });
 
+  it('hides completed rows by default and toggles them below newer research per section', () => {
+    const harness = createHarness();
+    const viewModel = createResearchViewModel();
+    viewModel.research.tabs[0].boxes[0].researches.unshift({
+      id: 'sage',
+      displayName: 'sage',
+      effect: '+1 sage',
+      displayValue: 'Researched',
+      completed: true,
+      state: 'completed',
+    });
+
+    harness.page.bind(viewModel);
+
+    const box = harness.page.boxes.get('herbs');
+    expect(box.rowWidgets.map((row) => row.research.id)).toEqual(['mint']);
+    expect(box.visibilityIcon.alpha).toBe(0.45);
+    expect(
+      harness.semanticTargets.resolve('research.completed.regular.herbs').state,
+    ).toMatchObject({ pressed: false });
+
+    expect(
+      harness.semanticTargets.activate('research.completed.regular.herbs'),
+    ).toBe(true);
+    expect(box.rowWidgets.map((row) => row.research.id)).toEqual([
+      'mint',
+      'sage',
+    ]);
+    expect(box.visibilityIcon.alpha).toBe(1);
+    expect(
+      harness.semanticTargets.resolve('research.completed.regular.herbs').state,
+    ).toMatchObject({ pressed: true });
+
+    harness.semanticTargets.activate('research.completed.regular.herbs');
+    expect(box.rowWidgets.map((row) => row.research.id)).toEqual(['mint']);
+
+    harness.page.destroy();
+    harness.dispose();
+  });
+
   it('keeps unlocked labels passive and routes locked rows to a requirement tooltip', () => {
     const buyResearch = vi.fn();
     const showLockedReason = vi.fn();

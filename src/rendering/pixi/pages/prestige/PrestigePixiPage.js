@@ -21,6 +21,10 @@ import {
 } from '../research/ResearchPixiPage.js';
 import { MarketTitleRibbon } from '../shop/MarketTitleRibbon.js';
 import {
+  PRESTIGE_INFO_DIALOG_ID,
+  PrestigeInfoDialogPixi,
+} from './PrestigeDialogPixi.js';
+import {
   BaseRetainedPixiPage,
   RETAINED_PAGE_GEOMETRY,
   RETAINED_TEXT_STYLES,
@@ -71,6 +75,8 @@ export class PrestigePixiPage extends BaseRetainedPixiPage {
     assetManager = null,
     semanticTargets = null,
     inputRouter = null,
+    dialogRegistry = null,
+    dialogLayer = null,
     actions = {},
     counters = null,
     theme = DEFAULT_PIXI_THEME_SNAPSHOT,
@@ -78,6 +84,8 @@ export class PrestigePixiPage extends BaseRetainedPixiPage {
     super({ pageId: 'prestige', semanticTargets, theme });
     this.assetManager = assetManager;
     this.inputRouter = inputRouter;
+    this.dialogRegistry = dialogRegistry;
+    this.dialogLayer = dialogLayer;
     this.actions = actions;
     this.selectedTabId = 'main';
     this.pendingConfirm = null;
@@ -104,7 +112,7 @@ export class PrestigePixiPage extends BaseRetainedPixiPage {
     this.description = new PrestigeDescriptionPanel({
       assetManager: this.assetManager,
       inputRouter: this.inputRouter,
-      onDetails: (model, target) => this.showTooltip(model, target),
+      onDetails: (model) => this.openInfoDialog(model),
     });
     this.confirm = new PrestigeConfirmPanel({
       assetManager: this.assetManager,
@@ -112,15 +120,13 @@ export class PrestigePixiPage extends BaseRetainedPixiPage {
       onCancel: () => this.cancelConfirm(),
       onProceed: () => this.proceedConfirm(),
     });
-    this.tooltip = new PrestigeTooltip({
-      assetManager: this.assetManager,
-    });
     this.content.addChild(
       this.identityLayer,
       this.scroll.root,
       this.tabsLayer,
-      this.tooltip.root,
     );
+
+    this.registerDialogs();
 
     this.rowPool = new WidgetPool({
       name: 'prestige row pool',
@@ -242,7 +248,6 @@ export class PrestigePixiPage extends BaseRetainedPixiPage {
         this.selectedTabId = tab.id;
         this.pendingConfirm = null;
         this.confirm.bind(null);
-        this.tooltip.hide();
         this.currentActions?.selectTab?.(tab.id);
       },
     });
@@ -292,27 +297,48 @@ export class PrestigePixiPage extends BaseRetainedPixiPage {
     );
   }
 
-  showTooltip(model, target) {
-    if (!model) {
-      this.tooltip.hide();
+  registerDialogs() {
+    if (
+      !this.dialogRegistry ||
+      !this.dialogLayer ||
+      this.dialogRegistry.has(PRESTIGE_INFO_DIALOG_ID)
+    ) {
       return;
     }
 
-    this.tooltip.bind(model);
-    const targetBounds = target.getBounds();
-    const targetRight = Number.isFinite(targetBounds.maxX)
-      ? targetBounds.maxX
-      : targetBounds.x + targetBounds.width;
-    const targetTop = Number.isFinite(targetBounds.minY)
-      ? targetBounds.minY
-      : targetBounds.y;
-    this.tooltip.show({
-      x: Math.min(
-        this.sourceWidth - 196,
-        Math.max(8, targetRight - 180),
-      ),
-      y: Math.max(8, targetTop - this.tooltip.height - 6),
-    });
+    this.dialogRegistry.register(
+      PRESTIGE_INFO_DIALOG_ID,
+      () =>
+        new PrestigeInfoDialogPixi({
+          parent: this.dialogLayer,
+          inputRouter: this.inputRouter,
+          semanticRegistry: this.semanticTargets,
+          assetManager: this.assetManager,
+          onClose: () => this.closeInfoDialog(),
+          theme: this.theme,
+        }),
+    );
+  }
+
+  openInfoDialog(model) {
+    if (!model || !this.dialogRegistry?.has?.(PRESTIGE_INFO_DIALOG_ID)) {
+      return false;
+    }
+
+    this.dialogRegistry.open(PRESTIGE_INFO_DIALOG_ID, model);
+    return true;
+  }
+
+  openDialog(dialogId, model) {
+    return dialogId === PRESTIGE_INFO_DIALOG_ID
+      ? this.openInfoDialog(model)
+      : false;
+  }
+
+  closeInfoDialog() {
+    return this.dialogRegistry?.isOpen?.(PRESTIGE_INFO_DIALOG_ID)
+      ? this.dialogRegistry.close(PRESTIGE_INFO_DIALOG_ID)
+      : false;
   }
 
   orderRows(widgets) {
@@ -343,7 +369,6 @@ export class PrestigePixiPage extends BaseRetainedPixiPage {
   applyThemeToChildren(theme) {
     this.description?.applyTheme(theme);
     this.confirm?.applyTheme(theme);
-    this.tooltip?.applyTheme(theme);
 
     for (const row of this.rows?.getWidgets?.() ?? []) {
       row.applyTheme(theme);
@@ -486,7 +511,6 @@ export class PrestigePixiPage extends BaseRetainedPixiPage {
     this.descriptionTitle?.root.destroy({ children: true });
     this.progressionTitle?.root.destroy({ children: true });
     this.scroll?.destroy();
-    this.tooltip?.destroy();
   }
 }
 
@@ -736,7 +760,7 @@ export class PrestigeRowWidget {
       assetManager,
       label: 'prestige-point-help',
       inputRouter: this.page.inputRouter,
-      action: () => this.page.showTooltip(this.model.tooltip, this.help),
+      action: () => this.page.openInfoDialog(this.model.tooltip),
     });
     this.lockedOverlay = new PixiNineSliceFrame({
       texture: Texture.EMPTY,
@@ -814,7 +838,7 @@ export class PrestigeRowWidget {
     this.help.visible = Boolean(model.tooltip);
     this.help.renderable = this.help.visible;
     this.help.setModel({
-      action: () => this.page.showTooltip(model.tooltip, this.help),
+      action: () => this.page.openInfoDialog(model.tooltip),
     });
     this.pointStars.setLevel(isPoint ? model.count : 0);
     this.pointStars.visible = isPoint;
@@ -1046,53 +1070,6 @@ export class PrestigeConfirmPanel {
   destroy() {
     this.cancel.destroy();
     this.proceed.destroy();
-    this.panel.destroy();
-  }
-}
-
-export class PrestigeTooltip {
-  constructor({ assetManager }) {
-    this.panel = new RetainedPanel({
-      assetManager,
-      panelLabel: 'prestige-tooltip',
-      strong: true,
-      shadowKind: 'tooltip',
-    });
-    this.root = this.panel.root;
-    this.copy = createText('', {
-      ...RETAINED_TEXT_STYLES.border,
-      wordWrapWidth: 160,
-    });
-    this.panel.body.addChild(this.copy);
-    this.root.visible = false;
-    this.height = 0;
-  }
-
-  bind(model) {
-    setText(this.copy, model.copy ?? model.text ?? String(model));
-    this.copy.position.set(10, 8);
-    this.height = Math.ceil(this.copy.height + 16);
-    this.panel.setBounds(0, 0, 180, this.height);
-  }
-
-  show({ x, y }) {
-    this.root.position.set(x, y);
-    this.root.visible = true;
-  }
-
-  hide() {
-    this.root.visible = false;
-  }
-
-  applyTheme(theme) {
-    this.panel.applyTheme(theme);
-    applyTextTheme(this.copy, theme, {
-      ...RETAINED_TEXT_STYLES.border,
-      wordWrapWidth: 160,
-    });
-  }
-
-  destroy() {
     this.panel.destroy();
   }
 }

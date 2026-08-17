@@ -609,6 +609,26 @@ export class WorkshopDialogPixi {
           afterReconcile: (widgets) => this.orderRows(widgets),
         })
       : null;
+    this.worldEventLeaderboardRowPool = this.isWorldEventDialog
+      ? new WidgetPool({
+          name: `${dialogId} world event leaderboard row pool`,
+          counters,
+          create: () => new LeaderboardRowPixi({ dialog: this }),
+          reset: (row) => row.reset(),
+          dispose: (row) => row.destroy(),
+          maxSize: 30,
+        })
+      : null;
+    this.worldEventLeaderboardRows = this.worldEventLeaderboardRowPool
+      ? new PooledCollection({
+          name: `${dialogId} world event leaderboard rows`,
+          pool: this.worldEventLeaderboardRowPool,
+          counters,
+          keyOf: (row, index) => row.id ?? row.identity ?? index,
+          bind: (widget, row) => widget.bind(row),
+          afterReconcile: (widgets) => this.orderRows(widgets),
+        })
+      : null;
     this.tabPool = new WidgetPool({
       name: `${dialogId} tab pool`,
       counters,
@@ -743,6 +763,10 @@ export class WorkshopDialogPixi {
             this.viewModel.rowWidget === 'worldEventQuest' &&
             this.worldEventRows
           ? this.worldEventRows
+          : this.isWorldEventDialog &&
+              this.viewModel.rowWidget === 'leaderboard' &&
+              this.worldEventLeaderboardRows
+            ? this.worldEventLeaderboardRows
           : this.defaultRows;
     if (this.rows !== nextRows) {
       this.rows.reconcile([]);
@@ -828,6 +852,8 @@ export class WorkshopDialogPixi {
             this.viewModel.rowWidget === 'worldEventQuest'
           ? WORLD_EVENT_SECTION_GAP
           : this.isLeaderboardDialog ||
+              (this.isWorldEventDialog &&
+                this.viewModel.rowWidget === 'leaderboard') ||
               (this.isAllianceDialog &&
                 this.viewModel.rowWidget === 'allianceQuest')
             ? 0
@@ -854,7 +880,9 @@ export class WorkshopDialogPixi {
           : this.isWorldEventDialog &&
               this.viewModel.rowWidget === 'worldEventQuest'
             ? this.scroll.width
-            : this.isLeaderboardDialog
+            : this.isLeaderboardDialog ||
+                (this.isWorldEventDialog &&
+                  this.viewModel.rowWidget === 'leaderboard')
               ? this.leaderboardRowWidth ?? WORKSHOP_DIALOG_CONTENT_WIDTH
               : this.isAllianceDialog &&
                 this.viewModel.rowWidget === 'allianceQuest'
@@ -1880,6 +1908,7 @@ export class WorkshopDialogPixi {
     const headerY = PIXI_UI_GEOMETRY.dialogPadding;
     const hasHeader = this.headerHeadline.visible === true;
     const usesQuestSectionRows = this.viewModel.rowWidget === 'worldEventQuest';
+    const usesLeaderboardRows = this.viewModel.rowWidget === 'leaderboard';
     const questRowsX = (width - WORLD_EVENT_QUEST_ROW_WIDTH) / 2;
 
     this.headerHeadline.position.set(
@@ -1955,10 +1984,32 @@ export class WorkshopDialogPixi {
     const scrollBottom = usesQuestSectionRows
       ? paperBottom
       : listY + listHeight - WORLD_EVENT_LIST_CONTENT_INSET;
+    const leaderboardListLayout = usesLeaderboardRows
+      ? resolveRetainedDialogListLayout({
+          bodyWidth: contentWidth,
+          paperRight: contentX + contentWidth + 14 / 3,
+          rowFrameWidth: RETAINED_DIALOG_LIST_GEOMETRY.rowFrameWidth,
+        })
+      : null;
+    if (leaderboardListLayout) {
+      this.leaderboardRowWidth =
+        leaderboardListLayout.rowWidth + LEADERBOARD_LIST_LEFT_EXPANSION;
+    }
     this.scroll.setBounds(
-      usesQuestSectionRows ? questRowsX : contentX,
+      usesQuestSectionRows
+        ? questRowsX
+        : usesLeaderboardRows
+          ? contentX +
+            leaderboardListLayout.x -
+            LEADERBOARD_LIST_LEFT_EXPANSION
+          : contentX,
       scrollY,
-      usesQuestSectionRows ? WORLD_EVENT_QUEST_ROW_WIDTH : contentWidth,
+      usesQuestSectionRows
+        ? WORLD_EVENT_QUEST_ROW_WIDTH
+        : usesLeaderboardRows
+          ? leaderboardListLayout.viewportWidth +
+            LEADERBOARD_LIST_LEFT_EXPANSION
+          : contentWidth,
       Math.max(0, scrollBottom - scrollY - statusHeight),
     );
     this.status.position.set(contentX, scrollBottom - statusHeight);
@@ -2022,12 +2073,14 @@ export class WorkshopDialogPixi {
     this.allianceMemberRows?.destroy();
     this.allianceQuestRows?.destroy();
     this.worldEventRows?.destroy();
+    this.worldEventLeaderboardRows?.destroy();
     this.rows = null;
     this.defaultRows = null;
     this.allianceRows = null;
     this.allianceMemberRows = null;
     this.allianceQuestRows = null;
     this.worldEventRows = null;
+    this.worldEventLeaderboardRows = null;
     for (const chrome of this.personalTaskSectionChrome?.values?.() ?? []) {
       chrome.progress.destroy();
       chrome.root.destroy({ children: true });
@@ -2043,6 +2096,8 @@ export class WorkshopDialogPixi {
     this.allianceQuestRowPool = null;
     this.worldEventRowPool?.destroy();
     this.worldEventRowPool = null;
+    this.worldEventLeaderboardRowPool?.destroy();
+    this.worldEventLeaderboardRowPool = null;
     this.tabs.destroy();
     this.tabPool.destroy();
     this.periodTabs?.destroy();
@@ -4215,6 +4270,7 @@ export class LeaderboardRowPixi extends ClickableWidget {
       fontWeight: 'bold',
       label: `${this.root.label}:total`,
     });
+    this.pointsTotal = createText('', RETAINED_TEXT_STYLES.bold);
     this.visual.addChild(
       this.background,
       this.currentOutline,
@@ -4227,6 +4283,7 @@ export class LeaderboardRowPixi extends ClickableWidget {
       this.prestigeStars,
       this.detail,
       this.total,
+      this.pointsTotal,
     );
     this.root.addChild(this.visual);
   }
@@ -4275,11 +4332,24 @@ export class LeaderboardRowPixi extends ClickableWidget {
     this.allianceIcon.renderable = this.allianceIcon.visible;
     this.prestigeStars.visible = player && prestigeCount > 0;
     this.prestigeStars.renderable = this.prestigeStars.visible;
-    this.total.bind(this.model.id, {
-      amount: this.model.totalCoinLabel ?? '0',
-      includeResourceName: false,
-      resource: 'coin',
-    });
+    const usesPointsTotal = this.model.totalMetric === 'points';
+    this.total.visible = !usesPointsTotal;
+    this.total.renderable = !usesPointsTotal;
+    this.pointsTotal.visible = usesPointsTotal;
+    this.pointsTotal.renderable = usesPointsTotal;
+    if (usesPointsTotal) {
+      setText(
+        this.pointsTotal,
+        this.model.totalLabel ?? this.model.totalPointsLabel ?? '0',
+      );
+    } else {
+      setText(this.pointsTotal, '');
+      this.total.bind(this.model.id, {
+        amount: this.model.totalCoinLabel ?? '0',
+        includeResourceName: false,
+        resource: 'coin',
+      });
+    }
     this.setClickableState({
       enabled: typeof this.model.onActivate === 'function',
       action: () => this.model.onActivate?.(this.model),
@@ -4329,8 +4399,13 @@ export class LeaderboardRowPixi extends ClickableWidget {
     this.tag.position.set(textX, 7);
     this.name.position.set(textX + (this.tag.text ? this.tag.width + 3 : 0), 6);
     const totalRight = backgroundWidth - 8;
-    this.total.position.set(totalRight - this.total.measuredWidth, 17);
-    const maxNameRight = Math.max(textX + 24, this.total.x - 7);
+    const totalWidth = this.pointsTotal.visible
+      ? this.pointsTotal.width
+      : this.total.measuredWidth;
+    const totalX = totalRight - totalWidth;
+    this.total.position.set(totalX, 17);
+    this.pointsTotal.position.set(totalX, 17);
+    const maxNameRight = Math.max(textX + 24, totalX - 7);
     fitLeaderboardText(this.name, maxNameRight - this.name.x);
     this.level.position.set(textX, 27);
     const prestigeX = textX + this.level.width + 6;
@@ -4374,6 +4449,10 @@ export class LeaderboardRowPixi extends ClickableWidget {
       ...RETAINED_TEXT_STYLES.border,
       fill: this.model.current ? resolvedTheme.accent : resolvedTheme.muted,
     });
+    applyTextTheme(this.pointsTotal, resolvedTheme, {
+      ...RETAINED_TEXT_STYLES.bold,
+      fill: resolvedTheme.text,
+    });
     this.total.applyTheme(resolvedTheme);
   }
 
@@ -4383,6 +4462,7 @@ export class LeaderboardRowPixi extends ClickableWidget {
     this.root.visible = false;
     this.root.renderable = false;
     this.avatarWidget.setTexture(Texture.EMPTY);
+    setText(this.pointsTotal, '');
     this.prestigeStars.reset();
     this.resetClickableState();
   }
@@ -4493,8 +4573,15 @@ export class AllianceQuestRow {
 
   setBounds(x, y, width, height = ALLIANCE_QUEST_ROW_HEIGHT) {
     this.root.position.set(x, y);
+    const {
+      actionHeight,
+      actionWidth,
+      actionX,
+      detailRight,
+      frameWidth,
+      titleWidth,
+    } = this.resolveLayout(width);
     const rowGap = PIXI_ROOT_RUN_GEOMETRY.settings.rowGap;
-    const frameWidth = Math.max(0, width - rowGap);
     const frameHeight = Math.max(0, height - rowGap);
     this.background.position.set(0, rowGap / 2);
     this.background.setSize(
@@ -4503,15 +4590,9 @@ export class AllianceQuestRow {
       PIXI_ROOT_RUN_GEOMETRY.settings.rowBorderInsets,
     );
 
-    const actionWidth = Math.max(0, Number(this.model.actionWidth) || 58);
-    const actionHeight = Math.max(20, Number(this.model.actionHeight) || 28);
-    const actionX = frameWidth - actionWidth - 6;
-    const detailRight = actionX - 7;
-    const titleWidth = Math.max(90, detailRight - 58);
-    this.title.style.wordWrap = true;
-    this.title.style.wordWrapWidth = titleWidth;
+    this.applyTitleWrap(titleWidth);
     this.title.position.set(8, 6);
-    this.contribution.position.set(8, 27);
+    this.contribution.position.set(8, 6 + Math.ceil(this.title.height) + 5);
     this.progress.position.set(detailRight, 7);
     this.reward.position.set(
       detailRight - this.reward.measuredWidth,
@@ -4526,8 +4607,51 @@ export class AllianceQuestRow {
     this.root.hitArea = new Rectangle(0, 0, width, height);
   }
 
-  getPreferredHeight() {
-    return ALLIANCE_QUEST_ROW_HEIGHT;
+  resolveLayout(width) {
+    const rowGap = PIXI_ROOT_RUN_GEOMETRY.settings.rowGap;
+    const frameWidth = Math.max(0, width - rowGap);
+    const actionWidth = Math.max(0, Number(this.model.actionWidth) || 58);
+    const actionHeight = Math.max(20, Number(this.model.actionHeight) || 28);
+    const actionX = frameWidth - actionWidth - 6;
+    const detailRight = actionX - 7;
+    const detailWidth = Math.max(
+      58,
+      Math.ceil(this.progress.width),
+      Math.ceil(this.reward.measuredWidth),
+    );
+
+    return {
+      actionHeight,
+      actionWidth,
+      actionX,
+      detailRight,
+      frameWidth,
+      titleWidth: Math.max(90, detailRight - detailWidth - 15),
+    };
+  }
+
+  applyTitleWrap(width) {
+    applyTextTheme(this.title, this.dialog.contentTheme ?? this.dialog.theme, {
+      ...RETAINED_TEXT_STYLES.body,
+      wordWrapWidth: width,
+    });
+  }
+
+  getPreferredHeight(
+    width = this.dialog.allianceQuestRowWidth || WORKSHOP_DIALOG_CONTENT_WIDTH,
+  ) {
+    const { actionHeight, titleWidth } = this.resolveLayout(width);
+    this.applyTitleWrap(titleWidth);
+    const titleBottom = 6 + Math.ceil(this.title.height);
+    const contributionBottom = this.contribution.text
+      ? titleBottom + 5 + Math.ceil(this.contribution.height)
+      : titleBottom;
+
+    return Math.max(
+      ALLIANCE_QUEST_ROW_HEIGHT,
+      actionHeight + PIXI_ROOT_RUN_GEOMETRY.settings.rowGap,
+      contributionBottom + PIXI_ROOT_RUN_GEOMETRY.settings.rowGap,
+    );
   }
 
   applyTheme(theme) {

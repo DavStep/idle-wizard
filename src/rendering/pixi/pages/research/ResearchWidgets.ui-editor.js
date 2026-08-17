@@ -75,6 +75,7 @@ export default [
     childWidgetIds: [
       'compound.research-station-title',
       'compound.research-row',
+      'base-button',
     ],
     createThumbnail: createResearchBoxThumbnail,
     folderPath: ['Research'],
@@ -324,6 +325,9 @@ async function mountResearchBox(context, fixture) {
 
 function createResearchBoxControl({ assets, fixture, input, now }) {
   const page = createResearchWidgetPage({ assets, input });
+  if (fixture.states.includes('completed')) {
+    page.toggleCompletedResearches('herbs');
+  }
   const rows = fixture.states.map((state, index) => {
     const row = new ResearchRowWidget({
       assetManager: assets,
@@ -392,6 +396,7 @@ function createResearchTooltipControl({ assets, fixture }) {
 
 function createResearchWidgetPage({ assets, input }) {
   const semanticTargets = new Map();
+  const completedSectionIds = new Set();
   return {
     assetManager: assets,
     inputRouter: input,
@@ -401,6 +406,18 @@ function createResearchWidgetPage({ assets, input }) {
     rowPool: null,
     selectedTabId: 'regular',
     theme: DEFAULT_PIXI_THEME_SNAPSHOT,
+    isShowingCompletedResearches(boxId) {
+      return completedSectionIds.has(`${this.selectedTabId}:${boxId}`);
+    },
+    toggleCompletedResearches(boxId) {
+      const sectionId = `${this.selectedTabId}:${boxId}`;
+      if (completedSectionIds.has(sectionId)) {
+        completedSectionIds.delete(sectionId);
+      } else {
+        completedSectionIds.add(sectionId);
+      }
+      return true;
+    },
     unregisterSemanticTarget(semanticId) {
       return semanticTargets.delete(semanticId);
     },

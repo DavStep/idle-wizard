@@ -17,6 +17,7 @@ describe('ResearchWidgets UI editor integrations', () => {
     expect(entries.get('compound.research-station-box')?.childWidgetIds).toEqual([
       'compound.research-station-title',
       'compound.research-row',
+      'base-button',
     ]);
     expect(
       [...entries.values()].every(

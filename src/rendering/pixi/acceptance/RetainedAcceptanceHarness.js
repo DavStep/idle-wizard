@@ -57,6 +57,8 @@ export function createRetainedAcceptanceHarness() {
       new PrestigePixiPage({
         assetManager,
         counters,
+        dialogLayer,
+        dialogRegistry: dialogs,
         inputRouter,
         semanticTargets,
       }),

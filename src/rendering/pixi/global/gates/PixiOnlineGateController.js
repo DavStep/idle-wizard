@@ -52,18 +52,30 @@ export class PixiOnlineGateController {
     mode = 'drain',
     message = 'maintenance in progress',
     saving = false,
+    preview = false,
   } = {}) {
     const normalizedMessage = String(message || 'maintenance in progress').trim();
-    this.show({
+    const displayMessage = normalizedMessage.replace(/^[a-z]/, (letter) =>
+      letter.toUpperCase(),
+    );
+    const sentence = /[.!?]$/.test(displayMessage)
+      ? displayMessage
+      : `${displayMessage}.`;
+    const model = {
       presentation: 'dialog',
-      title: 'maintenance',
+      title: 'Maintenance',
       message: saving
-        ? 'maintenance active. saving progress...'
+        ? `${sentence} Saving progress...`
         : mode === 'locked'
-          ? normalizedMessage
-          : `${normalizedMessage}. progress is saved.`,
+          ? displayMessage
+          : `${sentence} Progress is saved.`,
       progress: saving,
-    });
+    };
+    if (preview) {
+      this.showPreview(model);
+      return;
+    }
+    this.show(model);
   }
 
   show(model) {

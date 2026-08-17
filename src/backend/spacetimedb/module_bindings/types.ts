@@ -274,6 +274,9 @@ export const OwnPlayerInboxMailResult = __t.object("OwnPlayerInboxMailResult", {
 });
 export type OwnPlayerInboxMailResult = __Infer<typeof OwnPlayerInboxMailResult>;
 
+export const OwnPlayerMaintenance = __t.object("OwnPlayerMaintenance", {});
+export type OwnPlayerMaintenance = __Infer<typeof OwnPlayerMaintenance>;
+
 export const OwnPlayerProfile = __t.object("OwnPlayerProfile", {});
 export type OwnPlayerProfile = __Infer<typeof OwnPlayerProfile>;
 
@@ -469,6 +472,22 @@ export const PlayerInfoSummaryResult = __t.object("PlayerInfoSummaryResult", {
   character: __t.string(),
 });
 export type PlayerInfoSummaryResult = __Infer<typeof PlayerInfoSummaryResult>;
+
+export const PlayerMaintenance = __t.object("PlayerMaintenance", {
+  identity: __t.identity(),
+  mode: __t.string(),
+  message: __t.string(),
+  updatedAt: __t.timestamp(),
+});
+export type PlayerMaintenance = __Infer<typeof PlayerMaintenance>;
+
+export const PlayerMaintenanceResult = __t.object("PlayerMaintenanceResult", {
+  identity: __t.identity(),
+  mode: __t.string(),
+  message: __t.string(),
+  updatedAt: __t.timestamp(),
+});
+export type PlayerMaintenanceResult = __Infer<typeof PlayerMaintenanceResult>;
 
 export const PlayerProfileResult = __t.object("PlayerProfileResult", {
   identity: __t.identity(),

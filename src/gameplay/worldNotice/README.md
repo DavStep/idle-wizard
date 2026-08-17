@@ -23,3 +23,8 @@ points to qualify for rank or participation rewards.
 Request progress completes at its target, but matching actions keep adding
 contribution points after completion. Completion changes response status; it
 does not cap leaderboard scoring.
+
+Open the deterministic retained dialog recipe at
+`/src/dev/uiRecipes/world-event-dialog.html?tab=leaderboard` to review the
+shared leaderboard-row composition. Use `tab=tasks` or `tab=rewards` to verify
+renderer changes across all three pooled row families.

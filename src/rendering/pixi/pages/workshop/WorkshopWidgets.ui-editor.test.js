@@ -33,5 +33,9 @@ describe('Workshop widget UI editor integrations', () => {
       integrations.find(({ id }) => id === 'compound.alliance-quest-row')
         ?.childWidgetIds,
     ).toEqual(['primitive.resource-label', 'text-button']);
+    expect(
+      integrations.find(({ id }) => id === 'compound.alliance-quest-row')
+        ?.scenarios.map(({ id }) => id),
+    ).toEqual(['fill', 'claim', 'claimed', 'overflow']);
   });
 });

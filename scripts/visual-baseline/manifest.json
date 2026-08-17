@@ -100,7 +100,7 @@
       "production": true,
       "coverage": {
         "globalOwners": ["onlineGateManager"],
-        "devUi": ["serverRequired"],
+        "devUi": ["serverRequired", "accountMigrationMaintenance"],
         "domSelectors": [".app-online-gate__dialog"]
       },
       "recipe": {
@@ -131,7 +131,13 @@
         { "id": "server-paused" },
         { "id": "server-no-energy" },
         { "id": "account-in-use" },
-        { "id": "maintenance-drain" },
+        {
+          "id": "maintenance-drain",
+          "recipe": {
+            "kind": "devUi",
+            "surfaceId": "accountMigrationMaintenance"
+          }
+        },
         { "id": "maintenance-saving" },
         { "id": "maintenance-locked" }
       ]

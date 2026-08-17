@@ -2,7 +2,7 @@ import { MaintenanceStateManager } from './managers/MaintenanceStateManager.js';
 
 export class MaintenanceBackendFacade {
   static explain =
-    'Reads the server maintenance switch so the app can pause play before data work begins.';
+    'Combines global and account-only server maintenance so support can pause the affected players before data work begins.';
 
   constructor({ gameConfigFacade = null } = {}) {
     this.stateManager = new MaintenanceStateManager();

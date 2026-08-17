@@ -327,6 +327,7 @@ export class PixiTopPanelView extends BasePixiRetainedView {
       inputRouter?.registerPressTarget?.({
         id: 'top.settings',
         displayObject: this.settingsControl,
+        fallbackHitTest: true,
         enabled: () => this.isControlAvailable(this.settingsControl),
         onPressChange: (pressed, context) =>
           this.settingsControl.setPressed(pressed, context),

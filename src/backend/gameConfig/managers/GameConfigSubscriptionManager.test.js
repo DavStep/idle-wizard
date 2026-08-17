@@ -8,13 +8,20 @@ function createTable(rows) {
   };
 }
 
-function createConnection({ researchTable, applySynchronously = false }) {
+function createConnection({
+  researchTable,
+  playerMaintenanceTable = null,
+  applySynchronously = false,
+}) {
   const builders = [];
   const subscriptions = [];
 
   return {
     db: {
       researchConfigSnapshot: researchTable,
+      ...(playerMaintenanceTable
+        ? { ownPlayerMaintenance: playerMaintenanceTable }
+        : {}),
     },
     builders,
     subscriptions,
@@ -59,6 +66,35 @@ function createConnection({ researchTable, applySynchronously = false }) {
 }
 
 describe('GameConfigSubscriptionManager', () => {
+  it('publishes private maintenance state for only the connected player', () => {
+    const playerMaintenanceTable = createTable([
+      {
+        mode: 'drain',
+        message: 'account migration in progress',
+        updatedAt: { toMillis: () => 42 },
+      },
+    ]);
+    const connection = createConnection({
+      researchTable: createTable([]),
+      playerMaintenanceTable,
+    });
+    const manager = new GameConfigSubscriptionManager();
+
+    manager.connect(connection);
+
+    expect(connection.subscriptions.map(({ query }) => query)).toContain(
+      'SELECT * FROM own_player_maintenance',
+    );
+    expect(manager.getSnapshot()).toMatchObject({
+      connected: true,
+      playerMaintenance: {
+        mode: 'drain',
+        message: 'account migration in progress',
+        updatedAtMs: 42,
+      },
+    });
+  });
+
   it('unsubscribes bootstrap subscriptions only once when applied repeats', () => {
     const table = createTable([
       {

@@ -290,9 +290,10 @@ describe('PixiTopPanelView', () => {
     const settingsPress = registrations.find(
       ({ id }) => id === 'top.settings',
     );
-    expect(settingsPress?.displayObject).toBe(
-      view.settingsControl,
-    );
+    expect(settingsPress).toMatchObject({
+      displayObject: view.settingsControl,
+      fallbackHitTest: true,
+    });
     expect(settingsPress?.onActivate()).toBeUndefined();
     expect(openSettings).toHaveBeenCalledTimes(1);
 

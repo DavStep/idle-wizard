@@ -25,6 +25,7 @@ experience_type: communication
 - To clone test progression between live accounts while keeping the target profile, use `admin_copy_player_progression`; `admin_merge_player_accounts` moves/deletes the source and copies source profile settings.
 - Production player level fixes must update gameplay save `tasks.currentLevel` as well as `player.player_level`; profile-only level edits revert visually after save reload.
 - For player-save maintenance, use `drain` first so updated clients stop and flush, then `locked` before backup/migration so old clients cannot overwrite migrated rows.
+- For single-account support edits, use player-scoped drain/lock rows for every changed identity and a specific player-facing message; reserve global maintenance for bulk or schema-wide work.
 - Single-account support currency grants need a server pending-grant guard through the next client save; active clients can reconnect and autosave stale in-memory currency over a one-shot admin save edit.
 - When correcting live currency after a bad admin grant, clear the stale `player-currency-grant-pending:*` row or it can preserve/refill the old amount on future saves.
 - Full player resets that preserve identity should use `admin_reset_player_progression_data` while maintenance is `locked`, after `backup-reset`; it clears profile/session/progression data and keeps only the `player.identity` value, so do not substitute ad hoc table deletes.

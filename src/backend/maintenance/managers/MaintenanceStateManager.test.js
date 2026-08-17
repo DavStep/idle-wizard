@@ -58,6 +58,81 @@ describe('MaintenanceStateManager', () => {
     });
   });
 
+  it('uses connected-player maintenance without affecting global config', () => {
+    const manager = new MaintenanceStateManager();
+
+    manager.applyGameConfigSnapshot({
+      connected: true,
+      gameConfigs: [
+        {
+          configKey: 'maintenance',
+          configJson: JSON.stringify({ mode: 'off', message: 'maintenance complete' }),
+          updatedAtMs: 10,
+        },
+      ],
+      playerMaintenance: {
+        mode: 'drain',
+        message: 'account migration in progress',
+        updatedAtMs: 12,
+      },
+    });
+
+    expect(manager.getSnapshot()).toEqual({
+      mode: 'drain',
+      message: 'account migration in progress',
+      active: true,
+      updatedAtMs: 12,
+    });
+  });
+
+  it('chooses the strictest global or connected-player maintenance mode', () => {
+    const manager = new MaintenanceStateManager();
+
+    manager.applyGameConfigSnapshot({
+      connected: true,
+      gameConfigs: [
+        {
+          configKey: 'maintenance',
+          configJson: JSON.stringify({ mode: 'drain', message: 'server maintenance' }),
+          updatedAtMs: 20,
+        },
+      ],
+      playerMaintenance: {
+        mode: 'locked',
+        message: 'account migration in progress',
+        updatedAtMs: 21,
+      },
+    });
+
+    expect(manager.getSnapshot()).toMatchObject({
+      mode: 'locked',
+      message: 'account migration in progress',
+      updatedAtMs: 21,
+    });
+
+    manager.applyGameConfigSnapshot({
+      connected: true,
+      gameConfigs: [
+        {
+          configKey: 'maintenance',
+          configJson: JSON.stringify({ mode: 'locked', message: 'server maintenance' }),
+          updatedAtMs: 22,
+        },
+      ],
+      playerMaintenance: {
+        mode: 'drain',
+        message: 'account migration in progress',
+        updatedAtMs: 23,
+      },
+    });
+
+    expect(manager.getSnapshot()).toMatchObject({
+      mode: 'locked',
+      message: 'server maintenance',
+      updatedAtMs: 22,
+    });
+  });
+
   it('keeps active maintenance state when config disconnects', () => {
     const manager = new MaintenanceStateManager();
 

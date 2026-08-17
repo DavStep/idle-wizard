@@ -3,10 +3,11 @@
 import {
   createPixiAssetManagerFake,
 } from '../workshop/PixiPageTestHarness.js';
-import { Texture } from 'pixi.js';
+import { Container, Texture } from 'pixi.js';
 import { describe, expect, it, vi } from 'vitest';
 
 import { PageRegistry } from '../../retained/PageRegistry.js';
+import { DialogRegistry } from '../../retained/DialogRegistry.js';
 import { SemanticTargetRegistry } from '../../retained/SemanticTargetRegistry.js';
 import { PixiCostButton } from '../../primitives/PixiCostButton.js';
 import { PixiInfoButton } from '../../primitives/PixiInfoButton.js';
@@ -18,6 +19,10 @@ import {
   RESEARCH_PAPER_INK,
 } from '../research/ResearchPixiPage.js';
 import { RETAINED_PAGE_GEOMETRY } from '../workshop/RetainedPageKit.js';
+import {
+  PRESTIGE_INFO_DIALOG_ID,
+  PrestigeInfoDialogPixi,
+} from './PrestigeDialogPixi.js';
 
 describe('PrestigePixiPage', () => {
   it('retains keyed milestone rows and moves reset details behind the info control', () => {
@@ -132,6 +137,43 @@ describe('PrestigePixiPage', () => {
     page.destroy();
   });
 
+  it('opens centered, content-height Prestige info in the shared dialog shell', () => {
+    const dialogLayer = new Container();
+    const dialogRegistry = new DialogRegistry();
+    const page = createPage({ dialogLayer, dialogRegistry });
+    page.bind(createPrestigeViewModel());
+    page.activate();
+
+    page.description.details.activate();
+
+    const dialog = dialogRegistry.get(PRESTIGE_INFO_DIALOG_ID);
+    expect(dialogRegistry.isOpen(PRESTIGE_INFO_DIALOG_ID)).toBe(true);
+    expect(dialog).toBeInstanceOf(PrestigeInfoDialogPixi);
+    expect(dialog.copy.text).toBe(
+      PRESTIGE_DESCRIPTION_LINES.map((line) => `• ${line}`).join('\n'),
+    );
+    expect(dialog.copy.style.align).toBe('center');
+    expect(dialog.copy.anchor).toMatchObject({ x: 0.5, y: 0.5 });
+    expect(dialog.copy.position).toMatchObject({
+      x: dialog.modal.fixedBounds.width / 2,
+      y: dialog.modal.fixedBounds.height / 2,
+    });
+    expect(dialog.modal.fixedBounds.height).toBeGreaterThan(112);
+    expect(dialog.modal.fixedBounds.height).toBe(
+      Math.ceil(dialog.copy.height) + 52,
+    );
+
+    expect(page.closeInfoDialog()).toBe(true);
+    page.rows.get('level-10').help.activate();
+    expect(dialogRegistry.get(PRESTIGE_INFO_DIALOG_ID)).toBe(dialog);
+    expect(dialog.copy.text).toBe('prestige at this milestone');
+    expect(dialogRegistry.isOpen(PRESTIGE_INFO_DIALOG_ID)).toBe(true);
+
+    dialogRegistry.destroy();
+    page.destroy();
+    dialogLayer.destroy({ children: true });
+  });
+
   it('keeps the fixed scroll and tab anchors at source resolution', () => {
     const page = createPage();
     page.bind(createPrestigeViewModel());
@@ -226,10 +268,16 @@ describe('PrestigePixiPage', () => {
   });
 });
 
-function createPage({ semanticTargets = null } = {}) {
+function createPage({
+  semanticTargets = null,
+  dialogRegistry = null,
+  dialogLayer = null,
+} = {}) {
   return new PrestigePixiPage({
     assetManager: createPixiAssetManagerFake(Texture),
     semanticTargets,
+    dialogRegistry,
+    dialogLayer,
   });
 }
 

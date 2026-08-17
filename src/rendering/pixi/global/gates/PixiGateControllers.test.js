@@ -480,9 +480,32 @@ describe('retained Pixi gate controllers', () => {
     controller.showMaintenance({ mode: 'locked', message: 'back soon' });
     expect(view.bind).toHaveBeenLastCalledWith({
       presentation: 'dialog',
-      title: 'maintenance',
-      message: 'back soon',
+      title: 'Maintenance',
+      message: 'Back soon',
       progress: false,
+    });
+
+    controller.showMaintenance({
+      mode: 'drain',
+      message: 'brief account maintenance',
+    });
+    expect(view.bind).toHaveBeenLastCalledWith({
+      presentation: 'dialog',
+      title: 'Maintenance',
+      message: 'Brief account maintenance. Progress is saved.',
+      progress: false,
+    });
+
+    controller.showMaintenance({
+      mode: 'drain',
+      message: 'account migration in progress',
+      saving: true,
+    });
+    expect(view.bind).toHaveBeenLastCalledWith({
+      presentation: 'dialog',
+      title: 'Maintenance',
+      message: 'Account migration in progress. Saving progress...',
+      progress: true,
     });
 
     controller.showOffline('bindings_missing');
