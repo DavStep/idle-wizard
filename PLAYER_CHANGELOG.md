@@ -5,6 +5,12 @@ upload script posts the section whose heading matches `package.json` `version`.
 Write these developer-to-player notes only in Idle Wizard terms. Do not mention
 other game names, source projects, ports, or implementation provenance.
 
+## 0.3.65
+
+- Improved Android text editing so tapping an active field moves the caret where expected and reliably keeps the keyboard connected.
+- Added previews for locked avatars in Account settings while keeping profile saves unavailable until an unlocked avatar is selected.
+- Refined World Chat message spacing for clearer wrapped conversations.
+
 ## 0.3.64
 
 - Improved World Chat message spacing and readability, and fixed Android text entry so the keyboard keeps accepting messages after a successful send.

@@ -170,7 +170,7 @@ export class PlayerSelectableProfileWidget extends ClickableWidget {
       action: () => this.actions.select?.(this.data),
       enabled:
         data.enabled !== false &&
-        data.researched !== false &&
+        (data.researched !== false || data.previewable === true) &&
         data.selected !== true,
     });
     this.profileWidget

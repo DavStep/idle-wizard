@@ -117,7 +117,7 @@ export class PixiTextField extends Container {
     this.registration = inputRouter?.registerPressTarget?.(this, {
       enabled: () => this.visible && this.renderable,
       fallbackHitTest: true,
-      onActivate: () => this.focus(),
+      onActivate: (payload) => this.activate(payload),
       onFocusChange: (focused) => {
         if (!focused) {
           this.blur();
@@ -152,6 +152,39 @@ export class PixiTextField extends Container {
       this.onChange?.(this.value);
     }
     return this;
+  }
+
+  async activate(payload = {}) {
+    const selectionIndex = this.resolveSelectionIndex(payload?.point);
+    if (selectionIndex !== null) {
+      this.selectionStart = selectionIndex;
+      this.selectionEnd = selectionIndex;
+      this.redrawTextState();
+      this.restartCaretBlink();
+      if (this.focused && this.session) {
+        await this.session.setSelection(selectionIndex, selectionIndex);
+        return this.session;
+      }
+    }
+
+    return this.focus();
+  }
+
+  resolveSelectionIndex(point) {
+    if (
+      this.multiline ||
+      !point ||
+      typeof this.toLocal !== 'function'
+    ) {
+      return null;
+    }
+
+    const localPoint = this.toLocal(point);
+    const textX = Math.max(
+      0,
+      localPoint.x - this.textViewport.x + this.textScrollX,
+    );
+    return findNearestCaretIndex(this.textLabel, this.value, textX);
   }
 
   async focus() {
@@ -589,6 +622,45 @@ function measurePrefix(label, prefix) {
   const width = label.measuredWidth;
   label.setText(original);
   return width;
+}
+
+function findNearestCaretIndex(label, value, targetX) {
+  const boundaries = graphemeBoundaries(value);
+  let previousIndex = boundaries[0];
+  let previousWidth = 0;
+
+  for (const boundary of boundaries.slice(1)) {
+    const width = measurePrefix(label, value.slice(0, boundary));
+    if (targetX <= (previousWidth + width) / 2) {
+      return previousIndex;
+    }
+    previousIndex = boundary;
+    previousWidth = width;
+  }
+
+  return previousIndex;
+}
+
+function graphemeBoundaries(value) {
+  const text = String(value ?? '');
+  const Segmenter = globalThis.Intl?.Segmenter;
+  if (typeof Segmenter === 'function') {
+    const boundaries = [0];
+    for (const segment of new Segmenter(undefined, {
+      granularity: 'grapheme',
+    }).segment(text)) {
+      boundaries.push(segment.index + segment.segment.length);
+    }
+    return boundaries;
+  }
+
+  const boundaries = [0];
+  let index = 0;
+  for (const character of text) {
+    index += character.length;
+    boundaries.push(index);
+  }
+  return boundaries;
 }
 
 function stripTrailingLineBreaks(value) {

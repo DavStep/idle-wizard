@@ -101,6 +101,7 @@ experience_type: backend-android
 - Keep Android WebView framework haptics disabled when the app owns touch feedback; otherwise WebView adds a native long-press pulse while retained Pixi controls are still held.
 - Android native text-entry submit events must apply the terminal editor value before running Pixi callbacks; the IME can commit composition only in that final payload.
 - When clearing a focused Android text field after submit, mutate the active `Editable` and restart its IME input connection; `EditText.setText()` can strand Gboard on the discarded buffer until the dialog recreates the session.
+- A tap on a visible Pixi text field can focus the WebView while its transparent native editor session remains logically active; forward the tapped caret boundary and explicitly request/restart native editor focus instead of letting the JS `focus()` no-op.
 - Keep Capacitor `SystemBars.insetsHandling` disabled while native text entry owns IME insets; its CSS mode pads the WebView parent by the keyboard height and compresses the entire Pixi game even when the activity uses `adjustNothing`.
 - Keep the complete Pixi canvas projection locked through Android IME dismissal, then release it after the surface settles; WebView can emit a transient width-and-height sample that magnifies the whole game for one frame.
 - Capacitor 8 Android builds require JDK 21 here.

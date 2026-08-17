@@ -341,25 +341,41 @@ public class IdleWizardTextEntryPlugin extends Plugin {
             suppressEditorEvents = false;
         }
 
-        Activity activity = getActivity();
-        if (activity == null || !editor.hasFocus()) {
-            return;
-        }
-
-        InputMethodManager inputMethodManager = (InputMethodManager) activity
-            .getSystemService(Activity.INPUT_METHOD_SERVICE);
-        if (inputMethodManager != null) {
-            // Gboard may continue targeting its pre-update connection even
-            // when the Editable identity is preserved. Refresh that
-            // connection in place so the next key reaches this same session.
-            inputMethodManager.restartInput(editor);
-        }
+        reactivateEditorInput(true);
     }
 
     private void applySelection(int selectionStart, int selectionEnd) {
         suppressEditorEvents = true;
         setSelectionClamped(editor, selectionStart, selectionEnd);
         suppressEditorEvents = false;
+        reactivateEditorInput(true);
+    }
+
+    private void reactivateEditorInput(boolean restartInput) {
+        SessionEditText targetEditor = editor;
+        Activity activity = getActivity();
+        if (targetEditor == null || activity == null) {
+            return;
+        }
+
+        enforceKeyboardOverlayWindow(activity);
+        targetEditor.requestFocus();
+        InputMethodManager inputMethodManager = (InputMethodManager) activity
+            .getSystemService(Activity.INPUT_METHOD_SERVICE);
+        if (inputMethodManager == null) {
+            return;
+        }
+
+        if (restartInput) {
+            // A touch on the visible Pixi field or Send button focuses the
+            // WebView even though the JS session remains active. Rebind Gboard
+            // to the transparent editor before accepting the next key.
+            inputMethodManager.restartInput(targetEditor);
+        }
+        inputMethodManager.showSoftInput(
+            targetEditor,
+            InputMethodManager.SHOW_IMPLICIT
+        );
     }
 
     private void publishValue() {

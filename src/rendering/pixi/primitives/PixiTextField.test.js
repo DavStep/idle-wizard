@@ -144,6 +144,45 @@ describe('PixiTextField', () => {
     field.destroy({ children: true });
   });
 
+  it('moves the active native selection to the tapped character boundary', async () => {
+    let registration = null;
+    const setSelection = vi.fn(async () => {});
+    const field = new PixiTextField({
+      inputRouter: {
+        registerPressTarget: vi.fn((displayObject, descriptor) => {
+          registration = descriptor;
+          return vi.fn();
+        }),
+      },
+      textEntryService: {
+        open: vi.fn(async (options) => ({
+          close: vi.fn(),
+          getSnapshot: () => ({
+            active: true,
+            selectionEnd: options.selectionEnd,
+            selectionStart: options.selectionStart,
+            value: options.value,
+          }),
+          setSelection,
+          subscribe: () => vi.fn(),
+        })),
+      },
+    });
+    field.setValue('abcdef');
+    await registration.onActivate();
+
+    const secondCharacterX =
+      field.textViewport.x + field.measureCaretPosition(2).x;
+    await registration.onActivate({
+      point: { x: secondCharacterX, y: field.textViewport.y + 2 },
+    });
+
+    expect(field.selectionStart).toBe(2);
+    expect(field.selectionEnd).toBe(2);
+    expect(setSelection).toHaveBeenCalledWith(2, 2);
+    field.destroy({ children: true });
+  });
+
   it('wraps multiline text and keeps the active caret inside the visible writing area', () => {
     const field = new PixiTextField({
       assetManager: { getTexture: () => Texture.EMPTY },

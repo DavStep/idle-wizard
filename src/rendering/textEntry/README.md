@@ -26,6 +26,10 @@ Programmatic updates to an active Android editor mutate its existing `Editable`
 inside a batch edit, clear composing spans, and restart the field's IME input
 connection. Replacing the buffer with `EditText.setText()` can leave Gboard
 targeting a discarded connection after World Chat clears a successful message.
+Tapping a focused Pixi field resolves the nearest visible character boundary,
+forwards that selection to the native session, and reactivates the transparent
+editor because the WebView receives the physical tap and can steal Android
+focus while the JavaScript session still reports itself as active.
 
 ```js
 const service = new TextEntryService({ canvas });

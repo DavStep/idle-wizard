@@ -46,9 +46,15 @@ export default defineUiEditorIntegration({
       mount,
     },
     {
+      fixture: { key: 'mira', previewable: true, researched: false },
+      id: 'locked-preview',
+      label: 'Locked Preview',
+      mount,
+    },
+    {
       fixture: { key: 'mira', researched: false },
-      id: 'locked',
-      label: 'Locked',
+      id: 'locked-unavailable',
+      label: 'Locked Unavailable',
       mount,
     },
   ],

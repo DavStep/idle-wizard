@@ -1037,9 +1037,24 @@ describe('retained global Pixi dialogs', () => {
     expect(locked.status.y).toBe(1);
     expect(
       settings.selectAccountOption(settings.settingsModel.avatars[2]),
-    ).toBe(false);
-    expect(settings.accountDraft.character).toBe('mira');
+    ).toBe(true);
+    expect(settings.accountDraft.character).toBe('bramble');
+    expect(settings.accountPreviewProfile.portrait.texture).toBe(
+      harness.assets.getTexture('source:assets/avatars/bramble.png'),
+    );
+    expect(settings.accountSave.textLabel.text).toBe('Locked');
+    expect(settings.accountSave.enabled).toBe(false);
+    expect(settings.accountSave.locked).toBe(true);
+    expect(locked.lockOverlay.visible).toBe(true);
+    expect(locked.selectionFrame.visible).toBe(true);
+    expect(settings.accountSave.activate()).toBe(false);
+    expect(settings.saveAccount()).toBe(false);
+    expect(saveAccount).not.toHaveBeenCalled();
 
+    settings.selectAccountOption(settings.settingsModel.avatars[1]);
+    expect(settings.accountSave.textLabel.text).toBe('Save');
+    expect(settings.accountSave.enabled).toBe(true);
+    expect(settings.accountSave.locked).toBe(false);
     settings.accountSave.activate();
     expect(saveAccount).toHaveBeenCalledWith({
       username: 'wizard',
@@ -1107,7 +1122,7 @@ describe('retained global Pixi dialogs', () => {
     harness.dispose();
   });
 
-  it('gives enabled avatar choices shared press feedback while selected and locked choices stay silent', () => {
+  it('gives available and locked-preview avatars press feedback while selected choices stay silent', () => {
     const harness = createHarness();
     const settings = harness.registry.open(GLOBAL_DIALOG_IDS.SETTINGS, {
       tabId: 'account',
@@ -1147,9 +1162,10 @@ describe('retained global Pixi dialogs', () => {
     const lockedPress = harness.inputRouter.store.get(locked.registration.id);
 
     expect(selectedPress.enabled()).toBe(false);
-    expect(lockedPress.enabled()).toBe(false);
+    expect(lockedPress.enabled()).toBe(true);
     expect(availablePress.enabled()).toBe(true);
     expect(availablePress.haptic).toBe('light');
+    expect(lockedPress.haptic).toBe('light');
 
     availablePress.onPressChange(true, { confirmed: false });
     expect(available.visual.scale.x).toBe(0.97);
@@ -1159,6 +1175,17 @@ describe('retained global Pixi dialogs', () => {
     expect(available.visual.scale.y).toBe(1);
     expect(availablePress.onActivate()).toBe(true);
     expect(settings.accountDraft.character).toBe('mira');
+
+    lockedPress.onPressChange(true, { confirmed: false });
+    expect(locked.visual.scale.x).toBe(0.97);
+    expect(locked.visual.scale.y).toBe(0.97);
+    lockedPress.onPressChange(false, { confirmed: false });
+    expect(locked.visual.scale.x).toBe(1);
+    expect(locked.visual.scale.y).toBe(1);
+    expect(lockedPress.onActivate()).toBe(true);
+    expect(settings.accountDraft.character).toBe('bramble');
+    expect(settings.accountSave.textLabel.text).toBe('Locked');
+    expect(settings.accountSave.enabled).toBe(false);
 
     settings.selectAccountChoiceTab('frame');
     const [selectedFrame, availableFrame] = settings.frames.getWidgets();

@@ -90,8 +90,9 @@ describe('ViewportManager', () => {
     expect(textEntryPlugin).toContain(
       'WindowCompat.setDecorFitsSystemWindows(activity.getWindow(), false);',
     );
-    expect(textEntryPlugin.match(/enforceKeyboardOverlayWindow\(activity\);/g))
-      .toHaveLength(2);
+    expect(textEntryPlugin).toMatch(
+      /private void reactivateEditorInput\(boolean restartInput\)[\s\S]*?enforceKeyboardOverlayWindow\(activity\);[\s\S]*?targetEditor\.requestFocus\(\);[\s\S]*?inputMethodManager\.restartInput\(targetEditor\);[\s\S]*?inputMethodManager\.showSoftInput\(/,
+    );
     expect(textEntryPlugin).toContain(
       'WindowManager.LayoutParams.SOFT_INPUT_ADJUST_NOTHING',
     );

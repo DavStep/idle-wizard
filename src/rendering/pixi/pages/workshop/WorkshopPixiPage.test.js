@@ -3439,15 +3439,15 @@ describe('WorkshopPixiPage', () => {
     expect(playerRow.username.style.stroke?.width ?? 0).toBe(0);
     expect(playerRow.body.x).toBe(playerRow.tag.x);
     expect(playerRow.body.x).toBeCloseTo(48.75);
-    expect(playerRow.body.y).toBeCloseTo(15.795);
-    expect(playerRow.body.y - playerRow.username.y).toBeCloseTo(16.795);
+    expect(playerRow.body.y).toBeCloseTo(17.55);
+    expect(playerRow.body.y - playerRow.username.y).toBeCloseTo(18.55);
     expect(playerRow.tag.y).toBe(-1);
     expect(playerRow.username.y).toBe(-1);
     expect(playerRow.avatar.width).toBeCloseTo(42.9);
     expect(playerRow.tag.style.fontSize).toBeCloseTo(14.85);
     expect(playerRow.username.style.fontSize).toBeCloseTo(14.85);
     expect(playerRow.body.style.fontSize).toBeCloseTo(14.85);
-    expect(playerRow.body.style.lineHeight).toBeCloseTo(19.305);
+    expect(playerRow.body.style.lineHeight).toBeCloseTo(17.55);
     expect(playerRow.timestamp.style.fontSize).toBeCloseTo(11.475);
     expect(playerRow.getPreferredHeight()).toBeCloseTo(52.65);
     expect(dialog.scroll.root.x).toBe(8);

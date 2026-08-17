@@ -664,6 +664,7 @@ export class PixiSettingsDialog extends RetainedGlobalDialog {
 
     this.refreshAccountChoices();
     this.refreshAccountPreview();
+    this.syncAccountSaveState();
     this.renderSelectedPane();
   }
 
@@ -1026,7 +1027,7 @@ export class PixiSettingsDialog extends RetainedGlobalDialog {
   }
 
   selectAccountOption(data) {
-    if (data.researched === false) {
+    if (data.researched === false && data.category !== 'character') {
       return false;
     }
     if (data.category === 'frame') {
@@ -1037,6 +1038,7 @@ export class PixiSettingsDialog extends RetainedGlobalDialog {
     this.accountDraftDirty = true;
     this.refreshAccountChoices();
     this.refreshAccountPreview();
+    this.syncAccountSaveState();
     return true;
   }
 
@@ -1045,6 +1047,7 @@ export class PixiSettingsDialog extends RetainedGlobalDialog {
     const draft = this.accountDraft;
     const avatars = (this.settingsModel?.avatars ?? []).map((option) => ({
       ...option,
+      previewable: true,
       selected: draft.character === option.key,
       equipped: equipped.character === option.key,
       portraitKey: option.key,
@@ -1073,6 +1076,22 @@ export class PixiSettingsDialog extends RetainedGlobalDialog {
       .setTexture(
         getCharacterTexture(this.context.assets, this.accountDraft.character),
       );
+  }
+
+  isLockedAvatarPreview() {
+    return this.settingsModel?.avatars?.some(
+      (option) =>
+        option.key === this.accountDraft.character &&
+        option.researched === false,
+    ) === true;
+  }
+
+  syncAccountSaveState() {
+    const locked = this.isLockedAvatarPreview();
+    this.accountSave
+      .setText(locked ? 'Locked' : 'Save')
+      .setLocked(locked)
+      .setEnabled(!locked);
   }
 
   selectFeedbackKind(kind) {
@@ -1161,6 +1180,10 @@ export class PixiSettingsDialog extends RetainedGlobalDialog {
   }
 
   saveAccount() {
+    if (this.isLockedAvatarPreview()) {
+      this.syncAccountSaveState();
+      return false;
+    }
     const username = String(this.accountDraft.username ?? '').trim();
     if (this.settingsModel?.account?.usernameRequired && !username) {
       this.setUsernameStatus('enter a name');
