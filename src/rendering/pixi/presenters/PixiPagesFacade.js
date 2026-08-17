@@ -182,6 +182,7 @@ export class PixiPagesFacade {
     this.gameplaySnapshot = {};
     this.playerSnapshot = {};
     this.worldChatSnapshot = {};
+    this.worldChatSelectedReportMessageId = null;
     this.leaderboardSnapshot = {};
     this.worldEventLeaderboardSnapshot = {};
     this.playerInboxSnapshot = {};
@@ -315,6 +316,7 @@ export class PixiPagesFacade {
     }
 
     this.mounted = false;
+    this.worldChatSelectedReportMessageId = null;
     this.announcementPresenter?.unmount?.();
     this.experienceFacade?.unmount?.();
     this.globalDialogPresenter?.unmount?.();
@@ -649,9 +651,13 @@ export class PixiPagesFacade {
     return level >= WORKSHOP_SECONDARY_ACTION_UNLOCK_LEVEL;
   }
 
-  openWorldChat() {
+  openWorldChat({ preserveReportSelection = false } = {}) {
     if (!this.mounted || !this.isWorldChatUnlocked()) {
       return false;
+    }
+
+    if (!preserveReportSelection) {
+      this.worldChatSelectedReportMessageId = null;
     }
 
     return (
@@ -662,6 +668,10 @@ export class PixiPagesFacade {
           this.viewModelFactory.createWorldChatDialog(
             this.worldChatSnapshot,
             this.createActions().workshop,
+            {
+              selectedReportMessageId:
+                this.worldChatSelectedReportMessageId,
+            },
           ),
         ) ?? false
     );
@@ -677,7 +687,28 @@ export class PixiPagesFacade {
       return;
     }
 
-    this.openWorldChat();
+    this.openWorldChat({ preserveReportSelection: true });
+  }
+
+  selectWorldChatMessageForReport(message) {
+    const messageId = message?.id ?? message?.messageId;
+    if (messageId === null || messageId === undefined) {
+      return false;
+    }
+    this.worldChatSelectedReportMessageId = String(messageId);
+    this.refreshOpenWorldChatDialog();
+    return true;
+  }
+
+  openWorldChatReport(message) {
+    this.worldChatSelectedReportMessageId = null;
+    this.refreshOpenWorldChatDialog();
+    return (
+      this.globalDialogPresenter?.open?.('chatReport', {
+        message,
+        focusInput: true,
+      }) ?? false
+    );
   }
 
   refreshPage(pageId, { force = false } = {}) {
@@ -962,6 +993,10 @@ export class PixiPagesFacade {
         },
         fillTask: (taskId) => gameplay?.fillTask?.(taskId),
         sendWorldChat: (body) => this.worldChatFacade?.sendMessage?.(body),
+        selectWorldChatMessageForReport: (message) =>
+          this.selectWorldChatMessageForReport(message),
+        openWorldChatReport: (message) =>
+          this.openWorldChatReport(message),
         openInbox: () =>
           this.globalDialogPresenter?.open?.("inbox") ?? false,
         claimInboxReward: (mailKey) =>
@@ -3349,6 +3384,7 @@ const DEV_DIALOG_TARGETS = Object.freeze({
     dialogId: "global.feedback",
     options: { tab: "report", kind: "feedback" },
   },
+  chatreport: { dialogId: "global.chatReport" },
   bug: {
     dialogId: "global.feedback",
     options: { tab: "report", kind: "bug" },

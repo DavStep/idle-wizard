@@ -94,6 +94,8 @@ Useful view setup commands:
 - `unlockFeature(feature)` accepts page ids like `garden`, `research`, `brewing`,
   `prestige`, `guild`, plus utility gates like `leaderboard`, `worldChat`, and
   research ids.
+- `openUi('chatReport')` opens the production World Chat report form with a
+  deterministic selected-message fixture and without focusing the native field.
 - `unlockAllFeatures()` sets max level, completes configured research, and opens
   garden plots, cauldrons, trader stands, and player stands.
 - `setPlot(plot, options)` supports phases `empty`, `growing`, `ready`, and

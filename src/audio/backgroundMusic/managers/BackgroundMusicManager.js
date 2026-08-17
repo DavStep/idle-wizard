@@ -9,8 +9,6 @@ const USER_GESTURE_EVENTS = Object.freeze([
   'touchstart',
 ]);
 const BACKGROUND_MUSIC_VOLUME = 0.16;
-const MIN_RESTART_DELAY_MS = 1000;
-const MAX_RESTART_DELAY_MS = 2000;
 
 function defaultAudioFactory(url) {
   const AudioConstructor = globalThis.Audio;
@@ -22,28 +20,19 @@ export class BackgroundMusicManager {
     musicUrl = DEFAULT_BACKGROUND_MUSIC_URL,
     audioFactory = defaultAudioFactory,
     documentRef = globalThis.document ?? null,
-    setTimeoutFn = (callback, delayMs) =>
-      globalThis.setTimeout(callback, delayMs),
-    clearTimeoutFn = (timerId) => globalThis.clearTimeout(timerId),
-    random = Math.random,
     logger = null,
   } = {}) {
     this.musicUrl = musicUrl;
     this.audioFactory = audioFactory;
     this.documentRef = documentRef;
-    this.setTimeoutFn = setTimeoutFn;
-    this.clearTimeoutFn = clearTimeoutFn;
-    this.random = random;
     this.logger = logger;
     this.audio = null;
     this.enabled = true;
     this.started = false;
     this.disposed = false;
     this.gestureListenersInstalled = false;
-    this.restartTimer = null;
     this.playAttempt = 0;
 
-    this.handleEnded = () => this.scheduleRestart();
     this.handleGesture = () => this.tryPlay();
     this.handleVisibilityChange = () => this.syncPlayback();
   }
@@ -94,7 +83,6 @@ export class BackgroundMusicManager {
       return false;
     }
 
-    this.clearRestartTimer();
     this.rewindIfFinished(audio);
     const attempt = ++this.playAttempt;
 
@@ -132,10 +120,9 @@ export class BackgroundMusicManager {
       if (!this.audio) {
         return null;
       }
-      this.audio.loop = false;
+      this.audio.loop = true;
       this.audio.preload = 'none';
       this.audio.volume = BACKGROUND_MUSIC_VOLUME;
-      this.audio.addEventListener?.('ended', this.handleEnded);
       return this.audio;
     } catch (error) {
       this.logger?.warn?.('Unable to initialize background music.', error);
@@ -158,24 +145,8 @@ export class BackgroundMusicManager {
     }
   }
 
-  scheduleRestart() {
-    if (!this.enabled || this.disposed || this.isDocumentHidden()) {
-      return;
-    }
-
-    this.clearRestartTimer();
-    const delay =
-      MIN_RESTART_DELAY_MS +
-      this.random() * (MAX_RESTART_DELAY_MS - MIN_RESTART_DELAY_MS);
-    this.restartTimer = this.setTimeoutFn?.(() => {
-      this.restartTimer = null;
-      this.tryPlay();
-    }, delay);
-  }
-
   pause() {
     this.playAttempt += 1;
-    this.clearRestartTimer();
     this.audio?.pause?.();
   }
 
@@ -206,15 +177,6 @@ export class BackgroundMusicManager {
     }
   }
 
-  clearRestartTimer() {
-    if (this.restartTimer === null) {
-      return;
-    }
-
-    this.clearTimeoutFn?.(this.restartTimer);
-    this.restartTimer = null;
-  }
-
   isDocumentHidden() {
     return this.documentRef?.visibilityState === 'hidden';
   }
@@ -232,7 +194,6 @@ export class BackgroundMusicManager {
       'visibilitychange',
       this.handleVisibilityChange,
     );
-    this.audio?.removeEventListener?.('ended', this.handleEnded);
     this.audio = null;
   }
 }

@@ -16,6 +16,7 @@ export {
   registerGlobalDialogFactories,
 } from './GlobalDialogFactories.js';
 export { PixiAllianceInfoDialog } from './PixiAllianceInfoDialog.js';
+export { PixiChatReportDialog } from './PixiChatReportDialog.js';
 export { PixiInboxDialog } from './PixiInboxDialog.js';
 export { PixiLevelDialog } from './PixiLevelDialog.js';
 export {

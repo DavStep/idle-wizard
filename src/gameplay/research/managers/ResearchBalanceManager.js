@@ -35,19 +35,19 @@ import {
 const maxResearchDurationSeconds = 4 * 60 * 60;
 const quickResearchDurationSeconds = minimumResearchDurationSeconds;
 const defaultResearchDurationSeconds = 10 * 60;
-const discoveredRecipeResearchIdPrefix = 'unlockRecipe:';
-const discoveredRecipeKeys = new Set([
-  'ashenMemory',
-  'silverleafQuiet',
-  'emberSight',
-  'thornSleep',
-  'glassMoonElixir',
-  'rootboundResolve',
-  'nightOrchardTonic',
-  'starlessCourage',
-  'frostveinDraught',
-  'bloodlightWard',
-]);
+
+const discoveredRecipeResearchCostsCoin = {
+  'unlockRecipe:ashenMemory': 102_400,
+  'unlockRecipe:silverleafQuiet': 51_200,
+  'unlockRecipe:emberSight': 1_638_400,
+  'unlockRecipe:thornSleep': 204_800,
+  'unlockRecipe:glassMoonElixir': 409_600,
+  'unlockRecipe:rootboundResolve': 25_600,
+  'unlockRecipe:nightOrchardTonic': 819_200,
+  'unlockRecipe:starlessCourage': 1_638_400,
+  'unlockRecipe:frostveinDraught': 102_400,
+  'unlockRecipe:bloodlightWard': 819_200,
+};
 
 const seedResearchDurationSecondsById = {
   'unlockSeed:sageSeed': quickResearchDurationSeconds,
@@ -105,6 +105,9 @@ const recipeResearchDurationSecondsById = {
   'unlockRecipe:wormwoodPurge': 195 * 60,
   'unlockRecipe:snowdropBreath': 210 * 60,
   'unlockRecipe:pearlrootDraught': 240 * 60,
+  ...Object.fromEntries(
+    Object.keys(discoveredRecipeResearchCostsCoin).map((researchId) => [researchId, 0]),
+  ),
 };
 
 const DEFAULT_RESEARCH_BALANCE = {
@@ -167,6 +170,7 @@ const DEFAULT_RESEARCH_BALANCE = {
     'unlockRecipe:wormwoodPurge': 270_000_000,
     'unlockRecipe:snowdropBreath': 480_000_000,
     'unlockRecipe:pearlrootDraught': 830_000_000,
+    ...discoveredRecipeResearchCostsCoin,
     ...createDefaultAutomationCosts(),
   },
   researchCostsCrystal: createDefaultMultiplierCosts(),
@@ -447,13 +451,6 @@ export class ResearchBalanceManager {
       this.runtimeConfigByResearchId.get(normalizedResearchId)?.costCoin ??
       this.costCoinByResearchId[normalizedResearchId];
 
-    if (!Number.isFinite(costCoin) && this.isDiscoveredRecipeResearchId(normalizedResearchId)) {
-      return {
-        amount: 0,
-        currency: 'coin',
-      };
-    }
-
     if (!Number.isFinite(costCoin)) {
       throw new Error(`game_config.research missing cost for ${researchId}.`);
     }
@@ -496,16 +493,6 @@ export class ResearchBalanceManager {
       0;
 
     return this.normalizeDurationSeconds(durationSeconds);
-  }
-
-  isDiscoveredRecipeResearchId(researchId) {
-    if (!researchId.startsWith(discoveredRecipeResearchIdPrefix)) {
-      return false;
-    }
-
-    return discoveredRecipeKeys.has(
-      researchId.slice(discoveredRecipeResearchIdPrefix.length),
-    );
   }
 
   getResearchEffect() {

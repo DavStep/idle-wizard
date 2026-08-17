@@ -60,6 +60,7 @@ const GLOBAL_DIALOG_FACTORIES = new Map(createGlobalDialogFactories());
 const GLOBAL_DIALOG_IDS_IN_ORDER = Object.freeze([
   GLOBAL_DIALOG_IDS.SETTINGS,
   GLOBAL_DIALOG_IDS.FEEDBACK,
+  GLOBAL_DIALOG_IDS.CHAT_REPORT,
   GLOBAL_DIALOG_IDS.LEVEL,
   GLOBAL_DIALOG_IDS.INBOX,
   GLOBAL_DIALOG_IDS.PLAYER,
@@ -103,6 +104,10 @@ const DIALOG_CHILD_WIDGET_IDS = Object.freeze({
     'primitive.text-field',
     'text-button',
   ]),
+  [GLOBAL_DIALOG_IDS.CHAT_REPORT]: Object.freeze([
+    'primitive.text-field',
+    'text-button',
+  ]),
   [GLOBAL_DIALOG_IDS.LEVEL]: Object.freeze(['text-button']),
   [GLOBAL_DIALOG_IDS.ALLIANCE]: Object.freeze(['text-button']),
   [GLOBAL_DIALOG_IDS.ANNOUNCEMENT]: Object.freeze([
@@ -117,6 +122,7 @@ const DIALOG_CHILD_WIDGET_IDS = Object.freeze({
     'compound.alliance-directory-row',
     'compound.alliance-member-row',
     ALLIANCE_QUEST_ROW_WIDGET_ID,
+    'primitive.guild-color-swatch',
     'primitive.resource-label',
     'primitive.text-field',
     'tab-button',
@@ -208,6 +214,7 @@ const DIALOG_CHILD_WIDGET_IDS = Object.freeze({
 const DIALOG_LABELS = Object.freeze({
   'global.settings': 'Settings',
   'global.feedback': 'Feedback',
+  'global.chatReport': 'Report',
   'global.level': 'Level Rewards',
   'global.inbox': 'Inbox',
   'global.player': 'Player Info',
@@ -1180,6 +1187,18 @@ function createReusableDialogContentHierarchy(dialogId, dialog) {
           type: 'widget',
         }),
       );
+    const settingsSwatches = (settingsPane?.swatches ?? [])
+      .filter((swatch) => swatch.root.visible)
+      .map((swatch) =>
+        createUiEditorPixiHierarchyComponent({
+          displayObjects: [swatch.root],
+          id: `${dialogId}:profile:tag-color:${swatch.colorId}`,
+          label: `${titleCaseIdentifier(swatch.colorId)}:GuildColorSwatch`,
+          libraryEntryId: 'primitive.guild-color-swatch',
+          primary: swatch.root,
+          type: 'widget',
+        }),
+      );
     const settingsActions = [
       ['save', settingsPane?.saveButton],
       ['disband', settingsPane?.disbandButton],
@@ -1217,6 +1236,7 @@ function createReusableDialogContentHierarchy(dialogId, dialog) {
         }),
       ),
       ...settingsFields,
+      ...settingsSwatches,
       ...settingsActions,
     ];
   }
@@ -1352,6 +1372,26 @@ const GLOBAL_DIALOG_SCENARIOS = Object.freeze({
       },
       kind: 'bug',
       tabId: 'report',
+    })),
+  ]),
+  [GLOBAL_DIALOG_IDS.CHAT_REPORT]: Object.freeze([
+    scenario('empty', 'Empty report', () => ({
+      focusInput: false,
+      message: {
+        id: 'world-chat-player',
+        username: 'Mira',
+      },
+      title: 'Report',
+      value: '',
+    })),
+    scenario('draft', 'Report draft', () => ({
+      focusInput: false,
+      message: {
+        id: 'world-chat-player',
+        username: 'Mira',
+      },
+      title: 'Report',
+      value: 'This message is bothering other players.',
     })),
   ]),
   [GLOBAL_DIALOG_IDS.LEVEL]: Object.freeze([

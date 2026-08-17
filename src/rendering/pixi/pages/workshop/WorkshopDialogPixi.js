@@ -7,6 +7,10 @@ import {
   getSeedIconFrameName,
   getSeedPackItemFrameName,
 } from '../../../../assets/items/seeds/seedIconFrames.js';
+import {
+  TRADE_ALLIANCE_TAG_COLORS,
+  normalizeTradeAllianceTagColor,
+} from '../../../../shared/tradeAllianceTagColors.js';
 import { PixiTextButton } from '../../primitives/PixiTextButton.js';
 import { ClickableWidget } from '../../primitives/ClickableWidget.js';
 import {
@@ -37,6 +41,7 @@ import {
 import { getPlayerFrameTint } from '../../../../player/playerFrames.js';
 import {
   DEFAULT_PIXI_THEME_SNAPSHOT,
+  PIXI_PROGRESS_VISUALS,
   PIXI_ROOT_RUN_ASSETS,
   PIXI_ROOT_RUN_GEOMETRY,
   PIXI_UI_GEOMETRY,
@@ -55,6 +60,7 @@ import {
   resolveRetainedDialogListLayout,
   setText,
 } from './RetainedPageKit.js';
+import { GuildColorSwatch } from '../guild/GuildDialogPixi.js';
 
 const WORKSHOP_DIALOG_CONTENT_WIDTH = 264;
 const DIALOG_SCROLL_VIEWPORT_TOP = 18;
@@ -112,6 +118,11 @@ const WORLD_CHAT_BODY_TOP =
 const WORLD_CHAT_BODY_FONT_SIZE = 11 * WORLD_CHAT_TEXT_SCALE;
 const WORLD_CHAT_BODY_LINE_HEIGHT =
   10 * WORLD_CHAT_ROW_HEIGHT_SCALE * WORLD_CHAT_TEXT_SCALE;
+const WORLD_CHAT_OWN_BODY_TOP =
+  11 * WORLD_CHAT_ROW_HEIGHT_SCALE * WORLD_CHAT_TEXT_SCALE;
+const WORLD_CHAT_OWN_BODY_FONT_SIZE = WORLD_CHAT_BODY_FONT_SIZE * 0.95;
+const WORLD_CHAT_OWN_BODY_LINE_HEIGHT =
+  9.5 * WORLD_CHAT_ROW_HEIGHT_SCALE * WORLD_CHAT_TEXT_SCALE;
 const WORLD_CHAT_PLAYER_MIN_HEIGHT =
   27 * WORLD_CHAT_ROW_HEIGHT_SCALE * WORLD_CHAT_AVATAR_SCALE;
 const WORLD_CHAT_SYSTEM_MIN_HEIGHT =
@@ -126,6 +137,11 @@ const WORLD_CHAT_TIMESTAMP_COLOR = '#946a2e';
 const WORLD_CHAT_SYSTEM_BACKGROUND = '#efd0a2';
 const WORLD_CHAT_SYSTEM_TITLE_COLOR = '#432d20';
 const WORLD_CHAT_SYSTEM_PLAYER_COLOR = '#72533a';
+const WORLD_CHAT_REPORT_HOLD_MS = 530;
+const WORLD_CHAT_REPORT_ACTION_WIDTH = 74;
+const WORLD_CHAT_REPORT_ACTION_HEIGHT = 29;
+const WORLD_CHAT_REPORT_ACTION_GAP = 4;
+const WORLD_CHAT_REPORT_SELECTION_ALPHA = 0.16;
 const SCROLL_ROW_RENDER_BUFFER = 16;
 const DISCOVERY_ROW_GAP = 6;
 const DISCOVERY_MAX_INGREDIENTS = 6;
@@ -509,7 +525,7 @@ export class WorkshopDialogPixi {
         inputKind: 'text',
         maxLength: 160,
         retainOnSubmit: true,
-        variant: 'brown-inset',
+        variant: 'clean-inset',
         label: `${dialogId}-composer`,
         onChange: () => this.updateComposerControl(),
         onSubmit: () => void this.submitComposer(),
@@ -983,6 +999,23 @@ export class WorkshopDialogPixi {
     );
     if (locksWorldEventQuestScroll) {
       this.scroll.scrollTo(0);
+    } else if (this.isWorldChatDialog) {
+      const selectedRow = widgets.find(
+        (widget) => widget.selectedForReport === true,
+      );
+      const selectedLayout = selectedRow
+        ? this.scrollableRowLayouts.get(selectedRow)
+        : null;
+      if (selectedLayout) {
+        const viewportTop = this.scroll.offsetY;
+        const viewportBottom = viewportTop + this.scroll.height;
+        const selectedBottom = selectedLayout.top + selectedLayout.height;
+        if (selectedLayout.top < viewportTop) {
+          this.scroll.scrollTo(selectedLayout.top);
+        } else if (selectedBottom > viewportBottom) {
+          this.scroll.scrollTo(selectedBottom - this.scroll.height);
+        }
+      }
     }
     this.updateScrollableRowVisibility();
   }
@@ -2781,6 +2814,9 @@ export class WorldChatMessageRowPixi {
   constructor({ dialog }) {
     this.dialog = dialog;
     this.root = new Container({ label: `${dialog.dialogId}-message-row` });
+    this.selectionBackground = new Graphics({
+      label: `${dialog.dialogId}-message-row:selection-background`,
+    });
     this.systemBackground = new Graphics({
       label: `${dialog.dialogId}-message-row:system-background`,
     });
@@ -2820,7 +2856,19 @@ export class WorldChatMessageRowPixi {
       align: 'right',
     });
     this.timestamp.anchor.set(1, 0);
+    this.reportButton = new PixiTextButton({
+      assetManager: dialog.assetManager,
+      inputRouter: dialog.inputRouter,
+      text: 'Report',
+      color: 'red',
+      sizeTier: 30,
+      width: WORLD_CHAT_REPORT_ACTION_WIDTH,
+      height: WORLD_CHAT_REPORT_ACTION_HEIGHT,
+      action: () => this.activateReport(),
+      label: `${dialog.dialogId}-message-row:report`,
+    });
     this.root.addChild(
+      this.selectionBackground,
       this.systemBackground,
       this.avatar,
       this.tag,
@@ -2828,18 +2876,35 @@ export class WorldChatMessageRowPixi {
       this.systemPlayerUsername,
       this.body,
       this.timestamp,
+      this.reportButton,
     );
+    this.holdTimer = null;
+    this.holdTriggered = false;
+    this.holdPointerId = null;
+    this.rowRegistration =
+      dialog.inputRouter?.registerPressTarget?.(this.root, {
+        enabled: () => this.canReport(),
+        onPressChange: (pressed, context) =>
+          this.handleReportPressChange(pressed, context),
+        onActivate: () => this.activateRow(),
+        haptic: 'selection',
+        excludePageSwipe: true,
+      }) ?? null;
     this.avatarRegistration =
       dialog.inputRouter?.registerPressTarget?.(this.avatar, {
         enabled: () => this.isPlayerInteractive(),
-        onActivate: () => this.activatePlayer(),
+        onPressChange: (pressed, context) =>
+          this.handleReportPressChange(pressed, context),
+        onActivate: () => this.activatePlayerUnlessHeld(),
         haptic: 'selection',
         excludePageSwipe: true,
       }) ?? null;
     this.usernameRegistration =
       dialog.inputRouter?.registerPressTarget?.(this.username, {
         enabled: () => this.isPlayerInteractive(),
-        onActivate: () => this.activatePlayer(),
+        onPressChange: (pressed, context) =>
+          this.handleReportPressChange(pressed, context),
+        onActivate: () => this.activatePlayerUnlessHeld(),
         haptic: 'selection',
         excludePageSwipe: true,
       }) ?? null;
@@ -2857,6 +2922,10 @@ export class WorldChatMessageRowPixi {
     this.root.visible = true;
     this.isSystem = this.model.type === 'system';
     this.isOwn = !this.isSystem && this.model.isOwn === true;
+    this.selectedForReport =
+      !this.isSystem &&
+      !this.isOwn &&
+      this.model.selectedForReport === true;
     const tag = normalizeWorldChatTag(this.model.allianceTag);
     setText(this.tag, tag ? `[${tag}]` : '');
     setText(
@@ -2894,6 +2963,11 @@ export class WorldChatMessageRowPixi {
       this.isSystem && this.model.systemPlayerUsername,
     );
     this.systemPlayerUsername.renderable = this.systemPlayerUsername.visible;
+    this.reportButton.visible = this.selectedForReport;
+    this.reportButton.renderable = this.selectedForReport;
+    this.reportButton.setEnabled(
+      this.selectedForReport && typeof this.model.onReport === 'function',
+    );
     this.syncInteraction();
     this.applyTheme(this.dialog.contentTheme ?? this.dialog.theme);
     this.targetId = this.model.semanticId ?? null;
@@ -2919,7 +2993,21 @@ export class WorldChatMessageRowPixi {
     this.width = width;
     this.height = height;
     const contentX = this.isSystem ? 6 : WORLD_CHAT_TEXT_X;
+    const bodyTop = this.isOwn
+      ? WORLD_CHAT_OWN_BODY_TOP
+      : WORLD_CHAT_BODY_TOP;
     const timestampInset = this.isSystem ? 6 : 0;
+    this.selectionBackground.clear();
+    if (this.selectedForReport) {
+      const selectionColor = PIXI_PROGRESS_VISUALS.tones.red.fill;
+      this.selectionBackground
+        .roundRect(0, 0, width, height, 5)
+        .fill({
+          color: selectionColor,
+          alpha: WORLD_CHAT_REPORT_SELECTION_ALPHA,
+        })
+        .stroke({ color: selectionColor, width: 2, join: 'round' });
+    }
     this.systemBackground
       .clear()
       .roundRect(0, 0, width, height, 5)
@@ -2959,7 +3047,7 @@ export class WorldChatMessageRowPixi {
       this.isOwn
         ? Math.max(0, width - WORLD_CHAT_TEXT_X - this.body.layoutWidth)
         : bodyX,
-      WORLD_CHAT_BODY_TOP,
+      bodyTop,
     );
     this.avatar.hitArea = new Rectangle(
       0,
@@ -2979,24 +3067,43 @@ export class WorldChatMessageRowPixi {
       Math.max(1, this.systemPlayerUsername.width),
       Math.max(1, this.systemPlayerUsername.height),
     );
+    this.reportButton.position.set(
+      width - WORLD_CHAT_REPORT_ACTION_WIDTH,
+      height - WORLD_CHAT_REPORT_ACTION_HEIGHT,
+    );
+    this.reportButton.setSize(
+      WORLD_CHAT_REPORT_ACTION_WIDTH,
+      WORLD_CHAT_REPORT_ACTION_HEIGHT,
+    );
     this.root.hitArea = new Rectangle(0, 0, width, height);
   }
 
   getPreferredHeight() {
+    const bodyTop = this.isOwn
+      ? WORLD_CHAT_OWN_BODY_TOP
+      : WORLD_CHAT_BODY_TOP;
+    const bodyLineHeight = this.isOwn
+      ? WORLD_CHAT_OWN_BODY_LINE_HEIGHT
+      : WORLD_CHAT_BODY_LINE_HEIGHT;
     const bodyHeight = Math.max(
-      WORLD_CHAT_BODY_LINE_HEIGHT,
+      bodyLineHeight,
       Math.ceil(this.body.layoutHeight),
     );
-    return Math.max(
+    const messageHeight = Math.max(
       this.isSystem
         ? WORLD_CHAT_SYSTEM_MIN_HEIGHT
         : WORLD_CHAT_PLAYER_MIN_HEIGHT,
-      WORLD_CHAT_BODY_TOP +
+      bodyTop +
         bodyHeight +
         (this.isSystem
           ? WORLD_CHAT_SYSTEM_BOTTOM_INSET
           : WORLD_CHAT_PLAYER_BOTTOM_INSET),
     );
+    return this.selectedForReport
+      ? messageHeight +
+          WORLD_CHAT_REPORT_ACTION_GAP +
+          WORLD_CHAT_REPORT_ACTION_HEIGHT
+      : messageHeight;
   }
 
   applyTheme(theme) {
@@ -3023,8 +3130,12 @@ export class WorldChatMessageRowPixi {
       fill: WORLD_CHAT_SYSTEM_PLAYER_COLOR,
     });
     applyTextTheme(this.body, resolvedTheme, {
-      fontSize: WORLD_CHAT_BODY_FONT_SIZE,
-      lineHeight: WORLD_CHAT_BODY_LINE_HEIGHT,
+      fontSize: this.isOwn
+        ? WORLD_CHAT_OWN_BODY_FONT_SIZE
+        : WORLD_CHAT_BODY_FONT_SIZE,
+      lineHeight: this.isOwn
+        ? WORLD_CHAT_OWN_BODY_LINE_HEIGHT
+        : WORLD_CHAT_BODY_LINE_HEIGHT,
       fill: resolvedTheme.text,
       wordWrapWidth:
         (this.width || WORKSHOP_DIALOG_CONTENT_WIDTH) -
@@ -3040,6 +3151,86 @@ export class WorldChatMessageRowPixi {
       align: 'right',
       fill: WORLD_CHAT_TIMESTAMP_COLOR,
     });
+    this.reportButton.applyTheme(resolvedTheme);
+  }
+
+  canReport() {
+    return Boolean(
+      !this.isSystem &&
+      !this.isOwn &&
+      this.model?.canReport === true &&
+      typeof this.model?.onLongPress === 'function' &&
+      this.root.visible,
+    );
+  }
+
+  handleReportPressChange(pressed, context = {}) {
+    if (pressed) {
+      if (!this.canReport() || this.holdPointerId !== null) {
+        return;
+      }
+      this.holdTriggered = false;
+      this.holdPointerId = context.pointerId ?? 'router';
+      this.clearHoldTimer();
+      this.holdTimer = globalThis.setTimeout(() => {
+        this.holdTimer = null;
+        if (this.holdPointerId === null || !this.canReport()) {
+          this.stopHold();
+          return;
+        }
+        this.holdTriggered = true;
+        this.model.onLongPress(this.model);
+      }, WORLD_CHAT_REPORT_HOLD_MS);
+      return;
+    }
+
+    if (
+      context.pointerId == null ||
+      context.pointerId === this.holdPointerId
+    ) {
+      this.stopHold({
+        preserveTriggered:
+          this.holdTriggered && context.confirmed === true,
+      });
+    }
+  }
+
+  activateRow() {
+    this.holdTriggered = false;
+    return false;
+  }
+
+  activatePlayerUnlessHeld() {
+    if (this.holdTriggered) {
+      this.holdTriggered = false;
+      return false;
+    }
+    return this.activatePlayer();
+  }
+
+  activateReport() {
+    if (
+      !this.selectedForReport ||
+      typeof this.model?.onReport !== 'function'
+    ) {
+      return false;
+    }
+    return this.model.onReport(this.model) ?? true;
+  }
+
+  stopHold({ preserveTriggered = false } = {}) {
+    this.clearHoldTimer();
+    this.holdPointerId = null;
+    if (!preserveTriggered) {
+      this.holdTriggered = false;
+    }
+  }
+
+  clearHoldTimer() {
+    if (this.holdTimer !== null) {
+      globalThis.clearTimeout(this.holdTimer);
+      this.holdTimer = null;
+    }
   }
 
   isInteractive() {
@@ -3098,6 +3289,7 @@ export class WorldChatMessageRowPixi {
   }
 
   reset() {
+    this.stopHold();
     if (this.targetId) {
       this.dialog.unregisterTarget(this.targetId);
     }
@@ -3105,23 +3297,32 @@ export class WorldChatMessageRowPixi {
     this.model = null;
     this.isSystem = false;
     this.isOwn = false;
+    this.selectedForReport = false;
     this.avatarWidget.setTexture(Texture.EMPTY).setBackgroundTint(0xffffff);
     this.body.setRuns([]);
     setText(this.systemPlayerUsername, '');
     this.root.visible = false;
+    this.selectionBackground.clear();
+    this.reportButton.visible = false;
+    this.reportButton.renderable = false;
+    this.reportButton.setEnabled(false);
     this.syncInteraction();
   }
 
   destroy() {
+    this.stopHold();
     if (this.targetId) {
       this.dialog.unregisterTarget(this.targetId);
     }
+    disposeInputRegistration(this.rowRegistration);
+    this.rowRegistration = null;
     disposeInputRegistration(this.avatarRegistration);
     disposeInputRegistration(this.usernameRegistration);
     disposeInputRegistration(this.systemPlayerRegistration);
     this.avatarRegistration = null;
     this.usernameRegistration = null;
     this.systemPlayerRegistration = null;
+    this.reportButton.destroy();
     this.root.destroy({ children: true });
   }
 }
@@ -3167,6 +3368,27 @@ class AllianceSettingsPane {
       this.fields.set(key, field);
       this.root.addChild(labelText, field);
     }
+    this.tagColorLabel = createText(
+      'Tag Color',
+      RETAINED_TEXT_STYLES.border,
+    );
+    this.tagColorSwatchLayer = new Container({
+      label: `${dialog.dialogId}-settings-tag-color-swatches`,
+    });
+    this.swatches = TRADE_ALLIANCE_TAG_COLORS.map(
+      (color) =>
+        new GuildColorSwatch({
+          inputRouter: dialog.inputRouter,
+          semanticRegistry: dialog.semanticTargets,
+          semanticId: `${dialog.dialogId}.settings.tagColor.${color.id}`,
+          colorId: color.id,
+          label: `${dialog.dialogId}-settings-tag-color-${color.id}`,
+          action: () => this.selectTagColor(color.id),
+        }),
+    );
+    this.tagColorSwatchLayer.addChild(
+      ...this.swatches.map((swatch) => swatch.root),
+    );
     this.joinModeLabel = createText('Join Mode', RETAINED_TEXT_STYLES.border);
     this.joinModeButtons = ['open', 'apply', 'closed'].map(
       (joinMode) =>
@@ -3196,6 +3418,8 @@ class AllianceSettingsPane {
       align: 'center',
     });
     this.root.addChild(
+      this.tagColorLabel,
+      this.tagColorSwatchLayer,
       this.joinModeLabel,
       ...this.joinModeButtons.map((button) => button.root),
       this.saveButton.root,
@@ -3247,6 +3471,18 @@ class AllianceSettingsPane {
         field.blur();
       }
     }
+    this.tagColorLabel.visible = editable;
+    this.tagColorLabel.renderable = editable;
+    this.tagColorSwatchLayer.visible = editable;
+    this.tagColorSwatchLayer.renderable = editable;
+    const selectedTagColor = normalizeTradeAllianceTagColor(
+      this.draft?.tagColor,
+    );
+    for (const swatch of this.swatches) {
+      swatch.root.visible = editable;
+      swatch.root.renderable = editable;
+      swatch.setSelected(swatch.colorId === selectedTagColor);
+    }
     this.joinModeLabel.visible = editable;
     this.joinModeLabel.renderable = editable;
     this.joinModeButtons.forEach((button, index) => {
@@ -3297,6 +3533,16 @@ class AllianceSettingsPane {
     return true;
   }
 
+  selectTagColor(tagColor) {
+    if (!this.draft || this.saving) {
+      return false;
+    }
+    this.draft.tagColor = normalizeTradeAllianceTagColor(tagColor);
+    this.dirty = true;
+    this.bind(this.model);
+    return true;
+  }
+
   async save() {
     if (this.saving || !this.draft || this.model?.editable !== true) {
       return false;
@@ -3333,14 +3579,23 @@ class AllianceSettingsPane {
     const visibleFieldSpecs = this.fieldSpecs.filter(
       ([key]) => this.model?.mode !== 'create' || key !== 'notice',
     );
-    visibleFieldSpecs.forEach(([key], index) => {
-      const fieldY = index * fieldHeight;
+    let fieldY = 0;
+    visibleFieldSpecs.forEach(([key]) => {
       this.labels.get(key).position.set(0, fieldY);
       const field = this.fields.get(key);
       field.position.set(0, fieldY + 13);
       field.setSize(width, 25);
+      fieldY += fieldHeight;
+      if (key === 'tag') {
+        this.tagColorLabel.position.set(0, fieldY);
+        this.tagColorSwatchLayer.position.set(0, fieldY + 13);
+        this.swatches.forEach((swatch, index) => {
+          swatch.setBounds(index * 25, 0, 20);
+        });
+        fieldY += fieldHeight;
+      }
     });
-    const joinY = visibleFieldSpecs.length * fieldHeight;
+    const joinY = fieldY;
     this.joinModeLabel.position.set(0, joinY);
     const joinButtonY = joinY + 13;
     const joinGap = 6;
@@ -3378,6 +3633,14 @@ class AllianceSettingsPane {
       field.applyTheme(resolvedTheme);
     }
     applyTextTheme(
+      this.tagColorLabel,
+      resolvedTheme,
+      RETAINED_TEXT_STYLES.border,
+    );
+    for (const swatch of this.swatches) {
+      swatch.applyTheme(resolvedTheme);
+    }
+    applyTextTheme(
       this.joinModeLabel,
       resolvedTheme,
       RETAINED_TEXT_STYLES.border,
@@ -3395,6 +3658,9 @@ class AllianceSettingsPane {
   destroy() {
     for (const field of this.fields.values()) {
       field.destroy({ children: true });
+    }
+    for (const swatch of this.swatches) {
+      swatch.destroy();
     }
     this.joinModeButtons.forEach((button) => button.destroy());
     this.saveButton.destroy();

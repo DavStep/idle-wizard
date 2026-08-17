@@ -27,7 +27,7 @@ experience_type: gameplay-economy
 - Potion recipe ingredient order matters; every recipe entry is one ordered cauldron slot with `quantity: 1`, so repeated herbs must be repeated entries.
 - Brewing recipe-book UI should read `snapshot.brewing.recipes` and show only unlocked recipes; locked recipes stay hidden until research unlocks them.
 - Brewing `maxCauldrons` is only the level cap; bought slots persist as `brewing.unlockedCauldrons`.
-- Unknown potion recipes are named globally through SpacetimeDB discovery, but learning is player-specific: the discoverer keeps a permanent automatic unlock, while other players receive an independent free, instant study that resets with ordinary run research.
+- Unknown potion recipes are named globally through SpacetimeDB discovery, but learning is player-specific: the discoverer keeps a permanent automatic unlock, while other players receive an independent instant study priced at `2x` the seed research of its latest-progression ingredient. Include every discovery research id in the server research catalog so completed studies survive save normalization and relog.
 - Player-visible discovery reducers must not silently return behind feature flags; client success with no table row makes recipes look undiscovered.
 - Potion discovery table inserts must not depend on world-chat announcement rate limits; chat is secondary to the global unlock.
 - Potion discovery chat announcements should include the player, potion name, and full ingredient recipe, with a distinct coin system-row style.

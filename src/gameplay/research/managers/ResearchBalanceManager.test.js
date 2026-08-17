@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest';
 
 import { automationResearchIds } from '../../automation/automationResearchIds.js';
+import { ItemsFacade } from '../../items/ItemsFacade.js';
 import { ItemDefinitionManager } from '../../items/managers/ItemDefinitionManager.js';
 import { advancedResearchIds } from '../advancedResearchIds.js';
 import { automationReserveResearchIds } from '../automationReserveResearch.js';
@@ -10,6 +11,7 @@ import { researchCostResearchIds } from '../researchCostResearch.js';
 import { researchTimeResearchIds } from '../researchTimeResearch.js';
 import { stallStaffingResearchIds } from '../stallStaffingResearch.js';
 import { gardenBulkResearchIds } from '../../garden/gardenBulkResearch.js';
+import { discoveredPotionResearchCostGoldByKey } from '../../../../spacetimedb/src/discoveredPotionResearch.ts';
 
 describe('ResearchBalanceManager', () => {
   it('caps research durations at four hours', () => {
@@ -69,7 +71,7 @@ describe('ResearchBalanceManager', () => {
     expect(manager.getDurationSeconds('unlockRecipe:pearlrootDraught')).toBe(14_400);
     expect(manager.getDurationSeconds('unlockRecipe:ashenMemory')).toBe(0);
     expect(manager.getCost('unlockRecipe:ashenMemory')).toEqual({
-      amount: 0,
+      amount: 102_400,
       currency: 'coin',
     });
     expect(manager.getDurationSeconds('summonSeedsX2')).toBe(600);
@@ -213,6 +215,30 @@ describe('ResearchBalanceManager', () => {
         (researchId) => research.getCost(researchId).amount,
       ),
     ).toEqual([1_000, 10_000, 100_000, 1_000_000]);
+  });
+
+  it('prices discovered recipes at twice their latest ingredient seed research', () => {
+    const research = new ResearchBalanceManager();
+    const items = new ItemsFacade();
+
+    for (const potion of items.getUnknownPotionDefinitions()) {
+      const recipe = items.getPotionRecipe(potion.key);
+      const latestIngredientSeedCost = Math.max(
+        ...recipe.ingredients.map((ingredient) => {
+          const seedKey = ingredient.key.replace(/Herb$/, 'Seed');
+          return research.getCost(`unlockSeed:${seedKey}`).amount;
+        }),
+      );
+
+      expect(research.getCost(`unlockRecipe:${potion.key}`)).toEqual({
+        amount: latestIngredientSeedCost * 2,
+        currency: 'coin',
+      });
+      expect(research.getCost(`unlockRecipe:${potion.key}`).amount).toBe(
+        Number(discoveredPotionResearchCostGoldByKey[potion.key]),
+      );
+      expect(research.getDurationSeconds(`unlockRecipe:${potion.key}`)).toBe(0);
+    }
   });
 
   it('reads crystal multiplier costs from balance', () => {

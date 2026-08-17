@@ -6,10 +6,14 @@ Current scope uses SpacetimeDB `research_config` for regular coin overrides and 
 
 Coin research follows an achievement curve. After the free Sage and Mint onboarding rows, a seed unlock costs one hundred times that seed's default sell value, equivalent to about forty sales of the preceding tier's herb. After the free Mana Tonic row, recipe unlock prices rise by roughly `1.75x` per catalog step, from `400` coin to `830m`, so every next recipe is a larger milestone even when its ingredient value is lower. Summon multiplier studies cost `1k`, `10k`, `100k`, and `1m` coin. Premium-currency research prices do not use this coin curve.
 
-Globally discovered hidden recipes appear immediately as independent free,
-instant recipe studies for players other than the discoverer. They have no
-level or recipe-chain prerequisite. The original discoverer keeps the recipe
-learned from server discovery ownership and does not receive a redundant study.
+Globally discovered hidden recipes appear immediately as independent, instant
+coin studies for players other than the discoverer. Each costs twice the seed
+research price of its latest-progression ingredient, tying the study to the
+earliest point when its recipe can be brewed. They have no separate level or
+recipe-chain prerequisite. Completed discovery studies persist through server
+save round trips like other run research. The original discoverer keeps the
+recipe learned from server discovery ownership and does not receive a redundant
+study.
 
 Every timed research takes at least five seconds after research-time reductions. An explicit zero duration remains the internal instant-research sentinel.
 

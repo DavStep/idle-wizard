@@ -1,0 +1,159 @@
+{
+  "version": 1,
+  "format": "png",
+  "asset": "world-chat-text-field-clean.9.png",
+  "workingAsset": null,
+  "scaleWorkflow": {
+    "workScale": 1,
+    "downscaleResample": "lanczos",
+    "alphaCrop": {
+      "enabled": true,
+      "threshold": 0,
+      "crop": {
+        "x": 0,
+        "y": 0,
+        "width": 60,
+        "height": 60
+      },
+      "changed": false
+    }
+  },
+  "source": {
+    "path": "assets/game/source/ui/root-run-world-chat/world-chat-text-field-clean.9.png",
+    "width": 60,
+    "height": 60,
+    "mode": "RGBA",
+    "crop": {
+      "x": 0,
+      "y": 0,
+      "width": 60,
+      "height": 60
+    }
+  },
+  "sourceCropSize": {
+    "width": 60,
+    "height": 60
+  },
+  "slice": {
+    "left": 26,
+    "top": 26,
+    "right": 26,
+    "bottom": 26
+  },
+  "mode": "source",
+  "distill": null,
+  "cleanup": {
+    "symmetrizeCorners": false,
+    "symmetrizeEdges": false,
+    "transparentChamfer": 0,
+    "transparentChamferAaScale": 4,
+    "transparentInset": [
+      0,
+      0,
+      0,
+      0
+    ],
+    "brownBackgroundKey": null,
+    "sideGutterTrim": {
+      "transparentThroughPx": 0,
+      "fadePx": 2
+    },
+    "allowTransparentGutters": false,
+    "geometricMask": false
+  },
+  "rendering": {
+    "stretch": "edges-and-center",
+    "qaResample": "nearest",
+    "browserPreviewSmoothingDefault": false
+  },
+  "validation": {
+    "rasterOnly": true,
+    "pngSignatureChecked": true,
+    "naturalRoundTripExact": true,
+    "cornerRoundTripExact": true,
+    "alpha": {
+      "transparent": 160,
+      "translucent": 92,
+      "opaque": 3348
+    },
+    "alphaBounds": {
+      "x": 0,
+      "y": 0,
+      "width": 60,
+      "height": 60
+    },
+    "transparentGutters": {
+      "left": 0,
+      "right": 0,
+      "top": 0,
+      "bottom": 0
+    },
+    "passesNoGutterGate": true,
+    "uniqueColors": {
+      "all": 85,
+      "corners": 84,
+      "edges": 23
+    },
+    "workAsset": {
+      "size": {
+        "width": 60,
+        "height": 60
+      },
+      "slice": {
+        "left": 26,
+        "top": 26,
+        "right": 26,
+        "bottom": 26
+      },
+      "naturalRoundTripExact": true,
+      "cornerRoundTripExact": true,
+      "alpha": {
+        "transparent": 160,
+        "translucent": 92,
+        "opaque": 3348
+      },
+      "alphaBounds": {
+        "x": 0,
+        "y": 0,
+        "width": 60,
+        "height": 60
+      },
+      "transparentGutters": {
+        "left": 0,
+        "right": 0,
+        "top": 0,
+        "bottom": 0
+      },
+      "uniqueColors": {
+        "all": 85,
+        "corners": 84,
+        "edges": 23
+      }
+    }
+  },
+  "qa": {
+    "sheet": "world-chat-text-field-clean-qa-sheet.png",
+    "examples": [
+      {
+        "label": "original: 60x60",
+        "width": 60,
+        "height": 60
+      },
+      {
+        "label": "height stretched: 60x220",
+        "width": 60,
+        "height": 220
+      },
+      {
+        "label": "width stretched: 300x60",
+        "width": 300,
+        "height": 60
+      },
+      {
+        "label": "both stretched: 300x220",
+        "width": 300,
+        "height": 220
+      }
+    ]
+  }
+}

@@ -8,10 +8,11 @@ describe('PixiGlobalDialogPresenter', () => {
     const harness = createHarness({ runtimeInitialized: false });
 
     expect(harness.renderFacade.getUiRuntime).not.toHaveBeenCalled();
-    expect(harness.factories.size).toBe(8);
+    expect(harness.factories.size).toBe(9);
     expect([...harness.factories.keys()]).toEqual([
       GLOBAL_DIALOG_IDS.SETTINGS,
       GLOBAL_DIALOG_IDS.FEEDBACK,
+      GLOBAL_DIALOG_IDS.CHAT_REPORT,
       GLOBAL_DIALOG_IDS.LEVEL,
       GLOBAL_DIALOG_IDS.INBOX,
       GLOBAL_DIALOG_IDS.PLAYER,
@@ -65,12 +66,39 @@ describe('PixiGlobalDialogPresenter', () => {
     expect(harness.presenter.open('unknown')).toBe(false);
   });
 
+  it('replaces a submitted chat report with the requested reminder dialog', () => {
+    const harness = createHarness();
+    harness.presenter.mount();
+    const message = { id: 'message-one', username: 'Mira' };
+
+    expect(harness.presenter.open('chatReport', { message })).toEqual({
+      dialogId: GLOBAL_DIALOG_IDS.CHAT_REPORT,
+    });
+    const report = harness.getOpenModel(GLOBAL_DIALOG_IDS.CHAT_REPORT);
+    expect(report.message).toBe(message);
+    expect(report.actions.submit({ body: 'Repeated insults', message })).toEqual({
+      ok: true,
+    });
+
+    expect(harness.runtime.closeDialog).toHaveBeenCalledWith(
+      GLOBAL_DIALOG_IDS.CHAT_REPORT,
+    );
+    expect(harness.getOpenModel(GLOBAL_DIALOG_IDS.ANNOUNCEMENT)).toMatchObject({
+      title: 'Report',
+      copy:
+        'No need to report anyone you snitch! We all are a big family, learn to coexist together!',
+      contentHeight: 104,
+      framed: true,
+      dismissible: true,
+    });
+  });
+
   it('does not open before mount and delegates lazy open/close to the runtime', () => {
     const harness = createHarness();
 
     expect(harness.presenter.open('settings')).toBe(false);
     expect(harness.runtime.openDialog).not.toHaveBeenCalled();
-    expect(harness.factories.size).toBe(8);
+    expect(harness.factories.size).toBe(9);
 
     harness.presenter.mount();
     const first = harness.presenter.open('settings', {

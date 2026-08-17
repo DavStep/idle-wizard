@@ -5691,11 +5691,12 @@ describe("GameplayFacade", () => {
       discovered: true,
       unlocked: false,
     });
+    secondGameplayFacade.coinFacade.add(102_400);
     expect(
       secondGameplayFacade.buyResearch("unlockRecipe:ashenMemory"),
     ).toMatchObject({
       ok: true,
-      cost: 0,
+      cost: 102_400,
     });
     expect(secondGameplayFacade.getSnapshot().brewing).toMatchObject({
       buttonLabel: "brew ashen memory",

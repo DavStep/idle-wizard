@@ -1696,7 +1696,11 @@ export class PixiViewModelFactory {
     };
   }
 
-  createWorldChatDialog(worldChat = {}, actions = {}) {
+  createWorldChatDialog(
+    worldChat = {},
+    actions = {},
+    { selectedReportMessageId = null } = {},
+  ) {
     const canSend =
       worldChat.connected !== false &&
       typeof actions.sendWorldChat === 'function';
@@ -1718,6 +1722,12 @@ export class PixiViewModelFactory {
         const systemPlayerDetail =
           systemPlayer?.detail.trimStart() ?? '';
         const id = message.id ?? message.messageId ?? index;
+        const canReport =
+          !isSystem &&
+          message.isOwn !== true &&
+          typeof actions.selectWorldChatMessageForReport === 'function';
+        const selectedForReport =
+          canReport && String(id) === String(selectedReportMessageId ?? '');
         const canOpenPlayer =
           typeof actions.openPlayer === 'function' &&
           (!isSystem || Boolean(systemPlayer));
@@ -1739,6 +1749,8 @@ export class PixiViewModelFactory {
           character: message.character ?? 'elara',
           frame: message.frame ?? 'classic',
           ageLabel: formatWorldChatMessageAge(message.sentAtMs),
+          canReport,
+          selectedForReport,
           semanticId: canOpenPlayer
             ? `${isSystem ? 'world-chat-system-player' : 'world-chat-player'}:${id}`
             : null,
@@ -1754,6 +1766,12 @@ export class PixiViewModelFactory {
                         }
                       : message,
                   ),
+          onLongPress: canReport
+            ? () => actions.selectWorldChatMessageForReport(message)
+            : null,
+          onReport: selectedForReport
+            ? () => actions.openWorldChatReport(message)
+            : null,
         };
       }),
       onSubmit: canSend

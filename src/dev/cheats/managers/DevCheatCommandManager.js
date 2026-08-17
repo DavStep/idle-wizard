@@ -258,6 +258,16 @@ const UI_SURFACE_DEFINITIONS = Object.freeze([
     aliases: ['account'],
   },
   { id: 'feedback', kind: 'dialog', dialogId: 'feedback' },
+  {
+    id: 'chatReport',
+    kind: 'dialog',
+    dialogId: 'chatReport',
+    options: {
+      focusInput: false,
+      message: { id: 'dev-chat-report', username: 'Mira' },
+    },
+    aliases: ['reportChatMessage'],
+  },
   { id: 'bug', kind: 'dialog', dialogId: 'bug' },
   { id: 'feature', kind: 'dialog', dialogId: 'feature' },
   { id: 'level', kind: 'dialog', dialogId: 'level', aliases: ['levels'] },

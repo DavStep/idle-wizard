@@ -93,6 +93,37 @@ describe("PixiPagesFacade", () => {
     });
   });
 
+  it("keeps a held World Chat message selected and opens its report form", () => {
+    const harness = createHarness();
+    harness.dependencies.worldChatFacade.getSnapshot.mockReturnValue({
+      connected: true,
+      messages: [
+        { id: "message-one", username: "Mira", body: "Hello" },
+      ],
+    });
+    harness.runtime.getOpenDialogIds.mockReturnValue([
+      "workshop.worldChat",
+    ]);
+    const pages = new PixiPagesFacade(harness.dependencies);
+    pages.mount();
+    const openGlobal = vi.fn(() => true);
+    pages.globalDialogPresenter = { open: openGlobal, unmount: vi.fn() };
+
+    expect(pages.openWorldChat()).toBe(true);
+    let dialogModel = harness.pageSurface.openDialog.mock.lastCall[1];
+    expect(dialogModel.rows[0].selectedForReport).toBe(false);
+
+    expect(dialogModel.rows[0].onLongPress()).toBe(true);
+    dialogModel = harness.pageSurface.openDialog.mock.lastCall[1];
+    expect(dialogModel.rows[0].selectedForReport).toBe(true);
+    expect(dialogModel.rows[0].onReport()).toBe(true);
+
+    expect(openGlobal).toHaveBeenCalledWith("chatReport", {
+      message: expect.objectContaining({ id: "message-one" }),
+      focusInput: true,
+    });
+  });
+
   it("keeps level progress visible across partial frame resource snapshots", () => {
     const harness = createHarness({
       gameplaySnapshot: createGameplaySnapshot({ level: 1 }),

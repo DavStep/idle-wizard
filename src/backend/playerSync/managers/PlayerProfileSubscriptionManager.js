@@ -6,6 +6,10 @@ import {
   DEFAULT_PLAYER_FONT,
   normalizePlayerFont,
 } from '../../../player/playerFonts.js';
+import {
+  DEFAULT_PLAYER_FRAME,
+  normalizePlayerFrame,
+} from '../../../player/playerFrames.js';
 
 const PLAYER_PROFILE_QUERY = 'SELECT * FROM own_player_profile';
 const LEGACY_PLAYER_QUERY = 'SELECT * FROM player WHERE identity =';
@@ -105,6 +109,7 @@ export class PlayerProfileSubscriptionManager {
       font: normalizePlayerFont(row.font ?? DEFAULT_PLAYER_FONT),
       colorMode: row.colorMode ?? row.color_mode ?? 'resources',
       character: row.character ?? 'elara',
+      frame: normalizePlayerFrame(row.frame ?? DEFAULT_PLAYER_FRAME),
       usernamePromptSeen: Boolean(
         row.usernamePromptSeen ?? row.username_prompt_seen,
       ),

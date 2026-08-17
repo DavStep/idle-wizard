@@ -333,6 +333,7 @@ export class DevCheatsFacade {
       .toLowerCase();
     const requiresMountedGameSurfaces =
       surfaceId === 'brewingrecipes' ||
+      surfaceId === 'chatreport' ||
       surfaceId === 'globalconfirmation' ||
       surfaceId === 'dialogglobalconfirmation';
     return Boolean(

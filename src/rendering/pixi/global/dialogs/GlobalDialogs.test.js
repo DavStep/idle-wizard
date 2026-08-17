@@ -51,7 +51,7 @@ import { getPlayerFrameTint } from '../../../../player/playerFrames.js';
 installPixiPageTestCanvas();
 
 describe('retained global Pixi dialogs', () => {
-  it('exports canonical aliases and registers eight lazy runtime factories', () => {
+  it('exports canonical aliases and registers nine lazy runtime factories', () => {
     const registerDialog = vi.fn();
     const registrar = { registerDialog };
     const factories = createGlobalDialogFactories();
@@ -59,11 +59,11 @@ describe('retained global Pixi dialogs', () => {
     expect(GLOBAL_DIALOG_IDS.BUG).toBe(GLOBAL_DIALOG_IDS.FEEDBACK);
     expect(GLOBAL_DIALOG_IDS.FEATURE).toBe(GLOBAL_DIALOG_IDS.FEEDBACK);
     expect(GLOBAL_DIALOG_IDS.MAIL).toBe(GLOBAL_DIALOG_IDS.INBOX);
-    expect(new Set(factories.map(([id]) => id)).size).toBe(8);
+    expect(new Set(factories.map(([id]) => id)).size).toBe(9);
     expect(Object.isFrozen(factories)).toBe(true);
 
     expect(registerGlobalDialogFactories(registrar)).toBe(registrar);
-    expect(registerDialog).toHaveBeenCalledTimes(8);
+    expect(registerDialog).toHaveBeenCalledTimes(9);
     expect(registerDialog.mock.calls.map(([id]) => id)).toEqual(
       factories.map(([id]) => id),
     );
@@ -95,8 +95,8 @@ describe('retained global Pixi dialogs', () => {
     }
 
     expect(harness.registry.getStats()).toMatchObject({
-      registered: 8,
-      constructed: 8,
+      registered: 9,
+      constructed: 9,
       open: 0,
     });
     harness.dispose();
@@ -171,6 +171,45 @@ describe('retained global Pixi dialogs', () => {
     await confirmation.confirmButton.activate();
     expect(confirm).toHaveBeenCalledWith({ id: 'one' });
     expect(harness.registry.isOpen(GLOBAL_DIALOG_IDS.CONFIRMATION)).toBe(false);
+    harness.dispose();
+  });
+
+  it('requires a report reason and submits the selected World Chat message', async () => {
+    const harness = createHarness();
+    const submit = vi.fn(() => Promise.resolve({ ok: true }));
+    const message = { id: 'message-one', username: 'Mira' };
+    const report = harness.registry.open(GLOBAL_DIALOG_IDS.CHAT_REPORT, {
+      focusInput: false,
+      message,
+      actions: { submit },
+    });
+
+    expect(report.panel.titleVariant).toBe('danger');
+    expect(report.contentHeight).toBe(208);
+    expect(report.reportField.position.y).toBe(12);
+    expect(report.status.position.y).toBe(160);
+    expect(report.status.lineHeight).toBe(14);
+    expect(report.submitButton.position.y).toBe(178);
+    expect(
+      report.submitButton.position.y -
+        (report.reportField.position.y + 144),
+    ).toBe(22);
+    expect(
+      report.contentHeight - (report.submitButton.position.y + 30),
+    ).toBe(0);
+    expect(report.submitButton.enabled).toBe(false);
+    expect(await report.submit()).toBe(false);
+    expect(report.status.text).toBe('Tell us why you are reporting this message');
+
+    report.reportField.setValue('Repeated insults', { notify: true });
+    expect(report.submitButton.enabled).toBe(true);
+    await report.submitButton.activate();
+
+    expect(submit).toHaveBeenCalledWith({
+      body: 'Repeated insults',
+      message,
+    });
+    expect(harness.registry.isOpen(GLOBAL_DIALOG_IDS.CHAT_REPORT)).toBe(false);
     harness.dispose();
   });
 
@@ -643,6 +682,38 @@ describe('retained global Pixi dialogs', () => {
       text: '#634934',
     });
 
+    harness.dispose();
+  });
+
+  it('centers framed report copy on both axes inside the taller paper', () => {
+    const harness = createHarness();
+    const announcement = harness.registry.open(
+      GLOBAL_DIALOG_IDS.ANNOUNCEMENT,
+      {
+        title: 'Report',
+        copy:
+          'No need to report anyone you snitch! We all are a big family, learn to coexist together!',
+        contentHeight: 104,
+        dismissible: true,
+        framed: true,
+        variant: 'report',
+      },
+    );
+
+    expect(announcement.panel).toMatchObject({
+      contentBoxWidth: 260,
+      contentBoxHeight: 104,
+      outerWidth: 300,
+      outerHeight: 144,
+    });
+    expect(announcement.copy.textObject.anchor).toMatchObject({
+      x: 0.5,
+      y: 0.5,
+    });
+    expect(announcement.copy.position).toMatchObject({
+      x: 130,
+      y: 52,
+    });
     harness.dispose();
   });
 
@@ -2167,6 +2238,10 @@ function createPayloads() {
     },
     [GLOBAL_DIALOG_IDS.FEEDBACK]: {
       kind: 'feature',
+    },
+    [GLOBAL_DIALOG_IDS.CHAT_REPORT]: {
+      focusInput: false,
+      message: { id: 'report-message', username: 'Mira' },
     },
     [GLOBAL_DIALOG_IDS.LEVEL]: {
       currentLevel: 2,

@@ -19,10 +19,13 @@ Ten recipes are hidden from players until someone brews their exact ordered ingr
 
 - Hidden matches preview as a wasted mix before discovery.
 - A successful first discovery writes to the global SpacetimeDB discovery table.
-- Discovery names the recipe globally. Other players can immediately complete
-  its independent free study; it is not automatically learned for them.
+- Discovery names the recipe globally. Other players can immediately buy its
+  independent instant study; its coin price is twice the seed-research price of
+  the recipe's latest-progression ingredient.
 - The first discoverer keeps the recipe learned across Prestige without
   researching it again.
+- Other players' completed discovery studies persist across relogs like normal
+  run research.
 - Discovery must succeed even if the accompanying world-chat announcement is rate-limited.
 - Discoverers earn a **5% royalty** from other players' qualifying potion sales.
 - The internal vault shows the recipes because it documents game logic, even when the player UI hides them.

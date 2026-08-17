@@ -5,6 +5,12 @@ upload script posts the section whose heading matches `package.json` `version`.
 Write these developer-to-player notes only in Idle Wizard terms. Do not mention
 other game names, source projects, ports, or implementation provenance.
 
+## 0.3.66
+
+- Added message reporting to World Chat and clearer alliance tag colors in chat and alliance settings.
+- Added coin costs for studying shared potion discoveries, with the same research catalog enforced online.
+- Improved chat composition, profile-frame syncing, and background music playback.
+
 ## 0.3.65
 
 - Improved Android text editing so tapping an active field moves the caret where expected and reliably keeps the keyboard connected.

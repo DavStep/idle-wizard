@@ -22,6 +22,7 @@ import {
   resolvePixiTextStrokeWidth,
 } from '../../theme/PixiThemeTokens.js';
 import { ShopDialogPixi } from '../shop/ShopDialogPixi.js';
+import { WorldChatMessageRowPixi } from './WorkshopDialogPixi.js';
 import {
   RETAINED_DIALOG_LIST_GEOMETRY,
   RETAINED_DIALOG_SCROLL_GEOMETRY,
@@ -36,6 +37,69 @@ import {
 } from './WorkshopPixiPage.js';
 
 describe('WorkshopPixiPage', () => {
+  it('selects an eligible World Chat row only after the movement-safe hold threshold', () => {
+    vi.useFakeTimers();
+    const registrations = [];
+    const inputRouter = {
+      registerPressTarget: vi.fn((displayObject, descriptor) => {
+        registrations.push({ displayObject, descriptor });
+        return { unregister: vi.fn() };
+      }),
+    };
+    const dialog = {
+      assetManager: createPixiAssetManagerFake(Texture),
+      contentTheme: createPixiThemeSnapshot({ theme: 'night' }),
+      theme: createPixiThemeSnapshot({ theme: 'night' }),
+      dialogId: 'workshop.worldChat',
+      inputRouter,
+      registerTarget: vi.fn(),
+      unregisterTarget: vi.fn(),
+    };
+    const select = vi.fn(() => true);
+    const report = vi.fn(() => true);
+    const row = new WorldChatMessageRowPixi({ dialog });
+    const model = {
+      id: 'message-one',
+      username: 'Mira',
+      body: 'Hello',
+      canReport: true,
+      onLongPress: select,
+      onReport: report,
+    };
+    row.bind(model);
+    row.setBounds(0, 0, 288, row.getPreferredHeight());
+    const rowPress = registrations.find(
+      ({ displayObject }) => displayObject === row.root,
+    ).descriptor;
+
+    rowPress.onPressChange(true, { pointerId: 7 });
+    vi.advanceTimersByTime(529);
+    expect(select).not.toHaveBeenCalled();
+    rowPress.onPressChange(false, { pointerId: 7, cancelled: true });
+    vi.advanceTimersByTime(1);
+    expect(select).not.toHaveBeenCalled();
+
+    rowPress.onPressChange(true, { pointerId: 8 });
+    vi.advanceTimersByTime(530);
+    expect(select).toHaveBeenCalledOnce();
+    expect(select).toHaveBeenCalledWith(model);
+    rowPress.onPressChange(false, { pointerId: 8, confirmed: true });
+    expect(rowPress.onActivate()).toBe(false);
+
+    row.bind({ ...model, selectedForReport: true });
+    row.setBounds(0, 0, 288, row.getPreferredHeight());
+    expect(row.reportButton.visible).toBe(true);
+    expect(row.getPreferredHeight()).toBeGreaterThan(52);
+    expect(row.reportButton.activate()).toBe(true);
+    expect(report).toHaveBeenCalledOnce();
+
+    row.bind({ ...model, isOwn: true, selectedForReport: true });
+    expect(row.canReport()).toBe(false);
+    expect(row.reportButton.visible).toBe(false);
+    row.destroy();
+    vi.useRealTimers();
+  });
+
   it('grounds the Workshop with passive window art behind the summon control', () => {
     const windowTexture = new Texture();
     const dayWindowTexture = new Texture();
@@ -2590,6 +2654,10 @@ describe('WorkshopPixiPage', () => {
     expect(pane.root.visible).toBe(true);
     expect(pane.fields.get('name').value).toBe('Moss Hall');
     expect(pane.fields.get('notice').value).toBe('Help one another.');
+    expect(pane.swatches).toHaveLength(10);
+    expect(pane.swatches.find((swatch) => swatch.selected)?.colorId).toBe(
+      'green',
+    );
     expect(dialog.tabs.getWidgets()).toHaveLength(3);
     expect(dialog.panel.paperFrame.visible).toBe(true);
     expect(pane.root.y).toBe(
@@ -2597,13 +2665,14 @@ describe('WorkshopPixiPage', () => {
         RETAINED_DIALOG_SCROLL_GEOMETRY.contentPaddingTop,
     );
 
+    pane.selectTagColor('violet');
     pane.selectJoinMode('open');
     await pane.save();
     expect(onSave).toHaveBeenCalledWith(
       expect.objectContaining({
         name: 'Moss Hall',
         tag: 'MOSS',
-        tagColor: 'green',
+        tagColor: 'violet',
         joinMode: 'open',
       }),
     );
@@ -3382,7 +3451,7 @@ describe('WorkshopPixiPage', () => {
 
     expect(playerRow.avatarWidget.avatarFrame.tint).toBe(0xa3f6b2);
 
-    expect(dialog.composerField.variant).toBe('brown-inset');
+    expect(dialog.composerField.variant).toBe('clean-inset');
     expect(dialog.composerField.placeholder).toBe('Message');
     expect(dialog.composerField.retainOnSubmit).toBe(true);
     expect(dialog.composerSubmit.control.variant).toBe('yellow');
@@ -3507,7 +3576,7 @@ describe('WorkshopPixiPage', () => {
           type: 'player',
           isOwn: true,
           username: 'Mira',
-          body: 'I will join the expedition.',
+          body: 'I will join the next expedition from the moon garden.',
           allianceTag: 'MOSS',
           allianceTagColor: 'green',
           character: 'mira',
@@ -3528,6 +3597,12 @@ describe('WorkshopPixiPage', () => {
     expect(row.avatar.x).toBeCloseTo(row.width - row.avatar.width / 2);
     expect(row.username.x + row.username.width).toBeCloseTo(textRight);
     expect(row.body.x + row.body.layoutWidth).toBeCloseTo(textRight);
+    expect(row.username.style.fontSize).toBeCloseTo(14.85);
+    expect(row.body.style.fontSize).toBeCloseTo(14.1075);
+    expect(row.body.style.lineHeight).toBeCloseTo(16.6725);
+    expect(row.body.y).toBeCloseTo(19.305);
+    expect(row.body.y - row.username.y).toBeCloseTo(20.305);
+    expect(row.body.layoutHeight).toBeGreaterThan(row.body.style.lineHeight);
     expect(row.timestamp.anchor.x).toBe(0);
     expect(row.timestamp.x).toBe(0);
 

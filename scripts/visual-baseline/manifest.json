@@ -1085,6 +1085,26 @@
       ]
     },
     {
+      "id": "dialog.chat-report",
+      "label": "World Chat message report",
+      "kind": "dialog",
+      "production": true,
+      "coverage": {
+        "devUi": ["chatReport"]
+      },
+      "recipe": {
+        "kind": "devUi",
+        "surfaceId": "chatReport"
+      },
+      "states": [
+        { "id": "empty" },
+        { "id": "typing" },
+        { "id": "validation-error" },
+        { "id": "submitting" },
+        { "id": "failure" }
+      ]
+    },
+    {
       "id": "dialog.workshop-auxiliary",
       "label": "Workshop stats",
       "kind": "dialog",

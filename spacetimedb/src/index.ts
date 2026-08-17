@@ -34,6 +34,10 @@ import {
   resetNpcMarketTuningScores,
 } from './npcMarketPriceRebase';
 import {
+  createDiscoveredPotionResearchCatalog,
+  discoveredPotionResearchCostGoldByKey,
+} from './discoveredPotionResearch';
+import {
   createIdentityOnlyPlayerReset,
   createInvalidatedPlayerSession,
   DEFAULT_PLAYER_CHARACTER,
@@ -4298,6 +4302,12 @@ const researchDefaultCostGoldById: Record<string, bigint> = {
   'unlockRecipe:wormwoodPurge': 270_000_000n,
   'unlockRecipe:snowdropBreath': 480_000_000n,
   'unlockRecipe:pearlrootDraught': 830_000_000n,
+  ...Object.fromEntries(
+    Object.entries(discoveredPotionResearchCostGoldByKey).map(([potionKey, costGold]) => [
+      `unlockRecipe:${potionKey}`,
+      costGold,
+    ]),
+  ),
   ...getAutomationDefaultCostGoldById(),
 };
 
@@ -4492,6 +4502,12 @@ const recipeResearchDurationSecondsById: Record<string, bigint> = {
   'unlockRecipe:wormwoodPurge': 195n * 60n,
   'unlockRecipe:snowdropBreath': 210n * 60n,
   'unlockRecipe:pearlrootDraught': 240n * 60n,
+  ...Object.fromEntries(
+    Object.keys(discoveredPotionResearchCostGoldByKey).map((potionKey) => [
+      `unlockRecipe:${potionKey}`,
+      0n,
+    ]),
+  ),
 };
 
 const researchLegacyDurationOverrideSecondsById: Record<string, bigint> = {
@@ -5182,6 +5198,7 @@ const researchCatalog = [
       defaultCostGold: researchDefaultCostGoldById[id] ?? 0n,
     };
   }),
+  ...createDiscoveredPotionResearchCatalog(unknownPotionCatalog),
   ...automationResearchCatalog.map((research) => ({
     researchId: research.id,
     label: research.label,

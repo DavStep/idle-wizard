@@ -286,7 +286,7 @@ describe('DevCheatsFacade', () => {
     );
   });
 
-  it.each(['brewing.recipes', 'global.confirmation'])(
+  it.each(['brewing.recipes', 'chatReport', 'global.confirmation'])(
     'waits for mounted online game surfaces before opening the %s QA state',
     (surfaceId) => {
       const lifecycleManager = {

@@ -38,6 +38,7 @@ Canonical IDs:
 
 - `global.settings`
 - `global.feedback` (`bug` and `feature` route here with a `kind` view-model field)
+- `global.chatReport`
 - `global.level`
 - `global.inbox` (`mail` routes here)
 - `global.player`
@@ -65,11 +66,21 @@ completing research or publishing gameplay state.
 Open `?devUi=global.confirmation` to inspect the production confirmation shell,
 centered message area, and paired actions after the game surfaces mount.
 
+Open `?devUi=chatReport` to inspect the production World Chat report form with
+its multiline reason field and disabled-until-nonempty submit action. The form
+stack starts `12px` below the content boundary so the field has slightly more
+top clearance than the submit action has visible bottom clearance. The
+field-to-action band is `22px`, reserving one compact validation line with
+`4px` clearance above and below.
+
 The views accept renderer-neutral view models. Common fields are:
 
 ```text
 settings
   tabId, account, feedback, preferences, settings/categories, actions
+
+chatReport
+  message, value, status, pending, focusInput, actions.submit
 
 level
   currentLevel, maxLevel, selectedLevel, levels[]
@@ -96,6 +107,10 @@ confirmation
   title, message, rows, status, cancelLabel, cancelColor,
   confirmLabel, confirmColor, value, actions
 ```
+
+Framed announcement copy is centered on both axes inside its requested content
+box. The World Chat report placeholder response requests `104px` of content
+height so its two-line reminder remains centered with comfortable vertical air.
 
 Confirmation copy is centered inside the body area above the actions. The
 paper keeps a `124px` minimum content height, and callers may select any shared

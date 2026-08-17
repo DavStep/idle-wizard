@@ -637,12 +637,22 @@ describe('retained dialog UI editor integrations', () => {
 
   it('registers the production World Chat row as a drill-in widget with states', () => {
     expect(worldChatMessageRowIntegration.kind).toBe('widget');
+    expect(worldChatMessageRowIntegration.childWidgetIds).toEqual([
+      'compound.player-profile',
+      'text-button',
+    ]);
     expect(typeof worldChatMessageRowIntegration.createThumbnail).toBe(
       'function',
     );
     expect(
       worldChatMessageRowIntegration.scenarios.map(({ id }) => id),
-    ).toEqual(['player', 'own-player', 'system', 'disabled']);
+    ).toEqual([
+      'player',
+      'own-player',
+      'selected-report',
+      'system',
+      'disabled',
+    ]);
   });
 
   it('registers World Event quest sections as production-backed drill-in widgets', () => {

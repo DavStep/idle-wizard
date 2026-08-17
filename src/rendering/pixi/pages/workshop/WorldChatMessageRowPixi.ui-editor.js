@@ -12,7 +12,7 @@ const ROW_WIDTH = 288;
 
 export default defineUiEditorIntegration({
   apiVersion: 1,
-  childWidgetIds: ['compound.player-profile'],
+  childWidgetIds: ['compound.player-profile', 'text-button'],
   createThumbnail: createWorldChatMessageRowThumbnail,
   folderPath: ['Workshop'],
   id: 'compound.world-chat-message-row',
@@ -39,6 +39,17 @@ export default defineUiEditorIntegration({
       fixture: createPlayerFixture({ isOwn: true, username: 'You' }),
       id: 'own-player',
       label: 'Own player message',
+      mount: mountWorldChatMessageRow,
+    },
+    {
+      fixture: createPlayerFixture({
+        canReport: true,
+        onLongPress: () => true,
+        onReport: () => true,
+        selectedForReport: true,
+      }),
+      id: 'selected-report',
+      label: 'Selected for report',
       mount: mountWorldChatMessageRow,
     },
     {
@@ -130,6 +141,13 @@ function createWorldChatMessageRowControl({ assets, fixture, input }) {
 function createWorldChatMessageRowHierarchy(row) {
   return [
     createUiEditorPixiHierarchyComponent({
+      displayObjects: [row.selectionBackground],
+      id: 'world-chat-message-row:selection-background',
+      label: 'Report selection background',
+      primary: row.selectionBackground,
+      type: 'image',
+    }),
+    createUiEditorPixiHierarchyComponent({
       displayObjects: [row.systemBackground],
       id: 'world-chat-message-row:system-background',
       label: 'System background',
@@ -182,6 +200,14 @@ function createWorldChatMessageRowHierarchy(row) {
       textTarget: row.timestamp,
       type: 'label',
     }),
+    createUiEditorPixiHierarchyComponent({
+      displayObjects: [row.reportButton],
+      id: 'world-chat-message-row:report',
+      label: 'Report: TextButton',
+      libraryEntryId: 'text-button',
+      primary: row.reportButton,
+      type: 'widget',
+    }),
   ];
 }
 
@@ -217,5 +243,7 @@ function worldChatAssetFilter({ id }) {
   return String(id ?? '').startsWith('source:assets/avatars/')
     || String(id ?? '').startsWith('source:assets/characters/')
     || String(id ?? '').startsWith('source:assets/icons/')
+    || String(id ?? '').startsWith('source:assets/ui/notification-circle-')
+    || String(id ?? '').startsWith('source:assets/ui/regular-button/')
     || String(id ?? '').startsWith('source:assets/ui/root-run-top-hud/');
 }

@@ -1,4 +1,5 @@
 import { PixiAllianceInfoDialog } from './PixiAllianceInfoDialog.js';
+import { PixiChatReportDialog } from './PixiChatReportDialog.js';
 import { PixiInboxDialog } from './PixiInboxDialog.js';
 import { PixiLevelDialog } from './PixiLevelDialog.js';
 import {
@@ -11,6 +12,7 @@ import { PixiSettingsDialog } from './PixiSettingsDialog.js';
 export const GLOBAL_DIALOG_IDS = Object.freeze({
   SETTINGS: 'global.settings',
   FEEDBACK: 'global.feedback',
+  CHAT_REPORT: 'global.chatReport',
   BUG: 'global.feedback',
   FEATURE: 'global.feedback',
   LEVEL: 'global.level',
@@ -40,6 +42,14 @@ const GLOBAL_DIALOG_DEFINITIONS = Object.freeze([
         dialogId: GLOBAL_DIALOG_IDS.FEEDBACK,
         initialTab: 'report',
         initialFeedbackKind: 'feedback',
+      }),
+  ]),
+  Object.freeze([
+    GLOBAL_DIALOG_IDS.CHAT_REPORT,
+    (context) =>
+      new PixiChatReportDialog({
+        context,
+        dialogId: GLOBAL_DIALOG_IDS.CHAT_REPORT,
       }),
   ]),
   Object.freeze([

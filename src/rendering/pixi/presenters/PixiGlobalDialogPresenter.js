@@ -178,6 +178,8 @@ export class PixiGlobalDialogPresenter {
       case GLOBAL_DIALOG_IDS.SETTINGS:
       case GLOBAL_DIALOG_IDS.FEEDBACK:
         return this.createSettingsModel(dialogId, request);
+      case GLOBAL_DIALOG_IDS.CHAT_REPORT:
+        return this.createChatReportModel(request);
       case GLOBAL_DIALOG_IDS.LEVEL:
         return this.createLevelModel();
       case GLOBAL_DIALOG_IDS.INBOX:
@@ -361,6 +363,34 @@ export class PixiGlobalDialogPresenter {
         },
       },
     };
+  }
+
+  createChatReportModel(request = {}) {
+    return {
+      title: 'Report',
+      focusInput: request.focusInput !== false,
+      message: request.message ?? null,
+      value: '',
+      actions: {
+        submit: (submission) =>
+          this.submitChatReport(submission),
+      },
+    };
+  }
+
+  submitChatReport() {
+    this.requireRuntime().closeDialog(GLOBAL_DIALOG_IDS.CHAT_REPORT);
+    return this.open(GLOBAL_DIALOG_IDS.ANNOUNCEMENT, {
+      title: 'Report',
+      copy:
+        'No need to report anyone you snitch! We all are a big family, learn to coexist together!',
+      contentHeight: 104,
+      dismissible: true,
+      framed: true,
+      variant: 'report',
+    })
+      ? { ok: true }
+      : { ok: false, reason: 'dialog_unavailable' };
   }
 
   createInboxModel() {
@@ -1155,6 +1185,9 @@ function normalizeGlobalDialogId(dialogId) {
     bug: GLOBAL_DIALOG_IDS.FEEDBACK,
     feature: GLOBAL_DIALOG_IDS.FEEDBACK,
     'global.feedback': GLOBAL_DIALOG_IDS.FEEDBACK,
+    chatreport: GLOBAL_DIALOG_IDS.CHAT_REPORT,
+    'chat-report': GLOBAL_DIALOG_IDS.CHAT_REPORT,
+    'global.chatreport': GLOBAL_DIALOG_IDS.CHAT_REPORT,
     level: GLOBAL_DIALOG_IDS.LEVEL,
     'global.level': GLOBAL_DIALOG_IDS.LEVEL,
     inbox: GLOBAL_DIALOG_IDS.INBOX,

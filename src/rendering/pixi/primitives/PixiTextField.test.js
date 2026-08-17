@@ -37,6 +37,42 @@ describe('PixiTextField', () => {
     field.destroy({ children: true });
   });
 
+  it('uses the stroke-free clean inset nine-slice and keeps its focus ring inside the field', () => {
+    const getTexture = vi.fn(() => Texture.EMPTY);
+    const field = new PixiTextField({
+      assetManager: { getTexture },
+      height: 29,
+      variant: 'clean-inset',
+      width: 195,
+    });
+
+    expect(getTexture).toHaveBeenCalledWith(
+      PIXI_ROOT_RUN_ASSETS.textFieldCleanInset,
+    );
+    expect(field.insetFrame.sourceInsets).toEqual(
+      PIXI_ROOT_RUN_GEOMETRY.textFieldCleanInset.sourceInsets,
+    );
+    expect(field.insetFrame.borderInsets).toEqual(
+      PIXI_ROOT_RUN_GEOMETRY.textFieldCleanInset.borderInsets,
+    );
+    expect(field.insetFrame.frameWidth).toBe(195);
+    expect(field.insetFrame.frameHeight).toBe(29);
+    expect(field.insetFrame.visible).toBe(true);
+
+    field.focused = true;
+    field.redrawTextState();
+
+    const focusBounds = field.focusGraphic.getLocalBounds();
+    const focusStroke = field.focusGraphic.context.instructions.at(-1);
+    expect(focusBounds.x).toBeGreaterThanOrEqual(0);
+    expect(focusBounds.y).toBeGreaterThanOrEqual(0);
+    expect(focusBounds.width).toBeLessThanOrEqual(field.fieldWidth);
+    expect(focusBounds.height).toBeLessThanOrEqual(field.fieldHeight);
+    expect(focusStroke?.data?.style?.width).toBe(1);
+
+    field.destroy({ children: true });
+  });
+
   it('keeps the brown inset focus frame outside the writing area', () => {
     const field = new PixiTextField({
       assetManager: { getTexture: () => Texture.EMPTY },

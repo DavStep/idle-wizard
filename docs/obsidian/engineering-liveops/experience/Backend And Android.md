@@ -75,6 +75,7 @@ experience_type: backend-android
 - Leaderboard total generated coin should stay admin/server-owned until coin generation is server-authoritative; local lifetime totals are useful for player saves, not trusted shared ranking.
 - Google account links are represented by the Google-derived SpacetimeDB identity/token, not a game-owned email row; an identity-preserving global reset must retain `player.identity`, reset the rest of that row to fresh defaults, invalidate existing `player_session` rows, delete player-owned progression/shared rows, and force clients that observed locked maintenance to reload before gameplay resumes.
 - Hydrate profile fields from the server `player` row before pushing local values; otherwise local defaults can overwrite saved DB profile data.
+- Keep `PlayerProfileSubscriptionManager.mapProfile` aligned with every persisted profile field; an omitted field normalizes to its default on reopen and can overwrite the saved choice.
 - New client-only profile visual fields must not be sent to `set_player_profile` until the SpacetimeDB player schema and generated bindings support them.
 - Queue explicit profile edits made before server profile hydration finishes, then sync them after hydration so old server rows do not erase the user's choices.
 - First-run username prompts should wait until player profile hydration marks default `Wizard` as server-confirmed; legacy lowercase `wizard` rows normalize to that default, and local startup defaults are not enough.

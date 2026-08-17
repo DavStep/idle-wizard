@@ -1129,6 +1129,48 @@ describe('PixiViewModelFactory', () => {
     expect(factory.createWorldChatPreview(worldChat).messages[0].frame).toBe('violet');
   });
 
+  it('exposes report selection only for other-player World Chat messages', () => {
+    const factory = new PixiViewModelFactory();
+    const select = vi.fn(() => true);
+    const report = vi.fn(() => true);
+    const dialog = factory.createWorldChatDialog(
+      {
+        connected: true,
+        messages: [
+          { id: 'other', username: 'Mira', body: 'Hello' },
+          { id: 'own', username: 'You', body: 'Hi', isOwn: true },
+          { id: 'system', username: 'System', body: 'News', type: 'system' },
+        ],
+      },
+      {
+        selectWorldChatMessageForReport: select,
+        openWorldChatReport: report,
+      },
+      { selectedReportMessageId: 'other' },
+    );
+
+    expect(dialog.rows[0]).toMatchObject({
+      canReport: true,
+      selectedForReport: true,
+    });
+    expect(dialog.rows[0].onLongPress()).toBe(true);
+    expect(dialog.rows[0].onReport()).toBe(true);
+    expect(select).toHaveBeenCalledWith(expect.objectContaining({ id: 'other' }));
+    expect(report).toHaveBeenCalledWith(expect.objectContaining({ id: 'other' }));
+    expect(dialog.rows[1]).toMatchObject({
+      canReport: false,
+      selectedForReport: false,
+      onLongPress: null,
+      onReport: null,
+    });
+    expect(dialog.rows[2]).toMatchObject({
+      canReport: false,
+      selectedForReport: false,
+      onLongPress: null,
+      onReport: null,
+    });
+  });
+
   it('gives duplicate-named leaderboard players and alliance members stable unique row ids', () => {
     const factory = new PixiViewModelFactory();
     const leaderboard = factory.createLeaderboardDialog({
