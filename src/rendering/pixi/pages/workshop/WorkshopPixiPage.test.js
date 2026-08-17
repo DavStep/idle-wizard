@@ -1470,10 +1470,10 @@ describe('WorkshopPixiPage', () => {
       '10',
     ]);
     expect(rewardRow.rewardBadges.every(({ icon }) =>
-      icon.width === 38 && icon.height === 38,
+      icon.width === 28 && icon.height === 28,
     )).toBe(true);
     expect(rewardRow.rewardBadges.every(({ amount, icon }) =>
-      amount.y > icon.y,
+      amount.y === icon.y + icon.height / 2 - 1,
     )).toBe(true);
     model.workshop.dialogs.worldEvent = questsViewModel;
     harness.page.bind(model);
@@ -2605,6 +2605,61 @@ describe('WorkshopPixiPage', () => {
         tag: 'MOSS',
         tagColor: 'green',
         joinMode: 'open',
+      }),
+    );
+
+    harness.page.destroy();
+    harness.dispose();
+  });
+
+  it('renders the unaffiliated Create tab with the retained alliance form', async () => {
+    const onSave = vi.fn(async () => ({ ok: true }));
+    const harness = createHarness();
+    const model = createWorkshopViewModel();
+    model.workshop.dialogs.alliance = {
+      title: 'Trade Alliance',
+      directory: false,
+      selectedTabId: 'create',
+      tabs: ['browse', 'create'].map((id) => ({
+        id,
+        label: id[0].toUpperCase() + id.slice(1),
+        selected: id === 'create',
+        onSelect: vi.fn(),
+      })),
+      settings: {
+        allianceId: 'new-alliance',
+        mode: 'create',
+        name: '',
+        tag: '',
+        tagColor: 'ink',
+        description: '',
+        joinMode: 'apply',
+        editable: true,
+        onSave,
+      },
+      rows: [],
+      members: [],
+    };
+
+    harness.page.bind(model);
+    harness.page.openDialog('alliance');
+
+    const dialog = harness.dialogs.get('workshop.alliance');
+    const pane = dialog.allianceSettingsPane;
+    expect(pane.root.visible).toBe(true);
+    expect(pane.fields.get('notice').visible).toBe(false);
+    expect(pane.saveButton.text.text).toBe('Create Alliance');
+    expect(pane.disbandButton.root.visible).toBe(false);
+    expect(dialog.tabs.getWidgets()).toHaveLength(2);
+
+    pane.fields.get('name').setValue('Moon Traders', { notify: true });
+    pane.fields.get('tag').setValue('MOON', { notify: true });
+    await pane.save();
+    expect(onSave).toHaveBeenCalledWith(
+      expect.objectContaining({
+        name: 'Moon Traders',
+        tag: 'MOON',
+        joinMode: 'apply',
       }),
     );
 

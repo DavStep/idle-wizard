@@ -92,6 +92,10 @@ const TRADE_ALLIANCE_JOIN_MODE_LABELS = Object.freeze({
   apply: 'Apply',
   closed: 'Closed',
 });
+const TRADE_ALLIANCE_SOLO_TABS = Object.freeze([
+  Object.freeze({ id: 'browse', label: 'Browse' }),
+  Object.freeze({ id: 'create', label: 'Create' }),
+]);
 const TRADE_ALLIANCE_MEMBER_TABS = Object.freeze([
   Object.freeze({ id: 'home', label: 'Home' }),
   Object.freeze({ id: 'quests', label: 'Quests' }),
@@ -828,14 +832,43 @@ export class PixiViewModelFactory {
       [];
     if (!alliance) {
       const ownApplications = tradeAlliance.ownApplications ?? [];
+      const safeTabId = TRADE_ALLIANCE_SOLO_TABS.some(
+        (tab) => tab.id === selectedTabId,
+      )
+        ? selectedTabId
+        : 'browse';
+      const creating = safeTabId === 'create';
+      const tabs = TRADE_ALLIANCE_SOLO_TABS.map((tab) => ({
+        ...tab,
+        selected: tab.id === safeTabId,
+        onSelect: () => actions.selectAllianceTab?.(tab.id),
+      }));
       return {
-        title: 'trade alliance',
-        directory: true,
+        title: 'Trade Alliance',
+        directory: !creating,
+        selectedTabId: safeTabId,
+        tabs,
         status:
           tradeAlliance.connected === false
-            ? 'connecting...'
-            : 'not in an alliance',
-        rows: browse.map((candidate, index) => {
+            ? 'Connecting...'
+            : creating
+              ? ''
+              : 'Not in an alliance',
+        settings: creating
+          ? {
+              allianceId: 'new-alliance',
+              mode: 'create',
+              name: '',
+              tag: '',
+              tagColor: 'ink',
+              description: '',
+              notice: '',
+              joinMode: 'apply',
+              editable: true,
+              onSave: (profile) => actions.createAlliance?.(profile),
+            }
+          : null,
+        rows: creating ? [] : browse.map((candidate, index) => {
           const allianceId = candidate.allianceId ?? candidate.id ?? index;
           const application = ownApplications.find(
             (entry) => entry.allianceId === allianceId,

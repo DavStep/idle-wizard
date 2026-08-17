@@ -22,6 +22,9 @@ function createCanvas({ width = 1440, height = 900 } = {}) {
 function createFakeApplication() {
   return {
     stage: new Container(),
+    ticker: {
+      maxFPS: 0,
+    },
     renderer: {
       resize: vi.fn(),
     },
@@ -31,6 +34,32 @@ function createFakeApplication() {
 }
 
 describe('PixiApplicationManager', () => {
+  it('caps the production Pixi ticker at 60 FPS only on native Android', async () => {
+    const androidApp = createFakeApplication();
+    const androidManager = new PixiApplicationManager({
+      canvas: createCanvas(),
+      createApplication: () => androidApp,
+      isNativePlatform: () => true,
+      getPlatform: () => 'android',
+    });
+
+    await androidManager.initialize();
+
+    expect(androidApp.ticker.maxFPS).toBe(60);
+
+    const webApp = createFakeApplication();
+    const webManager = new PixiApplicationManager({
+      canvas: createCanvas(),
+      createApplication: () => webApp,
+      isNativePlatform: () => false,
+      getPlatform: () => 'web',
+    });
+
+    await webManager.initialize();
+
+    expect(webApp.ticker.maxFPS).toBe(0);
+  });
+
   it('registers Spine render pipes before initializing Pixi', async () => {
     const order = [];
     const app = createFakeApplication();

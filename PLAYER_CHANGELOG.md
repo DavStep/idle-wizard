@@ -5,6 +5,11 @@ upload script posts the section whose heading matches `package.json` `version`.
 Write these developer-to-player notes only in Idle Wizard terms. Do not mention
 other game names, source projects, ports, or implementation provenance.
 
+## 0.3.63
+
+- Added dedicated Browse and Create tabs for wizards who are not yet in a Trade Alliance, including a streamlined alliance creation form.
+- Refined World Event reward rows, improved text-field taps, and capped Android rendering for steadier performance on high-refresh devices.
+
 ## 0.3.62
 
 - Redesigned Guild quest review and posting with a clearer shared dialog, more readable quest details, and simpler request controls.

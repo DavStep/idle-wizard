@@ -76,6 +76,8 @@ const WORKSHOP_BAG_TAB_IDS = new Set([
 ]);
 const WORKSHOP_STATS_TAB_IDS = new Set(["seeds", "herbs", "potions", "coin"]);
 const WORKSHOP_ALLIANCE_TAB_IDS = new Set([
+  "browse",
+  "create",
   "home",
   "quests",
   "settings",
@@ -192,7 +194,7 @@ export class PixiPagesFacade {
     this.questProgressPreview = null;
     this.workshopBagTabId = "currencies";
     this.workshopStatsTabId = "seeds";
-    this.workshopAllianceTabId = "home";
+    this.workshopAllianceTabId = "browse";
     this.workshopLeaderboardTabId = "singlePlayer";
     this.workshopLeaderboardPeriodId = "allTime";
     this.workshopPersonalTasksTabId = "tasks";
@@ -409,7 +411,12 @@ export class PixiPagesFacade {
     );
     this.trackSubscription(
       this.tradeAllianceFacade?.subscribe?.((snapshot) => {
+        const hadAlliance = Boolean(this.tradeAllianceSnapshot.ownAlliance);
         this.tradeAllianceSnapshot = snapshot ?? {};
+        const hasAlliance = Boolean(this.tradeAllianceSnapshot.ownAlliance);
+        if (hadAlliance !== hasAlliance) {
+          this.workshopAllianceTabId = hasAlliance ? "home" : "browse";
+        }
         const availableAllianceIds = new Set(
           (this.tradeAllianceSnapshot.alliances ?? []).map((alliance) =>
             String(alliance.allianceId ?? ""),
@@ -989,11 +996,13 @@ export class PixiPagesFacade {
           this.workshopAllianceTabId = normalizeWorkshopTabId(
             tabId,
             WORKSHOP_ALLIANCE_TAB_IDS,
-            "home",
+            this.tradeAllianceSnapshot.ownAlliance ? "home" : "browse",
           );
           this.refreshPage("workshop");
           return true;
         },
+        createAlliance: (profile) =>
+          this.tradeAllianceFacade?.createAlliance?.(profile),
         joinAlliance: (allianceId) =>
           this.tradeAllianceFacade?.joinAlliance?.(allianceId),
         applyAlliance: (allianceId) =>

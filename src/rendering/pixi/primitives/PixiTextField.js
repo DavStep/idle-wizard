@@ -116,6 +116,7 @@ export class PixiTextField extends Container {
     );
     this.registration = inputRouter?.registerPressTarget?.(this, {
       enabled: () => this.visible && this.renderable,
+      fallbackHitTest: true,
       onActivate: () => this.focus(),
       onFocusChange: (focused) => {
         if (!focused) {

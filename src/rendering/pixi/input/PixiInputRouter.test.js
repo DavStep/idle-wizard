@@ -112,6 +112,34 @@ describe('PixiInputRouter', () => {
     expect(activate).toHaveBeenCalledTimes(1);
   });
 
+  it('keeps focused text entry when WebView retargets its tap to the canvas', () => {
+    const harness = createHarness();
+    const field = displayObject(harness.root, {
+      x: 20,
+      y: 40,
+      width: 220,
+      height: 30,
+    });
+    const fieldFocusChanged = vi.fn();
+    harness.router.registerPressTarget({
+      id: 'composer',
+      displayObject: field,
+      fallbackHitTest: true,
+      onActivate: vi.fn(),
+      onFocusChange: fieldFocusChanged,
+    });
+    harness.router.focus('composer');
+    fieldFocusChanged.mockClear();
+
+    harness.emitRoot(
+      'pointerdown',
+      pointerEvent(harness.root, 1, 80, 55),
+    );
+
+    expect(fieldFocusChanged).not.toHaveBeenCalled();
+    expect(harness.router.getFocusedId()).toBe('composer');
+  });
+
   it('turns a drag into one drop and never activates the pressed source', () => {
     const harness = createHarness({ dragThreshold: 5 });
     const source = displayObject(harness.root);

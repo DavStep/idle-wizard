@@ -118,6 +118,7 @@ const DIALOG_CHILD_WIDGET_IDS = Object.freeze({
     'compound.alliance-member-row',
     ALLIANCE_QUEST_ROW_WIDGET_ID,
     'primitive.resource-label',
+    'primitive.text-field',
     'tab-button',
     'text-button',
   ]),
@@ -279,6 +280,17 @@ function createDialogScenarios(dialogId) {
         'Rewards',
         () => createWorldEventDialogFixture(3),
       ),
+    ].map((entry) => ({
+      ...entry,
+      mount: (context, fixture) =>
+        mountRetainedDialog(context, dialogId, fixture),
+    }));
+  }
+  if (dialogId === 'workshop.alliance') {
+    return [
+      scenario('owned', 'Owned alliance', () => createUiEditorDialogFixture(dialogId, 0)),
+      scenario('browse', 'Browse alliances', () => createUiEditorDialogFixture(dialogId, 1)),
+      scenario('create', 'Create alliance', () => createUiEditorDialogFixture(dialogId, 2)),
     ].map((entry) => ({
       ...entry,
       mount: (context, fixture) =>
@@ -452,9 +464,12 @@ export function createUiEditorDialogFixture(dialogId, variantIndex = 0) {
     );
   }
   if (dialogId === 'workshop.alliance') {
-    return variantIndex === 0
-      ? createDialogViewModel(dialogId, 'a')
-      : createTradeAllianceDirectoryFixture();
+    if (variantIndex === 0) {
+      return createDialogViewModel(dialogId, 'a');
+    }
+    return variantIndex === 1
+      ? createTradeAllianceDirectoryFixture()
+      : createTradeAllianceCreateFixture();
   }
   if (dialogId === 'workshop.leaderboard') {
     return createLeaderboardDialogFixture(variantIndex);
@@ -587,6 +602,30 @@ function createTradeAllianceDirectoryFixture() {
         },
       },
     ],
+  };
+}
+
+function createTradeAllianceCreateFixture() {
+  return {
+    title: 'Trade Alliance',
+    directory: false,
+    selectedTabId: 'create',
+    tabs: [
+      { id: 'browse', label: 'Browse', selected: false, onSelect: () => true },
+      { id: 'create', label: 'Create', selected: true, onSelect: () => true },
+    ],
+    settings: {
+      allianceId: 'new-alliance',
+      mode: 'create',
+      name: '',
+      tag: '',
+      tagColor: 'ink',
+      description: '',
+      joinMode: 'apply',
+      editable: true,
+      onSave: async () => ({ ok: true }),
+    },
+    rows: [],
   };
 }
 
@@ -1128,6 +1167,34 @@ function createReusableDialogContentHierarchy(dialogId, dialog) {
     const directoryMemberRows = directoryRows.flatMap((row) =>
       Array.from(row.memberWidgets?.values?.() ?? []),
     );
+    const settingsPane = dialog.allianceSettingsPane;
+    const settingsFields = Array.from(settingsPane?.fields?.entries?.() ?? [])
+      .filter(([, field]) => field.visible)
+      .map(([key, field]) =>
+        createUiEditorPixiHierarchyComponent({
+          displayObjects: [field],
+          id: `${dialogId}:profile:${key}`,
+          label: `${titleCaseIdentifier(key)}:PixiTextField`,
+          libraryEntryId: 'primitive.text-field',
+          primary: field,
+          type: 'widget',
+        }),
+      );
+    const settingsActions = [
+      ['save', settingsPane?.saveButton],
+      ['disband', settingsPane?.disbandButton],
+    ]
+      .filter(([, button]) => button?.root?.visible)
+      .map(([key, button]) =>
+        createUiEditorPixiHierarchyComponent({
+          displayObjects: [button.root],
+          id: `${dialogId}:profile:${key}`,
+          label: `${titleCaseIdentifier(key)}:RetainedButton`,
+          libraryEntryId: 'text-button',
+          primary: button.root,
+          type: 'widget',
+        }),
+      );
     return [
       ...directoryRows.map((row, index) =>
         createUiEditorPixiHierarchyComponent({
@@ -1149,6 +1216,8 @@ function createReusableDialogContentHierarchy(dialogId, dialog) {
           type: 'widget',
         }),
       ),
+      ...settingsFields,
+      ...settingsActions,
     ];
   }
 

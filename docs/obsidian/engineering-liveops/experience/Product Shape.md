@@ -72,6 +72,7 @@ experience_type: product-shape
 - Brewing herbs box uses the shared room chrome inset like the top panel and world chat; do not size it with `--style-main-box-width`.
 - Dialog open paths must reset pending enter/exit animation state before showing; stale animation classes can block reopen attempts.
 - Fresh retained-dialog opens must discard the previous entry point's tab while same-open refreshes preserve it; otherwise Settings can inherit the Wizard pane.
+- Trade Alliance retained dialogs must preserve both membership branches: owned Home/Quests/Settings and unaffiliated Browse/Create. Leaving resets the selected tab to Browse, and Create routes through `TradeAllianceBackendFacade`.
 - Retained-dialog snapshot refreshes must bind in place without raising the dialog; only explicit open actions may reorder the modal stack, so a nested Alliance Info dialog stays above Player Info until it closes.
 - Cauldron tap opens should fire from no-drag world pointerup when the press started on a cauldron; Android/WebView can retarget the native click to the world shell, especially from empty overlays.
 - Cauldron tap drift should use the tap-action tolerance, not the normal world-pan threshold; 4 source pixels can classify WebView finger jitter as a drag.

@@ -35,6 +35,7 @@
       import { createDialogViewModel } from '/src/rendering/pixi/acceptance/RetainedAcceptanceFixtures.js';
       import { PixiInputRouter } from '/src/rendering/pixi/input/PixiInputRouter.js';
       import { WorkshopDialogPixi } from '/src/rendering/pixi/pages/workshop/WorkshopDialogPixi.js';
+      import { PixiViewModelFactory } from '/src/rendering/pixi/presenters/PixiViewModelFactory.js';
       import { SemanticTargetRegistry } from '/src/rendering/pixi/retained/SemanticTargetRegistry.js';
       import { PixiApplicationManager } from '/src/rendering/pixi/runtime/PixiApplicationManager.js';
 
@@ -61,8 +62,66 @@
         parent: applicationManager.layers.dialogsSource,
         semanticTargets,
       });
+      const recipeMode = new URLSearchParams(window.location.search).get('mode');
+      const directoryMode = recipeMode === 'directory';
       const homeModel = createDialogViewModel('workshop.alliance', 'a');
-      let selectedTabId = 'home';
+      const viewModelFactory = new PixiViewModelFactory();
+      let selectedTabId = directoryMode ? 'browse' : 'home';
+      let expandedAllianceId = null;
+
+      const directorySnapshot = {
+        connected: true,
+        ownAlliance: null,
+        ownMember: null,
+        ownApplications: [],
+        alliances: [
+          {
+            allianceId: 'night-owls',
+            name: 'Night Owls',
+            tag: 'OWL',
+            tagColor: 'violet',
+            joinMode: 'open',
+            memberCount: 18,
+            totalIncome: 1_240_000,
+          },
+          {
+            allianceId: 'sun-circle',
+            name: 'Sun Circle',
+            tag: 'SUN',
+            tagColor: 'amber',
+            joinMode: 'apply',
+            memberCount: 11,
+            totalIncome: 815_000,
+          },
+          {
+            allianceId: 'root-keepers',
+            name: 'Root Keepers',
+            tag: 'ROOT',
+            tagColor: 'green',
+            joinMode: 'closed',
+            memberCount: 7,
+            totalIncome: 348_000,
+          },
+        ],
+        members: [
+          {
+            allianceId: 'night-owls',
+            memberIdentity: 'mira',
+            username: 'Mira',
+            character: 'mira',
+            playerLevel: 24,
+            role: 'tradeMaster',
+          },
+          {
+            allianceId: 'night-owls',
+            memberIdentity: 'juniper',
+            username: 'Juniper',
+            character: 'juniper',
+            playerLevel: 18,
+            role: 'trader',
+          },
+        ],
+      };
 
       const questRows = [
         {
@@ -110,6 +169,32 @@
       };
 
       function bindDialog() {
+        if (directoryMode) {
+          dialog.bind(
+            viewModelFactory.createAllianceDialog(
+              directorySnapshot,
+              expandedAllianceId,
+              {
+                selectAlliance: (allianceId) => {
+                  expandedAllianceId =
+                    expandedAllianceId === allianceId ? null : allianceId;
+                  bindDialog();
+                  return true;
+                },
+                selectAllianceTab: (tabId) => {
+                  selectedTabId = tabId;
+                  bindDialog();
+                  return true;
+                },
+                createAlliance: async () => ({ ok: true }),
+              },
+              selectedTabId,
+            ),
+          );
+          dialog.layout(applicationManager.projection);
+          return;
+        }
+
         const tabs = homeModel.tabs.map((tab) => ({
           ...tab,
           selected: tab.id === selectedTabId,
@@ -137,6 +222,7 @@
       window.__allianceRecipe = {
         applicationManager,
         dialog,
+        directorySnapshot,
         semanticTargets,
       };
     </script>

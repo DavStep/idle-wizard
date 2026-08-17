@@ -187,7 +187,7 @@ const WORLD_EVENT_QUEST_MIN_DESCRIPTION_HEIGHT = 24;
 const WORLD_EVENT_MAX_DONATION_OPTIONS = 4;
 const WORLD_EVENT_HEADER_CONTENT_INSET = 5;
 const WORLD_EVENT_LIST_CONTENT_INSET = 5;
-const WORLD_EVENT_REWARD_ICON_SIZE = 38;
+const WORLD_EVENT_REWARD_ICON_SIZE = 28;
 const WORLD_EVENT_REWARD_ICON_GAP = 8;
 const WORLD_EVENT_REWARD_ICON_RIGHT_INSET = 8;
 const PERSONAL_TASK_SECTION_HEADER_HEIGHT = 48;
@@ -3234,13 +3234,15 @@ class AllianceSettingsPane {
       }
     }
     const editable = this.model.editable === true;
+    const creating = this.model.mode === 'create';
     for (const [key, field] of this.fields) {
       const label = this.labels.get(key);
-      field.visible = editable;
-      field.renderable = editable;
-      label.visible = editable;
-      label.renderable = editable;
-      if (!editable) {
+      const visible = editable && (!creating || key !== 'notice');
+      field.visible = visible;
+      field.renderable = visible;
+      label.visible = visible;
+      label.renderable = visible;
+      if (!visible) {
         field.blur();
       }
     }
@@ -3260,12 +3262,18 @@ class AllianceSettingsPane {
     this.saveButton.root.visible = editable;
     this.saveButton.root.renderable = editable;
     this.saveButton.setModel({
-      label: this.saving ? 'Saving' : 'Save',
+      label: this.saving
+        ? creating
+          ? 'Creating'
+          : 'Saving'
+        : creating
+          ? 'Create Alliance'
+          : 'Save',
       enabled: editable && !this.saving,
       action: () => this.save(),
     });
-    this.disbandButton.root.visible = editable;
-    this.disbandButton.root.renderable = editable;
+    this.disbandButton.root.visible = editable && !creating;
+    this.disbandButton.root.renderable = editable && !creating;
     this.disbandButton.setModel({
       label: this.model.canDisband ? 'Disband' : 'Remove Members First',
       enabled:
@@ -3303,7 +3311,13 @@ class AllianceSettingsPane {
     }
     this.saving = false;
     this.dirty = result?.ok !== true;
-    this.statusText = result?.ok === true ? 'Saved' : 'Not Saved';
+    this.statusText = result?.ok === true
+      ? this.model?.mode === 'create'
+        ? 'Created'
+        : 'Saved'
+      : this.model?.mode === 'create'
+        ? 'Not Created'
+        : 'Not Saved';
     this.bind(this.model);
     return result?.ok === true;
   }
@@ -3315,14 +3329,17 @@ class AllianceSettingsPane {
       return;
     }
     const fieldHeight = 40;
-    this.fieldSpecs.forEach(([key], index) => {
+    const visibleFieldSpecs = this.fieldSpecs.filter(
+      ([key]) => this.model?.mode !== 'create' || key !== 'notice',
+    );
+    visibleFieldSpecs.forEach(([key], index) => {
       const fieldY = index * fieldHeight;
       this.labels.get(key).position.set(0, fieldY);
       const field = this.fields.get(key);
       field.position.set(0, fieldY + 13);
       field.setSize(width, 25);
     });
-    const joinY = this.fieldSpecs.length * fieldHeight;
+    const joinY = visibleFieldSpecs.length * fieldHeight;
     this.joinModeLabel.position.set(0, joinY);
     const joinButtonY = joinY + 13;
     const joinGap = 6;
@@ -3337,14 +3354,17 @@ class AllianceSettingsPane {
     });
     const actionY = joinButtonY + 34;
     const actionGap = 8;
-    const actionWidth = (width - actionGap) / 2;
+    const creating = this.model?.mode === 'create';
+    const actionWidth = creating ? width : (width - actionGap) / 2;
     this.saveButton.setBounds(0, actionY, actionWidth, 28);
-    this.disbandButton.setBounds(
-      actionWidth + actionGap,
-      actionY,
-      actionWidth,
-      28,
-    );
+    if (!creating) {
+      this.disbandButton.setBounds(
+        actionWidth + actionGap,
+        actionY,
+        actionWidth,
+        28,
+      );
+    }
     this.status.position.set(0, actionY + 32);
   }
 
@@ -4583,7 +4603,7 @@ export class LeaderboardRowPixi extends ClickableWidget {
 
 /**
  * Passive World Event reward tier using the same image-backed list row as the
- * player leaderboard. Reward amounts sit on the lower edge of their large
+ * player leaderboard. Reward amounts sit on the lower edge of their
  * resource icons, matching the compact quantity treatment used by Market
  * stalls.
  */
@@ -4682,7 +4702,7 @@ export class WorldEventRewardRow {
       badge.icon.height = WORLD_EVENT_REWARD_ICON_SIZE;
       badge.amount.position.set(
         0,
-        backgroundHeight - 2,
+        backgroundHeight / 2 + WORLD_EVENT_REWARD_ICON_SIZE / 2 - 1,
       );
     });
     this.rank.position.set(10, 17);

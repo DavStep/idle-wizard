@@ -79,6 +79,7 @@ describe('PixiTextField', () => {
     });
 
     await registration.onActivate();
+    expect(registration.fallbackHitTest).toBe(true);
     registration.onFocusChange(false);
 
     expect(close).toHaveBeenCalledTimes(1);

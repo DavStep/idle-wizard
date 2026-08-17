@@ -1,3 +1,4 @@
+import { Capacitor } from '@capacitor/core';
 import {
   Application,
   Container,
@@ -17,6 +18,7 @@ const PIXI_AUTHORED_VIEWPORT = Object.freeze({
 });
 
 const TEXT_ENTRY_PROJECTION_RELEASE_DELAY_MS = 500;
+const ANDROID_MAX_RENDER_FPS = 60;
 
 function defaultSpineRuntimeImporter() {
   return import('@esotericsoftware/spine-pixi-v8');
@@ -42,6 +44,8 @@ export class PixiApplicationManager {
     prepareSpineRuntime = defaultSpineRuntimeImporter,
     windowTarget = globalThis.window ?? null,
     devicePixelRatio = () => globalThis.devicePixelRatio || 1,
+    isNativePlatform = () => Capacitor.isNativePlatform(),
+    getPlatform = () => Capacitor.getPlatform(),
     setTimer = (callback, delay) => globalThis.setTimeout(callback, delay),
     clearTimer = (timer) => globalThis.clearTimeout(timer),
   } = {}) {
@@ -55,6 +59,8 @@ export class PixiApplicationManager {
     this.prepareSpineRuntime = prepareSpineRuntime;
     this.windowTarget = windowTarget;
     this.devicePixelRatio = devicePixelRatio;
+    this.isNativePlatform = isNativePlatform;
+    this.getPlatform = getPlatform;
     this.setTimer = setTimer;
     this.clearTimer = clearTimer;
     this.app = null;
@@ -111,6 +117,7 @@ export class PixiApplicationManager {
       powerPreference: 'high-performance',
       hello: false,
     });
+    this.applyRenderFrameRate(app);
 
     if (this.destroyed) {
       app.destroy({ removeView: false }, { children: true });
@@ -126,6 +133,24 @@ export class PixiApplicationManager {
     this.applyProjection(projection);
     this.applyTheme(this.theme);
     return this;
+  }
+
+  applyRenderFrameRate(app) {
+    if (!app?.ticker) {
+      return 0;
+    }
+
+    let maxFps = 0;
+    try {
+      if (this.isNativePlatform() && this.getPlatform() === 'android') {
+        maxFps = ANDROID_MAX_RENDER_FPS;
+      }
+    } catch {
+      // Platform detection must never prevent the renderer from starting.
+    }
+
+    app.ticker.maxFPS = maxFps;
+    return maxFps;
   }
 
   createLayers() {

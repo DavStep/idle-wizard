@@ -72,6 +72,7 @@ experience_type: style
 - Text-entry viewport locks should start on press; some mobile WebViews resize for the keyboard before `focusin`.
 - Native keyboard adaptation belongs only to the open World Chat panel: keep its detached header below an `18px` source-space top clearance, shorten only its message viewport, and leave the stage, room chrome, composer scale, row scale, and every other dialog at resting geometry.
 - World Chat Send must preserve the active composer focus through pointer release; transferring focus to the canvas dismisses the keyboard, moves the adaptive sheet during the tap, and cancels the intended release.
+- Native-backed Pixi text fields need geometric fallback hit testing; Android WebView can retarget the first post-submit field tap to the canvas, and path-only routing then blurs the active composer instead of reopening it.
 - Animate World Chat keyboard/open transitions by interpolating its bottom-anchored panel bounds; scaling the dialog also scales text, rows, and composer and recreates the squished appearance.
 - Retained dialog data rebinds must reuse the complete last viewport projection; rebuilding layout from source width and height alone drops transient keyboard insets and lets live refreshes undo the focused layout.
 - Text-entry focus should use `preventScroll` so mobile browsers do not pan the game surface.

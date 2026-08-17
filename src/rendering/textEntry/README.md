@@ -19,7 +19,9 @@ inset handling stays disabled because its Android listener otherwise pads the
 WebView parent by the IME height, compressing the complete game surface before
 Pixi receives the inset. The native plugin reports keyboard insets in CSS pixels
 so World Chat alone can translate without resizing or moving the rest of the
-game.
+game. Native-backed Pixi text fields use geometric fallback hit testing because
+Android WebView can retarget a post-submit field tap to the canvas; the router
+must still recognize the focused field instead of closing its native session.
 
 ```js
 const service = new TextEntryService({ canvas });

@@ -1504,7 +1504,7 @@ describe('PixiViewModelFactory', () => {
     );
 
     expect(dialog.directory).toBe(true);
-    expect(dialog.status).toBe('not in an alliance');
+    expect(dialog.status).toBe('Not in an alliance');
     expect(dialog.rows).toHaveLength(3);
     expect(dialog.rows[0]).toMatchObject({
       id: 'dbp',
@@ -1546,6 +1546,69 @@ describe('PixiViewModelFactory', () => {
     expect(openPlayer).toHaveBeenCalledWith(members[0]);
     expect(cancelAllianceApplication).toHaveBeenCalledWith('application-solo');
     expect(applyAlliance).not.toHaveBeenCalled();
+  });
+
+  it('restores Browse and Create after an alliance member leaves', async () => {
+    const factory = new PixiViewModelFactory();
+    const selectAllianceTab = vi.fn();
+    const createAlliance = vi.fn(async () => ({ ok: true }));
+    const snapshotAfterLeave = {
+      connected: true,
+      ownAlliance: null,
+      ownMember: null,
+      alliances: [],
+      members: [],
+      ownApplications: [],
+    };
+
+    const browseDialog = factory.createAllianceDialog(
+      snapshotAfterLeave,
+      null,
+      { selectAllianceTab, createAlliance },
+      'settings',
+    );
+
+    expect(browseDialog).toMatchObject({
+      directory: true,
+      selectedTabId: 'browse',
+      status: 'Not in an alliance',
+      tabs: [
+        { id: 'browse', label: 'Browse', selected: true },
+        { id: 'create', label: 'Create', selected: false },
+      ],
+    });
+    browseDialog.tabs[1].onSelect();
+    expect(selectAllianceTab).toHaveBeenCalledWith('create');
+
+    const createDialog = factory.createAllianceDialog(
+      snapshotAfterLeave,
+      null,
+      { selectAllianceTab, createAlliance },
+      'create',
+    );
+
+    expect(createDialog).toMatchObject({
+      directory: false,
+      selectedTabId: 'create',
+      settings: {
+        mode: 'create',
+        editable: true,
+      },
+    });
+    await createDialog.settings.onSave({
+      name: 'Moon Traders',
+      tag: 'MOON',
+      tagColor: 'violet',
+      description: 'Patient traders.',
+      joinMode: 'apply',
+    });
+    expect(createAlliance).toHaveBeenCalledWith(
+      expect.objectContaining({
+        name: 'Moon Traders',
+        tag: 'MOON',
+        joinMode: 'apply',
+      }),
+    );
   });
 
   it('projects full compact chat metadata without exposing player levels', () => {

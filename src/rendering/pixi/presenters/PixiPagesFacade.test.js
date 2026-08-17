@@ -167,6 +167,26 @@ describe("PixiPagesFacade", () => {
     expect(harness.getBoundGlobal("chrome.bottom").actions.showPage("workshop")).toBe(true);
     expect(pages.getCurrentPageId()).toBe("workshop");
 
+    const createAllianceTab = harness
+      .getBoundPage("workshop")
+      .workshop.dialogs.alliance.tabs.find((tab) => tab.id === "create");
+    expect(createAllianceTab.onSelect()).toBe(true);
+    const createAllianceForm = harness.getBoundPage("workshop").workshop.dialogs.alliance.settings;
+    createAllianceForm.onSave({
+      name: "Moon Traders",
+      tag: "MOON",
+      tagColor: "violet",
+      description: "Patient traders.",
+      joinMode: "apply",
+    });
+    expect(harness.dependencies.tradeAllianceFacade.createAlliance).toHaveBeenCalledWith({
+      name: "Moon Traders",
+      tag: "MOON",
+      tagColor: "violet",
+      description: "Patient traders.",
+      joinMode: "apply",
+    });
+
     expect(pages.show("research")).toBe(true);
     const researchModel = harness.getBoundPage("research");
     researchModel.actions.buyResearch("mana-tonic");
@@ -2277,7 +2297,17 @@ function createHarness({ gameplaySnapshot = createGameplaySnapshot() } = {}) {
     playerFacade,
     worldChatFacade: createSnapshotFacade({ connected: true, messages: [] }),
     playerShopFacade: createSnapshotFacade({ connected: false }),
-    tradeAllianceFacade: createSnapshotFacade({ connected: false }),
+    tradeAllianceFacade: {
+      ...createSnapshotFacade({
+        connected: true,
+        ownAlliance: null,
+        ownMember: null,
+        alliances: [],
+        members: [],
+        ownApplications: [],
+      }),
+      createAlliance: vi.fn(() => Promise.resolve({ ok: true })),
+    },
   };
 
   return {

@@ -97,6 +97,7 @@ experience_type: backend-android
 - Gameplay save currency ceilings must cover every legitimate economy balance; a lower normalizer cap silently destroys the excess on the next save/reload round trip.
 - Client migrations must preserve newer branches present on lower-version server-normalized saves; Maincloud can return `version: 3` with `guild` state, and dropping it resets player guilds.
 - Android packaging uses Capacitor.
+- Cap high-refresh Android rendering on the production Pixi application ticker, not `AppGameplayTickManager`; gameplay and timer correctness stay tied to elapsed time while presentation frames can run at a lower ceiling.
 - Keep Android WebView framework haptics disabled when the app owns touch feedback; otherwise WebView adds a native long-press pulse while retained Pixi controls are still held.
 - Android native text-entry submit events must apply the terminal editor value before running Pixi callbacks; the IME can commit composition only in that final payload.
 - Keep Capacitor `SystemBars.insetsHandling` disabled while native text entry owns IME insets; its CSS mode pads the WebView parent by the keyboard height and compresses the entire Pixi game even when the activity uses `adjustNothing`.
