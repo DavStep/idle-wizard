@@ -24,6 +24,7 @@ export class ResearchSnapshotManager {
 
   getSnapshot({ unlockedPlotCount, unlockedCauldronCount } = {}) {
     const completedResearchIds = this.researchStateEntityManager.getCompletedResearchIds();
+    const requirementSnapshot = this.getRequirementSnapshot();
     const tabs = this.researchDefinitionManager
       .getVisibleResearchTabs(completedResearchIds, {
         unlockedPlotCount,
@@ -31,7 +32,9 @@ export class ResearchSnapshotManager {
       })
       .map((tab) => ({
         ...tab,
-        boxes: tab.boxes.map((box) => this.getBoxSnapshot(box, completedResearchIds)),
+        boxes: tab.boxes.map((box) =>
+          this.getBoxSnapshot(box, requirementSnapshot),
+        ),
       }));
 
     return {
@@ -52,37 +55,49 @@ export class ResearchSnapshotManager {
     return this.getResearchSnapshot(research);
   }
 
-  getBoxSnapshot(box, completedResearchIds = []) {
+  getBoxSnapshot(
+    box,
+    requirementSnapshot = this.getRequirementSnapshot(),
+  ) {
     return {
       ...box,
       researches: box.researches.map((research) =>
-        this.getResearchSnapshot(research, completedResearchIds),
+        this.getResearchSnapshot(
+          research,
+          requirementSnapshot,
+        ),
       ),
     };
   }
 
-  getResearchSnapshot(research, completedResearchIds = []) {
-    const researchOptions = { completedResearchIds };
+  getResearchSnapshot(
+    research,
+    requirementSnapshot = this.getRequirementSnapshot(),
+  ) {
     const cost = this.getResearchCost(research.id);
     const completed = this.researchStateEntityManager.isCompleted(research.id);
     const progress = this.researchStateEntityManager.getProgressSnapshot(research.id);
-    const requiredResearchIds =
-      research.requiredResearchIds ??
-      this.researchDefinitionManager.getRequiredResearchIds(research.id, researchOptions);
+    const requiredResearchIds = research.requiredResearchIds ?? [];
     const hasRequiredResearch = requiredResearchIds.every((requiredResearchId) =>
       this.researchStateEntityManager.isCompleted(requiredResearchId),
     );
+    const requiredPlayerLevel = Number.isInteger(research.requiredPlayerLevel)
+      ? research.requiredPlayerLevel
+      : null;
     const missingRequiredPlayerLevel =
-      this.researchDefinitionManager.getMissingRequiredPlayerLevel(
-        research.id,
-        researchOptions,
-      );
+      requiredPlayerLevel !== null &&
+      requirementSnapshot.currentPlayerLevel < requiredPlayerLevel
+        ? requiredPlayerLevel
+        : null;
     const hasRequiredPlayerLevel = !missingRequiredPlayerLevel;
+    const requiredPrestigeCount = Number.isInteger(research.requiredPrestigeCount)
+      ? research.requiredPrestigeCount
+      : null;
     const missingRequiredPrestigeCount =
-      this.researchDefinitionManager.getMissingRequiredPrestigeCount(
-        research.id,
-        researchOptions,
-      );
+      requiredPrestigeCount !== null &&
+      requirementSnapshot.currentPrestigeCount < requiredPrestigeCount
+        ? requiredPrestigeCount
+        : null;
     const hasRequiredPrestigeCount = !missingRequiredPrestigeCount;
     const locked =
       !completed &&
@@ -120,6 +135,13 @@ export class ResearchSnapshotManager {
         hasRequiredPlayerLevel &&
         hasRequiredPrestigeCount &&
         this.getCurrencyFacade(cost.currency)?.canSpend(cost.amount),
+    };
+  }
+
+  getRequirementSnapshot() {
+    return {
+      currentPlayerLevel: this.researchDefinitionManager.getCurrentPlayerLevel(),
+      currentPrestigeCount: this.researchDefinitionManager.getCurrentPrestigeCount(),
     };
   }
 

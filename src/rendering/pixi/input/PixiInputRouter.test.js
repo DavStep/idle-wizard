@@ -81,6 +81,37 @@ describe('PixiInputRouter', () => {
     expect(harness.haptics.playUiTap).toHaveBeenCalledTimes(2);
   });
 
+  it('activates an adjacent action without dismissing the focused text entry', () => {
+    const harness = createHarness();
+    const field = displayObject(harness.root);
+    const send = displayObject(harness.root);
+    const fieldFocusChanged = vi.fn();
+    const activate = vi.fn();
+    harness.router.registerPressTarget({
+      id: 'composer',
+      displayObject: field,
+      onActivate: vi.fn(),
+      onFocusChange: fieldFocusChanged,
+    });
+    harness.router.registerPressTarget({
+      id: 'send',
+      displayObject: send,
+      onActivate: activate,
+      preserveFocus: true,
+    });
+    harness.router.focus('composer');
+    harness.canvas.focus.mockClear();
+    fieldFocusChanged.mockClear();
+
+    harness.emitRoot('pointerdown', pointerEvent(send, 1, 10, 10));
+    harness.emitRoot('pointerup', pointerEvent(send, 1, 10, 10));
+
+    expect(harness.canvas.focus).not.toHaveBeenCalled();
+    expect(fieldFocusChanged).not.toHaveBeenCalled();
+    expect(harness.router.getFocusedId()).toBe('composer');
+    expect(activate).toHaveBeenCalledTimes(1);
+  });
+
   it('turns a drag into one drop and never activates the pressed source', () => {
     const harness = createHarness({ dragThreshold: 5 });
     const source = displayObject(harness.root);

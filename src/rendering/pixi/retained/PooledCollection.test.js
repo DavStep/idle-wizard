@@ -4,6 +4,39 @@ import { PooledCollection } from './PooledCollection.js';
 import { WidgetPool } from './WidgetPool.js';
 
 describe('PooledCollection', () => {
+  it('skips rebinding keyed widgets whose declared revision is unchanged', () => {
+    const pool = new WidgetPool({
+      create: () => ({
+        bind: vi.fn(),
+        reset: vi.fn(),
+      }),
+    });
+    const collection = new PooledCollection({
+      pool,
+      keyOf: (item) => item.id,
+      revisionOf: (item) => item.revision,
+    });
+
+    const [widget] = collection.reconcile([
+      { id: 'message-1', revision: 1, body: 'Hello' },
+    ]);
+    collection.reconcile([
+      { id: 'message-1', revision: 1, body: 'Hello' },
+    ]);
+
+    expect(widget.bind).toHaveBeenCalledTimes(1);
+
+    collection.reconcile([
+      { id: 'message-1', revision: 2, body: 'Updated' },
+    ]);
+
+    expect(widget.bind).toHaveBeenCalledTimes(2);
+    expect(widget.bind).toHaveBeenLastCalledWith(
+      'message-1',
+      { id: 'message-1', revision: 2, body: 'Updated' },
+    );
+  });
+
   it('keeps widget identity stable by key across data updates and reorders', () => {
     let nextWidgetId = 1;
     const pool = new WidgetPool({

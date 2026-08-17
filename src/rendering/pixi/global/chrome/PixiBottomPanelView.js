@@ -98,25 +98,11 @@ export const PIXI_GUILD_HUD_TABS = Object.freeze([
     tutorialId: 'guild:tab:hall',
   }),
   Object.freeze({
-    id: 'guild.board',
-    guildTabId: 'board',
-    label: 'Board',
-    semanticId: 'guild.tab.board',
-    tutorialId: 'guild:tab:board',
-  }),
-  Object.freeze({
     id: 'guild.adventurers',
     guildTabId: 'adventurers',
-    label: 'Roster',
+    label: 'Adventurers',
     semanticId: 'guild.tab.adventurers',
     tutorialId: 'guild:tab:adventurers',
-  }),
-  Object.freeze({
-    id: 'guild.log',
-    guildTabId: 'log',
-    label: 'Log',
-    semanticId: 'guild.tab.log',
-    tutorialId: 'guild:tab:log',
   }),
 ]);
 

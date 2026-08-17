@@ -3,6 +3,23 @@ import { describe, expect, it, vi } from "vitest";
 import { PixiPagesFacade } from "./PixiPagesFacade.js";
 
 describe("PixiPagesFacade", () => {
+  it("reuses the gameplay snapshot delivered by the subscription", () => {
+    const harness = createHarness();
+    const pages = new PixiPagesFacade(harness.dependencies);
+
+    pages.mount();
+    expect(harness.gameplayFacade.getSnapshot).toHaveBeenCalledTimes(1);
+    harness.gameplayFacade.getSnapshot.mockClear();
+    harness.runtime.bindPage.mockClear();
+
+    const nextSnapshot = createGameplaySnapshot({ level: 21 });
+    harness.publishGameplaySnapshot(nextSnapshot);
+
+    expect(harness.gameplayFacade.getSnapshot).not.toHaveBeenCalled();
+    expect(harness.runtime.bindPage).toHaveBeenCalledTimes(1);
+    expect(pages.gameplaySnapshot).toBe(nextSnapshot);
+  });
+
   it("registers all pages once and binds only the active retained instance", () => {
     const harness = createHarness();
     const pages = new PixiPagesFacade(harness.dependencies);
@@ -140,8 +157,13 @@ describe("PixiPagesFacade", () => {
       guildHud: { selectedTabId: "hall" },
     });
     expect(harness.getBoundGlobal("chrome.chat").visible).toBe(false);
-    expect(harness.getBoundGlobal("chrome.bottom").actions.selectGuildTab("board")).toBe(true);
-    expect(harness.getBoundPage("guild").selectedTabId).toBe("board");
+    expect(harness.getBoundGlobal("chrome.bottom").actions.selectGuildTab("adventurers")).toBe(true);
+    expect(harness.getBoundPage("guild")).toMatchObject({
+      selectedBranchId: "adventurers",
+      selectedAdventurerTabId: "board",
+    });
+    expect(harness.getBoundPage("guild").actions.selectAdventurerTab("roster")).toBe(true);
+    expect(harness.getBoundPage("guild").selectedAdventurerTabId).toBe("roster");
     expect(harness.getBoundGlobal("chrome.bottom").actions.showPage("workshop")).toBe(true);
     expect(pages.getCurrentPageId()).toBe("workshop");
 
@@ -831,6 +853,14 @@ describe("PixiPagesFacade", () => {
           label: "minor healing potion",
           unlocked: false,
         },
+        {
+          key: "ashenMemory",
+          label: "ashen memory",
+          unlocked: false,
+          discovered: true,
+          discoveryType: "unknown",
+          unknown: true,
+        },
       ],
     };
     gameplaySnapshot.research = {
@@ -848,6 +878,10 @@ describe("PixiPagesFacade", () => {
                 {
                   id: "unlockRecipe:minorHealingPotion",
                   canResearch: false,
+                },
+                {
+                  id: "unlockRecipe:ashenMemory",
+                  canResearch: true,
                 },
               ],
             },
@@ -879,6 +913,11 @@ describe("PixiPagesFacade", () => {
         researchId: "unlockRecipe:minorHealingPotion",
         canResearch: false,
       }),
+      expect.objectContaining({
+        key: "ashenMemory",
+        researchId: "unlockRecipe:ashenMemory",
+        canResearch: true,
+      }),
     ]);
 
     expect(
@@ -894,7 +933,13 @@ describe("PixiPagesFacade", () => {
     expect(
       brewingModel.actions.researchRecipe(brewingModel.brewing.recipes[1], 1),
     ).toBe(false);
-    expect(harness.gameplayFacade.buyResearch).toHaveBeenCalledTimes(1);
+    expect(
+      brewingModel.actions.researchRecipe(brewingModel.brewing.recipes[2], 1),
+    ).toEqual({ ok: true });
+    expect(harness.gameplayFacade.buyResearch).toHaveBeenLastCalledWith(
+      "unlockRecipe:ashenMemory",
+    );
+    expect(harness.gameplayFacade.buyResearch).toHaveBeenCalledTimes(2);
   });
 
   it("keeps retained stall picker drafts interactive until an allocation is marked", () => {
@@ -1786,6 +1831,8 @@ describe("PixiPagesFacade", () => {
           expect.objectContaining({
             id: 1,
             key: "sageSeed",
+            label: "Sage Seed",
+            displayLabel: "Sage Seed",
             quantity: 2,
             detail: "2 Available",
             icon: { kind: "seed", key: "sageSeed" },
@@ -1793,6 +1840,8 @@ describe("PixiPagesFacade", () => {
           expect.objectContaining({
             id: 2,
             key: "mintSeed",
+            label: "Mint Seed",
+            displayLabel: "Mint Seed",
             quantity: 0,
             detail: "0 Available",
           }),
@@ -2163,10 +2212,14 @@ function createHarness({ gameplaySnapshot = createGameplaySnapshot() } = {}) {
     getInputRouter: vi.fn(() => inputRouter),
     getPixiLayers: vi.fn(() => ({ pageUi: {} })),
   };
+  let gameplaySnapshotListener = null;
   const gameplayFacade = {
     getSnapshot: vi.fn(() => gameplaySnapshot),
     withSnapshotCache: vi.fn((callback) => callback()),
-    subscribe: vi.fn(() => vi.fn()),
+    subscribe: vi.fn((listener) => {
+      gameplaySnapshotListener = listener;
+      return vi.fn();
+    }),
     subscribeFrameResources: vi.fn(() => vi.fn()),
     summonSeed: vi.fn(),
     fillTask: vi.fn(),
@@ -2236,6 +2289,7 @@ function createHarness({ gameplaySnapshot = createGameplaySnapshot() } = {}) {
     transientEffects,
     bottomSurface,
     pageSurface,
+    publishGameplaySnapshot: (snapshot) => gameplaySnapshotListener?.(snapshot),
     getPageSwipeRegistration: () => pageSwipeRegistration,
     getBoundPage: (pageId) => boundPages.get(pageId),
     getBoundGlobal: (surfaceId) => boundGlobals.get(surfaceId),

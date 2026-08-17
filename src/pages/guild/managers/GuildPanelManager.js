@@ -27,36 +27,6 @@ const CONTENT_TABS = [
 ];
 
 const GUILD_SECRETARY_ICON_KEY = 'guild_secretary';
-const GUILD_QUEST_ASSET_URLS = Object.freeze({
-  'icon-difficulty.png': new URL(
-    '../../../../assets/game/source/ui/guild-quest/icon-difficulty.png',
-    import.meta.url,
-  ).href,
-  'icon-expires.png': new URL(
-    '../../../../assets/game/source/ui/guild-quest/icon-expires.png',
-    import.meta.url,
-  ).href,
-  'icon-reward.png': new URL(
-    '../../../../assets/game/source/ui/guild-quest/icon-reward.png',
-    import.meta.url,
-  ).href,
-  'icon-stats.png': new URL(
-    '../../../../assets/game/source/ui/guild-quest/icon-stats.png',
-    import.meta.url,
-  ).href,
-  'paperclip.png': new URL(
-    '../../../../assets/game/source/ui/guild-quest/paperclip.png',
-    import.meta.url,
-  ).href,
-  'quest-photo-smuggler-tunnel.png': new URL(
-    '../../../../assets/game/source/ui/guild-quest/quest-photo-smuggler-tunnel.png',
-    import.meta.url,
-  ).href,
-  'wax-seal.png': new URL(
-    '../../../../assets/game/source/ui/guild-quest/wax-seal.png',
-    import.meta.url,
-  ).href,
-});
 const GUILD_REQUEST_PAGE_TURN_MS = 205;
 
 export class GuildPanelManager {
@@ -1208,7 +1178,7 @@ export class GuildPanelManager {
 
     const note = document.createElement('div');
     note.className = 'guild-page__request-stack-note';
-    note.textContent = 'Papers rotate to the back when you open the next one.';
+    note.textContent = 'Review each quest, then post one to the board.';
 
     const preview = this.createRequestStackPreview(requests, request);
     preview.append(note);
@@ -1326,21 +1296,7 @@ export class GuildPanelManager {
     title.className = 'guild-page__request-list-title';
     title.textContent = this.toQuestDisplayCase(request.title);
 
-    const children = [number, title];
-
-    if (selected) {
-      children.push(
-        this.createQuestAssetImage(
-          'paperclip.png',
-          'guild-page__request-list-paperclip',
-        ),
-        this.createQuestAssetImage(
-          'quest-photo-smuggler-tunnel.png',
-          'guild-page__request-list-photo',
-        ),
-      );
-    }
-    button.replaceChildren(...children);
+    button.replaceChildren(number, title);
   }
 
   selectAvailableRequestIndex(requestIndex) {
@@ -1403,7 +1359,6 @@ export class GuildPanelManager {
     rows.className = 'guild-page__request-paper-rows guild-page__request-detail-rows guild-page__rows';
     rows.append(
       this.createRequestDetailRow({
-        icon: 'icon-difficulty.png',
         label: 'Difficulty',
         value: this.toQuestDisplayCase(request.difficulty),
         className: `guild-page__request-detail-row--${this.getCssToken(
@@ -1411,18 +1366,15 @@ export class GuildPanelManager {
         )}`,
       }),
       this.createRequestDetailRow({
-        icon: 'icon-stats.png',
         label: 'Stats',
         value: this.toQuestDisplayCase(request.statLabel),
       }),
       this.createRequestDetailRow({
-        icon: 'icon-reward.png',
         label: 'Reward',
         value: this.createRequestStackRewardText(request.rewardText),
         className: 'guild-page__request-detail-row--reward',
       }),
       this.createRequestDetailRow({
-        icon: 'icon-expires.png',
         label: 'Expires',
         value: request.expiresLabel ?? 'now',
       }),
@@ -1431,30 +1383,21 @@ export class GuildPanelManager {
     if (request.eventLabel) {
       rows.append(
         this.createRequestDetailRow({
-          icon: 'wax-seal.png',
           label: 'Event',
           value: request.eventLabel,
         }),
       );
     }
 
-    detail.append(
-      title,
-      page,
-      lore,
-      rows,
-      this.createQuestAssetImage('wax-seal.png', 'guild-page__request-detail-seal'),
-    );
+    detail.append(title, page, lore, rows);
     return detail;
   }
 
-  createRequestDetailRow({ icon, label, value, className = '' }) {
+  createRequestDetailRow({ label, value, className = '' }) {
     const row = document.createElement('div');
     row.className = ['guild-page__row guild-page__request-detail-row', className]
       .filter(Boolean)
       .join(' ');
-
-    row.append(this.createQuestAssetImage(icon, 'guild-page__request-detail-icon'));
 
     const key = document.createElement('span');
     key.className = 'guild-page__row-key';
@@ -1495,22 +1438,6 @@ export class GuildPanelManager {
 
   toQuestDisplayCase(value) {
     return String(value ?? '').replace(/\b[a-z]/g, (letter) => letter.toUpperCase());
-  }
-
-  createQuestAssetImage(fileName, className) {
-    const assetUrl = GUILD_QUEST_ASSET_URLS[fileName];
-
-    if (!assetUrl) {
-      throw new Error(`Unknown guild quest asset: ${fileName}`);
-    }
-
-    const image = document.createElement('img');
-    image.className = className;
-    image.src = assetUrl;
-    image.alt = '';
-    image.setAttribute('aria-hidden', 'true');
-    image.draggable = false;
-    return image;
   }
 
   getCssToken(value) {
@@ -1582,7 +1509,14 @@ export class GuildPanelManager {
 
   createRequestStackButton(label, className, onClick, { disabled = false } = {}) {
     const button = document.createElement('button');
-    button.className = ['style-button guild-page__request-stack-action', className]
+    const colorClass = className.includes('post')
+      ? 'style-button--green'
+      : 'style-button--brown-light';
+    button.className = [
+      'style-button guild-page__request-stack-action',
+      colorClass,
+      className,
+    ]
       .filter(Boolean)
       .join(' ');
     button.type = 'button';

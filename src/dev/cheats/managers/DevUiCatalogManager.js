@@ -319,6 +319,9 @@ function createPreviewModel(dialogId) {
   if (dialogId === 'brewing.recipes') {
     return {
       title: 'Recipes',
+      actions: {
+        researchRecipe: () => ({ ok: true }),
+      },
       recipes: [
         createRecipePreviewItem({
           key: 'manaTonic',
@@ -334,15 +337,20 @@ function createPreviewModel(dialogId) {
           ],
         }),
         createRecipePreviewItem({
-          key: 'minorHealingPotion',
-          label: 'Minor Healing Potion',
-          manaCost: 14,
-          brewDurationMs: 35_000,
+          key: 'ashenMemory',
+          label: 'Ashen Memory',
+          manaCost: 36,
+          brewDurationMs: 80_000,
           unlocked: false,
+          discovered: true,
+          discoveryType: 'unknown',
+          unknown: true,
+          known: false,
           canResearch: true,
           ingredients: [
             createRecipePreviewIngredient('sageHerb', 'Sage', 7),
-            createRecipePreviewIngredient('mintHerb', 'Mint', 3),
+            createRecipePreviewIngredient('lavenderHerb', 'Lavender', 1),
+            createRecipePreviewIngredient('frostmossHerb', 'Frostmoss', 2),
           ],
         }),
         createRecipePreviewItem({

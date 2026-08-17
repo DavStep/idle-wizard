@@ -69,7 +69,22 @@ export const RESEARCH_WIDGET_SHINE_CORNER_RADIUS_SCALE = 0.16;
 const RESEARCH_TAB_LOCK_WIDTH = 18;
 const RESEARCH_TAB_LOCK_HEIGHT = 20.5;
 const RESEARCH_VISIBILITY_BUTTON_SIZE = 28;
-const RESEARCH_VISIBILITY_ICON_SIZE = 24;
+const RESEARCH_VISIBILITY_BUTTON_RIGHT_INSET = 8;
+const RESEARCH_VISIBILITY_ICON_WIDTH = 22;
+const RESEARCH_VISIBILITY_ICON_HEIGHT = 14;
+const RESEARCH_VISIBILITY_ICON_INK = 0xfff2df;
+const RESEARCH_COMPLETED_CHECK_WIDTH = 30;
+const RESEARCH_COMPLETED_CHECK_HEIGHT = 28;
+const RESEARCH_TIMER_REVISION_FIELDS = new Set([
+  'elapsedMs',
+  'percent',
+  'progress',
+  'remainingLabel',
+  'remainingMs',
+  'remainingSeconds',
+  'timerLabel',
+  'timerText',
+]);
 export const RESEARCH_RANK_FONT =
   '"Lilita One", "Arial Black", Arial, sans-serif';
 const RESOURCE_WORD_MATCH_PATTERN =
@@ -77,6 +92,26 @@ const RESOURCE_WORD_MATCH_PATTERN =
 const RESOURCE_AMOUNT_PREFIX_PATTERN =
   /([+-]?(?:(?:\d[\d,]*(?:\.\d+)?(?:[a-z])?(?:\s*-\s*\d[\d,]*(?:\.\d+)?(?:[a-z])?)?)|(?:\d[\d,]*(?:\/\d[\d,]*)+)|\?)(?:\s*\/\s*(?:(?:\d[\d,]*(?:\.\d+)?(?:[a-z])?)|\?))?\s+)$/i;
 const MANA_NON_RESOURCE_PHRASE_PATTERN = /^\s+(?:sphere|tonic)\b/i;
+
+function createResearchVisibilityIcon() {
+  return new Graphics({ label: 'research-completed-toggle:icon' })
+    .moveTo(1, RESEARCH_VISIBILITY_ICON_HEIGHT / 2)
+    .bezierCurveTo(5, 1.5, 17, 1.5, 21, RESEARCH_VISIBILITY_ICON_HEIGHT / 2)
+    .bezierCurveTo(17, 12.5, 5, 12.5, 1, RESEARCH_VISIBILITY_ICON_HEIGHT / 2)
+    .closePath()
+    .stroke({
+      color: RESEARCH_VISIBILITY_ICON_INK,
+      width: 2,
+      cap: 'round',
+      join: 'round',
+    })
+    .circle(
+      RESEARCH_VISIBILITY_ICON_WIDTH / 2,
+      RESEARCH_VISIBILITY_ICON_HEIGHT / 2,
+      2.5,
+    )
+    .fill(RESEARCH_VISIBILITY_ICON_INK);
+}
 
 const CARD_SOURCE_INSETS =
   PIXI_ROOT_RUN_GEOMETRY.researchCard.sourceInsets;
@@ -288,8 +323,6 @@ export const RESEARCH_ROW_TEXT = Object.freeze({
   valueFontSize: 12,
   timedValueFontSize: 10,
   valueLineHeight: 14,
-  researchedFontSize: 9,
-  researchedLineHeight: 11,
   researchingFontSize: 10,
   researchingLineHeight: 11,
   researchingTimerFontSize: 9,
@@ -364,6 +397,7 @@ export class ResearchPixiPage extends BaseRetainedPixiPage {
     this.selectedTabId = 'regular';
     this.completedSectionIds = new Set();
     this.currentResearchBoxes = [];
+    this.renderRevision = null;
     this.active = false;
     this.tickHandler = () => this.tick();
 
@@ -473,6 +507,16 @@ export class ResearchPixiPage extends BaseRetainedPixiPage {
 
   renderViewModel(viewModel) {
     const research = viewModel.research ?? viewModel;
+    this.currentActions =
+      viewModel.actions ?? research.actions ?? this.actions;
+    const renderRevision = createResearchRenderRevision(viewModel);
+    if (
+      this.renderRevision !== null &&
+      renderRevision === this.renderRevision
+    ) {
+      return;
+    }
+    this.renderRevision = renderRevision;
     const tabs =
       Array.isArray(research.tabs) && research.tabs.length > 0
         ? research.tabs
@@ -492,8 +536,6 @@ export class ResearchPixiPage extends BaseRetainedPixiPage {
       tabs.find((tab) => tab.id === this.selectedTabId) ??
       tabs[0];
     this.selectedTabId = selectedTab?.id ?? 'regular';
-    this.currentActions =
-      viewModel.actions ?? research.actions ?? this.actions;
     const visibleTabTargetIds = new Set(
       tabs.map((tab) => `research.tab.${tab.id}`),
     );
@@ -921,21 +963,11 @@ export class ResearchBoxWidget {
       variant: 'inline',
       width: RESEARCH_VISIBILITY_BUTTON_SIZE,
     });
-    this.visibilityIcon = new Sprite({
-      label: 'research-completed-toggle:icon',
-      roundPixels: true,
-      texture:
-        page.assetManager?.getTexture?.(
-          PIXI_ROOT_RUN_ASSETS.researchVisibilityEye,
-        ) ?? Texture.EMPTY,
-    });
-    this.visibilityIcon.anchor.set(0.5);
+    this.visibilityIcon = createResearchVisibilityIcon();
     this.visibilityIcon.position.set(
-      RESEARCH_VISIBILITY_BUTTON_SIZE / 2,
-      RESEARCH_VISIBILITY_BUTTON_SIZE / 2,
+      (RESEARCH_VISIBILITY_BUTTON_SIZE - RESEARCH_VISIBILITY_ICON_WIDTH) / 2,
+      (RESEARCH_VISIBILITY_BUTTON_SIZE - RESEARCH_VISIBILITY_ICON_HEIGHT) / 2,
     );
-    this.visibilityIcon.width = RESEARCH_VISIBILITY_ICON_SIZE;
-    this.visibilityIcon.height = RESEARCH_VISIBILITY_ICON_SIZE;
     this.visibilityButton.visual.addChild(this.visibilityIcon);
     this.rowsLayer = new Container({ label: 'research-box-rows' });
     this.root.addChild(
@@ -1000,7 +1032,9 @@ export class ResearchBoxWidget {
     this.width = width;
     this.titlePlaque.setMaxWidth(width);
     this.visibilityButton.position.set(
-      width - RESEARCH_VISIBILITY_BUTTON_SIZE,
+      width -
+        RESEARCH_VISIBILITY_BUTTON_SIZE -
+        RESEARCH_VISIBILITY_BUTTON_RIGHT_INSET,
       (RESEARCH_PIXI_GEOMETRY.categoryTitleHeight -
         RESEARCH_VISIBILITY_BUTTON_SIZE) /
         2,
@@ -1411,6 +1445,17 @@ export class ResearchRowWidget {
       contentScale: RESEARCH_ROW_TEXT.costContentScale,
       label: 'research-row-researched',
     });
+    this.researchedCheckmark = new Sprite({
+      texture:
+        assetManager?.getTexture?.(PIXI_ROOT_RUN_ASSETS.checkmark) ??
+        Texture.EMPTY,
+      label: 'research-row-researched-checkmark',
+      roundPixels: true,
+    });
+    this.researchedCheckmark.anchor.set(0.5);
+    this.researchedCheckmark.eventMode = 'none';
+    this.researchedCheckmark.visible = false;
+    this.researchedCheckmark.renderable = false;
     this.researchingTimerLabel = new PixiTextLabel({
       fontFamily: RESEARCH_RANK_FONT,
       fontSize: RESEARCH_ROW_TEXT.researchingTimerFontSize,
@@ -1483,6 +1528,7 @@ export class ResearchRowWidget {
       this.infoVisual,
       this.costButton,
       this.researchedButton,
+      this.researchedCheckmark,
       this.readonlyValue,
       this.readonlyStars,
       this.progress.root,
@@ -1555,8 +1601,10 @@ export class ResearchRowWidget {
       research.timer?.active === true || research.inProgress === true;
     this.costButton.visible = interactive;
     this.costButton.renderable = interactive;
-    this.researchedButton.visible = researched || inProgress;
+    this.researchedButton.visible = inProgress;
     this.researchedButton.renderable = this.researchedButton.visible;
+    this.researchedCheckmark.visible = researched;
+    this.researchedCheckmark.renderable = researched;
     const remainingLabel =
       research.timer?.remainingLabel ??
       formatRemainingTime(
@@ -1566,9 +1614,7 @@ export class ResearchRowWidget {
         ),
       );
     this.researchedButton.setModel({
-      amountLabel: researched
-        ? 'Researched'
-        : this.formatInProgressButtonLabel(research),
+      amountLabel: this.formatInProgressButtonLabel(research),
       resource: 'none',
       enabled: false,
       action: null,
@@ -1768,6 +1814,9 @@ export class ResearchRowWidget {
       geometry.actionTop +
       geometry.contentOffsetY +
       geometry.actionHeight / 2;
+    this.researchedCheckmark.position.set(valueCenterX, valueCenterY);
+    this.researchedCheckmark.width = RESEARCH_COMPLETED_CHECK_WIDTH;
+    this.researchedCheckmark.height = RESEARCH_COMPLETED_CHECK_HEIGHT;
     this.readonlyValue.position.set(valueCenterX, valueCenterY);
     this.readonlyStars.position.set(
       valueCenterX - this.readonlyStars.measuredWidth / 2,
@@ -1961,16 +2010,8 @@ export class ResearchRowWidget {
       this.research?.timer?.active === true ||
       this.research?.inProgress === true;
     this.researchedButton.amountLabel
-      .setFontSize(
-        inProgress
-          ? RESEARCH_ROW_TEXT.researchingFontSize
-          : RESEARCH_ROW_TEXT.researchedFontSize,
-      )
-      .setLineHeight(
-        inProgress
-          ? RESEARCH_ROW_TEXT.researchingLineHeight
-          : RESEARCH_ROW_TEXT.researchedLineHeight,
-      )
+      .setFontSize(RESEARCH_ROW_TEXT.researchingFontSize)
+      .setLineHeight(RESEARCH_ROW_TEXT.researchingLineHeight)
       .setAlign('center')
       .setStroke({
         color: '#0a0a0a',
@@ -2070,6 +2111,8 @@ export class ResearchRowWidget {
     this.costButton.reset();
     this.researchedButton.visible = false;
     this.researchedButton.renderable = false;
+    this.researchedCheckmark.visible = false;
+    this.researchedCheckmark.renderable = false;
     this.setResearchingTimer('');
     this.progress.clearTimer(0);
     this.lockedOverlay.visible = false;
@@ -2240,6 +2283,31 @@ function parseResearchResourceValue(value) {
     resource: normalizeResearchResource(label),
     suffix: normalizedValue.slice(index + label.length),
   };
+}
+
+function createResearchRenderRevision(viewModel) {
+  try {
+    return JSON.stringify(viewModel, function createRevision(_key, value) {
+      if (typeof value === 'function') {
+        return undefined;
+      }
+      if (typeof value === 'bigint') {
+        return { bigint: String(value) };
+      }
+
+      const timerActive = Boolean(
+        this?.active === true ||
+          this?.inProgress === true ||
+          this?.timer?.active === true,
+      );
+      if (timerActive && RESEARCH_TIMER_REVISION_FIELDS.has(_key)) {
+        return undefined;
+      }
+      return value;
+    });
+  } catch {
+    return viewModel;
+  }
 }
 
 export function createResearchShine({ texture, alpha, label }) {

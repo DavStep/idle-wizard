@@ -6,7 +6,7 @@ tags:
   - social
   - multiplayer
   - proposal
-status: proposed
+status: superseded
 world: mechanics
 aliases:
   - Guild Redesign
@@ -19,6 +19,11 @@ aliases:
 > This note describes a proposed Guild redesign. It is not the current
 > implementation. See [[Guilds]] for the shipped behavior and current technical
 > boundaries.
+
+> [!warning] Superseded Direction
+> [[Guild Branches]] is the approved product direction: one Guild with
+> Adventurers, Fishers, Miners, and possible later branches. Keep this note as
+> the detailed Adventurers' Lodge design and server-authority reference.
 
 ## Recommendation
 
@@ -752,6 +757,7 @@ Recommended defaults:
 
 ## Related
 
+- [[Guild Branches]]
 - [[Guilds]]
 - [[Core Loop]]
 - [[Production Systems]]

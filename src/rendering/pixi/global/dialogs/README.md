@@ -48,6 +48,16 @@ Canonical IDs:
 Open `/src/dev/uiRecipes/inbox-dialog.html?empty=1` to inspect the real retained
 empty inbox without gameplay setup, backend state, or save publication.
 
+The Inbox uses each pooled mail card as its own paper section; it hides the
+dialog's continuous inner paper and gives its primary scroll viewport the
+shared adaptive maximum height. The shell fits the current message-section
+stack and only uses that maximum when overflow needs scrolling. Message
+sections begin at the dialog content boundary without an extra scroll-top
+inset, use the shared `8px` section gap, and keep compact `10px` internal
+content padding. World-event reward cards use the event headline as their
+title, including a compatibility fallback for already-issued `Event finished`
+mail.
+
 Open `?devUi=researchCompleteAnnouncement` to inspect the retained
 research-complete ribbon, centered research icon, and row composition without
 completing research or publishing gameplay state.

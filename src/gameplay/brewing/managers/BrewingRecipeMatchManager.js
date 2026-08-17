@@ -43,7 +43,13 @@ export class BrewingRecipeMatchManager {
 
   isRecipeUnlocked(recipe) {
     if (this.isUnknownRecipe(recipe)) {
-      return this.isRecipeDiscovered(recipe);
+      if (!this.isRecipeDiscovered(recipe)) {
+        return false;
+      }
+
+      if (this.potionDiscoveryFacade?.isDiscoveredByCurrentPlayer(recipe.key)) {
+        return true;
+      }
     }
 
     return this.researchFacade.hasCompletedResearch(this.getRecipeResearchId(recipe));

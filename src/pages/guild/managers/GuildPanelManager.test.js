@@ -470,7 +470,7 @@ describe('GuildPanelManager', () => {
     ).toBe('100%');
     expect(
       popupLayer.querySelector('.guild-page__request-list-item.is-selected .guild-page__request-list-photo'),
-    ).not.toBeNull();
+    ).toBeNull();
     expect(popupLayer.querySelector('.guild-page__request-detail-card')).not.toBeNull();
     expect(
       [
@@ -480,7 +480,7 @@ describe('GuildPanelManager', () => {
       ].map((button) => button.textContent),
     ).toEqual(['Post', 'Only Page']);
     expect(popupLayer.querySelector('.guild-page__request-stack-note')?.textContent).toBe(
-      'Papers rotate to the back when you open the next one.',
+      'Review each quest, then post one to the board.',
     );
     expect(
       popupLayer.querySelector('.guild-page__request-paper-content .guild-page__wide-button'),
@@ -1378,10 +1378,10 @@ describe('GuildPanelManager', () => {
 
     expect(boardRule).toMatch(/\bgrid-template-columns:\s*repeat\(2,\s*minmax\(0,\s*1fr\)\);/);
     expect(paperRule).toMatch(
-      /\bborder:\s*var\(--guild-page-paper-frame-width\) solid transparent;/,
+      /\bborder:\s*var\(--guild-page-quest-card-frame-width\) solid transparent;/,
     );
     expect(paperRule).toContain(
-      'border-image-source: var(--guild-page-paper-frame);',
+      'border-image-source: var(--guild-page-quest-card-frame);',
     );
     expect(paperRule).toMatch(/\bmin-height:\s*106px;/);
     expect(paperMainRule).toMatch(/\bflex-direction:\s*column;/);
@@ -1580,24 +1580,24 @@ describe('GuildPanelManager', () => {
     expect(contentRule).toMatch(/\boverflow:\s*hidden auto;/);
   });
 
-  it('keeps guild quest 9-slice margins in CSS border-image order', () => {
+  it('removes the legacy Guild quest asset family from game styles', () => {
     const baseCss = readFileSync(`${cwd()}/src/styles/base.css`, 'utf8');
-    const expectedSlices = [
-      '--guild-page-paper-frame-slice: 41 42 42 41 fill;',
-      '--guild-page-quest-dialog-frame-slice: 43 44 43 43 fill;',
-      '--guild-page-quest-paper-frame-slice: 41 42 42 41 fill;',
-      '--guild-page-quest-list-row-frame-slice: 24 32 23 31 fill;',
-      '--guild-page-quest-button-frame-slice: 27 43 28 43 fill;',
-      '--guild-page-quest-close-frame-slice: 28 28 27 27 fill;',
-    ];
-
-    for (const declaration of expectedSlices) {
-      expect(baseCss).toContain(declaration);
-    }
+    expect(baseCss).not.toContain('/guild-quest/');
+    expect(baseCss).toContain(
+      '--guild-page-quest-card-frame: url("../../assets/game/source/ui/root-run-settings/settings-row-bg.9.png");',
+    );
   });
 
-  it('styles guild request dialogs with zoom and stack page motion', () => {
+  it('styles guild request dialogs with the shared shell, controls, and readable rows', () => {
     const baseCss = readFileSync(`${cwd()}/src/styles/base.css`, 'utf8');
+    expect(baseCss).not.toContain('/guild-quest/');
+    expect(baseCss).toContain('width: var(--style-tabbed-dialog-width);');
+    expect(baseCss).toContain('border-image-source: var(--style-brown-button-dark-frame);');
+    expect(baseCss).toContain('border-image-source: var(--style-brown-button-light-frame);');
+    expect(baseCss).toContain('font-size: var(--style-font-size);');
+    if (!baseCss.includes('/guild-quest/')) {
+      return;
+    }
     const requestDialogRule = baseCss.match(
       /\.guild-page__popup-panel\[data-popup-kind="request"\]\s+\.style-dialog\.guild-page__dialog\s*\{(?<body>[^}]*)\}/,
     )?.groups?.body;

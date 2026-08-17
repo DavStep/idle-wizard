@@ -20,6 +20,7 @@ import {
 } from '../../theme/PixiThemeTokens.js';
 import { RootRunInventoryChoiceDialogPixi } from '../shared/RootRunInventoryChoiceDialogPixi.js';
 import {
+  BREWING_FIREFLY_COUNT,
   BREWING_PIXI_GEOMETRY,
   BrewingPixiPage,
 } from './BrewingPixiPage.js';
@@ -29,6 +30,34 @@ import {
 } from './BrewingHudPixi.js';
 
 describe('BrewingPixiPage', () => {
+  it('keeps passive fireflies behind Brewing controls and pauses them off-page', () => {
+    const motion = createAmbientMotionHarness();
+    const harness = createHarness({
+      ambientRequestFrame: motion.requestFrame,
+      ambientCancelFrame: motion.cancelFrame,
+      ambientTimeSource: motion.timeSource,
+    });
+    const firstFirefly = harness.page.fireflies.root.children[0];
+    const restingPosition = { x: firstFirefly.x, y: firstFirefly.y };
+
+    expect(harness.page.fireflies.root.eventMode).toBe('none');
+    expect(harness.page.fireflies.root.children).toHaveLength(BREWING_FIREFLY_COUNT);
+    expect(harness.page.content.getChildIndex(harness.page.fireflies.root)).toBeLessThan(
+      harness.page.content.getChildIndex(harness.page.hud.root),
+    );
+
+    harness.page.activate();
+    expect(motion.requestFrame).toHaveBeenCalledOnce();
+    motion.runAt(1000);
+    expect({ x: firstFirefly.x, y: firstFirefly.y }).not.toEqual(restingPosition);
+
+    harness.page.deactivate();
+    expect(motion.cancelFrame).toHaveBeenCalledOnce();
+
+    harness.page.destroy();
+    harness.dispose();
+  });
+
   it('builds once and keeps keyed cauldrons, rows, and inventory widgets', () => {
     const harness = createHarness();
     const pages = new PageRegistry({
@@ -598,6 +627,58 @@ describe('BrewingPixiPage', () => {
     expect(unavailableCard.select.variant).toBe('yellow');
     expect(unavailableCard.select.textLabel.text).toBe('Research');
     expect(unavailableCard.select.enabled).toBe(false);
+
+    harness.page.destroy();
+    harness.dispose();
+  });
+
+  it('shows a shared discovered recipe as researchable instead of unknown', () => {
+    const harness = createHarness();
+    const researchRecipe = vi.fn(() => ({ ok: true }));
+
+    harness.page.openDialog('recipes', {
+      recipes: [
+        {
+          key: 'ashenMemory',
+          label: 'ashen memory',
+          unlocked: false,
+          discovered: true,
+          unknown: true,
+          known: false,
+          discoveryType: 'unknown',
+          canResearch: true,
+          manaCost: 36,
+          brewDurationMs: 80_000,
+          ingredients: [
+            {
+              key: 'lavenderHerb',
+              label: 'lavender',
+              quantity: 1,
+              owned: 2,
+            },
+          ],
+        },
+      ],
+      actions: { researchRecipe },
+    });
+
+    const card = harness.dialogs
+      .get('brewing.recipes')
+      .cards.getWidgets()[0];
+    const ingredient = card.ingredients.getWidgets()[0];
+
+    expect(card.name.text).toBe('ashen memory');
+    expect(card.icon.alpha).toBe(1);
+    expect(card.costValue.text).toBe('36');
+    expect(card.select.textLabel.text).toBe('Research');
+    expect(card.select.enabled).toBe(true);
+    expect(ingredient.required.text).toBe('lavender');
+    expect(ingredient.owned.text).toBe('2/1');
+    expect(card.select.activate()).toMatchObject({ ok: true });
+    expect(researchRecipe).toHaveBeenCalledWith(
+      expect.objectContaining({ key: 'ashenMemory' }),
+      undefined,
+    );
 
     harness.page.destroy();
     harness.dispose();
@@ -2344,7 +2425,7 @@ function expectContainedCauldronRegistration(hud) {
   );
 }
 
-function createHarness({ ticker = null, timeSource = () => 0 } = {}) {
+function createHarness({ ticker = null, timeSource = () => 0, ...pageOptions } = {}) {
   const dialogLayer = new Container();
   const dialogs = new DialogRegistry();
   const inputRouter = new PixiInputRouter();
@@ -2357,6 +2438,7 @@ function createHarness({ ticker = null, timeSource = () => 0 } = {}) {
     semanticTargets,
     ticker,
     timeSource,
+    ...pageOptions,
   });
 
   return {
@@ -2368,6 +2450,31 @@ function createHarness({ ticker = null, timeSource = () => 0 } = {}) {
     dispose() {
       dialogs.destroy();
       dialogLayer.destroy({ children: true });
+    },
+  };
+}
+
+function createAmbientMotionHarness() {
+  let now = 0;
+  let nextFrameId = 1;
+  let pendingFrame = null;
+  const requestFrame = vi.fn((callback) => {
+    pendingFrame = callback;
+    return nextFrameId++;
+  });
+  const cancelFrame = vi.fn(() => {
+    pendingFrame = null;
+  });
+  return {
+    requestFrame,
+    cancelFrame,
+    timeSource: () => now,
+    runAt(timestamp) {
+      now = timestamp;
+      const callback = pendingFrame;
+      pendingFrame = null;
+      expect(callback).toEqual(expect.any(Function));
+      callback(timestamp);
     },
   };
 }

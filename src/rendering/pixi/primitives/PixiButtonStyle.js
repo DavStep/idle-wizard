@@ -39,13 +39,14 @@ const TAB_OUTPUT_INSETS_50 = Object.freeze({
 });
 
 // Every regular-button tier includes an authored cast shadow at the bottom.
-// Keep label/content centering tied to that rendered shadow instead of the
-// complete rectangular texture bounds.
+// A full face-center correction lifts Lilita One too far, so preserve half of
+// that tier-aware correction as the shared optical nudge.
 const BUTTON_BOTTOM_SHADOW_HEIGHT = Object.freeze({
   50: 20,
   30: 12,
   15: 6,
 });
+const BUTTON_SHADOW_FACE_CENTER_WEIGHT = 0.5;
 
 export function isPixiButtonColor(value) {
   return Object.hasOwn(BUTTON_ASSET_COLOR, String(value ?? ''));
@@ -127,7 +128,9 @@ function resolveButtonContentOffsetY({
   const renderedBottomScale = sourceInsets.bottom > 0
     ? borderInsets.bottom / sourceInsets.bottom
     : 0;
-  return -(sourceShadowHeight * renderedBottomScale) / 2;
+  return -(
+    (sourceShadowHeight * renderedBottomScale) / 2
+  ) * BUTTON_SHADOW_FACE_CENTER_WEIGHT;
 }
 
 function scaleInsets(insets, scale) {

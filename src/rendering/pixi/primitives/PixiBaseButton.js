@@ -40,6 +40,7 @@ export class PixiBaseButton extends Container {
     height = 30,
     action = null,
     fallbackHitTest = false,
+    preserveFocus = false,
     haptic = 'light',
     color = null,
     sizeTier = 50,
@@ -104,6 +105,7 @@ export class PixiBaseButton extends Container {
         onActivate: (event) => this.activate(event),
         haptic: () => this.haptic,
         fallbackHitTest: fallbackHitTest === true,
+        preserveFocus: preserveFocus === true,
         excludePageSwipe: true,
       }) ?? null;
     this.semanticDefinition =

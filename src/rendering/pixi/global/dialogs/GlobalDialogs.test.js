@@ -16,10 +16,12 @@ import {
   PixiResourceLabel,
   PixiStarLevelLabel,
   resolveDialogPaperOutsets,
+  RootRunSettingsSliderPixi,
   RootRunSettingsTogglePixi,
   RootRunDevicePreferenceRow,
   RootRunDevicePreferencesPanel,
 } from '../../primitives/index.js';
+import { PixiInlineText } from '../../primitives/PixiInlineText.js';
 import {
   PlayerProfileWidget,
   PlayerSelectableProfileWidget,
@@ -207,7 +209,9 @@ describe('retained global Pixi dialogs', () => {
   it('expands a primary dialog scroll viewport without stretching fixed confirmations', () => {
     const harness = createHarness();
     const inbox = harness.registry.open(GLOBAL_DIALOG_IDS.INBOX, {
-      mail: [],
+      mail: Array.from({ length: 8 }, (_, index) =>
+        createMail(`adaptive-${index}`),
+      ),
     });
     const confirmation = harness.registry.open(
       GLOBAL_DIALOG_IDS.CONFIRMATION,
@@ -216,16 +220,26 @@ describe('retained global Pixi dialogs', () => {
 
     harness.registry.layout({
       sourceWidth: 390,
-      sourceHeight: 944,
+      sourceHeight: 868,
       sourceScale: 1,
       sourceOffsetX: 0,
       stageLogicalWidth: 390,
       dialogShift: 0,
     });
 
-    expect(inbox.contentHeight).toBe(460);
-    expect(inbox.scroll.viewportHeight).toBe(460);
+    expect(inbox.contentHeight).toBe(384);
+    expect(inbox.scroll.viewportHeight).toBe(384);
     expect(confirmation.contentHeight).toBe(124);
+
+    harness.dispose();
+  });
+
+  it('centers the inbox shell within the authored viewport', () => {
+    const harness = createHarness();
+    const inbox = harness.registry.open(GLOBAL_DIALOG_IDS.INBOX, { mail: [] });
+
+    expect(inbox.panel.pivot.y).toBe(inbox.panel.outerHeight / 2);
+    expect(inbox.panel.position.y).toBe(PIXI_UI_GEOMETRY.sourceHeight / 2);
 
     harness.dispose();
   });
@@ -484,8 +498,13 @@ describe('retained global Pixi dialogs', () => {
       'theme',
     ]);
     expect(
-      settings.preferenceRows.every(
-        ({ toggle }) => toggle instanceof RootRunSettingsTogglePixi,
+      settings.preferenceRows.slice(0, 2).every(
+        ({ control }) => control instanceof RootRunSettingsSliderPixi,
+      ),
+    ).toBe(true);
+    expect(
+      settings.preferenceRows.slice(2).every(
+        ({ control }) => control instanceof RootRunSettingsTogglePixi,
       ),
     ).toBe(true);
     expect(settings.devicePanel).toBeInstanceOf(RootRunDevicePreferencesPanel);
@@ -544,9 +563,11 @@ describe('retained global Pixi dialogs', () => {
         (settings.themePanel.y + settings.themePanel.panelHeight),
     ).toBe(8);
 
-    expect(settings.preferenceRows[0].toggle.activate()).toBe(true);
+    expect(
+      settings.preferenceRows[0].control.activate({ localX: 0 }),
+    ).toBe(true);
     expect(togglePreference).toHaveBeenCalledWith('sfx', false);
-    expect(settings.preferenceRows[3].toggle.activate()).toBe(true);
+    expect(settings.preferenceRows[3].control.activate()).toBe(true);
     expect(togglePreference).toHaveBeenCalledWith('theme', true);
     await settings.accountConnectButton.activate();
     expect(connectAccount).toHaveBeenCalledTimes(1);
@@ -727,9 +748,9 @@ describe('retained global Pixi dialogs', () => {
 
     expect(inbox.panel).toMatchObject({
       contentBoxWidth: 264,
-      contentBoxHeight: 360,
+      contentBoxHeight: 88,
       outerWidth: 304,
-      outerHeight: 400,
+      outerHeight: 128,
     });
     const inboxWrapperLeft =
       (GLOBAL_DIALOG_GEOMETRY.sourceWidth -
@@ -746,9 +767,9 @@ describe('retained global Pixi dialogs', () => {
     expect(inbox.emptyLabel.text).toBe('No Mail');
     expect(inbox.emptyLabel.fontSize).toBe(20);
     expect(inbox.emptyLabel.x).toBe(inbox.panel.contentBoxWidth / 2);
-    expect(inbox.emptyLabel.y + inbox.scroll.content.y).toBe(
-      inbox.panel.contentBoxHeight / 2,
-    );
+    expect(inbox.emptyFrame.visible).toBe(true);
+    expect(inbox.emptyFrame.frameHeight).toBe(88);
+    expect(inbox.emptyLabel.y).toBe(inbox.emptyFrame.frameHeight / 2);
     harness.dispose();
   });
 
@@ -824,6 +845,57 @@ describe('retained global Pixi dialogs', () => {
     expect(mail.frame.assetId).toBe(
       'source:assets/ui/inner-section-panel-white.9.png',
     );
+
+    harness.dispose();
+  });
+
+  it('uses the established compact padding for inbox message sections', () => {
+    const harness = createHarness();
+    const inbox = harness.registry.open(GLOBAL_DIALOG_IDS.INBOX, {
+      mail: [createMail('first'), createMail('second')],
+    });
+    const [first, second] = inbox.mailRows.getWidgets();
+
+    expect(inbox.scroll.contentPaddingTop).toBe(0);
+    expect(first.root.position).toMatchObject({ x: 0, y: 0 });
+    expect(first.title.position).toMatchObject({ x: 10, y: 10 });
+    expect(first.meta.x).toBe(10);
+    expect(first.body.x).toBe(10);
+    expect(first.reward.x).toBe(10);
+    expect(second.root.y - (first.root.y + first.height)).toBe(8);
+    expect(inbox.contentHeight).toBe(second.root.y + second.height);
+    expect(inbox.scroll.viewportHeight).toBe(inbox.contentHeight);
+
+    harness.dispose();
+  });
+
+  it('renders inbox reward icons with clear dates and sentence-case event mail', () => {
+    const harness = createHarness({ atlasTexture: Texture.WHITE });
+    const inbox = harness.registry.open(GLOBAL_DIALOG_IDS.INBOX, {
+      mail: [
+        {
+          ...createMail('world-event'),
+          title: 'event finished',
+          sourceType: 'worldEvent',
+          senderLabel: 'world event',
+          body: 'you placed #4 in Bandits on North Road with 11,625 points. here are your rewards.',
+          createdAtMs: Date.UTC(2026, 7, 17, 12),
+          rewardText: '3 crystal, 1 emerald',
+        },
+      ],
+    });
+    const mail = inbox.mailRows.getWidgets()[0];
+
+    expect(inbox.panel.paperFrame.visible).toBe(false);
+    expect(inbox.panel.paperFrame.renderable).toBe(false);
+    expect(mail.title.text).toBe('Bandits on North Road');
+    expect(mail.meta.text).toBe('World event · Aug 17');
+    expect(mail.body.text).toBe(
+      'You placed #4 in Bandits on North Road with 11,625 points. Here are your rewards.',
+    );
+    expect(mail.reward).toBeInstanceOf(PixiInlineText);
+    expect(mail.reward.runs.filter((run) => run.kind === 'icon')).toHaveLength(2);
+    expect(mail.reward.text).toBe('3  1 ');
 
     harness.dispose();
   });
@@ -2008,12 +2080,16 @@ describe('retained global Pixi dialogs', () => {
 function createHarness({
   announcementMotionRuntime = null,
   announcementTexture = null,
+  atlasTexture = null,
   characterTexture = null,
 } = {}) {
   const registry = new DialogRegistry();
   const inputRouter = new PixiInputRouter();
   const semanticRegistry = new SemanticTargetRegistry();
   const assets = createPixiAssetManagerFake(Texture);
+  if (atlasTexture) {
+    assets.getAtlasTexture = vi.fn(() => atlasTexture);
+  }
   if (announcementTexture) {
     assets.getAtlasTexture = vi.fn(() => announcementTexture);
   }

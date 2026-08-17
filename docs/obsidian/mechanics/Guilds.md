@@ -17,10 +17,10 @@ Guilds are private player halls unlocked at level 15. The player spends a
 1.5k coin charter, chooses a name, tag, and color, then hires adventurers who
 take request-board work without direct micromanagement.
 
-> [!info] Proposed Redesign
-> [[Guild System Plan]] describes a connected, server-authoritative target
-> design. This note remains the source of truth for current behavior until that
-> proposal is approved and implemented.
+> [!info] Approved Expansion
+> [[Guild Branches]] defines the approved direction: one player-owned Guild
+> expanded through specialized branch buildings. This note remains the source
+> of truth for current behavior until that plan is implemented.
 
 ## Place In The Loop
 
@@ -99,6 +99,7 @@ outcome quality.
 
 ## Related
 
+- [[Guild Branches]]
 - [[Guild System Plan]]
 - [[Core Loop]]
 - [[Tasks And Leveling]]

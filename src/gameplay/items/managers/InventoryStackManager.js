@@ -6,10 +6,18 @@ export class InventoryStackManager {
   constructor({ itemDefinitionManager }) {
     this.itemDefinitionManager = itemDefinitionManager;
     this.ecsManagers = null;
+    this.entityIdByItemTypeId = new Map();
   }
 
   initialize(ecsManagers) {
     this.ecsManagers = ecsManagers;
+    this.entityIdByItemTypeId.clear();
+    for (const entityId of this.getStackEntities()) {
+      this.entityIdByItemTypeId.set(
+        InventoryStack.itemTypeId[entityId],
+        entityId,
+      );
+    }
   }
 
   addItem(itemTypeId, quantity) {
@@ -25,6 +33,7 @@ export class InventoryStackManager {
     if (safeQuantity <= 0) {
       if (existingEntityId !== null) {
         this.ecsManagers.entities.removeEntity(existingEntityId);
+        this.entityIdByItemTypeId.delete(itemTypeId);
       }
 
       return;
@@ -38,6 +47,7 @@ export class InventoryStackManager {
     for (const entityId of this.getStackEntities()) {
       this.ecsManagers.entities.removeEntity(entityId);
     }
+    this.entityIdByItemTypeId.clear();
   }
 
   removeItem(itemTypeId, quantity) {
@@ -51,6 +61,7 @@ export class InventoryStackManager {
 
     if (InventoryStack.quantity[entityId] <= 0) {
       this.ecsManagers.entities.removeEntity(entityId);
+      this.entityIdByItemTypeId.delete(itemTypeId);
     }
 
     return true;
@@ -105,15 +116,12 @@ export class InventoryStackManager {
     this.ecsManagers.components.add(entityId, InventoryStack);
     InventoryStack.itemTypeId[entityId] = itemTypeId;
     InventoryStack.quantity[entityId] = 0;
+    this.entityIdByItemTypeId.set(itemTypeId, entityId);
     return entityId;
   }
 
   findStackEntity(itemTypeId) {
-    return (
-      this.getStackEntities().find(
-        (entityId) => InventoryStack.itemTypeId[entityId] === itemTypeId,
-      ) ?? null
-    );
+    return this.entityIdByItemTypeId.get(itemTypeId) ?? null;
   }
 
   getStackEntities() {

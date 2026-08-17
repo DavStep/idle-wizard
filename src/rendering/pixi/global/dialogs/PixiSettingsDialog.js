@@ -133,11 +133,13 @@ const DEVICE_PREFERENCES = Object.freeze([
     key: 'sfx',
     text: 'SOUND',
     iconAssetId: PIXI_ROOT_RUN_ASSETS.settingsSound,
+    controlKind: 'slider',
   }),
   Object.freeze({
     key: 'music',
     text: 'MUSIC',
     iconAssetId: PIXI_ROOT_RUN_ASSETS.settingsMusic,
+    controlKind: 'slider',
   }),
   Object.freeze({
     key: 'haptics',
@@ -470,12 +472,15 @@ export class PixiSettingsDialog extends RetainedGlobalDialog {
         text: definition.text,
         iconAssetId: definition.iconAssetId,
         onIconAssetId: definition.onIconAssetId,
+        controlKind: definition.controlKind,
         label: `${this.dialogId}:preference:${definition.key}`,
       });
       return {
         key: definition.key,
         widget,
         label: widget.textLabel,
+        control: widget.control,
+        slider: widget.slider,
         toggle: widget.toggle,
         enabled: true,
       };
@@ -1198,7 +1203,7 @@ export class PixiSettingsDialog extends RetainedGlobalDialog {
       this.actions.togglePreference?.(key, enabled) ??
       this.actions[`toggle${capitalize(key)}`]?.(enabled);
     if (result === false) {
-      row.toggle.bind({
+      row.widget.bind({
         value: row.enabled,
         onChange: (nextEnabled) => this.setPreference(key, nextEnabled),
       });

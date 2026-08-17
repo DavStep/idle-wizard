@@ -120,12 +120,24 @@ describe('ResearchBoxListManager', () => {
     manager.mount(stage);
 
     const toggle = stage.querySelector('.research-page__completed-toggle');
+    const visibilityIcon = toggle?.querySelector(
+      '.research-page__completed-toggle-icon',
+    );
+    expect(visibilityIcon?.tagName).toBe('svg');
+    expect(visibilityIcon?.querySelectorAll('path')).toHaveLength(1);
+    expect(visibilityIcon?.querySelectorAll('circle')).toHaveLength(1);
+    expect(toggle?.querySelector('img')).toBeNull();
+    expect(readFileSync(`${cwd()}/src/styles/base.css`, 'utf8')).toMatch(
+      /\.research-page__completed-toggle\s*\{[^}]*margin:\s*0 8px 0 0;/,
+    );
     expect(toggle?.getAttribute('aria-pressed')).toBe('false');
     toggle?.dispatchEvent(new window.MouseEvent('click', { bubbles: true }));
 
     const rows = [...stage.querySelectorAll('.research-page__row')];
     const researchedNames = rows
-      .filter((row) => row.textContent?.includes('Researched'))
+      .filter((row) =>
+        row.querySelector('.research-page__research-status--completed'),
+      )
       .map((row) => row.querySelector('.research-page__research-name'));
     const lockedRow = rows.find((row) => row.textContent?.includes('nettle seed'));
 
@@ -219,15 +231,18 @@ describe('ResearchBoxListManager', () => {
       'research-page__row is-unavailable is-locked',
       'research-page__row is-completed',
     ]);
-    const researchedButton = rows[2]?.querySelector(
-      '.research-page__research-button--completed',
+    const researchedStatus = rows[2]?.querySelector(
+      '.research-page__research-status--completed',
     );
-    expect(researchedButton?.textContent).toBe('Researched');
-    expect(researchedButton?.disabled).toBe(true);
-    expect(researchedButton?.classList.contains('style-cost-button')).toBe(true);
+    expect(researchedStatus?.getAttribute('role')).toBe('img');
+    expect(researchedStatus?.getAttribute('aria-label')).toBe(
+      'sage seed is researched',
+    );
     expect(
-      researchedButton?.classList.contains('style-cost-button--yellow'),
-    ).toBe(true);
+      researchedStatus?.querySelector('.research-page__research-status-icon')
+        ?.dataset.assetAtlasFrame,
+    ).toBe('status:checkDefault');
+    expect(rows[2]?.querySelector('.style-cost-button')).toBeNull();
     expect(
       rows[0]?.querySelector('.research-page__research-description')?.textContent,
     ).toBe('Allows mint seed to drop from summon seed.');
@@ -459,9 +474,14 @@ describe('ResearchBoxListManager', () => {
     ).toBeUndefined();
     expect(
       completedRow
-        ?.querySelector('.research-page__research-button--completed')
-        ?.classList.contains('style-cost-button--yellow'),
-    ).toBe(true);
+        ?.querySelector('.research-page__research-status-icon')
+        ?.dataset.assetAtlasFrame,
+    ).toBe('status:checkDefault');
+    expect(
+      completedRow
+        ?.querySelector('.research-page__research-status--completed')
+        ?.getAttribute('aria-label'),
+    ).toBe('auto plant tile 1 is researched');
     expect(
       availableRow?.querySelector('.research-page__research-name')?.dataset.resourceColor,
     ).toBeUndefined();
@@ -586,7 +606,7 @@ describe('ResearchBoxListManager', () => {
       /\.research-page__row\s*\{[^}]*margin-left:\s*calc\(var\(--style-room-content-edge\) - 2px\);/,
     );
     expect(css).toMatch(
-      /\.style-button\.style-cost-button\.style-cost-button--yellow\.research-page__research-button--completed:disabled::after\s*\{[^}]*border-image-source:\s*var\(--style-yellow-button-frame\);/,
+      /\.research-page__research-status-icon\s*\{[^}]*width:\s*30px;[^}]*height:\s*28px;/,
     );
     expect(titleSkinRule).toContain('height: 117px;');
     expect(titleSkinRule).toContain('border-width: 0 165px 0 5px;');
@@ -650,10 +670,13 @@ describe('ResearchBoxListManager', () => {
     expect(researchCostButtonRule).toMatch(
       /right:\s*calc\(\s*var\(--style-research-card-action-right\)\s*\+\s*\(var\(--style-research-value-width\)\s*-\s*72px\)\s*\/\s*2\s*\);/,
     );
-    const researchedButtonRule = css.match(
-      /\.style-button\.style-cost-button\.research-page__research-button\.research-page__research-button--completed\s*\{(?<body>[^}]*)\}/,
+    const researchedStatusRule = css.match(
+      /\.research-page__research-status--completed\s*\{(?<body>[^}]*)\}/,
     )?.groups?.body;
-    expect(researchedButtonRule).toContain('font-size: 12px;');
+    expect(researchedStatusRule).toContain(
+      'width: var(--style-research-value-width);',
+    );
+    expect(researchedStatusRule).toContain('height: 64px;');
   });
 
   it('routes available research purchases through the shared cost button', () => {

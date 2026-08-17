@@ -1,7 +1,6 @@
 import {
   Container,
   Graphics,
-  NineSliceSprite,
   Rectangle,
   Sprite,
   Texture,
@@ -33,6 +32,7 @@ import {
   PIXI_UI_GEOMETRY,
 } from '../../theme/PixiThemeTokens.js';
 import { RetainedButton } from '../workshop/RetainedPageKit.js';
+import { capitalizeGuildText } from './GuildPageWidgets.js';
 
 export const GUILD_DIALOG_IDS = Object.freeze({
   CHARTER: 'guild.charter',
@@ -44,9 +44,9 @@ export const GUILD_DIALOG_IDS = Object.freeze({
 });
 
 const CARD_TABS = Object.freeze([
-  Object.freeze({ id: 'stats', label: 'stats' }),
-  Object.freeze({ id: 'life', label: 'life' }),
-  Object.freeze({ id: 'history', label: 'history' }),
+  Object.freeze({ id: 'stats', label: 'Stats' }),
+  Object.freeze({ id: 'life', label: 'Life' }),
+  Object.freeze({ id: 'history', label: 'History' }),
 ]);
 
 const PROFILE_DIALOG_WIDTH = 304;
@@ -54,14 +54,9 @@ const CHARTER_DIALOG_WIDTH = 324;
 const CARD_DIALOG_WIDTH = 304;
 const CARD_DIALOG_HEIGHT = 364;
 const REQUEST_DIALOG_WIDTH = 304;
-const REQUEST_DIALOG_HEIGHT = 250;
-const STACK_DIALOG_WIDTH = 350;
-const STACK_DIALOG_HEIGHT = 391;
-const STACK_LIST_WIDTH = 128;
-const STACK_GAP = 9;
-const GUILD_PAPER_SURFACE = '#f6f3ec';
-const GUILD_PAPER_TEXT = '#221d17';
-const GUILD_QUEST_INDEX = '#5b3d26';
+const REQUEST_DIALOG_HEIGHT = 280;
+const STACK_DIALOG_WIDTH = 304;
+const STACK_DIALOG_HEIGHT = 408;
 
 const SWATCH_COLORS = Object.freeze({
   ink: null,
@@ -167,7 +162,7 @@ export class GuildDialogPixi extends BasePixiRetainedView {
       assetManager: this.assetManager,
       inputRouter: this.inputRouter,
       textEntryService: this.textEntryService,
-      labelText: 'name',
+      labelText: 'Name',
       maxLength: 24,
       label: `${this.dialogId}:name`,
       onChange: (value) => {
@@ -178,7 +173,7 @@ export class GuildDialogPixi extends BasePixiRetainedView {
       assetManager: this.assetManager,
       inputRouter: this.inputRouter,
       textEntryService: this.textEntryService,
-      labelText: 'tag',
+      labelText: 'Tag',
       maxLength: 5,
       label: `${this.dialogId}:tag`,
       onChange: (value) => {
@@ -186,7 +181,7 @@ export class GuildDialogPixi extends BasePixiRetainedView {
       },
     });
     this.colorLabel = new PixiTextLabel({
-      text: 'tag color',
+      text: 'Tag Color',
       fontSize: PIXI_UI_GEOMETRY.borderLabelFontSize,
       label: `${this.dialogId}:colorLabel`,
     });
@@ -211,8 +206,8 @@ export class GuildDialogPixi extends BasePixiRetainedView {
       semanticId: `${this.dialogId}.submit`,
       text:
         this.dialogId === GUILD_DIALOG_IDS.CHARTER
-          ? 'create'
-          : 'save',
+          ? 'Create'
+          : 'Save',
       sizeTier: 30,
       label: `${this.dialogId}:submit`,
       action: () => this.submitProfile(),
@@ -232,15 +227,23 @@ export class GuildDialogPixi extends BasePixiRetainedView {
     );
   }
 
-  buildRequestDialog({ counters }) {
-    this.requestPaper = new GuildPaper({
+  buildRequestDialog() {
+    this.requestDetail = new GuildQuestDetail({
+      assetManager: this.assetManager,
+      label: `${this.dialogId}:detail`,
+    });
+    this.requestAction = new PixiTextButton({
       assetManager: this.assetManager,
       inputRouter: this.inputRouter,
       semanticRegistry: this.semanticRegistry,
-      counters,
-      label: `${this.dialogId}:paper`,
+      semanticId: 'guild.request.action',
+      sizeTier: 30,
+      label: `${this.dialogId}:action`,
     });
-    this.panel.content.addChild(this.requestPaper.root);
+    this.panel.content.addChild(
+      this.requestDetail.root,
+      this.requestAction,
+    );
   }
 
   buildCardDialog({ counters }) {
@@ -351,15 +354,35 @@ export class GuildDialogPixi extends BasePixiRetainedView {
 
   onBind(viewModel) {
     this.model = viewModel ?? {};
-    this.panel.setTitle(this.model.title ?? getDialogTitle(this.dialogId));
+    this.panel.setTitle(
+      capitalizeGuildText(
+        this.model.title ?? getDialogTitle(this.dialogId),
+      ),
+    );
     if (isProfileDialog(this.dialogId)) {
       this.bindProfile();
     } else if (this.dialogId === GUILD_DIALOG_IDS.REQUEST) {
-      this.requestPaper.bind(this.model);
+      this.bindRequest();
     } else {
       this.bindCard();
     }
     this.relayout();
+  }
+
+  bindRequest() {
+    const request = this.model.request ?? this.model;
+    this.requestDetail.bind({ ...request, title: '' });
+    const action = this.model.action ?? request.action;
+    this.requestAction
+      .setText(
+        capitalizeGuildText(
+          this.model.actionLabel ?? request.actionLabel,
+        ),
+      )
+      .setAction(action)
+      .setEnabled(Boolean(action) && this.model.actionDisabled !== true);
+    this.requestAction.visible = Boolean(action);
+    this.requestAction.renderable = this.requestAction.visible;
   }
 
   bindProfile() {
@@ -376,7 +399,7 @@ export class GuildDialogPixi extends BasePixiRetainedView {
       this.tagField.setValue(this.profileDraft.tag);
     }
     this.selectColor(this.profileDraft.color, { notify: false });
-    this.statusLabel.setText(this.model.status ?? '');
+    this.statusLabel.setText(capitalizeGuildText(this.model.status));
     this.statusLabel.visible = Boolean(this.model.status);
     this.submitButton.setEnabled(this.model.canSubmit !== false);
   }
@@ -388,21 +411,24 @@ export class GuildDialogPixi extends BasePixiRetainedView {
       this.model.selectedTabId ??
       card.selectedTabId ??
       this.selectedCardTab;
-    this.cardName.setText(card.displayName ?? card.name ?? 'nameless');
+    this.cardName.setText(
+      capitalizeGuildText(card.displayName ?? card.name ?? 'Nameless'),
+    );
     this.cardLevel.setText(
-      card.levelLabel ??
-        `level ${card.level ?? 1}`,
+      capitalizeGuildText(
+        card.levelLabel ?? `Level ${card.level ?? 1}`,
+      ),
     );
     this.cardStatus.setText(
-      card.statusLabel ??
-        card.status ??
-        'idle',
+      capitalizeGuildText(
+        card.statusLabel ?? card.status ?? 'Idle',
+      ),
     );
     this.cardInitial.setText(
       String(card.displayName ?? card.name ?? '?')
         .trim()
         .slice(0, 1)
-        .toLowerCase() || '?',
+        .toUpperCase() || '?',
     );
     this.cardIcon.visible = false;
     const texture = resolveCharacterTexture(this.assetManager, card);
@@ -429,9 +455,11 @@ export class GuildDialogPixi extends BasePixiRetainedView {
     const action = this.model.action ?? card.action;
     this.cardAction
       .setText(
-        this.model.actionLabel ??
-          card.actionLabel ??
-          (isApplicant ? 'hire' : 'fire'),
+        capitalizeGuildText(
+          this.model.actionLabel ??
+            card.actionLabel ??
+            (isApplicant ? 'Hire' : 'Fire'),
+        ),
       )
       .setAction(action)
       .setEnabled(Boolean(action) && this.model.actionEnabled !== false);
@@ -484,7 +512,8 @@ export class GuildDialogPixi extends BasePixiRetainedView {
         swatch.applyTheme(contentTheme);
       }
     } else if (this.dialogId === GUILD_DIALOG_IDS.REQUEST) {
-      this.requestPaper?.applyTheme(contentTheme);
+      this.requestDetail?.applyTheme(contentTheme);
+      this.requestAction?.applyTheme(contentTheme);
     } else {
       this.cardIconFrame?.applyTheme(contentTheme);
       this.cardInitial?.applyTheme(contentTheme);
@@ -563,12 +592,19 @@ export class GuildDialogPixi extends BasePixiRetainedView {
     if (isProfileDialog(this.dialogId)) {
       this.layoutProfile();
     } else if (this.dialogId === GUILD_DIALOG_IDS.REQUEST) {
-      this.requestPaper.setBounds(
-        0,
-        0,
+      const actionHeight = this.requestAction.visible ? 28 : 0;
+      const actionGap = actionHeight > 0 ? 8 : 0;
+      this.requestDetail.setSize(
         this.panel.contentBoxWidth,
-        this.panel.contentBoxHeight,
+        this.panel.contentBoxHeight - actionHeight - actionGap,
       );
+      if (this.requestAction.visible) {
+        this.requestAction.position.set(
+          0,
+          this.panel.contentBoxHeight - actionHeight,
+        );
+        this.requestAction.setSize(this.panel.contentBoxWidth, actionHeight);
+      }
     } else {
       this.layoutCard();
     }
@@ -675,7 +711,8 @@ export class GuildDialogPixi extends BasePixiRetainedView {
         swatch.destroy();
       }
     } else if (this.dialogId === GUILD_DIALOG_IDS.REQUEST) {
-      this.requestPaper.destroy();
+      this.requestDetail.destroy();
+      this.requestAction.destroy({ children: true });
     } else {
       this.detailRows.destroy();
       this.detailPool.destroy();
@@ -697,7 +734,6 @@ export class GuildRequestStackDialogPixi extends BasePixiRetainedView {
     assetManager = null,
     inputRouter = null,
     semanticRegistry = null,
-    counters = null,
     onClose = null,
     theme = DEFAULT_PIXI_THEME_SNAPSHOT,
   } = {}) {
@@ -728,7 +764,7 @@ export class GuildRequestStackDialogPixi extends BasePixiRetainedView {
       inputRouter,
       semanticRegistry,
       closeSemanticId: 'guild.requestStack.close',
-      title: 'incoming quests',
+      title: 'Incoming Quests',
       coreWidth: STACK_DIALOG_WIDTH,
       coreHeight: STACK_DIALOG_HEIGHT,
       closeAction: () => this.onClose?.(),
@@ -739,8 +775,6 @@ export class GuildRequestStackDialogPixi extends BasePixiRetainedView {
       STACK_DIALOG_HEIGHT - PIXI_UI_GEOMETRY.dialogPadding * 2,
       PIXI_UI_GEOMETRY.dialogPadding,
     );
-    this.listLayer = new Container();
-    this.listLayer.label = 'guild:requestStack:list';
     this.detail = new GuildQuestDetail({
       assetManager,
       label: 'guild:requestStack:detail',
@@ -749,64 +783,31 @@ export class GuildRequestStackDialogPixi extends BasePixiRetainedView {
       assetManager,
       label: 'guild:requestStack:progress',
     });
-    this.note = new PixiTextLabel({
-      text: 'Papers rotate to the back when you open the next one.',
-      fontSize: 9,
-      fontWeight: 'bold',
-      color: '#a89678',
-      anchor: { x: 0.5, y: 0 },
-      label: 'guild:requestStack:note',
-    });
-    this.postButton = new GuildQuestButton({
+    this.postButton = new PixiTextButton({
       assetManager,
       inputRouter,
       semanticRegistry,
       semanticId: 'guild.requestStack.post',
-      green: true,
+      color: 'green',
+      sizeTier: 30,
       label: 'guild:requestStack:post',
       action: () => this.postSelected(),
     });
-    this.nextButton = new GuildQuestButton({
+    this.nextButton = new PixiTextButton({
       assetManager,
       inputRouter,
       semanticRegistry,
       semanticId: 'guild.requestStack.next',
+      color: 'brown-light',
+      sizeTier: 30,
       label: 'guild:requestStack:next',
       action: () => this.nextPage(),
     });
-    this.requestPool = new WidgetPool({
-      name: 'guild request stack page pool',
-      counters,
-      create: () =>
-        new GuildRequestListItem({
-          assetManager,
-          inputRouter,
-          semanticRegistry,
-        }),
-      reset: (row) => row.reset(),
-      dispose: (row) => row.destroy(),
-      maxSize: 12,
-    });
-    this.requestRows = new PooledCollection({
-      name: 'guild request stack pages',
-      pool: this.requestPool,
-      counters,
-      keyOf: (entry) => entry.request.id,
-      bind: (widget, entry) =>
-        widget.bind(entry.request, {
-          selected: entry.selected,
-          pageNumber: entry.pageNumber,
-          action: () => this.selectRequest(entry.requestIndex),
-        }),
-      afterReconcile: (widgets) => orderChildren(this.listLayer, widgets),
-    });
     this.panel.content.addChild(
-      this.listLayer,
       this.detail.root,
       this.progress,
-      this.postButton.root,
-      this.nextButton.root,
-      this.note,
+      this.postButton,
+      this.nextButton,
     );
     this.root.addChild(this.backdrop, this.panel);
     parent?.addChild?.(this.root);
@@ -833,17 +834,6 @@ export class GuildRequestStackDialogPixi extends BasePixiRetainedView {
   }
 
   renderSelectedRequest() {
-    const displayItems = this.requests.map((_, offset) => {
-      const requestIndex =
-        (this.selectedIndex + offset) % this.requests.length;
-      return {
-        request: this.requests[requestIndex],
-        requestIndex,
-        pageNumber: requestIndex + 1,
-        selected: offset === 0,
-      };
-    });
-    this.requestRows.reconcile(displayItems);
     const selected = this.requests[this.selectedIndex];
     this.detail.bind(selected, {
       pageLabel: `${this.selectedIndex + 1}/${this.requests.length}`,
@@ -858,12 +848,7 @@ export class GuildRequestStackDialogPixi extends BasePixiRetainedView {
     this.nextButton
       .setText(this.requests.length > 1 ? 'Next Page' : 'Only Page')
       .setEnabled(this.requests.length > 1);
-    const contentTheme =
-      this.panel?.getContentTheme?.() ?? this.theme;
-    for (const row of this.requestRows.getWidgets()) {
-      row.applyTheme(contentTheme);
-    }
-    this.relayoutList();
+    this.relayout();
   }
 
   selectRequest(index) {
@@ -908,14 +893,10 @@ export class GuildRequestStackDialogPixi extends BasePixiRetainedView {
     this.panel?.applyTheme(this.theme);
     const contentTheme =
       this.panel?.getContentTheme?.() ?? this.theme;
-    this.note?.applyTheme(contentTheme);
     this.progress?.applyTheme(contentTheme);
     this.detail?.applyTheme(contentTheme);
     this.postButton?.applyTheme(contentTheme);
     this.nextButton?.applyTheme(contentTheme);
-    for (const row of this.requestRows?.getWidgets?.() ?? []) {
-      row.applyTheme(contentTheme);
-    }
   }
 
   onLayout(viewportProjection) {
@@ -956,51 +937,38 @@ export class GuildRequestStackDialogPixi extends BasePixiRetainedView {
     if (!this.panel) {
       return;
     }
-    const centerY = getDialogCenterY(this.sourceHeight) - 52;
+    const centerY = getDialogCenterY(this.sourceHeight) - 20;
     const shift = finiteOr(this.viewportProjection?.dialogShift, 0);
     const x = Math.round((this.sourceWidth - STACK_DIALOG_WIDTH) / 2);
     const y = Math.round(
       centerY - STACK_DIALOG_HEIGHT / 2 + shift,
     );
     this.panel.position.set(x, y);
-    this.listLayer.position.set(-1, 5);
-    this.detail.root.position.set(
-      -1 + STACK_LIST_WIDTH + STACK_GAP,
-      5,
-    );
+    this.detail.root.position.set(0, 0);
     this.detail.setSize(
-      STACK_DIALOG_WIDTH - 38 - STACK_LIST_WIDTH - STACK_GAP,
-      272,
+      this.panel.contentBoxWidth,
+      280,
     );
-    this.progress.position.set(16, 282);
+    this.progress.position.set(0, 288);
     this.progress.setSize(
-      STACK_DIALOG_WIDTH - 86,
+      this.panel.contentBoxWidth,
       PIXI_UI_GEOMETRY.progressTotalHeight,
     );
-    const controlY = 299;
-    this.postButton.setBounds(4, controlY, 189, 31);
-    this.nextButton.setBounds(206, controlY, 102, 31);
-    this.note.position.set(
-      this.panel.contentBoxWidth / 2,
-      336,
-    );
+    const controlY = 306;
+    const controlGap = 8;
+    const nextWidth = 92;
+    const postWidth = this.panel.contentBoxWidth - nextWidth - controlGap;
+    this.postButton.position.set(0, controlY);
+    this.postButton.setSize(postWidth, 32);
+    this.nextButton.position.set(postWidth + controlGap, controlY);
+    this.nextButton.setSize(nextWidth, 32);
     this.backdrop.hitArea = new Rectangle(
       0,
       0,
       this.sourceWidth,
       this.sourceHeight,
     );
-    this.relayoutList();
     this.redrawBackdrop();
-  }
-
-  relayoutList() {
-    let y = 0;
-    for (const row of this.requestRows?.getWidgets?.() ?? []) {
-      const height = row.selected ? 88 : 22;
-      row.setBounds(0, y, STACK_LIST_WIDTH, height);
-      y += height + 2;
-    }
   }
 
   redrawBackdrop() {
@@ -1018,11 +986,9 @@ export class GuildRequestStackDialogPixi extends BasePixiRetainedView {
     this.modalHandle = null;
     this.backdropRegistration?.();
     this.backdropRegistration = null;
-    this.requestRows.destroy();
-    this.requestPool.destroy();
     this.detail.destroy();
-    this.postButton.destroy();
-    this.nextButton.destroy();
+    this.postButton.destroy({ children: true });
+    this.nextButton.destroy({ children: true });
   }
 }
 
@@ -1164,148 +1130,12 @@ export class GuildColorSwatch {
   }
 }
 
-class GuildPaper {
-  constructor({
-    assetManager,
-    inputRouter,
-    semanticRegistry,
-    counters,
-    label,
-  }) {
-    this.root = new Container();
-    this.root.label = label;
-    this.frame = new GuildAssetNineSlice({
-      assetManager,
-      textureId: 'public:ui/guild-quest/paper.9.png',
-      sourceInsets: { left: 41, top: 41, right: 42, bottom: 42 },
-      outputInsets: { left: 5, top: 5, right: 5, bottom: 5 },
-      label: `${label}:frame`,
-    });
-    this.rowsLayer = new Container();
-    this.rowsLayer.label = `${label}:rows`;
-    this.actionButton = new PixiTextButton({
-      assetManager,
-      inputRouter,
-      semanticRegistry,
-      semanticId: 'guild.request.action',
-      sizeTier: 30,
-      label: `${label}:action`,
-    });
-    this.root.addChild(
-      this.frame.root,
-      this.rowsLayer,
-      this.actionButton,
-    );
-    this.rowPool = new WidgetPool({
-      name: `${label} row pool`,
-      counters,
-      create: () =>
-        new GuildDetailRow({
-          paper: true,
-          label: `${label}:row`,
-        }),
-      reset: (row) => row.reset(),
-      dispose: (row) => row.destroy(),
-      maxSize: 8,
-    });
-    this.rows = new PooledCollection({
-      name: `${label} rows`,
-      pool: this.rowPool,
-      counters,
-      keyOf: (row, index) => row.id ?? row.key ?? index,
-      bind: (widget, row, key) => widget.bind(key, row),
-      afterReconcile: (widgets) => orderChildren(this.rowsLayer, widgets),
-    });
-  }
-
-  bind(model = {}) {
-    const request = model.request ?? model;
-    const rows =
-      model.rows ??
-      [
-        { id: 'difficulty', label: 'difficulty', value: request.difficulty },
-        { id: 'stats', label: 'stats', value: request.statLabel },
-        {
-          id: 'reward',
-          label: 'reward',
-          value: request.rewardText,
-          valueResourceKey: 'coin',
-        },
-        {
-          id: 'expires',
-          label: 'expires',
-          value: request.expiresLabel ?? 'now',
-        },
-        {
-          id: 'lore',
-          text: request.lore ?? '',
-          paragraph: true,
-        },
-        ...(request.eventLabel
-          ? [
-              {
-                id: 'event',
-                label: 'event',
-                value: request.eventLabel,
-              },
-            ]
-          : []),
-      ];
-    this.rows.reconcile(rows);
-    const action = model.action ?? request.action;
-    this.actionButton
-      .setText(
-        model.actionLabel ??
-          request.actionLabel ??
-          '',
-      )
-      .setAction(action)
-      .setEnabled(Boolean(action) && model.actionDisabled !== true);
-    this.actionButton.visible = Boolean(action);
-    this.actionButton.renderable = this.actionButton.visible;
-  }
-
-  setBounds(x, y, width, height) {
-    this.root.position.set(x, y);
-    this.frame.setBounds(0, 0, width, height);
-    this.rowsLayer.position.set(10, 10);
-    let rowY = 0;
-    for (const row of this.rows.getWidgets()) {
-      const rowHeight = row.getPreferredHeight(width - 20);
-      row.setBounds(0, rowY, width - 20, rowHeight);
-      rowY += rowHeight + 2;
-    }
-    if (this.actionButton.visible) {
-      this.actionButton.position.set(10, height - 38);
-      this.actionButton.setSize(width - 20, 28);
-    }
-  }
-
-  applyTheme(theme) {
-    for (const row of this.rows.getWidgets()) {
-      row.applyTheme(theme);
-    }
-    this.actionButton.applyTheme(theme);
-  }
-
-  destroy() {
-    this.rows.destroy();
-    this.rowPool.destroy();
-    this.actionButton.destroy({ children: true });
-    this.frame.destroy();
-    this.root.destroy({ children: true });
-  }
-}
-
 export class GuildDetailRow {
-  constructor({ paper = false, label }) {
+  constructor({ label }) {
     this.root = new Container();
     this.root.label = label;
-    this.paper = paper;
     this.keyLabel = new PixiTextLabel({
-      fontSize: paper
-        ? PIXI_UI_GEOMETRY.bodyFontSize
-        : PIXI_UI_GEOMETRY.bodyFontSize,
+      fontSize: PIXI_UI_GEOMETRY.bodyFontSize,
       label: `${label}:key`,
     });
     this.valueLabel = new PixiTextLabel({
@@ -1333,10 +1163,14 @@ export class GuildDetailRow {
     this.valueLabel.visible = !paragraph;
     this.paragraph.visible = paragraph;
     if (paragraph) {
-      this.paragraph.setText(row.text ?? '');
+      this.paragraph.setText(capitalizeGuildText(row.text));
     } else {
-      this.keyLabel.setText(row.label ?? row.keyText ?? '');
-      this.valueLabel.setText(row.value ?? row.valueText ?? '');
+      this.keyLabel.setText(
+        capitalizeGuildText(row.label ?? row.keyText),
+      );
+      this.valueLabel.setText(
+        capitalizeGuildText(row.value ?? row.valueText),
+      );
     }
   }
 
@@ -1375,21 +1209,11 @@ export class GuildDetailRow {
     this.keyLabel.applyTheme(theme);
     this.valueLabel.applyTheme(theme);
     this.paragraph.applyTheme(theme);
-    if (this.paper) {
-      this.keyLabel.setColor(GUILD_PAPER_TEXT);
-      this.valueLabel.setColor(
-        this.model?.valueResourceKey
-          ? guildPaperResourceColor(this.model.valueResourceKey)
-          : GUILD_PAPER_TEXT,
-      );
-      this.paragraph.setColor(GUILD_PAPER_TEXT);
-    } else {
-      this.valueLabel.setColor(
-        resolveThemeColor(
-          this.model?.valueResourceKey ?? 'text',
-        ),
-      );
-    }
+    this.valueLabel.setColor(
+      resolveThemeColor(
+        this.model?.valueResourceKey ?? 'text',
+      ),
+    );
   }
 
   reset() {
@@ -1413,18 +1237,17 @@ export class GuildRequestListItem {
     this.assetManager = assetManager;
     this.semanticRegistry = semanticRegistry;
     this.root = new Container();
-    this.frame = new GuildAssetNineSlice({
+    this.frame = new PixiFrame({
       assetManager,
-      textureId: 'public:ui/guild-quest/list-row.9.png',
-      sourceInsets: { left: 31, top: 24, right: 32, bottom: 23 },
-      outputInsets: { left: 7, top: 7, right: 7, bottom: 7 },
+      width: 1,
+      height: 1,
       label: 'guild:requestStack:listItem:frame',
     });
     this.number = new PixiTextLabel({
       fontSize: 9,
       fontWeight: 'bold',
       anchor: { x: 1, y: 0 },
-      color: GUILD_QUEST_INDEX,
+      color: 'muted',
       label: 'guild:requestStack:listItem:number',
     });
     this.title = new PixiTextLabel({
@@ -1432,22 +1255,10 @@ export class GuildRequestListItem {
       fontWeight: 'bold',
       label: 'guild:requestStack:listItem:title',
     });
-    this.photo = createAssetSprite(
-      assetManager,
-      'public:ui/guild-quest/quest-photo-smuggler-tunnel.png',
-      'guild:requestStack:listItem:photo',
-    );
-    this.clip = createAssetSprite(
-      assetManager,
-      'public:ui/guild-quest/paperclip.png',
-      'guild:requestStack:listItem:clip',
-    );
     this.root.addChild(
-      this.frame.root,
+      this.frame,
       this.number,
       this.title,
-      this.photo,
-      this.clip,
     );
     this.action = null;
     this.enabled = true;
@@ -1473,19 +1284,6 @@ export class GuildRequestListItem {
     this.root.eventMode = 'static';
     this.number.setText(pageNumber);
     this.title.setText(toDisplayCase(request.title));
-    this.photo.visible = selected;
-    this.clip.visible = selected;
-    this.frame.setTextureId(
-      selected
-        ? 'public:ui/guild-quest/paper.9.png'
-        : 'public:ui/guild-quest/list-row.9.png',
-      selected
-        ? { left: 41, top: 41, right: 42, bottom: 42 }
-        : { left: 31, top: 24, right: 32, bottom: 23 },
-      selected
-        ? { left: 9, top: 9, right: 9, bottom: 9 }
-        : { left: 7, top: 7, right: 7, bottom: 7 },
-    );
     this.semanticId = `guild.requestStack.request.${request.id}`;
     if (this.semanticRegistry) {
       this.semanticDefinition = this.semanticRegistry.register({
@@ -1504,23 +1302,18 @@ export class GuildRequestListItem {
   setBounds(x, y, width, height) {
     this.root.position.set(x, y);
     this.root.hitArea = new Rectangle(0, 0, width, height);
-    this.frame.setBounds(0, 0, width, height);
-    this.number.position.set(19, this.selected ? 8 : 2);
-    this.title.position.set(23, this.selected ? 8 : 2);
+    this.frame.setSize(width, height);
+    this.number.position.set(19, Math.max(2, (height - 16) / 2));
+    this.title.position.set(23, Math.max(2, (height - 16) / 2));
     this.title.setWrapWidth(width - 30);
-    this.photo.position.set(20, 31);
-    this.photo.width = 88;
-    this.photo.height = 46;
-    this.clip.position.set(-14, -14);
-    this.clip.width = 22;
-    this.clip.height = 32;
   }
 
   applyTheme(theme) {
     this.number.applyTheme(theme);
     this.title.applyTheme(theme);
-    this.number.setColor(GUILD_QUEST_INDEX);
-    this.title.setColor(GUILD_PAPER_TEXT);
+    this.frame.applyTheme(theme);
+    this.number.setColor('muted');
+    this.title.setColor('text');
   }
 
   reset() {
@@ -1546,86 +1339,70 @@ export class GuildRequestListItem {
     this.unregisterSemantic();
     this.registration?.();
     this.registration = null;
-    this.frame.destroy();
     this.root.destroy({ children: true });
   }
 }
 
 export class GuildQuestDetail {
-  constructor({ assetManager, label }) {
+  constructor({ label }) {
     this.root = new Container();
     this.root.label = label;
-    this.frame = new GuildAssetNineSlice({
-      assetManager,
-      textureId: 'public:ui/guild-quest/paper.9.png',
-      sourceInsets: { left: 41, top: 41, right: 42, bottom: 42 },
-      outputInsets: { left: 9, top: 9, right: 9, bottom: 9 },
-      label: `${label}:frame`,
+    this.title = new PixiTextLabel({
+      fontSize: PIXI_UI_GEOMETRY.dialogTitleFontSize,
+      fontWeight: 'bold',
+      wordWrap: true,
+      label: `${label}:title`,
     });
     this.page = new PixiTextLabel({
-      fontSize: 10,
-      fontWeight: 'bold',
+      fontSize: PIXI_UI_GEOMETRY.borderLabelFontSize,
       anchor: { x: 1, y: 0 },
-      color: GUILD_QUEST_INDEX,
+      color: 'muted',
       label: `${label}:page`,
     });
     this.lore = new PixiTextLabel({
-      fontSize: 9.6,
-      fontWeight: 'bold',
+      fontSize: PIXI_UI_GEOMETRY.bodyFontSize,
       wordWrap: true,
-      color: GUILD_PAPER_TEXT,
       label: `${label}:lore`,
     });
     this.rows = [
       new GuildQuestDetailLine({
-        assetManager,
-        icon: 'icon-difficulty.png',
         label: 'Difficulty',
       }),
       new GuildQuestDetailLine({
-        assetManager,
-        icon: 'icon-stats.png',
         label: 'Stats',
       }),
       new GuildQuestDetailLine({
-        assetManager,
-        icon: 'icon-reward.png',
         label: 'Reward',
+        valueResourceKey: 'coin',
       }),
       new GuildQuestDetailLine({
-        assetManager,
-        icon: 'icon-expires.png',
         label: 'Expires',
       }),
       new GuildQuestDetailLine({
-        assetManager,
-        icon: 'wax-seal.png',
         label: 'Event',
       }),
     ];
-    this.seal = createAssetSprite(
-      assetManager,
-      'public:ui/guild-quest/wax-seal.png',
-      `${label}:seal`,
-    );
     this.root.addChild(
-      this.frame.root,
+      this.title,
       this.page,
       this.lore,
       ...this.rows.map((row) => row.root),
-      this.seal,
     );
   }
 
   bind(request = {}, { pageLabel = '' } = {}) {
+    const title = toDisplayCase(request.title ?? 'Quest');
+    this.title.setText(title);
+    this.title.visible = Boolean(title);
+    this.title.renderable = this.title.visible;
     this.page.setText(pageLabel);
-    this.lore.setText(request.lore ?? '');
+    this.lore.setText(capitalizeGuildText(request.lore));
     const values = [
       toDisplayCase(request.difficulty),
       toDisplayCase(request.statLabel),
-      request.rewardText ?? '',
-      request.expiresLabel ?? 'now',
-      request.eventLabel ?? '',
+      capitalizeGuildText(request.rewardText),
+      capitalizeGuildText(request.expiresLabel ?? 'Now'),
+      capitalizeGuildText(request.eventLabel),
     ];
     this.rows.forEach((row, index) => {
       row.setValue(values[index]);
@@ -1636,36 +1413,37 @@ export class GuildQuestDetail {
   setSize(width, height) {
     this.width = width;
     this.height = height;
-    this.frame.setBounds(0, 0, width, height);
-    this.page.position.set(width - 12, 12);
-    this.lore.position.set(15, 39);
-    this.lore.setWrapWidth(Math.min(91, width - 30));
-    let y = 101;
+    this.title.position.set(0, 0);
+    this.title.setWrapWidth(Math.max(0, width - 52));
+    this.page.position.set(width, 2);
+    const loreY = this.title.visible ? 28 : 0;
+    this.lore.position.set(0, loreY);
+    this.lore.setWrapWidth(width);
+    let y = Math.max(
+      this.title.visible ? 72 : 44,
+      loreY + 6 + this.lore.measuredHeight,
+    );
     for (const row of this.rows) {
       if (!row.root.visible) {
         continue;
       }
-      const rowHeight = row.labelText === 'Reward' ? 32 : 17;
-      row.setBounds(15, y, width - 30, rowHeight);
+      const rowHeight = row.labelText === 'Reward' ? 28 : 22;
+      row.setBounds(0, y, width, rowHeight);
       y += rowHeight;
     }
-    this.seal.position.set(width - 37, height - 37);
-    this.seal.width = 28;
-    this.seal.height = 28;
   }
 
   applyTheme(theme) {
+    this.title.applyTheme(theme);
     this.page.applyTheme(theme);
     this.lore.applyTheme(theme);
-    this.page.setColor(GUILD_QUEST_INDEX);
-    this.lore.setColor(GUILD_PAPER_TEXT);
+    this.page.setColor('muted');
     for (const row of this.rows) {
       row.applyTheme(theme);
     }
   }
 
   destroy() {
-    this.frame.destroy();
     for (const row of this.rows) {
       row.destroy();
     }
@@ -1674,41 +1452,32 @@ export class GuildQuestDetail {
 }
 
 export class GuildQuestDetailLine {
-  constructor({ assetManager, icon, label }) {
+  constructor({ label, valueResourceKey = null }) {
     this.root = new Container();
     this.labelText = label;
-    this.icon = createAssetSprite(
-      assetManager,
-      `public:ui/guild-quest/${icon}`,
-      `guild:questDetail:${label}:icon`,
-    );
+    this.valueResourceKey = valueResourceKey;
     this.label = new PixiTextLabel({
       text: label,
-      fontSize: 7.8,
-      fontWeight: 'bold',
-      color: GUILD_PAPER_TEXT,
+      fontSize: PIXI_UI_GEOMETRY.bodyFontSize,
       label: `guild:questDetail:${label}:label`,
     });
     this.value = new PixiTextLabel({
-      fontSize: 7,
-      fontWeight: 'bold',
+      fontSize: PIXI_UI_GEOMETRY.bodyFontSize,
       align: 'right',
       anchor: { x: 1, y: 0 },
-      color: GUILD_PAPER_TEXT,
       wordWrap: true,
       label: `guild:questDetail:${label}:value`,
     });
     this.separator = new Graphics();
     this.root.addChild(
       this.separator,
-      this.icon,
       this.label,
       this.value,
     );
   }
 
   setValue(value) {
-    this.value.setText(value ?? '');
+    this.value.setText(capitalizeGuildText(value));
   }
 
   setBounds(x, y, width) {
@@ -1718,175 +1487,20 @@ export class GuildQuestDetailLine {
       .moveTo(0, 0)
       .lineTo(width, 0)
       .stroke({ color: '#483726', alpha: 0.22, width: 1 });
-    this.icon.position.set(0, 3);
-    this.icon.width = 11;
-    this.icon.height = 11;
-    this.label.position.set(16, 3);
+    this.label.position.set(0, 4);
     this.value.position.set(width, 3);
-    this.value.setWrapWidth(Math.max(0, width - 55));
+    this.value.setWrapWidth(Math.max(0, width - 92));
   }
 
   applyTheme(theme) {
     this.label.applyTheme(theme);
     this.value.applyTheme(theme);
-    this.label.setColor(GUILD_PAPER_TEXT);
-    this.value.setColor(GUILD_PAPER_TEXT);
-  }
-
-  destroy() {
-    this.root.destroy({ children: true });
-  }
-}
-
-class GuildAssetNineSlice {
-  constructor({
-    assetManager,
-    textureId,
-    sourceInsets,
-    outputInsets,
-    label,
-  }) {
-    this.assetManager = assetManager;
-    this.textureId = textureId;
-    this.sourceInsets = sourceInsets;
-    this.outputInsets = outputInsets;
-    this.root = new Container();
-    this.root.label = label;
-    this.fallback = new Graphics();
-    this.sprite = new NineSliceSprite({
-      texture: resolveTexture(assetManager, textureId) ?? Texture.EMPTY,
-      leftWidth: sourceInsets.left,
-      topHeight: sourceInsets.top,
-      rightWidth: sourceInsets.right,
-      bottomHeight: sourceInsets.bottom,
-    });
-    this.sprite.visible = Boolean(resolveTexture(assetManager, textureId));
-    this.root.addChild(this.fallback, this.sprite);
-  }
-
-  setTextureId(textureId, sourceInsets, outputInsets) {
-    this.textureId = textureId;
-    this.sourceInsets = sourceInsets;
-    this.outputInsets = outputInsets;
-    const texture = resolveTexture(this.assetManager, textureId);
-    if (texture) {
-      this.sprite.texture = texture;
-      this.sprite.leftWidth = sourceInsets.left;
-      this.sprite.topHeight = sourceInsets.top;
-      this.sprite.rightWidth = sourceInsets.right;
-      this.sprite.bottomHeight = sourceInsets.bottom;
-      this.sprite.visible = true;
-    } else {
-      this.sprite.visible = false;
-    }
-  }
-
-  setBounds(x, y, width, height) {
-    this.root.position.set(x, y);
-    const scaleX = this.outputInsets.left / this.sourceInsets.left;
-    const scaleY = this.outputInsets.top / this.sourceInsets.top;
-    this.sprite.scale.set(scaleX, scaleY);
-    this.sprite.setSize(
-      scaleX > 0 ? width / scaleX : width,
-      scaleY > 0 ? height / scaleY : height,
+    this.value.setColor(
+      resolveThemeColor(this.valueResourceKey ?? 'text'),
     );
-    this.fallback
-      .clear()
-      .rect(0, 0, width, height)
-      .fill(GUILD_PAPER_SURFACE)
-      .stroke({ color: '#8c765c', width: 1, alignment: 1 });
-    this.fallback.visible = !this.sprite.visible;
   }
 
   destroy() {
-    this.root.destroy({ children: true });
-  }
-}
-
-class GuildQuestButton {
-  constructor({
-    assetManager,
-    inputRouter,
-    semanticRegistry,
-    semanticId,
-    green = false,
-    action,
-    label,
-  }) {
-    this.root = new Container();
-    this.root.label = label;
-    this.frame = new GuildAssetNineSlice({
-      assetManager,
-      textureId: `public:ui/guild-quest/button-${green ? 'green' : 'brown'}.9.png`,
-      sourceInsets: { left: 43, top: 27, right: 43, bottom: 28 },
-      outputInsets: { left: 10, top: 10, right: 10, bottom: 10 },
-      label: `${label}:frame`,
-    });
-    this.text = new PixiTextLabel({
-      fontWeight: 'bold',
-      anchor: { x: 0.5, y: 0.5 },
-      color: '#f0e2ca',
-      label: `${label}:text`,
-    });
-    this.root.addChild(this.frame.root, this.text);
-    this.action = action;
-    this.enabled = true;
-    this.registration =
-      inputRouter?.registerPressTarget?.(this.root, {
-        enabled: () =>
-          this.enabled && this.root.visible && this.root.renderable,
-        onActivate: () => this.action?.(),
-        haptic: 'light',
-      }) ?? null;
-    this.semanticRegistry = semanticRegistry;
-    this.semanticId = semanticId;
-    this.semanticDefinition =
-      semanticRegistry?.register?.({
-        semanticId,
-        displayObject: this.root,
-        state: () => ({
-          enabled: this.enabled,
-          interactive: true,
-          visible: this.root.visible && this.root.renderable,
-        }),
-        activate: () => (this.enabled ? this.action?.() : false),
-      }) ?? null;
-  }
-
-  setText(text) {
-    this.text.setText(text);
-    return this;
-  }
-
-  setEnabled(enabled) {
-    this.enabled = Boolean(enabled);
-    this.root.alpha = this.enabled ? 1 : 0.72;
-    this.root.eventMode = this.enabled ? 'static' : 'none';
-    return this;
-  }
-
-  setBounds(x, y, width, height) {
-    this.root.position.set(x, y);
-    this.root.hitArea = new Rectangle(0, 0, width, height);
-    this.frame.setBounds(0, 0, width, height);
-    this.text.position.set(width / 2, height / 2 - 1);
-  }
-
-  applyTheme(theme) {
-    this.text.applyTheme(theme);
-    this.text.setColor('#f0e2ca');
-  }
-
-  destroy() {
-    this.registration?.();
-    this.registration = null;
-    if (this.semanticDefinition) {
-      this.semanticRegistry?.unregister?.(this.semanticId, {
-        displayObject: this.root,
-      });
-      this.semanticDefinition = null;
-    }
-    this.frame.destroy();
     this.root.destroy({ children: true });
   }
 }
@@ -1926,13 +1540,13 @@ function resolveThemeColor(token) {
 
 function getDialogTitle(dialogId) {
   const titles = {
-    [GUILD_DIALOG_IDS.CHARTER]: 'guild charter',
-    [GUILD_DIALOG_IDS.SETTINGS]: 'guild settings',
-    [GUILD_DIALOG_IDS.REQUEST]: 'request',
-    [GUILD_DIALOG_IDS.ADVENTURER]: 'adventurer info',
-    [GUILD_DIALOG_IDS.APPLICANT]: 'applicant info',
+    [GUILD_DIALOG_IDS.CHARTER]: 'Guild Charter',
+    [GUILD_DIALOG_IDS.SETTINGS]: 'Guild Settings',
+    [GUILD_DIALOG_IDS.REQUEST]: 'Request',
+    [GUILD_DIALOG_IDS.ADVENTURER]: 'Adventurer Info',
+    [GUILD_DIALOG_IDS.APPLICANT]: 'Applicant Info',
   };
-  return titles[dialogId] ?? 'guild';
+  return titles[dialogId] ?? 'Guild';
 }
 
 function isProfileDialog(dialogId) {
@@ -1945,9 +1559,9 @@ function isProfileDialog(dialogId) {
 function deriveCardRows(card, tabId) {
   if (tabId === 'life') {
     return [
-      { id: 'morale', label: 'morale', value: card.morale },
-      { id: 'fatigue', label: 'fatigue', value: card.fatigue },
-      { id: 'injury', label: 'injury', value: card.injury },
+      { id: 'morale', label: 'Morale', value: card.morale },
+      { id: 'fatigue', label: 'Fatigue', value: card.fatigue },
+      { id: 'injury', label: 'Injury', value: card.injury },
       {
         id: 'lifeText',
         text: card.lifeText ?? card.personalityLife ?? '',
@@ -1963,40 +1577,25 @@ function deriveCardRows(card, tabId) {
           text: entry.text ?? entry,
           paragraph: true,
         }))
-      : [{ id: 'empty', text: 'no history', paragraph: true }];
+      : [{ id: 'empty', text: 'No History', paragraph: true }];
   }
   return [
     {
       id: 'xp',
-      label: 'xp',
+      label: 'XP',
       value: `${card.xp ?? 0}/${card.nextLevelXp ?? '?'}`,
     },
     {
       id: 'personality',
-      label: 'personality',
+      label: 'Personality',
       value: card.personalityLabel ?? '',
     },
     ...Object.entries(card.stats ?? {}).map(([key, value]) => ({
       id: `stat:${key}`,
-      label: key,
+      label: capitalizeGuildText(key),
       value,
     })),
   ];
-}
-
-function createAssetSprite(assetManager, textureId, label) {
-  const texture = resolveTexture(assetManager, textureId);
-  const sprite = new Sprite(texture ?? Texture.EMPTY);
-  sprite.label = label;
-  sprite.visible = Boolean(texture);
-  return sprite;
-}
-
-function resolveTexture(assetManager, textureId) {
-  if (!assetManager?.loaded || !textureId) {
-    return null;
-  }
-  return assetManager.getTexture(textureId);
 }
 
 function resolveCharacterTexture(assetManager, model = {}) {
@@ -2012,19 +1611,6 @@ function resolveCharacterTexture(assetManager, model = {}) {
     );
   }
   return null;
-}
-
-function guildPaperResourceColor(resourceKey) {
-  if (resourceKey === 'seed') {
-    return '#795a3d';
-  }
-  if (resourceKey === 'herb') {
-    return '#356b3e';
-  }
-  if (resourceKey === 'coin') {
-    return '#7a641d';
-  }
-  return GUILD_PAPER_TEXT;
 }
 
 function getDialogCenterY(sourceHeight) {

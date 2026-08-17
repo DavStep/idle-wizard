@@ -59,7 +59,9 @@ export class CanvasTextEntryAdapter {
     }
 
     const handlers = this.handlers;
-    this.cleanup();
+    if (!this.config?.retainOnSubmit) {
+      this.cleanup();
+    }
     handlers.onSubmit();
   }
 

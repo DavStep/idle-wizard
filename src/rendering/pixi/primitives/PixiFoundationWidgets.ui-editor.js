@@ -101,7 +101,7 @@ export default [
     sectionId: FOUNDATION_SECTION,
     properties: [
       { label: 'Production class', value: 'RootRunDevicePreferenceRow' },
-      { label: 'Contract', value: 'Icon-led boolean preference row' },
+      { label: 'Contract', value: 'Icon-led boolean preference row with compact toggle or full-width slider' },
     ],
     usages: [
       {
@@ -110,8 +110,8 @@ export default [
       },
     ],
     scenarios: [
-      { fixture: { enabled: true, key: 'sfx', text: 'SOUND', value: true }, id: 'on', label: 'On', mount: mountDevicePreferenceRow },
-      { fixture: { enabled: true, key: 'music', text: 'MUSIC', value: false }, id: 'off', label: 'Off', mount: mountDevicePreferenceRow },
+      { fixture: { controlKind: 'slider', enabled: true, key: 'sfx', text: 'SOUND', value: true }, id: 'slider-on', label: 'Slider on', mount: mountDevicePreferenceRow },
+      { fixture: { controlKind: 'slider', enabled: true, key: 'music', text: 'MUSIC', value: false }, id: 'slider-off', label: 'Slider off', mount: mountDevicePreferenceRow },
       { fixture: { enabled: false, key: 'haptics', text: 'VIBRATION', value: true }, id: 'disabled', label: 'Disabled', mount: mountDevicePreferenceRow },
       { fixture: { enabled: true, key: 'theme', text: 'THEME', value: true }, id: 'theme', label: 'Day theme', mount: mountDevicePreferenceRow },
     ],
@@ -397,8 +397,8 @@ export default [
     ],
     scenarios: [
       { fixture: { guildTabId: 'hall' }, id: 'default', label: 'Default', mount: mountBottomHudTextTab },
-      { fixture: { guildTabId: 'board', selected: true }, id: 'selected', label: 'Selected', mount: mountBottomHudTextTab },
-      { fixture: { guildTabId: 'log', notification: true }, id: 'notification', label: 'Notification', mount: mountBottomHudTextTab },
+      { fixture: { guildTabId: 'adventurers', selected: true }, id: 'selected', label: 'Selected', mount: mountBottomHudTextTab },
+      { fixture: { guildTabId: 'adventurers', notification: true }, id: 'notification', label: 'Notification', mount: mountBottomHudTextTab },
     ],
   }),
   defineUiEditorIntegration({
@@ -1167,7 +1167,7 @@ function createDevicePreferenceRowThumbnail() {
     component: 'RootRunDevicePreferenceRow',
     createControl: ({ assets }) => createDevicePreferenceRowControl({
       assets,
-      fixture: { enabled: true, key: 'sfx', text: 'SOUND', value: true },
+      fixture: { controlKind: 'slider', enabled: true, key: 'sfx', text: 'SOUND', value: true },
       input: null,
     }),
     id: 'compound.device-preference-row',
@@ -1412,14 +1412,15 @@ function createScrollAreaControl({ input, rowCount, width = 250, height = 180 })
 
 function createDevicePreferencesControl({ assets, input, state, onChange }) {
   const definitions = [
-    ['sound', 'SOUND', PIXI_ROOT_RUN_ASSETS.settingsSound],
-    ['music', 'MUSIC', PIXI_ROOT_RUN_ASSETS.settingsMusic],
-    ['haptics', 'VIBRATION', PIXI_ROOT_RUN_ASSETS.settingsVibration],
-    ['theme', 'THEME', PIXI_ROOT_RUN_ASSETS.settingsThemeNight, PIXI_ROOT_RUN_ASSETS.settingsThemeDay],
+    ['sound', 'SOUND', PIXI_ROOT_RUN_ASSETS.settingsSound, null, 'slider'],
+    ['music', 'MUSIC', PIXI_ROOT_RUN_ASSETS.settingsMusic, null, 'slider'],
+    ['haptics', 'VIBRATION', PIXI_ROOT_RUN_ASSETS.settingsVibration, null, 'toggle'],
+    ['theme', 'THEME', PIXI_ROOT_RUN_ASSETS.settingsThemeNight, PIXI_ROOT_RUN_ASSETS.settingsThemeDay, 'toggle'],
   ];
-  const rows = definitions.map(([key, text, iconAssetId, onIconAssetId]) =>
+  const rows = definitions.map(([key, text, iconAssetId, onIconAssetId, controlKind]) =>
     new RootRunDevicePreferenceRow({
       assetManager: assets,
+      controlKind,
       iconAssetId,
       inputRouter: input,
       onIconAssetId,
@@ -1478,6 +1479,7 @@ function createDevicePreferenceRowControl({ assets, fixture, input, onChange = (
   const iconDefinition = resolvePreferenceIconDefinition(fixture.key);
   const row = new RootRunDevicePreferenceRow({
     assetManager: assets,
+    controlKind: fixture.controlKind,
     iconAssetId: iconDefinition.off,
     inputRouter: input,
     onIconAssetId: iconDefinition.on,

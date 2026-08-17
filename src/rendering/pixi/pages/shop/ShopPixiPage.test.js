@@ -927,8 +927,11 @@ describe('ShopPixiPage', () => {
         PIXI_ROOT_RUN_GEOMETRY.settings.rowGap,
     );
     expect(dialog.list.root.position.x).toBe(-9);
-    expect(dialog.list.root.position.y).toBe(20);
-    expect(dialog.list.height).toBe(298);
+    expect(dialog.list.root.position.y).toBe(0);
+    expect(dialog.list.height).toBe(318);
+    expect(firstRow.root.position.y).toBe(
+      PIXI_UI_GEOMETRY.dialogScrollPaddingTop,
+    );
     expect(dialog.tabLayer.position.x).toBe(9);
     expect(tabs).toHaveLength(3);
     for (const tab of tabs) {
@@ -1095,7 +1098,7 @@ describe('ShopPixiPage', () => {
     expect(dialog.tabLayer.renderable).toBe(false);
     expect(seedTab.root.visible).toBe(false);
     expect(seedTab.root.renderable).toBe(false);
-    expect(dialog.list.height).toBe(312);
+    expect(dialog.list.height).toBe(332);
 
     harness.page.destroy();
     harness.dispose();

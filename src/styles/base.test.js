@@ -1123,28 +1123,11 @@ describe('base styles', () => {
     expect(taskButtonRule).toContain('white-space: nowrap;');
   });
 
-  it('uses the alpha-cropped guild quest slices in CSS top-right-bottom-left order', () => {
+  it('uses the shared Root Run Settings row slice for guild quest cards', () => {
     const generatorSlices = [
-      ['--guild-page-paper-frame-slice', { left: 41, top: 41, right: 42, bottom: 42 }],
       [
-        '--guild-page-quest-dialog-frame-slice',
-        { left: 43, top: 43, right: 44, bottom: 43 },
-      ],
-      [
-        '--guild-page-quest-paper-frame-slice',
-        { left: 41, top: 41, right: 42, bottom: 42 },
-      ],
-      [
-        '--guild-page-quest-list-row-frame-slice',
-        { left: 31, top: 24, right: 32, bottom: 23 },
-      ],
-      [
-        '--guild-page-quest-button-frame-slice',
-        { left: 43, top: 27, right: 43, bottom: 28 },
-      ],
-      [
-        '--guild-page-quest-close-frame-slice',
-        { left: 27, top: 28, right: 28, bottom: 27 },
+        '--guild-page-quest-card-frame-slice',
+        { left: 13, top: 17, right: 25, bottom: 19 },
       ],
     ];
 
@@ -1155,9 +1138,9 @@ describe('base styles', () => {
     }
   });
 
-  it('keeps guild quest PNG assets free of green-screen matte edges', () => {
-    const assetDir = `${cwd()}/assets/game/source/ui/guild-quest`;
-    const assetNames = readdirSync(assetDir).filter((name) => name.endsWith('.png'));
+  it('keeps the replacement Guild card skin free of green-screen matte edges', () => {
+    const assetDir = `${cwd()}/assets/game/source/ui/root-run-settings`;
+    const assetNames = ['settings-row-bg.9.png'];
     const failures = [];
 
     function isBrightGreen(r, g, b) {
@@ -1230,7 +1213,6 @@ describe('base styles', () => {
           }
 
           if (
-            assetName !== 'icon-herbs.png' &&
             isDarkGreenMatte(r, g, b) &&
             isNearTransparentEdge(png, x, y)
           ) {

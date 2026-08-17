@@ -5,6 +5,13 @@ upload script posts the section whose heading matches `package.json` `version`.
 Write these developer-to-player notes only in Idle Wizard terms. Do not mention
 other game names, source projects, ports, or implementation provenance.
 
+## 0.3.62
+
+- Redesigned Guild quest review and posting with a clearer shared dialog, more readable quest details, and simpler request controls.
+- Added shared potion discoveries to Research, so recipes discovered by other wizards can be studied and unlocked in your own Workshop.
+- Refined World Events with clearer reward tiers, larger reward icons, modern donation controls, and working player profiles from the event leaderboard.
+- Improved World Chat readability, Settings audio controls, Inbox rewards, completed Research presentation, room atmosphere, tap sounds, and Android text entry.
+
 ## 0.3.61
 
 - Moved Guild into a dedicated Workshop action and added its own Hall, Board, Roster, and Log navigation, giving Guild work more room while keeping the normal room bar focused.

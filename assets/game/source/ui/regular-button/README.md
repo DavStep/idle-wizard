@@ -30,7 +30,8 @@ gray textures with compact output insets instead of owning duplicate PNGs.
 Production regular buttons read their source slices, output insets, and minimum
 center directly from each adjacent `.9slice.json` sidecar. The runtime maps all
 four authored corners with one shared scale at the target button size so it
-cannot make one side rounder than the other. Text buttons also derive their
-vertical optical center from the rendered bottom shadow (`20px`, `12px`, and
-`6px` in the radius-50, radius-30, and radius-15 source assets respectively),
-so labels center on the visible face rather than the complete PNG rectangle.
+cannot make one side rounder than the other. Text buttons also derive a
+half-strength vertical optical lift from the rendered bottom shadow (`20px`,
+`12px`, and `6px` in the radius-50, radius-30, and radius-15 source assets
+respectively). This keeps labels slightly above the complete PNG center without
+overcorrecting to the geometric face center.

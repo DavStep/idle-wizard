@@ -50,6 +50,10 @@ import {
   BrewingRecipeChoiceDialogPixi,
 } from './BrewingDialogsPixi.js';
 import { RootRunInventoryChoiceDialogPixi } from '../shared/RootRunInventoryChoiceDialogPixi.js';
+import {
+  AMBIENT_FIREFLY_COUNT,
+  AmbientFireflyLayer,
+} from '../shared/AmbientFireflyLayer.js';
 
 export const BREWING_PIXI_GEOMETRY = Object.freeze({
   worldTop: 88,
@@ -77,6 +81,13 @@ export const BREWING_PIXI_GEOMETRY = Object.freeze({
   inventoryButtonHeight: 80.25,
   inventoryOpenHeight: 68.25,
   inventoryPanelBottom: 251.25,
+});
+export const BREWING_FIREFLY_COUNT = AMBIENT_FIREFLY_COUNT;
+
+const BREWING_FIREFLY_FIELD = Object.freeze({
+  top: 98,
+  bottomInset: 184,
+  maxBottom: 620,
 });
 
 const BREWING_WORLD_MIN_ZOOM = 0.56;
@@ -130,6 +141,10 @@ export class BrewingPixiPage extends BaseRetainedPixiPage {
     counters = null,
     ticker = null,
     timeSource = () => Date.now(),
+    ambientRequestFrame,
+    ambientCancelFrame,
+    ambientTimeSource,
+    reducedMotion = prefersReducedMotion,
     theme = DEFAULT_PIXI_THEME_SNAPSHOT,
   } = {}) {
     super({ pageId: 'brewing', semanticTargets, theme });
@@ -141,6 +156,10 @@ export class BrewingPixiPage extends BaseRetainedPixiPage {
     this.currentActions = actions;
     this.ticker = ticker;
     this.timeSource = timeSource;
+    this.reducedMotion =
+      typeof reducedMotion === 'function'
+        ? reducedMotion
+        : () => Boolean(reducedMotion);
     this.active = false;
     this.worldPan = { x: 0, y: 0 };
     this.worldZoom = 1;
@@ -155,6 +174,18 @@ export class BrewingPixiPage extends BaseRetainedPixiPage {
     this.currentHerbDrag = null;
     this.motionGhostSequence = 0;
     this.selectedCauldronIndex = 0;
+
+    this.fireflies = new AmbientFireflyLayer({
+      label: 'brewing',
+      field: BREWING_FIREFLY_FIELD,
+      phaseOffset: 1.7,
+      intensity: 0.78,
+      requestFrame: ambientRequestFrame,
+      cancelFrame: ambientCancelFrame,
+      timeSource: ambientTimeSource,
+      reducedMotion: this.reducedMotion,
+    });
+    this.content.addChild(this.fireflies.root);
 
     this.worldViewport = new Container({
       label: 'brewing-world-viewport',
@@ -626,6 +657,7 @@ export class BrewingPixiPage extends BaseRetainedPixiPage {
     }
     super.activate();
     this.active = true;
+    this.fireflies?.setActive(true);
     this.ticker?.add?.(this.tickHandler);
   }
 
@@ -635,6 +667,7 @@ export class BrewingPixiPage extends BaseRetainedPixiPage {
     }
     this.ticker?.remove?.(this.tickHandler);
     this.active = false;
+    this.fireflies?.setActive(false);
     this.clearPageMotion();
     super.deactivate();
   }
@@ -1017,11 +1050,7 @@ export class BrewingPixiPage extends BaseRetainedPixiPage {
   }
 
   prefersReducedMotion() {
-    return Boolean(
-      globalThis.matchMedia?.(
-        '(prefers-reduced-motion: reduce)',
-      )?.matches,
-    );
+    return this.reducedMotion();
   }
 
   orderCauldrons(cauldrons) {
@@ -1191,6 +1220,7 @@ export class BrewingPixiPage extends BaseRetainedPixiPage {
   }
 
   applyThemeToChildren(theme) {
+    this.fireflies?.applyTheme(theme);
     this.herbInventory?.applyTheme(theme);
     this.potionInventory?.applyTheme(theme);
     this.herbsButton?.applyTheme(theme);
@@ -1208,6 +1238,7 @@ export class BrewingPixiPage extends BaseRetainedPixiPage {
     const bottomClearance = resolveRetainedPageBottomClearance(
       this.viewModel,
     );
+    this.fireflies?.setBounds(sourceWidth, sourceHeight);
     this.worldViewportWidth = sourceWidth;
     this.worldViewportHeight = Math.max(
       0,
@@ -1281,6 +1312,7 @@ export class BrewingPixiPage extends BaseRetainedPixiPage {
 
   destroyPage() {
     this.ticker?.remove?.(this.tickHandler);
+    this.fireflies?.destroy();
     this.clearPageMotion();
     releaseRegistration(this.panRegistration);
     releaseRegistration(this.pinchRegistration);
@@ -3744,4 +3776,10 @@ function releaseRegistration(registration) {
     return;
   }
   registration?.unregister?.();
+}
+
+function prefersReducedMotion() {
+  return Boolean(
+    globalThis.matchMedia?.('(prefers-reduced-motion: reduce)')?.matches,
+  );
 }

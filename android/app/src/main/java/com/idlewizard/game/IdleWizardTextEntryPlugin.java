@@ -45,6 +45,7 @@ public class IdleWizardTextEntryPlugin extends Plugin {
     private SessionEditText editor;
     private String activeSessionId;
     private boolean submitOnEnter;
+    private boolean retainOnSubmit;
     private boolean suppressEditorEvents;
     private int lastKeyboardInset = -1;
     private TextWatcher textWatcher;
@@ -69,6 +70,9 @@ public class IdleWizardTextEntryPlugin extends Plugin {
         boolean shouldSubmitOnEnter = Boolean.TRUE.equals(
             call.getBoolean("submitOnEnter", !multiline)
         );
+        boolean shouldRetainOnSubmit = Boolean.TRUE.equals(
+            call.getBoolean("retainOnSubmit", false)
+        );
         Integer maxLength = call.getInt("maxLength");
         int selectionStart = integerOrDefault(
             call.getInt("selectionStart"),
@@ -91,7 +95,8 @@ public class IdleWizardTextEntryPlugin extends Plugin {
                     maxLength,
                     selectionStart,
                     selectionEnd,
-                    shouldSubmitOnEnter
+                    shouldSubmitOnEnter,
+                    shouldRetainOnSubmit
                 );
                 call.resolve();
             } catch (RuntimeException error) {
@@ -168,7 +173,8 @@ public class IdleWizardTextEntryPlugin extends Plugin {
         Integer maxLength,
         int selectionStart,
         int selectionEnd,
-        boolean shouldSubmitOnEnter
+        boolean shouldSubmitOnEnter,
+        boolean shouldRetainOnSubmit
     ) {
         enforceKeyboardOverlayWindow(activity);
         View contentView = activity.findViewById(android.R.id.content);
@@ -184,6 +190,7 @@ public class IdleWizardTextEntryPlugin extends Plugin {
         activeSessionId = sessionId;
         editor = nextEditor;
         submitOnEnter = shouldSubmitOnEnter;
+        retainOnSubmit = shouldRetainOnSubmit;
         suppressEditorEvents = true;
         lastKeyboardInset = -1;
 
@@ -305,7 +312,11 @@ public class IdleWizardTextEntryPlugin extends Plugin {
             return false;
         }
 
-        finishSession(EVENT_SUBMIT, "submit");
+        if (retainOnSubmit) {
+            publishSessionEvent(EVENT_SUBMIT);
+        } else {
+            finishSession(EVENT_SUBMIT, "submit");
+        }
         return true;
     }
 
@@ -364,11 +375,19 @@ public class IdleWizardTextEntryPlugin extends Plugin {
             return;
         }
 
+        publishSessionEvent(eventName);
+        closeEditor(reason, true);
+    }
+
+    private void publishSessionEvent(String eventName) {
+        if (editor == null || activeSessionId == null) {
+            return;
+        }
+
         JSObject payload = sessionPayload(activeSessionId);
         payload.put("value", editor.getText().toString());
         putSelection(payload, editor);
         notifyListeners(eventName, payload);
-        closeEditor(reason, true);
     }
 
     private void closeEditor(String reason, boolean notifyClosed) {
@@ -378,6 +397,7 @@ public class IdleWizardTextEntryPlugin extends Plugin {
         editor = null;
         activeSessionId = null;
         submitOnEnter = false;
+        retainOnSubmit = false;
         suppressEditorEvents = true;
 
         if (closingEditor != null) {

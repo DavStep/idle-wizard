@@ -4,8 +4,15 @@
 openers, bag/stats actions, and reward-flyout layer once. The compact world
 chat preview belongs to retained global chrome so it stays visible across room
 changes.
+The page also owns nine passive fireflies between the Workshop window and the
+interactive room UI. They reuse retained Graphics objects, animate only through
+transform and alpha while the page is active, pause off-page, and remain still
+under reduced motion.
 Requirement rows, feature openers, dialog rows, tabs, and flyouts are keyed and
 pooled.
+Long dialog lists keep those keyed row instances for stable state and input,
+but render only the visible scroll window plus a small guard band. Scrollbar
+geometry is reused across offset-only frames.
 
 Workshop gameplay and backend behavior remain in presenters/facades. The Pixi
 view consumes already-formatted task rows, summon state, feature state, chat
@@ -30,10 +37,11 @@ The Bag presenter keeps unlocked or owned item rows and omits locked zero-count
 catalog entries.
 
 Open `src/dev/uiRecipes/world-event-dialog.html` through the shared Vite server
-for a deterministic production-backed World Event Quests state. It includes
-the full-width `314px` paper request sections, the two-quest no-scroll composition,
-and Donate-to-donation-dialog interaction without depending on a gameplay save
-or backend account session.
+for deterministic production-backed World Event states. It includes the
+full-width `314px` paper request sections, the two-quest no-scroll composition,
+the shared player leaderboard rows, the image-backed reward rows with overlaid
+icon amounts, and Donate-to-donation-dialog interaction without depending on a
+gameplay save or backend account session. Use `?tab=rewards` for reward-row QA.
 
 Pass the shared `PixiInputRouter` when constructing the page. Buttons,
 quick-release and hold-to-repeat summoning, scrolling, dialog backdrops, Escape/Android back, and

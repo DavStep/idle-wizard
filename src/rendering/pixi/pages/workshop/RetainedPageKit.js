@@ -433,6 +433,7 @@ export class RetainedButton {
     label = '',
     buttonLabel = 'button',
     fallbackHitTest = false,
+    preserveFocus = false,
     onActivate = null,
     inputRouter = null,
     semanticRegistry = null,
@@ -461,6 +462,7 @@ export class RetainedButton {
       text: label,
       action: onActivate,
       fallbackHitTest,
+      preserveFocus,
       ...(variant === 'tab'
         ? {}
         : { variant: normalizeRetainedButtonVariant(variant) }),
@@ -636,6 +638,8 @@ export class RetainedScrollArea {
     });
     this.scrollbarTrack.eventMode = 'none';
     this.scrollbarThumb.eventMode = 'none';
+    this.scrollbarTrackGeometryKey = '';
+    this.scrollbarThumbGeometryKey = '';
     this.root.addChild(
       this.content,
       this.maskShape,
@@ -957,8 +961,6 @@ export class RetainedScrollArea {
       this.width > 0 &&
       this.height > 0 &&
       trackHeight > 0;
-    this.scrollbarTrack.clear();
-    this.scrollbarThumb.clear();
     this.scrollbarTrack.visible = visible;
     this.scrollbarThumb.visible = visible;
 
@@ -967,23 +969,28 @@ export class RetainedScrollArea {
     }
 
     const trackX = this.width + geometry.gap;
-    this.scrollbarTrack
-      .roundRect(
-        trackX,
-        geometry.trackInset,
-        geometry.width,
-        trackHeight,
-        geometry.width / 2,
-      )
-      .fill({
-        color: RETAINED_SCROLLBAR_VISUALS.trackBackground,
-        alpha: RETAINED_SCROLLBAR_VISUALS.trackBackgroundAlpha,
-      })
-      .stroke({
-        color: RETAINED_SCROLLBAR_VISUALS.trackBorder,
-        alpha: RETAINED_SCROLLBAR_VISUALS.trackBorderAlpha,
-        width: geometry.trackBorderWidth,
-      });
+    const trackGeometryKey = `${trackX}:${trackHeight}`;
+    if (trackGeometryKey !== this.scrollbarTrackGeometryKey) {
+      this.scrollbarTrackGeometryKey = trackGeometryKey;
+      this.scrollbarTrack
+        .clear()
+        .roundRect(
+          trackX,
+          geometry.trackInset,
+          geometry.width,
+          trackHeight,
+          geometry.width / 2,
+        )
+        .fill({
+          color: RETAINED_SCROLLBAR_VISUALS.trackBackground,
+          alpha: RETAINED_SCROLLBAR_VISUALS.trackBackgroundAlpha,
+        })
+        .stroke({
+          color: RETAINED_SCROLLBAR_VISUALS.trackBorder,
+          alpha: RETAINED_SCROLLBAR_VISUALS.trackBorderAlpha,
+          width: geometry.trackBorderWidth,
+        });
+    }
 
     const baseThumbHeight = Math.min(
       trackHeight,
@@ -1023,19 +1030,25 @@ export class RetainedScrollArea {
       0,
       geometry.width - geometry.thumbGap * 2,
     );
-    this.scrollbarThumb
-      .roundRect(
-        thumbX,
-        thumbY,
-        thumbWidth,
-        thumbHeight,
-        thumbWidth / 2,
-      )
-      .fill({ color: RETAINED_SCROLLBAR_VISUALS.thumbBackground })
-      .stroke({
-        color: RETAINED_SCROLLBAR_VISUALS.thumbBorder,
-        width: geometry.thumbBorderWidth,
-      });
+    const thumbGeometryKey = `${thumbX}:${thumbWidth}:${thumbHeight}`;
+    if (thumbGeometryKey !== this.scrollbarThumbGeometryKey) {
+      this.scrollbarThumbGeometryKey = thumbGeometryKey;
+      this.scrollbarThumb
+        .clear()
+        .roundRect(
+          thumbX,
+          0,
+          thumbWidth,
+          thumbHeight,
+          thumbWidth / 2,
+        )
+        .fill({ color: RETAINED_SCROLLBAR_VISUALS.thumbBackground })
+        .stroke({
+          color: RETAINED_SCROLLBAR_VISUALS.thumbBorder,
+          width: geometry.thumbBorderWidth,
+        });
+    }
+    this.scrollbarThumb.y = thumbY;
   }
 
   scrollRectIntoView(

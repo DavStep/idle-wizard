@@ -83,7 +83,6 @@ const LEDGER_DIALOG_WIDTH = DEFAULT_DIALOG_WIDTH;
 const DEFAULT_DIALOG_HEIGHT = 364;
 const LEDGER_DIALOG_HEIGHT = 382;
 const LEDGER_ROW_HEIGHT = 58;
-const LEDGER_SCROLL_VIEWPORT_TOP = 20;
 const LEDGER_SCROLL_VIEWPORT_BOTTOM_INSET = 10;
 const CONTENT_GAP = 6;
 const LIST_OVERSCAN = 2;
@@ -158,7 +157,6 @@ const DIALOG_CONFIG = Object.freeze({
     listFrameWidth: RETAINED_DIALOG_LIST_GEOMETRY.rowFrameWidth,
     scrollViewportBottomInset:
       LEDGER_SCROLL_VIEWPORT_BOTTOM_INSET,
-    scrollViewportTopInset: LEDGER_SCROLL_VIEWPORT_TOP,
     tabFontSize: PIXI_UI_GEOMETRY.borderLabelFontSize,
   }),
   [SHOP_DIALOG_IDS.REQUEST]: Object.freeze({

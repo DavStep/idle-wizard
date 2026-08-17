@@ -20,7 +20,17 @@ export class ShopSellItemVisibilityManager {
 
   isResearched(item) {
     if (item.discoveryType === 'unknown' || item.unknown === true) {
-      return this.potionDiscoveryFacade?.hasDiscoveredPotion(item.key) ?? false;
+      if (!this.potionDiscoveryFacade?.hasDiscoveredPotion(item.key)) {
+        return false;
+      }
+
+      if (this.potionDiscoveryFacade.isDiscoveredByCurrentPlayer?.(item.key)) {
+        return true;
+      }
+
+      return (
+        this.researchFacade?.hasCompletedResearch(this.getResearchId(item)) ?? false
+      );
     }
 
     const researchId = this.getResearchId(item);

@@ -177,9 +177,30 @@
         totalLabel: entry[7],
       }));
       const worldEventRewardRows = [
-        { id: 'qualification', label: 'Leaderboard Rewards', value: 'Qualified' },
-        { id: 'rank-1', label: 'Rank 1', value: '5 emerald · 10 crystal' },
-        { id: 'rank-2', label: 'Rank 2', value: '3 emerald · 7 crystal' },
+        {
+          id: 'rank-1',
+          type: 'worldEventReward',
+          rankLabel: 'Rank 1',
+          rewards: [
+            { resourceKey: 'emerald', amountLabel: '5' },
+            { resourceKey: 'crystal', amountLabel: '10' },
+          ],
+        },
+        {
+          id: 'rank-2',
+          type: 'worldEventReward',
+          rankLabel: 'Rank 2',
+          rewards: [
+            { resourceKey: 'emerald', amountLabel: '3' },
+            { resourceKey: 'crystal', amountLabel: '7' },
+          ],
+        },
+        {
+          id: 'rank-101-plus',
+          type: 'worldEventReward',
+          rankLabel: 'Rank 101+ Qualified',
+          rewards: [{ resourceKey: 'crystal', amountLabel: '1' }],
+        },
       ];
 
       function selectWorldEventTab(tabId) {
@@ -189,12 +210,15 @@
           ? 'worldEventQuest'
           : tabId === 'leaderboard'
             ? 'leaderboard'
-            : 'default';
+            : 'worldEventReward';
         dialog.rows = tabId === 'tasks'
           ? worldEventQuestRows
           : tabId === 'leaderboard'
             ? worldEventLeaderboardRows
             : worldEventRewardRows;
+        dialog.header.meta = tabId === 'rewards'
+          ? '0 points · 4d 2h\nLeaderboard Rewards: 2,000 points to qualify'
+          : '0 points · 4d 2h';
         dialog.tabs = dialog.tabs.map((tab) => ({
           ...tab,
           selected: tab.id === tabId,

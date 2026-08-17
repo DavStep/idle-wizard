@@ -557,9 +557,10 @@ export class BrewingRecipeCard {
     this.model = model ?? {};
     this.actions = actions ?? {};
     const unknown =
-      this.model.unknown === true ||
-      this.model.known === false ||
-      this.model.discoveryType === 'unknown';
+      this.model.discovered !== true &&
+      (this.model.unknown === true ||
+        this.model.known === false ||
+        this.model.discoveryType === 'unknown');
     const locked = this.model.unlocked !== true;
     setText(this.name, unknown ? 'unknown potion' : this.model.label ?? '');
     setText(
@@ -745,8 +746,8 @@ export class BrewingRecipeCard {
   applyTheme(theme) {
     this.theme = theme ?? DEFAULT_PIXI_THEME_SNAPSHOT;
     const masked =
-      this.model.unknown === true ||
-      this.model.known === false;
+      this.model.discovered !== true &&
+      (this.model.unknown === true || this.model.known === false);
     applyTextTheme(this.name, this.theme, {
       ...RETAINED_TEXT_STYLES.bold,
       fill: masked ? this.theme.disabled : this.theme.text,
@@ -834,8 +835,8 @@ export class BrewingRecipeIngredientRow {
     this.model = model ?? {};
     this.recipe = recipe ?? {};
     const masked =
-      this.recipe.unknown === true ||
-      this.recipe.known === false;
+      this.recipe.discovered !== true &&
+      (this.recipe.unknown === true || this.recipe.known === false);
     const frameName = getHerbIconFrameName(
       this.model.itemKey ?? this.model.key,
     );
@@ -889,8 +890,8 @@ export class BrewingRecipeIngredientRow {
         Number.isFinite(this.model.quantity) &&
         this.model.owned < this.model.quantity);
     const masked =
-      this.recipe.unknown === true ||
-      this.recipe.known === false;
+      this.recipe.discovered !== true &&
+      (this.recipe.unknown === true || this.recipe.known === false);
     applyTextTheme(this.required, this.theme, {
       ...RETAINED_TEXT_STYLES.border,
       fill: masked

@@ -31,6 +31,10 @@ import {
   WORKSHOP_WORLD_EVENT_DONATE_DIALOG_ID,
 } from '../shop/ShopDialogPixi.js';
 import {
+  AMBIENT_FIREFLY_COUNT,
+  AmbientFireflyLayer,
+} from '../shared/AmbientFireflyLayer.js';
+import {
   BaseRetainedPixiPage,
   RETAINED_PAGE_GEOMETRY,
   RETAINED_TEXT_STYLES,
@@ -155,6 +159,12 @@ export const WORKSHOP_WINDOW_GEOMETRY = Object.freeze({
   height: 300,
   alpha: 0.86,
 });
+export const WORKSHOP_FIREFLY_COUNT = AMBIENT_FIREFLY_COUNT;
+const WORKSHOP_FIREFLY_FIELD = Object.freeze({
+  top: 166,
+  bottomInset: 188,
+  maxBottom: 610,
+});
 export const ROOT_RUN_SIDE_ACTION_GEOMETRY = Object.freeze({
   taskGap: 18,
   rowPitch: 62,
@@ -230,6 +240,9 @@ export class WorkshopPixiPage extends BaseRetainedPixiPage {
     requestFrame = defaultRequestFrame,
     cancelFrame = defaultCancelFrame,
     timeSource = defaultTimeSource,
+    ambientRequestFrame = defaultRequestFrame,
+    ambientCancelFrame = defaultCancelFrame,
+    ambientTimeSource = defaultTimeSource,
     reducedMotion = prefersReducedMotion,
     isUnlockAnimationBlocked = null,
     questCompletionMotionCoordinator = null,
@@ -269,6 +282,14 @@ export class WorkshopPixiPage extends BaseRetainedPixiPage {
     this.workshopWindow.anchor.set(0.5, 0);
     this.workshopWindow.alpha = WORKSHOP_WINDOW_GEOMETRY.alpha;
     this.workshopWindow.eventMode = 'none';
+    this.fireflies = new AmbientFireflyLayer({
+      label: 'workshop',
+      field: WORKSHOP_FIREFLY_FIELD,
+      requestFrame: ambientRequestFrame,
+      cancelFrame: ambientCancelFrame,
+      timeSource: ambientTimeSource,
+      reducedMotion: this.reducedMotion,
+    });
     this.tasks = new WorkshopTaskPanel({
       page: this,
       assetManager: this.assetManager,
@@ -315,6 +336,7 @@ export class WorkshopPixiPage extends BaseRetainedPixiPage {
     this.featureLayer = new Container({ label: 'workshop-feature-buttons' });
     this.content.addChild(
       this.workshopWindow,
+      this.fireflies.root,
       this.tasks.root,
       this.summon.root,
       this.bagButton.root,
@@ -580,6 +602,7 @@ export class WorkshopPixiPage extends BaseRetainedPixiPage {
           PIXI_ROOT_RUN_ASSETS.workshopWindowNight,
       );
     }
+    this.fireflies?.applyTheme(theme);
     this.tasks?.applyTheme(theme);
     this.summon?.applyTheme(theme);
     this.bagButton?.applyTheme(theme);
@@ -600,11 +623,13 @@ export class WorkshopPixiPage extends BaseRetainedPixiPage {
 
   activate() {
     super.activate();
+    this.fireflies?.setActive(true);
     this.tasks?.resumeMotion();
     this.summon?.setActive(true);
   }
 
   deactivate() {
+    this.fireflies?.setActive(false);
     this.tasks?.pauseMotion();
     this.summon?.setActive(false);
     super.deactivate();
@@ -622,6 +647,7 @@ export class WorkshopPixiPage extends BaseRetainedPixiPage {
     );
     this.workshopWindow.width = WORKSHOP_WINDOW_GEOMETRY.width;
     this.workshopWindow.height = WORKSHOP_WINDOW_GEOMETRY.height;
+    this.fireflies.setBounds(this.sourceWidth, this.sourceHeight);
     this.tasks.setBounds(
       RETAINED_PAGE_GEOMETRY.contentEdge,
       RETAINED_PAGE_GEOMETRY.contentTop,
@@ -907,6 +933,7 @@ export class WorkshopPixiPage extends BaseRetainedPixiPage {
 
   destroyPage() {
     this.cancelSideControlAnimations();
+    this.fireflies?.destroy();
     this.tasks?.destroy();
     this.summon?.destroy();
     this.bagButton?.destroy();

@@ -672,6 +672,7 @@ describe('retained dialog UI editor integrations', () => {
       'compound.dialog-frame',
       'compound.world-event-quest-row',
       'compound.leaderboard-row',
+      'compound.world-event-reward-row',
     ]);
     expect(
       content.children.filter(
@@ -690,6 +691,7 @@ describe('retained dialog UI editor integrations', () => {
       'quests',
       'unavailable',
       'leaderboard',
+      'rewards',
     ]);
     const leaderboardFixture = createUiEditorDialogFixture(dialogId, 2);
     expect(leaderboardFixture).toMatchObject({
@@ -699,6 +701,18 @@ describe('retained dialog UI editor integrations', () => {
     expect(leaderboardFixture.rows[0]).toMatchObject({
       type: 'leaderboardPlayer',
       totalMetric: 'points',
+    });
+    const rewardsFixture = createUiEditorDialogFixture(dialogId, 3);
+    expect(rewardsFixture).toMatchObject({
+      rowWidget: 'worldEventReward',
+      selectedTabId: 'rewards',
+    });
+    expect(rewardsFixture.rows[0]).toMatchObject({
+      type: 'worldEventReward',
+      rewards: [
+        { resourceKey: 'emerald', amountLabel: '5' },
+        { resourceKey: 'crystal', amountLabel: '10' },
+      ],
     });
 
     dialog.destroy();

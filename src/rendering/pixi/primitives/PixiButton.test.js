@@ -67,11 +67,11 @@ describe('PixiTextButton', () => {
   });
 
   it.each([
-    { sizeTier: 50, width: 58, height: 36, expectedY: 15.916667 },
-    { sizeTier: 30, width: 72, height: 42, expectedY: 19 },
-    { sizeTier: 15, width: 46, height: 28, expectedY: 13 },
+    { sizeTier: 50, width: 58, height: 36, expectedY: 16.958333 },
+    { sizeTier: 30, width: 72, height: 42, expectedY: 20 },
+    { sizeTier: 15, width: 46, height: 28, expectedY: 13.5 },
   ])(
-    'centers tier-$sizeTier text above the authored bottom shadow',
+    'applies a half-strength tier-$sizeTier bottom-shadow optical nudge',
     ({ sizeTier, width, height, expectedY }) => {
       const button = new PixiTextButton({
         assetManager: { getTexture: vi.fn(() => Texture.EMPTY) },

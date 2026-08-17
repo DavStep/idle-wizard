@@ -151,6 +151,53 @@ describe('NativeTextEntryAdapter', () => {
       handlers.onSubmit.mock.invocationCallOrder[0],
     );
   });
+
+  it('keeps native listeners attached for retained keyboard submits', async () => {
+    const plugin = createPlugin();
+    const handlers = createHandlers();
+    const adapter = new NativeTextEntryAdapter({ plugin });
+    await adapter.open(
+      {
+        id: 'session-chat',
+        value: 'hello',
+        selectionStart: 5,
+        selectionEnd: 5,
+        inputKind: 'text',
+        multiline: false,
+        maxLength: 160,
+        submitOnEnter: true,
+        retainOnSubmit: true,
+      },
+      handlers,
+    );
+
+    plugin.emit(NATIVE_EVENT_NAMES.SUBMIT, {
+      sessionId: 'session-chat',
+      value: 'hello',
+      selectionStart: 5,
+      selectionEnd: 5,
+    });
+    await Promise.resolve();
+
+    expect(plugin.start).toHaveBeenCalledWith(
+      expect.objectContaining({ retainOnSubmit: true }),
+    );
+    expect(handlers.onSubmit).toHaveBeenCalledTimes(1);
+    expect(plugin.removeListener).not.toHaveBeenCalled();
+
+    await adapter.update({
+      id: 'session-chat',
+      value: '',
+      selectionStart: 0,
+      selectionEnd: 0,
+    });
+    expect(plugin.update).toHaveBeenCalledWith({
+      sessionId: 'session-chat',
+      value: '',
+      selectionStart: 0,
+      selectionEnd: 0,
+    });
+  });
 });
 
 function createHandlers() {

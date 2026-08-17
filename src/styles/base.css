@@ -446,25 +446,11 @@
   --style-motion-ease-soft: cubic-bezier(0.39, 0.575, 0.565, 1);
   --style-motion-ease-rubber: cubic-bezier(0.39, 0.575, 0.565, 1);
   --style-motion-ease-expand-rubber: cubic-bezier(0.22, 1, 0.36, 1);
-  --guild-page-paper-frame: url("../../assets/game/source/ui/guild-quest/paper.9.png");
-  --guild-page-paper-frame-slice: 41 42 42 41 fill;
-  --guild-page-paper-frame-width: 5px;
-  --guild-page-paper-surface: #f6f3ec;
-  --guild-page-paper-text: #221d17;
-  --guild-page-paper-muted: #665e54;
-  --guild-page-quest-index-color: #5b3d26;
-  --guild-page-quest-dialog-frame: url("../../assets/game/source/ui/guild-quest/dialog-panel.9.png");
-  --guild-page-quest-dialog-frame-slice: 43 44 43 43 fill;
-  --guild-page-quest-paper-frame: url("../../assets/game/source/ui/guild-quest/paper.9.png");
-  --guild-page-quest-paper-frame-slice: 41 42 42 41 fill;
-  --guild-page-quest-list-row-frame: url("../../assets/game/source/ui/guild-quest/list-row.9.png");
-  --guild-page-quest-list-row-frame-slice: 24 32 23 31 fill;
-  --guild-page-quest-button-green-frame: url("../../assets/game/source/ui/guild-quest/button-green.9.png");
-  --guild-page-quest-button-brown-frame: url("../../assets/game/source/ui/guild-quest/button-brown.9.png");
-  --guild-page-quest-button-frame-slice: 27 43 28 43 fill;
-  --guild-page-quest-close-frame: url("../../assets/game/source/ui/guild-quest/close-panel.9.png");
-  --guild-page-quest-close-frame-slice: 28 28 27 27 fill;
-  --guild-page-quest-close-x: url("../../assets/game/source/ui/guild-quest/close-x.png");
+  --guild-page-quest-card-frame: url("../../assets/game/source/ui/root-run-settings/settings-row-bg.9.png");
+  --guild-page-quest-card-frame-slice: 17 25 19 13 fill;
+  --guild-page-quest-card-frame-width: 5.6667px 8.3333px 6.3333px 4.3333px;
+  --guild-page-paper-text: #634934;
+  --guild-page-paper-muted: #8a6e57;
   --style-block-shadow: 5px 5px 5px var(--style-muted);
   --style-dialog-shadow: var(--style-block-shadow);
   --style-overlay-shadow: 5px 5px 5px var(--style-muted);
@@ -10706,7 +10692,7 @@ div.workshop-page__discovery-row {
   width: 28px;
   height: 28px;
   padding: 2px;
-  margin: 0;
+  margin: 0 8px 0 0;
   overflow: visible;
   cursor: pointer;
   background: transparent;
@@ -10732,10 +10718,20 @@ div.workshop-page__discovery-row {
 
 .research-page__completed-toggle-icon {
   display: block;
-  width: 24px;
-  height: 24px;
+  width: 22px;
+  height: 14px;
+  color: #fff2df;
+  fill: none;
   pointer-events: none;
-  object-fit: contain;
+  stroke: currentColor;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+  stroke-width: 2;
+}
+
+.research-page__completed-toggle-icon circle {
+  fill: currentColor;
+  stroke: none;
 }
 
 .research-page__research-label {
@@ -10906,26 +10902,26 @@ div.workshop-page__discovery-row {
   font-variant-numeric: tabular-nums lining-nums;
 }
 
-.style-button.style-cost-button.research-page__research-button.research-page__research-button--completed {
+.research-page__research-status--completed {
+  position: absolute;
   top: calc(
     var(--style-research-card-action-top) +
-      var(--style-research-card-content-offset-y) + (64px - 42px) / 2
+      var(--style-research-card-content-offset-y)
   );
-  right: calc(
-    var(--style-research-card-action-right) +
-      (var(--style-research-value-width) - 72px) / 2
-  );
-  width: 72px;
-  min-width: 72px;
-  height: 42px;
-  min-height: 42px;
-  margin: 0;
-  font-size: 12px;
-  line-height: normal;
+  right: var(--style-research-card-action-right);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: var(--style-research-value-width);
+  height: 64px;
+  line-height: 0;
+  pointer-events: none;
 }
 
-.style-button.style-cost-button.style-cost-button--yellow.research-page__research-button--completed:disabled::after {
-  border-image-source: var(--style-yellow-button-frame);
+.research-page__research-status-icon {
+  display: block;
+  width: 30px;
+  height: 28px;
 }
 
 .style-button.style-cost-button.style-cost-button--yellow.research-page__research-button--in-progress:disabled::after {
@@ -13455,11 +13451,11 @@ div.workshop-page__discovery-row {
   min-height: 106px;
   padding: 7px 8px calc(var(--style-box-border-label-line-height) + 6px);
   color: var(--guild-page-paper-text);
-  background: var(--guild-page-paper-surface);
-  border: var(--guild-page-paper-frame-width) solid transparent;
-  border-image-source: var(--guild-page-paper-frame);
-  border-image-slice: var(--guild-page-paper-frame-slice);
-  border-image-width: var(--guild-page-paper-frame-width);
+  background: transparent;
+  border: var(--guild-page-quest-card-frame-width) solid transparent;
+  border-image-source: var(--guild-page-quest-card-frame);
+  border-image-slice: var(--guild-page-quest-card-frame-slice);
+  border-image-width: var(--guild-page-quest-card-frame-width);
   border-image-repeat: stretch;
   transform-origin: center;
 }
@@ -13532,12 +13528,7 @@ div.workshop-page__discovery-row {
   min-height: 0;
   padding: 9px 10px 10px;
   color: var(--guild-page-paper-text);
-  background: var(--guild-page-paper-surface);
-  border: var(--guild-page-paper-frame-width) solid transparent;
-  border-image-source: var(--guild-page-paper-frame);
-  border-image-slice: var(--guild-page-paper-frame-slice);
-  border-image-width: var(--guild-page-paper-frame-width);
-  border-image-repeat: stretch;
+  background: transparent;
 }
 
 .guild-page__request-paper-header {
@@ -13801,8 +13792,8 @@ div.workshop-page__discovery-row {
 }
 
 .guild-page__popup-panel[data-popup-kind="requestStack"] {
-  width: 350px;
-  translate: 0 -52px;
+  width: var(--style-tabbed-dialog-width);
+  translate: none;
 }
 
 .guild-page__popup-panel[data-popup-kind="charter"] {
@@ -13844,81 +13835,8 @@ div.workshop-page__discovery-row {
 
 .guild-page__popup-panel[data-popup-kind="requestStack"]
   .style-dialog.guild-page__dialog {
-  box-sizing: border-box;
-  z-index: 2;
-  width: 350px;
-  height: 391px;
-  padding: 13px 2px;
-  color: var(--guild-page-paper-text);
-  background: transparent;
-  border: 17px solid transparent;
-  border-image-source: var(--guild-page-quest-dialog-frame);
-  border-image-slice: var(--guild-page-quest-dialog-frame-slice);
-  border-image-width: 17px;
-  border-image-repeat: stretch;
-  box-shadow: none;
-}
-
-.guild-page__popup-panel[data-popup-kind="requestStack"]
-  .style-dialog.guild-page__dialog::before,
-.guild-page__popup-panel[data-popup-kind="requestStack"]
-  .style-dialog.guild-page__dialog::after {
-  display: none;
-}
-
-.guild-page__popup-panel[data-popup-kind="requestStack"]
-  .style-dialog.guild-page__dialog
-  > .style-box__title {
-  box-sizing: border-box;
-  top: -52px;
-  left: 50%;
-  display: grid;
-  place-items: center;
-  width: 252px;
-  height: 57px;
-  padding: 6px 54px 17px;
-  color: #f1e7d5;
-  font-size: var(--style-dialog-title-font-size);
-  font-weight: 700;
-  line-height: 1;
-  text-align: center;
-  background: transparent;
-  text-shadow:
-    0 1px 0 #231912,
-    1px 0 0 #231912,
-    0 -1px 0 #231912,
-    -1px 0 0 #231912;
-  transform: translateX(-50%);
-}
-
-.guild-page__popup-panel[data-popup-kind="requestStack"] .guild-page__close {
-  position: relative;
-  top: auto;
-  right: -24px;
-  bottom: auto;
-  z-index: auto;
-  align-self: flex-end;
-  box-sizing: border-box;
-  width: 32px;
-  height: 32px;
-  min-height: 0;
-  padding: 0;
-  font-size: 0;
-  background: transparent;
-  border: 7px solid transparent;
-  border-image-source: var(--guild-page-quest-close-frame);
-  border-image-slice: var(--guild-page-quest-close-frame-slice);
-  border-image-width: 7px;
-  border-image-repeat: stretch;
-}
-
-.guild-page__popup-panel[data-popup-kind="requestStack"]
-  .guild-page__close::after {
-  position: absolute;
-  inset: 0;
-  pointer-events: none;
-  content: "";
-  background: var(--guild-page-quest-close-x) center / contain no-repeat;
+  width: 260px;
+  height: 348px;
 }
 
 .guild-page__popup-panel[data-popup-kind="requestStack"].is-turning-page
@@ -13984,8 +13902,8 @@ div.workshop-page__discovery-row {
 
 .guild-page__request-stack {
   display: grid;
-  grid-template-columns: 128px minmax(0, 1fr);
-  gap: 9px;
+  grid-template-rows: auto minmax(0, 1fr);
+  gap: 8px;
   align-items: stretch;
   flex: 1 1 auto;
   height: auto;
@@ -13999,8 +13917,8 @@ div.workshop-page__discovery-row {
 
 .guild-page__request-stack-controls {
   display: grid;
-  grid-template-columns: minmax(0, 1fr) 102px;
-  gap: 13px;
+  grid-template-columns: minmax(0, 1fr) 92px;
+  gap: 8px;
   align-items: stretch;
   width: 100%;
 }
@@ -14012,25 +13930,8 @@ div.workshop-page__discovery-row {
   min-height: 31px;
   padding: 0 8px 2px;
   margin: 0;
-  color: #f0e2ca;
   font-size: var(--style-font-size);
-  font-weight: 700;
   line-height: 1;
-  text-shadow:
-    0 1px 0 #2b2119,
-    1px 0 0 #2b2119,
-    0 -1px 0 #2b2119,
-    -1px 0 0 #2b2119;
-  background: transparent;
-  border: 10px solid transparent;
-  border-image-source: var(--guild-page-quest-button-brown-frame);
-  border-image-slice: var(--guild-page-quest-button-frame-slice);
-  border-image-width: 10px;
-  border-image-repeat: stretch;
-}
-
-.style-button.guild-page__request-stack-post {
-  border-image-source: var(--guild-page-quest-button-green-frame);
 }
 
 .style-button.guild-page__request-stack-action:disabled {
@@ -14049,23 +13950,21 @@ div.workshop-page__discovery-row {
   flex-direction: column;
   align-self: stretch;
   gap: 6px;
-  margin: 8px 32px 0 24px;
+  margin: 8px 0 0;
 }
 
 .guild-page__request-stack-note {
   flex: 0 0 auto;
-  color: #a89678;
-  font-size: 9px;
-  font-weight: 700;
-  line-height: 1.1;
+  color: var(--guild-page-paper-muted);
+  font-size: var(--style-box-border-label-font-size);
+  line-height: var(--style-box-border-label-line-height);
   text-align: center;
-  text-shadow: 0 1px 0 #211912;
 }
 
 .guild-page__request-list {
-  display: flex;
-  flex-direction: column;
-  gap: 2px;
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(0, 1fr));
+  gap: 6px;
   min-width: 0;
   min-height: 0;
   overflow: hidden;
@@ -14079,31 +13978,27 @@ div.workshop-page__discovery-row {
   align-items: baseline;
   box-sizing: border-box;
   min-width: 0;
-  min-height: 22px;
-  padding: 2px 5px 3px;
+  min-height: 28px;
+  padding: 2px 6px;
   appearance: none;
   color: var(--guild-page-paper-text);
   font: inherit;
-  font-size: 8.8px;
+  font-size: var(--style-box-border-label-font-size);
   text-align: left;
   cursor: pointer;
   background: transparent;
-  border: 7px solid transparent;
-  border-image-source: var(--guild-page-quest-list-row-frame);
-  border-image-slice: var(--guild-page-quest-list-row-frame-slice);
-  border-image-width: 7px;
+  border: var(--style-yellow-button-frame-width) solid transparent;
+  border-image-source: var(--style-brown-button-dark-frame);
+  border-image-slice: var(--style-yellow-button-frame-slice);
+  border-image-width: var(--style-yellow-button-frame-width);
   border-image-repeat: stretch;
 }
 
 .guild-page__request-list-item.is-selected {
-  grid-template-rows: max-content 1fr;
   align-items: baseline;
-  min-height: 88px;
-  padding: 6px;
-  border-width: 9px;
-  border-image-source: var(--guild-page-quest-paper-frame);
-  border-image-slice: var(--guild-page-quest-paper-frame-slice);
-  border-image-width: 9px;
+  min-height: 28px;
+  padding: 2px 6px;
+  border-image-source: var(--style-brown-button-light-frame);
 }
 
 .guild-page__request-list-number {
@@ -14114,8 +14009,8 @@ div.workshop-page__discovery-row {
   align-self: baseline;
   width: 16px;
   height: auto;
-  color: var(--guild-page-quest-index-color);
-  font-size: 9px;
+  color: inherit;
+  font-size: var(--style-box-border-label-font-size);
   font-weight: 700;
   font-variant-numeric: tabular-nums lining-nums;
   line-height: 1.05;
@@ -14137,71 +14032,17 @@ div.workshop-page__discovery-row {
   white-space: nowrap;
 }
 
-.guild-page__request-list-item.is-selected .guild-page__request-list-title {
-  overflow: hidden;
-  font-size: 8.7px;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-}
-
-.guild-page__request-list-item:not(.is-selected)
-  :where(.guild-page__request-list-number, .guild-page__request-list-title) {
-  translate: 0 -5px;
-}
-
-.guild-page__request-list-item.is-selected .guild-page__request-list-number {
-  translate: none;
-}
-
-.guild-page__request-list-photo {
-  position: relative;
-  z-index: 2;
-  grid-column: 1 / -1;
-  justify-self: center;
-  box-sizing: border-box;
-  width: 88px;
-  height: 46px;
-  padding: 3px;
-  margin-top: 5px;
-  background: #c9a875;
-  border: 1px solid rgb(63 45 28 / 62%);
-  object-fit: cover;
-  object-position: 50% 58%;
-  pointer-events: none;
-}
-
-.guild-page__request-list-paperclip {
-  position: absolute;
-  top: -14px;
-  left: -14px;
-  z-index: 4;
-  width: 22px;
-  height: auto;
-  pointer-events: none;
-  rotate: -12deg;
-}
-
 .guild-page__request-detail-card {
   position: relative;
   display: flex;
   flex-direction: column;
-  gap: 4px;
+  gap: 8px;
   box-sizing: border-box;
   height: 100%;
   min-height: 0;
-  padding: 15px 9px 10px;
-  font-size: 9px;
+  padding: 0;
+  font-size: var(--style-font-size);
   background: transparent;
-  border: 9px solid transparent;
-  border-image-source: var(--guild-page-quest-paper-frame);
-  border-image-slice: var(--guild-page-quest-paper-frame-slice);
-  border-image-width: 9px;
-  border-image-repeat: stretch;
-}
-
-.guild-page__request-detail-card > :not(.guild-page__request-detail-seal) {
-  position: relative;
-  z-index: 1;
 }
 
 .guild-page__request-detail-card .guild-page__request-paper-title {
@@ -14215,15 +14056,14 @@ div.workshop-page__discovery-row {
 
 .guild-page__request-detail-card .guild-page__request-paper-page {
   position: absolute;
-  top: 12px;
-  right: 12px;
+  top: 2px;
+  right: 0;
   display: block;
   min-width: 0;
   min-height: 0;
   padding: 0;
-  color: var(--guild-page-quest-index-color);
-  font-size: 10px;
-  font-weight: 700;
+  color: var(--guild-page-paper-muted);
+  font-size: var(--style-box-border-label-font-size);
   font-variant-numeric: tabular-nums lining-nums;
   line-height: 1.05;
   text-align: right;
@@ -14233,13 +14073,12 @@ div.workshop-page__discovery-row {
 }
 
 .guild-page__request-detail-lore {
-  min-height: 37px;
-  max-width: 91px;
+  min-height: 40px;
+  max-width: none;
   padding-right: 0;
-  margin: 22px 0 1px;
-  font-size: 9.6px;
-  font-weight: 700;
-  line-height: 1.14;
+  margin: 28px 0 2px;
+  font-size: var(--style-font-size);
+  line-height: normal;
   overflow-wrap: anywhere;
 }
 
@@ -14251,13 +14090,13 @@ div.workshop-page__discovery-row {
 }
 
 .guild-page__request-detail-row {
-  grid-template-columns: 12px 34px minmax(0, 1fr);
-  min-height: 17px;
-  padding: 1px 0;
+  grid-template-columns: minmax(0, 1fr) minmax(92px, max-content);
+  min-height: var(--style-row-min-height);
+  padding: 2px 0;
   border-top: 1px solid rgb(72 55 38 / 22%);
-  column-gap: 4px;
-  font-size: 7.8px;
-  line-height: 1.06;
+  column-gap: var(--style-row-column-gap);
+  font-size: var(--style-font-size);
+  line-height: normal;
 }
 
 .guild-page__request-detail-row .guild-page__row-key {
@@ -14269,15 +14108,14 @@ div.workshop-page__discovery-row {
 .guild-page__request-detail-row .guild-page__row-value {
   min-width: 0;
   color: var(--guild-page-paper-text);
-  font-size: 7px;
-  font-weight: 700;
+  font-size: var(--style-font-size);
   text-align: right;
   white-space: normal;
   overflow-wrap: anywhere;
 }
 
 .guild-page__request-detail-row--reward {
-  min-height: 32px;
+  min-height: calc(var(--style-row-min-height) + 8px);
 }
 
 .guild-page__request-detail-row--medium .guild-page__row-value {
@@ -14292,24 +14130,10 @@ div.workshop-page__discovery-row {
   color: #466b3c;
 }
 
-.guild-page__request-detail-icon {
-  align-self: start;
-  justify-self: center;
-  width: 11px;
-  height: 11px;
-  object-fit: contain;
-  pointer-events: none;
-}
-
 .guild-page__request-detail-row .style-resource-label {
   justify-content: flex-end;
-  line-height: 1.06;
+  line-height: normal;
   white-space: nowrap;
-}
-
-.guild-page__request-detail-row .style-resource-label__icon {
-  width: 9px;
-  height: 9px;
 }
 
 .guild-page__request-detail-reward-list {
@@ -14324,16 +14148,6 @@ div.workshop-page__discovery-row {
   display: inline-flex;
   justify-content: flex-end;
   white-space: nowrap;
-}
-
-.guild-page__request-detail-seal {
-  position: absolute;
-  right: 9px;
-  bottom: 9px;
-  z-index: 0;
-  width: 28px;
-  height: auto;
-  pointer-events: none;
 }
 
 .guild-page__card-info {
@@ -17830,21 +17644,6 @@ div.workshop-page__discovery-row {
   border-image-source: var(--style-midnight-button-disabled-frame);
   border-image-slice: var(--style-midnight-button-frame-slice);
   border-image-width: var(--style-midnight-frame-control-width);
-}
-
-:root:is([data-style-theme="night"], [data-style-theme="day"])
-  .guild-page__popup-panel[data-popup-kind="requestStack"]
-  .style-button.guild-page__request-stack-action {
-  background: transparent;
-  border-image-source: var(--guild-page-quest-button-brown-frame);
-  border-image-slice: var(--guild-page-quest-button-frame-slice);
-  border-image-width: 10px;
-}
-
-:root:is([data-style-theme="night"], [data-style-theme="day"])
-  .guild-page__popup-panel[data-popup-kind="requestStack"]
-  .style-button.guild-page__request-stack-post {
-  border-image-source: var(--guild-page-quest-button-green-frame);
 }
 
 .brewing-page__cauldron.is-locked .brewing-page__cauldron-recipe-box.style-box {

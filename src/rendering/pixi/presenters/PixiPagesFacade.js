@@ -170,6 +170,7 @@ export class PixiPagesFacade {
     this.registered = false;
     this.refreshing = false;
     this.refreshQueued = false;
+    this.refreshQueuedReadGameplaySnapshot = false;
     this.unsubscribers = [];
     this.pageSwipeRegistration = null;
     this.nativeBackHandle = null;
@@ -212,7 +213,8 @@ export class PixiPagesFacade {
     this.shopListingDraftBySlot = new Map();
     this.shopListingItemKindBySlot = new Map();
     this.shopListingStatusBySlot = new Map();
-    this.guildTabId = "hall";
+    this.guildBranchId = "hall";
+    this.guildAdventurerTabId = "board";
     this.prestigeTabId = "main";
     this.gardenInventoryTabId = null;
     this.gardenSelectedSeedItemTypeId = null;
@@ -297,7 +299,7 @@ export class PixiPagesFacade {
     this.readInitialSnapshots();
     this.subscribeToState();
     this.installInputBoundaries();
-    this.refresh();
+    this.refresh({ readGameplaySnapshot: false });
     runtime.activatePage(this.getUnlockedPageId(this.currentPageId));
     this.syncExternalDataRetention();
     this.globalDialogPresenter?.mount?.();
@@ -349,7 +351,7 @@ export class PixiPagesFacade {
     this.trackSubscription(
       this.gameplayFacade?.subscribe?.((snapshot) => {
         this.gameplaySnapshot = snapshot ?? {};
-        this.refresh();
+        this.refresh({ readGameplaySnapshot: false });
       }),
     );
     this.trackSubscription(
@@ -479,18 +481,22 @@ export class PixiPagesFacade {
     await handle?.remove?.();
   }
 
-  refresh() {
+  refresh({ readGameplaySnapshot = true } = {}) {
     if (!this.mounted || this.refreshing) {
       this.refreshQueued = this.mounted;
+      this.refreshQueuedReadGameplaySnapshot =
+        this.refreshQueuedReadGameplaySnapshot || readGameplaySnapshot;
       return;
     }
 
     this.refreshing = true;
     try {
-      this.gameplayFacade?.withSnapshotCache?.(() => {
-        this.gameplaySnapshot =
-          this.gameplayFacade?.getSnapshot?.() ?? this.gameplaySnapshot;
-      });
+      if (readGameplaySnapshot) {
+        this.gameplayFacade?.withSnapshotCache?.(() => {
+          this.gameplaySnapshot =
+            this.gameplayFacade?.getSnapshot?.() ?? this.gameplaySnapshot;
+        });
+      }
       this.pageStates = this.pageUnlockManager.getPageStates(
         this.gameplaySnapshot,
       );
@@ -520,8 +526,13 @@ export class PixiPagesFacade {
     } finally {
       this.refreshing = false;
       if (this.refreshQueued) {
+        const queuedReadGameplaySnapshot =
+          this.refreshQueuedReadGameplaySnapshot;
         this.refreshQueued = false;
-        this.refresh();
+        this.refreshQueuedReadGameplaySnapshot = false;
+        this.refresh({
+          readGameplaySnapshot: queuedReadGameplaySnapshot,
+        });
       }
     }
   }
@@ -561,8 +572,10 @@ export class PixiPagesFacade {
         currentPageId: this.currentPageId,
         hudMode: this.currentPageId === "guild" ? "guild" : "rooms",
         guildHud: {
-          selectedTabId: this.guildTabId,
-          notifications: guildNotification?.children ?? {},
+          selectedTabId: this.guildBranchId,
+          notifications: projectGuildBranchNotifications(
+            guildNotification?.children,
+          ),
         },
         pages: this.pageStates,
         notifications: projectChromeNotificationPages(
@@ -770,7 +783,8 @@ export class PixiPagesFacade {
       case "guild":
         viewModel = createGuildPixiViewModel({
           gameplaySnapshot: this.gameplaySnapshot,
-          selectedTabId: this.guildTabId,
+          selectedBranchId: this.guildBranchId,
+          selectedAdventurerTabId: this.guildAdventurerTabId,
           gameplayActions: this.gameplayFacade,
           actions: { ui: actions.guild },
           tabNotifications: pageNotification?.children ?? null,
@@ -1567,8 +1581,8 @@ export class PixiPagesFacade {
         },
       },
       guild: {
-        selectTab: (tabId) => {
-          this.guildTabId = String(tabId || "hall");
+        selectAdventurerTab: (tabId) => {
+          this.guildAdventurerTabId = normalizeGuildAdventurerTabId(tabId);
           this.refreshPage("guild");
           return true;
         },
@@ -2043,12 +2057,12 @@ export class PixiPagesFacade {
           : ownedByKey.get(ingredient?.itemKey ?? ingredient?.key) ?? 0,
       }));
 
-      if (
-        recipe?.unlocked === true ||
-        recipe?.unknown === true ||
-        recipe?.known === false ||
-        recipe?.discoveryType === "unknown"
-      ) {
+      const undiscoveredUnknown =
+        recipe?.discovered !== true &&
+        (recipe?.unknown === true ||
+          recipe?.known === false ||
+          recipe?.discoveryType === "unknown");
+      if (recipe?.unlocked === true || undiscoveredUnknown) {
         return {
           ...recipe,
           ingredients,
@@ -2535,11 +2549,11 @@ export class PixiPagesFacade {
   }
 
   selectGuildTab(tabId) {
-    const normalized = normalizeGuildTabId(tabId);
-    if (normalized === this.guildTabId) {
+    const normalized = normalizeGuildBranchId(tabId);
+    if (normalized === this.guildBranchId) {
       return true;
     }
-    this.guildTabId = normalized;
+    this.guildBranchId = normalized;
     this.refreshChrome();
     this.refreshPage("guild");
     return true;
@@ -3013,11 +3027,12 @@ function createGardenSeedDialogRows(
 
   return orderedSeeds.map((seed) => {
     const display = getItemDisplay(snapshot, seed, seed.quantity);
+    const displayLabel = formatTitleCaseLabel(display.label);
     return {
       ...seed,
       id: seed.itemTypeId,
-      label: display.label,
-      displayLabel: display.label,
+      label: displayLabel,
+      displayLabel,
       quantityText: String(seed.quantity ?? 0),
       detail: `${Number(seed.quantity) || 0} Available`,
       selected: selectedSeedItemTypeId === seed.itemTypeId,
@@ -3037,6 +3052,13 @@ function createGardenSeedDialogRows(
       tutorialId: seed.key ? `garden:seed:${seed.key}` : null,
     };
   });
+}
+
+function formatTitleCaseLabel(value) {
+  return String(value ?? "").replace(
+    /(^|[\s-])([a-z])/g,
+    (_, prefix, letter) => `${prefix}${letter.toUpperCase()}`,
+  );
 }
 
 function createBrewingHerbDialogRows(snapshot = {}) {
@@ -3347,9 +3369,44 @@ function normalizeWorkshopTabId(tabId, allowedTabIds, fallback) {
   return allowedTabIds.has(normalized) ? normalized : fallback;
 }
 
-function normalizeGuildTabId(tabId) {
-  const normalized = String(tabId ?? "");
-  return ["hall", "board", "adventurers", "log"].includes(normalized)
+function normalizeGuildBranchId(branchId) {
+  return branchId === "adventurers" ? "adventurers" : "hall";
+}
+
+function normalizeGuildAdventurerTabId(tabId) {
+  const normalized = tabId === "adventurers" ? "roster" : String(tabId ?? "");
+  return ["board", "roster", "log"].includes(normalized)
     ? normalized
-    : "hall";
+    : "board";
+}
+
+function projectGuildBranchNotifications(children = {}) {
+  const source = children && typeof children === "object" ? children : {};
+  const adventurerStates = [
+    source.adventurers,
+    source.roster,
+    source.board,
+    source.log,
+    source.guild,
+  ].filter(isGuildNotificationActive);
+  const adventurerNotification = adventurerStates.some(
+    (state) => state === "red" || state?.tone === "red",
+  )
+    ? "red"
+    : adventurerStates.some(Boolean)
+      ? "orange"
+      : false;
+  return {
+    adventurers: adventurerNotification,
+    hall: source.hall ?? source.charter ?? false,
+  };
+}
+
+function isGuildNotificationActive(state) {
+  return (
+    state === true ||
+    state === "red" ||
+    state === "orange" ||
+    state?.active === true
+  );
 }

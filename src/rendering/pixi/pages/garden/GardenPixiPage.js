@@ -40,6 +40,10 @@ import {
   GardenConfirmDialogPixi,
   GardenSeedDialogPixi,
 } from "./GardenDialogPixi.js";
+import {
+  AMBIENT_FIREFLY_COUNT,
+  AmbientFireflyLayer,
+} from "../shared/AmbientFireflyLayer.js";
 
 export const GARDEN_PIXI_GEOMETRY = Object.freeze({
   plotListTop: 120,
@@ -63,6 +67,13 @@ export const GARDEN_PIXI_GEOMETRY = Object.freeze({
   soloSeedsButtonWidth: 220,
   selectedSeedHeight: 24,
   selectedSeedGap: 5,
+});
+export const GARDEN_FIREFLY_COUNT = AMBIENT_FIREFLY_COUNT;
+
+const GARDEN_FIREFLY_FIELD = Object.freeze({
+  top: 106,
+  bottomInset: 176,
+  maxBottom: 640,
 });
 
 const GARDEN_GROWING_WIND_MS = 2_400;
@@ -94,6 +105,9 @@ export class GardenPixiPage extends BaseRetainedPixiPage {
     counters = null,
     ticker = null,
     timeSource = () => Date.now(),
+    ambientRequestFrame,
+    ambientCancelFrame,
+    ambientTimeSource,
     reducedMotion = prefersReducedMotion,
     theme = DEFAULT_PIXI_THEME_SNAPSHOT,
   } = {}) {
@@ -116,12 +130,23 @@ export class GardenPixiPage extends BaseRetainedPixiPage {
     this.boundPlotState = new Map();
     this.hasBoundPlotState = false;
 
+    this.fireflies = new AmbientFireflyLayer({
+      label: "garden",
+      field: GARDEN_FIREFLY_FIELD,
+      phaseOffset: 0.8,
+      intensity: 0.92,
+      requestFrame: ambientRequestFrame,
+      cancelFrame: ambientCancelFrame,
+      timeSource: ambientTimeSource,
+      reducedMotion: this.reducedMotion,
+    });
+
     this.plotScroll = new RetainedScrollArea({
       assetManager: this.assetManager,
       label: "garden-page-scroll",
       inputRouter: this.inputRouter,
     });
-    this.content.addChild(this.plotScroll.root);
+    this.content.addChild(this.fireflies.root, this.plotScroll.root);
     this.plotPool = new WidgetPool({
       name: "garden plot pool",
       counters,
@@ -311,6 +336,7 @@ export class GardenPixiPage extends BaseRetainedPixiPage {
     }
     super.activate();
     this.active = true;
+    this.fireflies?.setActive(true);
     this.tick(this.timeSource());
     this.ticker?.add?.(this.tickHandler);
   }
@@ -321,6 +347,7 @@ export class GardenPixiPage extends BaseRetainedPixiPage {
     }
     this.ticker?.remove?.(this.tickHandler);
     this.active = false;
+    this.fireflies?.setActive(false);
     this.hidePlotTooltip();
     this.settleTransientMotion();
     super.deactivate();
@@ -409,6 +436,7 @@ export class GardenPixiPage extends BaseRetainedPixiPage {
   }
 
   applyThemeToChildren(theme) {
+    this.fireflies?.applyTheme(theme);
     this.actionBar?.applyTheme(theme);
     this.plotTooltip?.applyTheme(theme);
     for (const plot of this.plots?.getWidgets?.() ?? []) {
@@ -423,6 +451,7 @@ export class GardenPixiPage extends BaseRetainedPixiPage {
     const bottomClearance = resolveRetainedPageBottomClearance(
       this.viewModel,
     );
+    this.fireflies?.setBounds(sourceWidth, sourceHeight);
     const plotListHeight = Math.max(
       0,
       sourceHeight -
@@ -468,6 +497,7 @@ export class GardenPixiPage extends BaseRetainedPixiPage {
 
   destroyPage() {
     this.ticker?.remove?.(this.tickHandler);
+    this.fireflies?.destroy();
     this.plots?.destroy();
     this.plotPool?.destroy();
     this.plotScroll?.destroy();

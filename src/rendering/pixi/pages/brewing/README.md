@@ -5,6 +5,10 @@ shared `assetManager`, `inputRouter`, `semanticTargets`, resolved
 `dialogRegistry`, `dialogLayer`, optional retained `counters`, `ticker`, and
 theme snapshot. Register the returned view as page id `brewing`.
 
+Nine restrained warm fireflies drift behind the cauldron HUD and every
+interactive control. They reuse the shared retained ambient layer, animate only
+while Brewing is active, dim in Day, and remain still under reduced motion.
+
 The preferred renderer-neutral view model is:
 
 ```js

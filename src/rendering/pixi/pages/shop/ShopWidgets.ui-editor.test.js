@@ -9,10 +9,10 @@ import { validateUiEditorCompositionCoverage } from '../../../../uiEditor/sdk/va
 import { guildUiEditorAssetFilter } from '../guild/GuildUiEditorAssets.js';
 
 describe('Market, Guild, and Prestige UI editor coverage', () => {
-  it('loads public guild quest textures used by production widgets', () => {
+  it('loads the shared Root Run textures used by Guild production widgets', () => {
     expect(
       guildUiEditorAssetFilter({
-        id: 'public:ui/guild-quest/paper.9.png',
+        id: 'source:assets/ui/root-run-dialog/expedition-dialog-front.9.png',
       }),
     ).toBe(true);
   });
@@ -44,7 +44,6 @@ describe('Market, Guild, and Prestige UI editor coverage', () => {
       'compound.guild-profile-field',
       'primitive.guild-color-swatch',
       'compound.guild-detail-row',
-      'compound.guild-request-list-item',
       'compound.guild-quest-detail',
       'compound.guild-quest-detail-line',
       'compound.prestige-description',

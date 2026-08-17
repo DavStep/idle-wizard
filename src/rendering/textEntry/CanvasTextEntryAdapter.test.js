@@ -124,6 +124,28 @@ describe('CanvasTextEntryAdapter', () => {
     });
   });
 
+  it('keeps retained-submit canvas sessions active for consecutive messages', async () => {
+    const canvas = document.createElement('canvas');
+    const service = createCanvasService(canvas);
+    const onSubmit = vi.fn();
+    const session = await service.open({
+      value: 'first',
+      retainOnSubmit: true,
+      onSubmit,
+    });
+
+    dispatchKey(canvas, 'Enter');
+    await session.setValue('');
+    dispatchKey(canvas, 's');
+
+    expect(onSubmit).toHaveBeenCalledTimes(1);
+    expect(session.getSnapshot()).toMatchObject({
+      value: 's',
+      status: 'active',
+      active: true,
+    });
+  });
+
   it('explicitly blocks composition because full desktop IME is unsupported', async () => {
     const canvas = document.createElement('canvas');
     const service = createCanvasService(canvas);

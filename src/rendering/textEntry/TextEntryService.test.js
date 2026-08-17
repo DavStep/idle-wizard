@@ -84,6 +84,28 @@ describe('TextEntryService', () => {
     expect(service.getActiveSession()).toBeNull();
   });
 
+  it('keeps retained-submit sessions active after the keyboard submits', async () => {
+    const adapter = new FakeTextEntryAdapter();
+    const service = createService({ adapter });
+    const eventTypes = [];
+    const session = await service.open({
+      value: 'hello',
+      retainOnSubmit: true,
+    });
+    session.subscribe((event) => eventTypes.push(event.type));
+
+    adapter.handlers.onSubmit();
+
+    expect(session.getSnapshot()).toMatchObject({
+      value: 'hello',
+      retainOnSubmit: true,
+      status: 'active',
+      active: true,
+    });
+    expect(eventTypes).toEqual(['submit']);
+    expect(service.getActiveSession()).toBe(session);
+  });
+
   it('publishes active text-entry state before the keyboard adapter opens', async () => {
     const adapter = new FakeTextEntryAdapter();
     const service = createService({ adapter });

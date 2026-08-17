@@ -623,13 +623,20 @@ export class PixiInputRouter {
     const point = resolveInputPoint(event);
     const pointerType = String(event?.pointerType ?? 'mouse');
     const modal = this.getTopModal();
-    this.canvas?.focus?.({ preventScroll: true });
-
     const resolvedPress = this.resolvePressTarget(
       event?.target,
       point.global,
     );
+    const preserveExistingFocus = Boolean(
+      this.focusedId !== null &&
+        resolvedPress &&
+        resolveRegistrationBoolean(resolvedPress.preserveFocus, false),
+    );
+    if (!preserveExistingFocus) {
+      this.canvas?.focus?.({ preventScroll: true });
+    }
     if (
+      !preserveExistingFocus &&
       this.focusedId !== null &&
       resolvedPress?.id !== this.focusedId
     ) {
@@ -670,7 +677,7 @@ export class PixiInputRouter {
         return;
       }
 
-      if (this.isFocusable(pointer.press)) {
+      if (!preserveExistingFocus && this.isFocusable(pointer.press)) {
         this.focus(pointer.press.id);
       }
 

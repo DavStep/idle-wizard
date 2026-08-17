@@ -3,7 +3,7 @@
 import {
   createPixiAssetManagerFake,
 } from '../workshop/PixiPageTestHarness.js';
-import { Container, Texture } from 'pixi.js';
+import { Container, Graphics, Texture } from 'pixi.js';
 import { describe, expect, it, vi } from 'vitest';
 
 import { DialogRegistry } from '../../retained/DialogRegistry.js';
@@ -178,6 +178,8 @@ describe('ResearchPixiPage', () => {
 
     const box = harness.page.boxes.get('herbs');
     expect(box.rowWidgets.map((row) => row.research.id)).toEqual(['mint']);
+    expect(box.visibilityButton.x).toBe(box.width - 28 - 8);
+    expect(box.visibilityIcon).toBeInstanceOf(Graphics);
     expect(box.visibilityIcon.alpha).toBe(0.45);
     expect(
       harness.semanticTargets.resolve('research.completed.regular.herbs').state,
@@ -584,11 +586,14 @@ describe('ResearchPixiPage', () => {
       thumbBorder: 0x5e321b,
     });
 
-    const topThumbY = scroll.scrollbarThumb.getLocalBounds().y;
+    const topThumbY =
+      scroll.scrollbarThumb.y +
+      scroll.scrollbarThumb.getLocalBounds().y;
     expect(scroll.scrollTo(scroll.contentHeight - scroll.height)).toBe(true);
-    expect(scroll.scrollbarThumb.getLocalBounds().y).toBeGreaterThan(
-      topThumbY,
-    );
+    expect(
+      scroll.scrollbarThumb.y +
+        scroll.scrollbarThumb.getLocalBounds().y,
+    ).toBeGreaterThan(topThumbY);
 
     harness.page.bind(createResearchViewModel());
     expect(scroll.contentHeight).toBeLessThan(scroll.height);
@@ -681,8 +686,8 @@ describe('ResearchPixiPage', () => {
     });
     expect(row.costButton.amountLabel.fontSize).toBeCloseTo(17 * 0.88);
     expect(row.costButton.resourceIcon.width).toBeCloseTo(23 * 0.88);
-    expect(row.researchedButton.amountLabel.fontSize).toBe(9);
-    expect(row.researchedButton.amountLabel.textObject.style.fontSize).toBe(9);
+    expect(row.researchedButton.amountLabel.fontSize).toBe(10);
+    expect(row.researchedButton.amountLabel.textObject.style.fontSize).toBe(10);
     expect(box.title.text).toBe('Herbs');
     expect(box.title.style).toMatchObject({
       fontFamily: '"Lilita One", "Arial Black", Arial, sans-serif',
@@ -831,7 +836,7 @@ describe('ResearchPixiPage', () => {
     harness.dispose();
   });
 
-  it('presents completed research with corrected copy and yellow status chrome', () => {
+  it('presents completed research with corrected copy and the shared checkmark', () => {
     const harness = createHarness();
     const model = createResearchViewModel({
       value: 'researched',
@@ -859,15 +864,21 @@ describe('ResearchPixiPage', () => {
     expect(row.name.position.y).toBe(
       RESEARCH_PIXI_GEOMETRY.contentOffsetY,
     );
-    expect(row.researchedButton.visible).toBe(true);
-    expect(row.researchedButton.tone).toBe('yellow');
-    expect(row.researchedButton.amountLabel.text).toBe('Researched');
-    expect(row.researchedButton).toMatchObject({
-      buttonWidth: 72,
-      buttonHeight: 42,
+    expect(row.researchedButton.visible).toBe(false);
+    expect(row.researchedCheckmark.visible).toBe(true);
+    expect(row.researchedCheckmark.renderable).toBe(true);
+    expect(row.researchedCheckmark.label).toBe(
+      'research-row-researched-checkmark',
+    );
+    expect(row.researchedCheckmark).toMatchObject({
+      width: 30,
+      height: 28,
     });
-    expect(row.researchedButton.background.visible).toBe(true);
-    expect(row.researchedButton.background.renderable).toBe(true);
+    expect(row.researchedCheckmark.position.x).toBeCloseTo(
+      RESEARCH_PIXI_GEOMETRY.cardWidth -
+        RESEARCH_PIXI_GEOMETRY.actionRight -
+        RESEARCH_PIXI_GEOMETRY.valueWidth / 2,
+    );
     expect(row.readonlyValue.visible).toBe(false);
 
     harness.page.destroy();
@@ -949,6 +960,52 @@ describe('ResearchPixiPage', () => {
 
     harness.page.deactivate();
     expect(ticker.remove).toHaveBeenCalledWith(harness.page.tickHandler);
+
+    harness.page.destroy();
+    harness.dispose();
+  });
+
+  it('keeps local research progress moving without rebinding timer-only snapshots', () => {
+    let now = 1_000;
+    const harness = createHarness({ timeSource: () => now });
+    const createTimedModel = ({
+      active = true,
+      progress = 0.5,
+      remainingMs = 5_000,
+    } = {}) => {
+      const model = createResearchViewModel({ canResearch: false });
+      Object.assign(model.research.tabs[0].boxes[0].researches[0], {
+        completed: !active,
+        inProgress: active,
+        timer: {
+          active,
+          totalMs: 10_000,
+          remainingMs,
+          progress,
+        },
+      });
+      return model;
+    };
+
+    harness.page.bind(createTimedModel());
+    const row = harness.page.rows.get('mint');
+    const rowBind = vi.spyOn(row, 'bind');
+
+    harness.page.bind(
+      createTimedModel({ progress: 0.6, remainingMs: 4_000 }),
+    );
+    expect(rowBind).not.toHaveBeenCalled();
+
+    now = 2_000;
+    harness.page.tick();
+    expect(row.progress.progress).toBeCloseTo(0.6);
+    expect(row.researchingTimerLabel.text).toBe('4s');
+
+    harness.page.bind(
+      createTimedModel({ active: false, progress: 1, remainingMs: 0 }),
+    );
+    expect(rowBind).toHaveBeenCalledTimes(1);
+    expect(row.progress.root.visible).toBe(false);
 
     harness.page.destroy();
     harness.dispose();

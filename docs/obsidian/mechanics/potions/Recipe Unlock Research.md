@@ -25,6 +25,10 @@ Twenty-eight known potion recipes unlock in one strict chain. Each potion note s
 - Coin research-cost reduction can lower the paid amount.
 - Displayed costs and durations are client fallback values. A live SpacetimeDB `research_config` row can override either value even though the broader Maincloud research object is rejected.
 - Research makes the known recipe brewable; it does not change ingredient order.
+- A hidden recipe joins the available studies after its first global discovery.
+  That discovery study is free, instant, and independent of the ordered chain.
+  The discoverer does not need it because discovery ownership permanently
+  unlocks that recipe for them.
 
 ## Related
 

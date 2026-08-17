@@ -60,7 +60,9 @@ describe('createGuild', () => {
       gameplayActions: actions,
     });
 
-    expect(model.selectedTabId).toBe('adventurers');
+    expect(model.selectedBranchId).toBe('adventurers');
+    expect(model.selectedAdventurerTabId).toBe('roster');
+    expect(model.selectedTabId).toBe('roster');
     expect(model.guild.board[0]).toMatchObject({
       id: 'request-1',
       statLabel: 'wits',

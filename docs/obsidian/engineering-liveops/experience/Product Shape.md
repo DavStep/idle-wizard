@@ -168,8 +168,8 @@ experience_type: product-shape
 - Alliance income deltas currently skip if the player has same-week quest contribution or reward rows in another alliance; new alliances can show 0 until weekly reset.
 - Guild adventurer notification dots anchor to the row's top-right corner and stay row-local so they cannot land between the name and status columns.
 - Guild room boxes should use the full room inset width, not `--style-main-box-width`; the alternate Guild HUD does not reserve Workshop side-panel or compact-chat width inside the room content column.
-- Guild is an alternate level-15 HUD entered from the Workshop right-side Guild action, not a normal bottom room tab or swipe destination. In Guild mode hide Workshop scenery, summon, normal room tabs, and compact World Chat; use Workshop/Hall/Board/Roster/Log in the Guild bottom strip, with Workshop returning to the normal room HUD.
-- Guild content tabs should use compact labels like `hall`, `board`, `roster`, and `log`; `adventurers` crowds fitted desktop tab widths.
+- Guild is an alternate level-15 HUD entered from the Workshop right-side Guild action, not a normal bottom room tab or swipe destination. In Guild mode hide Workshop scenery, summon, normal room tabs, and compact World Chat; use Workshop/Hall/Adventurers in the Guild bottom strip, with Workshop returning to the normal room HUD.
+- The Adventurers branch owns a local Board/Roster/Log button panel above the Guild bottom strip. Future branch tabs stay hidden until their gameplay is implemented.
 - Guild tab panels are rebuilt on snapshot refresh; preserve `.guild-page__tabpanel.scrollTop` per tab or mobile scrolling snaps back to the top.
 - Guild board refreshes should retain the active `.guild-page__tabpanel` DOM node; restoring `scrollTop` alone can still kill mobile scroll momentum.
 - Guild request board rows are player-selected from an available quest pool; new waves refresh available quests and expire old requests, but never auto-fill the visible board.

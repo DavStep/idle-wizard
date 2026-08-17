@@ -67,6 +67,11 @@ describe('ResearchBalanceManager', () => {
     expect(manager.getDurationSeconds('unlockRecipe:manaTonic')).toBe(10);
     expect(manager.getDurationSeconds('unlockRecipe:briarWard')).toBe(300);
     expect(manager.getDurationSeconds('unlockRecipe:pearlrootDraught')).toBe(14_400);
+    expect(manager.getDurationSeconds('unlockRecipe:ashenMemory')).toBe(0);
+    expect(manager.getCost('unlockRecipe:ashenMemory')).toEqual({
+      amount: 0,
+      currency: 'coin',
+    });
     expect(manager.getDurationSeconds('summonSeedsX2')).toBe(600);
     expect(manager.getCost(gardenBulkResearchIds.plantAll)).toEqual({
       amount: 1_000,

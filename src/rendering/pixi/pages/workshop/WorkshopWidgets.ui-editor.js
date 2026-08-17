@@ -11,6 +11,7 @@ import {
   PotionDiscoveryRowPixi,
   WorkshopDialogRow,
   WorldEventDonationOptionRow,
+  WorldEventRewardRow,
 } from './WorkshopDialogPixi.js';
 import {
   ROOT_RUN_SIDE_ACTION_GEOMETRY,
@@ -28,11 +29,12 @@ export default [
   widget('compound.workshop-task-row', 'Workshop Task Row', ['text-button', 'primitive.progress-bar'], taskRowControl, variants(['progress', 'claimable', 'complete'])),
   widget('compound.workshop-summon-control', 'Workshop Summon Control', ['cost-button', 'info-button', 'primitive.notification-badge'], summonControl, variants(['available', 'unaffordable', 'notified'])),
   widget('compound.root-run-side-action', 'Root Run Side Action', ['primitive.notification-badge'], sideActionControl, variants(['left', 'right', 'disabled', 'notified', 'timed'])),
-  widget('compound.world-event-donation-option-row', 'World Event Donation Option Row', ['cost-button'], donationOptionControl, variants(['available', 'unavailable', 'seed-pack'])),
+  widget('compound.world-event-donation-option-row', 'World Event Donation Option Row', ['text-button'], donationOptionControl, variants(['available', 'unavailable', 'seed-pack'])),
   widget('compound.alliance-directory-row', 'Alliance Directory Row', ['compound.alliance-member-row', 'primitive.managed-scroll-area', 'text-button'], allianceDirectoryControl, variants(['collapsed', 'expanded', 'full'])),
   widget('compound.alliance-member-row', 'Alliance Member Row', ['compound.player-profile', 'text-button'], allianceMemberControl, variants(['leader', 'member', 'passive'])),
   widget('compound.alliance-quest-row', 'Alliance Quest Row', ['primitive.resource-label', 'text-button'], allianceQuestControl, variants(['fill', 'claim', 'claimed', 'overflow'])),
   widget('compound.leaderboard-row', 'Leaderboard Row', ['compound.player-profile', 'primitive.star-level-label', 'primitive.resource-label'], leaderboardRowControl, variants(['player', 'current-player', 'alliance', 'world-event-points'])),
+  widget('compound.world-event-reward-row', 'World Event Reward Row', [], worldEventRewardRowControl, variants(['two-rewards', 'one-reward', 'long-rank'])),
   widget('compound.potion-discovery-row', 'Potion Discovery Row', [], potionDiscoveryControl, variants(['discovered', 'undiscovered', 'long-recipe'])),
   widget('compound.workshop-dialog-row', 'Workshop Dialog Row', ['text-button', 'primitive.inline-text'], dialogRowControl, variants(['value', 'resource', 'action', 'locked'])),
 ];
@@ -79,6 +81,7 @@ function productionClass(id) {
     'compound.alliance-member-row': 'AllianceMemberRow',
     'compound.alliance-quest-row': 'AllianceQuestRow',
     'compound.leaderboard-row': 'LeaderboardRowPixi',
+    'compound.world-event-reward-row': 'WorldEventRewardRow',
     'compound.potion-discovery-row': 'PotionDiscoveryRowPixi',
     'compound.workshop-dialog-row': 'WorkshopDialogRow',
   })[id];
@@ -176,10 +179,12 @@ function allianceQuestControl({ assets, input, fixture = { state: 'fill' }, cont
   const control = new AllianceQuestRow({ dialog: dialogStub(assets, input) });
   const claimed = fixture.state === 'claimed';
   control.bind({
-    id: 'gather-silverleaf',
+    id: 'fill-mana-tonic',
     title: fixture.state === 'overflow'
       ? 'Fill 5000 Moonflower Seeds Before The Eclipse Ends'
-      : 'Gather Silverleaf',
+      : 'Fill 500 Mana Tonic',
+    itemKind: fixture.state === 'overflow' ? 'seed' : 'potion',
+    itemKey: fixture.state === 'overflow' ? 'moonflowerSeed' : 'manaTonic',
     contributionLabel: 'Your Fill 8/10',
     progressLabel: fixture.state === 'fill' ? '18/40' : '40/40',
     rewardAmountLabel: '3',
@@ -232,6 +237,27 @@ function leaderboardRowControl({ assets, input, fixture = { state: 'player' }, c
           onActivate: () => context?.emit('playerOpened') ?? true,
         },
   );
+  control.setBounds(0, 0, 258, 50);
+  return wrap(control, 258, 50);
+}
+
+function worldEventRewardRowControl({ assets, input, fixture = { state: 'two-rewards' } }) {
+  const control = new WorldEventRewardRow({
+    dialog: dialogStub(assets, input),
+  });
+  control.bind({
+    id: `reward:${fixture.state}`,
+    type: 'worldEventReward',
+    rankLabel:
+      fixture.state === 'long-rank' ? 'Rank 101+ Qualified' : 'Rank 1',
+    rewards:
+      fixture.state === 'one-reward'
+        ? [{ resourceKey: 'crystal', amountLabel: '1' }]
+        : [
+            { resourceKey: 'emerald', amountLabel: '5' },
+            { resourceKey: 'crystal', amountLabel: '10' },
+          ],
+  });
   control.setBounds(0, 0, 258, 50);
   return wrap(control, 258, 50);
 }

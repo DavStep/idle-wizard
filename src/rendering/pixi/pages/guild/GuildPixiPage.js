@@ -28,11 +28,10 @@ import {
   GuildSecretarySection,
 } from './GuildPageWidgets.js';
 
-const GUILD_TABS = Object.freeze([
-  Object.freeze({ id: 'hall', label: 'hall' }),
-  Object.freeze({ id: 'board', label: 'board' }),
-  Object.freeze({ id: 'adventurers', label: 'roster' }),
-  Object.freeze({ id: 'log', label: 'log' }),
+const ADVENTURER_TABS = Object.freeze([
+  Object.freeze({ id: 'board', label: 'Board' }),
+  Object.freeze({ id: 'roster', label: 'Roster' }),
+  Object.freeze({ id: 'log', label: 'Log' }),
 ]);
 
 const SECTION_GAP = 18;
@@ -70,7 +69,8 @@ export class GuildPixiPage extends BasePixiRetainedView {
     this.theme = theme;
     this.sourceWidth = PIXI_UI_GEOMETRY.sourceWidth;
     this.sourceHeight = PIXI_UI_GEOMETRY.sourceHeight;
-    this.selectedTabId = 'hall';
+    this.selectedBranchId = 'hall';
+    this.selectedAdventurerTabId = 'board';
     this.model = normalizeGuildViewModel({});
     this.backgroundGradient = null;
 
@@ -84,7 +84,7 @@ export class GuildPixiPage extends BasePixiRetainedView {
     this.tabLayer.label = 'guild:tabs';
 
     this.lockedSection = new GuildRowsSection({
-      title: 'guild',
+      title: 'Guild',
       assetManager,
       inputRouter,
       semanticRegistry,
@@ -104,15 +104,27 @@ export class GuildPixiPage extends BasePixiRetainedView {
     this.tabButtons = new Map();
     this.tabNotifications = new Map();
     this.tabScrolls = new Map();
-    for (const tab of GUILD_TABS) {
+    this.tabScrolls.set(
+      'hall',
+      new PixiScrollView({
+        assetManager,
+        inputRouter,
+        width: 1,
+        height: 1,
+        showProgress: true,
+        label: 'guild:hall:scroll',
+      }),
+    );
+    this.createdLayer.addChild(this.tabScrolls.get('hall'));
+    for (const tab of ADVENTURER_TABS) {
       const button = new PixiTabButton({
         assetManager,
         inputRouter,
         semanticRegistry,
-        semanticId: `guild.tab.${tab.id}`,
+        semanticId: `guild.adventurers.tab.${tab.id}`,
         text: tab.label,
-        label: `guild:tab:${tab.id}`,
-        action: () => this.selectTab(tab.id),
+        label: `guild:adventurers:tab:${tab.id}`,
+        action: () => this.selectAdventurerTab(tab.id),
       });
       this.tabButtons.set(tab.id, button);
       this.tabNotifications.set(tab.id, button.notificationBadge);
@@ -131,7 +143,7 @@ export class GuildPixiPage extends BasePixiRetainedView {
     }
 
     this.hallSection = new GuildRowsSection({
-      title: 'guild hall',
+      title: 'Guild Hall',
       assetManager,
       inputRouter,
       semanticRegistry,
@@ -150,7 +162,7 @@ export class GuildPixiPage extends BasePixiRetainedView {
       counters,
     });
     this.availableSection = new GuildRowsSection({
-      title: 'available quests',
+      title: 'Available Quests',
       assetManager,
       inputRouter,
       semanticRegistry,
@@ -158,7 +170,7 @@ export class GuildPixiPage extends BasePixiRetainedView {
       label: 'guild:available',
     });
     this.adventurersSection = new GuildPeopleSection({
-      title: 'adventurers',
+      title: 'Adventurers',
       assetManager,
       inputRouter,
       semanticRegistry,
@@ -167,7 +179,7 @@ export class GuildPixiPage extends BasePixiRetainedView {
       label: 'guild:adventurers',
     });
     this.applicantsSection = new GuildPeopleSection({
-      title: 'applicants',
+      title: 'Applicants',
       assetManager,
       inputRouter,
       semanticRegistry,
@@ -176,7 +188,7 @@ export class GuildPixiPage extends BasePixiRetainedView {
       label: 'guild:applicants',
     });
     this.logSection = new GuildRowsSection({
-      title: 'guild log',
+      title: 'Guild Log',
       assetManager,
       inputRouter,
       semanticRegistry,
@@ -197,7 +209,7 @@ export class GuildPixiPage extends BasePixiRetainedView {
         this.availableSection.root,
       );
     this.tabScrolls
-      .get('adventurers')
+      .get('roster')
       .content.addChild(
         this.adventurersSection.root,
         this.applicantsSection.root,
@@ -256,8 +268,11 @@ export class GuildPixiPage extends BasePixiRetainedView {
   onBind(viewModel) {
     this.model = normalizeGuildViewModel(viewModel);
     this.currentActions = this.model.actions ?? this.actions;
-    this.selectedTabId = normalizeTabId(
-      this.model.selectedTabId ?? this.selectedTabId,
+    this.selectedBranchId = normalizeBranchId(
+      this.model.selectedBranchId ?? this.selectedBranchId,
+    );
+    this.selectedAdventurerTabId = normalizeAdventurerTabId(
+      this.model.selectedAdventurerTabId ?? this.selectedAdventurerTabId,
     );
     const guild = this.model.guild;
 
@@ -265,16 +280,16 @@ export class GuildPixiPage extends BasePixiRetainedView {
       rows: [
         {
           id: 'locked',
-          label: 'locked',
-          value: `level ${guild.unlockLevel ?? 15}`,
+          label: 'Locked',
+          value: `Level ${guild.unlockLevel ?? 15}`,
         },
       ],
     });
     this.charterSection.bind({
       description:
-        'establish your guild to hire adventurers, take requests, and keep a hall of your own.',
-      actionLabel: 'start guild',
-      costLabel: `${guild.charterCostCoin ?? 1500} coin`,
+        "Establish your Guild Hall and open its first Adventurers' Lodge.",
+      actionLabel: 'Start Guild',
+      costLabel: `${guild.charterCostCoin ?? 1500} Coin`,
       enabled: guild.canCreate === true,
       action: () =>
         this.openDialog(
@@ -289,7 +304,7 @@ export class GuildPixiPage extends BasePixiRetainedView {
     this.bindLog(guild);
     this.updateTabNotifications();
     this.applyStateVisibility();
-    this.applySelectedTab();
+    this.applySelectedView();
     this.relayout();
   }
 
@@ -309,12 +324,12 @@ export class GuildPixiPage extends BasePixiRetainedView {
         },
         {
           id: 'adventurers',
-          label: 'adventurers',
+          label: "Adventurers' Lodge",
           value: `${livingCount}/${guild.secretary?.hiredCap ?? 1}`,
         },
         {
           id: 'board',
-          label: 'board',
+          label: 'Board',
           value: `${safeArray(guild.board).length}/${
             guild.secretary?.boardSlots ?? 3
           }`,
@@ -322,7 +337,7 @@ export class GuildPixiPage extends BasePixiRetainedView {
         {
           id: 'settings',
           kind: 'button',
-          label: 'settings',
+          label: 'Settings',
           semanticId: 'guild.settings.open',
           action: () =>
             this.openDialog(
@@ -379,7 +394,7 @@ export class GuildPixiPage extends BasePixiRetainedView {
       availableRows.push(
         {
           id: 'incoming',
-          label: 'incoming',
+          label: 'Incoming',
           value: `${available.length} quest${
             available.length === 1 ? '' : 's'
           }`,
@@ -387,7 +402,7 @@ export class GuildPixiPage extends BasePixiRetainedView {
         {
           id: 'review',
           kind: 'button',
-          label: 'review quests',
+          label: 'Review Quests',
           semanticId: 'guild.available.open',
           action: () =>
             this.openDialog(
@@ -400,13 +415,13 @@ export class GuildPixiPage extends BasePixiRetainedView {
     if (guild.boardWaveLabel) {
       availableRows.push({
         id: 'wave',
-        label: 'upcoming quest',
+        label: 'Upcoming Quest',
         value: guild.boardWaveLabel,
       });
     }
     this.availableSection.bind({
       countLabel: String(available.length),
-      emptyLabel: 'no available quests',
+      emptyLabel: 'No Available Quests',
       rows: availableRows,
     });
   }
@@ -429,7 +444,7 @@ export class GuildPixiPage extends BasePixiRetainedView {
       countLabel: `${adventurers.length}/${
         guild.secretary?.hiredCap ?? 1
       }`,
-      emptyLabel: 'no adventurers',
+      emptyLabel: 'No Adventurers',
     });
     this.applicantsSection.bind({
       people: applicants.map((applicant) => ({
@@ -444,15 +459,15 @@ export class GuildPixiPage extends BasePixiRetainedView {
           ),
       })),
       countLabel: guild.applicantResetLabel
-        ? `next ${guild.applicantResetLabel}`
+        ? `Next ${guild.applicantResetLabel}`
         : '',
-      emptyLabel: 'no applicants',
+      emptyLabel: 'No Applicants',
     });
   }
 
   bindLog(guild) {
     this.logSection.bind({
-      emptyLabel: 'quiet',
+      emptyLabel: 'Quiet',
       rows: safeArray(guild.logs)
         .slice(0, 4)
         .map((log, index) => ({
@@ -531,7 +546,7 @@ export class GuildPixiPage extends BasePixiRetainedView {
       request,
       actionLabel:
         supplied.actionLabel ??
-        (posted ? 'remove' : boardFull ? 'board full' : 'post'),
+        (posted ? 'Remove' : boardFull ? 'Board Full' : 'Post'),
       actionDisabled:
         supplied.actionDisabled ??
         (!posted && boardFull),
@@ -610,7 +625,7 @@ export class GuildPixiPage extends BasePixiRetainedView {
       card: person,
       actionLabel:
         supplied.actionLabel ??
-        (isApplicant ? 'hire' : 'fire'),
+        (isApplicant ? 'Hire' : 'Fire'),
       actionEnabled:
         supplied.actionEnabled ??
         (isApplicant ||
@@ -640,18 +655,20 @@ export class GuildPixiPage extends BasePixiRetainedView {
     );
   }
 
-  selectTab(tabId) {
-    const normalized = normalizeTabId(tabId);
-    if (normalized === this.selectedTabId) {
+  selectAdventurerTab(tabId) {
+    const normalized = normalizeAdventurerTabId(tabId);
+    if (normalized === this.selectedAdventurerTabId) {
       return true;
     }
     const result =
-      this.currentActions.selectTab?.(normalized) ?? true;
+      this.currentActions.selectAdventurerTab?.(normalized) ??
+      this.currentActions.selectTab?.(normalized) ??
+      true;
     if (result === false || result?.ok === false) {
       return false;
     }
-    this.selectedTabId = normalized;
-    this.applySelectedTab();
+    this.selectedAdventurerTabId = normalized;
+    this.applySelectedView();
     return true;
   }
 
@@ -673,24 +690,28 @@ export class GuildPixiPage extends BasePixiRetainedView {
     this.charterSection.root.eventMode = !locked ? 'passive' : 'none';
   }
 
-  applySelectedTab() {
+  applySelectedView() {
     const created =
       this.model.guild.unlocked === true &&
       this.model.guild.created === true;
-    for (const tab of GUILD_TABS) {
-      const selected =
-        created && tab.id === this.selectedTabId;
-      const scroll = this.tabScrolls.get(tab.id);
+    for (const [viewId, scroll] of this.tabScrolls) {
+      const selected = created && (
+        (viewId === 'hall' && this.selectedBranchId === 'hall') ||
+        (viewId !== 'hall' &&
+          this.selectedBranchId === 'adventurers' &&
+          viewId === this.selectedAdventurerTabId)
+      );
       scroll.visible = selected;
       scroll.renderable = selected;
       scroll.eventMode = selected ? 'passive' : 'none';
+    }
+    for (const tab of ADVENTURER_TABS) {
       this.tabButtons.get(tab.id).setSelected(
-        tab.id === this.selectedTabId,
+        tab.id === this.selectedAdventurerTabId,
       );
     }
-    const usesHudNavigation =
-      this.model.navigationPlacement === 'hud';
-    this.tabLayer.visible = created && !usesHudNavigation;
+    this.tabLayer.visible =
+      created && this.selectedBranchId === 'adventurers';
     this.tabLayer.renderable = this.tabLayer.visible;
     this.tabLayer.eventMode = this.tabLayer.visible ? 'passive' : 'none';
   }
@@ -762,24 +783,24 @@ export class GuildPixiPage extends BasePixiRetainedView {
     }
     const edge = PIXI_UI_GEOMETRY.roomContentEdge;
     const contentWidth = this.sourceWidth - edge * 2;
+    const scrollWidth = this.sourceWidth - edge;
     const chatClearance = resolveRetainedPageBottomClearance(this.model);
-    const usesHudNavigation =
-      this.model.navigationPlacement === 'hud';
     const tabY =
       this.sourceHeight -
       chatClearance -
       6 -
       PIXI_UI_GEOMETRY.tabHeight;
     const scrollTop = PIXI_UI_GEOMETRY.roomContentTop;
-    const scrollBottom = usesHudNavigation
-      ? this.sourceHeight - chatClearance
-      : tabY - PAGE_SCROLL_PADDING;
-    const scrollHeight = Math.max(
+    const hallScrollHeight = Math.max(
       0,
-      scrollBottom - scrollTop,
+      this.sourceHeight - chatClearance - scrollTop,
+    );
+    const adventurerScrollHeight = Math.max(
+      0,
+      tabY - PAGE_SCROLL_PADDING - scrollTop,
     );
 
-    const gateWidth = this.sourceWidth - edge * 4;
+    const gateWidth = scrollWidth;
     const gateCenterY =
       this.sourceHeight / 2 -
       (PIXI_UI_GEOMETRY.roomContentTop + chatClearance) / 2;
@@ -788,55 +809,66 @@ export class GuildPixiPage extends BasePixiRetainedView {
       : this.lockedSection;
     const gateHeight = gate.getPreferredHeight(gateWidth);
     gate.setBounds(
-      edge,
+      0,
       gateCenterY - gateHeight / 2,
       gateWidth,
       gateHeight,
     );
 
-    for (const scroll of this.tabScrolls.values()) {
-      scroll.position.set(edge, scrollTop);
-      scroll.setViewportSize(contentWidth, scrollHeight);
+    for (const [viewId, scroll] of this.tabScrolls) {
+      scroll.position.set(0, scrollTop);
+      scroll.setViewportSize(
+        scrollWidth,
+        viewId === 'hall' ? hallScrollHeight : adventurerScrollHeight,
+      );
     }
     this.tabLayer.position.set(edge, tabY);
     const tabWidth =
-      (contentWidth - TAB_GAP * (GUILD_TABS.length - 1)) /
-      GUILD_TABS.length;
+      (contentWidth - TAB_GAP * (ADVENTURER_TABS.length - 1)) /
+      ADVENTURER_TABS.length;
     let tabX = 0;
-    for (const tab of GUILD_TABS) {
+    for (const tab of ADVENTURER_TABS) {
       const button = this.tabButtons.get(tab.id);
       button.position.set(tabX, 0);
       button.setSize(tabWidth, PIXI_UI_GEOMETRY.tabHeight);
       tabX += tabWidth + TAB_GAP;
     }
-    this.relayoutSections(contentWidth, scrollHeight);
+    this.relayoutSections({
+      adventurerViewportHeight: adventurerScrollHeight,
+      hallViewportHeight: hallScrollHeight,
+      width: scrollWidth,
+    });
     this.redrawBackground();
   }
 
-  relayoutSections(width, viewportHeight) {
+  relayoutSections({
+    adventurerViewportHeight,
+    hallViewportHeight,
+    width,
+  }) {
     this.layoutSectionStack(
       this.tabScrolls.get('hall'),
       [this.hallSection, this.secretarySection],
       width,
-      viewportHeight,
+      hallViewportHeight,
     );
     this.layoutSectionStack(
       this.tabScrolls.get('board'),
       [this.boardSection, this.availableSection],
       width,
-      viewportHeight,
+      adventurerViewportHeight,
     );
     this.layoutSectionStack(
-      this.tabScrolls.get('adventurers'),
+      this.tabScrolls.get('roster'),
       [this.adventurersSection, this.applicantsSection],
       width,
-      viewportHeight,
+      adventurerViewportHeight,
     );
     this.layoutSectionStack(
       this.tabScrolls.get('log'),
       [this.logSection],
       width,
-      viewportHeight,
+      adventurerViewportHeight,
     );
   }
 
@@ -882,7 +914,7 @@ export class GuildPixiPage extends BasePixiRetainedView {
     if (!this.tabNotifications) {
       return;
     }
-    for (const tab of GUILD_TABS) {
+    for (const tab of ADVENTURER_TABS) {
       const notification = this.tabNotifications.get(tab.id);
       const state = getGuildTabNotification(
         this.model,
@@ -964,35 +996,67 @@ function normalizeGuildViewModel(viewModel = {}) {
       viewModel.tabNotifications ??
       source.tabNotifications ??
       null,
-    selectedTabId:
-      viewModel.selectedTabId ??
-      source.selectedTabId ??
-      source.activeTabId ??
-      'hall',
+    ...normalizeGuildSelection({
+      selectedAdventurerTabId:
+        viewModel.selectedAdventurerTabId ??
+        source.selectedAdventurerTabId,
+      selectedBranchId:
+        viewModel.selectedBranchId ?? source.selectedBranchId,
+      selectedTabId:
+        viewModel.selectedTabId ??
+        source.selectedTabId ??
+        source.activeTabId,
+    }),
     navigationPlacement:
       viewModel.navigationPlacement === 'hud' ? 'hud' : 'page',
     subscribe: viewModel.subscribe ?? source.subscribe,
   };
 }
 
-function normalizeTabId(tabId) {
-  const value = String(tabId ?? '');
-  if (value === 'roster') {
-    return 'adventurers';
-  }
-  return GUILD_TABS.some((tab) => tab.id === value)
+function normalizeGuildSelection({
+  selectedAdventurerTabId,
+  selectedBranchId,
+  selectedTabId,
+} = {}) {
+  const legacyTabId = String(selectedTabId ?? '');
+  const branchId = normalizeBranchId(
+    selectedBranchId ??
+      (['board', 'roster', 'adventurers', 'log'].includes(legacyTabId)
+        ? 'adventurers'
+        : 'hall'),
+  );
+  const adventurerTabId = normalizeAdventurerTabId(
+    selectedAdventurerTabId ?? legacyTabId,
+  );
+  return {
+    selectedAdventurerTabId: adventurerTabId,
+    selectedBranchId: branchId,
+    selectedTabId: branchId === 'hall' ? 'hall' : adventurerTabId,
+  };
+}
+
+function normalizeBranchId(branchId) {
+  return branchId === 'adventurers' ? 'adventurers' : 'hall';
+}
+
+function normalizeAdventurerTabId(tabId) {
+  const value = tabId === 'adventurers' ? 'roster' : String(tabId ?? '');
+  return ADVENTURER_TABS.some((tab) => tab.id === value)
     ? value
-    : 'hall';
+    : 'board';
 }
 
 function getGuildTabNotification(model, tabId) {
   const explicit =
     model.tabNotifications?.[tabId] ??
+    (tabId === 'roster'
+      ? model.tabNotifications?.adventurers
+      : undefined) ??
     model.guild?.tabNotifications?.[tabId];
   if (explicit !== undefined) {
     return normalizeNotificationState(explicit);
   }
-  if (tabId !== 'adventurers') {
+  if (tabId !== 'roster') {
     return { active: false, tone: 'red' };
   }
   const adventurers = safeArray(model.guild?.adventurers);

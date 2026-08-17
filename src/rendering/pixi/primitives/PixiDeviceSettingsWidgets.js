@@ -12,14 +12,18 @@ import {
 } from '../theme/PixiThemeTokens.js';
 import { PixiTextButton } from './PixiTextButton.js';
 import { PixiNineSliceFrame } from './PixiNineSliceFrame.js';
-import { RootRunSettingsTogglePixi } from './PixiSettingsControls.js';
+import {
+  RootRunSettingsSliderPixi,
+  RootRunSettingsTogglePixi,
+} from './PixiSettingsControls.js';
 import { PixiTextLabel } from './PixiTextLabel.js';
 
 export const ROOT_RUN_DEVICE_PREFERENCE_ROW_HEIGHT = 50;
 const DEVICE_PANEL_PADDING_X = 10;
 const DEVICE_PANEL_PADDING_Y = 10;
-const DEVICE_PREFERENCE_ICON_WIDTH = 42;
+const DEVICE_PREFERENCE_ICON_WIDTH = 36;
 const DEVICE_PREFERENCE_LABEL_X = 50;
+const DEVICE_PREFERENCE_SLIDER_X = 118;
 const DEVICE_PREFERENCE_LABEL_COLOR = '#735036';
 const DEVICE_PREFERENCE_LABEL_FONT_SIZE = 19;
 const DEVICE_IDENTITY_COLOR = '#8a684c';
@@ -121,7 +125,8 @@ export class RootRunDevicePreferencesPanel extends Container {
 
 /**
  * Approved icon-led device preference row. The icon and label are visual
- * identity; the shared Root Run switch retains all boolean interaction state.
+ * identity. Compact preferences use the shared switch; sound preferences may
+ * use the same boolean contract through the wider shared settings slider.
  */
 export class RootRunDevicePreferenceRow extends Container {
   constructor({
@@ -133,12 +138,15 @@ export class RootRunDevicePreferenceRow extends Container {
     text,
     iconAssetId,
     onIconAssetId = null,
+    controlKind = 'toggle',
     label = 'rootRunDevicePreferenceRow',
   } = {}) {
     super({ label });
     this.preferenceKey = String(preferenceKey ?? '');
     this.rowWidth = 0;
     this.rowHeight = ROOT_RUN_DEVICE_PREFERENCE_ROW_HEIGHT;
+    this.controlKind = controlKind === 'slider' ? 'slider' : 'toggle';
+    this.value = false;
     this.theme = DEFAULT_PIXI_THEME_SNAPSHOT;
     this.iconTextures = {
       off:
@@ -171,44 +179,84 @@ export class RootRunDevicePreferenceRow extends Container {
       color: DEVICE_PREFERENCE_LABEL_COLOR,
       label: `${label}:label`,
     });
-    this.toggle = new RootRunSettingsTogglePixi({
-      assetManager,
-      inputRouter,
-      semanticRegistry,
-      semanticId,
-      label: `${label}:toggle`,
-    });
-    this.addChild(this.icon, this.textLabel, this.toggle);
+    this.slider =
+      this.controlKind === 'slider'
+        ? new RootRunSettingsSliderPixi({
+            assetManager,
+            inputRouter,
+            semanticRegistry,
+            semanticId,
+            label: `${label}:slider`,
+          })
+        : null;
+    this.toggle =
+      this.controlKind === 'toggle'
+        ? new RootRunSettingsTogglePixi({
+            assetManager,
+            inputRouter,
+            semanticRegistry,
+            semanticId,
+            label: `${label}:toggle`,
+          })
+        : null;
+    this.control = this.slider ?? this.toggle;
+    this.addChild(this.icon, this.textLabel, this.control);
     this.rowRegistration =
       inputRouter?.registerPressTarget?.(this, {
         enabled: () => this.isInteractive(),
         focusable: false,
-        onPressChange: (pressed) => this.toggle.setPressed(pressed),
+        onPressChange: (pressed) => this.toggle?.setPressed(pressed),
         onActivate: () => this.activate(),
         haptic: 'selection',
       }) ?? null;
   }
 
   bind({ value, enabled = true, onChange = null } = {}) {
+    this.value = value === true;
     this.icon.texture =
-      value === true
+      this.value
         ? this.iconTextures.on
         : this.iconTextures.off;
-    this.toggle.bind({
-      value: value === true,
-      enabled,
-      onChange,
-    });
+    const commit = (nextValue) => {
+      const nextEnabled = nextValue === true || nextValue === 1;
+      const result = onChange?.(nextEnabled) ?? true;
+      if (result !== false) {
+        this.value = nextEnabled;
+        this.icon.texture = nextEnabled
+          ? this.iconTextures.on
+          : this.iconTextures.off;
+      }
+      return result;
+    };
+    if (this.slider) {
+      this.slider.bind({
+        value: this.value ? 1 : 0,
+        enabled,
+        min: 0,
+        max: 1,
+        step: 1,
+        tone: 'green',
+        onChange: commit,
+      });
+    } else {
+      this.toggle.bind({
+        value: this.value,
+        enabled,
+        onChange: commit,
+      });
+    }
     this.eventMode = this.isInteractive() ? 'static' : 'none';
     return this;
   }
 
   activate() {
-    return this.toggle.activate();
+    return this.slider
+      ? this.slider.commitRange(this.value ? 0 : 1)
+      : this.toggle.activate();
   }
 
   isInteractive() {
-    return this.toggle.isInteractive();
+    return this.control.isInteractive();
   }
 
   setBounds(
@@ -236,7 +284,7 @@ export class RootRunDevicePreferenceRow extends Container {
   applyTheme(theme) {
     this.theme = theme ?? DEFAULT_PIXI_THEME_SNAPSHOT;
     this.textLabel.applyTheme(this.theme);
-    this.toggle.applyTheme(this.theme);
+    this.control.applyTheme(this.theme);
     return this;
   }
 
@@ -249,13 +297,21 @@ export class RootRunDevicePreferenceRow extends Container {
       DEVICE_PREFERENCE_LABEL_X,
       (this.rowHeight - this.textLabel.measuredHeight) / 2,
     );
-    this.toggle.setBounds(
-      Math.max(
-        DEVICE_PREFERENCE_LABEL_X,
-        this.rowWidth - this.toggle.controlWidth,
-      ),
-      (this.rowHeight - this.toggle.controlHeight) / 2,
-    );
+    if (this.slider) {
+      this.slider.setBounds(
+        DEVICE_PREFERENCE_SLIDER_X,
+        (this.rowHeight - this.slider.controlHeight) / 2,
+        Math.max(0, this.rowWidth - DEVICE_PREFERENCE_SLIDER_X),
+      );
+    } else {
+      this.toggle.setBounds(
+        Math.max(
+          DEVICE_PREFERENCE_LABEL_X,
+          this.rowWidth - this.toggle.controlWidth,
+        ),
+        (this.rowHeight - this.toggle.controlHeight) / 2,
+      );
+    }
   }
 
   get labelText() {
@@ -419,12 +475,15 @@ export class DeviceIdentityFooter extends Container {
 
 function getPreferenceIconHeight(key) {
   if (key === 'sfx') {
-    return 40;
+    return 34;
   }
   if (key === 'music') {
-    return 38;
+    return 33;
   }
-  return 34;
+  if (key === 'haptics') {
+    return 29;
+  }
+  return 33;
 }
 
 function compactIdentity(identity) {

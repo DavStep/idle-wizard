@@ -155,7 +155,9 @@ describe('DevUiCatalogManager', () => {
             ]),
           }),
           expect.objectContaining({
-            key: 'minorHealingPotion',
+            key: 'ashenMemory',
+            discovered: true,
+            discoveryType: 'unknown',
             canResearch: true,
           }),
         ]),

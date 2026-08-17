@@ -34,6 +34,7 @@ export class PixiTextField extends Container {
     multiline = false,
     inputKind = 'text',
     maxLength = null,
+    retainOnSubmit = false,
     onSubmit = null,
     onCancel = null,
     onChange = null,
@@ -50,6 +51,7 @@ export class PixiTextField extends Container {
     this.multiline = multiline;
     this.inputKind = inputKind;
     this.maxLength = maxLength;
+    this.retainOnSubmit = retainOnSubmit === true;
     this.onSubmit = onSubmit;
     this.onCancel = onCancel;
     this.onChange = onChange;
@@ -166,6 +168,7 @@ export class PixiTextField extends Container {
       multiline: this.multiline,
       inputKind: this.inputKind,
       maxLength: this.maxLength,
+      retainOnSubmit: this.retainOnSubmit,
       onValue: (snapshot) => {
         this.applySessionSnapshot(snapshot);
         this.onChange?.(this.value);

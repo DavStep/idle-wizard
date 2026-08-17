@@ -4,7 +4,7 @@ import { PotionDiscoverySubscriptionManager } from './managers/PotionDiscoverySu
 
 export class PotionDiscoveryBackendFacade {
   static explain =
-    'Shares unknown potion recipe discoveries through the server so every player learns the recipe once one wizard finds it.';
+    'Shares unknown potion recipe discoveries through the server so the discoverer keeps the recipe and other players can research it.';
 
   constructor() {
     this.stateObserverManager = new PotionDiscoveryStateObserverManager();
@@ -19,8 +19,8 @@ export class PotionDiscoveryBackendFacade {
     this.sendManager = new PotionDiscoverySendManager();
   }
 
-  connect(connection) {
-    this.subscriptionManager.connect(connection);
+  connect(connection, identity) {
+    this.subscriptionManager.connect(connection, identity);
     this.sendManager.connect(connection);
   }
 
@@ -49,6 +49,13 @@ export class PotionDiscoveryBackendFacade {
       return this.getDiscovery(potionKey) !== null;
     }
     return this.subscriptionManager.hasDiscoveredPotion(potionKey);
+  }
+
+  isDiscoveredByCurrentPlayer(potionKey) {
+    if (this.devSnapshot) {
+      return false;
+    }
+    return this.subscriptionManager.isDiscoveredByCurrentPlayer(potionKey);
   }
 
   subscribe(listener) {

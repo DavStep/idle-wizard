@@ -58,6 +58,18 @@ describe('RetainedScrollArea', () => {
     expect(scroll.physics.velocity).toBeGreaterThan(0);
   });
 
+  it('reuses scrollbar geometry while only the scroll offset changes', () => {
+    scroll = overflowingScroll();
+    const clearTrack = vi.spyOn(scroll.scrollbarTrack, 'clear');
+    const clearThumb = vi.spyOn(scroll.scrollbarThumb, 'clear');
+
+    scroll.scrollTo(40);
+    scroll.scrollTo(80);
+
+    expect(clearTrack).not.toHaveBeenCalled();
+    expect(clearThumb).not.toHaveBeenCalled();
+  });
+
   it('supports elastic wheel overscroll and settles exactly at the top', () => {
     scroll = overflowingScroll();
     const event = wheelEvent(-180);
@@ -85,9 +97,10 @@ describe('RetainedScrollArea', () => {
     scroll.physics.scrollByElastic(-180);
     scroll.applyPhysicsOffset();
     const topBounds = scroll.scrollbarThumb.getLocalBounds();
+    const topY = scroll.scrollbarThumb.y + topBounds.y;
 
     expect(topBounds.height).toBeLessThan(baseHeight);
-    expect(topBounds.y).toBeCloseTo(
+    expect(topY).toBeCloseTo(
       RETAINED_SCROLLBAR_GEOMETRY.trackInset -
         RETAINED_SCROLLBAR_GEOMETRY.thumbBorderWidth / 2,
       5,
@@ -97,11 +110,12 @@ describe('RetainedScrollArea', () => {
     scroll.physics.scrollByElastic(180);
     scroll.applyPhysicsOffset();
     const bottomBounds = scroll.scrollbarThumb.getLocalBounds();
+    const bottomY = scroll.scrollbarThumb.y + bottomBounds.y;
     const trackBottom =
       scroll.height - RETAINED_SCROLLBAR_GEOMETRY.trackInset;
 
     expect(bottomBounds.height).toBeLessThan(baseHeight);
-    expect(bottomBounds.y + bottomBounds.height).toBeCloseTo(
+    expect(bottomY + bottomBounds.height).toBeCloseTo(
       trackBottom +
         RETAINED_SCROLLBAR_GEOMETRY.thumbBorderWidth / 2,
       5,

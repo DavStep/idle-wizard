@@ -194,7 +194,10 @@ export class TextEntryService {
         session.applyKeyboardInset(keyboardInset);
         this.publishKeyboardInset(keyboardInset);
       },
-      onSubmit: () => this.finish(session, 'submit'),
+      onSubmit: () =>
+        session.retainOnSubmit
+          ? session.emitSubmit()
+          : this.finish(session, 'submit'),
       onCancel: () => this.finish(session, 'cancel'),
       onClose: () => this.finish(session, 'closed'),
     };

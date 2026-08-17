@@ -4,10 +4,16 @@ import { ResearchStateEntityManager } from './ResearchStateEntityManager.js';
 
 function createResearchDefinitionManagerFake() {
   const knownResearchIds = new Set(['unlockSeed:sageSeed', 'automation:autoPlantTile:1']);
+  const persistentResearchIds = new Set([
+    ...knownResearchIds,
+    'unlockRecipe:ashenMemory',
+  ]);
 
   return {
     getResearches: () => [...knownResearchIds].map((id) => ({ id })),
+    getPersistentResearchIds: () => [...persistentResearchIds],
     hasConfiguredResearch: (researchId) => knownResearchIds.has(researchId),
+    hasPersistentResearch: (researchId) => persistentResearchIds.has(researchId),
     normalizeResearchId: (researchId) => String(researchId ?? '').trim(),
   };
 }
@@ -57,5 +63,18 @@ describe('ResearchStateEntityManager', () => {
       remainingSeconds: 0,
       progress: 0,
     });
+  });
+
+  it('restores completed discovery research before the shared row is visible', () => {
+    const manager = new ResearchStateEntityManager({
+      defaultCompletedResearchIds: [],
+      researchDefinitionManager: createResearchDefinitionManagerFake(),
+    });
+
+    manager.initialize(createEcsManagersFake());
+    manager.setCompletedResearchIds(['unlockRecipe:ashenMemory']);
+
+    expect(manager.isCompleted('unlockRecipe:ashenMemory')).toBe(true);
+    expect(manager.getCompletedResearchIds()).toContain('unlockRecipe:ashenMemory');
   });
 });

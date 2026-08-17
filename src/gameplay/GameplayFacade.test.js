@@ -5573,6 +5573,8 @@ describe("GameplayFacade", () => {
       },
       getDiscovery: (potionKey) => discoveries.get(potionKey) ?? null,
       hasDiscoveredPotion: (potionKey) => discoveries.has(potionKey),
+      isDiscoveredByCurrentPlayer: (potionKey) => discoveries.has(potionKey),
+      getSnapshot: () => ({ discoveries: [...discoveries.values()] }),
     };
 
     gameplayFacade.setPotionDiscoveryFacade(potionDiscoveryFacade);
@@ -5654,9 +5656,25 @@ describe("GameplayFacade", () => {
       unlocked: true,
     });
 
+    advanceToLevel(gameplayFacade, 10);
+    expect(gameplayFacade.completePrestigeMilestone(10)).toMatchObject({
+      ok: true,
+    });
+    expect(
+      gameplayFacade
+        .getSnapshot()
+        .brewing.recipes.find((recipe) => recipe.key === "ashenMemory"),
+    ).toMatchObject({
+      discovered: true,
+      unlocked: true,
+    });
+
     const { ecsFacade: secondEcsFacade, gameplayFacade: secondGameplayFacade } =
       createGameplay();
-    secondGameplayFacade.setPotionDiscoveryFacade(potionDiscoveryFacade);
+    secondGameplayFacade.setPotionDiscoveryFacade({
+      ...potionDiscoveryFacade,
+      isDiscoveredByCurrentPlayer: () => false,
+    });
     secondGameplayFacade.itemsFacade.addItem(1001, 1);
     secondGameplayFacade.itemsFacade.addItem(1004, 1);
     secondGameplayFacade.itemsFacade.addItem(1010, 1);
@@ -5665,6 +5683,20 @@ describe("GameplayFacade", () => {
     secondGameplayFacade.addBrewingIngredient(1004);
     secondGameplayFacade.addBrewingIngredient(1010);
 
+    expect(
+      secondGameplayFacade
+        .getSnapshot()
+        .brewing.recipes.find((recipe) => recipe.key === "ashenMemory"),
+    ).toMatchObject({
+      discovered: true,
+      unlocked: false,
+    });
+    expect(
+      secondGameplayFacade.buyResearch("unlockRecipe:ashenMemory"),
+    ).toMatchObject({
+      ok: true,
+      cost: 0,
+    });
     expect(secondGameplayFacade.getSnapshot().brewing).toMatchObject({
       buttonLabel: "brew ashen memory",
       manaCost: 36,

@@ -131,6 +131,10 @@ export class ResearchFacade {
     }
   }
 
+  setPotionDiscoveryFacade(potionDiscoveryFacade) {
+    this.researchDefinitionManager.setPotionDiscoveryFacade(potionDiscoveryFacade);
+  }
+
   buyResearch(researchId) {
     return this.researchPurchaseManager.buyResearch(researchId);
   }

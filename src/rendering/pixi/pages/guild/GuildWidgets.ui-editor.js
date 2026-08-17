@@ -18,7 +18,6 @@ import {
   GuildProfileField,
   GuildQuestDetail,
   GuildQuestDetailLine,
-  GuildRequestListItem,
 } from './GuildDialogPixi.js';
 import { guildUiEditorAssetFilter } from './GuildUiEditorAssets.js';
 
@@ -27,17 +26,16 @@ const assetsFilter = guildUiEditorAssetFilter;
 
 export default [
   entry('compound.guild-section-row', 'Guild Section Row', [], sectionRow, variants(['pair', 'button', 'identity', 'paragraph'])),
-  entry('compound.guild-rows-section', 'Guild Rows Section', ['compound.guild-section-row'], rowsSection, variants(['summary', 'empty'])),
-  entry('compound.guild-charter-panel', 'Guild Charter Panel', ['text-button'], charterPanel, variants(['available', 'unavailable'])),
-  entry('compound.guild-secretary-section', 'Guild Secretary Section', ['text-button'], secretarySection, variants(['upgrade', 'maximum'])),
+  entry('compound.guild-rows-section', 'Guild Rows Section', ['compound.research-station-title', 'compound.guild-section-row'], rowsSection, variants(['summary', 'empty'])),
+  entry('compound.guild-charter-panel', 'Guild Charter Panel', ['compound.research-station-title', 'text-button'], charterPanel, variants(['available', 'unavailable'])),
+  entry('compound.guild-secretary-section', 'Guild Secretary Section', ['compound.research-station-title', 'text-button'], secretarySection, variants(['upgrade', 'maximum'])),
   entry('compound.guild-quest-card', 'Guild Quest Card', [], questCard, variants(['available', 'assigned'])),
-  entry('compound.guild-quest-board', 'Guild Quest Board', ['compound.guild-quest-card'], questBoard, variants(['requests', 'empty'])),
+  entry('compound.guild-quest-board', 'Guild Quest Board', ['compound.research-station-title', 'compound.guild-quest-card'], questBoard, variants(['requests', 'empty'])),
   entry('compound.guild-person-row', 'Guild Person Row', ['primitive.notification-badge'], personRow, variants(['idle', 'hospital', 'dead'])),
-  entry('compound.guild-people-section', 'Guild People Section', ['compound.guild-person-row'], peopleSection, variants(['adventurers', 'empty'])),
+  entry('compound.guild-people-section', 'Guild People Section', ['compound.research-station-title', 'compound.guild-person-row'], peopleSection, variants(['adventurers', 'empty'])),
   entry('compound.guild-profile-field', 'Guild Profile Field', ['primitive.text-field'], profileField, variants(['name', 'tag'])),
   entry('primitive.guild-color-swatch', 'Guild Color Swatch', [], colorSwatch, variants(['selected', 'unselected'])),
-  entry('compound.guild-detail-row', 'Guild Detail Row', [], detailRow, variants(['pair', 'paragraph', 'paper'])),
-  entry('compound.guild-request-list-item', 'Guild Request List Item', [], requestListItem, variants(['selected', 'unselected'])),
+  entry('compound.guild-detail-row', 'Guild Detail Row', [], detailRow, variants(['pair', 'paragraph'])),
   entry('compound.guild-quest-detail-line', 'Guild Quest Detail Line', [], questDetailLine, variants(['difficulty', 'reward'])),
   entry('compound.guild-quest-detail', 'Guild Quest Detail', ['compound.guild-quest-detail-line'], questDetail, variants(['standard', 'event'])),
 ];
@@ -115,7 +113,7 @@ function personRow({ assets, input, fixture }) {
 }
 
 function peopleSection({ assets, input, fixture }) {
-  const control = new GuildPeopleSection({ title: 'adventurers', assetManager: assets, inputRouter: input, semanticPrefix: 'ui.guild.person', label: 'ui:guild:people' });
+  const control = new GuildPeopleSection({ title: 'Adventurers', assetManager: assets, inputRouter: input, semanticPrefix: 'ui.guild.person', label: 'ui:guild:people' });
   control.bind({ countLabel: fixture.state === 'empty' ? '0/4' : '2/4', people: fixture.state === 'empty' ? [] : [{ id: '1', displayName: 'Mira Ashveil', level: 7, status: 'idle' }, { id: '2', displayName: 'Orin Moss', level: 5, status: 'questing' }] });
   const height = control.getPreferredHeight(); control.setBounds(0, 0, WIDTH, height); return wrap(control, WIDTH, height);
 }
@@ -131,23 +129,18 @@ function colorSwatch({ input, fixture }) {
 }
 
 function detailRow({ fixture }) {
-  const control = new GuildDetailRow({ paper: fixture.state === 'paper', label: 'ui:guild:detailRow' });
+  const control = new GuildDetailRow({ label: 'ui:guild:detailRow' });
   control.bind('row', fixture.state === 'paragraph' ? { text: 'A quiet guild with a taste for difficult work.' } : { label: 'Members', value: '8/12', valueResourceKey: 'coin' });
   control.applyTheme(DEFAULT_PIXI_THEME_SNAPSHOT); const height = control.getPreferredHeight(WIDTH); control.setBounds(0, 0, WIDTH, height); return wrap(control, WIDTH, height);
 }
 
-function requestListItem({ assets, input, fixture }) {
-  const control = new GuildRequestListItem({ assetManager: assets, inputRouter: input });
-  control.bind(questModel(), { action: () => true, pageNumber: '1.', selected: fixture.state === 'selected' }); control.applyTheme(DEFAULT_PIXI_THEME_SNAPSHOT); const height = fixture.state === 'selected' ? 90 : 30; control.setBounds(0, 0, 150, height); return wrap(control, 150, height);
-}
-
-function questDetailLine({ assets, fixture }) {
-  const reward = fixture.state === 'reward'; const control = new GuildQuestDetailLine({ assetManager: assets, icon: reward ? 'icon-reward.png' : 'icon-difficulty.png', label: reward ? 'Reward' : 'Difficulty' }); control.setValue(reward ? '120-180 coin' : 'Hard'); control.applyTheme(DEFAULT_PIXI_THEME_SNAPSHOT); control.setBounds(0, 0, 150); return wrap(control, 150, reward ? 32 : 17);
+function questDetailLine({ fixture }) {
+  const reward = fixture.state === 'reward'; const control = new GuildQuestDetailLine({ label: reward ? 'Reward' : 'Difficulty', valueResourceKey: reward ? 'coin' : null }); control.setValue(reward ? '120-180 coin' : 'Hard'); control.applyTheme(DEFAULT_PIXI_THEME_SNAPSHOT); control.setBounds(0, 0, 264); return wrap(control, 264, reward ? 28 : 22);
 }
 
 function questDetail({ assets, fixture }) {
-  const control = new GuildQuestDetail({ assetManager: assets, label: 'ui:guild:questDetail' }); control.bind({ ...questModel(), eventLabel: fixture.state === 'event' ? 'Moon Festival' : '' }, { pageLabel: '1/3' }); control.applyTheme(DEFAULT_PIXI_THEME_SNAPSHOT); control.setSize(180, 245); return wrap(control, 180, 245);
+  const control = new GuildQuestDetail({ assetManager: assets, label: 'ui:guild:questDetail' }); control.bind({ ...questModel(), eventLabel: fixture.state === 'event' ? 'Moon Festival' : '' }, { pageLabel: '1/3' }); control.applyTheme(DEFAULT_PIXI_THEME_SNAPSHOT); control.setSize(264, 230); return wrap(control, 264, 230);
 }
 
-function questModel() { return { difficulty: 'hard', expiresLabel: '2h', id: 'quest', lore: 'Recover the moonstone ledger from the flooded archive.', rewardText: '120-180 coin', statLabel: 'Wisdom 7', title: 'The Flooded Archive' }; }
+function questModel() { return { difficulty: 'Hard', expiresLabel: '2h', id: 'quest', lore: 'Recover the moonstone ledger from the flooded archive.', rewardText: '120-180 Coin', statLabel: 'Wisdom 7', title: 'The Flooded Archive' }; }
 function wrap(control, width, height) { return { control, destroy: () => control.destroy(), height, root: control.root, width }; }

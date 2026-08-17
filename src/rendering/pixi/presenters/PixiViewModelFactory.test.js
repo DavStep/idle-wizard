@@ -538,6 +538,7 @@ describe('PixiViewModelFactory', () => {
   it('projects the complete World Event dialog instead of bare quest labels', () => {
     const selectWorldEventTab = vi.fn();
     const openWorldEventDonation = vi.fn();
+    const openPlayer = vi.fn();
     const factory = new PixiViewModelFactory();
     const gameplay = {
       worldNotice: {
@@ -610,6 +611,7 @@ describe('PixiViewModelFactory', () => {
     const actions = {
       selectWorldEventTab,
       openWorldEventDonation,
+      openPlayer,
     };
 
     const tasks = factory.createWorldEventDialog(
@@ -692,6 +694,10 @@ describe('PixiViewModelFactory', () => {
       ]),
     );
     expect(leaderboard.rowWidget).toBe('leaderboard');
+    leaderboard.rows[0].onActivate();
+    expect(openPlayer).toHaveBeenCalledWith(
+      expect.objectContaining({ name: 'Mira' }),
+    );
 
     const rewards = factory.createWorldEventDialog(
       gameplay,
@@ -700,20 +706,27 @@ describe('PixiViewModelFactory', () => {
       'rewards',
       actions,
     );
-    expect(rewards.rows).toEqual(
-      expect.arrayContaining([
-        expect.objectContaining({
-          id: 'reward:1',
-          label: 'Rank 1',
-          value: '5 emerald · 10 crystal',
-        }),
-        expect.objectContaining({
-          id: 'reward:101+ qualified',
-          label: 'Rank 101+ Qualified',
-          value: '1 crystal',
-        }),
-      ]),
+    expect(rewards.rowWidget).toBe('worldEventReward');
+    expect(rewards.header.meta).toBe(
+      '125 points · 5d\nLeaderboard Rewards: 2,000 points to qualify',
     );
+    expect(rewards.rows).toEqual([
+      {
+        id: 'reward:1',
+        type: 'worldEventReward',
+        rankLabel: 'Rank 1',
+        rewards: [
+          { resourceKey: 'emerald', amountLabel: '5' },
+          { resourceKey: 'crystal', amountLabel: '10' },
+        ],
+      },
+      {
+        id: 'reward:101+ qualified',
+        type: 'worldEventReward',
+        rankLabel: 'Rank 101+ Qualified',
+        rewards: [{ resourceKey: 'crystal', amountLabel: '1' }],
+      },
+    ]);
 
     const adjustWorldEventDonationAmount = vi.fn();
     const confirmWorldEventDonation = vi.fn();
@@ -1368,9 +1381,9 @@ describe('PixiViewModelFactory', () => {
           allianceId: 'alliance-1',
           questId: 'fill-seeds',
           dayKey: '1',
-          label: 'fill 5000 moonflower seed',
+          label: 'fill 500 mana tonic',
           questType: 'itemFill',
-          itemKey: 'sageSeed',
+          itemKey: 'manaTonic',
           progress: 2,
           target: 10,
           minContribution: 3,
@@ -1410,9 +1423,11 @@ describe('PixiViewModelFactory', () => {
     expect(dialog.selectedTabId).toBe('quests');
     expect(dialog.rows.map((row) => row.actionLabel)).toEqual(['Fill', 'Claim']);
     expect(dialog.rows[0]).toMatchObject({
-      title: 'Fill 5000 moonflower seed',
+      title: 'Fill 500 mana tonic',
       contributionLabel: 'Your Fill 0/3',
       progressLabel: '2/10',
+      itemKind: 'potion',
+      itemKey: 'manaTonic',
       rewardAmountLabel: '2',
       rewardResource: 'crystal',
     });

@@ -14,6 +14,7 @@ describe('Workshop widget UI editor integrations', () => {
       'compound.alliance-member-row',
       'compound.alliance-quest-row',
       'compound.leaderboard-row',
+      'compound.world-event-reward-row',
       'compound.potion-discovery-row',
       'compound.workshop-dialog-row',
     ]);
@@ -21,6 +22,11 @@ describe('Workshop widget UI editor integrations', () => {
       kind === 'widget' && scenarios.length > 0 &&
       scenarios.every(({ mount }) => typeof mount === 'function')),
     ).toBe(true);
+    expect(
+      integrations.find(
+        ({ id }) => id === 'compound.world-event-donation-option-row',
+      )?.childWidgetIds,
+    ).toEqual(['text-button']);
     expect(
       integrations.find(({ id }) => id === 'compound.leaderboard-row')
         ?.childWidgetIds,
@@ -37,5 +43,10 @@ describe('Workshop widget UI editor integrations', () => {
       integrations.find(({ id }) => id === 'compound.alliance-quest-row')
         ?.scenarios.map(({ id }) => id),
     ).toEqual(['fill', 'claim', 'claimed', 'overflow']);
+    expect(
+      integrations.find(
+        ({ id }) => id === 'compound.world-event-reward-row',
+      )?.scenarios.map(({ id }) => id),
+    ).toEqual(['two-rewards', 'one-reward', 'long-rank']);
   });
 });

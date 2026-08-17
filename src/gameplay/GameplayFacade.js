@@ -218,6 +218,7 @@ export class GameplayFacade {
     this.lastFrameSnapshotKey = "";
     this.lastFrameResourceSnapshotKey = "";
     this.lastFrameSeedSummoningAvailable = false;
+    this.snapshotGardenForReservations = null;
     this.lastFrameHadTimerWork = false;
     this.snapshotCacheDepth = 0;
     this.cachedSnapshot = null;
@@ -292,6 +293,7 @@ export class GameplayFacade {
 
   setPotionDiscoveryFacade(potionDiscoveryFacade) {
     this.potionDiscoveryFacade = potionDiscoveryFacade;
+    this.researchFacade.setPotionDiscoveryFacade(potionDiscoveryFacade);
     this.brewingFacade.setPotionDiscoveryFacade(potionDiscoveryFacade);
     this.shopFacade.setPotionDiscoveryFacade(potionDiscoveryFacade);
 
@@ -1553,7 +1555,9 @@ export class GameplayFacade {
   }
 
   getGardenSelectedSeedReservedQuantity(itemTypeId) {
-    return (this.gardenFacade.getSnapshot().plot?.tiles ?? []).filter(
+    const garden =
+      this.snapshotGardenForReservations ?? this.gardenFacade.getSnapshot();
+    return (garden.plot?.tiles ?? []).filter(
       (tile) =>
         tile.unlocked &&
         tile.phase === "empty" &&
@@ -1588,6 +1592,14 @@ export class GameplayFacade {
     const prestige = this.prestigeFacade.getSnapshot();
     const brewing = this.brewingFacade.getSnapshot();
     const garden = this.gardenFacade.getSnapshot();
+    const previousReservationGarden = this.snapshotGardenForReservations;
+    this.snapshotGardenForReservations = garden;
+    let shop;
+    try {
+      shop = this.shopFacade.getSnapshot();
+    } finally {
+      this.snapshotGardenForReservations = previousReservationGarden;
+    }
     const snapshot = {
       mana: this.manaFacade.getSnapshot(),
       coin: this.coinFacade.getSnapshot(),
@@ -1627,7 +1639,7 @@ export class GameplayFacade {
         unlockedCauldronCount: brewing.unlockedCauldrons,
       }),
       visualSettings: this.visualSettingsFacade.getSnapshot(),
-      shop: this.shopFacade.getSnapshot(),
+      shop,
       garden,
     };
 

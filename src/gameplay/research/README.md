@@ -6,6 +6,11 @@ Current scope uses SpacetimeDB `research_config` for regular coin overrides and 
 
 Coin research follows an achievement curve. After the free Sage and Mint onboarding rows, a seed unlock costs one hundred times that seed's default sell value, equivalent to about forty sales of the preceding tier's herb. After the free Mana Tonic row, recipe unlock prices rise by roughly `1.75x` per catalog step, from `400` coin to `830m`, so every next recipe is a larger milestone even when its ingredient value is lower. Summon multiplier studies cost `1k`, `10k`, `100k`, and `1m` coin. Premium-currency research prices do not use this coin curve.
 
+Globally discovered hidden recipes appear immediately as independent free,
+instant recipe studies for players other than the discoverer. They have no
+level or recipe-chain prerequisite. The original discoverer keeps the recipe
+learned from server discovery ownership and does not receive a redundant study.
+
 Every timed research takes at least five seconds after research-time reductions. An explicit zero duration remains the internal instant-research sentinel.
 
 Capacity researches are advanced emerald studies. `plot 6-12 capacity` requires 1-7 completed prestiges, and `cauldron 3-5 capacity` requires 1-3 completed prestiges. Completed capacity research is permanent across prestige resets, permanently spends emerald, and makes that capacity buyable immediately in the run without waiting for the level cap. Slot-specific automation, speed, and crystal researches are configured through the higher of the player-level cap and completed capacity research, so prestige slots can receive matching studies after purchase. Speed research still resets with the run.

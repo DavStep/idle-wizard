@@ -132,6 +132,22 @@ describe('PotionDiscoverySubscriptionManager', () => {
     expect(snapshots.at(-1)).toEqual(manager.getSnapshot());
   });
 
+  it('identifies recipes discovered by the connected player', () => {
+    const table = createTable([
+      {
+        potionKey: 'ashenMemory',
+        discoveredByIdentity: 'identity-a',
+        discoveredAt: createTimestamp(1_000),
+      },
+    ]);
+    const manager = new PotionDiscoverySubscriptionManager();
+
+    manager.connect(createConnection(table), 'identity-a');
+
+    expect(manager.isDiscoveredByCurrentPlayer('ashenMemory')).toBe(true);
+    expect(manager.isDiscoveredByCurrentPlayer('silverleafQuiet')).toBe(false);
+  });
+
   it('subscribes to the indexed discovery snapshot view', () => {
     const table = createTable([]);
     const connection = createConnection(table);

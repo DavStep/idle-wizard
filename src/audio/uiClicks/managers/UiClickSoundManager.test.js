@@ -3,7 +3,10 @@
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import { UiClickSoundManager } from './UiClickSoundManager.js';
 
-function makeFakeAudioContextConstructor({ initialState = 'running' } = {}) {
+function makeFakeAudioContextConstructor({
+  initialState = 'running',
+  deferResume = false,
+} = {}) {
   const stats = {
     bufferLength: 0,
     closeCount: 0,
@@ -106,6 +109,11 @@ function makeFakeAudioContextConstructor({ initialState = 'running' } = {}) {
 
     resume() {
       stats.resumeCount += 1;
+      if (deferResume) {
+        return Promise.resolve().then(() => {
+          this.state = 'running';
+        });
+      }
       this.state = 'running';
       return Promise.resolve();
     }
@@ -225,7 +233,7 @@ describe('UiClickSoundManager', () => {
     expect(stats.sourceGains[0]).toBeCloseTo(0.4464);
   });
 
-  it('resumes a suspended context before playing the first click', async () => {
+  it('unlocks a suspended context before playing the first click', async () => {
     const { AudioContextConstructor, stats } = makeFakeAudioContextConstructor({
       initialState: 'suspended',
     });
@@ -238,12 +246,46 @@ describe('UiClickSoundManager', () => {
       },
     });
 
-    manager.playClick();
+    manager.unlock();
     expect(stats.oscillatorStartCount).toBe(0);
 
     await flushPromises();
 
     expect(stats.resumeCount).toBe(1);
+    expect(manager.playClick()).toBe(true);
+    expect(stats.oscillatorStartCount).toBe(1);
+  });
+
+  it('drops pre-unlock cues instead of replaying them after the first gesture', async () => {
+    const { AudioContextConstructor, stats } = makeFakeAudioContextConstructor({
+      initialState: 'suspended',
+      deferResume: true,
+    });
+    const manager = new UiClickSoundManager({
+      clickSampleUrl: null,
+      dialogOpenSampleUrls: ['/ui-fly.wav'],
+      purchaseSampleUrls: [],
+      windowRef: {
+        AudioContext: AudioContextConstructor,
+        fetch: makeFakeFetch(),
+      },
+    });
+
+    await flushPromises();
+
+    expect(manager.playDialogOpen()).toBe(false);
+    expect(manager.playDialogOpen()).toBe(false);
+    expect(manager.playDialogOpen()).toBe(false);
+    expect(stats.resumeCount).toBe(0);
+
+    manager.unlock();
+    await flushPromises();
+
+    expect(stats.resumeCount).toBe(1);
+    expect(stats.sourceStartCount).toBe(0);
+    expect(stats.oscillatorStartCount).toBe(0);
+
+    expect(manager.playClick()).toBe(true);
     expect(stats.oscillatorStartCount).toBe(1);
   });
 

@@ -20,6 +20,30 @@ function createGameplayFacade() {
 }
 
 describe('GameplayFacade frame publishing', () => {
+  it('reuses one Garden snapshot while computing Shop reservations', () => {
+    const gameplayFacade = createGameplayFacade();
+    const getGardenSnapshot = vi.spyOn(
+      gameplayFacade.gardenFacade,
+      'getSnapshot',
+    );
+
+    gameplayFacade.getSnapshot();
+
+    expect(getGardenSnapshot).toHaveBeenCalledTimes(1);
+  });
+
+  it('builds Research rows from resolved definitions without repeated lookups', () => {
+    const gameplayFacade = createGameplayFacade();
+    const getResearch = vi.spyOn(
+      gameplayFacade.researchFacade.researchDefinitionManager,
+      'getResearch',
+    );
+
+    gameplayFacade.researchFacade.getSnapshot();
+
+    expect(getResearch).not.toHaveBeenCalled();
+  });
+
   it('does not build explicit snapshots when no listeners are subscribed', () => {
     const gameplayFacade = createGameplayFacade();
     const getSnapshot = vi.spyOn(gameplayFacade, 'getSnapshot');

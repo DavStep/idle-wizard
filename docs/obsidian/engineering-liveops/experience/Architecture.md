@@ -22,6 +22,7 @@ experience_type: architecture
 - `PressFeedbackManager` can route the `.is-pressing` class to a child selector via `data-press-feedback-target`; use it when a control's art should press without moving its label/sign container.
 - Porting the unified button system must preserve control roles: price-bearing buys use cost buttons, skin variants stay scoped to their source actions, and compact icon panel actions must not be converted into regular buttons.
 - UI click sounds live in `src/audio/uiClicks`; trigger them through `PressFeedbackManager` so individual button managers do not duplicate sound hooks.
+- Suspended Web Audio cues must be discarded; only the pointer-gesture unlock path may resume the context, or pre-touch dialog and click requests can replay together on mobile.
 - Idle Witch Craft's button tap cue uses `idlefarmer-mouth-pop.wav` plus a short triangle tone; Idle Wizard mirrors that in `assets/game/source/audio/ui-click-pop.wav`.
 - Root Run-style presentation uses one retained Pixi application with a fixed `390x844` logical stage for every room, popup, gate, tutorial overlay, and Spine visual; do not add page-local Pixi applications or extra WebGL canvases.
 - Derive the retained Pixi authored stage from that canonical viewport (`1170x2532` at the existing 3x source-art scale). A mismatched authored aspect ratio makes Pixi allocate a shorter backing bitmap that CSS stretches, softening every UI edge even when antialiasing is enabled.

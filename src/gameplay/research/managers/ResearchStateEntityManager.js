@@ -29,21 +29,19 @@ export class ResearchStateEntityManager {
       return;
     }
 
-    for (const research of this.researchDefinitionManager.getResearches({
-      includeLevelLockedAutomation: true,
-    })) {
-      if (this.entityIdsByResearchId.has(research.id)) {
+    for (const researchId of this.getPersistentResearchIds()) {
+      if (this.entityIdsByResearchId.has(researchId)) {
         continue;
       }
 
       const entityId = this.ecsManagers.entities.createEntity();
       this.ecsManagers.components.add(entityId, PlayerResearch);
-      PlayerResearch.researchId[entityId] = research.id;
+      PlayerResearch.researchId[entityId] = researchId;
       PlayerResearch.isCompleted[entityId] = 0;
       PlayerResearch.isInProgress[entityId] = 0;
       PlayerResearch.totalSeconds[entityId] = 0;
       PlayerResearch.remainingSeconds[entityId] = 0;
-      this.entityIdsByResearchId.set(research.id, entityId);
+      this.entityIdsByResearchId.set(researchId, entityId);
     }
 
     this.researchEntitiesSynced = true;
@@ -135,7 +133,7 @@ export class ResearchStateEntityManager {
     for (const researchId of this.withDefaultCompletedResearchIds(researchIds)) {
       const normalizedResearchId = this.normalizeResearchId(researchId);
 
-      if (!this.researchDefinitionManager.hasConfiguredResearch(normalizedResearchId)) {
+      if (!this.hasPersistentResearch(normalizedResearchId)) {
         continue;
       }
 
@@ -180,7 +178,7 @@ export class ResearchStateEntityManager {
 
       if (
         !normalizedResearchId ||
-        !this.researchDefinitionManager.hasConfiguredResearch(normalizedResearchId) ||
+        !this.hasPersistentResearch(normalizedResearchId) ||
         this.isCompleted(normalizedResearchId)
       ) {
         continue;
@@ -353,6 +351,24 @@ export class ResearchStateEntityManager {
 
   normalizeResearchId(researchId) {
     return this.researchDefinitionManager.normalizeResearchId(researchId);
+  }
+
+  getPersistentResearchIds() {
+    if (typeof this.researchDefinitionManager.getPersistentResearchIds === 'function') {
+      return this.researchDefinitionManager.getPersistentResearchIds();
+    }
+
+    return this.researchDefinitionManager
+      .getResearches({ includeLevelLockedAutomation: true })
+      .map((research) => research.id);
+  }
+
+  hasPersistentResearch(researchId) {
+    if (typeof this.researchDefinitionManager.hasPersistentResearch === 'function') {
+      return this.researchDefinitionManager.hasPersistentResearch(researchId);
+    }
+
+    return this.researchDefinitionManager.hasConfiguredResearch(researchId);
   }
 
   normalizeDurationSeconds(durationSeconds) {

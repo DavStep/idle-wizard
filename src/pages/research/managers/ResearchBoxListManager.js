@@ -14,6 +14,10 @@ import { UiWidgetPoolManager } from '../../../rendering/managers/UiWidgetPoolMan
 import { createAssetAtlasSprite } from '../../../assets/atlas/atlasSprite.js';
 import { createSeedPackIcon } from '../../../assets/items/seeds/seedIcons.js';
 import { getPotionIconFrameName } from '../../../assets/items/potions/potionIcons.js';
+import {
+  createStatusIcon,
+  STATUS_ICON_CHECK,
+} from '../../shared/statusIcon.js';
 
 const maxLockedResearchesPerBox = 1;
 const RESEARCH_ARTWORK_BY_BOX_ID = Object.freeze({
@@ -86,10 +90,28 @@ const RESEARCH_FALLBACK_ARTWORK = new URL(
   '../../../../assets/game/source/icons/icon-research.png',
   import.meta.url,
 ).href;
-const RESEARCH_VISIBILITY_EYE = new URL(
-  '../../../../assets/game/source/icons/icon-research-visibility-eye.png',
-  import.meta.url,
-).href;
+
+function createResearchVisibilityIcon() {
+  const svgNamespace = 'http://www.w3.org/2000/svg';
+  const icon = document.createElementNS(svgNamespace, 'svg');
+  icon.classList.add('research-page__completed-toggle-icon');
+  icon.setAttribute('viewBox', '0 0 24 16');
+  icon.setAttribute('aria-hidden', 'true');
+  icon.setAttribute('focusable', 'false');
+
+  const outline = document.createElementNS(svgNamespace, 'path');
+  outline.setAttribute(
+    'd',
+    'M2 8C6.5 2.5 17.5 2.5 22 8C17.5 13.5 6.5 13.5 2 8Z',
+  );
+  const pupil = document.createElementNS(svgNamespace, 'circle');
+  pupil.setAttribute('cx', '12');
+  pupil.setAttribute('cy', '8');
+  pupil.setAttribute('r', '2.5');
+  icon.append(outline, pupil);
+
+  return icon;
+}
 
 function formatResearchSectionTitle(value) {
   return String(value ?? '').replace(
@@ -523,11 +545,7 @@ export class ResearchBoxListManager {
     const toggle = document.createElement('button');
     toggle.className = 'research-page__completed-toggle';
     toggle.type = 'button';
-    const icon = document.createElement('img');
-    icon.className = 'research-page__completed-toggle-icon';
-    icon.alt = '';
-    icon.setAttribute('aria-hidden', 'true');
-    icon.src = RESEARCH_VISIBILITY_EYE;
+    const icon = createResearchVisibilityIcon();
     toggle.append(icon);
     const ref = { section, heading, title, toggle, icon, boxId: null };
     toggle.addEventListener('click', () => this.toggleCompletedResearches(ref.boxId));
@@ -681,7 +699,7 @@ export class ResearchBoxListManager {
       research.locked
         ? this.createLockedValue(research)
         : this.isResearchedStatus(research)
-        ? this.createResearchedStatusButton(research)
+        ? this.createResearchedStatus(research)
         : research.inProgress
         ? this.createInProgressStatusButton(research)
         : research.completed
@@ -962,22 +980,25 @@ export class ResearchBoxListManager {
     );
   }
 
-  createResearchedStatusButton(research) {
-    const button = document.createElement('button');
-    button.className =
-      'style-button style-cost-button style-cost-button--yellow research-page__research-button research-page__research-button--completed';
-    button.type = 'button';
-    button.disabled = true;
-
-    const label = document.createElement('span');
-    label.className = 'style-cost-button__plain-label';
-    label.textContent = 'Researched';
-    button.append(label);
-    button.setAttribute(
+  createResearchedStatus(research) {
+    const status = document.createElement('span');
+    status.className = 'research-page__research-status--completed';
+    status.setAttribute('role', 'img');
+    status.setAttribute(
       'aria-label',
       `${this.formatResearchName(research)} is researched`,
     );
-    return button;
+
+    const icon = createStatusIcon(
+      'research-page__research-status-icon',
+      STATUS_ICON_CHECK,
+    );
+    if (icon) {
+      status.append(icon);
+    } else {
+      status.textContent = 'Researched';
+    }
+    return status;
   }
 
   createInProgressStatusButton(research) {

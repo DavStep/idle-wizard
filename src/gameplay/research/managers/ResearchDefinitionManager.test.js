@@ -100,6 +100,35 @@ describe('ResearchDefinitionManager', () => {
     expect(manager.hasConfiguredResearch('unlockRecipe:manaTonic')).toBe(true);
   });
 
+  it('offers a globally discovered hidden recipe as independent research', () => {
+    const { manager, setCurrentLevel } = createManager();
+    setCurrentLevel(1);
+    manager.setPotionDiscoveryFacade({
+      getSnapshot: () => ({ discoveries: [{ potionKey: 'ashenMemory' }] }),
+      hasDiscoveredPotion: (potionKey) => potionKey === 'ashenMemory',
+      isDiscoveredByCurrentPlayer: () => false,
+    });
+
+    expect(manager.getResearch('unlockRecipe:ashenMemory')).toMatchObject({
+      id: 'unlockRecipe:ashenMemory',
+      requiredResearchIds: [],
+    });
+    expect(manager.getResearch('unlockRecipe:ashenMemory')).not.toHaveProperty(
+      'requiredPlayerLevel',
+    );
+  });
+
+  it('does not offer redundant research to the recipe discoverer', () => {
+    const { manager } = createManager();
+    manager.setPotionDiscoveryFacade({
+      getSnapshot: () => ({ discoveries: [{ potionKey: 'ashenMemory' }] }),
+      hasDiscoveredPotion: () => true,
+      isDiscoveredByCurrentPlayer: () => true,
+    });
+
+    expect(manager.hasConfiguredResearch('unlockRecipe:ashenMemory')).toBe(false);
+  });
+
   it('offers one combined automation research per plot and cauldron', () => {
     const { manager } = createManager();
     const automationBoxes = manager

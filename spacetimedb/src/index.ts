@@ -14508,9 +14508,9 @@ function settleWorldEventInboxRewards(
         recipientIdentity: player.identity,
         sourceType: 'worldEvent',
         sourceKey,
-        senderLabel: 'world event',
-        title: 'event finished',
-        body: `you placed #${rank} in ${eventHeadline} with ${points.toString()} points. here are your rewards.`,
+        senderLabel: 'World Event',
+        title: eventHeadline,
+        body: `You placed #${rank} in ${eventHeadline} with ${points.toString()} points. Here are your rewards.`,
         rewards,
       })
     ) {

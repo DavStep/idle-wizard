@@ -124,6 +124,25 @@ describe('PixiTextField', () => {
     field.destroy({ children: true });
   });
 
+  it('passes retained-submit behavior to the text-entry session', async () => {
+    const open = vi.fn(async () => ({
+      close: vi.fn(),
+      getSnapshot: () => ({ active: true }),
+      subscribe: () => vi.fn(),
+    }));
+    const field = new PixiTextField({
+      retainOnSubmit: true,
+      textEntryService: { open },
+    });
+
+    await field.focus();
+
+    expect(open).toHaveBeenCalledWith(
+      expect.objectContaining({ retainOnSubmit: true }),
+    );
+    field.destroy({ children: true });
+  });
+
   it('wraps multiline text and keeps the active caret inside the visible writing area', () => {
     const field = new PixiTextField({
       assetManager: { getTexture: () => Texture.EMPTY },

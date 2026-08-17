@@ -9,6 +9,7 @@ export class PotionDiscoverySubscriptionManager {
   constructor({ onSnapshot } = {}) {
     this.onSnapshot = onSnapshot;
     this.connection = null;
+    this.identityKey = '';
     this.table = null;
     this.subscription = null;
     this.snapshot = { ...EMPTY_SNAPSHOT };
@@ -16,9 +17,10 @@ export class PotionDiscoverySubscriptionManager {
     this.handleTableChange = () => this.publishFromTable();
   }
 
-  connect(connection) {
+  connect(connection, identity) {
     this.disconnect();
     this.connection = connection;
+    this.identityKey = this.toIdentityKey(identity);
     this.table = this.findTable(connection);
 
     if (!this.table) {
@@ -50,6 +52,7 @@ export class PotionDiscoverySubscriptionManager {
     }
 
     this.connection = null;
+    this.identityKey = '';
     this.table = null;
     this.subscription = null;
     this.publish({ ...EMPTY_SNAPSHOT });
@@ -65,6 +68,15 @@ export class PotionDiscoverySubscriptionManager {
 
   hasDiscoveredPotion(potionKey) {
     return this.discoveriesByPotionKey.has(potionKey);
+  }
+
+  isDiscoveredByCurrentPlayer(potionKey) {
+    const discovery = this.getDiscovery(potionKey);
+    return Boolean(
+      discovery &&
+        this.identityKey &&
+        discovery.discoveredByIdentity === this.identityKey,
+    );
   }
 
   publishFromTable() {

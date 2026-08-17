@@ -12,8 +12,8 @@ children, and the standalone room-tab entry exposes the widget's internal
 frame, icon, label, lock, and notification atoms.
 
 Guild is an alternate HUD mode on the same retained bottom surface. It swaps
-the ordinary room tabs for one icon-backed Workshop return plus four
-`PixiBottomHudTextTab` category controls: Hall, Board, Roster, and Log. The text
+the ordinary room tabs for one icon-backed Workshop return plus two
+`PixiBottomHudTextTab` category controls: Hall and Adventurers. The text
 variant reuses the room-tab cap and interaction states but keeps its label
 visible while inactive because it has no room icon.
 

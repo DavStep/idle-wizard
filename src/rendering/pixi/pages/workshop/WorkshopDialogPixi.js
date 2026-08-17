@@ -7,7 +7,7 @@ import {
   getSeedIconFrameName,
   getSeedPackItemFrameName,
 } from '../../../../assets/items/seeds/seedIconFrames.js';
-import { PixiCostButton } from '../../primitives/PixiCostButton.js';
+import { PixiTextButton } from '../../primitives/PixiTextButton.js';
 import { ClickableWidget } from '../../primitives/ClickableWidget.js';
 import {
   PIXI_DIALOG_BASE_GEOMETRY,
@@ -26,6 +26,7 @@ import { PixiOwnedDialogSurface } from '../../primitives/PixiOwnedDialogSurface.
 import { PixiInlineText } from '../../primitives/PixiInlineText.js';
 import { layoutPixiSeedPackIcon } from '../../primitives/PixiSeedPackIcon.js';
 import { PixiStarLevelLabel } from '../../primitives/PixiStarLevelLabel.js';
+import { PixiTextLabel } from '../../primitives/PixiTextLabel.js';
 import { PixiTextField } from '../../primitives/PixiTextField.js';
 import { PooledCollection } from '../../retained/PooledCollection.js';
 import { WidgetPool } from '../../retained/WidgetPool.js';
@@ -89,6 +90,7 @@ const WORLD_CHAT_OPEN_DURATION_MS = 280;
 const WORLD_CHAT_RESIZE_DURATION_MS = 240;
 const WORLD_CHAT_MOTION_EPSILON = 0.01;
 const WORLD_CHAT_ROW_HEIGHT_SCALE = 1.3;
+const WORLD_CHAT_ROW_CONTENT_SCALE = 1.5;
 const WORLD_CHAT_COMPOSER_GAP = 6;
 const WORLD_CHAT_COMPOSER_INSET_RIGHT = 4;
 const WORLD_CHAT_COMPOSER_HEIGHT = 34;
@@ -96,21 +98,34 @@ const WORLD_CHAT_COMPOSER_FIELD_HEIGHT = 29;
 const WORLD_CHAT_COMPOSER_SEND_WIDTH = 74;
 const WORLD_CHAT_COMPOSER_SEND_HEIGHT = 29;
 const WORLD_CHAT_ROW_SCROLLBAR_GUTTER = 3;
-const WORLD_CHAT_AVATAR_SIZE = 22 * WORLD_CHAT_ROW_HEIGHT_SCALE;
-const WORLD_CHAT_TEXT_X = 25 * WORLD_CHAT_ROW_HEIGHT_SCALE;
-const WORLD_CHAT_HEADER_HEIGHT = 12 * WORLD_CHAT_ROW_HEIGHT_SCALE;
+const WORLD_CHAT_AVATAR_SIZE =
+  22 * WORLD_CHAT_ROW_HEIGHT_SCALE * WORLD_CHAT_ROW_CONTENT_SCALE;
+const WORLD_CHAT_TEXT_X =
+  25 * WORLD_CHAT_ROW_HEIGHT_SCALE * WORLD_CHAT_ROW_CONTENT_SCALE;
+const WORLD_CHAT_HEADER_FONT_SIZE = 11 * WORLD_CHAT_ROW_CONTENT_SCALE;
+const WORLD_CHAT_HEADER_HEIGHT =
+  12 * WORLD_CHAT_ROW_HEIGHT_SCALE * WORLD_CHAT_ROW_CONTENT_SCALE;
 const WORLD_CHAT_HEADER_TOP = -1;
-const WORLD_CHAT_BODY_TOP = 12 * WORLD_CHAT_ROW_HEIGHT_SCALE;
-const WORLD_CHAT_BODY_FONT_SIZE = 11;
-const WORLD_CHAT_BODY_LINE_HEIGHT = 13 * WORLD_CHAT_ROW_HEIGHT_SCALE;
-const WORLD_CHAT_PLAYER_MIN_HEIGHT = 27 * WORLD_CHAT_ROW_HEIGHT_SCALE;
-const WORLD_CHAT_SYSTEM_MIN_HEIGHT = 25 * WORLD_CHAT_ROW_HEIGHT_SCALE;
-const WORLD_CHAT_PLAYER_BOTTOM_INSET = 1 * WORLD_CHAT_ROW_HEIGHT_SCALE;
-const WORLD_CHAT_SYSTEM_BOTTOM_INSET = 3 * WORLD_CHAT_ROW_HEIGHT_SCALE;
+const WORLD_CHAT_BODY_TOP =
+  12 * WORLD_CHAT_ROW_HEIGHT_SCALE * WORLD_CHAT_ROW_CONTENT_SCALE;
+const WORLD_CHAT_BODY_FONT_SIZE = 11 * WORLD_CHAT_ROW_CONTENT_SCALE;
+const WORLD_CHAT_BODY_LINE_HEIGHT =
+  13 * WORLD_CHAT_ROW_HEIGHT_SCALE * WORLD_CHAT_ROW_CONTENT_SCALE;
+const WORLD_CHAT_PLAYER_MIN_HEIGHT =
+  27 * WORLD_CHAT_ROW_HEIGHT_SCALE * WORLD_CHAT_ROW_CONTENT_SCALE;
+const WORLD_CHAT_SYSTEM_MIN_HEIGHT =
+  25 * WORLD_CHAT_ROW_HEIGHT_SCALE * WORLD_CHAT_ROW_CONTENT_SCALE;
+const WORLD_CHAT_PLAYER_BOTTOM_INSET =
+  1 * WORLD_CHAT_ROW_HEIGHT_SCALE * WORLD_CHAT_ROW_CONTENT_SCALE;
+const WORLD_CHAT_SYSTEM_BOTTOM_INSET =
+  3 * WORLD_CHAT_ROW_HEIGHT_SCALE * WORLD_CHAT_ROW_CONTENT_SCALE;
+const WORLD_CHAT_TIMESTAMP_FONT_SIZE = 8.5 * WORLD_CHAT_ROW_CONTENT_SCALE;
+const WORLD_CHAT_TIMESTAMP_LINE_HEIGHT = 10 * WORLD_CHAT_ROW_CONTENT_SCALE;
 const WORLD_CHAT_TIMESTAMP_COLOR = '#946a2e';
 const WORLD_CHAT_SYSTEM_BACKGROUND = '#efd0a2';
 const WORLD_CHAT_SYSTEM_TITLE_COLOR = '#432d20';
 const WORLD_CHAT_SYSTEM_PLAYER_COLOR = '#72533a';
+const SCROLL_ROW_RENDER_BUFFER = 16;
 const DISCOVERY_ROW_GAP = 6;
 const DISCOVERY_MAX_INGREDIENTS = 6;
 const DISCOVERY_ICON_SIZE = 44;
@@ -135,6 +150,7 @@ const WORLD_CHAT_TAG_COLORS = Object.freeze({
 const ALLIANCE_DIRECTORY_HEADER_HEIGHT = 30;
 const ALLIANCE_MEMBER_ROW_HEIGHT = PIXI_ROOT_RUN_GEOMETRY.settings.rowPitch;
 const ALLIANCE_QUEST_ROW_HEIGHT = PIXI_ROOT_RUN_GEOMETRY.settings.rowPitch;
+const ALLIANCE_QUEST_ITEM_ICON_SIZE = 36;
 const ALLIANCE_MEMBER_AVATAR_SIZE = LEADERBOARD_AVATAR_SIZE;
 const ALLIANCE_MEMBER_VISIBLE_ROWS = 4.5;
 const ALLIANCE_MEMBER_VIEWPORT_HEIGHT =
@@ -171,6 +187,9 @@ const WORLD_EVENT_QUEST_MIN_DESCRIPTION_HEIGHT = 24;
 const WORLD_EVENT_MAX_DONATION_OPTIONS = 4;
 const WORLD_EVENT_HEADER_CONTENT_INSET = 5;
 const WORLD_EVENT_LIST_CONTENT_INSET = 5;
+const WORLD_EVENT_REWARD_ICON_SIZE = 38;
+const WORLD_EVENT_REWARD_ICON_GAP = 8;
+const WORLD_EVENT_REWARD_ICON_RIGHT_INSET = 8;
 const PERSONAL_TASK_SECTION_HEADER_HEIGHT = 48;
 const PERSONAL_TASK_SECTION_ROW_GAP = 2;
 const RESOURCE_ICON_FRAMES = Object.freeze({
@@ -337,6 +356,7 @@ export class WorkshopDialogPixi {
     this.isStatsDialog = this.dialogId === 'workshop.stats';
     this.isLeaderboardDialog = this.dialogId === 'workshop.leaderboard';
     this.isWorldChatDialog = this.dialogId === 'workshop.worldChat';
+    this.viewModelRevision = null;
     this.isDiscoveriesDialog = this.dialogId === 'workshop.discoveries';
     this.isAllianceDialog = this.dialogId === 'workshop.alliance';
     this.isWorldEventDialog = this.dialogId === 'workshop.worldEvent';
@@ -402,10 +422,12 @@ export class WorkshopDialogPixi {
       ...RETAINED_TEXT_STYLES.border,
       wordWrapWidth: 264,
     });
+    this.scrollableRowLayouts = new Map();
     this.scroll = new RetainedScrollArea({
       assetManager: this.assetManager,
       label: `${dialogId}-scroll`,
       inputRouter: this.inputRouter,
+      onScroll: () => this.updateScrollableRowVisibility(),
     });
     this.ownedAllianceLayout = false;
     this.allianceTradeSection = this.isAllianceDialog
@@ -485,6 +507,7 @@ export class WorkshopDialogPixi {
         placeholder: 'Message',
         inputKind: 'text',
         maxLength: 160,
+        retainOnSubmit: true,
         variant: 'brown-inset',
         label: `${dialogId}-composer`,
         onChange: () => this.updateComposerControl(),
@@ -496,6 +519,7 @@ export class WorkshopDialogPixi {
         inputRouter: this.inputRouter,
         sizeTier: 30,
         variant: 'yellow',
+        preserveFocus: true,
       });
       this.panel.content.addChild(this.composerField, this.composerSubmit.root);
       this.composerField.visible = false;
@@ -524,6 +548,9 @@ export class WorkshopDialogPixi {
       pool: this.rowPool,
       counters,
       keyOf: (row, index) => row.id ?? row.key ?? index,
+      revisionOf: this.isWorldChatDialog
+        ? (row) => createRetainedModelRevision(row)
+        : null,
       bind: (widget, row) => widget.bind(row),
       afterReconcile: (widgets) => this.orderRows(widgets),
     });
@@ -629,6 +656,26 @@ export class WorkshopDialogPixi {
           afterReconcile: (widgets) => this.orderRows(widgets),
         })
       : null;
+    this.worldEventRewardRowPool = this.isWorldEventDialog
+      ? new WidgetPool({
+          name: `${dialogId} world event reward row pool`,
+          counters,
+          create: () => new WorldEventRewardRow({ dialog: this }),
+          reset: (row) => row.reset(),
+          dispose: (row) => row.destroy(),
+          maxSize: 16,
+        })
+      : null;
+    this.worldEventRewardRows = this.worldEventRewardRowPool
+      ? new PooledCollection({
+          name: `${dialogId} world event reward rows`,
+          pool: this.worldEventRewardRowPool,
+          counters,
+          keyOf: (row, index) => row.id ?? index,
+          bind: (widget, row) => widget.bind(row),
+          afterReconcile: (widgets) => this.orderRows(widgets),
+        })
+      : null;
     this.tabPool = new WidgetPool({
       name: `${dialogId} tab pool`,
       counters,
@@ -687,12 +734,26 @@ export class WorkshopDialogPixi {
   }
 
   bind(viewModel) {
+    const nextViewModel = viewModel ?? {};
+    const nextViewModelRevision = this.isWorldChatDialog
+      ? createRetainedModelRevision(nextViewModel)
+      : null;
+    if (
+      this.isWorldChatDialog &&
+      this.viewModelRevision !== null &&
+      nextViewModelRevision === this.viewModelRevision
+    ) {
+      this.viewModel = nextViewModel;
+      return;
+    }
+
     const keepWorldChatPinnedToNewest =
       this.isWorldChatDialog &&
       this.modal.shown === true &&
       this.scroll.offsetY >=
         Math.max(0, this.scroll.contentHeight - this.scroll.height) - 0.5;
-    this.viewModel = viewModel ?? {};
+    this.viewModel = nextViewModel;
+    this.viewModelRevision = nextViewModelRevision;
     this.ownedAllianceHomeLayout = Boolean(
       this.isAllianceDialog &&
         (this.viewModel.ownedAllianceHome === true ||
@@ -767,6 +828,10 @@ export class WorkshopDialogPixi {
               this.viewModel.rowWidget === 'leaderboard' &&
               this.worldEventLeaderboardRows
             ? this.worldEventLeaderboardRows
+          : this.isWorldEventDialog &&
+              this.viewModel.rowWidget === 'worldEventReward' &&
+              this.worldEventRewardRows
+            ? this.worldEventRewardRows
           : this.defaultRows;
     if (this.rows !== nextRows) {
       this.rows.reconcile([]);
@@ -840,6 +905,7 @@ export class WorkshopDialogPixi {
     }
 
     this.scroll.content.removeChildren();
+    this.scrollableRowLayouts.clear();
     const contentPaddingTop =
       this.isWorldEventDialog && this.viewModel.rowWidget === 'worldEventQuest'
         ? 0
@@ -853,7 +919,8 @@ export class WorkshopDialogPixi {
           ? WORLD_EVENT_SECTION_GAP
           : this.isLeaderboardDialog ||
               (this.isWorldEventDialog &&
-                this.viewModel.rowWidget === 'leaderboard') ||
+                (this.viewModel.rowWidget === 'leaderboard' ||
+                  this.viewModel.rowWidget === 'worldEventReward')) ||
               (this.isAllianceDialog &&
                 this.viewModel.rowWidget === 'allianceQuest')
             ? 0
@@ -872,6 +939,10 @@ export class WorkshopDialogPixi {
     widgets.forEach((widget, index) => {
       const rowHeight = preferredHeights[index] ?? widget.getPreferredHeight();
       this.scroll.content.addChild(widget.root);
+      this.scrollableRowLayouts.set(widget, {
+        top: y,
+        height: rowHeight,
+      });
       widget.setBounds(
         0,
         y,
@@ -882,7 +953,8 @@ export class WorkshopDialogPixi {
             ? this.scroll.width
             : this.isLeaderboardDialog ||
                 (this.isWorldEventDialog &&
-                  this.viewModel.rowWidget === 'leaderboard')
+                  (this.viewModel.rowWidget === 'leaderboard' ||
+                    this.viewModel.rowWidget === 'worldEventReward'))
               ? this.leaderboardRowWidth ?? WORKSHOP_DIALOG_CONTENT_WIDTH
               : this.isAllianceDialog &&
                 this.viewModel.rowWidget === 'allianceQuest'
@@ -910,6 +982,30 @@ export class WorkshopDialogPixi {
     );
     if (locksWorldEventQuestScroll) {
       this.scroll.scrollTo(0);
+    }
+    this.updateScrollableRowVisibility();
+  }
+
+  updateScrollableRowVisibility() {
+    if (!this.scrollableRowLayouts || !this.scroll) {
+      return;
+    }
+
+    const viewportHeight = this.scroll.height;
+    if (viewportHeight <= 0) {
+      for (const widget of this.scrollableRowLayouts.keys()) {
+        widget.root.renderable = true;
+      }
+      return;
+    }
+
+    const viewportTop = this.scroll.offsetY - SCROLL_ROW_RENDER_BUFFER;
+    const viewportBottom =
+      this.scroll.offsetY + viewportHeight + SCROLL_ROW_RENDER_BUFFER;
+    for (const [widget, layout] of this.scrollableRowLayouts) {
+      widget.root.renderable =
+        layout.top + layout.height >= viewportTop &&
+        layout.top <= viewportBottom;
     }
   }
 
@@ -1908,7 +2004,9 @@ export class WorkshopDialogPixi {
     const headerY = PIXI_UI_GEOMETRY.dialogPadding;
     const hasHeader = this.headerHeadline.visible === true;
     const usesQuestSectionRows = this.viewModel.rowWidget === 'worldEventQuest';
-    const usesLeaderboardRows = this.viewModel.rowWidget === 'leaderboard';
+    const usesLeaderboardRows =
+      this.viewModel.rowWidget === 'leaderboard' ||
+      this.viewModel.rowWidget === 'worldEventReward';
     const questRowsX = (width - WORLD_EVENT_QUEST_ROW_WIDTH) / 2;
 
     this.headerHeadline.position.set(
@@ -2074,6 +2172,7 @@ export class WorkshopDialogPixi {
     this.allianceQuestRows?.destroy();
     this.worldEventRows?.destroy();
     this.worldEventLeaderboardRows?.destroy();
+    this.worldEventRewardRows?.destroy();
     this.rows = null;
     this.defaultRows = null;
     this.allianceRows = null;
@@ -2081,6 +2180,7 @@ export class WorkshopDialogPixi {
     this.allianceQuestRows = null;
     this.worldEventRows = null;
     this.worldEventLeaderboardRows = null;
+    this.worldEventRewardRows = null;
     for (const chrome of this.personalTaskSectionChrome?.values?.() ?? []) {
       chrome.progress.destroy();
       chrome.root.destroy({ children: true });
@@ -2098,6 +2198,8 @@ export class WorkshopDialogPixi {
     this.worldEventRowPool = null;
     this.worldEventLeaderboardRowPool?.destroy();
     this.worldEventLeaderboardRowPool = null;
+    this.worldEventRewardRowPool?.destroy();
+    this.worldEventRewardRowPool = null;
     this.tabs.destroy();
     this.tabPool.destroy();
     this.periodTabs?.destroy();
@@ -2257,11 +2359,10 @@ export class WorldEventDonationOptionRow {
       align: 'right',
     });
     this.total.anchor.set(1, 0);
-    this.action = new PixiCostButton({
+    this.action = new PixiTextButton({
       assetManager: dialog.assetManager,
       inputRouter: dialog.inputRouter,
-      compact: true,
-      contentScale: 0.68,
+      color: 'green',
       sizeTier: 30,
       width: WORLD_EVENT_QUEST_ACTION_WIDTH,
       height: WORLD_EVENT_QUEST_ACTION_HEIGHT,
@@ -2304,17 +2405,15 @@ export class WorldEventDonationOptionRow {
     const enabled =
       this.model.enabled === true &&
       typeof this.model.onActivate === 'function';
-    this.action.setModel({
-      amountLabel:
-        this.model.actionLabel ?? (enabled ? 'Donate' : 'Unavailable'),
-      resource: 'none',
-      enabled,
-      action: enabled ? () => this.model.onActivate?.(this.model) : null,
-    });
-    this.action.visible = true;
-    this.action.renderable = true;
-    this.action.eventMode = enabled ? 'static' : 'none';
-    this.action.cursor = enabled ? 'pointer' : 'default';
+    this.action.bind(
+      this.model.id,
+      {
+        label:
+          this.model.actionLabel ?? (enabled ? 'Donate' : 'Unavailable'),
+        enabled,
+      },
+      enabled ? () => this.model.onActivate?.(this.model) : null,
+    );
     this.targetId = this.model.semanticId ?? null;
     if (this.targetId) {
       this.dialog.registerTarget({
@@ -2368,9 +2467,11 @@ export class WorldEventDonationOptionRow {
     this.label.style.wordWrapWidth = Math.max(52, copyRight - copyX - 92);
     this.points.position.set(copyRight, 7);
     this.total.position.set(copyRight, 23);
-    this.action.setBounds(
+    this.action.position.set(
       actionX,
       Math.max(0, (height - WORLD_EVENT_QUEST_ACTION_HEIGHT) / 2),
+    );
+    this.action.setSize(
       WORLD_EVENT_QUEST_ACTION_WIDTH,
       WORLD_EVENT_QUEST_ACTION_HEIGHT,
     );
@@ -2435,7 +2536,7 @@ export class WorldEventDonationOptionRow {
  * Image-backed World Event quest row derived from the Research station card.
  *
  * The quest owns its narrative and nested donation options while each option
- * reuses the shared green/gray cost-button interaction and press contract.
+ * reuses the shared green/gray text-button interaction and press contract.
  */
 export class WorldEventQuestRow {
   constructor({ dialog }) {
@@ -2690,12 +2791,12 @@ export class WorldChatMessageRowPixi {
     this.avatarWidget.pivot.set(PLAYER_PROFILE_SIZE / 2);
     this.avatar = this.avatarWidget;
     this.tag = createText('', {
-      fontSize: 11,
+      fontSize: WORLD_CHAT_HEADER_FONT_SIZE,
       lineHeight: WORLD_CHAT_HEADER_HEIGHT,
       fontWeight: '700',
     });
     this.username = createText('', {
-      fontSize: 11,
+      fontSize: WORLD_CHAT_HEADER_FONT_SIZE,
       lineHeight: WORLD_CHAT_HEADER_HEIGHT,
       fontWeight: '700',
     });
@@ -2713,8 +2814,8 @@ export class WorldChatMessageRowPixi {
       fontWeight: '700',
     });
     this.timestamp = createText('', {
-      fontSize: 8.5,
-      lineHeight: 10,
+      fontSize: WORLD_CHAT_TIMESTAMP_FONT_SIZE,
+      lineHeight: WORLD_CHAT_TIMESTAMP_LINE_HEIGHT,
       align: 'right',
     });
     this.timestamp.anchor.set(1, 0);
@@ -2900,7 +3001,7 @@ export class WorldChatMessageRowPixi {
   applyTheme(theme) {
     const resolvedTheme = theme ?? this.dialog.theme;
     applyTextTheme(this.tag, resolvedTheme, {
-      fontSize: 11,
+      fontSize: WORLD_CHAT_HEADER_FONT_SIZE,
       lineHeight: WORLD_CHAT_HEADER_HEIGHT,
       fontWeight: '700',
       fill:
@@ -2909,7 +3010,7 @@ export class WorldChatMessageRowPixi {
         ] ?? WORLD_CHAT_TAG_COLORS.ink,
     });
     applyTextTheme(this.username, resolvedTheme, {
-      fontSize: 11,
+      fontSize: WORLD_CHAT_HEADER_FONT_SIZE,
       lineHeight: WORLD_CHAT_HEADER_HEIGHT,
       fontWeight: '700',
       fill: this.isSystem ? WORLD_CHAT_SYSTEM_TITLE_COLOR : resolvedTheme.text,
@@ -2933,8 +3034,8 @@ export class WorldChatMessageRowPixi {
             : WORLD_CHAT_TEXT_X),
     });
     applyTextTheme(this.timestamp, resolvedTheme, {
-      fontSize: 8.5,
-      lineHeight: 10,
+      fontSize: WORLD_CHAT_TIMESTAMP_FONT_SIZE,
+      lineHeight: WORLD_CHAT_TIMESTAMP_LINE_HEIGHT,
       align: 'right',
       fill: WORLD_CHAT_TIMESTAMP_COLOR,
     });
@@ -4481,6 +4582,152 @@ export class LeaderboardRowPixi extends ClickableWidget {
 }
 
 /**
+ * Passive World Event reward tier using the same image-backed list row as the
+ * player leaderboard. Reward amounts sit on the lower edge of their large
+ * resource icons, matching the compact quantity treatment used by Market
+ * stalls.
+ */
+export class WorldEventRewardRow {
+  constructor({ dialog }) {
+    this.dialog = dialog;
+    this.model = {};
+    this.root = new Container({
+      label: `${dialog.dialogId}-world-event-reward-row`,
+    });
+    this.background = new PixiNineSliceFrame({
+      texture:
+        dialog.assetManager?.getTexture?.(PIXI_ROOT_RUN_ASSETS.settingsRow) ??
+        Texture.EMPTY,
+      sourceInsets: PIXI_ROOT_RUN_GEOMETRY.settings.rowSourceInsets,
+      borderInsets: PIXI_ROOT_RUN_GEOMETRY.settings.rowBorderInsets,
+      label: `${this.root.label}:background`,
+    });
+    this.rank = createText('', RETAINED_TEXT_STYLES.bold);
+    this.rewardBadges = ['emerald', 'crystal'].map((resourceKey) => {
+      const root = new Container({
+        label: `${this.root.label}:${resourceKey}`,
+      });
+      const icon = new Sprite(Texture.EMPTY);
+      icon.label = `${root.label}:icon`;
+      icon.anchor.set(0.5);
+      const amount = new PixiTextLabel({
+        fontSize: PIXI_UI_GEOMETRY.borderLabelFontSize,
+        fontWeight: 'bold',
+        anchor: { x: 0.5, y: 1 },
+        color: '#ffffff',
+        stroke: 'outlined',
+        label: `${root.label}:amount`,
+      });
+      root.addChild(icon, amount);
+      this.root.addChild(root);
+      return { amount, icon, resourceKey, root };
+    });
+    this.root.addChildAt(this.background, 0);
+    this.root.addChildAt(this.rank, 1);
+  }
+
+  bind(model) {
+    this.model = model ?? {};
+    this.root.visible = true;
+    this.root.renderable = true;
+    setText(this.rank, this.model.rankLabel ?? this.model.label ?? 'Rank');
+    const rewards = new Map(
+      normalizeRows(this.model.rewards).map((reward) => [
+        String(reward.resourceKey ?? reward.resource ?? '').toLowerCase(),
+        reward,
+      ]),
+    );
+    for (const badge of this.rewardBadges) {
+      const reward = rewards.get(badge.resourceKey);
+      badge.icon.texture = reward
+        ? resolveAtlasTexture(
+            this.dialog.assetManager,
+            RESOURCE_ICON_FRAMES[badge.resourceKey],
+          )
+        : Texture.EMPTY;
+      badge.amount.setText(reward?.amountLabel ?? reward?.value ?? '');
+      badge.root.visible = Boolean(reward);
+      badge.root.renderable = badge.root.visible;
+    }
+    this.applyTheme(this.dialog.contentTheme ?? this.dialog.theme);
+  }
+
+  setBounds(x, y, width, height = LEADERBOARD_ROW_HEIGHT) {
+    this.root.position.set(x, y);
+    const rowGap = PIXI_ROOT_RUN_GEOMETRY.settings.rowGap;
+    const backgroundWidth = Math.max(0, width - rowGap);
+    const backgroundHeight = Math.max(0, height - rowGap);
+    this.background.position.set(0, rowGap / 2);
+    this.background.setSize(
+      backgroundWidth,
+      backgroundHeight,
+      PIXI_ROOT_RUN_GEOMETRY.settings.rowBorderInsets,
+    );
+    const visibleBadges = this.rewardBadges.filter(
+      ({ root }) => root.visible,
+    );
+    const badgesWidth =
+      visibleBadges.length * WORLD_EVENT_REWARD_ICON_SIZE +
+      Math.max(0, visibleBadges.length - 1) * WORLD_EVENT_REWARD_ICON_GAP;
+    const badgesLeft =
+      backgroundWidth - WORLD_EVENT_REWARD_ICON_RIGHT_INSET - badgesWidth;
+    visibleBadges.forEach((badge, index) => {
+      const centerX =
+        badgesLeft +
+        WORLD_EVENT_REWARD_ICON_SIZE / 2 +
+        index * (WORLD_EVENT_REWARD_ICON_SIZE + WORLD_EVENT_REWARD_ICON_GAP);
+      badge.root.position.set(centerX, rowGap / 2);
+      badge.icon.position.set(0, backgroundHeight / 2);
+      badge.icon.width = WORLD_EVENT_REWARD_ICON_SIZE;
+      badge.icon.height = WORLD_EVENT_REWARD_ICON_SIZE;
+      badge.amount.position.set(
+        0,
+        backgroundHeight - 2,
+      );
+    });
+    this.rank.position.set(10, 17);
+    fitLeaderboardText(
+      this.rank,
+      Math.max(0, badgesLeft - this.rank.x - 8),
+    );
+    this.root.hitArea = new Rectangle(0, 0, backgroundWidth, height);
+  }
+
+  getPreferredHeight() {
+    return LEADERBOARD_ROW_HEIGHT;
+  }
+
+  applyTheme(theme) {
+    const resolvedTheme = theme ?? DEFAULT_PIXI_THEME_SNAPSHOT;
+    applyTextTheme(this.rank, resolvedTheme, {
+      ...RETAINED_TEXT_STYLES.bold,
+      fill: resolvedTheme.text,
+    });
+    for (const badge of this.rewardBadges) {
+      badge.amount.applyTheme(resolvedTheme);
+      badge.amount.setColor('#ffffff');
+    }
+  }
+
+  reset() {
+    this.model = {};
+    this.root.visible = false;
+    this.root.renderable = false;
+    setText(this.rank, '');
+    for (const badge of this.rewardBadges) {
+      badge.icon.texture = Texture.EMPTY;
+      badge.amount.setText('');
+      badge.root.visible = false;
+      badge.root.renderable = false;
+    }
+  }
+
+  destroy() {
+    this.root.destroy({ children: true });
+  }
+}
+
+/**
  * Image-backed Trade Alliance quest row using the same retained list rhythm as
  * the alliance roster. Quest identity stays left, while progress, reward, and
  * the fixed action occupy stable right-side columns.
@@ -4501,6 +4748,14 @@ export class AllianceQuestRow {
       borderInsets: PIXI_ROOT_RUN_GEOMETRY.settings.rowBorderInsets,
       label: `${this.root.label}:background`,
     });
+    this.itemIcon = new Sprite(Texture.EMPTY);
+    this.itemIcon.label = `${this.root.label}:item-icon`;
+    this.itemIcon.anchor.set(0.5);
+    this.itemIcon.visible = false;
+    this.itemIconOverlay = new Sprite(Texture.EMPTY);
+    this.itemIconOverlay.label = `${this.root.label}:item-icon-overlay`;
+    this.itemIconOverlay.anchor.set(0.5);
+    this.itemIconOverlay.visible = false;
     this.title = createText('', RETAINED_TEXT_STYLES.body);
     this.contribution = createText('', RETAINED_TEXT_STYLES.border);
     this.progress = createText('', {
@@ -4524,6 +4779,8 @@ export class AllianceQuestRow {
     });
     this.root.addChild(
       this.background,
+      this.itemIcon,
+      this.itemIconOverlay,
       this.title,
       this.contribution,
       this.progress,
@@ -4540,6 +4797,20 @@ export class AllianceQuestRow {
     setText(this.title, this.model.title ?? this.model.label ?? 'Alliance Quest');
     setText(this.contribution, this.model.contributionLabel ?? '');
     setText(this.progress, this.model.progressLabel ?? this.model.value ?? '');
+    const iconFrames = resolveValueIconFrames(this.model);
+    this.itemIcon.texture = resolveAtlasTexture(
+      this.dialog.assetManager,
+      iconFrames.base,
+    );
+    this.itemIconOverlay.texture = resolveAtlasTexture(
+      this.dialog.assetManager,
+      iconFrames.overlay,
+    );
+    this.itemIcon.visible = this.itemIcon.texture !== Texture.EMPTY;
+    this.itemIcon.renderable = this.itemIcon.visible;
+    this.itemIconOverlay.visible =
+      this.itemIcon.visible && this.itemIconOverlay.texture !== Texture.EMPTY;
+    this.itemIconOverlay.renderable = this.itemIconOverlay.visible;
     this.reward.bind(this.model.id, {
       amount: this.model.rewardAmountLabel ?? '0',
       includeResourceName: false,
@@ -4579,6 +4850,7 @@ export class AllianceQuestRow {
       actionX,
       detailRight,
       frameWidth,
+      titleX,
       titleWidth,
     } = this.resolveLayout(width);
     const rowGap = PIXI_ROOT_RUN_GEOMETRY.settings.rowGap;
@@ -4591,8 +4863,29 @@ export class AllianceQuestRow {
     );
 
     this.applyTitleWrap(titleWidth);
-    this.title.position.set(8, 6);
-    this.contribution.position.set(8, 6 + Math.ceil(this.title.height) + 5);
+    const iconCenterX = 4 + ALLIANCE_QUEST_ITEM_ICON_SIZE / 2;
+    const iconCenterY = height / 2;
+    if (this.itemIconOverlay.visible) {
+      layoutPixiSeedPackIcon({
+        base: this.itemIcon,
+        item: this.itemIconOverlay,
+        x: iconCenterX,
+        y: iconCenterY,
+        width: ALLIANCE_QUEST_ITEM_ICON_SIZE,
+        height: ALLIANCE_QUEST_ITEM_ICON_SIZE,
+        fitPositionX: 1,
+      });
+    } else if (this.itemIcon.visible) {
+      this.itemIcon.position.set(iconCenterX, iconCenterY);
+      this.itemIcon.width = ALLIANCE_QUEST_ITEM_ICON_SIZE;
+      this.itemIcon.height = ALLIANCE_QUEST_ITEM_ICON_SIZE;
+      this.itemIconOverlay.rotation = 0;
+    }
+    this.title.position.set(titleX, 6);
+    this.contribution.position.set(
+      titleX,
+      6 + Math.ceil(this.title.height) + 5,
+    );
     this.progress.position.set(detailRight, 7);
     this.reward.position.set(
       detailRight - this.reward.measuredWidth,
@@ -4619,6 +4912,10 @@ export class AllianceQuestRow {
       Math.ceil(this.progress.width),
       Math.ceil(this.reward.measuredWidth),
     );
+    const titleX = this.itemIcon.visible
+      ? ALLIANCE_QUEST_ITEM_ICON_SIZE + 10
+      : 8;
+    const titleRight = detailRight - detailWidth - 7;
 
     return {
       actionHeight,
@@ -4626,7 +4923,11 @@ export class AllianceQuestRow {
       actionX,
       detailRight,
       frameWidth,
-      titleWidth: Math.max(90, detailRight - detailWidth - 15),
+      titleX,
+      titleWidth: Math.max(
+        this.itemIcon.visible ? 52 : 90,
+        titleRight - titleX,
+      ),
     };
   }
 
@@ -4682,6 +4983,13 @@ export class AllianceQuestRow {
   reset() {
     this.unregisterTarget();
     this.model = {};
+    this.itemIcon.texture = Texture.EMPTY;
+    this.itemIcon.visible = false;
+    this.itemIcon.renderable = false;
+    this.itemIconOverlay.texture = Texture.EMPTY;
+    this.itemIconOverlay.visible = false;
+    this.itemIconOverlay.renderable = false;
+    this.itemIconOverlay.rotation = 0;
     this.reward.bind('', { amount: '', hidden: true, resource: 'crystal' });
     this.root.visible = false;
     this.root.renderable = false;
@@ -5122,6 +5430,22 @@ function disposeInputRegistration(registration) {
     return;
   }
   registration?.unregister?.();
+}
+
+function createRetainedModelRevision(model) {
+  try {
+    return JSON.stringify(model, (_key, value) => {
+      if (typeof value === 'function') {
+        return undefined;
+      }
+      if (typeof value === 'bigint') {
+        return { bigint: String(value) };
+      }
+      return value;
+    });
+  } catch {
+    return model;
+  }
 }
 
 function createSettledWorldChatMotion(bounds) {

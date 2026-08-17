@@ -38,6 +38,7 @@ export class TextEntrySession {
     this.multiline = normalizedOptions.multiline;
     this.maxLength = normalizedOptions.maxLength;
     this.submitOnEnter = normalizedOptions.submitOnEnter;
+    this.retainOnSubmit = normalizedOptions.retainOnSubmit;
     this.value = normalizedOptions.value;
     this.selectionStart = normalizedOptions.selectionStart;
     this.selectionEnd = normalizedOptions.selectionEnd;
@@ -56,6 +57,7 @@ export class TextEntrySession {
       multiline: this.multiline,
       maxLength: this.maxLength,
       submitOnEnter: this.submitOnEnter,
+      retainOnSubmit: this.retainOnSubmit,
       keyboardInset: this.keyboardInset,
       status: this.status,
       active: !this.closed,
@@ -179,6 +181,15 @@ export class TextEntrySession {
     return true;
   }
 
+  emitSubmit() {
+    if (this.closed) {
+      return false;
+    }
+
+    this.emit(TEXT_ENTRY_EVENT_TYPES.SUBMIT);
+    return true;
+  }
+
   emit(type, extra = {}) {
     const event = Object.freeze({
       type,
@@ -220,6 +231,7 @@ export function normalizeTextEntryOptions(options = {}) {
     multiline,
     maxLength,
     submitOnEnter: Boolean(options.submitOnEnter ?? !multiline),
+    retainOnSubmit: Boolean(options.retainOnSubmit),
   };
 }
 

@@ -183,21 +183,12 @@ export class UiClickSoundManager {
     }
 
     const context = this.ensureContext();
-    if (!context || isContextClosed(context)) {
+    if (!context || isContextClosed(context) || !isContextRunning(context)) {
       return false;
     }
 
     this.lastPlayAtMsByCue.set(cueId, this.now());
-    const play = () => this.playCueNow(context, cueId, cue, { fallbackTone });
-    if (isContextRunning(context)) {
-      play();
-    } else {
-      void this.resumeContext().then((running) => {
-        if (running && this.enabled && this.context === context) {
-          play();
-        }
-      });
-    }
+    this.playCueNow(context, cueId, cue, { fallbackTone });
     return true;
   }
 

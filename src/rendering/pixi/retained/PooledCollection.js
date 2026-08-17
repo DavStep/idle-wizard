@@ -14,8 +14,9 @@ export class PooledCollection {
   /**
    * @param {{
    *   pool?: { acquire: (...arguments_: unknown[]) => object, release: (widget: object) => void },
-   *   keyOf?: (item: unknown, index: number) => unknown,
-   *   bind?: (widget: object, item: unknown, key: unknown, index: number) => void,
+ *   keyOf?: (item: unknown, index: number) => unknown,
+ *   revisionOf?: ((item: unknown, index: number) => unknown) | null,
+ *   bind?: (widget: object, item: unknown, key: unknown, index: number) => void,
    *   afterReconcile?: (widgets: readonly object[]) => void,
    *   name?: string,
    *   counters?: import('./RetainedUiCounters.js').RetainedUiCounters | null,
@@ -24,6 +25,7 @@ export class PooledCollection {
   constructor({
     pool,
     keyOf,
+    revisionOf = null,
     bind = defaultBind,
     afterReconcile = null,
     name = 'pooled collection',
@@ -39,17 +41,23 @@ export class PooledCollection {
       throw new TypeError('PooledCollection bind must be a function.');
     }
 
+    if (revisionOf !== null && typeof revisionOf !== 'function') {
+      throw new TypeError('PooledCollection revisionOf must be a function or null.');
+    }
+
     if (afterReconcile !== null && typeof afterReconcile !== 'function') {
       throw new TypeError('PooledCollection afterReconcile must be a function or null.');
     }
 
     this.pool = pool;
     this.keyOf = keyOf;
+    this.revisionOf = revisionOf;
     this.bindWidget = bind;
     this.afterReconcile = afterReconcile;
     this.name = validateName(name);
     this.counters = assertRetainedUiCounters(counters);
     this.widgetsByKey = new Map();
+    this.revisionsByKey = new Map();
     this.orderedKeys = [];
     this.highWaterMark = 0;
     this.reconcileCount = 0;
@@ -63,6 +71,7 @@ export class PooledCollection {
       item,
       index,
       key: validateKey(this.keyOf(item, index), this.name),
+      revision: this.revisionOf?.(item, index),
     }));
     assertUniqueKeys(keyedItems, this.name);
 
@@ -81,8 +90,15 @@ export class PooledCollection {
         nextWidgetsByKey.set(key, widget);
       }
 
-      for (const { item, index, key } of keyedItems) {
-        this.bindWidget(nextWidgetsByKey.get(key), item, key, index);
+      for (const { item, index, key, revision } of keyedItems) {
+        const existingWidget = this.widgetsByKey.get(key);
+        const revisionChanged =
+          this.revisionOf === null ||
+          !Object.is(this.revisionsByKey.get(key), revision);
+
+        if (existingWidget === undefined || revisionChanged) {
+          this.bindWidget(nextWidgetsByKey.get(key), item, key, index);
+        }
       }
     } catch (error) {
       const errors = [error];
@@ -107,6 +123,9 @@ export class PooledCollection {
     }
 
     this.widgetsByKey = nextWidgetsByKey;
+    this.revisionsByKey = new Map(
+      keyedItems.map(({ key, revision }) => [key, revision]),
+    );
     this.orderedKeys = keyedItems.map(({ key }) => key);
     this.highWaterMark = Math.max(this.highWaterMark, this.widgetsByKey.size);
     this.reconcileCount += 1;
@@ -161,6 +180,7 @@ export class PooledCollection {
     }
 
     this.widgetsByKey.delete(key);
+    this.revisionsByKey.delete(key);
     const index = this.orderedKeys.indexOf(key);
 
     if (index >= 0) {
@@ -176,6 +196,7 @@ export class PooledCollection {
     this.assertUsable('clear widgets');
     const widgets = [...this.widgetsByKey.values()];
     this.widgetsByKey.clear();
+    this.revisionsByKey.clear();
     this.orderedKeys.length = 0;
     const errors = [];
 

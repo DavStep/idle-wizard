@@ -23,8 +23,9 @@ export default defineUiEditorIntegration({
   sectionId: 'scenes',
   properties: [{ label: 'Production class', value: 'GuildPixiPage' }],
   scenarios: [
-    { fixture: { created: true }, id: 'established', label: 'Established guild', mount },
-    { fixture: { created: false }, id: 'charter', label: 'Guild charter', mount },
+    { fixture: { branch: 'hall', created: true }, id: 'hall', label: 'Guild Hall', mount },
+    { fixture: { branch: 'adventurers', created: true, tab: 'board' }, id: 'adventurers', label: 'Adventurers Lodge', mount },
+    { fixture: { created: false }, id: 'charter', label: 'Guild Charter', mount },
   ],
 });
 
@@ -35,7 +36,7 @@ async function mount(_context, fixture) {
     createControl: ({ assets, input, projection }) => {
       const page = new GuildPixiPage({ assetManager: assets, inputRouter: input });
       page.layout(projection);
-      page.bind(createModel(fixture.created));
+      page.bind(createModel(fixture));
       page.activate();
       return { destroy: () => page.destroy(), layout: (next) => page.layout(next), root: page.root };
     },
@@ -43,6 +44,6 @@ async function mount(_context, fixture) {
   });
 }
 
-function createModel(created) {
-  return { guild: { unlocked: true, created, profile: { name: 'Moonlit Order', tag: 'MOON', color: 'violet' }, secretary: { level: 2, hiredCap: 4, boardSlots: 3, canUpgrade: true, next: { level: 3, hiredCap: 5, boardSlots: 4, costCoin: 800 } }, board: [{ id: 'quest-1', title: 'The Flooded Archive', lore: 'Recover the moonstone ledger.', difficulty: 'hard', rewardText: '120-180 coin', expiresLabel: '2h' }], normalBoard: [], adventurers: [{ id: 'mira', displayName: 'Mira Ashveil', level: 7, status: 'idle' }], applicants: [{ id: 'orin', displayName: 'Orin Moss', level: 5, status: 'waiting' }], logs: [{ id: '1', text: 'A request reaches the board.' }], applicantResetLabel: '5h', boardWaveLabel: '2h' }, actions: {}, navigationPlacement: 'hud' };
+function createModel(fixture = {}) {
+  return { guild: { unlocked: true, created: fixture.created, profile: { name: 'Moonlit Order', tag: 'MOON', color: 'violet' }, secretary: { level: 2, hiredCap: 4, boardSlots: 3, canUpgrade: true, next: { level: 3, hiredCap: 5, boardSlots: 4, costCoin: 800 } }, board: [{ id: 'quest-1', title: 'The Flooded Archive', lore: 'Recover the moonstone ledger.', difficulty: 'hard', rewardText: '120-180 coin', expiresLabel: '2h' }], normalBoard: [], adventurers: [{ id: 'mira', displayName: 'Mira Ashveil', level: 7, status: 'idle' }], applicants: [{ id: 'orin', displayName: 'Orin Moss', level: 5, status: 'waiting' }], logs: [{ id: '1', text: 'A request reaches the board.' }], applicantResetLabel: '5h', boardWaveLabel: '2h' }, actions: {}, navigationPlacement: 'hud', selectedBranchId: fixture.branch ?? 'hall', selectedAdventurerTabId: fixture.tab ?? 'board' };
 }

@@ -13,6 +13,7 @@ export class NativeTextEntryAdapter {
   constructor({ plugin = IdleWizardTextEntryPlugin } = {}) {
     this.plugin = plugin;
     this.sessionId = null;
+    this.config = null;
     this.handlers = null;
     this.listenerHandles = [];
   }
@@ -23,6 +24,7 @@ export class NativeTextEntryAdapter {
     }
 
     this.sessionId = config.id;
+    this.config = config;
     this.handlers = handlers;
 
     try {
@@ -151,7 +153,9 @@ export class NativeTextEntryAdapter {
       selectionEnd: event.selectionEnd,
     });
     this.handlers.onSubmit();
-    void this.cleanup();
+    if (!this.config?.retainOnSubmit) {
+      void this.cleanup();
+    }
   }
 
   onCancel(event) {
@@ -195,6 +199,7 @@ export class NativeTextEntryAdapter {
   async cleanup() {
     const handles = this.listenerHandles.splice(0);
     this.sessionId = null;
+    this.config = null;
     this.handlers = null;
 
     await Promise.allSettled(
@@ -221,6 +226,10 @@ function toNativeStartPayload(config) {
     multiline: config.multiline,
     submitOnEnter: config.submitOnEnter,
   };
+
+  if (config.retainOnSubmit) {
+    payload.retainOnSubmit = true;
+  }
 
   if (config.maxLength !== null) {
     payload.maxLength = config.maxLength;

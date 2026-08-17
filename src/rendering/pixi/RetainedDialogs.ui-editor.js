@@ -91,6 +91,7 @@ const DIALOG_CHILD_WIDGET_IDS = Object.freeze({
   [GLOBAL_DIALOG_IDS.SETTINGS]: Object.freeze([
     'tab-button',
     'primitive.text-field',
+    'primitive.settings-slider',
     'compound.device-preferences',
     'compound.device-identity-footer',
     PLAYER_PROFILE_WIDGET_ID,
@@ -183,9 +184,11 @@ const DIALOG_CHILD_WIDGET_IDS = Object.freeze({
   'guild.request': Object.freeze([
     'compound.guild-quest-detail',
     'compound.guild-quest-detail-line',
+    'text-button',
   ]),
   'guild.requestStack': Object.freeze([
-    'compound.guild-request-list-item',
+    'compound.guild-quest-detail',
+    'compound.guild-quest-detail-line',
     'primitive.progress-bar',
     'text-button',
   ]),
@@ -270,6 +273,11 @@ function createDialogScenarios(dialogId) {
         'leaderboard',
         'Leaderboard',
         () => createWorldEventDialogFixture(2),
+      ),
+      scenario(
+        'rewards',
+        'Rewards',
+        () => createWorldEventDialogFixture(3),
       ),
     ].map((entry) => ({
       ...entry,
@@ -626,6 +634,51 @@ function createWorldChatDialogFixture(variantIndex) {
 }
 
 function createWorldEventDialogFixture(variantIndex) {
+  if (variantIndex === 3) {
+    return {
+      header: {
+        body:
+          'Bells ring from towers that disagreed yesterday.\nNew clerks ask every workshop to prove the town still moves.',
+        headline: 'New King Crowned',
+        meta:
+          '1,302,270 points · 5h\nLeaderboard Rewards: 2,000 points to qualify',
+      },
+      rowWidget: 'worldEventReward',
+      rows: [
+        {
+          id: 'reward:1',
+          type: 'worldEventReward',
+          rankLabel: 'Rank 1',
+          rewards: [
+            { resourceKey: 'emerald', amountLabel: '5' },
+            { resourceKey: 'crystal', amountLabel: '10' },
+          ],
+        },
+        {
+          id: 'reward:2',
+          type: 'worldEventReward',
+          rankLabel: 'Rank 2',
+          rewards: [
+            { resourceKey: 'emerald', amountLabel: '3' },
+            { resourceKey: 'crystal', amountLabel: '7' },
+          ],
+        },
+        {
+          id: 'reward:101+',
+          type: 'worldEventReward',
+          rankLabel: 'Rank 101+ Qualified',
+          rewards: [{ resourceKey: 'crystal', amountLabel: '1' }],
+        },
+      ],
+      selectedTabId: 'rewards',
+      tabs: [
+        { id: 'tasks', label: 'Quests' },
+        { id: 'leaderboard', label: 'Leaderboard' },
+        { id: 'rewards', label: 'Rewards', selected: true },
+      ],
+      title: 'World Event',
+    };
+  }
   if (variantIndex === 2) {
     return {
       header: {
@@ -1039,22 +1092,30 @@ function createReusableDialogContentHierarchy(dialogId, dialog) {
   }
 
   if (dialogId === 'workshop.worldEvent') {
-    const leaderboard = dialog.viewModel?.rowWidget === 'leaderboard';
+    const rowWidget = dialog.viewModel?.rowWidget;
+    const leaderboard = rowWidget === 'leaderboard';
+    const rewards = rowWidget === 'worldEventReward';
     const rows = leaderboard
       ? dialog.worldEventLeaderboardRows?.getWidgets?.() ?? []
-      : dialog.worldEventRows?.getWidgets?.() ?? [];
+      : rewards
+        ? dialog.worldEventRewardRows?.getWidgets?.() ?? []
+        : dialog.worldEventRows?.getWidgets?.() ?? [];
     return rows.map((row, index) =>
       createUiEditorPixiHierarchyComponent({
         displayObjects: [row.root],
-        id: `${dialogId}:${leaderboard ? 'leaderboard' : 'quest'}:${
+        id: `${dialogId}:${leaderboard ? 'leaderboard' : rewards ? 'reward' : 'quest'}:${
           row.model?.id ?? index
         }`,
         label: leaderboard
           ? 'WorldEventLeaderboard:LeaderboardRowPixi'
-          : 'WorldEventQuest:WorldEventQuestRow',
+          : rewards
+            ? 'WorldEventReward:WorldEventRewardRow'
+            : 'WorldEventQuest:WorldEventQuestRow',
         libraryEntryId: leaderboard
           ? 'compound.leaderboard-row'
-          : WORLD_EVENT_QUEST_ROW_WIDGET_ID,
+          : rewards
+            ? 'compound.world-event-reward-row'
+            : WORLD_EVENT_QUEST_ROW_WIDGET_ID,
         primary: row.root,
         type: 'widget',
       }),
@@ -1445,6 +1506,7 @@ function resolveDialogChildWidgetIds(dialogId) {
       'compound.dialog-frame',
       WORLD_EVENT_QUEST_ROW_WIDGET_ID,
       'compound.leaderboard-row',
+      'compound.world-event-reward-row',
     ];
   }
   if (INVENTORY_CHOICE_DIALOG_HIERARCHY[dialogId]) {

@@ -6,6 +6,9 @@ exactly one herb and recipes may use fewer than six slots. Repeated herbs are
 stored as repeated ordered recipe slots.
 Known recipes require matching ingredient order and completed recipe research.
 Unknown mixes brew into wasted potion, which uses the default wasted brew balance.
+The first player to discover a hidden recipe keeps it learned across Prestige.
+Once discovered, the named recipe becomes independently researchable for other
+players instead of becoming globally learned.
 Cauldron slots are bought with coin up to the current progression cap. Level milestones unlock the first 2 caps before prestige, then permanent advanced capacity research unlocks cauldrons 3-5 after enough completed prestiges and makes the researched cap buyable immediately in that run. Milestones and research do not grant extra cauldrons for free.
 An active brew runs through brewing, waits for a bottling action, then bottling, and finally waits in `ready` until the player collects the whole produced batch. Cancelling during brewing or bottling destroys the unfinished output, does not refund herbs or mana, and disables autobrew for that cauldron.
 Auto brewing stores enabled, armed, and the selected unlocked recipe independently for every cauldron. Enabled Auto Brew always collects a ready batch so the automation loop can continue; legacy auto-collect save fields remain compatible but no longer disable collection. The save uses the numbered cauldron array, so additional cauldron slots inherit the same persistence behavior without slot-specific fields. Automation prepares that cauldron's recipe from inventory before starting the brew.

@@ -1,7 +1,6 @@
 import {
   Container,
   Graphics,
-  NineSliceSprite,
   Rectangle,
   Sprite,
   Texture,
@@ -11,33 +10,23 @@ import { PixiTextButton } from '../../primitives/PixiTextButton.js';
 import { getPixiButtonSkin } from '../../primitives/PixiButtonStyle.js';
 import { PixiFrame } from '../../primitives/PixiFrame.js';
 import { PixiNineSliceFrame } from '../../primitives/PixiNineSliceFrame.js';
-import { PixiPanel } from '../../primitives/PixiPanel.js';
 import { PixiTextLabel } from '../../primitives/PixiTextLabel.js';
 import { PixiNotificationBadge } from '../../global/transient/PixiNotificationBadges.js';
 import { PooledCollection } from '../../retained/PooledCollection.js';
 import { WidgetPool } from '../../retained/WidgetPool.js';
 import {
   DEFAULT_PIXI_THEME_SNAPSHOT,
+  PIXI_ROOT_RUN_ASSETS,
+  PIXI_ROOT_RUN_GEOMETRY,
   PIXI_UI_GEOMETRY,
 } from '../../theme/PixiThemeTokens.js';
+import {
+  RESEARCH_PIXI_GEOMETRY,
+  ResearchStationTitlePlaque,
+} from '../research/ResearchPixiPage.js';
 
-const PAPER_TEXTURE_ID = 'public:ui/guild-quest/paper.9.png';
-const PAPER_SOURCE_INSETS = Object.freeze({
-  left: 41,
-  top: 41,
-  right: 42,
-  bottom: 42,
-});
-const PAPER_OUTPUT_INSETS = Object.freeze({
-  left: 5,
-  top: 5,
-  right: 5,
-  bottom: 5,
-});
-const PAPER_SURFACE = '#f6f3ec';
-const PAPER_TEXT = '#221d17';
-const PAPER_MUTED = '#665e54';
-const PAPER_STROKE = '#8c765c';
+const PAPER_TEXT = '#634934';
+const PAPER_MUTED = '#8a6e57';
 const ALLIANCE_TAG_COLORS = Object.freeze({
   red: '#e88b7e',
   amber: '#e4c774',
@@ -53,6 +42,13 @@ const CARD_HEIGHT = 106;
 const CARD_GAP = 8;
 const PERSON_HEIGHT = 54;
 const ROW_HEIGHT = PIXI_UI_GEOMETRY.rowMinHeight;
+const SECTION_CONTENT_GAP = 5;
+
+export function capitalizeGuildText(value) {
+  return String(value ?? '').replace(/[A-Za-z]/, (letter) =>
+    letter.toUpperCase(),
+  );
+}
 
 export class GuildRowsSection {
   constructor({
@@ -65,12 +61,11 @@ export class GuildRowsSection {
   } = {}) {
     this.title = title;
     this.theme = DEFAULT_PIXI_THEME_SNAPSHOT;
-    this.panel = new PixiPanel({
-      assetManager,
-      title,
-      label: `${label}:panel`,
-    });
-    this.root = this.panel;
+    this.root = new Container({ label: `${label}:section` });
+    this.titlePlaque = new ResearchStationTitlePlaque({ assetManager });
+    this.titlePlaque.root.label = `${label}:titlePlaque`;
+    this.titlePlaque.bind(title, 'regular');
+    this.contentLayer = new Container({ label: `${label}:content` });
     this.rowsLayer = new Container();
     this.rowsLayer.label = `${label}:rows`;
     this.countLabel = new PixiTextLabel({
@@ -78,8 +73,12 @@ export class GuildRowsSection {
       color: 'muted',
       label: `${label}:count`,
     });
-    this.panel.content.addChild(this.rowsLayer);
-    this.root.addChild(this.countLabel);
+    this.contentLayer.addChild(this.rowsLayer);
+    this.root.addChild(
+      this.titlePlaque.root,
+      this.contentLayer,
+      this.countLabel,
+    );
     this.rowPool = new WidgetPool({
       name: `${label} row pool`,
       counters,
@@ -117,11 +116,11 @@ export class GuildRowsSection {
             {
               id: 'empty',
               kind: 'empty',
-              text: model.emptyLabel ?? 'quiet',
+              text: model.emptyLabel ?? 'Quiet',
             },
           ],
     );
-    this.countLabel.setText(model.countLabel ?? '');
+    this.countLabel.setText(capitalizeGuildText(model.countLabel));
     this.countLabel.visible = Boolean(model.countLabel);
     this.countLabel.renderable = this.countLabel.visible;
     for (const row of this.rows.getWidgets()) {
@@ -132,38 +131,51 @@ export class GuildRowsSection {
   getPreferredHeight(width) {
     const contentWidth = Math.max(
       0,
-      width -
-        (this.panel.paddingX + this.panel.borderWidth) * 2,
+      width - PIXI_UI_GEOMETRY.roomContentEdge,
     );
     let rowsHeight = 0;
-    for (const row of this.rows.getWidgets()) {
+    const widgets = this.rows.getWidgets();
+    for (const row of widgets) {
       rowsHeight += row.getPreferredHeight(contentWidth);
     }
+    rowsHeight += Math.max(0, widgets.length - 1) *
+      RESEARCH_PIXI_GEOMETRY.rowGap;
     return (
-      rowsHeight +
-      (this.panel.paddingY + this.panel.borderWidth) * 2
+      RESEARCH_PIXI_GEOMETRY.categoryTitleHeight +
+      SECTION_CONTENT_GAP +
+      rowsHeight
     );
   }
 
-  setBounds(x, y, width, height) {
+  setBounds(x, y, width) {
     this.root.position.set(x, y);
     this.width = width;
-    this.panel.setOuterSize(width, height);
+    this.titlePlaque.setMaxWidth(width);
+    const contentX = PIXI_UI_GEOMETRY.roomContentEdge;
+    const contentWidth = Math.max(0, width - contentX);
+    this.contentLayer.position.set(
+      contentX,
+      RESEARCH_PIXI_GEOMETRY.categoryTitleHeight + SECTION_CONTENT_GAP,
+    );
     let rowY = 0;
     for (const row of this.rows.getWidgets()) {
-      const rowHeight = row.getPreferredHeight(this.panel.contentWidth);
-      row.setBounds(0, rowY, this.panel.contentWidth, rowHeight);
-      rowY += rowHeight;
+      const rowHeight = row.getPreferredHeight(contentWidth);
+      row.setBounds(0, rowY, contentWidth, rowHeight);
+      rowY += rowHeight + RESEARCH_PIXI_GEOMETRY.rowGap;
     }
     this.countLabel.position.set(
-      width - this.countLabel.measuredWidth - 10,
-      -PIXI_UI_GEOMETRY.borderLabelLineHeight + 2,
+      width - this.countLabel.measuredWidth - 8,
+      Math.max(
+        0,
+        (RESEARCH_PIXI_GEOMETRY.categoryTitleHeight -
+          this.countLabel.measuredHeight) /
+          2,
+      ),
     );
   }
 
   applyTheme(theme) {
     this.theme = theme ?? DEFAULT_PIXI_THEME_SNAPSHOT;
-    this.panel.applyTheme(this.theme);
     this.countLabel.applyTheme(this.theme);
     for (const row of this.rows.getWidgets()) {
       row.applyTheme(this.theme);
@@ -191,15 +203,15 @@ export class GuildCharterPanel {
     semanticRegistry = null,
   } = {}) {
     this.theme = DEFAULT_PIXI_THEME_SNAPSHOT;
-    this.panel = new PixiPanel({
-      assetManager,
-      title: 'guild charter',
-      label: 'guild:charter:panel',
-    });
-    this.root = this.panel;
+    this.root = new Container({ label: 'guild:charter:section' });
+    this.titlePlaque = new ResearchStationTitlePlaque({ assetManager });
+    this.titlePlaque.root.label = 'guild:charter:titlePlaque';
+    this.titlePlaque.bind('Guild Charter', 'regular');
+    this.contentLayer = new Container({ label: 'guild:charter:content' });
+    this.paper = new GuildPaperFrame({ assetManager });
     this.paragraph = new PixiTextLabel({
       text:
-        'establish your guild to hire adventurers, take requests, and keep a hall of your own.',
+        "Establish your Guild Hall and open its first Adventurers' Lodge.",
       wordWrap: true,
       label: 'guild:charter:paragraph',
     });
@@ -208,7 +220,7 @@ export class GuildCharterPanel {
       inputRouter,
       semanticRegistry,
       semanticId: 'guild.charter.open',
-      text: 'start guild',
+      text: 'Start Guild',
       label: 'guild:charter:button',
     });
     this.costLabel = new PixiTextLabel({
@@ -217,45 +229,58 @@ export class GuildCharterPanel {
       color: resolveThemeColor('coin'),
       label: 'guild:charter:cost',
     });
-    this.panel.content.addChild(
+    this.contentLayer.addChild(
+      this.paper.root,
       this.paragraph,
       this.button,
       this.costLabel,
     );
+    this.root.addChild(this.titlePlaque.root, this.contentLayer);
   }
 
   bind(model = {}) {
     this.paragraph.setText(
       model.description ??
-        'establish your guild to hire adventurers, take requests, and keep a hall of your own.',
+        "Establish your Guild Hall and open its first Adventurers' Lodge.",
     );
     this.button
-      .setText(model.actionLabel ?? 'start guild')
+      .setText(capitalizeGuildText(model.actionLabel ?? 'Start Guild'))
       .setAction(model.action)
       .setEnabled(model.enabled !== false);
-    this.costLabel.setText(model.costLabel ?? '');
+    this.costLabel.setText(capitalizeGuildText(model.costLabel));
   }
 
   getPreferredHeight() {
-    return 124;
+    return RESEARCH_PIXI_GEOMETRY.categoryTitleHeight +
+      SECTION_CONTENT_GAP + 124;
   }
 
   setBounds(x, y, width, height = this.getPreferredHeight()) {
     this.root.position.set(x, y);
-    this.panel.setOuterSize(width, height);
-    const contentWidth = this.panel.contentWidth;
-    this.paragraph.position.set(0, 5);
-    this.paragraph.setWrapWidth(contentWidth);
-    const buttonWidth = Math.min(220, contentWidth);
+    this.titlePlaque.setMaxWidth(width);
+    const contentX = PIXI_UI_GEOMETRY.roomContentEdge;
+    const contentWidth = Math.max(0, width - contentX);
+    const contentHeight = Math.max(
+      0,
+      height - RESEARCH_PIXI_GEOMETRY.categoryTitleHeight -
+        SECTION_CONTENT_GAP,
+    );
+    this.contentLayer.position.set(
+      contentX,
+      RESEARCH_PIXI_GEOMETRY.categoryTitleHeight + SECTION_CONTENT_GAP,
+    );
+    this.paper.setBounds(0, 0, contentWidth, contentHeight);
+    this.paragraph.position.set(8, 8);
+    this.paragraph.setWrapWidth(Math.max(0, contentWidth - 16));
+    const buttonWidth = Math.min(220, contentWidth - 16);
     const buttonX = (contentWidth - buttonWidth) / 2;
-    this.button.position.set(buttonX, 51);
+    this.button.position.set(buttonX, 58);
     this.button.setSize(buttonWidth, 40);
-    this.costLabel.position.set(contentWidth / 2, 75);
+    this.costLabel.position.set(contentWidth / 2, 84);
   }
 
   applyTheme(theme) {
     this.theme = theme ?? DEFAULT_PIXI_THEME_SNAPSHOT;
-    this.panel.applyTheme(this.theme);
     this.paragraph.applyTheme(this.theme);
     this.button.applyTheme(this.theme);
     this.costLabel.applyTheme(this.theme);
@@ -276,12 +301,12 @@ export class GuildSecretarySection {
   } = {}) {
     this.assetManager = assetManager;
     this.theme = DEFAULT_PIXI_THEME_SNAPSHOT;
-    this.panel = new PixiPanel({
-      assetManager,
-      title: 'secretary',
-      label: 'guild:secretary:panel',
-    });
-    this.root = this.panel;
+    this.root = new Container({ label: 'guild:secretary:section' });
+    this.titlePlaque = new ResearchStationTitlePlaque({ assetManager });
+    this.titlePlaque.root.label = 'guild:secretary:titlePlaque';
+    this.titlePlaque.bind('Secretary', 'regular');
+    this.contentLayer = new Container({ label: 'guild:secretary:content' });
+    this.paper = new GuildPaperFrame({ assetManager });
     this.iconFrame = new PixiFrame({
       assetManager,
       width: 72,
@@ -303,23 +328,23 @@ export class GuildSecretarySection {
       this.icon.visible = false;
     }
     this.initial = new PixiTextLabel({
-      text: 's',
+      text: 'S',
       fontWeight: 'bold',
       anchor: { x: 0.5, y: 0.5 },
       color: 'muted',
       label: 'guild:secretary:initial',
     });
     this.rows = [
-      createFixedLabelPair('level', 'guild:secretary:level'),
-      createFixedLabelPair('adventurers', 'guild:secretary:adventurers'),
-      createFixedLabelPair('board', 'guild:secretary:board'),
+      createFixedLabelPair('Level', 'guild:secretary:level'),
+      createFixedLabelPair('Adventurers', 'guild:secretary:adventurers'),
+      createFixedLabelPair('Board', 'guild:secretary:board'),
     ];
     this.button = new PixiTextButton({
       assetManager,
       inputRouter,
       semanticRegistry,
       semanticId: 'guild.secretary.upgrade',
-      text: 'upgrade secretary',
+      text: 'Upgrade Secretary',
       sizeTier: 30,
       label: 'guild:secretary:upgrade',
     });
@@ -329,7 +354,8 @@ export class GuildSecretarySection {
       color: resolveThemeColor('coin'),
       label: 'guild:secretary:upgradeCost',
     });
-    this.panel.content.addChild(
+    this.contentLayer.addChild(
+      this.paper.root,
       this.iconFrame,
       this.icon,
       this.initial,
@@ -337,6 +363,7 @@ export class GuildSecretarySection {
       this.button,
       this.costLabel,
     );
+    this.root.addChild(this.titlePlaque.root, this.contentLayer);
   }
 
   bind(model = {}) {
@@ -350,43 +377,54 @@ export class GuildSecretarySection {
     );
     const next = secretary.next;
     this.button
-      .setText(next ? 'upgrade secretary' : 'secretary max')
+      .setText(next ? 'Upgrade Secretary' : 'Secretary Max')
       .setAction(model.action ?? secretary.action)
       .setEnabled(Boolean(next) && secretary.canUpgrade === true);
-    this.costLabel.setText(next ? `${next.costCoin ?? '?'} coin` : '');
+    this.costLabel.setText(next ? `${next.costCoin ?? '?'} Coin` : '');
     this.costLabel.visible = Boolean(next);
     this.costLabel.renderable = this.costLabel.visible;
   }
 
   getPreferredHeight() {
-    return 118;
+    return RESEARCH_PIXI_GEOMETRY.categoryTitleHeight +
+      SECTION_CONTENT_GAP + 126;
   }
 
   setBounds(x, y, width, height = this.getPreferredHeight()) {
     this.root.position.set(x, y);
-    this.panel.setOuterSize(width, height);
-    const contentWidth = this.panel.contentWidth;
-    this.iconFrame.position.set(0, 0);
+    this.titlePlaque.setMaxWidth(width);
+    const contentX = PIXI_UI_GEOMETRY.roomContentEdge;
+    const contentWidth = Math.max(0, width - contentX);
+    const contentHeight = Math.max(
+      0,
+      height - RESEARCH_PIXI_GEOMETRY.categoryTitleHeight -
+        SECTION_CONTENT_GAP,
+    );
+    this.contentLayer.position.set(
+      contentX,
+      RESEARCH_PIXI_GEOMETRY.categoryTitleHeight + SECTION_CONTENT_GAP,
+    );
+    this.paper.setBounds(0, 0, contentWidth, contentHeight);
+    this.iconFrame.position.set(8, 8);
     this.iconFrame.setSize(72, 72);
-    this.icon.position.set(0, 0);
+    this.icon.position.set(8, 8);
     this.icon.width = 72;
     this.icon.height = 72;
-    this.initial.position.set(36, 36);
+    this.initial.position.set(44, 44);
     this.initial.visible = !this.icon.visible;
     let rowY = 7;
     for (const row of this.rows) {
-      row.key.position.set(80, rowY);
-      row.value.position.set(contentWidth, rowY);
+      row.key.position.set(88, rowY);
+      row.value.position.set(contentWidth - 8, rowY);
       rowY += ROW_HEIGHT;
     }
-    this.button.position.set(0, 78);
-    this.button.setSize(contentWidth, ROW_HEIGHT);
-    this.costLabel.position.set(contentWidth - 6, 88);
+    this.button.position.set(8, 86);
+    this.button.setSize(contentWidth - 16, ROW_HEIGHT);
+    this.costLabel.position.set(contentWidth - 14, 96);
   }
 
   applyTheme(theme) {
     this.theme = theme ?? DEFAULT_PIXI_THEME_SNAPSHOT;
-    this.panel.applyTheme(this.theme);
     this.iconFrame.applyTheme(this.theme);
     this.initial.applyTheme(this.theme);
     for (const row of this.rows) {
@@ -412,16 +450,15 @@ export class GuildQuestBoardSection {
     counters = null,
   } = {}) {
     this.theme = DEFAULT_PIXI_THEME_SNAPSHOT;
-    this.panel = new PixiPanel({
-      assetManager,
-      title: 'request board',
-      label: 'guild:board:panel',
-    });
-    this.root = this.panel;
+    this.root = new Container({ label: 'guild:board:section' });
+    this.titlePlaque = new ResearchStationTitlePlaque({ assetManager });
+    this.titlePlaque.root.label = 'guild:board:titlePlaque';
+    this.titlePlaque.bind('Request Board', 'regular');
+    this.contentLayer = new Container({ label: 'guild:board:content' });
     this.cardsLayer = new Container();
     this.cardsLayer.label = 'guild:board:cards';
     this.emptyLabel = new PixiTextLabel({
-      text: 'no requests',
+      text: 'No Requests',
       label: 'guild:board:empty',
     });
     this.countLabel = new PixiTextLabel({
@@ -429,8 +466,12 @@ export class GuildQuestBoardSection {
       color: 'muted',
       label: 'guild:board:count',
     });
-    this.panel.content.addChild(this.cardsLayer, this.emptyLabel);
-    this.root.addChild(this.countLabel);
+    this.contentLayer.addChild(this.cardsLayer, this.emptyLabel);
+    this.root.addChild(
+      this.titlePlaque.root,
+      this.contentLayer,
+      this.countLabel,
+    );
     this.cardPool = new WidgetPool({
       name: 'guild board quest-card pool',
       counters,
@@ -461,7 +502,7 @@ export class GuildQuestBoardSection {
 
   bind(model = {}) {
     this.cards.reconcile(safeArray(model.requests));
-    this.countLabel.setText(model.countLabel ?? '');
+    this.countLabel.setText(capitalizeGuildText(model.countLabel));
     this.countLabel.visible = Boolean(model.countLabel);
     this.countLabel.renderable = this.countLabel.visible;
     const empty = this.cards.getWidgets().length === 0;
@@ -481,17 +522,24 @@ export class GuildQuestBoardSection {
         ? ROW_HEIGHT
         : rowCount * CARD_HEIGHT + (rowCount - 1) * CARD_GAP;
     return (
-      contentHeight +
-      (this.panel.paddingY + this.panel.borderWidth) * 2
+      RESEARCH_PIXI_GEOMETRY.categoryTitleHeight +
+      SECTION_CONTENT_GAP +
+      contentHeight
     );
   }
 
-  setBounds(x, y, width, height) {
+  setBounds(x, y, width) {
     this.root.position.set(x, y);
-    this.panel.setOuterSize(width, height);
+    this.titlePlaque.setMaxWidth(width);
+    const contentX = PIXI_UI_GEOMETRY.roomContentEdge;
+    const contentWidth = Math.max(0, width - contentX);
+    this.contentLayer.position.set(
+      contentX,
+      RESEARCH_PIXI_GEOMETRY.categoryTitleHeight + SECTION_CONTENT_GAP,
+    );
     const cards = this.cards.getWidgets();
     const cardWidth =
-      (this.panel.contentWidth - CARD_GAP) / 2;
+      (contentWidth - CARD_GAP) / 2;
     cards.forEach((card, index) => {
       const column = index % 2;
       const row = Math.floor(index / 2);
@@ -504,14 +552,18 @@ export class GuildQuestBoardSection {
     });
     this.emptyLabel.position.set(0, 0);
     this.countLabel.position.set(
-      width - this.countLabel.measuredWidth - 10,
-      -PIXI_UI_GEOMETRY.borderLabelLineHeight + 2,
+      width - this.countLabel.measuredWidth - 8,
+      Math.max(
+        0,
+        (RESEARCH_PIXI_GEOMETRY.categoryTitleHeight -
+          this.countLabel.measuredHeight) /
+          2,
+      ),
     );
   }
 
   applyTheme(theme) {
     this.theme = theme ?? DEFAULT_PIXI_THEME_SNAPSHOT;
-    this.panel.applyTheme(this.theme);
     this.countLabel.applyTheme(this.theme);
     this.emptyLabel.applyTheme(this.theme);
     for (const card of this.cards.getWidgets()) {
@@ -544,12 +596,11 @@ export class GuildPeopleSection {
     label,
   } = {}) {
     this.theme = DEFAULT_PIXI_THEME_SNAPSHOT;
-    this.panel = new PixiPanel({
-      assetManager,
-      title,
-      label: `${label}:panel`,
-    });
-    this.root = this.panel;
+    this.root = new Container({ label: `${label}:section` });
+    this.titlePlaque = new ResearchStationTitlePlaque({ assetManager });
+    this.titlePlaque.root.label = `${label}:titlePlaque`;
+    this.titlePlaque.bind(title, 'regular');
+    this.contentLayer = new Container({ label: `${label}:content` });
     this.rowsLayer = new Container();
     this.rowsLayer.label = `${label}:rows`;
     this.emptyLabel = new PixiTextLabel({
@@ -560,8 +611,12 @@ export class GuildPeopleSection {
       color: 'muted',
       label: `${label}:count`,
     });
-    this.panel.content.addChild(this.rowsLayer, this.emptyLabel);
-    this.root.addChild(this.countLabel);
+    this.contentLayer.addChild(this.rowsLayer, this.emptyLabel);
+    this.root.addChild(
+      this.titlePlaque.root,
+      this.contentLayer,
+      this.countLabel,
+    );
     this.personPool = new WidgetPool({
       name: `${label} person-row pool`,
       counters,
@@ -585,15 +640,17 @@ export class GuildPeopleSection {
       bind: (row, person, key) => row.bind(key, person),
       afterReconcile: (widgets) => orderChildren(this.rowsLayer, widgets),
     });
-    this.emptyText = `no ${title}`;
+    this.emptyText = `No ${capitalizeGuildText(title)}`;
   }
 
   bind(model = {}) {
     this.people.reconcile(safeArray(model.people));
-    this.countLabel.setText(model.countLabel ?? '');
+    this.countLabel.setText(capitalizeGuildText(model.countLabel));
     this.countLabel.visible = Boolean(model.countLabel);
     this.countLabel.renderable = this.countLabel.visible;
-    this.emptyLabel.setText(model.emptyLabel ?? this.emptyText);
+    this.emptyLabel.setText(
+      capitalizeGuildText(model.emptyLabel ?? this.emptyText),
+    );
     const empty = this.people.getWidgets().length === 0;
     this.emptyLabel.visible = empty;
     this.emptyLabel.renderable = empty;
@@ -605,34 +662,48 @@ export class GuildPeopleSection {
   getPreferredHeight() {
     const count = this.people.getWidgets().length;
     const contentHeight =
-      count > 0 ? count * PERSON_HEIGHT : ROW_HEIGHT;
+      count > 0
+        ? count * PERSON_HEIGHT +
+          (count - 1) * RESEARCH_PIXI_GEOMETRY.rowGap
+        : ROW_HEIGHT;
     return (
-      contentHeight +
-      (this.panel.paddingY + this.panel.borderWidth) * 2
+      RESEARCH_PIXI_GEOMETRY.categoryTitleHeight +
+      SECTION_CONTENT_GAP +
+      contentHeight
     );
   }
 
-  setBounds(x, y, width, height) {
+  setBounds(x, y, width) {
     this.root.position.set(x, y);
-    this.panel.setOuterSize(width, height);
+    this.titlePlaque.setMaxWidth(width);
+    const contentX = PIXI_UI_GEOMETRY.roomContentEdge;
+    const contentWidth = Math.max(0, width - contentX);
+    this.contentLayer.position.set(
+      contentX,
+      RESEARCH_PIXI_GEOMETRY.categoryTitleHeight + SECTION_CONTENT_GAP,
+    );
     this.people.getWidgets().forEach((row, index) => {
       row.setBounds(
         0,
-        index * PERSON_HEIGHT,
-        this.panel.contentWidth,
+        index * (PERSON_HEIGHT + RESEARCH_PIXI_GEOMETRY.rowGap),
+        contentWidth,
         PERSON_HEIGHT,
       );
     });
     this.emptyLabel.position.set(0, 0);
     this.countLabel.position.set(
-      width - this.countLabel.measuredWidth - 10,
-      -PIXI_UI_GEOMETRY.borderLabelLineHeight + 2,
+      width - this.countLabel.measuredWidth - 8,
+      Math.max(
+        0,
+        (RESEARCH_PIXI_GEOMETRY.categoryTitleHeight -
+          this.countLabel.measuredHeight) /
+          2,
+      ),
     );
   }
 
   applyTheme(theme) {
     this.theme = theme ?? DEFAULT_PIXI_THEME_SNAPSHOT;
-    this.panel.applyTheme(this.theme);
     this.countLabel.applyTheme(this.theme);
     this.emptyLabel.applyTheme(this.theme);
     for (const row of this.people.getWidgets()) {
@@ -665,6 +736,7 @@ export class GuildSectionRow {
     this.assetManager = assetManager;
     this.root = new Container();
     this.root.label = label;
+    this.paper = new GuildPaperFrame({ assetManager });
     this.background = new Graphics();
     this.keyLabel = new PixiTextLabel({
       label: `${label}:key`,
@@ -714,6 +786,7 @@ export class GuildSectionRow {
     this.notificationBadge.root.label = `${label}:notification`;
     this.notification = this.notificationBadge.root;
     this.root.addChild(
+      this.paper.root,
       this.background,
       this.keyLabel,
       this.valueLabel,
@@ -770,6 +843,8 @@ export class GuildSectionRow {
     const isParagraph = kind === 'paragraph';
     const isIdentity = kind === 'identity';
     const isEmpty = kind === 'empty';
+    this.paper.root.visible = !isButton;
+    this.paper.root.renderable = !isButton;
     this.keyLabel.visible = !isButton && !isParagraph && !isIdentity;
     this.valueLabel.visible = !isButton && !isParagraph && !isEmpty;
     this.paragraph.visible = isParagraph || isIdentity || isEmpty;
@@ -780,22 +855,28 @@ export class GuildSectionRow {
     this.buttonValue.visible = isButton && Boolean(model.value);
     if (this.paragraph.visible) {
       this.paragraph.setText(
-        isIdentity ? '' : model.text ?? model.value ?? '',
+        isIdentity
+          ? ''
+          : capitalizeGuildText(model.text ?? model.value),
       );
       this.paragraph.setFontWeight(isIdentity ? 'bold' : 'normal');
       if (isIdentity) {
         this.identityTag.setText(
           model.tag ? `[${model.tag}]` : '',
         );
-        this.identityName.setText(model.name ?? model.text ?? '');
+        this.identityName.setText(
+          capitalizeGuildText(model.name ?? model.text),
+        );
       }
     } else {
-      this.keyLabel.setText(model.label ?? '');
-      this.valueLabel.setText(model.value ?? '');
+      this.keyLabel.setText(capitalizeGuildText(model.label));
+      this.valueLabel.setText(capitalizeGuildText(model.value));
     }
     if (isButton) {
-      this.buttonLabel.setText(model.label ?? model.text ?? '');
-      this.buttonValue.setText(model.value ?? '');
+      this.buttonLabel.setText(
+        capitalizeGuildText(model.label ?? model.text),
+      );
+      this.buttonValue.setText(capitalizeGuildText(model.value));
     }
     this.semanticId =
       model.semanticId ??
@@ -819,10 +900,10 @@ export class GuildSectionRow {
 
   getPreferredHeight(width) {
     if (this.model.kind === 'paragraph') {
-      this.paragraph.setWrapWidth(width);
+      this.paragraph.setWrapWidth(Math.max(0, width - 16));
       return Math.max(
         ROW_HEIGHT,
-        this.paragraph.measuredHeight,
+        this.paragraph.measuredHeight + 12,
       );
     }
     if (this.model.kind === 'button' && this.model.tall) {
@@ -836,33 +917,38 @@ export class GuildSectionRow {
     this.width = width;
     this.height = height;
     this.root.hitArea = new Rectangle(0, 0, width, height);
+    this.paper.setBounds(0, 0, width, height);
+    const inset = 8;
     const textY = Math.max(1, (height - 16) / 2);
-    this.keyLabel.position.set(0, textY);
-    this.valueLabel.position.set(width, textY);
+    this.keyLabel.position.set(inset, textY);
+    this.valueLabel.position.set(width - inset, textY);
     this.keyLabel.setWrapWidth(
       Math.max(
         0,
-        width -
+        width - inset * 2 -
           this.valueLabel.measuredWidth -
           PIXI_UI_GEOMETRY.rowColumnGap,
       ),
     );
-    this.paragraph.position.set(0, 0);
-    this.paragraph.setWrapWidth(width);
-    this.identityTag.position.set(0, textY);
+    this.paragraph.position.set(
+      inset,
+      Math.max(4, (height - this.paragraph.measuredHeight) / 2),
+    );
+    this.paragraph.setWrapWidth(Math.max(0, width - inset * 2));
+    this.identityTag.position.set(inset, textY);
     this.identityName.position.set(
       this.identityTag.visible
-        ? this.identityTag.measuredWidth + 5
-        : 0,
+        ? inset + this.identityTag.measuredWidth + 5
+        : inset,
       textY,
     );
     this.identityName.setWrapWidth(
       Math.max(
         0,
-        width -
+        width - inset -
           (this.identityTag.visible
-            ? this.identityTag.measuredWidth + 5
-            : 0),
+            ? inset + this.identityTag.measuredWidth + 5
+            : inset),
       ),
     );
     this.buttonFrame.setSize(
@@ -1002,7 +1088,7 @@ export class GuildQuestCard {
     this.removeRoot = new Container();
     this.removeRoot.label = 'guild:board:questRemove';
     this.removeLabel = new PixiTextLabel({
-      text: 'remove',
+      text: 'Remove',
       fontSize: PIXI_UI_GEOMETRY.borderLabelFontSize,
       anchor: { x: 1, y: 0 },
       color: PAPER_MUTED,
@@ -1057,16 +1143,16 @@ export class GuildQuestCard {
     this.root.renderable = true;
     this.main.eventMode = open ? 'static' : 'none';
     this.removeRoot.eventMode = remove ? 'static' : 'none';
-    this.title.setText(request.title ?? '');
-    this.description.setText(request.lore ?? '');
+    this.title.setText(capitalizeGuildText(request.title));
+    this.description.setText(capitalizeGuildText(request.lore));
     this.meta.setText(
-      `${request.difficulty ?? ''}${
+      capitalizeGuildText(`${request.difficulty ?? ''}${
         request.expiresLabel
-          ? `, expires ${request.expiresLabel}`
+          ? `, Expires ${request.expiresLabel}`
           : ''
-      }`,
+      }`),
     );
-    this.reward.setText(`reward: ${request.rewardText ?? ''}`);
+    this.reward.setText(`Reward: ${request.rewardText ?? ''}`);
     this.removeRoot.visible = Boolean(remove);
     this.removeRoot.renderable = this.removeRoot.visible;
     this.mainSemanticId =
@@ -1187,6 +1273,7 @@ export class GuildPersonRow {
     this.assetManager = assetManager;
     this.root = new Container();
     this.root.label = label;
+    this.paper = new GuildPaperFrame({ assetManager });
     this.iconFrame = new PixiFrame({
       assetManager,
       width: 48,
@@ -1223,6 +1310,7 @@ export class GuildPersonRow {
     this.notificationBadge.root.label = `${label}:notification`;
     this.notification = this.notificationBadge.root;
     this.root.addChild(
+      this.paper.root,
       this.iconFrame,
       this.icon,
       this.initial,
@@ -1256,19 +1344,23 @@ export class GuildPersonRow {
     this.root.renderable = true;
     this.root.eventMode = this.action ? 'static' : 'none';
     const displayName =
-      person.displayName ?? person.name ?? 'nameless';
-    this.nameLabel.setText(displayName);
+      person.displayName ?? person.name ?? 'Nameless';
+    this.nameLabel.setText(capitalizeGuildText(displayName));
     this.levelLabel.setText(
-      person.levelLabel ?? `level ${person.level ?? 1}`,
+      capitalizeGuildText(
+        person.levelLabel ?? `Level ${person.level ?? 1}`,
+      ),
     );
     this.statusLabel.setText(
-      person.statusLabel ??
-        person.personalityLabel ??
-        person.status ??
-        'idle',
+      capitalizeGuildText(
+        person.statusLabel ??
+          person.personalityLabel ??
+          person.status ??
+          'Idle',
+      ),
     );
     this.initial.setText(
-      displayName.trim().slice(0, 1).toLowerCase() || '?',
+      displayName.trim().slice(0, 1).toUpperCase() || '?',
     );
     const texture = resolveCharacterTexture(
       this.assetManager,
@@ -1299,25 +1391,27 @@ export class GuildPersonRow {
   setBounds(x, y, width, height) {
     this.root.position.set(x, y);
     this.root.hitArea = new Rectangle(0, 0, width, height);
-    this.iconFrame.position.set(0, 3);
+    this.paper.setBounds(0, 0, width, height);
+    const inset = 6;
+    this.iconFrame.position.set(inset, 3);
     this.iconFrame.setSize(48, 48);
-    this.icon.position.set(0, 3);
+    this.icon.position.set(inset, 3);
     this.icon.width = 48;
     this.icon.height = 48;
-    this.initial.position.set(24, 27);
-    const nameX = 48 + PIXI_UI_GEOMETRY.rowColumnGap;
+    this.initial.position.set(inset + 24, 27);
+    const nameX = inset + 48 + PIXI_UI_GEOMETRY.rowColumnGap;
     this.nameLabel.position.set(nameX, 7);
     this.nameLabel.setWrapWidth(
       Math.max(
         0,
-        width -
+          width - inset -
           nameX -
           this.statusLabel.measuredWidth -
           PIXI_UI_GEOMETRY.rowColumnGap,
       ),
     );
     this.levelLabel.position.set(nameX, 29);
-    this.statusLabel.position.set(width, 19);
+    this.statusLabel.position.set(width - inset, 19);
     this.notificationBadge.placeAtTopRight({
       x: 0,
       y: 0,
@@ -1380,40 +1474,23 @@ export class GuildPersonRow {
 
 class GuildPaperFrame {
   constructor({ assetManager }) {
-    this.assetManager = assetManager;
-    this.root = new Container();
-    this.root.label = 'guild:paperFrame';
-    this.fallback = new Graphics();
-    const texture = resolveTexture(assetManager, PAPER_TEXTURE_ID);
-    this.sprite = new NineSliceSprite({
-      texture: texture ?? Texture.EMPTY,
-      leftWidth: PAPER_SOURCE_INSETS.left,
-      topHeight: PAPER_SOURCE_INSETS.top,
-      rightWidth: PAPER_SOURCE_INSETS.right,
-      bottomHeight: PAPER_SOURCE_INSETS.bottom,
+    this.root = new PixiNineSliceFrame({
+      texture:
+        assetManager?.getTexture?.(PIXI_ROOT_RUN_ASSETS.settingsRow) ??
+        Texture.EMPTY,
+      sourceInsets: PIXI_ROOT_RUN_GEOMETRY.settings.rowSourceInsets,
+      borderInsets: PIXI_ROOT_RUN_GEOMETRY.settings.rowBorderInsets,
+      label: 'guild:questCard:background',
     });
-    this.sprite.visible = Boolean(texture);
-    this.root.addChild(this.fallback, this.sprite);
   }
 
   setBounds(x, y, width, height) {
     this.root.position.set(x, y);
-    const scaleX =
-      PAPER_OUTPUT_INSETS.left / PAPER_SOURCE_INSETS.left;
-    const scaleY =
-      PAPER_OUTPUT_INSETS.top / PAPER_SOURCE_INSETS.top;
-    this.sprite.scale.set(scaleX, scaleY);
-    this.sprite.setSize(width / scaleX, height / scaleY);
-    this.fallback
-      .clear()
-      .rect(0, 0, width, height)
-      .fill(PAPER_SURFACE)
-      .stroke({
-        color: PAPER_STROKE,
-        width: 1,
-        alignment: 1,
-      });
-    this.fallback.visible = !this.sprite.visible;
+    this.root.setSize(
+      width,
+      height,
+      PIXI_ROOT_RUN_GEOMETRY.settings.rowBorderInsets,
+    );
   }
 }
 

@@ -5,6 +5,10 @@ shared `assetManager`, `inputRouter`, `semanticTargets`, resolved
 `dialogRegistry`, `dialogLayer`, optional retained `counters`, `ticker`, and
 theme snapshot. Register the returned view as page id `garden`.
 
+Nine warm fireflies drift behind the plot grid and action bar. They reuse the
+shared retained ambient layer, animate only while Garden is active, dim in Day,
+and settle into a static constellation when reduced motion is requested.
+
 The page consumes display-ready presenter data:
 
 ```js

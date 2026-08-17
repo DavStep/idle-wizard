@@ -11,6 +11,7 @@ import {
   PixiScrollView,
   PixiTextLabel,
 } from '../../primitives/index.js';
+import { PixiInlineText } from '../../primitives/PixiInlineText.js';
 import {
   PooledCollection,
   WidgetPool,
@@ -35,8 +36,8 @@ const INBOX_CONTENT_WIDTH =
   GLOBAL_DIALOG_GEOMETRY.maxContentWidth;
 const INBOX_CONTENT_HEIGHT = 360;
 const MAIL_GAP = 8;
-const MAIL_PADDING_X = 16;
-const MAIL_PADDING_Y = 14;
+const MAIL_PADDING_X = 10;
+const MAIL_PADDING_Y = 10;
 const MAIL_ACTION_WIDTH = 80;
 const MAIL_COLUMN_GAP = 8;
 const MAIL_SECTION_GAP = 4;
@@ -44,6 +45,17 @@ const MAIL_FOOTER_GAP = 8;
 const MAIL_MIN_HEIGHT = 88;
 const MAIL_CLAIM_HEIGHT = 30;
 const INBOX_EMPTY_FONT_SIZE = 20;
+const INBOX_REWARD_RESOURCE_PATTERN =
+  /\b(?:crystals?|emeralds?|coin|herbs?|mana|rubies|ruby|seeds?)\b/gi;
+const INBOX_REWARD_RESOURCE_FRAMES = Object.freeze({
+  coin: 'resource:coin',
+  crystal: 'resource:crystal',
+  emerald: 'resource:emerald',
+  herb: 'herb:sageHerb',
+  mana: 'resource:mana',
+  ruby: 'resource:ruby',
+  seed: 'seed:pack',
+});
 
 /**
  * Retained, keyed inbox. Mail cards are pooled and keep one installed claim
@@ -57,20 +69,34 @@ export class PixiInboxDialog extends RetainedGlobalDialog {
       title: 'Inbox',
       contentWidth: INBOX_CONTENT_WIDTH,
       contentHeight: INBOX_CONTENT_HEIGHT,
-      placement: 'top',
+      placement: 'center',
       label: `${dialogId}:inboxDialog`,
     });
+    this.panel.paperFrame.visible = false;
+    this.panel.paperFrame.renderable = false;
     this.pendingMailKeys = new Set();
     this.scroll = new PixiScrollView({
       inputRouter: this.context.inputRouter,
       assetManager: this.context.assets,
       width: INBOX_CONTENT_WIDTH,
       height: INBOX_CONTENT_HEIGHT,
-      contentPaddingTop: PIXI_UI_GEOMETRY.dialogScrollPaddingTop,
+      contentPaddingTop: 0,
       showProgress: true,
       label: `${dialogId}:scroll`,
     });
     this.panel.content.addChild(this.scroll);
+    const emptyPanelSkin = PIXI_ROOT_RUN_GEOMETRY.innerSectionPanelWhite;
+    this.emptyFrame = new PixiNineSliceFrame({
+      texture:
+        this.context.assets?.getTexture?.(
+          PIXI_ROOT_RUN_ASSETS.innerSectionPanelWhite,
+        ) ?? Texture.EMPTY,
+      sourceInsets: emptyPanelSkin.sourceInsets,
+      borderInsets: emptyPanelSkin.borderInsets,
+      width: INBOX_CONTENT_WIDTH,
+      height: MAIL_MIN_HEIGHT,
+      label: `${dialogId}:emptyFrame`,
+    });
     this.emptyLabel = new PixiTextLabel({
       text: 'No Mail',
       fontSize: INBOX_EMPTY_FONT_SIZE,
@@ -78,7 +104,7 @@ export class PixiInboxDialog extends RetainedGlobalDialog {
       color: 'muted',
       label: `${dialogId}:empty`,
     });
-    this.scroll.content.addChild(this.emptyLabel);
+    this.scroll.content.addChild(this.emptyFrame, this.emptyLabel);
 
     this.mailPool = new WidgetPool({
       name: `${dialogId} mail row pool`,
@@ -107,7 +133,7 @@ export class PixiInboxDialog extends RetainedGlobalDialog {
         }),
       afterReconcile: (widgets) => {
         orderDisplayObjects(this.scroll.content, widgets);
-        this.scroll.content.addChild(this.emptyLabel);
+        this.scroll.content.addChild(this.emptyFrame, this.emptyLabel);
       },
     });
     this.applyTheme(this.context.theme);
@@ -127,7 +153,9 @@ export class PixiInboxDialog extends RetainedGlobalDialog {
     const empty = this.inboxModel.mail.length === 0;
     this.emptyLabel.visible = empty;
     this.emptyLabel.renderable = empty;
-    this.layoutRows();
+    this.emptyFrame.visible = empty;
+    this.emptyFrame.renderable = empty;
+    this.layoutDialog(this.viewportProjection);
   }
 
   async claimMail(mail) {
@@ -187,11 +215,33 @@ export class PixiInboxDialog extends RetainedGlobalDialog {
       y += height + MAIL_GAP;
     }
     const contentHeight = Math.max(0, y - MAIL_GAP);
+    this.emptyFrame.position.set(0, 0);
+    this.emptyFrame.setSize(
+      INBOX_CONTENT_WIDTH,
+      MAIL_MIN_HEIGHT,
+      PIXI_ROOT_RUN_GEOMETRY.innerSectionPanelWhite.borderInsets,
+    );
     this.emptyLabel.position.set(
       INBOX_CONTENT_WIDTH / 2,
-      this.contentHeight / 2 - this.scroll.contentPaddingTop,
+      MAIL_MIN_HEIGHT / 2,
     );
-    this.scroll.setContentHeight(contentHeight);
+    this.scroll.setContentHeight(
+      this.inboxModel?.mail?.length > 0 ? contentHeight : MAIL_MIN_HEIGHT,
+    );
+  }
+
+  measureRowsHeight() {
+    const widgets = this.mailRows?.getWidgets?.() ?? [];
+    if (widgets.length === 0) {
+      return MAIL_MIN_HEIGHT;
+    }
+    return widgets.reduce(
+      (height, widget, index) =>
+        height +
+        widget.getPreferredHeight(INBOX_CONTENT_WIDTH) +
+        (index > 0 ? MAIL_GAP : 0),
+      0,
+    );
   }
 
   applyDialogTheme(theme) {
@@ -203,14 +253,23 @@ export class PixiInboxDialog extends RetainedGlobalDialog {
   }
 
   layoutDialog(projection = this.viewportProjection) {
-    const contentHeight = resolveAdaptiveDialogHeight({
+    const maximumContentHeight = resolveAdaptiveDialogHeight({
       viewportHeight: projection?.sourceHeight,
       baseHeight: INBOX_CONTENT_HEIGHT,
       minimumHeight: 240,
       maximumHeight: Math.max(240, (projection?.sourceHeight ?? 844) - 200),
       hasPrimaryVerticalScroll: true,
     });
-    this.setPanelContentSize(INBOX_CONTENT_WIDTH, contentHeight);
+    const contentHeight = Math.min(
+      maximumContentHeight,
+      Math.max(MAIL_MIN_HEIGHT, this.measureRowsHeight()),
+    );
+    if (
+      this.contentWidth !== INBOX_CONTENT_WIDTH ||
+      this.contentHeight !== contentHeight
+    ) {
+      this.setPanelContentSize(INBOX_CONTENT_WIDTH, contentHeight);
+    }
     this.scroll?.position.set(0, 0);
     this.scroll?.setViewportSize(
       INBOX_CONTENT_WIDTH,
@@ -289,11 +348,8 @@ export class InboxMailWidget {
       wordWrap: true,
       label: `${label}:body`,
     });
-    this.reward = new PixiTextLabel({
-      fontSize: PIXI_UI_GEOMETRY.bodyFontSize,
-      fontWeight: 'bold',
-      color: PIXI_DIALOG_PALETTE.coin,
-      wordWrap: true,
+    this.reward = new PixiInlineText({
+      style: createRewardTextStyle(theme),
       label: `${label}:reward`,
     });
     this.status = new PixiTextLabel({
@@ -349,8 +405,13 @@ export class InboxMailWidget {
     this.title.setText(this.data.title || 'message');
     this.meta.setText(this.data.meta ?? '');
     this.body.setText(this.data.body ?? '');
-    this.reward.setText(
-      this.data.hasReward ? this.data.rewardText || 'reward' : '',
+    this.reward.setRuns(
+      this.data.hasReward
+        ? createInboxRewardRuns(
+            this.assetManager,
+            this.data.rewardText || 'reward',
+          )
+        : [],
     );
     const claimed =
       Boolean(this.data.hasReward) &&
@@ -386,7 +447,7 @@ export class InboxMailWidget {
     this.title.setText('');
     this.meta.setText('');
     this.body.setText('');
-    this.reward.setText('');
+    this.reward.setRuns([]);
     this.status.setText('');
     this.claimedIcon.visible = false;
     this.claimedIcon.renderable = false;
@@ -498,7 +559,7 @@ export class InboxMailWidget {
       ? MAIL_CLAIM_HEIGHT
       : Math.max(claimedHeight, statusHeight);
     return Math.max(
-      this.reward.text ? this.reward.measuredHeight : 0,
+      this.reward.text ? this.reward.layoutHeight : 0,
       actionHeight,
     );
   }
@@ -508,7 +569,7 @@ export class InboxMailWidget {
     this.title.applyTheme(this.theme);
     this.meta.applyTheme(this.theme);
     this.body.applyTheme(this.theme);
-    this.reward.applyTheme(this.theme);
+    this.reward.setStyle(createRewardTextStyle(this.theme));
     this.status.applyTheme(this.theme);
     this.claimedLabel.applyTheme(this.theme);
     this.claimButton.applyTheme(this.theme);
@@ -550,9 +611,11 @@ function normalizeInboxModel(model = {}) {
 
 function normalizeMail(mail = {}, index = 0) {
   const timestamp = Number(mail.createdAtMs);
-  const sender =
+  const body = capitalizeSentences(String(mail.body ?? ''));
+  const sender = capitalizeSentences(
     String(mail.senderLabel ?? mail.sender ?? 'system').trim() ||
-    'system';
+      'system',
+  );
   const createdLabel =
     mail.createdLabel ??
     mail.date ??
@@ -563,8 +626,8 @@ function normalizeMail(mail = {}, index = 0) {
   return {
     ...mail,
     mailKey: String(mail.mailKey ?? mail.id ?? index),
-    title: String(mail.title || 'message'),
-    body: String(mail.body ?? ''),
+    title: resolveMailTitle(mail, body),
+    body,
     meta,
     read: Boolean(mail.read),
     hasReward: Boolean(
@@ -582,18 +645,114 @@ function normalizeMail(mail = {}, index = 0) {
   };
 }
 
+function resolveMailTitle(mail, body) {
+  const title = capitalizeSentences(String(mail.title || 'message'));
+  const sourceType = String(mail.sourceType ?? '')
+    .replace(/[^a-z]/gi, '')
+    .toLowerCase();
+  if (sourceType !== 'worldevent' || title.toLowerCase() !== 'event finished') {
+    return title;
+  }
+
+  const eventHeadline = String(body).match(
+    /\bin (.+?) with [\d,]+ points\./i,
+  )?.[1];
+  return eventHeadline ? capitalizeSentences(eventHeadline) : title;
+}
+
 function formatMailDate(timestamp) {
   if (!Number.isFinite(timestamp) || timestamp <= 0) {
     return '';
   }
   try {
-    return new Date(timestamp).toLocaleDateString(undefined, {
-      month: 'numeric',
+    return new Date(timestamp).toLocaleDateString('en-US', {
+      month: 'short',
       day: 'numeric',
     });
   } catch {
     return '';
   }
+}
+
+function createInboxRewardRuns(assetManager, rewardText) {
+  const value = String(rewardText ?? '');
+  const runs = [];
+  let lastIndex = 0;
+
+  for (const match of value.matchAll(INBOX_REWARD_RESOURCE_PATTERN)) {
+    const index = match.index ?? 0;
+    if (index > lastIndex) {
+      runs.push({ kind: 'text', text: value.slice(lastIndex, index) });
+    }
+    const label = match[0];
+    const resource = normalizeRewardResource(label);
+    const texture = getAtlasTexture(
+      assetManager,
+      INBOX_REWARD_RESOURCE_FRAMES[resource],
+    );
+    runs.push({
+      kind: 'icon',
+      texture,
+      size: PIXI_UI_GEOMETRY.bodyFontSize + 1,
+      fallbackText: texture === Texture.EMPTY ? label : '',
+    });
+    lastIndex = index + label.length;
+  }
+
+  if (lastIndex < value.length) {
+    runs.push({ kind: 'text', text: value.slice(lastIndex) });
+  }
+
+  return runs.length > 0 ? runs : [{ kind: 'text', text: value }];
+}
+
+function createRewardTextStyle(theme) {
+  const resolved = theme ?? DEFAULT_PIXI_THEME_SNAPSHOT;
+  return {
+    fontFamily: resolved.fontFamily,
+    fontSize: PIXI_UI_GEOMETRY.bodyFontSize,
+    fontWeight: 'bold',
+    fill: PIXI_DIALOG_PALETTE.coin,
+    lineHeight: 16,
+  };
+}
+
+function getAtlasTexture(assetManager, frameName) {
+  if (!frameName) {
+    return Texture.EMPTY;
+  }
+  try {
+    return assetManager?.getAtlasTexture?.(frameName) ?? Texture.EMPTY;
+  } catch {
+    return Texture.EMPTY;
+  }
+}
+
+function normalizeRewardResource(value) {
+  const normalized = String(value ?? '').trim().toLowerCase();
+  if (normalized === 'crystals') {
+    return 'crystal';
+  }
+  if (normalized === 'emeralds') {
+    return 'emerald';
+  }
+  if (normalized === 'rubies') {
+    return 'ruby';
+  }
+  if (normalized === 'seeds') {
+    return 'seed';
+  }
+  if (normalized === 'herbs') {
+    return 'herb';
+  }
+  return normalized;
+}
+
+function capitalizeSentences(value) {
+  return String(value ?? '').replace(
+    /(^|[.!?]\s+)([a-z])/g,
+    (_match, prefix, character) => `${prefix}${character.toUpperCase()}`,
+  );
 }
 
 function getCheckTexture(assetManager) {

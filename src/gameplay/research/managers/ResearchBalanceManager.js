@@ -35,6 +35,19 @@ import {
 const maxResearchDurationSeconds = 4 * 60 * 60;
 const quickResearchDurationSeconds = minimumResearchDurationSeconds;
 const defaultResearchDurationSeconds = 10 * 60;
+const discoveredRecipeResearchIdPrefix = 'unlockRecipe:';
+const discoveredRecipeKeys = new Set([
+  'ashenMemory',
+  'silverleafQuiet',
+  'emberSight',
+  'thornSleep',
+  'glassMoonElixir',
+  'rootboundResolve',
+  'nightOrchardTonic',
+  'starlessCourage',
+  'frostveinDraught',
+  'bloodlightWard',
+]);
 
 const seedResearchDurationSecondsById = {
   'unlockSeed:sageSeed': quickResearchDurationSeconds,
@@ -434,6 +447,13 @@ export class ResearchBalanceManager {
       this.runtimeConfigByResearchId.get(normalizedResearchId)?.costCoin ??
       this.costCoinByResearchId[normalizedResearchId];
 
+    if (!Number.isFinite(costCoin) && this.isDiscoveredRecipeResearchId(normalizedResearchId)) {
+      return {
+        amount: 0,
+        currency: 'coin',
+      };
+    }
+
     if (!Number.isFinite(costCoin)) {
       throw new Error(`game_config.research missing cost for ${researchId}.`);
     }
@@ -476,6 +496,16 @@ export class ResearchBalanceManager {
       0;
 
     return this.normalizeDurationSeconds(durationSeconds);
+  }
+
+  isDiscoveredRecipeResearchId(researchId) {
+    if (!researchId.startsWith(discoveredRecipeResearchIdPrefix)) {
+      return false;
+    }
+
+    return discoveredRecipeKeys.has(
+      researchId.slice(discoveredRecipeResearchIdPrefix.length),
+    );
   }
 
   getResearchEffect() {

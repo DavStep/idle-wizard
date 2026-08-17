@@ -211,7 +211,7 @@ export class BackendFacade {
         this.playerInboxFacade.connect(connection, identity);
         this.playerSyncFacade.connect(connection, identity);
         this.playerShopFacade.connect(connection, identity);
-        this.potionDiscoveryFacade.connect(connection);
+        this.potionDiscoveryFacade.connect(connection, identity);
         this.tradeAllianceFacade.connect(connection, identity);
         this.gameplaySaveFacade.connect(connection, identity, {
           onReady: finishGameplaySaveReady,

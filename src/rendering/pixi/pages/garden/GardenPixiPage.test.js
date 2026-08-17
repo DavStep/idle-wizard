@@ -21,9 +21,41 @@ import {
 } from "../../theme/PixiThemeTokens.js";
 import { ROOT_RUN_INVENTORY_CHOICE_DIALOG_GEOMETRY } from "../shared/RootRunInventoryChoiceDialogPixi.js";
 import { RetainedScrollArea } from "../workshop/RetainedPageKit.js";
-import { GARDEN_PIXI_GEOMETRY, GardenPixiPage } from "./GardenPixiPage.js";
+import {
+  GARDEN_FIREFLY_COUNT,
+  GARDEN_PIXI_GEOMETRY,
+  GardenPixiPage,
+} from "./GardenPixiPage.js";
 
 describe("GardenPixiPage", () => {
+  it("keeps passive fireflies behind Garden controls and pauses them off-page", () => {
+    const motion = createAmbientMotionHarness();
+    const harness = createHarness({
+      ambientRequestFrame: motion.requestFrame,
+      ambientCancelFrame: motion.cancelFrame,
+      ambientTimeSource: motion.timeSource,
+    });
+    const firstFirefly = harness.page.fireflies.root.children[0];
+    const restingPosition = { x: firstFirefly.x, y: firstFirefly.y };
+
+    expect(harness.page.fireflies.root.eventMode).toBe("none");
+    expect(harness.page.fireflies.root.children).toHaveLength(GARDEN_FIREFLY_COUNT);
+    expect(harness.page.content.getChildIndex(harness.page.fireflies.root)).toBeLessThan(
+      harness.page.content.getChildIndex(harness.page.plotScroll.root),
+    );
+
+    harness.page.activate();
+    expect(motion.requestFrame).toHaveBeenCalledOnce();
+    motion.runAt(1000);
+    expect({ x: firstFirefly.x, y: firstFirefly.y }).not.toEqual(restingPosition);
+
+    harness.page.deactivate();
+    expect(motion.cancelFrame).toHaveBeenCalledOnce();
+
+    harness.page.destroy();
+    harness.dispose();
+  });
+
   it("builds once and keeps keyed plots and the seed action bar across binds", () => {
     const harness = createHarness();
     const pages = new PageRegistry({
@@ -1252,6 +1284,7 @@ function createHarness({
   ticker = null,
   timeSource = () => 0,
   reducedMotion = false,
+  ...pageOptions
 } = {}) {
   const dialogLayer = new Container();
   const dialogs = new DialogRegistry();
@@ -1268,6 +1301,7 @@ function createHarness({
     ticker,
     timeSource,
     reducedMotion,
+    ...pageOptions,
   });
 
   return {
@@ -1280,6 +1314,31 @@ function createHarness({
     dispose() {
       dialogs.destroy();
       dialogLayer.destroy({ children: true });
+    },
+  };
+}
+
+function createAmbientMotionHarness() {
+  let now = 0;
+  let nextFrameId = 1;
+  let pendingFrame = null;
+  const requestFrame = vi.fn((callback) => {
+    pendingFrame = callback;
+    return nextFrameId++;
+  });
+  const cancelFrame = vi.fn(() => {
+    pendingFrame = null;
+  });
+  return {
+    requestFrame,
+    cancelFrame,
+    timeSource: () => now,
+    runAt(timestamp) {
+      now = timestamp;
+      const callback = pendingFrame;
+      pendingFrame = null;
+      expect(callback).toEqual(expect.any(Function));
+      callback(timestamp);
     },
   };
 }

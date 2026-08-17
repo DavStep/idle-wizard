@@ -15,13 +15,16 @@ identifier. The shared plaque renders at `75%` of its authored nine-slice
 geometry in Research and every cross-room consumer.
 
 Each station section places a shared label-free base button at the far right of
-its title row. The generated painted eye icon is dimmed while off. Completed
-research is hidden by default; pressing that section's eye reveals completed
-rows below all newer, incomplete rows without changing another section.
+its title row with an `8px` edge inset. A simple outlined eye icon is dimmed
+while off. Completed research is hidden by default; pressing that section's eye
+reveals completed rows below all newer, incomplete rows without changing another
+section.
 
 Rows and boxes are keyed and pooled. Research labels are passive; the cost
 button owns available purchases. Selecting a locked row keeps the requirement
 off the cost button and opens the retained theme tooltip instead.
+Completed rows replace the action button with the shared checkmark centered in
+the same fixed status slot. Active timers keep the yellow `Researching` button.
 
 Item-unlock rows consume `itemKind` and `itemKey`: seeds render the shared
 seed-pack plus matching herb mark, and potion recipes render the exact potion

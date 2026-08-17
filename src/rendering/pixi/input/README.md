@@ -14,6 +14,11 @@ The router arbitrates interactions in this order:
 5. A press activates only when release remains on its original target and
    movement stays inside its configured slop.
 
+An adjacent action may opt into `preserveFocus` when it must operate on the
+currently focused text-entry session without transferring focus to the canvas.
+World Chat Send uses this so one release submits while the mobile keyboard and
+composer session stay active.
+
 World pan, drag, pinch, explicit `excludePageSwipe`, and the top modal block
 page navigation. Scroll and page swipe intentionally coexist: vertical intent
 scrolls while horizontal intent changes rooms.

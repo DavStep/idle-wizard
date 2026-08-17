@@ -9,6 +9,8 @@
  *
  * @param {{
  *   gameplaySnapshot?: object,
+ *   selectedBranchId?: 'hall' | 'adventurers',
+ *   selectedAdventurerTabId?: 'board' | 'roster' | 'log',
  *   selectedTabId?: 'hall' | 'board' | 'adventurers' | 'log' | 'roster',
  *   actions?: object,
  *   gameplayActions?: object,
@@ -26,6 +28,14 @@ export function createGuild(options = {}) {
   const gameplayActions =
     options.gameplayActions ?? actions.gameplay ?? actions;
   const uiActions = actions.ui ?? actions;
+  const selection = normalizeGuildSelection({
+    selectedAdventurerTabId:
+      options.selectedAdventurerTabId ?? guild.selectedAdventurerTabId,
+    selectedBranchId:
+      options.selectedBranchId ?? guild.selectedBranchId,
+    selectedTabId:
+      options.selectedTabId ?? guild.selectedTabId,
+  });
   const model = {
     guild: {
       ...guild,
@@ -50,9 +60,7 @@ export function createGuild(options = {}) {
             : String(log),
       })),
     },
-    selectedTabId: normalizeTabId(
-      options.selectedTabId ?? guild.selectedTabId,
-    ),
+    ...selection,
     dialogs: { ...(options.dialogs ?? {}) },
     actions: createGuildActionMap({
       gameplayActions,
@@ -88,7 +96,14 @@ export const createGuildPixiViewModel = createGuild;
 
 function createGuildActionMap({ gameplayActions, uiActions }) {
   const result = {};
-  assignAction(result, 'selectTab', uiActions, ['selectTab']);
+  assignAction(result, 'selectAdventurerTab', uiActions, [
+    'selectAdventurerTab',
+    'selectTab',
+  ]);
+  assignAction(result, 'selectTab', uiActions, [
+    'selectTab',
+    'selectAdventurerTab',
+  ]);
   assignAction(result, 'createGuild', gameplayActions, [
     'createGuild',
   ]);
@@ -200,13 +215,28 @@ function mapPeople(people) {
   });
 }
 
-function normalizeTabId(tabId) {
-  if (tabId === 'roster') {
-    return 'adventurers';
-  }
-  return ['hall', 'board', 'adventurers', 'log'].includes(tabId)
-    ? tabId
-    : 'hall';
+function normalizeGuildSelection({
+  selectedAdventurerTabId,
+  selectedBranchId,
+  selectedTabId,
+} = {}) {
+  const legacyTabId = String(selectedTabId ?? '');
+  const branchId =
+    selectedBranchId === 'adventurers' ||
+    ['board', 'roster', 'adventurers', 'log'].includes(legacyTabId)
+      ? 'adventurers'
+      : 'hall';
+  const candidate =
+    selectedAdventurerTabId ??
+    (legacyTabId === 'adventurers' ? 'roster' : legacyTabId);
+  const adventurerTabId = ['board', 'roster', 'log'].includes(candidate)
+    ? candidate
+    : 'board';
+  return {
+    selectedAdventurerTabId: adventurerTabId,
+    selectedBranchId: branchId,
+    selectedTabId: branchId === 'hall' ? 'hall' : adventurerTabId,
+  };
 }
 
 function safeArray(value) {

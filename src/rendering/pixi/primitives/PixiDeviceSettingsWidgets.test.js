@@ -60,4 +60,42 @@ describe('RootRunDevicePreferencesPanel', () => {
 
     row.destroy({ children: true });
   });
+
+  it('projects sound preferences through the full-width boolean slider', () => {
+    const presses = [];
+    const inputRouter = {
+      registerPressTarget: vi.fn((displayObject, descriptor) => {
+        presses.push({ displayObject, descriptor });
+        return vi.fn();
+      }),
+      registerGestureSurface: vi.fn(() => vi.fn()),
+    };
+    const onChange = vi.fn();
+    const row = new RootRunDevicePreferenceRow({
+      assetManager: {
+        getTexture: () => Texture.EMPTY,
+      },
+      controlKind: 'slider',
+      inputRouter,
+      preferenceKey: 'sfx',
+      text: 'SOUND',
+      iconAssetId: 'settings-sound',
+    });
+    vi.spyOn(row.textLabel, 'measuredHeight', 'get').mockReturnValue(19);
+    row.setBounds(0, 0, 244);
+    row.bind({ value: true, onChange });
+
+    const sliderPress = presses.find(
+      ({ displayObject }) => displayObject === row.slider,
+    );
+
+    expect(row.toggle).toBeNull();
+    expect(row.slider.controlWidth).toBe(126);
+    expect(row.slider.x).toBe(118);
+    expect(row.icon.width).toBe(36);
+    expect(sliderPress.descriptor.onActivate({ localX: 0 })).toBe(true);
+    expect(onChange).toHaveBeenCalledWith(false);
+
+    row.destroy({ children: true });
+  });
 });

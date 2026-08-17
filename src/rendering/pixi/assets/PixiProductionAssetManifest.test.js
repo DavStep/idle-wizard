@@ -28,6 +28,14 @@ describe('PixiProductionAssetManifest', () => {
     ).toBe(false);
   });
 
+  it('excludes the retired Guild quest asset family', () => {
+    expect(
+      PIXI_PRODUCTION_ASSET_MANIFEST.some(({ id }) =>
+        id.includes('/guild-quest/'),
+      ),
+    ).toBe(false);
+  });
+
   it('resolves public production assets against the deployed base path', () => {
     expect(
       resolvePixiPublicAssetUrl(

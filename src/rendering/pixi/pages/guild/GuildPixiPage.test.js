@@ -61,8 +61,12 @@ describe('GuildPixiPage', () => {
     expect(
       harness.page.getPoolStats().adventurers.pool.allocated,
     ).toBe(before.adventurers.pool.allocated);
-    expect(quest.reward.text).toBe('reward: 25 coin');
-    expect(adventurer.statusLabel.text).toBe('resting');
+    expect(quest.reward.text).toBe('Reward: 25 coin');
+    expect(adventurer.statusLabel.text).toBe('Resting');
+    expect(harness.page.hallSection.titlePlaque.title.text).toBe(
+      'Guild Hall',
+    );
+    expect(harness.page.hallSection.contentLayer.x).toBe(16);
 
     pages.deactivate();
     expect(root).toMatchObject({
@@ -74,23 +78,24 @@ describe('GuildPixiPage', () => {
     harness.dispose();
   });
 
-  it('moves Guild category navigation into the external HUD without duplicating tabs', () => {
+  it('keeps branch navigation in the external HUD and Adventurer sections in a local button panel', () => {
     const harness = createHarness();
     harness.page.layout({ sourceWidth: 390, sourceHeight: 844 });
     harness.page.bind({
       ...createGuildViewModel(),
       chrome: { worldChatVisible: false },
       navigationPlacement: 'hud',
-      selectedTabId: 'board',
+      selectedBranchId: 'adventurers',
+      selectedAdventurerTabId: 'board',
     });
     harness.page.activate();
 
-    expect(harness.page.tabLayer.visible).toBe(false);
-    expect(harness.page.tabLayer.renderable).toBe(false);
+    expect(harness.page.tabLayer.visible).toBe(true);
+    expect(harness.page.tabLayer.renderable).toBe(true);
     expect(harness.page.tabScrolls.get('board').visible).toBe(true);
     expect(harness.page.tabScrolls.get('hall').visible).toBe(false);
     expect(harness.page.tabScrolls.get('board').viewportHeight).toBe(
-      844 - 92 - 104,
+      844 - 92 - 104 - 6 - 28 - 6,
     );
 
     harness.page.destroy();
@@ -126,6 +131,13 @@ describe('GuildPixiPage', () => {
           304,
         );
       }
+      if (dialogId === GUILD_DIALOG_IDS.REQUEST) {
+        const dialog = harness.dialogs.get(dialogId);
+        expect(dialog.requestDetail.lore.text).toBe(
+          'A courier left it near the old road.',
+        );
+        expect(dialog.requestAction.textLabel.text).toBe('Remove');
+      }
       if (dialogId === GUILD_DIALOG_IDS.ADVENTURER) {
         const dialog = harness.dialogs.get(dialogId);
         const [statsTab, lifeTab] = dialog.cardTabs;
@@ -150,6 +162,9 @@ describe('GuildPixiPage', () => {
           lifeTab.root.x -
             (statsTab.root.x + statsTab.width),
         ).toBe(8);
+        expect(dialog.cardName.text).toBe('Mira');
+        expect(dialog.cardStatus.text).toBe('Idle');
+        expect(dialog.cardAction.textLabel.text).toBe('Fire');
       }
       harness.dialogs.close(dialogId);
     }
@@ -244,14 +259,17 @@ describe('GuildPixiPage', () => {
 
     expect(
       harness.page.tabScrolls.get('hall').position,
-    ).toMatchObject({ x: 16, y: 104 });
+    ).toMatchObject({ x: 0, y: 104 });
+    expect(
+      harness.page.tabScrolls.get('hall').viewportWidth,
+    ).toBe(374);
     expect(harness.page.tabLayer.position).toMatchObject({
       x: 16,
       y: 657,
     });
     expect(
       harness.page.tabScrolls.get('hall').viewportHeight,
-    ).toBeCloseTo(547, 10);
+    ).toBeCloseTo(587, 10);
 
     harness.page.destroy();
     harness.dispose();
@@ -318,19 +336,17 @@ describe('GuildPixiPage', () => {
     const requestStack = harness.dialogs.get(
       GUILD_DIALOG_IDS.REQUEST_STACK,
     );
-    const requestRow = requestStack.requestRows.getWidgets()[0];
-
     expect(inputRouter.getTopModal()?.id).toBe(
       GUILD_DIALOG_IDS.REQUEST_STACK,
     );
     expect(requestStack.panel).toBeInstanceOf(PixiDialogFrame);
-    expect(requestRow.title.text).toBe('Smuggler Tunnel');
+    expect(requestStack.detail.title.text).toBe('Smuggler Tunnel');
     expect(requestStack.detail.lore.text).toBe(
-      'a narrow road under the hill.',
+      'A narrow road under the hill.',
     );
     expect(requestStack.detail.rows[0].value.text).toBe('Easy');
-    expect(requestStack.postButton.text.text).toBe('Post');
-    expect(requestStack.nextButton.text.text).toBe('Only Page');
+    expect(requestStack.postButton.textLabel.text).toBe('Post');
+    expect(requestStack.nextButton.textLabel.text).toBe('Only Page');
     expect(inputRouter.handleBack({ source: 'native' })).toBe(true);
     expect(
       harness.dialogs.isOpen(GUILD_DIALOG_IDS.REQUEST_STACK),

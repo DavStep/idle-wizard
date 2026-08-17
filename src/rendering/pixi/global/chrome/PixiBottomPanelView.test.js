@@ -85,14 +85,12 @@ describe('PixiBottomPanelView', () => {
       true,
       true,
       true,
-      true,
-      true,
     ]);
     expect(view.guildTabs.slice(1).every(
       (tab) => tab instanceof PixiBottomHudTextTab,
     )).toBe(true);
-    semanticRegistry.activate('guild.tab.board');
-    expect(selectGuildTab).toHaveBeenCalledWith('board');
+    semanticRegistry.activate('guild.tab.adventurers');
+    expect(selectGuildTab).toHaveBeenCalledWith('adventurers');
     semanticRegistry.activate('guild.return.workshop');
     expect(showPage).toHaveBeenCalledWith('workshop');
   });
@@ -102,8 +100,8 @@ describe('PixiBottomPanelView', () => {
     view.bind({
       currentPageId: 'guild',
       guildHud: {
-        selectedTabId: 'board',
-        notifications: { log: { active: true, tone: 'red' } },
+        selectedTabId: 'adventurers',
+        notifications: { adventurers: { active: true, tone: 'red' } },
       },
       hudMode: 'guild',
       pages: [{ id: 'workshop', visible: true, unlocked: true }],
@@ -112,19 +110,16 @@ describe('PixiBottomPanelView', () => {
     const hall = view.guildTabs.find(
       (tab) => tab.definition.guildTabId === 'hall',
     );
-    const board = view.guildTabs.find(
-      (tab) => tab.definition.guildTabId === 'board',
-    );
-    const log = view.guildTabs.find(
-      (tab) => tab.definition.guildTabId === 'log',
+    const adventurers = view.guildTabs.find(
+      (tab) => tab.definition.guildTabId === 'adventurers',
     );
 
     expect(hall.labelRoot.visible).toBe(true);
     expect(hall.labelRoot.position.y).toBe(34);
-    expect(board.labelRoot.visible).toBe(true);
-    expect(board.labelRoot.position.y).toBe(28);
-    expect(board.frame.mode).toBe('active');
-    expect(log.notification.root.visible).toBe(true);
+    expect(adventurers.labelRoot.visible).toBe(true);
+    expect(adventurers.labelRoot.position.y).toBe(28);
+    expect(adventurers.frame.mode).toBe('active');
+    expect(adventurers.notification.root.visible).toBe(true);
   });
 
   it('lays out fixed five, six, and seven-tab rows with a wider selection', () => {

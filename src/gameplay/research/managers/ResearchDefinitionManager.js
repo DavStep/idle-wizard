@@ -173,6 +173,7 @@ export class ResearchDefinitionManager {
     this.playerLevelFacade = playerLevelFacade;
     this.prestigeFacade = prestigeFacade;
     this.researchBalanceManager = researchBalanceManager;
+    this.potionDiscoveryFacade = null;
     this.researchTabsCache = new Map();
     this.researchLookupCache = new Map();
   }
@@ -180,6 +181,11 @@ export class ResearchDefinitionManager {
   clearCache() {
     this.researchTabsCache.clear();
     this.researchLookupCache.clear();
+  }
+
+  setPotionDiscoveryFacade(potionDiscoveryFacade) {
+    this.potionDiscoveryFacade = potionDiscoveryFacade;
+    this.clearCache();
   }
 
   getResearchTabs({
@@ -294,7 +300,16 @@ export class ResearchDefinitionManager {
   }
 
   areRecipeUnlocksVisible() {
-    return (this.playerLevelFacade?.getSnapshot?.().currentLevel ?? 1) >= 4;
+    return (
+      (this.playerLevelFacade?.getSnapshot?.().currentLevel ?? 1) >= 4 ||
+      (this.potionDiscoveryFacade?.getSnapshot?.().discoveries ?? []).some(
+        (discovery) =>
+          discovery?.potionKey &&
+          this.potionDiscoveryFacade?.isDiscoveredByCurrentPlayer?.(
+            discovery.potionKey,
+          ) !== true,
+      )
+    );
   }
 
   getResearchBoxes(options) {
@@ -350,17 +365,20 @@ export class ResearchDefinitionManager {
   getRecipeUnlockResearches() {
     return this.getRecipePotionDefinitionsInResearchOrder().map((potion, index, potions) => {
       const previousPotion = potions[index - 1];
+      const discoveredRecipe = this.isDiscoveredRecipe(potion);
 
       return {
         id: `unlockRecipe:${potion.key}`,
         label: potion.label,
         value: 'brew',
-        ...(recipeUnlockRequiredPlayerLevels[potion.key]
+        ...(!discoveredRecipe && recipeUnlockRequiredPlayerLevels[potion.key]
           ? { requiredPlayerLevel: recipeUnlockRequiredPlayerLevels[potion.key] }
           : {}),
-        ...(previousPotion
-          ? { requiredResearchIds: [`unlockRecipe:${previousPotion.key}`] }
-          : {}),
+        ...(discoveredRecipe
+          ? { requiredResearchIds: [] }
+          : previousPotion && !this.isDiscoveredRecipe(previousPotion)
+            ? { requiredResearchIds: [`unlockRecipe:${previousPotion.key}`] }
+            : {}),
         description: `allows valid cauldron ingredients to brew ${potion.label}.`,
       };
     });
@@ -375,8 +393,37 @@ export class ResearchDefinitionManager {
       .filter(Boolean);
     const orderedKeys = new Set(orderedPotions.map((potion) => potion.key));
     const extraPotions = [...potionsByKey.values()].filter((potion) => !orderedKeys.has(potion.key));
+    const discoveredPotions = this.itemsFacade
+      .getUnknownPotionDefinitions()
+      .filter(
+        (potion) =>
+          this.potionDiscoveryFacade?.hasDiscoveredPotion?.(potion.key) === true &&
+          this.potionDiscoveryFacade?.isDiscoveredByCurrentPlayer?.(potion.key) !== true,
+      );
 
-    return [...orderedPotions, ...extraPotions];
+    return [...orderedPotions, ...extraPotions, ...discoveredPotions];
+  }
+
+  isDiscoveredRecipe(potion) {
+    return potion?.discoveryType === 'unknown' || potion?.unknown === true;
+  }
+
+  getPersistentResearchIds() {
+    return [
+      ...this.getResearches({ includeLevelLockedAutomation: true }).map(
+        (research) => research.id,
+      ),
+      ...this.itemsFacade
+        .getUnknownPotionDefinitions()
+        .map((potion) => `unlockRecipe:${potion.key}`),
+    ];
+  }
+
+  hasPersistentResearch(researchId) {
+    const normalizedResearchId = this.normalizeResearchId(researchId);
+    return this.getPersistentResearchIds().some(
+      (candidateId) => this.normalizeResearchId(candidateId) === normalizedResearchId,
+    );
   }
 
   getAutomationResearchBoxes({
@@ -992,8 +1039,10 @@ export class ResearchDefinitionManager {
     unlockedPlotCount,
     unlockedCauldronCount,
   } = {}) {
+    const potionDiscoveryKey = this.getPotionDiscoveryCacheKey();
+
     if (includeLevelLockedAutomation) {
-      return 'all';
+      return `all:${potionDiscoveryKey}`;
     }
 
     return [
@@ -1007,7 +1056,21 @@ export class ResearchDefinitionManager {
         completedResearchIds,
         unlockedCauldronCount,
       }),
+      potionDiscoveryKey,
     ].join(':');
+  }
+
+  getPotionDiscoveryCacheKey() {
+    return (this.potionDiscoveryFacade?.getSnapshot?.().discoveries ?? [])
+      .map((discovery) => discovery?.potionKey)
+      .filter(Boolean)
+      .sort()
+      .map((potionKey) =>
+        this.potionDiscoveryFacade?.isDiscoveredByCurrentPlayer?.(potionKey)
+          ? `${potionKey}=own`
+          : `${potionKey}=shared`,
+      )
+      .join(',');
   }
 
   getResearchLookup(options = {}) {

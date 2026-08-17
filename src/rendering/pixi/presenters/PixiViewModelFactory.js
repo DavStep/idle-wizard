@@ -1320,6 +1320,33 @@ export class PixiViewModelFactory {
       sharedLeaderboard.currentWorldEventUser ??
       sharedLeaderboard.currentUser ??
       null;
+    const currentEventPoints = Math.max(
+      0,
+      Math.floor(
+        Number(
+          localLeaderboard.currentPoints ?? sharedLeaderboard.currentPoints,
+        ) || 0,
+      ),
+    );
+    const remainingQualificationPoints = Math.max(
+      0,
+      Math.floor(
+        Number(
+          localLeaderboard.remainingQualificationPoints ??
+            sharedLeaderboard.remainingQualificationPoints,
+        ) || 0,
+      ),
+    );
+    const qualificationPoints = Math.max(
+      0,
+      Math.floor(
+        Number(
+          localLeaderboard.qualificationPoints ??
+            sharedLeaderboard.qualificationPoints,
+        ) ||
+          currentEventPoints + remainingQualificationPoints,
+      ),
+    );
     const leaderboardRows =
       projectedLeaderboardRows.length > 0
         ? projectedLeaderboardRows
@@ -1376,39 +1403,31 @@ export class PixiViewModelFactory {
             Boolean(identity && currentIdentity && identity === currentIdentity),
           totalMetric: 'points',
           totalLabel: formatWorldEventNumber(user.points),
+          onActivate:
+            typeof actions.openPlayer === 'function'
+              ? () => actions.openPlayer(user)
+              : null,
         };
       });
     } else if (safeTabId === 'rewards') {
-      const remaining = Math.max(
-        0,
-        Math.floor(
-          Number(
-            localLeaderboard.remainingQualificationPoints ??
-              sharedLeaderboard.remainingQualificationPoints,
-          ) || 0,
-        ),
-      );
-      rows = [
-        {
-          id: 'rewards:qualification',
-          label: 'Leaderboard Rewards',
-          value:
-            localLeaderboard.qualified === true ||
-            sharedLeaderboard.qualified === true
-              ? 'Qualified'
-              : `${formatWorldEventNumber(remaining)} points to qualify`,
-          height: 32,
-        },
-        ...(
-          localLeaderboard.rewardTiers ??
-          sharedLeaderboard.rewardTiers ??
-          []
-        ).map((tier) => ({
-          id: `reward:${tier.rankLabel}`,
-          label: toTitleCase(`Rank ${tier.rankLabel}`),
-          value: formatWorldEventRewardTier(tier),
-        })),
-      ];
+      rows = (
+        localLeaderboard.rewardTiers ??
+        sharedLeaderboard.rewardTiers ??
+        []
+      ).map((tier) => ({
+        id: `reward:${tier.rankLabel}`,
+        type: 'worldEventReward',
+        rankLabel: toTitleCase(`Rank ${tier.rankLabel}`),
+        rewards: [
+          { resourceKey: 'emerald', amount: Number(tier.emerald) || 0 },
+          { resourceKey: 'crystal', amount: Number(tier.crystal) || 0 },
+        ]
+          .filter(({ amount }) => amount > 0)
+          .map(({ resourceKey, amount }) => ({
+            resourceKey,
+            amountLabel: formatWorldEventNumber(amount),
+          })),
+      }));
     } else {
       rows = (current?.requests ?? current?.options ?? [])
         .slice(0, WORLD_EVENT_MAX_QUEST_ROWS)
@@ -1498,7 +1517,7 @@ export class PixiViewModelFactory {
           ? 'worldEventQuest'
           : safeTabId === 'leaderboard'
             ? 'leaderboard'
-            : 'default',
+            : 'worldEventReward',
       header: current
         ? {
             headline: toTitleCase(current.headline ?? 'World Event'),
@@ -1508,9 +1527,14 @@ export class PixiViewModelFactory {
                 : current.body ?? '',
             ),
             meta: `${formatWorldEventNumber(
-              localLeaderboard.currentPoints ??
-                sharedLeaderboard.currentPoints,
-            )} points · ${formatWorldEventTimer(current.resetLabel)}`,
+              currentEventPoints,
+            )} points · ${formatWorldEventTimer(current.resetLabel)}${
+              safeTabId === 'rewards'
+                ? `\nLeaderboard Rewards: ${formatWorldEventNumber(
+                    qualificationPoints,
+                  )} points to qualify`
+                : ''
+            }`,
           }
         : null,
       onSelectTab: (tabId) => actions.selectWorldEventTab?.(tabId),
@@ -1831,6 +1855,9 @@ function createTradeAllianceQuestRows(tradeAlliance, allianceId, actions) {
       );
       const itemFillQuest =
         quest.questType === 'itemFill' && Boolean(quest.itemKey);
+      const itemKind = itemFillQuest
+        ? resolveTradeAllianceQuestItemKind(quest)
+        : null;
       const remainingProgress = Math.max(
         0,
         Number(quest.target ?? 0) - Number(quest.progress ?? 0),
@@ -1868,6 +1895,8 @@ function createTradeAllianceQuestRows(tradeAlliance, allianceId, actions) {
         progressLabel: `${formatWholeNumber(quest.progress)}/${formatWholeNumber(
           quest.target,
         )}`,
+        itemKind,
+        itemKey: itemFillQuest ? quest.itemKey : null,
         rewardAmountLabel: formatWholeNumber(quest.crystalReward),
         rewardResource: 'crystal',
         label: `${title}\n${routeLabel} ${formatWholeNumber(
@@ -1892,6 +1921,25 @@ function createTradeAllianceQuestRows(tradeAlliance, allianceId, actions) {
           : null,
       };
     });
+}
+
+function resolveTradeAllianceQuestItemKind(quest = {}) {
+  const explicitKind = String(quest.itemKind ?? '')
+    .trim()
+    .toLowerCase();
+  if (explicitKind) {
+    return explicitKind;
+  }
+
+  const itemKey = String(quest.itemKey ?? '').trim();
+  if (itemKey.endsWith('Seed')) {
+    return 'seed';
+  }
+  if (itemKey.endsWith('Herb')) {
+    return 'herb';
+  }
+
+  return itemKey ? 'potion' : null;
 }
 
 function formatWholeNumber(value) {
@@ -3081,19 +3129,6 @@ function formatWorldEventTimer(value) {
   return String(value ?? '')
     .trim()
     .replace(/^resolves\s+/i, '') || 'soon';
-}
-
-function formatWorldEventRewardTier(tier = {}) {
-  return [
-    Number(tier.emerald) > 0
-      ? `${formatWorldEventNumber(tier.emerald)} emerald`
-      : '',
-    Number(tier.crystal) > 0
-      ? `${formatWorldEventNumber(tier.crystal)} crystal`
-      : '',
-  ]
-    .filter(Boolean)
-    .join(' · ') || 'Participation';
 }
 
 function getWorldEventDonationItemKind(option = {}) {
