@@ -51,7 +51,10 @@ const PAGE_IDS = Object.freeze([
   "prestige",
 ]);
 
-const SWIPE_PAGE_IDS = new Set(PAGE_IDS);
+const NAVIGABLE_PAGE_IDS = new Set(PAGE_IDS);
+const SWIPE_PAGE_IDS = new Set(
+  PAGE_IDS.filter((pageId) => pageId !== "guild"),
+);
 const TASK_DESTINATION_PAGE_BY_TYPE = Object.freeze({
   research: "research",
   summon: "workshop",
@@ -528,6 +531,11 @@ export class PixiPagesFacade {
       return;
     }
     const runtime = this.requireRuntime();
+    const guildNotification = projectPageNotificationState(
+      "guild",
+      this.notifications.pages?.guild,
+      this.tutorialNotificationPolicy,
+    );
     runtime.bindGlobalSurface(
       "chrome.top",
       this.viewModelFactory.createTopPanel({
@@ -551,6 +559,11 @@ export class PixiPagesFacade {
       "chrome.bottom",
       this.viewModelFactory.createBottomPanel({
         currentPageId: this.currentPageId,
+        hudMode: this.currentPageId === "guild" ? "guild" : "rooms",
+        guildHud: {
+          selectedTabId: this.guildTabId,
+          notifications: guildNotification?.children ?? {},
+        },
         pages: this.pageStates,
         notifications: projectChromeNotificationPages(
           this.notifications.pages,
@@ -558,6 +571,7 @@ export class PixiPagesFacade {
         ),
         actions: {
           showPage: (pageId) => this.show(pageId),
+          selectGuildTab: (tabId) => this.selectGuildTab(tabId),
           onLockedPage: () => true,
         },
       }),
@@ -565,7 +579,8 @@ export class PixiPagesFacade {
     runtime.bindGlobalSurface(
       "chrome.chat",
       this.viewModelFactory.createWorldChatPreview(this.worldChatSnapshot, {
-        visible: this.isWorldChatUnlocked(),
+        visible:
+          this.isWorldChatUnlocked() && this.currentPageId !== "guild",
         onActivate: () => this.openWorldChat(),
       }),
     );
@@ -673,6 +688,11 @@ export class PixiPagesFacade {
           tradeAlliance: this.tradeAllianceSnapshot,
           playerInbox: this.playerInboxSnapshot,
           notifications: pageNotification,
+          guildNotification: projectPageNotificationState(
+            "guild",
+            this.notifications.pages?.guild,
+            this.tutorialNotificationPolicy,
+          ),
           actions: actions.workshop,
           pageStates: this.pageStates,
           dialogState: {
@@ -754,6 +774,7 @@ export class PixiPagesFacade {
           gameplayActions: this.gameplayFacade,
           actions: { ui: actions.guild },
           tabNotifications: pageNotification?.children ?? null,
+          navigationPlacement: "hud",
         });
         break;
       default:
@@ -770,7 +791,8 @@ export class PixiPagesFacade {
       ...projectedViewModel,
       chrome: {
         ...(projectedViewModel.chrome ?? {}),
-        worldChatVisible: this.isWorldChatUnlocked(),
+        worldChatVisible:
+          this.isWorldChatUnlocked() && pageId !== "guild",
       },
     };
     runtime.bindPage(pageId, chromeAwareViewModel);
@@ -886,6 +908,7 @@ export class PixiPagesFacade {
     const gameplay = this.gameplayFacade;
     return {
       workshop: {
+        openGuild: () => this.show("guild"),
         navigateToTask: (task) => {
           const taskType = String(task?.type ?? task?.action ?? "").trim();
           const pageId = TASK_DESTINATION_PAGE_BY_TYPE[taskType];
@@ -2486,7 +2509,7 @@ export class PixiPagesFacade {
       return false;
     }
     const state = this.pageStates.find((page) => page.id === pageId);
-    if (!state || state.visible === false || !SWIPE_PAGE_IDS.has(pageId)) {
+    if (!state || state.visible === false || !NAVIGABLE_PAGE_IDS.has(pageId)) {
       return false;
     }
     if (state.unlocked === false) {
@@ -2508,6 +2531,17 @@ export class PixiPagesFacade {
     this.refreshChrome();
     this.refreshPage(pageId, { force: true });
     this.syncExternalDataRetention();
+    return true;
+  }
+
+  selectGuildTab(tabId) {
+    const normalized = normalizeGuildTabId(tabId);
+    if (normalized === this.guildTabId) {
+      return true;
+    }
+    this.guildTabId = normalized;
+    this.refreshChrome();
+    this.refreshPage("guild");
     return true;
   }
 
@@ -2657,7 +2691,7 @@ export class PixiPagesFacade {
     const requested = this.pageStates.find(
       (page) => page.id === pageId && page.unlocked,
     );
-    if (requested && SWIPE_PAGE_IDS.has(requested.id)) {
+    if (requested && NAVIGABLE_PAGE_IDS.has(requested.id)) {
       return requested.id;
     }
     return this.pageStates.some(
@@ -2665,7 +2699,7 @@ export class PixiPagesFacade {
     )
       ? "workshop"
       : (this.pageStates.find(
-          (page) => page.unlocked && SWIPE_PAGE_IDS.has(page.id),
+          (page) => page.unlocked && NAVIGABLE_PAGE_IDS.has(page.id),
         )?.id ?? "workshop");
   }
 
@@ -3311,4 +3345,11 @@ function normalizeDialogId(dialogId) {
 function normalizeWorkshopTabId(tabId, allowedTabIds, fallback) {
   const normalized = String(tabId ?? "");
   return allowedTabIds.has(normalized) ? normalized : fallback;
+}
+
+function normalizeGuildTabId(tabId) {
+  const normalized = String(tabId ?? "");
+  return ["hall", "board", "adventurers", "log"].includes(normalized)
+    ? normalized
+    : "hall";
 }

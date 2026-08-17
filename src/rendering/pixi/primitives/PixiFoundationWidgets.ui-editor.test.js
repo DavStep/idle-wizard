@@ -24,6 +24,8 @@ const harness = vi.hoisted(() => ({
     })),
   },
 }));
+harness.view.allTabs = harness.view.tabs;
+harness.view.guildTabs = [];
 
 vi.mock('../global/chrome/PixiBottomPanelView.js', () => ({
   PIXI_BOTTOM_PANEL_TABS: [
@@ -33,6 +35,14 @@ vi.mock('../global/chrome/PixiBottomPanelView.js', () => ({
     { id: 'research', label: 'Research' },
     { id: 'shop', label: 'Market' },
   ],
+  PIXI_GUILD_HUD_TABS: [
+    { guildTabId: 'hall', id: 'guild.hall', label: 'Hall' },
+  ],
+  PixiBottomHudTextTab: class {
+    constructor() {
+      return harness.tab;
+    }
+  },
   PixiBottomRoomTab: class {
     constructor() {
       return harness.tab;
@@ -75,7 +85,10 @@ describe('Pixi foundation UI editor integrations', () => {
       label: 'Bottom Room Tab',
     });
     expect(tab.createThumbnail).toEqual(expect.any(Function));
-    expect(tabs.childWidgetIds).toEqual(['compound.bottom-room-tab']);
+    expect(tabs.childWidgetIds).toEqual([
+      'compound.bottom-room-tab',
+      'compound.bottom-hud-text-tab',
+    ]);
   });
 
   it('shows the five production tab instances as the group hierarchy', async () => {

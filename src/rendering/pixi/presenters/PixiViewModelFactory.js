@@ -234,6 +234,8 @@ export class PixiViewModelFactory {
 
   createBottomPanel({
     currentPageId,
+    hudMode = 'rooms',
+    guildHud = null,
     pages,
     notifications,
     actions,
@@ -241,6 +243,8 @@ export class PixiViewModelFactory {
   } = {}) {
     return {
       currentPageId,
+      hudMode,
+      guildHud,
       pages,
       notifications,
       reveal: {
@@ -260,6 +264,7 @@ export class PixiViewModelFactory {
     tradeAlliance = {},
     playerInbox = {},
     notifications = {},
+    guildNotification = false,
     actions = {},
     dialogState = {},
     pageStates = null,
@@ -321,9 +326,12 @@ export class PixiViewModelFactory {
           enabled: true,
         },
         features: createWorkshopFeatures({
+          actions,
           gameplay,
           level,
           notifications: notifications.children ?? {},
+          guildNotification,
+          pageStates,
           tradeAlliance,
         }),
         worldChat: this.createWorldChatPreview(worldChat),
@@ -1971,9 +1979,12 @@ function getActiveQuestFraction(progress = {}) {
 }
 
 function createWorkshopFeatures({
+  actions = {},
   gameplay,
   level,
   notifications,
+  guildNotification = false,
+  pageStates = [],
   tradeAlliance = {},
 }) {
   const alliance =
@@ -1983,6 +1994,9 @@ function createWorkshopFeatures({
     tradeAlliance.membership?.alliance ??
     null;
   const notice = gameplay.worldNotice?.current ?? null;
+  const guildPage = Array.isArray(pageStates)
+    ? pageStates.find((page) => page?.id === 'guild')
+    : null;
   return [
     {
       id: 'alliance',
@@ -2037,6 +2051,16 @@ function createWorkshopFeatures({
           ? notice.requests.some((request) => request?.completed !== true)
           : Number(notice?.completedRequests ?? 0) <
             Number(notice?.totalRequests ?? 0),
+    },
+    {
+      id: 'guild',
+      label: 'guild',
+      side: 'right',
+      weight: 40,
+      visible:
+        guildPage?.visible === true && guildPage?.unlocked !== false,
+      notification: guildNotification,
+      onActivate: () => actions.openGuild?.(),
     },
   ];
 }

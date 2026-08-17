@@ -32,6 +32,7 @@ identified from the router.
 | Settings fields, toggles, sliders, and device panels | `Root Run Settings Controls` |
 | Inventory selection and allocation | `Stall Allocation Lists` |
 | Progress and timer rails | `Progress Rails` |
+| Bottom room navigation and alternate HUD category tabs | named `Bottom room tab` / `Bottom HUD Text Tab` entries in `Current Library` |
 | Expand/collapse behavior | `Expandable Boxes` |
 | Dialog shells, tabs, scrolling, and close controls | `Popup Structure` |
 
@@ -46,4 +47,3 @@ identified from the router.
 - Repository-wide UI Lab completeness belongs to an explicit coverage migration
   or release audit. Do not expand an unrelated feature task into legacy catalogue
   backfill.
-

@@ -6,6 +6,13 @@ sections are constructed once. Quest papers, roster rows, applicant rows, and
 logs use keyed bounded pools. Every Guild dialog is a lazy-once
 `DialogRegistry` entry.
 
+Production places Hall, Board, Roster, and Log in the alternate global Guild
+HUD. The page keeps the same selected-tab model but hides its legacy local tab
+row when `navigationPlacement` is `hud`, allowing its active scroll panel to
+use the space above the Guild bottom strip. World Chat and the normal room tabs
+are not part of Guild mode; the Workshop icon in the Guild strip returns to the
+normal room HUD.
+
 The view consumes display state and calls actions; Guild simulation,
 affordability, quest generation, hiring, firing, and secretary upgrades remain
 owned by the existing gameplay facade. The preferred presenter shape is:

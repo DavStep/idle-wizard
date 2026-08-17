@@ -688,6 +688,11 @@ export class GuildPixiPage extends BasePixiRetainedView {
         tab.id === this.selectedTabId,
       );
     }
+    const usesHudNavigation =
+      this.model.navigationPlacement === 'hud';
+    this.tabLayer.visible = created && !usesHudNavigation;
+    this.tabLayer.renderable = this.tabLayer.visible;
+    this.tabLayer.eventMode = this.tabLayer.visible ? 'passive' : 'none';
   }
 
   openDialog(dialogId, payload = {}) {
@@ -758,15 +763,20 @@ export class GuildPixiPage extends BasePixiRetainedView {
     const edge = PIXI_UI_GEOMETRY.roomContentEdge;
     const contentWidth = this.sourceWidth - edge * 2;
     const chatClearance = resolveRetainedPageBottomClearance(this.model);
+    const usesHudNavigation =
+      this.model.navigationPlacement === 'hud';
     const tabY =
       this.sourceHeight -
       chatClearance -
       6 -
       PIXI_UI_GEOMETRY.tabHeight;
     const scrollTop = PIXI_UI_GEOMETRY.roomContentTop;
+    const scrollBottom = usesHudNavigation
+      ? this.sourceHeight - chatClearance
+      : tabY - PAGE_SCROLL_PADDING;
     const scrollHeight = Math.max(
       0,
-      tabY - PAGE_SCROLL_PADDING - scrollTop,
+      scrollBottom - scrollTop,
     );
 
     const gateWidth = this.sourceWidth - edge * 4;
@@ -959,6 +969,8 @@ function normalizeGuildViewModel(viewModel = {}) {
       source.selectedTabId ??
       source.activeTabId ??
       'hall',
+    navigationPlacement:
+      viewModel.navigationPlacement === 'hud' ? 'hud' : 'page',
     subscribe: viewModel.subscribe ?? source.subscribe,
   };
 }

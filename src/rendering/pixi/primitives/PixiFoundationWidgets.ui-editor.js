@@ -12,6 +12,8 @@ import {
 } from '../global/chrome/RootRunTopHudWidgets.js';
 import {
   PIXI_BOTTOM_PANEL_TABS,
+  PIXI_GUILD_HUD_TABS,
+  PixiBottomHudTextTab,
   PixiBottomPanelView,
   PixiBottomRoomTab,
 } from '../global/chrome/PixiBottomPanelView.js';
@@ -377,7 +379,34 @@ export default [
   }),
   defineUiEditorIntegration({
     apiVersion: 1,
-    childWidgetIds: ['compound.bottom-room-tab'],
+    createThumbnail: createBottomHudTextTabThumbnail,
+    folderPath: ['Navigation'],
+    id: 'compound.bottom-hud-text-tab',
+    kind: 'widget',
+    label: 'Bottom HUD Text Tab',
+    sectionId: FOUNDATION_SECTION,
+    properties: [
+      { label: 'Production class', value: 'PixiBottomHudTextTab' },
+      { label: 'Contract', value: 'Always-labeled alternate HUD tab using room-tab chrome' },
+    ],
+    usages: [
+      {
+        label: 'Guild HUD navigation',
+        source: 'src/rendering/pixi/global/chrome/PixiBottomPanelView.js',
+      },
+    ],
+    scenarios: [
+      { fixture: { guildTabId: 'hall' }, id: 'default', label: 'Default', mount: mountBottomHudTextTab },
+      { fixture: { guildTabId: 'board', selected: true }, id: 'selected', label: 'Selected', mount: mountBottomHudTextTab },
+      { fixture: { guildTabId: 'log', notification: true }, id: 'notification', label: 'Notification', mount: mountBottomHudTextTab },
+    ],
+  }),
+  defineUiEditorIntegration({
+    apiVersion: 1,
+    childWidgetIds: [
+      'compound.bottom-room-tab',
+      'compound.bottom-hud-text-tab',
+    ],
     createThumbnail: createBottomRoomTabsThumbnail,
     folderPath: ['Navigation'],
     id: 'compound.bottom-room-tabs',
@@ -398,6 +427,7 @@ export default [
       { fixture: { currentPageId: 'workshop' }, id: 'workshop', label: 'Workshop selected', mount: mountBottomRoomTabs },
       { fixture: { currentPageId: 'research', lockedPageId: 'garden' }, id: 'locked', label: 'Locked Garden', mount: mountBottomRoomTabs },
       { fixture: { currentPageId: 'shop', notifiedPageId: 'shop' }, id: 'notification', label: 'Market notification', mount: mountBottomRoomTabs },
+      { fixture: { currentPageId: 'guild', hudMode: 'guild' }, id: 'guild', label: 'Guild HUD', mount: mountBottomRoomTabs },
     ],
   }),
 ];
@@ -775,6 +805,8 @@ async function mountHudCurrency(_context, fixture) {
 async function mountBottomRoomTabs(context, fixture) {
   const state = {
     currentPageId: fixture.currentPageId,
+    guildTabId: fixture.guildTabId ?? 'hall',
+    hudMode: fixture.hudMode ?? 'rooms',
     lockedPageId: fixture.lockedPageId ?? '',
     notifiedPageId: fixture.notifiedPageId ?? '',
   };
@@ -810,7 +842,12 @@ async function mountBottomRoomTabs(context, fixture) {
       selectControl('page', 'Selected room', () => state.currentPageId, (value) => {
         state.currentPageId = value;
         refresh();
-      }, ['brewing', 'garden', 'workshop', 'research', 'shop']),
+      }, ['brewing', 'garden', 'workshop', 'research', 'shop', 'guild']),
+      selectControl('hud-mode', 'HUD mode', () => state.hudMode, (value) => {
+        state.hudMode = value;
+        state.currentPageId = value === 'guild' ? 'guild' : 'workshop';
+        refresh();
+      }, ['rooms', 'guild']),
       checkboxControl('garden-lock', 'Lock Garden', () => state.lockedPageId === 'garden', (value) => {
         state.lockedPageId = value ? 'garden' : '';
         refresh();
@@ -832,8 +869,19 @@ async function mountBottomRoomTabs(context, fixture) {
           refresh();
           return true;
         },
+        selectGuildTab: (tabId) => {
+          state.guildTabId = tabId;
+          context.emit('guildTabSelected', { tabId });
+          refresh();
+          return true;
+        },
       },
       currentPageId: state.currentPageId,
+      guildHud: {
+        notifications: {},
+        selectedTabId: state.guildTabId,
+      },
+      hudMode: state.hudMode,
       notifications: state.notifiedPageId
         ? { [state.notifiedPageId]: { active: true, tone: 'red' } }
         : {},
@@ -845,6 +893,40 @@ async function mountBottomRoomTabs(context, fixture) {
       reveal: { rooms: true },
     };
   }
+}
+
+async function mountBottomHudTextTab(context, fixture) {
+  const state = { ...fixture };
+  const surface = await createUiEditorPixiSurface({
+    assetFilter: bottomPanelAssetFilter,
+    component: 'PixiBottomHudTextTab',
+    createControl: ({ assets, input }) => createBottomHudTextTabControl({
+      assets,
+      fixture: state,
+      input,
+      onActivate: () => context.emit('guildTabSelected', {
+        tabId: state.guildTabId,
+      }),
+    }),
+  });
+  const tab = surface.control.tab;
+  const refresh = () => {
+    bindBottomRoomTab(tab, state);
+    context.invalidate();
+  };
+  return {
+    ...surface,
+    controls: [
+      checkboxControl('selected', 'Selected', () => state.selected === true, (value) => {
+        state.selected = value;
+        refresh();
+      }),
+      checkboxControl('notification', 'Notification', () => state.notification === true, (value) => {
+        state.notification = value;
+        refresh();
+      }),
+    ],
+  };
 }
 
 async function mountBottomRoomTab(context, fixture) {
@@ -916,6 +998,41 @@ function createBottomRoomTabControl({
   };
 }
 
+function createBottomHudTextTabControl({
+  assets,
+  fixture,
+  input,
+  onActivate = () => true,
+}) {
+  const root = new Container();
+  const notificationLayer = new Container();
+  const definition = PIXI_GUILD_HUD_TABS.find(
+    ({ guildTabId }) => guildTabId === fixture.guildTabId,
+  ) ?? PIXI_GUILD_HUD_TABS.find(({ guildTabId }) => guildTabId === 'hall');
+  const tab = new PixiBottomHudTextTab({
+    assets,
+    definition,
+    inputRouter: input,
+    notificationLayer,
+    onActivate,
+  });
+  tab.setWidth(78);
+  tab.setLayoutX(0);
+  bindBottomRoomTab(tab, fixture);
+  root.addChild(tab.root, notificationLayer);
+  return {
+    atomicComponents: createBottomRoomTabAtoms(tab),
+    destroy: () => {
+      tab.destroy();
+      root.destroy({ children: true });
+    },
+    height: 82,
+    root,
+    tab,
+    width: 78,
+  };
+}
+
 function bindBottomRoomTab(tab, state) {
   tab.bind({
     id: tab.definition.id,
@@ -929,13 +1046,19 @@ function bindBottomRoomTab(tab, state) {
 }
 
 function createBottomRoomTabsHierarchy(view) {
-  return view.tabs
+  const tabs = view.allTabs ?? [
+    ...(view.tabs ?? []),
+    ...(view.guildTabs ?? []),
+  ];
+  return tabs
     .filter((tab) => tab.root.visible !== false)
     .map((tab) => createUiEditorPixiHierarchyComponent({
       displayObjects: [tab.root, tab.notification.root],
       id: `bottom-room-tab:${tab.definition.id}`,
       label: `${tab.definition.label} tab`,
-      libraryEntryId: 'compound.bottom-room-tab',
+      libraryEntryId: tab instanceof PixiBottomHudTextTab
+        ? 'compound.bottom-hud-text-tab'
+        : 'compound.bottom-room-tab',
       primary: tab.root,
       type: 'widget',
     }));
@@ -997,6 +1120,19 @@ function createBottomRoomTabThumbnail() {
       input,
     }),
     id: 'compound.bottom-room-tab',
+  });
+}
+
+function createBottomHudTextTabThumbnail() {
+  return createUiEditorPixiThumbnail({
+    assetFilter: bottomPanelAssetFilter,
+    component: 'PixiBottomHudTextTab',
+    createControl: ({ assets, input }) => createBottomHudTextTabControl({
+      assets,
+      fixture: { guildTabId: 'hall', selected: true },
+      input,
+    }),
+    id: 'compound.bottom-hud-text-tab',
   });
 }
 

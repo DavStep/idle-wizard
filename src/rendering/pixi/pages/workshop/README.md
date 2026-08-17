@@ -17,6 +17,8 @@ Every side-control model supplies `side` and `weight`. `WorkshopPixiPage`
 independently sorts the visible left and right controls, packs each side from
 the shared top anchor into fixed slots, and owns the short enter, exit, and
 slot-shift transitions. Hidden controls never reserve a row.
+The level-15 Guild model is a right-side control whose activation changes to
+the retained Guild page and alternate Guild HUD; it is not a Workshop dialog.
 Each label and optional timer centers on the shifted art frame rather than the
 unshifted panel edge. Notification dots attach to that same frame's top-right
 corner, and per-icon presentation scales normalize the current art against the

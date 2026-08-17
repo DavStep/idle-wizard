@@ -75,8 +75,50 @@ const TAB_DEFINITIONS = Object.freeze({
 });
 
 export const PIXI_BOTTOM_PANEL_TABS = Object.freeze(
-  DEFAULT_PAGE_SWIPE_ORDER.map((pageId) => TAB_DEFINITIONS[pageId]),
+  DEFAULT_PAGE_SWIPE_ORDER
+    .filter((pageId) => pageId !== 'guild')
+    .map((pageId) => TAB_DEFINITIONS[pageId]),
 );
+
+export const PIXI_GUILD_HUD_TABS = Object.freeze([
+  Object.freeze({
+    id: 'guild.workshop',
+    pageId: 'workshop',
+    label: 'Workshop',
+    icon: 'icon-workshop-house-tab.png',
+    artScale: 0.84,
+    semanticId: 'guild.return.workshop',
+    tutorialId: 'guild:return:workshop',
+  }),
+  Object.freeze({
+    id: 'guild.hall',
+    guildTabId: 'hall',
+    label: 'Hall',
+    semanticId: 'guild.tab.hall',
+    tutorialId: 'guild:tab:hall',
+  }),
+  Object.freeze({
+    id: 'guild.board',
+    guildTabId: 'board',
+    label: 'Board',
+    semanticId: 'guild.tab.board',
+    tutorialId: 'guild:tab:board',
+  }),
+  Object.freeze({
+    id: 'guild.adventurers',
+    guildTabId: 'adventurers',
+    label: 'Roster',
+    semanticId: 'guild.tab.adventurers',
+    tutorialId: 'guild:tab:adventurers',
+  }),
+  Object.freeze({
+    id: 'guild.log',
+    guildTabId: 'log',
+    label: 'Log',
+    semanticId: 'guild.tab.log',
+    tutorialId: 'guild:tab:log',
+  }),
+]);
 
 const DEFAULT_TAB_IDS = new Set([
   'brewing',
@@ -198,8 +240,22 @@ export class PixiBottomPanelView extends BasePixiRetainedView {
           onActivate: (tab) => this.activateTab(tab),
         }),
     );
+    this.guildTabs = PIXI_GUILD_HUD_TABS.map((definition) => {
+      const TabClass = definition.guildTabId
+        ? PixiBottomHudTextTab
+        : PixiBottomRoomTab;
+      return new TabClass({
+        definition,
+        assets,
+        inputRouter,
+        semanticRegistry,
+        notificationLayer: this.notificationsRoot,
+        onActivate: (tab) => this.activateTab(tab),
+      });
+    });
+    this.allTabs = [...this.tabs, ...this.guildTabs];
     this.tabsRoot.addChild(
-      ...this.tabs.map((tab) => tab.root),
+      ...this.allTabs.map((tab) => tab.root),
       this.notificationsRoot,
     );
 
@@ -271,6 +327,10 @@ export class PixiBottomPanelView extends BasePixiRetainedView {
     const notifications = viewModel.notifications ?? {};
     const currentPageId = viewModel.currentPageId ?? 'workshop';
     const revealRooms = viewModel.reveal?.rooms !== false;
+    const hudMode = viewModel.hudMode === 'guild' ? 'guild' : 'rooms';
+    const guildHud = viewModel.guildHud ?? {};
+    const selectedGuildTabId = guildHud.selectedTabId ?? 'hall';
+    const guildNotifications = guildHud.notifications ?? {};
     if (
       Object.prototype.hasOwnProperty.call(
         viewModel,
@@ -298,6 +358,7 @@ export class PixiBottomPanelView extends BasePixiRetainedView {
         selected: tabId === currentPageId,
         swipeTarget: tabId === this.swipeTargetPageId,
         visible:
+          hudMode === 'rooms' &&
           revealRooms &&
           (state.visible !== false) &&
           (DEFAULT_TAB_IDS.has(tabId) || state.visible === true),
@@ -326,11 +387,30 @@ export class PixiBottomPanelView extends BasePixiRetainedView {
         this.cancelUnlockFlyout(tab);
       }
     }
+    for (const tab of this.guildTabs) {
+      const wasVisible = tab.root.visible;
+      const wasSelected = tab.state.selected === true;
+      const guildTabId = tab.definition.guildTabId;
+      tab.bind({
+        id: tab.definition.id,
+        selected: Boolean(guildTabId) && guildTabId === selectedGuildTabId,
+        unlocked: true,
+        visible: hudMode === 'guild' && revealRooms,
+        notification: guildTabId
+          ? guildNotifications[guildTabId]
+          : false,
+      });
+      if (tab.state.selected === true && !wasSelected && wasVisible) {
+        this.startSelectedMotion(tab);
+      } else if (tab.state.selected !== true) {
+        tab.cancelSelectedMotion();
+      }
+    }
     this.layoutTabs(this.viewportProjection);
   }
 
   onApplyTheme(theme) {
-    for (const tab of this.tabs) {
+    for (const tab of this.allTabs) {
       tab.applyTheme(theme);
     }
     this.lockPanel.applyTheme(theme);
@@ -356,7 +436,7 @@ export class PixiBottomPanelView extends BasePixiRetainedView {
     this.stopMotion();
     this.pendingUnlockTabs.clear();
     this.unlockSourceBoundsByPageId.clear();
-    for (const tab of this.tabs) {
+    for (const tab of this.allTabs) {
       this.cancelUnlockFlyout(tab);
       tab.settleMotion();
     }
@@ -367,16 +447,24 @@ export class PixiBottomPanelView extends BasePixiRetainedView {
     this.stopMotion();
     this.pendingUnlockTabs.clear();
     this.unlockSourceBoundsByPageId.clear();
-    for (const tab of this.tabs) {
+    for (const tab of this.allTabs) {
       this.cancelUnlockFlyout(tab);
     }
     this.unlockFlyoutPool.destroy();
-    for (const tab of this.tabs) {
+    for (const tab of this.allTabs) {
       tab.destroy();
     }
   }
 
   activateTab(tab) {
+    if (tab.definition.guildTabId) {
+      return this.actions.selectGuildTab?.(
+        tab.definition.guildTabId,
+      ) ?? true;
+    }
+    if (tab.definition.pageId) {
+      return this.actions.showPage?.(tab.definition.pageId) ?? true;
+    }
     const tabId = tab.definition.id;
     const state = this.pageStates.get(tabId) ?? {};
     if (state.visible === false) {
@@ -599,7 +687,7 @@ export class PixiBottomPanelView extends BasePixiRetainedView {
     if (!this.active || this.reducedMotion()) {
       this.stopMotion();
       this.pendingUnlockTabs.clear();
-      for (const tab of this.tabs) {
+      for (const tab of this.allTabs) {
         this.cancelUnlockFlyout(tab);
         tab.settleMotion();
       }
@@ -607,7 +695,7 @@ export class PixiBottomPanelView extends BasePixiRetainedView {
     }
 
     let hasMotion = false;
-    for (const tab of this.tabs) {
+    for (const tab of this.allTabs) {
       hasMotion = tab.updateMotion(now) || hasMotion;
     }
 
@@ -689,7 +777,7 @@ export class PixiBottomPanelView extends BasePixiRetainedView {
   }
 
   layoutTabs(projection) {
-    const visibleTabs = this.tabs.filter((tab) => tab.root.visible);
+    const visibleTabs = this.allTabs.filter((tab) => tab.root.visible);
     const sourceHeight =
       projection?.sourceHeight ?? PIXI_UI_GEOMETRY.sourceHeight;
     this.tabsRoot.position.set(
@@ -850,9 +938,12 @@ export class PixiBottomRoomTab {
       this.lock,
     );
     this.root.addChild(this.motionRoot);
+    const semanticId =
+      definition.semanticId ??
+      `page.${definition.pageId ?? definition.id}`;
     this.registration =
       inputRouter?.registerPressTarget?.({
-        id: `page.${definition.id}`,
+        id: semanticId,
         displayObject: this.root,
         enabled: () =>
           this.root.visible &&
@@ -865,11 +956,13 @@ export class PixiBottomRoomTab {
         onActivate: () => this.onActivate?.(this),
         haptic: 'light',
       }) ?? null;
-    this.semanticId = `page.${definition.id}`;
+    this.semanticId = semanticId;
     if (!semanticRegistry?.has?.(this.semanticId)) {
       semanticRegistry?.register?.({
         semanticId: this.semanticId,
-        tutorialId: `page:${definition.id}`,
+        tutorialId:
+          definition.tutorialId ??
+          `page:${definition.pageId ?? definition.id}`,
         displayObject: this.root,
         state: () => ({
           active: !this.root.destroyed,
@@ -927,8 +1020,7 @@ export class PixiBottomRoomTab {
     for (const label of [...this.labelShadows, this.text]) {
       label.setWrapWidth(Math.max(0, this.width - 4));
     }
-    this.labelRoot.position.y =
-      TAB_ACTIVE_HEIGHT - 2 - this.text.measuredHeight / 2;
+    this.layoutLabel();
     this.motionRoot.pivot.set(this.width / 2, TAB_HEIGHT);
     this.applyMotionTransform();
     return this;
@@ -1128,14 +1220,22 @@ export class PixiBottomRoomTab {
       swipeTarget: this.state.swipeTarget === true,
       locked,
     });
-    this.labelRoot.visible = selected;
-    this.labelRoot.renderable = selected;
+    const textOnly = this.definition.textOnly === true;
+    this.labelRoot.visible = selected || textOnly;
+    this.labelRoot.renderable = this.labelRoot.visible;
     this.labelRoot.alpha = locked ? 0.34 : 1;
     this.iconFrame.alpha = 1;
     this.applyIconLayout();
     this.iconFrame.visible = !this.receivingUnlock && !locked;
     this.iconFrame.renderable = this.iconFrame.visible;
+    this.layoutLabel();
     this.layoutNotification();
+  }
+
+  layoutLabel() {
+    this.labelRoot.position.y = this.definition.textOnly === true
+      ? (this.state.selected === true ? 28 : 34)
+      : TAB_ACTIVE_HEIGHT - 2 - this.text.measuredHeight / 2;
   }
 
   drawNotification(state) {
@@ -1191,6 +1291,18 @@ export class PixiBottomRoomTab {
     this.settleMotion();
     this.notification.destroy();
     this.root.destroy({ children: true });
+  }
+}
+
+export class PixiBottomHudTextTab extends PixiBottomRoomTab {
+  constructor(options = {}) {
+    super({
+      ...options,
+      definition: {
+        ...(options.definition ?? {}),
+        textOnly: true,
+      },
+    });
   }
 }
 

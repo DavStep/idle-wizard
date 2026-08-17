@@ -5,6 +5,10 @@ upload script posts the section whose heading matches `package.json` `version`.
 Write these developer-to-player notes only in Idle Wizard terms. Do not mention
 other game names, source projects, ports, or implementation provenance.
 
+## 0.3.61
+
+- Moved Guild into a dedicated Workshop action and added its own Hall, Board, Roster, and Log navigation, giving Guild work more room while keeping the normal room bar focused.
+
 ## 0.3.60
 
 - Made Research easier to scan by keeping unfinished studies first, hiding completed studies by default, and adding a per-category control to reveal them.

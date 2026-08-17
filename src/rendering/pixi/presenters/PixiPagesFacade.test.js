@@ -124,6 +124,27 @@ describe("PixiPagesFacade", () => {
         .selectedPeriodId,
     ).toBe("weekly");
 
+    const guildAction = workshopModel.workshop.features.find(
+      (feature) => feature.id === "guild",
+    );
+    expect(guildAction).toMatchObject({
+      label: "guild",
+      side: "right",
+      visible: true,
+    });
+    expect(guildAction.onActivate()).toBe(true);
+    expect(pages.getCurrentPageId()).toBe("guild");
+    expect(harness.getBoundGlobal("chrome.bottom")).toMatchObject({
+      currentPageId: "guild",
+      hudMode: "guild",
+      guildHud: { selectedTabId: "hall" },
+    });
+    expect(harness.getBoundGlobal("chrome.chat").visible).toBe(false);
+    expect(harness.getBoundGlobal("chrome.bottom").actions.selectGuildTab("board")).toBe(true);
+    expect(harness.getBoundPage("guild").selectedTabId).toBe("board");
+    expect(harness.getBoundGlobal("chrome.bottom").actions.showPage("workshop")).toBe(true);
+    expect(pages.getCurrentPageId()).toBe("workshop");
+
     expect(pages.show("research")).toBe(true);
     const researchModel = harness.getBoundPage("research");
     researchModel.actions.buyResearch("mana-tonic");

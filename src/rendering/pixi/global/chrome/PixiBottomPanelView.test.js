@@ -8,6 +8,7 @@ import { DEFAULT_PAGE_SWIPE_ORDER } from '../../../../pages/managers/pageOrder.j
 import { SemanticTargetRegistry } from '../../retained/index.js';
 import {
   PIXI_BOTTOM_PANEL_TABS,
+  PixiBottomHudTextTab,
   PixiBottomRoomTab,
   PixiBottomPanelView,
 } from './PixiBottomPanelView.js';
@@ -23,7 +24,7 @@ installPixiPageTestCanvas();
 describe('PixiBottomPanelView', () => {
   it('uses the canonical prestige-first page order', () => {
     expect(PIXI_BOTTOM_PANEL_TABS.map(({ id }) => id)).toEqual(
-      DEFAULT_PAGE_SWIPE_ORDER,
+      DEFAULT_PAGE_SWIPE_ORDER.filter((id) => id !== 'guild'),
     );
     expect(
       PIXI_BOTTOM_PANEL_TABS.slice(0, 6).map(({ id }) => id),
@@ -42,14 +43,16 @@ describe('PixiBottomPanelView', () => {
     });
   });
 
-  it('retains all tabs and changes page state in place', () => {
+  it('retains room and Guild HUD tabs while switching navigation modes', () => {
     const showPage = vi.fn();
+    const selectGuildTab = vi.fn();
     const semanticRegistry = new SemanticTargetRegistry();
     const view = new PixiBottomPanelView({
       assets: createAssets(),
       semanticRegistry,
     });
     const tabs = [...view.tabs];
+    const guildTabs = [...view.guildTabs];
 
     view.activate();
     view.bind({
@@ -62,14 +65,66 @@ describe('PixiBottomPanelView', () => {
     });
 
     expect(view.tabs).toEqual(tabs);
+    expect(view.guildTabs).toEqual(guildTabs);
     expect(view.tabs.every((tab) => tab instanceof PixiBottomRoomTab)).toBe(
       true,
     );
-    expect(
-      view.tabs.find((tab) => tab.definition.id === 'guild').root.visible,
-    ).toBe(true);
-    semanticRegistry.activate('page.guild');
-    expect(showPage).toHaveBeenCalledWith('guild');
+    expect(view.tabs.some((tab) => tab.definition.id === 'guild')).toBe(false);
+    expect(view.guildTabs.every((tab) => tab.root.visible === false)).toBe(true);
+
+    view.bind({
+      currentPageId: 'guild',
+      guildHud: { selectedTabId: 'hall' },
+      hudMode: 'guild',
+      pages: [{ id: 'workshop', visible: true, unlocked: true }],
+      actions: { selectGuildTab, showPage },
+    });
+
+    expect(view.tabs.every((tab) => tab.root.visible === false)).toBe(true);
+    expect(view.guildTabs.map((tab) => tab.root.visible)).toEqual([
+      true,
+      true,
+      true,
+      true,
+      true,
+    ]);
+    expect(view.guildTabs.slice(1).every(
+      (tab) => tab instanceof PixiBottomHudTextTab,
+    )).toBe(true);
+    semanticRegistry.activate('guild.tab.board');
+    expect(selectGuildTab).toHaveBeenCalledWith('board');
+    semanticRegistry.activate('guild.return.workshop');
+    expect(showPage).toHaveBeenCalledWith('workshop');
+  });
+
+  it('keeps Guild category labels visible across resting and selected states', () => {
+    const view = new PixiBottomPanelView({ assets: createAssets() });
+    view.bind({
+      currentPageId: 'guild',
+      guildHud: {
+        selectedTabId: 'board',
+        notifications: { log: { active: true, tone: 'red' } },
+      },
+      hudMode: 'guild',
+      pages: [{ id: 'workshop', visible: true, unlocked: true }],
+    });
+
+    const hall = view.guildTabs.find(
+      (tab) => tab.definition.guildTabId === 'hall',
+    );
+    const board = view.guildTabs.find(
+      (tab) => tab.definition.guildTabId === 'board',
+    );
+    const log = view.guildTabs.find(
+      (tab) => tab.definition.guildTabId === 'log',
+    );
+
+    expect(hall.labelRoot.visible).toBe(true);
+    expect(hall.labelRoot.position.y).toBe(34);
+    expect(board.labelRoot.visible).toBe(true);
+    expect(board.labelRoot.position.y).toBe(28);
+    expect(board.frame.mode).toBe('active');
+    expect(log.notification.root.visible).toBe(true);
   });
 
   it('lays out fixed five, six, and seven-tab rows with a wider selection', () => {
@@ -98,7 +153,7 @@ describe('PixiBottomPanelView', () => {
         'workshop',
         'research',
         'shop',
-        'guild',
+        'advancedBrewing',
       ],
     ]) {
       view.bind({
@@ -153,7 +208,7 @@ describe('PixiBottomPanelView', () => {
         'workshop',
         'research',
         'shop',
-        'guild',
+        'advancedBrewing',
       ]),
     });
 

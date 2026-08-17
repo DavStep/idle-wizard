@@ -95,6 +95,12 @@ const DEFAULT_FEATURES = Object.freeze([
     side: 'right',
     weight: 30,
   }),
+  Object.freeze({
+    id: 'guild',
+    label: 'Guild',
+    side: 'right',
+    weight: 40,
+  }),
 ]);
 
 const WORKSHOP_FLYOUT_VISUALS = Object.freeze({
@@ -129,6 +135,9 @@ const WORKSHOP_FEATURE_PRESENTATIONS = Object.freeze({
   }),
   worldEvent: Object.freeze({
     assetId: PIXI_ROOT_RUN_ASSETS.workshopWorldEvent,
+  }),
+  guild: Object.freeze({
+    assetId: PIXI_ROOT_RUN_ASSETS.workshopAlliance,
   }),
 });
 

@@ -74,6 +74,29 @@ describe('GuildPixiPage', () => {
     harness.dispose();
   });
 
+  it('moves Guild category navigation into the external HUD without duplicating tabs', () => {
+    const harness = createHarness();
+    harness.page.layout({ sourceWidth: 390, sourceHeight: 844 });
+    harness.page.bind({
+      ...createGuildViewModel(),
+      chrome: { worldChatVisible: false },
+      navigationPlacement: 'hud',
+      selectedTabId: 'board',
+    });
+    harness.page.activate();
+
+    expect(harness.page.tabLayer.visible).toBe(false);
+    expect(harness.page.tabLayer.renderable).toBe(false);
+    expect(harness.page.tabScrolls.get('board').visible).toBe(true);
+    expect(harness.page.tabScrolls.get('hall').visible).toBe(false);
+    expect(harness.page.tabScrolls.get('board').viewportHeight).toBe(
+      844 - 92 - 104,
+    );
+
+    harness.page.destroy();
+    harness.dispose();
+  });
+
   it('retains every Guild dialog after its lazy first open', () => {
     const harness = createHarness();
     harness.page.bind(createGuildViewModel());

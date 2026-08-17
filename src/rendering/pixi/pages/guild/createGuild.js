@@ -14,6 +14,7 @@
  *   gameplayActions?: object,
  *   dialogs?: object,
  *   tabNotifications?: object | null,
+ *   navigationPlacement?: 'page' | 'hud',
  *   subscribe?: ((listener: (snapshot: object) => void) => (() => void) | void) | null,
  * }} [options]
  * @returns {object}
@@ -61,6 +62,8 @@ export function createGuild(options = {}) {
       options.tabNotifications ??
       guild.tabNotifications ??
       null,
+    navigationPlacement:
+      options.navigationPlacement === 'hud' ? 'hud' : 'page',
   };
 
   if (typeof options.subscribe === 'function') {
