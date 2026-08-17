@@ -197,6 +197,21 @@ describe('NativeTextEntryAdapter', () => {
       selectionStart: 0,
       selectionEnd: 0,
     });
+
+    plugin.emit(NATIVE_EVENT_NAMES.VALUE, {
+      sessionId: 'session-chat',
+      value: 'n',
+      selectionStart: 1,
+      selectionEnd: 1,
+    });
+
+    expect(handlers.onValue).toHaveBeenLastCalledWith({
+      value: 'n',
+      selectionStart: 1,
+      selectionEnd: 1,
+    });
+    expect(plugin.start).toHaveBeenCalledTimes(1);
+    expect(plugin.removeListener).not.toHaveBeenCalled();
   });
 });
 

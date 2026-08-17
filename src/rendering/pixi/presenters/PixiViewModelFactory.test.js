@@ -564,7 +564,7 @@ describe('PixiViewModelFactory', () => {
                 rank: 1,
                 name: 'Mira',
                 playerLevel: 4,
-                points: 450,
+                points: 12_345,
               },
             ],
           },
@@ -689,7 +689,7 @@ describe('PixiViewModelFactory', () => {
           username: 'Mira',
           playerLevel: 4,
           totalMetric: 'points',
-          totalLabel: '450',
+          totalLabel: '12.3k',
         }),
       ]),
     );
@@ -708,7 +708,7 @@ describe('PixiViewModelFactory', () => {
     );
     expect(rewards.rowWidget).toBe('worldEventReward');
     expect(rewards.header.meta).toBe(
-      '125 points · 5d\nLeaderboard Rewards: 2,000 points to qualify',
+      '125 points · 5d\nLeaderboard Rewards: 2k points to qualify',
     );
     expect(rewards.rows).toEqual([
       {

@@ -74,7 +74,7 @@ describe('PlayerInfoDialogManager', () => {
       'nameAda',
     );
     expect(popup.querySelector('.room-player-info-rows')?.textContent).toContain(
-      'total produced coin1234',
+      'total produced coin1.23k',
     );
     expect(popup.querySelector('.room-player-info-rows')?.textContent).toContain(
       'last seenonline now',

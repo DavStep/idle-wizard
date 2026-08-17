@@ -2,6 +2,7 @@ import {
   formatCoinAmount,
   formatCoinPriceText,
 } from '../../../shared/coinPrice.js';
+import { formatBigNumber } from '../../../shared/bigNumber.js';
 import { getItemDisplay } from '../../../pages/shared/itemResearchStatus.js';
 import { formatRemainingTime } from '../../../pages/shared/timerDisplay.js';
 import { parseWorldChatSystemPlayerAnnouncement } from '../../../pages/workshop/worldChatSystemAnnouncement.js';
@@ -3155,7 +3156,7 @@ function formatPercent(value) {
 }
 
 function formatWorldEventNumber(value) {
-  return Math.max(0, Math.floor(Number(value) || 0)).toLocaleString('en-US');
+  return formatBigNumber(Math.max(0, Math.floor(Number(value) || 0)));
 }
 
 function formatWorldEventTimer(value) {

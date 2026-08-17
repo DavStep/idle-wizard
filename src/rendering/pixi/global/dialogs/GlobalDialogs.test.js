@@ -283,10 +283,10 @@ describe('retained global Pixi dialogs', () => {
     expect(player.prestigeStars).toBeInstanceOf(PixiStarLevelLabel);
     expect(player.prestigeStars.starCount).toBe(2);
     expect(player.totalCoinValue).toBeInstanceOf(PixiResourceLabel);
-    expect(player.totalCoinValue.amount).toBe('1200');
+    expect(player.totalCoinValue.amount).toBe('1.23m');
     expect(player.totalCoinValue.icon.visible).toBe(true);
-    expect(player.totalPotionsValue.text).toBe('86');
-    expect(player.totalHerbsValue.text).toBe('240');
+    expect(player.totalPotionsValue.text).toBe('86.5k');
+    expect(player.totalHerbsValue.text).toBe('2.4m');
     expect(player.lastSeenValue.text).toBe('Online Now');
     expect(player.timePlayedValue.text).toBe('12.5 Hours');
     expect(player.totalCoinLabel.text).toBe('Total Produced Coin');
@@ -2196,9 +2196,9 @@ function createPlayer() {
     frame: 'gnome',
     playerLevel: 4,
     prestigeCount: 2,
-    totalProducedCoin: 1200,
-    totalBrewedPotions: 86,
-    totalHarvestedHerbs: 240,
+    totalProducedCoin: 1_234_567,
+    totalBrewedPotions: 86_500,
+    totalHarvestedHerbs: 2_400_000,
     connected: true,
     lastSeenAtMs: 1_690_000_000_000,
     totalPlayTimeSeconds: 45_000,

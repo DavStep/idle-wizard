@@ -5,6 +5,11 @@ upload script posts the section whose heading matches `package.json` `version`.
 Write these developer-to-player notes only in Idle Wizard terms. Do not mention
 other game names, source projects, ports, or implementation provenance.
 
+## 0.3.64
+
+- Improved World Chat message spacing and readability, and fixed Android text entry so the keyboard keeps accepting messages after a successful send.
+- Added compact big-number formatting to player lifetime totals and World Event values for easier scanning.
+
 ## 0.3.63
 
 - Added dedicated Browse and Create tabs for wizards who are not yet in a Trade Alliance, including a streamlined alliance creation form.

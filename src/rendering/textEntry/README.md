@@ -22,6 +22,10 @@ so World Chat alone can translate without resizing or moving the rest of the
 game. Native-backed Pixi text fields use geometric fallback hit testing because
 Android WebView can retarget a post-submit field tap to the canvas; the router
 must still recognize the focused field instead of closing its native session.
+Programmatic updates to an active Android editor mutate its existing `Editable`
+inside a batch edit, clear composing spans, and restart the field's IME input
+connection. Replacing the buffer with `EditText.setText()` can leave Gboard
+targeting a discarded connection after World Chat clears a successful message.
 
 ```js
 const service = new TextEntryService({ canvas });

@@ -1,10 +1,6 @@
+import { formatBigNumber } from './bigNumber.js';
+
 const COIN_PRICE_PATTERN = /^\d+$/;
-const COMPACT_COIN_UNITS = [
-  { value: 1_000_000_000_000, suffix: 't' },
-  { value: 1_000_000_000, suffix: 'b' },
-  { value: 1_000_000, suffix: 'm' },
-  { value: 1_000, suffix: 'k' },
-];
 
 export function normalizeCoinPrice(value) {
   const number = Number(value);
@@ -58,23 +54,9 @@ export function formatCoinAmount(value) {
     return '?';
   }
 
-  if (price < 1_000) {
-    return String(price);
-  }
-
-  const unit = COMPACT_COIN_UNITS.find((candidate) => price >= candidate.value);
-  const scaled = price / unit.value;
-  const decimals = scaled >= 100 ? 0 : scaled >= 10 ? 1 : 2;
-  const factor = 10 ** decimals;
-  const compact = Math.floor(scaled * factor) / factor;
-
-  return `${trimCoinDecimals(compact.toFixed(decimals))}${unit.suffix}`;
+  return formatBigNumber(price);
 }
 
 export function formatCoinPriceText(value) {
   return `${formatCoinAmount(value)} coin`;
-}
-
-function trimCoinDecimals(text) {
-  return text.replace(/\.00$/, '').replace(/(\.\d)0$/, '$1').replace(/\.0$/, '');
 }

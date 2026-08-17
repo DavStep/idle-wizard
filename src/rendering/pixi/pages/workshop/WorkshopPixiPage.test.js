@@ -3439,14 +3439,16 @@ describe('WorkshopPixiPage', () => {
     expect(playerRow.username.style.stroke?.width ?? 0).toBe(0);
     expect(playerRow.body.x).toBe(playerRow.tag.x);
     expect(playerRow.body.x).toBeCloseTo(48.75);
-    expect(playerRow.body.y).toBeGreaterThan(playerRow.username.y);
+    expect(playerRow.body.y).toBeCloseTo(15.795);
+    expect(playerRow.body.y - playerRow.username.y).toBeCloseTo(16.795);
     expect(playerRow.tag.y).toBe(-1);
     expect(playerRow.username.y).toBe(-1);
     expect(playerRow.avatar.width).toBeCloseTo(42.9);
-    expect(playerRow.tag.style.fontSize).toBe(16.5);
-    expect(playerRow.username.style.fontSize).toBe(16.5);
-    expect(playerRow.body.style.fontSize).toBe(16.5);
-    expect(playerRow.timestamp.style.fontSize).toBe(12.75);
+    expect(playerRow.tag.style.fontSize).toBeCloseTo(14.85);
+    expect(playerRow.username.style.fontSize).toBeCloseTo(14.85);
+    expect(playerRow.body.style.fontSize).toBeCloseTo(14.85);
+    expect(playerRow.body.style.lineHeight).toBeCloseTo(19.305);
+    expect(playerRow.timestamp.style.fontSize).toBeCloseTo(11.475);
     expect(playerRow.getPreferredHeight()).toBeCloseTo(52.65);
     expect(dialog.scroll.root.x).toBe(8);
     expect(dialog.scroll.width).toBe(354);
@@ -3455,8 +3457,10 @@ describe('WorkshopPixiPage', () => {
     expect(playerRow.avatar.eventMode).toBe('static');
     expect(playerRow.username.eventMode).toBe('static');
     expect(playerRow.action).toBeUndefined();
-    expect(systemRow.root.y + systemRow.getPreferredHeight()).toBe(dialog.scroll.height);
-    expect(playerRow.root.y).toBe(
+    expect(systemRow.root.y + systemRow.getPreferredHeight()).toBeCloseTo(
+      dialog.scroll.height,
+    );
+    expect(playerRow.root.y).toBeCloseTo(
       dialog.scroll.height - playerRow.getPreferredHeight() - 3 - systemRow.getPreferredHeight(),
     );
     const avatarPress = pressRegistrations.find(
@@ -3478,7 +3482,7 @@ describe('WorkshopPixiPage', () => {
     expect(systemRow.avatar.eventMode).toBe('none');
     expect(systemRow.username.eventMode).toBe('none');
     expect(systemRow.action).toBeUndefined();
-    expect(systemRow.getPreferredHeight()).toBeCloseTo(55.25);
+    expect(systemRow.getPreferredHeight()).toBeCloseTo(43.875);
     expect(systemRow.root.y - playerRow.root.y).toBeCloseTo(
       playerRow.getPreferredHeight() + 3,
     );

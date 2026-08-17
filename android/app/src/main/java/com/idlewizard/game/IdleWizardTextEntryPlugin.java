@@ -11,6 +11,7 @@ import android.view.KeyEvent;
 import android.view.View;
 import android.view.ViewGroup;
 import android.view.WindowManager;
+import android.view.inputmethod.BaseInputConnection;
 import android.view.inputmethod.EditorInfo;
 import android.view.inputmethod.InputMethodManager;
 import android.widget.EditText;
@@ -325,10 +326,34 @@ public class IdleWizardTextEntryPlugin extends Plugin {
         int selectionStart,
         int selectionEnd
     ) {
+        Editable editable = editor.getText();
         suppressEditorEvents = true;
-        editor.setText(value);
-        setSelectionClamped(editor, selectionStart, selectionEnd);
-        suppressEditorEvents = false;
+        editor.beginBatchEdit();
+        try {
+            // Keep the Editable object owned by the active InputConnection.
+            // Replacing it with EditText.setText() can leave Gboard writing to
+            // the discarded buffer until the entire chat session is reopened.
+            BaseInputConnection.removeComposingSpans(editable);
+            editable.replace(0, editable.length(), value);
+            setSelectionClamped(editor, selectionStart, selectionEnd);
+        } finally {
+            editor.endBatchEdit();
+            suppressEditorEvents = false;
+        }
+
+        Activity activity = getActivity();
+        if (activity == null || !editor.hasFocus()) {
+            return;
+        }
+
+        InputMethodManager inputMethodManager = (InputMethodManager) activity
+            .getSystemService(Activity.INPUT_METHOD_SERVICE);
+        if (inputMethodManager != null) {
+            // Gboard may continue targeting its pre-update connection even
+            // when the Editable identity is preserved. Refresh that
+            // connection in place so the next key reaches this same session.
+            inputMethodManager.restartInput(editor);
+        }
     }
 
     private void applySelection(int selectionStart, int selectionEnd) {

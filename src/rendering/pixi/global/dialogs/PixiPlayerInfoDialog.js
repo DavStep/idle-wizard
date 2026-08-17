@@ -11,6 +11,7 @@ import {
   setDialogPaperSectionBounds,
 } from '../../primitives/index.js';
 import { PIXI_UI_GEOMETRY } from '../../theme/PixiThemeTokens.js';
+import { formatBigNumber } from '../../../../shared/bigNumber.js';
 import { normalizeTradeAllianceTagColor } from '../../../../shared/tradeAllianceTagColors.js';
 import { getPlayerFrameTint } from '../../../../player/playerFrames.js';
 import { PlayerProfileWidget } from '../chrome/PlayerProfileWidgets.js';
@@ -527,7 +528,7 @@ function normalizePlayerModel(model = {}) {
     frame: String(source.frame ?? 'classic'),
     playerLevel: String(positiveInteger(source.playerLevel ?? source.level, 1)),
     prestigeCount,
-    totalProducedCoin: String(
+    totalProducedCoin: formatBigNumber(
       nonNegativeInteger(
         source.totalProducedCoin ??
           source.totalGeneratedCoin ??
@@ -535,13 +536,13 @@ function normalizePlayerModel(model = {}) {
         0,
       ),
     ),
-    totalBrewedPotions: String(
+    totalBrewedPotions: formatBigNumber(
       nonNegativeInteger(
         source.totalBrewedPotions ?? source.total_brewed_potions,
         0,
       ),
     ),
-    totalHarvestedHerbs: String(
+    totalHarvestedHerbs: formatBigNumber(
       nonNegativeInteger(
         source.totalHarvestedHerbs ?? source.total_harvested_herbs,
         0,

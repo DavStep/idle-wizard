@@ -4,6 +4,7 @@ import {
   getPlayerCharacterImageUrl,
 } from '../../shared/playerCharacterIcon.js';
 import { normalizePlayerCharacter } from '../../../player/playerCharacters.js';
+import { formatBigNumber } from '../../../shared/bigNumber.js';
 
 const EMPTY_SNAPSHOT = {
   connected: false,
@@ -194,7 +195,10 @@ export class PlayerInfoDialogManager {
       this.createTextRow('prestige', this.formatPrestige(player.prestigeCount)),
     );
     this.refs.rows.replaceChildren(
-      this.createTextRow('total produced coin', this.formatNumber(player.totalProducedCoin)),
+      this.createTextRow(
+        'total produced coin',
+        formatBigNumber(player.totalProducedCoin),
+      ),
       this.createTextRow('last seen', this.formatLastSeen(player)),
       this.createTextRow('time played', this.formatPlayedHours(player.totalPlayTimeSeconds)),
     );
