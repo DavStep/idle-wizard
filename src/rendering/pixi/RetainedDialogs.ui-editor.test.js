@@ -639,7 +639,6 @@ describe('retained dialog UI editor integrations', () => {
     expect(worldChatMessageRowIntegration.kind).toBe('widget');
     expect(worldChatMessageRowIntegration.childWidgetIds).toEqual([
       'compound.player-profile',
-      'text-button',
     ]);
     expect(typeof worldChatMessageRowIntegration.createThumbnail).toBe(
       'function',
@@ -649,7 +648,7 @@ describe('retained dialog UI editor integrations', () => {
     ).toEqual([
       'player',
       'own-player',
-      'selected-report',
+      'report-eligible',
       'system',
       'disabled',
     ]);

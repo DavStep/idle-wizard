@@ -470,6 +470,7 @@ export const PlayerInfoSummaryResult = __t.object("PlayerInfoSummaryResult", {
   totalPlayTimeSeconds: __t.u64(),
   updatedAt: __t.timestamp(),
   character: __t.string(),
+  frame: __t.string(),
 });
 export type PlayerInfoSummaryResult = __Infer<typeof PlayerInfoSummaryResult>;
 
@@ -798,6 +799,7 @@ export const TradeAllianceMemberSnapshotResult = __t.object("TradeAllianceMember
   totalContribution: __t.u64(),
   dailyContribution: __t.u64(),
   dayKey: __t.string(),
+  frame: __t.string(),
 });
 export type TradeAllianceMemberSnapshotResult = __Infer<typeof TradeAllianceMemberSnapshotResult>;
 
@@ -958,6 +960,7 @@ export const WorldEventLeaderboardSummaryResult = __t.object("WorldEventLeaderbo
   updatedAt: __t.timestamp(),
   playerLevel: __t.u32(),
   rank: __t.u32(),
+  frame: __t.string(),
 });
 export type WorldEventLeaderboardSummaryResult = __Infer<typeof WorldEventLeaderboardSummaryResult>;
 

@@ -5,6 +5,12 @@ export {
   TutorialPixiOverlay,
 } from './TutorialPixiOverlay.js';
 export {
+  normalizeActionHighlightModel,
+  PIXI_ACTION_HIGHLIGHT_GEOMETRY,
+  PixiActionHighlightScene,
+} from './PixiActionHighlightScene.js';
+export { PixiSemanticHighlightLayer } from './PixiSemanticHighlightLayer.js';
+export {
   getOverlapArea,
   normalizeSourceRect,
   padSourceRect,

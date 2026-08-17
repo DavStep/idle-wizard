@@ -786,6 +786,7 @@ describe('DevCheatsFacade', () => {
     const pagesFacade = {
       openDialog: vi.fn((dialogId, options) => ({ ok: true, dialogId, options })),
       showFirstRunIntroPreview: vi.fn(() => ({ ok: true })),
+      showWorldChatReportHighlightPreview: vi.fn(() => ({ ok: true })),
       setBottomRoomTabsPreview: vi.fn((active) => ({ ok: true, active })),
       setTopPanelQuestProgressPreview: vi.fn((progress) => ({ ok: true, progress })),
       setDevNotifications: vi.fn((snapshot) => ({ ok: true, snapshot })),
@@ -997,6 +998,16 @@ describe('DevCheatsFacade', () => {
       active: true,
     });
     expect(pagesFacade.setBottomRoomTabsPreview).toHaveBeenCalledWith(true);
+    expect(publishAndSaveSpy).not.toHaveBeenCalled();
+
+    expect(target.cheats.openUi('worldChatReportHighlight')).toMatchObject({
+      ok: true,
+      surfaceId: 'worldChatReportHighlight',
+      surfaceKind: 'preview',
+    });
+    expect(
+      pagesFacade.showWorldChatReportHighlightPreview,
+    ).toHaveBeenCalledOnce();
     expect(publishAndSaveSpy).not.toHaveBeenCalled();
 
     expect(target.cheats.openUi('guildQuestPosting')).toMatchObject({

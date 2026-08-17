@@ -53,6 +53,12 @@ The presenter shape mirrors `TutorialFacade`:
 }
 ```
 
+`PixiSemanticHighlightLayer` is the shared target-promotion primitive. The
+tutorial overlay and `PixiActionHighlightScene` both use it so a live semantic
+target stays in its owning scene graph and renders once above an uninterrupted
+dim backdrop. Contextual action scenes add their shared button below the target;
+they must not restore target frames, cutouts, clones, or local selection boxes.
+
 `createTutorialPixiViewModel(facadeState, { actions })` adapts the existing
 facade state and deliberately drops legacy DOM target objects.
 `overlay.isLessonPanelOpen()` is the public panel-state query used when the

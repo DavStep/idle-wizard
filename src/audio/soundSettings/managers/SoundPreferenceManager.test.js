@@ -10,6 +10,8 @@ describe('SoundPreferenceManager', () => {
     const manager = new SoundPreferenceManager({ storage: memoryStorage() });
 
     expect(manager.getSnapshot()).toEqual({
+      musicVolume: 1,
+      sfxVolume: 1,
       musicEnabled: true,
       sfxEnabled: true,
     });
@@ -23,10 +25,14 @@ describe('SoundPreferenceManager', () => {
     manager.setSfxEnabled(false);
 
     expect(JSON.parse(storage.getItem(SOUND_SETTINGS_STORAGE_KEY))).toEqual({
+      musicVolume: 0,
+      sfxVolume: 0,
       musicEnabled: false,
       sfxEnabled: false,
     });
     expect(new SoundPreferenceManager({ storage }).getSnapshot()).toEqual({
+      musicVolume: 0,
+      sfxVolume: 0,
       musicEnabled: false,
       sfxEnabled: false,
     });
@@ -44,17 +50,50 @@ describe('SoundPreferenceManager', () => {
 
     expect(listener).toHaveBeenCalledTimes(3);
     expect(listener).toHaveBeenNthCalledWith(1, {
+      musicVolume: 1,
+      sfxVolume: 1,
       musicEnabled: true,
       sfxEnabled: true,
     });
     expect(listener).toHaveBeenNthCalledWith(2, {
+      musicVolume: 0,
+      sfxVolume: 1,
       musicEnabled: false,
       sfxEnabled: true,
     });
     expect(listener).toHaveBeenNthCalledWith(3, {
+      musicVolume: 0,
+      sfxVolume: 0,
       musicEnabled: false,
       sfxEnabled: false,
     });
+  });
+
+  it('stores continuous volume and migrates legacy on/off preferences', () => {
+    const storage = memoryStorage();
+    storage.setItem(
+      SOUND_SETTINGS_STORAGE_KEY,
+      JSON.stringify({ musicEnabled: false, sfxEnabled: true }),
+    );
+    const manager = new SoundPreferenceManager({ storage });
+
+    expect(manager.getSnapshot()).toMatchObject({
+      musicVolume: 0,
+      sfxVolume: 1,
+    });
+
+    manager.setMusicVolume(0.37);
+    manager.setSfxVolume(0.62);
+
+    expect(manager.getSnapshot()).toEqual({
+      musicVolume: 0.37,
+      sfxVolume: 0.62,
+      musicEnabled: true,
+      sfxEnabled: true,
+    });
+    expect(new SoundPreferenceManager({ storage }).getSnapshot()).toEqual(
+      manager.getSnapshot(),
+    );
   });
 });
 

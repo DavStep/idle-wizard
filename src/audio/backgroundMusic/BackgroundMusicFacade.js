@@ -16,6 +16,10 @@ export class BackgroundMusicFacade {
     this.manager.setEnabled(enabled);
   }
 
+  setVolume(volume) {
+    this.manager.setVolume(volume);
+  }
+
   destroy() {
     this.manager.destroy();
   }

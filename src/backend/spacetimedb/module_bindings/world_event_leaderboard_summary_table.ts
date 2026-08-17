@@ -23,4 +23,5 @@ export default __t.row({
   updatedAt: __t.timestamp().name("updated_at"),
   playerLevel: __t.u32().name("player_level"),
   rank: __t.u32(),
+  frame: __t.string(),
 });

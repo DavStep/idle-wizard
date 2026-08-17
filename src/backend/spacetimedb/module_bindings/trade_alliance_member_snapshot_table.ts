@@ -22,4 +22,5 @@ export default __t.row({
   totalContribution: __t.u64().name("total_contribution"),
   dailyContribution: __t.u64().name("daily_contribution"),
   dayKey: __t.string().name("day_key"),
+  frame: __t.string(),
 });

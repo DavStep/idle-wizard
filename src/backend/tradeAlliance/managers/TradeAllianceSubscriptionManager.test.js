@@ -264,7 +264,7 @@ describe('TradeAllianceSubscriptionManager', () => {
     });
   });
 
-  it('keeps the selected character on public alliance member rows', () => {
+  it('keeps the selected profile visuals on public alliance member rows', () => {
     const manager = new TradeAllianceSubscriptionManager();
 
     manager.publicDataActive = true;
@@ -277,6 +277,7 @@ describe('TradeAllianceSubscriptionManager', () => {
           memberIdentity: 'member-1',
           username: 'Mira',
           character: 'mira',
+          frame: 'violet',
           playerLevel: 12,
           role: 'tradeMaster',
         },
@@ -293,6 +294,7 @@ describe('TradeAllianceSubscriptionManager', () => {
     expect(manager.getSnapshot().members[0]).toMatchObject({
       memberIdentity: 'member-1',
       character: 'mira',
+      frame: 'violet',
     });
   });
 

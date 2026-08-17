@@ -28,6 +28,7 @@ export class BackgroundMusicManager {
     this.logger = logger;
     this.audio = null;
     this.enabled = true;
+    this.volume = 1;
     this.started = false;
     this.disposed = false;
     this.gestureListenersInstalled = false;
@@ -54,6 +55,16 @@ export class BackgroundMusicManager {
   setEnabled(enabled) {
     this.enabled = enabled !== false;
     if (this.started) {
+      this.syncPlayback();
+    }
+  }
+
+  setVolume(volume) {
+    const wasEnabled = this.enabled;
+    this.volume = normalizeVolume(volume);
+    this.enabled = this.volume > 0;
+    this.syncAudioVolume();
+    if (this.started && wasEnabled !== this.enabled) {
       this.syncPlayback();
     }
   }
@@ -122,11 +133,17 @@ export class BackgroundMusicManager {
       }
       this.audio.loop = true;
       this.audio.preload = 'none';
-      this.audio.volume = BACKGROUND_MUSIC_VOLUME;
+      this.syncAudioVolume();
       return this.audio;
     } catch (error) {
       this.logger?.warn?.('Unable to initialize background music.', error);
       return null;
+    }
+  }
+
+  syncAudioVolume() {
+    if (this.audio) {
+      this.audio.volume = BACKGROUND_MUSIC_VOLUME * this.volume;
     }
   }
 
@@ -196,4 +213,11 @@ export class BackgroundMusicManager {
     );
     this.audio = null;
   }
+}
+
+function normalizeVolume(volume) {
+  const numeric = Number(volume);
+  return Number.isFinite(numeric)
+    ? Math.max(0, Math.min(1, numeric))
+    : 0;
 }

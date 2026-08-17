@@ -25,4 +25,5 @@ export default __t.row({
   totalPlayTimeSeconds: __t.u64().name("total_play_time_seconds"),
   updatedAt: __t.timestamp().name("updated_at"),
   character: __t.string(),
+  frame: __t.string(),
 });

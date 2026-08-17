@@ -1,5 +1,6 @@
 import { normalizeTradeAllianceTagColor } from '../../../shared/tradeAllianceTagColors.js';
 import { normalizePlayerCharacter } from '../../../player/playerCharacters.js';
+import { normalizePlayerFrame } from '../../../player/playerFrames.js';
 
 const PLAYER_INFO_QUERY = 'SELECT * FROM player_info_summary';
 const EMPTY_SNAPSHOT = {
@@ -86,6 +87,9 @@ export class PlayerInfoSubscriptionManager {
       username: typeof username === 'string' ? username : 'Wizard',
       character: normalizePlayerCharacter(
         row.character ?? row.playerCharacter ?? row.player_character,
+      ),
+      frame: normalizePlayerFrame(
+        row.frame ?? row.playerFrame ?? row.player_frame,
       ),
       allianceId: this.toIdentityKey(row.allianceId ?? row.alliance_id),
       allianceName: String(row.allianceName ?? row.alliance_name ?? ''),

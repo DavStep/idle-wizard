@@ -1,6 +1,9 @@
 import { describe, expect, it, vi } from "vitest";
 
-import { PixiPagesFacade } from "./PixiPagesFacade.js";
+import {
+  PixiPagesFacade,
+  PIXI_WORLD_CHAT_REPORT_HIGHLIGHT_SURFACE_ID,
+} from "./PixiPagesFacade.js";
 
 describe("PixiPagesFacade", () => {
   it("reuses the gameplay snapshot delivered by the subscription", () => {
@@ -93,7 +96,7 @@ describe("PixiPagesFacade", () => {
     });
   });
 
-  it("keeps a held World Chat message selected and opens its report form", () => {
+  it("promotes a held World Chat row into the highlight scene before reporting", () => {
     const harness = createHarness();
     harness.dependencies.worldChatFacade.getSnapshot.mockReturnValue({
       connected: true,
@@ -116,11 +119,60 @@ describe("PixiPagesFacade", () => {
     expect(dialogModel.rows[0].onLongPress()).toBe(true);
     dialogModel = harness.pageSurface.openDialog.mock.lastCall[1];
     expect(dialogModel.rows[0].selectedForReport).toBe(true);
-    expect(dialogModel.rows[0].onReport()).toBe(true);
+    expect(dialogModel.rows[0].reportHighlightId).toBe(
+      "world-chat-report:message-one",
+    );
+    const highlight = harness.getBoundGlobal(
+      PIXI_WORLD_CHAT_REPORT_HIGHLIGHT_SURFACE_ID,
+    );
+    expect(highlight).toMatchObject({
+      visible: true,
+      targetId: "world-chat-report:message-one",
+      actionLabel: "Report",
+      actionVariant: "red",
+    });
+    expect(harness.inputRouter.pushModal).toHaveBeenCalledWith(
+      expect.objectContaining({
+        id: PIXI_WORLD_CHAT_REPORT_HIGHLIGHT_SURFACE_ID,
+        root: harness.highlightSurface.root,
+      }),
+    );
+
+    expect(highlight.onAction()).toBe(true);
 
     expect(openGlobal).toHaveBeenCalledWith("chatReport", {
       message: expect.objectContaining({ id: "message-one" }),
       focusInput: true,
+    });
+  });
+
+  it("opens a deterministic production report-highlight preview", () => {
+    const harness = createHarness();
+    const pages = new PixiPagesFacade(harness.dependencies);
+    pages.mount();
+
+    expect(pages.showWorldChatReportHighlightPreview()).toEqual({
+      ok: true,
+      messageId: "preview-report-message",
+      targetId: "world-chat-report:preview-report-message",
+    });
+    expect(harness.pageSurface.openDialog).toHaveBeenLastCalledWith(
+      "worldChat",
+      expect.objectContaining({
+        rows: expect.arrayContaining([
+          expect.objectContaining({
+            id: "preview-report-message",
+            selectedForReport: true,
+            reportHighlightId: "world-chat-report:preview-report-message",
+          }),
+        ]),
+      }),
+    );
+    expect(
+      harness.getBoundGlobal(PIXI_WORLD_CHAT_REPORT_HIGHLIGHT_SURFACE_ID),
+    ).toMatchObject({
+      visible: true,
+      targetId: "world-chat-report:preview-report-message",
     });
   });
 
@@ -2217,6 +2269,7 @@ describe("PixiPagesFacade", () => {
 
 function createHarness({ gameplaySnapshot = createGameplaySnapshot() } = {}) {
   const factories = new Map();
+  const globalFactories = new Map();
   const boundPages = new Map();
   const boundGlobals = new Map();
   const bottomSurface = {
@@ -2229,6 +2282,7 @@ function createHarness({ gameplaySnapshot = createGameplaySnapshot() } = {}) {
   const transientEffects = {
     emitReward: vi.fn(),
   };
+  const highlightSurface = { root: { label: "actionHighlightScene" } };
   const runtime = {
     initialized: true,
     bindPage: vi.fn((pageId, model) => {
@@ -2242,7 +2296,11 @@ function createHarness({ gameplaySnapshot = createGameplaySnapshot() } = {}) {
     closeAllDialogs: vi.fn(),
     closeDialog: vi.fn(),
     getOpenDialogIds: vi.fn(() => []),
-    getGlobalSurface: vi.fn(() => bottomSurface),
+    getGlobalSurface: vi.fn((surfaceId) =>
+      surfaceId === PIXI_WORLD_CHAT_REPORT_HIGHLIGHT_SURFACE_ID
+        ? highlightSurface
+        : bottomSurface,
+    ),
     getPage: vi.fn(() => pageSurface),
   };
   let pageSwipeRegistration = null;
@@ -2253,10 +2311,15 @@ function createHarness({ gameplaySnapshot = createGameplaySnapshot() } = {}) {
     }),
     setBackHandler: vi.fn(),
     setEscapeHandler: vi.fn(),
+    pushModal: vi.fn(() => ({ unregister: vi.fn() })),
   };
   const renderFacade = {
     registerPage: vi.fn(function registerPage(pageId, factory) {
       factories.set(pageId, factory);
+      return this;
+    }),
+    registerGlobalSurface: vi.fn(function registerGlobalSurface(surfaceId, factory) {
+      globalFactories.set(surfaceId, factory);
       return this;
     }),
     getUiRuntime: vi.fn(() => runtime),
@@ -2344,10 +2407,13 @@ function createHarness({ gameplaySnapshot = createGameplaySnapshot() } = {}) {
   return {
     dependencies,
     factories,
+    globalFactories,
     runtime,
+    inputRouter,
     gameplayFacade,
     gardenSoundFacade: dependencies.gardenSoundFacade,
     transientEffects,
+    highlightSurface,
     bottomSurface,
     pageSurface,
     publishGameplaySnapshot: (snapshot) => gameplaySnapshotListener?.(snapshot),

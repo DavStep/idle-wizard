@@ -41,7 +41,6 @@ import {
 import { getPlayerFrameTint } from '../../../../player/playerFrames.js';
 import {
   DEFAULT_PIXI_THEME_SNAPSHOT,
-  PIXI_PROGRESS_VISUALS,
   PIXI_ROOT_RUN_ASSETS,
   PIXI_ROOT_RUN_GEOMETRY,
   PIXI_UI_GEOMETRY,
@@ -138,10 +137,8 @@ const WORLD_CHAT_SYSTEM_BACKGROUND = '#efd0a2';
 const WORLD_CHAT_SYSTEM_TITLE_COLOR = '#432d20';
 const WORLD_CHAT_SYSTEM_PLAYER_COLOR = '#72533a';
 const WORLD_CHAT_REPORT_HOLD_MS = 530;
-const WORLD_CHAT_REPORT_ACTION_WIDTH = 74;
 const WORLD_CHAT_REPORT_ACTION_HEIGHT = 29;
 const WORLD_CHAT_REPORT_ACTION_GAP = 4;
-const WORLD_CHAT_REPORT_SELECTION_ALPHA = 0.16;
 const SCROLL_ROW_RENDER_BUFFER = 16;
 const DISCOVERY_ROW_GAP = 6;
 const DISCOVERY_MAX_INGREDIENTS = 6;
@@ -2298,6 +2295,7 @@ export class WorkshopDialogPixi {
 
     const token = ++this.composerSubmissionToken;
     this.composerSubmitting = true;
+    this.composerField.setValue('');
     this.updateComposerControl();
 
     let result;
@@ -2312,8 +2310,8 @@ export class WorkshopDialogPixi {
     }
 
     this.composerSubmitting = false;
-    if (result?.ok === true) {
-      this.composerField.setValue('');
+    if (result?.ok !== true && this.composerField.value === '') {
+      this.composerField.setValue(body);
     }
     this.updateStatus();
     this.updateComposerControl();
@@ -2814,9 +2812,6 @@ export class WorldChatMessageRowPixi {
   constructor({ dialog }) {
     this.dialog = dialog;
     this.root = new Container({ label: `${dialog.dialogId}-message-row` });
-    this.selectionBackground = new Graphics({
-      label: `${dialog.dialogId}-message-row:selection-background`,
-    });
     this.systemBackground = new Graphics({
       label: `${dialog.dialogId}-message-row:system-background`,
     });
@@ -2856,19 +2851,7 @@ export class WorldChatMessageRowPixi {
       align: 'right',
     });
     this.timestamp.anchor.set(1, 0);
-    this.reportButton = new PixiTextButton({
-      assetManager: dialog.assetManager,
-      inputRouter: dialog.inputRouter,
-      text: 'Report',
-      color: 'red',
-      sizeTier: 30,
-      width: WORLD_CHAT_REPORT_ACTION_WIDTH,
-      height: WORLD_CHAT_REPORT_ACTION_HEIGHT,
-      action: () => this.activateReport(),
-      label: `${dialog.dialogId}-message-row:report`,
-    });
     this.root.addChild(
-      this.selectionBackground,
       this.systemBackground,
       this.avatar,
       this.tag,
@@ -2876,7 +2859,6 @@ export class WorldChatMessageRowPixi {
       this.systemPlayerUsername,
       this.body,
       this.timestamp,
-      this.reportButton,
     );
     this.holdTimer = null;
     this.holdTriggered = false;
@@ -2963,14 +2945,29 @@ export class WorldChatMessageRowPixi {
       this.isSystem && this.model.systemPlayerUsername,
     );
     this.systemPlayerUsername.renderable = this.systemPlayerUsername.visible;
-    this.reportButton.visible = this.selectedForReport;
-    this.reportButton.renderable = this.selectedForReport;
-    this.reportButton.setEnabled(
-      this.selectedForReport && typeof this.model.onReport === 'function',
-    );
     this.syncInteraction();
     this.applyTheme(this.dialog.contentTheme ?? this.dialog.theme);
     this.targetId = this.model.semanticId ?? null;
+
+    const nextReportTargetId = this.model.reportHighlightId ?? null;
+    if (
+      this.reportTargetId &&
+      this.reportTargetId !== nextReportTargetId
+    ) {
+      this.dialog.unregisterTarget(this.reportTargetId);
+    }
+    this.reportTargetId = nextReportTargetId;
+    if (this.reportTargetId) {
+      this.dialog.registerTarget({
+        semanticId: this.reportTargetId,
+        displayObject: this.root,
+        state: () => ({
+          enabled: this.canReport(),
+          interactive: this.canReport(),
+          visible: this.root.visible && this.root.renderable,
+        }),
+      });
+    }
 
     if (this.targetId) {
       this.dialog.registerTarget({
@@ -2997,17 +2994,6 @@ export class WorldChatMessageRowPixi {
       ? WORLD_CHAT_OWN_BODY_TOP
       : WORLD_CHAT_BODY_TOP;
     const timestampInset = this.isSystem ? 6 : 0;
-    this.selectionBackground.clear();
-    if (this.selectedForReport) {
-      const selectionColor = PIXI_PROGRESS_VISUALS.tones.red.fill;
-      this.selectionBackground
-        .roundRect(0, 0, width, height, 5)
-        .fill({
-          color: selectionColor,
-          alpha: WORLD_CHAT_REPORT_SELECTION_ALPHA,
-        })
-        .stroke({ color: selectionColor, width: 2, join: 'round' });
-    }
     this.systemBackground
       .clear()
       .roundRect(0, 0, width, height, 5)
@@ -3066,14 +3052,6 @@ export class WorldChatMessageRowPixi {
       0,
       Math.max(1, this.systemPlayerUsername.width),
       Math.max(1, this.systemPlayerUsername.height),
-    );
-    this.reportButton.position.set(
-      width - WORLD_CHAT_REPORT_ACTION_WIDTH,
-      height - WORLD_CHAT_REPORT_ACTION_HEIGHT,
-    );
-    this.reportButton.setSize(
-      WORLD_CHAT_REPORT_ACTION_WIDTH,
-      WORLD_CHAT_REPORT_ACTION_HEIGHT,
     );
     this.root.hitArea = new Rectangle(0, 0, width, height);
   }
@@ -3151,7 +3129,6 @@ export class WorldChatMessageRowPixi {
       align: 'right',
       fill: WORLD_CHAT_TIMESTAMP_COLOR,
     });
-    this.reportButton.applyTheme(resolvedTheme);
   }
 
   canReport() {
@@ -3206,16 +3183,6 @@ export class WorldChatMessageRowPixi {
       return false;
     }
     return this.activatePlayer();
-  }
-
-  activateReport() {
-    if (
-      !this.selectedForReport ||
-      typeof this.model?.onReport !== 'function'
-    ) {
-      return false;
-    }
-    return this.model.onReport(this.model) ?? true;
   }
 
   stopHold({ preserveTriggered = false } = {}) {
@@ -3293,7 +3260,11 @@ export class WorldChatMessageRowPixi {
     if (this.targetId) {
       this.dialog.unregisterTarget(this.targetId);
     }
+    if (this.reportTargetId) {
+      this.dialog.unregisterTarget(this.reportTargetId);
+    }
     this.targetId = null;
+    this.reportTargetId = null;
     this.model = null;
     this.isSystem = false;
     this.isOwn = false;
@@ -3302,10 +3273,6 @@ export class WorldChatMessageRowPixi {
     this.body.setRuns([]);
     setText(this.systemPlayerUsername, '');
     this.root.visible = false;
-    this.selectionBackground.clear();
-    this.reportButton.visible = false;
-    this.reportButton.renderable = false;
-    this.reportButton.setEnabled(false);
     this.syncInteraction();
   }
 
@@ -3313,6 +3280,9 @@ export class WorldChatMessageRowPixi {
     this.stopHold();
     if (this.targetId) {
       this.dialog.unregisterTarget(this.targetId);
+    }
+    if (this.reportTargetId) {
+      this.dialog.unregisterTarget(this.reportTargetId);
     }
     disposeInputRegistration(this.rowRegistration);
     this.rowRegistration = null;
@@ -3322,7 +3292,6 @@ export class WorldChatMessageRowPixi {
     this.avatarRegistration = null;
     this.usernameRegistration = null;
     this.systemPlayerRegistration = null;
-    this.reportButton.destroy();
     this.root.destroy({ children: true });
   }
 }
@@ -3686,6 +3655,7 @@ export class AllianceMemberRow {
     this.visual = new Container({
       label: `${dialog.dialogId}-alliance-member-visual`,
     });
+    this.visual.eventMode = 'none';
     this.background = new PixiNineSliceFrame({
       texture:
         dialog.assetManager?.getTexture?.(PIXI_ROOT_RUN_ASSETS.settingsRow) ??

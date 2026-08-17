@@ -100,6 +100,7 @@ export class UiClickSoundManager {
     this.random = random;
     this.logger = logger;
     this.enabled = true;
+    this.volume = 1;
     this.context = null;
     this.masterGain = null;
     this.audioUnavailable = false;
@@ -150,6 +151,12 @@ export class UiClickSoundManager {
 
   setEnabled(enabled) {
     this.enabled = enabled !== false;
+    this.syncMasterGain();
+  }
+
+  setVolume(volume) {
+    this.volume = normalizeVolume(volume);
+    this.enabled = this.volume > 0;
     this.syncMasterGain();
   }
 
@@ -278,7 +285,9 @@ export class UiClickSoundManager {
 
   syncMasterGain() {
     if (this.masterGain) {
-      this.masterGain.gain.value = this.enabled ? MASTER_GAIN : 0;
+      this.masterGain.gain.value = this.enabled
+        ? MASTER_GAIN * this.volume
+        : 0;
     }
   }
 
@@ -466,6 +475,13 @@ export class UiClickSoundManager {
   randomBetween(min, max) {
     return min + (max - min) * this.random();
   }
+}
+
+function normalizeVolume(volume) {
+  const numeric = Number(volume);
+  return Number.isFinite(numeric)
+    ? Math.max(0, Math.min(1, numeric))
+    : 0;
 }
 
 function setAudioParamValue(param, value, atTime) {

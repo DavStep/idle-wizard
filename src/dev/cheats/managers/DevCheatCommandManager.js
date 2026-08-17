@@ -230,6 +230,12 @@ const UI_SURFACE_DEFINITIONS = Object.freeze([
     aliases: ['event', 'worldNotice'],
   },
   { id: 'worldChat', kind: 'dialog', dialogId: 'worldChat', aliases: ['chat'] },
+  {
+    id: 'worldChatReportHighlight',
+    kind: 'preview',
+    setup: 'worldChatReportHighlight',
+    aliases: ['reportHighlight'],
+  },
   { id: 'market', kind: 'dialog', dialogId: 'market', aliases: ['shopDialog'] },
   {
     id: 'traderStallLoader',
@@ -2028,6 +2034,10 @@ export class DevCheatCommandManager {
       return this.openBottomRoomTabsSurface(surface);
     }
 
+    if (surface.setup === 'worldChatReportHighlight') {
+      return this.openWorldChatReportHighlightSurface(surface);
+    }
+
     if (surface.setup === 'potionDiscoveries') {
       return this.openPotionDiscoveriesSurface(surface, options);
     }
@@ -2081,6 +2091,25 @@ export class DevCheatCommandManager {
         ...(surface.options ?? {}),
         ...(options ?? {}),
       }),
+      surface,
+    );
+  }
+
+  openWorldChatReportHighlightSurface(surface) {
+    if (
+      typeof this.pagesFacade?.showWorldChatReportHighlightPreview
+      !== 'function'
+    ) {
+      return this.decorateUiResult(
+        surface.id,
+        { ok: false, reason: 'pages_missing' },
+        surface,
+      );
+    }
+
+    return this.decorateUiResult(
+      surface.id,
+      this.pagesFacade.showWorldChatReportHighlightPreview(),
       surface,
     );
   }

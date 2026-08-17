@@ -34,9 +34,11 @@ export class AuthSessionManager {
         fallbackTokens: [],
       };
     const fallbackTokens = storedAuth.fallbackTokens ?? [];
+    const rememberedAccount =
+      this.oidcManager?.getSnapshot?.()?.remembered === true;
     const auth = {
       token: storedAuth.token,
-      canRetryWithoutToken: Boolean(storedAuth.token),
+      canRetryWithoutToken: Boolean(storedAuth.token) && !rememberedAccount,
     };
 
     if (fallbackTokens.length > 0) {

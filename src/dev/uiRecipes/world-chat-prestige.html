@@ -36,6 +36,7 @@
       import { WorkshopDialogPixi } from '/src/rendering/pixi/pages/workshop/WorkshopDialogPixi.js';
       import { SemanticTargetRegistry } from '/src/rendering/pixi/retained/SemanticTargetRegistry.js';
       import { PixiApplicationManager } from '/src/rendering/pixi/runtime/PixiApplicationManager.js';
+      import { TextEntryService } from '/src/rendering/textEntry/TextEntryService.js';
 
       const PRESTIGE_ICON_ASSET =
         'source:assets/icons/icon-prestige-star.png';
@@ -49,6 +50,7 @@
       const applicationManager = new PixiApplicationManager({ canvas });
       const assetManager = new PixiAssetManager();
       const inputRouter = new PixiInputRouter();
+      const textEntryService = new TextEntryService({ canvas });
 
       await Promise.all([
         applicationManager.initialize(),
@@ -67,6 +69,7 @@
         onClose: () => false,
         parent: applicationManager.layers.dialogsSource,
         semanticTargets,
+        textEntryService,
       });
       dialog.bind({
         title: 'World Chat',

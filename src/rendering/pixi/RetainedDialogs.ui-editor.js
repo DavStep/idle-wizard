@@ -1328,7 +1328,7 @@ const GLOBAL_DIALOG_SCENARIOS = Object.freeze({
         username: 'Mira',
         version: '0.9.0',
       },
-      preferences: { haptics: true, music: true, sfx: true, theme: false },
+      preferences: { haptics: true, music: 72, sfx: 58, theme: false },
       tabId: 'configurations',
     })),
     scenario('wizard', 'Wizard profile', () => ({

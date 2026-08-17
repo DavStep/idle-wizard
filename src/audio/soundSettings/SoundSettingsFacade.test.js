@@ -6,13 +6,13 @@ import { SoundSettingsFacade } from './SoundSettingsFacade.js';
 describe('SoundSettingsFacade', () => {
   it('syncs music and sfx preferences to their audio features', () => {
     const backgroundMusicFacade = {
-      setEnabled: vi.fn(),
+      setVolume: vi.fn(),
     };
     const uiClickSoundFacade = {
-      setEnabled: vi.fn(),
+      setVolume: vi.fn(),
     };
     const gardenSoundFacade = {
-      setEnabled: vi.fn(),
+      setVolume: vi.fn(),
     };
     const facade = new SoundSettingsFacade({
       preferenceManager: new SoundPreferenceManager({ storage: memoryStorage() }),
@@ -21,21 +21,24 @@ describe('SoundSettingsFacade', () => {
       uiClickSoundFacade,
     });
 
-    facade.setSfxEnabled(false);
-    facade.setMusicEnabled(false);
-    facade.setSfxEnabled(true);
+    facade.setSfxVolume(0.42);
+    facade.setMusicVolume(0.25);
+    facade.setSfxVolume(0.78);
 
-    expect(uiClickSoundFacade.setEnabled).toHaveBeenCalledTimes(3);
-    expect(uiClickSoundFacade.setEnabled).toHaveBeenNthCalledWith(1, true);
-    expect(uiClickSoundFacade.setEnabled).toHaveBeenNthCalledWith(2, false);
-    expect(uiClickSoundFacade.setEnabled).toHaveBeenNthCalledWith(3, true);
-    expect(gardenSoundFacade.setEnabled).toHaveBeenCalledTimes(3);
-    expect(gardenSoundFacade.setEnabled).toHaveBeenNthCalledWith(1, true);
-    expect(gardenSoundFacade.setEnabled).toHaveBeenNthCalledWith(2, false);
-    expect(gardenSoundFacade.setEnabled).toHaveBeenNthCalledWith(3, true);
-    expect(backgroundMusicFacade.setEnabled).toHaveBeenCalledTimes(2);
-    expect(backgroundMusicFacade.setEnabled).toHaveBeenNthCalledWith(1, true);
-    expect(backgroundMusicFacade.setEnabled).toHaveBeenNthCalledWith(2, false);
+    expect(uiClickSoundFacade.setVolume.mock.calls).toEqual([
+      [1],
+      [0.42],
+      [0.78],
+    ]);
+    expect(gardenSoundFacade.setVolume.mock.calls).toEqual([
+      [1],
+      [0.42],
+      [0.78],
+    ]);
+    expect(backgroundMusicFacade.setVolume.mock.calls).toEqual([
+      [1],
+      [0.25],
+    ]);
 
     facade.destroy();
   });

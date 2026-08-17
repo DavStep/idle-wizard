@@ -1,4 +1,5 @@
 import { normalizePlayerCharacter } from '../../../player/playerCharacters.js';
+import { normalizePlayerFrame } from '../../../player/playerFrames.js';
 import { normalizeTradeAllianceTagColor } from '../../../shared/tradeAllianceTagColors.js';
 
 const WORLD_EVENT_LEADERBOARD_QUERY = 'SELECT * FROM world_event_leaderboard_summary';
@@ -156,6 +157,7 @@ export class WorldEventLeaderboardSubscriptionManager {
         row.allianceTagColor ?? row.alliance_tag_color,
       ),
       character: normalizePlayerCharacter(row.character),
+      frame: normalizePlayerFrame(row.frame),
       points: this.toNumber(row.points),
     };
   }

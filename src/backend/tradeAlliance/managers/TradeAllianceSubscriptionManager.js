@@ -1,4 +1,5 @@
 import { normalizePlayerCharacter } from '../../../player/playerCharacters.js';
+import { normalizePlayerFrame } from '../../../player/playerFrames.js';
 import { normalizeTradeAllianceTagColor } from '../../../shared/tradeAllianceTagColors.js';
 
 const ALLIANCES_QUERY = 'SELECT * FROM trade_alliance_snapshot';
@@ -514,6 +515,9 @@ export class TradeAllianceSubscriptionManager {
       username: String(row.username ?? 'Wizard'),
       character: normalizePlayerCharacter(
         row.character ?? row.playerCharacter ?? row.player_character,
+      ),
+      frame: normalizePlayerFrame(
+        row.frame ?? row.playerFrame ?? row.player_frame,
       ),
       playerLevel: this.toPlayerLevel(row.playerLevel ?? row.player_level),
       role,

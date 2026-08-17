@@ -63,6 +63,11 @@ describe('GardenSoundManager', () => {
     expect(clips.every((clip) => clip.currentTime === 0)).toBe(true);
     expect(clips.every((clip) => clip.playbackRate === 1)).toBe(true);
     expect(clips.every((clip) => clip.volume === 1)).toBe(true);
+
+    manager.setVolume(0.4);
+    expect(clips.every((clip) => clip.volume === 0.4)).toBe(true);
+    expect(manager.playPlant()).toBe(true);
+    expect(clips.at(-1).volume).toBe(0.4);
   });
 
   it('avoids immediate repeats per cue and stops active audio when muted', () => {

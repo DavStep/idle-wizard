@@ -55,6 +55,7 @@ export class GardenSoundManager {
     this.random = random;
     this.logger = logger;
     this.enabled = true;
+    this.volume = 1;
     this.activeClips = new Set();
     this.cues = new Map([
       ['plant', this.createCue(plantSampleUrls)],
@@ -64,6 +65,17 @@ export class GardenSoundManager {
 
   setEnabled(enabled) {
     this.enabled = enabled !== false;
+    if (!this.enabled) {
+      this.stopActiveClips();
+    }
+  }
+
+  setVolume(volume) {
+    this.volume = normalizeVolume(volume);
+    this.enabled = this.volume > 0;
+    for (const clip of this.activeClips) {
+      clip.volume = GARDEN_ACTION_VOLUME * this.volume;
+    }
     if (!this.enabled) {
       this.stopActiveClips();
     }
@@ -94,7 +106,7 @@ export class GardenSoundManager {
     }
 
     clip.preload = 'auto';
-    clip.volume = GARDEN_ACTION_VOLUME;
+    clip.volume = GARDEN_ACTION_VOLUME * this.volume;
     clip.playbackRate = 1;
 
     try {
@@ -197,4 +209,11 @@ export class GardenSoundManager {
     }
     this.activeClips.clear();
   }
+}
+
+function normalizeVolume(volume) {
+  const numeric = Number(volume);
+  return Number.isFinite(numeric)
+    ? Math.max(0, Math.min(1, numeric))
+    : 0;
 }

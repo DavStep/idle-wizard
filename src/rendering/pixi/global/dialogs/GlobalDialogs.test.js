@@ -435,8 +435,8 @@ describe('retained global Pixi dialogs', () => {
     const settings = harness.registry.open(GLOBAL_DIALOG_IDS.SETTINGS, {
       preferences: {
         haptics: true,
-        music: true,
-        sfx: true,
+        music: 72,
+        sfx: 43,
         theme: false,
       },
     });
@@ -605,7 +605,11 @@ describe('retained global Pixi dialogs', () => {
     expect(
       settings.preferenceRows[0].control.activate({ localX: 0 }),
     ).toBe(true);
-    expect(togglePreference).toHaveBeenCalledWith('sfx', false);
+    expect(togglePreference).toHaveBeenCalledWith('sfx', 0);
+    expect(
+      settings.preferenceRows[1].control.activate({ localX: 75 }),
+    ).toBe(true);
+    expect(togglePreference).toHaveBeenCalledWith('music', 62);
     expect(settings.preferenceRows[3].control.activate()).toBe(true);
     expect(togglePreference).toHaveBeenCalledWith('theme', true);
     await settings.accountConnectButton.activate();

@@ -877,19 +877,28 @@ export class PixiViewModelFactory {
           const joinMode = candidate.joinMode ?? 'apply';
           const memberRows = members
             .filter((member) => member.allianceId === allianceId)
-            .map((member, memberIndex) => ({
-              id: member.memberIdentity ?? `${allianceId}:member:${memberIndex}`,
-              username: member.username ?? 'Wizard',
-              roleLabel:
-                TRADE_ALLIANCE_ROLE_LABELS[member.role] ??
-                member.role ??
-                'trader',
-              levelLabel: `Lv ${normalizeVisibleLevel(member.playerLevel) ?? 1}`,
-              semanticId: `workshop.alliance.member.${
-                member.memberIdentity ?? memberIndex
-              }`,
-              onActivate: () => actions.openPlayer?.(member),
-            }));
+            .map((member, memberIndex) => {
+              const player = createTradeAlliancePlayerRequest(member);
+              return {
+                id:
+                  player.identity ||
+                  `${allianceId}:member:${memberIndex}`,
+                identity: player.identity,
+                memberIdentity: member.memberIdentity ?? '',
+                username: player.username,
+                character: player.character,
+                frame: player.frame,
+                roleLabel:
+                  TRADE_ALLIANCE_ROLE_LABELS[member.role] ??
+                  member.role ??
+                  'trader',
+                levelLabel: `Lv ${normalizeVisibleLevel(member.playerLevel) ?? 1}`,
+                semanticId: `workshop.alliance.member.${
+                  player.identity || memberIndex
+                }`,
+                onActivate: () => actions.openPlayer?.(player),
+              };
+            });
           const action =
             application
               ? {
@@ -952,31 +961,28 @@ export class PixiViewModelFactory {
             String(member.allianceId ?? '').trim() === String(allianceId).trim(),
         )
       : members;
-    const memberRows = ownedMembers.map((row, index) => ({
-      id:
-        String(
-          row.memberIdentity ??
-            row.identity ??
-            row.id ??
-            '',
-        ).trim() || `${allianceId || 'alliance'}:member:${index}`,
-      memberIdentity: row.memberIdentity ?? row.identity ?? '',
-      username:
-        row.username ??
-        row.name ??
-        row.allianceName ??
-        'Wizard',
-      character: row.character ?? 'elara',
-      frame: row.frame ?? 'plain',
-      roleLabel:
-        TRADE_ALLIANCE_ROLE_LABELS[row.role] ??
-        titleCaseTradeAllianceLabel(row.role ?? 'trader'),
-      levelLabel: `Lv ${normalizeVisibleLevel(row.playerLevel) ?? 1}`,
-      semanticId: `workshop.alliance.member.${
-        row.memberIdentity ?? row.identity ?? index
-      }`,
-      onActivate: () => actions.openPlayer?.(row),
-    }));
+    const memberRows = ownedMembers.map((row, index) => {
+      const player = createTradeAlliancePlayerRequest(row);
+      return {
+        id:
+          player.identity ||
+          String(row.id ?? '').trim() ||
+          `${allianceId || 'alliance'}:member:${index}`,
+        identity: player.identity,
+        memberIdentity: row.memberIdentity ?? row.identity ?? '',
+        username: player.username,
+        character: player.character,
+        frame: player.frame,
+        roleLabel:
+          TRADE_ALLIANCE_ROLE_LABELS[row.role] ??
+          titleCaseTradeAllianceLabel(row.role ?? 'trader'),
+        levelLabel: `Lv ${normalizeVisibleLevel(row.playerLevel) ?? 1}`,
+        semanticId: `workshop.alliance.member.${
+          player.identity || index
+        }`,
+        onActivate: () => actions.openPlayer?.(player),
+      };
+    });
     const memberCount = Math.max(
       memberRows.length,
       Math.floor(Number(alliance.memberCount) || 0),
@@ -1728,6 +1734,9 @@ export class PixiViewModelFactory {
           typeof actions.selectWorldChatMessageForReport === 'function';
         const selectedForReport =
           canReport && String(id) === String(selectedReportMessageId ?? '');
+        const reportHighlightId = canReport
+          ? `world-chat-report:${id}`
+          : null;
         const canOpenPlayer =
           typeof actions.openPlayer === 'function' &&
           (!isSystem || Boolean(systemPlayer));
@@ -1751,6 +1760,7 @@ export class PixiViewModelFactory {
           ageLabel: formatWorldChatMessageAge(message.sentAtMs),
           canReport,
           selectedForReport,
+          reportHighlightId,
           semanticId: canOpenPlayer
             ? `${isSystem ? 'world-chat-system-player' : 'world-chat-player'}:${id}`
             : null,
@@ -1767,10 +1777,10 @@ export class PixiViewModelFactory {
                       : message,
                   ),
           onLongPress: canReport
-            ? () => actions.selectWorldChatMessageForReport(message)
-            : null,
-          onReport: selectedForReport
-            ? () => actions.openWorldChatReport(message)
+            ? () =>
+                actions.selectWorldChatMessageForReport(message, {
+                  targetId: reportHighlightId,
+                })
             : null,
         };
       }),
@@ -1884,6 +1894,25 @@ function titleCaseTradeAllianceLabel(value) {
     .replace(/[_-]+/g, ' ')
     .trim()
     .replace(/\b\w/g, (character) => character.toUpperCase());
+}
+
+function createTradeAlliancePlayerRequest(member = {}) {
+  return {
+    ...member,
+    identity: String(
+      member.identity ??
+        member.playerIdentity ??
+        member.memberIdentity ??
+        '',
+    ).trim(),
+    username:
+      member.username ??
+      member.name ??
+      member.allianceName ??
+      'Wizard',
+    character: member.character ?? 'elara',
+    frame: member.frame ?? 'classic',
+  };
 }
 
 function createTradeAllianceQuestRows(tradeAlliance, allianceId, actions) {

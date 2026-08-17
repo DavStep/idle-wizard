@@ -61,7 +61,7 @@ describe('RootRunDevicePreferencesPanel', () => {
     row.destroy({ children: true });
   });
 
-  it('projects sound preferences through the full-width boolean slider', () => {
+  it('projects sound preferences through the full-width percentage slider', () => {
     const presses = [];
     const inputRouter = {
       registerPressTarget: vi.fn((displayObject, descriptor) => {
@@ -83,7 +83,7 @@ describe('RootRunDevicePreferencesPanel', () => {
     });
     vi.spyOn(row.textLabel, 'measuredHeight', 'get').mockReturnValue(19);
     row.setBounds(0, 0, 244);
-    row.bind({ value: true, onChange });
+    row.bind({ value: 64, onChange });
 
     const sliderPress = presses.find(
       ({ displayObject }) => displayObject === row.slider,
@@ -93,8 +93,12 @@ describe('RootRunDevicePreferencesPanel', () => {
     expect(row.slider.controlWidth).toBe(126);
     expect(row.slider.x).toBe(118);
     expect(row.icon.width).toBe(36);
+    expect(row.slider.value).toBe(64);
     expect(sliderPress.descriptor.onActivate({ localX: 0 })).toBe(true);
-    expect(onChange).toHaveBeenCalledWith(false);
+    expect(onChange).toHaveBeenCalledWith(0);
+
+    expect(sliderPress.descriptor.onActivate({ localX: 63 })).toBe(true);
+    expect(onChange).toHaveBeenLastCalledWith(50);
 
     row.destroy({ children: true });
   });

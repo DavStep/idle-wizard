@@ -101,7 +101,7 @@ export default [
     sectionId: FOUNDATION_SECTION,
     properties: [
       { label: 'Production class', value: 'RootRunDevicePreferenceRow' },
-      { label: 'Contract', value: 'Icon-led boolean preference row with compact toggle or full-width slider' },
+      { label: 'Contract', value: 'Icon-led preference row with compact boolean toggle or full-width percentage slider' },
     ],
     usages: [
       {
@@ -110,8 +110,8 @@ export default [
       },
     ],
     scenarios: [
-      { fixture: { controlKind: 'slider', enabled: true, key: 'sfx', text: 'SOUND', value: true }, id: 'slider-on', label: 'Slider on', mount: mountDevicePreferenceRow },
-      { fixture: { controlKind: 'slider', enabled: true, key: 'music', text: 'MUSIC', value: false }, id: 'slider-off', label: 'Slider off', mount: mountDevicePreferenceRow },
+      { fixture: { controlKind: 'slider', enabled: true, key: 'sfx', text: 'SOUND', value: 64 }, id: 'slider-intermediate', label: 'Slider intermediate', mount: mountDevicePreferenceRow },
+      { fixture: { controlKind: 'slider', enabled: true, key: 'music', text: 'MUSIC', value: 0 }, id: 'slider-muted', label: 'Slider muted', mount: mountDevicePreferenceRow },
       { fixture: { enabled: false, key: 'haptics', text: 'VIBRATION', value: true }, id: 'disabled', label: 'Disabled', mount: mountDevicePreferenceRow },
       { fixture: { enabled: true, key: 'theme', text: 'THEME', value: true }, id: 'theme', label: 'Day theme', mount: mountDevicePreferenceRow },
     ],
@@ -500,13 +500,19 @@ async function mountDevicePreferenceRow(context, fixture) {
     }),
   });
   const row = surface.control.row;
+  const valueControl = state.controlKind === 'slider'
+    ? rangeControl('value', 'Volume', 0, 100, 1, () => state.value, (value) => {
+        state.value = Number(value);
+        row.bind({ enabled: state.enabled, value: state.value, onChange: () => true });
+      })
+    : checkboxControl('value', 'On', () => state.value, (value) => {
+        state.value = value;
+        row.bind({ enabled: state.enabled, value, onChange: () => true });
+      });
   return {
     ...surface,
     controls: [
-      checkboxControl('value', 'On', () => state.value, (value) => {
-        state.value = value;
-        row.bind({ enabled: state.enabled, value, onChange: () => true });
-      }),
+      valueControl,
       checkboxControl('enabled', 'Enabled', () => state.enabled, (value) => {
         state.enabled = value;
         row.bind({ enabled: value, value: state.value, onChange: () => true });
@@ -715,7 +721,7 @@ async function mountScrollArea(_context, fixture) {
 }
 
 async function mountDevicePreferences(context, fixture) {
-  const state = { haptics: true, music: true, sound: true, theme: fixture.theme };
+  const state = { haptics: true, music: 72, sound: 58, theme: fixture.theme };
   let panel = null;
   const surface = await createUiEditorPixiSurface({
     assetFilter: settingsAssetFilter,
@@ -728,15 +734,17 @@ async function mountDevicePreferences(context, fixture) {
   return {
     ...surface,
     controls: [
-      checkboxControl('sound', 'Sound', () => state.sound, (value) => handleChange('sound', value)),
-      checkboxControl('music', 'Music', () => state.music, (value) => handleChange('music', value)),
+      rangeControl('sound', 'Sound', 0, 100, 1, () => state.sound, (value) => handleChange('sound', value)),
+      rangeControl('music', 'Music', 0, 100, 1, () => state.music, (value) => handleChange('music', value)),
       checkboxControl('haptics', 'Vibration', () => state.haptics, (value) => handleChange('haptics', value)),
       checkboxControl('theme', 'Day theme', () => state.theme, (value) => handleChange('theme', value)),
     ],
   };
 
   function handleChange(key, value) {
-    state[key] = value === true;
+    state[key] = key === 'sound' || key === 'music'
+      ? Number(value)
+      : value === true;
     panel.bindRows(state, handleChange);
     context.emit('preferenceChanged', { key, value: state[key] });
     context.invalidate();
@@ -1170,7 +1178,7 @@ function createDevicePreferenceRowThumbnail() {
     component: 'RootRunDevicePreferenceRow',
     createControl: ({ assets }) => createDevicePreferenceRowControl({
       assets,
-      fixture: { controlKind: 'slider', enabled: true, key: 'sfx', text: 'SOUND', value: true },
+      fixture: { controlKind: 'slider', enabled: true, key: 'sfx', text: 'SOUND', value: 64 },
       input: null,
     }),
     id: 'compound.device-preference-row',
@@ -1241,7 +1249,7 @@ function createInlineTextThumbnail() {
 }
 
 function createDevicePreferencesThumbnail() {
-  const state = { haptics: true, music: true, sound: true, theme: false };
+  const state = { haptics: true, music: 72, sound: 58, theme: false };
   return createUiEditorPixiThumbnail({
     assetFilter: settingsAssetFilter,
     component: 'RootRunDevicePreferencesPanel',

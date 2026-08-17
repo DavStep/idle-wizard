@@ -482,7 +482,7 @@ export class PixiSettingsDialog extends RetainedGlobalDialog {
         control: widget.control,
         slider: widget.slider,
         toggle: widget.toggle,
-        enabled: true,
+        value: definition.controlKind === 'slider' ? 100 : true,
       };
     });
     this.devicePanel.setRows(
@@ -644,10 +644,10 @@ export class PixiSettingsDialog extends RetainedGlobalDialog {
     this.updateFeedbackPlaceholder();
 
     for (const preference of this.preferenceRows) {
-      preference.enabled = model.preferences[preference.key] !== false;
+      preference.value = model.preferences[preference.key];
       preference.widget.bind({
-        value: preference.enabled,
-        onChange: (enabled) => this.setPreference(preference.key, enabled),
+        value: preference.value,
+        onChange: (value) => this.setPreference(preference.key, value),
       });
     }
     this.accountStatus.setText(
@@ -1217,22 +1217,22 @@ export class PixiSettingsDialog extends RetainedGlobalDialog {
     this.usernameStatus.setText(status ?? '');
   }
 
-  setPreference(key, enabled) {
+  setPreference(key, value) {
     const row = this.preferenceRows.find((candidate) => candidate.key === key);
     if (!row) {
       return false;
     }
     const result =
-      this.actions.togglePreference?.(key, enabled) ??
-      this.actions[`toggle${capitalize(key)}`]?.(enabled);
+      this.actions.togglePreference?.(key, value) ??
+      this.actions[`toggle${capitalize(key)}`]?.(value);
     if (result === false) {
       row.widget.bind({
-        value: row.enabled,
-        onChange: (nextEnabled) => this.setPreference(key, nextEnabled),
+        value: row.value,
+        onChange: (nextValue) => this.setPreference(key, nextValue),
       });
       return false;
     }
-    row.enabled = enabled;
+    row.value = value;
     return result ?? true;
   }
 
@@ -1420,8 +1420,16 @@ function normalizeSettingsModel(
     },
     preferences: {
       haptics: settings.preferences?.haptics ?? settings.hapticsEnabled ?? true,
-      music: settings.preferences?.music ?? settings.musicEnabled ?? true,
-      sfx: settings.preferences?.sfx ?? settings.sfxEnabled ?? true,
+      music: normalizeVolumePercent(
+        settings.preferences?.music ??
+          settings.musicVolume ??
+          settings.musicEnabled,
+      ),
+      sfx: normalizeVolumePercent(
+        settings.preferences?.sfx ??
+          settings.sfxVolume ??
+          settings.sfxEnabled,
+      ),
       theme: settings.preferences?.theme ?? settings.theme === 'day',
     },
     avatars,
@@ -1431,6 +1439,17 @@ function normalizeSettingsModel(
       frame: String(selections.frame ?? settings.frame ?? 'classic'),
     },
   };
+}
+
+function normalizeVolumePercent(value) {
+  if (typeof value === 'boolean') {
+    return value ? 100 : 0;
+  }
+  const numeric = Number(value);
+  if (!Number.isFinite(numeric)) {
+    return 100;
+  }
+  return Math.round(Math.max(0, Math.min(100, numeric)));
 }
 
 function normalizeVisualOption({

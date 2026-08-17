@@ -14,8 +14,8 @@ export class SoundSettingsFacade {
     this.backgroundMusicFacade = backgroundMusicFacade;
     this.gardenSoundFacade = gardenSoundFacade;
     this.uiClickSoundFacade = uiClickSoundFacade;
-    this.lastMusicEnabled = null;
-    this.lastSfxEnabled = null;
+    this.lastMusicVolume = null;
+    this.lastSfxVolume = null;
     this.preferenceUnsubscribe = this.preferenceManager.subscribe((snapshot) =>
       this.syncPreferences(snapshot),
     );
@@ -31,6 +31,22 @@ export class SoundSettingsFacade {
 
   isSfxEnabled() {
     return this.preferenceManager.isSfxEnabled();
+  }
+
+  getMusicVolume() {
+    return this.preferenceManager.getMusicVolume();
+  }
+
+  getSfxVolume() {
+    return this.preferenceManager.getSfxVolume();
+  }
+
+  setMusicVolume(volume) {
+    return this.preferenceManager.setMusicVolume(volume);
+  }
+
+  setSfxVolume(volume) {
+    return this.preferenceManager.setSfxVolume(volume);
   }
 
   setMusicEnabled(enabled) {
@@ -54,25 +70,50 @@ export class SoundSettingsFacade {
   }
 
   syncPreferences(snapshot = this.getSnapshot()) {
-    const musicEnabled = snapshot.musicEnabled !== false;
-    const enabled = snapshot.sfxEnabled !== false;
+    const musicVolume = normalizeVolume(
+      snapshot.musicVolume,
+      snapshot.musicEnabled,
+    );
+    const sfxVolume = normalizeVolume(
+      snapshot.sfxVolume,
+      snapshot.sfxEnabled,
+    );
 
-    if (this.lastMusicEnabled !== musicEnabled) {
-      this.lastMusicEnabled = musicEnabled;
-      this.backgroundMusicFacade?.setEnabled?.(musicEnabled);
+    if (this.lastMusicVolume !== musicVolume) {
+      this.lastMusicVolume = musicVolume;
+      if (this.backgroundMusicFacade?.setVolume) {
+        this.backgroundMusicFacade.setVolume(musicVolume);
+      } else {
+        this.backgroundMusicFacade?.setEnabled?.(musicVolume > 0);
+      }
     }
 
-    if (this.lastSfxEnabled === enabled) {
+    if (this.lastSfxVolume === sfxVolume) {
       return;
     }
 
-    this.lastSfxEnabled = enabled;
-    this.gardenSoundFacade?.setEnabled?.(enabled);
-    this.uiClickSoundFacade?.setEnabled?.(enabled);
+    this.lastSfxVolume = sfxVolume;
+    for (const facade of [
+      this.gardenSoundFacade,
+      this.uiClickSoundFacade,
+    ]) {
+      if (facade?.setVolume) {
+        facade.setVolume(sfxVolume);
+      } else {
+        facade?.setEnabled?.(sfxVolume > 0);
+      }
+    }
   }
 
   destroy() {
     this.preferenceUnsubscribe?.();
     this.preferenceUnsubscribe = null;
   }
+}
+
+function normalizeVolume(volume, legacyEnabled) {
+  if (Number.isFinite(Number(volume))) {
+    return Math.max(0, Math.min(1, Number(volume)));
+  }
+  return legacyEnabled === false ? 0 : 1;
 }

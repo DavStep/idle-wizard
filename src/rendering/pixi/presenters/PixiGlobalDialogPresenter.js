@@ -260,8 +260,14 @@ export class PixiGlobalDialogPresenter {
       },
       preferences: {
         haptics: haptics.enabled !== false,
-        music: sound.musicEnabled !== false,
-        sfx: sound.sfxEnabled !== false,
+        music: toVolumePercent(
+          sound.musicVolume,
+          sound.musicEnabled,
+        ),
+        sfx: toVolumePercent(
+          sound.sfxVolume,
+          sound.sfxEnabled,
+        ),
         theme: player.theme === 'day',
       },
       categories: createSettingsCategories(),
@@ -765,26 +771,26 @@ export class PixiGlobalDialogPresenter {
     }
   }
 
-  setPreference(key, enabled) {
+  setPreference(key, value) {
     if (key === 'haptics') {
-      return this.hapticsFacade?.setEnabled?.(enabled) ?? false;
+      return this.hapticsFacade?.setEnabled?.(value) ?? false;
     }
     if (key === 'music') {
-      return (
-        this.soundSettingsFacade?.setMusicEnabled?.(enabled) ??
-        false
-      );
+      const volume = fromVolumePercent(value);
+      return this.soundSettingsFacade?.setMusicVolume
+        ? this.soundSettingsFacade.setMusicVolume(volume)
+        : this.soundSettingsFacade?.setMusicEnabled?.(volume > 0) ?? false;
     }
     if (key === 'sfx') {
-      return (
-        this.soundSettingsFacade?.setSfxEnabled?.(enabled) ??
-        false
-      );
+      const volume = fromVolumePercent(value);
+      return this.soundSettingsFacade?.setSfxVolume
+        ? this.soundSettingsFacade.setSfxVolume(volume)
+        : this.soundSettingsFacade?.setSfxEnabled?.(volume > 0) ?? false;
     }
     if (key === 'theme') {
       return Boolean(
         this.playerFacade?.setTheme?.(
-          enabled ? 'day' : 'night',
+          value ? 'day' : 'night',
         ),
       );
     }
@@ -1047,7 +1053,14 @@ function toTitleCase(value) {
 function normalizePlayerRequest(player = {}) {
   return {
     ...player,
-    identity: normalizeId(player.identity ?? player.playerIdentity),
+    identity: normalizeId(
+      player.identity ??
+        player.playerIdentity ??
+        player.memberIdentity ??
+        player.senderIdentity ??
+        player.discovererIdentity ??
+        player.contributorIdentity,
+    ),
     username: String(player.username ?? player.name ?? '').trim(),
     character: String(player.character ?? 'elara'),
     allianceId: normalizeId(player.allianceId),
@@ -1235,6 +1248,22 @@ function normalizeSettingsTab(tabId) {
     return 'configurations';
   }
   return SETTINGS_TABS.has(value) ? value : 'account';
+}
+
+function toVolumePercent(volume, legacyEnabled) {
+  const numeric = Number(volume);
+  if (Number.isFinite(numeric)) {
+    return Math.round(Math.max(0, Math.min(1, numeric)) * 100);
+  }
+  return legacyEnabled === false ? 0 : 100;
+}
+
+function fromVolumePercent(percent) {
+  const numeric = Number(percent);
+  if (!Number.isFinite(numeric)) {
+    return 0;
+  }
+  return Math.max(0, Math.min(100, numeric)) / 100;
 }
 
 function normalizeFeedbackKind(kind) {

@@ -137,6 +137,34 @@ describe('SpacetimeConnectionManager', () => {
     expect(onConnect).toHaveBeenCalledWith('connection-2', 'identity-2', 'token-2');
   });
 
+  it('keeps a remembered identity when its connection fails transiently', async () => {
+    const { DbConnection, builders } = createFakeDbConnection();
+    const authSessionManager = {
+      getConnectionAuth: vi.fn(async () => ({
+        token: 'remembered-token',
+        fallbackTokens: ['native-token'],
+        canRetryWithoutToken: true,
+      })),
+      acceptConnection: vi.fn(),
+      clearSession: vi.fn(),
+    };
+    const onConnectError = vi.fn();
+    const manager = new SpacetimeConnectionManager({
+      uri: 'https://maincloud.spacetimedb.com',
+      databaseName: 'idle-wizard',
+      authSessionManager,
+    });
+
+    await manager.connect(DbConnection, { onConnectError });
+    const transientError = new Error('database unavailable during publish');
+    builders[0].callbacks.onConnectError({}, transientError);
+
+    expect(builders).toHaveLength(1);
+    expect(onConnectError).toHaveBeenCalledWith(transientError);
+    expect(authSessionManager.acceptConnection).not.toHaveBeenCalled();
+    expect(authSessionManager.clearSession).not.toHaveBeenCalled();
+  });
+
   it('surfaces the retry error if anonymous connection also fails', async () => {
     const { DbConnection, builders } = createFakeDbConnection();
     const authSessionManager = {

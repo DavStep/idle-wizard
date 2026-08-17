@@ -8,7 +8,11 @@ selection, placeholder, or validation message belongs to the calling widget.
 Desktop web edits through keyboard events on the existing focusable game
 canvas and uses the Clipboard API. It does not create an `input`, `textarea`,
 or `contenteditable` surface. Consequently, full browser IME composition and
-mobile-web soft keyboards are intentionally unsupported.
+mobile-web soft keyboards are intentionally unsupported. Each inserted key
+advances the collapsed selection, and tapping a populated single-line field
+moves that selection to the nearest visible character boundary before the next
+key is inserted. The backend-free `world-chat-prestige.html` recipe wires this
+same service for account-safe browser reproduction of typing and caret edits.
 
 Android uses the registered `IdleWizardTextEntry` Capacitor plugin. The plugin
 adds one transparent one-pixel native `EditText` for the active session so the

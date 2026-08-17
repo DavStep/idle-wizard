@@ -2,7 +2,6 @@ import {
   Container,
   Graphics,
   Rectangle,
-  RenderLayer,
   Sprite,
 } from 'pixi.js';
 
@@ -30,6 +29,7 @@ import {
   TUTORIAL_PIXI_GEOMETRY,
 } from './TutorialPixiGeometry.js';
 import { TutorialPointerSpine } from './TutorialPointerSpine.js';
+import { PixiSemanticHighlightLayer } from './PixiSemanticHighlightLayer.js';
 
 const GUIDE_ASSET_ID = 'source:assets/characters/elara.png';
 const TUTORIAL_RESEARCH_CARD_PALETTE = Object.freeze({
@@ -123,9 +123,12 @@ export class TutorialPixiOverlay extends BasePixiRetainedView {
     this.backdrop.label = 'tutorial:spotlight';
     this.backdrop.eventMode = 'none';
 
-    this.highlightLayer = new RenderLayer();
-    this.highlightLayer.label = 'tutorial:highlightLayer';
-    this.highlightedTargets = new Map();
+    this.semanticHighlight = new PixiSemanticHighlightLayer({
+      semanticRegistry,
+      label: 'tutorial:highlightLayer',
+    });
+    this.highlightLayer = this.semanticHighlight.layer;
+    this.highlightedTargets = this.semanticHighlight.targets;
 
     this.pointer = new TutorialPointerSpine({ spineRuntime });
 
@@ -573,64 +576,24 @@ export class TutorialPixiOverlay extends BasePixiRetainedView {
   }
 
   syncHighlightedTargets() {
-    const nextTargets = new Set();
-    if (
-      this.active &&
-      this.model.kind === 'lesson' &&
-      this.panelOpen &&
-      this.backdrop.visible
-    ) {
-      for (const targetId of this.model.step?.highlightTargetIds ?? []) {
-        const snapshot = resolveSemanticTutorialTarget(
-          this.semanticRegistry,
-          targetId,
-        );
-        const target = snapshot?.displayObject;
-        if (
-          target?.parent &&
-          target.destroyed !== true &&
-          snapshot.state?.active !== false &&
-          snapshot.state?.visible !== false
-        ) {
-          nextTargets.add(target);
-        }
-      }
-    }
-
-    for (const target of this.highlightedTargets.keys()) {
-      if (!nextTargets.has(target)) {
-        this.releaseHighlightedTarget(target);
-      }
-    }
-    for (const target of nextTargets) {
-      if (this.highlightedTargets.has(target)) {
-        continue;
-      }
-      const previousLayer = target.parentRenderLayer ?? null;
-      this.highlightLayer.attach(target);
-      this.highlightedTargets.set(target, previousLayer);
-    }
+    this.semanticHighlight.sync(
+      this.model.step?.highlightTargetIds ?? [],
+      {
+        active:
+          this.active &&
+          this.model.kind === 'lesson' &&
+          this.panelOpen &&
+          this.backdrop.visible,
+      },
+    );
   }
 
   releaseHighlightedTarget(target) {
-    const previousLayer = this.highlightedTargets.get(target) ?? null;
-    if (target?.parentRenderLayer === this.highlightLayer) {
-      this.highlightLayer.detach(target);
-    }
-    if (
-      previousLayer &&
-      previousLayer.destroyed !== true &&
-      target?.parent
-    ) {
-      previousLayer.attach(target);
-    }
-    this.highlightedTargets.delete(target);
+    this.semanticHighlight.release(target);
   }
 
   clearHighlightedTargets() {
-    for (const target of [...this.highlightedTargets.keys()]) {
-      this.releaseHighlightedTarget(target);
-    }
+    this.semanticHighlight.clear();
   }
 
   whenPointerReady() {

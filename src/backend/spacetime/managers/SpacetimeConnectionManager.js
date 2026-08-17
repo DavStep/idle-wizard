@@ -33,8 +33,9 @@ export class SpacetimeConnectionManager {
         activeConnection?.disconnect?.();
         this.connection = null;
 
+        const authenticationFailure = this.isAuthenticationFailure(error);
         const [fallbackToken, ...remainingFallbackTokens] = fallbackTokens;
-        if (fallbackToken) {
+        if (authenticationFailure && fallbackToken) {
           this.connection = buildConnection({
             token: fallbackToken,
             canRetryWithoutToken,
@@ -43,7 +44,12 @@ export class SpacetimeConnectionManager {
           return;
         }
 
-        if (token && canRetryWithoutToken && !retriedWithoutToken) {
+        if (
+          authenticationFailure &&
+          token &&
+          canRetryWithoutToken &&
+          !retriedWithoutToken
+        ) {
           retriedWithoutToken = true;
           this.connection = buildConnection({
             token: undefined,
@@ -125,6 +131,34 @@ export class SpacetimeConnectionManager {
       fallbackTokens: this.normalizeFallbackTokens(auth.fallbackTokens, auth.token),
     });
     return this.connection;
+  }
+
+  isAuthenticationFailure(error) {
+    const status = Number(error?.status ?? error?.statusCode);
+    if (status === 401 || status === 403) {
+      return true;
+    }
+
+    const code = String(error?.code ?? '').toLowerCase();
+    if (
+      code === 'unauthenticated' ||
+      code === 'unauthorized' ||
+      code === 'invalid_token'
+    ) {
+      return true;
+    }
+
+    const message = String(error?.message ?? error ?? '').toLowerCase();
+    return (
+      /\b(?:unauthenticated|unauthorized)\b/u.test(message) ||
+      /\bauthentication\s+(?:failed|rejected)\b/u.test(message) ||
+      /\b(?:bad|expired|invalid|rejected)\b[^.\n]{0,40}\b(?:token|credential|jwt)\b/u.test(
+        message,
+      ) ||
+      /\b(?:token|credential|jwt)\b[^.\n]{0,40}\b(?:bad|expired|invalid|rejected)\b/u.test(
+        message,
+      )
+    );
   }
 
   async getConnectionAuth() {

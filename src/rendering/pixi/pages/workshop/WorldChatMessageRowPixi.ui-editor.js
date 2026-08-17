@@ -12,7 +12,7 @@ const ROW_WIDTH = 288;
 
 export default defineUiEditorIntegration({
   apiVersion: 1,
-  childWidgetIds: ['compound.player-profile', 'text-button'],
+  childWidgetIds: ['compound.player-profile'],
   createThumbnail: createWorldChatMessageRowThumbnail,
   folderPath: ['Workshop'],
   id: 'compound.world-chat-message-row',
@@ -45,11 +45,10 @@ export default defineUiEditorIntegration({
       fixture: createPlayerFixture({
         canReport: true,
         onLongPress: () => true,
-        onReport: () => true,
-        selectedForReport: true,
+        reportHighlightId: 'world-chat-report:world-chat-player',
       }),
-      id: 'selected-report',
-      label: 'Selected for report',
+      id: 'report-eligible',
+      label: 'Report eligible',
       mount: mountWorldChatMessageRow,
     },
     {
@@ -141,13 +140,6 @@ function createWorldChatMessageRowControl({ assets, fixture, input }) {
 function createWorldChatMessageRowHierarchy(row) {
   return [
     createUiEditorPixiHierarchyComponent({
-      displayObjects: [row.selectionBackground],
-      id: 'world-chat-message-row:selection-background',
-      label: 'Report selection background',
-      primary: row.selectionBackground,
-      type: 'image',
-    }),
-    createUiEditorPixiHierarchyComponent({
       displayObjects: [row.systemBackground],
       id: 'world-chat-message-row:system-background',
       label: 'System background',
@@ -199,14 +191,6 @@ function createWorldChatMessageRowHierarchy(row) {
       primary: row.timestamp,
       textTarget: row.timestamp,
       type: 'label',
-    }),
-    createUiEditorPixiHierarchyComponent({
-      displayObjects: [row.reportButton],
-      id: 'world-chat-message-row:report',
-      label: 'Report: TextButton',
-      libraryEntryId: 'text-button',
-      primary: row.reportButton,
-      type: 'widget',
     }),
   ];
 }

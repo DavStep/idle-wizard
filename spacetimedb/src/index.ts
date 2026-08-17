@@ -6284,6 +6284,7 @@ const worldEventLeaderboardSummaryResult = t.array(
     updatedAt: t.timestamp(),
     playerLevel: t.u32(),
     rank: t.u32(),
+    frame: t.string(),
   }),
 );
 const playerInfoSummaryResult = t.array(
@@ -6302,6 +6303,7 @@ const playerInfoSummaryResult = t.array(
     totalPlayTimeSeconds: t.u64(),
     updatedAt: t.timestamp(),
     character: t.string(),
+    frame: t.string(),
   }),
 );
 const ownTradeAllianceOverviewResult = t.option(
@@ -6502,6 +6504,7 @@ const tradeAllianceMemberSnapshotResult = t.array(
     totalContribution: t.u64(),
     dailyContribution: t.u64(),
     dayKey: t.string(),
+    frame: t.string(),
   }),
 );
 const tradeAllianceApplicationSnapshotResult = t.array(
@@ -6738,6 +6741,9 @@ export const trade_alliance_member_snapshot = spacetimedb.view(
       ...member,
       character: normalizePlayerCharacter(
         ctx.db.player.identity.find(member.memberIdentity)?.character ?? DEFAULT_PLAYER_CHARACTER,
+      ),
+      frame: normalizePlayerFrame(
+        ctx.db.player.identity.find(member.memberIdentity)?.frame ?? DEFAULT_PLAYER_FRAME,
       ),
     })),
 );
@@ -14755,6 +14761,9 @@ function getWorldEventLeaderboardSummaryRows(ctx: any) {
       updatedAt: new Timestamp(entry.updatedAt.microsSinceUnixEpoch),
       playerLevel: normalizePlayerLevel(entry.playerLevel),
       rank: ranksByContributionKey.get(String(entry.contributionKey)) ?? 0,
+      frame: normalizePlayerFrame(
+        ctx.db.player.identity.find(entry.identity)?.frame ?? DEFAULT_PLAYER_FRAME,
+      ),
     }))
     .sort((left, right) => {
       if (left.eventId !== right.eventId) {
@@ -14909,6 +14918,7 @@ function createPlayerInfoSummaryRow(ctx: any, identity: Identity) {
     totalPlayTimeSeconds: playtimeMicrosToWholeSeconds(totalPlayTimeMicros),
     updatedAt: leaderboard?.updatedAt ?? lastSeenAt,
     character: normalizePlayerCharacter(player?.character ?? DEFAULT_PLAYER_CHARACTER),
+    frame: normalizePlayerFrame(player?.frame ?? DEFAULT_PLAYER_FRAME),
   };
 }
 

@@ -224,6 +224,24 @@ describe('PixiGlobalDialogPresenter', () => {
     });
   });
 
+  it('normalizes alliance member identities for Player Info', () => {
+    const harness = createHarness();
+
+    const model = harness.presenter.createPlayerModel({
+      memberIdentity: 'alliance-member-id',
+      username: 'Alliance Mira',
+      character: 'mira',
+      frame: 'violet',
+    });
+
+    expect(model.player).toMatchObject({
+      identity: 'alliance-member-id',
+      username: 'Alliance Mira',
+      character: 'mira',
+      frame: 'violet',
+    });
+  });
+
   it('keeps an explicitly unnamed alliance request pending after a failed save', () => {
     const harness = createHarness({
       playerSnapshot: { hasExplicitUsername: false },
@@ -411,16 +429,16 @@ describe('PixiGlobalDialogPresenter', () => {
     });
 
     expect(model.actions.togglePreference('haptics', false)).toBe(true);
-    expect(model.actions.togglePreference('music', false)).toBe(true);
-    expect(model.actions.togglePreference('sfx', false)).toBe(true);
+    expect(model.actions.togglePreference('music', 35)).toBe(true);
+    expect(model.actions.togglePreference('sfx', 68)).toBe(true);
     expect(model.actions.togglePreference('theme', true)).toBe(true);
     expect(harness.hapticsFacade.setEnabled).toHaveBeenCalledWith(false);
     expect(
-      harness.soundSettingsFacade.setMusicEnabled,
-    ).toHaveBeenCalledWith(false);
+      harness.soundSettingsFacade.setMusicVolume,
+    ).toHaveBeenCalledWith(0.35);
     expect(
-      harness.soundSettingsFacade.setSfxEnabled,
-    ).toHaveBeenCalledWith(false);
+      harness.soundSettingsFacade.setSfxVolume,
+    ).toHaveBeenCalledWith(0.68);
     expect(harness.playerFacade.setTheme).toHaveBeenCalledWith('day');
     expect(model.account.userId).toBe('identity-mira');
     expect(await model.actions.copyUserId(model.account.userId)).toBe(
@@ -904,8 +922,15 @@ function createHarness({
     { setEnabled: vi.fn(() => true) },
   );
   const soundSettingsFacade = createSnapshotFacade(
-    { musicEnabled: true, sfxEnabled: true },
     {
+      musicVolume: 0.74,
+      sfxVolume: 0.58,
+      musicEnabled: true,
+      sfxEnabled: true,
+    },
+    {
+      setMusicVolume: vi.fn(() => true),
+      setSfxVolume: vi.fn(() => true),
       setMusicEnabled: vi.fn(() => true),
       setSfxEnabled: vi.fn(() => true),
     },

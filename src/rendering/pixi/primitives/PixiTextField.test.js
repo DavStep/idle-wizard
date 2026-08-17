@@ -8,6 +8,7 @@ import {
   PIXI_ROOT_RUN_ASSETS,
   PIXI_ROOT_RUN_GEOMETRY,
 } from '../theme/PixiThemeTokens.js';
+import { TextEntryService } from '../../textEntry/TextEntryService.js';
 import { PixiTextField } from './PixiTextField.js';
 
 installPixiPageTestCanvas();
@@ -219,6 +220,40 @@ describe('PixiTextField', () => {
     field.destroy({ children: true });
   });
 
+  it('types left to right and inserts at the tapped caret on desktop web', async () => {
+    const canvas = document.createElement('canvas');
+    const textEntryService = new TextEntryService({
+      canvas,
+      isNativePlatform: () => false,
+      platformProvider: () => 'web',
+    });
+    const field = new PixiTextField({ textEntryService });
+
+    await field.focus();
+    for (const key of 'wizard') {
+      dispatchKey(canvas, key);
+    }
+
+    expect(field.value).toBe('wizard');
+    expect(field.selectionStart).toBe(6);
+    expect(field.selectionEnd).toBe(6);
+
+    const thirdCharacterX =
+      field.textViewport.x + field.measureCaretPosition(3).x;
+    await field.activate({
+      point: { x: thirdCharacterX, y: field.textViewport.y + 2 },
+    });
+    for (const key of 'xyz') {
+      dispatchKey(canvas, key);
+    }
+
+    expect(field.value).toBe('wizxyzard');
+    expect(field.selectionStart).toBe(6);
+    expect(field.selectionEnd).toBe(6);
+
+    field.destroy({ children: true });
+  });
+
   it('wraps multiline text and keeps the active caret inside the visible writing area', () => {
     const field = new PixiTextField({
       assetManager: { getTexture: () => Texture.EMPTY },
@@ -382,3 +417,13 @@ describe('PixiTextField', () => {
     reducedField.destroy({ children: true });
   });
 });
+
+function dispatchKey(canvas, key) {
+  canvas.dispatchEvent(
+    new window.KeyboardEvent('keydown', {
+      key,
+      bubbles: true,
+      cancelable: true,
+    }),
+  );
+}

@@ -1152,22 +1152,25 @@ describe('PixiViewModelFactory', () => {
     expect(dialog.rows[0]).toMatchObject({
       canReport: true,
       selectedForReport: true,
+      reportHighlightId: 'world-chat-report:other',
     });
     expect(dialog.rows[0].onLongPress()).toBe(true);
-    expect(dialog.rows[0].onReport()).toBe(true);
-    expect(select).toHaveBeenCalledWith(expect.objectContaining({ id: 'other' }));
-    expect(report).toHaveBeenCalledWith(expect.objectContaining({ id: 'other' }));
+    expect(select).toHaveBeenCalledWith(
+      expect.objectContaining({ id: 'other' }),
+      { targetId: 'world-chat-report:other' },
+    );
+    expect(report).not.toHaveBeenCalled();
     expect(dialog.rows[1]).toMatchObject({
       canReport: false,
       selectedForReport: false,
+      reportHighlightId: null,
       onLongPress: null,
-      onReport: null,
     });
     expect(dialog.rows[2]).toMatchObject({
       canReport: false,
       selectedForReport: false,
+      reportHighlightId: null,
       onLongPress: null,
-      onReport: null,
     });
   });
 
@@ -1397,7 +1400,13 @@ describe('PixiViewModelFactory', () => {
     expect(alliance.rows).toHaveLength(1);
 
     alliance.members[0].onActivate();
-    expect(openPlayer).toHaveBeenCalledWith(member);
+    expect(openPlayer).toHaveBeenCalledWith(
+      expect.objectContaining({
+        ...member,
+        identity: 'member-a',
+        frame: 'classic',
+      }),
+    );
     alliance.tabs[1].onSelect();
     expect(selectAllianceTab).toHaveBeenCalledWith('quests');
   });
@@ -1520,6 +1529,8 @@ describe('PixiViewModelFactory', () => {
       allianceId: 'dbp',
       memberIdentity: `member-${index}`,
       username: `Wizard ${index}`,
+      character: index === 0 ? 'mira' : 'elara',
+      frame: index === 0 ? 'violet' : 'classic',
       role: index === 0 ? 'tradeMaster' : 'trader',
       playerLevel: 18 - index,
     }));
@@ -1564,7 +1575,10 @@ describe('PixiViewModelFactory', () => {
       },
     });
     expect(dialog.rows[0].members[0]).toMatchObject({
+      identity: 'member-0',
       username: 'Wizard 0',
+      character: 'mira',
+      frame: 'violet',
       roleLabel: 'Trade Master',
       levelLabel: 'Lv 18',
     });
@@ -1585,7 +1599,14 @@ describe('PixiViewModelFactory', () => {
     dialog.rows[1].action.onActivate();
     expect(selectAlliance).toHaveBeenCalledWith('dbp');
     expect(joinAlliance).toHaveBeenCalledWith('dbp');
-    expect(openPlayer).toHaveBeenCalledWith(members[0]);
+    expect(openPlayer).toHaveBeenCalledWith(
+      expect.objectContaining({
+        identity: 'member-0',
+        username: 'Wizard 0',
+        character: 'mira',
+        frame: 'violet',
+      }),
+    );
     expect(cancelAllianceApplication).toHaveBeenCalledWith('application-solo');
     expect(applyAlliance).not.toHaveBeenCalled();
   });

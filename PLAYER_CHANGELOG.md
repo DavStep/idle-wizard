@@ -5,6 +5,12 @@ upload script posts the section whose heading matches `package.json` `version`.
 Write these developer-to-player notes only in Idle Wizard terms. Do not mention
 other game names, source projects, ports, or implementation provenance.
 
+## 0.3.67
+
+- Added separate volume sliders for music and sound effects in Settings.
+- Improved World Chat reporting with a clearer focused-message action, and made failed sends restore an unsent draft safely.
+- Improved account reconnection so temporary server failures preserve the remembered account, and extended player frames across more shared player views.
+
 ## 0.3.66
 
 - Added message reporting to World Chat and clearer alliance tag colors in chat and alliance settings.

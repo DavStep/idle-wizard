@@ -56,7 +56,6 @@ describe('WorkshopPixiPage', () => {
       unregisterTarget: vi.fn(),
     };
     const select = vi.fn(() => true);
-    const report = vi.fn(() => true);
     const row = new WorldChatMessageRowPixi({ dialog });
     const model = {
       id: 'message-one',
@@ -64,7 +63,7 @@ describe('WorkshopPixiPage', () => {
       body: 'Hello',
       canReport: true,
       onLongPress: select,
-      onReport: report,
+      reportHighlightId: 'world-chat-report:message-one',
     };
     row.bind(model);
     row.setBounds(0, 0, 288, row.getPreferredHeight());
@@ -88,14 +87,16 @@ describe('WorkshopPixiPage', () => {
 
     row.bind({ ...model, selectedForReport: true });
     row.setBounds(0, 0, 288, row.getPreferredHeight());
-    expect(row.reportButton.visible).toBe(true);
     expect(row.getPreferredHeight()).toBeGreaterThan(52);
-    expect(row.reportButton.activate()).toBe(true);
-    expect(report).toHaveBeenCalledOnce();
+    expect(dialog.registerTarget).toHaveBeenCalledWith(
+      expect.objectContaining({
+        semanticId: 'world-chat-report:message-one',
+        displayObject: row.root,
+      }),
+    );
 
     row.bind({ ...model, isOwn: true, selectedForReport: true });
     expect(row.canReport()).toBe(false);
-    expect(row.reportButton.visible).toBe(false);
     row.destroy();
     vi.useRealTimers();
   });
@@ -2231,6 +2232,7 @@ describe('WorkshopPixiPage', () => {
   it('renders keyed expandable alliance rows with a 4.5-member nested viewport', () => {
     const toggle = vi.fn();
     const join = vi.fn();
+    const openPlayer = vi.fn();
     const assetManager = createPixiAssetManagerFake(Texture);
     assetManager.getAtlasTexture = vi.fn(() => new Texture());
     const harness = createHarness({ assetManager });
@@ -2260,8 +2262,11 @@ describe('WorkshopPixiPage', () => {
           members: Array.from({ length: 6 }, (_, index) => ({
             id: `member-${index}`,
             username: `Wizard ${index}`,
+            character: index === 0 ? 'mira' : 'elara',
+            frame: index === 0 ? 'violet' : 'classic',
             roleLabel: index === 0 ? 'Trade Master' : 'Trader',
             levelLabel: `Lv ${18 - index}`,
+            onActivate: openPlayer,
           })),
         },
         {
@@ -2305,11 +2310,18 @@ describe('WorkshopPixiPage', () => {
     expect(row.memberViewport.scrollbarTrack.visible).toBe(true);
     expect(row.action.text.text).toBe('Join Alliance');
     expect(row.action.control.variant).toBe('green');
+    const firstMember = row.memberWidgets.get('member-0');
+    expect(firstMember.avatarWidget.avatarFrame.tint).toBe(0xddb6ff);
+    expect(firstMember.visual.eventMode).toBe('none');
 
     row.summaryHit.handleTap();
     row.action.handleTap();
+    firstMember.hitTarget.handleTap();
     expect(toggle).toHaveBeenCalledTimes(1);
     expect(join).toHaveBeenCalledTimes(1);
+    expect(openPlayer).toHaveBeenCalledWith(
+      expect.objectContaining({ id: 'member-0' }),
+    );
 
     model.workshop.dialogs.alliance.rows[0] = {
       ...model.workshop.dialogs.alliance.rows[0],
@@ -3066,11 +3078,14 @@ describe('WorkshopPixiPage', () => {
     harness.dispose();
   });
 
-  it('keeps failed chat drafts and clears them only after confirmed success', async () => {
-    const send = vi
-      .fn()
-      .mockResolvedValueOnce({ ok: false, reason: 'global_rate_limited' })
-      .mockResolvedValueOnce({ ok: true, body: 'hello' });
+  it('clears submitted chat drafts immediately and restores only an untouched failed draft', async () => {
+    let resolveSend;
+    const send = vi.fn(
+      () =>
+        new Promise((resolve) => {
+          resolveSend = resolve;
+        }),
+    );
     const harness = createHarness();
     const model = createWorkshopViewModel();
     model.workshop.dialogs.worldChat = {
@@ -3092,12 +3107,22 @@ describe('WorkshopPixiPage', () => {
     expect(send).not.toHaveBeenCalled();
 
     dialog.composerField.setValue('hello', { notify: true });
-    await expect(dialog.submitComposer()).resolves.toBe(false);
+    const failedSubmission = dialog.submitComposer();
+    expect(send).toHaveBeenCalledWith('hello');
+    expect(dialog.composerField.value).toBe('');
+
+    resolveSend({ ok: false, reason: 'global_rate_limited' });
+    await expect(failedSubmission).resolves.toBe(false);
     expect(dialog.composerField.value).toBe('hello');
     expect(dialog.status.text).toBe('');
 
-    await expect(dialog.submitComposer()).resolves.toBe(true);
+    const successfulSubmission = dialog.submitComposer();
     expect(dialog.composerField.value).toBe('');
+    dialog.composerField.setValue('next message', { notify: true });
+
+    resolveSend({ ok: true, body: 'hello' });
+    await expect(successfulSubmission).resolves.toBe(true);
+    expect(dialog.composerField.value).toBe('next message');
     expect(dialog.status.text).toBe('');
     expect(dialog.composerSubmit.enabled).toBe(true);
     expect(send).toHaveBeenCalledTimes(2);

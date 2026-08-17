@@ -125,8 +125,8 @@ export class RootRunDevicePreferencesPanel extends Container {
 
 /**
  * Approved icon-led device preference row. The icon and label are visual
- * identity. Compact preferences use the shared switch; sound preferences may
- * use the same boolean contract through the wider shared settings slider.
+ * identity. Compact preferences use the shared switch; sound preferences use
+ * the wider shared settings slider with a numeric percentage value.
  */
 export class RootRunDevicePreferenceRow extends Container {
   constructor({
@@ -146,7 +146,7 @@ export class RootRunDevicePreferenceRow extends Container {
     this.rowWidth = 0;
     this.rowHeight = ROOT_RUN_DEVICE_PREFERENCE_ROW_HEIGHT;
     this.controlKind = controlKind === 'slider' ? 'slider' : 'toggle';
-    this.value = false;
+    this.value = this.controlKind === 'slider' ? 0 : false;
     this.theme = DEFAULT_PIXI_THEME_SNAPSHOT;
     this.iconTextures = {
       off:
@@ -211,18 +211,29 @@ export class RootRunDevicePreferenceRow extends Container {
       }) ?? null;
   }
 
-  bind({ value, enabled = true, onChange = null } = {}) {
-    this.value = value === true;
+  bind({
+    value,
+    enabled = true,
+    min = 0,
+    max = 100,
+    step = 1,
+    onChange = null,
+  } = {}) {
+    this.value = this.slider
+      ? normalizeRangeValue(value, min, max)
+      : value === true;
     this.icon.texture =
-      this.value
+      isPreferenceOn(this.value)
         ? this.iconTextures.on
         : this.iconTextures.off;
     const commit = (nextValue) => {
-      const nextEnabled = nextValue === true || nextValue === 1;
-      const result = onChange?.(nextEnabled) ?? true;
+      const normalizedValue = this.slider
+        ? normalizeRangeValue(nextValue, min, max)
+        : nextValue === true;
+      const result = onChange?.(normalizedValue) ?? true;
       if (result !== false) {
-        this.value = nextEnabled;
-        this.icon.texture = nextEnabled
+        this.value = normalizedValue;
+        this.icon.texture = isPreferenceOn(normalizedValue)
           ? this.iconTextures.on
           : this.iconTextures.off;
       }
@@ -230,11 +241,11 @@ export class RootRunDevicePreferenceRow extends Container {
     };
     if (this.slider) {
       this.slider.bind({
-        value: this.value ? 1 : 0,
+        value: this.value,
         enabled,
-        min: 0,
-        max: 1,
-        step: 1,
+        min,
+        max,
+        step,
         tone: 'green',
         onChange: commit,
       });
@@ -251,7 +262,11 @@ export class RootRunDevicePreferenceRow extends Container {
 
   activate() {
     return this.slider
-      ? this.slider.commitRange(this.value ? 0 : 1)
+      ? this.slider.commitRange(
+          this.value > this.slider.min
+            ? this.slider.min
+            : this.slider.max,
+        )
       : this.toggle.activate();
   }
 
@@ -484,6 +499,23 @@ function getPreferenceIconHeight(key) {
     return 29;
   }
   return 33;
+}
+
+function isPreferenceOn(value) {
+  return typeof value === 'number' ? value > 0 : value === true;
+}
+
+function normalizeRangeValue(value, min, max) {
+  const minimum = Number.isFinite(Number(min)) ? Number(min) : 0;
+  const maximum = Math.max(
+    minimum,
+    Number.isFinite(Number(max)) ? Number(max) : 100,
+  );
+  const numeric = Number(value);
+  if (!Number.isFinite(numeric)) {
+    return minimum;
+  }
+  return Math.max(minimum, Math.min(maximum, numeric));
 }
 
 function compactIdentity(identity) {

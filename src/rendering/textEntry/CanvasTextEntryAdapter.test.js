@@ -137,10 +137,16 @@ describe('CanvasTextEntryAdapter', () => {
     dispatchKey(canvas, 'Enter');
     await session.setValue('');
     dispatchKey(canvas, 's');
+    dispatchKey(canvas, 'p');
+    dispatchKey(canvas, 'e');
+    dispatchKey(canvas, 'l');
+    dispatchKey(canvas, 'l');
 
     expect(onSubmit).toHaveBeenCalledTimes(1);
     expect(session.getSnapshot()).toMatchObject({
-      value: 's',
+      selectionEnd: 5,
+      selectionStart: 5,
+      value: 'spell',
       status: 'active',
       active: true,
     });

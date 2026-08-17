@@ -33,6 +33,7 @@ import {
   createShopPixiViewModel,
 } from "../pages/shop/index.js";
 import { WorkshopPixiPage } from "../pages/workshop/index.js";
+import { PixiActionHighlightScene } from "../global/tutorial/index.js";
 import {
   normalizeTutorialNotificationPolicy,
   projectChromeNotificationPages,
@@ -95,6 +96,9 @@ const WORKSHOP_WORLD_EVENT_TAB_IDS = new Set([
   "leaderboard",
   "rewards",
 ]);
+export const PIXI_WORLD_CHAT_REPORT_HIGHLIGHT_SURFACE_ID =
+  "interaction.worldChatReportHighlight";
+const WORLD_CHAT_REPORT_HIGHLIGHT_MODAL_PRIORITY = 70;
 
 /**
  * Renderer-neutral coordinator for the retained Pixi room views.
@@ -183,6 +187,8 @@ export class PixiPagesFacade {
     this.playerSnapshot = {};
     this.worldChatSnapshot = {};
     this.worldChatSelectedReportMessageId = null;
+    this.worldChatReportHighlight = null;
+    this.worldChatReportHighlightModal = null;
     this.leaderboardSnapshot = {};
     this.worldEventLeaderboardSnapshot = {};
     this.playerInboxSnapshot = {};
@@ -288,6 +294,19 @@ export class PixiPagesFacade {
       .registerPage(
         "prestige",
         (context) => new PrestigePixiPage(createSharedOptions(context)),
+      )
+      .registerGlobalSurface(
+        PIXI_WORLD_CHAT_REPORT_HIGHLIGHT_SURFACE_ID,
+        (context) => {
+          const scene = new PixiActionHighlightScene({
+            assets: context.assets,
+            inputRouter: context.inputRouter,
+            semanticRegistry: context.semanticRegistry,
+            theme: context.theme(),
+          });
+          scene.preferredLayer = "tutorial";
+          return scene;
+        },
       );
     this.registered = true;
   }
@@ -315,8 +334,8 @@ export class PixiPagesFacade {
       return;
     }
 
+    this.hideWorldChatReportHighlight({ refreshDialog: false });
     this.mounted = false;
-    this.worldChatSelectedReportMessageId = null;
     this.announcementPresenter?.unmount?.();
     this.experienceFacade?.unmount?.();
     this.globalDialogPresenter?.unmount?.();
@@ -688,27 +707,107 @@ export class PixiPagesFacade {
     }
 
     this.openWorldChat({ preserveReportSelection: true });
+    this.refreshWorldChatReportHighlight();
   }
 
-  selectWorldChatMessageForReport(message) {
+  selectWorldChatMessageForReport(message, { targetId = null } = {}) {
     const messageId = message?.id ?? message?.messageId;
-    if (messageId === null || messageId === undefined) {
+    const safeTargetId = String(targetId ?? "").trim();
+    if (
+      messageId === null ||
+      messageId === undefined ||
+      !safeTargetId
+    ) {
       return false;
     }
     this.worldChatSelectedReportMessageId = String(messageId);
+    this.worldChatReportHighlight = {
+      message,
+      messageId: String(messageId),
+      targetId: safeTargetId,
+    };
     this.refreshOpenWorldChatDialog();
-    return true;
+    return this.showWorldChatReportHighlight();
   }
 
   openWorldChatReport(message) {
-    this.worldChatSelectedReportMessageId = null;
-    this.refreshOpenWorldChatDialog();
+    this.hideWorldChatReportHighlight();
     return (
       this.globalDialogPresenter?.open?.('chatReport', {
         message,
         focusInput: true,
       }) ?? false
     );
+  }
+
+  showWorldChatReportHighlight() {
+    if (!this.mounted || !this.worldChatReportHighlight) {
+      return false;
+    }
+    const runtime = this.requireRuntime();
+    const selection = this.worldChatReportHighlight;
+    runtime.bindGlobalSurface(
+      PIXI_WORLD_CHAT_REPORT_HIGHLIGHT_SURFACE_ID,
+      {
+        visible: true,
+        targetId: selection.targetId,
+        actionLabel: "Report",
+        actionVariant: "red",
+        onAction: () => this.openWorldChatReport(selection.message),
+        onDismiss: () => this.hideWorldChatReportHighlight(),
+      },
+    );
+    if (!this.worldChatReportHighlightModal) {
+      this.worldChatReportHighlightModal =
+        this.renderFacade.getInputRouter?.()?.pushModal?.({
+          id: PIXI_WORLD_CHAT_REPORT_HIGHLIGHT_SURFACE_ID,
+          root: runtime.getGlobalSurface(
+            PIXI_WORLD_CHAT_REPORT_HIGHLIGHT_SURFACE_ID,
+          )?.root,
+          priority: WORLD_CHAT_REPORT_HIGHLIGHT_MODAL_PRIORITY,
+          onBack: () => this.hideWorldChatReportHighlight(),
+          onEscape: () => this.hideWorldChatReportHighlight(),
+          autoFocus: true,
+        }) ?? null;
+    }
+    return true;
+  }
+
+  refreshWorldChatReportHighlight() {
+    const selection = this.worldChatReportHighlight;
+    if (!selection) {
+      return false;
+    }
+    const stillPresent = (this.worldChatSnapshot.messages ?? []).some(
+      (message) =>
+        String(message?.id ?? message?.messageId ?? "") ===
+        selection.messageId,
+    );
+    if (!stillPresent) {
+      return this.hideWorldChatReportHighlight();
+    }
+    return this.showWorldChatReportHighlight();
+  }
+
+  hideWorldChatReportHighlight({ refreshDialog = true } = {}) {
+    const hadSelection = Boolean(
+      this.worldChatReportHighlight ||
+      this.worldChatSelectedReportMessageId !== null,
+    );
+    this.worldChatReportHighlightModal?.unregister?.();
+    this.worldChatReportHighlightModal = null;
+    this.worldChatReportHighlight = null;
+    this.worldChatSelectedReportMessageId = null;
+    if (this.mounted) {
+      this.requireRuntime().bindGlobalSurface(
+        PIXI_WORLD_CHAT_REPORT_HIGHLIGHT_SURFACE_ID,
+        { visible: false },
+      );
+      if (refreshDialog) {
+        this.refreshOpenWorldChatDialog();
+      }
+    }
+    return hadSelection;
   }
 
   refreshPage(pageId, { force = false } = {}) {
@@ -993,8 +1092,8 @@ export class PixiPagesFacade {
         },
         fillTask: (taskId) => gameplay?.fillTask?.(taskId),
         sendWorldChat: (body) => this.worldChatFacade?.sendMessage?.(body),
-        selectWorldChatMessageForReport: (message) =>
-          this.selectWorldChatMessageForReport(message),
+        selectWorldChatMessageForReport: (message, options) =>
+          this.selectWorldChatMessageForReport(message, options),
         openWorldChatReport: (message) =>
           this.openWorldChatReport(message),
         openInbox: () =>
@@ -2772,6 +2871,62 @@ export class PixiPagesFacade {
     this.questProgressPreview = progress;
     this.refreshChrome();
     return { ok: true, progress };
+  }
+
+  showWorldChatReportHighlightPreview() {
+    if (!this.mounted) {
+      return { ok: false, reason: "pages_not_mounted" };
+    }
+    const message = {
+      id: "preview-report-message",
+      username: "Mira",
+      body: "Anyone joining the next expedition?",
+      allianceTag: "ARC",
+      allianceTagColor: "violet",
+      character: "mira",
+      frame: "violet",
+      isOwn: false,
+      sentAtMs: Date.now(),
+    };
+    const targetId = `world-chat-report:${message.id}`;
+    const worldChat = {
+      connected: true,
+      messages: [
+        {
+          id: "preview-system-message",
+          username: "System",
+          body: "Wizard reached level 20.",
+          sentAtMs: Date.now() - 60_000,
+        },
+        message,
+      ],
+    };
+
+    this.show("workshop");
+    this.worldChatSelectedReportMessageId = message.id;
+    this.worldChatReportHighlight = {
+      message,
+      messageId: message.id,
+      targetId,
+    };
+    const opened = this.requireRuntime()
+      .getPage("workshop")
+      ?.openDialog?.(
+        "worldChat",
+        this.viewModelFactory.createWorldChatDialog(
+          worldChat,
+          this.createActions().workshop,
+          { selectedReportMessageId: message.id },
+        ),
+      );
+    const highlighted = opened !== false && this.showWorldChatReportHighlight();
+
+    if (!highlighted) {
+      this.worldChatSelectedReportMessageId = null;
+      this.worldChatReportHighlight = null;
+      return { ok: false, reason: "highlight_unavailable" };
+    }
+    return { ok: true, messageId: message.id, targetId };
   }
 
   setDevNotifications(snapshot) {

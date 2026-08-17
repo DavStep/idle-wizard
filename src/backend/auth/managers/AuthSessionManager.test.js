@@ -78,6 +78,36 @@ describe('AuthSessionManager', () => {
     });
   });
 
+  it('does not replace a remembered Google account with an anonymous identity', async () => {
+    const tokenStorageManager = new AuthTokenStorageManager({
+      storage: createMemoryStorage(),
+    });
+    const sessionManager = new AuthSessionManager({
+      tokenStorageManager,
+      oidcManager: {
+        getConnectionToken: () => Promise.resolve(undefined),
+        getSnapshot: () => ({
+          enabled: true,
+          authenticated: false,
+          remembered: true,
+          displayName: 'Dav',
+          email: 'dav@example.com',
+          error: null,
+        }),
+      },
+    });
+
+    await sessionManager.acceptConnection({
+      identity: 'connected-identity',
+      token: 'stored-token',
+    });
+
+    await expect(sessionManager.getConnectionAuth()).resolves.toEqual({
+      token: 'stored-token',
+      canRetryWithoutToken: false,
+    });
+  });
+
   it('returns a fresh snapshot after restoring an OIDC account', async () => {
     const tokenStorageManager = new AuthTokenStorageManager({
       storage: createMemoryStorage(),

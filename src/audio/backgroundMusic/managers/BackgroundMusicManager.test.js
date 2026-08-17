@@ -21,6 +21,9 @@ describe('BackgroundMusicManager', () => {
     expect(audio.volume).toBe(0.16);
     expect(audio.play).toHaveBeenCalledTimes(1);
 
+    manager.setVolume(0.5);
+    expect(audio.volume).toBe(0.08);
+
     manager.setEnabled(false);
     expect(audio.pause).toHaveBeenCalledTimes(1);
 

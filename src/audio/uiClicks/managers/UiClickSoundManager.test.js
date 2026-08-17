@@ -307,6 +307,27 @@ describe('UiClickSoundManager', () => {
     expect(stats.sourceStartCount).toBe(0);
   });
 
+  it('applies the sound preference as the shared master gain', () => {
+    const { AudioContextConstructor } = makeFakeAudioContextConstructor();
+    const manager = new UiClickSoundManager({
+      clickSampleUrl: null,
+      dialogOpenSampleUrls: [],
+      purchaseSampleUrls: [],
+      windowRef: {
+        AudioContext: AudioContextConstructor,
+      },
+    });
+
+    manager.playClick();
+    manager.setVolume(0.35);
+
+    expect(manager.masterGain.gain.value).toBe(0.35);
+
+    manager.setVolume(0);
+    expect(manager.masterGain.gain.value).toBe(0);
+    expect(manager.playClick()).toBe(false);
+  });
+
   it('does not unlock audio while disabled', () => {
     const { AudioContextConstructor, stats } = makeFakeAudioContextConstructor();
     const manager = new UiClickSoundManager({
