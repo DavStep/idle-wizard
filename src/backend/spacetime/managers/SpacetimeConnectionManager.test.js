@@ -100,6 +100,34 @@ describe('SpacetimeConnectionManager', () => {
     expect(onConnect).toHaveBeenCalledWith('connection-2', 'identity-2', 'token-2');
   });
 
+  it('retries after the SDK rejects a stored websocket token', async () => {
+    const { DbConnection, builders } = createFakeDbConnection();
+    const authSessionManager = {
+      getConnectionAuth: vi.fn(async () => ({
+        token: 'stale-token',
+        canRetryWithoutToken: true,
+      })),
+      acceptConnection: vi.fn(),
+      clearSession: vi.fn(),
+    };
+    const onConnectError = vi.fn();
+    const manager = new SpacetimeConnectionManager({
+      uri: 'https://maincloud.spacetimedb.com',
+      databaseName: 'idle-wizard',
+      authSessionManager,
+    });
+
+    await manager.connect(DbConnection, { onConnectError });
+    builders[0].callbacks.onConnectError(
+      {},
+      new Error('Failed to verify token: '),
+    );
+
+    expect(builders).toHaveLength(2);
+    expect(builders[1].token).toBeUndefined();
+    expect(onConnectError).not.toHaveBeenCalled();
+  });
+
   it('retries a fallback stored token before connecting anonymously', async () => {
     const { DbConnection, builders } = createFakeDbConnection();
     const authSessionManager = {

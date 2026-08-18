@@ -150,6 +150,7 @@ export class SpacetimeConnectionManager {
 
     const message = String(error?.message ?? error ?? '').toLowerCase();
     return (
+      /\bfailed to verify token\b/u.test(message) ||
       /\b(?:unauthenticated|unauthorized)\b/u.test(message) ||
       /\bauthentication\s+(?:failed|rejected)\b/u.test(message) ||
       /\b(?:bad|expired|invalid|rejected)\b[^.\n]{0,40}\b(?:token|credential|jwt)\b/u.test(

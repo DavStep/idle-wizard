@@ -5,6 +5,10 @@ upload script posts the section whose heading matches `package.json` `version`.
 Write these developer-to-player notes only in Idle Wizard terms. Do not mention
 other game names, source projects, ports, or implementation provenance.
 
+## 0.3.68
+
+- Fixed web reconnection when a saved session token has expired, so the game can recover instead of remaining on the server connection screen.
+
 ## 0.3.67
 
 - Added separate volume sliders for music and sound effects in Settings.
