@@ -526,6 +526,27 @@ describe('retained Pixi gate controllers', () => {
     });
   });
 
+  it('can preserve completed startup progress while backend loading continues', () => {
+    const application = {
+      ticker: { add: vi.fn(), remove: vi.fn() },
+    };
+    const view = new PixiOnlineGateView({
+      application,
+      assets: createAssets(),
+    });
+    const controller = new PixiOnlineGateController();
+    controller.attach(view);
+    view.activate();
+    application.ticker.add.mockClear();
+
+    controller.showConnecting({ progressValue: 1 });
+
+    expect(view.splashProgressValue).toBe(1);
+    expect(view.splash.progressValue).toBe(1);
+    expect(application.ticker.add).not.toHaveBeenCalled();
+    view.destroy();
+  });
+
   it('fits the splash to the authored game width and clips vertical overflow', () => {
     const onSplashViewportChange = vi.fn();
     const view = new PixiOnlineGateView({

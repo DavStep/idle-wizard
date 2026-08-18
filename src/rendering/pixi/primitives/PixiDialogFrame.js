@@ -589,8 +589,9 @@ export class PixiDialogFrame extends Container {
 
 /**
  * Lets a dialog's primary vertical viewport consume the extra logical height
- * available on taller portrait devices. Fixed-content dialogs keep their
- * authored height by leaving `hasPrimaryVerticalScroll` false.
+ * available on taller portrait devices without shrinking below its authored
+ * height. Fixed-content dialogs keep their authored height by leaving
+ * `hasPrimaryVerticalScroll` false.
  */
 export function resolveAdaptiveDialogHeight({
   viewportHeight,
@@ -608,7 +609,11 @@ export function resolveAdaptiveDialogHeight({
   const viewportDelta = Number.isFinite(sourceHeight)
     ? sourceHeight - PIXI_ADAPTIVE_DIALOG_GEOMETRY.referenceViewportHeight
     : 0;
-  const lowerBound = Math.max(0, Number(minimumHeight) || 0);
+  const lowerBound = Math.max(
+    0,
+    authoredHeight,
+    Number(minimumHeight) || 0,
+  );
   const requestedUpperBound = Number(maximumHeight);
   const upperBound = Number.isFinite(requestedUpperBound)
     ? Math.max(lowerBound, requestedUpperBound)

@@ -147,8 +147,12 @@ playable and their scoring is proven fair.
 The Guild room uses its own HUD and bottom tabs:
 
 ```text
-Hall | Adventurers | Fishers | Miners | World
+Workshop | Hall | Adventurers | Fishers (Locked) | Miners (Locked) | World (Locked)
 ```
+
+All planned destinations stay visible from the start. Unavailable branches use
+the standard locked-tab feedback until their gameplay is ready. `Workshop`
+returns to the normal room HUD.
 
 `Hall` shows the Guild identity, owned branches, active members, recent results,
 and the next useful action.

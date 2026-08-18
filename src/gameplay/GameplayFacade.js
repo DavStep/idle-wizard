@@ -151,6 +151,7 @@ export class GameplayFacade {
     });
     this.shopFacade = new ShopFacade({
       coinFacade: this.coinFacade,
+      crystalFacade: this.crystalFacade,
       itemsFacade: this.itemsFacade,
       marketLicenceFacade: this.marketLicenceFacade,
       playerLevelFacade: this.playerLevelFacade,
@@ -1335,6 +1336,12 @@ export class GameplayFacade {
         source: "shop_coin_offer",
       });
     }
+    this.publishAndSaveSnapshot();
+    return result;
+  }
+
+  collectShopDailyCrystalOffer() {
+    const result = this.shopFacade.collectDailyCrystalOffer();
     this.publishAndSaveSnapshot();
     return result;
   }

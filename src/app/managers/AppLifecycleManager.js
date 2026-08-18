@@ -109,7 +109,7 @@ export class AppLifecycleManager {
       onVisible: () => this.handleAppVisible(),
     });
     this.appVisible = this.appVisibilityManager.visible !== false;
-    this.onlineGateManager.showConnecting();
+    this.onlineGateManager.showConnecting({ progressValue: 1 });
     this.maintenanceUnsubscribe = this.maintenanceFacade?.subscribe?.((snapshot) => {
       this.handleMaintenanceChange(snapshot);
     }) ?? null;

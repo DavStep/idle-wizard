@@ -18,12 +18,15 @@ export class PixiOnlineGateController {
     return this.view?.root ?? null;
   }
 
-  showConnecting({ preview = false } = {}) {
+  showConnecting({ preview = false, progressValue } = {}) {
     const model = {
       presentation: 'splash',
       message: 'Loading game',
       progress: true,
     };
+    if (Number.isFinite(progressValue)) {
+      model.progressValue = progressValue;
+    }
     if (preview) {
       this.showPreview(model);
       return;

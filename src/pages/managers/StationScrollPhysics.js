@@ -4,7 +4,7 @@ const TOP_MAX_EDGE_OVERSCROLL = 220;
 const BOTTOM_MAX_EDGE_OVERSCROLL = 118;
 const MAX_RELEASE_VELOCITY = 2600;
 const MIN_INERTIA_VELOCITY = 10;
-const INERTIA_DAMPING = 4.8;
+const INERTIA_DAMPING = 3.6;
 const EDGE_SPRING_STIFFNESS = 520;
 const EDGE_SPRING_DAMPING = 26;
 const MAX_DELTA_SECONDS = 0.05;
@@ -152,10 +152,13 @@ export class StationScrollPhysics {
     return true;
   }
 
-  endDrag() {
+  endDrag({ preserveInertia = true } = {}) {
     this.dragging = false;
     this.velocity = clamp(this.velocity, -MAX_RELEASE_VELOCITY, MAX_RELEASE_VELOCITY);
-    if (Math.abs(this.velocity) < MIN_INERTIA_VELOCITY) {
+    if (
+      !preserveInertia ||
+      Math.abs(this.velocity) < MIN_INERTIA_VELOCITY
+    ) {
       this.velocity = 0;
     }
   }

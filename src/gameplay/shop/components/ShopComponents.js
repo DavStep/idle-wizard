@@ -34,3 +34,7 @@ export const PlayerShopRequestSlot = {
 export const ShopCoinOffer = {
   cooldownRemainingSeconds: [],
 };
+
+export const ShopDailyCrystalOffer = {
+  cooldownRemainingSeconds: [],
+};

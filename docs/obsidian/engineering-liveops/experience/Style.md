@@ -162,7 +162,7 @@ experience_type: style
 - Tabbed popup wrappers should own centering/enter animation; do not also animate the nested `.style-dialog` with centered-dialog transforms.
 - Dialog close controls should sit as normal-weight border labels, like titles but not bold, not as boxed buttons inside the panel.
 - Guild charter tag setup mirrors trade alliance creation: stacked fields, `Tag Color`, square swatch buttons, and `Create` copy.
-- Guild room sections reuse the Research Station title plaque with content on the standard room inset; their summary and member rows use the shared Root Run Settings paper. Guild dialogs stay on `PixiDialogFrame`, and all player-facing Guild copy begins uppercase.
+- Guild room sections reuse the Research Station title plaque with content on the standard room inset; summary, quest, member, and empty rows use the full-width Root Run Research card with its paper ink. Each Hall/Board/Roster/Log view keeps one visible title and continues secondary content in the same row stack. Guild dialogs stay on `PixiDialogFrame`, and all player-facing Guild copy begins uppercase.
 - Guild incoming-quest indices and the current/total page count are unboxed dark-sepia text printed directly on their paper surfaces; right-align list indices in a fixed column and align the page count to the detail paper's top-right content inset.
 - Guild quest page turns must keep the dialog, list-paper, and detail-paper 9-slice nodes mounted; rebuilding those `border-image` nodes causes a black Chromium/WebView repaint frame during the transition.
 - Room UI layer uses `box-sizing: content-box`; wrappers that center fixed-width `.style-dialog` content must account for dialog padding and borders.

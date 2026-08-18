@@ -67,6 +67,23 @@ describe('GuildPixiPage', () => {
       'Guild Hall',
     );
     expect(harness.page.hallSection.contentLayer.x).toBe(16);
+    expect(quest.paper.root.frameWidth).toBe(358);
+    expect(quest.paper.root.frameHeight).toBe(80);
+    expect(harness.page.boardSection.titlePlaque.title.text).toBe('Board');
+    expect(harness.page.availableSection.titlePlaque.root.visible).toBe(
+      false,
+    );
+    expect(harness.page.adventurersSection.titlePlaque.title.text).toBe(
+      'Roster',
+    );
+    expect(harness.page.applicantsSection.titlePlaque.root.visible).toBe(
+      false,
+    );
+    expect(
+      harness.page.applicantsSection.people.get('applicant-1').statusLabel
+        .text,
+    ).toBe('Applicant · Next 5h');
+    expect(harness.page.logSection.titlePlaque.title.text).toBe('Log');
 
     pages.deactivate();
     expect(root).toMatchObject({
@@ -233,9 +250,16 @@ describe('GuildPixiPage', () => {
       );
     }
     expect(harness.page.secretarySection.button).toMatchObject({
-      buttonHeight: 20,
-      sizeTier: 30,
+      buttonHeight: 42,
+      research: true,
+      showLabel: true,
     });
+    expect(harness.page.secretarySection.button.actionTextLabel.text).toBe(
+      'Upgrade',
+    );
+    expect(harness.page.secretarySection.titlePlaque.root.visible).toBe(
+      false,
+    );
     expect(
       harness.page.secretarySection.button.rootRunFrame.compatibilityError,
     ).toBeNull();

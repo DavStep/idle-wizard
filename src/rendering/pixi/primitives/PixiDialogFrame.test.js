@@ -83,7 +83,7 @@ function applyColorMatrix(matrix, [red, green, blue]) {
 }
 
 describe('PixiDialogFrame', () => {
-  it('gives extra device height only to dialogs with a primary vertical scroll', () => {
+  it('gives extra device height only to dialogs with a primary vertical scroll without shrinking authored height', () => {
     const referenceHeight = 844;
     const tallHeight = 944;
 
@@ -118,7 +118,7 @@ describe('PixiDialogFrame', () => {
         minimumHeight: 260,
         hasPrimaryVerticalScroll: true,
       }),
-    ).toBe(260);
+    ).toBe(382);
   });
 
   it('uses the fixed base width and minimum height contract', () => {

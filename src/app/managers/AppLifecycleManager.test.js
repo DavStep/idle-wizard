@@ -200,6 +200,9 @@ describe('AppLifecycleManager', () => {
     await flushPromises();
 
     expect(lifecycle.onlineGateManager.showConnecting).toHaveBeenCalledTimes(1);
+    expect(lifecycle.onlineGateManager.showConnecting).toHaveBeenCalledWith({
+      progressValue: 1,
+    });
     expect(lifecycle.renderFacade.mount).toHaveBeenCalledWith(stage);
     expect(
       lifecycle.renderFacade.mount.mock.invocationCallOrder[0],

@@ -19,6 +19,29 @@ describe('StationScrollPhysics', () => {
     expect(scroll.velocity).toBeGreaterThan(0);
   });
 
+  it('keeps a flick coasting longer with the smoother inertia tuning', () => {
+    const scroll = releasedScroll();
+    const releasedOffset = scroll.offset;
+
+    for (let frame = 0; frame < 30; frame += 1) {
+      scroll.update(1 / 60);
+    }
+
+    expect(ROOT_RUN_STATION_SCROLL_CONSTANTS.inertiaDamping).toBe(3.6);
+    expect(scroll.offset - releasedOffset).toBeGreaterThan(220);
+  });
+
+  it('can end a drag without inertia for reduced motion', () => {
+    const scroll = releasedScroll();
+    const releasedOffset = scroll.offset;
+
+    scroll.endDrag({ preserveInertia: false });
+    scroll.update(1 / 60);
+
+    expect(scroll.offset).toBe(releasedOffset);
+    expect(scroll.velocity).toBe(0);
+  });
+
   it('does not reverse release inertia from high-frequency finger jitter', () => {
     const scroll = new StationScrollPhysics();
     scroll.setMaxOffset(1000);

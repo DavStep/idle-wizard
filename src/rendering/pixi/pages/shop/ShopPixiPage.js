@@ -378,30 +378,64 @@ export class ShopPixiPage extends BasePixiRetainedView {
         : [],
     );
     this.crystalOffersSection.bind(
-      this.model.crystals.offers.map((offer, index) => ({
-        ...offer,
-        id: offer.id ?? offer.crystalCount ?? index,
-        title: offer.title ?? 'Crystal Offer',
-        resourceKey: 'crystal',
-        amountLabel:
-          offer.amountLabel ??
-          offer.crystalCount ??
-          stripResourceName(
-            offer.bundleLabel ?? offer.label ?? '',
-            'crystal',
-          ),
-        value: offer.priceLabel ?? offer.value ?? '',
-        valueVariant: 'green',
-        semanticId:
-          offer.semanticId ??
-          `shop.crystalOffer.${offer.crystalCount ?? index}`,
-        action: () =>
-          offer.action?.(offer) ??
-          this.openDialog(
-            SHOP_DIALOG_IDS.SUPPORT,
-            offer.dialog ?? this.model.dialogs.support ?? {},
-          ),
-      })),
+      [
+        ...(this.model.crystals.dailyCrystalOffer
+          ? [
+              {
+                id: 'dailyCrystalOffer',
+                title:
+                  this.model.crystals.dailyCrystalOffer.title ??
+                  'Daily Offer',
+                resourceKey: 'crystal',
+                amountLabel: stripResourceName(
+                  this.model.crystals.dailyCrystalOffer.rewardLabel ?? '',
+                  'crystal',
+                ),
+                value:
+                  this.model.crystals.dailyCrystalOffer.actionLabel ??
+                  (this.model.crystals.dailyCrystalOffer.canCollect
+                    ? 'free'
+                    : this.model.crystals.dailyCrystalOffer.timerLabel ?? ''),
+                valueVariant: 'green',
+                valueMuted:
+                  this.model.crystals.dailyCrystalOffer.canCollect !== true,
+                enabled:
+                  this.model.crystals.dailyCrystalOffer.canCollect === true,
+                notification:
+                  this.model.crystals.dailyCrystalOffer.notification ??
+                  this.model.crystals.dailyCrystalOffer.canCollect === true,
+                semanticId: 'shop.dailyCrystalOffer.collect',
+                action:
+                  this.model.crystals.dailyCrystalOffer.action ??
+                  this.currentActions.collectDailyCrystalOffer,
+              },
+            ]
+          : []),
+        ...this.model.crystals.offers.map((offer, index) => ({
+          ...offer,
+          id: offer.id ?? offer.crystalCount ?? index,
+          title: offer.title ?? 'Crystal Offer',
+          resourceKey: 'crystal',
+          amountLabel:
+            offer.amountLabel ??
+            offer.crystalCount ??
+            stripResourceName(
+              offer.bundleLabel ?? offer.label ?? '',
+              'crystal',
+            ),
+          value: offer.priceLabel ?? offer.value ?? '',
+          valueVariant: 'green',
+          semanticId:
+            offer.semanticId ??
+            `shop.crystalOffer.${offer.crystalCount ?? index}`,
+          action: () =>
+            offer.action?.(offer) ??
+            this.openDialog(
+              SHOP_DIALOG_IDS.SUPPORT,
+              offer.dialog ?? this.model.dialogs.support ?? {},
+            ),
+        })),
+      ],
     );
 
     this.applySelectedTab();
@@ -2590,6 +2624,7 @@ function normalizeShopViewModel(viewModel = {}) {
   const players = source.players ?? {};
   const crystals = source.crystals ?? {};
   const rawCoinOffer = source.coinOffer;
+  const rawDailyCrystalOffer = source.dailyCrystalOffer;
   return {
     ...source,
     selectedTabId:
@@ -2654,6 +2689,19 @@ function normalizeShopViewModel(viewModel = {}) {
               actionLabel: rawCoinOffer.canCollect
                 ? 'collect'
                 : rawCoinOffer.timerLabel ?? '',
+            }
+          : null),
+      dailyCrystalOffer:
+        crystals.dailyCrystalOffer ??
+        (rawDailyCrystalOffer
+          ? {
+              ...rawDailyCrystalOffer,
+              rewardLabel:
+                rawDailyCrystalOffer.rewardLabel ??
+                `${rawDailyCrystalOffer.rewardCrystal ?? 1} crystal`,
+              actionLabel: rawDailyCrystalOffer.canCollect
+                ? 'free'
+                : rawDailyCrystalOffer.timerLabel ?? '',
             }
           : null),
       offers: safeArray(crystals.offers ?? source.crystalOffers),
@@ -2846,6 +2894,8 @@ function getShopTabNotification(model, tabId) {
     children.crystals,
     model.crystals?.coinOffer?.notification,
     model.crystals?.coinOffer?.canCollect,
+    model.crystals?.dailyCrystalOffer?.notification,
+    model.crystals?.dailyCrystalOffer?.canCollect,
   ]);
 }
 

@@ -546,6 +546,7 @@ describe('PixiViewModelFactory', () => {
         current: {
           periodKey: 'weekly-1',
           eventId: 'new-crown',
+          family: 'political change',
           headline: 'new crown tours town',
           body: [
             'the bells have not stopped.',
@@ -627,6 +628,8 @@ describe('PixiViewModelFactory', () => {
       selectedTabId: 'tasks',
       rowWidget: 'worldEventQuest',
       header: {
+        artAssetId:
+          'source:assets/world-events/political-change.png',
         headline: 'New Crown Tours Town',
         body:
           'The bells have not stopped.\nEvery guild is waiting to be counted.',
@@ -707,8 +710,9 @@ describe('PixiViewModelFactory', () => {
       actions,
     );
     expect(rewards.rowWidget).toBe('worldEventReward');
-    expect(rewards.header.meta).toBe(
-      '125 points · 5d\nLeaderboard Rewards: 2k points to qualify',
+    expect(rewards.header.meta).toBe('125 points · 5d');
+    expect(rewards.status).toBe(
+      'Leaderboard Rewards: 2k points to qualify',
     );
     expect(rewards.rows).toEqual([
       {

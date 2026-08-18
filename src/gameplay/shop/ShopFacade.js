@@ -12,6 +12,7 @@ import { ShopPlayerRequestManager } from './managers/ShopPlayerRequestManager.js
 import { ShopNpcPriceManager } from './managers/ShopNpcPriceManager.js';
 import { ShopSellAvailabilityManager } from './managers/ShopSellAvailabilityManager.js';
 import { ShopCoinOfferManager } from './managers/ShopCoinOfferManager.js';
+import { ShopDailyCrystalOfferManager } from './managers/ShopDailyCrystalOfferManager.js';
 import { ShopNpcSellQuoteManager } from './managers/ShopNpcSellQuoteManager.js';
 import { ShopStockPurchaseManager } from './managers/ShopStockPurchaseManager.js';
 import { ShopStockPriceQuoteManager } from './managers/ShopStockPriceQuoteManager.js';
@@ -26,6 +27,7 @@ export class ShopFacade {
 
   constructor({
     coinFacade,
+    crystalFacade,
     itemsFacade,
     marketLicenceFacade,
     playerLevelFacade,
@@ -62,6 +64,9 @@ export class ShopFacade {
     this.shopCoinOfferManager = new ShopCoinOfferManager({
       coinFacade,
       playerLevelFacade,
+    });
+    this.shopDailyCrystalOfferManager = new ShopDailyCrystalOfferManager({
+      crystalFacade,
     });
     this.shopShelfEntityManager = new ShopShelfEntityManager({
       initialUnlockedSlots: this.shopBalanceManager.getInitialUnlockedSlots(),
@@ -171,9 +176,11 @@ export class ShopFacade {
     this.shopPlayerShelfEntityManager.initialize(ecsManagers);
     this.shopPlayerRequestEntityManager.initialize(ecsManagers);
     this.shopCoinOfferManager.initialize(ecsManagers);
+    this.shopDailyCrystalOfferManager.initialize(ecsManagers);
     this.shopShelfFutureLoadManager.initialize(ecsManagers.systems);
     this.shopAutoSellManager.register(ecsManagers.systems);
     this.shopCoinOfferManager.register(ecsManagers.systems);
+    this.shopDailyCrystalOfferManager.register(ecsManagers.systems);
   }
 
   buyNextShelfSlot() {
@@ -296,9 +303,14 @@ export class ShopFacade {
     return this.shopCoinOfferManager.collect();
   }
 
+  collectDailyCrystalOffer() {
+    return this.shopDailyCrystalOfferManager.collect();
+  }
+
   hasFrameTimerWork() {
     return (
       this.shopCoinOfferManager.hasFrameTimerWork() ||
+      this.shopDailyCrystalOfferManager.hasFrameTimerWork() ||
       this.shopShelfFutureLoadManager.hasFrameTimerWork() ||
       this.shopAutoSellManager.hasFrameTimerWork()
     );
@@ -358,6 +370,7 @@ export class ShopFacade {
         items: visibleSellItems,
       },
       coinOffer: this.shopCoinOfferManager.getSnapshot(),
+      dailyCrystalOffer: this.shopDailyCrystalOfferManager.getSnapshot(),
     };
   }
 
@@ -571,6 +584,8 @@ export class ShopFacade {
     const shelf = snapshot.shelf;
     const playerShelf = snapshot.playerShelf;
     const coinOffer = this.shopCoinOfferManager.getPersistenceSnapshot();
+    const dailyCrystalOffer =
+      this.shopDailyCrystalOfferManager.getPersistenceSnapshot();
 
     return {
       shelf: {
@@ -613,6 +628,7 @@ export class ShopFacade {
       },
       coinOffer,
       goldOffer: coinOffer,
+      dailyCrystalOffer,
     };
   }
 
@@ -669,6 +685,9 @@ export class ShopFacade {
     });
     this.shopCoinOfferManager.applyPersistenceSnapshot(
       snapshot.coinOffer ?? snapshot.goldOffer,
+    );
+    this.shopDailyCrystalOfferManager.applyPersistenceSnapshot(
+      snapshot.dailyCrystalOffer,
     );
     this.syncMarketCapacity();
   }

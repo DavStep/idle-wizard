@@ -80,6 +80,18 @@ const WORLD_EVENT_TABS = Object.freeze([
   Object.freeze({ id: 'leaderboard', label: 'Leaderboard' }),
   Object.freeze({ id: 'rewards', label: 'Rewards' }),
 ]);
+const WORLD_EVENT_ART_ASSET_BY_FAMILY = Object.freeze({
+  'village crisis':
+    'source:assets/world-events/village-crisis.png',
+  'military danger':
+    'source:assets/world-events/military-danger.png',
+  'political change':
+    'source:assets/world-events/political-change.png',
+  'exploration discovery':
+    'source:assets/world-events/exploration-discovery.png',
+  'trade disruption':
+    'source:assets/world-events/trade-disruption.png',
+});
 const WORLD_EVENT_MAX_QUEST_ROWS = 2;
 const TRADE_ALLIANCE_ROLE_LABELS = Object.freeze({
   tradeMaster: 'Trade Master',
@@ -1546,10 +1558,17 @@ export class PixiViewModelFactory {
         });
     }
 
+    const qualificationStatus =
+      current && safeTabId === 'rewards'
+        ? `Leaderboard Rewards: ${formatWorldEventNumber(
+            qualificationPoints,
+          )} points to qualify`
+        : '';
+
     return {
       title: 'World Event',
       status: notice.unlocked
-        ? ''
+        ? qualificationStatus
         : `Unlocks at level ${notice.unlockLevel ?? 4}`,
       selectedTabId: safeTabId,
       rowWidget:
@@ -1560,6 +1579,8 @@ export class PixiViewModelFactory {
             : 'worldEventReward',
       header: current
         ? {
+            artAssetId:
+              WORLD_EVENT_ART_ASSET_BY_FAMILY[current.family] ?? '',
             headline: toTitleCase(current.headline ?? 'World Event'),
             body: toSentenceCase(
               Array.isArray(current.body)
@@ -1568,13 +1589,7 @@ export class PixiViewModelFactory {
             ),
             meta: `${formatWorldEventNumber(
               currentEventPoints,
-            )} points · ${formatWorldEventTimer(current.resetLabel)}${
-              safeTabId === 'rewards'
-                ? `\nLeaderboard Rewards: ${formatWorldEventNumber(
-                    qualificationPoints,
-                  )} points to qualify`
-                : ''
-            }`,
+            )} points · ${formatWorldEventTimer(current.resetLabel)}`,
           }
         : null,
       onSelectTab: (tabId) => actions.selectWorldEventTab?.(tabId),

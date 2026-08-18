@@ -55,6 +55,11 @@
             canCollect: false,
             cooldownRemainingSeconds: 7_020,
           },
+          dailyCrystalOffer: {
+            rewardCrystal: 1,
+            canCollect: true,
+            cooldownRemainingSeconds: 0,
+          },
           shelf: {
             autoSellSeconds: 5,
             sellKinds: [
@@ -259,6 +264,10 @@
         gameplaySnapshot.shop.coinOffer.canCollect = true;
         gameplaySnapshot.shop.coinOffer.cooldownRemainingSeconds = 0;
       }
+      if (query.get('dailyCrystalOffer') === 'cooldown') {
+        gameplaySnapshot.shop.dailyCrystalOffer.canCollect = false;
+        gameplaySnapshot.shop.dailyCrystalOffer.cooldownRemainingSeconds = 86_340;
+      }
       const showStallDialog = dialogQuery === 'stall';
       const showLedgerDialog = dialogQuery === 'ledger';
       const showRequestDialog = dialogQuery === 'request';
@@ -379,6 +388,13 @@
         inputRouter,
         textEntryService,
       });
+      applicationManager.subscribeProjection(
+        (projection) => {
+          page.layout(projection);
+          dialogRegistry.layout(projection);
+        },
+        { emitCurrent: true },
+      );
       let ledgerKind = 'seed';
       let stallItemKind = 'seed';
       let stallTargetQuantity = query.has('count')
@@ -440,6 +456,23 @@
             requestStatusBySlot: { 1: requestStatus },
             listingDraftBySlot: { 1: listingDraft },
             listingItemKindBySlot: { 1: listingItemKind },
+          },
+          gameplayActions: {
+            collectShopDailyCrystalOffer() {
+              const offer = gameplaySnapshot.shop.dailyCrystalOffer;
+              if (!offer.canCollect) {
+                return { ok: false, reason: 'cooldown' };
+              }
+              offer.canCollect = false;
+              offer.cooldownRemainingSeconds = 86_400;
+              window.__marketRecipeLastDailyCrystalOffer = {
+                ok: true,
+                crystal: offer.rewardCrystal,
+                cooldownSeconds: 86_400,
+              };
+              page.bind(createViewModel());
+              return window.__marketRecipeLastDailyCrystalOffer;
+            },
           },
           actions: {
             ui: {

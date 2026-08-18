@@ -9,6 +9,7 @@ describe('createShop', () => {
       claimPlayerShopSaleProceeds: vi.fn(() => ({ ok: true })),
       clearPlayerShopRequest: vi.fn(() => ({ ok: true })),
       collectShopCoinOffer: vi.fn(() => ({ ok: true })),
+      collectShopDailyCrystalOffer: vi.fn(() => ({ ok: true })),
       selectShopShelfSlot: vi.fn(() => ({ ok: true })),
       setSelectedShopShelfSlotAllocation: vi.fn(() => ({
         ok: true,
@@ -98,6 +99,11 @@ describe('createShop', () => {
           coinOffer: {
             rewardCoin: 100,
             cooldownRemainingSeconds: 45,
+            canCollect: true,
+          },
+          dailyCrystalOffer: {
+            rewardCrystal: 1,
+            cooldownRemainingSeconds: 0,
             canCollect: true,
           },
         },
@@ -208,6 +214,11 @@ describe('createShop', () => {
       actionLabel: 'collect',
       notification: true,
     });
+    expect(model.shop.crystals.dailyCrystalOffer).toMatchObject({
+      rewardLabel: '1 crystal',
+      actionLabel: 'free',
+      notification: true,
+    });
     expect(model.shop.dialogs.ledger.items[0]).toMatchObject({
       label: 'Sage Seed',
       detail: 'stock 4 · buyers 6',
@@ -264,6 +275,10 @@ describe('createShop', () => {
     expect(gameplayActions.collectShopCoinOffer).toHaveBeenCalledTimes(
       1,
     );
+    model.actions.collectDailyCrystalOffer();
+    expect(
+      gameplayActions.collectShopDailyCrystalOffer,
+    ).toHaveBeenCalledTimes(1);
   });
 
   it('projects player-centered ledger facts and honest unavailable states', () => {
@@ -863,5 +878,42 @@ describe('createShop', () => {
         }),
       }),
     );
+  });
+
+  it('preserves item identity for market and trade-history dialog icons', () => {
+    const dialogs = createShop({
+      playerShopSnapshot: {
+        connected: true,
+        listings: [
+          {
+            listingKey: 'listing-1',
+            itemKey: 'sageSeed',
+            itemKind: 'seed',
+            itemLabel: 'sage seed',
+            quantity: 2,
+            priceCoin: 3,
+          },
+        ],
+        ownTradeHistory: [
+          {
+            tradeId: 'trade-1',
+            itemKey: 'mintSeed',
+            itemKind: 'seed',
+            itemLabel: 'mint seed',
+            quantity: 1,
+            totalPriceCoin: 4,
+          },
+        ],
+      },
+    }).shop.dialogs;
+
+    expect(dialogs.market.items[0]).toMatchObject({
+      itemKey: 'sageSeed',
+      itemKind: 'seed',
+    });
+    expect(dialogs.tradeHistory.items[0]).toMatchObject({
+      itemKey: 'mintSeed',
+      itemKind: 'seed',
+    });
   });
 });

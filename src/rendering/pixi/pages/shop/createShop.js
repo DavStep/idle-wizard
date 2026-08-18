@@ -214,6 +214,9 @@ export function createShop(options = {}) {
       },
       crystals: {
         coinOffer: createCoinOfferModel(shop.coinOffer),
+        dailyCrystalOffer: createDailyCrystalOfferModel(
+          shop.dailyCrystalOffer,
+        ),
         offers: crystalOffers.map((offer, index) => ({
           ...offer,
           id: offer.id ?? offer.crystalCount ?? index,
@@ -1159,6 +1162,8 @@ function createMarketDialog({ playerShop, uiActions, uiState }) {
         }`,
         detail: `${nonNegativeInteger(row.quantity)} available`,
         value: formatCoinPriceText(row.priceCoin),
+        itemKey: row.itemKey,
+        itemKind: row.itemKind,
         resourceKey: row.itemKind,
         valueResourceKey: 'coin',
         semanticId:
@@ -1214,6 +1219,8 @@ function createTradeHistoryDialog({ playerShop, uiActions }) {
       value: `${nonNegativeInteger(trade.quantity)} · ${formatCoinPriceText(
         trade.totalPriceCoin ?? trade.priceCoin,
       )}`,
+      itemKey: trade.itemKey,
+      itemKind: trade.itemKind,
       resourceKey: trade.itemKind,
       valueResourceKey: 'coin',
       action: () =>
@@ -1231,6 +1238,26 @@ function createCoinOfferModel(offer) {
     rewardLabel: formatCoinPriceText(offer.rewardCoin),
     actionLabel: offer.canCollect
       ? 'collect'
+      : formatRemainingTime(
+          finiteNumber(offer.cooldownRemainingSeconds, 0) * 1_000,
+        ),
+    timerLabel: formatRemainingTime(
+      finiteNumber(offer.cooldownRemainingSeconds, 0) * 1_000,
+    ),
+    canCollect: offer.canCollect === true,
+    notification: offer.canCollect === true,
+  };
+}
+
+function createDailyCrystalOfferModel(offer) {
+  if (!offer) {
+    return null;
+  }
+  return {
+    ...offer,
+    rewardLabel: `${nonNegativeInteger(offer.rewardCrystal)} crystal`,
+    actionLabel: offer.canCollect
+      ? 'free'
       : formatRemainingTime(
           finiteNumber(offer.cooldownRemainingSeconds, 0) * 1_000,
         ),
@@ -1297,6 +1324,19 @@ function createShopActionMap({
       callFirst(
         gameplayActions,
         ['collectShopCoinOffer', 'collectCoinOffer'],
+        [],
+      );
+  }
+  if (
+    hasAnyMethod(gameplayActions, [
+      'collectShopDailyCrystalOffer',
+      'collectDailyCrystalOffer',
+    ])
+  ) {
+    result.collectDailyCrystalOffer = () =>
+      callFirst(
+        gameplayActions,
+        ['collectShopDailyCrystalOffer', 'collectDailyCrystalOffer'],
         [],
       );
   }

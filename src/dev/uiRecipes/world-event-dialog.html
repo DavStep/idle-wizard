@@ -77,6 +77,7 @@
           dialogs: {
             worldEvent: {
               header: {
+                artAssetId: 'source:assets/world-events/political-change.png',
                 body: 'Bells ring from towers that disagreed yesterday.\nNew clerks ask every workshop to prove the town still moves and read the new edicts.',
                 headline: 'New King Crowned',
                 meta: '0 points · 4d 2h',
@@ -140,6 +141,7 @@
                 },
               ],
               selectedTabId: 'tasks',
+              status: '',
               tabs: [
                 { id: 'tasks', label: 'Quests', selected: true },
                 { id: 'leaderboard', label: 'Leaderboard' },
@@ -196,6 +198,36 @@
           ],
         },
         {
+          id: 'rank-3',
+          type: 'worldEventReward',
+          rankLabel: 'Rank 3',
+          rewards: [
+            { resourceKey: 'emerald', amountLabel: '2' },
+            { resourceKey: 'crystal', amountLabel: '5' },
+          ],
+        },
+        {
+          id: 'rank-4-10',
+          type: 'worldEventReward',
+          rankLabel: 'Rank 4-10',
+          rewards: [
+            { resourceKey: 'emerald', amountLabel: '1' },
+            { resourceKey: 'crystal', amountLabel: '3' },
+          ],
+        },
+        {
+          id: 'rank-11-25',
+          type: 'worldEventReward',
+          rankLabel: 'Rank 11-25',
+          rewards: [{ resourceKey: 'crystal', amountLabel: '2' }],
+        },
+        {
+          id: 'rank-26-100',
+          type: 'worldEventReward',
+          rankLabel: 'Rank 26-100',
+          rewards: [{ resourceKey: 'crystal', amountLabel: '1' }],
+        },
+        {
           id: 'rank-101-plus',
           type: 'worldEventReward',
           rankLabel: 'Rank 101+ Qualified',
@@ -216,9 +248,10 @@
           : tabId === 'leaderboard'
             ? worldEventLeaderboardRows
             : worldEventRewardRows;
-        dialog.header.meta = tabId === 'rewards'
-          ? '0 points · 4d 2h\nLeaderboard Rewards: 2,000 points to qualify'
-          : '0 points · 4d 2h';
+        dialog.header.meta = '0 points · 4d 2h';
+        dialog.status = tabId === 'rewards'
+          ? 'Leaderboard Rewards: 2k points to qualify'
+          : '';
         dialog.tabs = dialog.tabs.map((tab) => ({
           ...tab,
           selected: tab.id === tabId,

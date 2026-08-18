@@ -28,7 +28,7 @@ export default [
   entry('compound.guild-section-row', 'Guild Section Row', [], sectionRow, variants(['pair', 'button', 'identity', 'paragraph'])),
   entry('compound.guild-rows-section', 'Guild Rows Section', ['compound.research-station-title', 'compound.guild-section-row'], rowsSection, variants(['summary', 'empty'])),
   entry('compound.guild-charter-panel', 'Guild Charter Panel', ['compound.research-station-title', 'text-button'], charterPanel, variants(['available', 'unavailable'])),
-  entry('compound.guild-secretary-section', 'Guild Secretary Section', ['compound.research-station-title', 'text-button'], secretarySection, variants(['upgrade', 'maximum'])),
+  entry('compound.guild-secretary-section', 'Guild Secretary Section', ['compound.research-station-title', 'cost-button'], secretarySection, variants(['upgrade', 'maximum'])),
   entry('compound.guild-quest-card', 'Guild Quest Card', [], questCard, variants(['available', 'assigned'])),
   entry('compound.guild-quest-board', 'Guild Quest Board', ['compound.research-station-title', 'compound.guild-quest-card'], questBoard, variants(['requests', 'empty'])),
   entry('compound.guild-person-row', 'Guild Person Row', ['primitive.notification-badge'], personRow, variants(['idle', 'hospital', 'dead'])),
@@ -97,7 +97,7 @@ function secretarySection({ assets, input, fixture }) {
 function questCard({ assets, input, fixture }) {
   const control = new GuildQuestCard({ assetManager: assets, inputRouter: input });
   control.bind('quest', questModel(), { open: () => true, remove: fixture.state === 'assigned' ? () => true : null });
-  control.applyTheme(DEFAULT_PIXI_THEME_SNAPSHOT); control.setBounds(0, 0, 157, 106); return wrap(control, 157, 106);
+  control.applyTheme(DEFAULT_PIXI_THEME_SNAPSHOT); control.setBounds(0, 0, WIDTH, 80); return wrap(control, WIDTH, 80);
 }
 
 function questBoard({ assets, input, fixture }) {

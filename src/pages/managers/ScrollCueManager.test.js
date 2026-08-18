@@ -275,6 +275,81 @@ describe('ScrollCueManager', () => {
     manager.unmount();
   });
 
+  it('samples the final pointer-up position before releasing inertia', () => {
+    const { root, pane } = createScrollablePane();
+    const manager = new ScrollCueManager();
+    manager.mount(root);
+    const cue = manager.cues.get(pane);
+    let nowMs = 0;
+    cue.now = () => nowMs;
+
+    cue.onPointerDown({
+      pointerId: 8,
+      pointerType: 'touch',
+      isPrimary: true,
+      button: 0,
+      clientY: 160,
+    });
+    nowMs = 40;
+    cue.onPointerMove({
+      pointerId: 8,
+      pointerType: 'touch',
+      clientY: 120,
+      cancelable: false,
+    });
+    nowMs = 80;
+    cue.onPointerUp({
+      pointerId: 8,
+      pointerType: 'touch',
+      clientY: 80,
+    });
+    cue.cancelAnimationFrame();
+
+    expect(cue.physics.offset).toBeCloseTo(
+      cue.toRootRunUnits(80),
+      10,
+    );
+    expect(cue.physics.velocity).toBeGreaterThan(0);
+
+    manager.unmount();
+  });
+
+  it('stops release inertia immediately when reduced motion is requested', () => {
+    const { root, pane } = createScrollablePane();
+    vi.stubGlobal('matchMedia', vi.fn(() => ({ matches: true })));
+    const manager = new ScrollCueManager();
+    manager.mount(root);
+    const cue = manager.cues.get(pane);
+    let nowMs = 0;
+    cue.now = () => nowMs;
+
+    cue.onPointerDown({
+      pointerId: 9,
+      pointerType: 'touch',
+      isPrimary: true,
+      button: 0,
+      clientY: 160,
+    });
+    nowMs = 40;
+    cue.onPointerMove({
+      pointerId: 9,
+      pointerType: 'touch',
+      clientY: 100,
+      cancelable: false,
+    });
+    cue.onPointerUp({
+      pointerId: 9,
+      pointerType: 'touch',
+      clientY: 100,
+    });
+
+    expect(cue.animationFrame).toBe(0);
+    expect(cue.physics.velocity).toBe(0);
+    expect(cue.physics.offset).toBeGreaterThan(0);
+
+    manager.unmount();
+  });
+
   it('uses one page-scroll primitive for page and dialog viewports', () => {
     const baseCss = readFileSync(`${cwd()}/src/styles/base.css`, 'utf8');
     const rootRule = baseCss.match(/:root\s*\{(?<body>[^}]*)\}/)?.groups?.body;

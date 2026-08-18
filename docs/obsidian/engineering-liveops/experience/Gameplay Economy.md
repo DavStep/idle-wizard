@@ -62,7 +62,7 @@ experience_type: gameplay-economy
 - Ruby is the prestige currency; it appears in the top panel only where usable, and automation research spends it.
 - Prestige ruby is derived from completed prestige milestones minus committed ruby automation research costs; save prestige milestone data and do not treat raw ruby as permanent across prestige resets.
 - Prestige resets run data but preserves current emerald currency; advanced emerald research remains run-scoped unless explicitly made permanent.
-- Crystal shop offers live as the third tab inside Market; rows show only bundle and price, with no `each` or note columns.
+- Crystal shop offers live as the third tab inside Market; rows show a two-hour coin offer, a daily free `1` crystal offer, and paid crystal bundles with no `each` or note columns.
 - Crystal shop price controls open a support-unavailable popup; do not add payment or crystal grant logic until transactions are requested.
 - Future resource info or shortfall dialogs should be catalog-backed with source/use rows and explicit goto ids; unknown resource ids should fail loudly, not fall back to generic text.
 - Early task levels must not require items gated far beyond the current research tier; use larger quantities of near-tier seeds, herbs, and potions instead.

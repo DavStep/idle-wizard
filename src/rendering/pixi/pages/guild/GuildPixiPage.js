@@ -15,6 +15,7 @@ import {
   drawPixiPageBackground,
 } from '../../theme/PixiPageBackground.js';
 import { resolveRetainedPageBottomClearance } from '../workshop/RetainedPageKit.js';
+import { RESEARCH_PIXI_GEOMETRY } from '../research/ResearchPixiPage.js';
 import {
   GUILD_DIALOG_IDS,
   GuildDialogPixi,
@@ -154,6 +155,7 @@ export class GuildPixiPage extends BasePixiRetainedView {
       assetManager,
       inputRouter,
       semanticRegistry,
+      showTitle: false,
     });
     this.boardSection = new GuildQuestBoardSection({
       assetManager,
@@ -168,9 +170,10 @@ export class GuildPixiPage extends BasePixiRetainedView {
       semanticRegistry,
       counters,
       label: 'guild:available',
+      showTitle: false,
     });
     this.adventurersSection = new GuildPeopleSection({
-      title: 'Adventurers',
+      title: 'Roster',
       assetManager,
       inputRouter,
       semanticRegistry,
@@ -186,9 +189,10 @@ export class GuildPixiPage extends BasePixiRetainedView {
       counters,
       semanticPrefix: 'guild.applicant',
       label: 'guild:applicants',
+      showTitle: false,
     });
     this.logSection = new GuildRowsSection({
-      title: 'Guild Log',
+      title: 'Log',
       assetManager,
       inputRouter,
       semanticRegistry,
@@ -443,12 +447,18 @@ export class GuildPixiPage extends BasePixiRetainedView {
       })),
       countLabel: `${adventurers.length}/${
         guild.secretary?.hiredCap ?? 1
+      } · ${applicants.length} Applicant${
+        applicants.length === 1 ? '' : 's'
       }`,
       emptyLabel: 'No Adventurers',
     });
     this.applicantsSection.bind({
-      people: applicants.map((applicant) => ({
+      people: applicants.map((applicant, index) => ({
         ...applicant,
+        statusLabel:
+          index === 0 && guild.applicantResetLabel
+            ? `Applicant · Next ${guild.applicantResetLabel}`
+            : 'Applicant',
         action: () =>
           this.openDialog(
             GUILD_DIALOG_IDS.APPLICANT,
@@ -472,7 +482,7 @@ export class GuildPixiPage extends BasePixiRetainedView {
         .slice(0, 4)
         .map((log, index) => ({
           id: log.id ?? index,
-          kind: 'empty',
+          kind: 'paragraph',
           text: log.text ?? String(log),
           tone: log.tone ?? '',
         })),
@@ -851,18 +861,21 @@ export class GuildPixiPage extends BasePixiRetainedView {
       [this.hallSection, this.secretarySection],
       width,
       hallViewportHeight,
+      RESEARCH_PIXI_GEOMETRY.rowGap,
     );
     this.layoutSectionStack(
       this.tabScrolls.get('board'),
       [this.boardSection, this.availableSection],
       width,
       adventurerViewportHeight,
+      RESEARCH_PIXI_GEOMETRY.rowGap,
     );
     this.layoutSectionStack(
       this.tabScrolls.get('roster'),
       [this.adventurersSection, this.applicantsSection],
       width,
       adventurerViewportHeight,
+      RESEARCH_PIXI_GEOMETRY.rowGap,
     );
     this.layoutSectionStack(
       this.tabScrolls.get('log'),
@@ -872,18 +885,24 @@ export class GuildPixiPage extends BasePixiRetainedView {
     );
   }
 
-  layoutSectionStack(scroll, sections, width, viewportHeight) {
+  layoutSectionStack(
+    scroll,
+    sections,
+    width,
+    viewportHeight,
+    sectionGap = SECTION_GAP,
+  ) {
     let y = PAGE_SCROLL_PADDING;
     for (const section of sections) {
       const height = section.getPreferredHeight(width);
       section.setBounds(0, y, width, height);
-      y += height + SECTION_GAP;
+      y += height + sectionGap;
     }
     const contentHeight = Math.max(
       viewportHeight,
       Math.max(
         PAGE_SCROLL_PADDING * 2,
-        y - SECTION_GAP + PAGE_SCROLL_PADDING,
+        y - sectionGap + PAGE_SCROLL_PADDING,
       ),
     );
     scroll.setContentHeight(contentHeight);

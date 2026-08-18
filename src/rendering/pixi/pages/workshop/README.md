@@ -38,7 +38,8 @@ catalog entries.
 
 Open `src/dev/uiRecipes/world-event-dialog.html` through the shared Vite server
 for deterministic production-backed World Event states. It includes the
-full-width `314px` paper request sections, the two-quest no-scroll composition,
+family-selected full-width event artwork with rounded clipping, full-width
+`314px` paper request sections, the two-quest no-scroll composition,
 the shared player leaderboard rows, the image-backed reward rows with overlaid
 icon amounts, and Donate-to-donation-dialog interaction without depending on a
 gameplay save or backend account session. Use `?tab=rewards` for reward-row QA.

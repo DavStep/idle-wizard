@@ -683,6 +683,11 @@ function createShopModel(key, subscribe) {
           actionLabel: 'collect',
           canCollect: true,
         },
+        dailyCrystalOffer: {
+          rewardLabel: '1 crystal',
+          actionLabel: 'free',
+          canCollect: true,
+        },
         offers: [1, 2].map((index) => ({
           id: `crystal-${key}-${index}`,
           crystalCount: (slotOffset + index) * 10,

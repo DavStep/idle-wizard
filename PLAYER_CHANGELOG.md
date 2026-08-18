@@ -5,6 +5,12 @@ upload script posts the section whose heading matches `package.json` `version`.
 Write these developer-to-player notes only in Idle Wizard terms. Do not mention
 other game names, source projects, ports, or implementation provenance.
 
+## 0.3.69
+
+- Added a free daily crystal offer to the Market, ready to collect once every 24 hours.
+- Refined the Guild Hall, Adventurers, applicants, quest board, and log, while showing the planned Fishers, Miners, and World branches as locked destinations.
+- Added illustrated World Event headers and improved room scrolling, reduced-motion behavior, and loading feedback.
+
 ## 0.3.68
 
 - Fixed web reconnection when a saved session token has expired, so the game can recover instead of remaining on the server connection screen.

@@ -234,14 +234,25 @@ export class ManagedStationScrollPane {
       return;
     }
 
+    if (Number.isFinite(event.clientY)) {
+      this.physics.dragTo(
+        this.toRootRunUnits(this.toLocalPointerY(event.clientY)),
+        this.now(),
+      );
+    }
     const draggedPastThreshold = this.draggedPastThreshold;
-    this.physics.endDrag();
+    const reduceMotion = this.prefersReducedMotion();
+    this.physics.endDrag({ preserveInertia: !reduceMotion });
     this.activePointerId = null;
     this.activePointerType = '';
     this.draggedPastThreshold = false;
     this.element.classList.remove('is-scroll-grabbing', 'is-scroll-dragging');
     if (draggedPastThreshold) {
       this.suppressClickUntilMs = this.now() + CLICK_SUPPRESSION_MS;
+    }
+    if (reduceMotion) {
+      this.snapInsideBounds();
+      return;
     }
     this.startAnimation();
   }
@@ -611,6 +622,14 @@ export class ManagedStationScrollPane {
 
   now() {
     return this.window?.performance?.now?.() ?? Date.now();
+  }
+
+  prefersReducedMotion() {
+    return Boolean(
+      this.window
+        ?.matchMedia?.('(prefers-reduced-motion: reduce)')
+        ?.matches,
+    );
   }
 
   requestFrame(callback) {

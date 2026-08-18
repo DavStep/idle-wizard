@@ -400,6 +400,7 @@ export default [
     scenarios: [
       { fixture: { guildTabId: 'hall' }, id: 'default', label: 'Default', mount: mountBottomHudTextTab },
       { fixture: { guildTabId: 'adventurers', selected: true }, id: 'selected', label: 'Selected', mount: mountBottomHudTextTab },
+      { fixture: { guildTabId: 'fishers', unlocked: false }, id: 'locked', label: 'Locked', mount: mountBottomHudTextTab },
       { fixture: { guildTabId: 'adventurers', notification: true }, id: 'notification', label: 'Notification', mount: mountBottomHudTextTab },
     ],
   }),

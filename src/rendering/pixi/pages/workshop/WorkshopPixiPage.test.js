@@ -1348,6 +1348,8 @@ describe('WorkshopPixiPage', () => {
       selectedTabId: 'tasks',
       rowWidget: 'worldEventQuest',
       header: {
+        artAssetId:
+          'source:assets/world-events/political-change.png',
         headline: 'New King Crowned',
         body:
           'Bells ring from towers that disagreed yesterday.\nNew clerks ask every workshop to prove the town still moves and read the new edicts.',
@@ -1423,6 +1425,12 @@ describe('WorkshopPixiPage', () => {
     expect(dialog.panel.paperFrame.visible).toBe(false);
     expect(dialog.worldEventHeaderPaper.visible).toBe(true);
     expect(dialog.worldEventListPaper.visible).toBe(false);
+    expect(dialog.worldEventHeaderArt.visible).toBe(true);
+    expect(dialog.worldEventHeaderArt.width).toBe(294);
+    expect(dialog.worldEventHeaderArt.height).toBe(98);
+    expect(dialog.worldEventHeaderArt.mask).toBe(
+      dialog.worldEventHeaderArtMask,
+    );
     expect(dialog.rows.getWidgets()).toHaveLength(2);
     expect(dialog.scroll.width).toBe(314);
     expect(row.width).toBe(314);
@@ -1457,6 +1465,9 @@ describe('WorkshopPixiPage', () => {
     ).toBeLessThanOrEqual(row.options[1].width);
     expect(assetManager.getTexture).toHaveBeenCalledWith(
       PIXI_ROOT_RUN_ASSETS.dialogPaper,
+    );
+    expect(assetManager.getTexture).toHaveBeenCalledWith(
+      'source:assets/world-events/political-change.png',
     );
     expect(assetManager.getTexture).toHaveBeenCalledWith(
       PIXI_ROOT_RUN_ASSETS.settingsRow,
@@ -1507,9 +1518,9 @@ describe('WorkshopPixiPage', () => {
       rowWidget: 'worldEventReward',
       header: {
         ...questsViewModel.header,
-        meta:
-          '0 points · 4d 2h\nLeaderboard Rewards: 2,000 points to qualify',
+        meta: '0 points · 4d 2h',
       },
+      status: 'Leaderboard Rewards: 2k points to qualify',
       rows: [
         {
           id: 'reward:1',
@@ -1525,8 +1536,14 @@ describe('WorkshopPixiPage', () => {
     harness.page.bind(model);
     const [rewardRow] = dialog.rows.getWidgets();
     expect(dialog.rows).toBe(dialog.worldEventRewardRows);
-    expect(dialog.headerMeta.text).toContain(
-      'Leaderboard Rewards: 2,000 points to qualify',
+    expect(dialog.headerMeta.text).toBe('0 points · 4d 2h');
+    expect(dialog.status.text).toBe(
+      'Leaderboard Rewards: 2k points to qualify',
+    );
+    expect(dialog.status.parent).toBe(dialog.panel.content);
+    expect(dialog.status.parent).not.toBe(dialog.scroll.content);
+    expect(dialog.status.y).toBe(
+      dialog.scroll.root.y + dialog.scroll.height,
     );
     expect(rewardRow.rank.text).toBe('Rank 1');
     expect(rewardRow.background.visible).toBe(true);
@@ -1549,6 +1566,88 @@ describe('WorkshopPixiPage', () => {
     expect(reboundRow.options[1].action.enabled).toBe(true);
     reboundRow.options[1].action.activate();
     expect(donate).toHaveBeenCalledTimes(2);
+
+    harness.page.destroy();
+    harness.dispose();
+  });
+
+  it('keeps World Event quest heights stable after a leaderboard round trip', () => {
+    const harness = createHarness();
+    const model = createWorkshopViewModel();
+    const questsViewModel = {
+      title: 'World Event',
+      selectedTabId: 'tasks',
+      rowWidget: 'worldEventQuest',
+      header: {
+        headline: 'Fever In The Lower Quarter',
+        body: 'Lanterns stay lit past midnight.',
+        meta: '0 points · 4d 2h',
+      },
+      tabs: [
+        { id: 'tasks', label: 'Quests', selected: true },
+        { id: 'leaderboard', label: 'Leaderboard', selected: false },
+        { id: 'rewards', label: 'Rewards', selected: false },
+      ],
+      rows: [
+        {
+          id: 'quest:cool-the-fever',
+          title: 'Cool The Fever',
+          pointsLabel: '0 Points',
+          description:
+            'Families are sleeping beside buckets because the lower quarter cannot keep water cool. Donate tonics that steady breath and bring fever down before the sick lose another night.',
+          donationOptions: [
+            {
+              id: 'mana-tonic',
+              label: 'Mana Tonic',
+              pointsEachLabel: '80 Points Each',
+              totalLabel: '0 Points Total',
+              actionLabel: 'Donate',
+              enabled: true,
+            },
+          ],
+        },
+        {
+          id: 'quest:quiet-rooms',
+          title: 'Quiet Rooms For The Sick',
+          pointsLabel: '0 Points',
+          description:
+            'Crowded houses keep the fever moving after sunset. Donate coin so families can rent spare rooms until the quarter is clean again.',
+          donationOptions: [
+            {
+              id: 'coin',
+              label: 'Coin',
+              pointsEachLabel: '1 Point Each',
+              totalLabel: '0 Points Total',
+              actionLabel: 'Donate',
+              enabled: true,
+            },
+          ],
+        },
+      ],
+    };
+    model.workshop.dialogs.worldEvent = questsViewModel;
+
+    harness.page.bind(model);
+    harness.page.openDialog('worldEvent');
+
+    const dialog = harness.dialogs.get('workshop.worldEvent');
+    const initialHeights = dialog.rows
+      .getWidgets()
+      .map((questRow) => questRow.height);
+
+    model.workshop.dialogs.worldEvent = {
+      ...questsViewModel,
+      selectedTabId: 'leaderboard',
+      rowWidget: 'leaderboard',
+      rows: [],
+    };
+    harness.page.bind(model);
+    model.workshop.dialogs.worldEvent = questsViewModel;
+    harness.page.bind(model);
+
+    expect(dialog.rows.getWidgets().map((questRow) => questRow.height)).toEqual(
+      initialHeights,
+    );
 
     harness.page.destroy();
     harness.dispose();

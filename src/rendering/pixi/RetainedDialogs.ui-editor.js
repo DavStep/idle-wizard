@@ -683,11 +683,11 @@ function createWorldEventDialogFixture(variantIndex) {
   if (variantIndex === 3) {
     return {
       header: {
+        artAssetId: 'source:assets/world-events/political-change.png',
         body:
           'Bells ring from towers that disagreed yesterday.\nNew clerks ask every workshop to prove the town still moves.',
         headline: 'New King Crowned',
-        meta:
-          '1,302,270 points · 5h\nLeaderboard Rewards: 2,000 points to qualify',
+        meta: '1,302,270 points · 5h',
       },
       rowWidget: 'worldEventReward',
       rows: [
@@ -717,6 +717,7 @@ function createWorldEventDialogFixture(variantIndex) {
         },
       ],
       selectedTabId: 'rewards',
+      status: 'Leaderboard Rewards: 2k points to qualify',
       tabs: [
         { id: 'tasks', label: 'Quests' },
         { id: 'leaderboard', label: 'Leaderboard' },
@@ -728,6 +729,7 @@ function createWorldEventDialogFixture(variantIndex) {
   if (variantIndex === 2) {
     return {
       header: {
+        artAssetId: 'source:assets/world-events/political-change.png',
         body:
           'Bells ring from towers that disagreed yesterday.\nNew clerks ask every workshop to prove the town still moves.',
         headline: 'New King Crowned',
@@ -794,6 +796,7 @@ function createWorldEventDialogFixture(variantIndex) {
 
   return {
     header: {
+      artAssetId: 'source:assets/world-events/political-change.png',
       body: 'Bells ring from towers that disagreed yesterday.\nNew clerks ask every workshop to prove the town still moves.',
       headline: 'New King Crowned',
       meta: '0 points · 4d 2h',

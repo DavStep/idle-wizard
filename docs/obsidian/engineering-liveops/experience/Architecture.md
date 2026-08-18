@@ -45,6 +45,7 @@ experience_type: architecture
 - Generated atlases need transparent-pixel alpha bleed and edge extrusion; raw RGB garbage or blank padding can show as seams when Pixi/SVG scales sprites.
 - Inline SVG atlas crops used as text-size item icons need wide gutters; 2px padding lets adjacent herb frames bleed into minified sprites.
 - `herbIcons` label entries need matching atlas frames; missing herb frames can render stray `null` text in rich item labels.
+- Retained Shop dialog rows for seeds, herbs, potions, or ingredients must preserve `itemKind` and `itemKey`; `resourceKey` alone falls through to `resource:<key>` atlas lookup and is valid only for true currencies.
 - Production Android builds need `VITE_SPACETIME_URI=https://maincloud.spacetimedb.com` and `VITE_SPACETIME_DATABASE=idle-wizard`; otherwise client defaults point at local SpacetimeDB.
 - `capacitor.config.json` must not set `server.url` for packaged APK QA; Capacitor loads that remote page instead of bundled `dist`, hiding local UI/CSS changes.
 - Android Activity soft input mode must stay `adjustNothing` and explicitly set decor to full-window layout on resume and native text focus; otherwise affected devices can pan/resize the whole WebView when the keyboard opens.

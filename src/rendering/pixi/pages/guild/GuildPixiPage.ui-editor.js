@@ -15,6 +15,7 @@ export default defineUiEditorIntegration({
     'compound.guild-people-section',
     'compound.guild-person-row',
     'text-button',
+    'cost-button',
   ],
   folderPath: ['Guild'],
   id: 'feature.guild-room',

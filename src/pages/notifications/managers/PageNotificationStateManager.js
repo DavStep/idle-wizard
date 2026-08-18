@@ -107,7 +107,9 @@ export class PageNotificationStateManager {
       playerMarket:
         playerShop.connected === true &&
         hasListingForOwnPlayerRequest(playerShop, snapshot.coin?.current),
-      crystals: shop.coinOffer?.canCollect === true,
+      crystals:
+        shop.coinOffer?.canCollect === true ||
+        shop.dailyCrystalOffer?.canCollect === true,
     });
   }
 

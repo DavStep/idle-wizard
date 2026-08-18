@@ -7,15 +7,21 @@ logs use keyed bounded pools. Every Guild dialog is a lazy-once
 `DialogRegistry` entry.
 
 Every room section reuses the Research Station title plaque with content on the
-standard room inset. Summary and person rows use the shared Root Run settings
-paper, while action rows keep the shared brown/gray button skins. Guild dialogs
+standard room inset. Summary, Secretary, and person rows use the shared Root
+Run Research card with Research paper ink, while action rows keep the shared
+brown/gray button skins. The Secretary is an embedded Guild Hall row and uses
+the shared labeled cost button for its Upgrade action. Guild dialogs
 reuse `PixiDialogFrame`, including its current brown shell, white paper, title
 plaque, and round close asset. Player-facing Guild labels and rendered dynamic
 copy always begin with an uppercase letter.
 
-Production places Hall and Adventurers in the alternate global Guild HUD.
+Production places Hall and Adventurers in the alternate global Guild HUD, with
+Fishers, Miners, and World visible as locked future destinations.
 Adventurers owns a local Board, Roster, and Log button panel above the Guild
-bottom strip. World Chat and the normal room tabs are not part of Guild mode;
+bottom strip. Each inner tab has one visible title and one full-width Research
+card stack: Board continues into its available-quest rows, Roster continues
+from hired adventurers into applicants, and Log uses the same row rhythm.
+World Chat and the normal room tabs are not part of Guild mode;
 the Workshop icon in the Guild strip returns to the normal room HUD.
 
 The view consumes display state and calls actions; Guild simulation,
@@ -78,7 +84,7 @@ payload is `{ name, tag, color }`. Request-stack dialogs receive
 Quest dialogs compose the shared Expedition dialog frame, paper content,
 progress rail, and regular green/brown buttons. Their full-width detail rows
 carry title, lore, difficulty, stats, reward, expiry, and optional event copy.
-The Board quest card reuses the Root Run Settings row nine-slice. The retired
+The Board quest card reuses the Root Run Research card nine-slice. The retired
 `ui/guild-quest` raster family is not a runtime or editor dependency.
 
 The adapter accepts the current raw `GuildFacade.getSnapshot()` shape and

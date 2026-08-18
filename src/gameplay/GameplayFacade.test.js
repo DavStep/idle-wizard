@@ -6004,6 +6004,45 @@ describe("GameplayFacade", () => {
     unsubscribeRewardEvents();
   });
 
+  it("collects one free daily crystal and starts a 24-hour cooldown", () => {
+    const { ecsFacade, gameplayFacade } = createGameplay();
+    const initialCrystal = gameplayFacade.getSnapshot().crystal.current;
+
+    expect(gameplayFacade.getSnapshot().shop.dailyCrystalOffer).toMatchObject({
+      rewardCrystal: 1,
+      cooldownRemainingSeconds: 0,
+      canCollect: true,
+    });
+
+    expect(gameplayFacade.collectShopDailyCrystalOffer()).toEqual({
+      ok: true,
+      crystal: 1,
+      cooldownSeconds: 86_400,
+    });
+    expect(gameplayFacade.getSnapshot().crystal.current).toBe(initialCrystal + 1);
+    expect(gameplayFacade.getSnapshot().shop.dailyCrystalOffer).toMatchObject({
+      cooldownRemainingSeconds: 86_400,
+      canCollect: false,
+    });
+    expect(gameplayFacade.collectShopDailyCrystalOffer()).toMatchObject({
+      ok: false,
+      reason: "cooldown",
+    });
+    expect(gameplayFacade.getSnapshot().crystal.current).toBe(initialCrystal + 1);
+
+    ecsFacade.update({ timerDeltaSeconds: 86_399 });
+    expect(gameplayFacade.getSnapshot().shop.dailyCrystalOffer).toMatchObject({
+      cooldownRemainingSeconds: 1,
+      canCollect: false,
+    });
+
+    ecsFacade.update({ timerDeltaSeconds: 1 });
+    expect(gameplayFacade.getSnapshot().shop.dailyCrystalOffer).toMatchObject({
+      cooldownRemainingSeconds: 0,
+      canCollect: true,
+    });
+  });
+
   it("publishes player shop proceeds as collected coin", () => {
     const { gameplayFacade } = createGameplay();
     const rewardEvents = [];
@@ -6081,6 +6120,43 @@ describe("GameplayFacade", () => {
       persistenceNow: () => now,
     });
     expect(third.gameplayFacade.getSnapshot().shop.coinOffer).toMatchObject({
+      cooldownRemainingSeconds: 0,
+      canCollect: true,
+    });
+    third.gameplayFacade.shutdown();
+    third.ecsFacade.destroyWorld();
+  });
+
+  it("persists the daily crystal offer cooldown and catches it up offline", () => {
+    const persistenceStorage = createMemoryStorage();
+    let now = 1_000_000;
+    const first = createGameplay({
+      persistenceStorage,
+      persistenceNow: () => now,
+    });
+
+    first.gameplayFacade.collectShopDailyCrystalOffer();
+    first.gameplayFacade.shutdown();
+    first.ecsFacade.destroyWorld();
+
+    now += 43_200_000;
+    const second = createGameplay({
+      persistenceStorage,
+      persistenceNow: () => now,
+    });
+    expect(second.gameplayFacade.getSnapshot().shop.dailyCrystalOffer).toMatchObject({
+      cooldownRemainingSeconds: 43_200,
+      canCollect: false,
+    });
+    second.gameplayFacade.shutdown();
+    second.ecsFacade.destroyWorld();
+
+    now += 43_200_000;
+    const third = createGameplay({
+      persistenceStorage,
+      persistenceNow: () => now,
+    });
+    expect(third.gameplayFacade.getSnapshot().shop.dailyCrystalOffer).toMatchObject({
       cooldownRemainingSeconds: 0,
       canCollect: true,
     });

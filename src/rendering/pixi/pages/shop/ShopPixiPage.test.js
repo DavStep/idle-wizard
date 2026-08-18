@@ -31,6 +31,7 @@ import {
   RETAINED_DIALOG_LIST_GEOMETRY,
   RetainedScrollArea,
 } from '../workshop/RetainedPageKit.js';
+import { createShop } from './createShop.js';
 
 globalThis.CanvasRenderingContext2D.prototype.createLinearGradient =
   () => ({
@@ -1063,6 +1064,33 @@ describe('ShopPixiPage', () => {
     harness.dispose();
   });
 
+  it('keeps Load Stall at its authored height on shorter mobile viewports and grows it on taller ones', () => {
+    const harness = createHarness();
+    harness.page.bind(createShopViewModel());
+    harness.page.activate();
+    harness.page.openDialog(SHOP_DIALOG_IDS.STALL, {
+      title: 'Load Stall',
+      items: Array.from({ length: 12 }, (_, index) => ({
+        id: `seed-${index}`,
+        label: `Seed ${index + 1}`,
+      })),
+    });
+    const stall = harness.dialogs.get(SHOP_DIALOG_IDS.STALL);
+
+    stall.layout({ sourceWidth: 390, sourceHeight: 803 });
+    const shortViewportListHeight = stall.list.height;
+
+    expect(stall.panel.coreHeight).toBe(364);
+
+    stall.layout({ sourceWidth: 390, sourceHeight: 944 });
+
+    expect(stall.panel.coreHeight).toBe(464);
+    expect(stall.list.height).toBeGreaterThan(shortViewportListHeight);
+
+    harness.page.destroy();
+    harness.dispose();
+  });
+
   it('hides a lone Market Ledger tab and gives its footer space to the list', () => {
     const harness = createHarness();
     harness.page.bind(createShopViewModel());
@@ -1099,6 +1127,50 @@ describe('ShopPixiPage', () => {
     expect(seedTab.root.visible).toBe(false);
     expect(seedTab.root.renderable).toBe(false);
     expect(dialog.list.height).toBe(332);
+
+    harness.page.destroy();
+    harness.dispose();
+  });
+
+  it('renders Player Market seed listings with the seed-pack atlas frames', () => {
+    const getAtlasTexture = vi.fn((frameName) => {
+      if (frameName === 'resource:seed') {
+        throw new Error(`Missing Pixi atlas frame: ${frameName}`);
+      }
+      return Texture.EMPTY;
+    });
+    const harness = createHarness({
+      assetManager: {
+        ...createPixiAssetManagerFake(Texture),
+        loaded: true,
+        getAtlasTexture,
+      },
+    });
+    harness.page.bind(createShopViewModel());
+    harness.page.activate();
+
+    const marketDialog = createShop({
+      playerShopSnapshot: {
+        connected: true,
+        listings: [
+          {
+            listingKey: 'listing-1',
+            username: 'Mira',
+            itemKey: 'sageSeed',
+            itemLabel: 'sage seed',
+            itemKind: 'seed',
+            quantity: 2,
+            priceCoin: 3,
+          },
+        ],
+      },
+    }).shop.dialogs.market;
+
+    harness.page.openDialog(SHOP_DIALOG_IDS.MARKET, marketDialog);
+
+    expect(getAtlasTexture).not.toHaveBeenCalledWith('resource:seed');
+    expect(getAtlasTexture).toHaveBeenCalledWith('seed:pack');
+    expect(getAtlasTexture).toHaveBeenCalledWith('herb:sageHerb');
 
     harness.page.destroy();
     harness.dispose();
@@ -1688,6 +1760,16 @@ describe('ShopPixiPage', () => {
 
     const crystalOffer =
       harness.page.crystalOffersSection.rows.get('crystal-1');
+    const dailyCrystalOffer =
+      harness.page.crystalOffersSection.rows.get('dailyCrystalOffer');
+    expect(dailyCrystalOffer.title.text).toBe('Daily Offer');
+    expect(dailyCrystalOffer.amountLabel.text).toBe('1');
+    expect(dailyCrystalOffer.actionButton.textLabel.text).toBe('Free');
+    expect(dailyCrystalOffer.actionButton.enabled).toBe(true);
+    expect(
+      harness.semanticRegistry.require('shop.dailyCrystalOffer.collect')
+        .displayObject,
+    ).toBe(dailyCrystalOffer.actionButton);
     expect(crystalOffer.frame).toBeInstanceOf(PixiNineSliceFrame);
     expect(crystalOffer.frame.borderInsets).toEqual(
       PIXI_ROOT_RUN_GEOMETRY.researchCard.borderInsets,
@@ -1724,6 +1806,26 @@ describe('ShopPixiPage', () => {
     );
     expect(
       harness.semanticRegistry.require('shop.coinOffer.collect')
+        .state(),
+    ).toMatchObject({
+      enabled: false,
+      interactive: false,
+      visible: true,
+    });
+
+    viewModel.shop.crystals.dailyCrystalOffer = {
+      ...viewModel.shop.crystals.dailyCrystalOffer,
+      actionLabel: '23h 59m',
+      canCollect: false,
+      notification: false,
+    };
+    harness.page.bind(viewModel);
+    const coolingDailyOffer =
+      harness.page.crystalOffersSection.rows.get('dailyCrystalOffer');
+    expect(coolingDailyOffer.actionButton.textLabel.text).toBe('23h 59m');
+    expect(coolingDailyOffer.actionButton.enabled).toBe(false);
+    expect(
+      harness.semanticRegistry.require('shop.dailyCrystalOffer.collect')
         .state(),
     ).toMatchObject({
       enabled: false,
@@ -2106,6 +2208,11 @@ function createShopViewModel({
         coinOffer: {
           rewardLabel: '100 coin',
           actionLabel: 'collect',
+          canCollect: true,
+        },
+        dailyCrystalOffer: {
+          rewardLabel: '1 crystal',
+          actionLabel: 'free',
           canCollect: true,
         },
         offers: [

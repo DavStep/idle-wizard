@@ -19,6 +19,7 @@ experience_type: product-shape
 - Before wiping local SpacetimeDB progress, check `.env.local` for the active `VITE_SPACETIME_DATABASE`; the shared Vite app may use `idle-wizard-codex-run` while `npm run stdb:publish` still targets `idle-wizard`.
 - The logical game viewport keeps Root Run's `390px` width; `390x844` is the reference QA surface. Portrait runtime height fills the remaining safe viewport at the width-fitted scale, while wide desktop windows contain-fit the reference surface.
 - Full-screen loading splashes must temporarily expand the canvas across every safe-area inset; restore the normal gameplay inset as soon as the splash hides.
+- When the asset-loading splash hands off to the initial backend gate, preserve its completed progress; restarting staged connection progress makes one app load look like two loading passes.
 - Game-stage text copy/paste suppression needs both CSS `user-select`/touch-callout rules and an app-level guard for clipboard, context menu, selectstart, and paste `beforeinput` events.
 - In-game UI no longer supports mouse hover; do not add `:hover` selectors or hover-only behavior. Press/focus states should keep `--style-active-surface` equal to the current surface, preserve font weight, and rely on border cues, never below-text line decoration.
 - Popup/tooltips positioned inside scaled room or popup layers must convert `getBoundingClientRect()` screen coords back into source coords before setting `left`/`top`; otherwise web `--style-ui-scale` can shove them off-stage.
@@ -134,7 +135,7 @@ experience_type: product-shape
 - World event leaderboard rows should keep the main leaderboard row treatment: 260px source row width, centered in the wider world-event dialog, with bare numeric values under a `points` header.
 - World event leaderboard data should come from `world_event_leaderboard_summary`; local current-point fallback is only for offline/missing backend rows.
 - Main and world event leaderboard user rows share `WorkshopLeaderboardRowRenderer`; do not fork icon/tag/name/level DOM in each dialog.
-- Keep event qualification copy in tasks/rewards, not under the leaderboard rows; the leaderboard tab should stay table-only.
+- Keep event qualification copy fixed beneath the Rewards list scroll inside the lower rewards paper; the leaderboard tab should stay table-only.
 - World event dialog top header should stay fixed with a separator; split points and resolve time into separate rows, and keep task text wrapping in a list.
 - Retained world-event migrations must project the complete header, tabs, quest detail, donation, leaderboard, and reward contract; a generic label-only row projection can pass DOM tests while shipping an empty-looking production dialog.
 - World event dialog overflow belongs on `.workshop-page__world-notice-frame`; register that frame with `ScrollCueManager` so the shared vertical scrollbar appears only when needed.
@@ -169,8 +170,8 @@ experience_type: product-shape
 - Alliance income deltas currently skip if the player has same-week quest contribution or reward rows in another alliance; new alliances can show 0 until weekly reset.
 - Guild adventurer notification dots anchor to the row's top-right corner and stay row-local so they cannot land between the name and status columns.
 - Guild room boxes should use the full room inset width, not `--style-main-box-width`; the alternate Guild HUD does not reserve Workshop side-panel or compact-chat width inside the room content column.
-- Guild is an alternate level-15 HUD entered from the Workshop right-side Guild action, not a normal bottom room tab or swipe destination. In Guild mode hide Workshop scenery, summon, normal room tabs, and compact World Chat; use Workshop/Hall/Adventurers in the Guild bottom strip, with Workshop returning to the normal room HUD.
-- The Adventurers branch owns a local Board/Roster/Log button panel above the Guild bottom strip. Future branch tabs stay hidden until their gameplay is implemented.
+- Guild is an alternate level-15 HUD entered from the Workshop right-side Guild action, not a normal bottom room tab or swipe destination. In Guild mode hide Workshop scenery, summon, normal room tabs, and compact World Chat; use Workshop/Hall/Adventurers/Fishers/Miners/World in the Guild bottom strip, with Workshop returning to the normal room HUD.
+- The Adventurers branch owns a local Board/Roster/Log button panel above the Guild bottom strip. Each inner tab uses one titled full-width row stack; secondary Board and Roster groups continue under that title instead of opening another section. Future Fishers, Miners, and World destinations stay visible with the standard locked-tab feedback until their gameplay is implemented.
 - Guild tab panels are rebuilt on snapshot refresh; preserve `.guild-page__tabpanel.scrollTop` per tab or mobile scrolling snaps back to the top.
 - Guild board refreshes should retain the active `.guild-page__tabpanel` DOM node; restoring `scrollTop` alone can still kill mobile scroll momentum.
 - Guild request board rows are player-selected from an available quest pool; new waves refresh available quests and expire old requests, but never auto-fill the visible board.

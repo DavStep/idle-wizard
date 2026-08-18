@@ -832,9 +832,15 @@ export class RetainedScrollArea {
     const suppressActivation =
       this.physics.dragDistance >
       ROOT_RUN_STATION_CLICK_DRAG_THRESHOLD;
-    this.physics.endDrag();
+    const reduceMotion = prefersReducedMotion();
+    this.physics.endDrag({ preserveInertia: !reduceMotion });
     this.root.cursor = this.physics.maxOffset > 0 ? 'grab' : 'default';
     this.suppressNextActivation = suppressActivation;
+    if (reduceMotion) {
+      this.physics.snapTo(this.physics.offset);
+      this.applyPhysicsOffset();
+      return suppressActivation;
+    }
     this.startAnimation();
     return suppressActivation;
   }
@@ -1164,6 +1170,14 @@ export function setText(text, value) {
 
 export function finiteOr(value, fallback) {
   return Number.isFinite(Number(value)) ? Number(value) : fallback;
+}
+
+function prefersReducedMotion() {
+  return Boolean(
+    globalThis
+      .matchMedia?.('(prefers-reduced-motion: reduce)')
+      ?.matches,
+  );
 }
 
 function eventTimeMs(event) {

@@ -196,6 +196,7 @@ const MAX_PLAYER_SAVE_BATCH_MULTIPLIER = 5;
 const MAX_PLAYER_SAVE_AUTO_SEED_MANA_RESERVE = MAX_PLAYER_SAVE_MANA_CURRENT;
 const MAX_PLAYER_SAVE_TIMER_MS = MAX_GAME_CONFIG_RESOURCE_LIMIT * 1_000;
 const MAX_PLAYER_SAVE_SHOP_COIN_OFFER_COOLDOWN_SECONDS = 2 * 60 * 60;
+const MAX_PLAYER_SAVE_SHOP_DAILY_CRYSTAL_OFFER_COOLDOWN_SECONDS = 24 * 60 * 60;
 const MAX_PLAYER_SAVE_INBOX_CLAIMED_MAIL_KEYS = 500;
 const LEADERBOARD_SUMMARY_LIMIT = 100;
 const LEADERBOARD_TOTAL_INCOME_CAP_PER_LEVEL = 10_000_000n;
@@ -11185,6 +11186,9 @@ function normalizeSaveShop(
   );
 
   const coinOffer = normalizeSaveShopCoinOffer(shop.coinOffer ?? shop.goldOffer);
+  const dailyCrystalOffer = normalizeSaveShopDailyCrystalOffer(
+    shop.dailyCrystalOffer,
+  );
 
   return {
     shelf,
@@ -11192,6 +11196,20 @@ function normalizeSaveShop(
     playerRequests,
     coinOffer,
     goldOffer: coinOffer,
+    dailyCrystalOffer,
+  };
+}
+
+function normalizeSaveShopDailyCrystalOffer(value: unknown) {
+  const offer = isRecord(value) ? value : {};
+
+  return {
+    cooldownRemainingSeconds: clampSaveNumber(
+      offer.cooldownRemainingSeconds,
+      0,
+      MAX_PLAYER_SAVE_SHOP_DAILY_CRYSTAL_OFFER_COOLDOWN_SECONDS,
+      0,
+    ),
   };
 }
 

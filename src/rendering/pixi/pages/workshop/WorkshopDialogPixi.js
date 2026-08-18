@@ -200,6 +200,10 @@ const WORLD_EVENT_QUEST_ICON_SIZE = 36;
 const WORLD_EVENT_QUEST_MIN_DESCRIPTION_HEIGHT = 24;
 const WORLD_EVENT_MAX_DONATION_OPTIONS = 4;
 const WORLD_EVENT_HEADER_CONTENT_INSET = 5;
+const WORLD_EVENT_HEADER_ART_GAP = 6;
+const WORLD_EVENT_HEADER_ART_HEIGHT = 98;
+const WORLD_EVENT_HEADER_ART_HORIZONTAL_OUTSET = 15;
+const WORLD_EVENT_HEADER_ART_RADIUS = 8;
 const WORLD_EVENT_LIST_CONTENT_INSET = 5;
 const WORLD_EVENT_REWARD_ICON_SIZE = 28;
 const WORLD_EVENT_REWARD_ICON_GAP = 8;
@@ -473,11 +477,26 @@ export class WorkshopDialogPixi {
           `${dialogId}-list-paper`,
         )
       : null;
+    this.worldEventHeaderArt = this.isWorldEventDialog
+      ? new Sprite({
+          texture: Texture.EMPTY,
+          label: `${dialogId}-header-art`,
+          roundPixels: true,
+        })
+      : null;
+    this.worldEventHeaderArtMask = this.isWorldEventDialog
+      ? new Graphics({ label: `${dialogId}-header-art-mask` })
+      : null;
     if (this.isWorldEventDialog) {
       this.panel.setPaperVisible(false);
+      this.worldEventHeaderArt.eventMode = 'none';
+      this.worldEventHeaderArtMask.eventMode = 'none';
+      this.worldEventHeaderArt.mask = this.worldEventHeaderArtMask;
       this.panel.content.addChild(
         this.worldEventHeaderPaper,
         this.worldEventListPaper,
+        this.worldEventHeaderArt,
+        this.worldEventHeaderArtMask,
       );
     }
     if (this.isPersonalTasksDialog) {
@@ -782,6 +801,18 @@ export class WorkshopDialogPixi {
     setText(this.headerHeadline, this.viewModel.header?.headline ?? '');
     setText(this.headerBody, this.viewModel.header?.body ?? '');
     setText(this.headerMeta, this.viewModel.header?.meta ?? '');
+    if (this.isWorldEventDialog) {
+      const headerArtAssetId = String(
+        this.viewModel.header?.artAssetId ?? '',
+      ).trim();
+      this.worldEventHeaderArt.texture = headerArtAssetId
+        ? this.assetManager?.getTexture?.(headerArtAssetId) ?? Texture.EMPTY
+        : Texture.EMPTY;
+      this.worldEventHeaderArt.visible = Boolean(headerArtAssetId);
+      this.worldEventHeaderArt.renderable = Boolean(headerArtAssetId);
+      this.worldEventHeaderArtMask.visible = Boolean(headerArtAssetId);
+      this.worldEventHeaderArtMask.renderable = Boolean(headerArtAssetId);
+    }
     const hasHeader = Boolean(
       this.headerHeadline.text || this.headerBody.text || this.headerMeta.text,
     );
@@ -939,8 +970,22 @@ export class WorkshopDialogPixi {
                 this.viewModel.rowWidget === 'allianceQuest')
             ? 0
             : 4;
+    const rowWidth = this.isWorldChatDialog
+      ? this.scroll.width - WORLD_CHAT_ROW_SCROLLBAR_GUTTER
+      : this.isWorldEventDialog &&
+          this.viewModel.rowWidget === 'worldEventQuest'
+        ? this.scroll.width
+        : this.isLeaderboardDialog ||
+            (this.isWorldEventDialog &&
+              (this.viewModel.rowWidget === 'leaderboard' ||
+                this.viewModel.rowWidget === 'worldEventReward'))
+          ? this.leaderboardRowWidth ?? WORKSHOP_DIALOG_CONTENT_WIDTH
+          : this.isAllianceDialog &&
+              this.viewModel.rowWidget === 'allianceQuest'
+            ? this.allianceQuestRowWidth || WORKSHOP_DIALOG_CONTENT_WIDTH
+            : WORKSHOP_DIALOG_CONTENT_WIDTH;
     const preferredHeights = widgets.map((widget) =>
-      widget.getPreferredHeight(),
+      widget.getPreferredHeight(rowWidth),
     );
     const rowsGapHeight = Math.max(0, widgets.length - 1) * rowGap;
     const rowsHeight =
@@ -960,20 +1005,7 @@ export class WorkshopDialogPixi {
       widget.setBounds(
         0,
         y,
-        this.isWorldChatDialog
-          ? this.scroll.width - WORLD_CHAT_ROW_SCROLLBAR_GUTTER
-          : this.isWorldEventDialog &&
-              this.viewModel.rowWidget === 'worldEventQuest'
-            ? this.scroll.width
-            : this.isLeaderboardDialog ||
-                (this.isWorldEventDialog &&
-                  (this.viewModel.rowWidget === 'leaderboard' ||
-                    this.viewModel.rowWidget === 'worldEventReward'))
-              ? this.leaderboardRowWidth ?? WORKSHOP_DIALOG_CONTENT_WIDTH
-              : this.isAllianceDialog &&
-                this.viewModel.rowWidget === 'allianceQuest'
-                ? this.allianceQuestRowWidth || WORKSHOP_DIALOG_CONTENT_WIDTH
-              : WORKSHOP_DIALOG_CONTENT_WIDTH,
+        rowWidth,
         rowHeight,
       );
       y += rowHeight + rowGap;
@@ -1324,7 +1356,9 @@ export class WorkshopDialogPixi {
     const baseHeight = this.isWorldChatDialog
       ? WORLD_CHAT_DIALOG_HEIGHT
       : this.isWorldEventDialog
-        ? 486
+        ? this.worldEventHeaderArt?.visible === true
+          ? 590
+          : 486
         : this.isPersonalTasksDialog
           ? 470
           : this.isAllianceDialog
@@ -2039,10 +2073,38 @@ export class WorkshopDialogPixi {
       this.viewModel.rowWidget === 'leaderboard' ||
       this.viewModel.rowWidget === 'worldEventReward';
     const questRowsX = (width - WORLD_EVENT_QUEST_ROW_WIDTH) / 2;
+    const hasHeaderArt = this.worldEventHeaderArt?.visible === true;
+    const artX =
+      contentX - WORLD_EVENT_HEADER_ART_HORIZONTAL_OUTSET;
+    const artY = headerY + WORLD_EVENT_HEADER_CONTENT_INSET;
+    const artWidth =
+      contentWidth + WORLD_EVENT_HEADER_ART_HORIZONTAL_OUTSET * 2;
+
+    if (hasHeaderArt) {
+      this.worldEventHeaderArt.position.set(artX, artY);
+      this.worldEventHeaderArt.width = artWidth;
+      this.worldEventHeaderArt.height = WORLD_EVENT_HEADER_ART_HEIGHT;
+      this.worldEventHeaderArtMask
+        .clear()
+        .roundRect(
+          artX,
+          artY,
+          artWidth,
+          WORLD_EVENT_HEADER_ART_HEIGHT,
+          WORLD_EVENT_HEADER_ART_RADIUS,
+        )
+        .fill('#ffffff');
+    } else {
+      this.worldEventHeaderArtMask.clear();
+    }
 
     this.headerHeadline.position.set(
       contentX,
-      headerY + WORLD_EVENT_HEADER_CONTENT_INSET,
+      hasHeaderArt
+        ? artY +
+            WORLD_EVENT_HEADER_ART_HEIGHT +
+            WORLD_EVENT_HEADER_ART_GAP
+        : headerY + WORLD_EVENT_HEADER_CONTENT_INSET,
     );
     this.headerBody.position.set(
       contentX,
@@ -2669,11 +2731,7 @@ export class WorldEventQuestRow {
       WORLD_EVENT_QUEST_CONTENT_INSET,
       WORLD_EVENT_QUEST_CONTENT_TOP,
     );
-    this.title.style.wordWrap = true;
-    this.title.style.wordWrapWidth = Math.max(
-      80,
-      width - WORLD_EVENT_QUEST_CONTENT_INSET * 2 - 84,
-    );
+    this.setTextWrapWidth(width);
     this.points.position.set(width - WORLD_EVENT_QUEST_CONTENT_INSET, 9);
     this.description.position.set(
       WORLD_EVENT_QUEST_CONTENT_INSET,
@@ -2681,9 +2739,6 @@ export class WorldEventQuestRow {
         WORLD_EVENT_QUEST_TITLE_HEIGHT +
         WORLD_EVENT_QUEST_DESCRIPTION_GAP,
     );
-    this.description.style.wordWrap = true;
-    this.description.style.wordWrapWidth =
-      width - WORLD_EVENT_QUEST_CONTENT_INSET * 2;
     let optionY =
       this.description.y +
       Math.max(
@@ -2711,7 +2766,19 @@ export class WorldEventQuestRow {
     this.root.hitArea = new Rectangle(0, 0, width, height);
   }
 
-  getPreferredHeight() {
+  setTextWrapWidth(width) {
+    this.title.style.wordWrap = true;
+    this.title.style.wordWrapWidth = Math.max(
+      80,
+      width - WORLD_EVENT_QUEST_CONTENT_INSET * 2 - 84,
+    );
+    this.description.style.wordWrap = true;
+    this.description.style.wordWrapWidth =
+      width - WORLD_EVENT_QUEST_CONTENT_INSET * 2;
+  }
+
+  getPreferredHeight(width = this.width ?? WORLD_EVENT_QUEST_ROW_WIDTH) {
+    this.setTextWrapWidth(width);
     const descriptionHeight = Math.max(
       WORLD_EVENT_QUEST_MIN_DESCRIPTION_HEIGHT,
       Math.ceil(this.description.height),

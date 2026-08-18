@@ -37,6 +37,9 @@ inventory changes, offers, or backend results. A presenter binds this shape:
       coinOffer: {
         rewardLabel, actionLabel, timerLabel, canCollect, notification
       },
+      dailyCrystalOffer: {
+        rewardLabel, actionLabel, timerLabel, canCollect, notification
+      },
       offers: [{
         id, crystalCount, bundleLabel, priceLabel, enabled, dialog
       }]
@@ -50,6 +53,7 @@ inventory changes, offers, or backend results. A presenter binds this shape:
     clearPlayerRequest,
     claimPlayerMarketProceeds,
     collectCoinOffer,
+    collectDailyCrystalOffer,
     onActivate,
     onDeactivate
   },
@@ -66,7 +70,7 @@ choices are available; one-category dialogs use the complete paper/content
 height instead.
 
 The compatibility adapter also accepts the current raw `shelf`,
-`playerShelf`, `coinOffer`, and `crystalOffers` snapshot names during cutover.
+`playerShelf`, `coinOffer`, `dailyCrystalOffer`, and `crystalOffers` snapshot names during cutover.
 It only renames display fields; it does not derive game rules.
 
 `MarketTitleRibbon` owns the Market licence identity above the page panels. It
@@ -100,8 +104,9 @@ stall's Select action.
 Add `?saleShine=loop` to replay the successful-sale shine on Stall 1 for
 motion and native-pixel capture QA.
 Add `?tab=crystals` to open the Crystal Market tab with its deterministic
-cooling-down coin offer and six crystal bundles. Add
-`&coinOffer=ready` to show the ready green Collect action.
+cooling-down coin offer, ready daily free crystal offer, and six crystal
+bundles. Add `&coinOffer=ready` to show the ready green Collect action and
+`&dailyCrystalOffer=cooldown` to show the daily offer's disabled countdown.
 Currency offers use the reusable `MarketOfferRow`: the stall card frame and
 art well hold a coin or crystal icon with the amount over the art, the offer
 name sits at the top-left, and a fixed right-side green button carries the

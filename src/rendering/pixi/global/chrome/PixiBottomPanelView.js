@@ -96,6 +96,7 @@ export const PIXI_GUILD_HUD_TABS = Object.freeze([
     label: 'Hall',
     semanticId: 'guild.tab.hall',
     tutorialId: 'guild:tab:hall',
+    defaultUnlocked: true,
   }),
   Object.freeze({
     id: 'guild.adventurers',
@@ -103,6 +104,34 @@ export const PIXI_GUILD_HUD_TABS = Object.freeze([
     label: 'Adventurers',
     semanticId: 'guild.tab.adventurers',
     tutorialId: 'guild:tab:adventurers',
+    defaultUnlocked: true,
+  }),
+  Object.freeze({
+    id: 'guild.fishers',
+    guildTabId: 'fishers',
+    label: 'Fishers',
+    semanticId: 'guild.tab.fishers',
+    tutorialId: 'guild:tab:fishers',
+    defaultUnlocked: false,
+    lockedMessage: "Fishers' Lodge is not available yet",
+  }),
+  Object.freeze({
+    id: 'guild.miners',
+    guildTabId: 'miners',
+    label: 'Miners',
+    semanticId: 'guild.tab.miners',
+    tutorialId: 'guild:tab:miners',
+    defaultUnlocked: false,
+    lockedMessage: "Miners' Lodge is not available yet",
+  }),
+  Object.freeze({
+    id: 'guild.world',
+    guildTabId: 'world',
+    label: 'World',
+    semanticId: 'guild.tab.world',
+    tutorialId: 'guild:tab:world',
+    defaultUnlocked: false,
+    lockedMessage: 'Guild World is not available yet',
   }),
 ]);
 
@@ -253,7 +282,7 @@ export class PixiBottomPanelView extends BasePixiRetainedView {
       inputRouter,
       semanticRegistry,
       closeSemanticId: 'bottomPanel.lock.close',
-      title: 'locked',
+      title: 'Locked',
       coreWidth: 230,
       coreHeight: 78,
       closeAction: () => this.hideLockedPage(),
@@ -317,6 +346,9 @@ export class PixiBottomPanelView extends BasePixiRetainedView {
     const guildHud = viewModel.guildHud ?? {};
     const selectedGuildTabId = guildHud.selectedTabId ?? 'hall';
     const guildNotifications = guildHud.notifications ?? {};
+    const guildTabStates = new Map(
+      (guildHud.tabs ?? []).map((state) => [state.id, state]),
+    );
     if (
       Object.prototype.hasOwnProperty.call(
         viewModel,
@@ -377,11 +409,20 @@ export class PixiBottomPanelView extends BasePixiRetainedView {
       const wasVisible = tab.root.visible;
       const wasSelected = tab.state.selected === true;
       const guildTabId = tab.definition.guildTabId;
+      const state = guildTabStates.get(guildTabId) ?? {};
+      const unlocked =
+        state.unlocked ?? tab.definition.defaultUnlocked !== false;
       tab.bind({
+        ...state,
         id: tab.definition.id,
-        selected: Boolean(guildTabId) && guildTabId === selectedGuildTabId,
-        unlocked: true,
+        selected:
+          unlocked &&
+          Boolean(guildTabId) &&
+          guildTabId === selectedGuildTabId,
+        unlocked,
         visible: hudMode === 'guild' && revealRooms,
+        lockedMessage:
+          state.lockedMessage ?? tab.definition.lockedMessage,
         notification: guildTabId
           ? guildNotifications[guildTabId]
           : false,
@@ -443,6 +484,13 @@ export class PixiBottomPanelView extends BasePixiRetainedView {
   }
 
   activateTab(tab) {
+    if (tab.state?.unlocked === false) {
+      this.showLockedPage(tab.definition, tab.state, {
+        swipeFeedback: false,
+      });
+      this.actions.onLockedPage?.(tab.definition.id, tab.state);
+      return true;
+    }
     if (tab.definition.guildTabId) {
       return this.actions.selectGuildTab?.(
         tab.definition.guildTabId,
@@ -473,14 +521,16 @@ export class PixiBottomPanelView extends BasePixiRetainedView {
   ) {
     const definition =
       typeof definitionOrId === 'string'
-        ? PIXI_BOTTOM_PANEL_TABS.find((tab) => tab.id === definitionOrId)
+        ? [...PIXI_BOTTOM_PANEL_TABS, ...PIXI_GUILD_HUD_TABS].find(
+            (tab) => tab.id === definitionOrId,
+          )
         : definitionOrId;
     const state = explicitState ?? this.pageStates.get(definition?.id);
     if (!definition || state?.unlocked !== false) {
       return false;
     }
     if (swipeFeedback) {
-      const tab = this.tabs.find(
+      const tab = this.allTabs.find(
         (candidate) => candidate.definition.id === definition.id,
       );
       if (tab) {
@@ -1209,7 +1259,7 @@ export class PixiBottomRoomTab {
     const textOnly = this.definition.textOnly === true;
     this.labelRoot.visible = selected || textOnly;
     this.labelRoot.renderable = this.labelRoot.visible;
-    this.labelRoot.alpha = locked ? 0.34 : 1;
+    this.labelRoot.alpha = locked ? (textOnly ? 0.68 : 0.34) : 1;
     this.iconFrame.alpha = 1;
     this.applyIconLayout();
     this.iconFrame.visible = !this.receivingUnlock && !locked;
@@ -1289,6 +1339,16 @@ export class PixiBottomHudTextTab extends PixiBottomRoomTab {
         textOnly: true,
       },
     });
+  }
+
+  layoutLabel() {
+    const locked = this.state.unlocked === false;
+    this.labelRoot.position.y = locked
+      ? 49
+      : this.state.selected === true
+        ? 28
+        : 34;
+    this.lock.position.y = locked ? 25 : TAB_LOCK_CENTER_Y;
   }
 }
 

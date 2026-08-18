@@ -20,7 +20,7 @@ verified_on: 2026-07-19
 
 # Crystal Shop
 
-The third Market tab contains a manual coin offer and static crystal bundle prices.
+The third Market tab contains a manual coin offer, a daily free crystal offer, and static crystal bundle prices.
 
 ## Coin offer
 
@@ -28,6 +28,13 @@ The third Market tab contains a manual coin offer and static crystal bundle pric
 - Cooldown: **2 hours**.
 - Offline time advances the cooldown.
 - Coin is never granted until the player manually collects it.
+
+## Daily crystal offer
+
+- Reward: **1 crystal**.
+- Cooldown: **24 hours after collection**.
+- Offline time advances the cooldown.
+- Crystal is never granted until the player manually collects it.
 
 ## Crystal bundles
 
@@ -45,5 +52,5 @@ Payments and crystal grants are **not implemented**. Pressing a price opens the 
 ## Source of truth
 
 - `src/gameplay/shop/managers/ShopCoinOfferManager.js`
+- `src/gameplay/shop/managers/ShopDailyCrystalOfferManager.js`
 - `src/pages/shop/managers/ShopCrystalOfferManager.js`
-

@@ -16,6 +16,7 @@ describe('RetainedScrollArea', () => {
   afterEach(() => {
     scroll?.destroy();
     scroll = null;
+    vi.unstubAllGlobals();
   });
 
   it('renders release inertia from the shared station physics', () => {
@@ -40,6 +41,20 @@ describe('RetainedScrollArea', () => {
 
     expect(scroll.offsetY).toBeCloseTo(80, 10);
     expect(scroll.physics.velocity).toBeGreaterThan(0);
+  });
+
+  it('snaps to rest on release when reduced motion is requested', () => {
+    vi.stubGlobal('matchMedia', vi.fn(() => ({ matches: true })));
+    scroll = overflowingScroll();
+    scroll.beginDrag(pointerContext(0, 120));
+    scroll.dragTo(pointerContext(40, 80));
+
+    scroll.endDrag(pointerContext(80, 40));
+    const releasedOffset = scroll.offsetY;
+    scroll.update(1 / 60);
+
+    expect(scroll.offsetY).toBe(releasedOffset);
+    expect(scroll.physics.velocity).toBe(0);
   });
 
   it('keeps release inertia through unchanged layout refreshes', () => {

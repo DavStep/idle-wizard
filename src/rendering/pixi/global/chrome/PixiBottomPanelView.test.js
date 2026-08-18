@@ -85,12 +85,21 @@ describe('PixiBottomPanelView', () => {
       true,
       true,
       true,
+      true,
+      true,
+      true,
     ]);
     expect(view.guildTabs.slice(1).every(
       (tab) => tab instanceof PixiBottomHudTextTab,
     )).toBe(true);
     semanticRegistry.activate('guild.tab.adventurers');
     expect(selectGuildTab).toHaveBeenCalledWith('adventurers');
+    semanticRegistry.activate('guild.tab.fishers');
+    expect(selectGuildTab).not.toHaveBeenCalledWith('fishers');
+    expect(view.lockLayer.visible).toBe(true);
+    expect(view.lockMessage.text).toBe(
+      "Fishers' Lodge is not available yet",
+    );
     semanticRegistry.activate('guild.return.workshop');
     expect(showPage).toHaveBeenCalledWith('workshop');
   });
@@ -113,6 +122,9 @@ describe('PixiBottomPanelView', () => {
     const adventurers = view.guildTabs.find(
       (tab) => tab.definition.guildTabId === 'adventurers',
     );
+    const fishers = view.guildTabs.find(
+      (tab) => tab.definition.guildTabId === 'fishers',
+    );
 
     expect(hall.labelRoot.visible).toBe(true);
     expect(hall.labelRoot.position.y).toBe(34);
@@ -120,6 +132,11 @@ describe('PixiBottomPanelView', () => {
     expect(adventurers.labelRoot.position.y).toBe(28);
     expect(adventurers.frame.mode).toBe('active');
     expect(adventurers.notification.root.visible).toBe(true);
+    expect(fishers.state.unlocked).toBe(false);
+    expect(fishers.lock.visible).toBe(true);
+    expect(fishers.lock.position.y).toBe(25);
+    expect(fishers.labelRoot.position.y).toBe(49);
+    expect(fishers.labelRoot.alpha).toBe(0.68);
   });
 
   it('lays out fixed five, six, and seven-tab rows with a wider selection', () => {
