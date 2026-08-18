@@ -60,6 +60,7 @@ import {
   setText,
 } from './RetainedPageKit.js';
 import { GuildColorSwatch } from '../guild/GuildDialogPixi.js';
+import { RootRunInventoryChoiceRowPixi } from '../shop/ShopDialogPixi.js';
 
 const WORKSHOP_DIALOG_CONTENT_WIDTH = 264;
 const DIALOG_SCROLL_VIEWPORT_TOP = 18;
@@ -70,11 +71,9 @@ const DIALOG_PAPER_TOP =
 const DIALOG_PAPER_BOTTOM_INSET =
   PIXI_ROOT_RUN_GEOMETRY.dialog.paperInsetBottom -
   PIXI_ROOT_RUN_GEOMETRY.dialog.frameOutset;
-const BAG_SCROLL_VIEWPORT_TOP_INSET =
-  DIALOG_SCROLL_VIEWPORT_BOTTOM_INSET -
-  DIALOG_PAPER_BOTTOM_INSET -
-  (DIALOG_SCROLL_VIEWPORT_TOP - DIALOG_PAPER_TOP);
-const BAG_ROW_VALUE_INSET_RIGHT = 2;
+const BAG_SCROLL_VIEWPORT_TOP_INSET = 4;
+const BAG_TAB_COLUMN_COUNT = 3;
+const BAG_TAB_ROW_GAP = 4;
 const STATS_SCROLL_VIEWPORT_TOP_INSET = 6;
 const STATS_SCROLLBAR_SHIFT_RIGHT = 4;
 const LEADERBOARD_FOOTER_ROW_GAP = 4;
@@ -140,15 +139,30 @@ const WORLD_CHAT_REPORT_HOLD_MS = 530;
 const WORLD_CHAT_REPORT_ACTION_HEIGHT = 29;
 const WORLD_CHAT_REPORT_ACTION_GAP = 4;
 const SCROLL_ROW_RENDER_BUFFER = 16;
-const DISCOVERY_ROW_GAP = 6;
 const DISCOVERY_MAX_INGREDIENTS = 6;
-const DISCOVERY_ICON_SIZE = 44;
-const DISCOVERY_LOCKED_ROW_HEIGHT = 64;
-const DISCOVERY_BASE_ROW_HEIGHT = 92;
-const DISCOVERY_RECIPE_COLUMNS = 2;
-const DISCOVERY_RECIPE_ROW_HEIGHT = 17;
+const DISCOVERY_DIALOG_OUTER_WIDTH = 304;
+const DISCOVERY_DIALOG_OUTER_HEIGHT = 404;
+const DISCOVERY_BOOK_SIDE_OVERFLOW = 4;
+const DISCOVERY_BOOK_WIDTH =
+  DISCOVERY_DIALOG_OUTER_WIDTH + DISCOVERY_BOOK_SIDE_OVERFLOW * 2;
+const DISCOVERY_BOOK_TOP = PIXI_UI_GEOMETRY.dialogPadding + 2;
+const DISCOVERY_PAGE_GAP = 2;
+const DISCOVERY_PAGE_WIDTH =
+  (DISCOVERY_BOOK_WIDTH - DISCOVERY_PAGE_GAP) / 2;
+const DISCOVERY_PAGE_HEIGHT = 341;
+const DISCOVERY_PAGE_CONTENT_INSET = 7;
+const DISCOVERY_ICON_SIZE = 46;
+const DISCOVERY_HEADER_GAP = 5;
+const DISCOVERY_INGREDIENT_ROW_HEIGHT = 20;
+const DISCOVERY_INGREDIENT_ICON_SIZE = 14;
+const DISCOVERY_INGREDIENT_ICON_GAP = 2;
+const DISCOVERY_PAGER_BUTTON_WIDTH = 72;
+const DISCOVERY_PAGER_BUTTON_HEIGHT = 28;
+const DISCOVERY_PAGER_GAP = 4;
+const DISCOVERY_METADATA_ROW_HEIGHT = 15;
+const DISCOVERY_RESOURCE_ICON_SIZE = 13;
+const DISCOVERY_RESOURCE_ICON_GAP = 2;
 const DISCOVERY_PLAYER_COLOR = '#7c359d';
-const DISCOVERY_DIVIDER_COLOR = '#bd9065';
 const WORLD_CHAT_TAG_COLORS = Object.freeze({
   ink: '#634934',
   red: '#9b3439',
@@ -164,6 +178,8 @@ const WORLD_CHAT_TAG_COLORS = Object.freeze({
 const ALLIANCE_DIRECTORY_HEADER_HEIGHT = 30;
 const ALLIANCE_MEMBER_ROW_HEIGHT = PIXI_ROOT_RUN_GEOMETRY.settings.rowPitch;
 const ALLIANCE_QUEST_ROW_HEIGHT = PIXI_ROOT_RUN_GEOMETRY.settings.rowPitch;
+const ALLIANCE_QUEST_SCROLL_BOTTOM_INSET =
+  DIALOG_PAPER_BOTTOM_INSET + RETAINED_DIALOG_SCROLL_GEOMETRY.contentPaddingTop;
 const ALLIANCE_QUEST_ITEM_ICON_SIZE = 36;
 const ALLIANCE_MEMBER_AVATAR_SIZE = LEADERBOARD_AVATAR_SIZE;
 const ALLIANCE_MEMBER_VISIBLE_ROWS = 4.5;
@@ -217,6 +233,35 @@ const RESOURCE_ICON_FRAMES = Object.freeze({
   mana: 'resource:mana',
   ruby: 'resource:ruby',
 });
+
+function resolveBagFooterTabLayout({ coreWidth, coreHeight, tabCount } = {}) {
+  const count = Math.max(0, Math.floor(Number(tabCount) || 0));
+  const columnCount = Math.min(BAG_TAB_COLUMN_COUNT, count);
+  const rowCount = Math.max(1, Math.ceil(count / BAG_TAB_COLUMN_COUNT));
+  const baseLayout = resolveDialogFooterTabLayout({
+    coreWidth,
+    coreHeight,
+    tabCount: columnCount,
+  });
+  const gridHeight =
+    rowCount * PIXI_DIALOG_FOOTER_TABS_GEOMETRY.rowHeight +
+    Math.max(0, rowCount - 1) * BAG_TAB_ROW_GAP;
+  const rowY =
+    baseLayout.shellBottom -
+    PIXI_DIALOG_FOOTER_TABS_GEOMETRY.bottomInset -
+    gridHeight;
+
+  return Object.freeze({
+    ...baseLayout,
+    columnCount,
+    gridHeight,
+    paperBottom:
+      rowY - PIXI_DIALOG_FOOTER_TABS_GEOMETRY.paperGap,
+    rowCount,
+    rowGap: BAG_TAB_ROW_GAP,
+    rowY,
+  });
+}
 
 function createPersonalTaskSectionChrome(dialog, sectionId) {
   const root = new Container({
@@ -380,8 +425,9 @@ export class WorkshopDialogPixi {
     this.isWorldEventDialog = this.dialogId === 'workshop.worldEvent';
     this.isPersonalTasksDialog = this.dialogId === 'workshop.personalTasks';
     this.counters = counters;
-    this.scrollContentPaddingTop =
-      RETAINED_DIALOG_SCROLL_GEOMETRY.contentPaddingTop;
+    this.scrollContentPaddingTop = this.isBagDialog
+      ? 0
+      : RETAINED_DIALOG_SCROLL_GEOMETRY.contentPaddingTop;
     this.scrollViewportTopInset = this.isWorldChatDialog
       ? WORLD_CHAT_SCROLL_PADDING_TOP
       : this.isBagDialog
@@ -502,6 +548,74 @@ export class WorkshopDialogPixi {
     if (this.isPersonalTasksDialog) {
       this.panel.setPaperVisible(false);
     }
+    this.discoveryBook = this.isDiscoveriesDialog
+      ? new Container({ label: `${dialogId}-book` })
+      : null;
+    this.discoveryEmptyPages = this.isDiscoveriesDialog
+      ? [0, 1].map((index) =>
+          createDialogPaperSection(
+            this.panel.paperFrame.texture,
+            `${dialogId}-empty-page-${index}`,
+          ),
+        )
+      : [];
+    this.discoveryEmptyText = this.isDiscoveriesDialog
+      ? createText('No potion discoveries yet.', {
+          ...RETAINED_TEXT_STYLES.body,
+          wordWrapWidth:
+            DISCOVERY_PAGE_WIDTH - DISCOVERY_PAGE_CONTENT_INSET * 2,
+        })
+      : null;
+    this.discoveryPrevious = this.isDiscoveriesDialog
+      ? new PixiTextButton({
+          assetManager,
+          inputRouter,
+          semanticRegistry: semanticTargets,
+          semanticId: 'workshop.discoveries.previous',
+          text: 'Prev',
+          width: DISCOVERY_PAGER_BUTTON_WIDTH,
+          height: DISCOVERY_PAGER_BUTTON_HEIGHT,
+          sizeTier: 30,
+          variant: 'yellow',
+          action: () => this.showPreviousDiscoverySpread(),
+          label: 'workshop.discoveries.previous',
+        })
+      : null;
+    this.discoveryNext = this.isDiscoveriesDialog
+      ? new PixiTextButton({
+          assetManager,
+          inputRouter,
+          semanticRegistry: semanticTargets,
+          semanticId: 'workshop.discoveries.next',
+          text: 'Next',
+          width: DISCOVERY_PAGER_BUTTON_WIDTH,
+          height: DISCOVERY_PAGER_BUTTON_HEIGHT,
+          sizeTier: 30,
+          variant: 'yellow',
+          action: () => this.showNextDiscoverySpread(),
+          label: 'workshop.discoveries.next',
+        })
+      : null;
+    this.discoveryPageLabel = this.isDiscoveriesDialog
+      ? createText('', {
+          ...RETAINED_TEXT_STYLES.border,
+          align: 'center',
+        })
+      : null;
+    if (this.discoveryPageLabel) {
+      this.discoveryPageLabel.anchor.set(0.5, 0);
+    }
+    this.discoverySpreadIndex = 0;
+    if (this.isDiscoveriesDialog) {
+      this.panel.setPaperVisible(false);
+      this.discoveryBook.eventMode = 'static';
+      this.panel.content.addChild(
+        this.discoveryBook,
+        this.discoveryPrevious,
+        this.discoveryNext,
+        this.discoveryPageLabel,
+      );
+    }
     this.tabsLayer = new Container({ label: `${dialogId}-tabs` });
     this.periodTabsLayer = this.isLeaderboardDialog
       ? new Container({ label: `${dialogId}-period-tabs` })
@@ -568,10 +682,12 @@ export class WorkshopDialogPixi {
         this.isWorldChatDialog
           ? new WorldChatMessageRowPixi({ dialog: this })
           : this.isDiscoveriesDialog
-            ? new PotionDiscoveryRowPixi({ dialog: this })
+            ? new PotionDiscoveryPagePixi({ dialog: this })
             : this.isLeaderboardDialog
               ? new LeaderboardRowPixi({ dialog: this })
-              : new WorkshopDialogRow({ dialog: this }),
+              : this.isBagDialog
+                ? new WorkshopBagInventoryRow({ dialog: this })
+                : new WorkshopDialogRow({ dialog: this }),
       reset: (row) => row.reset(),
       dispose: (row) => row.destroy(),
       maxSize: 30,
@@ -587,6 +703,18 @@ export class WorkshopDialogPixi {
       bind: (widget, row) => widget.bind(row),
       afterReconcile: (widgets) => this.orderRows(widgets),
     });
+    this.discoverySwipeRegistration = this.isDiscoveriesDialog
+      ? (this.inputRouter?.registerPageSwipe?.({
+          id: 'workshop.discoveries.book-swipe',
+          displayObject: this.discoveryBook,
+          modalId: this.modal.id,
+          threshold: 30,
+          onSwipe: ({ direction }) =>
+            direction === 'next'
+              ? this.showNextDiscoverySpread()
+              : this.showPreviousDiscoverySpread(),
+        }) ?? null)
+      : null;
     this.defaultRows = this.rows;
     this.allianceRowPool = this.isAllianceDialog
       ? new WidgetPool({
@@ -890,6 +1018,12 @@ export class WorkshopDialogPixi {
     if (!this.boundStatus && rows.length === 0) {
       this.boundStatus = this.viewModel.emptyLabel ?? '';
     }
+    if (this.isDiscoveriesDialog) {
+      if (Number.isInteger(this.viewModel.spreadIndex)) {
+        this.discoverySpreadIndex = this.viewModel.spreadIndex;
+      }
+      this.clampDiscoverySpread(rows.length);
+    }
     this.updateStatus();
     this.rows.reconcile(
       this.isWorldEventDialog && this.viewModel.rowWidget === 'worldEventQuest'
@@ -948,6 +1082,10 @@ export class WorkshopDialogPixi {
       this.orderPersonalTaskRows(widgets);
       return;
     }
+    if (this.isDiscoveriesDialog) {
+      this.orderDiscoveryPages(widgets);
+      return;
+    }
 
     this.scroll.content.removeChildren();
     this.scrollableRowLayouts.clear();
@@ -957,10 +1095,10 @@ export class WorkshopDialogPixi {
         : this.scrollContentPaddingTop;
     const rowGap = this.isWorldChatDialog
       ? WORLD_CHAT_ROW_GAP
-      : this.isDiscoveriesDialog
-        ? DISCOVERY_ROW_GAP
+      : this.isBagDialog
+        ? 0
         : this.isWorldEventDialog &&
-            this.viewModel.rowWidget === 'worldEventQuest'
+              this.viewModel.rowWidget === 'worldEventQuest'
           ? WORLD_EVENT_SECTION_GAP
           : this.isLeaderboardDialog ||
               (this.isWorldEventDialog &&
@@ -972,6 +1110,8 @@ export class WorkshopDialogPixi {
             : 4;
     const rowWidth = this.isWorldChatDialog
       ? this.scroll.width - WORLD_CHAT_ROW_SCROLLBAR_GUTTER
+      : this.isBagDialog
+        ? this.bagRowWidth ?? WORKSHOP_DIALOG_CONTENT_WIDTH
       : this.isWorldEventDialog &&
           this.viewModel.rowWidget === 'worldEventQuest'
         ? this.scroll.width
@@ -1047,6 +1187,95 @@ export class WorkshopDialogPixi {
       }
     }
     this.updateScrollableRowVisibility();
+  }
+
+  orderDiscoveryPages(widgets = this.rows?.getWidgets?.() ?? []) {
+    if (!this.discoveryBook) {
+      return;
+    }
+
+    this.discoveryBook.removeChildren();
+    this.clampDiscoverySpread(widgets.length);
+    const start = this.discoverySpreadIndex * 2;
+    const visiblePages = widgets.slice(start, start + 2);
+    for (const widget of widgets) {
+      const visible = visiblePages.includes(widget);
+      widget.root.visible = visible;
+      widget.root.renderable = visible;
+    }
+    visiblePages.forEach((widget, index) => {
+      this.discoveryBook.addChild(widget.root);
+      widget.setBounds(
+        index === 0 ? 0 : DISCOVERY_PAGE_WIDTH + DISCOVERY_PAGE_GAP,
+        0,
+        DISCOVERY_PAGE_WIDTH,
+        DISCOVERY_PAGE_HEIGHT,
+      );
+    });
+    if (widgets.length === 0) {
+      this.discoveryEmptyPages.forEach((page, index) => {
+        page.position.set(
+          index === 0 ? 0 : DISCOVERY_PAGE_WIDTH + DISCOVERY_PAGE_GAP,
+          0,
+        );
+        page.setSize(DISCOVERY_PAGE_WIDTH, DISCOVERY_PAGE_HEIGHT);
+        this.discoveryBook.addChild(page);
+      });
+      this.discoveryEmptyText.position.set(
+        DISCOVERY_PAGE_CONTENT_INSET,
+        DISCOVERY_PAGE_CONTENT_INSET + 5,
+      );
+      this.discoveryBook.addChild(this.discoveryEmptyText);
+    }
+
+    const pageCount = Math.max(1, widgets.length);
+    const leftPage = Math.min(pageCount, start + 1);
+    const rightPage = Math.min(pageCount, start + 2);
+    setText(
+      this.discoveryPageLabel,
+      widgets.length > 1
+        ? `${leftPage}-${rightPage} / ${pageCount}`
+        : `${leftPage} / ${pageCount}`,
+    );
+    this.discoveryPrevious.setEnabled(this.discoverySpreadIndex > 0);
+    this.discoveryNext.setEnabled(
+      this.discoverySpreadIndex < this.getDiscoverySpreadCount(widgets.length) - 1,
+    );
+  }
+
+  showPreviousDiscoverySpread() {
+    if (!this.isDiscoveriesDialog || this.discoverySpreadIndex <= 0) {
+      return false;
+    }
+    this.discoverySpreadIndex -= 1;
+    this.viewModel.actions?.turnSpread?.(this.discoverySpreadIndex);
+    this.orderDiscoveryPages();
+    return true;
+  }
+
+  showNextDiscoverySpread() {
+    const rowCount = this.rows?.getWidgets?.().length ?? 0;
+    if (
+      !this.isDiscoveriesDialog ||
+      this.discoverySpreadIndex >= this.getDiscoverySpreadCount(rowCount) - 1
+    ) {
+      return false;
+    }
+    this.discoverySpreadIndex += 1;
+    this.viewModel.actions?.turnSpread?.(this.discoverySpreadIndex);
+    this.orderDiscoveryPages();
+    return true;
+  }
+
+  clampDiscoverySpread(rowCount) {
+    this.discoverySpreadIndex = Math.min(
+      Math.max(0, Math.floor(Number(this.discoverySpreadIndex)) || 0),
+      this.getDiscoverySpreadCount(rowCount) - 1,
+    );
+  }
+
+  getDiscoverySpreadCount(rowCount = this.rows?.getWidgets?.().length ?? 0) {
+    return Math.max(1, Math.ceil(rowCount / 2));
   }
 
   updateScrollableRowVisibility() {
@@ -1264,6 +1493,23 @@ export class WorkshopDialogPixi {
       fill: contentTheme.muted,
       wordWrapWidth: 264,
     });
+    this.discoveryPrevious?.applyTheme(contentTheme);
+    this.discoveryNext?.applyTheme(contentTheme);
+    if (this.discoveryPageLabel) {
+      applyTextTheme(this.discoveryPageLabel, this.theme, {
+        ...RETAINED_TEXT_STYLES.border,
+        align: 'center',
+        fill: this.theme.text,
+      });
+    }
+    if (this.discoveryEmptyText) {
+      applyTextTheme(this.discoveryEmptyText, contentTheme, {
+        ...RETAINED_TEXT_STYLES.body,
+        fill: contentTheme.muted,
+        wordWrapWidth:
+          DISCOVERY_PAGE_WIDTH - DISCOVERY_PAGE_CONTENT_INSET * 2,
+      });
+    }
 
     const allRows = new Set([
       ...(this.defaultRows?.getWidgets?.() ?? []),
@@ -1342,6 +1588,10 @@ export class WorkshopDialogPixi {
       Number(viewportProjection?.sourceWidth) || PIXI_UI_GEOMETRY.sourceWidth;
     this.sourceHeight =
       Number(viewportProjection?.sourceHeight) || PIXI_UI_GEOMETRY.sourceHeight;
+    if (this.isDiscoveriesDialog) {
+      this.layoutDiscoveriesDialog(viewportProjection);
+      return;
+    }
     const frameOutset = PIXI_ROOT_RUN_GEOMETRY.dialog.frameOutset;
     const width = this.isWorldChatDialog
       ? this.sourceWidth - frameOutset * 2
@@ -1420,11 +1670,17 @@ export class WorkshopDialogPixi {
     let shellFooterPaperReduction = 0;
     let footerTabLayout = null;
     if (tabsInShellFooter) {
-      footerTabLayout = resolveDialogFooterTabLayout({
-        coreWidth: this.panel.coreWidth,
-        coreHeight: this.panel.coreHeight,
-        tabCount: tabs.length,
-      });
+      footerTabLayout = this.isBagDialog
+        ? resolveBagFooterTabLayout({
+            coreWidth: this.panel.coreWidth,
+            coreHeight: this.panel.coreHeight,
+            tabCount: tabs.length,
+          })
+        : resolveDialogFooterTabLayout({
+            coreWidth: this.panel.coreWidth,
+            coreHeight: this.panel.coreHeight,
+            tabCount: tabs.length,
+          });
     }
     if (this.isWorldEventDialog) {
       this.layoutWorldEventDialog({
@@ -1509,6 +1765,23 @@ export class WorkshopDialogPixi {
         8
       : 0;
     const statusHeight = this.status.text ? 18 : 0;
+    const bagListLayout = this.isBagDialog
+      ? resolveRetainedDialogListLayout({
+          bodyWidth: WORKSHOP_DIALOG_CONTENT_WIDTH,
+          paperRight:
+            WORKSHOP_DIALOG_CONTENT_WIDTH +
+            resolveDialogPaperOutsets({
+              top: PIXI_UI_GEOMETRY.dialogPadding,
+              right: PIXI_UI_GEOMETRY.dialogPadding,
+              bottom: PIXI_UI_GEOMETRY.dialogPadding,
+              left: PIXI_UI_GEOMETRY.dialogPadding,
+            }).right,
+          rowFrameWidth: RETAINED_DIALOG_LIST_GEOMETRY.rowFrameWidth,
+        })
+      : null;
+    if (bagListLayout) {
+      this.bagRowWidth = bagListLayout.rowWidth;
+    }
     const allianceQuestListLayout = usesAllianceQuestRows
       ? resolveRetainedDialogListLayout({
           bodyWidth: WORKSHOP_DIALOG_CONTENT_WIDTH,
@@ -1525,6 +1798,8 @@ export class WorkshopDialogPixi {
     this.scroll.setBounds(
       this.isWorldChatDialog
         ? WORLD_CHAT_CONTENT_INSET_X
+        : bagListLayout
+          ? 20 + bagListLayout.x
         : usesAllianceQuestRows
           ? 20 + allianceQuestListLayout.x
           : 20,
@@ -1534,10 +1809,14 @@ export class WorkshopDialogPixi {
         this.scrollViewportTopInset,
       usesAllianceQuestRows
         ? allianceQuestListLayout.viewportWidth
+        : bagListLayout
+          ? bagListLayout.viewportWidth
         : this.scrollViewportWidth,
       height -
         DIALOG_SCROLL_VIEWPORT_TOP -
-        DIALOG_SCROLL_VIEWPORT_BOTTOM_INSET -
+        (usesAllianceQuestRows
+          ? ALLIANCE_QUEST_SCROLL_BOTTOM_INSET
+          : DIALOG_SCROLL_VIEWPORT_BOTTOM_INSET) -
         copyHeight -
         headerHeight -
         statusHeight -
@@ -1545,7 +1824,7 @@ export class WorkshopDialogPixi {
         shellFooterPaperReduction -
         this.scrollViewportTopInset,
     );
-    if (this.isWorldChatDialog || usesAllianceQuestRows) {
+    if (this.isWorldChatDialog || bagListLayout || usesAllianceQuestRows) {
       this.orderRows(this.rows.getWidgets());
     }
     this.tabsLayer.position.set(
@@ -1555,16 +1834,28 @@ export class WorkshopDialogPixi {
     this.tabsLayer.visible = tabs.length > 0;
     const gap = footerTabLayout?.gap ?? 0;
     const tabWidth = footerTabLayout?.tabWidth ?? 0;
-    let tabX = 0;
-
-    for (const button of tabs) {
-      button.setBounds(
-        tabX,
+    for (const [index, button] of tabs.entries()) {
+      const columnCount = footerTabLayout?.columnCount ?? tabs.length;
+      const rowIndex = Math.floor(index / columnCount);
+      const columnIndex = index % columnCount;
+      const itemsInRow = Math.min(
+        columnCount,
+        tabs.length - rowIndex * columnCount,
+      );
+      const rowWidth =
+        itemsInRow * tabWidth + Math.max(0, itemsInRow - 1) * gap;
+      const rowOffsetX = Math.max(
         0,
+        ((footerTabLayout?.rowWidth ?? rowWidth) - rowWidth) / 2,
+      );
+      button.setBounds(
+        rowOffsetX + columnIndex * (tabWidth + gap),
+        rowIndex *
+          (PIXI_DIALOG_FOOTER_TABS_GEOMETRY.rowHeight +
+            (footerTabLayout?.rowGap ?? 0)),
         tabWidth,
         PIXI_DIALOG_FOOTER_TABS_GEOMETRY.rowHeight,
       );
-      tabX += tabWidth + gap;
     }
 
     this.status.position.set(
@@ -1598,6 +1889,57 @@ export class WorkshopDialogPixi {
         Math.max(0, this.scroll.contentHeight - this.scroll.height),
       );
     }
+  }
+
+  layoutDiscoveriesDialog(viewportProjection) {
+    this.modal.layout(viewportProjection);
+    this.modal.setBounds(
+      (this.sourceWidth - DISCOVERY_DIALOG_OUTER_WIDTH) / 2,
+      (this.sourceHeight - DISCOVERY_DIALOG_OUTER_HEIGHT) / 2,
+      DISCOVERY_DIALOG_OUTER_WIDTH,
+      DISCOVERY_DIALOG_OUTER_HEIGHT,
+    );
+    this.panel.setPaperVisible(false);
+    for (const displayObject of [
+      this.copy,
+      this.headerHeadline,
+      this.headerBody,
+      this.headerMeta,
+      this.scroll.root,
+      this.status,
+      this.tabsLayer,
+    ]) {
+      displayObject.visible = false;
+      displayObject.renderable = false;
+    }
+    const bookX = -DISCOVERY_BOOK_SIDE_OVERFLOW;
+    const controlsY =
+      DISCOVERY_BOOK_TOP + DISCOVERY_PAGE_HEIGHT + DISCOVERY_PAGER_GAP;
+    this.discoveryBook.position.set(bookX, DISCOVERY_BOOK_TOP);
+    this.discoveryBook.hitArea = new Rectangle(
+      0,
+      0,
+      DISCOVERY_BOOK_WIDTH,
+      DISCOVERY_PAGE_HEIGHT,
+    );
+    this.discoveryPrevious.position.set(bookX, controlsY);
+    this.discoveryPrevious.setSize(
+      DISCOVERY_PAGER_BUTTON_WIDTH,
+      DISCOVERY_PAGER_BUTTON_HEIGHT,
+    );
+    this.discoveryNext.position.set(
+      bookX + DISCOVERY_BOOK_WIDTH - DISCOVERY_PAGER_BUTTON_WIDTH,
+      controlsY,
+    );
+    this.discoveryNext.setSize(
+      DISCOVERY_PAGER_BUTTON_WIDTH,
+      DISCOVERY_PAGER_BUTTON_HEIGHT,
+    );
+    this.discoveryPageLabel.position.set(
+      bookX + DISCOVERY_BOOK_WIDTH / 2,
+      controlsY + 8,
+    );
+    this.orderDiscoveryPages();
   }
 
   resolveWorldChatMotionBounds(target) {
@@ -2079,6 +2421,8 @@ export class WorkshopDialogPixi {
     const artY = headerY + WORLD_EVENT_HEADER_CONTENT_INSET;
     const artWidth =
       contentWidth + WORLD_EVENT_HEADER_ART_HORIZONTAL_OUTSET * 2;
+    const headerTextX = hasHeaderArt ? artX : contentX;
+    const headerTextWidth = hasHeaderArt ? artWidth : contentWidth;
 
     if (hasHeaderArt) {
       this.worldEventHeaderArt.position.set(artX, artY);
@@ -2098,8 +2442,11 @@ export class WorkshopDialogPixi {
       this.worldEventHeaderArtMask.clear();
     }
 
+    this.headerHeadline.style.wordWrapWidth = headerTextWidth;
+    this.headerBody.style.wordWrapWidth = headerTextWidth;
+    this.headerMeta.style.wordWrapWidth = headerTextWidth;
     this.headerHeadline.position.set(
-      contentX,
+      headerTextX,
       hasHeaderArt
         ? artY +
             WORLD_EVENT_HEADER_ART_HEIGHT +
@@ -2107,14 +2454,14 @@ export class WorkshopDialogPixi {
         : headerY + WORLD_EVENT_HEADER_CONTENT_INSET,
     );
     this.headerBody.position.set(
-      contentX,
+      headerTextX,
       this.headerHeadline.y +
         (this.headerHeadline.text
           ? Math.ceil(this.headerHeadline.height) + 3
           : 0),
     );
     this.headerMeta.position.set(
-      contentX,
+      headerTextX,
       this.headerBody.y +
         (this.headerBody.text ? Math.ceil(this.headerBody.height) + 3 : 0),
     );
@@ -2253,6 +2600,8 @@ export class WorkshopDialogPixi {
   destroy() {
     this.stopWorldChatMotion();
     this.clearTargets();
+    disposeInputRegistration(this.discoverySwipeRegistration);
+    this.discoverySwipeRegistration = null;
     this.composerSubmissionToken += 1;
     this.composerField?.destroy({ children: true });
     this.composerField = null;
@@ -2302,6 +2651,10 @@ export class WorkshopDialogPixi {
     this.allianceSettingsPane?.destroy();
     this.allianceSettingsPane = null;
     this.allianceMembersSection?.scroll.destroy();
+    this.discoveryPrevious?.destroy();
+    this.discoveryPrevious = null;
+    this.discoveryNext?.destroy();
+    this.discoveryNext = null;
     this.scroll.destroy();
     this.modal.destroy();
   }
@@ -4168,7 +4521,7 @@ export class AllianceDirectoryRow {
   }
 }
 
-class PotionDiscoveryIngredientRowPixi {
+class PotionDiscoveryIngredientPageRowPixi {
   constructor({ dialog, index }) {
     this.dialog = dialog;
     this.root = new Container({
@@ -4176,21 +4529,20 @@ class PotionDiscoveryIngredientRowPixi {
     });
     this.icon = new Sprite(Texture.EMPTY);
     this.icon.label = `${this.root.label}:icon`;
-    this.icon.anchor.set(0.5);
-    this.label = createText('', {
-      fontSize: 9,
-      lineHeight: 11,
+    this.label = createText('', RETAINED_TEXT_STYLES.border);
+    this.quantity = createText('', {
+      ...RETAINED_TEXT_STYLES.border,
+      align: 'right',
     });
-    this.root.addChild(this.icon, this.label);
+    this.quantity.anchor.set(1, 0);
+    this.root.addChild(this.icon, this.label, this.quantity);
     this.root.visible = false;
   }
 
   bind(model) {
     this.model = model ?? {};
-    setText(
-      this.label,
-      `×${this.model.quantity ?? 0} ${this.model.label ?? 'Unknown'}`,
-    );
+    setText(this.label, this.model.label ?? 'Unknown');
+    setText(this.quantity, `×${this.model.quantity ?? 0}`);
     this.icon.texture = resolveAtlasTexture(
       this.dialog.assetManager,
       getHerbIconFrameName(this.model.key),
@@ -4201,20 +4553,31 @@ class PotionDiscoveryIngredientRowPixi {
 
   setBounds(x, y, width) {
     this.root.position.set(x, y);
-    this.icon.position.set(8, 8);
-    this.icon.width = 16;
-    this.icon.height = 16;
-    this.label.position.set(18, 2);
-    this.label.style.wordWrap = true;
-    this.label.style.wordWrapWidth = Math.max(0, width - 18);
+    this.label.position.set(0, 0);
+    this.icon.position.set(
+      this.label.width + DISCOVERY_INGREDIENT_ICON_GAP,
+      1,
+    );
+    this.icon.width = DISCOVERY_INGREDIENT_ICON_SIZE;
+    this.icon.height = DISCOVERY_INGREDIENT_ICON_SIZE;
+    this.quantity.position.set(width, 0);
+    this.root.hitArea = new Rectangle(
+      0,
+      0,
+      width,
+      DISCOVERY_INGREDIENT_ROW_HEIGHT,
+    );
   }
 
   applyTheme(theme) {
     applyTextTheme(this.label, theme, {
-      fontSize: 9,
-      lineHeight: 11,
-      fill: theme.text,
-      wordWrapWidth: Math.max(0, (this.width ?? 100) - 18),
+      ...RETAINED_TEXT_STYLES.border,
+      fill: theme.resourceColors?.herb ?? theme.text,
+    });
+    applyTextTheme(this.quantity, theme, {
+      ...RETAINED_TEXT_STYLES.border,
+      align: 'right',
+      fill: theme.muted,
     });
   }
 
@@ -4222,6 +4585,7 @@ class PotionDiscoveryIngredientRowPixi {
     this.model = null;
     this.icon.texture = Texture.EMPTY;
     setText(this.label, '');
+    setText(this.quantity, '');
     this.root.visible = false;
   }
 
@@ -4231,80 +4595,71 @@ class PotionDiscoveryIngredientRowPixi {
 }
 
 /**
- * Approved passive row for a discovered potion and its recipe provenance.
+ * One passive discovery page inside the Workshop's two-page potion book.
  *
  * The discoverer name is the only action and opens the existing Player Info
  * surface. Unknown potions intentionally hide recipe and economy metadata.
  */
-export class PotionDiscoveryRowPixi {
+export class PotionDiscoveryPagePixi {
   constructor({ dialog }) {
     this.dialog = dialog;
     this.root = new Container({
-      label: `${dialog.dialogId}-potion-discovery-row`,
+      label: `${dialog.dialogId}-potion-discovery-page`,
     });
-    this.background = new PixiNineSliceFrame({
-      texture:
-        dialog.assetManager?.getTexture?.(PIXI_ROOT_RUN_ASSETS.settingsRow) ??
+    this.background = createDialogPaperSection(
+      dialog.assetManager?.getTexture?.(PIXI_ROOT_RUN_ASSETS.dialogPaper) ??
         Texture.EMPTY,
-      sourceInsets: PIXI_ROOT_RUN_GEOMETRY.settings.rowSourceInsets,
-      borderInsets: PIXI_ROOT_RUN_GEOMETRY.settings.rowBorderInsets,
-      label: `${this.root.label}:background`,
-    });
+      `${this.root.label}:paper`,
+    );
     this.potionIcon = new Sprite(Texture.EMPTY);
     this.potionIcon.label = `${this.root.label}:potion-icon`;
-    this.potionIcon.anchor.set(0.5);
     this.name = createText('', {
-      fontSize: 13,
-      lineHeight: 15,
-      fontWeight: '700',
+      ...RETAINED_TEXT_STYLES.bold,
+      wordWrapWidth:
+        DISCOVERY_PAGE_WIDTH -
+        DISCOVERY_PAGE_CONTENT_INSET * 2 -
+        DISCOVERY_ICON_SIZE -
+        DISCOVERY_HEADER_GAP,
     });
-    this.date = createText('', {
-      fontSize: 9,
-      lineHeight: 11,
-      align: 'right',
-    });
-    this.date.anchor.set(1, 0);
+    this.date = createText('', RETAINED_TEXT_STYLES.border);
     this.discovererPrefix = createText('', {
-      fontSize: 9.5,
-      lineHeight: 12,
+      ...RETAINED_TEXT_STYLES.border,
     });
     this.discovererName = createText('', {
-      fontSize: 9.5,
-      lineHeight: 12,
+      ...RETAINED_TEXT_STYLES.border,
       fontWeight: '700',
     });
     this.recipeLabel = createText('', {
-      fontSize: 9,
-      lineHeight: 11,
-      fontWeight: '700',
-    });
-    this.divider = new Graphics({
-      label: `${this.root.label}:divider`,
+      ...RETAINED_TEXT_STYLES.bold,
     });
     this.manaIcon = new Sprite(Texture.EMPTY);
     this.manaIcon.label = `${this.root.label}:mana-icon`;
-    this.manaIcon.anchor.set(0.5);
+    this.manaLabel = createText('Required mana:', {
+      ...RETAINED_TEXT_STYLES.border,
+    });
     this.mana = createText('', {
-      fontSize: 8.5,
-      lineHeight: 10,
+      ...RETAINED_TEXT_STYLES.border,
+      align: 'right',
     });
+    this.mana.anchor.set(1, 0);
+    this.durationLabel = createText('Required Time:', RETAINED_TEXT_STYLES.border);
     this.duration = createText('', {
-      fontSize: 8.5,
-      lineHeight: 10,
+      ...RETAINED_TEXT_STYLES.border,
+      align: 'right',
     });
+    this.duration.anchor.set(1, 0);
     this.royaltyIcon = new Sprite(Texture.EMPTY);
     this.royaltyIcon.label = `${this.root.label}:royalty-icon`;
-    this.royaltyIcon.anchor.set(0.5);
+    this.royaltyLabel = createText('Royalty:', RETAINED_TEXT_STYLES.border);
     this.royalty = createText('', {
-      fontSize: 8.5,
-      lineHeight: 10,
+      ...RETAINED_TEXT_STYLES.border,
       align: 'right',
     });
     this.royalty.anchor.set(1, 0);
     this.ingredientRows = Array.from(
       { length: DISCOVERY_MAX_INGREDIENTS },
       (_, index) =>
-        new PotionDiscoveryIngredientRowPixi({
+        new PotionDiscoveryIngredientPageRowPixi({
           dialog,
           index,
         }),
@@ -4318,10 +4673,12 @@ export class PotionDiscoveryRowPixi {
       this.discovererName,
       this.recipeLabel,
       ...this.ingredientRows.map((row) => row.root),
-      this.divider,
+      this.manaLabel,
       this.manaIcon,
       this.mana,
+      this.durationLabel,
       this.duration,
+      this.royaltyLabel,
       this.royaltyIcon,
       this.royalty,
     );
@@ -4368,9 +4725,18 @@ export class PotionDiscoveryRowPixi {
       this.recipeLabel,
       this.discovered ? 'Recipe' : 'Recipe remains hidden',
     );
-    setText(this.mana, this.model.manaLabel ?? '');
-    setText(this.duration, this.model.durationLabel ?? '');
-    setText(this.royalty, this.model.royaltyLabel ?? '');
+    setText(
+      this.mana,
+      stripDiscoverySuffix(this.model.manaLabel, /\s+mana$/i),
+    );
+    setText(
+      this.duration,
+      stripDiscoverySuffix(this.model.durationLabel, /\s+brew$/i),
+    );
+    setText(
+      this.royalty,
+      stripDiscoverySuffix(this.model.royaltyLabel, /\s+coin\s+royalty$/i),
+    );
     this.potionIcon.texture = resolveAtlasTexture(
       this.dialog.assetManager,
       getPotionIconFrameName(this.model.potionKey),
@@ -4421,29 +4787,32 @@ export class PotionDiscoveryRowPixi {
     this.background.setSize(width, height);
     this.root.hitArea = new Rectangle(0, 0, width, height);
 
-    if (!this.discovered) {
-      this.potionIcon.position.set(30, height / 2);
-      this.potionIcon.width = 40;
-      this.potionIcon.height = 40;
-      this.name.position.set(56, 10);
-      this.name.style.wordWrap = true;
-      this.name.style.wordWrapWidth = Math.max(0, width - 64);
-      this.discovererPrefix.position.set(56, 29);
-      this.recipeLabel.position.set(56, 45);
-      return;
-    }
-
-    this.potionIcon.position.set(30, 29);
+    const contentWidth = Math.max(
+      0,
+      width - DISCOVERY_PAGE_CONTENT_INSET * 2,
+    );
+    this.potionIcon.position.set(
+      DISCOVERY_PAGE_CONTENT_INSET - 4,
+      DISCOVERY_PAGE_CONTENT_INSET + 3,
+    );
     this.potionIcon.width = DISCOVERY_ICON_SIZE;
     this.potionIcon.height = DISCOVERY_ICON_SIZE;
-    this.name.position.set(59, 7);
+    this.name.position.set(
+      DISCOVERY_PAGE_CONTENT_INSET +
+        DISCOVERY_ICON_SIZE +
+        DISCOVERY_HEADER_GAP,
+      DISCOVERY_PAGE_CONTENT_INSET + 5,
+    );
     this.name.style.wordWrap = true;
-    this.name.style.wordWrapWidth = Math.max(0, width - 147);
-    this.date.position.set(width - 8, 9);
-    this.discovererPrefix.position.set(59, 27);
+    this.name.style.wordWrapWidth = Math.max(
+      0,
+      contentWidth - DISCOVERY_ICON_SIZE - DISCOVERY_HEADER_GAP,
+    );
+    this.date.position.set(this.name.x, DISCOVERY_PAGE_CONTENT_INSET + 35);
+    this.discovererPrefix.position.set(DISCOVERY_PAGE_CONTENT_INSET, 67);
     this.discovererName.position.set(
-      this.discovererPrefix.x + this.discovererPrefix.width + 3,
-      27,
+      DISCOVERY_PAGE_CONTENT_INSET,
+      80,
     );
     this.discovererName.hitArea = new Rectangle(
       0,
@@ -4451,66 +4820,59 @@ export class PotionDiscoveryRowPixi {
       Math.max(1, this.discovererName.width),
       Math.max(1, this.discovererName.height),
     );
-    this.recipeLabel.position.set(8, 51);
-
-    const ingredientCount = this.visibleIngredientCount;
-    const recipeRowCount = Math.max(
-      1,
-      Math.ceil(ingredientCount / DISCOVERY_RECIPE_COLUMNS),
-    );
-    const recipeX = 50;
-    const ingredientWidth = (width - recipeX - 8) / DISCOVERY_RECIPE_COLUMNS;
+    this.recipeLabel.position.set(DISCOVERY_PAGE_CONTENT_INSET, 105);
+    const ingredientsY = 127;
     this.ingredientRows.forEach((row, index) => {
       if (!row.root.visible) {
         return;
       }
-      row.width = ingredientWidth;
       row.setBounds(
-        recipeX + (index % DISCOVERY_RECIPE_COLUMNS) * ingredientWidth,
-        45 +
-          Math.floor(index / DISCOVERY_RECIPE_COLUMNS) *
-            DISCOVERY_RECIPE_ROW_HEIGHT,
-        ingredientWidth,
+        DISCOVERY_PAGE_CONTENT_INSET,
+        ingredientsY + index * DISCOVERY_INGREDIENT_ROW_HEIGHT,
+        contentWidth,
       );
     });
-
-    const dividerY = 48 + recipeRowCount * DISCOVERY_RECIPE_ROW_HEIGHT;
-    this.divider
-      .clear()
-      .moveTo(8, dividerY)
-      .lineTo(width - 8, dividerY)
-      .stroke({
-        color: DISCOVERY_DIVIDER_COLOR,
-        width: 1,
-        alpha: 0.48,
-      });
-    const metadataY = dividerY + 5;
-    this.manaIcon.position.set(14, metadataY + 5);
-    this.manaIcon.width = 12;
-    this.manaIcon.height = 12;
-    this.mana.position.set(23, metadataY);
-    this.duration.position.set(91, metadataY);
-    this.royalty.position.set(width - 8, metadataY);
-    this.royaltyIcon.width = 12;
-    this.royaltyIcon.height = 12;
+    const metadataY =
+      ingredientsY +
+      DISCOVERY_MAX_INGREDIENTS * DISCOVERY_INGREDIENT_ROW_HEIGHT +
+      6;
+    this.manaLabel.position.set(DISCOVERY_PAGE_CONTENT_INSET, metadataY);
+    this.manaIcon.position.set(
+      width - DISCOVERY_PAGE_CONTENT_INSET - DISCOVERY_RESOURCE_ICON_SIZE,
+      metadataY,
+    );
+    this.manaIcon.width = DISCOVERY_RESOURCE_ICON_SIZE;
+    this.manaIcon.height = DISCOVERY_RESOURCE_ICON_SIZE;
+    this.mana.position.set(
+      this.manaIcon.x - DISCOVERY_RESOURCE_ICON_GAP,
+      metadataY,
+    );
+    this.durationLabel.position.set(
+      DISCOVERY_PAGE_CONTENT_INSET,
+      metadataY + DISCOVERY_METADATA_ROW_HEIGHT,
+    );
+    this.duration.position.set(
+      width - DISCOVERY_PAGE_CONTENT_INSET,
+      metadataY + DISCOVERY_METADATA_ROW_HEIGHT,
+    );
+    this.royaltyLabel.position.set(
+      DISCOVERY_PAGE_CONTENT_INSET,
+      metadataY + DISCOVERY_METADATA_ROW_HEIGHT * 2,
+    );
     this.royaltyIcon.position.set(
-      this.royalty.x - this.royalty.width - 8,
-      metadataY + 5,
+      width - DISCOVERY_PAGE_CONTENT_INSET - DISCOVERY_RESOURCE_ICON_SIZE,
+      metadataY + DISCOVERY_METADATA_ROW_HEIGHT * 2,
+    );
+    this.royaltyIcon.width = DISCOVERY_RESOURCE_ICON_SIZE;
+    this.royaltyIcon.height = DISCOVERY_RESOURCE_ICON_SIZE;
+    this.royalty.position.set(
+      this.royaltyIcon.x - DISCOVERY_RESOURCE_ICON_GAP,
+      metadataY + DISCOVERY_METADATA_ROW_HEIGHT * 2,
     );
   }
 
   getPreferredHeight() {
-    if (!this.discovered) {
-      return DISCOVERY_LOCKED_ROW_HEIGHT;
-    }
-    const recipeRowCount = Math.max(
-      1,
-      Math.ceil(this.visibleIngredientCount / DISCOVERY_RECIPE_COLUMNS),
-    );
-    return (
-      DISCOVERY_BASE_ROW_HEIGHT +
-      (recipeRowCount - 1) * DISCOVERY_RECIPE_ROW_HEIGHT
-    );
+    return DISCOVERY_PAGE_HEIGHT;
   }
 
   get visibleIngredientCount() {
@@ -4521,10 +4883,12 @@ export class PotionDiscoveryRowPixi {
     for (const displayObject of [
       this.date,
       this.discovererName,
-      this.divider,
+      this.manaLabel,
       this.manaIcon,
       this.mana,
+      this.durationLabel,
       this.duration,
+      this.royaltyLabel,
       this.royaltyIcon,
       this.royalty,
     ]) {
@@ -4536,47 +4900,53 @@ export class PotionDiscoveryRowPixi {
   applyTheme(theme) {
     const resolvedTheme = theme ?? this.dialog.theme;
     applyTextTheme(this.name, resolvedTheme, {
-      fontSize: 13,
-      lineHeight: 15,
-      fontWeight: '700',
+      ...RETAINED_TEXT_STYLES.bold,
       fill: this.discovered ? resolvedTheme.text : resolvedTheme.muted,
+      wordWrapWidth:
+        (this.width ?? DISCOVERY_PAGE_WIDTH) -
+        DISCOVERY_PAGE_CONTENT_INSET * 2 -
+        DISCOVERY_ICON_SIZE -
+        DISCOVERY_HEADER_GAP,
     });
     applyTextTheme(this.date, resolvedTheme, {
-      fontSize: 9,
-      lineHeight: 11,
-      align: 'right',
+      ...RETAINED_TEXT_STYLES.border,
       fill: resolvedTheme.muted,
     });
     applyTextTheme(this.discovererPrefix, resolvedTheme, {
-      fontSize: 9.5,
-      lineHeight: 12,
+      ...RETAINED_TEXT_STYLES.border,
       fill: resolvedTheme.muted,
     });
     applyTextTheme(this.discovererName, resolvedTheme, {
-      fontSize: 9.5,
-      lineHeight: 12,
+      ...RETAINED_TEXT_STYLES.border,
       fontWeight: '700',
       fill: DISCOVERY_PLAYER_COLOR,
     });
     applyTextTheme(this.recipeLabel, resolvedTheme, {
-      fontSize: 9,
-      lineHeight: 11,
-      fontWeight: '700',
+      ...RETAINED_TEXT_STYLES.bold,
       fill: this.discovered ? resolvedTheme.text : resolvedTheme.muted,
     });
+    for (const label of [
+      this.manaLabel,
+      this.durationLabel,
+      this.royaltyLabel,
+    ]) {
+      applyTextTheme(label, resolvedTheme, {
+        ...RETAINED_TEXT_STYLES.border,
+        fill: resolvedTheme.text,
+      });
+    }
     applyTextTheme(this.mana, resolvedTheme, {
-      fontSize: 8.5,
-      lineHeight: 10,
+      ...RETAINED_TEXT_STYLES.border,
+      align: 'right',
       fill: resolvedTheme.resourceColors?.mana ?? resolvedTheme.text,
     });
     applyTextTheme(this.duration, resolvedTheme, {
-      fontSize: 8.5,
-      lineHeight: 10,
-      fill: resolvedTheme.text,
+      ...RETAINED_TEXT_STYLES.border,
+      align: 'right',
+      fill: resolvedTheme.muted,
     });
     applyTextTheme(this.royalty, resolvedTheme, {
-      fontSize: 8.5,
-      lineHeight: 10,
+      ...RETAINED_TEXT_STYLES.border,
       align: 'right',
       fill: resolvedTheme.text,
     });
@@ -4926,6 +5296,9 @@ export class WorldEventRewardRow {
       borderInsets: PIXI_ROOT_RUN_GEOMETRY.settings.rowBorderInsets,
       label: `${this.root.label}:background`,
     });
+    this.currentOutline = new Graphics({
+      label: `${this.root.label}:current`,
+    });
     this.rank = createText('', RETAINED_TEXT_STYLES.bold);
     this.rewardBadges = ['emerald', 'crystal'].map((resourceKey) => {
       const root = new Container({
@@ -4947,7 +5320,8 @@ export class WorldEventRewardRow {
       return { amount, icon, resourceKey, root };
     });
     this.root.addChildAt(this.background, 0);
-    this.root.addChildAt(this.rank, 1);
+    this.root.addChildAt(this.currentOutline, 1);
+    this.root.addChildAt(this.rank, 2);
   }
 
   bind(model) {
@@ -4987,6 +5361,14 @@ export class WorldEventRewardRow {
       backgroundHeight,
       PIXI_ROOT_RUN_GEOMETRY.settings.rowBorderInsets,
     );
+    this.currentOutline
+      .clear()
+      .roundRect(1, rowGap / 2 + 1, backgroundWidth - 2, backgroundHeight - 2, 5)
+      .stroke({
+        color: this.dialog.contentTheme?.accent ?? '#a864d9',
+        width: 1.5,
+        alpha: this.model.current ? 0.9 : 0,
+      });
     const visibleBadges = this.rewardBadges.filter(
       ({ root }) => root.visible,
     );
@@ -5333,6 +5715,28 @@ export class AllianceQuestRow {
   }
 }
 
+class WorkshopBagInventoryRow extends RootRunInventoryChoiceRowPixi {
+  constructor({ dialog }) {
+    super({
+      assetManager: dialog.assetManager,
+      inputRouter: dialog.inputRouter,
+      label: `${dialog.dialogId}-inventory-row`,
+      semanticRegistry: dialog.semanticTargets,
+      useSettingsStyle: true,
+    });
+    this.dialog = dialog;
+  }
+
+  bind(model) {
+    super.bind(model?.id ?? model?.key ?? '', model ?? {});
+    this.applyTheme(this.dialog.contentTheme ?? this.dialog.theme);
+  }
+
+  getPreferredHeight() {
+    return PIXI_ROOT_RUN_GEOMETRY.settings.rowPitch;
+  }
+}
+
 export class WorkshopDialogRow {
   constructor({ dialog }) {
     this.dialog = dialog;
@@ -5498,7 +5902,7 @@ export class WorkshopDialogRow {
       actionHeight,
     );
     this.value.position.set(
-      valueRight - (this.dialog.isBagDialog ? BAG_ROW_VALUE_INSET_RIGHT : 0),
+      valueRight,
       contentY,
     );
     this.resourceValue.position.set(
@@ -5738,6 +6142,10 @@ function normalizeWorldChatTagColor(color) {
     .trim()
     .toLowerCase();
   return normalized in WORLD_CHAT_TAG_COLORS ? normalized : 'ink';
+}
+
+function stripDiscoverySuffix(value, suffixPattern) {
+  return String(value ?? '').replace(suffixPattern, '').trim();
 }
 
 function fitLeaderboardText(text, maxWidth) {

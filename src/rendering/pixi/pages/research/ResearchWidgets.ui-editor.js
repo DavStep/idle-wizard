@@ -385,7 +385,7 @@ async function mountResearchTooltip(_context, fixture) {
 function createResearchTooltipControl({ assets, fixture }) {
   const tooltip = new ResearchLockTooltip({ assetManager: assets });
   tooltip.bind(fixture.copy);
-  tooltip.show({ x: 0, y: 0 });
+  tooltip.show({ x: 0, y: 0, animate: false });
   return {
     destroy: () => tooltip.destroy(),
     height: tooltip.height,

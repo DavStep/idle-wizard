@@ -77,6 +77,7 @@ describe('PixiTopPanelView', () => {
     expect(view.manaRate.text).toBe('+2.25/s');
     expect(view.coin.amount).toBe('1.2k');
     expect(view.contextCurrency.resource).toBe('ruby');
+    expect(semanticRegistry.has('top.contextCurrency')).toBe(true);
     expect(view.levelValue.text).toBe('4');
     expect(assets.getTexture).toHaveBeenCalledWith(
       'public:ui/root-run-level-star.png',

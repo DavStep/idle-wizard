@@ -253,6 +253,7 @@ export class PixiViewModelFactory {
     currentPageId,
     hudMode = 'rooms',
     guildHud = null,
+    prestigeHud = null,
     pages,
     notifications,
     actions,
@@ -262,6 +263,7 @@ export class PixiViewModelFactory {
       currentPageId,
       hudMode,
       guildHud,
+      prestigeHud,
       pages,
       notifications,
       reveal: {
@@ -282,6 +284,7 @@ export class PixiViewModelFactory {
     playerInbox = {},
     notifications = {},
     guildNotification = false,
+    prestigeNotification = false,
     actions = {},
     dialogState = {},
     pageStates = null,
@@ -348,6 +351,7 @@ export class PixiViewModelFactory {
           level,
           notifications: notifications.children ?? {},
           guildNotification,
+          prestigeNotification,
           pageStates,
           tradeAlliance,
         }),
@@ -1004,7 +1008,11 @@ export class PixiViewModelFactory {
     const joinMode = String(alliance.joinMode ?? 'closed');
     const seasonIncome = alliance.seasonIncome ?? alliance.weeklyIncome ?? 0;
     const memberCountLabel = `${memberCount}/50`;
-    const safeTabId = TRADE_ALLIANCE_MEMBER_TABS.some(
+    const canEditSettings = tradeAlliance.canEditSettings === true;
+    const memberTabs = canEditSettings
+      ? TRADE_ALLIANCE_MEMBER_TABS
+      : TRADE_ALLIANCE_MEMBER_TABS.filter((tab) => tab.id !== 'settings');
+    const safeTabId = memberTabs.some(
       (tab) => tab.id === selectedTabId,
     )
       ? selectedTabId
@@ -1012,7 +1020,7 @@ export class PixiViewModelFactory {
     const ownMember = tradeAlliance.ownMember ?? null;
     const canLeave =
       ownMember?.role !== 'tradeMaster' || memberCount <= 1;
-    const tabs = TRADE_ALLIANCE_MEMBER_TABS.map((tab) => ({
+    const tabs = memberTabs.map((tab) => ({
       ...tab,
       selected: tab.id === safeTabId,
       notification:
@@ -1073,7 +1081,7 @@ export class PixiViewModelFactory {
         tradeAlliance.connected === false
           ? 'connecting...'
           : '',
-      copy: alliance?.description ?? '',
+      copy: '',
       tradeInfo: {
         identityLabel: `${tag ? `[${tag}] ` : ''}${name}`,
         description: String(alliance.description ?? '').trim(),
@@ -1097,7 +1105,7 @@ export class PixiViewModelFactory {
               description: String(alliance.description ?? ''),
               notice: String(alliance.notice ?? ''),
               joinMode,
-              editable: tradeAlliance.canEditSettings === true,
+              editable: canEditSettings,
               canDisband: memberCount <= 1,
               onSave: (profile) => actions.updateAllianceProfile?.(profile),
               onDisband:
@@ -1399,6 +1407,10 @@ export class PixiViewModelFactory {
           currentEventPoints + remainingQualificationPoints,
       ),
     );
+    const qualifiedForLeaderboardRewards =
+      localLeaderboard.qualified === true ||
+      sharedLeaderboard.qualified === true ||
+      currentEventPoints >= qualificationPoints;
     const leaderboardRows =
       projectedLeaderboardRows.length > 0
         ? projectedLeaderboardRows
@@ -1415,6 +1427,10 @@ export class PixiViewModelFactory {
                 current: true,
               },
             ];
+    const currentLeaderboardRank = normalizeWorldEventLeaderboardRank(
+      currentLeaderboardUser?.rank ??
+        leaderboardRows.find((user) => user?.current === true)?.rank,
+    );
     let rows = [];
 
     if (safeTabId === 'leaderboard') {
@@ -1466,20 +1482,27 @@ export class PixiViewModelFactory {
         localLeaderboard.rewardTiers ??
         sharedLeaderboard.rewardTiers ??
         []
-      ).map((tier) => ({
-        id: `reward:${tier.rankLabel}`,
-        type: 'worldEventReward',
-        rankLabel: toTitleCase(`Rank ${tier.rankLabel}`),
-        rewards: [
-          { resourceKey: 'emerald', amount: Number(tier.emerald) || 0 },
-          { resourceKey: 'crystal', amount: Number(tier.crystal) || 0 },
-        ]
-          .filter(({ amount }) => amount > 0)
-          .map(({ resourceKey, amount }) => ({
-            resourceKey,
-            amountLabel: formatWorldEventNumber(amount),
-          })),
-      }));
+      ).map((tier) => {
+        const current =
+          qualifiedForLeaderboardRewards &&
+          isWorldEventRewardTierForRank(tier, currentLeaderboardRank);
+
+        return {
+          id: `reward:${tier.rankLabel}`,
+          type: 'worldEventReward',
+          rankLabel: toTitleCase(`Rank ${tier.rankLabel}`),
+          rewards: [
+            { resourceKey: 'emerald', amount: Number(tier.emerald) || 0 },
+            { resourceKey: 'crystal', amount: Number(tier.crystal) || 0 },
+          ]
+            .filter(({ amount }) => amount > 0)
+            .map(({ resourceKey, amount }) => ({
+              resourceKey,
+              amountLabel: formatWorldEventNumber(amount),
+            })),
+          ...(current ? { current: true } : {}),
+        };
+      });
     } else {
       rows = (current?.requests ?? current?.options ?? [])
         .slice(0, WORLD_EVENT_MAX_QUEST_ROWS)
@@ -1490,7 +1513,6 @@ export class PixiViewModelFactory {
             (option, optionIndex) => {
               const optionKey = option.optionKey ?? optionIndex;
               const enabled =
-                option.canDonate === true &&
                 typeof actions.openWorldEventDonation === 'function';
               const itemKind = getWorldEventDonationItemKind(option);
               return {
@@ -1517,7 +1539,7 @@ export class PixiViewModelFactory {
                       onActivate: () =>
                         actions.openWorldEventDonation(
                           requestId,
-                          option.optionKey,
+                          optionKey,
                         ),
                     }
                   : {}),
@@ -1898,6 +1920,41 @@ function normalizeLeaderboardRank(rank, index) {
     : index + 1;
 }
 
+function normalizeWorldEventLeaderboardRank(rank) {
+  const safeRank = Math.floor(Number(rank));
+  return Number.isFinite(safeRank) && safeRank >= 1 ? safeRank : null;
+}
+
+function isWorldEventRewardTierForRank(tier = {}, rank = null) {
+  if (rank === null) {
+    return false;
+  }
+
+  const explicitMin = normalizeWorldEventLeaderboardRank(
+    tier.minRank ?? tier.min_rank,
+  );
+  const explicitMax = normalizeWorldEventLeaderboardRank(
+    tier.maxRank ?? tier.max_rank,
+  );
+  if (explicitMin !== null) {
+    return rank >= explicitMin && (explicitMax === null || rank <= explicitMax);
+  }
+
+  const label = String(tier.rankLabel ?? tier.rank_label ?? '').trim();
+  const range = label.match(/(\d+)\s*[-–]\s*(\d+)/);
+  if (range) {
+    return rank >= Number(range[1]) && rank <= Number(range[2]);
+  }
+
+  const openEnded = label.match(/(\d+)\s*\+/);
+  if (openEnded) {
+    return rank >= Number(openEnded[1]);
+  }
+
+  const exact = label.match(/^\D*(\d+)\D*$/);
+  return exact ? rank === Number(exact[1]) : false;
+}
+
 function normalizeVisibleLevel(value) {
   const level = Math.floor(Number(value));
   return Number.isFinite(level) && level >= 1 ? level : null;
@@ -1951,9 +2008,12 @@ function createTradeAllianceQuestRows(tradeAlliance, allianceId, actions) {
       );
       const itemFillQuest =
         quest.questType === 'itemFill' && Boolean(quest.itemKey);
+      const incomeRouteQuest = quest.questType === 'allianceIncome';
       const itemKind = itemFillQuest
         ? resolveTradeAllianceQuestItemKind(quest)
-        : null;
+        : incomeRouteQuest
+          ? 'resource'
+          : null;
       const remainingProgress = Math.max(
         0,
         Number(quest.target ?? 0) - Number(quest.progress ?? 0),
@@ -1992,7 +2052,11 @@ function createTradeAllianceQuestRows(tradeAlliance, allianceId, actions) {
           quest.target,
         )}`,
         itemKind,
-        itemKey: itemFillQuest ? quest.itemKey : null,
+        itemKey: itemFillQuest
+          ? quest.itemKey
+          : incomeRouteQuest
+            ? 'coin'
+            : null,
         rewardAmountLabel: formatWholeNumber(quest.crystalReward),
         rewardResource: 'crystal',
         label: `${title}\n${routeLabel} ${formatWholeNumber(
@@ -2128,6 +2192,7 @@ function createWorkshopFeatures({
   level,
   notifications,
   guildNotification = false,
+  prestigeNotification = false,
   pageStates = [],
   tradeAlliance = {},
 }) {
@@ -2140,6 +2205,9 @@ function createWorkshopFeatures({
   const notice = gameplay.worldNotice?.current ?? null;
   const guildPage = Array.isArray(pageStates)
     ? pageStates.find((page) => page?.id === 'guild')
+    : null;
+  const prestigePage = Array.isArray(pageStates)
+    ? pageStates.find((page) => page?.id === 'prestige')
     : null;
   return [
     {
@@ -2180,6 +2248,16 @@ function createWorkshopFeatures({
       weight: 30,
       visible: gameplay.personalTasks?.unlocked === true,
       notification: Boolean(notifications.personalTasks),
+    },
+    {
+      id: 'prestige',
+      label: 'prestige',
+      side: 'left',
+      weight: 35,
+      visible:
+        prestigePage?.visible === true && prestigePage?.unlocked !== false,
+      notification: prestigeNotification,
+      onActivate: () => actions.openPrestige?.(),
     },
     {
       id: 'worldEvent',

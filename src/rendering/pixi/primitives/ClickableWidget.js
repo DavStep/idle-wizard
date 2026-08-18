@@ -22,6 +22,7 @@ export class ClickableWidget {
     inputRouter = null,
     label = 'clickableWidget',
     motionRuntime = null,
+    pressSlop = null,
     pressScale = DEFAULT_PRESS_SCALE,
     releaseDurationMs = DEFAULT_RELEASE_DURATION_MS,
     releasePeakScale = DEFAULT_RELEASE_PEAK_SCALE,
@@ -56,6 +57,7 @@ export class ClickableWidget {
         fallbackHitTest,
         haptic,
         hitTest,
+        slop: pressSlop,
         excludePageSwipe: true,
       }) ?? null;
     this.syncClickableInteraction();

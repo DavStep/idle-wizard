@@ -10,4 +10,7 @@ tiny public guild identity fields when added later: name, tag, color, created ti
 
 Adventurers simulate in lazy 10-minute ticks. They live idle actions, choose board
 requests by personality/stat fit, roll d20 quest outcomes, gain xp, bring rewards,
-go to hospital, or die.
+go to hospital, or die. Every adventurer projects one current activity for the
+Guild Log. Idle guildmates can also share a deterministic paired activity; that
+event updates both personal histories and the bounded Guild chronicle. Routine
+solo life state stays visible under `Right Now` without flooding the chronicle.

@@ -4003,7 +4003,7 @@ describe('PagesFacade', () => {
     expect(stage.querySelector('.workshop-page__discoveries')?.hidden).toBe(false);
   });
 
-  it('reveals the prestige page tab at level 7', () => {
+  it('reveals the legacy prestige entry at level 7 without adding it to swipe order', () => {
     const stage = document.createElement('section');
     const gameplayFacade = createGameplayFacadeFake();
     unlockWorkshopSecondaryActions(gameplayFacade, 7);
@@ -4038,7 +4038,7 @@ describe('PagesFacade', () => {
     clickRoomTab(stage, 'brewing');
     pagesFacade.swipeNavigationManager.lastNavigationAtMs = -Infinity;
     dispatchTouchSwipe(stage, { startX: 120, endX: 320 });
-    expect(pagesFacade.getCurrentPageId()).toBe('prestige');
+    expect(pagesFacade.getCurrentPageId()).toBe('brewing');
   });
 
   it('shows ruby, emerald, or crystal in the top panel on matching research tabs', () => {

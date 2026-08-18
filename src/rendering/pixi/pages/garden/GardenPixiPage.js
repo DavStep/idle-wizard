@@ -44,6 +44,7 @@ import {
   AMBIENT_FIREFLY_COUNT,
   AmbientFireflyLayer,
 } from "../shared/AmbientFireflyLayer.js";
+import { PixiTooltip } from "../shared/PixiTooltip.js";
 
 export const GARDEN_PIXI_GEOMETRY = Object.freeze({
   plotListTop: 120,
@@ -180,6 +181,8 @@ export class GardenPixiPage extends BaseRetainedPixiPage {
     });
     this.plotTooltip = new GardenPlotTooltip({
       assetManager: this.assetManager,
+      inputRouter: this.inputRouter,
+      prefersReducedMotion: this.reducedMotion,
     });
     this.content.addChild(this.actionBar.root, this.plotTooltip.root);
 
@@ -355,6 +358,7 @@ export class GardenPixiPage extends BaseRetainedPixiPage {
 
   tick(now = this.timeSource()) {
     this.actionBar?.updateTime(now);
+    this.plotTooltip?.updateTime();
     for (const plot of this.plots?.getWidgets?.() ?? []) {
       plot.updateTime(now);
     }
@@ -381,32 +385,12 @@ export class GardenPixiPage extends BaseRetainedPixiPage {
     }
 
     this.plotTooltip.bind(copy);
-    const targetBounds = target.getBounds();
-    const targetRight = Number.isFinite(targetBounds.maxX)
-      ? targetBounds.maxX
-      : targetBounds.x + targetBounds.width;
-    const targetTop = Number.isFinite(targetBounds.minY)
-      ? targetBounds.minY
-      : targetBounds.y;
-    const targetBottom = Number.isFinite(targetBounds.maxY)
-      ? targetBounds.maxY
-      : targetBounds.y + targetBounds.height;
-    const topRight = this.content.toLocal({
-      x: targetRight,
-      y: targetTop,
+    return this.plotTooltip.showNearTarget({
+      target,
+      container: this.content,
+      boundaryWidth: this.sourceWidth,
+      boundaryHeight: this.sourceHeight,
     });
-    const bottomRight = this.content.toLocal({
-      x: targetRight,
-      y: targetBottom,
-    });
-    const x = Math.min(
-      this.sourceWidth - this.plotTooltip.width - 8,
-      Math.max(8, topRight.x - this.plotTooltip.width),
-    );
-    const aboveY = topRight.y - this.plotTooltip.height - 6;
-    const y = aboveY >= 8 ? aboveY : bottomRight.y + 6;
-    this.plotTooltip.show({ x, y });
-    return true;
   }
 
   hidePlotTooltip() {
@@ -785,56 +769,9 @@ export class GardenSeedActionBar {
   }
 }
 
-export class GardenPlotTooltip {
-  constructor({ assetManager }) {
-    this.width = 180;
-    this.height = 0;
-    this.panel = new RetainedPanel({
-      assetManager,
-      panelLabel: "garden-plot-tooltip",
-      strong: true,
-      shadowKind: "tooltip",
-    });
-    this.root = this.panel.root;
-    this.copy = createText("", {
-      ...RETAINED_TEXT_STYLES.border,
-      fill: "#ffffff",
-      wordWrapWidth: this.width - 20,
-    });
-    this.panel.body.addChild(this.copy);
-    this.root.visible = false;
-    this.root.renderable = false;
-  }
-
-  bind(copy) {
-    setText(this.copy, copy);
-    this.copy.position.set(10, 8);
-    this.height = Math.ceil(this.copy.height + 16);
-    this.panel.setBounds(0, 0, this.width, this.height);
-  }
-
-  show({ x, y }) {
-    this.root.position.set(x, y);
-    this.root.visible = true;
-    this.root.renderable = true;
-  }
-
-  hide() {
-    this.root.visible = false;
-    this.root.renderable = false;
-  }
-
-  applyTheme(theme) {
-    this.panel.applyTheme(theme);
-    applyTextTheme(this.copy, theme, {
-      ...RETAINED_TEXT_STYLES.border,
-      fill: "#ffffff",
-      wordWrapWidth: this.width - 20,
-    });
-  }
-
-  destroy() {
-    this.panel.destroy();
+export class GardenPlotTooltip extends PixiTooltip {
+  constructor(options = {}) {
+    super({ label: 'garden-plot-tooltip', ...options });
   }
 }
 

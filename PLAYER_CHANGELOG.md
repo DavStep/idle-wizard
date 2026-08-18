@@ -5,6 +5,13 @@ upload script posts the section whose heading matches `package.json` `version`.
 Write these developer-to-player notes only in Idle Wizard terms. Do not mention
 other game names, source projects, ports, or implementation provenance.
 
+## 0.3.70
+
+- Brought the Guild Hall to life with adventurer activities, social moments, clearer current-status details, and a chronological living log.
+- Improved guild applicants, adventurer profiles, quest information, and hall navigation for faster scanning and clearer decisions.
+- Added contextual item tooltips and refined inventory, Market, World Event, Prestige, Research, Garden, and Workshop layouts.
+- Improved HUD tap feedback, reward flyouts, page transitions, and compact mobile presentation across the game.
+
 ## 0.3.69
 
 - Added a free daily crystal offer to the Market, ready to collect once every 24 hours.

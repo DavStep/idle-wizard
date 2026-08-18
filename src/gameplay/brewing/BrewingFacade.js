@@ -341,7 +341,6 @@ export class BrewingFacade {
 
     if (
       !this.getAutoBrewEnabled(safeCauldronIndex) ||
-      !this.getAutoBrewArmed(safeCauldronIndex) ||
       !this.getAutoBrewRecipeKey(safeCauldronIndex)
     ) {
       return 0;
@@ -391,15 +390,6 @@ export class BrewingFacade {
       return {
         ok: false,
         reason: 'auto_brew_disabled',
-        cauldronIndex: safeCauldronIndex,
-        cauldronNumber: safeCauldronIndex + 1,
-      };
-    }
-
-    if (!this.getAutoBrewArmed(safeCauldronIndex)) {
-      return {
-        ok: false,
-        reason: 'auto_brew_not_armed',
         cauldronIndex: safeCauldronIndex,
         cauldronNumber: safeCauldronIndex + 1,
       };

@@ -22,6 +22,23 @@ const MIN_GUILD_TAG_LENGTH = 2;
 const MAX_GUILD_TAG_LENGTH = 5;
 const MAX_BOARD_SEQUENCE = 1_000_000;
 export const GUILD_MAX_AVAILABLE_REQUESTS = 10;
+const LIFE_ACTIVITY_LABELS = Object.freeze({
+  argue: 'In The Hall',
+  argument: 'With A Guildmate',
+  family: 'Visiting Home',
+  gearRepair: 'With A Guildmate',
+  mapStudy: 'With A Guildmate',
+  read: 'Studying',
+  recovered: 'Recovering',
+  redLantern: 'In Town',
+  returned: 'Back At The Hall',
+  sharedSupper: 'With A Guildmate',
+  sleep: 'Resting',
+  sparring: 'With A Guildmate',
+  tavern: 'At The Tavern',
+  theft: 'In Town',
+  train: 'Training',
+});
 
 export { GUILD_CHARTER_COST_COIN, GUILD_STATS, GUILD_UNLOCK_LEVEL };
 
@@ -380,7 +397,7 @@ export class GuildFacade {
       availableRequests,
       availableEventRequests: availableRequests.filter((request) => request.event),
       availableNormalRequests: availableRequests.filter((request) => !request.event),
-      logs: [...(this.state.logs ?? [])],
+      logs: (this.state.logs ?? []).map((log) => this.createLogSnapshot(log)),
       applicantResetLabel: daily.resetLabel,
       boardWaveLabel: boardWave.resetLabel,
       notifications: this.createNotificationSnapshot({ applicants, adventurers }),
@@ -436,7 +453,9 @@ export class GuildFacade {
             .filter(Boolean)
             .slice(0, GUILD_MAX_AVAILABLE_REQUESTS)
         : [],
-      logs: Array.isArray(snapshot.logs) ? snapshot.logs.slice(0, 80) : [],
+      logs: Array.isArray(snapshot.logs)
+        ? snapshot.logs.map((log) => this.sanitizeLog(log)).filter(Boolean).slice(0, 80)
+        : [],
       nextLogId: clampInt(snapshot.nextLogId, 1, 1_000_000),
     };
   }
@@ -600,6 +619,8 @@ export class GuildFacade {
       ...adventurer,
       displayName: this.getAdventurerName(adventurer),
       statusLabel: this.getStatusLabel(adventurer),
+      activityLabel: this.getActivityLabel(adventurer),
+      activityText: this.getActivityText(adventurer),
       statTotal: GUILD_STATS.reduce(
         (sum, stat) => sum + Math.max(0, Math.floor(Number(adventurer.stats?.[stat]) || 0)),
         0,
@@ -632,6 +653,73 @@ export class GuildFacade {
     }
 
     return 'idle';
+  }
+
+  getActivityLabel(adventurer) {
+    if (adventurer.status === 'questing') {
+      return 'Questing';
+    }
+
+    if (adventurer.status === 'hospital') {
+      return 'Recovering';
+    }
+
+    if (adventurer.status === 'dead') {
+      return 'Remembered';
+    }
+
+    if (adventurer.activityPartnerName) {
+      return `With ${adventurer.activityPartnerName}`;
+    }
+
+    return LIFE_ACTIVITY_LABELS[adventurer.lifeActionId] ?? 'In The Hall';
+  }
+
+  getActivityText(adventurer) {
+    if (adventurer.status === 'questing') {
+      const returnLabel = this.formatFutureActivityTime(adventurer.currentQuest?.returnAtMs);
+      return `Travels for ${adventurer.currentQuest?.title ?? 'a guild request'}${
+        returnLabel ? `. Returns ${returnLabel}` : ''
+      }.`;
+    }
+
+    if (adventurer.status === 'hospital') {
+      const returnLabel = this.formatFutureActivityTime(adventurer.hospitalUntilMs);
+      return `Rests in the guild hospital${returnLabel ? `. Back ${returnLabel}` : ''}.`;
+    }
+
+    if (adventurer.status === 'dead') {
+      return adventurer.lifeText || adventurer.history?.[0]?.text || 'Is remembered in the guild chronicle.';
+    }
+
+    return adventurer.lifeText || adventurer.personalityLife || 'Passes the time in the guild hall.';
+  }
+
+  formatFutureActivityTime(atMs) {
+    if (!Number.isFinite(atMs)) {
+      return '';
+    }
+
+    const remainingMs = Math.max(0, atMs - this.periodManager.getNowMs());
+    const duration = this.periodManager.formatDuration(remainingMs);
+    return duration === 'now' ? 'now' : `in ${duration}`;
+  }
+
+  createLogSnapshot(log = {}) {
+    const atMs = Number(log.atMs);
+    const elapsedLabel = Number.isFinite(atMs)
+      ? this.periodManager.formatDuration(this.periodManager.getNowMs() - atMs)
+      : '';
+
+    return {
+      ...log,
+      timeLabel:
+        elapsedLabel === 'now'
+          ? 'Now'
+          : elapsedLabel
+            ? `${elapsedLabel} ago`
+            : '',
+    };
   }
 
   getAdventurerName(adventurer) {
@@ -732,6 +820,14 @@ export class GuildFacade {
       stats,
       currentQuest: adventurer.currentQuest ? this.sanitizeRequest(adventurer.currentQuest) : null,
       lifeText: String(adventurer.lifeText ?? ''),
+      lifeActionId: String(adventurer.lifeActionId ?? ''),
+      activityPartnerId: adventurer.activityPartnerId
+        ? String(adventurer.activityPartnerId)
+        : null,
+      activityPartnerName: String(adventurer.activityPartnerName ?? ''),
+      activityAtMs: Number.isFinite(adventurer.activityAtMs)
+        ? adventurer.activityAtMs
+        : null,
       history: Array.isArray(adventurer.history) ? adventurer.history.slice(0, 16) : [],
       hiredAtMs: Number.isFinite(adventurer.hiredAtMs) ? adventurer.hiredAtMs : null,
       hospitalUntilMs: Number.isFinite(adventurer.hospitalUntilMs) ? adventurer.hospitalUntilMs : null,
@@ -792,12 +888,36 @@ export class GuildFacade {
     return Number.isFinite(expiresAtMs) && expiresAtMs <= nowMs;
   }
 
-  addLog(text, tone = null) {
+  sanitizeLog(log = {}) {
+    if (!log || typeof log !== 'object') {
+      return null;
+    }
+
+    const text = String(log.text ?? '').trim().slice(0, 240);
+    if (!text) {
+      return null;
+    }
+
+    return {
+      id: clampInt(log.id, 1, 1_000_000),
+      text,
+      tone: log.tone === 'red' || log.tone === 'orange' ? log.tone : null,
+      kind: String(log.kind ?? 'guild').slice(0, 24),
+      actorId: log.actorId ? String(log.actorId).slice(0, 80) : null,
+      partnerId: log.partnerId ? String(log.partnerId).slice(0, 80) : null,
+      atMs: Number.isFinite(log.atMs) ? log.atMs : null,
+    };
+  }
+
+  addLog(text, tone = null, details = {}) {
     this.state.logs = [
       {
         id: this.state.nextLogId,
         text,
         tone,
+        atMs: this.periodManager.getNowMs(),
+        kind: 'guild',
+        ...details,
       },
       ...(this.state.logs ?? []),
     ].slice(0, 80);

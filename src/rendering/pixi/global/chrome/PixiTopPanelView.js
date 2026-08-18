@@ -383,6 +383,10 @@ export class PixiTopPanelView extends BasePixiRetainedView {
       displayObject: this.coin,
     });
     this.registerSemanticTarget({
+      semanticId: 'top.contextCurrency',
+      displayObject: this.contextCurrency,
+    });
+    this.registerSemanticTarget({
       semanticId: 'top.level',
       displayObject: this.levelRail,
       activate: () => this.actions.openLevel?.(),

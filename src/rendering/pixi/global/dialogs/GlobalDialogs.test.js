@@ -997,7 +997,7 @@ describe('retained global Pixi dialogs', () => {
     harness.dispose();
   });
 
-  it('uses the normalized square avatar cut without distortion', () => {
+  it('renders the normalized avatar cut 15% larger, bottom-aligned, without distortion', () => {
     const characterTexture = new Texture({
       source: new TextureSource({
         resource: { width: 87, height: 108 },
@@ -1020,7 +1020,10 @@ describe('retained global Pixi dialogs', () => {
 
     const portrait = avatar.profileWidget.avatarWidget.portrait;
     expect(portrait.width / portrait.height).toBe(1);
+    expect(portrait.width).toBeCloseTo(148 * 1.15);
     expect(portrait.x).toBeCloseTo((186 - portrait.width) / 2);
+    expect(portrait.y + portrait.height).toBeCloseTo(19 + 148);
+    expect(avatar.profileWidget.avatarWidget.maskShape.getBounds().y).toBe(0);
 
     harness.dispose();
     characterTexture.destroy();

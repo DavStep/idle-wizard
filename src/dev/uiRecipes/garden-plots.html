@@ -71,6 +71,7 @@
       const seedUseMidFrame = seedUseMotion && params.get('frame') === 'mid';
       const bulkActions = params.get('bulk') || 'all';
       const progressBar = params.get('progress') || 'regular';
+      const theme = params.get('theme') || undefined;
       const emptyPlotCount = growing ? 4 : overflow ? 11 : 5;
       const plots = Array.from(
         { length: emptyPlotCount },
@@ -135,7 +136,8 @@
       const page = new GardenPixiPage({
         assetManager,
         inputRouter,
-        theme: createPixiThemeSnapshot({ progressBar }),
+        ticker: applicationManager.app.ticker,
+        theme: createPixiThemeSnapshot({ progressBar, theme }),
         timeSource: seedUseMidFrame
           ? () => recipeNow
           : seedUseMotion

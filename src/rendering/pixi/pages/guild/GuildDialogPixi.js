@@ -14,11 +14,15 @@ import {
 import { BasePixiRetainedView } from '../../primitives/BasePixiRetainedView.js';
 import { PixiTextButton } from '../../primitives/PixiTextButton.js';
 import {
+  createDialogPaperSection,
   PIXI_DIALOG_FOOTER_TABS_GEOMETRY,
+  PIXI_DIALOG_SPLIT_PAPER_GEOMETRY,
   PixiDialogFrame,
   resolveAdaptiveDialogHeight,
+  resolveDialogPaperOutsets,
   resolveDialogFooterTabLayout,
   setDialogPaperAboveFooterTabs,
+  setDialogPaperSectionBounds,
 } from '../../primitives/PixiDialogFrame.js';
 import { PixiFrame } from '../../primitives/PixiFrame.js';
 import { PixiProgressBar } from '../../primitives/PixiProgressBar.js';
@@ -57,6 +61,22 @@ const REQUEST_DIALOG_WIDTH = 304;
 const REQUEST_DIALOG_HEIGHT = 280;
 const STACK_DIALOG_WIDTH = 304;
 const STACK_DIALOG_HEIGHT = 408;
+const CARD_PORTRAIT_BOX = Object.freeze({
+  x: 0,
+  y: 7,
+  width: 72,
+  height: 72,
+});
+const CARD_SUMMARY_HEIGHT = 84;
+const CARD_SUMMARY_DETAILS_GAP = 12;
+const CARD_DETAIL_ROW_PITCH = 18;
+const CARD_DETAILS_PADDING_X = 10;
+const CARD_DETAILS_PADDING_TOP =
+  PIXI_DIALOG_SPLIT_PAPER_GEOMETRY.contentInsetTop;
+const CARD_DETAILS_PADDING_BOTTOM =
+  PIXI_DIALOG_SPLIT_PAPER_GEOMETRY.contentInsetBottom;
+const CARD_ACTION_HEIGHT = 30;
+const CARD_ACTION_GAP = 6;
 
 const SWATCH_COLORS = Object.freeze({
   ink: null,
@@ -247,6 +267,15 @@ export class GuildDialogPixi extends BasePixiRetainedView {
   }
 
   buildCardDialog({ counters }) {
+    this.panel.setPaperVisible(false);
+    this.summaryFrame = createDialogPaperSection(
+      this.panel.paperFrame.texture,
+      `${this.dialogId}:summaryFrame`,
+    );
+    this.detailsFrame = createDialogPaperSection(
+      this.panel.paperFrame.texture,
+      `${this.dialogId}:detailsFrame`,
+    );
     this.cardSummary = new Container();
     this.cardSummary.label = `${this.dialogId}:summary`;
     this.cardIconFrame = new PixiFrame({
@@ -270,10 +299,20 @@ export class GuildDialogPixi extends BasePixiRetainedView {
       fontWeight: 'bold',
       label: `${this.dialogId}:name`,
     });
+    this.cardLevelLabel = new PixiTextLabel({
+      text: 'Level',
+      label: `${this.dialogId}:levelLabel`,
+    });
     this.cardLevel = new PixiTextLabel({
+      anchor: { x: 1, y: 0 },
       label: `${this.dialogId}:level`,
     });
+    this.cardStatusLabel = new PixiTextLabel({
+      text: 'Status',
+      label: `${this.dialogId}:statusLabel`,
+    });
     this.cardStatus = new PixiTextLabel({
+      anchor: { x: 1, y: 0 },
       label: `${this.dialogId}:status`,
     });
     this.cardSummary.addChild(
@@ -281,7 +320,9 @@ export class GuildDialogPixi extends BasePixiRetainedView {
       this.cardIcon,
       this.cardInitial,
       this.cardName,
+      this.cardLevelLabel,
       this.cardLevel,
+      this.cardStatusLabel,
       this.cardStatus,
     );
     this.detailScroll = new PixiScrollView({
@@ -345,6 +386,8 @@ export class GuildDialogPixi extends BasePixiRetainedView {
       ...this.cardTabs.map((tab) => tab.root),
     );
     this.panel.content.addChild(
+      this.summaryFrame,
+      this.detailsFrame,
       this.cardSummary,
       this.detailScroll,
       this.cardAction,
@@ -415,9 +458,7 @@ export class GuildDialogPixi extends BasePixiRetainedView {
       capitalizeGuildText(card.displayName ?? card.name ?? 'Nameless'),
     );
     this.cardLevel.setText(
-      capitalizeGuildText(
-        card.levelLabel ?? `Level ${card.level ?? 1}`,
-      ),
+      formatCardLevelValue(card.levelLabel ?? card.level ?? 1),
     );
     this.cardStatus.setText(
       capitalizeGuildText(
@@ -443,6 +484,10 @@ export class GuildDialogPixi extends BasePixiRetainedView {
       this.model.rows ??
       deriveCardRows(card, this.selectedCardTab);
     this.detailRows.reconcile(safeArray(rows));
+    const contentTheme = this.panel.getContentTheme();
+    for (const row of this.detailRows.getWidgets()) {
+      row.applyTheme(contentTheme);
+    }
     this.cardTabs.forEach((button, index) => {
       const tab = CARD_TABS[index];
       button.setModel({
@@ -454,6 +499,7 @@ export class GuildDialogPixi extends BasePixiRetainedView {
     });
     const action = this.model.action ?? card.action;
     this.cardAction
+      .setColor(isApplicant ? 'green' : 'red')
       .setText(
         capitalizeGuildText(
           this.model.actionLabel ??
@@ -518,7 +564,9 @@ export class GuildDialogPixi extends BasePixiRetainedView {
       this.cardIconFrame?.applyTheme(contentTheme);
       this.cardInitial?.applyTheme(contentTheme);
       this.cardName?.applyTheme(contentTheme);
+      this.cardLevelLabel?.applyTheme(contentTheme);
       this.cardLevel?.applyTheme(contentTheme);
+      this.cardStatusLabel?.applyTheme(contentTheme);
       this.cardStatus?.applyTheme(contentTheme);
       this.detailScroll?.applyTheme(contentTheme);
       this.cardAction?.applyTheme(contentTheme);
@@ -637,42 +685,112 @@ export class GuildDialogPixi extends BasePixiRetainedView {
       tabCount: this.cardTabs.length,
     });
     setDialogPaperAboveFooterTabs(this.panel, footerTabLayout);
-    const height = Math.max(
+    const paperContentBottom = Math.max(
       0,
       Math.min(
         this.panel.contentBoxHeight,
         footerTabLayout.paperBottom - this.panel.content.y,
       ),
     );
-    this.cardSummary.position.set(0, 0);
-    this.cardIconFrame.position.set(0, 0);
-    this.cardIcon.position.set(0, 0);
-    this.cardIcon.width = 72;
-    this.cardIcon.height = 72;
-    this.cardInitial.position.set(36, 36);
-    this.cardName.position.set(84, 4);
-    this.cardName.setWrapWidth(Math.max(0, width - 84));
-    this.cardLevel.position.set(84, 27);
-    this.cardStatus.position.set(84, 50);
-
-    const actionHeight = this.cardAction.visible ? 28 : 0;
-    const detailsY = 82;
+    const paperOutsets = resolveDialogPaperOutsets(
+      this.panel.contentInsets,
+    );
+    const detailsY =
+      CARD_SUMMARY_HEIGHT +
+      paperOutsets.bottom +
+      PIXI_DIALOG_SPLIT_PAPER_GEOMETRY.sectionGap +
+      paperOutsets.top;
     const detailsHeight = Math.max(
       0,
-      height - detailsY - (actionHeight > 0 ? actionHeight + 6 : 0),
+      paperContentBottom - paperOutsets.bottom - detailsY,
     );
-    this.detailScroll.position.set(0, detailsY);
-    this.detailScroll.setViewportSize(width, detailsHeight);
+    setDialogPaperSectionBounds(
+      this.summaryFrame,
+      {
+        x: 0,
+        y: 0,
+        width,
+        height: CARD_SUMMARY_HEIGHT,
+      },
+      paperOutsets,
+    );
+    setDialogPaperSectionBounds(
+      this.detailsFrame,
+      {
+        x: 0,
+        y: detailsY,
+        width,
+        height: detailsHeight,
+      },
+      paperOutsets,
+    );
+    this.cardSummary.position.set(0, 0);
+    this.cardIconFrame.position.set(
+      CARD_PORTRAIT_BOX.x,
+      CARD_PORTRAIT_BOX.y,
+    );
+    this.cardIconFrame.setSize(
+      CARD_PORTRAIT_BOX.width,
+      CARD_PORTRAIT_BOX.height,
+    );
+    fitSpriteInside(this.cardIcon, CARD_PORTRAIT_BOX);
+    this.cardInitial.position.set(
+      CARD_PORTRAIT_BOX.x + CARD_PORTRAIT_BOX.width / 2,
+      CARD_PORTRAIT_BOX.y + CARD_PORTRAIT_BOX.height / 2,
+    );
+    const summaryDetailsX =
+      CARD_PORTRAIT_BOX.width + CARD_SUMMARY_DETAILS_GAP;
+    const summaryRightX = width - CARD_DETAILS_PADDING_X;
+    this.cardName.position.set(
+      summaryDetailsX,
+      CARD_PORTRAIT_BOX.y + 1,
+    );
+    this.cardName.setWrapWidth(
+      Math.max(0, summaryRightX - summaryDetailsX),
+    );
+    const levelY =
+      CARD_PORTRAIT_BOX.y + 1 + CARD_DETAIL_ROW_PITCH;
+    const statusY = levelY + CARD_DETAIL_ROW_PITCH;
+    this.cardLevelLabel.position.set(summaryDetailsX, levelY);
+    this.cardLevel.position.set(summaryRightX, levelY);
+    this.cardStatusLabel.position.set(summaryDetailsX, statusY);
+    this.cardStatus.position.set(summaryRightX, statusY);
+
+    const actionHeight = this.cardAction.visible ? CARD_ACTION_HEIGHT : 0;
+    const detailScrollHeight = Math.max(
+      0,
+      detailsHeight -
+        CARD_DETAILS_PADDING_TOP -
+        CARD_DETAILS_PADDING_BOTTOM -
+        (actionHeight > 0 ? actionHeight + CARD_ACTION_GAP : 0),
+    );
+    const detailWidth = Math.max(
+      0,
+      width - CARD_DETAILS_PADDING_X * 2,
+    );
+    this.detailScroll.position.set(
+      CARD_DETAILS_PADDING_X,
+      detailsY + CARD_DETAILS_PADDING_TOP,
+    );
+    this.detailScroll.setViewportSize(detailWidth, detailScrollHeight);
     let rowY = 0;
     for (const row of this.detailRows.getWidgets()) {
-      const rowHeight = row.getPreferredHeight(width);
-      row.setBounds(0, rowY, width, rowHeight);
+      const rowHeight = row.getPreferredHeight(detailWidth);
+      row.setBounds(0, rowY, detailWidth, rowHeight);
       rowY += rowHeight + 4;
     }
-    this.detailScroll.setContentHeight(Math.max(detailsHeight, rowY));
+    this.detailScroll.setContentHeight(
+      Math.max(detailScrollHeight, rowY),
+    );
     if (this.cardAction.visible) {
-      this.cardAction.position.set(0, height - actionHeight);
-      this.cardAction.setSize(width, actionHeight);
+      this.cardAction.position.set(
+        CARD_DETAILS_PADDING_X,
+        detailsY +
+          detailsHeight -
+          CARD_DETAILS_PADDING_BOTTOM -
+          actionHeight,
+      );
+      this.cardAction.setSize(detailWidth, actionHeight);
     }
     this.cardTabsLayer.position.set(
       footerTabLayout.rowX,
@@ -1553,6 +1671,26 @@ function isProfileDialog(dialogId) {
   return (
     dialogId === GUILD_DIALOG_IDS.CHARTER ||
     dialogId === GUILD_DIALOG_IDS.SETTINGS
+  );
+}
+
+function formatCardLevelValue(value) {
+  return capitalizeGuildText(value).replace(/^Level\s+/i, '');
+}
+
+function fitSpriteInside(sprite, box) {
+  const textureBounds = sprite.texture?.orig ?? sprite.texture?.frame;
+  const textureWidth = Math.max(1, Number(textureBounds?.width) || 1);
+  const textureHeight = Math.max(1, Number(textureBounds?.height) || 1);
+  const scale = Math.min(
+    box.width / textureWidth,
+    box.height / textureHeight,
+  );
+  sprite.width = textureWidth * scale;
+  sprite.height = textureHeight * scale;
+  sprite.position.set(
+    box.x + (box.width - sprite.width) / 2,
+    box.y + box.height - sprite.height,
   );
 }
 

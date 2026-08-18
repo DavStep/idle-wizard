@@ -15,7 +15,7 @@ describe('Workshop widget UI editor integrations', () => {
       'compound.alliance-quest-row',
       'compound.leaderboard-row',
       'compound.world-event-reward-row',
-      'compound.potion-discovery-row',
+      'compound.potion-discovery-page',
       'compound.workshop-dialog-row',
     ]);
     expect(integrations.every(({ kind, scenarios }) =>
@@ -42,11 +42,11 @@ describe('Workshop widget UI editor integrations', () => {
     expect(
       integrations.find(({ id }) => id === 'compound.alliance-quest-row')
         ?.scenarios.map(({ id }) => id),
-    ).toEqual(['fill', 'claim', 'claimed', 'overflow']);
+    ).toEqual(['fill', 'route', 'claim', 'claimed', 'overflow']);
     expect(
       integrations.find(
         ({ id }) => id === 'compound.world-event-reward-row',
       )?.scenarios.map(({ id }) => id),
-    ).toEqual(['two-rewards', 'one-reward', 'long-rank']);
+    ).toEqual(['two-rewards', 'current-rank', 'one-reward', 'long-rank']);
   });
 });

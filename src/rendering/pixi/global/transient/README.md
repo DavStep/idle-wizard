@@ -6,6 +6,9 @@ spend-burst particles.
 It installs one layer-level ticker callback only while an effect is active.
 After each pool reaches its high-water mark, repeated events reuse existing
 Pixi display objects.
+Item drops keep a per-reward visual cap of twelve, while the retained pool can
+hold seventy concurrent drops so x5 hold-to-repeat summoning never recycles a
+still-visible seed animation.
 
 Reward presentation model:
 

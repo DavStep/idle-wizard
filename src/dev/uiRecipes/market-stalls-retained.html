@@ -32,17 +32,23 @@
     <script type="module">
       import '@fontsource/lilita-one/400.css';
       import { PixiAssetManager } from '/src/rendering/pixi/assets/PixiAssetManager.js';
-      import { PixiTransientEffectsLayer } from '/src/rendering/pixi/global/transient/PixiTransientEffectsLayer.js';
+      import { PixiTopPanelView } from '/src/rendering/pixi/global/chrome/PixiTopPanelView.js';
+      import {
+        createRewardFlyoutPresentation,
+        PixiTransientEffectsLayer,
+      } from '/src/rendering/pixi/global/transient/PixiTransientEffectsLayer.js';
       import { PixiInputRouter } from '/src/rendering/pixi/input/PixiInputRouter.js';
       import { SHOP_DIALOG_IDS } from '/src/rendering/pixi/pages/shop/ShopDialogPixi.js';
       import { ShopPixiPage } from '/src/rendering/pixi/pages/shop/ShopPixiPage.js';
       import { createShop } from '/src/rendering/pixi/pages/shop/createShop.js';
       import { DialogRegistry } from '/src/rendering/pixi/retained/DialogRegistry.js';
+      import { SemanticTargetRegistry } from '/src/rendering/pixi/retained/SemanticTargetRegistry.js';
       import { PixiApplicationManager } from '/src/rendering/pixi/runtime/PixiApplicationManager.js';
       import { TextEntryService } from '/src/rendering/textEntry/TextEntryService.js';
 
       const gameplaySnapshot = {
         coin: { current: 5770 },
+        crystal: { current: 20 },
         playerLevel: { currentLevel: 4 },
         research: { completedResearchIds: ['unlockSeed:sageSeed'] },
         shop: {
@@ -277,6 +283,7 @@
       const requestStatus = query.get('requestStatus') ?? '';
       const showOverflowItems = query.get('items') === 'overflow';
       const loopSaleShine = query.get('saleShine') === 'loop';
+      const showCrystalClaimFlyout = query.get('claimFlyout') === 'crystal';
       if (query.get('categories') === 'seed') {
         for (const catalogue of [
           gameplaySnapshot.shop.shelf,
@@ -363,6 +370,7 @@
       const applicationManager = new PixiApplicationManager({ canvas });
       const assetManager = new PixiAssetManager();
       const inputRouter = new PixiInputRouter();
+      const semanticTargets = new SemanticTargetRegistry();
       const textEntryService = new TextEntryService({ canvas });
 
       await Promise.all([
@@ -377,8 +385,37 @@
         assets: assetManager,
         application: applicationManager.getApplication(),
         parent: applicationManager.layers.transient,
+        semanticRegistry: semanticTargets,
       });
       transientEffects.activate();
+
+      const topPanel = showCrystalClaimFlyout
+        ? new PixiTopPanelView({
+            assets: assetManager,
+            inputRouter,
+            semanticRegistry: semanticTargets,
+          })
+        : null;
+      const bindTopPanel = () => {
+        topPanel?.bind({
+          username: 'Wizard',
+          mana: { current: 295, cap: 1_000, perSecond: 10 },
+          coin: gameplaySnapshot.coin.current,
+          contextCurrency: {
+            resource: 'crystal',
+            amount: gameplaySnapshot.crystal.current,
+            visible: true,
+          },
+          level: 20,
+          quest: { visible: false },
+          reveal: {},
+        });
+      };
+      if (topPanel) {
+        bindTopPanel();
+        topPanel.activate();
+        applicationManager.layers.globalChrome.addChild(topPanel.root);
+      }
 
       const dialogRegistry = new DialogRegistry();
       const page = new ShopPixiPage({
@@ -386,6 +423,7 @@
         dialogLayer: applicationManager.layers.dialogsSource,
         dialogRegistry,
         inputRouter,
+        semanticRegistry: semanticTargets,
         textEntryService,
       });
       applicationManager.subscribeProjection(
@@ -463,14 +501,25 @@
               if (!offer.canCollect) {
                 return { ok: false, reason: 'cooldown' };
               }
+              if (showCrystalClaimFlyout) {
+                transientEffects.emitReward(
+                  createRewardFlyoutPresentation({
+                    type: 'crystal_collected',
+                    crystal: offer.rewardCrystal,
+                    source: 'shop_daily_crystal_offer',
+                  }),
+                );
+              }
               offer.canCollect = false;
               offer.cooldownRemainingSeconds = 86_400;
+              gameplaySnapshot.crystal.current += offer.rewardCrystal;
               window.__marketRecipeLastDailyCrystalOffer = {
                 ok: true,
                 crystal: offer.rewardCrystal,
                 cooldownSeconds: 86_400,
               };
               page.bind(createViewModel());
+              bindTopPanel();
               return window.__marketRecipeLastDailyCrystalOffer;
             },
           },

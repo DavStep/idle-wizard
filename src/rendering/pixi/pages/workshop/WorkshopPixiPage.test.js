@@ -21,7 +21,10 @@ import {
   PIXI_UI_GEOMETRY,
   resolvePixiTextStrokeWidth,
 } from '../../theme/PixiThemeTokens.js';
-import { ShopDialogPixi } from '../shop/ShopDialogPixi.js';
+import {
+  RootRunInventoryChoiceRowPixi,
+  ShopDialogPixi,
+} from '../shop/ShopDialogPixi.js';
 import { WorldChatMessageRowPixi } from './WorkshopDialogPixi.js';
 import {
   RETAINED_DIALOG_LIST_GEOMETRY,
@@ -548,7 +551,9 @@ describe('WorkshopPixiPage', () => {
 
   it('renders Workshop side controls with capitalized labels and optically normalized art', () => {
     const harness = createHarness();
-    harness.page.bind(createWorkshopViewModel());
+    const model = createWorkshopViewModel();
+    model.workshop.features = [{ id: 'prestige', visible: true }];
+    harness.page.bind(model);
 
     const sideControls = [
       harness.page.bagButton,
@@ -559,6 +564,7 @@ describe('WorkshopPixiPage', () => {
       harness.page.features.get('discoveries'),
       harness.page.features.get('personalTasks'),
       harness.page.features.get('worldEvent'),
+      harness.page.features.get('prestige'),
     ];
 
     expect(sideControls.map((control) => control.label.text)).toEqual([
@@ -570,6 +576,7 @@ describe('WorkshopPixiPage', () => {
       'Discoveries',
       'Tasks',
       'Event',
+      'Prestige',
     ]);
     for (const control of sideControls) {
       expect(control.label.style.fill).toBe('#ffffff');
@@ -594,6 +601,9 @@ describe('WorkshopPixiPage', () => {
     expect(harness.page.features.get('discoveries').presentation.scale).toBeUndefined();
     expect(harness.page.features.get('personalTasks').presentation.scale).toBeUndefined();
     expect(harness.page.features.get('worldEvent').presentation.scale).toBeUndefined();
+    expect(harness.page.features.get('prestige').presentation).toMatchObject({
+      assetId: PIXI_ROOT_RUN_ASSETS.workshopPrestige,
+    });
 
     harness.page.destroy();
     harness.dispose();
@@ -1259,10 +1269,11 @@ describe('WorkshopPixiPage', () => {
 
     const dialog = harness.dialogs.get('workshop.bag');
     const tabs = dialog.tabs.getWidgets();
-    const expectedTabGap = 4;
-    const expectedTabWidth = (286 - expectedTabGap * (tabs.length - 1)) / tabs.length;
+    const expectedTabGap = 8;
+    const expectedTabWidth = (286 - expectedTabGap * 2) / 3;
     const shellBottom = dialog.panel.coreHeight + PIXI_ROOT_RUN_GEOMETRY.dialog.frameOutset;
-    const tabsBottom = dialog.tabsLayer.position.y + tabs[0].height;
+    const tabsBottom =
+      dialog.tabsLayer.position.y + tabs[3].root.y + tabs[3].height;
     const paperBottom = dialog.panel.paperFrame.position.y + dialog.panel.paperFrame.frameHeight;
 
     expect(dialog.panel.titleLabel.textObject.text).toBe('Bag');
@@ -1271,6 +1282,9 @@ describe('WorkshopPixiPage', () => {
     expect(dialog.tabsLayer.position.y - paperBottom).toBeCloseTo(6);
     expect(tabs).toHaveLength(5);
     expect(tabs[1].root.x - (tabs[0].root.x + tabs[0].width)).toBeCloseTo(expectedTabGap);
+    expect(tabs[3].root.y).toBe(32);
+    expect(tabs[3].root.x).toBeCloseTo(49);
+    expect(tabs[4].root.x).toBeCloseTo(147);
     for (const tab of tabs) {
       expect(tab.control.textLabel.fontSize).toBe(11);
       expect(tab.width).toBeCloseTo(expectedTabWidth);
@@ -1284,7 +1298,6 @@ describe('WorkshopPixiPage', () => {
     ['personalTasks', 2, 10],
     ['worldEvent', 3, 8],
     ['stats', 4, 6],
-    ['bag', 5, 4],
   ])(
     'uses the shared in-shell footer geometry for %s',
     (dialogId, tabCount, expectedGap) => {
@@ -1431,6 +1444,18 @@ describe('WorkshopPixiPage', () => {
     expect(dialog.worldEventHeaderArt.mask).toBe(
       dialog.worldEventHeaderArtMask,
     );
+    expect(dialog.headerHeadline.x).toBe(dialog.worldEventHeaderArt.x);
+    expect(dialog.headerBody.x).toBe(dialog.worldEventHeaderArt.x);
+    expect(dialog.headerMeta.x).toBe(dialog.worldEventHeaderArt.x);
+    expect(dialog.headerHeadline.style.wordWrapWidth).toBe(
+      dialog.worldEventHeaderArt.width,
+    );
+    expect(dialog.headerBody.style.wordWrapWidth).toBe(
+      dialog.worldEventHeaderArt.width,
+    );
+    expect(dialog.headerMeta.style.wordWrapWidth).toBe(
+      dialog.worldEventHeaderArt.width,
+    );
     expect(dialog.rows.getWidgets()).toHaveLength(2);
     expect(dialog.scroll.width).toBe(314);
     expect(row.width).toBe(314);
@@ -1525,6 +1550,7 @@ describe('WorkshopPixiPage', () => {
         {
           id: 'reward:1',
           type: 'worldEventReward',
+          current: true,
           rankLabel: 'Rank 1',
           rewards: [
             { resourceKey: 'emerald', amountLabel: '5' },
@@ -1547,6 +1573,9 @@ describe('WorkshopPixiPage', () => {
     );
     expect(rewardRow.rank.text).toBe('Rank 1');
     expect(rewardRow.background.visible).toBe(true);
+    expect(
+      rewardRow.currentOutline.context.instructions.at(-1)?.data?.style,
+    ).toMatchObject({ alpha: 0.9, width: 1.5 });
     expect(rewardRow.rewardBadges.map(({ amount }) => amount.text)).toEqual([
       '5',
       '10',
@@ -1653,7 +1682,7 @@ describe('WorkshopPixiPage', () => {
     harness.dispose();
   });
 
-  it('keeps the Bag scroll viewport inset and moves its scrollbar toward the paper edge', () => {
+  it('places the first Bag row near the paper top and moves its scrollbar toward the paper edge', () => {
     const harness = createHarness();
     const model = createWorkshopViewModel();
     model.workshop.dialogs.bag = {
@@ -1679,12 +1708,21 @@ describe('WorkshopPixiPage', () => {
     const paperBottom = paperTop + dialog.panel.paperFrame.frameHeight;
     const viewportTop = dialog.scroll.root.position.y;
     const viewportBottom = viewportTop + dialog.scroll.height;
+    const firstRow = dialog.rows.getWidgets()[0];
+    const firstRowFrameTop =
+      viewportTop + firstRow.root.y + firstRow.background.y;
 
-    expect(dialog.scroll.width).toBe(268);
+    expect(dialog.scroll.width).toBe(
+      RETAINED_DIALOG_LIST_GEOMETRY.rowFrameWidth +
+        RETAINED_DIALOG_LIST_GEOMETRY.scrollbarViewportOutset,
+    );
     expect(dialog.scroll.scrollbarTrack.visible).toBe(true);
-    expect(dialog.scroll.scrollbarTrack.getLocalBounds().x).toBeGreaterThan(268);
+    expect(dialog.scroll.scrollbarTrack.getLocalBounds().x).toBeGreaterThan(
+      dialog.scroll.width,
+    );
     expect(viewportTop - paperTop).toBeGreaterThan(0);
-    expect(viewportTop - paperTop).toBeCloseTo(paperBottom - viewportBottom);
+    expect(firstRowFrameTop - paperTop).toBeCloseTo(20 / 3);
+    expect(paperBottom - viewportBottom).toBeGreaterThan(0);
 
     harness.page.destroy();
     harness.dispose();
@@ -1917,6 +1955,52 @@ describe('WorkshopPixiPage', () => {
     expect(dialog.list.scroll.scrollbarTrack.visible).toBe(true);
     expect(scrollbarLeft - firstRowRight).toBeGreaterThan(2.5);
     expect(seedPaperRight - scrollbarRight).toBeGreaterThan(2.5);
+
+    harness.page.destroy();
+    harness.dispose();
+  });
+
+  it('scrolls a partially visible selected seed row fully into view', () => {
+    const harness = createHarness({ reducedMotion: true });
+    const model = createWorkshopViewModel();
+    const summonInfo = createSummonInfoDialogModel({ unlocked: true });
+    summonInfo.items = Array.from({ length: 20 }, (_, index) => ({
+      ...summonInfo.items[0],
+      id: `seed-${index}`,
+      label: `Seed ${index + 1}`,
+    }));
+    model.workshop.dialogs.summonInfo = summonInfo;
+
+    harness.page.bind(model);
+    harness.page.openDialog('summonInfo');
+
+    const dialog = harness.dialogs.get('workshop.summonInfo');
+    const targetKey = 'seed-8';
+    const targetLayout = dialog.list
+      .createLayout()
+      .find((entry) => entry.item.__virtualKey === targetKey);
+    dialog.list.scroll.scrollTo(
+      targetLayout.top + targetLayout.height - dialog.list.height - 10,
+    );
+
+    const targetRow = dialog.list.rows
+      .getWidgets()
+      .find((row) => row.key === targetKey);
+    expect(targetLayout.top).toBeGreaterThanOrEqual(dialog.list.scroll.offsetY);
+    expect(targetLayout.top + targetLayout.height).toBeGreaterThan(
+      dialog.list.scroll.offsetY + dialog.list.height,
+    );
+
+    targetRow.action();
+
+    const expandedLayout = dialog.list
+      .createLayout()
+      .find((entry) => entry.item.__virtualKey === targetKey);
+    expect(dialog.list.scroll.offsetY).toBeGreaterThan(0);
+    expect(expandedLayout.top).toBeGreaterThanOrEqual(dialog.list.scroll.offsetY);
+    expect(expandedLayout.top + expandedLayout.height).toBeLessThanOrEqual(
+      dialog.list.scroll.offsetY + dialog.list.height,
+    );
 
     harness.page.destroy();
     harness.dispose();
@@ -2211,7 +2295,7 @@ describe('WorkshopPixiPage', () => {
     harness.dispose();
   });
 
-  it('animates seed-row disclosure with full-alpha rubber scale over 240ms', () => {
+  it('animates seed-row disclosure with a full-alpha monotonic settle over 240ms', () => {
     const frames = [];
     let frameId = 0;
     const requestFrame = vi.fn((callback) => {
@@ -2282,13 +2366,68 @@ describe('WorkshopPixiPage', () => {
     expect(midHeight).toBeGreaterThan(collapsedHeight);
     expect(midHeight).toBeLessThan(collapsedHeight + 31);
     expect(dialog.dropSettingsSlider.alpha).toBe(1);
-    expect(dialog.dropSettingsSlider.scale.x).toBeGreaterThan(1);
-    expect(dialog.dropSettingsSlider.scale.x).toBeLessThanOrEqual(1.035);
+    expect(dialog.dropSettingsSlider.scale.x).toBeGreaterThan(0.985);
+    expect(dialog.dropSettingsSlider.scale.x).toBeLessThan(1);
 
     frames.shift()(240);
     expect(dialog.list.rows.getWidgets()[0].height).toBe(collapsedHeight + 31);
     expect(dialog.dropSettingsSlider.alpha).toBe(1);
     expect(dialog.dropSettingsSlider.scale.x).toBe(1);
+
+    harness.page.destroy();
+    harness.dispose();
+  });
+
+  it('keeps a rapid seed-row tap valid while the previous disclosure settles', () => {
+    const frames = [];
+    let frameId = 0;
+    const requestFrame = vi.fn((callback) => {
+      frames.push(callback);
+      frameId += 1;
+      return frameId;
+    });
+    const inputRouter = new PixiInputRouter();
+    const harness = createHarness({
+      inputRouter,
+      requestFrame,
+      cancelFrame: vi.fn(),
+      reducedMotion: false,
+    });
+    const model = createWorkshopViewModel();
+    const summonInfo = createSummonInfoDialogModel({ unlocked: true });
+    summonInfo.items = [
+      summonInfo.items[0],
+      {
+        ...summonInfo.items[0],
+        id: 'mintSeed',
+        label: 'Mint Seed',
+      },
+    ];
+    model.workshop.dialogs.summonInfo = summonInfo;
+
+    harness.page.bind(model);
+    harness.page.openDialog('summonInfo');
+
+    const dialog = harness.dialogs.get('workshop.summonInfo');
+    const [sageRow, mintRow] = dialog.list.rows.getWidgets();
+    sageRow.action();
+    frames.shift()(0);
+
+    const mintBounds = mintRow.root.getBounds();
+    const mintPoint = {
+      x: mintBounds.x + mintBounds.width / 2,
+      y: mintBounds.y + mintBounds.height / 2,
+    };
+    inputRouter.onPointerDown(
+      createPointerEvent(mintRow.root, 'pointerdown', mintPoint),
+    );
+
+    frames.shift()(240);
+    inputRouter.onPointerUp(
+      createPointerEvent(dialog.list.root, 'pointerup', mintPoint),
+    );
+
+    expect(dialog.list.expandedKey).toBe('mintSeed');
 
     harness.page.destroy();
     harness.dispose();
@@ -2528,13 +2667,17 @@ describe('WorkshopPixiPage', () => {
     miraTexture.destroy();
   });
 
-  it('renders owned alliance quests with large item icons and icon-backed rewards', () => {
+  it('renders owned alliance quests with large item or coin icons and icon-backed rewards', () => {
     const crystalTexture = new Texture();
+    const coinTexture = new Texture();
     const potionTexture = new Texture();
     const assetManager = createPixiAssetManagerFake(Texture);
     assetManager.getAtlasTexture = vi.fn((frame) => {
       if (frame === 'resource:crystal') {
         return crystalTexture;
+      }
+      if (frame === 'resource:coin') {
+        return coinTexture;
       }
       if (frame === 'potion:manaTonic') {
         return potionTexture;
@@ -2571,6 +2714,21 @@ describe('WorkshopPixiPage', () => {
           enabled: true,
           onActivate: vi.fn(),
         },
+        {
+          id: 'grand-route',
+          title: 'Grand Route',
+          itemKind: 'resource',
+          itemKey: 'coin',
+          contributionLabel: 'Your Route 12,500/12,500',
+          progressLabel: '86,027/250,000',
+          rewardAmountLabel: '12',
+          rewardResource: 'crystal',
+          actionLabel: 'Claim',
+          actionVariant: 'gray',
+          actionWidth: 58,
+          actionHeight: 28,
+          enabled: false,
+        },
       ],
       members: [],
     };
@@ -2580,6 +2738,7 @@ describe('WorkshopPixiPage', () => {
 
     const dialog = harness.dialogs.get('workshop.alliance');
     const quest = dialog.allianceQuestRows.get('fill-mana-tonic');
+    const routeQuest = dialog.allianceQuestRows.get('grand-route');
     const tabs = dialog.tabs.getWidgets();
     expect(dialog.rows).toBe(dialog.allianceQuestRows);
     expect(quest.background.frameHeight).toBeCloseTo(
@@ -2596,6 +2755,17 @@ describe('WorkshopPixiPage', () => {
     expect(quest.reward.icon.texture).toBe(crystalTexture);
     expect(quest.reward.amountLabel.textObject.text).toBe('3');
     expect(quest.action.text.text).toBe('Fill');
+    expect(routeQuest.itemIcon.texture).toBe(coinTexture);
+    expect(routeQuest.itemIcon.width).toBe(36);
+    expect(routeQuest.itemIcon.height).toBe(36);
+    expect(routeQuest.title.x).toBeGreaterThan(
+      routeQuest.itemIcon.x + routeQuest.itemIcon.width / 2,
+    );
+    expect(quest.root.y).toBe(dialog.scrollContentPaddingTop);
+    expect(
+      dialog.panel.paperFrame.y + dialog.panel.paperFrame.frameHeight -
+        (dialog.scroll.root.y + dialog.scroll.height),
+    ).toBe(dialog.scrollContentPaddingTop);
     expect(tabs[1].root.x - (tabs[0].root.x + tabs[0].width)).toBe(8);
     expect(
       dialog.tabsLayer.y -
@@ -2605,6 +2775,7 @@ describe('WorkshopPixiPage', () => {
     harness.page.destroy();
     harness.dispose();
     crystalTexture.destroy();
+    coinTexture.destroy();
     potionTexture.destroy();
   });
 
@@ -2847,7 +3018,7 @@ describe('WorkshopPixiPage', () => {
     harness.dispose();
   });
 
-  it('renders complete potion discovery rows with item art and recipe metadata', () => {
+  it('renders potion discoveries as Recipe-style paper pages', () => {
     const openDiscoverer = vi.fn();
     const assetManager = createPixiAssetManagerFake(Texture);
     assetManager.getTexture = vi.fn(() => new Texture());
@@ -2892,16 +3063,26 @@ describe('WorkshopPixiPage', () => {
     const dialog = harness.dialogs.get('workshop.discoveries');
     const row = dialog.rows.get('potion:silverleafQuiet');
     expect(dialog.panel.titleLabel.text).toBe('Discoveries');
+    expect(dialog.panel.paperFrame.visible).toBe(false);
+    expect(dialog.modal.fixedBounds).toMatchObject({
+      width: 304,
+      height: 404,
+    });
+    expect(dialog.discoveryBook.children).toEqual([row.root]);
+    expect(dialog.discoveryPageLabel.text).toBe('1 / 1');
+    expect(row).toMatchObject({ width: 155, height: 341 });
     expect(row.name.text).toBe('Silverleaf Quiet');
     expect(row.discovererName.text).toBe('Ada');
     expect(row.date.text).toBe('Jan 2, 2026');
-    expect(row.mana.text).toBe('34 Mana');
-    expect(row.duration.text).toBe('75s Brew');
-    expect(row.royalty.text).toBe('12.5 Coin Royalty');
-    expect(row.ingredientRows[0].label.text).toBe('×1 Mint');
-    expect(row.ingredientRows[1].label.text).toBe('×2 Silverleaf');
+    expect(row.mana.text).toBe('34');
+    expect(row.duration.text).toBe('75s');
+    expect(row.royalty.text).toBe('12.5');
+    expect(row.ingredientRows[0].label.text).toBe('Mint');
+    expect(row.ingredientRows[0].quantity.text).toBe('×1');
+    expect(row.ingredientRows[1].label.text).toBe('Silverleaf');
+    expect(row.ingredientRows[1].quantity.text).toBe('×2');
     expect(assetManager.getTexture).toHaveBeenCalledWith(
-      PIXI_ROOT_RUN_ASSETS.settingsRow,
+      PIXI_ROOT_RUN_ASSETS.dialogPaper,
     );
     expect(assetManager.getAtlasTexture).toHaveBeenCalledWith(
       'potion:silverleafQuiet',
@@ -2912,12 +3093,58 @@ describe('WorkshopPixiPage', () => {
     );
     expect(assetManager.getAtlasTexture).toHaveBeenCalledWith('resource:mana');
     expect(assetManager.getAtlasTexture).toHaveBeenCalledWith('resource:coin');
+    expect(row.activateDiscoverer()).toBe(true);
+    expect(openDiscoverer).toHaveBeenCalledWith(
+      model.workshop.dialogs.discoveries.rows[0],
+    );
 
     harness.page.destroy();
     harness.dispose();
   });
 
-  it('renders icons and one normal amount color across every Bag row kind', () => {
+  it('pages potion discoveries two at a time like the Recipes book', () => {
+    const harness = createHarness();
+    const model = createWorkshopViewModel();
+    model.workshop.dialogs.discoveries = {
+      title: 'Discoveries',
+      rows: [0, 1, 2].map((index) => ({
+        id: `potion:${index}`,
+        discovered: false,
+        potionKey: `unknown-${index}`,
+      })),
+    };
+
+    harness.page.bind(model);
+    harness.page.openDialog('discoveries');
+
+    const dialog = harness.dialogs.get('workshop.discoveries');
+    expect(dialog.discoveryBook.children).toHaveLength(2);
+    expect(dialog.discoveryPageLabel.text).toBe('1-2 / 3');
+    expect(dialog.discoveryPrevious.enabled).toBe(false);
+    expect(dialog.discoveryNext.enabled).toBe(true);
+
+    expect(dialog.showNextDiscoverySpread()).toBe(true);
+    expect(dialog.discoveryBook.children).toHaveLength(1);
+    expect(dialog.discoveryPageLabel.text).toBe('3-3 / 3');
+    expect(dialog.discoveryPrevious.enabled).toBe(true);
+    expect(dialog.discoveryNext.enabled).toBe(false);
+    expect(dialog.showNextDiscoverySpread()).toBe(false);
+
+    expect(dialog.showPreviousDiscoverySpread()).toBe(true);
+    expect(dialog.discoveryPageLabel.text).toBe('1-2 / 3');
+
+    dialog.bind({ title: 'Discoveries', rows: [] });
+    expect(dialog.discoveryBook.children).toHaveLength(3);
+    expect(dialog.discoveryEmptyText.text).toBe('No potion discoveries yet.');
+    expect(dialog.discoveryPageLabel.text).toBe('1 / 1');
+    expect(dialog.discoveryPrevious.enabled).toBe(false);
+    expect(dialog.discoveryNext.enabled).toBe(false);
+
+    harness.page.destroy();
+    harness.dispose();
+  });
+
+  it('reuses framed inventory rows with larger art across every Bag row kind', () => {
     const assetManager = createPixiAssetManagerFake(Texture);
     assetManager.getAtlasTexture = vi.fn(() => new Texture());
     const harness = createHarness({ assetManager });
@@ -2980,9 +3207,43 @@ describe('WorkshopPixiPage', () => {
     expect(assetManager.getAtlasTexture).toHaveBeenCalledWith('herb:sageHerb');
     expect(assetManager.getAtlasTexture).toHaveBeenCalledWith('potion:manaTonic');
     expect(assetManager.getAtlasTexture).toHaveBeenCalledWith('ingredient:cyclopsEye');
-    expect(rows.every((row) => row.valueIcon.visible)).toBe(true);
-    expect(rows.every((row) => row.value.style.fill === dialog.contentTheme.text)).toBe(true);
-    expect(rows.every((row) => row.value.x === 262)).toBe(true);
+    expect(rows.every((row) => row instanceof RootRunInventoryChoiceRowPixi)).toBe(true);
+    expect(rows.every((row) => row.background instanceof PixiNineSliceFrame)).toBe(true);
+    expect(
+      rows.every(
+        (row) =>
+          row.background.frameWidth ===
+          RETAINED_DIALOG_LIST_GEOMETRY.rowFrameWidth,
+      ),
+    ).toBe(true);
+    expect(dialog.scroll.root.x).toBeCloseTo(
+      (dialog.panel.coreWidth - RETAINED_DIALOG_LIST_GEOMETRY.rowFrameWidth) / 2,
+    );
+    expect(dialog.scroll.width).toBe(
+      RETAINED_DIALOG_LIST_GEOMETRY.rowFrameWidth +
+        RETAINED_DIALOG_LIST_GEOMETRY.scrollbarViewportOutset,
+    );
+    expect(rows.every((row) => row.background.frameHeight === 44)).toBe(true);
+    expect(rows.every((row) => row.itemIcon.visible)).toBe(true);
+    expect(
+      rows.every(
+        (row) => Math.max(row.itemIcon.width, row.itemIcon.height) === 28,
+      ),
+    ).toBe(true);
+    expect(
+      rows.every(
+        (row) =>
+          row.value.textObject.style.fill === row.label.textObject.style.fill,
+      ),
+    ).toBe(true);
+    expect(
+      rows.every(
+        (row) =>
+          row.value.x ===
+          RETAINED_DIALOG_LIST_GEOMETRY.rowFrameWidth -
+            PIXI_ROOT_RUN_GEOMETRY.settings.rowPadding,
+      ),
+    ).toBe(true);
 
     harness.page.destroy();
     harness.dispose();

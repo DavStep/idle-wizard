@@ -155,7 +155,6 @@ export class GuildPixiPage extends BasePixiRetainedView {
       assetManager,
       inputRouter,
       semanticRegistry,
-      showTitle: false,
     });
     this.boardSection = new GuildQuestBoardSection({
       assetManager,
@@ -164,16 +163,15 @@ export class GuildPixiPage extends BasePixiRetainedView {
       counters,
     });
     this.availableSection = new GuildRowsSection({
-      title: 'Available Quests',
+      title: 'Quest Requests',
       assetManager,
       inputRouter,
       semanticRegistry,
       counters,
       label: 'guild:available',
-      showTitle: false,
     });
     this.adventurersSection = new GuildPeopleSection({
-      title: 'Roster',
+      title: 'Adventurers',
       assetManager,
       inputRouter,
       semanticRegistry,
@@ -189,10 +187,18 @@ export class GuildPixiPage extends BasePixiRetainedView {
       counters,
       semanticPrefix: 'guild.applicant',
       label: 'guild:applicants',
-      showTitle: false,
+    });
+    this.activitySection = new GuildPeopleSection({
+      title: 'Right Now',
+      assetManager,
+      inputRouter,
+      semanticRegistry,
+      counters,
+      semanticPrefix: 'guild.activity',
+      label: 'guild:activity',
     });
     this.logSection = new GuildRowsSection({
-      title: 'Log',
+      title: 'Chronicle',
       assetManager,
       inputRouter,
       semanticRegistry,
@@ -220,7 +226,10 @@ export class GuildPixiPage extends BasePixiRetainedView {
       );
     this.tabScrolls
       .get('log')
-      .content.addChild(this.logSection.root);
+      .content.addChild(
+        this.activitySection.root,
+        this.logSection.root,
+      );
     this.createdLayer.addChild(this.tabLayer);
     this.root.addChild(
       this.background,
@@ -366,10 +375,15 @@ export class GuildPixiPage extends BasePixiRetainedView {
     ];
     const board =
       requests.length > 0 ? requests : safeArray(guild.board);
+    const boardCapacity = Math.max(
+      1,
+      Number(guild.secretary?.boardSlots ?? 3),
+    );
     this.boardSection.bind({
-      countLabel: `${safeArray(guild.board).length}/${
-        guild.secretary?.boardSlots ?? 3
-      }`,
+      capacity: boardCapacity,
+      countLabel: `${Math.min(board.length, boardCapacity)} / ${
+        boardCapacity
+      } Posted`,
       requests: board.map((request) => ({
         ...request,
         openAction: () =>
@@ -393,39 +407,42 @@ export class GuildPixiPage extends BasePixiRetainedView {
     });
 
     const available = safeArray(guild.availableRequests);
-    const availableRows = [];
+    const availableRows = [
+      {
+        id: 'explanation',
+        kind: 'paragraph',
+        text:
+          'Post a request to send an adventurer out on that quest.',
+      },
+    ];
     if (available.length > 0) {
       availableRows.push(
         {
-          id: 'incoming',
-          label: 'Incoming',
-          value: `${available.length} quest${
-            available.length === 1 ? '' : 's'
-          }`,
-        },
-        {
           id: 'review',
           kind: 'button',
-          label: 'Review Quests',
+          label: 'Review Requests',
+          value: guild.boardWaveLabel
+            ? `${available.length} waiting · New in ${guild.boardWaveLabel}`
+            : `${available.length} waiting`,
           semanticId: 'guild.available.open',
           action: () =>
             this.openDialog(
               GUILD_DIALOG_IDS.REQUEST_STACK,
               this.createRequestStackDialogModel(),
-            ),
+          ),
         },
       );
-    }
-    if (guild.boardWaveLabel) {
+    } else {
       availableRows.push({
-        id: 'wave',
-        label: 'Upcoming Quest',
-        value: guild.boardWaveLabel,
+        id: 'empty',
+        kind: 'empty',
+        text: guild.boardWaveLabel
+          ? `No requests are waiting. New requests in ${guild.boardWaveLabel}.`
+          : 'No requests are waiting.',
       });
     }
     this.availableSection.bind({
-      countLabel: String(available.length),
-      emptyLabel: 'No Available Quests',
+      countLabel: `${available.length} available`,
       rows: availableRows,
     });
   }
@@ -447,8 +464,6 @@ export class GuildPixiPage extends BasePixiRetainedView {
       })),
       countLabel: `${adventurers.length}/${
         guild.secretary?.hiredCap ?? 1
-      } · ${applicants.length} Applicant${
-        applicants.length === 1 ? '' : 's'
       }`,
       emptyLabel: 'No Adventurers',
     });
@@ -476,14 +491,39 @@ export class GuildPixiPage extends BasePixiRetainedView {
   }
 
   bindLog(guild) {
+    const adventurers = safeArray(guild.adventurers);
+    this.activitySection.bind({
+      countLabel: `${adventurers.length} ${
+        adventurers.length === 1 ? 'Life' : 'Lives'
+      }`,
+      emptyLabel: 'Hire An Adventurer To Begin Their Story',
+      people: adventurers.map((adventurer) => ({
+        ...adventurer,
+        action: () =>
+          this.openDialog(
+            GUILD_DIALOG_IDS.ADVENTURER,
+            this.createPersonDialogModel(
+              adventurer,
+              GUILD_DIALOG_IDS.ADVENTURER,
+            ),
+          ),
+        detailLabel:
+          adventurer.activityText ??
+          adventurer.lifeText ??
+          'Passes The Time In The Guild Hall.',
+        statusLabel: adventurer.activityLabel ?? 'In The Hall',
+      })),
+    });
     this.logSection.bind({
-      emptyLabel: 'Quiet',
+      emptyLabel: 'The Chronicle Is Waiting For Its First Story',
       rows: safeArray(guild.logs)
-        .slice(0, 4)
+        .slice(0, 16)
         .map((log, index) => ({
           id: log.id ?? index,
           kind: 'paragraph',
-          text: log.text ?? String(log),
+          text: `${log.timeLabel ? `${log.timeLabel} · ` : ''}${
+            log.text ?? String(log)
+          }`,
           tone: log.tone ?? '',
         })),
     });
@@ -861,27 +901,25 @@ export class GuildPixiPage extends BasePixiRetainedView {
       [this.hallSection, this.secretarySection],
       width,
       hallViewportHeight,
-      RESEARCH_PIXI_GEOMETRY.rowGap,
     );
     this.layoutSectionStack(
       this.tabScrolls.get('board'),
       [this.boardSection, this.availableSection],
       width,
       adventurerViewportHeight,
-      RESEARCH_PIXI_GEOMETRY.rowGap,
     );
     this.layoutSectionStack(
       this.tabScrolls.get('roster'),
       [this.adventurersSection, this.applicantsSection],
       width,
       adventurerViewportHeight,
-      RESEARCH_PIXI_GEOMETRY.rowGap,
     );
     this.layoutSectionStack(
       this.tabScrolls.get('log'),
-      [this.logSection],
+      [this.activitySection, this.logSection],
       width,
       adventurerViewportHeight,
+      RESEARCH_PIXI_GEOMETRY.rowGap,
     );
   }
 
@@ -953,6 +991,7 @@ export class GuildPixiPage extends BasePixiRetainedView {
       this.availableSection,
       this.adventurersSection,
       this.applicantsSection,
+      this.activitySection,
       this.logSection,
     ].filter(Boolean);
   }
@@ -964,6 +1003,7 @@ export class GuildPixiPage extends BasePixiRetainedView {
       available: this.availableSection.getStats(),
       adventurers: this.adventurersSection.getStats(),
       applicants: this.applicantsSection.getStats(),
+      activity: this.activitySection.getStats(),
       log: this.logSection.getStats(),
     });
   }

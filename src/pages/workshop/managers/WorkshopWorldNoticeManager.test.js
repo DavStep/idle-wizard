@@ -444,11 +444,27 @@ describe('WorkshopWorldNoticeManager', () => {
     expect(
       optionLabels[0]?.querySelector('.style-potion-label__icon')?.dataset.assetAtlasFrame,
     ).toBe('potion:manaTonic');
-    expect(optionLabels[1]?.classList.contains('is-unavailable')).toBe(true);
+    expect(optionLabels[1]?.classList.contains('is-unavailable')).toBe(false);
     expect(optionLabels[1]?.dataset.resourceColor).toBe('potion');
     expect(
       optionLabels[1]?.querySelector('.style-potion-label__icon')?.dataset.assetAtlasFrame,
     ).toBe('potion:minorHealingPotion');
+    const unavailableOption = optionLabels[1]?.closest(
+      '.workshop-page__world-notice-donation-option',
+    );
+    const unavailableAction = unavailableOption?.querySelector(
+      '.workshop-page__world-notice-request-action',
+    );
+    expect(unavailableAction?.textContent).toBe('donate');
+    expect(unavailableAction?.disabled).toBe(false);
+    unavailableAction?.click();
+    expect(
+      popup.querySelector('.workshop-page__world-notice-donate-panel')?.hidden,
+    ).toBe(false);
+    expect(popup.querySelector('.workshop-page__world-notice-donate-status')?.textContent).toBe(
+      'need item',
+    );
+    manager.hideDonateDialog();
     const coinLabel = optionLabels.find((label) => label.textContent === 'coin');
     expect(coinLabel?.dataset.resourceColor).toBe('coin');
     expect(

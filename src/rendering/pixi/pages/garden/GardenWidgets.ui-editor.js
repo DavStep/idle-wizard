@@ -174,7 +174,7 @@ function createTooltipControl({ assets, fixture = { copy: 'Select a seed before 
   const tooltip = new GardenPlotTooltip({ assetManager: assets });
   tooltip.bind(fixture.copy);
   tooltip.applyTheme(DEFAULT_PIXI_THEME_SNAPSHOT);
-  tooltip.show({ x: 0, y: 0 });
+  tooltip.show({ x: 0, y: 0, animate: false });
   return { destroy: () => tooltip.destroy(), height: tooltip.height, root: tooltip.root, width: tooltip.width };
 }
 

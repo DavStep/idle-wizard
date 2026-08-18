@@ -8,7 +8,7 @@ import {
   AllianceDirectoryRow,
   AllianceMemberRow,
   LeaderboardRowPixi,
-  PotionDiscoveryRowPixi,
+  PotionDiscoveryPagePixi,
   WorkshopDialogRow,
   WorldEventDonationOptionRow,
   WorldEventRewardRow,
@@ -32,10 +32,10 @@ export default [
   widget('compound.world-event-donation-option-row', 'World Event Donation Option Row', ['text-button'], donationOptionControl, variants(['available', 'unavailable', 'seed-pack'])),
   widget('compound.alliance-directory-row', 'Alliance Directory Row', ['compound.alliance-member-row', 'primitive.managed-scroll-area', 'text-button'], allianceDirectoryControl, variants(['collapsed', 'expanded', 'full'])),
   widget('compound.alliance-member-row', 'Alliance Member Row', ['compound.player-profile', 'text-button'], allianceMemberControl, variants(['leader', 'member', 'passive'])),
-  widget('compound.alliance-quest-row', 'Alliance Quest Row', ['primitive.resource-label', 'text-button'], allianceQuestControl, variants(['fill', 'claim', 'claimed', 'overflow'])),
+  widget('compound.alliance-quest-row', 'Alliance Quest Row', ['primitive.resource-label', 'text-button'], allianceQuestControl, variants(['fill', 'route', 'claim', 'claimed', 'overflow'])),
   widget('compound.leaderboard-row', 'Leaderboard Row', ['compound.player-profile', 'primitive.star-level-label', 'primitive.resource-label'], leaderboardRowControl, variants(['player', 'current-player', 'alliance', 'world-event-points'])),
-  widget('compound.world-event-reward-row', 'World Event Reward Row', [], worldEventRewardRowControl, variants(['two-rewards', 'one-reward', 'long-rank'])),
-  widget('compound.potion-discovery-row', 'Potion Discovery Row', [], potionDiscoveryControl, variants(['discovered', 'undiscovered', 'long-recipe'])),
+  widget('compound.world-event-reward-row', 'World Event Reward Row', [], worldEventRewardRowControl, variants(['two-rewards', 'current-rank', 'one-reward', 'long-rank'])),
+  widget('compound.potion-discovery-page', 'Potion Discovery Page', [], potionDiscoveryControl, variants(['discovered', 'undiscovered', 'long-recipe'])),
   widget('compound.workshop-dialog-row', 'Workshop Dialog Row', ['text-button', 'primitive.inline-text'], dialogRowControl, variants(['value', 'resource', 'action', 'locked'])),
 ];
 
@@ -82,7 +82,7 @@ function productionClass(id) {
     'compound.alliance-quest-row': 'AllianceQuestRow',
     'compound.leaderboard-row': 'LeaderboardRowPixi',
     'compound.world-event-reward-row': 'WorldEventRewardRow',
-    'compound.potion-discovery-row': 'PotionDiscoveryRowPixi',
+    'compound.potion-discovery-page': 'PotionDiscoveryPagePixi',
     'compound.workshop-dialog-row': 'WorkshopDialogRow',
   })[id];
 }
@@ -178,21 +178,24 @@ function allianceMemberControl({ assets, input, fixture = { state: 'leader' }, c
 function allianceQuestControl({ assets, input, fixture = { state: 'fill' }, context }) {
   const control = new AllianceQuestRow({ dialog: dialogStub(assets, input) });
   const claimed = fixture.state === 'claimed';
+  const route = fixture.state === 'route';
   control.bind({
-    id: 'fill-mana-tonic',
-    title: fixture.state === 'overflow'
-      ? 'Fill 5000 Moonflower Seeds Before The Eclipse Ends'
-      : 'Fill 500 Mana Tonic',
-    itemKind: fixture.state === 'overflow' ? 'seed' : 'potion',
-    itemKey: fixture.state === 'overflow' ? 'moonflowerSeed' : 'manaTonic',
-    contributionLabel: 'Your Fill 8/10',
-    progressLabel: fixture.state === 'fill' ? '18/40' : '40/40',
-    rewardAmountLabel: '3',
+    id: route ? 'grand-route' : 'fill-mana-tonic',
+    title: route
+      ? 'Grand Route'
+      : fixture.state === 'overflow'
+        ? 'Fill 5000 Moonflower Seeds Before The Eclipse Ends'
+        : 'Fill 500 Mana Tonic',
+    itemKind: route ? 'resource' : fixture.state === 'overflow' ? 'seed' : 'potion',
+    itemKey: route ? 'coin' : fixture.state === 'overflow' ? 'moonflowerSeed' : 'manaTonic',
+    contributionLabel: route ? 'Your Route 12,500/12,500' : 'Your Fill 8/10',
+    progressLabel: route ? '86,027/250,000' : fixture.state === 'fill' ? '18/40' : '40/40',
+    rewardAmountLabel: route ? '12' : '3',
     rewardResource: 'crystal',
-    actionLabel: claimed ? 'Claimed' : fixture.state === 'claim' ? 'Claim' : 'Fill',
-    actionVariant: claimed ? 'gray' : 'green',
-    enabled: !claimed,
-    onActivate: claimed ? null : () => context?.emit('allianceQuestActivated') ?? true,
+    actionLabel: claimed ? 'Claimed' : route || fixture.state === 'claim' ? 'Claim' : 'Fill',
+    actionVariant: claimed || route ? 'gray' : 'green',
+    enabled: !claimed && !route,
+    onActivate: claimed || route ? null : () => context?.emit('allianceQuestActivated') ?? true,
   });
   const height = control.getPreferredHeight(252);
   control.setBounds(0, 0, 252, height);
@@ -248,6 +251,7 @@ function worldEventRewardRowControl({ assets, input, fixture = { state: 'two-rew
   control.bind({
     id: `reward:${fixture.state}`,
     type: 'worldEventReward',
+    current: fixture.state === 'current-rank',
     rankLabel:
       fixture.state === 'long-rank' ? 'Rank 101+ Qualified' : 'Rank 1',
     rewards:
@@ -272,14 +276,15 @@ function allianceDirectoryControl({ assets, input, fixture = { state: 'collapsed
 }
 
 function potionDiscoveryControl({ assets, input, fixture = { state: 'discovered' }, context }) {
-  const control = new PotionDiscoveryRowPixi({ dialog: dialogStub(assets, input) });
+  const control = new PotionDiscoveryPagePixi({ dialog: dialogStub(assets, input) });
   const discovered = fixture.state !== 'undiscovered';
   const ingredients = [{ key: 'mintHerb', label: 'Mint', quantity: 2 }, { key: 'sageHerb', label: 'Sage', quantity: 1 }];
   if (fixture.state === 'long-recipe') ingredients.push({ key: 'lavenderHerb', label: 'Lavender', quantity: 3 }, { key: 'valerianHerb', label: 'Valerian', quantity: 1 });
   control.bind({ discovered, potionKey: 'minorManaPotion', label: 'Minor Mana Potion', discovererUsername: 'Elara', discoveredAtLabel: 'Today', ingredients, manaLabel: '12 mana', durationLabel: '5 sec', royaltyLabel: '2 coin', onDiscovererActivate: () => context?.emit('discovererOpened') ?? true });
+  const width = 155;
   const height = control.getPreferredHeight();
-  control.setBounds(0, 0, WIDTH, height);
-  return wrap(control, WIDTH, height);
+  control.setBounds(0, 0, width, height);
+  return wrap(control, width, height);
 }
 
 function dialogRowControl({ assets, input, fixture = { state: 'value' }, context }) {

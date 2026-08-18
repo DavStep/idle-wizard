@@ -128,6 +128,7 @@ experience_type: product-shape
 - Weekly event resolution should avoid hard fail: the world resolves, and player contribution changes weak/decent/strong outcome text plus archive/history flavor.
 - Weekly event requests should grant contribution points, not immediate completion rewards; leaderboard rewards require 2000 points to qualify.
 - Weekly event request completion caps visible progress/response only; matching actions keep adding contribution points after completion.
+- World event donation options stay navigable after completion and at zero owned quantity; the picker shows the shortage and gates only its final confirmation.
 - Weekly event tasks have no contribution limit; show accumulated contribution like `earned 175 coin`, never `25/50`, remaining, or capped target copy.
 - Weekly event task labels should start with the literal counted action (`earn coin`, `sell items`, `complete research`) before event flavor; flavor-only labels read like hidden mechanics.
 - Weekly event task titles use the normal HUD title treatment; reserve semantic color/icons for resources, progress, action roles, selection, and notifications.
@@ -171,7 +172,8 @@ experience_type: product-shape
 - Guild adventurer notification dots anchor to the row's top-right corner and stay row-local so they cannot land between the name and status columns.
 - Guild room boxes should use the full room inset width, not `--style-main-box-width`; the alternate Guild HUD does not reserve Workshop side-panel or compact-chat width inside the room content column.
 - Guild is an alternate level-15 HUD entered from the Workshop right-side Guild action, not a normal bottom room tab or swipe destination. In Guild mode hide Workshop scenery, summon, normal room tabs, and compact World Chat; use Workshop/Hall/Adventurers/Fishers/Miners/World in the Guild bottom strip, with Workshop returning to the normal room HUD.
-- The Adventurers branch owns a local Board/Roster/Log button panel above the Guild bottom strip. Each inner tab uses one titled full-width row stack; secondary Board and Roster groups continue under that title instead of opening another section. Future Fishers, Miners, and World destinations stay visible with the standard locked-tab feedback until their gameplay is implemented.
+- Prestige is an alternate level-7 HUD entered from the Workshop left-side Prestige action, not a normal bottom room tab or swipe destination. Its bottom strip uses Workshop/Main/Points, with Workshop returning to the normal room HUD; Main and Points must not also render as page-local tabs.
+- The Adventurers branch owns a local Board/Roster/Log button panel above the Guild bottom strip. Board and Log use one titled full-width row stack; Roster separates Adventurers and Applicants under their own title plaques. Future Fishers, Miners, and World destinations stay visible with the standard locked-tab feedback until their gameplay is implemented.
 - Guild tab panels are rebuilt on snapshot refresh; preserve `.guild-page__tabpanel.scrollTop` per tab or mobile scrolling snaps back to the top.
 - Guild board refreshes should retain the active `.guild-page__tabpanel` DOM node; restoring `scrollTop` alone can still kill mobile scroll momentum.
 - Guild request board rows are player-selected from an available quest pool; new waves refresh available quests and expire old requests, but never auto-fill the visible board.

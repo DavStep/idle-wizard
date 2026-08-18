@@ -40,7 +40,6 @@ import {
   RETAINED_PAGE_GEOMETRY,
   RETAINED_TEXT_STYLES,
   RetainedButton,
-  RetainedPanel,
   RetainedTimedProgressBar,
   RetainedScrollArea,
   applyTextTheme,
@@ -51,6 +50,7 @@ import {
   resolveRetainedPageBottomClearance,
   setText,
 } from '../workshop/RetainedPageKit.js';
+import { PixiTooltip } from '../shared/PixiTooltip.js';
 const MAX_LOCKED_ROWS_PER_BOX = 1;
 export const RESEARCH_PAPER_INK = '#634934';
 export const RESEARCH_PROGRESS_INK = '#725737';
@@ -409,6 +409,8 @@ export class ResearchPixiPage extends BaseRetainedPixiPage {
     this.tabsLayer = new Container({ label: 'research-page-tabs' });
     this.lockTooltip = new ResearchLockTooltip({
       assetManager: this.assetManager,
+      inputRouter: this.inputRouter,
+      prefersReducedMotion: this.prefersReducedMotion,
     });
     this.lockTooltipResearchId = null;
     this.content.addChild(
@@ -605,36 +607,17 @@ export class ResearchPixiPage extends BaseRetainedPixiPage {
     return true;
   }
 
-  positionLockTooltip(target) {
+  positionLockTooltip(target, { animate = true } = {}) {
     if (!target) {
       return;
     }
-
-    const targetBounds = target.getBounds();
-    const targetRight = Number.isFinite(targetBounds.maxX)
-      ? targetBounds.maxX
-      : targetBounds.x + targetBounds.width;
-    const targetTop = Number.isFinite(targetBounds.minY)
-      ? targetBounds.minY
-      : targetBounds.y;
-    const targetBottom = Number.isFinite(targetBounds.maxY)
-      ? targetBounds.maxY
-      : targetBounds.y + targetBounds.height;
-    const topRight = this.content.toLocal({
-      x: targetRight,
-      y: targetTop,
+    this.lockTooltip.showNearTarget({
+      target,
+      container: this.content,
+      boundaryWidth: this.sourceWidth,
+      boundaryHeight: this.sourceHeight,
+      animate,
     });
-    const bottomRight = this.content.toLocal({
-      x: targetRight,
-      y: targetBottom,
-    });
-    const x = Math.min(
-      this.sourceWidth - this.lockTooltip.width - 8,
-      Math.max(8, topRight.x - this.lockTooltip.width),
-    );
-    const aboveY = topRight.y - this.lockTooltip.height - 6;
-    const y = aboveY >= 8 ? aboveY : bottomRight.y + 6;
-    this.lockTooltip.show({ x, y });
   }
 
   hideLockTooltip() {
@@ -826,7 +809,7 @@ export class ResearchPixiPage extends BaseRetainedPixiPage {
     if (this.lockTooltipResearchId) {
       const row = this.rows.get(this.lockTooltipResearchId);
       if (row?.research?.locked === true) {
-        this.positionLockTooltip(row.costButton);
+        this.positionLockTooltip(row.costButton, { animate: false });
       } else {
         this.hideLockTooltip();
       }
@@ -854,6 +837,7 @@ export class ResearchPixiPage extends BaseRetainedPixiPage {
 
   tick() {
     const now = this.timeSource();
+    this.lockTooltip?.updateTime();
     for (const row of this.rows?.getWidgets?.() ?? []) {
       row.updateTime(now);
     }
@@ -894,54 +878,9 @@ export class ResearchPixiPage extends BaseRetainedPixiPage {
   }
 }
 
-export class ResearchLockTooltip {
-  constructor({ assetManager }) {
-    this.width = 180;
-    this.height = 0;
-    this.panel = new RetainedPanel({
-      assetManager,
-      panelLabel: 'research-lock-tooltip',
-      strong: true,
-      shadowKind: 'tooltip',
-    });
-    this.root = this.panel.root;
-    this.copy = createText('', {
-      ...RETAINED_TEXT_STYLES.border,
-      wordWrapWidth: this.width - 20,
-    });
-    this.panel.body.addChild(this.copy);
-    this.root.visible = false;
-    this.root.renderable = false;
-  }
-
-  bind(copy) {
-    setText(this.copy, copy);
-    this.copy.position.set(10, 8);
-    this.height = Math.ceil(this.copy.height + 16);
-    this.panel.setBounds(0, 0, this.width, this.height);
-  }
-
-  show({ x, y }) {
-    this.root.position.set(x, y);
-    this.root.visible = true;
-    this.root.renderable = true;
-  }
-
-  hide() {
-    this.root.visible = false;
-    this.root.renderable = false;
-  }
-
-  applyTheme(theme) {
-    this.panel.applyTheme(theme);
-    applyTextTheme(this.copy, theme, {
-      ...RETAINED_TEXT_STYLES.border,
-      wordWrapWidth: this.width - 20,
-    });
-  }
-
-  destroy() {
-    this.panel.destroy();
+export class ResearchLockTooltip extends PixiTooltip {
+  constructor(options = {}) {
+    super({ label: 'research-lock-tooltip', ...options });
   }
 }
 

@@ -54,7 +54,7 @@ const PAGE_IDS = Object.freeze([
 
 const NAVIGABLE_PAGE_IDS = new Set(PAGE_IDS);
 const SWIPE_PAGE_IDS = new Set(
-  PAGE_IDS.filter((pageId) => pageId !== "guild"),
+  PAGE_IDS.filter((pageId) => !["guild", "prestige"].includes(pageId)),
 );
 const TASK_DESTINATION_PAGE_BY_TYPE = Object.freeze({
   research: "research",
@@ -598,12 +598,17 @@ export class PixiPagesFacade {
       "chrome.bottom",
       this.viewModelFactory.createBottomPanel({
         currentPageId: this.currentPageId,
-        hudMode: this.currentPageId === "guild" ? "guild" : "rooms",
+        hudMode: ["guild", "prestige"].includes(this.currentPageId)
+          ? this.currentPageId
+          : "rooms",
         guildHud: {
           selectedTabId: this.guildBranchId,
           notifications: projectGuildBranchNotifications(
             guildNotification?.children,
           ),
+        },
+        prestigeHud: {
+          selectedTabId: this.prestigeTabId,
         },
         pages: this.pageStates,
         notifications: projectChromeNotificationPages(
@@ -613,6 +618,7 @@ export class PixiPagesFacade {
         actions: {
           showPage: (pageId) => this.show(pageId),
           selectGuildTab: (tabId) => this.selectGuildTab(tabId),
+          selectPrestigeTab: (tabId) => this.selectPrestigeTab(tabId),
           onLockedPage: () => true,
         },
       }),
@@ -843,6 +849,11 @@ export class PixiPagesFacade {
             this.notifications.pages?.guild,
             this.tutorialNotificationPolicy,
           ),
+          prestigeNotification: projectPageNotificationState(
+            "prestige",
+            this.notifications.pages?.prestige,
+            this.tutorialNotificationPolicy,
+          ),
           actions: actions.workshop,
           pageStates: this.pageStates,
           dialogState: {
@@ -1060,6 +1071,7 @@ export class PixiPagesFacade {
     return {
       workshop: {
         openGuild: () => this.show("guild"),
+        openPrestige: () => this.show("prestige"),
         navigateToTask: (task) => {
           const taskType = String(task?.type ?? task?.action ?? "").trim();
           const pageId = TASK_DESTINATION_PAGE_BY_TYPE[taskType];
@@ -1291,11 +1303,7 @@ export class PixiPagesFacade {
         },
       },
       prestige: {
-        selectTab: (tabId) => {
-          this.prestigeTabId = tabId === "points" ? "points" : "main";
-          this.refreshPage("prestige");
-          return true;
-        },
+        selectTab: (tabId) => this.selectPrestigeTab(tabId),
         requestPrestige: (row) => {
           this.prestigeConfirm = row?.confirm ?? row ?? null;
           this.refreshPage("prestige");
@@ -2699,6 +2707,17 @@ export class PixiPagesFacade {
     this.guildBranchId = normalized;
     this.refreshChrome();
     this.refreshPage("guild");
+    return true;
+  }
+
+  selectPrestigeTab(tabId) {
+    const normalized = tabId === "points" ? "points" : "main";
+    if (normalized === this.prestigeTabId) {
+      return true;
+    }
+    this.prestigeTabId = normalized;
+    this.refreshChrome();
+    this.refreshPage("prestige");
     return true;
   }
 

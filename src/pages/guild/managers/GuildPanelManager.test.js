@@ -224,7 +224,7 @@ describe('GuildPanelManager', () => {
       ?.dispatchEvent(new window.MouseEvent('click', { bubbles: true }));
 
     expect(parent.querySelector('.guild-page__tabpanel')?.dataset.guildTabPanel).toBe('log');
-    expect(getBoxTitles()).toEqual(['guild log']);
+    expect(getBoxTitles()).toEqual(['right now', 'chronicle']);
   });
 
   it('keeps guild tab taps out of page-swipe capture', () => {
@@ -866,17 +866,18 @@ describe('GuildPanelManager', () => {
     )?.groups?.body;
 
     expect(summaryRule).toMatch(/\bdisplay:\s*grid;/);
-    expect(summaryRule).toMatch(/\bgrid-template-columns:\s*88px minmax\(0,\s*1fr\);/);
-    expect(summaryRule).toMatch(/\bmin-height:\s*72px;/);
+    expect(summaryRule).toMatch(/\bgrid-template-columns:\s*112px minmax\(0,\s*1fr\);/);
+    expect(summaryRule).toMatch(/\bmin-height:\s*104px;/);
     expect(rowRule).toMatch(/\bdisplay:\s*flex;/);
     expect(rowRule).toMatch(/\bjustify-content:\s*flex-start;/);
-    expect(rowRule).toMatch(/\bmin-height:\s*72px;/);
+    expect(rowRule).toMatch(/\bmin-height:\s*104px;/);
     expect(iconRule).toMatch(/\bwidth:\s*auto;/);
-    expect(iconRule).toMatch(/\bheight:\s*72px;/);
+    expect(iconRule).toMatch(/\bheight:\s*96px;/);
     expect(iconRule).toMatch(/\bobject-fit:\s*contain;/);
     expect(iconRule).toMatch(/\bobject-position:\s*0 100%;/);
     expect(rowsRule).toMatch(/\bdisplay:\s*flex;/);
     expect(rowsRule).toMatch(/\bflex-direction:\s*column;/);
+    expect(rowsRule).toMatch(/\bgap:\s*8px;/);
   });
 
   it('styles secretary upgrade motion with a reduced-motion fallback', () => {

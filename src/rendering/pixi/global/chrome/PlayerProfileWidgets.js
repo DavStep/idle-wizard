@@ -16,6 +16,11 @@ import {
 export const PLAYER_PROFILE_SIZE = 186;
 const PLAYER_PROFILE_INSET = 19;
 const PLAYER_AVATAR_SIZE = 148;
+const PLAYER_AVATAR_ART_SCALE = 1.15;
+const PLAYER_AVATAR_ART_SIZE = PLAYER_AVATAR_SIZE * PLAYER_AVATAR_ART_SCALE;
+const PLAYER_AVATAR_ART_X = (PLAYER_PROFILE_SIZE - PLAYER_AVATAR_ART_SIZE) / 2;
+const PLAYER_AVATAR_ART_Y =
+  PLAYER_PROFILE_INSET + PLAYER_AVATAR_SIZE - PLAYER_AVATAR_ART_SIZE;
 
 /** Owns the tintable frame and inner profile decoration. */
 export class PlayerBackgroundWidget extends Container {
@@ -58,9 +63,9 @@ export class PlayerAvatarWidget extends Container {
     this.maskShape = new Graphics()
       .rect(
         PLAYER_PROFILE_INSET,
-        PLAYER_PROFILE_INSET,
+        0,
         PLAYER_AVATAR_SIZE,
-        PLAYER_AVATAR_SIZE,
+        PLAYER_PROFILE_INSET + PLAYER_AVATAR_SIZE,
       )
       .fill('#ffffff');
     this.maskShape.label = `${label}:mask`;
@@ -78,9 +83,9 @@ export class PlayerAvatarWidget extends Container {
     if (texture) {
       this.portrait.texture = texture;
     }
-    this.portrait.position.set(PLAYER_PROFILE_INSET, PLAYER_PROFILE_INSET);
-    this.portrait.width = PLAYER_AVATAR_SIZE;
-    this.portrait.height = PLAYER_AVATAR_SIZE;
+    this.portrait.position.set(PLAYER_AVATAR_ART_X, PLAYER_AVATAR_ART_Y);
+    this.portrait.width = PLAYER_AVATAR_ART_SIZE;
+    this.portrait.height = PLAYER_AVATAR_ART_SIZE;
     return this;
   }
 }

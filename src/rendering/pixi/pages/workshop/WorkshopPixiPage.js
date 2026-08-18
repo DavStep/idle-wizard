@@ -94,6 +94,13 @@ const DEFAULT_FEATURES = Object.freeze([
     weight: 30,
   }),
   Object.freeze({
+    id: 'prestige',
+    label: 'Prestige',
+    side: 'left',
+    weight: 35,
+    visible: false,
+  }),
+  Object.freeze({
     id: 'worldEvent',
     label: 'Event',
     side: 'right',
@@ -136,6 +143,9 @@ const WORKSHOP_FEATURE_PRESENTATIONS = Object.freeze({
   }),
   personalTasks: Object.freeze({
     assetId: PIXI_ROOT_RUN_ASSETS.workshopPersonalTasks,
+  }),
+  prestige: Object.freeze({
+    assetId: PIXI_ROOT_RUN_ASSETS.workshopPrestige,
   }),
   worldEvent: Object.freeze({
     assetId: PIXI_ROOT_RUN_ASSETS.workshopWorldEvent,

@@ -212,4 +212,39 @@ describe('GuildFacade', () => {
     expect(snapshot.availableRequests[0].expiresLabel).toBe('30m');
     expect(snapshot.boardWaveLabel).toBe('30m');
   });
+
+  it('projects every adventurer current life and records shared social moments', () => {
+    let nowMs = 0;
+    const { facade } = createFacade({ coin: 10_000, now: () => nowMs });
+    facade.createGuild({ name: 'ash hall', tag: 'ASH', color: 'red' });
+    facade.upgradeSecretary();
+    facade.hireApplicant(facade.getSnapshot().applicants[0].id);
+    facade.hireApplicant(facade.getSnapshot().applicants[0].id);
+
+    let snapshot = facade.getSnapshot();
+    let socialLog = null;
+    for (let tick = 1; tick <= 18 && !socialLog; tick += 1) {
+      nowMs = tick * 10 * 60 * 1000;
+      snapshot = facade.getSnapshot();
+      socialLog = snapshot.logs.find((log) => log.kind === 'social');
+    }
+
+    expect(snapshot.adventurers).toHaveLength(2);
+    expect(
+      snapshot.adventurers.every(
+        (adventurer) => adventurer.activityLabel && adventurer.activityText,
+      ),
+    ).toBe(true);
+    expect(socialLog).toMatchObject({
+      actorId: expect.any(String),
+      partnerId: expect.any(String),
+      timeLabel: 'Now',
+    });
+    expect(socialLog.text).toMatch(/ and /);
+    expect(
+      snapshot.adventurers.every((adventurer) =>
+        adventurer.history.some((entry) => entry.text === socialLog.text),
+      ),
+    ).toBe(true);
+  });
 });

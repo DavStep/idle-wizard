@@ -13371,23 +13371,23 @@ div.workshop-page__discovery-row {
 
 .guild-page__secretary-summary {
   display: grid;
-  grid-template-columns: 88px minmax(0, 1fr);
+  grid-template-columns: 112px minmax(0, 1fr);
   align-items: center;
-  min-height: 72px;
-  column-gap: 8px;
+  min-height: 104px;
+  column-gap: 10px;
 }
 
 .guild-page__secretary-icon-row {
   display: flex;
   align-items: flex-end;
   justify-content: flex-start;
-  min-height: 72px;
+  min-height: 104px;
 }
 
 .guild-page__secretary-icon {
   display: block;
   width: auto;
-  height: 72px;
+  height: 96px;
   object-fit: contain;
   object-position: 0 100%;
 }
@@ -13396,7 +13396,12 @@ div.workshop-page__discovery-row {
   display: flex;
   flex-direction: column;
   justify-content: center;
+  gap: 8px;
   min-width: 0;
+}
+
+.guild-page__box--secretary .guild-page__rows {
+  gap: 8px;
 }
 
 .guild-page__row-main,

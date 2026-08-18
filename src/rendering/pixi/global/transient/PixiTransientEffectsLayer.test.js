@@ -113,6 +113,40 @@ describe('PixiTransientEffectsLayer', () => {
     expect(layer.getStats().active.text).toBe(1);
   });
 
+  it('keeps every x5 hold-to-repeat summon drop alive for its full lifetime', () => {
+    const ticker = createTicker();
+    const layer = new PixiTransientEffectsLayer({
+      assets: createAssets(),
+      application: { ticker },
+      random: () => 1,
+    });
+    layer.applyTheme(
+      createPixiThemeSnapshot({ iconMode: 'icons' }),
+    );
+    layer.activate();
+
+    for (let batch = 0; batch < 14; batch += 1) {
+      layer.emitReward({
+        itemDrops: Array.from({ length: 5 }, (_, index) => ({
+          id: `summon-${batch}-seed-${index}`,
+          kind: 'seed',
+          frameName: 'seed',
+          anchor: { x: 100, y: 200 },
+        })),
+      });
+
+      if (batch < 13) {
+        ticker.tick(100);
+      }
+    }
+
+    expect(layer.getStats().active.item).toBe(70);
+    expect(layer.getStats().pools.item.allocated).toBe(70);
+
+    ticker.tick(100);
+    expect(layer.getStats().active.item).toBe(65);
+  });
+
   it('rejects missing visual assets without leaking a pool lease', () => {
     const layer = new PixiTransientEffectsLayer({
       assets: createAssets(),
@@ -362,6 +396,73 @@ describe('PixiTransientEffectsLayer', () => {
     expect(coinTarget.scale).toMatchObject({ x: 1, y: 1 });
   });
 
+  it('reuses resource travel for the free daily crystal claim', () => {
+    const contextCurrencyTarget = new Container();
+    contextCurrencyTarget.position.set(180, 18);
+    const layer = new PixiTransientEffectsLayer({
+      assets: createAssets(),
+      semanticRegistry: createSemanticRegistry({
+        'shop.dailyCrystalOffer.collect': {
+          bounds: { x: 300, y: 400, width: 40, height: 20 },
+        },
+        'top.contextCurrency': {
+          bounds: { x: 180, y: 18, width: 42, height: 14 },
+          displayObject: contextCurrencyTarget,
+        },
+      }),
+      random: () => 0.5,
+    });
+    layer.applyTheme(
+      createPixiThemeSnapshot({ iconMode: 'icons' }),
+    );
+    layer.activate();
+
+    layer.emitReward(
+      createRewardFlyoutPresentation({
+        type: 'crystal_collected',
+        crystal: 1,
+        source: 'shop_daily_crystal_offer',
+      }),
+    );
+
+    expect(layer.getStats().active).toMatchObject({
+      coin: 3,
+      amount: 1,
+      coinTarget: 1,
+    });
+    const particle = layer.entries.find(
+      (entry) => entry.kind === 'coin',
+    );
+    expect(particle.widget.resource).toBe('crystal');
+    const amount = layer.entries.find(
+      (entry) => entry.kind === 'amount',
+    );
+    expect(amount.widget.label.text).toBe('+1');
+    expect(amount.widget.label.textObject.style.fill).toBe('#cdaef2');
+
+    const reducedLayer = new PixiTransientEffectsLayer({
+      assets: createAssets(),
+      reducedMotion: true,
+    });
+    reducedLayer.applyTheme(
+      createPixiThemeSnapshot({ iconMode: 'icons' }),
+    );
+    reducedLayer.activate();
+    reducedLayer.emitReward(
+      createRewardFlyoutPresentation({
+        type: 'crystal_collected',
+        crystal: 1,
+        source: 'shop_daily_crystal_offer',
+      }),
+    );
+    expect(reducedLayer.getStats().active).toMatchObject({
+      text: 1,
+      coin: 0,
+      amount: 0,
+      coinTarget: 0,
+    });
+  });
+
   it('ports the Root Run seven-icon spend burst and reuses its bounded pool', () => {
     const ticker = createTicker();
     const layer = new PixiTransientEffectsLayer({
@@ -538,6 +639,20 @@ describe('reward flyout presenter', () => {
         }),
       ]),
     );
+    const crystalReward = createRewardFlyoutPresentation({
+      type: 'crystal_collected',
+      crystal: 1,
+      source: 'shop_daily_crystal_offer',
+    });
+    expect(crystalReward.message).toBe('collected 1 crystal');
+    expect(crystalReward.runs).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({
+          kind: 'icon',
+          frameName: 'resource:crystal',
+        }),
+      ]),
+    );
   });
 
   it('maps summon, harvest, and brew events to bounded retained item drops', () => {
@@ -691,6 +806,26 @@ describe('reward flyout presenter', () => {
         toId: 'top.coin',
         showParticles: true,
         title: 'collected 20 coin',
+      },
+    });
+
+    expect(
+      createRewardVisualPresentation({
+        type: 'crystal_collected',
+        crystal: 1,
+        source: 'shop_daily_crystal_offer',
+      }),
+    ).toEqual({
+      coinTravel: {
+        amount: 1,
+        resource: 'crystal',
+        fromId: [
+          'shop.dailyCrystalOffer.collect',
+          'shop.tab.crystals',
+        ],
+        toId: 'top.contextCurrency',
+        showParticles: true,
+        title: 'collected 1 crystal',
       },
     });
 

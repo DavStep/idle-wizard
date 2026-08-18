@@ -81,6 +81,7 @@ const DEFAULT_DIALOG_WIDTH = 304;
 const WIDE_DIALOG_WIDTH = 344;
 const LEDGER_DIALOG_WIDTH = DEFAULT_DIALOG_WIDTH;
 const DEFAULT_DIALOG_HEIGHT = 364;
+const STALL_DIALOG_HEIGHT = 464;
 const LEDGER_DIALOG_HEIGHT = 382;
 const LEDGER_ROW_HEIGHT = 58;
 const LEDGER_SCROLL_VIEWPORT_BOTTOM_INSET = 10;
@@ -120,9 +121,9 @@ const SETTINGS_ROW_EXPANSION_DURATION_MS = 240;
 const SETTINGS_ROW_PRESS_SCALE = 0.97;
 const SETTINGS_ROW_RELEASE_PEAK_SCALE = 1.035;
 const SETTINGS_ROW_RELEASE_DURATION_MS = 180;
-const SETTINGS_ROW_DISCLOSURE_START_SCALE = 0.92;
-const SETTINGS_ROW_DISCLOSURE_PEAK_SCALE = 1.035;
-const SETTINGS_ROW_DISCLOSURE_PEAK_PROGRESS = 0.62;
+const SETTINGS_ROW_DISCLOSURE_START_SCALE = 0.985;
+const SETTINGS_ROW_DISCLOSURE_PRESS_SLOP =
+  SETTINGS_ROW_EXPANSION_HEIGHT + 4;
 const AUTO_SUMMON_REVEAL_DURATION_MS = 240;
 const AUTO_SUMMON_REVEAL_START_SCALE = 0.8;
 const AUTO_SUMMON_REVEAL_OVERSHOOT_SCALE = 1.02;
@@ -132,7 +133,7 @@ const DIALOG_CONFIG = Object.freeze({
   [SHOP_DIALOG_IDS.STALL]: Object.freeze({
     title: 'Load Stall',
     width: DEFAULT_DIALOG_WIDTH,
-    height: DEFAULT_DIALOG_HEIGHT,
+    height: STALL_DIALOG_HEIGHT,
     rowHeight: PIXI_ROOT_RUN_GEOMETRY.settings.rowPitch,
     hasPrimaryVerticalScroll: true,
     splitPaper: Object.freeze({
@@ -2035,6 +2036,7 @@ class VirtualShopDialogList {
     this.rowWidth = 0;
     this.height = 0;
     this.items = [];
+    this.itemsRevision = 0;
     this.visibleStart = 0;
     this.visibleEnd = 0;
     this.expandedKey = null;
@@ -2078,6 +2080,9 @@ class VirtualShopDialogList {
               cancelFrame: this.cancelFrame,
               timeSource: this.timeSource,
               reducedMotion: this.reducedMotion,
+              pressSlop: this.expandedControl
+                ? SETTINGS_ROW_DISCLOSURE_PRESS_SLOP
+                : null,
               label: `${label}:row`,
             }),
       reset: (row) => row.reset(),
@@ -2089,16 +2094,11 @@ class VirtualShopDialogList {
       pool: this.rowPool,
       counters,
       keyOf: (entry) => entry.item.__virtualKey,
+      revisionOf: (entry) =>
+        `${entry.item.__virtualRevision}:${entry.item.expanded === true}`,
       bind: (widget, entry) => {
         widget.applyTheme(this.theme);
         widget.bind(entry.item.__virtualKey, entry.item);
-        widget.setBounds(
-          0,
-          entry.top,
-          this.rowWidth,
-          entry.height,
-          this.rowHeight,
-        );
       },
       afterReconcile: (widgets) =>
         orderChildren(
@@ -2112,9 +2112,11 @@ class VirtualShopDialogList {
   }
 
   setItems(items) {
+    this.itemsRevision += 1;
     this.items = safeArray(items).map((item, index) => ({
       ...item,
       __virtualKey: item.id ?? item.key ?? item.semanticId ?? index,
+      __virtualRevision: this.itemsRevision,
     }));
     if (
       this.expandedKey !== null &&
@@ -2165,7 +2167,18 @@ class VirtualShopDialogList {
     }
     this.visibleStart = start;
     this.visibleEnd = end;
-    this.rows.reconcile(layout.slice(start, end));
+    const visibleEntries = layout.slice(start, end);
+    const visibleRows = this.rows.reconcile(visibleEntries);
+    visibleRows.forEach((row, index) => {
+      const entry = visibleEntries[index];
+      row.setBounds(
+        0,
+        entry.top,
+        this.rowWidth,
+        entry.height,
+        this.rowHeight,
+      );
+    });
     this.layoutExpandedControl(layout);
   }
 
@@ -2223,6 +2236,7 @@ class VirtualShopDialogList {
 
     this.refreshContentHeight();
     this.renderWindow(true);
+    this.scrollExpandedRowIntoView();
     this.expansionFrame = this.requestFrame((timestamp) =>
       this.tickExpansion(timestamp),
     );
@@ -2247,6 +2261,7 @@ class VirtualShopDialogList {
     this.expansionProgress = easeOutQuart(linearProgress);
     this.refreshContentHeight();
     this.renderWindow(true);
+    this.scrollExpandedRowIntoView();
 
     if (linearProgress >= 1) {
       this.finishExpansion();
@@ -2267,6 +2282,7 @@ class VirtualShopDialogList {
     this.syncExpandedControl();
     this.refreshContentHeight();
     this.renderWindow(true);
+    this.scrollExpandedRowIntoView();
   }
 
   cancelExpansion() {
@@ -2297,6 +2313,24 @@ class VirtualShopDialogList {
       };
       top += height;
       return entry;
+    });
+  }
+
+  scrollExpandedRowIntoView() {
+    if (this.expandedKey === null) {
+      return false;
+    }
+
+    const entry = this.createLayout().find(
+      (candidate) => candidate.item.__virtualKey === this.expandedKey,
+    );
+    if (!entry) {
+      return false;
+    }
+
+    return this.scroll.scrollRectIntoView({
+      y: entry.top,
+      height: entry.height,
     });
   }
 
@@ -2795,6 +2829,7 @@ export class RootRunInventoryChoiceRowPixi extends ClickableWidget {
     cancelFrame = defaultCancelFrame,
     timeSource = defaultTimeSource,
     reducedMotion = prefersReducedMotion,
+    pressSlop = null,
     label,
   }) {
     super({
@@ -2807,6 +2842,7 @@ export class RootRunInventoryChoiceRowPixi extends ClickableWidget {
         prefersReducedMotion: reducedMotion,
         requestFrame,
       },
+      pressSlop,
       pressScale: SETTINGS_ROW_PRESS_SCALE,
       releaseDurationMs: SETTINGS_ROW_RELEASE_DURATION_MS,
       releasePeakScale: SETTINGS_ROW_RELEASE_PEAK_SCALE,
@@ -3430,10 +3466,20 @@ function resolveItemIconFrames(model = {}) {
 }
 
 function orderChildren(container, widgets) {
-  container.removeChildren();
-  for (const widget of widgets) {
-    container.addChild(widget.root ?? widget);
+  const children = widgets.map((widget) => widget.root ?? widget);
+  const retained = new Set(children);
+  for (const child of [...container.children]) {
+    if (!retained.has(child)) {
+      container.removeChild(child);
+    }
   }
+  children.forEach((child, index) => {
+    if (child.parent !== container) {
+      container.addChildAt(child, index);
+    } else if (container.getChildIndex(child) !== index) {
+      container.setChildIndex(child, index);
+    }
+  });
 }
 
 function easeOutQuart(progress) {
@@ -3467,23 +3513,9 @@ function sampleAutoSummonRevealScale(progress) {
 
 function sampleSettingsRowDisclosureScale(progress) {
   const safeProgress = Math.min(1, Math.max(0, progress));
-  if (safeProgress <= SETTINGS_ROW_DISCLOSURE_PEAK_PROGRESS) {
-    return (
-      SETTINGS_ROW_DISCLOSURE_START_SCALE +
-      (SETTINGS_ROW_DISCLOSURE_PEAK_SCALE -
-        SETTINGS_ROW_DISCLOSURE_START_SCALE) *
-        easeOutCubic(
-          safeProgress / SETTINGS_ROW_DISCLOSURE_PEAK_PROGRESS,
-        )
-    );
-  }
   return (
-    SETTINGS_ROW_DISCLOSURE_PEAK_SCALE +
-    (1 - SETTINGS_ROW_DISCLOSURE_PEAK_SCALE) *
-      easeOutCubic(
-        (safeProgress - SETTINGS_ROW_DISCLOSURE_PEAK_PROGRESS) /
-          (1 - SETTINGS_ROW_DISCLOSURE_PEAK_PROGRESS),
-      )
+    SETTINGS_ROW_DISCLOSURE_START_SCALE +
+    (1 - SETTINGS_ROW_DISCLOSURE_START_SCALE) * safeProgress
   );
 }
 

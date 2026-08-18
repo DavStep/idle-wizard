@@ -885,6 +885,14 @@ export class GameplayFacade {
     });
   }
 
+  handleCrystalCollected(event) {
+    this.rewardEventManager.publish({
+      type: "crystal_collected",
+      crystal: event.crystal,
+      source: event.source,
+    });
+  }
+
   recordPersonalTaskAction(actionType, quantity = 1) {
     const result = this.personalTasksFacade.recordAction(actionType, quantity);
 
@@ -1342,6 +1350,12 @@ export class GameplayFacade {
 
   collectShopDailyCrystalOffer() {
     const result = this.shopFacade.collectDailyCrystalOffer();
+    if (result.ok) {
+      this.handleCrystalCollected({
+        crystal: result.crystal,
+        source: "shop_daily_crystal_offer",
+      });
+    }
     this.publishAndSaveSnapshot();
     return result;
   }

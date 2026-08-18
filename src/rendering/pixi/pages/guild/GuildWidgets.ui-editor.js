@@ -31,7 +31,7 @@ export default [
   entry('compound.guild-secretary-section', 'Guild Secretary Section', ['compound.research-station-title', 'cost-button'], secretarySection, variants(['upgrade', 'maximum'])),
   entry('compound.guild-quest-card', 'Guild Quest Card', [], questCard, variants(['available', 'assigned'])),
   entry('compound.guild-quest-board', 'Guild Quest Board', ['compound.research-station-title', 'compound.guild-quest-card'], questBoard, variants(['requests', 'empty'])),
-  entry('compound.guild-person-row', 'Guild Person Row', ['primitive.notification-badge'], personRow, variants(['idle', 'hospital', 'dead'])),
+  entry('compound.guild-person-row', 'Guild Person Row', ['primitive.notification-badge'], personRow, variants(['idle', 'activity', 'hospital', 'dead'])),
   entry('compound.guild-people-section', 'Guild People Section', ['compound.research-station-title', 'compound.guild-person-row'], peopleSection, variants(['adventurers', 'empty'])),
   entry('compound.guild-profile-field', 'Guild Profile Field', ['primitive.text-field'], profileField, variants(['name', 'tag'])),
   entry('primitive.guild-color-swatch', 'Guild Color Swatch', [], colorSwatch, variants(['selected', 'unselected'])),
@@ -102,19 +102,19 @@ function questCard({ assets, input, fixture }) {
 
 function questBoard({ assets, input, fixture }) {
   const control = new GuildQuestBoardSection({ assetManager: assets, inputRouter: input });
-  control.bind({ countLabel: fixture.state === 'empty' ? '0/3' : '2/3', requests: fixture.state === 'empty' ? [] : [{ ...questModel(), id: 'q1' }, { ...questModel(), id: 'q2', title: 'Escort The Herbalist' }] });
+  control.bind({ capacity: 3, countLabel: fixture.state === 'empty' ? '0 / 3 Posted' : '2 / 3 Posted', requests: fixture.state === 'empty' ? [] : [{ ...questModel(), id: 'q1' }, { ...questModel(), id: 'q2', title: 'Escort The Herbalist' }] });
   const height = control.getPreferredHeight(); control.setBounds(0, 0, WIDTH, height); return wrap(control, WIDTH, height);
 }
 
 function personRow({ assets, input, fixture }) {
   const control = new GuildPersonRow({ assetManager: assets, inputRouter: input, semanticPrefix: 'ui.guild.person', label: 'ui:guild:person' });
-  control.bind('mira', { action: () => true, displayName: 'Mira Ashveil', level: 7, notification: fixture.state !== 'idle', status: fixture.state });
-  control.applyTheme(DEFAULT_PIXI_THEME_SNAPSHOT); control.setBounds(0, 0, WIDTH, 54); return wrap(control, WIDTH, 54);
+  control.bind('mira', fixture.state === 'activity' ? { action: () => true, detailLabel: 'Shares supper and trades stories from the road with Orin Moss.', displayName: 'Mira Ashveil', iconKey: 'adventurer_cleric', level: 7, status: 'idle', statusLabel: 'With Orin Moss' } : { action: () => true, displayName: 'Mira Ashveil', iconKey: 'adventurer_cleric', level: 7, notification: fixture.state !== 'idle', status: fixture.state });
+  control.applyTheme(DEFAULT_PIXI_THEME_SNAPSHOT); control.setBounds(0, 0, WIDTH, 80); return wrap(control, WIDTH, 80);
 }
 
 function peopleSection({ assets, input, fixture }) {
   const control = new GuildPeopleSection({ title: 'Adventurers', assetManager: assets, inputRouter: input, semanticPrefix: 'ui.guild.person', label: 'ui:guild:people' });
-  control.bind({ countLabel: fixture.state === 'empty' ? '0/4' : '2/4', people: fixture.state === 'empty' ? [] : [{ id: '1', displayName: 'Mira Ashveil', level: 7, status: 'idle' }, { id: '2', displayName: 'Orin Moss', level: 5, status: 'questing' }] });
+  control.bind({ countLabel: fixture.state === 'empty' ? '0/4' : '2/4', people: fixture.state === 'empty' ? [] : [{ id: '1', displayName: 'Mira Ashveil', iconKey: 'adventurer_cleric', level: 7, status: 'idle' }, { id: '2', displayName: 'Orin Moss', iconKey: 'adventurer_shadowdagger', level: 5, status: 'questing' }] });
   const height = control.getPreferredHeight(); control.setBounds(0, 0, WIDTH, height); return wrap(control, WIDTH, height);
 }
 

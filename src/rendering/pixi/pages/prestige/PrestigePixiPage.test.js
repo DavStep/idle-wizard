@@ -56,8 +56,8 @@ describe('PrestigePixiPage', () => {
     expect(page.titleRibbon.stars.level).toBe(0);
     expect(page.descriptionTitle.title.text).toBe('Next Prestige');
     expect(page.progressionTitle.title.text).toBe('Milestones');
-    expect(page.tabs.get('main').control.textLabel.text).toBe('Main');
-    expect(page.tabs.get('points').control.textLabel.text).toBe('Points');
+    expect(page.tabs.getWidgets()).toHaveLength(0);
+    expect(page.tabsLayer.visible).toBe(false);
     expect(row.title.position).toMatchObject({
       x: 48,
       y: 17,
@@ -174,7 +174,7 @@ describe('PrestigePixiPage', () => {
     dialogLayer.destroy({ children: true });
   });
 
-  it('keeps the fixed scroll and tab anchors at source resolution', () => {
+  it('uses the bottom-HUD tab space for Prestige content', () => {
     const page = createPage();
     page.bind(createPrestigeViewModel());
 
@@ -185,8 +185,10 @@ describe('PrestigePixiPage', () => {
     expect(page.scroll.root.position).toMatchObject({ x: 0, y: 164 });
     expect(page.scroll).toMatchObject({
       width: 374,
-      height: 479,
+      height: 527,
     });
+    expect(page.tabs.getWidgets()).toHaveLength(0);
+    expect(page.tabsLayer.visible).toBe(false);
     expect(page.tabsLayer.position).toMatchObject({
       x: 16,
       y: 649,

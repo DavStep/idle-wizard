@@ -69,7 +69,12 @@ future level-up stat gains.
 
 Idle adventurers may take a posted request based on personality boldness, morale,
 fatigue, and stat fit. Otherwise they perform a small life action that changes
-morale or fatigue and may add personal history.
+morale or fatigue and may add personal history. When two adventurers are idle,
+the simulation may pair them for one shared activity that updates both histories
+and the Guild chronicle. The Log shows every hired adventurer's current life
+state separately from that bounded meaningful-event chronicle, so routine solo
+actions stay visible without burying departures, returns, growth, recovery, or
+death.
 
 ## Requests
 

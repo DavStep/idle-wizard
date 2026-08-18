@@ -1,0 +1,133 @@
+<!doctype html>
+<html
+  lang="en"
+  data-style-theme="night"
+  data-style-font="lilita-one"
+  data-style-icons="icons"
+>
+  <head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Idle Wizard Guild Hall recipe</title>
+    <style>
+      html,
+      body {
+        width: 100%;
+        height: 100%;
+        margin: 0;
+        overflow: hidden;
+        background: #1c1e26;
+      }
+
+      canvas {
+        display: block;
+        width: 100%;
+        height: 100%;
+      }
+    </style>
+  </head>
+  <body>
+    <canvas aria-label="Guild Hall visual recipe"></canvas>
+
+    <script type="module">
+      import '@fontsource/lilita-one/400.css';
+      import { gameAssetAtlasFrames } from '/src/assets/generated/game-asset-atlas.generated.js';
+      import { PixiAssetManager } from '/src/rendering/pixi/assets/PixiAssetManager.js';
+      import { PIXI_PRODUCTION_ASSET_MANIFEST } from '/src/rendering/pixi/assets/PixiProductionAssetManifest.js';
+      import { PixiInputRouter } from '/src/rendering/pixi/input/PixiInputRouter.js';
+      import { GuildPixiPage } from '/src/rendering/pixi/pages/guild/GuildPixiPage.js';
+      import { guildUiEditorAssetFilter } from '/src/rendering/pixi/pages/guild/GuildUiEditorAssets.js';
+      import { DialogRegistry } from '/src/rendering/pixi/retained/DialogRegistry.js';
+      import { SemanticTargetRegistry } from '/src/rendering/pixi/retained/SemanticTargetRegistry.js';
+      import { PixiApplicationManager } from '/src/rendering/pixi/runtime/PixiApplicationManager.js';
+
+      window.__guildHallRecipeState = 'boot';
+      const canvas = document.querySelector('canvas');
+      const applicationManager = new PixiApplicationManager({
+        canvas,
+        prepareSpineRuntime: async () => null,
+      });
+      const assetManager = new PixiAssetManager({
+        atlasFrames: gameAssetAtlasFrames,
+        manifest: PIXI_PRODUCTION_ASSET_MANIFEST.filter(
+          (asset) => asset.id === 'atlas:game' || guildUiEditorAssetFilter(asset),
+        ),
+      });
+      const inputRouter = new PixiInputRouter();
+      const semanticRegistry = new SemanticTargetRegistry();
+
+      window.__guildHallRecipeState = 'loading-assets';
+      await Promise.all([
+        applicationManager.initialize(),
+        assetManager.loadAll(),
+      ]);
+      window.__guildHallRecipeState = 'constructing-page';
+      inputRouter.mount({
+        root: applicationManager.getApplication().stage,
+        canvas,
+      });
+
+      const dialogRegistry = new DialogRegistry();
+      const page = new GuildPixiPage({
+        assetManager,
+        dialogLayer: applicationManager.layers.dialogsSource,
+        dialogRegistry,
+        inputRouter,
+        semanticRegistry,
+      });
+      page.bind({
+        chrome: { worldChatVisible: false },
+        guild: {
+          unlocked: true,
+          created: true,
+          profile: {
+            name: 'Moonlit Order',
+            tag: 'MOON',
+            color: 'violet',
+          },
+          secretary: {
+            level: 2,
+            hiredCap: 4,
+            boardSlots: 3,
+            canUpgrade: true,
+            next: {
+              level: 3,
+              hiredCap: 5,
+              boardSlots: 4,
+              costCoin: 800,
+            },
+          },
+          board: [
+            {
+              id: 'quest-1',
+              title: 'The Flooded Archive',
+            },
+          ],
+          adventurers: [
+            {
+              id: 'mira',
+              displayName: 'Mira Ashveil',
+              level: 7,
+              status: 'idle',
+            },
+          ],
+        },
+        actions: {
+          updateGuildProfile: () => true,
+          upgradeSecretary: () => true,
+        },
+        selectedBranchId: 'hall',
+      });
+      page.activate();
+      applicationManager.layers.pageUi.addChild(page.root);
+
+      window.__guildHallRecipeState = 'ready';
+      window.__guildHallRecipe = {
+        applicationManager,
+        dialogRegistry,
+        page,
+        semanticRegistry,
+      };
+    </script>
+  </body>
+</html>

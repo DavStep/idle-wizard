@@ -23,12 +23,6 @@ import {
 import { DEFAULT_PAGE_SWIPE_ORDER } from '../../../../pages/managers/pageOrder.js';
 
 const TAB_DEFINITIONS = Object.freeze({
-  prestige: Object.freeze({
-    id: 'prestige',
-    label: 'Prestige',
-    icon: 'icon-prestige-star.png',
-    artScale: 0.9,
-  }),
   brewing: Object.freeze({
     id: 'brewing',
     label: 'Brewing',
@@ -76,7 +70,7 @@ const TAB_DEFINITIONS = Object.freeze({
 
 export const PIXI_BOTTOM_PANEL_TABS = Object.freeze(
   DEFAULT_PAGE_SWIPE_ORDER
-    .filter((pageId) => pageId !== 'guild')
+    .filter((pageId) => !['guild', 'prestige'].includes(pageId))
     .map((pageId) => TAB_DEFINITIONS[pageId]),
 );
 
@@ -132,6 +126,32 @@ export const PIXI_GUILD_HUD_TABS = Object.freeze([
     tutorialId: 'guild:tab:world',
     defaultUnlocked: false,
     lockedMessage: 'Guild World is not available yet',
+  }),
+]);
+
+export const PIXI_PRESTIGE_HUD_TABS = Object.freeze([
+  Object.freeze({
+    id: 'prestige.workshop',
+    pageId: 'workshop',
+    label: 'Workshop',
+    icon: 'icon-workshop-house-tab.png',
+    artScale: 0.84,
+    semanticId: 'prestige.return.workshop',
+    tutorialId: 'prestige:return:workshop',
+  }),
+  Object.freeze({
+    id: 'prestige.main',
+    prestigeTabId: 'main',
+    label: 'Main',
+    semanticId: 'prestige.tab.main',
+    tutorialId: 'prestige:tab:main',
+  }),
+  Object.freeze({
+    id: 'prestige.points',
+    prestigeTabId: 'points',
+    label: 'Points',
+    semanticId: 'prestige.tab.points',
+    tutorialId: 'prestige:tab:points',
   }),
 ]);
 
@@ -268,7 +288,20 @@ export class PixiBottomPanelView extends BasePixiRetainedView {
         onActivate: (tab) => this.activateTab(tab),
       });
     });
-    this.allTabs = [...this.tabs, ...this.guildTabs];
+    this.prestigeTabs = PIXI_PRESTIGE_HUD_TABS.map((definition) => {
+      const TabClass = definition.prestigeTabId
+        ? PixiBottomHudTextTab
+        : PixiBottomRoomTab;
+      return new TabClass({
+        definition,
+        assets,
+        inputRouter,
+        semanticRegistry,
+        notificationLayer: this.notificationsRoot,
+        onActivate: (tab) => this.activateTab(tab),
+      });
+    });
+    this.allTabs = [...this.tabs, ...this.guildTabs, ...this.prestigeTabs];
     this.tabsRoot.addChild(
       ...this.allTabs.map((tab) => tab.root),
       this.notificationsRoot,
@@ -342,7 +375,9 @@ export class PixiBottomPanelView extends BasePixiRetainedView {
     const notifications = viewModel.notifications ?? {};
     const currentPageId = viewModel.currentPageId ?? 'workshop';
     const revealRooms = viewModel.reveal?.rooms !== false;
-    const hudMode = viewModel.hudMode === 'guild' ? 'guild' : 'rooms';
+    const hudMode = ['guild', 'prestige'].includes(viewModel.hudMode)
+      ? viewModel.hudMode
+      : 'rooms';
     const guildHud = viewModel.guildHud ?? {};
     const selectedGuildTabId = guildHud.selectedTabId ?? 'hall';
     const guildNotifications = guildHud.notifications ?? {};
@@ -433,6 +468,39 @@ export class PixiBottomPanelView extends BasePixiRetainedView {
         tab.cancelSelectedMotion();
       }
     }
+    const prestigeHud = viewModel.prestigeHud ?? {};
+    const selectedPrestigeTabId = prestigeHud.selectedTabId ?? 'main';
+    const prestigeNotifications = prestigeHud.notifications ?? {};
+    const prestigeTabStates = new Map(
+      (prestigeHud.tabs ?? []).map((state) => [state.id, state]),
+    );
+    for (const tab of this.prestigeTabs) {
+      const wasVisible = tab.root.visible;
+      const wasSelected = tab.state.selected === true;
+      const prestigeTabId = tab.definition.prestigeTabId;
+      const state = prestigeTabStates.get(prestigeTabId) ?? {};
+      const unlocked = state.unlocked !== false;
+      tab.bind({
+        ...state,
+        id: tab.definition.id,
+        selected:
+          unlocked &&
+          Boolean(prestigeTabId) &&
+          prestigeTabId === selectedPrestigeTabId,
+        unlocked,
+        visible: hudMode === 'prestige' && revealRooms,
+        lockedMessage:
+          state.lockedMessage ?? tab.definition.lockedMessage,
+        notification: prestigeTabId
+          ? prestigeNotifications[prestigeTabId]
+          : false,
+      });
+      if (tab.state.selected === true && !wasSelected && wasVisible) {
+        this.startSelectedMotion(tab);
+      } else if (tab.state.selected !== true) {
+        tab.cancelSelectedMotion();
+      }
+    }
     this.layoutTabs(this.viewportProjection);
   }
 
@@ -496,6 +564,11 @@ export class PixiBottomPanelView extends BasePixiRetainedView {
         tab.definition.guildTabId,
       ) ?? true;
     }
+    if (tab.definition.prestigeTabId) {
+      return this.actions.selectPrestigeTab?.(
+        tab.definition.prestigeTabId,
+      ) ?? true;
+    }
     if (tab.definition.pageId) {
       return this.actions.showPage?.(tab.definition.pageId) ?? true;
     }
@@ -521,9 +594,11 @@ export class PixiBottomPanelView extends BasePixiRetainedView {
   ) {
     const definition =
       typeof definitionOrId === 'string'
-        ? [...PIXI_BOTTOM_PANEL_TABS, ...PIXI_GUILD_HUD_TABS].find(
-            (tab) => tab.id === definitionOrId,
-          )
+          ? [
+              ...PIXI_BOTTOM_PANEL_TABS,
+              ...PIXI_GUILD_HUD_TABS,
+              ...PIXI_PRESTIGE_HUD_TABS,
+            ].find((tab) => tab.id === definitionOrId)
         : definitionOrId;
     const state = explicitState ?? this.pageStates.get(definition?.id);
     if (!definition || state?.unlocked !== false) {

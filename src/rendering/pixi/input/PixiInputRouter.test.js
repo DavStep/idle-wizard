@@ -4,6 +4,25 @@ import { UI_HELD_RELEASE_HAPTIC_MS } from '../../../app/haptics/hapticTiming.js'
 import { PixiInputRouter } from './PixiInputRouter.js';
 
 describe('PixiInputRouter', () => {
+  it('notifies pointer-down observers without claiming the press path', () => {
+    const harness = createHarness();
+    const target = displayObject(harness.root);
+    const observer = vi.fn();
+    const unsubscribe = harness.router.subscribePointerDown(observer);
+
+    harness.emitRoot('pointerdown', pointerEvent(target, 1, 12, 18));
+
+    expect(observer).toHaveBeenCalledWith(
+      expect.objectContaining({
+        point: { x: 12, y: 18 },
+        target,
+      }),
+    );
+    unsubscribe();
+    harness.emitRoot('pointerdown', pointerEvent(target, 2, 20, 24));
+    expect(observer).toHaveBeenCalledTimes(1);
+  });
+
   it('pulses on touch down, validates quick release with slop, and does not pulse again', () => {
     let nowMs = 1000;
     const harness = createHarness({

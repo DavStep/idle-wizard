@@ -431,6 +431,7 @@ export default [
       { fixture: { currentPageId: 'research', lockedPageId: 'garden' }, id: 'locked', label: 'Locked Garden', mount: mountBottomRoomTabs },
       { fixture: { currentPageId: 'shop', notifiedPageId: 'shop' }, id: 'notification', label: 'Market notification', mount: mountBottomRoomTabs },
       { fixture: { currentPageId: 'guild', hudMode: 'guild' }, id: 'guild', label: 'Guild HUD', mount: mountBottomRoomTabs },
+      { fixture: { currentPageId: 'prestige', hudMode: 'prestige' }, id: 'prestige', label: 'Prestige HUD', mount: mountBottomRoomTabs },
     ],
   }),
 ];
@@ -818,6 +819,7 @@ async function mountBottomRoomTabs(context, fixture) {
   const state = {
     currentPageId: fixture.currentPageId,
     guildTabId: fixture.guildTabId ?? 'hall',
+    prestigeTabId: fixture.prestigeTabId ?? 'main',
     hudMode: fixture.hudMode ?? 'rooms',
     lockedPageId: fixture.lockedPageId ?? '',
     notifiedPageId: fixture.notifiedPageId ?? '',
@@ -854,12 +856,14 @@ async function mountBottomRoomTabs(context, fixture) {
       selectControl('page', 'Selected room', () => state.currentPageId, (value) => {
         state.currentPageId = value;
         refresh();
-      }, ['brewing', 'garden', 'workshop', 'research', 'shop', 'guild']),
+      }, ['brewing', 'garden', 'workshop', 'research', 'shop', 'guild', 'prestige']),
       selectControl('hud-mode', 'HUD mode', () => state.hudMode, (value) => {
         state.hudMode = value;
-        state.currentPageId = value === 'guild' ? 'guild' : 'workshop';
+        state.currentPageId = ['guild', 'prestige'].includes(value)
+          ? value
+          : 'workshop';
         refresh();
-      }, ['rooms', 'guild']),
+      }, ['rooms', 'guild', 'prestige']),
       checkboxControl('garden-lock', 'Lock Garden', () => state.lockedPageId === 'garden', (value) => {
         state.lockedPageId = value ? 'garden' : '';
         refresh();
@@ -887,11 +891,21 @@ async function mountBottomRoomTabs(context, fixture) {
           refresh();
           return true;
         },
+        selectPrestigeTab: (tabId) => {
+          state.prestigeTabId = tabId;
+          context.emit('prestigeTabSelected', { tabId });
+          refresh();
+          return true;
+        },
       },
       currentPageId: state.currentPageId,
       guildHud: {
         notifications: {},
         selectedTabId: state.guildTabId,
+      },
+      prestigeHud: {
+        notifications: {},
+        selectedTabId: state.prestigeTabId,
       },
       hudMode: state.hudMode,
       notifications: state.notifiedPageId

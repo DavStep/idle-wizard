@@ -3,7 +3,7 @@
 import {
   createPixiAssetManagerFake,
 } from '../workshop/PixiPageTestHarness.js';
-import { Container, Texture } from 'pixi.js';
+import { Container, Rectangle, Texture } from 'pixi.js';
 import { describe, expect, it, vi } from 'vitest';
 
 import { DialogRegistry } from '../../retained/DialogRegistry.js';
@@ -11,12 +11,14 @@ import { PageRegistry } from '../../retained/PageRegistry.js';
 import { SemanticTargetRegistry } from '../../retained/SemanticTargetRegistry.js';
 import { PixiInputRouter } from '../../input/PixiInputRouter.js';
 import {
+  PIXI_DIALOG_PALETTE,
   PIXI_DIALOG_FOOTER_TABS_GEOMETRY,
   PixiDialogFrame,
 } from '../../primitives/PixiDialogFrame.js';
 import { getPixiButtonSkin } from '../../primitives/PixiButtonStyle.js';
 import { PIXI_ROOT_RUN_GEOMETRY } from '../../theme/PixiThemeTokens.js';
 import { GUILD_DIALOG_IDS } from './GuildDialogPixi.js';
+import { GuildPersonRow } from './GuildPageWidgets.js';
 import { GuildPixiPage } from './GuildPixiPage.js';
 
 globalThis.CanvasRenderingContext2D.prototype.createLinearGradient =
@@ -66,24 +68,66 @@ describe('GuildPixiPage', () => {
     expect(harness.page.hallSection.titlePlaque.title.text).toBe(
       'Guild Hall',
     );
+    expect(
+      harness.page.hallSection.rows.getWidgets().map((row) => row.key),
+    ).toEqual(['identity', 'adventurers', 'board', 'settings']);
     expect(harness.page.hallSection.contentLayer.x).toBe(16);
-    expect(quest.paper.root.frameWidth).toBe(358);
+    expect(harness.page.secretarySection.titlePlaque.title.text).toBe(
+      'Secretary',
+    );
+    expect(harness.page.secretarySection.titlePlaque.root.visible).toBe(
+      true,
+    );
+    expect(
+      harness.page.secretarySection.root.y -
+        (harness.page.hallSection.root.y +
+          harness.page.hallSection.getPreferredHeight(374)),
+    ).toBe(18);
+    expect(quest.paper.root.frameWidth).toBe(330);
     expect(quest.paper.root.frameHeight).toBe(80);
-    expect(harness.page.boardSection.titlePlaque.title.text).toBe('Board');
+    expect(harness.page.boardSection.titlePlaque.title.text).toBe(
+      "Adventurers' Board",
+    );
+    expect(harness.page.boardSection.boardFrame.frameWidth).toBe(358);
+    expect(harness.page.boardSection.emptySlotLabels[0].visible).toBe(false);
+    expect(harness.page.boardSection.emptySlotLabels[1].visible).toBe(true);
+    expect(harness.page.boardSection.emptySlotLabels[2].visible).toBe(true);
+    expect(harness.page.boardSection.countLabel.text).toBe('1 / 3 Posted');
+    expect(harness.page.availableSection.titlePlaque.title.text).toBe(
+      'Quest Requests',
+    );
     expect(harness.page.availableSection.titlePlaque.root.visible).toBe(
-      false,
+      true,
     );
     expect(harness.page.adventurersSection.titlePlaque.title.text).toBe(
-      'Roster',
+      'Adventurers',
     );
+    expect(harness.page.adventurersSection.countLabel.text).toBe('1/2');
     expect(harness.page.applicantsSection.titlePlaque.root.visible).toBe(
-      false,
+      true,
+    );
+    expect(harness.page.applicantsSection.titlePlaque.title.text).toBe(
+      'Applicants',
+    );
+    expect(harness.page.applicantsSection.countLabel.text).toBe('Next 5h');
+    expect(
+      harness.page.applicantsSection.root.y -
+        harness.page.adventurersSection.root.y,
+    ).toBe(
+      harness.page.adventurersSection.getPreferredHeight() + 18,
     );
     expect(
       harness.page.applicantsSection.people.get('applicant-1').statusLabel
         .text,
     ).toBe('Applicant · Next 5h');
-    expect(harness.page.logSection.titlePlaque.title.text).toBe('Log');
+    const rosterPerson =
+      harness.page.adventurersSection.people.get('adventurer-1');
+    expect(rosterPerson.paper.root.frameHeight).toBe(80);
+    expect(rosterPerson.root.hitArea.height).toBe(80);
+    expect(rosterPerson.nameLabel.position).toMatchObject({ x: 74, y: 15 });
+    expect(rosterPerson.levelLabel.position).toMatchObject({ x: 74, y: 45 });
+    expect(rosterPerson.statusLabel.position).toMatchObject({ x: 348, y: 45 });
+    expect(harness.page.logSection.titlePlaque.title.text).toBe('Chronicle');
 
     pages.deactivate();
     expect(root).toMatchObject({
@@ -93,6 +137,44 @@ describe('GuildPixiPage', () => {
     });
     pages.destroy();
     harness.dispose();
+  });
+
+  it('contain-fits non-square Guild portraits inside Research-height person rows', () => {
+    const portraitTexture = new Texture({
+      source: Texture.EMPTY.source,
+      frame: new Rectangle(0, 0, 1, 1),
+      orig: new Rectangle(0, 0, 87, 108),
+    });
+    const row = new GuildPersonRow({
+      assetManager: {
+        loaded: true,
+        getTexture: (id) =>
+          id.includes('/characters/') ? portraitTexture : Texture.EMPTY,
+      },
+      inputRouter: null,
+      semanticPrefix: 'guild.adventurer',
+      semanticRegistry: null,
+      label: 'guild:test-person',
+    });
+
+    row.bind('mira', {
+      displayName: 'Mira Ashveil',
+      iconKey: 'adventurer_cleric',
+      level: 7,
+      status: 'idle',
+    });
+    row.setBounds(0, 0, 358, 80);
+
+    expect(row.icon.width).toBeCloseTo(87 * (68 / 108), 5);
+    expect(row.icon.height).toBeCloseTo(68, 5);
+    expect(row.icon.width / row.icon.height).toBeCloseTo(87 / 108, 5);
+    expect(row.icon.x).toBeGreaterThanOrEqual(10);
+    expect(row.icon.y).toBeGreaterThanOrEqual(6);
+    expect(row.icon.x + row.icon.width).toBeLessThanOrEqual(67);
+    expect(row.icon.y + row.icon.height).toBeLessThanOrEqual(74);
+
+    row.destroy();
+    portraitTexture.destroy();
   });
 
   it('keeps branch navigation in the external HUD and Adventurer sections in a local button panel', () => {
@@ -229,6 +311,95 @@ describe('GuildPixiPage', () => {
     harness.dispose();
   });
 
+  it('uses Player Info paper hierarchy and semantic Hire/Fire action colors', () => {
+    const harness = createHarness();
+    harness.page.bind(createGuildViewModel());
+    harness.page.activate();
+
+    harness.page.openDialog(
+      GUILD_DIALOG_IDS.APPLICANT,
+      createGuildDialogPayload(GUILD_DIALOG_IDS.APPLICANT),
+    );
+    const applicant = harness.dialogs.get(GUILD_DIALOG_IDS.APPLICANT);
+    const applicantRows = applicant.detailRows.getWidgets();
+
+    expect(applicant.panel.paperFrame.visible).toBe(false);
+    expect(applicant.summaryFrame.visible).toBe(true);
+    expect(applicant.detailsFrame.visible).toBe(true);
+    expect(applicant.cardLevelLabel.text).toBe('Level');
+    expect(applicant.cardLevel.text).toBe('2');
+    expect(applicant.cardStatusLabel.text).toBe('Status');
+    expect(applicant.cardStatus.text).toBe('Idle');
+    expect(applicant.cardAction.color).toBe('green');
+    expect(applicant.cardAction.x).toBeGreaterThan(applicant.detailsFrame.x);
+    expect(applicant.cardAction.y).toBeGreaterThan(applicant.detailsFrame.y);
+    expect(
+      applicant.cardAction.x + applicant.cardAction.buttonWidth,
+    ).toBeLessThan(
+      applicant.detailsFrame.x + applicant.detailsFrame.frameWidth,
+    );
+    expect(
+      applicant.cardAction.y + applicant.cardAction.buttonHeight,
+    ).toBeLessThan(
+      applicant.detailsFrame.y + applicant.detailsFrame.frameHeight,
+    );
+    expect(applicantRows[0].keyLabel.textObject.style.fill).toBe(
+      PIXI_DIALOG_PALETTE.ink,
+    );
+    expect(applicantRows[0].valueLabel.textObject.style.fill).toBe(
+      PIXI_DIALOG_PALETTE.ink,
+    );
+    harness.dialogs.close(GUILD_DIALOG_IDS.APPLICANT);
+
+    harness.page.openDialog(
+      GUILD_DIALOG_IDS.ADVENTURER,
+      createGuildDialogPayload(GUILD_DIALOG_IDS.ADVENTURER),
+    );
+    const adventurer = harness.dialogs.get(GUILD_DIALOG_IDS.ADVENTURER);
+    expect(adventurer.cardAction.color).toBe('red');
+
+    harness.page.destroy();
+    harness.dispose();
+  });
+
+  it('contain-fits non-square portraits in Guild person dialogs', () => {
+    const portraitTexture = new Texture({
+      source: Texture.EMPTY.source,
+      frame: new Rectangle(0, 0, 1, 1),
+      orig: new Rectangle(0, 0, 87, 108),
+    });
+    const assetManager = createPixiAssetManagerFake(Texture);
+    assetManager.loaded = true;
+    const getFallbackTexture = assetManager.getTexture.bind(assetManager);
+    assetManager.getTexture = (id) =>
+      id.includes('/characters/')
+        ? portraitTexture
+        : getFallbackTexture(id);
+    const harness = createHarness({ assetManager });
+    harness.page.bind(createGuildViewModel());
+    harness.page.activate();
+    const payload = createGuildDialogPayload(GUILD_DIALOG_IDS.APPLICANT);
+    payload.card.iconKey = 'adventurer_packscout';
+
+    harness.page.openDialog(GUILD_DIALOG_IDS.APPLICANT, payload);
+    const dialog = harness.dialogs.get(GUILD_DIALOG_IDS.APPLICANT);
+
+    expect(dialog.cardIcon.texture.orig.width).toBe(87);
+    expect(dialog.cardIcon.texture.orig.height).toBe(108);
+    expect(dialog.cardIcon.width / dialog.cardIcon.height).toBeCloseTo(
+      87 / 108,
+      5,
+    );
+    expect(dialog.cardIcon.width).toBeLessThanOrEqual(72);
+    expect(dialog.cardIcon.height).toBeLessThanOrEqual(72);
+    expect(dialog.cardIcon.x).toBeGreaterThanOrEqual(0);
+    expect(dialog.cardIcon.y).toBeGreaterThanOrEqual(7);
+
+    harness.page.destroy();
+    harness.dispose();
+    portraitTexture.destroy();
+  });
+
   it('routes semantic quest/person actions and keeps source anchors', () => {
     const harness = createHarness();
     harness.page.bind(createGuildViewModel());
@@ -258,8 +429,21 @@ describe('GuildPixiPage', () => {
       'Upgrade',
     );
     expect(harness.page.secretarySection.titlePlaque.root.visible).toBe(
-      false,
+      true,
     );
+    expect(harness.page.secretarySection.paper.root.frameHeight).toBe(116);
+    expect(harness.page.secretarySection.icon.width).toBeGreaterThan(90);
+    expect(harness.page.secretarySection.icon.height).toBeGreaterThan(80);
+    expect(
+      harness.page.secretarySection.icon.width /
+        harness.page.secretarySection.icon.height,
+    ).toBeCloseTo(
+      harness.page.secretarySection.icon.texture.orig.width /
+        harness.page.secretarySection.icon.texture.orig.height,
+    );
+    expect(
+      harness.page.secretarySection.rows.map((row) => row.key.y),
+    ).toEqual([18, 47, 76]);
     expect(
       harness.page.secretarySection.button.rootRunFrame.compatibilityError,
     ).toBeNull();
@@ -381,14 +565,69 @@ describe('GuildPixiPage', () => {
     harness.dispose();
     inputRouter.destroy();
   });
+
+  it('shows every current adventurer life above the longer Guild chronicle', () => {
+    const harness = createHarness();
+    const model = createGuildViewModel();
+    model.selectedBranchId = 'adventurers';
+    model.selectedAdventurerTabId = 'log';
+    model.guild.adventurers = [
+      {
+        ...model.guild.adventurers[0],
+        activityLabel: 'At The Tavern',
+        activityText: 'Trades road stories with Orin Moss.',
+      },
+      {
+        id: 'adventurer-2',
+        displayName: 'orin moss',
+        level: 3,
+        status: 'idle',
+        activityLabel: 'With Mira',
+        activityText: 'Repairs travelling gear with Mira.',
+      },
+    ];
+    model.guild.logs = Array.from({ length: 6 }, (_, index) => ({
+      id: `log-${index + 1}`,
+      text: `guild story ${index + 1}.`,
+      timeLabel: index === 0 ? 'Now' : `${index * 10}m ago`,
+    }));
+
+    harness.page.bind(model);
+    harness.page.activate();
+
+    expect(harness.page.activitySection.titlePlaque.title.text).toBe(
+      'Right Now',
+    );
+    expect(harness.page.activitySection.people.getWidgets()).toHaveLength(2);
+    expect(
+      harness.page.activitySection.people.get('adventurer-1').levelLabel.text,
+    ).toBe('Trades road stories with Orin Moss.');
+    expect(harness.page.logSection.titlePlaque.title.text).toBe('Chronicle');
+    expect(harness.page.logSection.rows.getWidgets()).toHaveLength(6);
+    expect(harness.page.logSection.rows.get('log-1').paragraph.text).toBe(
+      'Now · guild story 1.',
+    );
+    expect(
+      harness.semanticRegistry.activate('guild.activity.adventurer-1'),
+    ).toBe(true);
+    expect(
+      harness.dialogs.isOpen(GUILD_DIALOG_IDS.ADVENTURER),
+    ).toBe(true);
+
+    harness.page.destroy();
+    harness.dispose();
+  });
 });
 
-function createHarness({ inputRouter = null } = {}) {
+function createHarness({
+  inputRouter = null,
+  assetManager = createPixiAssetManagerFake(Texture),
+} = {}) {
   const dialogLayer = new Container();
   const dialogs = new DialogRegistry();
   const semanticRegistry = new SemanticTargetRegistry();
   const page = new GuildPixiPage({
-    assetManager: createPixiAssetManagerFake(Texture),
+    assetManager,
     dialogLayer,
     dialogRegistry: dialogs,
     semanticRegistry,

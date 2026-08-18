@@ -408,6 +408,9 @@ describe('PixiViewModelFactory', () => {
           personalTasks: true,
         },
       },
+      pageStates: [
+        { id: 'prestige', visible: true, unlocked: true },
+      ],
     });
 
     expect(
@@ -427,6 +430,13 @@ describe('PixiViewModelFactory', () => {
       visible: true,
       timer: '2d 4h',
       notification: true,
+    });
+    expect(
+      model.workshop.features.find((feature) => feature.id === 'prestige'),
+    ).toMatchObject({
+      side: 'left',
+      weight: 35,
+      visible: true,
     });
     expect(model.workshop.stats).toMatchObject({
       side: 'right',
@@ -806,6 +816,132 @@ describe('PixiViewModelFactory', () => {
       'calmingDraught',
       2,
     );
+  });
+
+  it('keeps a world event donation picker reachable after the owned resource is spent', () => {
+    const openWorldEventDonation = vi.fn();
+    const factory = new PixiViewModelFactory();
+    const gameplay = {
+      worldNotice: {
+        unlocked: true,
+        current: {
+          periodKey: 'weekly-1',
+          eventId: 'new-crown',
+          requests: [
+            {
+              requestId: 'weekly-1:new-crown:crowd',
+              title: 'quiet the crowd',
+              completed: true,
+              donationOptions: [
+                {
+                  optionKey: 'calmingDraught',
+                  resourceType: 'item',
+                  itemKey: 'calmingDraught',
+                  label: 'calming draught',
+                  pointsPerUnit: 120,
+                  availableQuantity: 0,
+                  maxDonateQuantity: 0,
+                  contributionPoints: 600,
+                  collectedPointText: '600 points',
+                  canDonate: false,
+                },
+              ],
+            },
+          ],
+          leaderboard: {},
+        },
+      },
+    };
+
+    const dialog = factory.createWorldEventDialog(
+      gameplay,
+      {},
+      {},
+      'tasks',
+      { openWorldEventDonation },
+    );
+    const [option] = dialog.rows[0].donationOptions;
+
+    expect(option).toMatchObject({
+      actionLabel: 'Donate',
+      enabled: true,
+      onActivate: expect.any(Function),
+    });
+    option.onActivate();
+    expect(openWorldEventDonation).toHaveBeenCalledWith(
+      'weekly-1:new-crown:crowd',
+      'calmingDraught',
+    );
+
+    const picker = factory.createWorldEventDonationDialog(
+      gameplay,
+      {
+        requestId: 'weekly-1:new-crown:crowd',
+        optionKey: 'calmingDraught',
+        amount: 1,
+      },
+      { confirmWorldEventDonation: vi.fn() },
+    );
+
+    expect(picker).toMatchObject({
+      status: 'Not enough resources.',
+      featuredItem: { value: '0' },
+      actions: [expect.objectContaining({ enabled: false })],
+    });
+  });
+
+  it('marks only the qualified current-rank World Event reward tier', () => {
+    const factory = new PixiViewModelFactory();
+    const gameplay = {
+      worldNotice: {
+        unlocked: true,
+        current: {
+          periodKey: 'weekly-1',
+          eventId: 'new-crown',
+          leaderboard: {
+            currentPoints: 2_200,
+            qualificationPoints: 2_000,
+            rewardTiers: [
+              { rankLabel: '1', emerald: 5, crystal: 10 },
+              { rankLabel: '4-10', emerald: 1, crystal: 3 },
+              { rankLabel: '101+ qualified', crystal: 1 },
+            ],
+          },
+          requests: [],
+        },
+      },
+    };
+    const leaderboard = {
+      periodKey: 'weekly-1',
+      eventId: 'new-crown',
+      currentWorldEventUser: { rank: 7, name: 'Wizard' },
+    };
+
+    for (const [rank, rewardId] of [
+      [1, 'reward:1'],
+      [7, 'reward:4-10'],
+      [101, 'reward:101+ qualified'],
+    ]) {
+      leaderboard.currentWorldEventUser.rank = rank;
+      const rewards = factory.createWorldEventDialog(
+        gameplay,
+        leaderboard,
+        {},
+        'rewards',
+      );
+
+      expect(rewards.rows.filter(({ current }) => current)).toEqual([
+        expect.objectContaining({ id: rewardId, current: true }),
+      ]);
+    }
+
+    leaderboard.currentWorldEventUser.rank = 7;
+    gameplay.worldNotice.current.leaderboard.currentPoints = 1_999;
+    expect(
+      factory
+        .createWorldEventDialog(gameplay, leaderboard, {}, 'rewards')
+        .rows.some(({ current }) => current),
+    ).toBe(false);
   });
 
   it('projects Daily Tasks progress, reward tabs, and claim actions from the personal-task snapshot', () => {
@@ -1367,6 +1503,7 @@ describe('PixiViewModelFactory', () => {
           seasonIncome: 84520,
           description: 'Patient traders sharing one hall.',
         },
+        canEditSettings: true,
         members: [member, outsider],
       },
       null,
@@ -1423,6 +1560,7 @@ describe('PixiViewModelFactory', () => {
         allianceId: 'alliance-1',
         name: 'Moss Hall',
         tag: 'MOSS',
+        description: 'Patient traders building a stronger market together.',
         memberCount: 1,
       },
       ownMember: {
@@ -1476,6 +1614,7 @@ describe('PixiViewModelFactory', () => {
     expect(dialog.ownedAllianceHome).toBe(false);
     expect(dialog.rowWidget).toBe('allianceQuest');
     expect(dialog.selectedTabId).toBe('quests');
+    expect(dialog.copy).toBe('');
     expect(dialog.rows.map((row) => row.actionLabel)).toEqual(['Fill', 'Claim']);
     expect(dialog.rows[0]).toMatchObject({
       title: 'Fill 500 mana tonic',
@@ -1484,6 +1623,15 @@ describe('PixiViewModelFactory', () => {
       itemKind: 'potion',
       itemKey: 'manaTonic',
       rewardAmountLabel: '2',
+      rewardResource: 'crystal',
+    });
+    expect(dialog.rows[1]).toMatchObject({
+      title: 'Earn Coin',
+      contributionLabel: 'Your Route 10/10',
+      progressLabel: '100/100',
+      itemKind: 'resource',
+      itemKey: 'coin',
+      rewardAmountLabel: '4',
       rewardResource: 'crystal',
     });
     expect(dialog.tabs.find((tab) => tab.id === 'quests')?.notification).toBe(true);
@@ -1676,6 +1824,32 @@ describe('PixiViewModelFactory', () => {
         joinMode: 'apply',
       }),
     );
+  });
+
+  it('hides inaccessible alliance settings and falls back to the wider member tabs', () => {
+    const dialog = new PixiViewModelFactory().createAllianceDialog(
+      {
+        connected: true,
+        ownAlliance: {
+          allianceId: 'shared-alliance',
+          name: 'Shared Alliance',
+          memberCount: 2,
+        },
+        ownMember: {
+          memberIdentity: 'member-a',
+          role: 'trader',
+        },
+        canEditSettings: false,
+        members: [],
+      },
+      null,
+      {},
+      'settings',
+    );
+
+    expect(dialog.selectedTabId).toBe('home');
+    expect(dialog.tabs.map((tab) => tab.id)).toEqual(['home', 'quests']);
+    expect(dialog.settings).toBeNull();
   });
 
   it('projects full compact chat metadata without exposing player levels', () => {

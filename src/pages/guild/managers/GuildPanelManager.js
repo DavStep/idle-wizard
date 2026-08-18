@@ -304,7 +304,10 @@ export class GuildPanelManager {
     }
 
     if (tabId === 'log') {
-      return [this.createLogBox(guild)];
+      return [
+        this.createActivityBox(guild),
+        this.createLogBox(guild),
+      ];
     }
 
     return [this.createHallBox(guild), this.createSecretaryBox(guild)];
@@ -371,7 +374,7 @@ export class GuildPanelManager {
       [
         this.createIdentityRow(profileLabel),
         this.createTextRow(
-          'adventurers',
+          "adventurers' lodge",
           `${guild.adventurers?.filter((adventurer) => adventurer.status !== 'dead').length ?? 0}/${guild.secretary?.hiredCap ?? 1}`,
         ),
         this.createTextRow('board', `${guild.board?.length ?? 0}/${guild.secretary?.boardSlots ?? 3}`),
@@ -391,10 +394,12 @@ export class GuildPanelManager {
         this.createSecretaryUpgradeButton(secretary),
       ],
       {
-        className:
+        className: [
+          'guild-page__box--secretary',
           secretaryLevel != null && secretaryLevel === this.secretaryUpgradeAnimationLevel
             ? 'guild-page__box--secretary-upgraded'
             : '',
+        ].filter(Boolean).join(' '),
       },
     );
   }
@@ -551,13 +556,45 @@ export class GuildPanelManager {
   }
 
   createLogBox(guild) {
-    const rows = (guild.logs ?? []).slice(0, 4).map((log) => {
-      const row = this.createEmptyRow(log.text);
+    const rows = (guild.logs ?? []).slice(0, 16).map((log) => {
+      const row = this.createEmptyRow(
+        `${log.timeLabel ? `${log.timeLabel} · ` : ''}${log.text}`,
+      );
       row.dataset.tone = log.tone ?? '';
       return row;
     });
 
-    return this.createBox('guild log', rows.length ? rows : [this.createEmptyRow('quiet')]);
+    return this.createBox(
+      'chronicle',
+      rows.length
+        ? rows
+        : [this.createEmptyRow('the chronicle is waiting for its first story')],
+    );
+  }
+
+  createActivityBox(guild) {
+    const adventurers = guild.adventurers ?? [];
+    const rows = adventurers.length
+      ? adventurers.map((adventurer) =>
+          this.createAdventurerRow(
+            {
+              ...adventurer,
+              detailLabel:
+                adventurer.activityText ??
+                adventurer.lifeText ??
+                'passes the time in the guild hall.',
+              statusLabel: adventurer.activityLabel ?? 'in the hall',
+            },
+            'adventurer',
+          ),
+        )
+      : [this.createEmptyRow('hire an adventurer to begin their story')];
+
+    return this.createBox('right now', rows, {
+      countLabel: `${adventurers.length} ${
+        adventurers.length === 1 ? 'life' : 'lives'
+      }`,
+    });
   }
 
   createIdentityRow(label) {
@@ -623,7 +660,7 @@ export class GuildPanelManager {
     setNotificationBadge(row, adventurer.status === 'hospital' || adventurer.status === 'dead');
 
     const displayName = adventurer.displayName ?? 'nameless';
-    const levelLabel = `level ${adventurer.level ?? 1}`;
+    const levelLabel = adventurer.detailLabel ?? `level ${adventurer.level ?? 1}`;
     const statusLabel = adventurer.statusLabel ?? adventurer.personalityLabel ?? 'idle';
 
     const main = document.createElement('button');

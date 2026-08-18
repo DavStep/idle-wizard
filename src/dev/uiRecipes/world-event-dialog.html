@@ -182,6 +182,7 @@
         {
           id: 'rank-1',
           type: 'worldEventReward',
+          current: true,
           rankLabel: 'Rank 1',
           rewards: [
             { resourceKey: 'emerald', amountLabel: '5' },
@@ -248,7 +249,7 @@
           : tabId === 'leaderboard'
             ? worldEventLeaderboardRows
             : worldEventRewardRows;
-        dialog.header.meta = '0 points · 4d 2h';
+        dialog.header.meta = '2.4k points · 4d 2h';
         dialog.status = tabId === 'rewards'
           ? 'Leaderboard Rewards: 2k points to qualify'
           : '';

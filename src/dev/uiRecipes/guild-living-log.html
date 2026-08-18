@@ -1,0 +1,150 @@
+<!doctype html>
+<html
+  lang="en"
+  data-style-theme="night"
+  data-style-font="lilita-one"
+  data-style-icons="icons"
+>
+  <head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Idle Wizard living Guild Log recipe</title>
+    <style>
+      html,
+      body {
+        width: 100%;
+        height: 100%;
+        margin: 0;
+        overflow: hidden;
+        background: #1c1e26;
+      }
+
+      canvas {
+        display: block;
+        width: 100%;
+        height: 100%;
+      }
+    </style>
+  </head>
+  <body>
+    <canvas aria-label="Living Guild Log visual recipe"></canvas>
+
+    <script type="module">
+      import '@fontsource/lilita-one/400.css';
+      import { gameAssetAtlasFrames } from '/src/assets/generated/game-asset-atlas.generated.js';
+      import { PixiAssetManager } from '/src/rendering/pixi/assets/PixiAssetManager.js';
+      import { PIXI_PRODUCTION_ASSET_MANIFEST } from '/src/rendering/pixi/assets/PixiProductionAssetManifest.js';
+      import { PixiInputRouter } from '/src/rendering/pixi/input/PixiInputRouter.js';
+      import { GuildPixiPage } from '/src/rendering/pixi/pages/guild/GuildPixiPage.js';
+      import { guildUiEditorAssetFilter } from '/src/rendering/pixi/pages/guild/GuildUiEditorAssets.js';
+      import { DialogRegistry } from '/src/rendering/pixi/retained/DialogRegistry.js';
+      import { SemanticTargetRegistry } from '/src/rendering/pixi/retained/SemanticTargetRegistry.js';
+      import { PixiApplicationManager } from '/src/rendering/pixi/runtime/PixiApplicationManager.js';
+
+      window.__guildLivingLogRecipeState = 'boot';
+      const canvas = document.querySelector('canvas');
+      const applicationManager = new PixiApplicationManager({
+        canvas,
+        prepareSpineRuntime: async () => null,
+      });
+      const assetManager = new PixiAssetManager({
+        atlasFrames: gameAssetAtlasFrames,
+        manifest: PIXI_PRODUCTION_ASSET_MANIFEST.filter(
+          (asset) => asset.id === 'atlas:game' || guildUiEditorAssetFilter(asset),
+        ),
+      });
+      const inputRouter = new PixiInputRouter();
+      const semanticRegistry = new SemanticTargetRegistry();
+
+      window.__guildLivingLogRecipeState = 'loading-assets';
+      await Promise.all([
+        applicationManager.initialize(),
+        assetManager.loadAll(),
+      ]);
+      window.__guildLivingLogRecipeState = 'constructing-page';
+      inputRouter.mount({
+        root: applicationManager.getApplication().stage,
+        canvas,
+      });
+
+      const dialogRegistry = new DialogRegistry();
+      const page = new GuildPixiPage({
+        assetManager,
+        dialogLayer: applicationManager.layers.dialogsSource,
+        dialogRegistry,
+        inputRouter,
+        semanticRegistry,
+      });
+      page.bind({
+        chrome: { worldChatVisible: false },
+        guild: {
+          unlocked: true,
+          created: true,
+          profile: {
+            name: 'Moonlit Order',
+            tag: 'MOON',
+            color: 'violet',
+          },
+          secretary: {
+            level: 3,
+            hiredCap: 5,
+            boardSlots: 7,
+          },
+          adventurers: [
+            {
+              id: 'mira',
+              displayName: 'Mira Ashveil',
+              iconKey: 'adventurer_cleric',
+              level: 7,
+              status: 'idle',
+              activityLabel: 'With Orin Moss',
+              activityText: 'Shares supper and trades stories from the road with Orin Moss.',
+            },
+            {
+              id: 'orin',
+              displayName: 'Orin Moss',
+              iconKey: 'adventurer_shadowdagger',
+              level: 5,
+              status: 'questing',
+              activityLabel: 'Questing',
+              activityText: 'Travels for The Flooded Archive. Returns in 2h.',
+            },
+            {
+              id: 'selka',
+              displayName: 'Selka Thorn',
+              iconKey: 'adventurer_treasurehunter',
+              level: 4,
+              status: 'hospital',
+              activityLabel: 'Recovering',
+              activityText: 'Rests in the Guild Hospital. Back in 46m.',
+            },
+          ],
+          logs: [
+            { id: '1', text: 'Mira Ashveil and Orin Moss share supper and trade stories from the road.', timeLabel: 'Now' },
+            { id: '2', text: 'Orin Moss takes The Flooded Archive.', timeLabel: '20m ago' },
+            { id: '3', text: 'Selka Thorn returns from Night Watch and goes to the Guild Hospital.', timeLabel: '40m ago', tone: 'red' },
+            { id: '4', text: 'Mira Ashveil reaches level 7.', timeLabel: '1h ago', tone: 'orange' },
+            { id: '5', text: 'Orin Moss and Selka Thorn repair each other\'s battered travelling gear.', timeLabel: '2h ago' },
+            { id: '6', text: 'Mira Ashveil completes Lost Courier cleanly.', timeLabel: '3h ago', tone: 'orange' },
+          ],
+        },
+        actions: {
+          fireAdventurer: () => ({ ok: true }),
+        },
+        navigationPlacement: 'hud',
+        selectedBranchId: 'adventurers',
+        selectedAdventurerTabId: 'log',
+      });
+      page.activate();
+      applicationManager.layers.pageUi.addChild(page.root);
+
+      window.__guildLivingLogRecipeState = 'ready';
+      window.__guildLivingLogRecipe = {
+        applicationManager,
+        dialogRegistry,
+        page,
+        semanticRegistry,
+      };
+    </script>
+  </body>
+</html>

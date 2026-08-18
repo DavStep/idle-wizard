@@ -250,6 +250,31 @@ describe("PixiPagesFacade", () => {
     expect(harness.getBoundGlobal("chrome.bottom").actions.showPage("workshop")).toBe(true);
     expect(pages.getCurrentPageId()).toBe("workshop");
 
+    const prestigeAction = harness
+      .getBoundPage("workshop")
+      .workshop.features.find((feature) => feature.id === "prestige");
+    expect(prestigeAction).toMatchObject({
+      label: "prestige",
+      side: "left",
+      visible: true,
+    });
+    expect(prestigeAction.onActivate()).toBe(true);
+    expect(pages.getCurrentPageId()).toBe("prestige");
+    expect(harness.getBoundGlobal("chrome.bottom")).toMatchObject({
+      currentPageId: "prestige",
+      hudMode: "prestige",
+      prestigeHud: { selectedTabId: "main" },
+    });
+    expect(
+      harness.getBoundGlobal("chrome.bottom").actions.selectPrestigeTab("points"),
+    ).toBe(true);
+    expect(harness.getBoundGlobal("chrome.bottom").prestigeHud.selectedTabId).toBe(
+      "points",
+    );
+    expect(harness.getBoundPage("prestige").prestige.selectedTabId).toBe("points");
+    expect(harness.getBoundGlobal("chrome.bottom").actions.showPage("workshop")).toBe(true);
+    expect(pages.getCurrentPageId()).toBe("workshop");
+
     const createAllianceTab = harness
       .getBoundPage("workshop")
       .workshop.dialogs.alliance.tabs.find((tab) => tab.id === "create");

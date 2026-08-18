@@ -70,6 +70,18 @@ const GLOBAL_DIALOG_IDS_IN_ORDER = Object.freeze([
 ]);
 
 const INVENTORY_CHOICE_DIALOG_HIERARCHY = Object.freeze({
+  'workshop.summonInfo': Object.freeze({
+    childWidgetIds: Object.freeze([
+      'primitive.settings-slider',
+      'primitive.settings-toggle',
+    ]),
+    rowLabel: 'SummonSeedRow:InventoryChoiceRow',
+  }),
+  'workshop.bag': Object.freeze({
+    rowLabel: 'BagItemRow:InventoryChoiceRow',
+    rowsProperty: 'rows',
+    tabbed: true,
+  }),
   'brewing.herbs': Object.freeze({
     rowLabel: 'ChooseHerbRow:InventoryChoiceRow',
   }),
@@ -114,8 +126,10 @@ const DIALOG_CHILD_WIDGET_IDS = Object.freeze({
     'compound.feature-unlock-announcement-item',
   ]),
   [GLOBAL_DIALOG_IDS.CONFIRMATION]: Object.freeze(['text-button']),
-  'workshop.summonInfo': Object.freeze(['cost-button']),
-  'workshop.bag': Object.freeze(['compound.workshop-dialog-row']),
+  'workshop.bag': Object.freeze([
+    'compound.inventory-choice-row',
+    'tab-button',
+  ]),
   'workshop.stats': Object.freeze(['compound.workshop-dialog-row']),
   'workshop.inbox': Object.freeze(['compound.workshop-dialog-row']),
   'workshop.alliance': Object.freeze([
@@ -135,7 +149,10 @@ const DIALOG_CHILD_WIDGET_IDS = Object.freeze({
     'primitive.resource-label',
     'tab-button',
   ]),
-  'workshop.discoveries': Object.freeze(['compound.potion-discovery-row']),
+  'workshop.discoveries': Object.freeze([
+    'compound.potion-discovery-page',
+    'text-button',
+  ]),
   'workshop.personalTasks': Object.freeze([
     'compound.workshop-dialog-row',
     'primitive.progress-bar',
@@ -464,6 +481,12 @@ export function createUiEditorDialogFixture(dialogId, variantIndex = 0) {
   if (dialogId === 'workshop.worldEvent') {
     return createWorldEventDialogFixture(variantIndex);
   }
+  if (dialogId === WORKSHOP_SUMMON_INFO_DIALOG_ID) {
+    return createSummonInfoDialogFixture(variantIndex);
+  }
+  if (dialogId === 'workshop.discoveries') {
+    return createDiscoveriesDialogFixture(variantIndex);
+  }
   if (dialogId === WORKSHOP_WORLD_EVENT_DONATE_DIALOG_ID) {
     return createDialogViewModel(
       dialogId,
@@ -492,6 +515,115 @@ export function createUiEditorDialogFixture(dialogId, variantIndex = 0) {
     dialogId,
     createDialogViewModel(dialogId, variantIndex === 0 ? 'a' : 'b'),
   );
+}
+
+function createSummonInfoDialogFixture(variantIndex = 0) {
+  const alternate = variantIndex > 0;
+  const sliderOptions = [
+    { value: 'none', tone: 'root' },
+    { value: 'low', tone: 'red' },
+    { value: 'medium', tone: 'yellow' },
+    { value: 'high', tone: 'green' },
+  ];
+  const seeds = alternate
+    ? [
+        ['sageSeed', 'Sage Seed', 'High', 'high', 'green', '58% Chance'],
+        ['mintSeed', 'Mint Seed', 'Low', 'low', 'red', '24% Chance'],
+      ]
+    : [
+        ['sageSeed', 'Sage Seed', 'Medium', 'medium', 'yellow', '46% Chance'],
+        ['mintSeed', 'Mint Seed', 'Low', 'low', 'red', '23% Chance'],
+        ['briarSeed', 'Briar Seed', 'None', 'none', 'text', '0% Chance'],
+        ['lavenderSeed', 'Lavender Seed', 'High', 'high', 'green', '31% Chance'],
+      ];
+
+  return {
+    title: 'Summoning Seeds',
+    autoSummonUnlocked: true,
+    summaryRows: [
+      {
+        id: 'auto',
+        label: 'Auto Summon',
+        value: '',
+        icon: { kind: 'automation' },
+        iconLeading: true,
+      },
+      {
+        id: 'reserve',
+        label: 'Keep Mana Above',
+        value: alternate ? '250' : '0',
+        valueIconResourceKey: 'mana',
+      },
+    ],
+    settingsToggle: {
+      value: !alternate,
+      enabled: true,
+      onChange: () => true,
+    },
+    manaSlider: {
+      mode: 'range',
+      min: 0,
+      max: 5_000,
+      step: 1,
+      value: alternate ? 250 : 0,
+      tone: 'blue',
+      enabled: true,
+      onChange: () => true,
+    },
+    items: seeds.map(([id, label, value, preference, valueTone, detail]) => ({
+      id,
+      label,
+      detail,
+      value,
+      valueTone,
+      itemKind: 'seed',
+      itemKey: id,
+      dropSlider: {
+        mode: 'milestones',
+        value: preference,
+        options: sliderOptions,
+        enabled: true,
+        onChange: () => true,
+      },
+    })),
+  };
+}
+
+function createDiscoveriesDialogFixture(variantIndex = 0) {
+  const discovered = [
+    {
+      discovered: true,
+      discoveredAtLabel: 'Jan 2, 2026',
+      discovererSemanticId: 'workshop.discoveries.discoverer.ada',
+      discovererUsername: 'Ada',
+      durationLabel: '75s Brew',
+      id: 'potion:silverleafQuiet',
+      ingredients: [
+        { key: 'mintHerb', label: 'Mint', quantity: 1 },
+        { key: 'glowcapHerb', label: 'Glowcap', quantity: 1 },
+        { key: 'moonflowerHerb', label: 'Moonflower', quantity: 1 },
+      ],
+      label: 'Silverleaf Quiet',
+      manaLabel: '34 Mana',
+      onDiscovererActivate: () => true,
+      potionKey: 'silverleafQuiet',
+      royaltyLabel: '12.5 Coin Royalty',
+      type: 'potionDiscovery',
+    },
+  ];
+  const undiscovered = Array.from(
+    { length: variantIndex === 0 ? 1 : 4 },
+    (_, index) => ({
+      discovered: false,
+      id: `potion:unknown-${index}`,
+      potionKey: `unknown-${index}`,
+      type: 'potionDiscovery',
+    }),
+  );
+  return {
+    title: 'Discoveries',
+    rows: [...discovered, ...undiscovered],
+  };
 }
 
 function createLeaderboardDialogFixture(variantIndex = 0) {
@@ -1244,12 +1376,46 @@ function createReusableDialogContentHierarchy(dialogId, dialog) {
     ];
   }
 
+  if (dialogId === WORKSHOP_SUMMON_INFO_DIALOG_ID) {
+    const controls = [
+      ['auto-toggle', 'AutoSummon:RootRunSettingsTogglePixi', 'primitive.settings-toggle', dialog.settingsToggle],
+      ['mana-reserve', 'ManaReserve:RootRunSettingsSliderPixi', 'primitive.settings-slider', dialog.manaSettingsSlider],
+      ['drop-rate', 'DropRate:RootRunSettingsSliderPixi', 'primitive.settings-slider', dialog.dropSettingsSlider],
+    ];
+    return [
+      ...(dialog.list?.rows?.getWidgets?.() ?? []).map((row, index) =>
+        createUiEditorPixiHierarchyComponent({
+          displayObjects: [row.root],
+          id: `${dialogId}:row:${row.key ?? index}`,
+          label: 'SummonSeedRow:InventoryChoiceRow',
+          libraryEntryId: 'compound.inventory-choice-row',
+          primary: row.root,
+          type: 'widget',
+        }),
+      ),
+      ...controls
+        .filter(([, , , control]) => control?.visible)
+        .map(([id, label, libraryEntryId, control]) =>
+          createUiEditorPixiHierarchyComponent({
+            displayObjects: [control],
+            id: `${dialogId}:${id}`,
+            label,
+            libraryEntryId,
+            primary: control,
+            type: 'widget',
+          }),
+        ),
+    ];
+  }
+
   const inventoryChoiceConfig = INVENTORY_CHOICE_DIALOG_HIERARCHY[dialogId];
   if (!inventoryChoiceConfig) {
     return [];
   }
 
-  const rows = dialog.list?.rows?.getWidgets?.() ?? [];
+  const rows = inventoryChoiceConfig.rowsProperty
+    ? dialog[inventoryChoiceConfig.rowsProperty]?.getWidgets?.() ?? []
+    : dialog.list?.rows?.getWidgets?.() ?? [];
 
   return rows.map((row, index) =>
     createUiEditorPixiHierarchyComponent({
@@ -1622,7 +1788,14 @@ function resolveDialogChildWidgetIds(dialogId) {
     ];
   }
   if (INVENTORY_CHOICE_DIALOG_HIERARCHY[dialogId]) {
-    return ['compound.dialog-frame', 'compound.inventory-choice-row'];
+    return [
+      'compound.dialog-frame',
+      'compound.inventory-choice-row',
+      ...(INVENTORY_CHOICE_DIALOG_HIERARCHY[dialogId].childWidgetIds ?? []),
+      ...(INVENTORY_CHOICE_DIALOG_HIERARCHY[dialogId].tabbed
+        ? ['tab-button']
+        : []),
+    ];
   }
   return [
     'compound.dialog-frame',

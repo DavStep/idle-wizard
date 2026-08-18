@@ -80,6 +80,10 @@ export default defineUiEditorIntegration({
       label: 'World Event donation item row',
       source: 'src/rendering/pixi/pages/shop/ShopDialogPixi.js',
     },
+    {
+      label: 'Workshop Bag passive inventory row',
+      source: 'src/rendering/pixi/pages/workshop/WorkshopDialogPixi.js',
+    },
   ],
 });
 

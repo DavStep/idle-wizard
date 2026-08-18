@@ -7,20 +7,39 @@ logs use keyed bounded pools. Every Guild dialog is a lazy-once
 `DialogRegistry` entry.
 
 Every room section reuses the Research Station title plaque with content on the
-standard room inset. Summary, Secretary, and person rows use the shared Root
-Run Research card with Research paper ink, while action rows keep the shared
-brown/gray button skins. The Secretary is an embedded Guild Hall row and uses
-the shared labeled cost button for its Upgrade action. Guild dialogs
-reuse `PixiDialogFrame`, including its current brown shell, white paper, title
-plaque, and round close asset. Player-facing Guild labels and rendered dynamic
-copy always begin with an uppercase letter.
+standard room inset. The Adventurers' Board is the branch landmark: it reuses
+the brown Expedition nine-slice as a wooden posting surface, draws one dotted
+posting slot for every Secretary capacity slot, and lays posted requests over
+those slots on the shared Root Run Research parchment card. A separate Quest
+Requests section below it explains posting, reports the next request wave, and
+owns the shared Review Requests action. Summary, Secretary, and person rows use
+the shared Research card with Research paper ink, while action rows keep the
+shared brown/gray button skins. Hall keeps identity, Adventurers' Lodge, Board,
+and Settings in one titled summary section. Secretary follows as its own titled,
+taller portrait section and uses the shared labeled cost button for its Upgrade
+action. Guild dialogs reuse `PixiDialogFrame`, including its current brown
+shell, white paper, title plaque, and round close asset. Adventurer and
+Applicant Info reuse Player Info's split-paper rhythm: the first paper contains
+a contain-fit portrait plus aligned Level and Status rows, while the second
+contains the active tab's details and an inset action. Hire uses the shared
+green button and Fire uses the shared red button. Player-facing Guild labels
+and rendered dynamic copy always begin with an uppercase letter.
 
 Production places Hall and Adventurers in the alternate global Guild HUD, with
 Fishers, Miners, and World visible as locked future destinations.
 Adventurers owns a local Board, Roster, and Log button panel above the Guild
-bottom strip. Each inner tab has one visible title and one full-width Research
-card stack: Board continues into its available-quest rows, Roster continues
-from hired adventurers into applicants, and Log uses the same row rhythm.
+bottom strip. Board continues into its available-quest rows, while Roster
+separates hired Adventurers and Applicants under their own Research Station
+title plaques. Log reuses the production person row for a `Right Now` section
+containing every hired adventurer, followed by a `Chronicle` section of up to
+sixteen meaningful events. Activity rows keep the existing portrait, paper,
+press, semantic, and adventurer-card contracts; their secondary line carries
+the live action while the right label names the current place, status, or
+partner. Roster person rows use the Research row's `80px` height,
+contain-fit character art without changing its aspect ratio, and keep copy
+inside the card insets.
+The reproducible living-log preview is
+`src/dev/uiRecipes/guild-living-log.html`.
 World Chat and the normal room tabs are not part of Guild mode;
 the Workshop icon in the Guild strip returns to the normal room HUD.
 
@@ -43,7 +62,7 @@ owned by the existing gameplay facade. The preferred presenter shape is:
     availableRequests: [request],
     adventurers: [person],
     applicants: [person],
-    logs: [{ id, text, tone }],
+    logs: [{ id, text, tone, kind, actorId, partnerId, timeLabel }],
     applicantResetLabel,
     boardWaveLabel
   },
@@ -71,7 +90,8 @@ owned by the existing gameplay facade. The preferred presenter shape is:
 `request` display fields are `id`, `title`, `lore`, `difficulty`,
 `statLabel`, `rewardText`, `expiresLabel`, and optional `eventLabel`.
 `person` display fields are `id`, `displayName`, `iconKey`, `level`,
-`status`, `statusLabel`, `personalityLabel`, `stats`, `history`, and optional
+`status`, `statusLabel`, `activityLabel`, `activityText`, `personalityLabel`,
+`stats`, `history`, and optional
 dialog-ready tab rows. Adventurer and applicant tabs use the shared
 whole-dialog footer geometry inside the brown shell, below the paper content;
 they do not own feature-local buttons or external tab placement.
@@ -91,6 +111,9 @@ The adapter accepts the current raw `GuildFacade.getSnapshot()` shape and
 method aliases such as `upgradeGuildSecretary`, `postGuildRequest`, and
 `removeGuildRequest` during cutover. These aliases are routing only and do not
 duplicate gameplay behavior.
+
+Use `src/dev/uiRecipes/guild-hall.html` for a deterministic, production-backed
+Hall layout state when the local player has not created a guild yet.
 
 ## Snapshot adapter
 

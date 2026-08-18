@@ -37,7 +37,10 @@ import { createRewardFlyoutRuns } from './RewardFlyoutRuns.js';
 
 export const PIXI_TRANSIENT_LIMITS = Object.freeze({
   textFlyouts: 10,
-  itemDrops: 12,
+  // x5 hold summoning can overlap fourteen 100ms batches while the oldest
+  // delayed drops are still inside their 1200ms animation lifetime.
+  itemDrops: 70,
+  itemDropsPerReward: 12,
   coinParticles: 8,
   coinAmounts: 4,
   spendParticles: 28,
@@ -324,7 +327,7 @@ export class PixiTransientEffectsLayer extends BasePixiRetainedView {
   emitItemDrops(drops) {
     const normalizedDrops = (drops ?? []).slice(
       0,
-      PIXI_TRANSIENT_LIMITS.itemDrops,
+      PIXI_TRANSIENT_LIMITS.itemDropsPerReward,
     );
     let count = 0;
     for (const [index, drop] of normalizedDrops.entries()) {
@@ -392,6 +395,7 @@ export class PixiTransientEffectsLayer extends BasePixiRetainedView {
     if (amount <= 0 || !from || !to) {
       return 0;
     }
+    const resource = normalizeTravelResource(model.resource);
     const desired = model.showParticles === false
       ? 0
       : Math.max(
@@ -421,6 +425,7 @@ export class PixiTransientEffectsLayer extends BasePixiRetainedView {
             index,
             count,
             random: this.random,
+            resource,
           });
         },
       );
@@ -453,6 +458,7 @@ export class PixiTransientEffectsLayer extends BasePixiRetainedView {
           amount,
           title: model.title ?? '',
           anchor: { x: from.x, y: from.y - 4 },
+          resource,
         });
       },
     );
@@ -858,6 +864,13 @@ export function formatRewardEventMessage(event) {
   if (event.type === 'coin_collected') {
     return `collected ${formatCoinPriceText(event.coin ?? 0)}`;
   }
+  if (event.type === 'crystal_collected') {
+    const crystal = Math.max(
+      0,
+      Math.floor(Number(event.crystal) || 0),
+    );
+    return `collected ${crystal} ${crystal === 1 ? 'crystal' : 'crystals'}`;
+  }
   if (event.type === 'personal_task_reward_claimed') {
     const coin = Math.max(0, Math.floor(Number(event.coin) || 0));
     const crystal = Math.max(
@@ -1015,6 +1028,24 @@ export function createRewardVisualPresentation(event) {
         amount: event.coin,
         fromId: createCoinCollectionAnchorIds(event.source),
         toId: 'top.coin',
+        showParticles: true,
+        title: formatRewardEventMessage(event),
+      },
+    };
+  }
+  if (
+    event.type === 'crystal_collected' &&
+    Number(event.crystal) > 0
+  ) {
+    return {
+      coinTravel: {
+        amount: event.crystal,
+        resource: 'crystal',
+        fromId: [
+          'shop.dailyCrystalOffer.collect',
+          'shop.tab.crystals',
+        ],
+        toId: 'top.contextCurrency',
         showParticles: true,
         title: formatRewardEventMessage(event),
       },
@@ -1399,11 +1430,12 @@ class ItemDropWidget {
 
 class CoinParticleWidget {
   constructor({ assets, parent }) {
+    this.assets = assets;
     this.root = new Container();
     this.root.label = 'coinParticle';
     this.root.eventMode = 'none';
     this.sprite = new Sprite({
-      texture: assets.getAtlasTexture('resource:coin'),
+      texture: Texture.EMPTY,
       roundPixels: true,
     });
     this.sprite.anchor.set(0.5);
@@ -1411,9 +1443,14 @@ class CoinParticleWidget {
     this.sprite.height = 19.2;
     this.root.addChild(this.sprite);
     parent.addChild(this.root);
+    this.resource = 'coin';
   }
 
   bind(_key, model) {
+    this.resource = normalizeTravelResource(model.resource);
+    this.sprite.texture = resolveTexture(this.assets, {
+      frameName: SPEND_RESOURCE_FRAMES[this.resource],
+    });
     this.model = model;
     const t =
       model.count === 1
@@ -1504,6 +1541,8 @@ class CoinParticleWidget {
     this.root.alpha = 0;
     this.root.scale.set(1);
     this.root.rotation = 0;
+    this.sprite.texture = Texture.EMPTY;
+    this.resource = 'coin';
     this.model = null;
   }
 
@@ -1643,12 +1682,21 @@ class CoinAmountWidget {
     });
     this.root.addChild(this.label);
     parent.addChild(this.root);
+    this.resource = 'coin';
+    this.theme = DEFAULT_PIXI_THEME_SNAPSHOT;
   }
 
   bind(_key, model) {
     this.model = model;
+    this.resource = normalizeTravelResource(model.resource);
+    const amount = Number.isInteger(model.amount)
+      ? model.amount
+      : Number(model.amount.toFixed(2));
     this.label.setText(
-      `+${Number.isInteger(model.amount) ? model.amount : Number(model.amount.toFixed(2))}G`,
+      `+${amount}${this.resource === 'coin' ? 'G' : ''}`,
+    );
+    this.label.setColor(
+      this.theme.resourceColors[this.resource] ?? this.theme.text,
     );
     this.root.position.set(model.anchor.x, model.anchor.y);
     this.root.visible = true;
@@ -1656,7 +1704,11 @@ class CoinAmountWidget {
   }
 
   applyTheme(theme) {
-    this.label.applyTheme(theme);
+    this.theme = theme ?? DEFAULT_PIXI_THEME_SNAPSHOT;
+    this.label.applyTheme(this.theme);
+    this.label.setColor(
+      this.theme.resourceColors[this.resource] ?? this.theme.text,
+    );
   }
 
   update(progress, { delayed }) {
@@ -1684,6 +1736,7 @@ class CoinAmountWidget {
     this.root.alpha = 0;
     this.root.scale.set(1);
     this.label.setText('');
+    this.resource = 'coin';
     this.model = null;
   }
 
@@ -1838,6 +1891,15 @@ function normalizeSpendTextureModel(model) {
       SPEND_RESOURCE_FRAMES[resource] ??
       SPEND_RESOURCE_FRAMES.coin,
   };
+}
+
+function normalizeTravelResource(resource) {
+  const normalized = String(resource ?? 'coin')
+    .trim()
+    .toLowerCase();
+  return SPEND_RESOURCE_FRAMES[normalized]
+    ? normalized
+    : 'coin';
 }
 
 function createItemDropTextureModel(item, kind) {
@@ -2006,7 +2068,7 @@ function createRewardVisualId(event, kind, index) {
 
 function getVisualDropQuantity(quantity) {
   return Math.min(
-    PIXI_TRANSIENT_LIMITS.itemDrops,
+    PIXI_TRANSIENT_LIMITS.itemDropsPerReward,
     normalizeItemQuantity(quantity),
   );
 }

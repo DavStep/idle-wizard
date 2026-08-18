@@ -78,7 +78,7 @@ experience_type: gameplay-economy
 - Auto seed summoning must leave mana reserved for a ready auto brew recipe; brewing has first claim when both automations can spend mana.
 - Auto brew recipe/enabled state is per cauldron; selecting a recipe in cauldron 2+ must not rewrite cauldron 1 automation.
 - Auto brew enable UI must set `autoBrewRecipeKey` from the selected recipe before enabling; `BrewingFacade` rejects enabled auto-brew without a recipe key.
-- Auto/manual cauldron UI only enables or disables future automation; auto brew stays unarmed until a successful manual brew, then repeats future cycles.
+- Auto/manual cauldron UI enables or disables future automation; enabled auto brew waits for missing herbs or mana and starts as soon as they become available. The armed flag records the first successful start but must not gate resource waiting.
 - Enabled Auto Brew owns the full loop: bottle, collect the ready potion, and start the next batch. Legacy auto-collect save flags must not stall that loop.
 - Manual fast sell is removed; trader stands always use the full marginal NPC quote.
 - Fresh games start with 0 coin. No player level may require or spend coin. Task `coinBudget` values scale daily/world content only; legacy `completionCostCoin` and `completionCostGold` inputs must normalize into that budget and stay out of level-completion snapshots.

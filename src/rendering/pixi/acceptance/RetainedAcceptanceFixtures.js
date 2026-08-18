@@ -854,14 +854,27 @@ function createGuildDialogModel(dialogId, key, subscribe) {
     };
   }
 
+  const isApplicant = dialogId === GUILD_DIALOG_IDS.APPLICANT;
+
   return {
     card: {
       id: `person-${key}`,
-      displayName: `person ${key}`,
-      level: 2,
-      status: 'idle',
+      displayName: isApplicant ? 'Orin Moss' : 'Mira Ashveil',
+      iconKey:
+        isApplicant
+          ? 'adventurer_packscout'
+          : 'adventurer_bluescarf_spear',
+      level: isApplicant ? 2 : 7,
+      xp: isApplicant ? 35 : 410,
+      nextLevelXp: isApplicant ? 100 : 600,
+      status: isApplicant ? 'waiting' : 'idle',
+      statusLabel: isApplicant ? 'Applicant' : 'Resting',
+      personalityLabel: isApplicant ? 'Scholar' : 'Loyal',
+      stats: {
+        strength: isApplicant ? 2 : 7,
+        agility: isApplicant ? 4 : 5,
+      },
     },
-    rows: createCompactRows(key, `${dialogId}-detail`),
     actionLabel:
       dialogId === GUILD_DIALOG_IDS.APPLICANT ? 'hire' : 'fire',
     action: accept,

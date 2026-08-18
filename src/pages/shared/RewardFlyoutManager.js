@@ -1072,6 +1072,11 @@ export class RewardFlyoutManager {
       return `collected ${formatCoinPriceText(event.coin ?? 0)}`;
     }
 
+    if (event.type === 'crystal_collected') {
+      const crystal = Math.max(0, Math.floor(Number(event.crystal) || 0));
+      return `collected ${crystal} ${crystal === 1 ? 'crystal' : 'crystals'}`;
+    }
+
     if (event.type === 'personal_task_reward_claimed') {
       return this.formatCurrencyRewardMessage(event);
     }

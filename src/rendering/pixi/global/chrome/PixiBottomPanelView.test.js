@@ -8,6 +8,7 @@ import { DEFAULT_PAGE_SWIPE_ORDER } from '../../../../pages/managers/pageOrder.j
 import { SemanticTargetRegistry } from '../../retained/index.js';
 import {
   PIXI_BOTTOM_PANEL_TABS,
+  PIXI_PRESTIGE_HUD_TABS,
   PixiBottomHudTextTab,
   PixiBottomRoomTab,
   PixiBottomPanelView,
@@ -22,25 +23,24 @@ import {
 installPixiPageTestCanvas();
 
 describe('PixiBottomPanelView', () => {
-  it('uses the canonical prestige-first page order', () => {
+  it('keeps alternate HUD destinations out of normal room navigation', () => {
     expect(PIXI_BOTTOM_PANEL_TABS.map(({ id }) => id)).toEqual(
-      DEFAULT_PAGE_SWIPE_ORDER.filter((id) => id !== 'guild'),
+      DEFAULT_PAGE_SWIPE_ORDER.filter(
+        (id) => !['guild', 'prestige'].includes(id),
+      ),
     );
-    expect(
-      PIXI_BOTTOM_PANEL_TABS.slice(0, 6).map(({ id }) => id),
-    ).toEqual([
-      'prestige',
+    expect(PIXI_BOTTOM_PANEL_TABS.slice(0, 5).map(({ id }) => id)).toEqual([
       'brewing',
       'garden',
       'workshop',
       'research',
       'shop',
     ]);
-    expect(PIXI_BOTTOM_PANEL_TABS[0]).toMatchObject({
-      id: 'prestige',
-      icon: 'icon-prestige-star.png',
-      artScale: 0.9,
-    });
+    expect(PIXI_PRESTIGE_HUD_TABS.map(({ id }) => id)).toEqual([
+      'prestige.workshop',
+      'prestige.main',
+      'prestige.points',
+    ]);
   });
 
   it('retains room and Guild HUD tabs while switching navigation modes', () => {
@@ -139,6 +139,45 @@ describe('PixiBottomPanelView', () => {
     expect(fishers.labelRoot.alpha).toBe(0.68);
   });
 
+  it('switches Prestige to Workshop return plus Main and Points text tabs', () => {
+    const showPage = vi.fn();
+    const selectPrestigeTab = vi.fn();
+    const semanticRegistry = new SemanticTargetRegistry();
+    const view = new PixiBottomPanelView({
+      assets: createAssets(),
+      semanticRegistry,
+    });
+
+    view.bind({
+      currentPageId: 'prestige',
+      hudMode: 'prestige',
+      prestigeHud: { selectedTabId: 'main' },
+      pages: [{ id: 'workshop', visible: true, unlocked: true }],
+      actions: { selectPrestigeTab, showPage },
+    });
+
+    expect(view.tabs.every((tab) => tab.root.visible === false)).toBe(true);
+    expect(view.guildTabs.every((tab) => tab.root.visible === false)).toBe(true);
+    expect(view.prestigeTabs.map((tab) => tab.root.visible)).toEqual([
+      true,
+      true,
+      true,
+    ]);
+    expect(view.prestigeTabs[0]).toBeInstanceOf(PixiBottomRoomTab);
+    expect(view.prestigeTabs.slice(1).every(
+      (tab) => tab instanceof PixiBottomHudTextTab,
+    )).toBe(true);
+    expect(view.prestigeTabs[1].state.selected).toBe(true);
+    expect(view.prestigeTabs[2].state.selected).toBe(false);
+
+    semanticRegistry.activate('prestige.tab.points');
+    expect(selectPrestigeTab).toHaveBeenCalledWith('points');
+    semanticRegistry.activate('prestige.return.workshop');
+    expect(showPage).toHaveBeenCalledWith('workshop');
+
+    view.destroy();
+  });
+
   it('lays out fixed five, six, and seven-tab rows with a wider selection', () => {
     const view = new PixiBottomPanelView({ assets: createAssets() });
     view.layout({
@@ -151,21 +190,21 @@ describe('PixiBottomPanelView', () => {
     for (const visibleIds of [
       ['brewing', 'garden', 'workshop', 'research', 'shop'],
       [
-        'prestige',
-        'brewing',
-        'garden',
-        'workshop',
-        'research',
-        'shop',
-      ],
-      [
-        'prestige',
         'brewing',
         'garden',
         'workshop',
         'research',
         'shop',
         'advancedBrewing',
+      ],
+      [
+        'brewing',
+        'garden',
+        'workshop',
+        'research',
+        'shop',
+        'advancedBrewing',
+        'advancedGarden',
       ],
     ]) {
       view.bind({
@@ -214,13 +253,13 @@ describe('PixiBottomPanelView', () => {
     view.bind({
       currentPageId: 'workshop',
       pages: pageStates([
-        'prestige',
         'brewing',
         'garden',
         'workshop',
         'research',
         'shop',
         'advancedBrewing',
+        'advancedGarden',
       ]),
     });
 

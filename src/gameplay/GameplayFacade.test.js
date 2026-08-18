@@ -3784,13 +3784,13 @@ describe("GameplayFacade", () => {
     ]);
   });
 
-  it("reserves mana for pending auto brew before auto summoning seeds", () => {
+  it("prioritizes an enabled auto brew before auto summoning seeds", () => {
     const { ecsFacade, gameplayFacade } = createGameplay();
 
     unlockSageSeed(gameplayFacade);
     gameplayFacade.coinFacade.add(80);
     gameplayFacade.rubyFacade.add(3);
-    gameplayFacade.itemsFacade.addItem(1001, 3);
+    gameplayFacade.itemsFacade.addItem(1001, 6);
 
     expect(unlockRecipeResearch(gameplayFacade)).toMatchObject({
       ok: true,
@@ -3817,20 +3817,6 @@ describe("GameplayFacade", () => {
 
     ecsFacade.update({ deltaSeconds: 4 });
 
-    expect(gameplayFacade.getSnapshot().brewing.activeBrew).toBeNull();
-
-    gameplayFacade.manaFacade.fill();
-    gameplayFacade.itemsFacade.addItem(1001, 3);
-    expect(gameplayFacade.addBrewingIngredient(1001)).toMatchObject({
-      ok: true,
-    });
-    expect(gameplayFacade.addBrewingIngredient(1001)).toMatchObject({
-      ok: true,
-    });
-    expect(gameplayFacade.addBrewingIngredient(1001)).toMatchObject({
-      ok: true,
-    });
-    expect(gameplayFacade.brewCauldron()).toMatchObject({ ok: true });
     expect(gameplayFacade.getSnapshot().brewing).toMatchObject({
       autoBrewEnabled: true,
       autoBrewArmed: true,
@@ -4438,24 +4424,6 @@ describe("GameplayFacade", () => {
 
     expect(
       gameplayFacade.getSnapshot().brewing.cauldrons[0].activeBrew,
-    ).toBeNull();
-    expect(
-      gameplayFacade.getSnapshot().brewing.cauldrons[1].activeBrew,
-    ).toBeNull();
-
-    expect(gameplayFacade.prepareBrewingRecipe("manaTonic", 0)).toMatchObject({
-      ok: true,
-    });
-    expect(gameplayFacade.brewCauldron(0)).toMatchObject({ ok: true });
-    expect(
-      gameplayFacade.prepareBrewingRecipe("minorHealingPotion", 1),
-    ).toMatchObject({
-      ok: true,
-    });
-    expect(gameplayFacade.brewCauldron(1)).toMatchObject({ ok: true });
-
-    expect(
-      gameplayFacade.getSnapshot().brewing.cauldrons[0].activeBrew,
     ).toMatchObject({
       key: "manaTonic",
       cauldronNumber: 1,
@@ -4600,6 +4568,39 @@ describe("GameplayFacade", () => {
     expect(gameplayFacade.getSnapshot().brewing.ingredients).toEqual([]);
   });
 
+  it("resumes enabled auto brew when the missing herbs become available", () => {
+    const { ecsFacade, gameplayFacade } = createGameplay();
+
+    gameplayFacade.coinFacade.add(80);
+    gameplayFacade.rubyFacade.add(1);
+    unlockRecipeResearch(gameplayFacade);
+    expect(
+      gameplayFacade.buyResearch(automationResearchIds.autoBrewCauldron(1)),
+    ).toMatchObject({ ok: true });
+    expect(gameplayFacade.setBrewingAutoBrewRecipe("manaTonic")).toMatchObject({
+      ok: true,
+      autoBrewRecipeKey: "manaTonic",
+    });
+    expect(gameplayFacade.setBrewingAutoBrewEnabled(true)).toMatchObject({
+      ok: true,
+      autoBrewEnabled: true,
+    });
+    gameplayFacade.manaFacade.fill();
+
+    ecsFacade.update({ deltaSeconds: 0 });
+
+    expect(gameplayFacade.getSnapshot().brewing.activeBrew).toBeNull();
+
+    gameplayFacade.itemsFacade.addItem(1001, 3);
+    ecsFacade.update({ deltaSeconds: 0 });
+
+    expect(gameplayFacade.getSnapshot().brewing.activeBrew).toMatchObject({
+      key: "manaTonic",
+      phase: "brewing",
+      remainingMs: 30_000,
+    });
+  });
+
   it("auto brews, bottles, and collects cauldron potions after research", () => {
     const { ecsFacade, gameplayFacade } = createGameplay();
 
@@ -4624,11 +4625,6 @@ describe("GameplayFacade", () => {
     });
     gameplayFacade.itemsFacade.addItem(1001, 6);
     ecsFacade.update({ deltaSeconds: 12 });
-    gameplayFacade.addBrewingIngredient(1001);
-    gameplayFacade.addBrewingIngredient(1001);
-    gameplayFacade.addBrewingIngredient(1001);
-
-    expect(gameplayFacade.brewCauldron()).toMatchObject({ ok: true });
 
     expect(gameplayFacade.getSnapshot().mana.current).toBe(78);
     expect(gameplayFacade.getSnapshot().brewing.ingredients).toEqual([]);
@@ -6007,6 +6003,12 @@ describe("GameplayFacade", () => {
   it("collects one free daily crystal and starts a 24-hour cooldown", () => {
     const { ecsFacade, gameplayFacade } = createGameplay();
     const initialCrystal = gameplayFacade.getSnapshot().crystal.current;
+    const rewardEvents = [];
+    const unsubscribeRewardEvents = gameplayFacade.subscribeRewardEvents(
+      (event) => {
+        rewardEvents.push(event);
+      },
+    );
 
     expect(gameplayFacade.getSnapshot().shop.dailyCrystalOffer).toMatchObject({
       rewardCrystal: 1,
@@ -6020,6 +6022,13 @@ describe("GameplayFacade", () => {
       cooldownSeconds: 86_400,
     });
     expect(gameplayFacade.getSnapshot().crystal.current).toBe(initialCrystal + 1);
+    expect(rewardEvents).toEqual([
+      expect.objectContaining({
+        type: "crystal_collected",
+        crystal: 1,
+        source: "shop_daily_crystal_offer",
+      }),
+    ]);
     expect(gameplayFacade.getSnapshot().shop.dailyCrystalOffer).toMatchObject({
       cooldownRemainingSeconds: 86_400,
       canCollect: false,
@@ -6029,6 +6038,7 @@ describe("GameplayFacade", () => {
       reason: "cooldown",
     });
     expect(gameplayFacade.getSnapshot().crystal.current).toBe(initialCrystal + 1);
+    expect(rewardEvents).toHaveLength(1);
 
     ecsFacade.update({ timerDeltaSeconds: 86_399 });
     expect(gameplayFacade.getSnapshot().shop.dailyCrystalOffer).toMatchObject({
@@ -6041,6 +6051,7 @@ describe("GameplayFacade", () => {
       cooldownRemainingSeconds: 0,
       canCollect: true,
     });
+    unsubscribeRewardEvents();
   });
 
   it("publishes player shop proceeds as collected coin", () => {

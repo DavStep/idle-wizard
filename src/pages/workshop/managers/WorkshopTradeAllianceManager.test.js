@@ -398,4 +398,35 @@ describe('WorkshopTradeAllianceManager styles', () => {
     expect(refreshedNameInput.selectionStart).toBe(3);
     expect(refreshedNameInput.selectionEnd).toBe(3);
   });
+
+  it('hides settings when the current alliance member cannot edit them', () => {
+    const tradeAllianceFacade = createTradeAllianceFacadeFake({
+      connected: true,
+      ownAlliance: {
+        allianceId: 'alliance-1',
+        name: 'All Seeing Void',
+        tag: 'VOID',
+        memberCount: 2,
+        seasonIncome: 0,
+        dailyIncome: 0,
+      },
+      ownMember: {
+        memberIdentity: 'self',
+        role: 'trader',
+      },
+      canEditSettings: false,
+      members: [],
+      quests: [],
+      contributions: [],
+      rewardInbox: [],
+    });
+    const { popupParent, manager } = mountManager(tradeAllianceFacade);
+    const tabs = [
+      ...popupParent.querySelectorAll('.workshop-page__trade-alliance-tab-button'),
+    ];
+
+    expect(tabs.map((button) => button.textContent)).toEqual(['home', 'quests']);
+
+    manager.unmount();
+  });
 });

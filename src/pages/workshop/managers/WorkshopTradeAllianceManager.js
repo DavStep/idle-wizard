@@ -358,6 +358,13 @@ export class WorkshopTradeAllianceManager {
     this.captureVisibleDrafts();
     this.lastSnapshot = snapshot ?? {};
     const ownAlliance = this.lastSnapshot.ownAlliance ?? null;
+    const memberTabs = ownAlliance ? this.getMemberTabs() : null;
+    if (
+      ownAlliance &&
+      !memberTabs.some((tab) => tab.id === this.selectedMemberTabId)
+    ) {
+      this.selectedMemberTabId = 'home';
+    }
     this.syncMemberEditState();
     this.syncButtonIconColor(ownAlliance);
     this.renderTitle(ownAlliance);
@@ -369,7 +376,7 @@ export class WorkshopTradeAllianceManager {
       : this.selectedSoloTabId;
 
     if (ownAlliance) {
-      this.renderTabs(MEMBER_TABS, this.selectedMemberTabId);
+      this.renderTabs(memberTabs, this.selectedMemberTabId);
       this.renderMemberView(this.selectedMemberTabId);
       this.renderMemberEditPopup();
       this.restoreContentFocusState(focusState);
@@ -393,8 +400,7 @@ export class WorkshopTradeAllianceManager {
         setSelectedTabState(button, selectedTabId === tab.id);
         setNotificationBadge(
           button,
-          tabs === MEMBER_TABS &&
-            tab.id === 'quests' &&
+          tab.id === 'quests' &&
             hasClaimableTradeAllianceQuest(this.lastSnapshot),
         );
         button.addEventListener('click', () => {
@@ -410,6 +416,12 @@ export class WorkshopTradeAllianceManager {
         return button;
       }),
     );
+  }
+
+  getMemberTabs() {
+    return this.lastSnapshot.canEditSettings
+      ? MEMBER_TABS
+      : MEMBER_TABS.filter((tab) => tab.id !== 'settings');
   }
 
   renderTitle(ownAlliance) {

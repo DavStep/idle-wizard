@@ -33,12 +33,12 @@ describe('BrewingAutomationManager', () => {
     expect(brewingFacade.startBottling).toHaveBeenCalledWith(0);
   });
 
-  it('uses the same cauldron automation to brew its armed recipe', () => {
+  it('keeps trying an enabled recipe before its first successful brew', () => {
     const { brewingFacade, manager } = createManager({
       cauldronNumber: 1,
       canStartBottling: false,
       autoBrewEnabled: true,
-      autoBrewArmed: true,
+      autoBrewArmed: false,
       autoBrewRecipeKey: 'manaTonic',
     });
 

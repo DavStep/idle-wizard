@@ -87,6 +87,7 @@ export class PixiInputRouter {
     this.focusedId = null;
     this.backHandler = null;
     this.escapeHandler = null;
+    this.pointerDownObservers = new Set();
     this.nextGeneratedRegistrationId = 1;
     this.nextModalOrder = 1;
     this.originalCanvasTabIndex = null;
@@ -179,6 +180,7 @@ export class PixiInputRouter {
     this.unmount();
     this.modals.length = 0;
     this.store.clear();
+    this.pointerDownObservers.clear();
     this.backHandler = null;
     this.escapeHandler = null;
   }
@@ -258,6 +260,15 @@ export class PixiInputRouter {
         descriptor,
       ),
     );
+  }
+
+  subscribePointerDown(observer) {
+    if (typeof observer !== 'function') {
+      throw new TypeError('PixiInputRouter pointer-down observers must be functions.');
+    }
+
+    this.pointerDownObservers.add(observer);
+    return () => this.pointerDownObservers.delete(observer);
   }
 
   /**
@@ -621,6 +632,14 @@ export class PixiInputRouter {
     }
 
     const point = resolveInputPoint(event);
+    for (const observer of [...this.pointerDownObservers]) {
+      observer({
+        event,
+        point: point.global,
+        screenPoint: point.screen,
+        target: event?.target ?? null,
+      });
+    }
     const pointerType = String(event?.pointerType ?? 'mouse');
     const modal = this.getTopModal();
     const resolvedPress = this.resolvePressTarget(

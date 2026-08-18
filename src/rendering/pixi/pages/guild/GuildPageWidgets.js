@@ -43,10 +43,33 @@ const ALLIANCE_TAG_COLORS = Object.freeze({
   slate: '#b5bac4',
 });
 const CARD_HEIGHT = RESEARCH_PIXI_GEOMETRY.rowHeight;
-const CARD_GAP = RESEARCH_PIXI_GEOMETRY.rowGap;
-const PERSON_HEIGHT = 54;
+const PERSON_HEIGHT = RESEARCH_PIXI_GEOMETRY.rowHeight;
 const ROW_HEIGHT = PERSON_HEIGHT;
 const SECTION_CONTENT_GAP = 5;
+const PERSON_PORTRAIT_BOX = Object.freeze({
+  x: 10,
+  y: 6,
+  width: 57,
+  height: 68,
+});
+const PERSON_TEXT_X = 74;
+const PERSON_TEXT_RIGHT_INSET = RESEARCH_PIXI_GEOMETRY.actionRight;
+const PERSON_PRIMARY_TEXT_Y = 15;
+const PERSON_SECONDARY_TEXT_Y = 45;
+const BOARD_SLOT_GAP = 7;
+const BOARD_INSET_X = 14;
+const BOARD_INSET_Y = 14;
+const BOARD_MAX_SLOTS = 12;
+const BOARD_PAPER_INK = '#ffe7c8';
+const SECRETARY_CONTENT_HEIGHT = 116;
+const SECRETARY_PORTRAIT_BOX = Object.freeze({
+  x: 8,
+  y: 8,
+  width: 100,
+  height: 100,
+});
+const SECRETARY_DETAILS_X = 116;
+const SECRETARY_ROW_Y = Object.freeze([18, 47, 76]);
 
 export function capitalizeGuildText(value) {
   return String(value ?? '').replace(/[A-Za-z]/, (letter) =>
@@ -347,11 +370,6 @@ export class GuildSecretarySection {
       color: 'muted',
       label: 'guild:secretary:initial',
     });
-    this.nameLabel = new PixiTextLabel({
-      text: 'Secretary',
-      fontWeight: 'bold',
-      label: 'guild:secretary:name',
-    });
     this.rows = [
       createFixedLabelPair('Level', 'guild:secretary:level'),
       createFixedLabelPair('Adventurers', 'guild:secretary:adventurers'),
@@ -374,7 +392,6 @@ export class GuildSecretarySection {
       this.iconFrame,
       this.icon,
       this.initial,
-      this.nameLabel,
       ...this.rows.flatMap((row) => [row.key, row.value]),
       this.button,
     );
@@ -412,7 +429,7 @@ export class GuildSecretarySection {
     return (
       (this.showTitle
         ? RESEARCH_PIXI_GEOMETRY.categoryTitleHeight + SECTION_CONTENT_GAP
-        : 0) + RESEARCH_PIXI_GEOMETRY.rowHeight
+        : 0) + SECRETARY_CONTENT_HEIGHT
     );
   }
 
@@ -430,23 +447,35 @@ export class GuildSecretarySection {
       titleOffset,
     );
     this.paper.setBounds(0, 0, contentWidth, contentHeight);
-    this.iconFrame.position.set(8, 12);
-    this.iconFrame.setSize(56, 56);
-    this.icon.position.set(8, 12);
-    this.icon.width = 56;
-    this.icon.height = 56;
-    this.initial.position.set(36, 40);
+    this.iconFrame.position.set(
+      SECRETARY_PORTRAIT_BOX.x,
+      SECRETARY_PORTRAIT_BOX.y,
+    );
+    this.iconFrame.setSize(
+      SECRETARY_PORTRAIT_BOX.width,
+      SECRETARY_PORTRAIT_BOX.height,
+    );
+    fitSpriteInside(this.icon, SECRETARY_PORTRAIT_BOX);
+    this.initial.position.set(
+      SECRETARY_PORTRAIT_BOX.x + SECRETARY_PORTRAIT_BOX.width / 2,
+      SECRETARY_PORTRAIT_BOX.y + SECRETARY_PORTRAIT_BOX.height / 2,
+    );
     this.initial.visible = !this.icon.visible;
-    const detailsX = 72;
+    const detailsX = SECRETARY_DETAILS_X;
     const buttonWidth = RESEARCH_PIXI_GEOMETRY.costWidth;
     const buttonX = contentWidth - buttonWidth - 8;
-    const detailsRight = buttonX - 7;
-    this.nameLabel.position.set(detailsX, 8);
-    this.nameLabel.setWrapWidth(Math.max(0, detailsRight - detailsX));
-    const rowYs = [27, 44, 61];
+    const detailsRight = buttonX - 10;
     this.rows.forEach((row, index) => {
-      row.key.position.set(detailsX, rowYs[index]);
-      row.value.position.set(detailsRight, rowYs[index]);
+      const rowY = SECRETARY_ROW_Y[index];
+      row.key.position.set(detailsX, rowY);
+      row.key.setWrapWidth(
+        Math.max(
+          0,
+          detailsRight - detailsX -
+            row.value.measuredWidth - PIXI_UI_GEOMETRY.rowColumnGap,
+        ),
+      );
+      row.value.position.set(detailsRight, rowY);
     });
     this.button.position.set(
       buttonX,
@@ -462,9 +491,7 @@ export class GuildSecretarySection {
     this.theme = theme ?? DEFAULT_PIXI_THEME_SNAPSHOT;
     this.iconFrame.applyTheme(this.theme);
     this.initial.applyTheme(this.theme);
-    this.nameLabel.applyTheme(this.theme);
     this.initial.setColor(PAPER_MUTED);
-    this.nameLabel.setColor(PAPER_TEXT);
     for (const row of this.rows) {
       row.key.applyTheme(this.theme);
       row.value.applyTheme(this.theme);
@@ -491,24 +518,42 @@ export class GuildQuestBoardSection {
     this.root = new Container({ label: 'guild:board:section' });
     this.titlePlaque = new ResearchStationTitlePlaque({ assetManager });
     this.titlePlaque.root.label = 'guild:board:titlePlaque';
-    this.titlePlaque.bind('Board', 'regular');
+    this.titlePlaque.bind("Adventurers' Board", 'regular');
     this.contentLayer = new Container({ label: 'guild:board:content' });
+    this.boardFrame = new PixiNineSliceFrame({
+      texture:
+        assetManager?.getTexture?.(PIXI_ROOT_RUN_ASSETS.dialogBack) ??
+        Texture.EMPTY,
+      sourceInsets:
+        PIXI_ROOT_RUN_GEOMETRY.dialog.frameSourceInsets,
+      borderInsets:
+        PIXI_ROOT_RUN_GEOMETRY.dialog.frameBorderInsets,
+      label: 'guild:board:woodFrame',
+    });
+    this.slotGuides = new Graphics({ label: 'guild:board:slotGuides' });
+    this.emptySlotLabels = Array.from(
+      { length: BOARD_MAX_SLOTS },
+      (_, index) =>
+        new PixiTextLabel({
+          text: 'Open Posting Slot',
+          fontSize: PIXI_UI_GEOMETRY.borderLabelFontSize,
+          anchor: { x: 0.5, y: 0 },
+          color: BOARD_PAPER_INK,
+          label: `guild:board:emptySlot:${index}`,
+        }),
+    );
     this.cardsLayer = new Container();
     this.cardsLayer.label = 'guild:board:cards';
-    this.emptyPaper = new GuildPaperFrame({ assetManager });
-    this.emptyLabel = new PixiTextLabel({
-      text: 'No Requests',
-      label: 'guild:board:empty',
-    });
     this.countLabel = new PixiTextLabel({
       fontSize: PIXI_UI_GEOMETRY.borderLabelFontSize,
       color: 'muted',
       label: 'guild:board:count',
     });
     this.contentLayer.addChild(
-      this.emptyPaper.root,
+      this.boardFrame,
+      this.slotGuides,
+      ...this.emptySlotLabels,
       this.cardsLayer,
-      this.emptyLabel,
     );
     this.root.addChild(
       this.titlePlaque.root,
@@ -541,29 +586,38 @@ export class GuildQuestBoardSection {
         }),
       afterReconcile: (widgets) => orderChildren(this.cardsLayer, widgets),
     });
+    this.capacity = 1;
   }
 
   bind(model = {}) {
-    this.cards.reconcile(safeArray(model.requests));
+    const requests = safeArray(model.requests).slice(0, BOARD_MAX_SLOTS);
+    this.capacity = Math.min(
+      BOARD_MAX_SLOTS,
+      Math.max(
+        1,
+        requests.length,
+        Math.floor(Number(model.capacity)) || 0,
+      ),
+    );
+    this.cards.reconcile(requests);
     this.countLabel.setText(capitalizeGuildText(model.countLabel));
     this.countLabel.visible = Boolean(model.countLabel);
     this.countLabel.renderable = this.countLabel.visible;
-    const empty = this.cards.getWidgets().length === 0;
-    this.emptyPaper.root.visible = empty;
-    this.emptyPaper.root.renderable = empty;
-    this.emptyLabel.visible = empty;
-    this.emptyLabel.renderable = empty;
+    this.emptySlotLabels.forEach((label, index) => {
+      const visible = index >= requests.length && index < this.capacity;
+      label.visible = visible;
+      label.renderable = visible;
+    });
     for (const card of this.cards.getWidgets()) {
       card.applyTheme(this.theme);
     }
   }
 
   getPreferredHeight() {
-    const count = this.cards.getWidgets().length;
     const contentHeight =
-      count === 0
-        ? ROW_HEIGHT
-        : count * CARD_HEIGHT + (count - 1) * CARD_GAP;
+      BOARD_INSET_Y * 2 +
+      this.capacity * CARD_HEIGHT +
+      Math.max(0, this.capacity - 1) * BOARD_SLOT_GAP;
     return (
       RESEARCH_PIXI_GEOMETRY.categoryTitleHeight +
       SECTION_CONTENT_GAP +
@@ -580,20 +634,43 @@ export class GuildQuestBoardSection {
       contentX,
       RESEARCH_PIXI_GEOMETRY.categoryTitleHeight + SECTION_CONTENT_GAP,
     );
+    const contentHeight =
+      BOARD_INSET_Y * 2 +
+      this.capacity * CARD_HEIGHT +
+      Math.max(0, this.capacity - 1) * BOARD_SLOT_GAP;
+    const slotWidth = Math.max(0, contentWidth - BOARD_INSET_X * 2);
+    this.boardFrame.position.set(0, 0);
+    this.boardFrame.setSize(
+      contentWidth,
+      contentHeight,
+      PIXI_ROOT_RUN_GEOMETRY.dialog.frameBorderInsets,
+    );
+    this.slotGuides.clear();
+    for (let index = 0; index < this.capacity; index += 1) {
+      const slotY = BOARD_INSET_Y + index * (CARD_HEIGHT + BOARD_SLOT_GAP);
+      drawDashedRect(
+        this.slotGuides,
+        BOARD_INSET_X,
+        slotY,
+        slotWidth,
+        CARD_HEIGHT,
+        0xffe7c8,
+      );
+      const label = this.emptySlotLabels[index];
+      label.position.set(
+        contentWidth / 2,
+        slotY + Math.max(1, (CARD_HEIGHT - label.measuredHeight) / 2),
+      );
+    }
     const cards = this.cards.getWidgets();
     cards.forEach((card, index) => {
       card.setBounds(
-        0,
-        index * (CARD_HEIGHT + CARD_GAP),
-        contentWidth,
+        BOARD_INSET_X,
+        BOARD_INSET_Y + index * (CARD_HEIGHT + BOARD_SLOT_GAP),
+        slotWidth,
         CARD_HEIGHT,
       );
     });
-    this.emptyPaper.setBounds(0, 0, contentWidth, ROW_HEIGHT);
-    this.emptyLabel.position.set(
-      8,
-      Math.max(1, (ROW_HEIGHT - this.emptyLabel.measuredHeight) / 2),
-    );
     this.countLabel.position.set(
       width - this.countLabel.measuredWidth - 8,
       Math.max(
@@ -608,8 +685,10 @@ export class GuildQuestBoardSection {
   applyTheme(theme) {
     this.theme = theme ?? DEFAULT_PIXI_THEME_SNAPSHOT;
     this.countLabel.applyTheme(this.theme);
-    this.emptyLabel.applyTheme(this.theme);
-    this.emptyLabel.setColor(PAPER_TEXT);
+    for (const label of this.emptySlotLabels) {
+      label.applyTheme(this.theme);
+      label.setColor(BOARD_PAPER_INK);
+    }
     for (const card of this.cards.getWidgets()) {
       card.applyTheme(this.theme);
     }
@@ -1357,6 +1436,7 @@ export class GuildPersonRow {
     this.levelLabel = new PixiTextLabel({
       fontSize: PIXI_UI_GEOMETRY.borderLabelFontSize,
       color: 'muted',
+      wordWrap: true,
       label: `${label}:level`,
     });
     this.statusLabel = new PixiTextLabel({
@@ -1407,7 +1487,7 @@ export class GuildPersonRow {
     this.nameLabel.setText(capitalizeGuildText(displayName));
     this.levelLabel.setText(
       capitalizeGuildText(
-        person.levelLabel ?? `Level ${person.level ?? 1}`,
+        person.detailLabel ?? person.levelLabel ?? `Level ${person.level ?? 1}`,
       ),
     );
     this.statusLabel.setText(
@@ -1451,26 +1531,47 @@ export class GuildPersonRow {
     this.root.position.set(x, y);
     this.root.hitArea = new Rectangle(0, 0, width, height);
     this.paper.setBounds(0, 0, width, height);
-    const inset = 6;
-    this.iconFrame.position.set(inset, 3);
-    this.iconFrame.setSize(48, 48);
-    this.icon.position.set(inset, 3);
-    this.icon.width = 48;
-    this.icon.height = 48;
-    this.initial.position.set(inset + 24, 27);
-    const nameX = inset + 48 + PIXI_UI_GEOMETRY.rowColumnGap;
-    this.nameLabel.position.set(nameX, 7);
+    this.iconFrame.position.set(
+      PERSON_PORTRAIT_BOX.x,
+      PERSON_PORTRAIT_BOX.y,
+    );
+    this.iconFrame.setSize(
+      PERSON_PORTRAIT_BOX.width,
+      PERSON_PORTRAIT_BOX.height,
+    );
+    fitSpriteInside(this.icon, PERSON_PORTRAIT_BOX);
+    this.initial.position.set(
+      PERSON_PORTRAIT_BOX.x + PERSON_PORTRAIT_BOX.width / 2,
+      PERSON_PORTRAIT_BOX.y + PERSON_PORTRAIT_BOX.height / 2,
+    );
+    const activityLayout = Boolean(this.person?.detailLabel);
+    this.nameLabel.position.set(
+      PERSON_TEXT_X,
+      activityLayout ? 10 : PERSON_PRIMARY_TEXT_Y,
+    );
     this.nameLabel.setWrapWidth(
       Math.max(
         0,
-          width - inset -
-          nameX -
+          width - PERSON_TEXT_RIGHT_INSET -
+          PERSON_TEXT_X -
           this.statusLabel.measuredWidth -
           PIXI_UI_GEOMETRY.rowColumnGap,
       ),
     );
-    this.levelLabel.position.set(nameX, 29);
-    this.statusLabel.position.set(width - inset, 19);
+    this.levelLabel.position.set(
+      PERSON_TEXT_X,
+      activityLayout ? 34 : PERSON_SECONDARY_TEXT_Y,
+    );
+    this.levelLabel.setWrapWidth(
+      Math.max(
+        0,
+        width - PERSON_TEXT_RIGHT_INSET - PERSON_TEXT_X,
+      ),
+    );
+    this.statusLabel.position.set(
+      width - PERSON_TEXT_RIGHT_INSET,
+      activityLayout ? 10 : PERSON_SECONDARY_TEXT_Y,
+    );
     this.notificationBadge.placeAtTopRight({
       x: 0,
       y: 0,
@@ -1577,6 +1678,22 @@ function previewValue(current, next) {
   return `${current} > ${next}`;
 }
 
+function fitSpriteInside(sprite, box) {
+  const textureBounds = sprite.texture?.orig ?? sprite.texture?.frame;
+  const textureWidth = Math.max(1, Number(textureBounds?.width) || 1);
+  const textureHeight = Math.max(1, Number(textureBounds?.height) || 1);
+  const scale = Math.min(
+    box.width / textureWidth,
+    box.height / textureHeight,
+  );
+  sprite.width = textureWidth * scale;
+  sprite.height = textureHeight * scale;
+  sprite.position.set(
+    box.x + (box.width - sprite.width) / 2,
+    box.y + box.height - sprite.height,
+  );
+}
+
 function resolveCharacterTexture(assetManager, person = {}) {
   if (!assetManager?.loaded) {
     return null;
@@ -1612,6 +1729,27 @@ function orderChildren(container, widgets) {
   for (const widget of widgets) {
     container.addChild(widget.root ?? widget);
   }
+}
+
+function drawDashedRect(graphics, x, y, width, height, color) {
+  const dash = 5;
+  const gap = 3;
+  const drawLine = (x1, y1, x2, y2) => {
+    const length = Math.hypot(x2 - x1, y2 - y1);
+    const dx = (x2 - x1) / length;
+    const dy = (y2 - y1) / length;
+    for (let distance = 0; distance < length; distance += dash + gap) {
+      const end = Math.min(length, distance + dash);
+      graphics
+        .moveTo(x1 + dx * distance, y1 + dy * distance)
+        .lineTo(x1 + dx * end, y1 + dy * end);
+    }
+  };
+  drawLine(x, y, x + width, y);
+  drawLine(x + width, y, x + width, y + height);
+  drawLine(x + width, y + height, x, y + height);
+  drawLine(x, y + height, x, y);
+  graphics.stroke({ color, width: 1, alpha: 0.52 });
 }
 
 function safeArray(value) {

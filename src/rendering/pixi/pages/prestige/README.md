@@ -1,9 +1,11 @@
 # Retained Pixi Prestige Page
 
-`PrestigePixiPage` keeps the main/points tabs, description, milestone rows,
-point-reward rows, and confirmation panel in one retained Pixi tree. Milestone
-and reward rows are keyed and pooled. Summary and reward info controls open the
-page-owned `PrestigeInfoDialogPixi` through the shared retained dialog registry.
+`PrestigePixiPage` keeps the description, milestone rows, point-reward rows,
+and confirmation panel in one retained Pixi tree. The global bottom HUD owns
+the Main/Points controls alongside an icon-backed Workshop return, matching the
+alternate Guild HUD contract. Milestone and reward rows are keyed and pooled.
+Summary and reward info controls open the page-owned `PrestigeInfoDialogPixi`
+through the shared retained dialog registry.
 
 The identity ribbon reuses `MarketTitleRibbon` and binds its three-slot star
 group to completed Prestige Points. `Next Prestige` and `Milestones` reuse

@@ -567,7 +567,7 @@ describe('ShopPixiPage', () => {
       );
       if (dialogId === SHOP_DIALOG_IDS.STALL) {
         expect(harness.dialogs.get(dialogId).panel.outerHeight).toBe(
-          364,
+          464,
         );
       }
       if (dialogId === SHOP_DIALOG_IDS.LEDGER) {
@@ -1064,7 +1064,7 @@ describe('ShopPixiPage', () => {
     harness.dispose();
   });
 
-  it('keeps Load Stall at its authored height on shorter mobile viewports and grows it on taller ones', () => {
+  it('uses the taller Load Stall shell at the authored mobile viewport and grows it on taller ones', () => {
     const harness = createHarness();
     harness.page.bind(createShopViewModel());
     harness.page.activate();
@@ -1077,15 +1077,17 @@ describe('ShopPixiPage', () => {
     });
     const stall = harness.dialogs.get(SHOP_DIALOG_IDS.STALL);
 
-    stall.layout({ sourceWidth: 390, sourceHeight: 803 });
-    const shortViewportListHeight = stall.list.height;
+    stall.layout({ sourceWidth: 390, sourceHeight: 844 });
+    const authoredViewportListHeight = stall.list.height;
 
-    expect(stall.panel.coreHeight).toBe(364);
+    expect(stall.panel.coreHeight).toBe(464);
 
     stall.layout({ sourceWidth: 390, sourceHeight: 944 });
 
-    expect(stall.panel.coreHeight).toBe(464);
-    expect(stall.list.height).toBeGreaterThan(shortViewportListHeight);
+    expect(stall.panel.coreHeight).toBe(564);
+    expect(stall.list.height).toBeGreaterThan(
+      authoredViewportListHeight,
+    );
 
     harness.page.destroy();
     harness.dispose();

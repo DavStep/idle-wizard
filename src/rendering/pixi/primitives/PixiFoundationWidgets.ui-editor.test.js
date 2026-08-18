@@ -137,4 +137,29 @@ describe('Pixi foundation UI editor integrations', () => {
       pageId: 'research',
     });
   });
+
+  it('previews Prestige alternate-HUD tab selection through production actions', async () => {
+    const integration = integrations.find(
+      ({ id }) => id === 'compound.bottom-room-tabs',
+    );
+    const scenario = integration.scenarios.find(({ id }) => id === 'prestige');
+    const context = {
+      emit: vi.fn(),
+      invalidate: vi.fn(),
+    };
+
+    await scenario.mount(context, scenario.fixture);
+    const initialModel = harness.models.at(-1);
+
+    expect(initialModel).toMatchObject({
+      currentPageId: 'prestige',
+      hudMode: 'prestige',
+      prestigeHud: { selectedTabId: 'main' },
+    });
+    expect(initialModel.actions.selectPrestigeTab('points')).toBe(true);
+    expect(harness.models.at(-1).prestigeHud.selectedTabId).toBe('points');
+    expect(context.emit).toHaveBeenCalledWith('prestigeTabSelected', {
+      tabId: 'points',
+    });
+  });
 });

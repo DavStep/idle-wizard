@@ -751,7 +751,6 @@ export class WorkshopWorldNoticeManager {
   createDonationOptionRow(request, option) {
     const row = document.createElement('div');
     row.className = 'workshop-page__world-notice-donation-option';
-    row.classList.toggle('is-unavailable', option.canDonate !== true);
 
     const label = document.createElement('span');
     label.className = 'workshop-page__world-notice-donation-label';
@@ -778,7 +777,7 @@ export class WorkshopWorldNoticeManager {
     }
 
     const resource = this.getDonationOptionResource(option);
-    label.classList.toggle('is-unavailable', option.canDonate !== true);
+    label.classList.remove('is-unavailable');
 
     if (resource === 'coin') {
       label.replaceChildren(createResourceIconLabel('coin', option.label || 'coin'));
@@ -841,8 +840,7 @@ export class WorkshopWorldNoticeManager {
     const button = document.createElement('button');
     button.className = 'style-button workshop-page__world-notice-request-action';
     button.type = 'button';
-    button.textContent = option.canDonate ? 'donate' : this.getDonationNeedText(option);
-    button.disabled = !option.canDonate;
+    button.textContent = 'donate';
     button.addEventListener('click', () => this.showDonateDialog(request, option));
     return button;
   }

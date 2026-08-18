@@ -67,7 +67,9 @@ Rows in long market/history dialogs are viewport-windowed and keyed by `id`.
 Actions are invoked directly and are expected to call the authoritative
 gameplay/backend facade. Whole-dialog footer tabs render only when at least two
 choices are available; one-category dialogs use the complete paper/content
-height instead.
+height instead. Load Stall uses a dedicated `464px` authored shell at
+`390x844`; its item-list viewport absorbs additional portrait height and keeps
+the allocation controls and footer tabs fixed outside the managed scroll.
 
 The compatibility adapter also accepts the current raw `shelf`,
 `playerShelf`, `coinOffer`, `dailyCrystalOffer`, and `crystalOffers` snapshot names during cutover.
@@ -107,6 +109,8 @@ Add `?tab=crystals` to open the Crystal Market tab with its deterministic
 cooling-down coin offer, ready daily free crystal offer, and six crystal
 bundles. Add `&coinOffer=ready` to show the ready green Collect action and
 `&dailyCrystalOffer=cooldown` to show the daily offer's disabled countdown.
+Add `&claimFlyout=crystal` to include the production top panel and replay the
+daily Free claim's crystal travel into its HUD counter.
 Currency offers use the reusable `MarketOfferRow`: the stall card frame and
 art well hold a coin or crystal icon with the amount over the art, the offer
 name sits at the top-left, and a fixed right-side green button carries the

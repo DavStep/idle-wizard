@@ -186,7 +186,9 @@ export class PrestigePixiPage extends BaseRetainedPixiPage {
       prestige.selectedTabId ??
       tabs.find((tab) => tab.selected)?.id ??
       this.selectedTabId;
-    this.tabs.reconcile(tabs);
+    this.tabs.reconcile(prestige.localTabsVisible === true ? tabs : []);
+    this.tabsLayer.visible = this.tabs.getWidgets().length > 0;
+    this.tabsLayer.renderable = this.tabsLayer.visible;
 
     const summary = prestige.summary ?? {};
     this.titleRibbon.bind(
@@ -391,8 +393,9 @@ export class PrestigePixiPage extends BaseRetainedPixiPage {
       resolveRetainedPageBottomClearance(this.viewModel);
     const width = sourceWidth - edge * 2;
     const scrollWidth = sourceWidth - edge;
-    const tabClearance =
-      RETAINED_PAGE_GEOMETRY.tabHeight + RETAINED_PAGE_GEOMETRY.scrollCut * 2;
+    const tabClearance = this.tabs.getWidgets().length > 0
+      ? RETAINED_PAGE_GEOMETRY.tabHeight + RETAINED_PAGE_GEOMETRY.scrollCut * 2
+      : 0;
     const panelTop =
       RETAINED_PAGE_GEOMETRY.contentTop +
       PRESTIGE_BANNER_HEIGHT +
