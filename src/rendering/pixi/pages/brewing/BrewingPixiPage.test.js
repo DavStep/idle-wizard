@@ -145,6 +145,53 @@ describe('BrewingPixiPage', () => {
     harness.dispose();
   });
 
+  it('accelerates the active cauldron on release without stealing carousel swipes', () => {
+    let now = 100;
+    const accelerateCauldron = vi.fn(() => ({
+      ok: true,
+      cauldronIndex: 0,
+      reducedSeconds: 1,
+      remainingMs: 4_000,
+      cooldownMs: 800,
+    }));
+    const harness = createHarness({ timeSource: () => now });
+    const model = createBrewingViewModel();
+    model.brewing.cauldrons[0].activeBrew = {
+      key: 'sage-tonic',
+      label: 'sage tonic',
+      phase: 'brewing',
+      totalMs: 10_000,
+      remainingMs: 5_000,
+    };
+    model.actions.accelerateCauldron = accelerateCauldron;
+    harness.page.bind(model);
+    harness.page.activate();
+
+    const registration = harness.inputRouter.store
+      .getRegistrations('press')
+      .find((candidate) => candidate.id === 'brewing.cauldron.tap');
+
+    expect(registration).toMatchObject({
+      displayObject: harness.page.hud.cauldronArt,
+      sound: false,
+      onActivate: expect.any(Function),
+    });
+    expect(registration.excludePageSwipe).not.toBe(true);
+    expect(registration.enabled()).toBe(true);
+    expect(registration.onActivate()).toMatchObject({
+      ok: true,
+      reducedSeconds: 1,
+    });
+    expect(accelerateCauldron).toHaveBeenCalledWith(0);
+    expect(registration.enabled()).toBe(false);
+
+    now = 900;
+    expect(registration.enabled()).toBe(true);
+
+    harness.page.destroy();
+    harness.dispose();
+  });
+
   it('empties the selected cauldron from the compact release-only action', () => {
     const emptyCauldron = vi.fn(() => ({ ok: true }));
     const harness = createHarness();

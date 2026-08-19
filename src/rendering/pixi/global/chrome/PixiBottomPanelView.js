@@ -88,6 +88,8 @@ export const PIXI_GUILD_HUD_TABS = Object.freeze([
     id: 'guild.hall',
     guildTabId: 'hall',
     label: 'Hall',
+    icon: 'icon-guild-hall-tab.png',
+    artScale: 0.72,
     semanticId: 'guild.tab.hall',
     tutorialId: 'guild:tab:hall',
     defaultUnlocked: true,
@@ -96,6 +98,8 @@ export const PIXI_GUILD_HUD_TABS = Object.freeze([
     id: 'guild.adventurers',
     guildTabId: 'adventurers',
     label: 'Adventurers',
+    icon: 'icon-guild-adventurers-tab.png',
+    artScale: 0.78,
     semanticId: 'guild.tab.adventurers',
     tutorialId: 'guild:tab:adventurers',
     defaultUnlocked: true,
@@ -104,6 +108,8 @@ export const PIXI_GUILD_HUD_TABS = Object.freeze([
     id: 'guild.fishers',
     guildTabId: 'fishers',
     label: 'Fishers',
+    icon: 'icon-guild-fishers-tab.png',
+    artScale: 0.78,
     semanticId: 'guild.tab.fishers',
     tutorialId: 'guild:tab:fishers',
     defaultUnlocked: false,
@@ -113,6 +119,8 @@ export const PIXI_GUILD_HUD_TABS = Object.freeze([
     id: 'guild.miners',
     guildTabId: 'miners',
     label: 'Miners',
+    icon: 'icon-guild-miners-tab.png',
+    artScale: 0.78,
     semanticId: 'guild.tab.miners',
     tutorialId: 'guild:tab:miners',
     defaultUnlocked: false,
@@ -122,6 +130,8 @@ export const PIXI_GUILD_HUD_TABS = Object.freeze([
     id: 'guild.world',
     guildTabId: 'world',
     label: 'World',
+    icon: 'icon-guild-world-tab.png',
+    artScale: 0.82,
     semanticId: 'guild.tab.world',
     tutorialId: 'guild:tab:world',
     defaultUnlocked: false,
@@ -143,6 +153,8 @@ export const PIXI_PRESTIGE_HUD_TABS = Object.freeze([
     id: 'prestige.main',
     prestigeTabId: 'main',
     label: 'Main',
+    icon: 'icon-prestige-main-tab.png',
+    artScale: 0.84,
     semanticId: 'prestige.tab.main',
     tutorialId: 'prestige:tab:main',
   }),
@@ -150,6 +162,8 @@ export const PIXI_PRESTIGE_HUD_TABS = Object.freeze([
     id: 'prestige.points',
     prestigeTabId: 'points',
     label: 'Points',
+    icon: 'icon-prestige-points-tab.png',
+    artScale: 0.9,
     semanticId: 'prestige.tab.points',
     tutorialId: 'prestige:tab:points',
   }),
@@ -276,10 +290,7 @@ export class PixiBottomPanelView extends BasePixiRetainedView {
         }),
     );
     this.guildTabs = PIXI_GUILD_HUD_TABS.map((definition) => {
-      const TabClass = definition.guildTabId
-        ? PixiBottomHudTextTab
-        : PixiBottomRoomTab;
-      return new TabClass({
+      return new PixiBottomRoomTab({
         definition,
         assets,
         inputRouter,
@@ -289,10 +300,7 @@ export class PixiBottomPanelView extends BasePixiRetainedView {
       });
     });
     this.prestigeTabs = PIXI_PRESTIGE_HUD_TABS.map((definition) => {
-      const TabClass = definition.prestigeTabId
-        ? PixiBottomHudTextTab
-        : PixiBottomRoomTab;
-      return new TabClass({
+      return new PixiBottomRoomTab({
         definition,
         assets,
         inputRouter,

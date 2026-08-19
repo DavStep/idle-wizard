@@ -5399,6 +5399,35 @@ describe("GameplayFacade", () => {
     });
   });
 
+  it("reduces one active Brewing cauldron second per accepted tap", () => {
+    const { gameplayFacade } = createGameplay();
+    gameplayFacade.brewingFacade.brewingProcessEntityManager.restoreActiveBrew({
+      cauldronIndex: 0,
+      resultItemTypeId: 2001,
+      phase: "brewing",
+      totalSeconds: 30,
+      remainingSeconds: 12,
+      bottlingTotalSeconds: 2,
+    });
+
+    expect(gameplayFacade.accelerateBrewingCauldron(0)).toMatchObject({
+      ok: true,
+      cauldronIndex: 0,
+      phase: "brewing",
+      reducedSeconds: 1,
+      remainingMs: 11_000,
+      cooldownMs: 800,
+    });
+    expect(gameplayFacade.getSnapshot().brewing.activeBrew).toMatchObject({
+      phase: "brewing",
+      remainingMs: 11_000,
+    });
+    expect(gameplayFacade.accelerateBrewingCauldron(0)).toMatchObject({
+      ok: false,
+      reason: "tap_cooldown",
+    });
+  });
+
   it("rejects garden seed changes while a crop is active", () => {
     const { ecsFacade, gameplayFacade } = createGameplay();
 

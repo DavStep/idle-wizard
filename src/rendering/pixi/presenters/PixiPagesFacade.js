@@ -1079,6 +1079,12 @@ export class PixiPagesFacade {
         },
         summonSeed: () => {
           const result = gameplay?.summonSeed?.();
+          if (result?.ok === true) {
+            const summonedQuantity = Array.isArray(result.seeds)
+              ? result.seeds.length
+              : result.quantity ?? 1;
+            this.uiClickSoundFacade?.playSummon?.(summonedQuantity);
+          }
           if (result?.reason === "no_active_seed_weights") {
             this.experienceFacade?.transientEffects?.emitReward?.({
               message: "Select a seed to drop",
@@ -1233,6 +1239,15 @@ export class PixiPagesFacade {
           return true;
         },
         openWorldEventDonation: (requestId, optionKey) => {
+          const option = findWorldEventDonationOption(
+            this.gameplaySnapshot,
+            requestId,
+            optionKey,
+          );
+          if (option && getWorldEventDonationMaximum(option) <= 0) {
+            this.emitWorldEventDonationShortage();
+            return true;
+          }
           this.worldEventDonationDraft = {
             requestId,
             optionKey,
@@ -1270,6 +1285,8 @@ export class PixiPagesFacade {
             this.worldEventDonationDraft = null;
             this.requireRuntime().closeDialog?.("workshop.worldEventDonate");
             this.refreshPage("workshop");
+          } else if (isWorldEventDonationShortage(result?.reason)) {
+            this.emitWorldEventDonationShortage();
           }
           return result ?? false;
         },
@@ -1753,6 +1770,13 @@ export class PixiPagesFacade {
           gameplay?.fireGuildAdventurer?.(adventurerId),
       },
     };
+  }
+
+  emitWorldEventDonationShortage() {
+    this.experienceFacade?.transientEffects?.emitReward?.({
+      message: "Not enough resources",
+      flyoutKey: "workshop-world-event-donation-shortage",
+    });
   }
 
   emitPurchaseSpendBurstForResult(
@@ -2540,6 +2564,29 @@ export class PixiPagesFacade {
           }
         }
         return gameplay?.brewCauldron?.(index);
+      },
+      accelerateCauldron: (cauldronIndex = 0) => {
+        const index = Math.max(
+          0,
+          Math.floor(Number(cauldronIndex) || 0),
+        );
+        const result =
+          gameplay?.accelerateBrewingCauldron?.(index) ?? false;
+        if (result?.ok === true) {
+          const reducedSeconds = Math.max(
+            0,
+            Number(result.reducedSeconds) || 0,
+          );
+          this.uiClickSoundFacade?.playClick?.();
+          this.experienceFacade?.transientEffects?.emitReward?.({
+            message: `-${Number.isInteger(reducedSeconds)
+              ? reducedSeconds
+              : reducedSeconds.toFixed(1)}s`,
+            flyoutKey: `brewing-cauldron-tap-${index}`,
+            anchorId: "brewing.cauldron.liquid",
+          });
+        }
+        return result;
       },
       selectBrewQuantity: (quantity, cauldronIndex) =>
         gameplay?.setBrewingBrewQuantity?.(quantity, cauldronIndex),
@@ -3586,6 +3633,31 @@ function normalizeDialogId(dialogId) {
 function normalizeWorkshopTabId(tabId, allowedTabIds, fallback) {
   const normalized = String(tabId ?? "");
   return allowedTabIds.has(normalized) ? normalized : fallback;
+}
+
+function findWorldEventDonationOption(gameplay = {}, requestId, optionKey) {
+  const requests = gameplay.worldNotice?.current?.requests ?? [];
+  const request = requests.find(
+    (candidate) => candidate?.requestId === requestId,
+  );
+  return (
+    request?.donationOptions?.find(
+      (candidate) => candidate?.optionKey === optionKey,
+    ) ?? null
+  );
+}
+
+function getWorldEventDonationMaximum(option = {}) {
+  return Math.max(
+    0,
+    Math.floor(
+      Number(option?.maxDonateQuantity ?? option?.availableQuantity) || 0,
+    ),
+  );
+}
+
+function isWorldEventDonationShortage(reason) {
+  return reason === "not_enough_coin" || reason === "not_enough_items";
 }
 
 function normalizeGuildBranchId(branchId) {

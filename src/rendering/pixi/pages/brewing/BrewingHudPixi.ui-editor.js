@@ -88,6 +88,24 @@ async function mountBrewing(context, fixture) {
     selectedCauldronIndex: 0,
   });
   const actions = {
+    accelerateCauldron: () => {
+      const previousRemainingMs = Math.max(
+        0,
+        Number(state.active?.endTimeMs) - context.clock.now(),
+      );
+      const reducedMs = Math.min(1_000, previousRemainingMs);
+      context.clock.advance(reducedMs);
+      context.emit('cauldronAccelerated', {
+        reducedSeconds: reducedMs / 1_000,
+      });
+      refresh();
+      return {
+        ok: reducedMs > 0,
+        reducedSeconds: reducedMs / 1_000,
+        remainingMs: Math.max(0, previousRemainingMs - reducedMs),
+        cooldownMs: 800,
+      };
+    },
     collectBrew: () => {
       context.emit('brewCollected', { potion: 'minorManaPotion' });
       state.active = null;

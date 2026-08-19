@@ -841,6 +841,7 @@ export class WorkshopWorldNoticeManager {
     button.className = 'style-button workshop-page__world-notice-request-action';
     button.type = 'button';
     button.textContent = 'donate';
+    setNotificationBadge(button, request?.completed !== true);
     button.addEventListener('click', () => this.showDonateDialog(request, option));
     return button;
   }

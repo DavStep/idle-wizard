@@ -1,14 +1,6 @@
 const BUTTON_CLICK_SAMPLE_URLS = Object.freeze([
   new URL(
-    '../../../../assets/game/source/audio/idle-outpost/button-touch-up-1.wav',
-    import.meta.url,
-  ).href,
-  new URL(
     '../../../../assets/game/source/audio/idle-outpost/button-touch-up-2.wav',
-    import.meta.url,
-  ).href,
-  new URL(
-    '../../../../assets/game/source/audio/idle-outpost/button-touch-up-3.wav',
     import.meta.url,
   ).href,
 ]);
@@ -40,15 +32,24 @@ const DIALOG_OPEN_SAMPLE_URLS = Object.freeze([
     import.meta.url,
   ).href,
 ]);
+const SUMMON_POP_SAMPLE_URL = new URL(
+  '../../../../assets/game/source/audio/ui-click-pop.wav',
+  import.meta.url,
+).href;
 
 const MASTER_GAIN = 1;
 const CLICK_MIN_INTERVAL_MS = 42;
 const CLICK_GAIN = 0.56;
 const PURCHASE_GAIN = 0.74 * 0.5;
 const DIALOG_OPEN_GAIN = 0.62 * 0.72;
+const SUMMON_POP_GAIN = 1;
 const PURCHASE_PLAYBACK_RATE = 1.08;
 const DIALOG_OPEN_PLAYBACK_RATE_MIN = 0.9;
 const DIALOG_OPEN_PLAYBACK_RATE_MAX = 1.2;
+const SUMMON_POP_PLAYBACK_RATE_MIN = 0.94;
+const SUMMON_POP_PLAYBACK_RATE_MAX = 1.08;
+const SUMMON_POP_INTERVAL_SECONDS = 0.085;
+const MAX_SUMMON_POP_COUNT = 5;
 const FALLBACK_TONE_DURATION_SECONDS = 0.034;
 const FALLBACK_TONE_GAIN = 0.026;
 const FALLBACK_TONE_START_FREQUENCY_MIN = 520;
@@ -90,6 +91,7 @@ export class UiClickSoundManager {
     clickSampleUrl,
     purchaseSampleUrls = PURCHASE_SAMPLE_URLS,
     dialogOpenSampleUrls = DIALOG_OPEN_SAMPLE_URLS,
+    summonPopSampleUrl = SUMMON_POP_SAMPLE_URL,
     windowRef = typeof window === 'undefined' ? null : window,
     now = () => Date.now(),
     random = Math.random,
@@ -140,6 +142,15 @@ export class UiClickSoundManager {
           playbackRateMax: DIALOG_OPEN_PLAYBACK_RATE_MAX,
         }),
       ],
+      [
+        'summon-pop',
+        createCue({
+          urls: [summonPopSampleUrl],
+          gain: SUMMON_POP_GAIN,
+          playbackRate: SUMMON_POP_PLAYBACK_RATE_MIN,
+          playbackRateMax: SUMMON_POP_PLAYBACK_RATE_MAX,
+        }),
+      ],
     ]);
 
     for (const cue of this.cues.values()) {
@@ -183,7 +194,28 @@ export class UiClickSoundManager {
     return this.playCue('dialog-open');
   }
 
-  playCue(cueId, { fallbackTone = false } = {}) {
+  playSummon(quantity = 1) {
+    const repeatCount = Math.min(
+      MAX_SUMMON_POP_COUNT,
+      Math.max(0, Math.floor(Number(quantity) || 0)),
+    );
+    if (repeatCount === 0) {
+      return false;
+    }
+    return this.playCue('summon-pop', {
+      repeatCount,
+      repeatIntervalSeconds: SUMMON_POP_INTERVAL_SECONDS,
+    });
+  }
+
+  playCue(
+    cueId,
+    {
+      fallbackTone = false,
+      repeatCount = 1,
+      repeatIntervalSeconds = 0,
+    } = {},
+  ) {
     const cue = this.cues.get(cueId);
     if (!this.enabled || !cue || this.isThrottled(cueId, cue)) {
       return false;
@@ -195,7 +227,11 @@ export class UiClickSoundManager {
     }
 
     this.lastPlayAtMsByCue.set(cueId, this.now());
-    this.playCueNow(context, cueId, cue, { fallbackTone });
+    this.playCueNow(context, cueId, cue, {
+      fallbackTone,
+      repeatCount,
+      repeatIntervalSeconds,
+    });
     return true;
   }
 
@@ -291,11 +327,19 @@ export class UiClickSoundManager {
     }
   }
 
-  playCueNow(context, cueId, cue, { fallbackTone }) {
+  playCueNow(
+    context,
+    cueId,
+    cue,
+    { fallbackTone, repeatCount, repeatIntervalSeconds },
+  ) {
     const url = this.chooseVariant(cueId, cue.urls);
     const buffer = url ? this.buffers.get(url) : null;
     if (buffer) {
-      this.scheduleSample(context, buffer, cue);
+      this.scheduleSamples(context, buffer, cue, {
+        repeatCount,
+        repeatIntervalSeconds,
+      });
       return;
     }
 
@@ -313,7 +357,10 @@ export class UiClickSoundManager {
         this.context === context &&
         isContextRunning(context)
       ) {
-        this.scheduleSample(context, loadedBuffer, cue);
+        this.scheduleSamples(context, loadedBuffer, cue, {
+          repeatCount,
+          repeatIntervalSeconds,
+        });
       }
     });
   }
@@ -338,10 +385,26 @@ export class UiClickSoundManager {
     return urls[index];
   }
 
-  scheduleSample(context, buffer, cue) {
+  scheduleSamples(
+    context,
+    buffer,
+    cue,
+    { repeatCount = 1, repeatIntervalSeconds = 0 } = {},
+  ) {
+    for (let index = 0; index < repeatCount; index += 1) {
+      this.scheduleSample(
+        context,
+        buffer,
+        cue,
+        index * repeatIntervalSeconds,
+      );
+    }
+  }
+
+  scheduleSample(context, buffer, cue, delaySeconds = 0) {
     const source = context.createBufferSource();
     const gain = context.createGain();
-    const startAt = context.currentTime ?? 0;
+    const startAt = (context.currentTime ?? 0) + delaySeconds;
     const playbackRate = this.randomBetween(
       cue.playbackRate,
       cue.playbackRateMax,

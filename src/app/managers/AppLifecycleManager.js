@@ -334,7 +334,7 @@ export class AppLifecycleManager {
   shouldPromptForFreshStart({ save, accountLinkSave } = {}) {
     return (
       !this.freshStartConfirmed &&
-      !this.isAuthenticatedAccount() &&
+      !this.hasConnectableAccount() &&
       !save &&
       !accountLinkSave
     );

@@ -26,7 +26,12 @@ describe('Workshop widget UI editor integrations', () => {
       integrations.find(
         ({ id }) => id === 'compound.world-event-donation-option-row',
       )?.childWidgetIds,
-    ).toEqual(['text-button']);
+    ).toEqual(['text-button', 'primitive.notification-badge']);
+    expect(
+      integrations.find(
+        ({ id }) => id === 'compound.world-event-donation-option-row',
+      )?.scenarios.map(({ id }) => id),
+    ).toEqual(['available', 'notified', 'unavailable', 'seed-pack']);
     expect(
       integrations.find(({ id }) => id === 'compound.leaderboard-row')
         ?.childWidgetIds,

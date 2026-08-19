@@ -792,6 +792,17 @@ describe('WorkshopWorldNoticeManager', () => {
     const openButton = parent.querySelector('.workshop-page__world-notice-open');
     expect(openButton?.dataset.notification).toBe('true');
 
+    openButton.click();
+    const donationButtons = [...popupParent.querySelectorAll(
+      '.workshop-page__world-notice-donation-option > .workshop-page__world-notice-request-action',
+    )];
+    expect(donationButtons.map((button) => button.dataset.notification)).toEqual([
+      undefined,
+      undefined,
+      'true',
+      'true',
+    ]);
+
     for (const request of snapshot.worldNotice.current.requests) {
       request.completed = true;
     }

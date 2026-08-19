@@ -2,8 +2,9 @@
 
 `PrestigePixiPage` keeps the description, milestone rows, point-reward rows,
 and confirmation panel in one retained Pixi tree. The global bottom HUD owns
-the Main/Points controls alongside an icon-backed Workshop return, matching the
-alternate Guild HUD contract. Milestone and reward rows are keyed and pooled.
+icon-backed Main/Points controls alongside the icon-backed Workshop return,
+using the normal bottom-room icon-tab behavior. Milestone and reward rows are
+keyed and pooled.
 Summary and reward info controls open the page-owned `PrestigeInfoDialogPixi`
 through the shared retained dialog registry.
 

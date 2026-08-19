@@ -9,6 +9,7 @@ import { BrewingProcessManager } from './managers/BrewingProcessManager.js';
 import { BrewingRecipeMatchManager } from './managers/BrewingRecipeMatchManager.js';
 import { BrewingSnapshotManager } from './managers/BrewingSnapshotManager.js';
 import { BrewingStartManager } from './managers/BrewingStartManager.js';
+import { BrewingTapAccelerationManager } from './managers/BrewingTapAccelerationManager.js';
 import { parseGameConfig } from '../config/gameConfigSnapshot.js';
 
 export class BrewingFacade {
@@ -22,6 +23,7 @@ export class BrewingFacade {
     playerLevelFacade,
     researchFacade,
     onBrewComplete,
+    tapNow,
   }) {
     this.playerLevelFacade = playerLevelFacade;
     this.researchFacade = researchFacade;
@@ -70,6 +72,10 @@ export class BrewingFacade {
     this.brewingProcessManager = new BrewingProcessManager({
       brewingProcessEntityManager: this.brewingProcessEntityManager,
       collectReadyBrews: () => this.collectAutoReadyBrews(),
+    });
+    this.brewingTapAccelerationManager = new BrewingTapAccelerationManager({
+      brewingProcessEntityManager: this.brewingProcessEntityManager,
+      now: tapNow,
     });
     this.autoBrewEnabledByCauldron = new Map();
     this.autoBrewRecipeKeysByCauldron = new Map();
@@ -488,6 +494,10 @@ export class BrewingFacade {
     return this.brewingBottlingManager.startBottling(cauldronIndex);
   }
 
+  accelerateCauldron(cauldronIndex = 0) {
+    return this.brewingTapAccelerationManager.accelerate(cauldronIndex);
+  }
+
   cancel(cauldronIndex = 0) {
     return this.brewingCancelManager.cancel(cauldronIndex);
   }
@@ -610,6 +620,7 @@ export class BrewingFacade {
     }
 
     this.clearAutoBrewState();
+    this.brewingTapAccelerationManager.reset();
 
     this.brewingCauldronEntityManager.clearAllIngredients();
     this.brewingProcessEntityManager.clearAllActiveBrews();

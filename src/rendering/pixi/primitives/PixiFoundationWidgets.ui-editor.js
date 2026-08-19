@@ -393,7 +393,7 @@ export default [
     ],
     usages: [
       {
-        label: 'Guild HUD navigation',
+        label: 'Iconless alternate HUD navigation',
         source: 'src/rendering/pixi/global/chrome/PixiBottomPanelView.js',
       },
     ],
@@ -408,7 +408,6 @@ export default [
     apiVersion: 1,
     childWidgetIds: [
       'compound.bottom-room-tab',
-      'compound.bottom-hud-text-tab',
     ],
     createThumbnail: createBottomRoomTabsThumbnail,
     folderPath: ['Navigation'],
@@ -1035,9 +1034,13 @@ function createBottomHudTextTabControl({
   const definition = PIXI_GUILD_HUD_TABS.find(
     ({ guildTabId }) => guildTabId === fixture.guildTabId,
   ) ?? PIXI_GUILD_HUD_TABS.find(({ guildTabId }) => guildTabId === 'hall');
+  const textDefinition = {
+    ...definition,
+    icon: undefined,
+  };
   const tab = new PixiBottomHudTextTab({
     assets,
-    definition,
+    definition: textDefinition,
     inputRouter: input,
     notificationLayer,
     onActivate,

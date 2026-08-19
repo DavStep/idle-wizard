@@ -70,6 +70,9 @@ const SECRETARY_PORTRAIT_BOX = Object.freeze({
 });
 const SECRETARY_DETAILS_X = 116;
 const SECRETARY_ROW_Y = Object.freeze([18, 47, 76]);
+const JOINED_ROW_HEIGHT = 64;
+const JOINED_ROW_INSET = 12;
+const JOINED_BUTTON_INSET = 8;
 
 export function capitalizeGuildText(value) {
   return String(value ?? '').replace(/[A-Za-z]/, (letter) =>
@@ -86,9 +89,11 @@ export class GuildRowsSection {
     counters = null,
     label = 'guild:section',
     showTitle = true,
+    joined = false,
   } = {}) {
     this.title = title;
     this.showTitle = showTitle !== false;
+    this.joined = joined === true;
     this.theme = DEFAULT_PIXI_THEME_SNAPSHOT;
     this.root = new Container({ label: `${label}:section` });
     this.titlePlaque = new ResearchStationTitlePlaque({ assetManager });
@@ -97,11 +102,24 @@ export class GuildRowsSection {
     this.contentLayer = new Container({ label: `${label}:content` });
     this.rowsLayer = new Container();
     this.rowsLayer.label = `${label}:rows`;
+    this.joinedPaper = this.joined
+      ? new GuildPaperFrame({ assetManager })
+      : null;
+    this.joinedDividers = this.joined
+      ? new Graphics({ label: `${label}:dividers` })
+      : null;
     this.countLabel = new PixiTextLabel({
       fontSize: PIXI_UI_GEOMETRY.borderLabelFontSize,
       color: 'muted',
       label: `${label}:count`,
     });
+    if (this.joinedPaper && this.joinedDividers) {
+      this.joinedPaper.root.label = `${label}:joinedPaper`;
+      this.contentLayer.addChild(
+        this.joinedPaper.root,
+        this.joinedDividers,
+      );
+    }
     this.contentLayer.addChild(this.rowsLayer);
     this.root.addChild(
       this.titlePlaque.root,
@@ -130,7 +148,8 @@ export class GuildRowsSection {
       pool: this.rowPool,
       counters,
       keyOf: (row, index) => row.id ?? row.key ?? index,
-      bind: (widget, row, key) => widget.bind(key, row),
+      bind: (widget, row, key) =>
+        widget.bind(key, row, { joined: this.joined }),
       afterReconcile: (widgets) => orderChildren(this.rowsLayer, widgets),
     });
     this.model = {};
@@ -170,8 +189,10 @@ export class GuildRowsSection {
     for (const row of widgets) {
       rowsHeight += row.getPreferredHeight(contentWidth);
     }
-    rowsHeight += Math.max(0, widgets.length - 1) *
-      RESEARCH_PIXI_GEOMETRY.rowGap;
+    rowsHeight += this.joined
+      ? 0
+      : Math.max(0, widgets.length - 1) *
+        RESEARCH_PIXI_GEOMETRY.rowGap;
     return (
       (this.showTitle
         ? RESEARCH_PIXI_GEOMETRY.categoryTitleHeight + SECTION_CONTENT_GAP
@@ -191,10 +212,28 @@ export class GuildRowsSection {
       : 0;
     this.contentLayer.position.set(contentX, titleOffset);
     let rowY = 0;
-    for (const row of this.rows.getWidgets()) {
+    const widgets = this.rows.getWidgets();
+    this.joinedDividers?.clear();
+    for (const [index, row] of widgets.entries()) {
       const rowHeight = row.getPreferredHeight(contentWidth);
       row.setBounds(0, rowY, contentWidth, rowHeight);
-      rowY += rowHeight + RESEARCH_PIXI_GEOMETRY.rowGap;
+      rowY += rowHeight;
+      if (this.joined && index < widgets.length - 1) {
+        this.joinedDividers
+          .moveTo(JOINED_ROW_INSET, rowY)
+          .lineTo(contentWidth - JOINED_ROW_INSET, rowY);
+      }
+      if (!this.joined) {
+        rowY += RESEARCH_PIXI_GEOMETRY.rowGap;
+      }
+    }
+    if (this.joinedPaper && this.joinedDividers) {
+      this.joinedPaper.setBounds(0, 0, contentWidth, rowY);
+      this.joinedDividers.stroke({
+        color: PAPER_MUTED,
+        width: 1,
+        alpha: 0.28,
+      });
     }
     this.countLabel.position.set(
       width - this.countLabel.measuredWidth - 8,
@@ -963,12 +1002,13 @@ export class GuildSectionRow {
       }) ?? null;
   }
 
-  bind(key, model = {}) {
+  bind(key, model = {}, { joined = false } = {}) {
     this.unregisterSemantic();
     this.key = key;
     this.model = model;
     this.action = model.action;
     this.enabled = model.enabled !== false && model.disabled !== true;
+    this.joined = joined === true;
     const buttonSkin = getPixiButtonSkin({
       color: this.enabled ? 'brown-light' : 'gray',
       sizeTier: 15,
@@ -984,8 +1024,8 @@ export class GuildSectionRow {
     const isParagraph = kind === 'paragraph';
     const isIdentity = kind === 'identity';
     const isEmpty = kind === 'empty';
-    this.paper.root.visible = !isButton;
-    this.paper.root.renderable = !isButton;
+    this.paper.root.visible = !isButton && !this.joined;
+    this.paper.root.renderable = !isButton && !this.joined;
     this.keyLabel.visible = !isButton && !isParagraph && !isIdentity;
     this.valueLabel.visible = !isButton && !isParagraph && !isEmpty;
     this.paragraph.visible = isParagraph || isIdentity || isEmpty;
@@ -1040,6 +1080,9 @@ export class GuildSectionRow {
   }
 
   getPreferredHeight(width) {
+    if (this.joined) {
+      return JOINED_ROW_HEIGHT;
+    }
     if (this.model.kind === 'paragraph') {
       this.paragraph.setWrapWidth(Math.max(0, width - 16));
       return Math.max(
@@ -1059,7 +1102,7 @@ export class GuildSectionRow {
     this.height = height;
     this.root.hitArea = new Rectangle(0, 0, width, height);
     this.paper.setBounds(0, 0, width, height);
-    const inset = 8;
+    const inset = this.joined ? JOINED_ROW_INSET : 8;
     const textY = Math.max(1, (height - 16) / 2);
     this.keyLabel.position.set(inset, textY);
     this.valueLabel.position.set(width - inset, textY);
@@ -1092,14 +1135,18 @@ export class GuildSectionRow {
             : inset),
       ),
     );
+    const buttonInset = this.joined ? JOINED_BUTTON_INSET : 0;
+    const buttonWidth = Math.max(0, width - buttonInset * 2);
+    const buttonHeight = Math.max(0, height - buttonInset * 2);
+    this.buttonFrame.position.set(buttonInset, buttonInset);
     this.buttonFrame.setSize(
-      width,
-      height,
+      buttonWidth,
+      buttonHeight,
       getPixiButtonSkin({
         color: 'brown-light',
-        height,
+        height: buttonHeight,
         sizeTier: 15,
-        width,
+        width: buttonWidth,
       }).borderInsets,
     );
     this.buttonLabel.position.set(

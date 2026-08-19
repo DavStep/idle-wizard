@@ -7,15 +7,21 @@ logs use keyed bounded pools. Every Guild dialog is a lazy-once
 `DialogRegistry` entry.
 
 Every room section reuses the Research Station title plaque with content on the
-standard room inset. The Adventurers' Board is the branch landmark: it reuses
+standard room inset. Guild Hall composes identity/tag, Adventurers' Lodge,
+Board, and the inset Settings action as four aligned rows inside one continuous
+Research-paper panel with compact separators. The Adventurers' Board is the branch landmark: it reuses
 the brown Expedition nine-slice as a wooden posting surface, draws one dotted
 posting slot for every Secretary capacity slot, and lays posted requests over
-those slots on the shared Root Run Research parchment card. A separate Quest
-Requests section below it explains posting, reports the next request wave, and
-owns the shared Review Requests action. Summary, Secretary, and person rows use
+those slots on the shared Root Run Research parchment card. One Quest Requests
+button below the board reports the waiting count and next request wave, then
+opens the existing paged request dialog. The dialog follows the Brewing Recipes
+page rhythm with one parchment request per view: Post Request stays inside the
+page, while yellow Prev/Next controls and a centered page count sit below it.
+Players can also swipe left or right before posting the selected request.
+Summary, Secretary, and person rows use
 the shared Research card with Research paper ink, while action rows keep the
 shared brown/gray button skins. Hall keeps identity, Adventurers' Lodge, Board,
-and Settings in one titled summary section. Secretary follows as its own titled,
+and Settings in that one titled continuous summary panel. Secretary follows as its own titled,
 taller portrait section and uses the shared labeled cost button for its Upgrade
 action. Guild dialogs reuse `PixiDialogFrame`, including its current brown
 shell, white paper, title plaque, and round close asset. Adventurer and
@@ -26,7 +32,9 @@ green button and Fire uses the shared red button. Player-facing Guild labels
 and rendered dynamic copy always begin with an uppercase letter.
 
 Production places Hall and Adventurers in the alternate global Guild HUD, with
-Fishers, Miners, and World visible as locked future destinations.
+Fishers, Miners, and World visible as locked future destinations. Workshop and
+all five Guild destinations reuse the shared icon-backed bottom-room-tab
+contract; locked destinations replace their icon with the shared lock.
 Adventurers owns a local Board, Roster, and Log button panel above the Guild
 bottom strip. Board continues into its available-quest rows, while Roster
 separates hired Adventurers and Applicants under their own Research Station

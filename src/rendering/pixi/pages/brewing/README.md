@@ -69,6 +69,7 @@ The preferred renderer-neutral view model is:
     selectCauldron, openRecipes, selectRecipe,
     openHerbPicker, selectHerb,
     performCauldronAction, primaryAction,
+    accelerateCauldron,
     selectBrewQuantity, toggleAutoBrew,
     cancelBrew, collectBrew,
     addHerb, dropHerb, addIngredient, removeIngredient, emptyCauldron,
@@ -83,6 +84,11 @@ All labels, affordability/lock states, valid drop targets, recipe matching,
 quantities, timer endpoints, and result messages must come from the presenter.
 The small raw-snapshot fallbacks exist only to ease atomic cutover and do not
 perform writes or own game rules.
+
+During brewing or bottling, the visible cauldron art is a release-only timer
+acceleration target. An accepted tap removes at most one second, emits the
+shared `-1s` transient flyout from the liquid anchor, and locks that cauldron
+for 800ms. Horizontal movement still belongs to the carousel swipe.
 
 The retained Recipes dialog is a two-page Expedition composition. Each visible
 `BrewingRecipeCard` reuses the shared dialog-paper nine-slice, the two wider page

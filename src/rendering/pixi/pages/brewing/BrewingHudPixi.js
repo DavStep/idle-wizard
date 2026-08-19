@@ -191,6 +191,7 @@ export class BrewingHudPixi {
     this.previewOffsetY = 0;
     this.lastMotionCauldronKey = null;
     this.boundMotionStates = new Map();
+    this.cauldronTapLockUntilByIndex = new Map();
     this.root = new Container({ label: 'brewing-fantasy-hud' });
 
     this.carouselPanel = new RetainedPanel({
@@ -234,6 +235,15 @@ export class BrewingHudPixi {
     this.cauldronArt = new Sprite(getTexture(assetManager, ASSETS.cauldron));
     this.cauldronArt.anchor.set(0.5);
     this.cauldronArt.label = 'brewing-carousel-cauldron-art';
+    this.cauldronTapRegistration =
+      this.inputRouter?.registerPressTarget?.({
+        id: 'brewing.cauldron.tap',
+        displayObject: this.cauldronArt,
+        enabled: () => this.canAccelerateSelectedCauldron(),
+        slop: 12,
+        sound: false,
+        onActivate: () => this.accelerateSelectedCauldron(),
+      }) ?? null;
     this.semanticTargets?.register?.({
       semanticId: BREWING_CAULDRON_REWARD_ANCHOR_ID,
       displayObject: this.cauldronArt,
@@ -245,6 +255,21 @@ export class BrewingHudPixi {
           this.cauldronArt.renderable,
         active: !this.root.destroyed,
       }),
+    });
+    this.semanticTargets?.register?.({
+      semanticId: 'brewing.cauldron.tap',
+      displayObject: this.cauldronArt,
+      state: () => ({
+        visible:
+          this.root.visible &&
+          this.root.renderable &&
+          this.cauldronArt.visible &&
+          this.cauldronArt.renderable,
+        interactive: this.canAccelerateSelectedCauldron(),
+        enabled: this.canAccelerateSelectedCauldron(),
+        active: !this.root.destroyed,
+      }),
+      activate: () => this.accelerateSelectedCauldron(),
     });
     this.cauldronLiquid = new Sprite(
       getTexture(assetManager, ASSETS.cauldronLiquidMask),
@@ -885,6 +910,51 @@ export class BrewingHudPixi {
 
   getSelectedCauldron() {
     return this.getCauldrons()[this.selectedIndex] ?? {};
+  }
+
+  canAccelerateSelectedCauldron() {
+    const cauldron = this.getSelectedCauldron();
+    const active = cauldron?.activeBrew ?? null;
+    const remainingMs = Number.isFinite(Number(active?.remainingMs))
+      ? Number(active.remainingMs)
+      : Number(active?.endTimeMs) - this.getInteractionNow();
+    if (
+      cauldron?.unlocked === false ||
+      !active ||
+      (active.phase !== 'brewing' && active.phase !== 'bottling') ||
+      !Number.isFinite(remainingMs) ||
+      remainingMs <= 0
+    ) {
+      return false;
+    }
+    return (
+      this.getInteractionNow() >=
+      (this.cauldronTapLockUntilByIndex.get(this.selectedIndex) ?? 0)
+    );
+  }
+
+  accelerateSelectedCauldron() {
+    if (!this.canAccelerateSelectedCauldron()) {
+      return {
+        ok: false,
+        reason: 'tap_cooldown',
+      };
+    }
+    const result =
+      this.actions.accelerateCauldron?.(this.selectedIndex) ?? false;
+    if (result?.ok === true) {
+      this.cauldronTapLockUntilByIndex.set(
+        this.selectedIndex,
+        this.getInteractionNow() +
+          Math.max(0, Number(result.cooldownMs) || 0),
+      );
+    }
+    return result;
+  }
+
+  getInteractionNow() {
+    const now = Number(this.page?.timeSource?.());
+    return Number.isFinite(now) ? now : Date.now();
   }
 
   drawDots() {
@@ -1918,6 +1988,11 @@ export class BrewingHudPixi {
       BREWING_CAULDRON_REWARD_ANCHOR_ID,
       { displayObject: this.cauldronArt },
     );
+    this.semanticTargets?.unregister?.(
+      'brewing.cauldron.tap',
+      { displayObject: this.cauldronArt },
+    );
+    releaseRegistration(this.cauldronTapRegistration);
     releaseRegistration(this.swipeRegistration);
     for (const button of [
       this.previous,

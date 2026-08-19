@@ -1157,6 +1157,14 @@ export class GameplayFacade {
     return result;
   }
 
+  accelerateBrewingCauldron(cauldronIndex = 0) {
+    const result = this.brewingFacade.accelerateCauldron(cauldronIndex);
+    if (result.ok) {
+      this.publishAndSaveSnapshot();
+    }
+    return result;
+  }
+
   cancelBrewing(cauldronIndex = 0) {
     const result = this.brewingFacade.cancel(cauldronIndex);
     this.publishAndFlushSnapshot();

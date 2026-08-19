@@ -87,7 +87,6 @@ describe('Pixi foundation UI editor integrations', () => {
     expect(tab.createThumbnail).toEqual(expect.any(Function));
     expect(tabs.childWidgetIds).toEqual([
       'compound.bottom-room-tab',
-      'compound.bottom-hud-text-tab',
     ]);
   });
 

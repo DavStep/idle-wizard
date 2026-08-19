@@ -6,8 +6,8 @@ Use the Market title ribbon for the room identity and owned Prestige Point stars
 Below it, use Research station title plaques for the `Description` and
 `Progression` sections. The description and milestone/point rows extend the
 Research paper-card composition, including its art well, rank badge, resource
-icons, and compact action slot. Project `Main` and `Points` into the alternate
-bottom HUD instead of rendering a page-local tab row. The same strip
+icons, and compact action slot. Project icon-backed `Main` and `Points` into the
+alternate bottom HUD instead of rendering a page-local tab row. The same strip
 keeps an icon-backed `Workshop` return tab. Prestige is entered from the
 Workshop left-side Prestige action and does not appear in normal room tabs.
 

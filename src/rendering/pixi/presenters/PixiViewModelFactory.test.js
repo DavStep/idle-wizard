@@ -612,6 +612,7 @@ describe('PixiViewModelFactory', () => {
         ...firstRequest,
         requestId: 'weekly-1:new-crown:seal',
         title: 'protect the seal',
+        completed: true,
       },
       {
         ...firstRequest,
@@ -656,6 +657,7 @@ describe('PixiViewModelFactory', () => {
       'quest:weekly-1:new-crown:crowd',
       'quest:weekly-1:new-crown:seal',
     ]);
+    expect(tasks.rows[1].donationOptions[0].notification).toBe(false);
     expect(tasks.rows[0]).toEqual(
       expect.objectContaining({
         id: 'quest:weekly-1:new-crown:crowd',
@@ -672,6 +674,7 @@ describe('PixiViewModelFactory', () => {
             totalLabel: '80 points total',
             actionLabel: 'Donate',
             enabled: true,
+            notification: true,
             onActivate: expect.any(Function),
           }),
         ],
@@ -818,7 +821,7 @@ describe('PixiViewModelFactory', () => {
     );
   });
 
-  it('keeps a world event donation picker reachable after the owned resource is spent', () => {
+  it('keeps a world event donation action available without shortage copy in the picker', () => {
     const openWorldEventDonation = vi.fn();
     const factory = new PixiViewModelFactory();
     const gameplay = {
@@ -884,7 +887,7 @@ describe('PixiViewModelFactory', () => {
     );
 
     expect(picker).toMatchObject({
-      status: 'Not enough resources.',
+      status: '',
       featuredItem: { value: '0' },
       actions: [expect.objectContaining({ enabled: false })],
     });

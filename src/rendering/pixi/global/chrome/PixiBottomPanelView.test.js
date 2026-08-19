@@ -8,8 +8,8 @@ import { DEFAULT_PAGE_SWIPE_ORDER } from '../../../../pages/managers/pageOrder.j
 import { SemanticTargetRegistry } from '../../retained/index.js';
 import {
   PIXI_BOTTOM_PANEL_TABS,
+  PIXI_GUILD_HUD_TABS,
   PIXI_PRESTIGE_HUD_TABS,
-  PixiBottomHudTextTab,
   PixiBottomRoomTab,
   PixiBottomPanelView,
 } from './PixiBottomPanelView.js';
@@ -36,10 +36,23 @@ describe('PixiBottomPanelView', () => {
       'research',
       'shop',
     ]);
+    expect(PIXI_GUILD_HUD_TABS.map(({ icon }) => icon)).toEqual([
+      'icon-workshop-house-tab.png',
+      'icon-guild-hall-tab.png',
+      'icon-guild-adventurers-tab.png',
+      'icon-guild-fishers-tab.png',
+      'icon-guild-miners-tab.png',
+      'icon-guild-world-tab.png',
+    ]);
     expect(PIXI_PRESTIGE_HUD_TABS.map(({ id }) => id)).toEqual([
       'prestige.workshop',
       'prestige.main',
       'prestige.points',
+    ]);
+    expect(PIXI_PRESTIGE_HUD_TABS.map(({ icon }) => icon)).toEqual([
+      'icon-workshop-house-tab.png',
+      'icon-prestige-main-tab.png',
+      'icon-prestige-points-tab.png',
     ]);
   });
 
@@ -89,9 +102,10 @@ describe('PixiBottomPanelView', () => {
       true,
       true,
     ]);
-    expect(view.guildTabs.slice(1).every(
-      (tab) => tab instanceof PixiBottomHudTextTab,
+    expect(view.guildTabs.every(
+      (tab) => tab instanceof PixiBottomRoomTab,
     )).toBe(true);
+    expect(view.guildTabs.every((tab) => tab.icon !== null)).toBe(true);
     semanticRegistry.activate('guild.tab.adventurers');
     expect(selectGuildTab).toHaveBeenCalledWith('adventurers');
     semanticRegistry.activate('guild.tab.fishers');
@@ -104,7 +118,7 @@ describe('PixiBottomPanelView', () => {
     expect(showPage).toHaveBeenCalledWith('workshop');
   });
 
-  it('keeps Guild category labels visible across resting and selected states', () => {
+  it('uses icon-backed Guild tabs and keeps locked destinations explicit', () => {
     const view = new PixiBottomPanelView({ assets: createAssets() });
     view.bind({
       currentPageId: 'guild',
@@ -126,20 +140,20 @@ describe('PixiBottomPanelView', () => {
       (tab) => tab.definition.guildTabId === 'fishers',
     );
 
-    expect(hall.labelRoot.visible).toBe(true);
-    expect(hall.labelRoot.position.y).toBe(34);
+    expect(hall.labelRoot.visible).toBe(false);
+    expect(hall.iconFrame.visible).toBe(true);
     expect(adventurers.labelRoot.visible).toBe(true);
-    expect(adventurers.labelRoot.position.y).toBe(28);
+    expect(adventurers.iconFrame.visible).toBe(true);
     expect(adventurers.frame.mode).toBe('active');
     expect(adventurers.notification.root.visible).toBe(true);
     expect(fishers.state.unlocked).toBe(false);
     expect(fishers.lock.visible).toBe(true);
-    expect(fishers.lock.position.y).toBe(25);
-    expect(fishers.labelRoot.position.y).toBe(49);
-    expect(fishers.labelRoot.alpha).toBe(0.68);
+    expect(fishers.iconFrame.visible).toBe(false);
+    expect(fishers.lock.position.y).toBe(32);
+    expect(fishers.labelRoot.visible).toBe(false);
   });
 
-  it('switches Prestige to Workshop return plus Main and Points text tabs', () => {
+  it('switches Prestige to Workshop return plus Main and Points icon tabs', () => {
     const showPage = vi.fn();
     const selectPrestigeTab = vi.fn();
     const semanticRegistry = new SemanticTargetRegistry();
@@ -163,10 +177,10 @@ describe('PixiBottomPanelView', () => {
       true,
       true,
     ]);
-    expect(view.prestigeTabs[0]).toBeInstanceOf(PixiBottomRoomTab);
-    expect(view.prestigeTabs.slice(1).every(
-      (tab) => tab instanceof PixiBottomHudTextTab,
+    expect(view.prestigeTabs.every(
+      (tab) => tab instanceof PixiBottomRoomTab,
     )).toBe(true);
+    expect(view.prestigeTabs.every((tab) => tab.icon !== null)).toBe(true);
     expect(view.prestigeTabs[1].state.selected).toBe(true);
     expect(view.prestigeTabs[2].state.selected).toBe(false);
 

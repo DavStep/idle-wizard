@@ -1398,6 +1398,7 @@ describe('WorkshopPixiPage', () => {
               totalLabel: '0 Points Total',
               actionLabel: 'Donate',
               enabled: true,
+              notification: true,
               onActivate: donate,
             },
           ],
@@ -1483,6 +1484,8 @@ describe('WorkshopPixiPage', () => {
     expect(row.options[0].action.enabled).toBe(false);
     expect(row.options[1].action.textLabel.textObject.text).toBe('Donate');
     expect(row.options[1].action.enabled).toBe(true);
+    expect(row.options[1].action.notification).toBe(true);
+    expect(row.options[1].action.notificationBadge.root.visible).toBe(true);
     expect(row.options[1].action.visible).toBe(true);
     expect(row.options[1].action.renderable).toBe(true);
     expect(

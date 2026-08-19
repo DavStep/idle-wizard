@@ -29,7 +29,7 @@ export default [
   widget('compound.workshop-task-row', 'Workshop Task Row', ['text-button', 'primitive.progress-bar'], taskRowControl, variants(['progress', 'claimable', 'complete'])),
   widget('compound.workshop-summon-control', 'Workshop Summon Control', ['cost-button', 'info-button', 'primitive.notification-badge'], summonControl, variants(['available', 'unaffordable', 'notified'])),
   widget('compound.root-run-side-action', 'Root Run Side Action', ['primitive.notification-badge'], sideActionControl, variants(['left', 'right', 'disabled', 'notified', 'timed'])),
-  widget('compound.world-event-donation-option-row', 'World Event Donation Option Row', ['text-button'], donationOptionControl, variants(['available', 'unavailable', 'seed-pack'])),
+  widget('compound.world-event-donation-option-row', 'World Event Donation Option Row', ['text-button', 'primitive.notification-badge'], donationOptionControl, variants(['available', 'notified', 'unavailable', 'seed-pack'])),
   widget('compound.alliance-directory-row', 'Alliance Directory Row', ['compound.alliance-member-row', 'primitive.managed-scroll-area', 'text-button'], allianceDirectoryControl, variants(['collapsed', 'expanded', 'full'])),
   widget('compound.alliance-member-row', 'Alliance Member Row', ['compound.player-profile', 'text-button'], allianceMemberControl, variants(['leader', 'member', 'passive'])),
   widget('compound.alliance-quest-row', 'Alliance Quest Row', ['primitive.resource-label', 'text-button'], allianceQuestControl, variants(['fill', 'route', 'claim', 'claimed', 'overflow'])),
@@ -163,7 +163,7 @@ function sideActionControl({ assets, input, fixture = { state: 'left' }, context
 
 function donationOptionControl({ assets, input, fixture = { state: 'available' }, context }) {
   const control = new WorldEventDonationOptionRow({ dialog: dialogStub(assets, input), index: 0 });
-  control.bind({ id: 'mint', itemKey: fixture.state === 'seed-pack' ? 'mintSeed' : 'calmingDraught', itemKind: fixture.state === 'seed-pack' ? 'seed' : 'potion', label: fixture.state === 'seed-pack' ? 'Mint Seeds' : 'Calming Draught', pointsEachLabel: '120 points each', totalLabel: '360 points total', actionLabel: fixture.state === 'unavailable' ? 'Unavailable' : 'Donate', enabled: fixture.state !== 'unavailable', onActivate: fixture.state === 'unavailable' ? null : () => context?.emit('donated') ?? true });
+  control.bind({ id: 'mint', itemKey: fixture.state === 'seed-pack' ? 'mintSeed' : 'calmingDraught', itemKind: fixture.state === 'seed-pack' ? 'seed' : 'potion', label: fixture.state === 'seed-pack' ? 'Mint Seeds' : 'Calming Draught', pointsEachLabel: '120 points each', totalLabel: '360 points total', actionLabel: fixture.state === 'unavailable' ? 'Unavailable' : 'Donate', enabled: fixture.state !== 'unavailable', notification: fixture.state === 'notified', onActivate: fixture.state === 'unavailable' ? null : () => context?.emit('donated') ?? true });
   control.setBounds(0, 0, WIDTH, 48);
   return wrap(control, WIDTH, 48);
 }

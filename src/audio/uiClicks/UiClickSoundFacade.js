@@ -2,7 +2,7 @@ import { UiClickSoundManager } from './managers/UiClickSoundManager.js';
 
 export class UiClickSoundFacade {
   static explain =
-    'Plays the shared button, purchase, and dialog cues so interface actions feel confirmed.';
+    'Plays shared button, purchase, dialog, and summon cues so interface actions feel confirmed.';
 
   constructor({ manager = new UiClickSoundManager() } = {}) {
     this.manager = manager;
@@ -18,6 +18,10 @@ export class UiClickSoundFacade {
 
   playDialogOpen() {
     return this.manager.playDialogOpen();
+  }
+
+  playSummon(quantity) {
+    return this.manager.playSummon(quantity);
   }
 
   unlock() {

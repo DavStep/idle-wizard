@@ -25,7 +25,6 @@ import {
   setDialogPaperSectionBounds,
 } from '../../primitives/PixiDialogFrame.js';
 import { PixiFrame } from '../../primitives/PixiFrame.js';
-import { PixiProgressBar } from '../../primitives/PixiProgressBar.js';
 import { PixiScrollView } from '../../primitives/PixiScrollView.js';
 import { PixiTextField } from '../../primitives/PixiTextField.js';
 import { PixiTextLabel } from '../../primitives/PixiTextLabel.js';
@@ -33,6 +32,7 @@ import { PooledCollection } from '../../retained/PooledCollection.js';
 import { WidgetPool } from '../../retained/WidgetPool.js';
 import {
   DEFAULT_PIXI_THEME_SNAPSHOT,
+  PIXI_ROOT_RUN_ASSETS,
   PIXI_UI_GEOMETRY,
 } from '../../theme/PixiThemeTokens.js';
 import { RetainedButton } from '../workshop/RetainedPageKit.js';
@@ -61,6 +61,11 @@ const REQUEST_DIALOG_WIDTH = 304;
 const REQUEST_DIALOG_HEIGHT = 280;
 const STACK_DIALOG_WIDTH = 304;
 const STACK_DIALOG_HEIGHT = 408;
+const STACK_PAGE_HEIGHT = 326;
+const STACK_PAGE_CONTENT_INSET = 8;
+const STACK_PAGER_BUTTON_WIDTH = 72;
+const STACK_PAGER_BUTTON_HEIGHT = 28;
+const STACK_PAGER_Y = 334;
 const CARD_PORTRAIT_BOX = Object.freeze({
   x: 0,
   y: 7,
@@ -882,7 +887,7 @@ export class GuildRequestStackDialogPixi extends BasePixiRetainedView {
       inputRouter,
       semanticRegistry,
       closeSemanticId: 'guild.requestStack.close',
-      title: 'Incoming Quests',
+      title: 'Quest Requests',
       coreWidth: STACK_DIALOG_WIDTH,
       coreHeight: STACK_DIALOG_HEIGHT,
       closeAction: () => this.onClose?.(),
@@ -893,13 +898,19 @@ export class GuildRequestStackDialogPixi extends BasePixiRetainedView {
       STACK_DIALOG_HEIGHT - PIXI_UI_GEOMETRY.dialogPadding * 2,
       PIXI_UI_GEOMETRY.dialogPadding,
     );
+    this.panel.setPaperVisible(false);
+    this.pageRoot = new Container({
+      label: 'guild:requestStack:page',
+    });
+    this.pageRoot.eventMode = 'static';
+    this.pageFrame = createDialogPaperSection(
+      assetManager?.getTexture?.(PIXI_ROOT_RUN_ASSETS.dialogPaper) ??
+        Texture.EMPTY,
+      'guild:requestStack:pageFrame',
+    );
     this.detail = new GuildQuestDetail({
       assetManager,
       label: 'guild:requestStack:detail',
-    });
-    this.progress = new PixiProgressBar({
-      assetManager,
-      label: 'guild:requestStack:progress',
     });
     this.postButton = new PixiTextButton({
       assetManager,
@@ -916,17 +927,50 @@ export class GuildRequestStackDialogPixi extends BasePixiRetainedView {
       inputRouter,
       semanticRegistry,
       semanticId: 'guild.requestStack.next',
-      color: 'brown-light',
+      color: 'yellow',
       sizeTier: 30,
       label: 'guild:requestStack:next',
       action: () => this.nextPage(),
     });
-    this.panel.content.addChild(
+    this.previousButton = new PixiTextButton({
+      assetManager,
+      inputRouter,
+      semanticRegistry,
+      semanticId: 'guild.requestStack.previous',
+      color: 'yellow',
+      sizeTier: 30,
+      label: 'guild:requestStack:previous',
+      action: () => this.previousPage(),
+    });
+    this.pageLabel = new PixiTextLabel({
+      fontSize: PIXI_UI_GEOMETRY.borderLabelFontSize,
+      anchor: { x: 0.5, y: 0 },
+      color: 'text',
+      label: 'guild:requestStack:pageLabel',
+    });
+    this.pageRoot.addChild(
+      this.pageFrame,
       this.detail.root,
-      this.progress,
       this.postButton,
-      this.nextButton,
     );
+    this.panel.content.addChild(
+      this.pageRoot,
+      this.previousButton,
+      this.nextButton,
+      this.pageLabel,
+    );
+    this.swipeRegistration =
+      inputRouter?.registerPageSwipe?.({
+        id: 'guild.requestStack.swipe',
+        displayObject: this.pageRoot,
+        modalId: GUILD_DIALOG_IDS.REQUEST_STACK,
+        priority: 10,
+        threshold: 30,
+        onSwipe: ({ direction }) =>
+          direction === 'next'
+            ? this.nextPage()
+            : this.previousPage(),
+      }) ?? null;
     this.root.addChild(this.backdrop, this.panel);
     parent?.addChild?.(this.root);
     this.onApplyTheme(theme);
@@ -953,19 +997,20 @@ export class GuildRequestStackDialogPixi extends BasePixiRetainedView {
 
   renderSelectedRequest() {
     const selected = this.requests[this.selectedIndex];
-    this.detail.bind(selected, {
-      pageLabel: `${this.selectedIndex + 1}/${this.requests.length}`,
-    });
-    this.progress.setProgress(
-      (this.selectedIndex + 1) / Math.max(1, this.requests.length),
+    this.detail.bind(selected);
+    this.pageLabel.setText(
+      `${this.selectedIndex + 1} / ${this.requests.length}`,
     );
     const boardFull = this.model.boardFull === true;
     this.postButton
-      .setText(boardFull ? 'Board Full' : 'Post')
+      .setText(boardFull ? 'Board Full' : 'Post Request')
       .setEnabled(!boardFull);
+    this.previousButton
+      .setText('Prev')
+      .setEnabled(this.selectedIndex > 0);
     this.nextButton
-      .setText(this.requests.length > 1 ? 'Next Page' : 'Only Page')
-      .setEnabled(this.requests.length > 1);
+      .setText('Next')
+      .setEnabled(this.selectedIndex < this.requests.length - 1);
     this.relayout();
   }
 
@@ -985,12 +1030,17 @@ export class GuildRequestStackDialogPixi extends BasePixiRetainedView {
   }
 
   nextPage() {
-    if (this.requests.length <= 1) {
+    if (this.selectedIndex >= this.requests.length - 1) {
       return false;
     }
-    return this.selectRequest(
-      (this.selectedIndex + 1) % this.requests.length,
-    );
+    return this.selectRequest(this.selectedIndex + 1);
+  }
+
+  previousPage() {
+    if (this.selectedIndex <= 0) {
+      return false;
+    }
+    return this.selectRequest(this.selectedIndex - 1);
   }
 
   postSelected() {
@@ -1011,10 +1061,12 @@ export class GuildRequestStackDialogPixi extends BasePixiRetainedView {
     this.panel?.applyTheme(this.theme);
     const contentTheme =
       this.panel?.getContentTheme?.() ?? this.theme;
-    this.progress?.applyTheme(contentTheme);
     this.detail?.applyTheme(contentTheme);
     this.postButton?.applyTheme(contentTheme);
+    this.previousButton?.applyTheme(contentTheme);
     this.nextButton?.applyTheme(contentTheme);
+    this.pageLabel?.applyTheme(this.theme);
+    this.pageLabel?.setColor('text');
   }
 
   onLayout(viewportProjection) {
@@ -1062,24 +1114,51 @@ export class GuildRequestStackDialogPixi extends BasePixiRetainedView {
       centerY - STACK_DIALOG_HEIGHT / 2 + shift,
     );
     this.panel.position.set(x, y);
-    this.detail.root.position.set(0, 0);
+    this.pageRoot.position.set(0, 0);
+    this.pageFrame.position.set(0, 0);
+    this.pageFrame.setSize(
+      this.panel.contentBoxWidth,
+      STACK_PAGE_HEIGHT,
+    );
+    this.detail.root.position.set(
+      STACK_PAGE_CONTENT_INSET,
+      STACK_PAGE_CONTENT_INSET + 2,
+    );
     this.detail.setSize(
-      this.panel.contentBoxWidth,
-      280,
+      this.panel.contentBoxWidth - STACK_PAGE_CONTENT_INSET * 2,
+      268,
     );
-    this.progress.position.set(0, 288);
-    this.progress.setSize(
+    this.pageRoot.hitArea = new Rectangle(
+      0,
+      0,
       this.panel.contentBoxWidth,
-      PIXI_UI_GEOMETRY.progressTotalHeight,
+      STACK_PAGE_HEIGHT,
     );
-    const controlY = 306;
-    const controlGap = 8;
-    const nextWidth = 92;
-    const postWidth = this.panel.contentBoxWidth - nextWidth - controlGap;
-    this.postButton.position.set(0, controlY);
-    this.postButton.setSize(postWidth, 32);
-    this.nextButton.position.set(postWidth + controlGap, controlY);
-    this.nextButton.setSize(nextWidth, 32);
+    this.postButton.position.set(
+      STACK_PAGE_CONTENT_INSET,
+      STACK_PAGE_HEIGHT - 38,
+    );
+    this.postButton.setSize(
+      this.panel.contentBoxWidth - STACK_PAGE_CONTENT_INSET * 2,
+      30,
+    );
+    this.previousButton.position.set(0, STACK_PAGER_Y);
+    this.previousButton.setSize(
+      STACK_PAGER_BUTTON_WIDTH,
+      STACK_PAGER_BUTTON_HEIGHT,
+    );
+    this.nextButton.position.set(
+      this.panel.contentBoxWidth - STACK_PAGER_BUTTON_WIDTH,
+      STACK_PAGER_Y,
+    );
+    this.nextButton.setSize(
+      STACK_PAGER_BUTTON_WIDTH,
+      STACK_PAGER_BUTTON_HEIGHT,
+    );
+    this.pageLabel.position.set(
+      this.panel.contentBoxWidth / 2,
+      STACK_PAGER_Y + 7,
+    );
     this.backdrop.hitArea = new Rectangle(
       0,
       0,
@@ -1104,8 +1183,11 @@ export class GuildRequestStackDialogPixi extends BasePixiRetainedView {
     this.modalHandle = null;
     this.backdropRegistration?.();
     this.backdropRegistration = null;
+    this.swipeRegistration?.();
+    this.swipeRegistration = null;
     this.detail.destroy();
     this.postButton.destroy({ children: true });
+    this.previousButton.destroy({ children: true });
     this.nextButton.destroy({ children: true });
   }
 }

@@ -213,7 +213,6 @@ const DIALOG_CHILD_WIDGET_IDS = Object.freeze({
   'guild.requestStack': Object.freeze([
     'compound.guild-quest-detail',
     'compound.guild-quest-detail-line',
-    'primitive.progress-bar',
     'text-button',
   ]),
   'guild.adventurer': Object.freeze([

@@ -1127,24 +1127,18 @@ describe('AppLifecycleManager', () => {
     ).toHaveBeenCalledTimes(1);
   });
 
-  it('asks before loading fresh gameplay data for an anonymous empty save', async () => {
+  it('does not ask a known guest identity to connect again for an empty save', async () => {
     const freshStartChoiceManager = {
       mount: vi.fn(),
       choose: vi.fn(() => Promise.resolve(FRESH_START_CHOICE_START_FRESH)),
+      hide: vi.fn(),
       unmount: vi.fn(),
     };
     const { lifecycle } = createLifecycle({ freshStartChoiceManager });
     await lifecycle.handleGameplaySaveReady({ save: null });
 
-    expect(lifecycle.onlineGateManager.hide).toHaveBeenCalledTimes(1);
-    expect(freshStartChoiceManager.choose).toHaveBeenCalledWith({
-      authSnapshot: { hasToken: true, oidc: { authenticated: false } },
-      statusText: null,
-      keepOpenOnConnect: true,
-    });
-    expect(
-      lifecycle.onlineGateManager.hide.mock.invocationCallOrder[0],
-    ).toBeLessThan(freshStartChoiceManager.choose.mock.invocationCallOrder[0]);
+    expect(freshStartChoiceManager.choose).not.toHaveBeenCalled();
+    expect(freshStartChoiceManager.hide).toHaveBeenCalledTimes(1);
     expect(lifecycle.gameplayFacade.resetPersistenceState).toHaveBeenCalledTimes(1);
     expect(lifecycle.pagesFacade.resetTutorialProgress).toHaveBeenCalledTimes(1);
     expect(

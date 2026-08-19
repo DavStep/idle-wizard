@@ -16,6 +16,7 @@ function makeFakeAudioContextConstructor({
     lastSourcePlaybackRate: 0,
     sourceGains: [],
     sourcePlaybackRates: [],
+    sourceStartTimes: [],
     resumeCount: 0,
     oscillatorStartCount: 0,
     sourceStartCount: 0,
@@ -71,10 +72,11 @@ function makeFakeAudioContextConstructor({
         disconnect: vi.fn(),
         onended: null,
         playbackRate: makeAudioParam(1),
-        start: vi.fn(() => {
+        start: vi.fn((startAt) => {
           stats.lastSourcePlaybackRate = source.playbackRate.value;
           stats.sourcePlaybackRates.push(source.playbackRate.value);
           stats.sourceGains.push(source.connectedGain?.gain?.value ?? 0);
+          stats.sourceStartTimes.push(startAt);
           stats.sourceStartCount += 1;
           source.onended?.();
         }),
@@ -155,17 +157,13 @@ describe('UiClickSoundManager', () => {
     vi.clearAllMocks();
   });
 
-  it('plays the Idle Outpost button release bank at the shared click gain', async () => {
+  it('plays only the preferred second Idle Outpost button release sample', async () => {
     const { AudioContextConstructor, stats } = makeFakeAudioContextConstructor();
     const fetch = makeFakeFetch();
     const manager = new UiClickSoundManager({
-      clickSampleUrls: [
-        '/button-touch-up-1.wav',
-        '/button-touch-up-2.wav',
-        '/button-touch-up-3.wav',
-      ],
       dialogOpenSampleUrls: [],
       purchaseSampleUrls: [],
+      summonPopSampleUrl: null,
       random: () => 0.5,
       windowRef: {
         AudioContext: AudioContextConstructor,
@@ -177,14 +175,36 @@ describe('UiClickSoundManager', () => {
     manager.playClick();
     await flushPromises();
 
-    expect(fetch).toHaveBeenCalledWith('/button-touch-up-1.wav');
-    expect(fetch).toHaveBeenCalledWith('/button-touch-up-2.wav');
-    expect(fetch).toHaveBeenCalledWith('/button-touch-up-3.wav');
-    expect(stats.decodeCount).toBe(3);
+    expect(fetch).toHaveBeenCalledTimes(1);
+    expect(fetch.mock.calls[0][0]).toMatch(/button-touch-up-2\.wav$/);
+    expect(stats.decodeCount).toBe(1);
     expect(stats.sourceStartCount).toBe(1);
     expect(stats.oscillatorStartCount).toBe(0);
     expect(stats.lastSourcePlaybackRate).toBe(1);
     expect(stats.sourceGains).toEqual([0.56]);
+  });
+
+  it('plays one staggered pop per seed in a successful manual summon', async () => {
+    const { AudioContextConstructor, stats } = makeFakeAudioContextConstructor();
+    const manager = new UiClickSoundManager({
+      clickSampleUrl: null,
+      dialogOpenSampleUrls: [],
+      purchaseSampleUrls: [],
+      summonPopSampleUrl: '/summon-pop.wav',
+      random: () => 0.5,
+      windowRef: {
+        AudioContext: AudioContextConstructor,
+        fetch: makeFakeFetch(),
+      },
+    });
+
+    await flushPromises();
+    expect(manager.playSummon(3)).toBe(true);
+    await flushPromises();
+
+    expect(stats.sourceStartTimes).toEqual([0, 0.085, 0.17]);
+    expect(stats.sourcePlaybackRates).toEqual([1.01, 1.01, 1.01]);
+    expect(stats.sourceGains).toEqual([1, 1, 1]);
   });
 
   it('plays non-repeating purchase variants with the Root Run sell mix', async () => {

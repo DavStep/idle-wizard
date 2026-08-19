@@ -2858,6 +2858,7 @@ export class WorldEventDonationOptionRow {
         label:
           this.model.actionLabel ?? (enabled ? 'Donate' : 'Unavailable'),
         enabled,
+        notification: this.model.notification === true,
       },
       enabled ? () => this.model.onActivate?.(this.model) : null,
     );

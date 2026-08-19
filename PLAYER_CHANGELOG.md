@@ -5,6 +5,12 @@ upload script posts the section whose heading matches `package.json` `version`.
 Write these developer-to-player notes only in Idle Wizard terms. Do not mention
 other game names, source projects, ports, or implementation provenance.
 
+## 0.3.71
+
+- Added tap-to-accelerate Brewing, with clear time-reduction feedback while a cauldron is brewing or bottling.
+- Added illustrated Guild and Prestige navigation icons, and refined the Guild Hall and quest-request flow for faster scanning and paging.
+- Improved summoning sound feedback and made World Event donation availability and resource shortages clearer.
+
 ## 0.3.70
 
 - Brought the Guild Hall to life with adventurer activities, social moments, clearer current-status details, and a chronological living log.

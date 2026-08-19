@@ -316,6 +316,25 @@ describe("PixiPagesFacade", () => {
     });
   });
 
+  it("plays one summon pop per seed only after a successful manual summon", () => {
+    const harness = createHarness();
+    harness.gameplayFacade.summonSeed
+      .mockReturnValueOnce({
+        ok: true,
+        seeds: [{ id: "sageSeed" }, { id: "mintSeed" }, { id: "sageSeed" }],
+      })
+      .mockReturnValueOnce({ ok: false, reason: "not_enough_mana" });
+    const pages = new PixiPagesFacade(harness.dependencies);
+    pages.mount();
+
+    const summon = harness.getBoundPage("workshop").actions.summonSeed;
+    summon();
+    summon();
+
+    expect(harness.uiClickSoundFacade.playSummon).toHaveBeenCalledTimes(1);
+    expect(harness.uiClickSoundFacade.playSummon).toHaveBeenCalledWith(3);
+  });
+
   it("opens Player Info for the current player from the top avatar", () => {
     const gameplaySnapshot = createGameplaySnapshot({ level: 12 });
     gameplaySnapshot.prestige.completedLevels = [10];
@@ -575,6 +594,96 @@ describe("PixiPagesFacade", () => {
     });
   });
 
+  it("shows a text flyout instead of opening Donate when no event resources are owned", () => {
+    const gameplaySnapshot = createGameplaySnapshot();
+    gameplaySnapshot.worldNotice = {
+      unlocked: true,
+      current: {
+        requests: [
+          {
+            requestId: "weekly-1:remedy",
+            title: "Village Remedy",
+            donationOptions: [
+              {
+                optionKey: "calmingDraught",
+                label: "Calming Draught",
+                resourceType: "item",
+                itemKey: "calmingDraught",
+                pointsPerUnit: 120,
+                availableQuantity: 0,
+                maxDonateQuantity: 0,
+              },
+            ],
+          },
+        ],
+      },
+    };
+    const harness = createHarness({ gameplaySnapshot });
+    const pages = new PixiPagesFacade(harness.dependencies);
+    pages.mount();
+
+    const donationOption = harness.getBoundPage("workshop").workshop.dialogs
+      .worldEvent.rows[0].donationOptions[0];
+
+    expect(donationOption.onActivate()).toBe(true);
+    expect(harness.transientEffects.emitReward).toHaveBeenCalledWith({
+      message: "Not enough resources",
+      flyoutKey: "workshop-world-event-donation-shortage",
+    });
+    expect(harness.pageSurface.openDialog).not.toHaveBeenCalledWith(
+      "worldEventDonate",
+    );
+    expect(pages.worldEventDonationDraft).toBeNull();
+  });
+
+  it("shows the same text flyout when slider confirmation finds spent resources", () => {
+    const gameplaySnapshot = createGameplaySnapshot();
+    gameplaySnapshot.worldNotice = {
+      unlocked: true,
+      current: {
+        requests: [
+          {
+            requestId: "weekly-1:remedy",
+            title: "Village Remedy",
+            donationOptions: [
+              {
+                optionKey: "calmingDraught",
+                label: "Calming Draught",
+                resourceType: "item",
+                itemKey: "calmingDraught",
+                pointsPerUnit: 120,
+                availableQuantity: 2,
+                maxDonateQuantity: 2,
+              },
+            ],
+          },
+        ],
+      },
+    };
+    const harness = createHarness({ gameplaySnapshot });
+    harness.gameplayFacade.donateWorldNoticeResource.mockReturnValue({
+      ok: false,
+      reason: "not_enough_items",
+    });
+    const pages = new PixiPagesFacade(harness.dependencies);
+    pages.mount();
+
+    const donationOption = harness.getBoundPage("workshop").workshop.dialogs
+      .worldEvent.rows[0].donationOptions[0];
+    expect(donationOption.onActivate()).toBe(true);
+    const confirm = harness.getBoundPage("workshop").workshop.dialogs
+      .worldEventDonate.actions[0];
+
+    expect(confirm.action()).toEqual({
+      ok: false,
+      reason: "not_enough_items",
+    });
+    expect(harness.transientEffects.emitReward).toHaveBeenCalledWith({
+      message: "Not enough resources",
+      flyoutKey: "workshop-world-event-donation-shortage",
+    });
+  });
+
   it("hides unavailable Brewing progression controls and keeps empty actions pressable", () => {
     const gameplaySnapshot = createGameplaySnapshot();
     gameplaySnapshot.brewing = {
@@ -628,6 +737,51 @@ describe("PixiPagesFacade", () => {
     expect(harness.transientEffects.emitReward).toHaveBeenNthCalledWith(2, {
       message: "No potion is ready to collect",
       flyoutKey: "brewing-collect-empty",
+    });
+  });
+
+  it("routes an active cauldron tap to Brewing acceleration feedback", () => {
+    const gameplaySnapshot = createGameplaySnapshot();
+    gameplaySnapshot.brewing = {
+      cauldrons: [
+        {
+          cauldronIndex: 0,
+          cauldronNumber: 1,
+          activeBrew: {
+            phase: "brewing",
+            remainingMs: 8_000,
+            totalMs: 12_000,
+          },
+        },
+      ],
+      recipes: [],
+      herbs: [],
+    };
+    const harness = createHarness({ gameplaySnapshot });
+    harness.gameplayFacade.accelerateBrewingCauldron.mockReturnValue({
+      ok: true,
+      cauldronIndex: 0,
+      reducedSeconds: 1,
+      remainingMs: 7_000,
+      cooldownMs: 800,
+    });
+    const pages = new PixiPagesFacade(harness.dependencies);
+    pages.mount();
+    pages.show("brewing");
+
+    const result = harness
+      .getBoundPage("brewing")
+      .actions.accelerateCauldron(0);
+
+    expect(result).toMatchObject({ ok: true, reducedSeconds: 1 });
+    expect(
+      harness.gameplayFacade.accelerateBrewingCauldron,
+    ).toHaveBeenCalledWith(0);
+    expect(harness.uiClickSoundFacade.playClick).toHaveBeenCalledOnce();
+    expect(harness.transientEffects.emitReward).toHaveBeenCalledWith({
+      message: "-1s",
+      flyoutKey: "brewing-cauldron-tap-0",
+      anchorId: "brewing.cauldron.liquid",
     });
   });
 
@@ -2361,6 +2515,7 @@ function createHarness({ gameplaySnapshot = createGameplaySnapshot() } = {}) {
     }),
     subscribeFrameResources: vi.fn(() => vi.fn()),
     summonSeed: vi.fn(),
+    donateWorldNoticeResource: vi.fn(),
     fillTask: vi.fn(),
     claimPersonalTaskMilestoneReward: vi.fn(),
     buyResearch: vi.fn(),
@@ -2379,6 +2534,7 @@ function createHarness({ gameplaySnapshot = createGameplaySnapshot() } = {}) {
     replaceGardenSeed: vi.fn(),
     startGardenHarvest: vi.fn(),
     accelerateGardenPlot: vi.fn(),
+    accelerateBrewingCauldron: vi.fn(),
     startAllReadyGardenHarvests: vi.fn(),
     selectGardenSeed: vi.fn(),
     cancelBrewing: vi.fn(),
@@ -2412,6 +2568,11 @@ function createHarness({ gameplaySnapshot = createGameplaySnapshot() } = {}) {
     renderFacade,
     experienceFacade: { transientEffects },
     gardenSoundFacade: { playHarvest: vi.fn(), playPlant: vi.fn() },
+    uiClickSoundFacade: {
+      playClick: vi.fn(),
+      playPurchase: vi.fn(),
+      playSummon: vi.fn(),
+    },
     gameplayFacade,
     playerFacade,
     worldChatFacade: createSnapshotFacade({ connected: true, messages: [] }),
@@ -2437,6 +2598,7 @@ function createHarness({ gameplaySnapshot = createGameplaySnapshot() } = {}) {
     inputRouter,
     gameplayFacade,
     gardenSoundFacade: dependencies.gardenSoundFacade,
+    uiClickSoundFacade: dependencies.uiClickSoundFacade,
     transientEffects,
     highlightSurface,
     bottomSurface,

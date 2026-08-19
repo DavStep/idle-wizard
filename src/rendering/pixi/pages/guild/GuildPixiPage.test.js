@@ -71,7 +71,22 @@ describe('GuildPixiPage', () => {
     expect(
       harness.page.hallSection.rows.getWidgets().map((row) => row.key),
     ).toEqual(['identity', 'adventurers', 'board', 'settings']);
+    expect(harness.page.hallSection.joined).toBe(true);
     expect(harness.page.hallSection.contentLayer.x).toBe(16);
+    expect(harness.page.hallSection.joinedPaper.root.frameWidth).toBe(358);
+    expect(harness.page.hallSection.joinedPaper.root.frameHeight).toBe(256);
+    expect(
+      harness.page.hallSection.rows.getWidgets().map((row) => row.root.y),
+    ).toEqual([0, 64, 128, 192]);
+    expect(
+      harness.page.hallSection.rows.getWidgets().slice(0, 3)
+        .every((row) => row.paper.root.visible === false),
+    ).toBe(true);
+    const settingsRow = harness.page.hallSection.rows.get('settings');
+    expect(settingsRow.buttonFrame.x).toBe(8);
+    expect(settingsRow.buttonFrame.y).toBe(8);
+    expect(settingsRow.buttonFrame.frameWidth).toBe(342);
+    expect(settingsRow.buttonFrame.frameHeight).toBe(48);
     expect(harness.page.secretarySection.titlePlaque.title.text).toBe(
       'Secretary',
     );
@@ -97,8 +112,17 @@ describe('GuildPixiPage', () => {
       'Quest Requests',
     );
     expect(harness.page.availableSection.titlePlaque.root.visible).toBe(
-      true,
+      false,
     );
+    expect(
+      harness.page.availableSection.rows.getWidgets().map((row) => row.key),
+    ).toEqual(['review']);
+    expect(
+      harness.page.availableSection.rows.get('review').buttonLabel.text,
+    ).toBe('Quest Requests');
+    expect(
+      harness.page.availableSection.rows.get('review').buttonValue.text,
+    ).toBe('1 Waiting · New in 2h');
     expect(harness.page.adventurersSection.titlePlaque.title.text).toBe(
       'Adventurers',
     );
@@ -449,12 +473,28 @@ describe('GuildPixiPage', () => {
     ).toBeNull();
 
     expect(
+      harness.semanticRegistry.activate('guild.settings.open'),
+    ).toBe(true);
+    expect(
+      harness.dialogs.isOpen(GUILD_DIALOG_IDS.SETTINGS),
+    ).toBe(true);
+    harness.dialogs.close(GUILD_DIALOG_IDS.SETTINGS);
+
+    expect(
       harness.semanticRegistry.activate('guild.request.quest-1'),
     ).toBe(true);
     expect(
       harness.dialogs.isOpen(GUILD_DIALOG_IDS.REQUEST),
     ).toBe(true);
     harness.dialogs.close(GUILD_DIALOG_IDS.REQUEST);
+
+    expect(
+      harness.semanticRegistry.activate('guild.available.open'),
+    ).toBe(true);
+    expect(
+      harness.dialogs.isOpen(GUILD_DIALOG_IDS.REQUEST_STACK),
+    ).toBe(true);
+    harness.dialogs.close(GUILD_DIALOG_IDS.REQUEST_STACK);
 
     expect(
       harness.semanticRegistry.activate(
@@ -553,8 +593,32 @@ describe('GuildPixiPage', () => {
       'A narrow road under the hill.',
     );
     expect(requestStack.detail.rows[0].value.text).toBe('Easy');
-    expect(requestStack.postButton.textLabel.text).toBe('Post');
-    expect(requestStack.nextButton.textLabel.text).toBe('Only Page');
+    expect(requestStack.panel.titleLabel.text).toBe('Quest Requests');
+    expect(requestStack.postButton.textLabel.text).toBe('Post Request');
+    expect(requestStack.panel.paperFrame.visible).toBe(false);
+    expect(requestStack.pageFrame.frameHeight).toBe(326);
+    expect(requestStack.pageLabel.text).toBe('1 / 2');
+    expect(requestStack.previousButton.textLabel.text).toBe('Prev');
+    expect(requestStack.previousButton.enabled).toBe(false);
+    expect(requestStack.nextButton.textLabel.text).toBe('Next');
+    expect(requestStack.nextButton.enabled).toBe(true);
+    const swipeRegistration = inputRouter.store
+      .getRegistrations('swipe')
+      .find(
+        (registration) =>
+          registration.id === 'guild.requestStack.swipe',
+      );
+    expect(swipeRegistration).toBeDefined();
+    expect(swipeRegistration.onSwipe({ direction: 'next' })).toBe(true);
+    expect(requestStack.detail.title.text).toBe('Hilltop Watch');
+    expect(requestStack.pageLabel.text).toBe('2 / 2');
+    expect(requestStack.previousButton.enabled).toBe(true);
+    expect(requestStack.nextButton.enabled).toBe(false);
+    expect(swipeRegistration.onSwipe({ direction: 'previous' })).toBe(
+      true,
+    );
+    expect(requestStack.detail.title.text).toBe('Smuggler Tunnel');
+    expect(requestStack.pageLabel.text).toBe('1 / 2');
     expect(inputRouter.handleBack({ source: 'native' })).toBe(true);
     expect(
       harness.dialogs.isOpen(GUILD_DIALOG_IDS.REQUEST_STACK),
@@ -765,6 +829,13 @@ function createGuildDialogPayload(dialogId) {
           lore: 'a narrow road under the hill.',
           difficulty: 'easy',
           rewardText: '10 coin',
+        },
+        {
+          id: 'quest-3',
+          title: 'hilltop watch',
+          lore: 'watch the old road until sunrise.',
+          difficulty: 'medium',
+          rewardText: '15 coin',
         },
       ],
       onPost: vi.fn(),

@@ -150,6 +150,7 @@ export class GuildPixiPage extends BasePixiRetainedView {
       semanticRegistry,
       counters,
       label: 'guild:hall',
+      joined: true,
     });
     this.secretarySection = new GuildSecretarySection({
       assetManager,
@@ -169,6 +170,7 @@ export class GuildPixiPage extends BasePixiRetainedView {
       semanticRegistry,
       counters,
       label: 'guild:available',
+      showTitle: false,
     });
     this.adventurersSection = new GuildPeopleSection({
       title: 'Adventurers',
@@ -407,43 +409,32 @@ export class GuildPixiPage extends BasePixiRetainedView {
     });
 
     const available = safeArray(guild.availableRequests);
-    const availableRows = [
-      {
-        id: 'explanation',
-        kind: 'paragraph',
-        text:
-          'Post a request to send an adventurer out on that quest.',
-      },
-    ];
-    if (available.length > 0) {
-      availableRows.push(
+    this.availableSection.bind({
+      rows: [
         {
           id: 'review',
           kind: 'button',
-          label: 'Review Requests',
-          value: guild.boardWaveLabel
-            ? `${available.length} waiting · New in ${guild.boardWaveLabel}`
-            : `${available.length} waiting`,
+          label: 'Quest Requests',
+          value:
+            available.length > 0
+              ? guild.boardWaveLabel
+                ? `${available.length} waiting · New in ${guild.boardWaveLabel}`
+                : `${available.length} waiting`
+              : guild.boardWaveLabel
+                ? `None waiting · New in ${guild.boardWaveLabel}`
+                : 'None waiting',
+          enabled: available.length > 0,
           semanticId: 'guild.available.open',
-          action: () =>
-            this.openDialog(
-              GUILD_DIALOG_IDS.REQUEST_STACK,
-              this.createRequestStackDialogModel(),
-          ),
+          action:
+            available.length > 0
+              ? () =>
+                  this.openDialog(
+                    GUILD_DIALOG_IDS.REQUEST_STACK,
+                    this.createRequestStackDialogModel(),
+                  )
+              : null,
         },
-      );
-    } else {
-      availableRows.push({
-        id: 'empty',
-        kind: 'empty',
-        text: guild.boardWaveLabel
-          ? `No requests are waiting. New requests in ${guild.boardWaveLabel}.`
-          : 'No requests are waiting.',
-      });
-    }
-    this.availableSection.bind({
-      countLabel: `${available.length} available`,
-      rows: availableRows,
+      ],
     });
   }
 

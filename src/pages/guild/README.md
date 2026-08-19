@@ -2,7 +2,8 @@
 
 Guild is the level-15 alternate HUD opened from the Workshop right-side Guild
 action. Its bottom HUD replaces room navigation with Workshop, Hall, and
-Adventurers; Workshop returns to the normal room HUD. The Adventurers branch
+Adventurers, plus locked Fishers, Miners, and World destinations. Each uses
+the shared icon-backed bottom-room-tab contract; Workshop returns to the normal room HUD. The Adventurers branch
 uses a local Board, Roster, and Log button panel.
 It uses ordinary room boxes for hall, board, adventurers, applicants, and log.
 Roster separates Adventurers from Applicants with titled Research-card groups;

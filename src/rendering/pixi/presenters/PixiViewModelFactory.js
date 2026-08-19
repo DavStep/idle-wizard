@@ -1533,6 +1533,7 @@ export class PixiViewModelFactory {
                   option.resourceType === 'coin' ? 'coin' : itemKind,
                 actionLabel: enabled ? 'Donate' : 'Unavailable',
                 enabled,
+                notification: request.completed !== true,
                 semanticId: `workshop.worldEvent.quest.${requestId}.donation.${optionKey}`,
                 ...(enabled
                   ? {
@@ -1675,7 +1676,7 @@ export class PixiViewModelFactory {
 
     return {
       title: questTitle,
-      status: canDonate ? '' : 'Not enough resources.',
+      status: '',
       featuredItem: {
         id: 'giving',
         label: toTitleCase(option.label ?? ''),

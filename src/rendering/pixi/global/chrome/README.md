@@ -12,10 +12,10 @@ children, and the standalone room-tab entry exposes the widget's internal
 frame, icon, label, lock, and notification atoms.
 
 Guild is an alternate HUD mode on the same retained bottom surface. It swaps
-the ordinary room tabs for one icon-backed Workshop return plus two
-`PixiBottomHudTextTab` category controls: Hall and Adventurers. The text
-variant reuses the room-tab cap and interaction states but keeps its label
-visible while inactive because it has no room icon.
+the ordinary room tabs for six icon-backed `PixiBottomRoomTab` destinations:
+Workshop, Hall, Adventurers, Fishers, Miners, and World. The five Guild icons
+reuse the room-tab art contract; locked future destinations still replace
+their icon with the shared lock and open the standard locked notice.
 
 Coordinates are source UI units (`360 × 723.333…`) and preserve the current
 DOM chrome anchors: top panel `16/9/328`, content begins at `104`, and room

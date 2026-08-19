@@ -13,3 +13,6 @@ Keep `dropWeight` as config data. Use `effectiveDropWeight` for rolled odds and 
 
 The player may set every unlocked seed to `none`. Summoning stays unavailable
 until at least one researched seed has an active weight again.
+
+Successful manual summons play one short pop per seed returned by the summon.
+Automation and rejected summon requests do not play this player-action cue.
