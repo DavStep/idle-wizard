@@ -72,3 +72,6 @@ Use `pushModal()` / `popModal()` for modal ownership, `focus()` / `moveFocus()`
 for semantic keyboard focus, and `handleBack({ source: 'native' })` from the
 Android back bridge. Clipboard callbacks belong to the focused press
 registration. The package creates no DOM nodes and performs no DOM queries.
+Keyboard activation contexts deliberately expose `point: null` and
+`screenPoint: null`; only real pointer activation may carry coordinates into
+controls such as `PixiTextField` that derive a caret position from geometry.

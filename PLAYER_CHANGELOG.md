@@ -5,6 +5,10 @@ upload script posts the section whose heading matches `package.json` `version`.
 Write these developer-to-player notes only in Idle Wizard terms. Do not mention
 other game names, source projects, ports, or implementation provenance.
 
+## 0.3.76
+
+- Fixed web text entry so spaces no longer move the caret and reverse the order of words in World Chat and other text fields.
+
 ## 0.3.75
 
 - Added dedicated Mana Capacity and Mana Generation research, with one new rank unlocked at every wizard level and the full research paths preserving the previous mana curve.

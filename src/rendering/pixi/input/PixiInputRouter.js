@@ -1936,15 +1936,18 @@ export class PixiInputRouter {
   }
 
   activationContext(registration, pointer, event, source) {
-    const point = pointer?.current ?? resolveInputPoint(event);
+    const point =
+      source === 'keyboard'
+        ? null
+        : pointer?.current ?? resolveInputPoint(event);
     return {
       registration,
       registrationId: registration?.id ?? null,
       source,
       pointerId: pointer?.id ?? null,
       pointerType: pointer?.pointerType ?? null,
-      point: point.global,
-      screenPoint: point.screen,
+      point: point?.global ?? null,
+      screenPoint: point?.screen ?? null,
       event,
       router: this,
     };

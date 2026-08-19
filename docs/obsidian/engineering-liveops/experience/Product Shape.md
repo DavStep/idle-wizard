@@ -182,6 +182,7 @@ experience_type: product-shape
 - Zero-cost market stand unlock labels should read `free`, not `buy (free)`.
 - Market top-right border labels like `demand` need enough first-row clearance; otherwise they can overlap `free` stand unlock hit-testing and cause hover flicker/dead taps.
 - Every button-like touch target, including non-button text/row controls, activates only after validated release on the original target; never synthesize the action on press-start.
+- Retained Pixi keyboard activation must not synthesize pointer coordinates; a focused text field otherwise treats spacebar activation as a tap at the origin and moves its caret before inserting the space.
 - `.is-locked` is not a disabled signal for shared press handling; use native `disabled`, `aria-disabled="true"`, or `.is-disabled` so buyable locked rows and locked room tabs still synth-click on web.
 - Native dialog/open/submit buttons should activate on validated pointerup/click; do not add touchstart/pointerdown action handlers to buttons unless the interaction is a true hold/drag setup.
 - Retained Pixi room tabs need `fallbackHitTest` on their central-router press registrations; tutorial and other higher layers can make the native event path miss the real tab even when the release point is inside its live bounds.

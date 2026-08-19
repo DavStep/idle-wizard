@@ -1,6 +1,6 @@
 // @vitest-environment jsdom
 
-import { Texture } from 'pixi.js';
+import { Container, Texture } from 'pixi.js';
 import { describe, expect, it, vi } from 'vitest';
 
 import { installPixiPageTestCanvas } from '../pages/workshop/PixiPageTestHarness.js';
@@ -9,6 +9,7 @@ import {
   PIXI_ROOT_RUN_GEOMETRY,
 } from '../theme/PixiThemeTokens.js';
 import { TextEntryService } from '../../textEntry/TextEntryService.js';
+import { PixiInputRouter } from '../input/PixiInputRouter.js';
 import { PixiTextField } from './PixiTextField.js';
 
 installPixiPageTestCanvas();
@@ -252,6 +253,35 @@ describe('PixiTextField', () => {
     expect(field.selectionEnd).toBe(6);
 
     field.destroy({ children: true });
+  });
+
+  it('keeps desktop web words in typed order when spaces pass through the input router', async () => {
+    const root = new Container();
+    const canvas = document.createElement('canvas');
+    const inputRouter = new PixiInputRouter();
+    inputRouter.mount({ root, canvas });
+    const textEntryService = new TextEntryService({
+      canvas,
+      isNativePlatform: () => false,
+      platformProvider: () => 'web',
+    });
+    const field = new PixiTextField({ inputRouter, textEntryService });
+    root.addChild(field);
+    inputRouter.focus(field.registration.id);
+    await field.focus();
+
+    const message = 'now I have 650 mana and 1mana/s';
+    for (const key of message) {
+      dispatchKey(canvas, key);
+    }
+
+    expect(field.value).toBe(message);
+    expect(field.selectionStart).toBe(message.length);
+    expect(field.selectionEnd).toBe(message.length);
+
+    field.destroy({ children: true });
+    inputRouter.unmount();
+    root.destroy({ children: true });
   });
 
   it('wraps multiline text and keeps the active caret inside the visible writing area', () => {
