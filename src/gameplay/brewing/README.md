@@ -11,6 +11,7 @@ Once discovered, the named recipe becomes independently researchable for other
 players instead of becoming globally learned.
 Cauldron slots are bought with coin up to the current progression cap. Level milestones unlock the first 2 caps before prestige, then permanent advanced capacity research unlocks cauldrons 3-5 after enough completed prestiges and makes the researched cap buyable immediately in that run. Milestones and research do not grant extra cauldrons for free.
 An active brew runs through brewing, waits for a bottling action, then bottling, and finally waits in `ready` until the player collects the whole produced batch. Cancelling during brewing or bottling destroys the unfinished output, does not refund herbs or mana, and disables autobrew for that cauldron.
+Every potion recipe owns its configured brew duration. Regular per-potion mastery reduces that duration independently in five-percentage-point ranks, then advanced per-cauldron research applies to the result. Mana Tonic starts at the previous `30s`; early potion uplifts ramp by tier before later recipes use the full `85%` uplift.
 `BrewingTapAccelerationManager` owns manual cauldron acceleration. Each accepted
 tap removes at most one second from that cauldron's brewing or bottling timer,
 then locks that cauldron for the same 800ms feedback window used by Garden plots.

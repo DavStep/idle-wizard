@@ -22,6 +22,7 @@ experience_type: gameplay-economy
 - Coin research uses an achievement curve: post-onboarding seed unlocks cost `100x` seed sell value, recipe unlocks climb monotonically by roughly `1.75x` per catalog step, and summon multipliers cost `1k`, `10k`, `100k`, then `1m`.
 - Ingredients are inventory-only catalog entries with six rarity tiers; do not invent prices, drop sources, recipes, or progression gates until those rules are explicitly requested.
 - Garden page herb inventory should read owned counts from `snapshot.garden.herbs`; Brewing's herb snapshot can subtract staged cauldron ingredients.
+- Garden's page-level selected seed belongs in the gameplay save and authoritative Garden snapshot, not renderer-local state; legacy saves default it to no selection.
 - Garden and Brewing herb/potion use panels show only researched/unlocked or owned items; hide locked zero-count rows completely.
 - Brewing is active: herbs can be staged in cauldron order, brew spends mana, valid unlocked recipes make potions, and invalid mixes make wasted potion.
 - Potion recipe ingredient order matters; every recipe entry is one ordered cauldron slot with `quantity: 1`, so repeated herbs must be repeated entries.
@@ -57,7 +58,8 @@ experience_type: gameplay-economy
 - `unlockSeed:sageSeed` costs `0` and displays as `free`; seed summoning stays locked until that research is completed.
 - Summon multiplier research is ordered `x2 -> x3 -> x4 -> x5`; each later multiplier requires the previous one.
 - `summonSeedsX2` through `summonSeedsX5` use the highest completed multiplier; summon cost and rolled seed count both scale from 10 mana.
-- Initial local gameplay defaults: mana cap `50`, mana generation `1/second`, seed summon cost `10`, and herb growth ranges from `12s` to `520s` across the 24-herb catalog.
+- Initial local gameplay defaults: mana cap `50`, mana generation `1/second`, seed summon cost `10`, and configured herb growth ranges from `12s` to `962s` across the 24-herb catalog.
+- Timer mastery stores only the live configured herb/recipe duration. Derive its uplift from the item's mastery-rank cap (`90 + 5 * ranks`) so full mastery ends 10% faster than the former balance without retaining a redundant legacy timer.
 - Crystal is the hard currency; it appears in the top panel only where usable, player levels grant `playerLevel.crystal.perLevel` starting at level 1, and plot/cauldron multiplier research spends it.
 - Ruby is the prestige currency; it appears in the top panel only where usable, and automation research spends it.
 - Prestige ruby is derived from completed prestige milestones minus committed ruby automation research costs; save prestige milestone data and do not treat raw ruby as permanent across prestige resets.

@@ -50,6 +50,7 @@ const DIALOG_SECTION = 'dialogs';
 const DIALOG_ASSET_PREFIXES = Object.freeze([
   'source:assets/avatars/',
   'source:assets/characters/',
+  'source:assets/guild/',
   'source:assets/icons/',
   'source:assets/items/',
   'source:assets/ui/',
@@ -75,7 +76,8 @@ const INVENTORY_CHOICE_DIALOG_HIERARCHY = Object.freeze({
       'primitive.settings-slider',
       'primitive.settings-toggle',
     ]),
-    rowLabel: 'SummonSeedRow:InventoryChoiceRow',
+    rowLabel: 'SummonSeedPreferenceRow',
+    rowWidgetId: 'compound.summon-seed-preference-row',
   }),
   'workshop.bag': Object.freeze({
     rowLabel: 'BagItemRow:InventoryChoiceRow',
@@ -121,7 +123,11 @@ const DIALOG_CHILD_WIDGET_IDS = Object.freeze({
     'text-button',
   ]),
   [GLOBAL_DIALOG_IDS.LEVEL]: Object.freeze(['text-button']),
-  [GLOBAL_DIALOG_IDS.ALLIANCE]: Object.freeze(['text-button']),
+  [GLOBAL_DIALOG_IDS.ALLIANCE]: Object.freeze([
+    'compound.workshop-dialog-row',
+    ALLIANCE_MEMBER_ROW_WIDGET_ID,
+    'text-button',
+  ]),
   [GLOBAL_DIALOG_IDS.ANNOUNCEMENT]: Object.freeze([
     'compound.feature-unlock-announcement-item',
   ]),
@@ -192,7 +198,12 @@ const DIALOG_CHILD_WIDGET_IDS = Object.freeze({
     'compound.amount-selector',
     'text-button',
   ]),
-  'shop.market': Object.freeze(['compound.market-compact-row', 'tab-button']),
+  'shop.market': Object.freeze([
+    'compound.dialog-field',
+    'compound.market-compact-row',
+    'tab-button',
+    'text-button',
+  ]),
   'shop.tradeHistory': Object.freeze(['compound.market-compact-row']),
   'shop.support': Object.freeze([]),
   'guild.charter': Object.freeze([
@@ -1198,6 +1209,31 @@ function createDialogContentHierarchy(dialogId, dialog, content) {
 }
 
 function createReusableDialogContentHierarchy(dialogId, dialog) {
+  if (dialogId === GLOBAL_DIALOG_IDS.ALLIANCE) {
+    return [
+      ...(dialog.summaryRows?.getWidgets?.() ?? []).map((row, index) =>
+        createUiEditorPixiHierarchyComponent({
+          displayObjects: [row.root],
+          id: `${dialogId}:summary:${row.model?.id ?? index}`,
+          label: 'TradeInfo:WorkshopDialogRow',
+          libraryEntryId: 'compound.workshop-dialog-row',
+          primary: row.root,
+          type: 'widget',
+        }),
+      ),
+      ...(dialog.memberRows?.getWidgets?.() ?? []).map((row, index) =>
+        createUiEditorPixiHierarchyComponent({
+          displayObjects: [row.root],
+          id: `${dialogId}:member:${row.model?.memberIdentity ?? index}`,
+          label: 'AllianceMember:AllianceMemberRow',
+          libraryEntryId: ALLIANCE_MEMBER_ROW_WIDGET_ID,
+          primary: row.root,
+          type: 'widget',
+        }),
+      ),
+    ];
+  }
+
   if (dialogId === GLOBAL_DIALOG_IDS.PLAYER) {
     return [
       createUiEditorPixiHierarchyComponent({
@@ -1386,8 +1422,8 @@ function createReusableDialogContentHierarchy(dialogId, dialog) {
         createUiEditorPixiHierarchyComponent({
           displayObjects: [row.root],
           id: `${dialogId}:row:${row.key ?? index}`,
-          label: 'SummonSeedRow:InventoryChoiceRow',
-          libraryEntryId: 'compound.inventory-choice-row',
+          label: 'SummonSeedPreferenceRow',
+          libraryEntryId: 'compound.summon-seed-preference-row',
           primary: row.root,
           type: 'widget',
         }),
@@ -1648,10 +1684,11 @@ const GLOBAL_DIALOG_SCENARIOS = Object.freeze({
       alliance: {
         allianceId: 'moss-hall',
         description: 'A quiet hall for patient traders.',
-        joinMode: 'open',
-        name: 'Moss Hall',
+        joinMode: 'apply',
+        name: 'Fellowship Of Patient Merchants',
+        notice: 'Weekly goal: support every active member.',
         seasonIncome: 84520,
-        tag: 'MOSS',
+        tag: 'NIGHT',
       },
       members: [
         {
@@ -1671,6 +1708,48 @@ const GLOBAL_DIALOG_SCENARIOS = Object.freeze({
           playerLevel: 7,
           role: 'member',
           username: 'Juniper',
+        },
+      ],
+    })),
+    scenario('pending', 'Application pending', () => ({
+      alliance: {
+        allianceId: 'moss-hall',
+        description: 'A quiet hall for patient traders.',
+        joinMode: 'apply',
+        name: 'Moss Hall',
+        seasonIncome: 84520,
+        tag: 'MOSS',
+      },
+      members: [
+        {
+          character: 'mira',
+          frame: 'sun',
+          memberIdentity: 'mira',
+          playerLevel: 12,
+          role: 'tradeMaster',
+          username: 'Mira',
+        },
+      ],
+      ownApplications: [{ allianceId: 'moss-hall' }],
+    })),
+    scenario('unavailable', 'No available action', () => ({
+      actionEnabled: false,
+      alliance: {
+        allianceId: 'moss-hall',
+        description: 'A quiet hall for patient traders.',
+        joinMode: 'apply',
+        name: 'Moss Hall',
+        seasonIncome: 84520,
+        tag: 'MOSS',
+      },
+      members: [
+        {
+          character: 'mira',
+          frame: 'sun',
+          memberIdentity: 'mira',
+          playerLevel: 12,
+          role: 'tradeMaster',
+          username: 'Mira',
         },
       ],
     })),
@@ -1787,9 +1866,12 @@ function resolveDialogChildWidgetIds(dialogId) {
     ];
   }
   if (INVENTORY_CHOICE_DIALOG_HIERARCHY[dialogId]) {
+    const rowWidgetId =
+      INVENTORY_CHOICE_DIALOG_HIERARCHY[dialogId].rowWidgetId ??
+      'compound.inventory-choice-row';
     return [
       'compound.dialog-frame',
-      'compound.inventory-choice-row',
+      rowWidgetId,
       ...(INVENTORY_CHOICE_DIALOG_HIERARCHY[dialogId].childWidgetIds ?? []),
       ...(INVENTORY_CHOICE_DIALOG_HIERARCHY[dialogId].tabbed
         ? ['tab-button']

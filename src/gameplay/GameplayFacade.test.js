@@ -2027,6 +2027,7 @@ describe("GameplayFacade", () => {
       "seed_summoned",
       "item_sold",
       "potion_collected",
+      "garden_seed_planted",
       "herb_harvested",
     ]);
     expect(rewardEvents[0]).toMatchObject({
@@ -2048,6 +2049,12 @@ describe("GameplayFacade", () => {
       quantity: 1,
     });
     expect(rewardEvents[3]).toMatchObject({
+      type: "garden_seed_planted",
+      seed: { label: "sage seed" },
+      quantity: 1,
+      tileNumber: 1,
+    });
+    expect(rewardEvents[4]).toMatchObject({
       type: "herb_harvested",
       herb: { label: "sage" },
       quantity: 1,
@@ -2802,6 +2809,7 @@ describe("GameplayFacade", () => {
     });
     expect(research.boxes.map((box) => box.id)).toEqual([
       "seedUnlocks",
+      "herbGrowthMastery",
       "summonSeeds",
       "gardenBulkActions",
     ]);
@@ -2816,7 +2824,17 @@ describe("GameplayFacade", () => {
       completed: true,
       canResearch: false,
     });
-    expect(research.boxes[1].researches).toEqual([
+    expect(research.boxes[1].researches[0]).toMatchObject({
+      id: "timer:herbGrowth:sageHerb:1",
+      itemKind: "herb",
+      itemKey: "sageHerb",
+      starLevel: 1,
+      starMaxLevel: 2,
+      value: "25 coin",
+      costCoin: 25,
+      canResearch: false,
+    });
+    expect(research.boxes[2].researches).toEqual([
       {
         id: "summonSeedsX2",
         label: "x2 summon",
@@ -2868,6 +2886,7 @@ describe("GameplayFacade", () => {
     const levelThreeResearch = gameplayFacade.getSnapshot().research;
     expect(levelThreeResearch.boxes.map((box) => box.id)).toEqual([
       "seedUnlocks",
+      "herbGrowthMastery",
       "summonSeeds",
       "gardenBulkActions",
     ]);
@@ -2876,12 +2895,14 @@ describe("GameplayFacade", () => {
     const levelFourResearch = gameplayFacade.getSnapshot().research;
     expect(levelFourResearch.boxes.map((box) => box.id)).toEqual([
       "seedUnlocks",
+      "herbGrowthMastery",
       "summonSeeds",
       "gardenBulkActions",
       "recipeUnlocks",
+      "potionBrewingMastery",
     ]);
-    expect(levelFourResearch.boxes[3].researches).toHaveLength(28);
-    expect(levelFourResearch.boxes[3].researches[0]).toEqual({
+    expect(levelFourResearch.boxes[4].researches).toHaveLength(28);
+    expect(levelFourResearch.boxes[4].researches[0]).toEqual({
       id: "unlockRecipe:manaTonic",
       label: "mana tonic",
       value: "Free",
@@ -2895,7 +2916,7 @@ describe("GameplayFacade", () => {
 
     advanceToLevel(gameplayFacade, 5);
     expect(
-      gameplayFacade.getSnapshot().research.boxes[3].researches[0],
+      gameplayFacade.getSnapshot().research.boxes[4].researches[0],
     ).toMatchObject({
       id: "unlockRecipe:manaTonic",
       value: "Free",
@@ -5199,7 +5220,7 @@ describe("GameplayFacade", () => {
         label: "sage seed",
         kind: "seed",
       },
-      durationMs: 25_000,
+      durationMs: 27_500,
       replaced: true,
     });
     expect(gameplayFacade.getSnapshot().garden.plot.tiles[0]).toMatchObject({
@@ -5207,11 +5228,11 @@ describe("GameplayFacade", () => {
       selectedSeedKey: "mintSeed",
       seedKey: "mintSeed",
       herbKey: "mintHerb",
-      remainingMs: 25_000,
-      totalMs: 25_000,
+      remainingMs: 27_500,
+      totalMs: 27_500,
       process: {
         phase: "growing",
-        remainingMs: 25_000,
+        remainingMs: 27_500,
         progress: 0,
       },
     });
@@ -5510,6 +5531,34 @@ describe("GameplayFacade", () => {
     });
   });
 
+  it("restores the Garden toolbar seed selection after reopening the game", () => {
+    const persistenceStorage = createMemoryStorage();
+    const first = createGameplay({ persistenceStorage });
+
+    expect(first.gameplayFacade.selectGardenToolbarSeed(2)).toMatchObject({
+      ok: true,
+      selectedSeedItemTypeId: 2,
+      selectedSeedItemKey: "mintSeed",
+    });
+    first.gameplayFacade.shutdown();
+    first.ecsFacade.destroyWorld();
+
+    const saved = JSON.parse(
+      persistenceStorage.getItem("idle-wizard.gameplay.save"),
+    );
+    expect(saved.garden.selectedSeedItemKey).toBe("mintSeed");
+
+    const second = createGameplay({ persistenceStorage });
+
+    expect(second.gameplayFacade.getSnapshot().garden).toMatchObject({
+      selectedSeedItemTypeId: 2,
+      selectedSeedItemKey: "mintSeed",
+    });
+
+    second.gameplayFacade.shutdown();
+    second.ecsFacade.destroyWorld();
+  });
+
   it("plants non-sage garden seeds into their matching herbs", () => {
     const { gameplayFacade } = createGameplay();
 
@@ -5651,7 +5700,7 @@ describe("GameplayFacade", () => {
         potionLabel: "ashen memory",
       },
       manaCost: 5,
-      durationMs: 80_000,
+      durationMs: 148_000,
     });
     expect(gameplayFacade.getSnapshot().mana.current).toBe(45);
 

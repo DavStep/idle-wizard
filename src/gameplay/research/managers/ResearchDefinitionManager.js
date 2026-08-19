@@ -45,6 +45,11 @@ import {
   gardenBulkResearchIds,
   gardenBulkResearchLevels,
 } from '../../garden/gardenBulkResearch.js';
+import {
+  getItemTimerResearchMaxLevel,
+  itemTimerResearchIds,
+  itemTimerResearchStepPercent,
+} from '../itemTimerResearch.js';
 
 const summonSeedResearches = [
   {
@@ -258,6 +263,11 @@ export class ResearchDefinitionManager {
         researches: this.getSeedUnlockResearches(),
       },
       {
+        id: 'herbGrowthMastery',
+        label: 'herb growing mastery',
+        researches: this.getHerbGrowthResearches(),
+      },
+      {
         id: 'summonSeeds',
         label: 'summon seeds unlock',
         researches: summonSeedResearches,
@@ -293,6 +303,11 @@ export class ResearchDefinitionManager {
         id: 'recipeUnlocks',
         label: 'recipe unlocks research',
         researches: this.getRecipeUnlockResearches(),
+      });
+      boxes.push({
+        id: 'potionBrewingMastery',
+        label: 'potion brewing mastery',
+        researches: this.getPotionBrewingResearches(),
       });
     }
 
@@ -362,6 +377,22 @@ export class ResearchDefinitionManager {
     });
   }
 
+  getHerbGrowthResearches() {
+    return this.itemsFacade.getHerbDefinitions().flatMap((herb, catalogIndex) =>
+      this.getItemTimerResearches({
+        item: herb,
+        maxLevel: getItemTimerResearchMaxLevel(catalogIndex),
+        getId: itemTimerResearchIds.herbGrowth,
+        seriesId: `timer:herbGrowth:${herb.key}`,
+        firstRequiredResearchIds: [
+          `unlockSeed:${herb.key.replace(/Herb$/, 'Seed')}`,
+        ],
+        displayName: `${herb.label} growing`,
+        description: `reduces ${herb.label} growing time by 5%.`,
+      }),
+    );
+  }
+
   getRecipeUnlockResearches() {
     return this.getRecipePotionDefinitionsInResearchOrder().map((potion, index, potions) => {
       const previousPotion = potions[index - 1];
@@ -380,6 +411,57 @@ export class ResearchDefinitionManager {
             ? { requiredResearchIds: [`unlockRecipe:${previousPotion.key}`] }
             : {}),
         description: `allows valid cauldron ingredients to brew ${potion.label}.`,
+      };
+    });
+  }
+
+  getPotionBrewingResearches() {
+    return this.getPotionTimerDefinitionsInResearchOrder().flatMap(
+      (potion, catalogIndex) => {
+        const discoveredByCurrentPlayer =
+          this.isDiscoveredRecipe(potion) &&
+          this.potionDiscoveryFacade?.isDiscoveredByCurrentPlayer?.(potion.key) === true;
+
+        return this.getItemTimerResearches({
+          item: potion,
+          maxLevel: getItemTimerResearchMaxLevel(catalogIndex),
+          getId: itemTimerResearchIds.potionBrewing,
+          seriesId: `timer:potionBrewing:${potion.key}`,
+          firstRequiredResearchIds: discoveredByCurrentPlayer
+            ? []
+            : [`unlockRecipe:${potion.key}`],
+          displayName: `${potion.label} brewing`,
+          description: `reduces ${potion.label} brewing time by 5%.`,
+        });
+      },
+    );
+  }
+
+  getItemTimerResearches({
+    item,
+    maxLevel,
+    getId,
+    seriesId,
+    firstRequiredResearchIds,
+    displayName,
+    description,
+  }) {
+    return Array.from({ length: maxLevel }, (_value, index) => {
+      const level = index + 1;
+      return {
+        id: getId(item.key, level),
+        label: `${displayName} lvl ${level}`,
+        displayName,
+        value: `-${itemTimerResearchStepPercent}% time`,
+        showEffect: true,
+        starLevel: level,
+        starMaxLevel: maxLevel,
+        seriesId,
+        itemKind: item.kind,
+        itemKey: item.key,
+        requiredResearchIds:
+          level > 1 ? [getId(item.key, level - 1)] : firstRequiredResearchIds,
+        description,
       };
     });
   }
@@ -404,6 +486,20 @@ export class ResearchDefinitionManager {
     return [...orderedPotions, ...extraPotions, ...discoveredPotions];
   }
 
+  getPotionTimerDefinitionsInResearchOrder() {
+    const potions = this.getRecipePotionDefinitionsInResearchOrder();
+    const seenKeys = new Set(potions.map((potion) => potion.key));
+    const ownDiscoveries = this.itemsFacade
+      .getUnknownPotionDefinitions()
+      .filter(
+        (potion) =>
+          !seenKeys.has(potion.key) &&
+          this.potionDiscoveryFacade?.isDiscoveredByCurrentPlayer?.(potion.key) === true,
+      );
+
+    return [...potions, ...ownDiscoveries];
+  }
+
   isDiscoveredRecipe(potion) {
     return potion?.discoveryType === 'unknown' || potion?.unknown === true;
   }
@@ -416,7 +512,30 @@ export class ResearchDefinitionManager {
       ...this.itemsFacade
         .getUnknownPotionDefinitions()
         .map((potion) => `unlockRecipe:${potion.key}`),
+      ...this.itemsFacade.getUnknownPotionDefinitions().flatMap((potion) =>
+        Array.from(
+          { length: getItemTimerResearchMaxLevel(Number.MAX_SAFE_INTEGER) },
+          (_value, index) =>
+            itemTimerResearchIds.potionBrewing(potion.key, index + 1),
+        ),
+      ),
     ];
+  }
+
+  getHerbGrowthResearchMaxLevel(herbKey) {
+    const index = this.itemsFacade
+      .getHerbDefinitions()
+      .findIndex((herb) => herb.key === herbKey);
+    return getItemTimerResearchMaxLevel(index < 0 ? Number.MAX_SAFE_INTEGER : index);
+  }
+
+  getPotionBrewingResearchMaxLevel(potionKey) {
+    const allPotions = [
+      ...this.itemsFacade.getRecipePotionDefinitions(),
+      ...this.itemsFacade.getUnknownPotionDefinitions(),
+    ];
+    const index = allPotions.findIndex((potion) => potion.key === potionKey);
+    return getItemTimerResearchMaxLevel(index < 0 ? Number.MAX_SAFE_INTEGER : index);
   }
 
   hasPersistentResearch(researchId) {

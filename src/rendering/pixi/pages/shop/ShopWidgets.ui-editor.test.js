@@ -41,6 +41,8 @@ describe('Market, Guild, and Prestige UI editor coverage', () => {
       'compound.guild-quest-board',
       'compound.guild-person-row',
       'compound.guild-people-section',
+      'compound.guild-chronicle-entry',
+      'compound.guild-chronicle-section',
       'compound.guild-profile-field',
       'primitive.guild-color-swatch',
       'compound.guild-detail-row',

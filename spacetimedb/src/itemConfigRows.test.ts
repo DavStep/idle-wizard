@@ -4,6 +4,7 @@ import {
   appendMissingItemConfigRows,
   normalizeLegacySeedSummonCosts,
   rebaseItemConfigSellPrices,
+  rebaseVersionedHerbGrowthDurations,
   rebaseVersionedItemConfigSellPrices,
 } from './itemConfigRows';
 
@@ -160,6 +161,51 @@ describe('rebaseVersionedItemConfigSellPrices', () => {
         currentConfig,
         defaults,
         2,
+        (row) => String(row.key ?? ''),
+      ),
+    ).toBe(currentConfig);
+  });
+});
+
+describe('rebaseVersionedHerbGrowthDurations', () => {
+  it('installs the balanced timer catalog once without keeping old durations', () => {
+    expect(
+      rebaseVersionedHerbGrowthDurations(
+        {
+          herbs: [
+            { key: 'sageHerb', growthDurationMs: 12_000 },
+            { key: 'glowcapHerb', growthDurationMs: 60_000 },
+          ],
+        },
+        {
+          herbs: [
+            { key: 'sageHerb', growthDurationMs: 12_000 },
+            { key: 'glowcapHerb', growthDurationMs: 111_000 },
+          ],
+        },
+        1,
+        (row) => String(row.key ?? ''),
+      ),
+    ).toEqual({
+      growthTimerVersion: 1,
+      herbs: [
+        { key: 'sageHerb', growthDurationMs: 12_000 },
+        { key: 'glowcapHerb', growthDurationMs: 111_000 },
+      ],
+    });
+  });
+
+  it('preserves live tuning once the timer version is current', () => {
+    const currentConfig = {
+      growthTimerVersion: 1,
+      herbs: [{ key: 'glowcapHerb', growthDurationMs: 120_000 }],
+    };
+
+    expect(
+      rebaseVersionedHerbGrowthDurations(
+        currentConfig,
+        { herbs: [{ key: 'glowcapHerb', growthDurationMs: 111_000 }] },
+        1,
         (row) => String(row.key ?? ''),
       ),
     ).toBe(currentConfig);

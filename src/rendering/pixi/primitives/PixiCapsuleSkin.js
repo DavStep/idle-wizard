@@ -67,7 +67,6 @@ export function setPixiCapsuleBounds(
     width = 0,
     height = 0,
     kind,
-    orientation = 'horizontal',
   } = {},
 ) {
   const source = CAPSULE_SOURCE_GEOMETRY[kind];
@@ -91,16 +90,6 @@ export function setPixiCapsuleBounds(
   const scaleX = outputRadius / source.radiusX;
   const scaleY = outputRadius / source.radiusY;
   slice.scale.set(scaleX, scaleY);
-
-  if (orientation === 'vertical') {
-    slice.rotation = Math.PI / 2;
-    slice.position.set(x + nextWidth, y);
-    slice.setSize(
-      nextHeight / scaleX,
-      nextWidth / scaleY,
-    );
-    return sprite;
-  }
 
   slice.rotation = 0;
   slice.position.set(x, y);

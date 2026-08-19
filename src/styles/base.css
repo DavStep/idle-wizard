@@ -70,7 +70,6 @@
     var(--style-progress-top-panel-height) +
       (var(--style-progress-rail-border-width) * 2)
   );
-  --style-scroll-progress-height: var(--style-progress-total-height);
   --style-page-scroll-cut: 6px;
   --style-page-scroll-padding-top: var(--style-page-scroll-cut);
   --style-page-scroll-padding-bottom: var(--style-page-scroll-cut);
@@ -412,7 +411,7 @@
   --garden-page-box-gap: 24px;
   --garden-page-world-top-safe-space: var(--style-room-content-edge);
   --room-inventory-panel-y-offset: 5px;
-  --garden-page-plot-progress-slot-height: var(--style-scroll-progress-height);
+  --garden-page-plot-progress-slot-height: var(--style-progress-total-height);
   --garden-page-plot-visual-width: 88px;
   --garden-page-plot-progress-width: 80px;
   --garden-page-plot-progress-height: 6px;

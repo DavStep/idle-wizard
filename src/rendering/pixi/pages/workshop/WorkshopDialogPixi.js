@@ -4135,6 +4135,10 @@ export class AllianceMemberRow {
     this.applyTheme(this.dialog.contentTheme ?? this.dialog.theme);
   }
 
+  activate() {
+    return this.model?.onActivate?.(this.model) ?? false;
+  }
+
   setBounds(x, y, width, height = ALLIANCE_MEMBER_ROW_HEIGHT) {
     this.root.position.set(x, y);
     this.hitTarget.setBounds(0, 0, width, height);

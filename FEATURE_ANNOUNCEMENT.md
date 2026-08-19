@@ -4,6 +4,12 @@ These are developer-to-player Discord posts. Describe features only in Idle
 Wizard terms; do not mention other game names, source projects, ports, or
 implementation provenance.
 
+## 0.3.73
+
+Research now offers growing-speed mastery for every herb and brewing-speed mastery for every potion. Each item has its own rank series, letting you invest directly in the crops and recipes that matter most to your Workshop.
+
+Base timers have been rebalanced around the new mastery system, and completing an item's full series makes it faster than it was before. Elara's requests after the early tutorial now introduce the first Sage, Mint, and Mana Tonic mastery studies naturally as you progress.
+
 ## 0.2.98
 
 Trader stalls now hold real stock and sell on their own five-second cycles. Tap a stall, then press or hold an item to load it from your inventory; hold the loaded item on the stall to take stock back. Every stall shows its remaining stock, next-sale countdown, batch size, and current trader value.

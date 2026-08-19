@@ -44,6 +44,10 @@ import {
   plotCapacityStartPlotNumber,
 } from './capacityResearchIds.js';
 import { parseGameConfig } from '../config/gameConfigSnapshot.js';
+import {
+  applyItemTimerResearchReduction,
+  itemTimerResearchIds,
+} from './itemTimerResearch.js';
 
 export class ResearchFacade {
   static explain =
@@ -227,6 +231,43 @@ export class ResearchFacade {
     return [...researchIds].reduce(
       (total, researchId) => total + this.researchBalanceManager.getCostEmerald(researchId),
       0,
+    );
+  }
+
+  getCompletedHerbGrowthLevel(herbKey) {
+    return this.getCompletedItemTimerLevel({
+      getId: itemTimerResearchIds.herbGrowth,
+      itemKey: herbKey,
+      maxLevel: this.researchDefinitionManager.getHerbGrowthResearchMaxLevel(herbKey),
+    });
+  }
+
+  getReducedHerbGrowthDurationMs(herbKey, durationMs) {
+    const maxLevel =
+      this.researchDefinitionManager.getHerbGrowthResearchMaxLevel(herbKey);
+    return applyItemTimerResearchReduction(
+      durationMs,
+      this.getCompletedHerbGrowthLevel(herbKey),
+      maxLevel,
+    );
+  }
+
+  getCompletedPotionBrewingLevel(potionKey) {
+    return this.getCompletedItemTimerLevel({
+      getId: itemTimerResearchIds.potionBrewing,
+      itemKey: potionKey,
+      maxLevel:
+        this.researchDefinitionManager.getPotionBrewingResearchMaxLevel(potionKey),
+    });
+  }
+
+  getReducedPotionBrewingDurationMs(potionKey, durationMs) {
+    const maxLevel =
+      this.researchDefinitionManager.getPotionBrewingResearchMaxLevel(potionKey);
+    return applyItemTimerResearchReduction(
+      durationMs,
+      this.getCompletedPotionBrewingLevel(potionKey),
+      maxLevel,
     );
   }
 
@@ -420,6 +461,20 @@ export class ResearchFacade {
 
     for (let level = 1; level <= advancedResearchMaxLevel; level += 1) {
       if (!this.researchStateEntityManager.isCompleted(getId(targetNumber, level))) {
+        break;
+      }
+
+      completedLevel = level;
+    }
+
+    return completedLevel;
+  }
+
+  getCompletedItemTimerLevel({ getId, itemKey, maxLevel }) {
+    let completedLevel = 0;
+
+    for (let level = 1; level <= maxLevel; level += 1) {
+      if (!this.researchStateEntityManager.isCompleted(getId(itemKey, level))) {
         break;
       }
 

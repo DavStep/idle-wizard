@@ -12,6 +12,7 @@ import { researchTimeResearchIds } from '../researchTimeResearch.js';
 import { stallStaffingResearchIds } from '../stallStaffingResearch.js';
 import { gardenBulkResearchIds } from '../../garden/gardenBulkResearch.js';
 import { discoveredPotionResearchCostGoldByKey } from '../../../../spacetimedb/src/discoveredPotionResearch.ts';
+import { itemTimerResearchIds } from '../itemTimerResearch.js';
 
 describe('ResearchBalanceManager', () => {
   it('caps research durations at four hours', () => {
@@ -70,6 +71,15 @@ describe('ResearchBalanceManager', () => {
     expect(manager.getDurationSeconds('unlockRecipe:briarWard')).toBe(300);
     expect(manager.getDurationSeconds('unlockRecipe:pearlrootDraught')).toBe(14_400);
     expect(manager.getDurationSeconds('unlockRecipe:ashenMemory')).toBe(0);
+    expect(
+      manager.getDurationSeconds(itemTimerResearchIds.herbGrowth('sageHerb', 1)),
+    ).toBe(5);
+    expect(
+      manager.getCost(itemTimerResearchIds.herbGrowth('sageHerb', 2)),
+    ).toEqual({ amount: 38, currency: 'coin' });
+    expect(
+      manager.getCost(itemTimerResearchIds.potionBrewing('manaTonic', 1)),
+    ).toEqual({ amount: 50, currency: 'coin' });
     expect(manager.getCost('unlockRecipe:ashenMemory')).toEqual({
       amount: 102_400,
       currency: 'coin',

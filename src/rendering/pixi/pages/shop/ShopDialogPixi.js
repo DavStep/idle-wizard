@@ -61,6 +61,7 @@ import {
   RetainedScrollArea,
   resolveRetainedDialogListLayout,
 } from '../workshop/RetainedPageKit.js';
+import { ShopCompactRow } from './ShopPixiPage.js';
 
 export const SHOP_DIALOG_IDS = Object.freeze({
   STALL: 'shop.stall',
@@ -124,6 +125,8 @@ const SETTINGS_ROW_RELEASE_DURATION_MS = 180;
 const SETTINGS_ROW_DISCLOSURE_START_SCALE = 0.985;
 const SETTINGS_ROW_DISCLOSURE_PRESS_SLOP =
   SETTINGS_ROW_EXPANSION_HEIGHT + 4;
+const SUMMON_SEED_PREFERENCE_BUTTON_WIDTH = 70;
+const SUMMON_SEED_PREFERENCE_BUTTON_HEIGHT = 28;
 const AUTO_SUMMON_REVEAL_DURATION_MS = 240;
 const AUTO_SUMMON_REVEAL_START_SCALE = 0.8;
 const AUTO_SUMMON_REVEAL_OVERSHOOT_SCALE = 1.02;
@@ -183,7 +186,7 @@ const DIALOG_CONFIG = Object.freeze({
   [SHOP_DIALOG_IDS.LISTING]: Object.freeze({
     title: 'Sell',
     width: DEFAULT_DIALOG_WIDTH,
-    height: DEFAULT_DIALOG_HEIGHT,
+    height: STALL_DIALOG_HEIGHT,
     rowHeight: PIXI_ROOT_RUN_GEOMETRY.settings.rowPitch,
     hasPrimaryVerticalScroll: true,
     splitPaper: Object.freeze({
@@ -203,14 +206,16 @@ const DIALOG_CONFIG = Object.freeze({
     }),
   }),
   [SHOP_DIALOG_IDS.MARKET]: Object.freeze({
-    title: 'player market',
+    title: 'Player Market',
     width: WIDE_DIALOG_WIDTH,
-    height: DEFAULT_DIALOG_HEIGHT,
-    rowHeight: 48,
+    height: STALL_DIALOG_HEIGHT,
+    rowHeight: 50,
+    rowVariant: 'market-compact',
+    actionsPlacement: 'before-list',
     hasPrimaryVerticalScroll: true,
   }),
   [SHOP_DIALOG_IDS.TRADE_HISTORY]: Object.freeze({
-    title: 'trade history',
+    title: 'Trade History',
     width: WIDE_DIALOG_WIDTH,
     height: DEFAULT_DIALOG_HEIGHT,
     rowHeight: 36,
@@ -424,20 +429,16 @@ export class ShopDialogPixi extends BasePixiRetainedView {
       semanticId: `${dialogId}.dropRate`,
       label: `${dialogId}:dropRate`,
     });
-    this.fields = [
-      new DialogField({
-        assetManager,
-        inputRouter,
-        textEntryService,
-        label: `${dialogId}:field:0`,
-      }),
-      new DialogField({
-        assetManager,
-        inputRouter,
-        textEntryService,
-        label: `${dialogId}:field:1`,
-      }),
-    ];
+    this.fields = Array.from(
+      { length: 3 },
+      (_, index) =>
+        new DialogField({
+          assetManager,
+          inputRouter,
+          textEntryService,
+          label: `${dialogId}:field:${index}`,
+        }),
+    );
     for (const field of this.fields) {
       this.fieldLayer.addChild(field.root);
     }
@@ -449,9 +450,12 @@ export class ShopDialogPixi extends BasePixiRetainedView {
       counters,
       rowHeight: config.rowHeight,
       rowVariant:
-        dialogId === SHOP_DIALOG_IDS.LEDGER
+        config.rowVariant ??
+        (dialogId === SHOP_DIALOG_IDS.LEDGER
           ? 'market-ledger'
-          : 'inventory-choice',
+          : dialogId === WORKSHOP_SUMMON_INFO_DIALOG_ID
+            ? 'summon-seed-preference'
+            : 'inventory-choice'),
       useSettingsRows: usesSplitPaperSections,
       expandedControl:
         dialogId === WORKSHOP_SUMMON_INFO_DIALOG_ID
@@ -1006,6 +1010,13 @@ export class ShopDialogPixi extends BasePixiRetainedView {
 
     const actionButtons = this.actions?.getWidgets?.() ?? [];
     const actionHeight = actionButtons.length > 0 ? 28 : 0;
+    const actionsBeforeList =
+      this.config.actionsPlacement === 'before-list';
+    if (actionsBeforeList && actionHeight > 0) {
+      layoutButtons(actionButtons, 0, y, bodyWidth, actionHeight, 6);
+      this.applyActionLabelOpticalOffset();
+      y += actionHeight + CONTENT_GAP;
+    }
     const statusHeight = this.statusLabel.visible
       ? PIXI_UI_GEOMETRY.rowMinHeight
       : 0;
@@ -1013,7 +1024,9 @@ export class ShopDialogPixi extends BasePixiRetainedView {
       0,
       usableBodyHeight -
         y -
-        (actionHeight > 0 ? actionHeight + CONTENT_GAP : 0) -
+        (!actionsBeforeList && actionHeight > 0
+          ? actionHeight + CONTENT_GAP
+          : 0) -
         statusHeight -
         finiteOr(this.config.scrollViewportBottomInset, 0),
     );
@@ -1051,7 +1064,7 @@ export class ShopDialogPixi extends BasePixiRetainedView {
         bottomY + 2,
       );
     }
-    if (actionHeight > 0) {
+    if (!actionsBeforeList && actionHeight > 0) {
       bottomY -= actionHeight;
       layoutButtons(actionButtons, 0, bottomY, bodyWidth, actionHeight, 6);
       this.applyActionLabelOpticalOffset();
@@ -2054,7 +2067,6 @@ class VirtualShopDialogList {
       label,
       onScroll: () => this.renderWindow(),
     });
-    this.scroll.progressBar = null;
     this.root = this.scroll.root;
     this.rowPool = new WidgetPool({
       name: `${label} viewport row pool`,
@@ -2071,6 +2083,27 @@ class VirtualShopDialogList {
               reducedMotion: this.reducedMotion,
               label: `${label}:row`,
             })
+          : this.rowVariant === 'market-compact'
+            ? new ShopCompactRow({
+                assetManager,
+                inputRouter,
+                semanticRegistry,
+                paperPresentation: true,
+                label: `${label}:row`,
+              })
+          : this.rowVariant === 'summon-seed-preference'
+            ? new SummonSeedPreferenceRowPixi({
+                assetManager,
+                inputRouter,
+                semanticRegistry,
+                useSettingsStyle: this.useSettingsRows,
+                requestFrame: this.requestFrame,
+                cancelFrame: this.cancelFrame,
+                timeSource: this.timeSource,
+                reducedMotion: this.reducedMotion,
+                pressSlop: SETTINGS_ROW_DISCLOSURE_PRESS_SLOP,
+                label: `${label}:row`,
+              })
           : new RootRunInventoryChoiceRowPixi({
               assetManager,
               inputRouter,
@@ -3034,9 +3067,7 @@ export class RootRunInventoryChoiceRowPixi extends ClickableWidget {
     this.visual.position.set(width / 2, summaryHeight / 2);
     this.root.hitArea = new Rectangle(0, 0, width, summaryHeight);
     const hasDetail = this.detail.visible;
-    const valueWidth = this.valueResource.visible
-      ? this.valueResource.measuredWidth
-      : this.value.measuredWidth;
+    const valueWidth = this.getValueLayoutWidth();
     if (!this.useSettingsStyle) {
       const hasItemIcon = this.itemIcon.visible;
       const itemIconSize = Math.max(
@@ -3174,6 +3205,12 @@ export class RootRunInventoryChoiceRowPixi extends ClickableWidget {
     this.redraw();
   }
 
+  getValueLayoutWidth() {
+    return this.valueResource.visible
+      ? this.valueResource.measuredWidth
+      : this.value.measuredWidth;
+  }
+
   redraw() {
     if (!this.useSettingsStyle) {
       this.background.clear();
@@ -3230,6 +3267,76 @@ export class RootRunInventoryChoiceRowPixi extends ClickableWidget {
   destroy() {
     this.unregisterSemantic();
     super.destroy({ children: true });
+  }
+}
+
+/**
+ * Summoning Seeds row with a dedicated weight button in the right value slot.
+ * The whole row still toggles disclosure on validated release, but only the
+ * nested weight button owns press/release motion.
+ */
+export class SummonSeedPreferenceRowPixi extends RootRunInventoryChoiceRowPixi {
+  constructor(options = {}) {
+    super(options);
+    this.preferenceButton = new PixiTextButton({
+      assetManager: options.assetManager,
+      inputRouter: options.inputRouter,
+      width: SUMMON_SEED_PREFERENCE_BUTTON_WIDTH,
+      height: SUMMON_SEED_PREFERENCE_BUTTON_HEIGHT,
+      sizeTier: 15,
+      variant: 'brown',
+      label: `${options.label}:preferenceButton`,
+    });
+    this.visual.addChild(this.preferenceButton);
+  }
+
+  bind(key, item) {
+    super.bind(key, item);
+    this.value.visible = false;
+    this.value.renderable = false;
+    this.valueResource.visible = false;
+    this.valueResource.renderable = false;
+    this.preferenceButton.bind(
+      key,
+      {
+        label: item.value ?? item.actionLabel ?? '',
+        enabled: this.enabled,
+        variant: resolveSeedPreferenceButtonColor(item),
+      },
+      this.action,
+    );
+  }
+
+  setBounds(x, y, width, height, summaryHeight = height) {
+    super.setBounds(x, y, width, height, summaryHeight);
+    const rowPadding = PIXI_ROOT_RUN_GEOMETRY.settings.rowPadding;
+    const backgroundRight =
+      this.background.x + this.background.frameWidth - rowPadding;
+    this.preferenceButton.position.set(
+      backgroundRight - SUMMON_SEED_PREFERENCE_BUTTON_WIDTH,
+      Math.max(0, (summaryHeight - SUMMON_SEED_PREFERENCE_BUTTON_HEIGHT) / 2),
+    );
+  }
+
+  getValueLayoutWidth() {
+    return SUMMON_SEED_PREFERENCE_BUTTON_WIDTH;
+  }
+
+  setPressed(pressed) {
+    this.cancelReleaseAnimation();
+    this.pressed = Boolean(pressed) && this.isClickableEnabled();
+    this.clickableVisual.scale.set(1);
+    return this;
+  }
+
+  applyTheme(theme) {
+    super.applyTheme(theme);
+    this.preferenceButton.applyTheme(this.theme);
+  }
+
+  reset() {
+    super.reset();
+    this.preferenceButton.reset();
   }
 }
 
@@ -3603,4 +3710,18 @@ function resolveProgressToneText(tone) {
 function resolveProgressToneTextStroke(tone) {
   const color = PIXI_PROGRESS_VISUALS.tones[tone]?.textStroke;
   return color ? { color, width: 2 } : null;
+}
+
+function resolveSeedPreferenceButtonColor(item) {
+  const preference = String(item?.dropSlider?.value ?? '').toLowerCase();
+  if (preference === 'high') {
+    return 'green';
+  }
+  if (preference === 'medium' || preference === 'normal') {
+    return 'yellow';
+  }
+  if (preference === 'low') {
+    return 'red';
+  }
+  return 'brown';
 }

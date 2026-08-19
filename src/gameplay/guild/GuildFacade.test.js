@@ -247,4 +247,26 @@ describe('GuildFacade', () => {
       ),
     ).toBe(true);
   });
+
+  it('keeps the newest 80 Chronicle entries in persisted Guild state', () => {
+    const { facade } = createFacade();
+    facade.applyPersistenceSnapshot({
+      logs: Array.from({ length: 105 }, (_, index) => ({
+        atMs: 105 - index,
+        id: index + 1,
+        text: `Story ${index + 1}.`,
+      })),
+      nextLogId: 106,
+      profile: {
+        color: 'red',
+        name: 'Ash Hall',
+        tag: 'ASH',
+      },
+    });
+
+    const logs = facade.getPersistenceSnapshot().logs;
+    expect(logs).toHaveLength(80);
+    expect(logs[0].text).toBe('Story 1.');
+    expect(logs.at(-1).text).toBe('Story 80.');
+  });
 });

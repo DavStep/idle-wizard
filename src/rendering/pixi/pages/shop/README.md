@@ -67,9 +67,9 @@ Rows in long market/history dialogs are viewport-windowed and keyed by `id`.
 Actions are invoked directly and are expected to call the authoritative
 gameplay/backend facade. Whole-dialog footer tabs render only when at least two
 choices are available; one-category dialogs use the complete paper/content
-height instead. Load Stall uses a dedicated `464px` authored shell at
-`390x844`; its item-list viewport absorbs additional portrait height and keeps
-the allocation controls and footer tabs fixed outside the managed scroll.
+height instead. Load Stall and Sell use a dedicated `464px` authored shell at
+`390x844`; their item-list viewports absorb additional portrait height and keep
+the transaction controls and footer tabs fixed outside the managed scroll.
 
 The compatibility adapter also accepts the current raw `shelf`,
 `playerShelf`, `coinOffer`, `dailyCrystalOffer`, and `crystalOffers` snapshot names during cutover.
@@ -84,8 +84,10 @@ and tails extend below the raised front panel.
 Loaded stall rows reuse the Research art-well frame, but contain item artwork
 inside that well. The loaded quantity sits over the artwork as white,
 dark-stroked text without a badge background. The sale batch size uses the
-shortened `30x27px` red downward badge at the card's top-right, inset `14px`
-from the right edge, with centered white, dark-stroked `xN` text.
+shortened `30x27px` red downward badge in the upper-right content lane, `10px`
+before the fixed Select/Cancel action and protruding `2px` above the card, with
+centered white, dark-stroked `xN` text. The sale rail ends before its compact
+timer, and the timer ends `6px` before the fixed action column.
 Each successful automatic sale sweeps the Research upgrade shine once across
 the selling stall while the existing bounded coin trail travels to the top
 currency display. Reduced motion skips the shine without delaying the sale.
@@ -122,6 +124,10 @@ listing slot, a dedicated compact claim-proceeds row, and bottom-border actions
 on the final card. Add `&proceeds=none` to isolate the empty-request state
 without the claim-proceeds row, and add `&requests=empty` to render one empty
 request slot.
+Add `?dialog=market` to open Browse Market directly with Title Case copy,
+shared compact Market rows, and canonical coin icons. Add `&filters=open` to
+show the Item, Min Price, and Username filter fields with their Clear and Apply
+Filter actions.
 Add `?dialog=request` to open the retained Request picker directly with
 `Coins Per Item` and `Max Quantity` fields. Add `&requestStatus=offline` to
 verify visible submission-failure feedback. Add `?dialog=listing` to open the
@@ -170,3 +176,7 @@ listing, clear, and proceeds callbacks forward to the current backend and
 gameplay APIs; success/failure remains authoritative in those APIs. Optional
 UI draft callbacks only retain canvas-local selection/input state and must
 recreate/rebind this view model after changing it.
+
+Traders stands and Players request/listing cards keep their full card bodies
+passive. Empty unlocked cards expose only a fixed green `Select` action;
+occupied cards replace it with red `Cancel`, scoped to that exact slot.

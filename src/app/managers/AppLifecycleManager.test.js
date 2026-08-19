@@ -807,8 +807,8 @@ describe('AppLifecycleManager', () => {
     expect(lifecycle.backendFacade.start).toHaveBeenCalledTimes(1);
   });
 
-  it('refreshes a remembered connected account before using a stored server token', async () => {
-    let authenticated = false;
+  it('uses a native-recovered server token without reopening Google after an update', async () => {
+    let snapshotReads = 0;
     const freshStartChoiceManager = {
       mount: vi.fn(),
       choose: vi.fn(() => Promise.resolve(FRESH_START_CHOICE_START_FRESH)),
@@ -818,18 +818,19 @@ describe('AppLifecycleManager', () => {
     const authFacade = {
       getPendingAccountLinkSave: vi.fn(() => null),
       clearPendingAccountLinkSave: vi.fn(),
-      getSnapshot: vi.fn(() => ({
-        hasToken: true,
-        oidc: {
-          authenticated,
-          enabled: true,
-          remembered: !authenticated,
-        },
-      })),
-      tryRestoreConnectedAccount: vi.fn(() => {
-        authenticated = true;
-        return Promise.resolve({ ok: true, restored: true });
+      getSnapshot: vi.fn(() => {
+        snapshotReads += 1;
+        const recoveredFromNativeStorage = snapshotReads > 1;
+        return {
+          hasToken: recoveredFromNativeStorage,
+          oidc: {
+            authenticated: false,
+            enabled: true,
+            remembered: recoveredFromNativeStorage,
+          },
+        };
       }),
+      tryRestoreConnectedAccount: vi.fn(),
       signInWithGoogle: vi.fn(),
     };
     const { lifecycle } = createLifecycle({ freshStartChoiceManager, authFacade });
@@ -838,7 +839,7 @@ describe('AppLifecycleManager', () => {
     await flushPromises();
     await flushPromises();
 
-    expect(authFacade.tryRestoreConnectedAccount).toHaveBeenCalledTimes(1);
+    expect(authFacade.tryRestoreConnectedAccount).not.toHaveBeenCalled();
     expect(freshStartChoiceManager.choose).not.toHaveBeenCalled();
     expect(lifecycle.backendFacade.start).toHaveBeenCalledTimes(1);
   });

@@ -14,6 +14,8 @@ export default defineUiEditorIntegration({
     'compound.guild-quest-card',
     'compound.guild-people-section',
     'compound.guild-person-row',
+    'compound.guild-chronicle-section',
+    'compound.guild-chronicle-entry',
     'text-button',
     'cost-button',
   ],

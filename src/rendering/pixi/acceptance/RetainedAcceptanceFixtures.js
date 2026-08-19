@@ -31,11 +31,7 @@ export const DIALOG_IDS_BY_PAGE = Object.freeze({
   ]),
   research: Object.freeze([]),
   prestige: Object.freeze([PRESTIGE_INFO_DIALOG_ID]),
-  garden: Object.freeze([
-    'garden.seed',
-    'garden.cancel',
-    'garden.swap',
-  ]),
+  garden: Object.freeze(['garden.seed', 'garden.cancel', 'garden.swap']),
   brewing: Object.freeze([
     'brewing.herbs',
     'brewing.recipes',
@@ -169,8 +165,7 @@ export function createDialogViewModel(
   if (dialogId === 'garden.cancel' || dialogId === 'garden.swap') {
     return {
       message: `${dialogId} ${key}?`,
-      confirmLabel:
-        dialogId === 'garden.cancel' ? 'empty' : 'swap',
+      confirmLabel: dialogId === 'garden.cancel' ? 'empty' : 'swap',
       payload: { key },
       onConfirm: accept,
     };
@@ -315,7 +310,11 @@ function createTradeAllianceDialogModel(key) {
       memberCountLabel: `${members.length}/50`,
     },
     tradeInfoRows: [
-      { id: 'trade-info:members', label: 'Members', value: `${members.length}/50` },
+      {
+        id: 'trade-info:members',
+        label: 'Members',
+        value: `${members.length}/50`,
+      },
       { id: 'trade-info:join-mode', label: 'Join Mode', value: 'Apply' },
       {
         id: 'trade-info:season-income',
@@ -619,18 +618,10 @@ function createBrewingModel(key) {
       inventory: {
         activeTab: 'herbs',
         herbs: {
-          rows: createInventoryRows(
-            key,
-            'herb',
-            'availableQuantity',
-          ),
+          rows: createInventoryRows(key, 'herb', 'availableQuantity'),
         },
         potions: {
-          rows: createInventoryRows(
-            key,
-            'potion',
-            'availableQuantity',
-          ),
+          rows: createInventoryRows(key, 'potion', 'availableQuantity'),
         },
       },
     },
@@ -707,14 +698,26 @@ function createShopModel(key, subscribe) {
 }
 
 function createGuildModel(key, subscribe) {
-  const quests = [1, 2].map((index) => ({
-    id: `quest-${key}-${index}`,
-    title: `quest ${key} ${index}`,
-    lore: `quest lore ${key} ${index}`,
-    difficulty: 'easy',
-    rewardText: `${index * 20} coin`,
-    expiresLabel: '2h',
-  }));
+  const quests = [
+    {
+      id: `quest-${key}-1`,
+      title: 'Smuggler Tunnel',
+      lore: 'Map the lantern-lit route beneath the fish market and return unseen.',
+      difficulty: 'medium',
+      statLabel: 'Cunning / Agility',
+      rewardText: '120-180 coin, 2-4 seeds, or 1-3 herbs',
+      expiresLabel: '2h',
+    },
+    {
+      id: `quest-${key}-2`,
+      title: 'Broken Bridge Watch',
+      lore: 'Guard the bridge crew through dusk while raiders test the unfinished crossing.',
+      difficulty: 'easy',
+      statLabel: 'Endurance / Discipline',
+      rewardText: '80-120 coin, 1-3 seeds, or 1-2 herbs',
+      expiresLabel: '4h',
+    },
+  ];
 
   return {
     guild: {
@@ -768,6 +771,45 @@ function createGuildModel(key, subscribe) {
 }
 
 function createShopDialogModel(dialogId, key, subscribe) {
+  if (dialogId === SHOP_DIALOG_IDS.MARKET) {
+    return {
+      title: 'Player Market',
+      status: key === 'a' ? '3 Matching Offers' : '',
+      fields:
+        key === 'a'
+          ? [
+              { id: 'item', label: 'Item', value: 'Sage Seed' },
+              { id: 'minPrice', label: 'Min Price', value: '5' },
+              { id: 'username', label: 'Username', value: 'Mira' },
+            ]
+          : [],
+      items: [
+        ['Mira', 'Sage Seed', 12],
+        ['Rowan', 'Mint Seed', 18],
+        ['Juniper', 'Briar Seed', 25],
+      ].map(([username, itemLabel, priceCoin], index) => ({
+        id: `shop-market-${key}-${index}`,
+        indexLabel: `${index + 1}.`,
+        itemLabel: `${itemLabel} (${index + 2}) · ${username}`,
+        priceLabel: `${priceCoin} coin`,
+        valueResourceKey: 'coin',
+        action: accept,
+      })),
+      actions:
+        key === 'a'
+          ? [
+              { id: 'clear', label: 'Clear', action: accept },
+              { id: 'apply', label: 'Apply Filter', action: accept },
+            ]
+          : [{ id: 'filter', label: 'Filter', action: accept }],
+      tabs: [
+        { id: 'selling', label: 'Selling', selected: true, action: accept },
+        { id: 'buying', label: 'Buying', action: accept },
+      ],
+      subscribe,
+    };
+  }
+
   return {
     title: `${dialogId} ${key}`,
     summaryRows: createCompactRows(key, `${dialogId}-summary`),
@@ -824,14 +866,88 @@ function createGuildDialogModel(dialogId, key, subscribe) {
 
   if (dialogId === GUILD_DIALOG_IDS.REQUEST_STACK) {
     return {
-      requests: [1, 2].map((index) => ({
-        id: `stack-request-${key}-${index}`,
-        title: `request ${key} ${index}`,
-        lore: `request lore ${key} ${index}`,
-        difficulty: 'easy',
-        rewardText: `${index * 10} coin`,
-        expiresLabel: '2h',
-      })),
+      requests: [
+        {
+          id: `stack-request-${key}-1`,
+          title: 'Smuggler Tunnel',
+          lore: 'Map the lantern-lit route beneath the fish market and return unseen.',
+          difficulty: 'medium',
+          tags: ['crime'],
+          statLabel: 'Cunning / Agility',
+          rewardText: '120-180 coin, 2-4 seeds, or 1-3 herbs',
+          expiresLabel: '2h',
+        },
+        {
+          id: `stack-request-${key}-2`,
+          title: 'Broken Bridge Watch',
+          lore: 'Guard the bridge crew through dusk while raiders test the unfinished crossing.',
+          difficulty: 'easy',
+          tags: ['village'],
+          statLabel: 'Endurance / Discipline',
+          rewardText: '80-120 coin, 1-3 seeds, or 1-2 herbs',
+          expiresLabel: '4h',
+        },
+        {
+          id: `stack-request-${key}-3`,
+          title: 'Fever Ward Run',
+          lore: 'Carry medicine across town before the fever ward closes its doors.',
+          difficulty: 'medium',
+          tags: ['medical'],
+          statLabel: 'Wisdom / Discipline',
+          rewardText: '100-140 coin, 2-3 seeds, or 1-3 herbs',
+          expiresLabel: '3h',
+        },
+        {
+          id: `stack-request-${key}-4`,
+          title: 'Old Road Escort',
+          lore: 'Guide a nervous merchant and a damaged wagon through the north road.',
+          difficulty: 'easy',
+          tags: ['road', 'trade'],
+          statLabel: 'Endurance / Charisma',
+          rewardText: '90-130 coin, 1-3 seeds, or 1-2 herbs',
+          expiresLabel: '5h',
+        },
+        {
+          id: `stack-request-${key}-5`,
+          title: 'Charter Audit',
+          lore: 'Recover the sealed town charter before the council bell rings.',
+          difficulty: 'medium',
+          tags: ['political'],
+          statLabel: 'Wisdom / Cunning',
+          rewardText: '110-160 coin, 2-4 seeds, or 2-3 herbs',
+          expiresLabel: '2h',
+        },
+        {
+          id: `stack-request-${key}-6`,
+          title: 'Mirror Maze',
+          lore: 'Find the one reflection that still remembers where the key was hidden.',
+          difficulty: 'hard',
+          tags: ['magic'],
+          statLabel: 'Wisdom / Luck',
+          rewardText: '160-220 coin, 3-5 seeds, or 2-4 herbs',
+          expiresLabel: '6h',
+        },
+        {
+          id: `stack-request-${key}-7`,
+          title: 'Hilltop Watch',
+          lore: 'Survey the ridge and mark every campfire along the valley road.',
+          difficulty: 'medium',
+          tags: ['exploration'],
+          statLabel: 'Wisdom / Agility',
+          rewardText: '100-150 coin, 2-4 seeds, or 1-3 herbs',
+          expiresLabel: '4h',
+        },
+        {
+          id: `stack-request-${key}-8`,
+          title: 'Arena Challenge',
+          lore: 'Meet the gate captain at the training ring and answer the guild challenge.',
+          difficulty: 'hard',
+          tags: ['arena'],
+          statLabel: 'Strength / Endurance',
+          rewardText: '170-230 coin, 3-5 seeds, or 2-4 herbs',
+          expiresLabel: '6h',
+        },
+      ],
       onPost: accept,
       subscribe,
     };
@@ -860,10 +976,9 @@ function createGuildDialogModel(dialogId, key, subscribe) {
     card: {
       id: `person-${key}`,
       displayName: isApplicant ? 'Orin Moss' : 'Mira Ashveil',
-      iconKey:
-        isApplicant
-          ? 'adventurer_packscout'
-          : 'adventurer_bluescarf_spear',
+      iconKey: isApplicant
+        ? 'adventurer_packscout'
+        : 'adventurer_bluescarf_spear',
       level: isApplicant ? 2 : 7,
       xp: isApplicant ? 35 : 410,
       nextLevelXp: isApplicant ? 100 : 600,
@@ -875,8 +990,7 @@ function createGuildDialogModel(dialogId, key, subscribe) {
         agility: isApplicant ? 4 : 5,
       },
     },
-    actionLabel:
-      dialogId === GUILD_DIALOG_IDS.APPLICANT ? 'hire' : 'fire',
+    actionLabel: dialogId === GUILD_DIALOG_IDS.APPLICANT ? 'hire' : 'fire',
     action: accept,
     subscribe,
   };

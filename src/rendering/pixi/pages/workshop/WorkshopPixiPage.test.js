@@ -1865,27 +1865,24 @@ describe('WorkshopPixiPage', () => {
       dialog.panel.contentBoxWidth,
     );
     expect(reserveRow.valueResource.amountLabel.x).toBeGreaterThan(reserveRow.valueResource.icon.x);
-    expect(seedRows.map((row) => row.value.textObject.style.fill)).toEqual([
-      '#d8ad32',
-      dialog.contentTheme.text,
-      '#be403b',
-      '#4aa83f',
+    expect(seedRows.map((row) => row.preferenceButton.color)).toEqual([
+      'yellow',
+      'brown',
+      'red',
+      'green',
     ]);
-    expect(seedRows.map((row) => row.value.textObject.style.stroke)).toEqual([
-      expect.objectContaining({
-        color: PIXI_TEXT_STROKE_COLOR,
-        width: resolvePixiTextStrokeWidth(seedRows[0].value.fontSize),
-      }),
-      null,
-      expect.objectContaining({
-        color: PIXI_TEXT_STROKE_COLOR,
-        width: resolvePixiTextStrokeWidth(seedRows[2].value.fontSize),
-      }),
-      expect.objectContaining({
-        color: PIXI_TEXT_STROKE_COLOR,
-        width: resolvePixiTextStrokeWidth(seedRows[3].value.fontSize),
-      }),
+    expect(
+      seedRows.map((row) => row.preferenceButton.textLabel.textObject.style.fill),
+    ).toEqual(['#ffffff', '#ffffff', '#ffffff', '#ffffff']);
+    expect(
+      seedRows.map((row) => row.preferenceButton.textLabel.textObject.style.stroke),
+    ).toEqual([
+      expect.objectContaining({ color: PIXI_TEXT_STROKE_COLOR }),
+      expect.objectContaining({ color: PIXI_TEXT_STROKE_COLOR }),
+      expect.objectContaining({ color: PIXI_TEXT_STROKE_COLOR }),
+      expect.objectContaining({ color: PIXI_TEXT_STROKE_COLOR }),
     ]);
+    expect(seedRows.every((row) => row.value.visible === false)).toBe(true);
     expect(seedRows.every((row) => row.selectedIndicator.visible === false)).toBe(true);
     const expectedListFrameWidth =
       PIXI_ROOT_RUN_GEOMETRY.dialog.innerBoardWidth -
@@ -2009,22 +2006,10 @@ describe('WorkshopPixiPage', () => {
     harness.dispose();
   });
 
-  it('uses full-alpha light-haptic row presses with the shared rubber release snap', () => {
-    const frames = [];
-    let now = 0;
-    let frameId = 0;
-    const requestFrame = vi.fn((callback) => {
-      frames.push(callback);
-      frameId += 1;
-      return frameId;
-    });
+  it('keeps row taps motionless and gives press feedback only to the preference button', () => {
     const inputRouter = new PixiInputRouter();
     const harness = createHarness({
       inputRouter,
-      requestFrame,
-      cancelFrame: vi.fn(),
-      timeSource: () => now,
-      reducedMotion: false,
     });
     const model = createWorkshopViewModel();
     model.workshop.dialogs.summonInfo = createSummonInfoDialogModel({
@@ -2036,27 +2021,31 @@ describe('WorkshopPixiPage', () => {
 
     const dialog = harness.dialogs.get('workshop.summonInfo');
     const row = dialog.list.rows.getWidgets()[0];
-    const registration = inputRouter.store
+    const rowRegistration = inputRouter.store
       .getRegistrations('press')
       .find((candidate) => candidate.displayObject === row.root);
+    const buttonRegistration = inputRouter.store
+      .getRegistrations('press')
+      .find((candidate) => candidate.displayObject === row.preferenceButton);
 
-    expect(registration?.haptic).toBe('light');
-    registration.onPressChange(true, { confirmed: false });
-    expect(row.visual.scale.x).toBeCloseTo(0.97);
-    expect(row.background.alpha).toBe(1);
-
-    registration.onPressChange(false, { confirmed: true });
-    expect(frames).toHaveLength(1);
-    now = 65;
-    frames.shift()();
-    expect(row.visual.scale.x).toBeGreaterThan(1);
-    expect(row.visual.scale.x).toBeLessThanOrEqual(1.035);
-    expect(row.background.alpha).toBe(1);
-
-    now = 180;
-    frames.shift()();
+    expect(rowRegistration?.haptic).toBe('light');
+    rowRegistration.onPressChange(true, { confirmed: false });
     expect(row.visual.scale.x).toBe(1);
     expect(row.background.alpha).toBe(1);
+
+    rowRegistration.onPressChange(false, { confirmed: true });
+    expect(row.background.alpha).toBe(1);
+    expect(row.visual.scale.x).toBe(1);
+
+    expect(buttonRegistration?.haptic()).toBe('light');
+    buttonRegistration.onPressChange(true, { confirmed: false });
+    expect(row.preferenceButton.visual.scale.x).toBe(0.94);
+    expect(row.visual.scale.x).toBe(1);
+    buttonRegistration.onPressChange(false, { confirmed: false });
+    expect(row.preferenceButton.visual.scale.x).toBe(1);
+    expect(dialog.list.expandedKey).toBeNull();
+    expect(buttonRegistration.onActivate()).toBe(true);
+    expect(dialog.list.expandedKey).toBe('sageSeed');
 
     harness.page.destroy();
     harness.dispose();

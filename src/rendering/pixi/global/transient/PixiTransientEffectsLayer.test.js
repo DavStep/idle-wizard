@@ -689,6 +689,27 @@ describe('reward flyout presenter', () => {
       }),
     ]);
 
+    const plantedSeedReward = createRewardFlyoutPresentation({
+      type: 'garden_seed_planted',
+      eventId: 'plant-2',
+      seed: { key: 'mintSeed', label: 'mint seed' },
+      quantity: 9,
+      tileNumber: 2,
+    });
+    expect(plantedSeedReward.itemDrops).toHaveLength(6);
+    expect(plantedSeedReward.itemDrops).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({
+          id: 'plant-2:seed:0',
+          kind: 'seed',
+          baseFrameName: 'seed:pack',
+          itemFrameName: 'herb:mintHerb',
+          anchorId: 'garden.plot.2',
+          anchorYRatio: 0.5,
+        }),
+      ]),
+    );
+
     expect(
       createRewardVisualPresentation({
         type: 'herb_harvested',

@@ -451,6 +451,7 @@ describe('ScrollCueManager', () => {
     expect(rootRule).toMatch(/--style-scrollbar-thumb-background:\s*#f2ae54;/);
     expect(rootRule).toMatch(/--style-scrollbar-thumb-border:\s*#5e321b;/);
     expect(rootRule).not.toMatch(/--style-scroll-progress-block-size:/);
+    expect(rootRule).not.toMatch(/--style-scroll-progress-height:/);
     expect(cueRule).toMatch(/\bscrollbar-width:\s*none;/);
     expect(cueRule).toMatch(/\btouch-action:\s*none;/);
     expect(scrollbarRule).toMatch(/\bdisplay:\s*none;/);

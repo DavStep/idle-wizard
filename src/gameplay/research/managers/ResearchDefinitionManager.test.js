@@ -15,6 +15,7 @@ import {
   gardenBulkResearchIds,
   gardenBulkResearchLevels,
 } from '../../garden/gardenBulkResearch.js';
+import { itemTimerResearchIds } from '../itemTimerResearch.js';
 
 function createManager() {
   let maxGardenTiles = 10;
@@ -62,6 +63,43 @@ describe('ResearchDefinitionManager', () => {
       'automation',
       'advanced',
     ]);
+  });
+
+  it('adds independent item timer mastery chains to regular research', () => {
+    const { manager } = createManager();
+    const regularBoxes = manager.getRegularResearchBoxes({
+      includeHiddenRecipeUnlocks: true,
+    });
+    const herbResearches = regularBoxes.find(
+      (box) => box.id === 'herbGrowthMastery',
+    )?.researches;
+    const potionResearches = regularBoxes.find(
+      (box) => box.id === 'potionBrewingMastery',
+    )?.researches;
+
+    expect(herbResearches?.filter((research) => research.itemKey === 'sageHerb'))
+      .toHaveLength(2);
+    expect(herbResearches?.filter((research) => research.itemKey === 'mintHerb'))
+      .toHaveLength(4);
+    expect(herbResearches?.filter((research) => research.itemKey === 'glowcapHerb'))
+      .toHaveLength(19);
+    expect(herbResearches?.[0]).toMatchObject({
+      id: itemTimerResearchIds.herbGrowth('sageHerb', 1),
+      itemKind: 'herb',
+      itemKey: 'sageHerb',
+      requiredResearchIds: ['unlockSeed:sageSeed'],
+      starMaxLevel: 2,
+    });
+    expect(potionResearches?.filter((research) => research.itemKey === 'manaTonic'))
+      .toHaveLength(2);
+    expect(potionResearches?.find(
+      (research) =>
+        research.id === itemTimerResearchIds.potionBrewing('manaTonic', 1),
+    )).toMatchObject({
+      itemKind: 'potion',
+      requiredResearchIds: ['unlockRecipe:manaTonic'],
+      starMaxLevel: 2,
+    });
   });
 
   it('reuses research definitions for the same visible state', () => {

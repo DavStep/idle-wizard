@@ -81,6 +81,7 @@ const ITEM_DROP_SIZES = Object.freeze({
   herb: 38,
   potion: 36,
 });
+const GARDEN_MAX_VISUAL_SEED_DROPS = 6;
 const REWARD_FLYOUT_VISUALS = Object.freeze({
   backgroundColor: 0x000000,
   backgroundAlpha: 0.62,
@@ -922,6 +923,25 @@ export function createRewardVisualPresentation(event) {
   if (event.type === 'seed_summoned') {
     return {
       itemDrops: createSeedSummonDrops(event),
+    };
+  }
+  if (
+    event.type === 'garden_seed_planted' &&
+    Number.isInteger(event.tileNumber)
+  ) {
+    const quantity = Math.min(
+      GARDEN_MAX_VISUAL_SEED_DROPS,
+      normalizeItemQuantity(event.quantity),
+    );
+    return {
+      itemDrops: Array.from({ length: quantity }, (_, index) =>
+        createSeedDrop({
+          event,
+          seed: event.seed,
+          index,
+          anchorId: `garden.plot.${event.tileNumber}`,
+        }),
+      ),
     };
   }
   if (
@@ -2019,7 +2039,12 @@ function createSeedSummonDrops(event) {
   );
 }
 
-function createSeedDrop({ event, seed, index }) {
+function createSeedDrop({
+  event,
+  seed,
+  index,
+  anchorId = 'workshop.summonArea',
+}) {
   const itemFrameName = getSeedPackItemFrameName(seed);
   const textureModel = itemFrameName
     ? {
@@ -2033,7 +2058,7 @@ function createSeedDrop({ event, seed, index }) {
     id: createRewardVisualId(event, 'seed', index),
     kind: 'seed',
     ...textureModel,
-    anchorId: 'workshop.summonArea',
+    anchorId,
     anchorYRatio: 0.5,
   };
 }

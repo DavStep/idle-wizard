@@ -28,6 +28,7 @@ identified from the router.
 | UI Lab, editor previews, thumbnails, hierarchy, inspector, assets, nine-slices | `Current Library` and `UI Lab Production Coverage` |
 | Ordinary panels, scroll panes, room chrome | `Box Construction` and the named `style-box` / managed-scroll entries |
 | Rows and row actions | `Numbered Rows` and `Inline Row Actions` |
+| Guild Chronicle messages | named `Guild Chronicle Feed` entry in `Current Library` |
 | Info, lock, and check controls | `Info Buttons`, `Lock Icons`, and `Checkmark Icons` |
 | Settings fields, toggles, sliders, and device panels | `Root Run Settings Controls` |
 | Inventory selection and allocation | `Stall Allocation Lists` |

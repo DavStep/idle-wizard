@@ -118,6 +118,56 @@ export function rebaseVersionedItemConfigSellPrices(
   return rebasedConfig;
 }
 
+export function rebaseVersionedHerbGrowthDurations(
+  existingConfig: ConfigRow,
+  defaultConfig: ConfigRow,
+  targetVersion: number,
+  getKey: (row: ConfigRow) => string,
+) {
+  const storedVersion = Number(existingConfig.growthTimerVersion);
+
+  if (Number.isInteger(storedVersion) && storedVersion >= targetVersion) {
+    return existingConfig;
+  }
+
+  return {
+    ...existingConfig,
+    herbs: rebaseItemConfigNumberField(
+      existingConfig.herbs,
+      defaultConfig.herbs,
+      getKey,
+      'growthDurationMs',
+    ),
+    growthTimerVersion: targetVersion,
+  };
+}
+
+function rebaseItemConfigNumberField(
+  existingRows: unknown,
+  defaultRows: unknown,
+  getKey: (row: ConfigRow) => string,
+  field: string,
+) {
+  if (!Array.isArray(existingRows) || !Array.isArray(defaultRows)) {
+    return existingRows;
+  }
+
+  const defaultRowsByKey = new Map(
+    defaultRows.filter(isConfigRow).map((row) => [getKey(row), row]),
+  );
+
+  return existingRows.map((row) => {
+    if (!isConfigRow(row)) {
+      return row;
+    }
+
+    const defaultValue = Number(defaultRowsByKey.get(getKey(row))?.[field]);
+    return Number.isFinite(defaultValue) && Number(row[field]) !== defaultValue
+      ? { ...row, [field]: defaultValue }
+      : row;
+  });
+}
+
 function isConfigRow(value: unknown): value is ConfigRow {
   return typeof value === 'object' && value !== null && !Array.isArray(value);
 }

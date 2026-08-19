@@ -6,6 +6,8 @@ Current scope uses SpacetimeDB `research_config` for regular coin overrides and 
 
 Coin research follows an achievement curve. After the free Sage and Mint onboarding rows, a seed unlock costs one hundred times that seed's default sell value, equivalent to about forty sales of the preceding tier's herb. After the free Mana Tonic row, recipe unlock prices rise by roughly `1.75x` per catalog step, from `400` coin to `830m`, so every next recipe is a larger milestone even when its ingredient value is lower. Summon multiplier studies cost `1k`, `10k`, `100k`, and `1m` coin. Premium-currency research prices do not use this coin curve.
 
+Regular Research also contains one independent speed-mastery series for every herb and potion. Each rank removes another five percentage points of the former timer and takes five seconds to research. The first five catalog tiers use `2`, `4`, `7`, `10`, and `14` ranks with configured timer uplifts of `0%`, `10%`, `25%`, `40%`, and `60%`; later items use `19` ranks and a configured `85%` uplift. Completing a series always ends at `90%` of the pre-mastery duration. Rank prices start from the matching unlock price (with `25`/`50`-coin starter exceptions) and compound by `1.5x`, making the final ranks late-game purchases. Configured item and recipe durations are the only base timers; no duplicate legacy duration is stored. Item mastery stacks before advanced plot/cauldron speed research.
+
 Globally discovered hidden recipes appear immediately as independent, instant
 coin studies for players other than the discoverer. Each costs twice the seed
 research price of its latest-progression ingredient, tying the study to the

@@ -179,6 +179,22 @@ describe('PixiDialogFrame', () => {
     );
   });
 
+  it('shrinks long plaque titles to fit and restores the authored size for short titles', () => {
+    const { frame } = createHarness();
+    const authoredFontSize = PIXI_ROOT_RUN_GEOMETRY.dialog.titleTextSize;
+
+    frame.setTitle('[NIGHT] Fellowship Of Patient Merchants');
+
+    expect(frame.titleLabel.fontSize).toBeLessThan(authoredFontSize);
+    expect(frame.titleLabel.measuredWidth).toBeLessThan(
+      frame.titleFrame.frameWidth,
+    );
+
+    frame.setTitle('Moss Hall');
+
+    expect(frame.titleLabel.fontSize).toBeCloseTo(authoredFontSize);
+  });
+
   it('supports an edge header with the title at the left and close at the right', () => {
     const { frame } = createHarness({
       closeAction: vi.fn(),

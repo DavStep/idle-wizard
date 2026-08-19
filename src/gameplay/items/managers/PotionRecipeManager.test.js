@@ -51,7 +51,7 @@ describe('PotionRecipeManager', () => {
       key: 'pactWard',
       label: 'pact ward',
       manaCost: 64,
-      brewDurationMs: 145_000,
+      brewDurationMs: 268_250,
       ingredients: [
         {
           slotIndex: 0,
@@ -108,7 +108,7 @@ describe('PotionRecipeManager', () => {
       known: false,
       researchable: false,
       manaCost: 36,
-      brewDurationMs: 80_000,
+      brewDurationMs: 148_000,
       ingredients: [
         {
           itemTypeId: 1001,
@@ -138,7 +138,7 @@ describe('PotionRecipeManager', () => {
       key: 'pearlrootDraught',
       label: 'pearlroot draught',
       manaCost: 120,
-      brewDurationMs: 270_000,
+      brewDurationMs: 499_500,
       ingredients: [
         {
           itemTypeId: 1024,

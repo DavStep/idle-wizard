@@ -47,6 +47,10 @@ import { GLOBAL_DIALOG_GEOMETRY } from './GlobalDialogKit.js';
 import { RetainedScrollArea } from '../../pages/workshop/RetainedPageKit.js';
 import { getPixiButtonSkin } from '../../primitives/PixiButtonStyle.js';
 import { getPlayerFrameTint } from '../../../../player/playerFrames.js';
+import {
+  AllianceMemberRow,
+  WorkshopDialogRow,
+} from '../../pages/workshop/WorkshopDialogPixi.js';
 
 installPixiPageTestCanvas();
 
@@ -174,6 +178,104 @@ describe('retained global Pixi dialogs', () => {
     harness.dispose();
   });
 
+  it('matches Trade Alliance Home without Membership and projects footer action states', async () => {
+    const harness = createHarness();
+    const applyAlliance = vi.fn(() => Promise.resolve({ ok: true }));
+    const alliance = harness.registry.open(GLOBAL_DIALOG_IDS.ALLIANCE, {
+      alliance: {
+        ...createAlliance(),
+        joinMode: 'apply',
+        notice: 'Weekly goal: support every active member.',
+      },
+      members: [
+        {
+          ...createMember(),
+          character: 'mira',
+          frame: 'sun',
+        },
+      ],
+      ownApplications: [],
+      actions: { applyAlliance },
+    });
+
+    expect(alliance.panel.paperFrame.visible).toBe(false);
+    expect(alliance.summaryPaper.texture).toBe(alliance.panel.paperFrame.texture);
+    expect(alliance.membersPaper.texture).toBe(alliance.panel.paperFrame.texture);
+    expect(
+      alliance.membersSection.y + alliance.membersPaper.y -
+        (alliance.summaryPaper.y + alliance.summaryPaper.frameHeight),
+    ).toBeCloseTo(8);
+    expect(alliance.summaryRows.getWidgets()).toHaveLength(3);
+    expect(
+      alliance.summaryRows.getWidgets().every((row) => row instanceof WorkshopDialogRow),
+    ).toBe(true);
+    expect(
+      alliance.summaryRows.getWidgets().map((row) => row.model.label),
+    ).toEqual(['Members', 'Join Mode', 'Season Income']);
+    const memberRow = alliance.memberRows.getWidgets()[0];
+    expect(memberRow).toBeInstanceOf(AllianceMemberRow);
+    const memberPaperLeft = alliance.membersPaper.x;
+    const memberPaperRight =
+      memberPaperLeft + alliance.membersPaper.frameWidth;
+    const memberRowLeft =
+      alliance.membersScroll.root.x + memberRow.root.x + memberRow.background.x;
+    const memberRowRight = memberRowLeft + memberRow.background.frameWidth;
+    expect(memberRowLeft - memberPaperLeft).toBeCloseTo(
+      memberPaperRight - memberRowRight,
+    );
+    expect(alliance.primaryAction.parent).toBe(alliance.panel);
+    expect(alliance.primaryAction.textLabel.text).toBe('Apply');
+    expect(alliance.primaryAction.enabled).toBe(true);
+    expect(alliance.primaryAction.color).toBe('green');
+
+    await alliance.primaryAction.activate();
+
+    expect(applyAlliance).toHaveBeenCalledWith(
+      'alliance-one',
+      expect.objectContaining({ allianceId: 'alliance-one' }),
+    );
+    expect(alliance.primaryAction.textLabel.text).toBe('Pending');
+    expect(alliance.primaryAction.enabled).toBe(false);
+
+    alliance.bind({
+      alliance: { ...createAlliance(), joinMode: 'apply' },
+      members: [createMember()],
+      ownApplications: [{ allianceId: 'alliance-one' }],
+    });
+
+    expect(alliance.primaryAction.visible).toBe(true);
+    expect(alliance.primaryAction.textLabel.text).toBe('Pending');
+    expect(alliance.primaryAction.enabled).toBe(false);
+    expect(alliance.primaryAction.activeSkin.assetId).toContain('gray-button');
+
+    alliance.bind({
+      alliance: { ...createAlliance(), joinMode: 'open' },
+      members: [createMember()],
+      ownApplications: [],
+    });
+
+    expect(alliance.primaryAction.textLabel.text).toBe('Join');
+    expect(alliance.primaryAction.enabled).toBe(true);
+
+    alliance.bind({
+      alliance: { ...createAlliance(), joinMode: 'closed' },
+      members: [createMember()],
+    });
+
+    expect(alliance.primaryAction.visible).toBe(false);
+    expect(alliance.primaryAction.renderable).toBe(false);
+
+    alliance.bind({
+      actionEnabled: false,
+      alliance: { ...createAlliance(), joinMode: 'apply' },
+      members: [createMember()],
+    });
+
+    expect(alliance.primaryAction.visible).toBe(false);
+    expect(alliance.primaryAction.renderable).toBe(false);
+    harness.dispose();
+  });
+
   it('requires a report reason and submits the selected World Chat message', async () => {
     const harness = createHarness();
     const submit = vi.fn(() => Promise.resolve({ ok: true }));
@@ -267,7 +369,11 @@ describe('retained global Pixi dialogs', () => {
     });
 
     expect(inbox.contentHeight).toBe(384);
-    expect(inbox.scroll.viewportHeight).toBe(384);
+    expect(inbox.scroll.height).toBe(384);
+    expect(inbox.scroll).toBeInstanceOf(RetainedScrollArea);
+    expect(inbox.scroll.scrollbarTrack.visible).toBe(true);
+    expect(inbox.scroll.scrollbarThumb.visible).toBe(true);
+    expect(inbox.scroll).not.toHaveProperty('progressBar');
     expect(confirmation.contentHeight).toBe(124);
 
     harness.dispose();
@@ -592,7 +698,7 @@ describe('retained global Pixi dialogs', () => {
     expect(settings.identityFooter.copyButton.textLabel.text).toBe('Copy');
     expect(settings.identityFooter.userIdLabel.text).toBe('12345678…90abcdef');
     expect(settings.identityFooter.copyButton.variant).toBe('yellow');
-    expect(settings.scroll.maxScrollY).toBe(0);
+    expect(settings.scroll.physics.maxOffset).toBe(0);
     expect(
       settings.themePanel.y -
         (settings.devicePanel.y + settings.devicePanel.panelHeight),
@@ -636,9 +742,9 @@ describe('retained global Pixi dialogs', () => {
       surface: '#ffe7c8',
       text: '#634934',
     });
-    expect(settings.scroll.maxScrollY).toBe(0);
-    expect(settings.scroll.content.y).toBe(12);
-    expect(settings.scroll.progressBar.visible).toBe(false);
+    expect(settings.scroll.physics.maxOffset).toBe(0);
+    expect(settings.reportLayer.y).toBe(12);
+    expect(settings.scroll).not.toHaveProperty('progressBar');
     expect(settings.panel.closeSprite.width).toBe(38);
     expect(settings.backdropAlpha).toBe(0.68);
     expect(
@@ -931,7 +1037,7 @@ describe('retained global Pixi dialogs', () => {
     });
     const [first, second] = inbox.mailRows.getWidgets();
 
-    expect(inbox.scroll.contentPaddingTop).toBe(0);
+    expect(inbox.scroll.content.y).toBe(0);
     expect(first.root.position).toMatchObject({ x: 0, y: 0 });
     expect(first.title.position).toMatchObject({ x: 10, y: 10 });
     expect(first.meta.x).toBe(10);
@@ -939,7 +1045,7 @@ describe('retained global Pixi dialogs', () => {
     expect(first.reward.x).toBe(10);
     expect(second.root.y - (first.root.y + first.height)).toBe(8);
     expect(inbox.contentHeight).toBe(second.root.y + second.height);
-    expect(inbox.scroll.viewportHeight).toBe(inbox.contentHeight);
+    expect(inbox.scroll.height).toBe(inbox.contentHeight);
 
     harness.dispose();
   });
@@ -1507,10 +1613,10 @@ describe('retained global Pixi dialogs', () => {
 
     expect(settings.accountChoiceScroll).toBeInstanceOf(RetainedScrollArea);
     expect(settings.accountLayer.parent).toBe(settings.panel.content);
-    expect(settings.scroll.visible).toBe(false);
-    expect(settings.scroll.renderable).toBe(false);
-    expect(settings.scroll.eventMode).toBe('none');
-    expect(settings.scroll.progressBar.visible).toBe(false);
+    expect(settings.scroll.root.visible).toBe(false);
+    expect(settings.scroll.root.renderable).toBe(false);
+    expect(settings.scroll.root.eventMode).toBe('none');
+    expect(settings.scroll).not.toHaveProperty('progressBar');
     expect(settings.accountChoiceScroll.scrollbarTrack.visible).toBe(true);
     expect(selectionLeft).toBeCloseTo(0);
     expect(selectionTop).toBeCloseTo(0);

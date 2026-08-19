@@ -831,6 +831,12 @@ export class GameplayFacade {
 
     this.whileAwayReportFacade.recordGardenSeedPlanted(event);
     this.recordPersonalTaskAction(PERSONAL_TASK_ACTIONS.PLANT_SEEDS, 1);
+    this.rewardEventManager.publish({
+      type: "garden_seed_planted",
+      seed: event.seed,
+      quantity: event.quantity ?? 1,
+      tileNumber: event.tileNumber,
+    });
   }
 
   handleItemSold(event) {
@@ -1507,6 +1513,14 @@ export class GameplayFacade {
       this.gameplayLogFacade.logGardenSeedPlanted(result);
     }
     this.publishAndSaveSnapshot();
+    return result;
+  }
+
+  selectGardenToolbarSeed(seedTypeId) {
+    const result = this.gardenFacade.selectToolbarSeed(seedTypeId);
+    if (result.ok) {
+      this.publishAndSaveSnapshot();
+    }
     return result;
   }
 

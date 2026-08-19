@@ -96,9 +96,18 @@ const WORKSHOP_WORLD_EVENT_TAB_IDS = new Set([
   "leaderboard",
   "rewards",
 ]);
+const MARKET_FILTER_FIELDS = new Set([
+  "item",
+  "minPrice",
+  "username",
+]);
 export const PIXI_WORLD_CHAT_REPORT_HIGHLIGHT_SURFACE_ID =
   "interaction.worldChatReportHighlight";
 const WORLD_CHAT_REPORT_HIGHLIGHT_MODAL_PRIORITY = 70;
+
+function createEmptyMarketFilters() {
+  return { item: "", minPrice: "", username: "" };
+}
 
 /**
  * Renderer-neutral coordinator for the retained Pixi room views.
@@ -211,6 +220,10 @@ export class PixiPagesFacade {
     this.researchTabId = "regular";
     this.shopTabId = "traders";
     this.shopLedgerKind = "seed";
+    this.shopMarketBrowseTab = "selling";
+    this.shopMarketFiltersOpen = false;
+    this.shopMarketFilterDraft = createEmptyMarketFilters();
+    this.shopMarketFilterApplied = createEmptyMarketFilters();
     this.shopStallItemTypeIdBySlot = new Map();
     this.shopStallTargetQuantityBySlot = new Map();
     this.shopStallItemKindBySlot = new Map();
@@ -226,7 +239,6 @@ export class PixiPagesFacade {
     this.guildAdventurerTabId = "board";
     this.prestigeTabId = "main";
     this.gardenInventoryTabId = null;
-    this.gardenSelectedSeedItemTypeId = null;
     this.brewingInventoryTabId = null;
     this.expandedInventoryKindsByPage = new Map();
     this.prestigeConfirm = null;
@@ -901,6 +913,10 @@ export class PixiPagesFacade {
           actions: { ui: actions.shop },
           uiState: {
             ledgerKind: this.shopLedgerKind,
+            marketBrowseTab: this.shopMarketBrowseTab,
+            marketFiltersOpen: this.shopMarketFiltersOpen,
+            marketFilterDraft: this.shopMarketFilterDraft,
+            marketFilterApplied: this.shopMarketFilterApplied,
             selectedRequestSlotNumber: this.shopSelectedRequestSlotNumber,
             stallItemTypeIdBySlot: Object.fromEntries(
               this.shopStallItemTypeIdBySlot,
@@ -1035,6 +1051,22 @@ export class PixiPagesFacade {
       runtime
         .getPage("shop")
         ?.openDialog?.(SHOP_DIALOG_IDS.LISTING, listing.dialog ?? listing);
+    }
+    return viewModel;
+  }
+
+  refreshShopMarketDialog() {
+    const viewModel = this.refreshPage("shop");
+    const runtime = this.requireRuntime();
+    if (
+      !viewModel ||
+      !runtime.getOpenDialogIds?.().includes(SHOP_DIALOG_IDS.MARKET)
+    ) {
+      return viewModel;
+    }
+    const market = viewModel.shop?.dialogs?.market;
+    if (market) {
+      runtime.getPage("shop")?.openDialog?.(SHOP_DIALOG_IDS.MARKET, market);
     }
     return viewModel;
   }
@@ -1638,6 +1670,40 @@ export class PixiPagesFacade {
           this.refreshShopLedgerDialog();
           return true;
         },
+        selectMarketBrowseTab: (tabId) => {
+          this.shopMarketBrowseTab = tabId === "buying" ? "buying" : "selling";
+          this.refreshShopMarketDialog();
+          return true;
+        },
+        openMarketFilters: () => {
+          this.shopMarketFilterDraft = { ...this.shopMarketFilterApplied };
+          this.shopMarketFiltersOpen = true;
+          this.refreshShopMarketDialog();
+          return true;
+        },
+        setMarketFilterDraft: (field, value) => {
+          if (!MARKET_FILTER_FIELDS.has(field)) {
+            return false;
+          }
+          this.shopMarketFilterDraft = {
+            ...this.shopMarketFilterDraft,
+            [field]: String(value ?? ""),
+          };
+          return true;
+        },
+        applyMarketFilters: () => {
+          this.shopMarketFilterApplied = { ...this.shopMarketFilterDraft };
+          this.shopMarketFiltersOpen = false;
+          this.refreshShopMarketDialog();
+          return true;
+        },
+        clearMarketFilters: () => {
+          this.shopMarketFilterDraft = createEmptyMarketFilters();
+          this.shopMarketFilterApplied = createEmptyMarketFilters();
+          this.shopMarketFiltersOpen = false;
+          this.refreshShopMarketDialog();
+          return true;
+        },
         selectStallItem: (slotNumber, item) => {
           const safeSlotNumber = Math.max(
             1,
@@ -1806,7 +1872,7 @@ export class PixiPagesFacade {
     const seeds = garden.seeds ?? [];
     const selectedSeed =
       seeds.find(
-        (seed) => seed.itemTypeId === this.gardenSelectedSeedItemTypeId,
+        (seed) => seed.itemTypeId === garden.selectedSeedItemTypeId,
       ) ?? null;
     const notificationContext = getGardenNotificationContext(
       this.gameplaySnapshot,
@@ -1838,7 +1904,7 @@ export class PixiPagesFacade {
           hasSeedChoices:
             createGardenSeedDialogRows(
               this.gameplaySnapshot,
-              this.gardenSelectedSeedItemTypeId,
+              garden.selectedSeedItemTypeId,
             ).length > 0,
         },
       },
@@ -1950,7 +2016,7 @@ export class PixiPagesFacade {
       openSeedPicker: () => this.openGardenSeedDialog(),
       plantAll: () => {
         const result = gameplay?.plantAllGardenSeeds?.(
-          this.gardenSelectedSeedItemTypeId,
+          this.gameplaySnapshot.garden?.selectedSeedItemTypeId ?? null,
         ) ?? {
           ok: false,
           reason: "unavailable",
@@ -1985,7 +2051,13 @@ export class PixiPagesFacade {
             reason: "invalid_seed",
           };
         }
-        this.gardenSelectedSeedItemTypeId = seed.itemTypeId;
+        const result = gameplay?.selectGardenToolbarSeed?.(seed.itemTypeId) ?? {
+          ok: false,
+          reason: "unavailable",
+        };
+        if (result?.ok !== true) {
+          return result;
+        }
         this.requireRuntime().closeDialog?.("garden.seed");
         this.refreshPage("garden");
         return {
@@ -2004,7 +2076,7 @@ export class PixiPagesFacade {
   openGardenSeedDialog() {
     const rows = createGardenSeedDialogRows(
       this.gameplaySnapshot,
-      this.gardenSelectedSeedItemTypeId,
+      this.gameplaySnapshot.garden?.selectedSeedItemTypeId,
     );
     return this.requireRuntime().getPage("garden").openDialog("seed", {
       open: true,
@@ -3385,9 +3457,10 @@ function createBrewingHerbDialogRows(snapshot = {}) {
 
 function createGardenSelectedSeedModel(snapshot = {}, seed = {}) {
   const display = getItemDisplay(snapshot, seed, seed.quantity);
+  const herbLabel = stripSeedSuffix(display.label) ?? display.label;
   return {
     ...seed,
-    label: stripSeedSuffix(display.label) ?? display.label,
+    label: formatTitleCaseLabel(herbLabel),
     quantity: Number(seed.quantity) || 0,
     quantityText: String(seed.quantity ?? 0),
     itemKind: "seed",

@@ -48,7 +48,6 @@ export { PixiPanel } from './PixiPanel.js';
 export { PixiProgressBar } from './PixiProgressBar.js';
 export { PixiResourceLabel } from './PixiResourceLabel.js';
 export { PixiRow } from './PixiRow.js';
-export { PixiScrollView } from './PixiScrollView.js';
 export {
   ROOT_RUN_SETTINGS_SLIDER_MODES,
   RootRunSettingsSliderPixi,

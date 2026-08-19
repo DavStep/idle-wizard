@@ -8,7 +8,6 @@ import {
 import {
   PixiTextButton,
   PixiNineSliceFrame,
-  PixiScrollView,
   PixiTextLabel,
 } from '../../primitives/index.js';
 import { PixiInlineText } from '../../primitives/PixiInlineText.js';
@@ -31,6 +30,7 @@ import {
   RetainedGlobalDialog,
   orderDisplayObjects,
 } from './GlobalDialogKit.js';
+import { RetainedScrollArea } from '../../pages/workshop/RetainedPageKit.js';
 
 const INBOX_CONTENT_WIDTH =
   GLOBAL_DIALOG_GEOMETRY.maxContentWidth;
@@ -75,16 +75,11 @@ export class PixiInboxDialog extends RetainedGlobalDialog {
     this.panel.paperFrame.visible = false;
     this.panel.paperFrame.renderable = false;
     this.pendingMailKeys = new Set();
-    this.scroll = new PixiScrollView({
+    this.scroll = new RetainedScrollArea({
       inputRouter: this.context.inputRouter,
-      assetManager: this.context.assets,
-      width: INBOX_CONTENT_WIDTH,
-      height: INBOX_CONTENT_HEIGHT,
-      contentPaddingTop: 0,
-      showProgress: true,
       label: `${dialogId}:scroll`,
     });
-    this.panel.content.addChild(this.scroll);
+    this.panel.content.addChild(this.scroll.root);
     const emptyPanelSkin = PIXI_ROOT_RUN_GEOMETRY.innerSectionPanelWhite;
     this.emptyFrame = new PixiNineSliceFrame({
       texture:
@@ -245,7 +240,6 @@ export class PixiInboxDialog extends RetainedGlobalDialog {
   }
 
   applyDialogTheme(theme) {
-    this.scroll?.applyTheme(theme);
     this.emptyLabel?.applyTheme(theme);
     for (const widget of this.mailRows?.getWidgets?.() ?? []) {
       widget.applyTheme(theme);
@@ -270,8 +264,9 @@ export class PixiInboxDialog extends RetainedGlobalDialog {
     ) {
       this.setPanelContentSize(INBOX_CONTENT_WIDTH, contentHeight);
     }
-    this.scroll?.position.set(0, 0);
-    this.scroll?.setViewportSize(
+    this.scroll?.setBounds(
+      0,
+      0,
       INBOX_CONTENT_WIDTH,
       contentHeight,
     );
@@ -297,6 +292,8 @@ export class PixiInboxDialog extends RetainedGlobalDialog {
     this.mailPool?.destroy();
     this.mailPool = null;
     this.pendingMailKeys.clear();
+    this.scroll?.destroy();
+    this.scroll = null;
   }
 
   getPoolStats() {

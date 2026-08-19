@@ -4,6 +4,9 @@ import { createShop } from './createShop.js';
 
 describe('createShop', () => {
   it('translates current gameplay/backend snapshots without owning rules', async () => {
+    const clearStall = vi.fn(() => ({ ok: true }));
+    const clearRequestSlot = vi.fn(() => ({ ok: true }));
+    const clearListingSlot = vi.fn(() => ({ ok: true }));
     const gameplayActions = {
       buyNpcMarketStockItem: vi.fn(() => ({ ok: true })),
       claimPlayerShopSaleProceeds: vi.fn(() => ({ ok: true })),
@@ -77,7 +80,12 @@ describe('createShop', () => {
               {
                 slotNumber: 1,
                 unlocked: true,
-                itemTypeId: null,
+                itemTypeId: 1,
+                itemKey: 'sageSeed',
+                itemKind: 'seed',
+                itemLabel: 'sage seed',
+                quantity: 2,
+                priceCoin: 6,
               },
             ],
           },
@@ -135,6 +143,13 @@ describe('createShop', () => {
       },
       gameplayActions,
       playerShopActions,
+      actions: {
+        ui: {
+          clearStall,
+          clearPlayerRequest: clearRequestSlot,
+          clearPlayerListing: clearListingSlot,
+        },
+      },
     });
 
     expect(model.shop.market).toMatchObject({
@@ -148,6 +163,7 @@ describe('createShop', () => {
       priceLabel: '2 coin',
       progress: 0.25,
       timerLabel: '45s',
+      selected: true,
     });
     expect(model.shop.traders.stalls[0].dialog).toMatchObject({
       title: 'Load Stall',
@@ -203,7 +219,19 @@ describe('createShop', () => {
       value: '5 coin',
       priceLabel: '5 coin',
       priceResourceKey: 'coin',
+      selected: true,
     });
+    expect(model.shop.players.market.slots[0]).toMatchObject({
+      itemLabel: 'sage seed',
+      selected: true,
+    });
+
+    model.shop.traders.stalls[0].cancelAction();
+    model.shop.players.requests.slots[0].cancelAction();
+    model.shop.players.market.slots[0].cancelAction();
+    expect(clearStall).toHaveBeenCalledWith(1);
+    expect(clearRequestSlot).toHaveBeenCalledWith(1);
+    expect(clearListingSlot).toHaveBeenCalledWith(1);
     expect(model.shop.players.market).toMatchObject({
       proceedsLabel: 'claim (12 coin)',
       proceedsValueLabel: '12 coin',
@@ -260,10 +288,11 @@ describe('createShop', () => {
     );
 
     await model.actions.clearPlayerRequest();
-    expect(playerShopActions.clearSlotRequest).toHaveBeenCalledWith(1);
-    expect(gameplayActions.clearPlayerShopRequest).toHaveBeenCalledWith(
-      1,
-    );
+    expect(clearRequestSlot).toHaveBeenNthCalledWith(2);
+    expect(playerShopActions.clearSlotRequest).not.toHaveBeenCalled();
+    expect(
+      gameplayActions.clearPlayerShopRequest,
+    ).not.toHaveBeenCalled();
 
     await model.actions.claimPlayerMarketProceeds();
     expect(playerShopActions.claimProceeds).toHaveBeenCalledTimes(1);
@@ -347,6 +376,104 @@ describe('createShop', () => {
         disabled: true,
       },
     ]);
+  });
+
+  it('projects Title Case player-market filters and applies all three criteria', () => {
+    const uiActions = {
+      applyMarketFilters: vi.fn(),
+      clearMarketFilters: vi.fn(),
+      openMarketFilters: vi.fn(),
+      selectMarketBrowseTab: vi.fn(),
+      setMarketFilterDraft: vi.fn(),
+    };
+    const market = createShop({
+      playerShopSnapshot: {
+        connected: true,
+        listings: [
+          {
+            listingKey: 'sage-mira',
+            username: 'mira',
+            itemKey: 'sageSeed',
+            itemLabel: 'sage seed',
+            itemKind: 'seed',
+            quantity: 2,
+            priceCoin: 8,
+          },
+          {
+            listingKey: 'sage-rowan',
+            username: 'rowan',
+            itemKey: 'sageSeed',
+            itemLabel: 'sage seed',
+            itemKind: 'seed',
+            quantity: 4,
+            priceCoin: 4,
+          },
+          {
+            listingKey: 'mint-mira',
+            username: 'mira',
+            itemKey: 'mintSeed',
+            itemLabel: 'mint seed',
+            itemKind: 'seed',
+            quantity: 1,
+            priceCoin: 12,
+          },
+        ],
+      },
+      actions: { ui: uiActions },
+      uiState: {
+        marketBrowseTab: 'selling',
+        marketFiltersOpen: true,
+        marketFilterDraft: {
+          item: 'sage',
+          minPrice: '6',
+          username: 'mir',
+        },
+        marketFilterApplied: {
+          item: 'SAGE',
+          minPrice: '6',
+          username: 'MIR',
+        },
+      },
+    }).shop.dialogs.market;
+
+    expect(market).toMatchObject({
+      title: 'Player Market',
+      status: '1 Matching Offer',
+      fields: [
+        { id: 'item', label: 'Item', value: 'sage' },
+        { id: 'minPrice', label: 'Min Price', value: '6' },
+        { id: 'username', label: 'Username', value: 'mir' },
+      ],
+      actions: [
+        { id: 'clearFilters', label: 'Clear' },
+        { id: 'applyFilters', label: 'Apply Filter' },
+      ],
+      tabs: [
+        { id: 'selling', label: 'Selling', selected: true },
+        { id: 'buying', label: 'Buying', selected: false },
+      ],
+    });
+    expect(market.items).toMatchObject([
+      {
+        id: 'sage-mira',
+        indexLabel: '1.',
+        itemLabel: 'Sage Seed (2) · mira',
+        priceLabel: '8 coin',
+        valueResourceKey: 'coin',
+      },
+    ]);
+
+    market.fields[0].onChange('mint');
+    expect(uiActions.setMarketFilterDraft).toHaveBeenCalledWith(
+      'item',
+      'mint',
+    );
+    market.actions[1].action();
+    expect(uiActions.applyMarketFilters).toHaveBeenCalledTimes(1);
+    market.tabs[1].action();
+    expect(uiActions.selectMarketBrowseTab).toHaveBeenCalledWith(
+      'buying',
+    );
   });
 
   it('shows only unlocked stall tabs and researched stall items', () => {

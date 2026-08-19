@@ -83,7 +83,9 @@ describe('ShopPixiPage', () => {
     expect(
       harness.page.requestsSection.rowPool.getStats().allocated,
     ).toBe(requestAllocations);
-    expect(stall.price.text).toBe('12 Coin');
+    expect(stall.price.visible).toBe(false);
+    expect(stall.priceAction.textLabel.text).toBe('Cancel');
+    expect(stall.priceAction.variant).toBe('red');
     expect(stall.progress).toMatchObject({
       tone: 'root',
       barHeight: 10,
@@ -96,7 +98,9 @@ describe('ShopPixiPage', () => {
     expect(stall.progress.fillColor).toBe(
       PIXI_PROGRESS_VISUALS.tones.root.fill,
     );
-    expect(request.price.text).toBe('3 Herb');
+    expect(request.price.visible).toBe(false);
+    expect(request.priceAction.textLabel.text).toBe('Cancel');
+    expect(request.priceAction.variant).toBe('red');
 
     pages.deactivate();
     expect(root).toMatchObject({
@@ -193,23 +197,14 @@ describe('ShopPixiPage', () => {
     );
     expect(stall.title.text).toBe('Stall 1');
     expect(stall.item.text).toBe('Sage');
-    expect(stall.price.text).toBe('10 Coin');
+    expect(stall.price.text).toBe('Cancel');
     expect(stall.price.visible).toBe(false);
-    expect(stall.priceResource).toMatchObject({
-      amount: '10',
-      resource: 'coin',
-      visible: true,
-    });
-    expect(stall.priceResource.amountLabel.text).toBe('10');
-    expect(stall.priceResource.icon.x).toBeGreaterThan(
-      stall.priceResource.amountLabel.x,
-    );
+    expect(stall.priceResource.visible).toBe(false);
+    expect(stall.priceAction.textLabel.text).toBe('Cancel');
+    expect(stall.priceAction.variant).toBe('red');
     expect(
-      stall.priceResource.x + stall.priceResource.measuredWidth,
-    ).toBe(stall.width - 10);
-    expect(
-      harness.semanticRegistry.get('shop.stall.1.price')?.displayObject,
-    ).toBe(stall.priceResource);
+      harness.semanticRegistry.get('shop.stall.1')?.displayObject,
+    ).toBe(stall.priceAction);
     expect(harness.page.stallsSection.ledgerButton.text.text).toBe(
       'Market Ledger',
     );
@@ -452,6 +447,39 @@ describe('ShopPixiPage', () => {
     inputRouter.destroy();
   });
 
+  it('routes occupied Traders and Players cards through red Cancel actions', () => {
+    const cancelStall = vi.fn(() => true);
+    const cancelRequest = vi.fn(() => true);
+    const cancelListing = vi.fn(() => true);
+    const harness = createHarness();
+    const model = createShopViewModel();
+    model.shop.traders.stalls[0].cancelAction = cancelStall;
+    model.shop.players.requests.slots[0].cancelAction = cancelRequest;
+    model.shop.players.market.slots[0].cancelAction = cancelListing;
+
+    harness.page.bind(model);
+    harness.page.activate();
+
+    const stall = harness.page.stallsSection.stalls.get('stall-1');
+    const request = harness.page.requestsSection.rows.get('request-1');
+    const listing =
+      harness.page.playerMarketSection.rows.get('listing-1');
+
+    for (const row of [stall, request, listing]) {
+      expect(row.root.eventMode).toBe('passive');
+      expect(row.priceAction.textLabel.text).toBe('Cancel');
+      expect(row.priceAction.variant).toBe('red');
+      expect(row.priceAction.activate()).toBe(true);
+    }
+    expect(cancelStall).toHaveBeenCalledOnce();
+    expect(cancelRequest).toHaveBeenCalledOnce();
+    expect(cancelListing).toHaveBeenCalledOnce();
+    expect(harness.dialogs.getOpenDialogIds()).toEqual([]);
+
+    harness.page.destroy();
+    harness.dispose();
+  });
+
   it('presses only the Select button when the nested stall action is targeted', () => {
     const inputRouter = new PixiInputRouter();
     const harness = createHarness({ inputRouter });
@@ -524,12 +552,12 @@ describe('ShopPixiPage', () => {
       renderable: true,
       width: 30,
       height: 27,
-      y: 1,
+      y: -2,
     });
     expect(stall.batch.x).toBe(stall.batchBadge.x);
-    expect(stall.batch.y).toBe(11);
+    expect(stall.batch.y).toBe(8);
     expect(stall.batchBadge.x + stall.batchBadge.width / 2).toBe(
-      stall.width - 14,
+      stall.priceAction.x - 10,
     );
     expect(getTexture).toHaveBeenCalledWith(
       PIXI_ROOT_RUN_ASSETS.stallBatchBadge,
@@ -539,12 +567,44 @@ describe('ShopPixiPage', () => {
     harness.dispose();
   });
 
+  it('keeps the sale rail, timer, and batch badge clear of Cancel', () => {
+    const harness = createHarness();
+    const viewModel = createShopViewModel();
+    viewModel.shop.traders.stalls[0].batchLabel = 'x3';
+
+    harness.page.bind(viewModel);
+    harness.page.activate();
+
+    const stall = harness.page.stallsSection.stalls.get('stall-1');
+    const actionLeft = stall.priceAction.x;
+    const progressRight = stall.progress.x + stall.progress.barWidth;
+    const timerLeft = stall.timer.x - stall.timer.measuredWidth;
+    const batchRight =
+      stall.batchBadge.x + stall.batchBadge.width / 2;
+
+    expect(progressRight).toBeLessThan(timerLeft);
+    expect(stall.timer.x).toBeLessThan(actionLeft);
+    expect(batchRight).toBeLessThan(actionLeft);
+    expect(stall.batchBadge.x).toBeGreaterThan(stall.width / 2);
+
+    harness.page.destroy();
+    harness.dispose();
+  });
+
   it('routes semantic actions and constructs each Shop dialog once', () => {
     const harness = createHarness();
     const clearPlayerRequest = vi.fn();
-    harness.page.bind(
-      createShopViewModel({ clearPlayerRequest }),
-    );
+    const viewModel = createShopViewModel({ clearPlayerRequest });
+    Object.assign(viewModel.shop.traders.stalls[0], {
+      itemLabel: 'empty stand',
+      priceLabel: 'select',
+      progress: null,
+      quantityLabel: '',
+      selected: false,
+    });
+    viewModel.shop.players.requests.slots[0].cancelAction =
+      clearPlayerRequest;
+    harness.page.bind(viewModel);
     harness.page.activate();
 
     expect(
@@ -591,9 +651,9 @@ describe('ShopPixiPage', () => {
       Object.values(SHOP_DIALOG_IDS).length,
     );
 
-    const clearButton =
-      harness.page.requestsSection.actions.get('clear');
-    expect(clearButton.activate()).toBe(true);
+    expect(
+      harness.semanticRegistry.activate('shop.requests.1'),
+    ).toBe(true);
     expect(clearPlayerRequest).toHaveBeenCalledTimes(1);
 
     harness.page.destroy();
@@ -603,17 +663,24 @@ describe('ShopPixiPage', () => {
   it('opens the tutorial-targeted stall when the tutorial overlay owns the event path', () => {
     const inputRouter = new PixiInputRouter();
     const harness = createHarness({ inputRouter });
-    harness.page.bind(createShopViewModel());
+    const viewModel = createShopViewModel({ stallPrice: 'select' });
+    Object.assign(viewModel.shop.traders.stalls[0], {
+      itemLabel: 'empty stand',
+      progress: null,
+      quantityLabel: '',
+      selected: false,
+    });
+    harness.page.bind(viewModel);
     harness.page.activate();
 
     const stall = harness.page.stallsSection.stalls.get('stall-1');
     const registration = inputRouter.store
       .getRegistrations('press')
-      .find((entry) => entry.displayObject === stall.root);
+      .find((entry) => entry.displayObject === stall.priceAction);
     const tutorialOverlay = new Container({
       label: 'tutorial-overlay-hit',
     });
-    const bounds = stall.root.getBounds();
+    const bounds = stall.priceAction.getBounds();
     const point = {
       x: bounds.x + bounds.width / 2,
       y: bounds.y + bounds.height / 2,
@@ -635,7 +702,7 @@ describe('ShopPixiPage', () => {
     inputRouter.destroy();
   });
 
-  it('presses the complete stall row without fading its frame', () => {
+  it('keeps the complete stall row passive outside its action button', () => {
     const inputRouter = new PixiInputRouter();
     const harness = createHarness({ inputRouter });
     harness.page.bind(createShopViewModel());
@@ -647,14 +714,14 @@ describe('ShopPixiPage', () => {
       .find((entry) => entry.displayObject === stall.root);
     const point = stall.root.getGlobalPosition();
 
-    expect(registration).toBeDefined();
+    expect(registration).toBeUndefined();
 
     inputRouter.onPointerDown(
       createPointerEvent(stall.root, 'pointerdown', point),
     );
 
-    expect(stall.visual.scale.x).toBeLessThan(1);
-    expect(stall.visual.scale.y).toBe(stall.visual.scale.x);
+    expect(stall.visual.scale.x).toBe(1);
+    expect(stall.visual.scale.y).toBe(1);
     expect(stall.frame.alpha).toBe(1);
 
     inputRouter.onPointerCancel(
@@ -1093,6 +1160,35 @@ describe('ShopPixiPage', () => {
     harness.dispose();
   });
 
+  it('uses the taller Sell shell at the authored mobile viewport and grows it on taller ones', () => {
+    const harness = createHarness();
+    harness.page.bind(createShopViewModel());
+    harness.page.activate();
+    harness.page.openDialog(SHOP_DIALOG_IDS.LISTING, {
+      title: 'Sell',
+      items: Array.from({ length: 12 }, (_, index) => ({
+        id: `seed-${index}`,
+        label: `Seed ${index + 1}`,
+      })),
+    });
+    const listing = harness.dialogs.get(SHOP_DIALOG_IDS.LISTING);
+
+    listing.layout({ sourceWidth: 390, sourceHeight: 844 });
+    const authoredViewportListHeight = listing.list.height;
+
+    expect(listing.panel.coreHeight).toBe(464);
+
+    listing.layout({ sourceWidth: 390, sourceHeight: 944 });
+
+    expect(listing.panel.coreHeight).toBe(564);
+    expect(listing.list.height).toBeGreaterThan(
+      authoredViewportListHeight,
+    );
+
+    harness.page.destroy();
+    harness.dispose();
+  });
+
   it('hides a lone Market Ledger tab and gives its footer space to the list', () => {
     const harness = createHarness();
     harness.page.bind(createShopViewModel());
@@ -1134,7 +1230,7 @@ describe('ShopPixiPage', () => {
     harness.dispose();
   });
 
-  it('renders Player Market seed listings with the seed-pack atlas frames', () => {
+  it('renders Player Market listings with the shared compact row and coin icon', () => {
     const getAtlasTexture = vi.fn((frameName) => {
       if (frameName === 'resource:seed') {
         throw new Error(`Missing Pixi atlas frame: ${frameName}`);
@@ -1170,9 +1266,15 @@ describe('ShopPixiPage', () => {
 
     harness.page.openDialog(SHOP_DIALOG_IDS.MARKET, marketDialog);
 
+    const dialog = harness.dialogs.get(SHOP_DIALOG_IDS.MARKET);
+    const [row] = dialog.list.rows.getWidgets();
+
     expect(getAtlasTexture).not.toHaveBeenCalledWith('resource:seed');
-    expect(getAtlasTexture).toHaveBeenCalledWith('seed:pack');
-    expect(getAtlasTexture).toHaveBeenCalledWith('herb:sageHerb');
+    expect(getAtlasTexture).toHaveBeenCalledWith('resource:coin');
+    expect(row.indexLabel.text).toBe('1.');
+    expect(row.itemLabel.text).toBe('Sage Seed (2) · Mira');
+    expect(row.valueResource.visible).toBe(true);
+    expect(row.valueLabel.visible).toBe(false);
 
     harness.page.destroy();
     harness.dispose();
@@ -1366,7 +1468,7 @@ describe('ShopPixiPage', () => {
     expect(seedsTab.notificationDot.visible).toBe(true);
     expect(herbsTab.notificationDot.visible).toBe(false);
     expect(row.label.fontWeight).toBe('normal');
-    expect(dialog.list.scroll.progressBar).toBeNull();
+    expect(dialog.list.scroll).not.toHaveProperty('progressBar');
 
     harness.page.destroy();
     harness.dispose();
@@ -1904,11 +2006,13 @@ describe('ShopPixiPage', () => {
     expect(request.item.text).toBe('Sage');
     expect(request.quantity.text).toBe('2');
     expect(request.price.visible).toBe(false);
-    expect(request.priceResource).toMatchObject({
-      amount: '5',
-      resource: 'coin',
-      visible: true,
-    });
+    expect(request.priceResource.visible).toBe(false);
+    expect(request.priceAction.textLabel.text).toBe('Cancel');
+    expect(request.priceAction.variant).toBe('red');
+    expect(nextRequest.priceAction.textLabel.text).toBe('Select');
+    expect(nextRequest.priceAction.variant).toBe('green');
+    expect(listing.priceAction.textLabel.text).toBe('Cancel');
+    expect(listing.priceAction.variant).toBe('red');
     expect(request.root.hitArea.height).toBe(84);
     expect(listing.root.hitArea.height).toBe(84);
     expect(nextRequest.root.y).toBeGreaterThan(
@@ -1920,21 +2024,12 @@ describe('ShopPixiPage', () => {
     expect(
       harness.semanticRegistry.require('shop.requests.1')
         .displayObject,
-    ).toBe(request.root);
+    ).toBe(request.priceAction);
     expect(
       harness.semanticRegistry.require('shop.playerMarket.1')
         .displayObject,
-    ).toBe(listing.root);
-
-    const clear =
-      harness.page.requestsSection.actions.get('clear');
-    expect(clear.root.label).toBe(
-      'shop:requests:footerAction',
-    );
-    expect(clear.text.text).toBe('Clear');
-    expect(clear.root.y).toBeGreaterThan(
-      harness.page.requestsSection.rowsLayer.y,
-    );
+    ).toBe(listing.priceAction);
+    expect(harness.page.requestsSection.actions.getWidgets()).toEqual([]);
 
     const browse =
       harness.page.playerMarketSection.actions.get('browse');

@@ -8,7 +8,7 @@ const WIDGET_DEFINITIONS = Object.freeze([
   defineWidget('PixiProgressBar', 'status', 'topPanelQuestProgress'),
   defineWidget('PixiResourceLabel', 'label', 'bag'),
   defineWidget('PixiRow', 'row', 'bag'),
-  defineWidget('PixiScrollView', 'container', 'bag'),
+  defineWidget('RetainedScrollArea', 'container', 'bag'),
   defineWidget('PixiStarLevelLabel', 'label', 'research'),
   defineWidget('PixiTextField', 'input', 'settings'),
   defineWidget('PixiTextLabel', 'label', 'workshop'),

@@ -23,10 +23,12 @@ import {
   normalizeSaveClientTimestamp,
 } from './saveClientTimestampNormalizer';
 import { normalizeSaveSelectedNumber } from './saveSelectedNumberNormalizer';
+import { normalizeGardenSelectedSeedItemKey } from './saveGardenNormalizer';
 import { assertMarketScope, getMarketScopedKey, normalizeMarketId } from './marketScope';
 import {
   appendMissingItemConfigRows as appendMissingItemConfigRowsByKey,
   normalizeLegacySeedSummonCosts,
+  rebaseVersionedHerbGrowthDurations,
   rebaseVersionedItemConfigSellPrices,
 } from './itemConfigRows';
 import {
@@ -372,6 +374,7 @@ const npcMarketAdminIdentityAllowlist = new Set(
 );
 
 const DEFAULT_TASKS_CONFIG = {
+  "timerResearchVersion": 1,
   "levels": [
     {
       "level": 1,
@@ -501,15 +504,18 @@ const DEFAULT_TASKS_CONFIG = {
           "quantity": 1
         },
         {
+          "id": "level6-turn-in-mana-tonic",
+          "type": "research",
+          "researchId": "timer:herbGrowth:sageHerb:1",
+          "itemKey": "sageHerb",
+          "targetLabel": "sage growing speed I",
+          "quantity": 1
+        },
+        {
           "id": "level6-brew-mana-tonic",
           "itemKey": "manaTonic",
           "quantity": 3,
           "type": "brew"
-        },
-        {
-          "id": "level6-turn-in-mana-tonic",
-          "itemKey": "manaTonic",
-          "quantity": 2
         },
         {
           "id": "level6-sell-mint-herb",
@@ -530,6 +536,14 @@ const DEFAULT_TASKS_CONFIG = {
       "coinBudget": 80,
       "tasks": [
         {
+          "id": "level7-turn-in-nettle-herb",
+          "type": "research",
+          "researchId": "timer:herbGrowth:mintHerb:1",
+          "itemKey": "mintHerb",
+          "targetLabel": "mint growing speed I",
+          "quantity": 1
+        },
+        {
           "id": "level7-summon-nettle-seed",
           "itemKey": "nettleSeed",
           "quantity": 17,
@@ -540,11 +554,6 @@ const DEFAULT_TASKS_CONFIG = {
           "itemKey": "nettleHerb",
           "quantity": 6,
           "type": "grow"
-        },
-        {
-          "id": "level7-turn-in-nettle-herb",
-          "itemKey": "nettleHerb",
-          "quantity": 5
         },
         {
           "id": "level7-brew-mana-tonic",
@@ -571,15 +580,18 @@ const DEFAULT_TASKS_CONFIG = {
           "quantity": 1
         },
         {
+          "id": "level8-turn-in-mana-tonic",
+          "type": "research",
+          "researchId": "timer:potionBrewing:manaTonic:1",
+          "itemKey": "manaTonic",
+          "targetLabel": "mana tonic brewing speed I",
+          "quantity": 1
+        },
+        {
           "id": "level8-brew-mana-tonic",
           "itemKey": "manaTonic",
           "quantity": 6,
           "type": "brew"
-        },
-        {
-          "id": "level8-turn-in-mana-tonic",
-          "itemKey": "manaTonic",
-          "quantity": 3
         },
         {
           "id": "level8-sell-sage-herb",
@@ -3940,29 +3952,29 @@ const LEGACY_PLAYER_LEVEL_CAPS_BY_LEVEL = new Map<number, {
 
 const herbCatalog = [
   { key: 'sage', label: 'sage', growthDurationMs: 12_000 },
-  { key: 'mint', label: 'mint', growthDurationMs: 25_000 },
-  { key: 'nettle', label: 'nettle', growthDurationMs: 30_000 },
-  { key: 'lavender', label: 'lavender', growthDurationMs: 40_000 },
-  { key: 'briar', label: 'briar', growthDurationMs: 50_000 },
-  { key: 'glowcap', label: 'glowcap', growthDurationMs: 60_000 },
-  { key: 'mandrake', label: 'mandrake', growthDurationMs: 75_000 },
-  { key: 'sunroot', label: 'sunroot', growthDurationMs: 90_000 },
-  { key: 'moonflower', label: 'moonflower', growthDurationMs: 105_000 },
-  { key: 'frostmoss', label: 'frostmoss', growthDurationMs: 120_000 },
-  { key: 'dreambell', label: 'dreambell', growthDurationMs: 135_000 },
-  { key: 'starAnise', label: 'star anise', growthDurationMs: 150_000 },
-  { key: 'bloodrose', label: 'bloodrose', growthDurationMs: 180_000 },
-  { key: 'dragonpepper', label: 'dragonpepper', growthDurationMs: 210_000 },
-  { key: 'silverleaf', label: 'silverleaf', growthDurationMs: 240_000 },
-  { key: 'yarrow', label: 'yarrow', growthDurationMs: 270_000 },
-  { key: 'hyssop', label: 'hyssop', growthDurationMs: 300_000 },
-  { key: 'valerian', label: 'valerian', growthDurationMs: 330_000 },
-  { key: 'comfrey', label: 'comfrey', growthDurationMs: 360_000 },
-  { key: 'nightshade', label: 'nightshade', growthDurationMs: 390_000 },
-  { key: 'belladonna', label: 'belladonna', growthDurationMs: 420_000 },
-  { key: 'wormwood', label: 'wormwood', growthDurationMs: 450_000 },
-  { key: 'snowdrop', label: 'snowdrop', growthDurationMs: 480_000 },
-  { key: 'pearlroot', label: 'pearlroot', growthDurationMs: 520_000 },
+  { key: 'mint', label: 'mint', growthDurationMs: 27_500 },
+  { key: 'nettle', label: 'nettle', growthDurationMs: 37_500 },
+  { key: 'lavender', label: 'lavender', growthDurationMs: 56_000 },
+  { key: 'briar', label: 'briar', growthDurationMs: 80_000 },
+  { key: 'glowcap', label: 'glowcap', growthDurationMs: 111_000 },
+  { key: 'mandrake', label: 'mandrake', growthDurationMs: 138_750 },
+  { key: 'sunroot', label: 'sunroot', growthDurationMs: 166_500 },
+  { key: 'moonflower', label: 'moonflower', growthDurationMs: 194_250 },
+  { key: 'frostmoss', label: 'frostmoss', growthDurationMs: 222_000 },
+  { key: 'dreambell', label: 'dreambell', growthDurationMs: 249_750 },
+  { key: 'starAnise', label: 'star anise', growthDurationMs: 277_500 },
+  { key: 'bloodrose', label: 'bloodrose', growthDurationMs: 333_000 },
+  { key: 'dragonpepper', label: 'dragonpepper', growthDurationMs: 388_500 },
+  { key: 'silverleaf', label: 'silverleaf', growthDurationMs: 444_000 },
+  { key: 'yarrow', label: 'yarrow', growthDurationMs: 499_500 },
+  { key: 'hyssop', label: 'hyssop', growthDurationMs: 555_000 },
+  { key: 'valerian', label: 'valerian', growthDurationMs: 610_500 },
+  { key: 'comfrey', label: 'comfrey', growthDurationMs: 666_000 },
+  { key: 'nightshade', label: 'nightshade', growthDurationMs: 721_500 },
+  { key: 'belladonna', label: 'belladonna', growthDurationMs: 777_000 },
+  { key: 'wormwood', label: 'wormwood', growthDurationMs: 832_500 },
+  { key: 'snowdrop', label: 'snowdrop', growthDurationMs: 888_000 },
+  { key: 'pearlroot', label: 'pearlroot', growthDurationMs: 962_000 },
 ];
 
 const ingredientRarities = new Set([
@@ -4312,6 +4324,86 @@ const researchDefaultCostGoldById: Record<string, bigint> = {
   ...getAutomationDefaultCostGoldById(),
 };
 
+const ITEM_TIMER_RESEARCH_DURATION_SECONDS = 5n;
+const ITEM_TIMER_RESEARCH_LATE_GAME_MAX_LEVEL = 19;
+const itemTimerEarlyMaxLevels = [2, 4, 7, 10, 14];
+
+function getItemTimerResearchMaxLevel(catalogIndex: number): number {
+  const safeIndex = Math.max(0, Math.floor(Number(catalogIndex) || 0));
+  return itemTimerEarlyMaxLevels[safeIndex] ?? ITEM_TIMER_RESEARCH_LATE_GAME_MAX_LEVEL;
+}
+
+function getItemTimerResearchCostGold(baseCostGold: bigint, level: number): bigint {
+  return BigInt(
+    Math.round(Number(baseCostGold) * 1.5 ** (Math.max(1, level) - 1)),
+  );
+}
+
+const itemTimerPotionCatalog = [
+  ...knownPotionResearchCatalog,
+  ...unknownPotionCatalog,
+];
+
+function getItemTimerResearchDefaultCostGoldById(): Record<string, bigint> {
+  const costs: Record<string, bigint> = {};
+
+  herbCatalog.forEach((herb, catalogIndex) => {
+    const unlockId = `unlockSeed:${herb.key}Seed`;
+    const baseCostGold =
+      herb.key === 'sage'
+        ? 25n
+        : herb.key === 'mint'
+          ? 50n
+          : (researchDefaultCostGoldById[unlockId] ?? 0n);
+    const maxLevel = getItemTimerResearchMaxLevel(catalogIndex);
+    for (let level = 1; level <= maxLevel; level += 1) {
+      costs[`timer:herbGrowth:${herb.key}Herb:${level}`] =
+        getItemTimerResearchCostGold(baseCostGold, level);
+    }
+  });
+
+  itemTimerPotionCatalog.forEach((potion, catalogIndex) => {
+    const unlockId = `unlockRecipe:${potion.key}`;
+    const baseCostGold =
+      potion.key === 'manaTonic'
+        ? 50n
+        : (researchDefaultCostGoldById[unlockId] ?? 0n);
+    const maxLevel = getItemTimerResearchMaxLevel(catalogIndex);
+    for (let level = 1; level <= maxLevel; level += 1) {
+      costs[`timer:potionBrewing:${potion.key}:${level}`] =
+        getItemTimerResearchCostGold(baseCostGold, level);
+    }
+  });
+
+  return costs;
+}
+
+const itemTimerResearchDefaultCostGoldById =
+  getItemTimerResearchDefaultCostGoldById();
+
+const itemTimerResearchCatalog = [
+  ...herbCatalog.flatMap((herb, catalogIndex) =>
+    Array.from(
+      { length: getItemTimerResearchMaxLevel(catalogIndex) },
+      (_value, index) => ({
+        id: `timer:herbGrowth:${herb.key}Herb:${index + 1}`,
+        label: `${herb.label} growing lvl ${index + 1}`,
+        groupId: 'herbGrowthMastery',
+      }),
+    ),
+  ),
+  ...itemTimerPotionCatalog.flatMap((potion, catalogIndex) =>
+    Array.from(
+      { length: getItemTimerResearchMaxLevel(catalogIndex) },
+      (_value, index) => ({
+        id: `timer:potionBrewing:${potion.key}:${index + 1}`,
+        label: `${potion.label} brewing lvl ${index + 1}`,
+        groupId: 'potionBrewingMastery',
+      }),
+    ),
+  ),
+];
+
 const ADVANCED_RESEARCH_MAX_LEVEL = 12;
 const STALL_STAFFING_RESEARCH_COUNT = 5;
 const RESEARCH_TIME_REDUCTION_MAX_LEVEL = 8;
@@ -4576,6 +4668,10 @@ function getLegacyDefaultResearchDurationSeconds(index: number): bigint {
 }
 
 function getDefaultResearchDurationSeconds(researchId: string): bigint {
+  if (researchId.startsWith('timer:')) {
+    return ITEM_TIMER_RESEARCH_DURATION_SECONDS;
+  }
+
   if (
     researchDefaultCostCrystalById[researchId] !== undefined ||
     researchDefaultCostRubyById[researchId] !== undefined ||
@@ -4612,7 +4708,7 @@ const potionRecipeCatalog = [
   {
     potionKey: 'minorHealingPotion',
     manaCost: 14,
-    brewDurationMs: 35_000,
+    brewDurationMs: 38_500,
     ingredients: [
       { itemKey: 'sageHerb', quantity: 2 },
       { itemKey: 'mintHerb', quantity: 1 },
@@ -4621,7 +4717,7 @@ const potionRecipeCatalog = [
   {
     potionKey: 'nettleVigor',
     manaCost: 16,
-    brewDurationMs: 40_000,
+    brewDurationMs: 50_000,
     ingredients: [
       { itemKey: 'nettleHerb', quantity: 2 },
       { itemKey: 'sageHerb', quantity: 1 },
@@ -4630,7 +4726,7 @@ const potionRecipeCatalog = [
   {
     potionKey: 'calmingDraught',
     manaCost: 18,
-    brewDurationMs: 45_000,
+    brewDurationMs: 63_000,
     ingredients: [
       { itemKey: 'mintHerb', quantity: 2 },
       { itemKey: 'lavenderHerb', quantity: 1 },
@@ -4639,7 +4735,7 @@ const potionRecipeCatalog = [
   {
     potionKey: 'briarWard',
     manaCost: 24,
-    brewDurationMs: 60_000,
+    brewDurationMs: 96_000,
     ingredients: [
       { itemKey: 'briarHerb', quantity: 2 },
       { itemKey: 'sageHerb', quantity: 2 },
@@ -4648,7 +4744,7 @@ const potionRecipeCatalog = [
   {
     potionKey: 'lanternTonic',
     manaCost: 22,
-    brewDurationMs: 55_000,
+    brewDurationMs: 101_750,
     ingredients: [
       { itemKey: 'glowcapHerb', quantity: 2 },
       { itemKey: 'mintHerb', quantity: 1 },
@@ -4657,7 +4753,7 @@ const potionRecipeCatalog = [
   {
     potionKey: 'simpleAntidote',
     manaCost: 22,
-    brewDurationMs: 50_000,
+    brewDurationMs: 92_500,
     ingredients: [
       { itemKey: 'nettleHerb', quantity: 2 },
       { itemKey: 'sageHerb', quantity: 1 },
@@ -4667,7 +4763,7 @@ const potionRecipeCatalog = [
   {
     potionKey: 'venomDraught',
     manaCost: 24,
-    brewDurationMs: 60_000,
+    brewDurationMs: 111_000,
     ingredients: [
       { itemKey: 'mandrakeHerb', quantity: 1 },
       { itemKey: 'nettleHerb', quantity: 2 },
@@ -4677,7 +4773,7 @@ const potionRecipeCatalog = [
   {
     potionKey: 'healingPotion',
     manaCost: 26,
-    brewDurationMs: 65_000,
+    brewDurationMs: 120_250,
     ingredients: [
       { itemKey: 'sageHerb', quantity: 2 },
       { itemKey: 'mandrakeHerb', quantity: 1 },
@@ -4686,7 +4782,7 @@ const potionRecipeCatalog = [
   {
     potionKey: 'sunrootStamina',
     manaCost: 34,
-    brewDurationMs: 75_000,
+    brewDurationMs: 138_750,
     ingredients: [
       { itemKey: 'sunrootHerb', quantity: 2 },
       { itemKey: 'nettleHerb', quantity: 2 },
@@ -4695,7 +4791,7 @@ const potionRecipeCatalog = [
   {
     potionKey: 'moonlitFocus',
     manaCost: 30,
-    brewDurationMs: 70_000,
+    brewDurationMs: 129_500,
     ingredients: [
       { itemKey: 'moonflowerHerb', quantity: 1 },
       { itemKey: 'lavenderHerb', quantity: 2 },
@@ -4704,7 +4800,7 @@ const potionRecipeCatalog = [
   {
     potionKey: 'frostmossCleanse',
     manaCost: 38,
-    brewDurationMs: 85_000,
+    brewDurationMs: 157_250,
     ingredients: [
       { itemKey: 'frostmossHerb', quantity: 1 },
       { itemKey: 'glowcapHerb', quantity: 2 },
@@ -4713,7 +4809,7 @@ const potionRecipeCatalog = [
   {
     potionKey: 'sleepDraught',
     manaCost: 42,
-    brewDurationMs: 95_000,
+    brewDurationMs: 175_750,
     ingredients: [
       { itemKey: 'dreambellHerb', quantity: 1 },
       { itemKey: 'lavenderHerb', quantity: 2 },
@@ -4723,7 +4819,7 @@ const potionRecipeCatalog = [
   {
     potionKey: 'elixirOfLife',
     manaCost: 44,
-    brewDurationMs: 100_000,
+    brewDurationMs: 185_000,
     ingredients: [
       { itemKey: 'mandrakeHerb', quantity: 3 },
       { itemKey: 'moonflowerHerb', quantity: 2 },
@@ -4732,7 +4828,7 @@ const potionRecipeCatalog = [
   {
     potionKey: 'starLuckPhiltre',
     manaCost: 50,
-    brewDurationMs: 110_000,
+    brewDurationMs: 203_500,
     ingredients: [
       { itemKey: 'starAniseHerb', quantity: 1 },
       { itemKey: 'moonflowerHerb', quantity: 2 },
@@ -4742,7 +4838,7 @@ const potionRecipeCatalog = [
   {
     potionKey: 'deepDreamVision',
     manaCost: 62,
-    brewDurationMs: 135_000,
+    brewDurationMs: 249_750,
     ingredients: [
       { itemKey: 'dreambellHerb', quantity: 2 },
       { itemKey: 'starAniseHerb', quantity: 1 },
@@ -4752,7 +4848,7 @@ const potionRecipeCatalog = [
   {
     potionKey: 'pactWard',
     manaCost: 64,
-    brewDurationMs: 145_000,
+    brewDurationMs: 268_250,
     ingredients: [
       { itemKey: 'bloodroseHerb', quantity: 1 },
       { itemKey: 'briarHerb', quantity: 2 },
@@ -4762,7 +4858,7 @@ const potionRecipeCatalog = [
   {
     potionKey: 'dragonCourage',
     manaCost: 58,
-    brewDurationMs: 125_000,
+    brewDurationMs: 231_250,
     ingredients: [
       { itemKey: 'dragonpepperHerb', quantity: 1 },
       { itemKey: 'sunrootHerb', quantity: 2 },
@@ -4772,7 +4868,7 @@ const potionRecipeCatalog = [
   {
     potionKey: 'silverleafSalve',
     manaCost: 70,
-    brewDurationMs: 150_000,
+    brewDurationMs: 277_500,
     ingredients: [
       { itemKey: 'silverleafHerb', quantity: 2 },
       { itemKey: 'sageHerb', quantity: 1 },
@@ -4782,7 +4878,7 @@ const potionRecipeCatalog = [
   {
     potionKey: 'yarrowPoultice',
     manaCost: 72,
-    brewDurationMs: 155_000,
+    brewDurationMs: 286_750,
     ingredients: [
       { itemKey: 'yarrowHerb', quantity: 2 },
       { itemKey: 'mintHerb', quantity: 1 },
@@ -4792,7 +4888,7 @@ const potionRecipeCatalog = [
   {
     potionKey: 'hyssopClarity',
     manaCost: 76,
-    brewDurationMs: 165_000,
+    brewDurationMs: 305_250,
     ingredients: [
       { itemKey: 'hyssopHerb', quantity: 2 },
       { itemKey: 'moonflowerHerb', quantity: 1 },
@@ -4802,7 +4898,7 @@ const potionRecipeCatalog = [
   {
     potionKey: 'valerianRest',
     manaCost: 80,
-    brewDurationMs: 175_000,
+    brewDurationMs: 323_750,
     ingredients: [
       { itemKey: 'valerianHerb', quantity: 2 },
       { itemKey: 'dreambellHerb', quantity: 1 },
@@ -4812,7 +4908,7 @@ const potionRecipeCatalog = [
   {
     potionKey: 'comfreyBalm',
     manaCost: 84,
-    brewDurationMs: 185_000,
+    brewDurationMs: 342_250,
     ingredients: [
       { itemKey: 'comfreyHerb', quantity: 2 },
       { itemKey: 'sunrootHerb', quantity: 1 },
@@ -4822,7 +4918,7 @@ const potionRecipeCatalog = [
   {
     potionKey: 'nightshadeVeil',
     manaCost: 90,
-    brewDurationMs: 200_000,
+    brewDurationMs: 370_000,
     ingredients: [
       { itemKey: 'nightshadeHerb', quantity: 1 },
       { itemKey: 'frostmossHerb', quantity: 1 },
@@ -4832,7 +4928,7 @@ const potionRecipeCatalog = [
   {
     potionKey: 'belladonnaSight',
     manaCost: 96,
-    brewDurationMs: 215_000,
+    brewDurationMs: 397_750,
     ingredients: [
       { itemKey: 'belladonnaHerb', quantity: 1 },
       { itemKey: 'starAniseHerb', quantity: 1 },
@@ -4842,7 +4938,7 @@ const potionRecipeCatalog = [
   {
     potionKey: 'wormwoodPurge',
     manaCost: 102,
-    brewDurationMs: 230_000,
+    brewDurationMs: 425_500,
     ingredients: [
       { itemKey: 'wormwoodHerb', quantity: 1 },
       { itemKey: 'nettleHerb', quantity: 2 },
@@ -4852,7 +4948,7 @@ const potionRecipeCatalog = [
   {
     potionKey: 'snowdropBreath',
     manaCost: 110,
-    brewDurationMs: 245_000,
+    brewDurationMs: 453_250,
     ingredients: [
       { itemKey: 'snowdropHerb', quantity: 1 },
       { itemKey: 'silverleafHerb', quantity: 1 },
@@ -4862,7 +4958,7 @@ const potionRecipeCatalog = [
   {
     potionKey: 'pearlrootDraught',
     manaCost: 120,
-    brewDurationMs: 270_000,
+    brewDurationMs: 499_500,
     ingredients: [
       { itemKey: 'pearlrootHerb', quantity: 1 },
       { itemKey: 'dragonpepperHerb', quantity: 1 },
@@ -4873,7 +4969,7 @@ const potionRecipeCatalog = [
   {
     potionKey: 'ashenMemory',
     manaCost: 36,
-    brewDurationMs: 80_000,
+    brewDurationMs: 148_000,
     ingredients: [
       { itemKey: 'sageHerb', quantity: 1 },
       { itemKey: 'lavenderHerb', quantity: 1 },
@@ -4883,7 +4979,7 @@ const potionRecipeCatalog = [
   {
     potionKey: 'silverleafQuiet',
     manaCost: 34,
-    brewDurationMs: 75_000,
+    brewDurationMs: 138_750,
     ingredients: [
       { itemKey: 'mintHerb', quantity: 1 },
       { itemKey: 'glowcapHerb', quantity: 1 },
@@ -4893,7 +4989,7 @@ const potionRecipeCatalog = [
   {
     potionKey: 'emberSight',
     manaCost: 58,
-    brewDurationMs: 120_000,
+    brewDurationMs: 222_000,
     ingredients: [
       { itemKey: 'dragonpepperHerb', quantity: 1 },
       { itemKey: 'starAniseHerb', quantity: 1 },
@@ -4903,7 +4999,7 @@ const potionRecipeCatalog = [
   {
     potionKey: 'thornSleep',
     manaCost: 44,
-    brewDurationMs: 90_000,
+    brewDurationMs: 166_500,
     ingredients: [
       { itemKey: 'briarHerb', quantity: 1 },
       { itemKey: 'dreambellHerb', quantity: 1 },
@@ -4913,7 +5009,7 @@ const potionRecipeCatalog = [
   {
     potionKey: 'glassMoonElixir',
     manaCost: 52,
-    brewDurationMs: 110_000,
+    brewDurationMs: 203_500,
     ingredients: [
       { itemKey: 'moonflowerHerb', quantity: 2 },
       { itemKey: 'frostmossHerb', quantity: 1 },
@@ -4923,7 +5019,7 @@ const potionRecipeCatalog = [
   {
     potionKey: 'rootboundResolve',
     manaCost: 48,
-    brewDurationMs: 100_000,
+    brewDurationMs: 185_000,
     ingredients: [
       { itemKey: 'sunrootHerb', quantity: 1 },
       { itemKey: 'mandrakeHerb', quantity: 1 },
@@ -4933,7 +5029,7 @@ const potionRecipeCatalog = [
   {
     potionKey: 'nightOrchardTonic',
     manaCost: 60,
-    brewDurationMs: 125_000,
+    brewDurationMs: 231_250,
     ingredients: [
       { itemKey: 'bloodroseHerb', quantity: 1 },
       { itemKey: 'mintHerb', quantity: 2 },
@@ -4943,7 +5039,7 @@ const potionRecipeCatalog = [
   {
     potionKey: 'starlessCourage',
     manaCost: 68,
-    brewDurationMs: 140_000,
+    brewDurationMs: 259_000,
     ingredients: [
       { itemKey: 'dragonpepperHerb', quantity: 1 },
       { itemKey: 'bloodroseHerb', quantity: 1 },
@@ -4954,7 +5050,7 @@ const potionRecipeCatalog = [
   {
     potionKey: 'frostveinDraught',
     manaCost: 54,
-    brewDurationMs: 115_000,
+    brewDurationMs: 212_750,
     ingredients: [
       { itemKey: 'frostmossHerb', quantity: 2 },
       { itemKey: 'nettleHerb', quantity: 1 },
@@ -4964,7 +5060,7 @@ const potionRecipeCatalog = [
   {
     potionKey: 'bloodlightWard',
     manaCost: 62,
-    brewDurationMs: 130_000,
+    brewDurationMs: 240_500,
     ingredients: [
       { itemKey: 'bloodroseHerb', quantity: 1 },
       { itemKey: 'glowcapHerb', quantity: 2 },
@@ -5200,6 +5296,12 @@ const researchCatalog = [
     };
   }),
   ...createDiscoveredPotionResearchCatalog(unknownPotionCatalog),
+  ...itemTimerResearchCatalog.map((research) => ({
+    researchId: research.id,
+    label: research.label,
+    groupId: research.groupId,
+    defaultCostGold: itemTimerResearchDefaultCostGoldById[research.id] ?? 0n,
+  })),
   ...automationResearchCatalog.map((research) => ({
     researchId: research.id,
     label: research.label,
@@ -5275,9 +5377,13 @@ function removeLegacySplitAutomationEntries(
   );
 }
 
+const HERB_GROWTH_TIMER_BALANCE_VERSION = 1;
+const POTION_BREW_TIMER_BALANCE_VERSION = 1;
+
 function getDefaultItemsConfig() {
   return {
     sellPriceVersion: ITEM_SELL_PRICE_BALANCE_VERSION,
+    growthTimerVersion: HERB_GROWTH_TIMER_BALANCE_VERSION,
     seeds: herbCatalog.map((herb, index) => ({
       id: index + 1,
       key: `${herb.key}Seed`,
@@ -5505,6 +5611,7 @@ const DEFAULT_VISUAL_SETTINGS_CONFIG_JSON = toGameConfigJson({
 });
 const DEFAULT_ITEMS_CONFIG_JSON = toGameConfigJson(getDefaultItemsConfig());
 const DEFAULT_POTION_RECIPES_CONFIG_JSON = toGameConfigJson({
+  brewTimerVersion: POTION_BREW_TIMER_BALANCE_VERSION,
   recipes: potionRecipeCatalog,
 });
 const DEFAULT_MAINTENANCE_CONFIG_JSON = toGameConfigJson({
@@ -9016,17 +9123,59 @@ function normalizeTasksGameConfigJson(
     return DEFAULT_TASKS_CONFIG_JSON;
   }
 
-  const normalizedLevels = normalizeLegacyTaskCoinBudgets(
-    normalizeLegacyLevel5Tasks(levels),
+  const shouldRebaseTimerResearchTasks =
+    !Number.isInteger(Number(parsedConfig.timerResearchVersion)) ||
+    Number(parsedConfig.timerResearchVersion) < 1;
+  const normalizedLevels = normalizeTimerResearchTasks(
+    normalizeLegacyTaskCoinBudgets(normalizeLegacyLevel5Tasks(levels)),
+    shouldRebaseTimerResearchTasks,
   );
 
-  if (normalizedLevels === levels) {
+  if (normalizedLevels === levels && !shouldRebaseTimerResearchTasks) {
     return originalJson;
   }
 
   return JSON.stringify({
     ...parsedConfig,
+    timerResearchVersion: 1,
     levels: normalizedLevels,
+  });
+}
+
+function normalizeTimerResearchTasks(
+  levels: unknown[],
+  shouldRebase: boolean,
+): unknown[] {
+  if (!shouldRebase) {
+    return levels;
+  }
+
+  const replacementIds = new Set([
+    'level6-turn-in-mana-tonic',
+    'level7-turn-in-nettle-herb',
+    'level8-turn-in-mana-tonic',
+  ]);
+  const replacementsById = new Map(
+    DEFAULT_TASKS_CONFIG.levels.flatMap((levelConfig) => levelConfig.tasks)
+      .filter((task) => replacementIds.has(task.id))
+      .map((task) => [task.id, task]),
+  );
+
+  return levels.map((levelConfig) => {
+    if (!isRecord(levelConfig) || !Array.isArray(levelConfig.tasks)) {
+      return levelConfig;
+    }
+
+    return {
+      ...levelConfig,
+      tasks: levelConfig.tasks.map((task) => {
+        if (!isRecord(task)) {
+          return task;
+        }
+
+        return replacementsById.get(String(task.id ?? '')) ?? task;
+      }),
+    };
   });
 }
 
@@ -9300,7 +9449,7 @@ function normalizePotionRecipesGameConfigJson(
   }
 
   let changed = false;
-  const normalizedRecipes = recipes.map((recipe) => {
+  let normalizedRecipes = recipes.map((recipe) => {
     if (!isRecord(recipe) || !Array.isArray(recipe.ingredients)) {
       return recipe;
     }
@@ -9331,6 +9480,30 @@ function normalizePotionRecipesGameConfigJson(
   const missingCatalogRecipes = potionRecipeCatalog.filter(
     (recipe) => !seenPotionKeys.has(recipe.potionKey),
   );
+  normalizedRecipes = [...normalizedRecipes, ...missingCatalogRecipes];
+  const storedTimerVersion = Number(parsedConfig.brewTimerVersion);
+
+  if (
+    !Number.isInteger(storedTimerVersion) ||
+    storedTimerVersion < POTION_BREW_TIMER_BALANCE_VERSION
+  ) {
+    const defaultRecipesByKey = new Map(
+      potionRecipeCatalog.map((recipe) => [recipe.potionKey, recipe]),
+    );
+    normalizedRecipes = normalizedRecipes.map((recipe) => {
+      if (!isRecord(recipe)) {
+        return recipe;
+      }
+
+      const potionKey = normalizeNpcMarketItemKey(String(recipe.potionKey ?? ''));
+      const defaultDurationMs = defaultRecipesByKey.get(potionKey)?.brewDurationMs;
+      return Number.isFinite(defaultDurationMs) &&
+        Number(recipe.brewDurationMs) !== defaultDurationMs
+        ? { ...recipe, brewDurationMs: defaultDurationMs }
+        : recipe;
+    });
+    changed = true;
+  }
 
   if (missingCatalogRecipes.length <= 0 && !changed) {
     return originalJson;
@@ -9338,7 +9511,8 @@ function normalizePotionRecipesGameConfigJson(
 
   return JSON.stringify({
     ...parsedConfig,
-    recipes: [...normalizedRecipes, ...missingCatalogRecipes],
+    brewTimerVersion: POTION_BREW_TIMER_BALANCE_VERSION,
+    recipes: normalizedRecipes,
   });
 }
 
@@ -9385,6 +9559,18 @@ function normalizeItemsGameConfigJson(
 
   if (priceRebasedConfig !== normalizedConfig) {
     normalizedConfig = priceRebasedConfig;
+    changed = true;
+  }
+
+  const growthTimerRebasedConfig = rebaseVersionedHerbGrowthDurations(
+    normalizedConfig,
+    defaultConfig,
+    HERB_GROWTH_TIMER_BALANCE_VERSION,
+    (row) => normalizeNpcMarketItemKey(String(row.key ?? '')),
+  );
+
+  if (growthTimerRebasedConfig !== normalizedConfig) {
+    normalizedConfig = growthTimerRebasedConfig;
     changed = true;
   }
 
@@ -11057,6 +11243,28 @@ function getSaveRequiredResearchIds(researchId: string): string[] {
     return index > 0 ? [`unlockRecipe:${knownPotionResearchCatalog[index - 1].key}`] : [];
   }
 
+  const herbTimerMatch = /^timer:herbGrowth:([^:]+Herb):(\d+)$/.exec(researchId);
+  if (herbTimerMatch) {
+    const herbKey = herbTimerMatch[1];
+    const level = Number(herbTimerMatch[2]);
+    return level > 1
+      ? [`timer:herbGrowth:${herbKey}:${level - 1}`]
+      : [`unlockSeed:${herbKey.replace(/Herb$/, 'Seed')}`];
+  }
+
+  const potionTimerMatch = /^timer:potionBrewing:([^:]+):(\d+)$/.exec(researchId);
+  if (potionTimerMatch) {
+    const potionKey = potionTimerMatch[1];
+    const level = Number(potionTimerMatch[2]);
+    if (level > 1) {
+      return [`timer:potionBrewing:${potionKey}:${level - 1}`];
+    }
+
+    return knownPotionCatalogByKey.has(potionKey)
+      ? [`unlockRecipe:${potionKey}`]
+      : [];
+  }
+
   const summonIndex = summonSeedResearchCatalog.findIndex(
     (research) => research.id === researchId,
   );
@@ -11620,8 +11828,15 @@ function normalizeSaveGarden(
         .map((tile) => normalizeSaveGardenTile(tile, itemCatalog, unlockedTiles))
         .filter((tile): tile is NonNullable<typeof tile> => Boolean(tile))
     : [];
+  const selectedSeedItemKey = normalizeSaveItemKey(
+    garden.selectedSeedItemKey,
+  );
 
   return {
+    selectedSeedItemKey: normalizeGardenSelectedSeedItemKey(
+      selectedSeedItemKey,
+      itemCatalog,
+    ),
     unlockedTiles,
     tiles,
   };
@@ -15624,8 +15839,9 @@ function ensureResearchConfig(
       catalogResearch.defaultCostGold,
     );
     const enabled = existingConfig.enabled !== false;
-    const defaultDurationSeconds =
-      researchDefaultDurationSecondsById[catalogResearch.researchId] ?? 0n;
+    const defaultDurationSeconds = getCatalogResearchDefaultDurationSeconds(
+      catalogResearch.researchId,
+    );
     const durationSeconds = normalizeStoredResearchDurationSeconds(
       catalogResearch.researchId,
       existingConfig.durationSeconds,
@@ -15663,8 +15879,19 @@ function ensureResearchConfig(
     costGold: catalogResearch.defaultCostGold,
     enabled: true,
     updatedAt: ctx.timestamp,
-    durationSeconds: researchDefaultDurationSecondsById[catalogResearch.researchId] ?? 0n,
+    durationSeconds: getCatalogResearchDefaultDurationSeconds(
+      catalogResearch.researchId,
+    ),
   });
+}
+
+function getCatalogResearchDefaultDurationSeconds(researchId: string): bigint {
+  return (
+    researchDefaultDurationSecondsById[researchId] ??
+    (researchId.startsWith('timer:')
+      ? ITEM_TIMER_RESEARCH_DURATION_SECONDS
+      : 0n)
+  );
 }
 
 function ensureResearchConfigCatalog(ctx: IdleWizardReducerCtx) {

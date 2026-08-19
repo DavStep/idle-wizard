@@ -708,6 +708,37 @@ describe('PixiGlobalDialogPresenter', () => {
     ).toBe(0);
   });
 
+  it('projects the viewer pending alliance applications into Alliance Info', () => {
+    const harness = createHarness();
+    harness.tradeAllianceFacade.getSnapshot.mockReturnValue({
+      connected: true,
+      alliances: [
+        {
+          allianceId: 'alliance-one',
+          name: 'Moss Hall',
+          tag: 'MOSS',
+          joinMode: 'apply',
+        },
+      ],
+      members: [],
+      ownAlliance: null,
+      ownApplications: [
+        {
+          applicationKey: 'application-one',
+          allianceId: 'alliance-one',
+        },
+      ],
+    });
+
+    const model = harness.presenter.createAllianceModel({
+      allianceId: 'alliance-one',
+    });
+
+    expect(model.ownApplications).toEqual([
+      expect.objectContaining({ allianceId: 'alliance-one' }),
+    ]);
+  });
+
   it('keeps a newly opened alliance above player-info refreshes', () => {
     const harness = createHarness();
     harness.presenter.mount();

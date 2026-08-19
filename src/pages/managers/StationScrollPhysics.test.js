@@ -19,7 +19,7 @@ describe('StationScrollPhysics', () => {
     expect(scroll.velocity).toBeGreaterThan(0);
   });
 
-  it('keeps a flick coasting longer with the smoother inertia tuning', () => {
+  it('keeps a mobile flick coasting with stronger release inertia', () => {
     const scroll = releasedScroll();
     const releasedOffset = scroll.offset;
 
@@ -27,8 +27,8 @@ describe('StationScrollPhysics', () => {
       scroll.update(1 / 60);
     }
 
-    expect(ROOT_RUN_STATION_SCROLL_CONSTANTS.inertiaDamping).toBe(3.6);
-    expect(scroll.offset - releasedOffset).toBeGreaterThan(220);
+    expect(ROOT_RUN_STATION_SCROLL_CONSTANTS.inertiaDamping).toBe(2.4);
+    expect(scroll.offset - releasedOffset).toBeGreaterThan(280);
   });
 
   it('can end a drag without inertia for reduced motion', () => {

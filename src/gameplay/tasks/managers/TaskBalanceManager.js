@@ -215,7 +215,10 @@ export class TaskBalanceManager {
       return {
         researchId,
         item,
-        targetLabel: item.label,
+        targetLabel:
+          typeof task.targetLabel === 'string' && task.targetLabel.trim().length > 0
+            ? task.targetLabel.trim()
+            : item.label,
       };
     }
 

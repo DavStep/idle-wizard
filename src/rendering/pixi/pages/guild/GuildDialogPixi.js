@@ -1,10 +1,4 @@
-import {
-  Container,
-  Graphics,
-  Rectangle,
-  Sprite,
-  Texture,
-} from 'pixi.js';
+import { Container, Graphics, Rectangle, Sprite, Texture } from 'pixi.js';
 
 import {
   DEFAULT_TRADE_ALLIANCE_TAG_COLOR,
@@ -25,7 +19,7 @@ import {
   setDialogPaperSectionBounds,
 } from '../../primitives/PixiDialogFrame.js';
 import { PixiFrame } from '../../primitives/PixiFrame.js';
-import { PixiScrollView } from '../../primitives/PixiScrollView.js';
+import { PixiNineSliceFrame } from '../../primitives/PixiNineSliceFrame.js';
 import { PixiTextField } from '../../primitives/PixiTextField.js';
 import { PixiTextLabel } from '../../primitives/PixiTextLabel.js';
 import { PooledCollection } from '../../retained/PooledCollection.js';
@@ -33,9 +27,14 @@ import { WidgetPool } from '../../retained/WidgetPool.js';
 import {
   DEFAULT_PIXI_THEME_SNAPSHOT,
   PIXI_ROOT_RUN_ASSETS,
+  PIXI_ROOT_RUN_GEOMETRY,
   PIXI_UI_GEOMETRY,
 } from '../../theme/PixiThemeTokens.js';
-import { RetainedButton } from '../workshop/RetainedPageKit.js';
+import {
+  RetainedButton,
+  RETAINED_SCROLLBAR_GEOMETRY,
+  RetainedScrollArea,
+} from '../workshop/RetainedPageKit.js';
 import { capitalizeGuildText } from './GuildPageWidgets.js';
 
 export const GUILD_DIALOG_IDS = Object.freeze({
@@ -56,32 +55,195 @@ const CARD_TABS = Object.freeze([
 const PROFILE_DIALOG_WIDTH = 304;
 const CHARTER_DIALOG_WIDTH = 324;
 const CARD_DIALOG_WIDTH = 304;
-const CARD_DIALOG_HEIGHT = 364;
+const CARD_DIALOG_HEIGHT = 518;
 const REQUEST_DIALOG_WIDTH = 304;
 const REQUEST_DIALOG_HEIGHT = 280;
 const STACK_DIALOG_WIDTH = 304;
-const STACK_DIALOG_HEIGHT = 408;
-const STACK_PAGE_HEIGHT = 326;
-const STACK_PAGE_CONTENT_INSET = 8;
+// Keep the Recipes dialog's full-width parchment and pager edge rhythm.
+const STACK_PAGE_SIDE_OVERFLOW = 4;
+const STACK_PAGE_TOP = 22;
+const STACK_PAGE_WIDTH = STACK_DIALOG_WIDTH + STACK_PAGE_SIDE_OVERFLOW * 2;
+const STACK_PAGE_HEIGHT = 341;
+const STACK_PAGE_CONTENT_INSET = 7;
+const STACK_PAGE_ACTION_HEIGHT = 30;
+const STACK_PAGE_ACTION_BOTTOM_INSET = 8;
 const STACK_PAGER_BUTTON_WIDTH = 72;
 const STACK_PAGER_BUTTON_HEIGHT = 28;
-const STACK_PAGER_Y = 334;
-const CARD_PORTRAIT_BOX = Object.freeze({
-  x: 0,
-  y: 7,
-  width: 72,
-  height: 72,
+const STACK_PAGER_GAP = 4;
+const STACK_PAGER_Y = STACK_PAGE_TOP + STACK_PAGE_HEIGHT + STACK_PAGER_GAP;
+const STACK_DIALOG_BOTTOM_INSET = 9;
+const STACK_DIALOG_HEIGHT =
+  STACK_PAGER_Y + STACK_PAGER_BUTTON_HEIGHT + STACK_DIALOG_BOTTOM_INSET;
+const GUILD_QUEST_ART_ASSET_IDS = Object.freeze([
+  'source:assets/guild/quest-requests.png',
+  'source:assets/guild/quest-requests-hillside.png',
+  'source:assets/guild/quest-requests-bridge.png',
+  'source:assets/guild/quest-requests-village.png',
+  'source:assets/guild/quest-requests-road.png',
+  'source:assets/guild/quest-requests-mine.png',
+  'source:assets/guild/quest-requests-political.png',
+  'source:assets/guild/quest-requests-magic.png',
+  'source:assets/guild/quest-requests-military.png',
+]);
+const GUILD_QUEST_ART_RULES = Object.freeze([
+  Object.freeze({
+    assetId: 'source:assets/guild/quest-requests-bridge.png',
+    terms: Object.freeze(['bridge']),
+  }),
+  Object.freeze({
+    assetId: 'source:assets/guild/quest-requests-political.png',
+    terms: Object.freeze([
+      'political',
+      'noble',
+      'blackmail',
+      'charter',
+      'palace',
+      'crownless',
+      'guarded witness',
+      'seal runner',
+      'silent contract',
+    ]),
+  }),
+  Object.freeze({
+    assetId: 'source:assets/guild/quest-requests-magic.png',
+    terms: Object.freeze([
+      'magic',
+      'research',
+      'curse',
+      'cursed',
+      'mirror',
+      'relic',
+      'glowcap',
+      'marking copy',
+    ]),
+  }),
+  Object.freeze({
+    assetId: 'source:assets/guild/quest-requests-mine.png',
+    terms: Object.freeze([
+      'mine',
+      'crypt',
+      'dungeon',
+      'tunnel',
+      'sealed room',
+      'lower dark',
+      'first stair',
+      'lamp run',
+    ]),
+  }),
+  Object.freeze({
+    assetId: 'source:assets/guild/quest-requests-road.png',
+    terms: Object.freeze([
+      'road',
+      'trade',
+      'courier',
+      'escort',
+      'convoy',
+      'caravan',
+      'ambush',
+      'bandit toll',
+      'thief nest',
+    ]),
+  }),
+  Object.freeze({
+    assetId: 'source:assets/guild/quest-requests-village.png',
+    terms: Object.freeze([
+      'village',
+      'tavern',
+      'medical',
+      'fever',
+      'sickroom',
+      'quarantine',
+      'clean water',
+      'cellar trouble',
+      'warehouse',
+    ]),
+  }),
+  Object.freeze({
+    assetId: 'source:assets/guild/quest-requests-military.png',
+    terms: Object.freeze([
+      'military',
+      'arena',
+      'siege',
+      'wall-run',
+      'black banner',
+      'field bottle',
+      'night watch',
+    ]),
+  }),
+  Object.freeze({
+    assetId: 'source:assets/guild/quest-requests-hillside.png',
+    terms: Object.freeze(['exploration', 'hill', 'scout', 'pine sweep']),
+  }),
+]);
+const GUILD_QUEST_ART_HEIGHT = 98;
+const GUILD_QUEST_ART_RADIUS = 8;
+const GUILD_QUEST_ART_GAP = 6;
+const GUILD_QUEST_REWARD_ROW_HEIGHT = 50;
+const GUILD_QUEST_REWARD_ICON_SIZE = 28;
+const GUILD_QUEST_REWARD_ICON_GAP = 8;
+const GUILD_QUEST_REWARD_ASSETS = Object.freeze({
+  coin: PIXI_ROOT_RUN_ASSETS.coin,
+  seed: 'source:assets/icons/icon-seed-box.png',
+  herb: 'source:assets/icons/icon-herb-box.png',
 });
-const CARD_SUMMARY_HEIGHT = 84;
-const CARD_SUMMARY_DETAILS_GAP = 12;
+// The source PNGs have different transparent padding. These values keep their
+// visible artwork equally weighted inside the shared World Event-sized slot.
+const GUILD_QUEST_REWARD_ICON_GEOMETRY = Object.freeze({
+  coin: Object.freeze({ size: 26, y: 0 }),
+  seed: Object.freeze({ size: 29, y: 0 }),
+  herb: Object.freeze({ size: 31, y: -3 }),
+});
+const GUILD_DIFFICULTY_COLOR_KEYS = Object.freeze({
+  trivial: '#4aa83f',
+  easy: '#4aa83f',
+  medium: '#d8ad32',
+  hard: '#be403b',
+  deadly: '#be403b',
+});
+const CARD_PORTRAIT_BOX = Object.freeze({
+  x: -14,
+  y: 0,
+  width: 108,
+  height: 108,
+});
+const CARD_SUMMARY_HEIGHT = 108;
+const CARD_SUMMARY_DETAILS_GAP = 8;
+const CARD_SUMMARY_CONTENT_TOP = 6;
 const CARD_DETAIL_ROW_PITCH = 18;
-const CARD_DETAILS_PADDING_X = 10;
 const CARD_DETAILS_PADDING_TOP =
   PIXI_DIALOG_SPLIT_PAPER_GEOMETRY.contentInsetTop;
 const CARD_DETAILS_PADDING_BOTTOM =
   PIXI_DIALOG_SPLIT_PAPER_GEOMETRY.contentInsetBottom;
-const CARD_ACTION_HEIGHT = 30;
-const CARD_ACTION_GAP = 6;
+// Match the Wizard cosmetics choice board and its Save action geometry.
+const CARD_DETAILS_BOARD_WIDTH = PIXI_ROOT_RUN_GEOMETRY.dialog.innerBoardWidth;
+const CARD_DETAILS_BOARD_SOURCE_INSETS = Object.freeze({
+  top: 17,
+  right: 25,
+  bottom: 19,
+  left: 13,
+});
+const CARD_DETAILS_BOARD_BORDER_INSETS = Object.freeze({
+  top: 17 / 3,
+  right: 25 / 3,
+  bottom: 19 / 3,
+  left: 13 / 3,
+});
+const CARD_DETAILS_SCROLL_INSET_Y = 8;
+const CARD_DETAILS_SCROLL_LEFT_INSET = 4;
+const CARD_DETAILS_SCROLL_RIGHT_INSET = 2;
+const CARD_DETAILS_SCROLL_CONTENT_BLEED = 4;
+const CARD_DETAILS_SCROLLBAR_OUTSET =
+  RETAINED_SCROLLBAR_GEOMETRY.gap + RETAINED_SCROLLBAR_GEOMETRY.width;
+const CARD_DETAILS_SCROLL_WIDTH =
+  CARD_DETAILS_BOARD_WIDTH -
+  CARD_DETAILS_SCROLL_LEFT_INSET -
+  CARD_DETAILS_SCROLLBAR_OUTSET -
+  CARD_DETAILS_SCROLL_RIGHT_INSET;
+const CARD_ACTION_WIDTH =
+  456 * (PIXI_ROOT_RUN_GEOMETRY.dialog.innerBoardWidth / 925);
+const CARD_ACTION_HEIGHT = 52;
+const CARD_ACTION_FONT_SIZE = 16;
+const CARD_ACTION_GAP = 8;
 
 const SWATCH_COLORS = Object.freeze({
   ink: null,
@@ -229,10 +391,7 @@ export class GuildDialogPixi extends BasePixiRetainedView {
       inputRouter: this.inputRouter,
       semanticRegistry: this.semanticRegistry,
       semanticId: `${this.dialogId}.submit`,
-      text:
-        this.dialogId === GUILD_DIALOG_IDS.CHARTER
-          ? 'Create'
-          : 'Save',
+      text: this.dialogId === GUILD_DIALOG_IDS.CHARTER ? 'Create' : 'Save',
       sizeTier: 30,
       label: `${this.dialogId}:submit`,
       action: () => this.submitProfile(),
@@ -265,10 +424,7 @@ export class GuildDialogPixi extends BasePixiRetainedView {
       sizeTier: 30,
       label: `${this.dialogId}:action`,
     });
-    this.panel.content.addChild(
-      this.requestDetail.root,
-      this.requestAction,
-    );
+    this.panel.content.addChild(this.requestDetail.root, this.requestAction);
   }
 
   buildCardDialog({ counters }) {
@@ -320,6 +476,22 @@ export class GuildDialogPixi extends BasePixiRetainedView {
       anchor: { x: 1, y: 0 },
       label: `${this.dialogId}:status`,
     });
+    this.cardXpLabel = new PixiTextLabel({
+      text: 'XP',
+      label: `${this.dialogId}:xpLabel`,
+    });
+    this.cardXp = new PixiTextLabel({
+      anchor: { x: 1, y: 0 },
+      label: `${this.dialogId}:xp`,
+    });
+    this.cardPersonalityLabel = new PixiTextLabel({
+      text: 'Personality',
+      label: `${this.dialogId}:personalityLabel`,
+    });
+    this.cardPersonality = new PixiTextLabel({
+      anchor: { x: 1, y: 0 },
+      label: `${this.dialogId}:personality`,
+    });
     this.cardSummary.addChild(
       this.cardIconFrame,
       this.cardIcon,
@@ -329,14 +501,25 @@ export class GuildDialogPixi extends BasePixiRetainedView {
       this.cardLevel,
       this.cardStatusLabel,
       this.cardStatus,
+      this.cardXpLabel,
+      this.cardXp,
+      this.cardPersonalityLabel,
+      this.cardPersonality,
     );
-    this.detailScroll = new PixiScrollView({
-      assetManager: this.assetManager,
+    this.cardDetailsBoard = new PixiNineSliceFrame({
+      texture:
+        this.assetManager?.getTexture?.(PIXI_ROOT_RUN_ASSETS.settingsRow) ??
+        Texture.EMPTY,
+      sourceInsets: CARD_DETAILS_BOARD_SOURCE_INSETS,
+      borderInsets: CARD_DETAILS_BOARD_BORDER_INSETS,
+      width: CARD_DETAILS_BOARD_WIDTH,
+      height:
+        CARD_DETAILS_BOARD_BORDER_INSETS.top +
+        CARD_DETAILS_BOARD_BORDER_INSETS.bottom,
+      label: `${this.dialogId}:detailsBoard`,
+    });
+    this.detailScroll = new RetainedScrollArea({
       inputRouter: this.inputRouter,
-      showProgress: true,
-      width: 1,
-      height: 1,
-      contentPaddingTop: PIXI_UI_GEOMETRY.dialogScrollPaddingTop,
       label: `${this.dialogId}:details`,
     });
     this.detailPool = new WidgetPool({
@@ -367,6 +550,7 @@ export class GuildDialogPixi extends BasePixiRetainedView {
       sizeTier: 30,
       label: `${this.dialogId}:action`,
     });
+    this.cardAction.textLabel.setFontSize(CARD_ACTION_FONT_SIZE);
     this.cardTabsLayer = new Container();
     this.cardTabsLayer.label = `${this.dialogId}:tabs`;
     this.cardTabs = CARD_TABS.map(
@@ -383,18 +567,15 @@ export class GuildDialogPixi extends BasePixiRetainedView {
         }),
     );
     for (const tab of this.cardTabs) {
-      tab.control.textLabel.setFontSize(
-        PIXI_UI_GEOMETRY.borderLabelFontSize,
-      );
+      tab.control.textLabel.setFontSize(PIXI_UI_GEOMETRY.borderLabelFontSize);
     }
-    this.cardTabsLayer.addChild(
-      ...this.cardTabs.map((tab) => tab.root),
-    );
+    this.cardTabsLayer.addChild(...this.cardTabs.map((tab) => tab.root));
     this.panel.content.addChild(
       this.summaryFrame,
       this.detailsFrame,
+      this.cardDetailsBoard,
       this.cardSummary,
-      this.detailScroll,
+      this.detailScroll.root,
       this.cardAction,
     );
     this.panel.addChild(this.cardTabsLayer);
@@ -403,9 +584,7 @@ export class GuildDialogPixi extends BasePixiRetainedView {
   onBind(viewModel) {
     this.model = viewModel ?? {};
     this.panel.setTitle(
-      capitalizeGuildText(
-        this.model.title ?? getDialogTitle(this.dialogId),
-      ),
+      capitalizeGuildText(this.model.title ?? getDialogTitle(this.dialogId)),
     );
     if (isProfileDialog(this.dialogId)) {
       this.bindProfile();
@@ -423,9 +602,7 @@ export class GuildDialogPixi extends BasePixiRetainedView {
     const action = this.model.action ?? request.action;
     this.requestAction
       .setText(
-        capitalizeGuildText(
-          this.model.actionLabel ?? request.actionLabel,
-        ),
+        capitalizeGuildText(this.model.actionLabel ?? request.actionLabel),
       )
       .setAction(action)
       .setEnabled(Boolean(action) && this.model.actionDisabled !== true);
@@ -456,9 +633,7 @@ export class GuildDialogPixi extends BasePixiRetainedView {
     const card = this.model.card ?? this.model.adventurer ?? this.model;
     const isApplicant = this.dialogId === GUILD_DIALOG_IDS.APPLICANT;
     this.selectedCardTab =
-      this.model.selectedTabId ??
-      card.selectedTabId ??
-      this.selectedCardTab;
+      this.model.selectedTabId ?? card.selectedTabId ?? this.selectedCardTab;
     this.cardName.setText(
       capitalizeGuildText(card.displayName ?? card.name ?? 'Nameless'),
     );
@@ -466,10 +641,10 @@ export class GuildDialogPixi extends BasePixiRetainedView {
       formatCardLevelValue(card.levelLabel ?? card.level ?? 1),
     );
     this.cardStatus.setText(
-      capitalizeGuildText(
-        card.statusLabel ?? card.status ?? 'Idle',
-      ),
+      capitalizeGuildText(card.statusLabel ?? card.status ?? 'Idle'),
     );
+    this.cardXp.setText(`${card.xp ?? 0}/${card.nextLevelXp ?? '?'}`);
+    this.cardPersonality.setText(capitalizeGuildText(card.personalityLabel));
     this.cardInitial.setText(
       String(card.displayName ?? card.name ?? '?')
         .trim()
@@ -488,7 +663,11 @@ export class GuildDialogPixi extends BasePixiRetainedView {
       card.tabs?.[this.selectedCardTab] ??
       this.model.rows ??
       deriveCardRows(card, this.selectedCardTab);
-    this.detailRows.reconcile(safeArray(rows));
+    this.detailRows.reconcile(
+      this.selectedCardTab === 'stats'
+        ? safeArray(rows).filter((row) => !isCardSummaryRow(row))
+        : safeArray(rows),
+    );
     const contentTheme = this.panel.getContentTheme();
     for (const row of this.detailRows.getWidgets()) {
       row.applyTheme(contentTheme);
@@ -551,8 +730,7 @@ export class GuildDialogPixi extends BasePixiRetainedView {
     this.theme = theme ?? DEFAULT_PIXI_THEME_SNAPSHOT;
     this.redrawBackdrop();
     this.panel?.applyTheme(this.theme);
-    const contentTheme =
-      this.panel?.getContentTheme?.() ?? this.theme;
+    const contentTheme = this.panel?.getContentTheme?.() ?? this.theme;
     if (isProfileDialog(this.dialogId)) {
       this.nameField?.applyTheme(contentTheme);
       this.tagField?.applyTheme(contentTheme);
@@ -573,7 +751,10 @@ export class GuildDialogPixi extends BasePixiRetainedView {
       this.cardLevel?.applyTheme(contentTheme);
       this.cardStatusLabel?.applyTheme(contentTheme);
       this.cardStatus?.applyTheme(contentTheme);
-      this.detailScroll?.applyTheme(contentTheme);
+      this.cardXpLabel?.applyTheme(contentTheme);
+      this.cardXp?.applyTheme(contentTheme);
+      this.cardPersonalityLabel?.applyTheme(contentTheme);
+      this.cardPersonality?.applyTheme(contentTheme);
       this.cardAction?.applyTheme(contentTheme);
       for (const row of this.detailRows?.getWidgets?.() ?? []) {
         row.applyTheme(contentTheme);
@@ -697,9 +878,7 @@ export class GuildDialogPixi extends BasePixiRetainedView {
         footerTabLayout.paperBottom - this.panel.content.y,
       ),
     );
-    const paperOutsets = resolveDialogPaperOutsets(
-      this.panel.contentInsets,
-    );
+    const paperOutsets = resolveDialogPaperOutsets(this.panel.contentInsets);
     const detailsY =
       CARD_SUMMARY_HEIGHT +
       paperOutsets.bottom +
@@ -730,10 +909,7 @@ export class GuildDialogPixi extends BasePixiRetainedView {
       paperOutsets,
     );
     this.cardSummary.position.set(0, 0);
-    this.cardIconFrame.position.set(
-      CARD_PORTRAIT_BOX.x,
-      CARD_PORTRAIT_BOX.y,
-    );
+    this.cardIconFrame.position.set(CARD_PORTRAIT_BOX.x, CARD_PORTRAIT_BOX.y);
     this.cardIconFrame.setSize(
       CARD_PORTRAIT_BOX.width,
       CARD_PORTRAIT_BOX.height,
@@ -744,63 +920,77 @@ export class GuildDialogPixi extends BasePixiRetainedView {
       CARD_PORTRAIT_BOX.y + CARD_PORTRAIT_BOX.height / 2,
     );
     const summaryDetailsX =
-      CARD_PORTRAIT_BOX.width + CARD_SUMMARY_DETAILS_GAP;
-    const summaryRightX = width - CARD_DETAILS_PADDING_X;
-    this.cardName.position.set(
-      summaryDetailsX,
-      CARD_PORTRAIT_BOX.y + 1,
-    );
-    this.cardName.setWrapWidth(
-      Math.max(0, summaryRightX - summaryDetailsX),
-    );
-    const levelY =
-      CARD_PORTRAIT_BOX.y + 1 + CARD_DETAIL_ROW_PITCH;
+      CARD_PORTRAIT_BOX.x + CARD_PORTRAIT_BOX.width + CARD_SUMMARY_DETAILS_GAP;
+    const summaryRightX = width - CARD_DETAILS_SCROLL_LEFT_INSET;
+    this.cardName.position.set(summaryDetailsX, CARD_SUMMARY_CONTENT_TOP);
+    this.cardName.setWrapWidth(Math.max(0, summaryRightX - summaryDetailsX));
+    const levelY = CARD_SUMMARY_CONTENT_TOP + CARD_DETAIL_ROW_PITCH;
     const statusY = levelY + CARD_DETAIL_ROW_PITCH;
+    const xpY = statusY + CARD_DETAIL_ROW_PITCH;
+    const personalityY = xpY + CARD_DETAIL_ROW_PITCH;
     this.cardLevelLabel.position.set(summaryDetailsX, levelY);
     this.cardLevel.position.set(summaryRightX, levelY);
     this.cardStatusLabel.position.set(summaryDetailsX, statusY);
     this.cardStatus.position.set(summaryRightX, statusY);
+    this.cardXpLabel.position.set(summaryDetailsX, xpY);
+    this.cardXp.position.set(summaryRightX, xpY);
+    this.cardPersonalityLabel.position.set(summaryDetailsX, personalityY);
+    this.cardPersonality.position.set(summaryRightX, personalityY);
 
     const actionHeight = this.cardAction.visible ? CARD_ACTION_HEIGHT : 0;
-    const detailScrollHeight = Math.max(
+    const actionGap = actionHeight > 0 ? CARD_ACTION_GAP : 0;
+    const detailsBoardHeight = Math.max(
       0,
       detailsHeight -
         CARD_DETAILS_PADDING_TOP -
         CARD_DETAILS_PADDING_BOTTOM -
-        (actionHeight > 0 ? actionHeight + CARD_ACTION_GAP : 0),
+        actionHeight -
+        actionGap,
     );
-    const detailWidth = Math.max(
+    const detailsBoardX = (width - CARD_DETAILS_BOARD_WIDTH) / 2;
+    const detailsBoardY = detailsY + CARD_DETAILS_PADDING_TOP;
+    this.cardDetailsBoard.position.set(detailsBoardX, detailsBoardY);
+    this.cardDetailsBoard.setSize(
+      CARD_DETAILS_BOARD_WIDTH,
+      detailsBoardHeight,
+      CARD_DETAILS_BOARD_BORDER_INSETS,
+    );
+    const detailScrollHeight = Math.max(
       0,
-      width - CARD_DETAILS_PADDING_X * 2,
+      detailsBoardHeight - CARD_DETAILS_SCROLL_INSET_Y * 2,
     );
-    this.detailScroll.position.set(
-      CARD_DETAILS_PADDING_X,
-      detailsY + CARD_DETAILS_PADDING_TOP,
+    this.detailScroll.setBounds(
+      detailsBoardX + CARD_DETAILS_SCROLL_LEFT_INSET,
+      detailsBoardY + CARD_DETAILS_SCROLL_INSET_Y,
+      CARD_DETAILS_SCROLL_WIDTH,
+      detailScrollHeight,
     );
-    this.detailScroll.setViewportSize(detailWidth, detailScrollHeight);
-    let rowY = 0;
+    const detailRowWidth = Math.max(
+      0,
+      CARD_DETAILS_SCROLL_WIDTH - CARD_DETAILS_SCROLL_CONTENT_BLEED * 2,
+    );
+    let rowY = CARD_DETAILS_SCROLL_CONTENT_BLEED;
     for (const row of this.detailRows.getWidgets()) {
-      const rowHeight = row.getPreferredHeight(detailWidth);
-      row.setBounds(0, rowY, detailWidth, rowHeight);
+      const rowHeight = row.getPreferredHeight(detailRowWidth);
+      row.setBounds(
+        CARD_DETAILS_SCROLL_CONTENT_BLEED,
+        rowY,
+        detailRowWidth,
+        rowHeight,
+      );
       rowY += rowHeight + 4;
     }
     this.detailScroll.setContentHeight(
-      Math.max(detailScrollHeight, rowY),
+      Math.max(detailScrollHeight, rowY + CARD_DETAILS_SCROLL_CONTENT_BLEED),
     );
     if (this.cardAction.visible) {
       this.cardAction.position.set(
-        CARD_DETAILS_PADDING_X,
-        detailsY +
-          detailsHeight -
-          CARD_DETAILS_PADDING_BOTTOM -
-          actionHeight,
+        (width - CARD_ACTION_WIDTH) / 2,
+        detailsBoardY + detailsBoardHeight + actionGap,
       );
-      this.cardAction.setSize(detailWidth, actionHeight);
+      this.cardAction.setSize(CARD_ACTION_WIDTH, actionHeight);
     }
-    this.cardTabsLayer.position.set(
-      footerTabLayout.rowX,
-      footerTabLayout.rowY,
-    );
+    this.cardTabsLayer.position.set(footerTabLayout.rowX, footerTabLayout.rowY);
     layoutButtons(
       this.cardTabs,
       0,
@@ -843,7 +1033,7 @@ export class GuildDialogPixi extends BasePixiRetainedView {
       for (const tab of this.cardTabs) {
         tab.destroy({ children: true });
       }
-      this.detailScroll.destroy({ children: true });
+      this.detailScroll.destroy();
     }
   }
 }
@@ -893,11 +1083,7 @@ export class GuildRequestStackDialogPixi extends BasePixiRetainedView {
       closeAction: () => this.onClose?.(),
       label: 'guild:requestStack:panel',
     });
-    this.panel.setContentBoxSize(
-      STACK_DIALOG_WIDTH - PIXI_UI_GEOMETRY.dialogPadding * 2,
-      STACK_DIALOG_HEIGHT - PIXI_UI_GEOMETRY.dialogPadding * 2,
-      PIXI_UI_GEOMETRY.dialogPadding,
-    );
+    this.panel.setCoreSize(STACK_DIALOG_WIDTH, STACK_DIALOG_HEIGHT);
     this.panel.setPaperVisible(false);
     this.pageRoot = new Container({
       label: 'guild:requestStack:page',
@@ -910,6 +1096,7 @@ export class GuildRequestStackDialogPixi extends BasePixiRetainedView {
     );
     this.detail = new GuildQuestDetail({
       assetManager,
+      showArtwork: true,
       label: 'guild:requestStack:detail',
     });
     this.postButton = new PixiTextButton({
@@ -948,11 +1135,7 @@ export class GuildRequestStackDialogPixi extends BasePixiRetainedView {
       color: 'text',
       label: 'guild:requestStack:pageLabel',
     });
-    this.pageRoot.addChild(
-      this.pageFrame,
-      this.detail.root,
-      this.postButton,
-    );
+    this.pageRoot.addChild(this.pageFrame, this.detail.root, this.postButton);
     this.panel.content.addChild(
       this.pageRoot,
       this.previousButton,
@@ -967,9 +1150,7 @@ export class GuildRequestStackDialogPixi extends BasePixiRetainedView {
         priority: 10,
         threshold: 30,
         onSwipe: ({ direction }) =>
-          direction === 'next'
-            ? this.nextPage()
-            : this.previousPage(),
+          direction === 'next' ? this.nextPage() : this.previousPage(),
       }) ?? null;
     this.root.addChild(this.backdrop, this.panel);
     parent?.addChild?.(this.root);
@@ -980,8 +1161,7 @@ export class GuildRequestStackDialogPixi extends BasePixiRetainedView {
   onBind(viewModel) {
     this.model = viewModel ?? {};
     this.requests = safeArray(
-      this.model.requests ??
-        this.model.availableRequests,
+      this.model.requests ?? this.model.availableRequests,
     );
     this.selectedIndex = clampInteger(
       this.model.selectedIndex ?? this.selectedIndex,
@@ -1005,9 +1185,7 @@ export class GuildRequestStackDialogPixi extends BasePixiRetainedView {
     this.postButton
       .setText(boardFull ? 'Board Full' : 'Post Request')
       .setEnabled(!boardFull);
-    this.previousButton
-      .setText('Prev')
-      .setEnabled(this.selectedIndex > 0);
+    this.previousButton.setText('Prev').setEnabled(this.selectedIndex > 0);
     this.nextButton
       .setText('Next')
       .setEnabled(this.selectedIndex < this.requests.length - 1);
@@ -1059,8 +1237,7 @@ export class GuildRequestStackDialogPixi extends BasePixiRetainedView {
     this.theme = theme ?? DEFAULT_PIXI_THEME_SNAPSHOT;
     this.redrawBackdrop();
     this.panel?.applyTheme(this.theme);
-    const contentTheme =
-      this.panel?.getContentTheme?.() ?? this.theme;
+    const contentTheme = this.panel?.getContentTheme?.() ?? this.theme;
     this.detail?.applyTheme(contentTheme);
     this.postButton?.applyTheme(contentTheme);
     this.previousButton?.applyTheme(contentTheme);
@@ -1107,48 +1284,48 @@ export class GuildRequestStackDialogPixi extends BasePixiRetainedView {
     if (!this.panel) {
       return;
     }
-    const centerY = getDialogCenterY(this.sourceHeight) - 20;
+    const centerY = getDialogCenterY(this.sourceHeight);
     const shift = finiteOr(this.viewportProjection?.dialogShift, 0);
     const x = Math.round((this.sourceWidth - STACK_DIALOG_WIDTH) / 2);
-    const y = Math.round(
-      centerY - STACK_DIALOG_HEIGHT / 2 + shift,
-    );
+    const y = Math.round(centerY - STACK_DIALOG_HEIGHT / 2 + shift);
     this.panel.position.set(x, y);
-    this.pageRoot.position.set(0, 0);
+    this.pageRoot.position.set(-STACK_PAGE_SIDE_OVERFLOW, STACK_PAGE_TOP);
     this.pageFrame.position.set(0, 0);
-    this.pageFrame.setSize(
-      this.panel.contentBoxWidth,
-      STACK_PAGE_HEIGHT,
-    );
+    this.pageFrame.setSize(STACK_PAGE_WIDTH, STACK_PAGE_HEIGHT);
     this.detail.root.position.set(
       STACK_PAGE_CONTENT_INSET,
-      STACK_PAGE_CONTENT_INSET + 2,
+      STACK_PAGE_CONTENT_INSET,
     );
     this.detail.setSize(
-      this.panel.contentBoxWidth - STACK_PAGE_CONTENT_INSET * 2,
-      268,
+      STACK_PAGE_WIDTH - STACK_PAGE_CONTENT_INSET * 2,
+      STACK_PAGE_HEIGHT -
+        STACK_PAGE_CONTENT_INSET -
+        STACK_PAGE_ACTION_HEIGHT -
+        STACK_PAGE_ACTION_BOTTOM_INSET,
     );
     this.pageRoot.hitArea = new Rectangle(
       0,
       0,
-      this.panel.contentBoxWidth,
+      STACK_PAGE_WIDTH,
       STACK_PAGE_HEIGHT,
     );
     this.postButton.position.set(
       STACK_PAGE_CONTENT_INSET,
-      STACK_PAGE_HEIGHT - 38,
+      STACK_PAGE_HEIGHT -
+        STACK_PAGE_ACTION_HEIGHT -
+        STACK_PAGE_ACTION_BOTTOM_INSET,
     );
     this.postButton.setSize(
-      this.panel.contentBoxWidth - STACK_PAGE_CONTENT_INSET * 2,
-      30,
+      STACK_PAGE_WIDTH - STACK_PAGE_CONTENT_INSET * 2,
+      STACK_PAGE_ACTION_HEIGHT,
     );
-    this.previousButton.position.set(0, STACK_PAGER_Y);
+    this.previousButton.position.set(-STACK_PAGE_SIDE_OVERFLOW, STACK_PAGER_Y);
     this.previousButton.setSize(
       STACK_PAGER_BUTTON_WIDTH,
       STACK_PAGER_BUTTON_HEIGHT,
     );
     this.nextButton.position.set(
-      this.panel.contentBoxWidth - STACK_PAGER_BUTTON_WIDTH,
+      -STACK_PAGE_SIDE_OVERFLOW + STACK_PAGE_WIDTH - STACK_PAGER_BUTTON_WIDTH,
       STACK_PAGER_Y,
     );
     this.nextButton.setSize(
@@ -1156,7 +1333,7 @@ export class GuildRequestStackDialogPixi extends BasePixiRetainedView {
       STACK_PAGER_BUTTON_HEIGHT,
     );
     this.pageLabel.position.set(
-      this.panel.contentBoxWidth / 2,
+      -STACK_PAGE_SIDE_OVERFLOW + STACK_PAGE_WIDTH / 2,
       STACK_PAGER_Y + 7,
     );
     this.backdrop.hitArea = new Rectangle(
@@ -1303,9 +1480,7 @@ export class GuildColorSwatch {
   }
 
   redraw() {
-    const color =
-      SWATCH_COLORS[this.colorId] ??
-      this.theme.text;
+    const color = SWATCH_COLORS[this.colorId] ?? this.theme.text;
     this.graphic
       .clear()
       .rect(0, 0, this.size ?? 20, this.size ?? 20)
@@ -1346,11 +1521,7 @@ export class GuildDetailRow {
       wordWrap: true,
       label: `${label}:paragraph`,
     });
-    this.root.addChild(
-      this.keyLabel,
-      this.valueLabel,
-      this.paragraph,
-    );
+    this.root.addChild(this.keyLabel, this.valueLabel, this.paragraph);
   }
 
   bind(key, row = {}) {
@@ -1365,12 +1536,8 @@ export class GuildDetailRow {
     if (paragraph) {
       this.paragraph.setText(capitalizeGuildText(row.text));
     } else {
-      this.keyLabel.setText(
-        capitalizeGuildText(row.label ?? row.keyText),
-      );
-      this.valueLabel.setText(
-        capitalizeGuildText(row.value ?? row.valueText),
-      );
+      this.keyLabel.setText(capitalizeGuildText(row.label ?? row.keyText));
+      this.valueLabel.setText(capitalizeGuildText(row.value ?? row.valueText));
     }
   }
 
@@ -1398,9 +1565,7 @@ export class GuildDetailRow {
     this.keyLabel.setWrapWidth(
       Math.max(
         0,
-        width -
-          this.valueLabel.measuredWidth -
-          PIXI_UI_GEOMETRY.rowColumnGap,
+        width - this.valueLabel.measuredWidth - PIXI_UI_GEOMETRY.rowColumnGap,
       ),
     );
   }
@@ -1410,9 +1575,7 @@ export class GuildDetailRow {
     this.valueLabel.applyTheme(theme);
     this.paragraph.applyTheme(theme);
     this.valueLabel.setColor(
-      resolveThemeColor(
-        this.model?.valueResourceKey ?? 'text',
-      ),
+      resolveThemeColor(this.model?.valueResourceKey ?? 'text'),
     );
   }
 
@@ -1429,11 +1592,7 @@ export class GuildDetailRow {
 }
 
 export class GuildRequestListItem {
-  constructor({
-    assetManager,
-    inputRouter,
-    semanticRegistry,
-  }) {
+  constructor({ assetManager, inputRouter, semanticRegistry }) {
     this.assetManager = assetManager;
     this.semanticRegistry = semanticRegistry;
     this.root = new Container();
@@ -1455,11 +1614,7 @@ export class GuildRequestListItem {
       fontWeight: 'bold',
       label: 'guild:requestStack:listItem:title',
     });
-    this.root.addChild(
-      this.frame,
-      this.number,
-      this.title,
-    );
+    this.root.addChild(this.frame, this.number, this.title);
     this.action = null;
     this.enabled = true;
     this.selected = false;
@@ -1467,8 +1622,7 @@ export class GuildRequestListItem {
     this.semanticDefinition = null;
     this.registration =
       inputRouter?.registerPressTarget?.(this.root, {
-        enabled: () =>
-          this.root.visible && this.root.renderable,
+        enabled: () => this.root.visible && this.root.renderable,
         onActivate: () => this.action?.(),
         haptic: 'selection',
       }) ?? null;
@@ -1544,9 +1698,22 @@ export class GuildRequestListItem {
 }
 
 export class GuildQuestDetail {
-  constructor({ label }) {
+  constructor({ assetManager = null, showArtwork = false, label }) {
+    this.assetManager = assetManager;
+    this.showArtwork = showArtwork;
     this.root = new Container();
     this.root.label = label;
+    this.art = new Sprite({
+      texture: Texture.EMPTY,
+      label: `${label}:art`,
+      roundPixels: true,
+    });
+    this.art.eventMode = 'none';
+    this.artMask = new Graphics({
+      label: `${label}:artMask`,
+    });
+    this.artMask.eventMode = 'none';
+    this.art.mask = this.artMask;
     this.title = new PixiTextLabel({
       fontSize: PIXI_UI_GEOMETRY.dialogTitleFontSize,
       fontWeight: 'bold',
@@ -1566,23 +1733,30 @@ export class GuildQuestDetail {
     });
     this.rows = [
       new GuildQuestDetailLine({
+        assetManager,
         label: 'Difficulty',
       }),
       new GuildQuestDetailLine({
+        assetManager,
         label: 'Stats',
       }),
       new GuildQuestDetailLine({
-        label: 'Reward',
-        valueResourceKey: 'coin',
+        assetManager,
+        label: 'Choose One Reward',
+        reward: true,
       }),
       new GuildQuestDetailLine({
+        assetManager,
         label: 'Expires',
       }),
       new GuildQuestDetailLine({
+        assetManager,
         label: 'Event',
       }),
     ];
     this.root.addChild(
+      this.art,
+      this.artMask,
       this.title,
       this.page,
       this.lore,
@@ -1597,6 +1771,15 @@ export class GuildQuestDetail {
     this.title.renderable = this.title.visible;
     this.page.setText(pageLabel);
     this.lore.setText(capitalizeGuildText(request.lore));
+    const artAssetId = resolveGuildQuestArtAssetId(request);
+    this.artAssetId = artAssetId;
+    this.art.texture = artAssetId
+      ? (this.assetManager?.getTexture?.(artAssetId) ?? Texture.EMPTY)
+      : Texture.EMPTY;
+    this.art.visible = this.showArtwork && Boolean(artAssetId);
+    this.art.renderable = this.art.visible;
+    this.artMask.visible = this.art.visible;
+    this.artMask.renderable = this.art.visible;
     const values = [
       toDisplayCase(request.difficulty),
       toDisplayCase(request.statLabel),
@@ -1605,7 +1788,14 @@ export class GuildQuestDetail {
       capitalizeGuildText(request.eventLabel),
     ];
     this.rows.forEach((row, index) => {
-      row.setValue(values[index]);
+      row.setValue(values[index], {
+        colorKey:
+          index === 0
+            ? (GUILD_DIFFICULTY_COLOR_KEYS[
+                String(request.difficulty ?? '').toLowerCase()
+              ] ?? 'text')
+            : 'text',
+      });
       row.root.visible = index < 4 || Boolean(values[index]);
     });
   }
@@ -1613,21 +1803,31 @@ export class GuildQuestDetail {
   setSize(width, height) {
     this.width = width;
     this.height = height;
-    this.title.position.set(0, 0);
+    this.art.position.set(0, 0);
+    this.art.width = width;
+    this.art.height = GUILD_QUEST_ART_HEIGHT;
+    this.artMask
+      .clear()
+      .roundRect(0, 0, width, GUILD_QUEST_ART_HEIGHT, GUILD_QUEST_ART_RADIUS)
+      .fill('#ffffff');
+    const textTop = this.art.visible
+      ? GUILD_QUEST_ART_HEIGHT + GUILD_QUEST_ART_GAP
+      : 0;
+    this.title.position.set(0, textTop);
     this.title.setWrapWidth(Math.max(0, width - 52));
-    this.page.position.set(width, 2);
-    const loreY = this.title.visible ? 28 : 0;
+    this.page.position.set(width, textTop + 2);
+    const loreY = textTop + (this.title.visible ? 24 : 0);
     this.lore.position.set(0, loreY);
     this.lore.setWrapWidth(width);
     let y = Math.max(
-      this.title.visible ? 72 : 44,
+      textTop + (this.title.visible ? 54 : 30),
       loreY + 6 + this.lore.measuredHeight,
     );
     for (const row of this.rows) {
       if (!row.root.visible) {
         continue;
       }
-      const rowHeight = row.labelText === 'Reward' ? 28 : 22;
+      const rowHeight = row.reward ? GUILD_QUEST_REWARD_ROW_HEIGHT : 22;
       row.setBounds(0, y, width, rowHeight);
       y += rowHeight;
     }
@@ -1651,11 +1851,56 @@ export class GuildQuestDetail {
   }
 }
 
+function resolveGuildQuestArtAssetId(request = {}) {
+  const explicitAssetId = String(request.artAssetId ?? '').trim();
+  if (explicitAssetId) {
+    return explicitAssetId;
+  }
+
+  const requestIdentity = [
+    request.title,
+    ...(Array.isArray(request.tags) ? request.tags : []),
+  ]
+    .filter(Boolean)
+    .join(' ')
+    .toLowerCase();
+  const requestContext = String(request.lore ?? '').toLowerCase();
+  const findMatchingRule = (value) =>
+    GUILD_QUEST_ART_RULES.find(({ terms }) =>
+      terms.some((term) => value.includes(term)),
+    );
+  const matchingRule =
+    findMatchingRule(requestIdentity) ?? findMatchingRule(requestContext);
+  if (matchingRule) {
+    return matchingRule.assetId;
+  }
+
+  const stableKey = String(request.id ?? request.title ?? 'guild-request');
+  let hash = 0;
+  for (let index = 0; index < stableKey.length; index += 1) {
+    hash = (hash * 31 + stableKey.charCodeAt(index)) >>> 0;
+  }
+  return GUILD_QUEST_ART_ASSET_IDS[hash % GUILD_QUEST_ART_ASSET_IDS.length];
+}
+
 export class GuildQuestDetailLine {
-  constructor({ label, valueResourceKey = null }) {
+  constructor({ assetManager = null, label, reward = false }) {
     this.root = new Container();
     this.labelText = label;
-    this.valueResourceKey = valueResourceKey;
+    this.assetManager = assetManager;
+    this.reward = reward;
+    this.valueColorKey = 'text';
+    this.rewardValues = [];
+    this.background = reward
+      ? new PixiNineSliceFrame({
+          texture:
+            assetManager?.getTexture?.(PIXI_ROOT_RUN_ASSETS.settingsRow) ??
+            Texture.EMPTY,
+          sourceInsets: PIXI_ROOT_RUN_GEOMETRY.settings.rowSourceInsets,
+          borderInsets: PIXI_ROOT_RUN_GEOMETRY.settings.rowBorderInsets,
+          label: `guild:questDetail:${label}:background`,
+        })
+      : null;
     this.label = new PixiTextLabel({
       text: label,
       fontSize: PIXI_UI_GEOMETRY.bodyFontSize,
@@ -1668,41 +1913,134 @@ export class GuildQuestDetailLine {
       wordWrap: true,
       label: `guild:questDetail:${label}:value`,
     });
-    this.separator = new Graphics();
+    this.rewardBadges = reward
+      ? Object.entries(GUILD_QUEST_REWARD_ASSETS).map(
+          ([resourceKey, assetId]) => {
+            const root = new Container({
+              label: `guild:questDetail:${label}:${resourceKey}`,
+            });
+            const icon = new Sprite({
+              texture: assetManager?.getTexture?.(assetId) ?? Texture.EMPTY,
+              anchor: 0.5,
+              roundPixels: true,
+              label: `${root.label}:icon`,
+            });
+            const amount = new PixiTextLabel({
+              fontSize: PIXI_UI_GEOMETRY.borderLabelFontSize,
+              fontWeight: 'bold',
+              anchor: { x: 0.5, y: 1 },
+              color: '#ffffff',
+              stroke: 'outlined',
+              label: `${root.label}:amount`,
+            });
+            root.addChild(icon, amount);
+            return { amount, icon, resourceKey, root };
+          },
+        )
+      : [];
     this.root.addChild(
-      this.separator,
+      ...(this.background ? [this.background] : []),
       this.label,
       this.value,
+      ...this.rewardBadges.map(({ root }) => root),
     );
   }
 
-  setValue(value) {
+  setValue(value, { colorKey = 'text' } = {}) {
+    this.valueColorKey = colorKey;
+    if (this.reward) {
+      this.rewardValues = parseGuildRewardValues(value);
+      this.rewardBadges.forEach((badge) => {
+        const rewardValue = this.rewardValues.find(
+          (entry) => entry.resourceKey === badge.resourceKey,
+        );
+        badge.amount.setText(rewardValue?.amount ?? '');
+        badge.root.visible = Boolean(rewardValue);
+        badge.root.renderable = badge.root.visible;
+      });
+      this.value.setText('');
+      return;
+    }
     this.value.setText(capitalizeGuildText(value));
+    if (this.theme) {
+      this.value.setColor(resolveThemeColor(this.valueColorKey));
+    }
   }
 
-  setBounds(x, y, width) {
+  setBounds(x, y, width, height = 22) {
     this.root.position.set(x, y);
-    this.separator
-      .clear()
-      .moveTo(0, 0)
-      .lineTo(width, 0)
-      .stroke({ color: '#483726', alpha: 0.22, width: 1 });
+    if (this.reward) {
+      this.background.position.set(0, 0);
+      this.background.setSize(
+        width,
+        height,
+        PIXI_ROOT_RUN_GEOMETRY.settings.rowBorderInsets,
+      );
+      this.label.position.set(10, 17);
+      const visibleBadges = this.rewardBadges.filter(
+        ({ root }) => root.visible,
+      );
+      const badgesWidth =
+        visibleBadges.length * GUILD_QUEST_REWARD_ICON_SIZE +
+        Math.max(0, visibleBadges.length - 1) * GUILD_QUEST_REWARD_ICON_GAP;
+      const badgesLeft = width - 10 - badgesWidth;
+      visibleBadges.forEach((badge, index) => {
+        const iconGeometry =
+          GUILD_QUEST_REWARD_ICON_GEOMETRY[badge.resourceKey] ??
+          GUILD_QUEST_REWARD_ICON_GEOMETRY.coin;
+        badge.root.position.set(
+          badgesLeft +
+            GUILD_QUEST_REWARD_ICON_SIZE / 2 +
+            index *
+              (GUILD_QUEST_REWARD_ICON_SIZE + GUILD_QUEST_REWARD_ICON_GAP),
+          0,
+        );
+        badge.icon.position.set(0, height / 2 + iconGeometry.y);
+        badge.icon.width = iconGeometry.size;
+        badge.icon.height = iconGeometry.size;
+        badge.amount.position.set(
+          0,
+          height / 2 + GUILD_QUEST_REWARD_ICON_SIZE / 2 - 1,
+        );
+      });
+      return;
+    }
     this.label.position.set(0, 4);
     this.value.position.set(width, 3);
     this.value.setWrapWidth(Math.max(0, width - 92));
   }
 
   applyTheme(theme) {
+    this.theme = theme;
     this.label.applyTheme(theme);
     this.value.applyTheme(theme);
-    this.value.setColor(
-      resolveThemeColor(this.valueResourceKey ?? 'text'),
-    );
+    this.value.setColor(resolveThemeColor(this.valueColorKey));
+    for (const badge of this.rewardBadges) {
+      badge.amount.applyTheme(theme);
+      badge.amount.setColor('#ffffff');
+    }
   }
 
   destroy() {
     this.root.destroy({ children: true });
   }
+}
+
+function parseGuildRewardValues(value) {
+  const rewards = [];
+  const pattern = /([\d,.]+(?:\s*-\s*[\d,.]+)?)\s+(coin|seeds?|herbs?)/gi;
+  for (const match of String(value ?? '').matchAll(pattern)) {
+    const word = match[2].toLowerCase();
+    rewards.push({
+      amount: match[1].replace(/\s+/g, ''),
+      resourceKey: word.startsWith('seed')
+        ? 'seed'
+        : word.startsWith('herb')
+          ? 'herb'
+          : 'coin',
+    });
+  }
+  return rewards;
 }
 
 function getDialogSize(dialogId, sourceHeight = PIXI_UI_GEOMETRY.sourceHeight) {
@@ -1732,10 +2070,7 @@ function getDialogSize(dialogId, sourceHeight = PIXI_UI_GEOMETRY.sourceHeight) {
 
 function resolveThemeColor(token) {
   return (theme) =>
-    theme?.[token] ??
-    theme?.resourceColors?.[token] ??
-    token ??
-    theme?.text;
+    theme?.[token] ?? theme?.resourceColors?.[token] ?? token ?? theme?.text;
 }
 
 function getDialogTitle(dialogId) {
@@ -1764,10 +2099,7 @@ function fitSpriteInside(sprite, box) {
   const textureBounds = sprite.texture?.orig ?? sprite.texture?.frame;
   const textureWidth = Math.max(1, Number(textureBounds?.width) || 1);
   const textureHeight = Math.max(1, Number(textureBounds?.height) || 1);
-  const scale = Math.min(
-    box.width / textureWidth,
-    box.height / textureHeight,
-  );
+  const scale = Math.min(box.width / textureWidth, box.height / textureHeight);
   sprite.width = textureWidth * scale;
   sprite.height = textureHeight * scale;
   sprite.position.set(
@@ -1800,22 +2132,17 @@ function deriveCardRows(card, tabId) {
       : [{ id: 'empty', text: 'No History', paragraph: true }];
   }
   return [
-    {
-      id: 'xp',
-      label: 'XP',
-      value: `${card.xp ?? 0}/${card.nextLevelXp ?? '?'}`,
-    },
-    {
-      id: 'personality',
-      label: 'Personality',
-      value: card.personalityLabel ?? '',
-    },
     ...Object.entries(card.stats ?? {}).map(([key, value]) => ({
       id: `stat:${key}`,
       label: capitalizeGuildText(key),
       value,
     })),
   ];
+}
+
+function isCardSummaryRow(row = {}) {
+  const id = String(row.id ?? row.key ?? '').toLowerCase();
+  return id === 'xp' || id === 'personality';
 }
 
 function resolveCharacterTexture(assetManager, model = {}) {
@@ -1839,10 +2166,7 @@ function getDialogCenterY(sourceHeight) {
     PIXI_UI_GEOMETRY.roomChatHeight +
     PIXI_UI_GEOMETRY.roomChatTitleOverhang +
     PIXI_UI_GEOMETRY.roomChatGap;
-  return (
-    PIXI_UI_GEOMETRY.roomContentTop +
-    (sourceHeight - chatClearance)
-  ) / 2;
+  return (PIXI_UI_GEOMETRY.roomContentTop + (sourceHeight - chatClearance)) / 2;
 }
 
 function orderChildren(container, widgets) {
@@ -1856,8 +2180,7 @@ function layoutButtons(buttons, x, y, width, height, gap) {
   if (buttons.length === 0) {
     return;
   }
-  const buttonWidth =
-    (width - gap * (buttons.length - 1)) / buttons.length;
+  const buttonWidth = (width - gap * (buttons.length - 1)) / buttons.length;
   let cursorX = x;
   for (const button of buttons) {
     if (button?.root && typeof button.setBounds === 'function') {
@@ -1871,9 +2194,8 @@ function layoutButtons(buttons, x, y, width, height, gap) {
 }
 
 function toDisplayCase(value) {
-  return String(value ?? '').replace(
-    /\b[a-z]/g,
-    (letter) => letter.toUpperCase(),
+  return String(value ?? '').replace(/\b[a-z]/g, (letter) =>
+    letter.toUpperCase(),
   );
 }
 

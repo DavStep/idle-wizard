@@ -9,6 +9,7 @@ import {
 
 import { formatRemainingTime } from '../../../../pages/shared/timerDisplay.js';
 import { getPotionIconFrameName } from '../../../../assets/items/potions/potionIcons.js';
+import { getHerbIconFrameName } from '../../../../assets/items/herbs/herbIcons.js';
 import { PixiCostButton } from '../../primitives/PixiCostButton.js';
 import { PixiBaseButton } from '../../primitives/PixiBaseButton.js';
 import { PixiNineSliceFrame } from '../../primitives/PixiNineSliceFrame.js';
@@ -928,22 +929,33 @@ export class ResearchBoxWidget {
   bind(box) {
     this.unregisterVisibilityTarget();
     this.box = box;
+    this.hasCompletedResearch = getOrderedResearches(box).some(
+      (research) => research.completed === true,
+    );
     this.titlePlaque.bind(box.label ?? '', this.page.selectedTabId);
     this.visibilityTargetId =
       `research.completed.${this.page.selectedTabId}.${box.id}`;
     this.visibilityButton
-      .setEnabled(true)
-      .setAction(() => this.page.toggleCompletedResearches(box.id));
-    this.page.registerSemanticTarget({
-      semanticId: this.visibilityTargetId,
-      displayObject: this.visibilityButton,
-      state: () => ({
-        enabled: true,
-        interactive: this.visibilityButton.eventMode !== 'none',
-        pressed: this.page.isShowingCompletedResearches(box.id),
-      }),
-      activate: () => this.visibilityButton.activate(),
-    });
+      .setEnabled(this.hasCompletedResearch)
+      .setAction(
+        this.hasCompletedResearch
+          ? () => this.page.toggleCompletedResearches(box.id)
+          : null,
+      );
+    if (this.hasCompletedResearch) {
+      this.page.registerSemanticTarget({
+        semanticId: this.visibilityTargetId,
+        displayObject: this.visibilityButton,
+        state: () => ({
+          enabled: true,
+          interactive: this.visibilityButton.eventMode !== 'none',
+          pressed: this.page.isShowingCompletedResearches(box.id),
+        }),
+        activate: () => this.visibilityButton.activate(),
+      });
+    } else {
+      this.visibilityTargetId = null;
+    }
     this.syncVisibilityToggle();
     this.applyTheme(this.page.theme);
   }
@@ -1002,9 +1014,11 @@ export class ResearchBoxWidget {
     this.rowsLayer.removeChildren();
     this.rowWidgets = [];
     this.box = null;
+    this.hasCompletedResearch = false;
     this.titlePlaque.bind('', 'regular');
     this.visibilityButton.setAction(null).setEnabled(false);
     this.preferredHeight = RESEARCH_PIXI_GEOMETRY.categoryTitleHeight;
+    this.syncVisibilityToggle();
   }
 
   destroy() {
@@ -1016,6 +1030,8 @@ export class ResearchBoxWidget {
     const showing = this.box
       ? this.page.isShowingCompletedResearches(this.box.id)
       : false;
+    this.visibilityButton.visible = this.hasCompletedResearch === true;
+    this.visibilityButton.renderable = this.hasCompletedResearch === true;
     this.visibilityIcon.alpha = showing ? 1 : 0.45;
     this.visibilityButton.alpha = showing ? 1 : 0.72;
   }
@@ -2111,12 +2127,15 @@ export class ResearchRowWidget {
       return;
     }
 
-    this.art.texture =
-      itemKind === 'potion' && itemKey
-        ? this.assetManager?.getAtlasTexture?.(
-            getPotionIconFrameName(itemKey),
-          ) ?? Texture.EMPTY
-        : this.resolveTexture(research.artAssetId ?? research.artKey);
+    const itemFrameName =
+      itemKind === 'herb' && itemKey
+        ? getHerbIconFrameName(itemKey)
+        : itemKind === 'potion' && itemKey
+          ? getPotionIconFrameName(itemKey)
+          : null;
+    this.art.texture = itemFrameName
+      ? this.assetManager?.getAtlasTexture?.(itemFrameName) ?? Texture.EMPTY
+      : this.resolveTexture(research.artAssetId ?? research.artKey);
     this.art.visible = true;
     this.art.renderable = true;
   }

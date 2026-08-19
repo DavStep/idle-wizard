@@ -207,6 +207,31 @@ describe('TaskBalanceManager', () => {
     ]);
   });
 
+  it('teaches the first timer masteries after onboarding', () => {
+    const taskBalanceManager = createManager();
+
+    expect([6, 7, 8].map((level) =>
+      taskBalanceManager.getLevelTasks(level).find((task) => task.type === 'research' &&
+        task.researchId?.startsWith('timer:')),
+    )).toMatchObject([
+      {
+        researchId: 'timer:herbGrowth:sageHerb:1',
+        itemKey: 'sageHerb',
+        requirementLabel: 'Research Sage Growing Speed I',
+      },
+      {
+        researchId: 'timer:herbGrowth:mintHerb:1',
+        itemKey: 'mintHerb',
+        requirementLabel: 'Research Mint Growing Speed I',
+      },
+      {
+        researchId: 'timer:potionBrewing:manaTonic:1',
+        itemKey: 'manaTonic',
+        requirementLabel: 'Research Mana Tonic Brewing Speed I',
+      },
+    ]);
+  });
+
   it('extends the richer requirement curve to level 100', () => {
     const taskBalanceManager = createManager();
 

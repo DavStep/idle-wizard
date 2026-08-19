@@ -937,22 +937,20 @@ describe("GardenPixiPage", () => {
     harness.page.bind(model);
     const plot = harness.page.plots.get("plot-1");
     const plotChildren = plot.frame.children.length;
+    const restingSeedPackY = harness.page.actionBar.seedPack.y;
+    const restingSeedItemY = harness.page.actionBar.seedItem.y;
     now = 300;
     expect(plot.activate()).toBe(true);
     expect(plot.receiveStartedAt).toBe(300);
-    expect(harness.page.actionBar.seedUsedStartedAt).toBe(300);
 
     now = 300 + 220 * 0.5;
     harness.page.tick(now);
-    expect(harness.page.actionBar.seedIconDropY).toBeCloseTo(6);
-    expect(harness.page.actionBar.seedPack.y).toBeCloseTo(18);
-    expect(harness.page.actionBar.seedItem.y).toBeCloseTo(18);
-    expect(harness.page.actionBar.selectionPanel.root.scale.x).toBeCloseTo(
-      1.012,
-    );
-    expect(harness.page.actionBar.selectionPanel.root.scale.y).toBeCloseTo(
-      0.97,
-    );
+    expect(harness.page.actionBar.seedPack.y).toBe(restingSeedPackY);
+    expect(harness.page.actionBar.seedItem.y).toBe(restingSeedItemY);
+    expect(harness.page.actionBar.selectionPanel.root.scale).toMatchObject({
+      x: 1,
+      y: 1,
+    });
 
     now = 300 + 240 * 0.52;
     harness.page.tick(now);
@@ -963,8 +961,6 @@ describe("GardenPixiPage", () => {
     harness.page.tick(now);
     expect(plot.receiveStartedAt).toBeNull();
     expect(plot.frame.scale).toMatchObject({ x: 1, y: 1 });
-    expect(harness.page.actionBar.seedUsedStartedAt).toBeNull();
-    expect(harness.page.actionBar.seedIconDropY).toBe(0);
     expect(harness.page.actionBar.selectionPanel.root.scale).toMatchObject({
       x: 1,
       y: 1,
@@ -1062,25 +1058,24 @@ describe("GardenPixiPage", () => {
     harness.dispose();
   });
 
-  it("animates the selected seed indicator only after successful seed use", () => {
-    let now = 40;
+  it("leaves the selected seed indicator still while shared transients own seed drops", () => {
     const plantAll = vi
       .fn()
       .mockReturnValueOnce({ ok: false, reason: "not_enough_seed" })
       .mockReturnValueOnce({ ok: true, planted: 2 });
-    const harness = createHarness({ timeSource: () => now });
+    const harness = createHarness();
     harness.page.bind(createGardenViewModel({ plantAll }));
 
     expect(harness.page.actionBar.plantButton.activate()).toMatchObject({
       ok: false,
     });
-    expect(harness.page.actionBar.seedUsedStartedAt).toBeNull();
-
-    now = 80;
     expect(harness.page.actionBar.plantButton.activate()).toMatchObject({
       ok: true,
     });
-    expect(harness.page.actionBar.seedUsedStartedAt).toBe(80);
+    expect(harness.page.actionBar.selectionPanel.root.scale).toMatchObject({
+      x: 1,
+      y: 1,
+    });
 
     harness.page.destroy();
     harness.dispose();
@@ -1099,8 +1094,6 @@ describe("GardenPixiPage", () => {
     expect(harness.page.plots.get("plot-1").activate()).toMatchObject({
       ok: true,
     });
-    expect(harness.page.actionBar.seedUsedStartedAt).toBeNull();
-    expect(harness.page.actionBar.seedIconDropY).toBe(0);
     expect(harness.page.actionBar.selectionPanel.root.scale).toMatchObject({
       x: 1,
       y: 1,
@@ -1110,7 +1103,7 @@ describe("GardenPixiPage", () => {
     harness.dispose();
   });
 
-  it("runs selected seed use feedback after a successful swap confirmation", () => {
+  it("confirms a successful seed swap without animating the persistent selector", () => {
     let now = 120;
     const confirmSwap = vi.fn(() => ({ ok: true }));
     const harness = createHarness({ timeSource: () => now });
@@ -1128,7 +1121,10 @@ describe("GardenPixiPage", () => {
       tileNumber: 1,
       seedTypeId: 2,
     });
-    expect(harness.page.actionBar.seedUsedStartedAt).toBe(120);
+    expect(harness.page.actionBar.selectionPanel.root.scale).toMatchObject({
+      x: 1,
+      y: 1,
+    });
 
     harness.page.destroy();
     harness.dispose();
@@ -1148,14 +1144,12 @@ describe("GardenPixiPage", () => {
     harness.page.activate();
     const plot = harness.page.plots.get("plot-1");
     plot.startSeedReceive(0);
-    harness.page.actionBar.startSeedUsedMotion(0);
     now = 60;
     harness.page.tick(now);
     harness.page.deactivate();
 
     expect(ticker.remove).toHaveBeenCalledWith(harness.page.tickHandler);
     expect(plot.receiveStartedAt).toBeNull();
-    expect(harness.page.actionBar.seedUsedStartedAt).toBeNull();
     expect(harness.page.actionBar.selectionPanel.root.scale).toMatchObject({
       x: 1,
       y: 1,

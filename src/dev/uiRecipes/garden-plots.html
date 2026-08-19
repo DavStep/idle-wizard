@@ -67,8 +67,6 @@
       const params = new URLSearchParams(window.location.search);
       const overflow = params.get('overflow') === '1';
       const growing = params.get('growing') === '1';
-      const seedUseMotion = params.get('motion') === 'seed-use';
-      const seedUseMidFrame = seedUseMotion && params.get('frame') === 'mid';
       const bulkActions = params.get('bulk') || 'all';
       const progressBar = params.get('progress') || 'regular';
       const theme = params.get('theme') || undefined;
@@ -128,21 +126,16 @@
           growingPlots: growing ? String(emptyPlotCount) : '0',
           progressBar,
           bulkActions,
-          motion: seedUseMotion ? 'seed-use' : 'still',
+          motion: 'shared-transient',
         },
       );
 
-      let recipeNow = 0;
       const page = new GardenPixiPage({
         assetManager,
         inputRouter,
         ticker: applicationManager.app.ticker,
         theme: createPixiThemeSnapshot({ progressBar, theme }),
-        timeSource: seedUseMidFrame
-          ? () => recipeNow
-          : seedUseMotion
-            ? () => performance.now()
-            : () => 0,
+        timeSource: () => 0,
       });
       page.layout(applicationManager.projection);
       page.bind({
@@ -157,7 +150,7 @@
               id: 'nettle-seed',
               itemTypeId: 3,
               key: 'nettleSeed',
-              label: 'nettle',
+              label: 'Nettle',
               quantity: 75,
               icon: {
                 kind: 'seed',
@@ -212,11 +205,6 @@
         },
       });
       page.activate();
-      if (seedUseMidFrame) {
-        page.actionBar.startSeedUsedMotion(0);
-        recipeNow = 110;
-        page.tick(recipeNow);
-      }
       applicationManager.layers.pageUi.addChild(page.root);
       window.__gardenPlotsRecipe = page;
     </script>

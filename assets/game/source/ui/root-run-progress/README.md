@@ -12,4 +12,4 @@ These compact PNGs are copied from Root Run's reusable progress-bar art:
   alpha as the shared fill mask so Idle Wizard can retain its existing fill
   colors and gradients.
 
-The retained Pixi renderer rotates the same capsule skin for vertical scrollbars. The assets remain direct source textures rather than game-atlas frames so their nine-slice source geometry is never trimmed.
+These assets are only for horizontal gameplay progress and slider rails. Scrollable views use the separate yellow right-edge station scrollbar, drawn procedurally in Pixi so progress rails can never become scroll indicators again. The assets remain direct source textures rather than game-atlas frames so their nine-slice source geometry is never trimmed.

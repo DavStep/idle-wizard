@@ -62,6 +62,8 @@ export const PIXI_ADAPTIVE_DIALOG_GEOMETRY = Object.freeze({
 });
 
 const TITLE_TEXT_PADDING_X = 89 / 3;
+const TITLE_TEXT_LINE_HEIGHT = 73 / 3;
+const TITLE_TEXT_MIN_SIZE = 8;
 const TITLE_MAX_INSET_X = 8;
 const TITLE_CLOSE_GAP = 4;
 const EDGE_HEADER_SHELL_GAP = 4;
@@ -173,7 +175,7 @@ export class PixiDialogFrame extends Container {
       text: title,
       fontSize: PIXI_ROOT_RUN_GEOMETRY.dialog.titleTextSize,
       fontWeight: 'normal',
-      lineHeight: 73 / 3,
+      lineHeight: TITLE_TEXT_LINE_HEIGHT,
       color: PIXI_DIALOG_PALETTE.titleText,
       stroke: {
         color: PIXI_DIALOG_PALETTE.titleStroke,
@@ -505,6 +507,9 @@ export class PixiDialogFrame extends Container {
           TITLE_CLOSE_GAP
         : this.coreWidth - TITLE_MAX_INSET_X * 2,
     );
+    this.fitTitleLabel(
+      Math.max(0, maxWidth - TITLE_TEXT_PADDING_X * 2),
+    );
     const desiredWidth = Math.max(
       geometry.titleMinWidth,
       this.titleLabel.measuredWidth + TITLE_TEXT_PADDING_X * 2,
@@ -529,6 +534,25 @@ export class PixiDialogFrame extends Container {
       titleY + geometry.titleHeight / 2,
     );
     this.syncHitArea();
+  }
+
+  fitTitleLabel(maxTextWidth) {
+    const baseSize = PIXI_ROOT_RUN_GEOMETRY.dialog.titleTextSize;
+    this.titleLabel
+      .setFontSize(baseSize)
+      .setLineHeight(TITLE_TEXT_LINE_HEIGHT);
+    const measuredWidth = this.titleLabel.measuredWidth;
+    if (maxTextWidth <= 0 || measuredWidth <= maxTextWidth) {
+      return;
+    }
+    const fittedSize = Math.max(
+      TITLE_TEXT_MIN_SIZE,
+      baseSize * (maxTextWidth / measuredWidth),
+    );
+    const fittedScale = fittedSize / baseSize;
+    this.titleLabel
+      .setFontSize(fittedSize)
+      .setLineHeight(TITLE_TEXT_LINE_HEIGHT * fittedScale);
   }
 
   layoutCloseControl() {

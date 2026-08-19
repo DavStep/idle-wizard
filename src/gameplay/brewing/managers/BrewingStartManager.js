@@ -345,14 +345,7 @@ export class BrewingStartManager {
       : this.itemsFacade.getItemDefinitionByKey(
           this.brewingBalanceManager.getWastedPotionKey(),
         );
-    const baseDurationMs =
-      recipe?.brewDurationMs ?? this.brewingBalanceManager.getWastedBrewDurationMs();
-    const durationMs =
-      this.researchFacade?.getReducedCauldronBrewingDurationMs?.(
-        safeCauldronIndex + 1,
-        baseDurationMs,
-      ) ??
-      baseDurationMs;
+    const durationMs = this.getBrewDurationMs(safeCauldronIndex + 1, recipe);
 
     this.brewingProcessEntityManager.startBrew({
       cauldronIndex: safeCauldronIndex,
@@ -386,6 +379,23 @@ export class BrewingStartManager {
       quantity: yieldMultiplier,
       durationMs,
     };
+  }
+
+  getBrewDurationMs(cauldronNumber, recipe) {
+    const baseDurationMs =
+      recipe?.brewDurationMs ?? this.brewingBalanceManager.getWastedBrewDurationMs();
+    const potionDurationMs = recipe
+      ? this.researchFacade?.getReducedPotionBrewingDurationMs?.(
+          recipe.key,
+          baseDurationMs,
+        ) ?? baseDurationMs
+      : baseDurationMs;
+    return (
+      this.researchFacade?.getReducedCauldronBrewingDurationMs?.(
+        cauldronNumber,
+        potionDurationMs,
+      ) ?? potionDurationMs
+    );
   }
 
   prepareRecipeForAutoBrew(recipeKey, cauldronIndex = 0, brewQuantity = null) {

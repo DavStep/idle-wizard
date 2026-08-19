@@ -116,9 +116,10 @@ state that verifies Garden timer rails keep their green role color even when
 the player-wide progress style is gradient. The default recipe shows both
 researched bulk actions with a selected Nettle seed; use `?bulk=plant` for the
 level-5 two-action composition and `?bulk=locked` for the pre-research
-Seeds-only composition. Add `?motion=seed-use`, then press `Plant All`, to
-exercise the selected-seed use feedback with a live clock and no persistence;
-add `&frame=mid` for its deterministic halfway visual-QA frame.
+Seeds-only composition. Successful planting uses the shared transient
+summon-seed toss at the affected plot, with one seed pack per consumed seed and
+a six-pack visual cap. The selected seed label stays still and uses Title Case;
+the selected seed itself is restored from the gameplay save after reopening.
 
 The cancel-progress confirmation uses the approved red danger title plaque,
 Title Case copy, a centered prompt, a yellow `Keep` action, and a red `Empty`

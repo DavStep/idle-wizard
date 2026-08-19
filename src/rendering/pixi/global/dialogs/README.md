@@ -22,7 +22,9 @@ Dialogs whose main body is a vertical scroll viewport use the shared adaptive
 height resolver. The authored `844px` logical surface keeps its exact baseline
 height; taller portrait surfaces add the available logical-height delta to the
 scroll viewport, while fixed-content dialogs and compact nested scroll regions
-keep their authored height.
+keep their authored height. These viewports use `RetainedScrollArea` and its
+overflow-only yellow right-edge station scrollbar. They never append a
+horizontal progress rail or bottom fade as a scroll cue.
 
 Register the suite before the Pixi runtime is initialized:
 
@@ -97,7 +99,7 @@ player
   actions.{openAlliance,openCosmetics}
 
 alliance
-  connected, loading, alliance, members[], ownAlliance
+  connected, loading, alliance, members[], ownAlliance, ownApplications[]
   actions.{activate,deactivate,openPlayer,joinAlliance,applyAlliance}
 
 announcement

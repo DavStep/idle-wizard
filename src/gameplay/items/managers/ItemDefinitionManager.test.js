@@ -22,7 +22,7 @@ describe('ItemDefinitionManager', () => {
       key: 'dragonpepperHerb',
       label: 'dragonpepper',
       kind: 'herb',
-      growthDurationMs: 210_000,
+      growthDurationMs: 388_500,
       baseSellPrice: 40_960,
       marketGrade: 3,
     });
@@ -31,7 +31,7 @@ describe('ItemDefinitionManager', () => {
       key: 'pearlrootHerb',
       label: 'pearlroot',
       kind: 'herb',
-      growthDurationMs: 520_000,
+      growthDurationMs: 962_000,
       baseSellPrice: 41_943_040,
       marketGrade: 5,
     });

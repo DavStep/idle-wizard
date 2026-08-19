@@ -1,8 +1,6 @@
 // @vitest-environment jsdom
 
-import {
-  createPixiAssetManagerFake,
-} from '../workshop/PixiPageTestHarness.js';
+import { createPixiAssetManagerFake } from '../workshop/PixiPageTestHarness.js';
 import { Container, Rectangle, Texture } from 'pixi.js';
 import { describe, expect, it, vi } from 'vitest';
 
@@ -17,14 +15,14 @@ import {
 } from '../../primitives/PixiDialogFrame.js';
 import { getPixiButtonSkin } from '../../primitives/PixiButtonStyle.js';
 import { PIXI_ROOT_RUN_GEOMETRY } from '../../theme/PixiThemeTokens.js';
+import { RETAINED_SCROLLBAR_GEOMETRY } from '../workshop/RetainedPageKit.js';
 import { GUILD_DIALOG_IDS } from './GuildDialogPixi.js';
-import { GuildPersonRow } from './GuildPageWidgets.js';
+import { GuildChronicleEntryRow, GuildPersonRow } from './GuildPageWidgets.js';
 import { GuildPixiPage } from './GuildPixiPage.js';
 
-globalThis.CanvasRenderingContext2D.prototype.createLinearGradient =
-  () => ({
-    addColorStop() {},
-  });
+globalThis.CanvasRenderingContext2D.prototype.createLinearGradient = () => ({
+  addColorStop() {},
+});
 globalThis.CanvasRenderingContext2D.prototype.fillRect = () => {};
 
 describe('GuildPixiPage', () => {
@@ -51,23 +49,19 @@ describe('GuildPixiPage', () => {
     );
 
     expect(harness.page.root).toBe(root);
-    expect(
-      harness.page.boardSection.cards.get('quest-1'),
-    ).toBe(quest);
-    expect(
-      harness.page.adventurersSection.people.get('adventurer-1'),
-    ).toBe(adventurer);
+    expect(harness.page.boardSection.cards.get('quest-1')).toBe(quest);
+    expect(harness.page.adventurersSection.people.get('adventurer-1')).toBe(
+      adventurer,
+    );
     expect(harness.page.getPoolStats().board.pool.allocated).toBe(
       before.board.pool.allocated,
     );
-    expect(
-      harness.page.getPoolStats().adventurers.pool.allocated,
-    ).toBe(before.adventurers.pool.allocated);
+    expect(harness.page.getPoolStats().adventurers.pool.allocated).toBe(
+      before.adventurers.pool.allocated,
+    );
     expect(quest.reward.text).toBe('Reward: 25 coin');
     expect(adventurer.statusLabel.text).toBe('Resting');
-    expect(harness.page.hallSection.titlePlaque.title.text).toBe(
-      'Guild Hall',
-    );
+    expect(harness.page.hallSection.titlePlaque.title.text).toBe('Guild Hall');
     expect(
       harness.page.hallSection.rows.getWidgets().map((row) => row.key),
     ).toEqual(['identity', 'adventurers', 'board', 'settings']);
@@ -79,7 +73,9 @@ describe('GuildPixiPage', () => {
       harness.page.hallSection.rows.getWidgets().map((row) => row.root.y),
     ).toEqual([0, 64, 128, 192]);
     expect(
-      harness.page.hallSection.rows.getWidgets().slice(0, 3)
+      harness.page.hallSection.rows
+        .getWidgets()
+        .slice(0, 3)
         .every((row) => row.paper.root.visible === false),
     ).toBe(true);
     const settingsRow = harness.page.hallSection.rows.get('settings');
@@ -90,9 +86,7 @@ describe('GuildPixiPage', () => {
     expect(harness.page.secretarySection.titlePlaque.title.text).toBe(
       'Secretary',
     );
-    expect(harness.page.secretarySection.titlePlaque.root.visible).toBe(
-      true,
-    );
+    expect(harness.page.secretarySection.titlePlaque.root.visible).toBe(true);
     expect(
       harness.page.secretarySection.root.y -
         (harness.page.hallSection.root.y +
@@ -111,9 +105,7 @@ describe('GuildPixiPage', () => {
     expect(harness.page.availableSection.titlePlaque.title.text).toBe(
       'Quest Requests',
     );
-    expect(harness.page.availableSection.titlePlaque.root.visible).toBe(
-      false,
-    );
+    expect(harness.page.availableSection.titlePlaque.root.visible).toBe(false);
     expect(
       harness.page.availableSection.rows.getWidgets().map((row) => row.key),
     ).toEqual(['review']);
@@ -127,9 +119,7 @@ describe('GuildPixiPage', () => {
       'Adventurers',
     );
     expect(harness.page.adventurersSection.countLabel.text).toBe('1/2');
-    expect(harness.page.applicantsSection.titlePlaque.root.visible).toBe(
-      true,
-    );
+    expect(harness.page.applicantsSection.titlePlaque.root.visible).toBe(true);
     expect(harness.page.applicantsSection.titlePlaque.title.text).toBe(
       'Applicants',
     );
@@ -137,12 +127,9 @@ describe('GuildPixiPage', () => {
     expect(
       harness.page.applicantsSection.root.y -
         harness.page.adventurersSection.root.y,
-    ).toBe(
-      harness.page.adventurersSection.getPreferredHeight() + 18,
-    );
+    ).toBe(harness.page.adventurersSection.getPreferredHeight() + 18);
     expect(
-      harness.page.applicantsSection.people.get('applicant-1').statusLabel
-        .text,
+      harness.page.applicantsSection.people.get('applicant-1').statusLabel.text,
     ).toBe('Applicant · Next 5h');
     const rosterPerson =
       harness.page.adventurersSection.people.get('adventurer-1');
@@ -215,9 +202,9 @@ describe('GuildPixiPage', () => {
 
     expect(harness.page.tabLayer.visible).toBe(true);
     expect(harness.page.tabLayer.renderable).toBe(true);
-    expect(harness.page.tabScrolls.get('board').visible).toBe(true);
-    expect(harness.page.tabScrolls.get('hall').visible).toBe(false);
-    expect(harness.page.tabScrolls.get('board').viewportHeight).toBe(
+    expect(harness.page.tabScrolls.get('board').root.visible).toBe(true);
+    expect(harness.page.tabScrolls.get('hall').root.visible).toBe(false);
+    expect(harness.page.tabScrolls.get('board').height).toBe(
       844 - 92 - 104 - 6 - 28 - 6,
     );
 
@@ -236,23 +223,16 @@ describe('GuildPixiPage', () => {
 
     const retainedDialogs = new Map();
     for (const dialogId of Object.values(GUILD_DIALOG_IDS)) {
-      harness.page.openDialog(
-        dialogId,
-        createGuildDialogPayload(dialogId),
-      );
+      harness.page.openDialog(dialogId, createGuildDialogPayload(dialogId));
       retainedDialogs.set(dialogId, harness.dialogs.get(dialogId));
       expect(harness.dialogs.get(dialogId).panel).toBeInstanceOf(
         PixiDialogFrame,
       );
       if (dialogId === GUILD_DIALOG_IDS.CHARTER) {
-        expect(harness.dialogs.get(dialogId).panel.outerWidth).toBe(
-          324,
-        );
+        expect(harness.dialogs.get(dialogId).panel.outerWidth).toBe(324);
       }
       if (dialogId === GUILD_DIALOG_IDS.SETTINGS) {
-        expect(harness.dialogs.get(dialogId).panel.outerWidth).toBe(
-          304,
-        );
+        expect(harness.dialogs.get(dialogId).panel.outerWidth).toBe(304);
       }
       if (dialogId === GUILD_DIALOG_IDS.REQUEST) {
         const dialog = harness.dialogs.get(dialogId);
@@ -265,40 +245,44 @@ describe('GuildPixiPage', () => {
         const dialog = harness.dialogs.get(dialogId);
         const [statsTab, lifeTab] = dialog.cardTabs;
         const shellBottom =
-          dialog.panel.coreHeight +
-          PIXI_ROOT_RUN_GEOMETRY.dialog.frameOutset;
+          dialog.panel.coreHeight + PIXI_ROOT_RUN_GEOMETRY.dialog.frameOutset;
         const paperBottom =
-          dialog.panel.paperFrame.y +
-          dialog.panel.paperFrame.frameHeight;
+          dialog.panel.paperFrame.y + dialog.panel.paperFrame.frameHeight;
 
-        expect(dialog.panel.outerHeight).toBe(364);
+        expect(dialog.panel.outerHeight).toBe(518);
         expect(dialog.cardTabsLayer.parent).toBe(dialog.panel);
         expect(dialog.cardTabsLayer.x).toBe(9);
-        expect(
-          shellBottom -
-            (dialog.cardTabsLayer.y + statsTab.height),
-        ).toBe(PIXI_DIALOG_FOOTER_TABS_GEOMETRY.bottomInset);
+        expect(shellBottom - (dialog.cardTabsLayer.y + statsTab.height)).toBe(
+          PIXI_DIALOG_FOOTER_TABS_GEOMETRY.bottomInset,
+        );
         expect(dialog.cardTabsLayer.y - paperBottom).toBe(
           PIXI_DIALOG_FOOTER_TABS_GEOMETRY.paperGap,
         );
-        expect(
-          lifeTab.root.x -
-            (statsTab.root.x + statsTab.width),
-        ).toBe(8);
+        expect(lifeTab.root.x - (statsTab.root.x + statsTab.width)).toBe(8);
         expect(dialog.cardName.text).toBe('Mira');
         expect(dialog.cardStatus.text).toBe('Idle');
+        expect(dialog.cardXp.text).toBe('14/40');
+        expect(dialog.cardPersonality.text).toBe('Loyal');
+        expect(dialog.detailRows.getWidgets().map((row) => row.key)).toEqual([
+          'stat:strength',
+        ]);
+        expect(dialog.cardDetailsBoard.frameWidth).toBe(
+          PIXI_ROOT_RUN_GEOMETRY.dialog.innerBoardWidth,
+        );
+        expect(dialog.detailScroll.root.x - dialog.cardDetailsBoard.x).toBe(4);
+        expect(dialog.detailScroll.root.y - dialog.cardDetailsBoard.y).toBe(8);
         expect(dialog.cardAction.textLabel.text).toBe('Fire');
+        expect(dialog.cardAction.buttonWidth).toBeCloseTo(
+          456 * (PIXI_ROOT_RUN_GEOMETRY.dialog.innerBoardWidth / 925),
+          10,
+        );
+        expect(dialog.cardAction.buttonHeight).toBe(52);
       }
       harness.dialogs.close(dialogId);
     }
     for (const dialogId of Object.values(GUILD_DIALOG_IDS)) {
-      harness.page.openDialog(
-        dialogId,
-        createGuildDialogPayload(dialogId),
-      );
-      expect(harness.dialogs.get(dialogId)).toBe(
-        retainedDialogs.get(dialogId),
-      );
+      harness.page.openDialog(dialogId, createGuildDialogPayload(dialogId));
+      expect(harness.dialogs.get(dialogId)).toBe(retainedDialogs.get(dialogId));
       harness.dialogs.close(dialogId);
     }
     expect(harness.dialogs.getStats().constructed).toBe(
@@ -327,9 +311,40 @@ describe('GuildPixiPage', () => {
     card.layout({ sourceWidth: 390, sourceHeight: 944 });
     charter.layout({ sourceWidth: 390, sourceHeight: 944 });
 
-    expect(card.panel.coreHeight).toBe(464);
-    expect(card.detailScroll.viewportHeight).toBeGreaterThan(200);
+    expect(card.panel.coreHeight).toBe(618);
+    expect(card.detailScroll.height).toBeGreaterThan(200);
     expect(charter.panel.coreHeight).toBe(230);
+
+    harness.page.destroy();
+    harness.dispose();
+  });
+
+  it('keeps overflowing adventurer stats inside the cosmetics-style board scrollbar', () => {
+    const harness = createHarness();
+    harness.page.bind(createGuildViewModel());
+    harness.page.activate();
+    const payload = createGuildDialogPayload(GUILD_DIALOG_IDS.ADVENTURER);
+    payload.card.stats = Object.fromEntries(
+      Array.from({ length: 14 }, (_, index) => [
+        `stat ${index + 1}`,
+        index + 1,
+      ]),
+    );
+
+    harness.page.openDialog(GUILD_DIALOG_IDS.ADVENTURER, payload);
+    const dialog = harness.dialogs.get(GUILD_DIALOG_IDS.ADVENTURER);
+
+    expect(dialog.detailScroll.contentHeight).toBeGreaterThan(
+      dialog.detailScroll.height,
+    );
+    expect(dialog.detailScroll.scrollbarTrack.visible).toBe(true);
+    expect(dialog.detailScroll.scrollbarThumb.visible).toBe(true);
+    expect(
+      dialog.detailScroll.root.x +
+        dialog.detailScroll.width +
+        RETAINED_SCROLLBAR_GEOMETRY.gap +
+        RETAINED_SCROLLBAR_GEOMETRY.width,
+    ).toBe(dialog.cardDetailsBoard.x + dialog.cardDetailsBoard.frameWidth - 2);
 
     harness.page.destroy();
     harness.dispose();
@@ -396,9 +411,7 @@ describe('GuildPixiPage', () => {
     assetManager.loaded = true;
     const getFallbackTexture = assetManager.getTexture.bind(assetManager);
     assetManager.getTexture = (id) =>
-      id.includes('/characters/')
-        ? portraitTexture
-        : getFallbackTexture(id);
+      id.includes('/characters/') ? portraitTexture : getFallbackTexture(id);
     const harness = createHarness({ assetManager });
     harness.page.bind(createGuildViewModel());
     harness.page.activate();
@@ -414,10 +427,10 @@ describe('GuildPixiPage', () => {
       87 / 108,
       5,
     );
-    expect(dialog.cardIcon.width).toBeLessThanOrEqual(72);
-    expect(dialog.cardIcon.height).toBeLessThanOrEqual(72);
-    expect(dialog.cardIcon.x).toBeGreaterThanOrEqual(0);
-    expect(dialog.cardIcon.y).toBeGreaterThanOrEqual(7);
+    expect(dialog.cardIcon.width).toBeLessThanOrEqual(108);
+    expect(dialog.cardIcon.height).toBeLessThanOrEqual(108);
+    expect(dialog.cardIcon.x).toBeGreaterThanOrEqual(-14);
+    expect(dialog.cardIcon.y).toBeGreaterThanOrEqual(0);
 
     harness.page.destroy();
     harness.dispose();
@@ -452,9 +465,7 @@ describe('GuildPixiPage', () => {
     expect(harness.page.secretarySection.button.actionTextLabel.text).toBe(
       'Upgrade',
     );
-    expect(harness.page.secretarySection.titlePlaque.root.visible).toBe(
-      true,
-    );
+    expect(harness.page.secretarySection.titlePlaque.root.visible).toBe(true);
     expect(harness.page.secretarySection.paper.root.frameHeight).toBe(116);
     expect(harness.page.secretarySection.icon.width).toBeGreaterThan(90);
     expect(harness.page.secretarySection.icon.height).toBeGreaterThan(80);
@@ -465,59 +476,44 @@ describe('GuildPixiPage', () => {
       harness.page.secretarySection.icon.texture.orig.width /
         harness.page.secretarySection.icon.texture.orig.height,
     );
-    expect(
-      harness.page.secretarySection.rows.map((row) => row.key.y),
-    ).toEqual([18, 47, 76]);
+    expect(harness.page.secretarySection.rows.map((row) => row.key.y)).toEqual([
+      18, 47, 76,
+    ]);
     expect(
       harness.page.secretarySection.button.rootRunFrame.compatibilityError,
     ).toBeNull();
 
-    expect(
-      harness.semanticRegistry.activate('guild.settings.open'),
-    ).toBe(true);
-    expect(
-      harness.dialogs.isOpen(GUILD_DIALOG_IDS.SETTINGS),
-    ).toBe(true);
+    expect(harness.semanticRegistry.activate('guild.settings.open')).toBe(true);
+    expect(harness.dialogs.isOpen(GUILD_DIALOG_IDS.SETTINGS)).toBe(true);
     harness.dialogs.close(GUILD_DIALOG_IDS.SETTINGS);
 
-    expect(
-      harness.semanticRegistry.activate('guild.request.quest-1'),
-    ).toBe(true);
-    expect(
-      harness.dialogs.isOpen(GUILD_DIALOG_IDS.REQUEST),
-    ).toBe(true);
+    expect(harness.semanticRegistry.activate('guild.request.quest-1')).toBe(
+      true,
+    );
+    expect(harness.dialogs.isOpen(GUILD_DIALOG_IDS.REQUEST)).toBe(true);
     harness.dialogs.close(GUILD_DIALOG_IDS.REQUEST);
 
-    expect(
-      harness.semanticRegistry.activate('guild.available.open'),
-    ).toBe(true);
-    expect(
-      harness.dialogs.isOpen(GUILD_DIALOG_IDS.REQUEST_STACK),
-    ).toBe(true);
+    expect(harness.semanticRegistry.activate('guild.available.open')).toBe(
+      true,
+    );
+    expect(harness.dialogs.isOpen(GUILD_DIALOG_IDS.REQUEST_STACK)).toBe(true);
     harness.dialogs.close(GUILD_DIALOG_IDS.REQUEST_STACK);
 
     expect(
-      harness.semanticRegistry.activate(
-        'guild.adventurer.adventurer-1',
-      ),
+      harness.semanticRegistry.activate('guild.adventurer.adventurer-1'),
     ).toBe(true);
-    expect(
-      harness.dialogs.isOpen(GUILD_DIALOG_IDS.ADVENTURER),
-    ).toBe(true);
+    expect(harness.dialogs.isOpen(GUILD_DIALOG_IDS.ADVENTURER)).toBe(true);
 
-    expect(
-      harness.page.tabScrolls.get('hall').position,
-    ).toMatchObject({ x: 0, y: 104 });
-    expect(
-      harness.page.tabScrolls.get('hall').viewportWidth,
-    ).toBe(374);
+    expect(harness.page.tabScrolls.get('hall').root.position).toMatchObject({
+      x: 0,
+      y: 104,
+    });
+    expect(harness.page.tabScrolls.get('hall').width).toBe(374);
     expect(harness.page.tabLayer.position).toMatchObject({
       x: 16,
       y: 657,
     });
-    expect(
-      harness.page.tabScrolls.get('hall').viewportHeight,
-    ).toBeCloseTo(587, 10);
+    expect(harness.page.tabScrolls.get('hall').height).toBeCloseTo(587, 10);
 
     harness.page.destroy();
     harness.dispose();
@@ -535,20 +531,15 @@ describe('GuildPixiPage', () => {
     harness.page.bind(suppressed);
     harness.page.activate();
 
-    const person =
-      harness.page.adventurersSection.people.get('adventurer-1');
+    const person = harness.page.adventurersSection.people.get('adventurer-1');
     expect(person.notification.visible).toBe(false);
     expect(person.notification.renderable).toBe(false);
     expect(person.notificationBadge.sprite.width).toBe(12);
     expect(person.root.eventMode).toBe('static');
     expect(
-      harness.semanticRegistry.activate(
-        'guild.adventurer.adventurer-1',
-      ),
+      harness.semanticRegistry.activate('guild.adventurer.adventurer-1'),
     ).toBe(true);
-    expect(
-      harness.dialogs.isOpen(GUILD_DIALOG_IDS.ADVENTURER),
-    ).toBe(true);
+    expect(harness.dialogs.isOpen(GUILD_DIALOG_IDS.ADVENTURER)).toBe(true);
     harness.dialogs.close(GUILD_DIALOG_IDS.ADVENTURER);
 
     const visible = createGuildViewModel();
@@ -560,9 +551,9 @@ describe('GuildPixiPage', () => {
     };
     harness.page.bind(visible);
 
-    expect(
-      harness.page.adventurersSection.people.get('adventurer-1'),
-    ).toBe(person);
+    expect(harness.page.adventurersSection.people.get('adventurer-1')).toBe(
+      person,
+    );
     expect(person.notification.visible).toBe(true);
     expect(person.notification.renderable).toBe(true);
     expect(person.notificationBadge.sprite.width).toBe(12);
@@ -581,22 +572,93 @@ describe('GuildPixiPage', () => {
       GUILD_DIALOG_IDS.REQUEST_STACK,
       createGuildDialogPayload(GUILD_DIALOG_IDS.REQUEST_STACK),
     );
-    const requestStack = harness.dialogs.get(
-      GUILD_DIALOG_IDS.REQUEST_STACK,
-    );
-    expect(inputRouter.getTopModal()?.id).toBe(
-      GUILD_DIALOG_IDS.REQUEST_STACK,
-    );
+    const requestStack = harness.dialogs.get(GUILD_DIALOG_IDS.REQUEST_STACK);
+    expect(inputRouter.getTopModal()?.id).toBe(GUILD_DIALOG_IDS.REQUEST_STACK);
     expect(requestStack.panel).toBeInstanceOf(PixiDialogFrame);
     expect(requestStack.detail.title.text).toBe('Smuggler Tunnel');
     expect(requestStack.detail.lore.text).toBe(
-      'A narrow road under the hill.',
+      'Map the lantern-lit route beneath the fish market and return unseen.',
     );
     expect(requestStack.detail.rows[0].value.text).toBe('Easy');
+    expect(requestStack.detail.rows[0].value.textObject.style.fill).toBe(
+      '#4aa83f',
+    );
+    expect(requestStack.detail.art.visible).toBe(true);
+    expect(requestStack.detail.art.width).toBe(298);
+    expect(requestStack.detail.art.height).toBe(98);
+    expect(requestStack.detail.art.mask).toBe(requestStack.detail.artMask);
+    expect(requestStack.detail.artAssetId).toBe(
+      'source:assets/guild/quest-requests-mine.png',
+    );
+    const rewardRow = requestStack.detail.rows[2];
+    expect(rewardRow.label.text).toBe('Choose One Reward');
+    expect(rewardRow.background).toBeDefined();
+    expect(
+      rewardRow.rewardBadges
+        .filter(({ root }) => root.visible)
+        .map(({ resourceKey, amount }) => [resourceKey, amount.text]),
+    ).toEqual([
+      ['coin', '120-180'],
+      ['seed', '2-4'],
+      ['herb', '1-3'],
+    ]);
+    expect(
+      rewardRow.rewardBadges
+        .filter(({ root }) => root.visible)
+        .map(({ icon, resourceKey }) => [
+          resourceKey,
+          icon.width,
+          icon.height,
+          icon.y,
+        ]),
+    ).toEqual([
+      ['coin', 26, 26, 25],
+      ['seed', 29, 29, 25],
+      ['herb', 31, 31, 22],
+    ]);
+    expect(
+      rewardRow.rewardBadges
+        .filter(({ root }) => root.visible)
+        .map(({ amount }) => amount.y),
+    ).toEqual([38, 38, 38]);
+    expect(
+      requestStack.detail.rows
+        .filter(({ reward }) => !reward)
+        .every(({ separator }) => separator === undefined),
+    ).toBe(true);
     expect(requestStack.panel.titleLabel.text).toBe('Quest Requests');
     expect(requestStack.postButton.textLabel.text).toBe('Post Request');
     expect(requestStack.panel.paperFrame.visible).toBe(false);
-    expect(requestStack.pageFrame.frameHeight).toBe(326);
+    expect(requestStack.panel.contentInsets).toEqual({
+      top: 0,
+      right: 0,
+      bottom: 0,
+      left: 0,
+    });
+    expect(requestStack.pageRoot.position).toMatchObject({
+      x: -4,
+      y: 22,
+    });
+    expect(requestStack.pageFrame.frameWidth).toBe(312);
+    expect(requestStack.pageFrame.frameHeight).toBe(341);
+    expect(requestStack.detail.root.position).toMatchObject({
+      x: 7,
+      y: 7,
+    });
+    expect(requestStack.postButton.buttonWidth).toBe(298);
+    expect(requestStack.previousButton.position).toMatchObject({
+      x: -4,
+      y: 367,
+    });
+    expect(requestStack.nextButton.position).toMatchObject({
+      x: 236,
+      y: 367,
+    });
+    expect(
+      requestStack.panel.coreHeight -
+        requestStack.previousButton.y -
+        requestStack.previousButton.buttonHeight,
+    ).toBe(9);
     expect(requestStack.pageLabel.text).toBe('1 / 2');
     expect(requestStack.previousButton.textLabel.text).toBe('Prev');
     expect(requestStack.previousButton.enabled).toBe(false);
@@ -604,25 +666,45 @@ describe('GuildPixiPage', () => {
     expect(requestStack.nextButton.enabled).toBe(true);
     const swipeRegistration = inputRouter.store
       .getRegistrations('swipe')
-      .find(
-        (registration) =>
-          registration.id === 'guild.requestStack.swipe',
-      );
+      .find((registration) => registration.id === 'guild.requestStack.swipe');
     expect(swipeRegistration).toBeDefined();
     expect(swipeRegistration.onSwipe({ direction: 'next' })).toBe(true);
     expect(requestStack.detail.title.text).toBe('Hilltop Watch');
+    expect(requestStack.detail.artAssetId).toBe(
+      'source:assets/guild/quest-requests-hillside.png',
+    );
     expect(requestStack.pageLabel.text).toBe('2 / 2');
     expect(requestStack.previousButton.enabled).toBe(true);
     expect(requestStack.nextButton.enabled).toBe(false);
-    expect(swipeRegistration.onSwipe({ direction: 'previous' })).toBe(
-      true,
-    );
+    expect(swipeRegistration.onSwipe({ direction: 'previous' })).toBe(true);
     expect(requestStack.detail.title.text).toBe('Smuggler Tunnel');
     expect(requestStack.pageLabel.text).toBe('1 / 2');
+    requestStack.detail.bind({ id: 'quest-a', title: 'Forest Bridge' });
+    expect(requestStack.detail.artAssetId).toBe(
+      'source:assets/guild/quest-requests-bridge.png',
+    );
+    requestStack.detail.bind({ title: 'Fever Ward Run', tags: ['medical'] });
+    expect(requestStack.detail.artAssetId).toBe(
+      'source:assets/guild/quest-requests-village.png',
+    );
+    requestStack.detail.bind({ title: 'Old Road Escort', tags: ['road'] });
+    expect(requestStack.detail.artAssetId).toBe(
+      'source:assets/guild/quest-requests-road.png',
+    );
+    requestStack.detail.bind({ title: 'Charter Audit', tags: ['political'] });
+    expect(requestStack.detail.artAssetId).toBe(
+      'source:assets/guild/quest-requests-political.png',
+    );
+    requestStack.detail.bind({ title: 'Mirror Maze', tags: ['magic'] });
+    expect(requestStack.detail.artAssetId).toBe(
+      'source:assets/guild/quest-requests-magic.png',
+    );
+    requestStack.detail.bind({ title: 'Arena Challenge', tags: ['arena'] });
+    expect(requestStack.detail.artAssetId).toBe(
+      'source:assets/guild/quest-requests-military.png',
+    );
     expect(inputRouter.handleBack({ source: 'native' })).toBe(true);
-    expect(
-      harness.dialogs.isOpen(GUILD_DIALOG_IDS.REQUEST_STACK),
-    ).toBe(false);
+    expect(harness.dialogs.isOpen(GUILD_DIALOG_IDS.REQUEST_STACK)).toBe(false);
     expect(inputRouter.getTopModal()).toBeNull();
 
     harness.page.destroy();
@@ -630,8 +712,13 @@ describe('GuildPixiPage', () => {
     inputRouter.destroy();
   });
 
-  it('shows every current adventurer life above the longer Guild chronicle', () => {
-    const harness = createHarness();
+  it('shows one newest-first Chronicle feed with compact character messages', () => {
+    const harness = createHarness({
+      assetManager: {
+        ...createPixiAssetManagerFake(Texture),
+        loaded: true,
+      },
+    });
     const model = createGuildViewModel();
     model.selectedBranchId = 'adventurers';
     model.selectedAdventurerTabId = 'log';
@@ -640,46 +727,88 @@ describe('GuildPixiPage', () => {
         ...model.guild.adventurers[0],
         activityLabel: 'At The Tavern',
         activityText: 'Trades road stories with Orin Moss.',
+        iconKey: 'adventurer_cleric',
       },
       {
         id: 'adventurer-2',
         displayName: 'orin moss',
+        iconKey: 'adventurer_shadowdagger',
         level: 3,
         status: 'idle',
         activityLabel: 'With Mira',
         activityText: 'Repairs travelling gear with Mira.',
       },
     ];
-    model.guild.logs = Array.from({ length: 6 }, (_, index) => ({
-      id: `log-${index + 1}`,
-      text: `guild story ${index + 1}.`,
-      timeLabel: index === 0 ? 'Now' : `${index * 10}m ago`,
-    }));
+    model.guild.logs = [
+      {
+        actorId: 'adventurer-1',
+        id: 'log-newest',
+        text: 'mira reaches level 3.',
+        timeLabel: 'Now',
+      },
+      {
+        actorId: 'adventurer-1',
+        id: 'log-paired',
+        partnerId: 'adventurer-2',
+        text: 'mira and orin moss share supper and trade stories.',
+        timeLabel: '28m ago',
+      },
+      ...Array.from({ length: 83 }, (_, index) => ({
+        id: `log-system-${index}`,
+        text: `guild story ${index + 1}.`,
+        timeLabel: `${index + 1}h ago`,
+      })),
+    ];
 
     harness.page.bind(model);
     harness.page.activate();
 
-    expect(harness.page.activitySection.titlePlaque.title.text).toBe(
-      'Right Now',
-    );
-    expect(harness.page.activitySection.people.getWidgets()).toHaveLength(2);
-    expect(
-      harness.page.activitySection.people.get('adventurer-1').levelLabel.text,
-    ).toBe('Trades road stories with Orin Moss.');
+    expect(harness.page.activitySection).toBeUndefined();
     expect(harness.page.logSection.titlePlaque.title.text).toBe('Chronicle');
-    expect(harness.page.logSection.rows.getWidgets()).toHaveLength(6);
-    expect(harness.page.logSection.rows.get('log-1').paragraph.text).toBe(
-      'Now · guild story 1.',
-    );
-    expect(
-      harness.semanticRegistry.activate('guild.activity.adventurer-1'),
-    ).toBe(true);
-    expect(
-      harness.dialogs.isOpen(GUILD_DIALOG_IDS.ADVENTURER),
-    ).toBe(true);
+    expect(harness.page.logSection.entries.getWidgets()).toHaveLength(80);
+    const newest = harness.page.logSection.entries.get('log-newest');
+    const paired = harness.page.logSection.entries.get('log-paired');
+    expect(newest.root.y).toBe(0);
+    expect(newest.authorLabel.text).toBe('Mira');
+    expect(newest.authorLabel.textObject.style.fontWeight).toBe('bold');
+    expect(newest.timeLabel.text).toBe('Now');
+    expect(newest.messageLabel.text).toBe('Reaches level 3.');
+    expect(newest.avatars[0].icon.visible).toBe(true);
+    expect(paired.root.y).toBeGreaterThan(newest.root.y);
+    expect(paired.authorLabel.text).toBe('Mira & Orin Moss');
+    expect(paired.timeLabel.text).toBe('28m ago');
+    expect(paired.messageLabel.text).toBe('Share supper and trade stories.');
+    expect(paired.avatars.filter(({ icon }) => icon.visible)).toHaveLength(2);
+    expect(harness.page.logSection.countLabel.visible).toBe(false);
 
     harness.page.destroy();
     harness.dispose();
+  });
+
+  it('lays out a Chronicle entry like a chat message without lowercasing copy', () => {
+    const row = new GuildChronicleEntryRow({
+      assetManager: createPixiAssetManagerFake(Texture),
+      label: 'guild:test-chronicle-entry',
+    });
+    row.bind('entry', {
+      authorLabel: 'mira ashveil',
+      message: 'returns with the moonstone ledger.',
+      participants: [
+        { displayName: 'mira ashveil', iconKey: 'adventurer_cleric' },
+      ],
+      timeLabel: '28m ago',
+    });
+    const height = row.getPreferredHeight(358);
+    row.setBounds(0, 0, 358, height);
+
+    expect(row.authorLabel.text).toBe('Mira Ashveil');
+    expect(row.messageLabel.text).toBe('Returns with the moonstone ledger.');
+    expect(row.authorLabel.x).toBe(54);
+    expect(row.messageLabel.y).toBe(27);
+    expect(row.timeLabel.x).toBe(350);
+    expect(height).toBeGreaterThanOrEqual(58);
+
+    row.destroy();
   });
 });
 
@@ -826,16 +955,18 @@ function createGuildDialogPayload(dialogId) {
         {
           id: 'quest-2',
           title: 'smuggler tunnel',
-          lore: 'a narrow road under the hill.',
+          lore: 'map the lantern-lit route beneath the fish market and return unseen.',
           difficulty: 'easy',
-          rewardText: '10 coin',
+          statLabel: 'cunning / agility',
+          rewardText: '120-180 coin, 2-4 seeds, or 1-3 herbs',
         },
         {
           id: 'quest-3',
           title: 'hilltop watch',
-          lore: 'watch the old road until sunrise.',
+          lore: 'guard the old road until sunrise and report every passing cart.',
           difficulty: 'medium',
-          rewardText: '15 coin',
+          statLabel: 'discipline / endurance',
+          rewardText: '90-140 coin, 1-3 seeds, or 1-2 herbs',
         },
       ],
       onPost: vi.fn(),
@@ -859,13 +990,15 @@ function createGuildDialogPayload(dialogId) {
       id: 'person-1',
       displayName: 'mira',
       level: 2,
+      xp: 14,
+      nextLevelXp: 40,
       status: 'idle',
+      personalityLabel: 'loyal',
       stats: {
         strength: 2,
       },
     },
-    actionLabel:
-      dialogId === GUILD_DIALOG_IDS.APPLICANT ? 'hire' : 'fire',
+    actionLabel: dialogId === GUILD_DIALOG_IDS.APPLICANT ? 'hire' : 'fire',
     action: vi.fn(),
   };
 }

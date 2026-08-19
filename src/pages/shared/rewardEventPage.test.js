@@ -9,6 +9,7 @@ describe('reward event page ownership', () => {
   it.each([
     ['seed_summoned', 'workshop'],
     ['personal_task_reward_claimed', 'workshop'],
+    ['garden_seed_planted', 'garden'],
     ['herb_harvested', 'garden'],
     ['potion_collected', 'brewing'],
     ['item_sold', 'shop'],

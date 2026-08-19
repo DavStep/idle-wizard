@@ -2555,17 +2555,20 @@ function createResearchItemModel(
     actionNoun,
     displayName: displayTitle,
   });
-  const itemKind = String(item.id ?? '').startsWith('unlockSeed:')
-    ? 'seed'
-    : String(item.id ?? '').startsWith('unlockRecipe:')
-      ? 'potion'
-      : null;
+  const itemKind = item.itemKind
+    ? String(item.itemKind).toLowerCase()
+    : String(item.id ?? '').startsWith('unlockSeed:')
+      ? 'seed'
+      : String(item.id ?? '').startsWith('unlockRecipe:')
+        ? 'potion'
+        : null;
   const itemKey =
-    itemKind === 'seed'
+    item.itemKey ??
+    (itemKind === 'seed'
       ? String(item.id).slice('unlockSeed:'.length)
       : itemKind === 'potion'
         ? String(item.id).slice('unlockRecipe:'.length)
-        : null;
+        : null);
 
   return {
     ...item,

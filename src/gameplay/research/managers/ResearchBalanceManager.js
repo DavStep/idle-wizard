@@ -31,6 +31,11 @@ import {
   emeraldResearchMinMultiplier,
   getEmeraldResearchCost,
 } from '../emeraldResearchIds.js';
+import {
+  createItemTimerResearchCosts,
+  isItemTimerResearchId,
+  itemTimerResearchDurationSeconds,
+} from '../itemTimerResearch.js';
 
 const maxResearchDurationSeconds = 4 * 60 * 60;
 const quickResearchDurationSeconds = minimumResearchDurationSeconds;
@@ -181,6 +186,11 @@ const DEFAULT_RESEARCH_BALANCE = {
   researchCostsEmerald: createDefaultAdvancedCosts(),
 };
 
+const defaultItemTimerResearchCostsCoin = createItemTimerResearchCosts({
+  seedUnlockCosts: DEFAULT_RESEARCH_BALANCE.researchCostsCoin,
+  recipeUnlockCosts: DEFAULT_RESEARCH_BALANCE.researchCostsCoin,
+});
+
 DEFAULT_RESEARCH_BALANCE.researchDurationsSeconds = createDefaultResearchDurations(
   DEFAULT_RESEARCH_BALANCE.researchCostsCoin,
   DEFAULT_RESEARCH_BALANCE.researchCostsCrystal,
@@ -329,6 +339,10 @@ function getDefaultResearchDurationSeconds(
   researchId,
   { costsCrystal = {}, costsRuby = {}, costsEmerald = {} } = {},
 ) {
+  if (isItemTimerResearchId(researchId)) {
+    return itemTimerResearchDurationSeconds;
+  }
+
   if (
     costsCrystal[researchId] !== undefined ||
     costsRuby[researchId] !== undefined ||
@@ -449,7 +463,8 @@ export class ResearchBalanceManager {
 
     const costCoin =
       this.runtimeConfigByResearchId.get(normalizedResearchId)?.costCoin ??
-      this.costCoinByResearchId[normalizedResearchId];
+      this.costCoinByResearchId[normalizedResearchId] ??
+      defaultItemTimerResearchCostsCoin[normalizedResearchId];
 
     if (!Number.isFinite(costCoin)) {
       throw new Error(`game_config.research missing cost for ${researchId}.`);
@@ -490,7 +505,9 @@ export class ResearchBalanceManager {
     const durationSeconds =
       this.runtimeConfigByResearchId.get(normalizedResearchId)?.durationSeconds ??
       this.durationSecondsByResearchId[normalizedResearchId] ??
-      0;
+      (isItemTimerResearchId(normalizedResearchId)
+        ? itemTimerResearchDurationSeconds
+        : 0);
 
     return this.normalizeDurationSeconds(durationSeconds);
   }

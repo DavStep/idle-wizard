@@ -338,6 +338,30 @@ function createStallModel({
     slot.unlocked === true &&
     !loaded &&
     !future;
+  const cancelAction = () =>
+    callFirstOr(
+      uiActions,
+      ['clearStall'],
+      [slotNumber],
+      () => {
+        const selection = callFirst(
+          gameplayActions,
+          ['selectShopShelfSlot', 'selectShelfSlot'],
+          [slotNumber],
+        );
+        if (selection === false || selection?.ok === false) {
+          return selection;
+        }
+        return callFirst(
+          gameplayActions,
+          [
+            'clearSelectedShopShelfSlot',
+            'clearSelectedShelfSlot',
+          ],
+          [],
+        );
+      },
+    );
 
   return {
     ...slot,
@@ -391,11 +415,14 @@ function createStallModel({
     notificationTone: notification
       ? npcListingNotification.tone
       : null,
+    selected: loaded || future,
+    cancelAction,
     semanticId: `shop.stall.${slotNumber}`,
     tutorialId: `shop:stand:${slotNumber}`,
     dialog: createStallDialog({
       gameplaySnapshot,
       gameplayActions,
+      cancelAction,
       selectedItemTypeId,
       selectedKind,
       shelf,
@@ -411,6 +438,7 @@ function createStallModel({
 function createStallDialog({
   gameplaySnapshot,
   gameplayActions,
+  cancelAction,
   selectedItemTypeId,
   selectedKind,
   shelf,
@@ -559,20 +587,7 @@ function createStallDialog({
         enabled: Boolean(
           slot.sellItemTypeId ?? slot.futureItemTypeId,
         ),
-        action: () =>
-          callFirstOr(
-            uiActions,
-            ['clearStall'],
-            [slotNumber],
-            () =>
-              selectAndCall(
-                [
-                  'clearSelectedShopShelfSlot',
-                  'clearSelectedShelfSlot',
-                ],
-                [],
-              ),
-          ),
+        action: cancelAction,
       },
     ],
     tabs: visibleSellKinds.map((kind) => ({
@@ -616,6 +631,18 @@ function createRequestSlotModel({
     Boolean(slot.itemTypeId) &&
     positiveInteger(slot.quantity) !== null &&
     positiveInteger(slot.priceCoin) !== null;
+  const cancelAction = () =>
+    callFirstOr(
+      uiActions,
+      ['clearPlayerRequest'],
+      [slotNumber],
+      () =>
+        clearPlayerRequest({
+          gameplayActions,
+          playerShopActions,
+          slotNumber,
+        }),
+    );
   return {
     ...slot,
     id: slot.id ?? slotNumber,
@@ -632,6 +659,8 @@ function createRequestSlotModel({
       : 'select',
     priceResourceKey: hasRequest ? 'coin' : null,
     enabled: slot.unlocked !== false,
+    selected: hasRequest,
+    cancelAction,
     hasRequest,
     action: () => {
       callFirst(uiActions, ['selectPlayerRequestSlot'], [slotNumber]);
@@ -823,6 +852,20 @@ function createPlayerListingSlotModel({
     slot.unlocked !== false &&
     Boolean(slot.itemTypeId) &&
     positiveInteger(slot.quantity) !== null;
+  const cancelAction = () =>
+    callFirstOr(
+      uiActions,
+      ['clearPlayerListing'],
+      [slotNumber],
+      () =>
+        listed
+          ? clearPlayerListing({
+              gameplayActions,
+              playerShopActions,
+              slotNumber,
+            })
+          : { ok: false, reason: 'nothing_to_clear' },
+    );
   return {
     ...slot,
     id: slot.id ?? slotNumber,
@@ -839,6 +882,8 @@ function createPlayerListingSlotModel({
       : 'select',
     priceResourceKey: listed ? 'coin' : null,
     enabled: slot.unlocked !== false,
+    selected: listed,
+    cancelAction,
     action: () => {
       callFirst(uiActions, ['selectPlayerListingSlot'], [slotNumber]);
       return null;
@@ -852,6 +897,7 @@ function createPlayerListingSlotModel({
       slotNumber,
       uiActions,
       uiState,
+      cancelAction,
     }),
   };
 }
@@ -865,6 +911,7 @@ function createListingDialog({
   slotNumber,
   uiActions,
   uiState,
+  cancelAction,
 }) {
   const draft = uiState.listingDraftBySlot?.[slotNumber] ?? slot;
   const selectedItemTypeId =
@@ -983,19 +1030,7 @@ function createListingDialog({
         enabled: true,
         layoutWeight: 1,
         action: async () => {
-          const result = await callFirstOr(
-            uiActions,
-            ['clearPlayerListing'],
-            [slotNumber],
-            () =>
-              slot.itemTypeId
-                ? clearPlayerListing({
-                    gameplayActions,
-                    playerShopActions,
-                    slotNumber,
-                  })
-                : { ok: false, reason: 'nothing_to_clear' },
-          );
+          const result = await cancelAction();
           if (result !== false && result?.ok !== false) {
             callFirst(uiActions, ['closePlayerListingDialog'], [slotNumber]);
           }
@@ -1142,13 +1177,102 @@ function createLedgerDialog({
 
 function createMarketDialog({ playerShop, uiActions, uiState }) {
   const selectedTab = uiState.marketBrowseTab ?? 'selling';
-  const rows =
+  const filtersOpen = uiState.marketFiltersOpen === true;
+  const draftFilters = normalizeMarketFilters(
+    uiState.marketFilterDraft,
+  );
+  const appliedFilters = normalizeMarketFilters(
+    uiState.marketFilterApplied,
+  );
+  const sourceRows =
     selectedTab === 'buying'
       ? safeArray(playerShop.requests)
       : safeArray(playerShop.listings);
+  const rows = sourceRows.filter((row) =>
+    matchesMarketFilters(row, appliedFilters),
+  );
+  const hasAppliedFilters = marketFiltersAreActive(appliedFilters);
   return {
-    title: 'player market',
-    status: playerShop.connected === false ? 'offline' : '',
+    title: 'Player Market',
+    status:
+      playerShop.connected === false
+        ? 'Offline'
+        : rows.length === 0
+          ? hasAppliedFilters
+            ? 'No Matching Offers'
+            : 'No Offers Yet'
+          : hasAppliedFilters
+            ? `${rows.length} Matching ${rows.length === 1 ? 'Offer' : 'Offers'}`
+            : '',
+    fields: filtersOpen
+      ? [
+          {
+            id: 'item',
+            label: 'Item',
+            inputKind: 'text',
+            placeholder: 'Any Item',
+            value: draftFilters.item,
+            onChange: (value) =>
+              callFirst(uiActions, ['setMarketFilterDraft'], [
+                'item',
+                value,
+              ]),
+          },
+          {
+            id: 'minPrice',
+            label: 'Min Price',
+            inputKind: 'integer',
+            placeholder: '0',
+            value: draftFilters.minPrice,
+            onChange: (value) =>
+              callFirst(uiActions, ['setMarketFilterDraft'], [
+                'minPrice',
+                value,
+              ]),
+          },
+          {
+            id: 'username',
+            label: 'Username',
+            inputKind: 'text',
+            placeholder: 'Any Wizard',
+            value: draftFilters.username,
+            onChange: (value) =>
+              callFirst(uiActions, ['setMarketFilterDraft'], [
+                'username',
+                value,
+              ]),
+          },
+        ]
+      : [],
+    actions: filtersOpen
+      ? [
+          {
+            id: 'clearFilters',
+            label: 'Clear',
+            semanticId: 'shop.market.filter.clear',
+            variant: 'brown-dark',
+            action: () =>
+              callFirst(uiActions, ['clearMarketFilters'], []),
+          },
+          {
+            id: 'applyFilters',
+            label: 'Apply Filter',
+            semanticId: 'shop.market.filter.apply',
+            variant: 'green',
+            action: () =>
+              callFirst(uiActions, ['applyMarketFilters'], []),
+          },
+        ]
+      : [
+          {
+            id: 'openFilters',
+            label: hasAppliedFilters ? 'Edit Filter' : 'Filter',
+            semanticId: 'shop.market.filter.open',
+            variant: 'yellow',
+            action: () =>
+              callFirst(uiActions, ['openMarketFilters'], []),
+          },
+        ],
     items: rows.map((row, index) => {
       const rowId =
         row.listingKey ??
@@ -1157,14 +1281,13 @@ function createMarketDialog({ playerShop, uiActions, uiState }) {
         index;
       return {
         id: rowId,
-        label: `${row.username ?? 'Wizard'} · ${
-          row.itemLabel ?? 'item'
-        }`,
-        detail: `${nonNegativeInteger(row.quantity)} available`,
-        value: formatCoinPriceText(row.priceCoin),
+        indexLabel: `${index + 1}.`,
+        itemLabel: `${toTitleCase(row.itemLabel ?? 'Item')} (${nonNegativeInteger(
+          row.quantity,
+        )}) · ${row.username ?? 'Wizard'}`,
+        priceLabel: formatCoinPriceText(row.priceCoin),
         itemKey: row.itemKey,
         itemKind: row.itemKind,
-        resourceKey: row.itemKind,
         valueResourceKey: 'coin',
         semanticId:
           selectedTab === 'buying'
@@ -1183,7 +1306,8 @@ function createMarketDialog({ playerShop, uiActions, uiState }) {
     tabs: [
       {
         id: 'selling',
-        label: 'selling',
+        label: 'Selling',
+        semanticId: 'shop.market.tab.selling',
         selected: selectedTab === 'selling',
         action: () =>
           callFirst(uiActions, ['selectMarketBrowseTab'], [
@@ -1192,7 +1316,8 @@ function createMarketDialog({ playerShop, uiActions, uiState }) {
       },
       {
         id: 'buying',
-        label: 'buying',
+        label: 'Buying',
+        semanticId: 'shop.market.tab.buying',
         selected: selectedTab === 'buying',
         action: () =>
           callFirst(uiActions, ['selectMarketBrowseTab'], [
@@ -1201,6 +1326,37 @@ function createMarketDialog({ playerShop, uiActions, uiState }) {
       },
     ],
   };
+}
+
+function normalizeMarketFilters(filters = {}) {
+  return {
+    item: String(filters?.item ?? '').trim(),
+    minPrice: String(filters?.minPrice ?? '').trim(),
+    username: String(filters?.username ?? '').trim(),
+  };
+}
+
+function marketFiltersAreActive(filters) {
+  return Boolean(
+    filters.item || filters.minPrice || filters.username,
+  );
+}
+
+function matchesMarketFilters(row, filters) {
+  const itemQuery = filters.item.toLocaleLowerCase();
+  const usernameQuery = filters.username.toLocaleLowerCase();
+  const itemText = `${row.itemLabel ?? ''} ${row.itemKey ?? ''}`
+    .toLocaleLowerCase();
+  const username = String(row.username ?? '').toLocaleLowerCase();
+  const minimumPrice = Number(filters.minPrice);
+
+  return (
+    (!itemQuery || itemText.includes(itemQuery)) &&
+    (!usernameQuery || username.includes(usernameQuery)) &&
+    (!filters.minPrice ||
+      (Number.isFinite(minimumPrice) &&
+        Number(row.priceCoin) >= minimumPrice))
+  );
 }
 
 function createTradeHistoryDialog({ playerShop, uiActions }) {

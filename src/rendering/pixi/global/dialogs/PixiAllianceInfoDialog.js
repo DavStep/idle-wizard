@@ -1,90 +1,157 @@
 import { Container } from 'pixi.js';
 
+import { formatCoinAmount } from '../../../../shared/coinPrice.js';
+import { PixiTextButton, PixiTextLabel } from '../../primitives/index.js';
 import {
-  PixiTextButton,
-  PixiScrollView,
-  PixiTextLabel,
-} from '../../primitives/index.js';
-import { PIXI_UI_GEOMETRY } from '../../theme/PixiThemeTokens.js';
-import { resolveAdaptiveDialogHeight } from '../../primitives/PixiDialogFrame.js';
+  PIXI_DIALOG_FOOTER_TABS_GEOMETRY,
+  PIXI_DIALOG_SPLIT_PAPER_GEOMETRY,
+  createDialogPaperSection,
+  resolveAdaptiveDialogHeight,
+  resolveDialogFooterTabLayout,
+  resolveDialogPaperOutsets,
+  setDialogPaperSectionBounds,
+} from '../../primitives/PixiDialogFrame.js';
+import { PooledCollection, WidgetPool } from '../../retained/index.js';
+import {
+  PIXI_ROOT_RUN_GEOMETRY,
+  PIXI_UI_GEOMETRY,
+} from '../../theme/PixiThemeTokens.js';
+import {
+  AllianceMemberRow,
+  WorkshopDialogRow,
+} from '../../pages/workshop/WorkshopDialogPixi.js';
+import {
+  RETAINED_DIALOG_LIST_GEOMETRY,
+  RETAINED_TEXT_STYLES,
+  RetainedScrollArea,
+  applyTextTheme,
+  createText,
+  resolveRetainedDialogListLayout,
+  setText,
+} from '../../pages/workshop/RetainedPageKit.js';
 import {
   GLOBAL_DIALOG_GEOMETRY,
-  PooledDialogRows,
   RetainedGlobalDialog,
 } from './GlobalDialogKit.js';
 
-const ALLIANCE_CONTENT_WIDTH =
-  GLOBAL_DIALOG_GEOMETRY.maxContentWidth;
-const ALLIANCE_CONTENT_HEIGHT = 360;
-const ROLE_ORDER = Object.freeze([
-  'tradeMaster',
-  'quartermaster',
-  'factor',
-  'broker',
-  'trader',
-]);
-const ROLE_LABELS = Object.freeze({
-  tradeMaster: 'trade master',
-  quartermaster: 'quartermaster',
-  factor: 'factor',
-  broker: 'broker',
-  trader: 'trader',
-});
+const ALLIANCE_CONTENT_WIDTH = GLOBAL_DIALOG_GEOMETRY.maxContentWidth;
+const ALLIANCE_CONTENT_HEIGHT = 430;
+const ALLIANCE_MEMBER_ROW_HEIGHT = PIXI_ROOT_RUN_GEOMETRY.settings.rowPitch;
+const SECTION_GAP = PIXI_DIALOG_SPLIT_PAPER_GEOMETRY.sectionGap;
+const SECTION_CONTENT_TOP = PIXI_DIALOG_SPLIT_PAPER_GEOMETRY.contentInsetTop;
+const SECTION_CONTENT_BOTTOM = PIXI_DIALOG_SPLIT_PAPER_GEOMETRY.contentInsetBottom;
+const STATUS_HEIGHT = 16;
 const JOIN_MODE_LABELS = Object.freeze({
-  open: 'open',
-  apply: 'apply',
-  closed: 'closed',
+  open: 'Open',
+  apply: 'Apply',
+  closed: 'Closed',
+});
+const ROLE_LABELS = Object.freeze({
+  tradeMaster: 'Trade Master',
+  quartermaster: 'Quartermaster',
+  factor: 'Factor',
+  broker: 'Broker',
+  trader: 'Trader',
 });
 
 /**
- * Retained public alliance card with a keyed/pool-backed member list.
+ * Retained public alliance card that reuses the Trade Alliance Home
+ * split-paper summary and member-row composition.
  */
 export class PixiAllianceInfoDialog extends RetainedGlobalDialog {
   constructor({ context, dialogId = 'global.alliance' } = {}) {
     super({
       context,
       dialogId,
-      title: 'alliance',
+      title: 'Alliance',
       contentWidth: ALLIANCE_CONTENT_WIDTH,
       contentHeight: ALLIANCE_CONTENT_HEIGHT,
       placement: 'center',
       label: `${dialogId}:allianceInfoDialog`,
     });
+    this.assetManager = this.context.assets;
+    this.inputRouter = this.context.inputRouter;
+    this.contentTheme = this.panel.getContentTheme?.() ?? this.theme;
+    this.isBagDialog = false;
+    this.registeredTargetIds = new Set();
     this.statusText = '';
     this.actionPending = false;
-    this.activateMemberRow = (member) =>
-      this.openPlayer(member);
 
-    this.scroll = new PixiScrollView({
-      inputRouter: this.context.inputRouter,
-      assetManager: this.context.assets,
-      width: ALLIANCE_CONTENT_WIDTH,
-      height: ALLIANCE_CONTENT_HEIGHT - 20,
-      contentPaddingTop: PIXI_UI_GEOMETRY.dialogScrollPaddingTop,
-      showProgress: false,
-      label: `${dialogId}:scroll`,
+    this.summarySection = new Container({ label: `${dialogId}:tradeInfoSection` });
+    this.summaryPaper = createDialogPaperSection(
+      this.panel.paperFrame.texture,
+      `${dialogId}:tradeInfoPaper`,
+    );
+    this.identityLabel = createText('', RETAINED_TEXT_STYLES.bold);
+    this.detailLabel = createText('', {
+      ...RETAINED_TEXT_STYLES.border,
+      lineHeight: 14,
+      wordWrapWidth: ALLIANCE_CONTENT_WIDTH,
     });
-    this.rowsLayer = new Container();
-    this.rowsLayer.label = `${dialogId}:rows`;
-    this.scroll.content.addChild(this.rowsLayer);
-    this.panel.content.addChild(this.scroll);
-    this.rows = new PooledDialogRows({
-      parent: this.rowsLayer,
-      inputRouter: this.context.inputRouter,
+    this.summaryRowsLayer = new Container({ label: `${dialogId}:tradeInfoRows` });
+    this.summarySection.addChild(
+      this.summaryPaper,
+      this.identityLabel,
+      this.detailLabel,
+      this.summaryRowsLayer,
+    );
+
+    this.membersSection = new Container({ label: `${dialogId}:membersSection` });
+    this.membersPaper = createDialogPaperSection(
+      this.panel.paperFrame.texture,
+      `${dialogId}:membersPaper`,
+    );
+    this.membersScroll = new RetainedScrollArea({
+      inputRouter: this.inputRouter,
+      label: `${dialogId}:membersScroll`,
+    });
+    this.membersSection.addChild(this.membersPaper, this.membersScroll.root);
+
+    this.summaryRowPool = new WidgetPool({
+      name: `${dialogId} summary row pool`,
       counters: this.context.counters,
-      name: `${dialogId} alliance rows`,
-      maxSize: 72,
-      theme: this.theme,
+      create: () => new WorkshopDialogRow({ dialog: this }),
+      reset: (row) => row.reset(),
+      dispose: (row) => row.destroy(),
+      maxSize: 3,
     });
+    this.summaryRows = new PooledCollection({
+      name: `${dialogId} summary rows`,
+      pool: this.summaryRowPool,
+      counters: this.context.counters,
+      keyOf: (row, index) => row.id ?? index,
+      bind: (widget, row) => widget.bind(row),
+      afterReconcile: (widgets) => this.orderSummaryRows(widgets),
+    });
+    this.memberRowPool = new WidgetPool({
+      name: `${dialogId} member row pool`,
+      counters: this.context.counters,
+      create: () => new AllianceMemberRow({ dialog: this }),
+      reset: (row) => row.reset(),
+      dispose: (row) => row.destroy(),
+      maxSize: 50,
+    });
+    this.memberRows = new PooledCollection({
+      name: `${dialogId} member rows`,
+      pool: this.memberRowPool,
+      counters: this.context.counters,
+      keyOf: (member, index) =>
+        `member:${member.memberIdentity || member.username || index}`,
+      bind: (widget, member) => widget.bind(member),
+      afterReconcile: (widgets) => this.orderMemberRows(widgets),
+    });
+    this.rows = { collection: this.memberRows };
 
     this.primaryAction = new PixiTextButton({
-      assetManager: this.context.assets,
-      inputRouter: this.context.inputRouter,
+      assetManager: this.assetManager,
+      inputRouter: this.inputRouter,
       semanticRegistry: this.context.semanticRegistry,
       semanticId: `${dialogId}.join`,
-      text: 'join',
+      text: 'Apply',
       width: ALLIANCE_CONTENT_WIDTH,
-      height: 30,
+      height: PIXI_DIALOG_FOOTER_TABS_GEOMETRY.rowHeight,
+      color: 'green',
+      sizeTier: 50,
       action: () => this.runPrimaryAction(),
       label: `${dialogId}:action`,
     });
@@ -92,10 +159,14 @@ export class PixiAllianceInfoDialog extends RetainedGlobalDialog {
       color: 'muted',
       label: `${dialogId}:status`,
     });
+
+    this.panel.setPaperVisible(false);
     this.panel.content.addChild(
-      this.primaryAction,
+      this.summarySection,
+      this.membersSection,
       this.statusLabel,
     );
+    this.panel.addChild(this.primaryAction);
     this.applyTheme(this.context.theme);
     this.bind({});
     this.layout(this.context.projection);
@@ -104,130 +175,67 @@ export class PixiAllianceInfoDialog extends RetainedGlobalDialog {
   bindDialog(viewModel) {
     this.allianceModel = normalizeAllianceModel(viewModel);
     this.panel.setTitle(this.allianceModel.title);
-    if (viewModel.status !== undefined) {
-      this.statusText = String(viewModel.status ?? '');
-    }
-    this.statusLabel.setText(this.statusText);
+    this.statusText = String(viewModel.status ?? '');
+    setText(this.identityLabel, this.allianceModel.title);
+    setText(
+      this.detailLabel,
+      [this.allianceModel.description, this.allianceModel.notice]
+        .filter(Boolean)
+        .join('\n'),
+    );
+
     const action = this.allianceModel.action;
-    this.primaryAction.visible = Boolean(action);
-    this.primaryAction.renderable = Boolean(action);
+    const showAction = Boolean(action);
+    this.primaryAction.visible = showAction;
+    this.primaryAction.renderable = showAction;
     this.primaryAction
-      .setText(
-        this.actionPending
-          ? '...'
-          : action?.label ?? 'join',
-      )
-      .setEnabled(
-        Boolean(action) &&
-          !this.actionPending &&
-          action.enabled !== false,
-      );
-    this.rows.reconcile(this.createRows());
+      .setColor(action?.kind === 'pending' ? 'gray' : 'green')
+      .setText(this.actionPending ? '...' : action?.label ?? '')
+      .setEnabled(showAction && !this.actionPending && action.enabled !== false);
+
+    this.summaryRows.reconcile(this.createSummaryRows());
+    this.memberRows.reconcile(this.createMemberRows());
+    this.updateStatusLabel();
     this.layoutDialog();
   }
 
-  createRows() {
-    const model = this.allianceModel;
-    const rows = [];
-    if (model.loading) {
-      rows.push({
-        id: 'alliance-state',
-        kind: 'message',
-        text: model.connected ? 'loading alliance' : 'offline',
-        mutedLabel: true,
-      });
-    } else {
-      rows.push(
-        {
-          id: 'members-count',
-          label: 'members',
-          value: `${model.memberCount}/50`,
-        },
-        {
-          id: 'join-mode',
-          label: 'join mode',
-          value:
-            JOIN_MODE_LABELS[model.joinMode] ??
-            model.joinMode,
-        },
-        {
-          id: 'season-income',
-          label: 'season income',
-          value: model.seasonIncome,
-          resource: 'coin',
-        },
-      );
-      if (model.description) {
-        rows.push({
-          id: 'description',
-          kind: 'paragraph',
-          text: model.description,
-          mutedLabel: true,
-        });
-      }
-      if (model.notice) {
-        rows.push({
-          id: 'notice',
-          kind: 'paragraph',
-          text: model.notice,
-          mutedLabel: true,
-        });
-      }
+  createSummaryRows() {
+    if (this.allianceModel.loading) {
+      return [];
     }
-
-    rows.push(
-      { id: 'member-divider', kind: 'divider' },
+    return [
       {
-        id: 'member-section',
-        kind: 'message',
-        text: 'members',
-        mutedLabel: true,
+        id: 'trade-info:members',
+        label: 'Members',
+        value: `${this.allianceModel.memberCount}/50`,
       },
-    );
+      {
+        id: 'trade-info:join-mode',
+        label: 'Join Mode',
+        value:
+          JOIN_MODE_LABELS[this.allianceModel.joinMode] ??
+          titleCaseLabel(this.allianceModel.joinMode),
+      },
+      {
+        id: 'trade-info:season-income',
+        label: 'Season Income',
+        value: this.allianceModel.seasonIncome,
+        itemKind: 'resource',
+        itemKey: 'coin',
+        resourceKey: 'coin',
+      },
+    ];
+  }
 
-    if (model.loading) {
-      rows.push({
-        id: 'member-state',
-        kind: 'message',
-        text: model.connected ? 'loading members' : 'offline',
-        mutedLabel: true,
-      });
-      return rows;
+  createMemberRows() {
+    if (this.allianceModel.loading) {
+      return [];
     }
-    if (model.members.length === 0) {
-      rows.push({
-        id: 'member-empty',
-        kind: 'message',
-        text: 'no members',
-        mutedLabel: true,
-      });
-      return rows;
-    }
-
-    for (const role of getRoleOrder(model.members)) {
-      const members = model.members.filter(
-        (member) => member.role === role,
-      );
-      if (members.length === 0) {
-        continue;
-      }
-      rows.push({
-        id: `role:${role}`,
-        kind: 'message',
-        text: ROLE_LABELS[role] ?? role,
-        mutedLabel: true,
-      });
-      for (const member of members) {
-        rows.push({
-          id: `member:${member.memberIdentity || member.username}`,
-          label: member.username,
-          value: member.playerLevel,
-          payload: member,
-          action: this.activateMemberRow,
-        });
-      }
-    }
-    return rows;
+    return this.allianceModel.members.map((member, index) => ({
+      ...member,
+      semanticId: `${this.dialogId}.member.${member.memberIdentity || index}`,
+      onActivate: () => this.openPlayer(member),
+    }));
   }
 
   openPlayer(member) {
@@ -240,68 +248,114 @@ export class PixiAllianceInfoDialog extends RetainedGlobalDialog {
 
   async runPrimaryAction() {
     const action = this.allianceModel.action;
-    if (!action || this.actionPending) {
+    if (!action || action.enabled === false || this.actionPending) {
       return false;
     }
     const handler =
       action.kind === 'join'
-        ? this.actions.joinAlliance ??
-          this.model.onJoin
-        : this.actions.applyAlliance ??
-          this.model.onApply;
+        ? this.actions.joinAlliance ?? this.model.onJoin
+        : this.actions.applyAlliance ?? this.model.onApply;
     if (!handler) {
       return false;
     }
     this.actionPending = true;
-    this.setStatus('saving');
     this.primaryAction.setText('...').setEnabled(false);
+    this.setStatus('Saving');
     let result;
     try {
-      result = await handler(
-        this.allianceModel.allianceId,
-        this.allianceModel,
-      );
+      result = await handler(this.allianceModel.allianceId, this.allianceModel);
     } catch {
       result = { ok: false, reason: 'offline' };
     }
     this.actionPending = false;
-    this.primaryAction
-      .setText(action.label)
-      .setEnabled(action.enabled !== false);
-    this.setStatus(
-      result?.ok === false || result === false
-        ? formatFailure(result?.reason)
-        : '',
-    );
+    const failed = result?.ok === false || result === false;
+    if (!failed && action.kind === 'apply') {
+      this.allianceModel.action = {
+        kind: 'pending',
+        label: 'Pending',
+        enabled: false,
+      };
+      this.primaryAction
+        .setColor('gray')
+        .setText('Pending')
+        .setEnabled(false);
+    } else {
+      this.primaryAction
+        .setColor('green')
+        .setText(action.label)
+        .setEnabled(action.enabled !== false);
+    }
+    this.setStatus(failed ? formatFailure(result?.reason) : '');
     return result ?? true;
   }
 
   setStatus(status) {
     this.statusText = String(status ?? '');
-    this.statusLabel.setText(this.statusText);
+    this.updateStatusLabel();
+    this.layoutDialog();
+  }
+
+  updateStatusLabel() {
+    const status =
+      this.statusText ||
+      (this.allianceModel.loading
+        ? this.allianceModel.connected
+          ? 'Loading Alliance'
+          : 'Offline'
+        : this.allianceModel.members.length === 0
+          ? 'No Members'
+          : '');
+    this.statusLabel.setText(status);
+    this.statusLabel.visible = Boolean(status);
+    this.statusLabel.renderable = this.statusLabel.visible;
+  }
+
+  orderSummaryRows(widgets = this.summaryRows?.getWidgets?.() ?? []) {
+    if (!this.summaryRowsLayer) {
+      return 0;
+    }
+    this.summaryRowsLayer.removeChildren();
+    let y = 0;
+    for (const widget of widgets) {
+      const rowHeight = widget.getPreferredHeight();
+      this.summaryRowsLayer.addChild(widget.root);
+      widget.setBounds(0, y, ALLIANCE_CONTENT_WIDTH, rowHeight);
+      y += rowHeight;
+    }
+    this.summaryRowsHeight = y;
+    return y;
+  }
+
+  orderMemberRows(widgets = this.memberRows?.getWidgets?.() ?? []) {
+    if (!this.membersScroll) {
+      return;
+    }
+    this.membersScroll.content.removeChildren();
+    const listLayout = this.memberListLayout ?? resolveAllianceMemberListLayout();
+    let y = 0;
+    for (const widget of widgets) {
+      this.membersScroll.content.addChild(widget.root);
+      widget.setBounds(0, y, listLayout.rowWidth, ALLIANCE_MEMBER_ROW_HEIGHT);
+      y += ALLIANCE_MEMBER_ROW_HEIGHT;
+    }
+    this.membersScroll.setContentHeight(y);
   }
 
   layoutCloseControl() {
     if (!this.closeControl || !this.panel) {
       return;
     }
-    const width = Math.max(
-      32,
-      Math.ceil(this.closeControl.textWidth + 8),
-    );
+    const width = Math.max(32, Math.ceil(this.closeControl.textWidth + 8));
     this.closeControl.setBounds(
-      this.panel.outerWidth -
-        PIXI_UI_GEOMETRY.dialogPadding -
-        width,
-      this.panel.outerHeight -
-        PIXI_UI_GEOMETRY.borderLabelLineHeight / 2,
+      this.panel.outerWidth - PIXI_UI_GEOMETRY.dialogPadding - width,
+      this.panel.outerHeight - PIXI_UI_GEOMETRY.borderLabelLineHeight / 2,
       width,
       PIXI_UI_GEOMETRY.borderLabelLineHeight,
     );
   }
 
   layoutDialog(projection = this.viewportProjection) {
-    if (!this.rows || !this.allianceModel) {
+    if (!this.summaryRows || !this.memberRows || !this.allianceModel) {
       return;
     }
     const contentHeight = resolveAdaptiveDialogHeight({
@@ -312,42 +366,121 @@ export class PixiAllianceInfoDialog extends RetainedGlobalDialog {
       hasPrimaryVerticalScroll: true,
     });
     this.setPanelContentSize(ALLIANCE_CONTENT_WIDTH, contentHeight);
-    const showAction = this.primaryAction.visible;
-    const actionBlock = showAction ? 36 : 0;
-    const statusHeight = 20;
-    const viewportHeight =
-      contentHeight -
-      actionBlock -
-      statusHeight;
-    this.scroll.position.set(0, 0);
-    this.scroll.setViewportSize(
-      ALLIANCE_CONTENT_WIDTH,
-      viewportHeight,
+    this.panel.setPaperVisible(false);
+
+    const footerLayout = this.primaryAction.visible
+      ? resolveDialogFooterTabLayout({
+          coreWidth: this.panel.coreWidth,
+          coreHeight: this.panel.coreHeight,
+          tabCount: 1,
+        })
+      : null;
+    const paperBottom = footerLayout?.paperBottom ?? this.panel.coreHeight;
+    const contentBottom = paperBottom - this.panel.content.y;
+    const paperOutsets = resolveDialogPaperOutsets({
+      top: PIXI_UI_GEOMETRY.dialogPadding,
+      right: PIXI_UI_GEOMETRY.dialogPadding,
+      bottom: PIXI_UI_GEOMETRY.dialogPadding,
+      left: PIXI_UI_GEOMETRY.dialogPadding,
+    });
+
+    this.summarySection.position.set(0, 0);
+    this.identityLabel.position.set(0, SECTION_CONTENT_TOP);
+    const detailY = this.identityLabel.y + Math.ceil(this.identityLabel.height) + 2;
+    this.detailLabel.position.set(0, detailY);
+    this.detailLabel.style.wordWrap = true;
+    this.detailLabel.style.wordWrapWidth = ALLIANCE_CONTENT_WIDTH;
+    const rowsY =
+      detailY +
+      (this.detailLabel.text ? Math.ceil(this.detailLabel.height) + 4 : 0);
+    this.summaryRowsLayer.position.set(0, rowsY);
+    this.orderSummaryRows();
+    const summaryContentHeight =
+      rowsY + (this.summaryRowsHeight ?? 0) + SECTION_CONTENT_BOTTOM;
+    setDialogPaperSectionBounds(
+      this.summaryPaper,
+      { x: 0, y: 0, width: ALLIANCE_CONTENT_WIDTH, height: summaryContentHeight },
+      paperOutsets,
     );
-    const rowsHeight = this.rows.layout(
-      ALLIANCE_CONTENT_WIDTH,
-      { gap: 5 },
+    const summarySectionHeight = this.summaryPaper.y + this.summaryPaper.frameHeight;
+    const membersY = summarySectionHeight + SECTION_GAP - this.summaryPaper.y;
+    const membersHeight = Math.max(80, contentBottom - membersY);
+    const membersContentHeight = Math.max(
+      40,
+      membersHeight - paperOutsets.bottom,
     );
-    this.scroll.setContentHeight(rowsHeight);
-    this.primaryAction.position.set(
-      0,
-      viewportHeight + 6,
+    const statusHeight = this.statusLabel.visible ? STATUS_HEIGHT : 0;
+
+    this.membersSection.position.set(0, membersY);
+    this.memberListLayout = resolveAllianceMemberListLayout();
+    this.membersScroll.setBounds(
+      this.memberListLayout.x,
+      SECTION_CONTENT_TOP,
+      this.memberListLayout.viewportWidth,
+      Math.max(
+        ALLIANCE_MEMBER_ROW_HEIGHT,
+        membersContentHeight -
+          SECTION_CONTENT_TOP -
+          SECTION_CONTENT_BOTTOM -
+          statusHeight,
+      ),
     );
-    this.primaryAction.setSize(
-      ALLIANCE_CONTENT_WIDTH,
-      30,
+    this.orderMemberRows();
+    setDialogPaperSectionBounds(
+      this.membersPaper,
+      { x: 0, y: 0, width: ALLIANCE_CONTENT_WIDTH, height: membersContentHeight },
+      paperOutsets,
     );
     this.statusLabel.position.set(
       0,
-      viewportHeight + actionBlock,
+      membersY + membersContentHeight - SECTION_CONTENT_BOTTOM - statusHeight,
     );
+
+    if (footerLayout) {
+      this.primaryAction.position.set(footerLayout.rowX, footerLayout.rowY);
+      this.primaryAction.setSize(
+        footerLayout.tabWidth,
+        PIXI_DIALOG_FOOTER_TABS_GEOMETRY.rowHeight,
+      );
+    }
   }
 
   applyDialogTheme(theme) {
-    this.scroll?.applyTheme(theme);
-    this.rows?.applyTheme(theme);
+    this.contentTheme = theme;
+    if (this.identityLabel) {
+      applyTextTheme(this.identityLabel, theme, RETAINED_TEXT_STYLES.bold);
+      applyTextTheme(this.detailLabel, theme, {
+        ...RETAINED_TEXT_STYLES.border,
+        lineHeight: 14,
+        wordWrapWidth: ALLIANCE_CONTENT_WIDTH,
+      });
+      for (const row of this.summaryRows?.getWidgets?.() ?? []) {
+        row.applyTheme(theme);
+      }
+      for (const row of this.memberRows?.getWidgets?.() ?? []) {
+        row.applyTheme(theme);
+      }
+    }
     this.primaryAction?.applyTheme(theme);
     this.statusLabel?.applyTheme(theme);
+  }
+
+  registerTarget(descriptor) {
+    const semanticId = descriptor?.semanticId;
+    if (!semanticId || !this.context.semanticRegistry) {
+      return null;
+    }
+    this.unregisterTarget(semanticId);
+    const definition = this.context.semanticRegistry.register(descriptor);
+    this.registeredTargetIds.add(semanticId);
+    return definition;
+  }
+
+  unregisterTarget(semanticId) {
+    if (!this.registeredTargetIds.delete(semanticId)) {
+      return false;
+    }
+    return this.context.semanticRegistry?.unregister?.(semanticId) ?? false;
   }
 
   activateDialog() {
@@ -360,12 +493,31 @@ export class PixiAllianceInfoDialog extends RetainedGlobalDialog {
   }
 
   destroyDialog() {
-    this.rows?.destroy();
+    this.summaryRows?.destroy();
+    this.summaryRows = null;
+    this.summaryRowPool?.destroy();
+    this.summaryRowPool = null;
+    this.memberRows?.destroy();
+    this.memberRows = null;
+    this.memberRowPool?.destroy();
+    this.memberRowPool = null;
+    this.membersScroll?.destroy();
+    this.membersScroll = null;
+    this.primaryAction?.destroy();
+    this.primaryAction = null;
+    this.registeredTargetIds.clear();
     this.rows = null;
   }
 
   getPoolStats() {
-    return this.rows?.getStats() ?? null;
+    return Object.freeze({
+      collection: this.memberRows?.getStats?.() ?? null,
+      pool: this.memberRowPool?.getStats?.() ?? null,
+      summary: Object.freeze({
+        collection: this.summaryRows?.getStats?.() ?? null,
+        pool: this.summaryRowPool?.getStats?.() ?? null,
+      }),
+    });
   }
 }
 
@@ -376,36 +528,35 @@ function normalizeAllianceModel(model = {}) {
     : Array.isArray(alliance.members)
       ? alliance.members
       : [];
-  const tag = normalizeTag(
-    alliance.tag ?? alliance.allianceTag,
-  );
-  const name = String(
-    alliance.name ?? alliance.allianceName ?? '',
-  ).trim();
-  const joinMode = String(
-    alliance.joinMode ?? 'closed',
-  );
+  const tag = normalizeTag(alliance.tag ?? alliance.allianceTag);
+  const name = String(alliance.name ?? alliance.allianceName ?? '').trim();
+  const joinMode = String(alliance.joinMode ?? 'closed');
   const connected = model.connected !== false;
   const loading =
-    Boolean(model.loading ?? alliance.loading) ||
-    model.state === 'loading';
-  const ownsAlliance = Boolean(
-    model.ownAlliance ?? model.isMember,
-  );
-  const allianceId = String(
-    alliance.allianceId ?? alliance.id ?? '',
-  );
+    Boolean(model.loading ?? alliance.loading) || model.state === 'loading';
+  const ownsAlliance = Boolean(model.ownAlliance ?? model.isMember);
+  const allianceId = normalizeId(alliance.allianceId ?? alliance.id);
+  const ownApplications = Array.isArray(model.ownApplications)
+    ? model.ownApplications
+    : [];
+  const pending =
+    !ownsAlliance &&
+    Boolean(allianceId) &&
+    ownApplications.some(
+      (application) => normalizeId(application?.allianceId) === allianceId,
+    );
   const canAct =
     Boolean(allianceId) &&
+    !loading &&
     !ownsAlliance &&
-    joinMode !== 'closed';
+    model.actionEnabled !== false &&
+    (joinMode === 'open' || joinMode === 'apply');
   return {
     ...alliance,
     allianceId,
-    title:
-      [tag ? `[${tag}]` : '', name || (tag ? '' : 'alliance')]
-        .filter(Boolean)
-        .join(' '),
+    title: [tag ? `[${tag}]` : '', name || (tag ? '' : 'Alliance')]
+      .filter(Boolean)
+      .join(' '),
     tag,
     name,
     connected,
@@ -414,54 +565,51 @@ function normalizeAllianceModel(model = {}) {
       alliance.memberCount ?? suppliedMembers.length,
     ).toLocaleString('en-US'),
     joinMode,
-    seasonIncome: formatNumber(
+    seasonIncome: formatCoinAmount(
       alliance.seasonIncome ??
         alliance.weeklyIncome ??
-        alliance.totalIncome,
+        alliance.totalIncome ??
+        0,
     ),
     description: String(alliance.description ?? '').trim(),
     notice: String(alliance.notice ?? '').trim(),
     members: suppliedMembers.map(normalizeMember),
-    action: canAct
-      ? {
-          kind: joinMode === 'open' ? 'join' : 'apply',
-          label: joinMode === 'open' ? 'join' : 'apply',
-          enabled: model.actionEnabled !== false,
-        }
-      : null,
+    action: pending
+      ? { kind: 'pending', label: 'Pending', enabled: false }
+      : canAct
+        ? {
+            kind: joinMode === 'open' ? 'join' : 'apply',
+            label: joinMode === 'open' ? 'Join' : 'Apply',
+            enabled: true,
+          }
+        : null,
   };
 }
 
 function normalizeMember(member = {}) {
+  const role = String(member.role ?? 'trader');
+  const level = Math.max(
+    1,
+    Math.floor(Number(member.playerLevel ?? member.level)) || 1,
+  );
   return {
     ...member,
-    memberIdentity: String(
-      member.memberIdentity ?? member.identity ?? '',
-    ),
-    username: String(
-      member.username ?? member.name ?? 'player',
-    ),
-    playerLevel: String(
-      Math.max(
-        1,
-        Math.floor(Number(member.playerLevel ?? member.level)) || 1,
-      ),
-    ),
-    role: String(member.role ?? 'trader'),
+    memberIdentity: normalizeId(member.memberIdentity ?? member.identity),
+    username: String(member.username ?? member.name ?? 'Wizard'),
+    playerLevel: level,
+    levelLabel: `Lv ${level}`,
+    role,
+    roleLabel: ROLE_LABELS[role] ?? titleCaseLabel(role),
   };
 }
 
-function getRoleOrder(members) {
-  const extraRoles = [];
-  for (const member of members) {
-    if (
-      !ROLE_ORDER.includes(member.role) &&
-      !extraRoles.includes(member.role)
-    ) {
-      extraRoles.push(member.role);
-    }
-  }
-  return [...ROLE_ORDER, ...extraRoles];
+function resolveAllianceMemberListLayout() {
+  return resolveRetainedDialogListLayout({
+    bodyWidth: ALLIANCE_CONTENT_WIDTH,
+    paperRight:
+      ALLIANCE_CONTENT_WIDTH + PIXI_UI_GEOMETRY.dialogPadding + 14 / 3,
+    rowFrameWidth: RETAINED_DIALOG_LIST_GEOMETRY.rowFrameWidth,
+  });
 }
 
 function normalizeTag(value) {
@@ -471,15 +619,22 @@ function normalizeTag(value) {
     .toUpperCase();
 }
 
+function normalizeId(value) {
+  return String(value ?? '').trim();
+}
+
 function nonNegativeInteger(value) {
   const number = Math.floor(Number(value));
   return Number.isFinite(number) && number >= 0 ? number : 0;
 }
 
-function formatNumber(value) {
-  return nonNegativeInteger(value).toLocaleString('en-US');
+function titleCaseLabel(value) {
+  return String(value ?? '')
+    .replace(/([a-z])([A-Z])/g, '$1 $2')
+    .replace(/[._-]+/g, ' ')
+    .replace(/\b\w/g, (character) => character.toUpperCase());
 }
 
 function formatFailure(reason) {
-  return reason === 'offline' ? 'offline' : 'not saved';
+  return reason === 'offline' ? 'Offline' : 'Not Saved';
 }

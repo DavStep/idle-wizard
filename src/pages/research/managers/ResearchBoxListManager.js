@@ -13,6 +13,7 @@ import { createStarLevelLabel, formatStarLevel } from '../../shared/starLevelLab
 import { UiWidgetPoolManager } from '../../../rendering/managers/UiWidgetPoolManager.js';
 import { createAssetAtlasSprite } from '../../../assets/atlas/atlasSprite.js';
 import { createSeedPackIcon } from '../../../assets/items/seeds/seedIcons.js';
+import { getHerbIconFrameName } from '../../../assets/items/herbs/herbIcons.js';
 import { getPotionIconFrameName } from '../../../assets/items/potions/potionIcons.js';
 import {
   createStatusIcon,
@@ -51,6 +52,14 @@ const RESEARCH_ARTWORK_BY_BOX_ID = Object.freeze({
   ).href,
   plotGrowth: new URL(
     '../../../../assets/game/source/icons/research/icon-research-plot-growth.png',
+    import.meta.url,
+  ).href,
+  herbGrowthMastery: new URL(
+    '../../../../assets/game/source/icons/research/icon-research-plot-growth.png',
+    import.meta.url,
+  ).href,
+  potionBrewingMastery: new URL(
+    '../../../../assets/game/source/icons/research/icon-research-cauldron-brewing.png',
     import.meta.url,
   ).href,
   plotPlanting: new URL(
@@ -520,12 +529,21 @@ export class ResearchBoxListManager {
       }`;
     title.textContent = formatResearchSectionTitle(box.label);
     ref.boxId = box.id;
-    const showingCompleted = this.isShowingCompletedResearches(box.id);
-    toggle.setAttribute('aria-pressed', showingCompleted ? 'true' : 'false');
-    toggle.setAttribute(
-      'aria-label',
-      `${showingCompleted ? 'Hide' : 'Show'} researched ${formatResearchSectionTitle(box.label)}`,
+    const hasCompletedResearch = box.researches.some(
+      (research) => research.completed === true,
     );
+    const showingCompleted = this.isShowingCompletedResearches(box.id);
+    if (hasCompletedResearch) {
+      toggle.setAttribute('aria-pressed', showingCompleted ? 'true' : 'false');
+      toggle.setAttribute(
+        'aria-label',
+        `${showingCompleted ? 'Hide' : 'Show'} researched ${formatResearchSectionTitle(box.label)}`,
+      );
+    } else {
+      toggle.removeAttribute('aria-pressed');
+      toggle.removeAttribute('aria-label');
+    }
+    heading.replaceChildren(title, ...(hasCompletedResearch ? [toggle] : []));
     section.replaceChildren(
       heading,
       ...this.getDisplayedResearches(box.researches, box.id).map((research) =>
@@ -740,6 +758,8 @@ export class ResearchBoxListManager {
       research.showEffect,
       research.actionType ?? '',
       research.description,
+      research.itemKind ?? '',
+      research.itemKey ?? '',
       research.costCurrency ?? '',
       research.completed,
       research.inProgress,
@@ -795,9 +815,10 @@ export class ResearchBoxListManager {
 
   createResearchArtworkContent(boxId, research) {
     const researchId = String(research?.id ?? '');
+    const itemKind = this.getResearchItemKind(research);
+    const itemKey = this.getResearchItemKey(research);
 
-    if (researchId.startsWith('unlockSeed:')) {
-      const itemKey = researchId.slice('unlockSeed:'.length);
+    if (itemKind === 'seed' && itemKey) {
       const icon = createSeedPackIcon(
         'research-page__research-art-image',
         {
@@ -811,8 +832,18 @@ export class ResearchBoxListManager {
       }
     }
 
-    if (researchId.startsWith('unlockRecipe:')) {
-      const itemKey = researchId.slice('unlockRecipe:'.length);
+    if (itemKind === 'herb' && itemKey) {
+      const icon = createAssetAtlasSprite(
+        'research-page__research-art-image',
+        getHerbIconFrameName(itemKey),
+      );
+
+      if (icon) {
+        return icon;
+      }
+    }
+
+    if (itemKind === 'potion' && itemKey) {
       const icon = createAssetAtlasSprite(
         'research-page__research-art-image',
         getPotionIconFrameName(itemKey),
@@ -882,6 +913,10 @@ export class ResearchBoxListManager {
   }
 
   getResearchItemKind(research) {
+    if (research.itemKind) {
+      return String(research.itemKind).toLowerCase();
+    }
+
     if (research.id?.startsWith('unlockSeed:')) {
       return 'seed';
     }
@@ -904,6 +939,14 @@ export class ResearchBoxListManager {
   }
 
   getResearchItemKey(research) {
+    if (research.itemKey) {
+      return research.itemKey;
+    }
+
+    if (research.id?.startsWith('unlockSeed:')) {
+      return research.id.slice('unlockSeed:'.length);
+    }
+
     return research.id?.startsWith('unlockRecipe:')
       ? research.id.slice('unlockRecipe:'.length)
       : null;

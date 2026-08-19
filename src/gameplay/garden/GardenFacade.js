@@ -3,6 +3,7 @@ import { GardenBulkActionManager } from "./managers/GardenBulkActionManager.js";
 import { GardenCancellationManager } from "./managers/GardenCancellationManager.js";
 import { GardenPlantingManager } from "./managers/GardenPlantingManager.js";
 import { GardenProcessManager } from "./managers/GardenProcessManager.js";
+import { GardenSeedSelectionManager } from "./managers/GardenSeedSelectionManager.js";
 import { GardenSnapshotManager } from "./managers/GardenSnapshotManager.js";
 import { GardenTileEntityManager } from "./managers/GardenTileEntityManager.js";
 import { GardenTilePurchaseManager } from "./managers/GardenTilePurchaseManager.js";
@@ -42,6 +43,9 @@ export class GardenFacade {
       gardenTileEntityManager: this.gardenTileEntityManager,
       itemsFacade,
       researchFacade,
+    });
+    this.gardenSeedSelectionManager = new GardenSeedSelectionManager({
+      itemsFacade,
     });
     this.gardenTapAccelerationManager = new GardenTapAccelerationManager({
       gardenTileEntityManager: this.gardenTileEntityManager,
@@ -102,6 +106,10 @@ export class GardenFacade {
     return this.gardenPlantingManager.plantSeed(tileNumber, seedTypeId);
   }
 
+  selectToolbarSeed(seedTypeId) {
+    return this.gardenSeedSelectionManager.select(seedTypeId);
+  }
+
   selectSeed(tileNumber, seedTypeId) {
     return this.gardenPlantingManager.selectSeed(tileNumber, seedTypeId);
   }
@@ -135,7 +143,10 @@ export class GardenFacade {
   }
 
   getSnapshot() {
-    return this.gardenSnapshotManager.getSnapshot();
+    return {
+      ...this.gardenSnapshotManager.getSnapshot(),
+      ...this.gardenSeedSelectionManager.getSnapshot(),
+    };
   }
 
   hasFrameTimerWork() {
@@ -144,6 +155,7 @@ export class GardenFacade {
 
   getPersistenceSnapshot() {
     return {
+      ...this.gardenSeedSelectionManager.getPersistenceSnapshot(),
       unlockedTiles: this.gardenTileEntityManager.getUnlockedTiles(),
       tiles: this.gardenSnapshotManager.getTileSnapshots().map((tile) => ({
         tileNumber: tile.tileNumber,
@@ -164,6 +176,7 @@ export class GardenFacade {
     }
 
     this.gardenTapAccelerationManager.reset();
+    this.gardenSeedSelectionManager.applyPersistenceSnapshot(snapshot);
     const tiles = Array.isArray(snapshot.tiles)
       ? snapshot.tiles.map((tile) => this.restoreTile(tile)).filter(Boolean)
       : [];

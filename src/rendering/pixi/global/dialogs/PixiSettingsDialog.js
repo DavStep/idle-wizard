@@ -6,7 +6,6 @@ import {
   PixiTabButton,
   createDialogPaperSection,
   PixiNineSliceFrame,
-  PixiScrollView,
   PixiTextField,
   PixiTextLabel,
   PIXI_DIALOG_SPLIT_PAPER_GEOMETRY,
@@ -197,25 +196,20 @@ export class PixiSettingsDialog extends RetainedGlobalDialog {
     this.accountDraftDirty = false;
     this.scrollOffsets = new Map();
 
-    this.scroll = new PixiScrollView({
+    this.scroll = new RetainedScrollArea({
       inputRouter: this.context.inputRouter,
-      assetManager: this.context.assets,
-      width: SETTINGS_CONTENT_WIDTH,
-      height: startsOnDevicePreferences
-        ? SETTINGS_DEVICE_SCROLL_HEIGHT
-        : SETTINGS_STANDARD_SCROLL_HEIGHT,
-      contentPaddingTop: PIXI_UI_GEOMETRY.dialogScrollPaddingTop,
-      showProgress: true,
       label: `${dialogId}:scroll`,
     });
-    this.panel.content.addChild(this.scroll);
+    this.panel.content.addChild(this.scroll.root);
 
     this.accountLayer = new Container();
     this.accountLayer.label = `${dialogId}:accountPane`;
     this.reportLayer = new Container();
     this.reportLayer.label = `${dialogId}:reportPane`;
+    this.reportLayer.y = PIXI_UI_GEOMETRY.dialogScrollPaddingTop;
     this.configurationsLayer = new Container();
     this.configurationsLayer.label = `${dialogId}:configurationsPane`;
+    this.configurationsLayer.y = PIXI_UI_GEOMETRY.dialogScrollPaddingTop;
     this.panel.content.addChild(this.accountLayer);
     this.scroll.content.addChild(this.reportLayer, this.configurationsLayer);
 
@@ -673,7 +667,7 @@ export class PixiSettingsDialog extends RetainedGlobalDialog {
     if (next === this.selectedTab) {
       return true;
     }
-    this.scrollOffsets.set(this.selectedTab, this.scroll.scrollY);
+    this.scrollOffsets.set(this.selectedTab, this.scroll.offsetY);
     this.selectedTab = next;
     const result =
       this.actions.selectTab?.(next) ?? this.actions.selectSettingsTab?.(next);
@@ -711,7 +705,6 @@ export class PixiSettingsDialog extends RetainedGlobalDialog {
       ACCOUNT_SCROLL_X,
       PIXI_UI_GEOMETRY.dialogScrollPaddingTop,
     );
-    this.scroll.position.set(0, 0);
     this.setPanelContentSize(
       SETTINGS_CONTENT_WIDTH,
       account
@@ -720,7 +713,9 @@ export class PixiSettingsDialog extends RetainedGlobalDialog {
           ? SETTINGS_DEVICE_CONTENT_HEIGHT
           : SETTINGS_STANDARD_CONTENT_HEIGHT,
     );
-    this.scroll.setViewportSize(
+    this.scroll.setBounds(
+      0,
+      0,
       account ? ACCOUNT_HEADER_WIDTH : SETTINGS_CONTENT_WIDTH,
       account
         ? this.activePaneHeight
@@ -728,7 +723,9 @@ export class PixiSettingsDialog extends RetainedGlobalDialog {
           ? SETTINGS_DEVICE_SCROLL_HEIGHT
           : SETTINGS_STANDARD_SCROLL_HEIGHT,
     );
-    this.scroll.setContentHeight(this.activePaneHeight);
+    this.scroll.setContentHeight(
+      PIXI_UI_GEOMETRY.dialogScrollPaddingTop + this.activePaneHeight,
+    );
     this.scroll.scrollTo(this.scrollOffsets.get(this.selectedTab) ?? 0);
     this.syncOuterScrollState(account);
     this.syncAccountPaper(account);
@@ -737,12 +734,11 @@ export class PixiSettingsDialog extends RetainedGlobalDialog {
 
   syncOuterScrollState(account) {
     const visible = !account;
-    this.scroll.visible = visible;
-    this.scroll.renderable = visible;
-    this.scroll.eventMode = visible ? 'static' : 'none';
+    this.scroll.root.visible = visible;
+    this.scroll.root.renderable = visible;
+    this.scroll.root.eventMode = visible ? 'static' : 'none';
     if (account) {
       this.scroll.scrollTo(0);
-      this.scroll.progressBar.visible = false;
     }
   }
 
@@ -1241,7 +1237,6 @@ export class PixiSettingsDialog extends RetainedGlobalDialog {
   }
 
   applyDialogTheme(theme) {
-    this.scroll?.applyTheme(theme);
     for (const label of [
       this.usernameStatus,
       this.feedbackStatus,
@@ -1284,15 +1279,18 @@ export class PixiSettingsDialog extends RetainedGlobalDialog {
       ACCOUNT_SCROLL_X,
       PIXI_UI_GEOMETRY.dialogScrollPaddingTop,
     );
-    this.scroll.position.set(0, 0);
-    this.scroll.setViewportSize(
+    this.scroll.setBounds(
+      0,
+      0,
       SETTINGS_CONTENT_WIDTH,
       this.selectedTab === 'configurations'
         ? SETTINGS_DEVICE_SCROLL_HEIGHT
         : SETTINGS_STANDARD_SCROLL_HEIGHT,
     );
     this.layoutActivePane();
-    this.scroll.setContentHeight(this.activePaneHeight);
+    this.scroll.setContentHeight(
+      PIXI_UI_GEOMETRY.dialogScrollPaddingTop + this.activePaneHeight,
+    );
     this.syncOuterScrollState(account);
     if (this.selectedTab === 'account') {
       this.syncAccountPaper(true);
@@ -1334,6 +1332,8 @@ export class PixiSettingsDialog extends RetainedGlobalDialog {
     this.frames?.destroy();
     this.framePool?.destroy();
     this.accountChoiceScroll?.destroy();
+    this.scroll?.destroy();
+    this.scroll = null;
   }
 
   getPoolStats() {

@@ -275,9 +275,16 @@ export class GardenPlantingManager {
 
   getGrowthDurationMs(tileNumber, herb) {
     const baseDurationMs = herb.growthDurationMs ?? 60_000;
+    const herbDurationMs =
+      this.researchFacade?.getReducedHerbGrowthDurationMs?.(
+        herb.key,
+        baseDurationMs,
+      ) ?? baseDurationMs;
     return (
-      this.researchFacade?.getReducedPlotGrowthDurationMs?.(tileNumber, baseDurationMs) ??
-      baseDurationMs
+      this.researchFacade?.getReducedPlotGrowthDurationMs?.(
+        tileNumber,
+        herbDurationMs,
+      ) ?? herbDurationMs
     );
   }
 

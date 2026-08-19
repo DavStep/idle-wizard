@@ -1,5 +1,6 @@
 const REWARD_EVENT_PAGE_IDS = Object.freeze({
   seed_summoned: 'workshop',
+  garden_seed_planted: 'garden',
   personal_task_reward_claimed: 'workshop',
   herb_harvested: 'garden',
   potion_collected: 'brewing',

@@ -5,7 +5,6 @@ import {
 
 import { BasePixiRetainedView } from '../../primitives/BasePixiRetainedView.js';
 import { PixiTabButton } from '../../primitives/PixiTabButton.js';
-import { PixiScrollView } from '../../primitives/PixiScrollView.js';
 import {
   DEFAULT_PIXI_THEME_SNAPSHOT,
   PIXI_UI_GEOMETRY,
@@ -14,8 +13,10 @@ import {
   createPixiPageBackgroundGradient,
   drawPixiPageBackground,
 } from '../../theme/PixiPageBackground.js';
-import { resolveRetainedPageBottomClearance } from '../workshop/RetainedPageKit.js';
-import { RESEARCH_PIXI_GEOMETRY } from '../research/ResearchPixiPage.js';
+import {
+  RetainedScrollArea,
+  resolveRetainedPageBottomClearance,
+} from '../workshop/RetainedPageKit.js';
 import {
   GUILD_DIALOG_IDS,
   GuildDialogPixi,
@@ -23,6 +24,7 @@ import {
 } from './GuildDialogPixi.js';
 import {
   GuildCharterPanel,
+  GuildChronicleSection,
   GuildPeopleSection,
   GuildQuestBoardSection,
   GuildRowsSection,
@@ -38,6 +40,7 @@ const ADVENTURER_TABS = Object.freeze([
 const SECTION_GAP = 18;
 const TAB_GAP = 3;
 const PAGE_SCROLL_PADDING = 6;
+const MAX_CHRONICLE_ENTRIES = 80;
 
 /**
  * Full retained-mode Guild page.
@@ -107,16 +110,12 @@ export class GuildPixiPage extends BasePixiRetainedView {
     this.tabScrolls = new Map();
     this.tabScrolls.set(
       'hall',
-      new PixiScrollView({
-        assetManager,
+      new RetainedScrollArea({
         inputRouter,
-        width: 1,
-        height: 1,
-        showProgress: true,
         label: 'guild:hall:scroll',
       }),
     );
-    this.createdLayer.addChild(this.tabScrolls.get('hall'));
+    this.createdLayer.addChild(this.tabScrolls.get('hall').root);
     for (const tab of ADVENTURER_TABS) {
       const button = new PixiTabButton({
         assetManager,
@@ -131,16 +130,12 @@ export class GuildPixiPage extends BasePixiRetainedView {
       this.tabNotifications.set(tab.id, button.notificationBadge);
       this.tabLayer.addChild(button);
 
-      const scroll = new PixiScrollView({
-        assetManager,
+      const scroll = new RetainedScrollArea({
         inputRouter,
-        width: 1,
-        height: 1,
-        showProgress: true,
         label: `guild:${tab.id}:scroll`,
       });
       this.tabScrolls.set(tab.id, scroll);
-      this.createdLayer.addChild(scroll);
+      this.createdLayer.addChild(scroll.root);
     }
 
     this.hallSection = new GuildRowsSection({
@@ -190,20 +185,9 @@ export class GuildPixiPage extends BasePixiRetainedView {
       semanticPrefix: 'guild.applicant',
       label: 'guild:applicants',
     });
-    this.activitySection = new GuildPeopleSection({
-      title: 'Right Now',
-      assetManager,
-      inputRouter,
-      semanticRegistry,
-      counters,
-      semanticPrefix: 'guild.activity',
-      label: 'guild:activity',
-    });
-    this.logSection = new GuildRowsSection({
+    this.logSection = new GuildChronicleSection({
       title: 'Chronicle',
       assetManager,
-      inputRouter,
-      semanticRegistry,
       counters,
       label: 'guild:log',
     });
@@ -229,7 +213,6 @@ export class GuildPixiPage extends BasePixiRetainedView {
     this.tabScrolls
       .get('log')
       .content.addChild(
-        this.activitySection.root,
         this.logSection.root,
       );
     this.createdLayer.addChild(this.tabLayer);
@@ -483,40 +466,37 @@ export class GuildPixiPage extends BasePixiRetainedView {
 
   bindLog(guild) {
     const adventurers = safeArray(guild.adventurers);
-    this.activitySection.bind({
-      countLabel: `${adventurers.length} ${
-        adventurers.length === 1 ? 'Life' : 'Lives'
-      }`,
-      emptyLabel: 'Hire An Adventurer To Begin Their Story',
-      people: adventurers.map((adventurer) => ({
-        ...adventurer,
-        action: () =>
-          this.openDialog(
-            GUILD_DIALOG_IDS.ADVENTURER,
-            this.createPersonDialogModel(
-              adventurer,
-              GUILD_DIALOG_IDS.ADVENTURER,
-            ),
-          ),
-        detailLabel:
-          adventurer.activityText ??
-          adventurer.lifeText ??
-          'Passes The Time In The Guild Hall.',
-        statusLabel: adventurer.activityLabel ?? 'In The Hall',
-      })),
-    });
+    const peopleById = new Map(
+      adventurers.map((adventurer) => [adventurer.id, adventurer]),
+    );
+    const logs = safeArray(guild.logs).slice(0, MAX_CHRONICLE_ENTRIES);
     this.logSection.bind({
       emptyLabel: 'The Chronicle Is Waiting For Its First Story',
-      rows: safeArray(guild.logs)
-        .slice(0, 16)
-        .map((log, index) => ({
+      entries: logs.map((log, index) => {
+        const participants = resolveChronicleParticipants({
+          adventurers,
+          log,
+          peopleById,
+        });
+        return {
           id: log.id ?? index,
-          kind: 'paragraph',
-          text: `${log.timeLabel ? `${log.timeLabel} · ` : ''}${
-            log.text ?? String(log)
-          }`,
+          authorLabel:
+            participants.length > 0
+              ? participants
+                  .map((person) => person.displayName ?? person.name)
+                  .filter(Boolean)
+                  .join(' & ')
+              : 'Guild Hall',
+          message: stripChronicleParticipantLead(
+            log.text ?? String(log),
+            participants,
+          ),
+          participants,
+          system: participants.length === 0,
+          timeLabel: log.timeLabel ?? '',
           tone: log.tone ?? '',
-        })),
+        };
+      }),
     });
   }
 
@@ -742,9 +722,9 @@ export class GuildPixiPage extends BasePixiRetainedView {
           this.selectedBranchId === 'adventurers' &&
           viewId === this.selectedAdventurerTabId)
       );
-      scroll.visible = selected;
-      scroll.renderable = selected;
-      scroll.eventMode = selected ? 'passive' : 'none';
+      scroll.root.visible = selected;
+      scroll.root.renderable = selected;
+      scroll.root.eventMode = selected ? 'passive' : 'none';
     }
     for (const tab of ADVENTURER_TABS) {
       this.tabButtons.get(tab.id).setSelected(
@@ -778,9 +758,6 @@ export class GuildPixiPage extends BasePixiRetainedView {
       button.applyTheme(this.theme);
     }
     this.updateTabNotifications();
-    for (const scroll of this.tabScrolls?.values?.() ?? []) {
-      scroll.applyTheme(this.theme);
-    }
     for (const section of this.getCreatedSections()) {
       section.applyTheme(this.theme);
     }
@@ -857,8 +834,9 @@ export class GuildPixiPage extends BasePixiRetainedView {
     );
 
     for (const [viewId, scroll] of this.tabScrolls) {
-      scroll.position.set(0, scrollTop);
-      scroll.setViewportSize(
+      scroll.setBounds(
+        0,
+        scrollTop,
         scrollWidth,
         viewId === 'hall' ? hallScrollHeight : adventurerScrollHeight,
       );
@@ -907,10 +885,9 @@ export class GuildPixiPage extends BasePixiRetainedView {
     );
     this.layoutSectionStack(
       this.tabScrolls.get('log'),
-      [this.activitySection, this.logSection],
+      [this.logSection],
       width,
       adventurerViewportHeight,
-      RESEARCH_PIXI_GEOMETRY.rowGap,
     );
   }
 
@@ -982,7 +959,6 @@ export class GuildPixiPage extends BasePixiRetainedView {
       this.availableSection,
       this.adventurersSection,
       this.applicantsSection,
-      this.activitySection,
       this.logSection,
     ].filter(Boolean);
   }
@@ -994,7 +970,6 @@ export class GuildPixiPage extends BasePixiRetainedView {
       available: this.availableSection.getStats(),
       adventurers: this.adventurersSection.getStats(),
       applicants: this.applicantsSection.getStats(),
-      activity: this.activitySection.getStats(),
       log: this.logSection.getStats(),
     });
   }
@@ -1015,8 +990,8 @@ export class GuildPixiPage extends BasePixiRetainedView {
       detachAndDestroy(button, () => button.destroy());
     }
     for (const scroll of this.tabScrolls.values()) {
-      detachAndDestroy(scroll, () =>
-        scroll.destroy({ children: true }),
+      detachAndDestroy(scroll.root, () =>
+        scroll.destroy(),
       );
     }
   }
@@ -1146,6 +1121,80 @@ function normalizeNotificationState(notification) {
 function detachAndDestroy(displayObject, destroy) {
   displayObject?.parent?.removeChild?.(displayObject);
   destroy();
+}
+
+function resolveChronicleParticipants({ adventurers, log, peopleById }) {
+  if (!log || typeof log !== 'object') {
+    return [];
+  }
+  const explicit = [
+    resolveChronicleParticipant('actor', log, peopleById),
+    resolveChronicleParticipant('partner', log, peopleById),
+  ].filter(Boolean);
+  if (explicit.length > 0) {
+    return explicit;
+  }
+
+  const text = String(log.text ?? '').toLocaleLowerCase();
+  return adventurers
+    .map((person) => ({
+      person,
+      textIndex: text.indexOf(
+        String(person.displayName ?? person.name ?? '').toLocaleLowerCase(),
+      ),
+    }))
+    .filter(({ textIndex }) => textIndex >= 0)
+    .sort((left, right) => left.textIndex - right.textIndex)
+    .slice(0, 2)
+    .map(({ person }) => person);
+}
+
+function resolveChronicleParticipant(prefix, log, peopleById) {
+  const id = log[`${prefix}Id`];
+  if (id && peopleById.has(id)) {
+    return peopleById.get(id);
+  }
+  const displayName = log[`${prefix}Name`];
+  if (!displayName) {
+    return null;
+  }
+  return {
+    id: id ?? `${prefix}:${displayName}`,
+    displayName,
+    iconKey: log[`${prefix}IconKey`] ?? null,
+  };
+}
+
+function stripChronicleParticipantLead(text, participants) {
+  const original = String(text ?? '').trim();
+  if (!original || participants.length === 0) {
+    return original;
+  }
+  const names = participants
+    .map((person) => String(person.displayName ?? person.name ?? '').trim())
+    .filter(Boolean);
+  const patterns = [];
+  if (names.length > 1) {
+    patterns.push(
+      `${escapeRegExp(names[0])}\\s+(?:and|&)\\s+${escapeRegExp(names[1])}`,
+      `${escapeRegExp(names[1])}\\s+(?:and|&)\\s+${escapeRegExp(names[0])}`,
+    );
+  }
+  patterns.push(...names.map((name) => escapeRegExp(name)));
+  for (const pattern of patterns) {
+    const message = original.replace(
+      new RegExp(`^${pattern}\\s*[:,]?\\s*`, 'i'),
+      '',
+    );
+    if (message !== original) {
+      return message || original;
+    }
+  }
+  return original;
+}
+
+function escapeRegExp(value) {
+  return String(value).replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
 }
 
 function safeArray(value) {

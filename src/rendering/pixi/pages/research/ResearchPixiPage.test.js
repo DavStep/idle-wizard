@@ -204,6 +204,22 @@ describe('ResearchPixiPage', () => {
     harness.dispose();
   });
 
+  it('hides the completed-research toggle when a section has nothing to hide', () => {
+    const harness = createHarness();
+
+    harness.page.bind(createResearchViewModel());
+
+    const box = harness.page.boxes.get('herbs');
+    expect(box.visibilityButton.visible).toBe(false);
+    expect(box.visibilityButton.renderable).toBe(false);
+    expect(
+      harness.semanticTargets.has('research.completed.regular.herbs'),
+    ).toBe(false);
+
+    harness.page.destroy();
+    harness.dispose();
+  });
+
   it('keeps unlocked labels passive and routes locked rows to a requirement tooltip', () => {
     const buyResearch = vi.fn();
     const showLockedReason = vi.fn();
@@ -302,7 +318,7 @@ describe('ResearchPixiPage', () => {
     harness.dispose();
   });
 
-  it('renders exact seed-pack and potion artwork for item unlock research', () => {
+  it('renders exact seed-pack, herb, and potion artwork for item research', () => {
     const genericTexture = Texture.WHITE;
     const seedPackTexture = new Texture();
     const silverleafTexture = new Texture();
@@ -355,6 +371,20 @@ describe('ResearchPixiPage', () => {
     );
     expect(potionRow.art.texture).toBe(potionTexture);
     expect(potionRow.artOverlay.visible).toBe(false);
+
+    Object.assign(research, {
+      id: 'timer:herbGrowth:silverleafHerb:1',
+      displayName: 'silverleaf growing',
+      itemKind: 'herb',
+      itemKey: 'silverleafHerb',
+    });
+    harness.page.bind(model);
+
+    const herbRow = harness.page.rows.get(
+      'timer:herbGrowth:silverleafHerb:1',
+    );
+    expect(herbRow.art.texture).toBe(silverleafTexture);
+    expect(herbRow.artOverlay.visible).toBe(false);
 
     harness.page.destroy();
     harness.dispose();

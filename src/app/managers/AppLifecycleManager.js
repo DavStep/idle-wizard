@@ -149,14 +149,6 @@ export class AppLifecycleManager {
       }
 
       let promptedBeforeConnect = false;
-      if (this.shouldRestoreConnectedAccountBeforeInitialConnect(authSnapshot)) {
-        await this.tryRestoreConnectedAccount();
-        if (!this.started || this.stopping) {
-          return;
-        }
-        authSnapshot = this.getAuthSnapshot();
-      }
-
       if (
         this.shouldPromptBeforeInitialConnect(authSnapshot, {
           hadConnectableAccountBeforePrepare,
@@ -354,16 +346,6 @@ export class AppLifecycleManager {
     );
   }
 
-  shouldRestoreConnectedAccountBeforeInitialConnect(
-    authSnapshot = this.getAuthSnapshot(),
-  ) {
-    return (
-      authSnapshot?.hasToken &&
-      !authSnapshot?.oidc?.authenticated &&
-      authSnapshot?.oidc?.remembered
-    );
-  }
-
   hasConnectableAccount(authSnapshot = this.getAuthSnapshot()) {
     return Boolean(authSnapshot?.hasToken || authSnapshot?.oidc?.authenticated);
   }
@@ -443,20 +425,6 @@ export class AppLifecycleManager {
 
     const save = this.gameplayFacade.createPersistenceSave?.();
     return save && typeof save === 'object' ? save : null;
-  }
-
-  async tryRestoreConnectedAccount() {
-    const authFacade = this.backendFacade.getAuthFacade?.();
-
-    if (typeof authFacade?.tryRestoreConnectedAccount !== 'function') {
-      return { ok: false, reason: 'disabled' };
-    }
-
-    return Promise.resolve(authFacade.tryRestoreConnectedAccount()).catch((error) => ({
-      ok: false,
-      reason: 'exception',
-      message: this.getErrorText(error),
-    }));
   }
 
   getFreshStartLoginStatusText(result = {}, authSnapshot = this.getAuthSnapshot()) {

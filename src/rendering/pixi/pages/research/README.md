@@ -14,11 +14,12 @@ Crystal Research tab is purple. The visible category title remains the primary
 identifier. The shared plaque renders at `75%` of its authored nine-slice
 geometry in Research and every cross-room consumer.
 
-Each station section places a shared label-free base button at the far right of
-its title row with an `8px` edge inset. A simple outlined eye icon is dimmed
-while off. Completed research is hidden by default; pressing that section's eye
-reveals completed rows below all newer, incomplete rows without changing another
-section.
+Each station section that contains completed research places a shared label-free
+base button at the far right of its title row with an `8px` edge inset. Sections
+with nothing to hide omit the control and its semantic target. A simple outlined
+eye icon is dimmed while off. Completed research is hidden by default; pressing
+that section's eye reveals completed rows below all newer, incomplete rows
+without changing another section.
 
 Rows and boxes are keyed and pooled. Research labels are passive; the cost
 button owns available purchases. Selecting a locked row keeps the requirement

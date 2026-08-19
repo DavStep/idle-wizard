@@ -93,14 +93,13 @@ const STALL_STAR_GAP = 4;
 const STALL_CONTENT_RAISE = 5;
 const STALL_BATCH_BADGE_WIDTH = 30;
 const STALL_BATCH_BADGE_HEIGHT = 27;
-const STALL_BATCH_BADGE_RIGHT_INSET = 14;
-const STALL_BATCH_BADGE_TOP = 1;
+const STALL_BATCH_BADGE_ACTION_GAP = 10;
+const STALL_BATCH_BADGE_TOP = -2;
 const STALL_BATCH_TEXT_CENTER_Y = 10;
+const STALL_ACTION_CONTENT_GAP = 6;
+const STALL_PROGRESS_TIMER_GAP = 4;
 const STALL_ART_WELL_SIZE = 52;
 const STALL_ARTWORK_SIZE = 44;
-const STALL_PRESS_SCALE = 0.97;
-const STALL_RELEASE_PEAK_SCALE = 1.015;
-const STALL_RELEASE_DURATION_MS = 180;
 const STALL_QUANTITY_COLOR = '#ffffff';
 const STALL_QUANTITY_STROKE = Object.freeze({
   color: '#2a160d',
@@ -457,22 +456,8 @@ export class ShopPixiPage extends BasePixiRetainedView {
   }
 
   createRequestSectionOptions() {
-    const requests = this.model.players.requests;
     return {
-      actions:
-        requests.canClear === true
-          ? [
-              {
-                id: 'clear',
-                label: 'clear',
-                semanticId: 'shop.requests.clear',
-                enabled: true,
-                action:
-                  requests.clearAction ??
-                  this.currentActions.clearPlayerRequest,
-              },
-            ]
-          : [],
+      actions: [],
       onRow: (slot) =>
         slot.action?.(slot) ??
         this.openDialog(
@@ -866,8 +851,16 @@ export class ShopStallsSection {
       counters,
       keyOf: (stall, index) =>
         stall.id ?? stall.slotNumber ?? index,
-      bind: (widget, stall, key) =>
-        widget.bind(key, stall, () => this.openStall?.(stall)),
+      bind: (widget, stall, key) => {
+        const model = normalizeSectionStallRow(stall, key);
+        widget.bind(
+          key,
+          model,
+          model.selected
+            ? () => stall.cancelAction?.(stall)
+            : () => this.openStall?.(stall),
+        );
+      },
       afterReconcile: (widgets) => orderChildren(this.rowsLayer, widgets),
     });
     this.width = 0;
@@ -1042,7 +1035,13 @@ export class ShopRowsSection {
                 tutorialPrefix: this.rowTutorialPrefix,
               })
             : row;
-        widget.bind(key, model, () => this.onRow?.(row));
+        widget.bind(
+          key,
+          model,
+          model.selected
+            ? () => row.cancelAction?.(row)
+            : () => this.onRow?.(row),
+        );
       },
       afterReconcile: (widgets) => orderChildren(this.rowsLayer, widgets),
     });
@@ -1317,6 +1316,7 @@ export class ShopStallWidget {
       width: STALL_SELECT_ACTION_WIDTH,
       height: STALL_SELECT_ACTION_HEIGHT,
       variant: 'green',
+      fallbackHitTest: true,
       label: 'shop:stall:priceAction',
     });
     this.priceAction.visible = false;
@@ -1370,28 +1370,14 @@ export class ShopStallWidget {
     );
     this.root.addChild(this.visual);
     this.enabled = false;
-    this.pressed = false;
     this.action = null;
     this.semanticId = null;
     this.semanticDefinition = null;
+    this.semanticDisplayObject = null;
     this.priceSemanticId = null;
     this.priceSemanticDefinition = null;
-    this.releaseFrame = 0;
-    this.releaseStartedAt = 0;
     this.saleShineFrame = 0;
     this.saleShineStartedAt = 0;
-    this.registration =
-      inputRouter?.registerPressTarget?.(this.root, {
-        fallbackHitTest: true,
-        enabled: () =>
-          this.enabled &&
-          this.root.visible &&
-          this.root.renderable,
-        onPressChange: (pressed, context) =>
-          this.setPressed(pressed, context),
-        onActivate: (payload) => this.action?.(payload),
-        haptic: 'light',
-      }) ?? null;
   }
 
   bind(key, stall = {}, action) {
@@ -1402,7 +1388,8 @@ export class ShopStallWidget {
     this.enabled = stall.enabled !== false && stall.locked !== true;
     this.root.visible = stall.hidden !== true;
     this.root.renderable = this.root.visible;
-    this.root.eventMode = this.enabled ? 'static' : 'none';
+    this.root.eventMode = this.root.visible ? 'passive' : 'none';
+    this.root.cursor = 'default';
     this.title.setText(formatTitleCase(
       stall.title ?? `stall ${stall.slotNumber ?? key}`,
     ));
@@ -1473,15 +1460,19 @@ export class ShopStallWidget {
       stall.semanticId ??
       `shop.stall.${stall.slotNumber ?? key}`;
     if (this.semanticRegistry && this.semanticId) {
+      this.semanticDisplayObject = this.priceAction.visible
+        ? this.priceAction
+        : this.root;
       this.semanticDefinition = this.semanticRegistry.register({
         semanticId: this.semanticId,
         tutorialId:
           stall.tutorialId ??
           `shop:stand:${stall.slotNumber ?? key}`,
-        displayObject: this.root,
+        displayObject: this.semanticDisplayObject,
         state: () => ({
           enabled: this.enabled,
-          interactive: Boolean(this.action),
+          interactive:
+            this.priceAction.visible && Boolean(this.action),
           visible: this.root.visible && this.root.renderable,
         }),
         activate: (payload) => this.action?.(payload),
@@ -1525,9 +1516,11 @@ export class ShopStallWidget {
       this.title.x + this.title.measuredWidth + STALL_STAR_GAP,
       this.title.y + 1,
     );
+    const actionLeft =
+      width - 10 - STALL_SELECT_ACTION_WIDTH;
     const batchCenterX =
-      width -
-      STALL_BATCH_BADGE_RIGHT_INSET -
+      actionLeft -
+      STALL_BATCH_BADGE_ACTION_GAP -
       STALL_BATCH_BADGE_WIDTH / 2;
     this.batchBadge.position.set(
       batchCenterX,
@@ -1579,13 +1572,16 @@ export class ShopStallWidget {
     );
     this.layoutPriceResource();
     const timerWidth = Math.max(18, this.timer.measuredWidth);
+    const timerRight = actionLeft - STALL_ACTION_CONTENT_GAP;
+    const progressRight =
+      timerRight - timerWidth - STALL_PROGRESS_TIMER_GAP;
     this.progress.position.set(70, progressY);
     this.progress.setSize(
-      Math.max(0, width - 80 - timerWidth - 4),
+      Math.max(0, progressRight - this.progress.x),
       PIXI_UI_GEOMETRY.progressTotalHeight,
     );
     this.timer.position.set(
-      width - 10,
+      timerRight,
       progressY + PIXI_UI_GEOMETRY.progressTotalHeight / 2,
     );
     this.notificationBadge.placeAtTopRight({
@@ -1643,62 +1639,6 @@ export class ShopStallWidget {
     this.redrawState();
   }
 
-  setPressed(pressed, context = null) {
-    const nextPressed = Boolean(pressed) && this.enabled;
-    if (nextPressed) {
-      this.cancelReleaseAnimation();
-      this.pressed = true;
-      this.visual.scale.set(STALL_PRESS_SCALE);
-      this.redrawState();
-      return;
-    }
-
-    const wasPressed = this.pressed;
-    this.pressed = false;
-    this.redrawState();
-    if (
-      wasPressed &&
-      context?.confirmed === true &&
-      !prefersReducedMotion()
-    ) {
-      this.startReleaseAnimation();
-      return;
-    }
-
-    this.cancelReleaseAnimation();
-    this.visual.scale.set(1);
-  }
-
-  startReleaseAnimation() {
-    this.cancelReleaseAnimation();
-    this.releaseStartedAt = now();
-    const tick = () => {
-      const progress = Math.min(
-        1,
-        Math.max(
-          0,
-          (now() - this.releaseStartedAt) /
-            STALL_RELEASE_DURATION_MS,
-        ),
-      );
-      this.visual.scale.set(stallReleaseScale(progress));
-      if (progress >= 1) {
-        this.releaseFrame = 0;
-        this.visual.scale.set(1);
-        return;
-      }
-      this.releaseFrame = requestFrame(tick);
-    };
-    this.releaseFrame = requestFrame(tick);
-  }
-
-  cancelReleaseAnimation() {
-    if (this.releaseFrame) {
-      cancelFrame(this.releaseFrame);
-      this.releaseFrame = 0;
-    }
-  }
-
   startSaleShine() {
     this.cancelSaleShine();
     if (prefersReducedMotion() || !this.saleShine.layout) {
@@ -1738,7 +1678,7 @@ export class ShopStallWidget {
   }
 
   redrawState() {
-    this.frame.alpha = this.model?.selected ? 0.86 : 1;
+    this.frame.alpha = 1;
     this.title.setColor(STALL_TEXT_INK);
     this.batch.setColor(STALL_QUANTITY_COLOR);
     this.item.setColor(STALL_TEXT_INK);
@@ -1776,7 +1716,6 @@ export class ShopStallWidget {
     this.key = null;
     this.action = null;
     this.enabled = false;
-    this.setPressed(false);
     this.cancelSaleShine();
     this.root.eventMode = 'none';
     this.root.visible = false;
@@ -1799,21 +1738,19 @@ export class ShopStallWidget {
     }
     if (this.semanticDefinition && this.semanticId) {
       this.semanticRegistry?.unregister?.(this.semanticId, {
-        displayObject: this.root,
+        displayObject: this.semanticDisplayObject ?? this.root,
       });
     }
     this.priceSemanticDefinition = null;
     this.priceSemanticId = null;
     this.semanticDefinition = null;
     this.semanticId = null;
+    this.semanticDisplayObject = null;
   }
 
   destroy() {
     this.unregisterSemantic();
-    this.cancelReleaseAnimation();
     this.cancelSaleShine();
-    this.registration?.();
-    this.registration = null;
     this.root.destroy({ children: true });
   }
 }
@@ -2816,21 +2753,41 @@ function normalizeSectionStallRow(
     row.priceResourceKey ??
     row.valueResourceKey ??
     null;
-  const isAvailableSelectAction =
-    !priceResourceKey &&
-    row.enabled !== false &&
-    row.locked !== true &&
-    String(priceLabel).trim().toLowerCase() === 'select';
+  const normalizedPriceLabel = String(priceLabel).trim().toLowerCase();
+  const inferredSelection =
+    Boolean(
+      row.itemKey ??
+        row.itemTypeId ??
+        row.quantityLabel ??
+        row.quantity,
+    ) ||
+    (
+      Boolean(normalizedPriceLabel) &&
+      normalizedPriceLabel !== 'select' &&
+      normalizedPriceLabel !== 'locked'
+    );
+  const selected =
+    row.selected ?? row.hasRequest ?? row.listed ?? inferredSelection;
+  const actionable = row.enabled !== false && row.locked !== true;
+  const selectionActionLabel = actionable
+    ? selected
+      ? 'cancel'
+      : 'select'
+    : null;
   return {
     ...row,
     title: row.title ?? `${titlePrefix} ${slotNumber}`,
     itemLabel,
     quantityLabel,
-    priceLabel,
-    priceResourceKey,
+    selected,
+    priceLabel: selectionActionLabel ?? priceLabel,
+    priceResourceKey: selectionActionLabel ? null : priceResourceKey,
     priceVariant:
-      row.priceVariant ??
-      (isAvailableSelectAction ? 'green' : null),
+      selectionActionLabel === 'cancel'
+        ? 'red'
+        : selectionActionLabel === 'select'
+          ? 'green'
+          : row.priceVariant ?? null,
     semanticId:
       row.semanticId ??
       `${semanticPrefix}.${slotNumber}`,
@@ -3092,25 +3049,6 @@ function countCapacityStars(value) {
     return match.length;
   }
   return Math.max(0, Math.floor(Number(value) || 0));
-}
-
-function stallReleaseScale(progress) {
-  if (progress <= 0.36) {
-    return (
-      STALL_PRESS_SCALE +
-      (STALL_RELEASE_PEAK_SCALE - STALL_PRESS_SCALE) *
-        easeOutCubic(progress / 0.36)
-    );
-  }
-  return (
-    STALL_RELEASE_PEAK_SCALE +
-    (1 - STALL_RELEASE_PEAK_SCALE) *
-      easeOutCubic((progress - 0.36) / 0.64)
-  );
-}
-
-function easeOutCubic(value) {
-  return 1 - (1 - value) ** 3;
 }
 
 function prefersReducedMotion() {

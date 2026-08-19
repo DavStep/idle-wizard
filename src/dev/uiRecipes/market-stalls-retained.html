@@ -241,9 +241,18 @@
       const playerShopSnapshot = {
         connected: true,
         proceedsCoin: 42,
-        listings: [],
+        listings: [
+          { listingKey: 'mira-sage', username: 'Mira', itemKey: 'sageSeed', itemLabel: 'sage seed', itemKind: 'seed', quantity: 8, priceCoin: 12 },
+          { listingKey: 'rowan-mint', username: 'Rowan', itemKey: 'mintSeed', itemLabel: 'mint seed', itemKind: 'seed', quantity: 5, priceCoin: 18 },
+          { listingKey: 'juniper-briar', username: 'Juniper', itemKey: 'briarSeed', itemLabel: 'briar seed', itemKind: 'seed', quantity: 3, priceCoin: 25 },
+          { listingKey: 'orin-sage', username: 'Orin', itemKey: 'sageSeed', itemLabel: 'sage seed', itemKind: 'seed', quantity: 12, priceCoin: 7 },
+          { listingKey: 'elara-mint', username: 'Elara', itemKey: 'mintSeed', itemLabel: 'mint seed', itemKind: 'seed', quantity: 4, priceCoin: 16 },
+        ],
         ownListings: [],
-        requests: [],
+        requests: [
+          { requestKey: 'mira-mint', username: 'Mira', itemKey: 'mintSeed', itemLabel: 'mint seed', itemKind: 'seed', quantity: 6, priceCoin: 14 },
+          { requestKey: 'rowan-sage', username: 'Rowan', itemKey: 'sageSeed', itemLabel: 'sage seed', itemKind: 'seed', quantity: 10, priceCoin: 9 },
+        ],
         ownRequests: [],
         tradeHistory: [],
       };
@@ -255,7 +264,7 @@
         query.get('tab'),
       )
         ? query.get('tab')
-        : ['request', 'listing'].includes(dialogQuery)
+        : ['request', 'listing', 'market'].includes(dialogQuery)
           ? 'players'
           : 'traders';
       if (query.get('proceeds') === 'none') {
@@ -278,6 +287,7 @@
       const showLedgerDialog = dialogQuery === 'ledger';
       const showRequestDialog = dialogQuery === 'request';
       const showListingDialog = dialogQuery === 'listing';
+      const showMarketDialog = dialogQuery === 'market';
       const showListingReference =
         query.get('listingState') === 'reference';
       const requestStatus = query.get('requestStatus') ?? '';
@@ -440,6 +450,12 @@
         : 32;
       let requestItemKind = 'seed';
       let listingItemKind = 'seed';
+      let marketBrowseTab = 'selling';
+      let marketFiltersOpen = query.get('filters') === 'open';
+      let marketFilterDraft = marketFiltersOpen
+        ? { item: 'Sage', minPrice: '8', username: 'Mira' }
+        : { item: '', minPrice: '', username: '' };
+      let marketFilterApplied = { item: '', minPrice: '', username: '' };
       let requestDraft = {
         itemTypeId: 1,
         itemKey: 'sageSeed',
@@ -462,7 +478,9 @@
         const dialog =
           dialogId === SHOP_DIALOG_IDS.REQUEST
             ? nextViewModel.shop.players.requests.slots[0].dialog
-            : nextViewModel.shop.players.market.slots[0].dialog;
+            : dialogId === SHOP_DIALOG_IDS.MARKET
+              ? nextViewModel.shop.dialogs.market
+              : nextViewModel.shop.players.market.slots[0].dialog;
         page.openDialog(dialogId, dialog);
       };
       const createViewModel = () =>
@@ -481,6 +499,10 @@
           selectedTabId,
           uiState: {
             ledgerKind,
+            marketBrowseTab,
+            marketFiltersOpen,
+            marketFilterDraft,
+            marketFilterApplied,
             ...(showStallDialog
               ? {
                   stallTargetQuantityBySlot: {
@@ -525,6 +547,27 @@
           },
           actions: {
             ui: {
+              clearStall(slotNumber) {
+                const slot = gameplaySnapshot.shop.shelf.slots.find(
+                  (candidate) => candidate.slotNumber === Number(slotNumber),
+                );
+                if (!slot) {
+                  return { ok: false, reason: 'missing_slot' };
+                }
+                Object.assign(slot, {
+                  sellItemTypeId: null,
+                  sellKind: null,
+                  sellKey: null,
+                  sellLabel: null,
+                  loadedQuantity: 0,
+                  futureItemTypeId: null,
+                  futureItemKind: null,
+                  futureItemKey: null,
+                  futureItemLabel: null,
+                });
+                page.bind(createViewModel());
+                return { ok: true };
+              },
               selectStallItemKind(slotNumber, kind) {
                 stallItemKind = kind;
                 const nextViewModel = createViewModel();
@@ -562,6 +605,37 @@
                 );
                 return true;
               },
+              selectMarketBrowseTab(tabId) {
+                marketBrowseTab = tabId === 'buying' ? 'buying' : 'selling';
+                rebindDialog(SHOP_DIALOG_IDS.MARKET);
+                return true;
+              },
+              openMarketFilters() {
+                marketFilterDraft = { ...marketFilterApplied };
+                marketFiltersOpen = true;
+                rebindDialog(SHOP_DIALOG_IDS.MARKET);
+                return true;
+              },
+              setMarketFilterDraft(field, value) {
+                marketFilterDraft = {
+                  ...marketFilterDraft,
+                  [field]: String(value ?? ''),
+                };
+                return true;
+              },
+              applyMarketFilters() {
+                marketFilterApplied = { ...marketFilterDraft };
+                marketFiltersOpen = false;
+                rebindDialog(SHOP_DIALOG_IDS.MARKET);
+                return true;
+              },
+              clearMarketFilters() {
+                marketFilterDraft = { item: '', minPrice: '', username: '' };
+                marketFilterApplied = { item: '', minPrice: '', username: '' };
+                marketFiltersOpen = false;
+                rebindDialog(SHOP_DIALOG_IDS.MARKET);
+                return true;
+              },
               selectRequestItem(slotNumber, item) {
                 requestItemKind = item.kind;
                 requestDraft = {
@@ -573,6 +647,16 @@
                 };
                 rebindDialog(SHOP_DIALOG_IDS.REQUEST);
                 return true;
+              },
+              clearPlayerRequest(slotNumber) {
+                const index = Math.max(0, Number(slotNumber) - 1);
+                const slot = gameplaySnapshot.shop.playerRequests.slots[index];
+                gameplaySnapshot.shop.playerRequests.slots[index] = {
+                  slotNumber: Number(slotNumber),
+                  unlocked: slot?.unlocked !== false,
+                };
+                page.bind(createViewModel());
+                return { ok: true };
               },
               setRequestDraftField(slotNumber, field, value) {
                 requestDraft = { ...requestDraft, [field]: value };
@@ -615,6 +699,20 @@
                 return { ok: true };
               },
               clearPlayerListing(slotNumber) {
+                const index = Math.max(0, Number(slotNumber) - 1);
+                const slot = gameplaySnapshot.shop.playerShelf.slots[index];
+                if (slot?.itemTypeId) {
+                  gameplaySnapshot.shop.playerShelf.slots[index] = {
+                    slotNumber: Number(slotNumber),
+                    unlocked: slot.unlocked !== false,
+                  };
+                  page.bind(createViewModel());
+                  window.__marketRecipeLastClear = {
+                    slotNumber,
+                    result: 'cleared',
+                  };
+                  return { ok: true };
+                }
                 transientEffects.emitReward({
                   message: 'Nothing to clear',
                   flyoutKey: `shop-listing-nothing-to-clear-${slotNumber}`,
@@ -660,6 +758,11 @@
         page.openDialog(
           SHOP_DIALOG_IDS.LISTING,
           viewModel.shop.players.market.slots[0].dialog,
+        );
+      } else if (showMarketDialog) {
+        page.openDialog(
+          SHOP_DIALOG_IDS.MARKET,
+          viewModel.shop.dialogs.market,
         );
       }
     </script>

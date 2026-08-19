@@ -30,7 +30,7 @@ const marketAssets = ({ id }) => id.includes('/ui/') || id.includes('/icons/') |
 
 export default [
   widget('compound.market-title-ribbon', 'Market Title Ribbon', ['primitive.star-level-label'], ribbonControl, [scenario('rank-1', 'Rank 1', { rank: 1 }), scenario('rank-3', 'Rank 3', { rank: 3 })]),
-  widget('compound.market-stall', 'Market Stall', ['primitive.progress-bar', 'primitive.star-level-label', 'text-button', 'primitive.notification-badge'], stallControl, [scenario('selling', 'Selling', { state: 'selling' }), scenario('empty', 'Empty', { state: 'empty' }), scenario('locked', 'Locked', { state: 'locked' })]),
+  widget('compound.market-stall', 'Market Stall', ['primitive.progress-bar', 'primitive.star-level-label', 'text-button', 'primitive.notification-badge'], stallControl, [scenario('selling', 'Occupied, Cancel', { state: 'selling' }), scenario('empty', 'Empty, Select', { state: 'empty' }), scenario('locked', 'Locked', { state: 'locked' })]),
   widget('compound.market-offer-row', 'Market Offer Row', ['text-button'], offerControl, [scenario('coin', 'Coin offer', { resourceKey: 'coin' }), scenario('crystal', 'Crystal offer', { resourceKey: 'crystal' }), scenario('disabled', 'Unavailable', { resourceKey: 'crystal', disabled: true })]),
   widget('compound.market-compact-row', 'Market Compact Row', ['text-button', 'primitive.notification-badge'], compactRowControl, [scenario('value', 'Label and value', { mode: 'value' }), scenario('action', 'Inline action', { mode: 'action' }), scenario('disabled', 'Disabled', { mode: 'value', disabled: true })]),
   widget('compound.market-stalls-section', 'Market Stalls Section', ['compound.market-stall'], stallsSectionControl, [scenario('loaded', 'Loaded stalls', {}), scenario('empty', 'Empty stall', { empty: true })]),
@@ -70,7 +70,7 @@ function stallControl({ assets, input, fixture }) {
   const control = new ShopStallWidget({ assetManager: assets, inputRouter: input });
   const locked = fixture.state === 'locked';
   const empty = fixture.state === 'empty';
-  control.bind('stall-1', { batchLabel: empty ? '' : 'x4', enabled: !locked, itemLabel: empty ? 'Empty' : locked ? 'Locked' : 'Sage Seed', locked, priceLabel: empty ? 'Load' : '12', priceResourceKey: empty ? null : 'coin', progress: empty ? null : 0.62, slotNumber: 1, starLevel: 2, timerLabel: empty ? '' : '18s' }, () => true);
+  control.bind('stall-1', { batchLabel: empty ? '' : 'x4', enabled: !locked, itemLabel: empty ? 'Empty' : locked ? 'Locked' : 'Sage Seed', locked, priceLabel: locked ? 'Locked' : empty ? 'Select' : 'Cancel', priceVariant: locked ? null : empty ? 'green' : 'red', progress: empty ? null : 0.62, selected: !empty && !locked, slotNumber: 1, starLevel: 2, timerLabel: empty ? '' : '18s' }, () => true);
   control.applyTheme(DEFAULT_PIXI_THEME_SNAPSHOT);
   control.setBounds(0, 0, WIDTH, 84);
   return wrap(control.root, WIDTH, 84, () => control.destroy(), { control });
@@ -95,7 +95,7 @@ function compactRowControl({ assets, input, fixture }) {
 function stallsSectionControl({ assets, input, fixture }) {
   const page = { theme: DEFAULT_PIXI_THEME_SNAPSHOT };
   const control = new ShopStallsSection({ page, assetManager: assets, inputRouter: input });
-  control.bind({ stalls: [fixture.empty ? { id: '1', itemLabel: 'Empty', progress: null, slotNumber: 1 } : { id: '1', itemLabel: 'Sage Seed', priceLabel: '12 coin', priceResourceKey: 'coin', progress: 0.4, slotNumber: 1, starLevel: 2, timerLabel: '18s' }], timerLabel: fixture.empty ? '' : 'next sale 18s' });
+  control.bind({ stalls: [fixture.empty ? { id: '1', itemLabel: 'Empty', progress: null, selected: false, slotNumber: 1 } : { cancelAction: () => true, id: '1', itemLabel: 'Sage Seed', progress: 0.4, selected: true, slotNumber: 1, starLevel: 2, timerLabel: '18s' }], timerLabel: fixture.empty ? '' : 'next sale 18s' });
   const height = control.getPreferredHeight();
   control.setBounds(0, 0, WIDTH, height);
   return wrap(control.root, WIDTH, height, () => control.destroy(), { control });

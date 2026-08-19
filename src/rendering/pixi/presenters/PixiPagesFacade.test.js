@@ -1922,7 +1922,8 @@ describe("PixiPagesFacade", () => {
     gameplaySnapshot.garden.seeds = [
       { itemTypeId: 2, key: "mintSeed", label: "mint seed", quantity: 1 },
     ];
-    pages.gardenSelectedSeedItemTypeId = 2;
+    gameplaySnapshot.garden.selectedSeedItemTypeId = 2;
+    gameplaySnapshot.garden.selectedSeedItemKey = "mintSeed";
     pages.refreshPage("garden");
     garden = harness.getBoundPage("garden");
     expect(garden.actions.activatePlot(garden.garden.plots[0])).toBe(true);
@@ -2089,6 +2090,17 @@ describe("PixiPagesFacade", () => {
       ],
     };
     const harness = createHarness({ gameplaySnapshot });
+    harness.gameplayFacade.selectGardenToolbarSeed.mockImplementation(
+      (itemTypeId) => {
+        gameplaySnapshot.garden.selectedSeedItemTypeId = itemTypeId;
+        gameplaySnapshot.garden.selectedSeedItemKey = "sageSeed";
+        return {
+          ok: true,
+          selectedSeedItemTypeId: itemTypeId,
+          selectedSeedItemKey: "sageSeed",
+        };
+      },
+    );
     harness.gameplayFacade.plantGardenSeed
       .mockReturnValueOnce({
         ok: true,
@@ -2140,10 +2152,11 @@ describe("PixiPagesFacade", () => {
       selectedSeedItemTypeId: 1,
     });
     expect(harness.runtime.closeDialog).toHaveBeenCalledWith("garden.seed");
+    expect(harness.gameplayFacade.selectGardenToolbarSeed).toHaveBeenCalledWith(1);
     const selectedGarden = harness.getBoundPage("garden");
     expect(selectedGarden.garden.actionBar.selectedSeed).toMatchObject({
       itemTypeId: 1,
-      label: "sage",
+      label: "Sage",
       quantity: 2,
     });
     expect(
@@ -2530,6 +2543,21 @@ function createHarness({ gameplaySnapshot = createGameplaySnapshot() } = {}) {
     fireGuildAdventurer: vi.fn(),
     buyGardenTile: vi.fn(),
     plantGardenSeed: vi.fn(),
+    selectGardenToolbarSeed: vi.fn((itemTypeId) => {
+      const seed = gameplaySnapshot.garden?.seeds?.find(
+        (candidate) => candidate.itemTypeId === itemTypeId,
+      );
+      if (!seed) {
+        return { ok: false, reason: "invalid_seed" };
+      }
+      gameplaySnapshot.garden.selectedSeedItemTypeId = itemTypeId;
+      gameplaySnapshot.garden.selectedSeedItemKey = seed.key;
+      return {
+        ok: true,
+        selectedSeedItemTypeId: itemTypeId,
+        selectedSeedItemKey: seed.key,
+      };
+    }),
     plantAllGardenSeeds: vi.fn(),
     replaceGardenSeed: vi.fn(),
     startGardenHarvest: vi.fn(),

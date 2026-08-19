@@ -1,4 +1,5 @@
 {
+  "timerResearchVersion": 1,
   "levels": [
     {
       "level": 1,
@@ -128,15 +129,18 @@
           "quantity": 1
         },
         {
+          "id": "level6-turn-in-mana-tonic",
+          "type": "research",
+          "researchId": "timer:herbGrowth:sageHerb:1",
+          "itemKey": "sageHerb",
+          "targetLabel": "sage growing speed I",
+          "quantity": 1
+        },
+        {
           "id": "level6-brew-mana-tonic",
           "itemKey": "manaTonic",
           "quantity": 3,
           "type": "brew"
-        },
-        {
-          "id": "level6-turn-in-mana-tonic",
-          "itemKey": "manaTonic",
-          "quantity": 2
         },
         {
           "id": "level6-sell-mint-herb",
@@ -157,6 +161,14 @@
       "coinBudget": 80,
       "tasks": [
         {
+          "id": "level7-turn-in-nettle-herb",
+          "type": "research",
+          "researchId": "timer:herbGrowth:mintHerb:1",
+          "itemKey": "mintHerb",
+          "targetLabel": "mint growing speed I",
+          "quantity": 1
+        },
+        {
           "id": "level7-summon-nettle-seed",
           "itemKey": "nettleSeed",
           "quantity": 17,
@@ -167,11 +179,6 @@
           "itemKey": "nettleHerb",
           "quantity": 6,
           "type": "grow"
-        },
-        {
-          "id": "level7-turn-in-nettle-herb",
-          "itemKey": "nettleHerb",
-          "quantity": 5
         },
         {
           "id": "level7-brew-mana-tonic",
@@ -198,15 +205,18 @@
           "quantity": 1
         },
         {
+          "id": "level8-turn-in-mana-tonic",
+          "type": "research",
+          "researchId": "timer:potionBrewing:manaTonic:1",
+          "itemKey": "manaTonic",
+          "targetLabel": "mana tonic brewing speed I",
+          "quantity": 1
+        },
+        {
           "id": "level8-brew-mana-tonic",
           "itemKey": "manaTonic",
           "quantity": 6,
           "type": "brew"
-        },
-        {
-          "id": "level8-turn-in-mana-tonic",
-          "itemKey": "manaTonic",
-          "quantity": 3
         },
         {
           "id": "level8-sell-sage-herb",

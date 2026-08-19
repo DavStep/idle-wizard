@@ -81,7 +81,6 @@ const GARDEN_GROWING_WIND_MS = 2_400;
 const GARDEN_READY_LIFT_MS = 1_080;
 const GARDEN_SCISSORS_SNIP_MS = 420;
 const GARDEN_PLOT_RECEIVE_MS = 240;
-const GARDEN_SEED_USED_FEEDBACK_MS = 220;
 const GARDEN_PLOT_TAP_FEEDBACK_MS = 800;
 const GARDEN_PLOT_TAP_REDUCED_MOTION_LABEL_MS = 220;
 const GARDEN_DIALOG_IDS = Object.freeze({
@@ -176,8 +175,6 @@ export class GardenPixiPage extends BaseRetainedPixiPage {
       assetManager: this.assetManager,
       inputRouter: this.inputRouter,
       semanticTargets: this.semanticTargets,
-      reducedMotion: this.reducedMotion,
-      onSeedUsed: (result) => this.startSeedUsedFeedback(result),
     });
     this.plotTooltip = new GardenPlotTooltip({
       assetManager: this.assetManager,
@@ -323,13 +320,7 @@ export class GardenPixiPage extends BaseRetainedPixiPage {
       ((payload) => this.currentActions?.[actionName]?.(payload));
     return {
       ...model,
-      onConfirm: (payload) => {
-        const result = onConfirm(payload);
-        if (kind === "swap") {
-          this.startSeedUsedFeedback(result);
-        }
-        return result;
-      },
+      onConfirm,
     };
   }
 
@@ -357,7 +348,6 @@ export class GardenPixiPage extends BaseRetainedPixiPage {
   }
 
   tick(now = this.timeSource()) {
-    this.actionBar?.updateTime(now);
     this.plotTooltip?.updateTime();
     for (const plot of this.plots?.getWidgets?.() ?? []) {
       plot.updateTime(now);
@@ -365,17 +355,9 @@ export class GardenPixiPage extends BaseRetainedPixiPage {
   }
 
   settleTransientMotion() {
-    this.actionBar?.settleSeedUsedMotion();
     for (const plot of this.plots?.getWidgets?.() ?? []) {
       plot.settleTransientMotion();
     }
-  }
-
-  startSeedUsedFeedback(result) {
-    if (!seedUseSucceeded(result)) {
-      return false;
-    }
-    return this.actionBar?.startSeedUsedMotion(this.timeSource()) ?? false;
   }
 
   showPlotTooltip(copy, target) {
@@ -499,21 +481,9 @@ export class GardenSeedActionBar {
     assetManager = null,
     inputRouter = null,
     semanticTargets = null,
-    reducedMotion = prefersReducedMotion,
-    onSeedUsed = null,
   } = {}) {
     this.assetManager = assetManager;
     this.theme = DEFAULT_PIXI_THEME_SNAPSHOT;
-    this.reducedMotion =
-      typeof reducedMotion === "function"
-        ? reducedMotion
-        : () => Boolean(reducedMotion);
-    this.onSeedUsed = typeof onSeedUsed === "function" ? onSeedUsed : null;
-    this.seedUsedStartedAt = null;
-    this.seedIconDropY = 0;
-    this.indicatorOffsetY = 0;
-    this.indicatorScaleX = 1;
-    this.indicatorScaleY = 1;
     this.root = new Container({ label: "garden-seed-action-bar" });
     this.plantButton = new PixiTextButton({
       assetManager,
@@ -580,9 +550,7 @@ export class GardenSeedActionBar {
       .setText("Plant All")
       .setEnabled(canPlantAll)
       .setAction(() => {
-        const result = actions.plantAll?.() ?? false;
-        this.onSeedUsed?.(result);
-        return result;
+        return actions.plantAll?.() ?? false;
       });
     this.harvestButton.visible = canHarvestAll;
     this.harvestButton.renderable = canHarvestAll;
@@ -610,54 +578,10 @@ export class GardenSeedActionBar {
         `${selectedSeed.label ?? "Seed"} selected · ${selectedSeed.quantity ?? 0}`,
       );
     } else {
-      this.settleSeedUsedMotion();
+      this.seedPack.texture = Texture.EMPTY;
+      this.seedItem.texture = Texture.EMPTY;
     }
     this.layout();
-  }
-
-  startSeedUsedMotion(now) {
-    if (
-      !this.selectionPanel.root.visible ||
-      this.reducedMotion()
-    ) {
-      this.settleSeedUsedMotion();
-      return false;
-    }
-    this.seedUsedStartedAt = finiteOr(now, 0);
-    this.seedIconDropY = 0;
-    this.indicatorOffsetY = 0;
-    this.indicatorScaleX = 1;
-    this.indicatorScaleY = 1;
-    this.applySeedUsedTransform();
-    return true;
-  }
-
-  updateTime(now) {
-    if (this.seedUsedStartedAt === null) {
-      return false;
-    }
-    const progress = clamp(
-      (finiteOr(now, this.seedUsedStartedAt) - this.seedUsedStartedAt) /
-        GARDEN_SEED_USED_FEEDBACK_MS,
-      0,
-      1,
-    );
-    if (progress >= 1) {
-      this.settleSeedUsedMotion();
-      return false;
-    }
-    applySeedUsedMotion(this, progress);
-    this.applySeedUsedTransform();
-    return true;
-  }
-
-  settleSeedUsedMotion() {
-    this.seedUsedStartedAt = null;
-    this.seedIconDropY = 0;
-    this.indicatorOffsetY = 0;
-    this.indicatorScaleX = 1;
-    this.indicatorScaleY = 1;
-    this.applySeedUsedTransform();
   }
 
   setBounds(x, y, width) {
@@ -717,34 +641,8 @@ export class GardenSeedActionBar {
       indicatorWidth / 2 + 5,
       GARDEN_PIXI_GEOMETRY.selectedSeedHeight / 2,
     );
-    this.applySeedUsedTransform();
-  }
-
-  applySeedUsedTransform() {
-    const indicatorWidth = Math.min(176, this.width ?? 0);
-    const indicatorX = ((this.width ?? 0) - indicatorWidth) / 2;
-    const indicatorY =
-      -GARDEN_PIXI_GEOMETRY.actionButtonHeight -
-      GARDEN_PIXI_GEOMETRY.selectedSeedGap -
-      GARDEN_PIXI_GEOMETRY.selectedSeedHeight;
-    this.selectionPanel.root.pivot.set(
-      indicatorWidth / 2,
-      GARDEN_PIXI_GEOMETRY.selectedSeedHeight / 2,
-    );
-    this.selectionPanel.root.position.set(
-      indicatorX + indicatorWidth / 2,
-      indicatorY +
-        GARDEN_PIXI_GEOMETRY.selectedSeedHeight / 2 +
-        this.indicatorOffsetY,
-    );
-    this.selectionPanel.root.scale.set(
-      this.indicatorScaleX,
-      this.indicatorScaleY,
-    );
-    const iconY =
-      GARDEN_PIXI_GEOMETRY.selectedSeedHeight / 2 + this.seedIconDropY;
-    this.seedPack.y = iconY;
-    this.seedItem.y = iconY;
+    this.selectionPanel.root.pivot.set(0, 0);
+    this.selectionPanel.root.scale.set(1);
   }
 
   applyTheme(theme) {
@@ -1031,7 +929,6 @@ export class GardenPlotWidget {
     }
     if (receivesSeed && actionSucceeded(result)) {
       this.startSeedReceive(this.page.timeSource());
-      this.page.startSeedUsedFeedback(result);
     }
     if (plotAccelerationSucceeded(result)) {
       this.startTapAcceleration(result, now);
@@ -1768,54 +1665,6 @@ function applyTapAccelerationMotion(plot, progress) {
   }
 }
 
-function applySeedUsedMotion(actionBar, progress) {
-  let segment;
-  let fromIconY;
-  let toIconY;
-  let fromScaleX;
-  let toScaleX;
-  let fromScaleY;
-  let toScaleY;
-  let fromRowY;
-  let toRowY;
-  if (progress < 0.5) {
-    segment = progress / 0.5;
-    fromIconY = 0;
-    toIconY = 6;
-    fromScaleX = 1;
-    toScaleX = 1.012;
-    fromScaleY = 1;
-    toScaleY = 0.97;
-    fromRowY = 0;
-    toRowY = 1;
-  } else if (progress < 0.74) {
-    segment = (progress - 0.5) / 0.24;
-    fromIconY = 6;
-    toIconY = -1;
-    fromScaleX = 1.012;
-    toScaleX = 0.995;
-    fromScaleY = 0.97;
-    toScaleY = 1.015;
-    fromRowY = 1;
-    toRowY = -0.5;
-  } else {
-    segment = (progress - 0.74) / 0.26;
-    fromIconY = -1;
-    toIconY = 0;
-    fromScaleX = 0.995;
-    toScaleX = 1;
-    fromScaleY = 1.015;
-    toScaleY = 1;
-    fromRowY = -0.5;
-    toRowY = 0;
-  }
-  const eased = softEase(segment);
-  actionBar.seedIconDropY = lerp(fromIconY, toIconY, eased);
-  actionBar.indicatorScaleX = lerp(fromScaleX, toScaleX, eased);
-  actionBar.indicatorScaleY = lerp(fromScaleY, toScaleY, eased);
-  actionBar.indicatorOffsetY = lerp(fromRowY, toRowY, eased);
-}
-
 function actionSucceeded(result) {
   return result !== false && result?.ok !== false;
 }
@@ -1826,10 +1675,6 @@ function plotAccelerationSucceeded(result) {
     Number.isFinite(Number(result.reducedSeconds)) &&
     Number(result.reducedSeconds) > 0
   );
-}
-
-function seedUseSucceeded(result) {
-  return result === true || result?.ok === true;
 }
 
 function prefersReducedMotion() {

@@ -258,6 +258,37 @@ describe('ResearchBoxListManager', () => {
     expect(stage.querySelector('.research-page__research-summary')).toBeNull();
   });
 
+  it('omits the completed-research toggle when a section has nothing to hide', () => {
+    const snapshot = {
+      research: {
+        boxes: [
+          {
+            id: 'seedUnlocks',
+            label: 'seed unlock researches',
+            researches: [
+              {
+                id: 'unlockSeed:mintSeed',
+                label: 'mint seed',
+                value: 'Free',
+                completed: false,
+                canResearch: true,
+              },
+            ],
+          },
+        ],
+        completedResearchIds: [],
+      },
+    };
+    const manager = new ResearchBoxListManager({
+      gameplayFacade: createGameplayFacade(snapshot),
+    });
+    const stage = document.createElement('section');
+
+    manager.mount(stage);
+
+    expect(stage.querySelector('.research-page__completed-toggle')).toBeNull();
+  });
+
   it('notifies the Pixi skin owner after replacing research rows', () => {
     const snapshot = {
       playerLevel: { currentLevel: 1 },

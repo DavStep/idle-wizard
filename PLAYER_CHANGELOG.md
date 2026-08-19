@@ -5,6 +5,13 @@ upload script posts the section whose heading matches `package.json` `version`.
 Write these developer-to-player notes only in Idle Wizard terms. Do not mention
 other game names, source projects, ports, or implementation provenance.
 
+## 0.3.73
+
+- Added independent growing-speed mastery for every herb and brewing-speed mastery for every potion, with new early requests that introduce the system.
+- Rebalanced herb and potion timers around mastery while keeping fully mastered production faster than before.
+- The Garden now remembers your selected seed between sessions.
+- Refined Guild quest art, rewards, adventurer details, and Chronicle history; improved Trade Alliance details and added filters to Browse Market.
+
 ## 0.3.72
 
 - Refined the Guild bottom navigation icon family for clearer destination recognition and a more consistent visual finish.

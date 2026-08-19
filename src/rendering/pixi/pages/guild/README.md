@@ -15,9 +15,12 @@ posting slot for every Secretary capacity slot, and lays posted requests over
 those slots on the shared Root Run Research parchment card. One Quest Requests
 button below the board reports the waiting count and next request wave, then
 opens the existing paged request dialog. The dialog follows the Brewing Recipes
-page rhythm with one parchment request per view: Post Request stays inside the
-page, while yellow Prev/Next controls and a centered page count sit below it.
-Players can also swipe left or right before posting the selected request.
+page rhythm with one compact parchment request per view. It reuses the Recipes
+page's full `312px` width, `7px` content inset, `4px` pager gap, and `9px`
+footer inset instead of nesting the page inside the dialog's legacy `20px`
+content padding. Post Request stays inside the page, while yellow Prev/Next
+controls and a centered page count sit below it. Players can also swipe left or
+right before posting the selected request.
 Summary, Secretary, and person rows use
 the shared Research card with Research paper ink, while action rows keep the
 shared brown/gray button skins. Hall keeps identity, Adventurers' Lodge, Board,
@@ -26,10 +29,12 @@ taller portrait section and uses the shared labeled cost button for its Upgrade
 action. Guild dialogs reuse `PixiDialogFrame`, including its current brown
 shell, white paper, title plaque, and round close asset. Adventurer and
 Applicant Info reuse Player Info's split-paper rhythm: the first paper contains
-a contain-fit portrait plus aligned Level and Status rows, while the second
-contains the active tab's details and an inset action. Hire uses the shared
-green button and Fire uses the shared red button. Player-facing Guild labels
-and rendered dynamic copy always begin with an uppercase letter.
+a larger left-set contain-fit portrait plus aligned Level, Status, XP, and
+Personality rows. The second paper contains the active tab's details inside the
+same Settings-backed managed-scroll board used by Wizard avatar choices. Hire
+and Fire match the Wizard Save action's centered width, height, and surrounding
+spacing while retaining the shared green and red button skins. Player-facing
+Guild labels and rendered dynamic copy always begin with an uppercase letter.
 
 Production places Hall and Adventurers in the alternate global Guild HUD, with
 Fishers, Miners, and World visible as locked future destinations. Workshop and
@@ -38,12 +43,13 @@ contract; locked destinations replace their icon with the shared lock.
 Adventurers owns a local Board, Roster, and Log button panel above the Guild
 bottom strip. Board continues into its available-quest rows, while Roster
 separates hired Adventurers and Applicants under their own Research Station
-title plaques. Log reuses the production person row for a `Right Now` section
-containing every hired adventurer, followed by a `Chronicle` section of up to
-sixteen meaningful events. Activity rows keep the existing portrait, paper,
-press, semantic, and adventurer-card contracts; their secondary line carries
-the live action while the right label names the current place, status, or
-partner. Roster person rows use the Research row's `80px` height,
+title plaques. Log is one `Chronicle` section containing up to 80 meaningful
+events in newest-first order. Its continuous Research-paper feed uses compact
+chat-like rows: one or two contain-fit character portraits, bold participant
+names, a right-aligned age such as `28m ago`, and the event message below.
+Guild-wide system entries use the Hall icon. New entries are inserted at the
+top; routine solo activity stays out of the Chronicle. Roster person rows use
+the Research row's `80px` height,
 contain-fit character art without changing its aspect ratio, and keep copy
 inside the card insets.
 The reproducible living-log preview is
@@ -70,7 +76,7 @@ owned by the existing gameplay facade. The preferred presenter shape is:
     availableRequests: [request],
     adventurers: [person],
     applicants: [person],
-    logs: [{ id, text, tone, kind, actorId, partnerId, timeLabel }],
+    logs: [{ id, text, tone, kind, actorId, partnerId, timeLabel }], // newest first, max 80
     applicantResetLabel,
     boardWaveLabel
   },
@@ -109,9 +115,19 @@ payload is `{ name, tag, color }`. Request-stack dialogs receive
 `{ requests, selectedIndex, boardFull, onPost }`. Person dialogs receive
 `{ card, actionLabel, actionEnabled, action }`.
 
-Quest dialogs compose the shared Expedition dialog frame, paper content,
-progress rail, and regular green/brown buttons. Their full-width detail rows
-carry title, lore, difficulty, stats, reward, expiry, and optional event copy.
+Quest dialogs compose the shared Expedition dialog frame, paper content, and
+regular green/brown buttons. Request selection routes title, lore, and tags
+across nine bright, neutral-daylight Guild quest illustrations for board,
+bridge, hillside, village, road, mine, political, magic, and military families.
+Unknown quests fall back deterministically across that pool. Every image uses
+the same 3:1, `98px` rounded artwork contract as World Events, then carries title,
+adventurer briefing, difficulty, stats,
+reward, expiry, and optional event copy. Difficulty reuses the Summoning Seeds
+green/yellow/red value hues. Rewards use one Settings-backed row with the
+canonical coin, seed, and herb art plus overlaid ranges. The icons share a
+`28px` optical slot with source-padding corrections and one aligned amount
+baseline. Plain detail rows intentionally have no separator lines; live reward
+balance still comes from `GuildFacade`.
 The Board quest card reuses the Root Run Research card nine-slice. The retired
 `ui/guild-quest` raster family is not a runtime or editor dependency.
 
@@ -131,12 +147,12 @@ Hall layout state when the local player has not created a guild yet.
 createGuild({
   gameplaySnapshot, // GameplayFacade.getSnapshot() or GuildFacade.getSnapshot()
   selectedTabId,
-  gameplayActions,  // existing GameplayFacade/GuildFacade
+  gameplayActions, // existing GameplayFacade/GuildFacade
   actions: { ui: { selectAdventurerTab, onActivate, onDeactivate } },
-  dialogs,          // optional display-ready dialog overrides
+  dialogs, // optional display-ready dialog overrides
   tabNotifications,
-  subscribe         // emits the next raw gameplay snapshot
-})
+  subscribe, // emits the next raw gameplay snapshot
+});
 ```
 
 It returns the preferred presenter shape above and binds the existing

@@ -73,9 +73,30 @@ const SECRETARY_ROW_Y = Object.freeze([18, 47, 76]);
 const JOINED_ROW_HEIGHT = 64;
 const JOINED_ROW_INSET = 12;
 const JOINED_BUTTON_INSET = 8;
+const CHRONICLE_ROW_MIN_HEIGHT = 58;
+const CHRONICLE_ROW_PADDING_X = 8;
+const CHRONICLE_ROW_PADDING_Y = 7;
+const CHRONICLE_AVATAR_WIDTH = 38;
+const CHRONICLE_AVATAR_HEIGHT = 44;
+const CHRONICLE_PAIRED_AVATAR_WIDTH = 29;
+const CHRONICLE_PAIRED_AVATAR_OVERLAP = 12;
+const CHRONICLE_TEXT_GAP = 8;
+const CHRONICLE_MESSAGE_TOP = 27;
+const CHRONICLE_SYSTEM_ICON =
+  'source:assets/icons/icon-guild-hall-tab.png';
+const CHRONICLE_TONE_COLORS = Object.freeze({
+  orange: '#9a5b18',
+  red: '#a82f2f',
+});
 
 export function capitalizeGuildText(value) {
   return String(value ?? '').replace(/[A-Za-z]/, (letter) =>
+    letter.toUpperCase(),
+  );
+}
+
+export function formatGuildChronicleName(value) {
+  return String(value ?? '').replace(/\b[A-Za-z]/g, (letter) =>
     letter.toUpperCase(),
   );
 }
@@ -901,6 +922,397 @@ export class GuildPeopleSection {
   destroy() {
     this.people.destroy();
     this.personPool.destroy();
+    this.root.destroy({ children: true });
+  }
+}
+
+/**
+ * One continuous, chat-like Guild Chronicle surface.
+ *
+ * Entries are supplied newest-first. The section keeps one Research paper
+ * behind the feed while pooled rows own only avatar and text content.
+ */
+export class GuildChronicleSection {
+  constructor({
+    title = 'Chronicle',
+    assetManager = null,
+    counters = null,
+    label = 'guild:chronicle',
+  } = {}) {
+    this.theme = DEFAULT_PIXI_THEME_SNAPSHOT;
+    this.root = new Container({ label: `${label}:section` });
+    this.titlePlaque = new ResearchStationTitlePlaque({ assetManager });
+    this.titlePlaque.root.label = `${label}:titlePlaque`;
+    this.titlePlaque.bind(title, 'regular');
+    this.contentLayer = new Container({ label: `${label}:content` });
+    this.paper = new GuildPaperFrame({ assetManager });
+    this.rowsLayer = new Container({ label: `${label}:rows` });
+    this.dividers = new Graphics({ label: `${label}:dividers` });
+    this.countLabel = new PixiTextLabel({
+      fontSize: PIXI_UI_GEOMETRY.borderLabelFontSize,
+      color: 'muted',
+      label: `${label}:count`,
+    });
+    this.contentLayer.addChild(
+      this.paper.root,
+      this.dividers,
+      this.rowsLayer,
+    );
+    this.root.addChild(
+      this.titlePlaque.root,
+      this.contentLayer,
+      this.countLabel,
+    );
+    this.rowPool = new WidgetPool({
+      name: `${label} entry pool`,
+      counters,
+      create: () =>
+        new GuildChronicleEntryRow({
+          assetManager,
+          label: `${label}:entry`,
+        }),
+      reset: (row) => row.reset(),
+      dispose: (row) => row.destroy(),
+      maxSize: 80,
+    });
+    this.entries = new PooledCollection({
+      name: `${label} entries`,
+      pool: this.rowPool,
+      counters,
+      keyOf: (entry, index) => entry.id ?? index,
+      bind: (row, entry, key) => row.bind(key, entry),
+      afterReconcile: (widgets) => orderChildren(this.rowsLayer, widgets),
+    });
+    this.width = 0;
+    this.model = {};
+  }
+
+  bind(model = {}) {
+    this.model = model;
+    const entries = safeArray(model.entries);
+    this.entries.reconcile(
+      entries.length > 0
+        ? entries
+        : [
+            {
+              id: 'empty',
+              authorLabel: 'Guild Hall',
+              message:
+                model.emptyLabel ??
+                'The Chronicle Is Waiting For Its First Story',
+              system: true,
+            },
+          ],
+    );
+    this.countLabel.setText(capitalizeGuildText(model.countLabel));
+    this.countLabel.visible = Boolean(model.countLabel);
+    this.countLabel.renderable = this.countLabel.visible;
+    for (const row of this.entries.getWidgets()) {
+      row.applyTheme(this.theme);
+    }
+  }
+
+  getPreferredHeight(width) {
+    const contentWidth = Math.max(
+      0,
+      width - PIXI_UI_GEOMETRY.roomContentEdge,
+    );
+    const rowsHeight = this.entries
+      .getWidgets()
+      .reduce(
+        (height, row) => height + row.getPreferredHeight(contentWidth),
+        0,
+      );
+    return (
+      RESEARCH_PIXI_GEOMETRY.categoryTitleHeight +
+      SECTION_CONTENT_GAP +
+      rowsHeight
+    );
+  }
+
+  setBounds(x, y, width) {
+    this.root.position.set(x, y);
+    this.width = width;
+    this.titlePlaque.setMaxWidth(width);
+    const contentX = PIXI_UI_GEOMETRY.roomContentEdge;
+    const contentWidth = Math.max(0, width - contentX);
+    const titleOffset =
+      RESEARCH_PIXI_GEOMETRY.categoryTitleHeight + SECTION_CONTENT_GAP;
+    this.contentLayer.position.set(contentX, titleOffset);
+    this.dividers.clear();
+    let rowY = 0;
+    const rows = this.entries.getWidgets();
+    rows.forEach((row, index) => {
+      const rowHeight = row.getPreferredHeight(contentWidth);
+      row.setBounds(0, rowY, contentWidth, rowHeight);
+      rowY += rowHeight;
+      if (index < rows.length - 1) {
+        this.dividers
+          .moveTo(CHRONICLE_ROW_PADDING_X, rowY)
+          .lineTo(contentWidth - CHRONICLE_ROW_PADDING_X, rowY);
+      }
+    });
+    this.paper.setBounds(0, 0, contentWidth, rowY);
+    this.dividers.stroke({
+      color: PAPER_MUTED,
+      width: 1,
+      alpha: 0.28,
+    });
+    this.countLabel.position.set(
+      width - this.countLabel.measuredWidth - 8,
+      Math.max(
+        0,
+        (RESEARCH_PIXI_GEOMETRY.categoryTitleHeight -
+          this.countLabel.measuredHeight) /
+          2,
+      ),
+    );
+  }
+
+  applyTheme(theme) {
+    this.theme = theme ?? DEFAULT_PIXI_THEME_SNAPSHOT;
+    this.countLabel.applyTheme(this.theme);
+    for (const row of this.entries.getWidgets()) {
+      row.applyTheme(this.theme);
+    }
+  }
+
+  getStats() {
+    return {
+      entries: this.entries.getStats(),
+      pool: this.rowPool.getStats(),
+    };
+  }
+
+  destroy() {
+    this.entries.destroy();
+    this.rowPool.destroy();
+    this.root.destroy({ children: true });
+  }
+}
+
+export class GuildChronicleEntryRow {
+  constructor({ assetManager = null, label = 'guild:chronicle:entry' } = {}) {
+    this.assetManager = assetManager;
+    this.theme = DEFAULT_PIXI_THEME_SNAPSHOT;
+    this.root = new Container({ label });
+    this.systemIcon = new Sprite(Texture.EMPTY);
+    this.systemIcon.label = `${label}:systemIcon`;
+    this.avatars = [0, 1].map((index) => ({
+      icon: new Sprite(Texture.EMPTY),
+      initial: new PixiTextLabel({
+        anchor: { x: 0.5, y: 0.5 },
+        fontWeight: 'bold',
+        color: 'muted',
+        label: `${label}:avatar:${index}:initial`,
+      }),
+    }));
+    this.avatars.forEach(({ icon }, index) => {
+      icon.label = `${label}:avatar:${index}:icon`;
+    });
+    this.authorLabel = new PixiTextLabel({
+      fontWeight: 'bold',
+      wordWrap: true,
+      label: `${label}:author`,
+    });
+    this.timeLabel = new PixiTextLabel({
+      anchor: { x: 1, y: 0 },
+      color: 'muted',
+      fontSize: PIXI_UI_GEOMETRY.borderLabelFontSize,
+      label: `${label}:time`,
+    });
+    this.messageLabel = new PixiTextLabel({
+      wordWrap: true,
+      label: `${label}:message`,
+    });
+    this.root.addChild(
+      this.systemIcon,
+      ...this.avatars.flatMap(({ icon, initial }) => [icon, initial]),
+      this.authorLabel,
+      this.timeLabel,
+      this.messageLabel,
+    );
+    this.model = {};
+    this.textX = 0;
+  }
+
+  bind(key, model = {}) {
+    this.key = key;
+    this.model = model;
+    this.root.visible = true;
+    this.root.renderable = true;
+    const participants = safeArray(model.participants).slice(0, 2);
+    this.participantCount = participants.length;
+    this.authorLabel.setText(
+      formatGuildChronicleName(
+        model.authorLabel ||
+          participants
+            .map((person) => person.displayName ?? person.name)
+            .filter(Boolean)
+            .join(' & ') ||
+          'Guild Hall',
+      ),
+    );
+    this.timeLabel.setText(String(model.timeLabel ?? ''));
+    this.messageLabel.setText(
+      capitalizeGuildText(model.message ?? model.text),
+    );
+
+    this.systemIcon.visible = participants.length === 0;
+    this.systemIcon.renderable = this.systemIcon.visible;
+    if (this.systemIcon.visible) {
+      this.systemIcon.texture =
+        resolveTexture(this.assetManager, CHRONICLE_SYSTEM_ICON) ??
+        Texture.EMPTY;
+    }
+
+    this.avatars.forEach((avatar, index) => {
+      const person = participants[index];
+      const texture = person
+        ? resolveCharacterTexture(this.assetManager, person)
+        : null;
+      avatar.icon.visible = Boolean(person && texture);
+      avatar.icon.renderable = avatar.icon.visible;
+      if (texture) {
+        avatar.icon.texture = texture;
+      }
+      avatar.initial.setText(
+        String(person?.displayName ?? person?.name ?? '?')
+          .trim()
+          .slice(0, 1)
+          .toUpperCase() || '?',
+      );
+      avatar.initial.visible = Boolean(person) && !avatar.icon.visible;
+      avatar.initial.renderable = avatar.initial.visible;
+    });
+    this.applyTheme(this.theme);
+  }
+
+  getPreferredHeight(width) {
+    const textX = this.resolveTextX();
+    this.messageLabel.setWrapWidth(
+      Math.max(0, width - textX - CHRONICLE_ROW_PADDING_X),
+    );
+    return Math.max(
+      CHRONICLE_ROW_MIN_HEIGHT,
+      CHRONICLE_MESSAGE_TOP +
+        this.messageLabel.measuredHeight +
+        CHRONICLE_ROW_PADDING_Y,
+    );
+  }
+
+  setBounds(x, y, width, height = this.getPreferredHeight(width)) {
+    this.root.position.set(x, y);
+    this.textX = this.resolveTextX();
+    this.layoutAvatars(height);
+    this.timeLabel.position.set(
+      width - CHRONICLE_ROW_PADDING_X,
+      CHRONICLE_ROW_PADDING_Y,
+    );
+    this.authorLabel.position.set(this.textX, CHRONICLE_ROW_PADDING_Y);
+    this.authorLabel.setWrapWidth(
+      Math.max(
+        0,
+        width -
+          this.textX -
+          this.timeLabel.measuredWidth -
+          CHRONICLE_TEXT_GAP -
+          CHRONICLE_ROW_PADDING_X,
+      ),
+    );
+    this.messageLabel.position.set(this.textX, CHRONICLE_MESSAGE_TOP);
+    this.messageLabel.setWrapWidth(
+      Math.max(0, width - this.textX - CHRONICLE_ROW_PADDING_X),
+    );
+  }
+
+  resolveTextX() {
+    if (this.participantCount > 1) {
+      return (
+        CHRONICLE_ROW_PADDING_X +
+        CHRONICLE_PAIRED_AVATAR_WIDTH * 2 -
+        CHRONICLE_PAIRED_AVATAR_OVERLAP +
+        CHRONICLE_TEXT_GAP
+      );
+    }
+    return (
+      CHRONICLE_ROW_PADDING_X +
+      CHRONICLE_AVATAR_WIDTH +
+      CHRONICLE_TEXT_GAP
+    );
+  }
+
+  layoutAvatars(height) {
+    const avatarTop = Math.max(
+      CHRONICLE_ROW_PADDING_Y,
+      (height - CHRONICLE_AVATAR_HEIGHT) / 2,
+    );
+    if (this.participantCount > 1) {
+      this.avatars.forEach((avatar, index) => {
+        const box = {
+          x:
+            CHRONICLE_ROW_PADDING_X +
+            index *
+              (CHRONICLE_PAIRED_AVATAR_WIDTH -
+                CHRONICLE_PAIRED_AVATAR_OVERLAP),
+          y: avatarTop,
+          width: CHRONICLE_PAIRED_AVATAR_WIDTH,
+          height: CHRONICLE_AVATAR_HEIGHT,
+        };
+        fitSpriteInside(avatar.icon, box);
+        avatar.initial.position.set(
+          box.x + box.width / 2,
+          box.y + box.height / 2,
+        );
+      });
+    } else if (this.participantCount === 1) {
+      const box = {
+        x: CHRONICLE_ROW_PADDING_X,
+        y: avatarTop,
+        width: CHRONICLE_AVATAR_WIDTH,
+        height: CHRONICLE_AVATAR_HEIGHT,
+      };
+      fitSpriteInside(this.avatars[0].icon, box);
+      this.avatars[0].initial.position.set(
+        box.x + box.width / 2,
+        box.y + box.height / 2,
+      );
+    }
+    if (this.systemIcon.visible) {
+      fitSpriteInside(this.systemIcon, {
+        x: CHRONICLE_ROW_PADDING_X,
+        y: avatarTop + 3,
+        width: CHRONICLE_AVATAR_WIDTH,
+        height: CHRONICLE_AVATAR_HEIGHT - 6,
+      });
+    }
+  }
+
+  applyTheme(theme) {
+    this.theme = theme ?? DEFAULT_PIXI_THEME_SNAPSHOT;
+    this.authorLabel.applyTheme(this.theme);
+    this.timeLabel.applyTheme(this.theme);
+    this.messageLabel.applyTheme(this.theme);
+    for (const { initial } of this.avatars) {
+      initial.applyTheme(this.theme);
+      initial.setColor(PAPER_MUTED);
+    }
+    this.authorLabel.setColor(PAPER_TEXT);
+    this.timeLabel.setColor(PAPER_MUTED);
+    this.messageLabel.setColor(
+      CHRONICLE_TONE_COLORS[this.model.tone] ?? PAPER_TEXT,
+    );
+  }
+
+  reset() {
+    this.key = null;
+    this.model = {};
+    this.participantCount = 0;
+    this.root.visible = false;
+    this.root.renderable = false;
+  }
+
+  destroy() {
     this.root.destroy({ children: true });
   }
 }

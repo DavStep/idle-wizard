@@ -488,6 +488,7 @@ export class PixiGlobalDialogPresenter {
           normalizeId(member.allianceId) === allianceId,
       ),
       ownAlliance: snapshot.ownAlliance,
+      ownApplications: snapshot.ownApplications ?? [],
       actions: {
         activate: () =>
           this.startAllianceSubscriptions(),

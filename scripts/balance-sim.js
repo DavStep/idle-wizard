@@ -9,6 +9,13 @@ import {
   gardenBulkResearchIds,
   gardenBulkResearchLevels,
 } from '../src/gameplay/garden/gardenBulkResearch.js';
+import {
+  applyItemTimerResearchReduction,
+  createItemTimerResearchCosts,
+  getItemTimerResearchMaxLevel,
+  itemTimerResearchDurationSeconds,
+  itemTimerResearchIds,
+} from '../src/gameplay/research/itemTimerResearch.js';
 
 const require = createRequire(import.meta.url);
 
@@ -123,10 +130,11 @@ class BalanceSimulator {
     );
 
     this.researchCatalog = createResearchCatalog({
+      herbDefinitions: this.herbDefinitions,
       recipes: this.recipes,
       seedDefinitions: this.seedDefinitions,
     });
-    this.researchDurations = createResearchDurations();
+    this.researchDurations = createResearchDurations(this.researchCatalog);
     this.researchCosts = createResearchCosts();
 
     this.state = this.createInitialState();
@@ -434,6 +442,10 @@ class BalanceSimulator {
   }
 
   getResearchPriority(researchId) {
+    if (this.getCurrentTasks().some(
+      (task) =>
+        !this.state.completedTasks.has(task.id) && task.researchId === researchId,
+    )) return 0;
     if (researchId === 'unlockSeed:sageSeed') return 0;
     if (researchId.startsWith('unlockSeed:')) return 10;
     if (researchId.startsWith('unlockRecipe:')) return 20;
@@ -442,6 +454,7 @@ class BalanceSimulator {
     if (researchId.startsWith('automation:')) return 40;
     if (researchId.startsWith('advanced:')) return 50;
     if (researchId.startsWith('emerald:researchCost:')) return 50;
+    if (researchId.startsWith('timer:')) return 90;
     return 100;
   }
 
@@ -627,12 +640,24 @@ class BalanceSimulator {
 
       this.removeItem(seed.key, 1);
       const herb = this.itemDefinitionManager.getDefinition(seed.producesHerbTypeId);
+      const herbDurationSeconds =
+        applyItemTimerResearchReduction(
+          herb.growthDurationMs,
+          this.getCompletedItemTimerResearchLevel(
+            itemTimerResearchIds.herbGrowth,
+            herb.key,
+            this.herbDefinitions.findIndex((candidate) => candidate.key === herb.key),
+          ),
+          getItemTimerResearchMaxLevel(
+            this.herbDefinitions.findIndex((candidate) => candidate.key === herb.key),
+          ),
+        ) / 1000;
       tile.phase = 'growing';
       tile.seedKey = seed.key;
       tile.herbKey = herb.key;
       tile.remainingSeconds = this.getReducedPlotGrowthSeconds(
         this.state.gardenTiles.indexOf(tile) + 1,
-        herb.growthDurationMs / 1000,
+        herbDurationSeconds,
       );
       changed = true;
     }
@@ -714,16 +739,43 @@ class BalanceSimulator {
       }
 
       this.state.mana.current -= recipe.manaCost;
+      const recipeIndex = this.recipes.findIndex(
+        (candidate) => candidate.key === recipe.key,
+      );
+      const potionDurationSeconds =
+        applyItemTimerResearchReduction(
+          recipe.brewDurationMs,
+          this.getCompletedItemTimerResearchLevel(
+            itemTimerResearchIds.potionBrewing,
+            recipe.key,
+            recipeIndex,
+          ),
+          getItemTimerResearchMaxLevel(recipeIndex),
+        ) / 1000;
       cauldron.phase = 'brewing';
       cauldron.potionKey = recipe.key;
       cauldron.remainingSeconds = this.getReducedCauldronSeconds(
         this.state.cauldrons.indexOf(cauldron) + 1,
-        recipe.brewDurationMs / 1000,
+        potionDurationSeconds,
       );
       changed = true;
     }
 
     return changed;
+  }
+
+  getCompletedItemTimerResearchLevel(getId, itemKey, catalogIndex) {
+    const maxLevel = getItemTimerResearchMaxLevel(catalogIndex);
+    let completedLevel = 0;
+
+    for (let level = 1; level <= maxLevel; level += 1) {
+      if (!this.state.completedResearch.has(getId(itemKey, level))) {
+        break;
+      }
+      completedLevel = level;
+    }
+
+    return completedLevel;
   }
 
   chooseRecipeToBrew() {
@@ -1265,7 +1317,7 @@ function getRecipeUnlockOrderIndex(potionKey) {
   return index >= 0 ? index : RECIPE_UNLOCK_ORDER.length;
 }
 
-function createResearchCatalog({ recipes, seedDefinitions }) {
+function createResearchCatalog({ herbDefinitions, recipes, seedDefinitions }) {
   const catalog = [];
 
   seedDefinitions.forEach((seed, index) => {
@@ -1308,6 +1360,34 @@ function createResearchCatalog({ recipes, seedDefinitions }) {
     });
   });
 
+  herbDefinitions.forEach((herb, catalogIndex) => {
+    const maxLevel = getItemTimerResearchMaxLevel(catalogIndex);
+    for (let level = 1; level <= maxLevel; level += 1) {
+      catalog.push({
+        id: itemTimerResearchIds.herbGrowth(herb.key, level),
+        label: `${herb.label} growing lvl ${level}`,
+        requiredResearchIds:
+          level > 1
+            ? [itemTimerResearchIds.herbGrowth(herb.key, level - 1)]
+            : [`unlockSeed:${herb.key.replace(/Herb$/, 'Seed')}`],
+      });
+    }
+  });
+
+  recipes.forEach((recipe, catalogIndex) => {
+    const maxLevel = getItemTimerResearchMaxLevel(catalogIndex);
+    for (let level = 1; level <= maxLevel; level += 1) {
+      catalog.push({
+        id: itemTimerResearchIds.potionBrewing(recipe.key, level),
+        label: `${recipe.label} brewing lvl ${level}`,
+        requiredResearchIds:
+          level > 1
+            ? [itemTimerResearchIds.potionBrewing(recipe.key, level - 1)]
+            : [`unlockRecipe:${recipe.key}`],
+      });
+    }
+  });
+
   [
     ...Object.keys(researchBalance.researchCostsCrystal ?? {}),
     ...Object.keys(researchBalance.researchCostsRuby ?? {}),
@@ -1344,10 +1424,17 @@ function createResearchCosts() {
     costs.set(id, { currency: 'emerald', amount });
   });
 
+  Object.entries(createItemTimerResearchCosts({
+    seedUnlockCosts: researchBalance.researchCostsCoin,
+    recipeUnlockCosts: researchBalance.researchCostsCoin,
+  })).forEach(([id, amount]) => {
+    costs.set(id, { currency: 'coin', amount });
+  });
+
   return costs;
 }
 
-function createResearchDurations() {
+function createResearchDurations(researchCatalog = []) {
   const costsCrystal = researchBalance.researchCostsCrystal ?? {};
   const costsRuby = researchBalance.researchCostsRuby ?? {};
   const costsEmerald = researchBalance.researchCostsEmerald ?? {};
@@ -1368,12 +1455,20 @@ function createResearchDurations() {
     ),
   ];
 
-  return new Map(
+  const durations = new Map(
     ids.map((id) => [
       id,
       researchBalance.researchDurationsSeconds?.[id] ?? getDefaultResearchDurationSeconds(id),
     ]),
   );
+
+  for (const researchId of researchCatalog
+    .map((research) => research.id)
+    .filter((id) => id.startsWith('timer:'))) {
+    durations.set(researchId, itemTimerResearchDurationSeconds);
+  }
+
+  return durations;
 }
 
 function getDefaultResearchDurationSeconds(researchId) {
