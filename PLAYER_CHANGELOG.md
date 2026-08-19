@@ -5,6 +5,10 @@ upload script posts the section whose heading matches `package.json` `version`.
 Write these developer-to-player notes only in Idle Wizard terms. Do not mention
 other game names, source projects, ports, or implementation provenance.
 
+## 0.3.74
+
+- Updated Guild quest requests with new illustrated road artwork.
+
 ## 0.3.73
 
 - Added independent growing-speed mastery for every herb and brewing-speed mastery for every potion, with new early requests that introduce the system.
