@@ -5,6 +5,10 @@ upload script posts the section whose heading matches `package.json` `version`.
 Write these developer-to-player notes only in Idle Wizard terms. Do not mention
 other game names, source projects, ports, or implementation provenance.
 
+## 0.3.72
+
+- Refined the Guild bottom navigation icon family for clearer destination recognition and a more consistent visual finish.
+
 ## 0.3.71
 
 - Added tap-to-accelerate Brewing, with clear time-reduction feedback while a cauldron is brewing or bottling.

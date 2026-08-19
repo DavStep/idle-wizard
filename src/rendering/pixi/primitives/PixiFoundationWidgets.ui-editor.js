@@ -429,7 +429,7 @@ export default [
       { fixture: { currentPageId: 'workshop' }, id: 'workshop', label: 'Workshop selected', mount: mountBottomRoomTabs },
       { fixture: { currentPageId: 'research', lockedPageId: 'garden' }, id: 'locked', label: 'Locked Garden', mount: mountBottomRoomTabs },
       { fixture: { currentPageId: 'shop', notifiedPageId: 'shop' }, id: 'notification', label: 'Market notification', mount: mountBottomRoomTabs },
-      { fixture: { currentPageId: 'guild', hudMode: 'guild' }, id: 'guild', label: 'Guild HUD', mount: mountBottomRoomTabs },
+      { fixture: { currentPageId: 'guild', hudMode: 'guild', unlockGuildTabs: true }, id: 'guild', label: 'Guild HUD', mount: mountBottomRoomTabs },
       { fixture: { currentPageId: 'prestige', hudMode: 'prestige' }, id: 'prestige', label: 'Prestige HUD', mount: mountBottomRoomTabs },
     ],
   }),
@@ -822,6 +822,7 @@ async function mountBottomRoomTabs(context, fixture) {
     hudMode: fixture.hudMode ?? 'rooms',
     lockedPageId: fixture.lockedPageId ?? '',
     notifiedPageId: fixture.notifiedPageId ?? '',
+    unlockGuildTabs: fixture.unlockGuildTabs === true,
   };
   let view = null;
   const surface = await createUiEditorPixiSurface({
@@ -901,6 +902,11 @@ async function mountBottomRoomTabs(context, fixture) {
       guildHud: {
         notifications: {},
         selectedTabId: state.guildTabId,
+        tabs: state.unlockGuildTabs
+          ? PIXI_GUILD_HUD_TABS
+            .filter(({ guildTabId }) => Boolean(guildTabId))
+            .map(({ guildTabId }) => ({ id: guildTabId, unlocked: true }))
+          : [],
       },
       prestigeHud: {
         notifications: {},

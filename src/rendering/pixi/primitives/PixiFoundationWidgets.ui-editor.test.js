@@ -161,4 +161,25 @@ describe('Pixi foundation UI editor integrations', () => {
       tabId: 'points',
     });
   });
+
+  it('previews every Guild destination icon in the production group', async () => {
+    const integration = integrations.find(
+      ({ id }) => id === 'compound.bottom-room-tabs',
+    );
+    const scenario = integration.scenarios.find(({ id }) => id === 'guild');
+
+    await scenario.mount(
+      { emit: vi.fn(), invalidate: vi.fn() },
+      scenario.fixture,
+    );
+
+    expect(harness.models.at(-1)).toMatchObject({
+      currentPageId: 'guild',
+      guildHud: {
+        selectedTabId: 'hall',
+        tabs: [{ id: 'hall', unlocked: true }],
+      },
+      hudMode: 'guild',
+    });
+  });
 });
