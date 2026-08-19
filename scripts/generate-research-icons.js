@@ -61,10 +61,7 @@ const recipes = Object.freeze([
   ],
   [
     'icon-research-time.png',
-    [
-      layer('hourglass', 42, 18, 172, 214, { shadow: true }),
-      reductionArrowLayer(),
-    ],
+    [layer('hourglass', 32, 13, 192, 230, { shadow: true })],
   ],
   [
     'icon-research-automation-reserve.png',

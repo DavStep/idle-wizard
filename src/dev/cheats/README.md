@@ -32,7 +32,7 @@ cheats.setCauldron(1, { potion: 'manaTonic', phase: 'brewed' })
 cheats.unlockTraderStands(3)
 cheats.unlockPlayerStands(3)
 cheats.setMarketState('full')
-cheats.setWorldEventState('complete')
+cheats.setWorldEventState('highscore')
 cheats.setGuildState('claimable')
 cheats.setBackendState('offline')
 cheats.listDialogs()
@@ -114,7 +114,7 @@ Useful view setup commands:
 - `setMarketState(preset)` supports empty/full/ready/half/long-running market
   views and publishes dummy player-market backend rows when available.
 - `setWorldEventState(preset)` supports locked, active, partial, qualify,
-  complete, and ended/archive states.
+  highscore, and ended/archive states.
 - `setGuildState(preset)` supports locked, charter, joined, applicants, full,
   claimable, and urgent guild hall states.
 - `setBackendState(state)` supports connected, offline, reconnecting,

@@ -32,7 +32,7 @@ export default [
   widget('compound.brewing-inventory-opener', 'Brewing Inventory Opener', [], inventoryButtonControl, variants(['herbs', 'potions', 'selected'])),
   widget('compound.brewing-recipe-card', 'Brewing Recipe Card', ['text-button', 'compound.brewing-recipe-ingredient-row'], recipeCardControl, variants(['available', 'selected', 'research', 'unknown'])),
   widget('compound.brewing-recipe-ingredient-row', 'Brewing Recipe Ingredient Row', [], recipeIngredientControl, variants(['available', 'missing', 'unknown'])),
-  widget('compound.brewing-batch-detail', 'Brewing Batch Detail', ['compound.brewing-ingredient-picker-slot', 'primitive.progress-bar'], batchDetailControl, variants(['ready', 'brewing', 'complete'])),
+  widget('compound.brewing-batch-detail', 'Brewing Batch Detail', ['compound.brewing-ingredient-picker-slot', 'primitive.progress-bar'], batchDetailControl, variants(['empty', 'missing', 'ready', 'brewing', 'complete'])),
   widget('compound.brewing-ingredient-picker-slot', 'Brewing Ingredient Picker Slot', ['text-button'], ingredientSlotControl, variants(['filled', 'used', 'missing', 'empty'])),
   widget('compound.brewing-automation-toggle', 'Brewing Automation Inclusion', ['text-button'], automationToggleControl, variants(['included', 'unavailable'])),
 ];
@@ -209,8 +209,78 @@ function recipeIngredientControl({ assets, fixture = { state: 'available' } }) {
 }
 
 function createHudModel(state) {
-  const active = state === 'ready' ? null : { canCollect: state === 'complete', durationMs: 5000, endTimeMs: 5000, key: 'minorManaPotion', label: 'Minor Mana Potion', startedAtMs: 0 };
-  return { cauldrons: [{ activeBrew: active, brewQuantity: 2, canAddIngredient: true, canSelectRecipe: true, cauldronNumber: 1, id: 'cauldron-0', ingredients: [{ key: 'mintHerb', label: 'Mint', quantity: 2 }], level: 2, maxBrewQuantity: 3, primaryAction: { enabled: true, id: active ? (active.canCollect ? 'collect' : 'cancel') : 'brew', label: active ? (active.canCollect ? 'Collect' : 'Cancel') : 'Brew' }, selectedRecipe: { key: 'minorManaPotion', label: 'Minor Mana Potion', ingredients: [{ itemKey: 'mintHerb', label: 'Mint', quantity: 2, owned: 5 }] }, unlocked: true }], selectedCauldronIndex: 0 };
+  const active = ['empty', 'missing', 'ready'].includes(state)
+    ? null
+    : {
+        canCollect: state === 'complete',
+        durationMs: 5000,
+        endTimeMs: 5000,
+        key: 'minorManaPotion',
+        label: 'Minor Mana Potion',
+        phase: state === 'complete' ? 'ready' : 'brewing',
+        startedAtMs: 0,
+      };
+  const selectedRecipe =
+    state === 'empty'
+      ? null
+      : {
+          key: 'minorManaPotion',
+          label: 'Minor Mana Potion',
+          ingredients: [
+            {
+              itemKey: 'mintHerb',
+              label: 'Mint',
+              quantity: 2,
+              owned: state === 'missing' ? 0 : 2,
+            },
+          ],
+        };
+  const primaryId = active
+    ? active.canCollect
+      ? 'collect'
+      : 'cancel'
+    : selectedRecipe
+      ? 'brew'
+      : 'recipes';
+  const primaryLabel = active
+    ? active.canCollect
+      ? 'Collect'
+      : 'Cancel'
+    : selectedRecipe
+      ? 'Brew'
+      : 'Choose Recipe';
+  return {
+    cauldrons: [
+      {
+        activeBrew: active,
+        brewQuantity: 2,
+        canAddIngredient: true,
+        canSelectRecipe: true,
+        cauldronNumber: 1,
+        id: 'cauldron-0',
+        ingredients:
+          state === 'empty'
+            ? []
+            : [{ key: 'mintHerb', label: 'Mint', quantity: 2 }],
+        level: 2,
+        maxBrewQuantity: 3,
+        primaryAction: {
+          enabled: state !== 'missing',
+          id: primaryId,
+          label: primaryLabel,
+        },
+        recipeReadiness: selectedRecipe
+          ? {
+              hasEnoughIngredients: state !== 'missing',
+              hasEnoughMana: true,
+            }
+          : null,
+        selectedRecipe,
+        unlocked: true,
+      },
+    ],
+    selectedCauldronIndex: 0,
+  };
 }
 
 function batchDetailControl({ assets, input, fixture = { state: 'ready' }, context }) {

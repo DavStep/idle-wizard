@@ -15,6 +15,9 @@ const CURRENCY_ICON_FILES = [
   'icon-ruby.png',
   'icon-emerald.png',
 ];
+const THICK_OUTLINE_ICON_FILES = CURRENCY_ICON_FILES.filter(
+  (fileName) => fileName !== 'icon-coin.png',
+);
 
 describe('currency icon assets', () => {
   it.each(CURRENCY_ICON_FILES)('%s keeps a smooth antialiased 92px silhouette', (fileName) => {
@@ -34,7 +37,7 @@ describe('currency icon assets', () => {
     expect(partialAlphaPixels).toBeGreaterThan(200);
   });
 
-  it('keeps the crystal tall and optically full inside its canvas', () => {
+  it('keeps the outlined crystal tall and optically full inside its canvas', () => {
     const image = PNG.sync.read(
       fs.readFileSync(path.join(ICON_DIRECTORY, 'icon-crystal.png')),
     );
@@ -60,11 +63,81 @@ describe('currency icon assets', () => {
     const visibleHeight = maxY - minY + 1;
     const heightToWidth = visibleHeight / visibleWidth;
 
-    expect(visibleWidth).toBeGreaterThanOrEqual(66);
-    expect(visibleWidth).toBeLessThanOrEqual(72);
+    expect(visibleWidth).toBeGreaterThanOrEqual(72);
+    expect(visibleWidth).toBeLessThanOrEqual(76);
     expect(visibleHeight).toBeGreaterThanOrEqual(88);
     expect(visibleHeight).toBeLessThanOrEqual(90);
-    expect(heightToWidth).toBeGreaterThanOrEqual(1.25);
-    expect(heightToWidth).toBeLessThanOrEqual(1.5);
+    expect(heightToWidth).toBeGreaterThanOrEqual(1.2);
+    expect(heightToWidth).toBeLessThanOrEqual(1.25);
   });
+
+  it.each(THICK_OUTLINE_ICON_FILES)(
+    '%s keeps the shared thick near-black exterior contour',
+    (fileName) => {
+      const image = PNG.sync.read(
+        fs.readFileSync(path.join(ICON_DIRECTORY, fileName)),
+      );
+      const exterior = collectExteriorPixels(image);
+      const ringTotals = Array.from({ length: 9 }, () => ({ dark: 0, total: 0 }));
+
+      for (let y = 0; y < image.height; y += 1) {
+        for (let x = 0; x < image.width; x += 1) {
+          const offset = (y * image.width + x) * 4;
+
+          if (image.data[offset + 3] <= 16) {
+            continue;
+          }
+
+          const distance = Math.floor(
+            Math.sqrt(
+              exterior.reduce(
+                (closest, [exteriorX, exteriorY]) =>
+                  Math.min(
+                    closest,
+                    (x - exteriorX) ** 2 + (y - exteriorY) ** 2,
+                  ),
+                Number.POSITIVE_INFINITY,
+              ),
+            ),
+          );
+
+          if (distance < 1 || distance > 8) {
+            continue;
+          }
+
+          const luminance =
+            image.data[offset] * 0.2126
+            + image.data[offset + 1] * 0.7152
+            + image.data[offset + 2] * 0.0722;
+          ringTotals[distance].total += 1;
+          ringTotals[distance].dark += luminance < 35 ? 1 : 0;
+        }
+      }
+
+      for (const ring of ringTotals.slice(1)) {
+        expect(ring.total).toBeGreaterThan(0);
+        expect(ring.dark / ring.total).toBeGreaterThan(0.9);
+      }
+    },
+  );
 });
+
+function collectExteriorPixels(image) {
+  const exterior = [];
+
+  for (let y = -1; y <= image.height; y += 1) {
+    for (let x = -1; x <= image.width; x += 1) {
+      if (
+        x < 0
+        || y < 0
+        || x >= image.width
+        || y >= image.height
+        || image.data[(y * image.width + x) * 4 + 3] <= 16
+      ) {
+        exterior.push([x, y]);
+      }
+    }
+  }
+
+  return exterior;
+}

@@ -45,6 +45,7 @@ experience_type: backend-android
 - Level-up and prestige system chat announcements should bypass normal user-message rate limits; their duplicate guards are the cap, and chat traffic must not hide progression notices.
 - Potion recipe discoveries are server-backed through `potion_recipe_discovery`; discovery reducer also writes a system world chat message.
 - When asked to run the project, also check whether SpacetimeDB backend is running; start it if port `3000` has no backend listener.
+- Android WebView app activity can diverge from `document.visibilityState`; gate audio from the shared Capacitor-backed app visibility lifecycle, cancel scheduled Web Audio voices on inactivity, and require a fresh foreground gesture before resuming sound effects.
 - The client must block play until SpacetimeDB connects, and must stop the frame loop again when the backend disconnects.
 - SpacetimeDB startup and reconnect states keep the full-screen loading splash visible until online. Transient `connect_error`/`disconnect` states still retry; presentation must not bring back a server-required dialog.
 - Generated SpacetimeDB bindings belong in `src/backend/spacetimedb/module_bindings/`.
@@ -54,6 +55,7 @@ experience_type: backend-android
 - Lifetime playtime is server-owned: settle the prior `player_session` interval before reconnect/session takeover and again on disconnect, then project the still-active interval through `player_info_summary` without trusting a client timer.
 - On reconnect, discard a hydrated pending gameplay save when the server row is at least as new; resending it can roll back unrelated coin or cauldron batch settings.
 - Gameplay-save journal reconciliation must also discard a pending save that lowers the hydrated server level unless it adds a prestige completion; revision lineage alone can otherwise replay a stale runtime snapshot forever.
+- Offline catch-up must compare timestamps from the same clock domain: use server-preserved `clientSavedAt` with client `Date.now()`, then fall back to `savedAt` for legacy/local saves, or server/device skew can suppress elapsed time.
 - A resolved SpacetimeDB reducer promise is not gameplay-save durability proof; keep the own-save subscription live and clear the local journal only after observing the exact client session/sequence in the server row.
 - An authoritative empty gameplay-save row must replace stale runtime with the canonical fresh state, then persist and observe that baseline before gameplay opens.
 - Missing own-session rows and session subscription errors must fail closed; treating them as active lets invalidated clients continue writing, while observation errors should reconnect without deleting the gameplay-save journal.

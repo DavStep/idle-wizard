@@ -32,7 +32,7 @@ import { PressFeedbackManager } from './managers/PressFeedbackManager.js';
 import { ScrollCueManager } from './managers/ScrollCueManager.js';
 
 const FTUE_ENABLED = true;
-const SWIPE_PAGE_IDS = ['brewing', 'garden', 'workshop', 'research', 'shop'];
+const SWIPE_PAGE_IDS = ['brewing', 'garden', 'workshop', 'shop', 'research'];
 
 export class PagesFacade {
   static explain =

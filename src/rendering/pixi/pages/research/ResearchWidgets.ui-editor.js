@@ -37,6 +37,12 @@ export default [
       researchRowScenario('locked', 'Locked'),
       researchRowScenario('in-progress', 'Researching'),
       researchRowScenario('completed', 'Researched'),
+      {
+        fixture: { itemTimer: true, state: 'available' },
+        id: 'item-timer',
+        label: 'Item Timer',
+        mount: mountResearchRow,
+      },
     ],
     usages: [
       {
@@ -216,7 +222,7 @@ function createResearchRowControl({
     timeSource: now,
   });
   row.bind(
-    createResearchRowModel(fixture.state),
+    createResearchRowModel(fixture),
     { buy: onBuy, locked: onLocked },
     'herbs',
   );
@@ -230,13 +236,21 @@ function createResearchRowControl({
   };
 }
 
-function createResearchRowModel(state) {
+function createResearchRowModel({ itemTimer = false, state }) {
   const completed = state === 'completed';
   const inProgress = state === 'in-progress';
   const locked = state === 'locked';
   const unavailable = state === 'unavailable';
   return {
     artAssetId: RESEARCH_ART_ASSET_ID,
+    ...(itemTimer
+      ? {
+          artExtraAssetId:
+            'source:assets/icons/research/icon-research-time.png',
+          itemKey: 'mintHerb',
+          itemKind: 'herb',
+        }
+      : {}),
     canResearch: state === 'available',
     completed,
     cost: {
@@ -244,10 +258,10 @@ function createResearchRowModel(state) {
       lockPrompt: locked ? 'Complete prior research' : '',
       resource: 'coin',
     },
-    displayName: 'Mint Cultivation',
+    displayName: itemTimer ? 'Mint Growing' : 'Mint Cultivation',
     displayValue: completed ? 'Researched' : '25 coin',
     effect: completed ? 'Growth improved' : 'Learn to grow mint',
-    id: 'mint-cultivation',
+    id: itemTimer ? 'timer:herbGrowth:mintHerb:1' : 'mint-cultivation',
     inProgress,
     locked,
     state,
@@ -337,7 +351,7 @@ function createResearchBoxControl({ assets, fixture, input, now }) {
     });
     row.bind(
       {
-        ...createResearchRowModel(state),
+        ...createResearchRowModel({ state }),
         displayName: ['Mint Cultivation', 'Sage Mastery', 'Herbal Memory'][index],
         id: `research-editor-${index}`,
       },

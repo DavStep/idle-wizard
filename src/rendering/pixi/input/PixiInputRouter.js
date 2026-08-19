@@ -1069,7 +1069,11 @@ export class PixiInputRouter {
     const drag = blockedModal
       ? []
       : this.getEligibleCandidates(event?.target, 'drag', point.global);
+    const excludesScroll = drag.some((registration) =>
+      resolveRegistrationBoolean(registration.excludeScroll, false),
+    );
     const scroll = blockedModal
+      || excludesScroll
       ? []
       : this.getEligibleCandidates(event?.target, 'scroll');
     const pan = blockedModal

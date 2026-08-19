@@ -170,6 +170,10 @@ const RESEARCH_ART_ASSET_BY_BOX_ID = Object.freeze({
 });
 const RESEARCH_CAULDRON_LEVEL_ART_ASSET =
   'source:assets/icons/research/icon-research-cauldron-level.png';
+const RESEARCH_ART_EXTRA_ASSET_BY_KEY = Object.freeze({
+  timerReduction:
+    'source:assets/icons/research/icon-research-time.png',
+});
 const RESEARCH_FALLBACK_ART_ASSET =
   'source:assets/icons/icon-research.png';
 const WORLD_CHAT_PRESTIGE_ICON_ASSET =
@@ -1533,7 +1537,7 @@ export class PixiViewModelFactory {
                   option.resourceType === 'coin' ? 'coin' : itemKind,
                 actionLabel: enabled ? 'Donate' : 'Unavailable',
                 enabled,
-                notification: request.completed !== true,
+                notification: false,
                 semanticId: `workshop.worldEvent.quest.${requestId}.donation.${optionKey}`,
                 ...(enabled
                   ? {
@@ -1569,13 +1573,8 @@ export class PixiViewModelFactory {
                 : '',
             statusLabel:
               donationOptions.length === 0
-                ? toSentenceCase(
-                    request.completed === true
-                      ? 'Completed'
-                      : request.actionText ?? '',
-                  )
+                ? toSentenceCase(request.actionText ?? '')
                 : '',
-            completed: request.completed === true,
             donationOptions,
           };
         });
@@ -2270,10 +2269,7 @@ function createWorkshopFeatures({
         .trim()
         .replace(/^resolves\s+/i, ''),
       notification:
-        Array.isArray(notice?.requests) && notice.requests.length > 0
-          ? notice.requests.some((request) => request?.completed !== true)
-          : Number(notice?.completedRequests ?? 0) <
-            Number(notice?.totalRequests ?? 0),
+        false,
     },
     {
       id: 'guild',
@@ -2580,6 +2576,8 @@ function createResearchItemModel(
     state,
     artKey: artAssetId,
     artAssetId,
+    artExtraAssetId:
+      RESEARCH_ART_EXTRA_ASSET_BY_KEY[item.artExtraKey] ?? null,
     rank: {
       current: rankCurrent,
       total: 1,

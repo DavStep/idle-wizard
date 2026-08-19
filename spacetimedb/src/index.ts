@@ -40,6 +40,11 @@ import {
   discoveredPotionResearchCostGoldByKey,
 } from './discoveredPotionResearch';
 import {
+  getItemTimerResearchDurationSeconds,
+  getItemTimerResearchMaxLevel,
+  isLegacyItemTimerResearchDuration,
+} from './itemTimerResearch';
+import {
   createIdentityOnlyPlayerReset,
   createInvalidatedPlayerSession,
   DEFAULT_PLAYER_CHARACTER,
@@ -222,15 +227,9 @@ const PERIOD_MONTH_DAYS = 30n;
 const PERIOD_LOOP_ANCHOR_MICROS = 1_780_876_800_000_000n; // 2026-06-08 00:00 UTC, Armenia 04:00.
 const PLAYER_DATA_RESET_GUARD_MICROS = 1_781_298_268_808_000n;
 const STARTUP_MAINTENANCE_STATE_KEY = 'startup-maintenance:direct-sell-stands-v2';
-const PLAYER_LEVEL_MANA_REGEN_BACKFILL_STATE_KEY = 'game-config:player-level-mana-regen-v2';
 const PLAYER_LEVEL_CAULDRON_CAP_BACKFILL_STATE_KEY = 'game-config:player-level-cauldron-cap-v1';
 const SMALL_TOWN_FIXED_PRICE_BACKFILL_STATE_KEY = 'npc-market:small-town-fixed-prices-v1';
 const NPC_MARKET_CATALOG_PRICE_REBASE_STATE_KEY = 'npc-market:catalog-prices-2-5x-v1';
-const PLAYER_LEVEL_MANA_PER_SECOND_PER_LEVEL_RANGES = [
-  { fromLevel: 2, toLevel: 5, amount: 1 },
-  { fromLevel: 6, toLevel: 10, amount: 0.5 },
-  { fromLevel: 11, amount: 0.25 },
-];
 const RESERVED_USERNAMES = new Set(['admin', 'system']);
 const MAINTENANCE_MODE_OFF = 'off';
 const MAINTENANCE_MODE_DRAIN = 'drain';
@@ -3844,12 +3843,6 @@ const DEFAULT_TASKS_CONFIG_JSON = JSON.stringify(DEFAULT_TASKS_CONFIG);
 const DEFAULT_CURRENT_TASKS_CONFIG_JSON = DEFAULT_TASKS_CONFIG_JSON;
 const DEFAULT_PLAYER_LEVEL_CONFIG_JSON = JSON.stringify({
   "maxLevel": 100,
-  "mana": {
-    "baseMaxManaCap": 50,
-    "maxManaCapPerLevel": 50,
-    "baseManaPerSecond": 1,
-    "manaPerSecondPerLevelRanges": PLAYER_LEVEL_MANA_PER_SECOND_PER_LEVEL_RANGES
-  },
   "crystal": {
     "perLevel": 1
   },
@@ -4256,7 +4249,151 @@ function getAutomationDefaultCostCrystalById(): Record<string, number> {
   return costs;
 }
 
+const MANA_RESEARCH_FIRST_PLAYER_LEVEL = 2;
+const MANA_RESEARCH_MAX_PLAYER_LEVEL = 100;
+const MANA_RESEARCH_DURATION_SECONDS = 5n;
+const MANA_RESEARCH_EARLY_TARGET_PLAYER_LEVEL = 17;
+const MANA_RESEARCH_MID_TARGET_PLAYER_LEVEL = 44;
+const MANA_RESEARCH_MAX_COST_GOLD = 1_000_000_000;
+const MANA_CAPACITY_RESEARCH_BASE_COST_GOLD = 25;
+const MANA_GENERATION_RESEARCH_BASE_COST_GOLD = 50;
+const MANA_CAPACITY_RESEARCH_LEVEL_17_COST_GOLD = 30_000;
+const MANA_GENERATION_RESEARCH_LEVEL_17_COST_GOLD = 45_000;
+const MANA_CAPACITY_RESEARCH_LEVEL_44_COST_GOLD = 6_000_000;
+const MANA_GENERATION_RESEARCH_LEVEL_44_COST_GOLD = 9_000_000;
+const MANA_CAPACITY_RESEARCH_LEVEL_100_COST_GOLD = 700_000_000;
+const MANA_GENERATION_RESEARCH_LEVEL_100_COST_GOLD = 1_000_000_000;
+
+function getManaResearchRank(playerLevel: number): number {
+  return Math.max(1, playerLevel - MANA_RESEARCH_FIRST_PLAYER_LEVEL + 1);
+}
+
+function getManaCapacityResearchId(playerLevel: number): string {
+  return `manaSphereCap:${getManaResearchRank(playerLevel)}`;
+}
+
+function getManaGenerationResearchId(playerLevel: number): string {
+  return `manaProductionRate:${getManaResearchRank(playerLevel)}`;
+}
+
+function getManaResearchCostGold({
+  playerLevel,
+  baseCostGold,
+  level17CostGold,
+  level44CostGold,
+  level100CostGold,
+}: {
+  playerLevel: number;
+  baseCostGold: number;
+  level17CostGold: number;
+  level44CostGold: number;
+  level100CostGold: number;
+}): bigint {
+  const earlySteps =
+    Math.min(playerLevel, MANA_RESEARCH_EARLY_TARGET_PLAYER_LEVEL) -
+    MANA_RESEARCH_FIRST_PLAYER_LEVEL;
+  const midSteps =
+    Math.min(
+      Math.max(playerLevel, MANA_RESEARCH_EARLY_TARGET_PLAYER_LEVEL),
+      MANA_RESEARCH_MID_TARGET_PLAYER_LEVEL,
+    ) - MANA_RESEARCH_EARLY_TARGET_PLAYER_LEVEL;
+  const lateSteps = Math.max(
+    0,
+    playerLevel - MANA_RESEARCH_MID_TARGET_PLAYER_LEVEL,
+  );
+  const earlyGrowthMultiplier =
+    (level17CostGold / baseCostGold) **
+    (1 / (MANA_RESEARCH_EARLY_TARGET_PLAYER_LEVEL - MANA_RESEARCH_FIRST_PLAYER_LEVEL));
+  const midGrowthMultiplier =
+    (level44CostGold / level17CostGold) **
+    (1 / (MANA_RESEARCH_MID_TARGET_PLAYER_LEVEL - MANA_RESEARCH_EARLY_TARGET_PLAYER_LEVEL));
+  const lateGrowthMultiplier =
+    (level100CostGold / level44CostGold) **
+    (1 / (MANA_RESEARCH_MAX_PLAYER_LEVEL - MANA_RESEARCH_MID_TARGET_PLAYER_LEVEL));
+  const rawCost =
+    baseCostGold *
+    earlyGrowthMultiplier ** earlySteps *
+    midGrowthMultiplier ** midSteps *
+    lateGrowthMultiplier ** lateSteps;
+  const step =
+    rawCost < 100
+      ? 5
+      : rawCost < 1_000
+        ? 10
+        : rawCost < 10_000
+          ? 100
+          : rawCost < 100_000
+            ? 1_000
+            : rawCost < 1_000_000
+              ? 10_000
+              : rawCost < 10_000_000
+                ? 100_000
+                : rawCost < 100_000_000
+                  ? 1_000_000
+                  : 10_000_000;
+
+  return BigInt(
+    Math.min(
+      MANA_RESEARCH_MAX_COST_GOLD,
+      Math.round(rawCost / step) * step,
+    ),
+  );
+}
+
+function getManaResearchDefaultCostGoldById(): Record<string, bigint> {
+  const costs: Record<string, bigint> = {};
+
+  for (
+    let playerLevel = MANA_RESEARCH_FIRST_PLAYER_LEVEL;
+    playerLevel <= MANA_RESEARCH_MAX_PLAYER_LEVEL;
+    playerLevel += 1
+  ) {
+    costs[getManaCapacityResearchId(playerLevel)] = getManaResearchCostGold({
+      playerLevel,
+      baseCostGold: MANA_CAPACITY_RESEARCH_BASE_COST_GOLD,
+      level17CostGold: MANA_CAPACITY_RESEARCH_LEVEL_17_COST_GOLD,
+      level44CostGold: MANA_CAPACITY_RESEARCH_LEVEL_44_COST_GOLD,
+      level100CostGold: MANA_CAPACITY_RESEARCH_LEVEL_100_COST_GOLD,
+    });
+    costs[getManaGenerationResearchId(playerLevel)] = getManaResearchCostGold({
+      playerLevel,
+      baseCostGold: MANA_GENERATION_RESEARCH_BASE_COST_GOLD,
+      level17CostGold: MANA_GENERATION_RESEARCH_LEVEL_17_COST_GOLD,
+      level44CostGold: MANA_GENERATION_RESEARCH_LEVEL_44_COST_GOLD,
+      level100CostGold: MANA_GENERATION_RESEARCH_LEVEL_100_COST_GOLD,
+    });
+  }
+
+  return costs;
+}
+
+const manaResearchCatalog = [
+  ...Array.from(
+    { length: MANA_RESEARCH_MAX_PLAYER_LEVEL - MANA_RESEARCH_FIRST_PLAYER_LEVEL + 1 },
+    (_value, index) => {
+      const playerLevel = index + MANA_RESEARCH_FIRST_PLAYER_LEVEL;
+      return {
+        id: getManaCapacityResearchId(playerLevel),
+        label: `mana capacity lvl ${playerLevel}`,
+        groupId: 'manaSphere',
+      };
+    },
+  ),
+  ...Array.from(
+    { length: MANA_RESEARCH_MAX_PLAYER_LEVEL - MANA_RESEARCH_FIRST_PLAYER_LEVEL + 1 },
+    (_value, index) => {
+      const playerLevel = index + MANA_RESEARCH_FIRST_PLAYER_LEVEL;
+      return {
+        id: getManaGenerationResearchId(playerLevel),
+        label: `mana generation lvl ${playerLevel}`,
+        groupId: 'manaSphere',
+      };
+    },
+  ),
+];
+
 const researchDefaultCostGoldById: Record<string, bigint> = {
+  ...getManaResearchDefaultCostGoldById(),
   'unlockSeed:sageSeed': 0n,
   'unlockSeed:mintSeed': 0n,
   'unlockSeed:nettleSeed': 400n,
@@ -4324,13 +4461,35 @@ const researchDefaultCostGoldById: Record<string, bigint> = {
   ...getAutomationDefaultCostGoldById(),
 };
 
-const ITEM_TIMER_RESEARCH_DURATION_SECONDS = 5n;
-const ITEM_TIMER_RESEARCH_LATE_GAME_MAX_LEVEL = 19;
-const itemTimerEarlyMaxLevels = [2, 4, 7, 10, 14];
+function getItemTimerResearchDefaultDurationSeconds(researchId: string): bigint {
+  const herbMatch = /^timer:herbGrowth:([^:]+):([0-9]+)$/.exec(researchId);
 
-function getItemTimerResearchMaxLevel(catalogIndex: number): number {
-  const safeIndex = Math.max(0, Math.floor(Number(catalogIndex) || 0));
-  return itemTimerEarlyMaxLevels[safeIndex] ?? ITEM_TIMER_RESEARCH_LATE_GAME_MAX_LEVEL;
+  if (herbMatch) {
+    const herbKey = herbMatch[1].replace(/Herb$/, '');
+    const herb = herbCatalog.find((candidate) => candidate.key === herbKey);
+    return BigInt(
+      getItemTimerResearchDurationSeconds(
+        herb?.growthDurationMs ?? 0,
+        Number(herbMatch[2]),
+      ),
+    );
+  }
+
+  const potionMatch = /^timer:potionBrewing:([^:]+):([0-9]+)$/.exec(researchId);
+
+  if (potionMatch) {
+    const recipe = potionRecipeCatalog.find(
+      (candidate) => candidate.potionKey === potionMatch[1],
+    );
+    return BigInt(
+      getItemTimerResearchDurationSeconds(
+        recipe?.brewDurationMs ?? 0,
+        Number(potionMatch[2]),
+      ),
+    );
+  }
+
+  return 0n;
 }
 
 function getItemTimerResearchCostGold(baseCostGold: bigint, level: number): bigint {
@@ -4347,7 +4506,7 @@ const itemTimerPotionCatalog = [
 function getItemTimerResearchDefaultCostGoldById(): Record<string, bigint> {
   const costs: Record<string, bigint> = {};
 
-  herbCatalog.forEach((herb, catalogIndex) => {
+  herbCatalog.forEach((herb) => {
     const unlockId = `unlockSeed:${herb.key}Seed`;
     const baseCostGold =
       herb.key === 'sage'
@@ -4355,20 +4514,20 @@ function getItemTimerResearchDefaultCostGoldById(): Record<string, bigint> {
         : herb.key === 'mint'
           ? 50n
           : (researchDefaultCostGoldById[unlockId] ?? 0n);
-    const maxLevel = getItemTimerResearchMaxLevel(catalogIndex);
+    const maxLevel = getItemTimerResearchMaxLevel();
     for (let level = 1; level <= maxLevel; level += 1) {
       costs[`timer:herbGrowth:${herb.key}Herb:${level}`] =
         getItemTimerResearchCostGold(baseCostGold, level);
     }
   });
 
-  itemTimerPotionCatalog.forEach((potion, catalogIndex) => {
+  itemTimerPotionCatalog.forEach((potion) => {
     const unlockId = `unlockRecipe:${potion.key}`;
     const baseCostGold =
       potion.key === 'manaTonic'
         ? 50n
         : (researchDefaultCostGoldById[unlockId] ?? 0n);
-    const maxLevel = getItemTimerResearchMaxLevel(catalogIndex);
+    const maxLevel = getItemTimerResearchMaxLevel();
     for (let level = 1; level <= maxLevel; level += 1) {
       costs[`timer:potionBrewing:${potion.key}:${level}`] =
         getItemTimerResearchCostGold(baseCostGold, level);
@@ -4381,28 +4540,30 @@ function getItemTimerResearchDefaultCostGoldById(): Record<string, bigint> {
 const itemTimerResearchDefaultCostGoldById =
   getItemTimerResearchDefaultCostGoldById();
 
-const itemTimerResearchCatalog = [
-  ...herbCatalog.flatMap((herb, catalogIndex) =>
-    Array.from(
-      { length: getItemTimerResearchMaxLevel(catalogIndex) },
-      (_value, index) => ({
-        id: `timer:herbGrowth:${herb.key}Herb:${index + 1}`,
-        label: `${herb.label} growing lvl ${index + 1}`,
-        groupId: 'herbGrowthMastery',
-      }),
+function getItemTimerResearchCatalog() {
+  return [
+    ...herbCatalog.flatMap((herb) =>
+      Array.from(
+        { length: getItemTimerResearchMaxLevel() },
+        (_value, index) => ({
+          id: `timer:herbGrowth:${herb.key}Herb:${index + 1}`,
+          label: `${herb.label} growing lvl ${index + 1}`,
+          groupId: 'herbGrowthMastery',
+        }),
+      ),
     ),
-  ),
-  ...itemTimerPotionCatalog.flatMap((potion, catalogIndex) =>
-    Array.from(
-      { length: getItemTimerResearchMaxLevel(catalogIndex) },
-      (_value, index) => ({
-        id: `timer:potionBrewing:${potion.key}:${index + 1}`,
-        label: `${potion.label} brewing lvl ${index + 1}`,
-        groupId: 'potionBrewingMastery',
-      }),
+    ...itemTimerPotionCatalog.flatMap((potion) =>
+      Array.from(
+        { length: getItemTimerResearchMaxLevel() },
+        (_value, index) => ({
+          id: `timer:potionBrewing:${potion.key}:${index + 1}`,
+          label: `${potion.label} brewing lvl ${index + 1}`,
+          groupId: 'potionBrewingMastery',
+        }),
+      ),
     ),
-  ),
-];
+  ];
+}
 
 const ADVANCED_RESEARCH_MAX_LEVEL = 12;
 const STALL_STAFFING_RESEARCH_COUNT = 5;
@@ -4668,8 +4829,12 @@ function getLegacyDefaultResearchDurationSeconds(index: number): bigint {
 }
 
 function getDefaultResearchDurationSeconds(researchId: string): bigint {
+  if (/^(?:manaSphereCap|manaProductionRate):\d+$/.test(researchId)) {
+    return MANA_RESEARCH_DURATION_SECONDS;
+  }
+
   if (researchId.startsWith('timer:')) {
-    return ITEM_TIMER_RESEARCH_DURATION_SECONDS;
+    return getItemTimerResearchDefaultDurationSeconds(researchId);
   }
 
   if (
@@ -5265,6 +5430,12 @@ const emeraldResearchCatalog = [
 ];
 
 const researchCatalog = [
+  ...manaResearchCatalog.map((research) => ({
+    researchId: research.id,
+    label: research.label,
+    groupId: research.groupId,
+    defaultCostGold: researchDefaultCostGoldById[research.id] ?? 0n,
+  })),
   ...herbCatalog.map((herb) => {
     const id = `unlockSeed:${herb.key}Seed`;
     return {
@@ -5296,7 +5467,7 @@ const researchCatalog = [
     };
   }),
   ...createDiscoveredPotionResearchCatalog(unknownPotionCatalog),
-  ...itemTimerResearchCatalog.map((research) => ({
+  ...getItemTimerResearchCatalog().map((research) => ({
     researchId: research.id,
     label: research.label,
     groupId: research.groupId,
@@ -8488,12 +8659,22 @@ function validateResearchCostGold(costGold: bigint | number): bigint {
   return safeCostGold;
 }
 
-function normalizeResearchDurationSeconds(value: bigint | number, fallback: bigint): bigint {
+function getMaximumResearchDurationSeconds(researchId: string): bigint {
+  return researchId.startsWith('timer:')
+    ? BigInt(MAX_GAME_CONFIG_RESOURCE_LIMIT)
+    : MAX_RESEARCH_DURATION_SECONDS;
+}
+
+function normalizeResearchDurationSeconds(
+  researchId: string,
+  value: bigint | number,
+  fallback: bigint,
+): bigint {
   const safeValue = toBigInt(value);
 
   if (
     safeValue < MIN_RESEARCH_DURATION_SECONDS ||
-    safeValue > MAX_RESEARCH_DURATION_SECONDS
+    safeValue > getMaximumResearchDurationSeconds(researchId)
   ) {
     return fallback;
   }
@@ -8506,7 +8687,11 @@ function normalizeStoredResearchDurationSeconds(
   value: bigint | number,
   fallback: bigint,
 ): bigint {
-  const durationSeconds = normalizeResearchDurationSeconds(value, fallback);
+  const durationSeconds = normalizeResearchDurationSeconds(researchId, value, fallback);
+
+  if (isLegacyItemTimerResearchDuration(researchId, durationSeconds)) {
+    return fallback;
+  }
   const legacyDefaultDurationSeconds = researchLegacyDefaultDurationSecondsById[researchId];
 
   if (
@@ -8532,12 +8717,15 @@ function normalizeStoredResearchDurationSeconds(
   return durationSeconds;
 }
 
-function validateResearchDurationSeconds(durationSeconds: bigint | number): bigint {
+function validateResearchDurationSeconds(
+  researchId: string,
+  durationSeconds: bigint | number,
+): bigint {
   const safeDurationSeconds = toBigInt(durationSeconds);
 
   if (
     safeDurationSeconds < MIN_RESEARCH_DURATION_SECONDS ||
-    safeDurationSeconds > MAX_RESEARCH_DURATION_SECONDS
+    safeDurationSeconds > getMaximumResearchDurationSeconds(researchId)
   ) {
     throw new Error('Invalid research duration.');
   }
@@ -8872,6 +9060,12 @@ function normalizePlayerLevelGameConfigJson(
         perLevel: DEFAULT_PLAYER_LEVEL_CRYSTAL_PER_LEVEL,
       },
     };
+    changed = true;
+  }
+
+  if (normalizedConfig.mana !== undefined) {
+    const { mana: _removedMana, ...configWithoutMana } = normalizedConfig;
+    normalizedConfig = configWithoutMana;
     changed = true;
   }
 
@@ -11174,8 +11368,6 @@ function normalizeSaveInProgressResearches(
 
   const inProgressResearches = [];
   const inProgressIds = new Set<string>();
-  const maxResearchSeconds = Number(MAX_RESEARCH_DURATION_SECONDS);
-
   for (const progress of value.inProgress) {
     if (!isRecord(progress)) {
       continue;
@@ -11184,6 +11376,7 @@ function normalizeSaveInProgressResearches(
     const researchId = migrateLegacyResearchId(
       normalizeResearchId(String(progress.researchId ?? '')),
     );
+    const maxResearchSeconds = Number(getMaximumResearchDurationSeconds(researchId));
     if (
       !researchCatalogById.has(researchId) ||
       completedIds.has(researchId) ||
@@ -11228,6 +11421,14 @@ function normalizeSaveInProgressResearches(
 function getSaveRequiredResearchIds(researchId: string): string[] {
   if (researchId === 'garden:harvestAll') {
     return ['garden:plantAll'];
+  }
+
+  const manaResearchMatch = /^(manaSphereCap|manaProductionRate):(\d+)$/.exec(
+    researchId,
+  );
+  if (manaResearchMatch) {
+    const rank = Number(manaResearchMatch[2]);
+    return rank > 1 ? [`${manaResearchMatch[1]}:${rank - 1}`] : [];
   }
 
   if (researchId.startsWith('unlockSeed:')) {
@@ -13639,7 +13840,6 @@ function isValidTasksConfigResearchId(researchId: string): boolean {
 function validatePlayerLevelGameConfig(value: unknown) {
   const config = value as {
     maxLevel?: unknown;
-    mana?: unknown;
     crystal?: unknown;
     crystalPerLevel?: unknown;
     crystalPerLevelUp?: unknown;
@@ -13660,7 +13860,6 @@ function validatePlayerLevelGameConfig(value: unknown) {
     throw new Error('Invalid player level config.');
   }
 
-  validatePlayerLevelManaConfig(config.mana, maxLevel);
   validatePlayerLevelCrystalConfig(config);
 
   let previousLevel = 0;
@@ -13747,88 +13946,6 @@ function readPlayerLevelCrystalPerLevel(config: {
   const nestedPerLevel = crystal ? crystal.perLevel ?? crystal.perLevelUp : undefined;
 
   return nestedPerLevel ?? config.crystalPerLevel ?? config.crystalPerLevelUp;
-}
-
-function validatePlayerLevelManaConfig(value: unknown, maxLevel: number) {
-  if (value === undefined || value === null) {
-    return;
-  }
-
-  const mana = value as Record<string, unknown>;
-
-  for (const key of [
-    'baseMaxManaCap',
-    'maxManaCapPerLevel',
-    'baseManaPerSecond',
-  ]) {
-    const amount = Number(mana[key]);
-
-    if (
-      !Number.isFinite(amount) ||
-      amount < 0 ||
-      amount > MAX_GAME_CONFIG_RESOURCE_LIMIT
-    ) {
-      throw new Error('Invalid player level mana config.');
-    }
-  }
-
-  const ranges = mana.manaPerSecondPerLevelRanges ?? mana.perSecondPerLevelRanges;
-
-  if (ranges !== undefined) {
-    validatePlayerLevelManaRangeConfig(ranges, maxLevel);
-    return;
-  }
-
-  const perLevel = Number(mana.manaPerSecondPerLevel ?? mana.perSecondPerLevel);
-
-  if (
-    !Number.isFinite(perLevel) ||
-    perLevel < 0 ||
-    perLevel > MAX_GAME_CONFIG_RESOURCE_LIMIT
-  ) {
-    throw new Error('Invalid player level mana config.');
-  }
-}
-
-function validatePlayerLevelManaRangeConfig(value: unknown, maxLevel: number) {
-  if (
-    !Array.isArray(value) ||
-    value.length < 1 ||
-    value.length > MAX_GAME_CONFIG_LEVELS
-  ) {
-    throw new Error('Invalid player level mana config.');
-  }
-
-  let expectedFromLevel = 2;
-
-  for (const rangeValue of value) {
-    if (!isRecord(rangeValue)) {
-      throw new Error('Invalid player level mana config.');
-    }
-
-    const fromLevel = Number(rangeValue.fromLevel ?? rangeValue.minLevel ?? rangeValue.level);
-    const toLevel = Number(rangeValue.toLevel ?? rangeValue.maxLevel ?? maxLevel);
-    const amount = Number(rangeValue.amount ?? rangeValue.perLevel ?? rangeValue.perSecond);
-
-    if (
-      !Number.isInteger(fromLevel) ||
-      !Number.isInteger(toLevel) ||
-      fromLevel !== expectedFromLevel ||
-      toLevel < fromLevel ||
-      toLevel > maxLevel ||
-      !Number.isFinite(amount) ||
-      amount < 0 ||
-      amount > MAX_GAME_CONFIG_RESOURCE_LIMIT
-    ) {
-      throw new Error('Invalid player level mana config.');
-    }
-
-    expectedFromLevel = toLevel + 1;
-  }
-
-  if (maxLevel > 1 && expectedFromLevel !== maxLevel + 1) {
-    throw new Error('Invalid player level mana config.');
-  }
 }
 
 function validateGardenGameConfig(value: unknown) {
@@ -15889,7 +16006,7 @@ function getCatalogResearchDefaultDurationSeconds(researchId: string): bigint {
   return (
     researchDefaultDurationSecondsById[researchId] ??
     (researchId.startsWith('timer:')
-      ? ITEM_TIMER_RESEARCH_DURATION_SECONDS
+      ? getItemTimerResearchDefaultDurationSeconds(researchId)
       : 0n)
   );
 }
@@ -16159,18 +16276,6 @@ function runStartupMaintenanceOnce(ctx: IdleWizardReducerCtx) {
   });
 }
 
-function runPlayerLevelManaRegenBackfillOnce(ctx: IdleWizardReducerCtx) {
-  if (ctx.db.maintenanceState.stateKey.find(PLAYER_LEVEL_MANA_REGEN_BACKFILL_STATE_KEY)) {
-    return;
-  }
-
-  backfillPlayerLevelManaRegen(ctx);
-  ctx.db.maintenanceState.insert({
-    stateKey: PLAYER_LEVEL_MANA_REGEN_BACKFILL_STATE_KEY,
-    appliedAt: ctx.timestamp,
-  });
-}
-
 function runPlayerLevelCauldronCapBackfillOnce(ctx: IdleWizardReducerCtx) {
   if (ctx.db.maintenanceState.stateKey.find(PLAYER_LEVEL_CAULDRON_CAP_BACKFILL_STATE_KEY)) {
     return;
@@ -16281,51 +16386,6 @@ function runNpcMarketCatalogPriceRebaseOnce(ctx: IdleWizardReducerCtx) {
   ctx.db.maintenanceState.insert({
     stateKey: NPC_MARKET_CATALOG_PRICE_REBASE_STATE_KEY,
     appliedAt: ctx.timestamp,
-  });
-}
-
-function backfillPlayerLevelManaRegen(ctx: IdleWizardReducerCtx) {
-  const row = ctx.db.gameConfig.configKey.find('playerLevel');
-  if (!row) {
-    return;
-  }
-
-  let config: any;
-  try {
-    config = JSON.parse(row.configJson);
-  } catch {
-    return;
-  }
-
-  const mana = config?.mana;
-  if (!mana || typeof mana !== 'object' || Array.isArray(mana)) {
-    return;
-  }
-
-  if (Array.isArray(mana.manaPerSecondPerLevelRanges ?? mana.perSecondPerLevelRanges)) {
-    return;
-  }
-
-  const scalarPerLevel = Number(mana.manaPerSecondPerLevel ?? mana.perSecondPerLevel);
-  if (scalarPerLevel !== 0.25 && scalarPerLevel !== 1) {
-    return;
-  }
-
-  const restMana = { ...mana };
-  delete restMana.manaPerSecondPerLevel;
-  delete restMana.perSecondPerLevel;
-  const configJson = validateGameConfigJson('playerLevel', JSON.stringify({
-    ...config,
-    mana: {
-      ...restMana,
-      manaPerSecondPerLevelRanges: PLAYER_LEVEL_MANA_PER_SECOND_PER_LEVEL_RANGES,
-    },
-  }));
-
-  ctx.db.gameConfig.configKey.update({
-    ...row,
-    configJson,
-    updatedAt: ctx.timestamp,
   });
 }
 
@@ -18522,7 +18582,6 @@ export const onConnect = spacetimedb.clientConnected((ctx) => {
   ensureResearchConfigCatalog(ctx);
   ensureGameConfigCatalog(ctx);
   runStartupMaintenanceOnce(ctx);
-  runPlayerLevelManaRegenBackfillOnce(ctx);
   runPlayerLevelCauldronCapBackfillOnce(ctx);
   ensureNpcMarketCatalog(ctx);
   runSmallTownFixedPriceBackfillOnce(ctx);
@@ -18564,7 +18623,6 @@ export const init = spacetimedb.init((ctx) => {
   ensureResearchConfigCatalog(ctx);
   ensureGameConfigCatalog(ctx);
   runStartupMaintenanceOnce(ctx);
-  runPlayerLevelManaRegenBackfillOnce(ctx);
   runPlayerLevelCauldronCapBackfillOnce(ctx);
   ensureNpcMarketCatalog(ctx);
   runSmallTownFixedPriceBackfillOnce(ctx);
@@ -21175,7 +21233,10 @@ export const upsert_research_config = spacetimedb.reducer(
     }
 
     const safeCostGold = validateResearchCostGold(costGold);
-    const safeDurationSeconds = validateResearchDurationSeconds(durationSeconds);
+    const safeDurationSeconds = validateResearchDurationSeconds(
+      safeResearchId,
+      durationSeconds,
+    );
     const catalogResearch = researchCatalogById.get(safeResearchId);
     const existingConfig = ctx.db.researchConfig.researchId.find(safeResearchId);
     const nextConfig = {

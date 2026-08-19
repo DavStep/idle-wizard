@@ -864,8 +864,8 @@ describe('BottomPanelViewManager', () => {
       'Brewing',
       'Garden',
       'Workshop',
-      'Research',
       'Market',
+      'Research',
     ]);
     expect(stage.querySelector('.room-bottom-panel__prestige-button')).toBeNull();
 
@@ -881,8 +881,8 @@ describe('BottomPanelViewManager', () => {
       'Brewing',
       'Garden',
       'Workshop',
-      'Research',
       'Market',
+      'Research',
     ]);
     expect(prestigeButton?.dataset.pageId).toBe('prestige');
     expect(prestigeButton?.dataset.actionId).toBeUndefined();

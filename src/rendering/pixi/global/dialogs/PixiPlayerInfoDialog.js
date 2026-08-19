@@ -25,11 +25,11 @@ const SUMMARY_PADDING_BOTTOM = 5;
 const SUMMARY_HEIGHT =
   SUMMARY_PADDING_TOP + PORTRAIT_SIZE + SUMMARY_PADDING_BOTTOM;
 const DETAIL_ROW_PITCH = 18;
+const SECTION_CONTENT_OUTSET_X = PIXI_UI_GEOMETRY.panelPaddingX;
 const STATS_HEIGHT =
   PIXI_DIALOG_SPLIT_PAPER_GEOMETRY.contentInsetTop +
   90 +
   PIXI_DIALOG_SPLIT_PAPER_GEOMETRY.contentInsetBottom;
-const STATS_PADDING_X = 10;
 const STATS_PADDING_Y = PIXI_DIALOG_SPLIT_PAPER_GEOMETRY.contentInsetTop;
 const STATS_ROW_PITCH = 18;
 const PLAYER_PAPER_OUTSETS = resolveDialogPaperOutsets({
@@ -349,9 +349,10 @@ export class PixiPlayerInfoDialog extends RetainedGlobalDialog {
     if (!this.playerModel) {
       return;
     }
-    const rightX = PLAYER_CONTENT_WIDTH;
-    const detailsX = PORTRAIT_SIZE + SUMMARY_GAP;
-    const detailsWidth = PLAYER_CONTENT_WIDTH - detailsX;
+    const leftX = -SECTION_CONTENT_OUTSET_X;
+    const rightX = PLAYER_CONTENT_WIDTH + SECTION_CONTENT_OUTSET_X;
+    const detailsX = leftX + PORTRAIT_SIZE + SUMMARY_GAP;
+    const detailsWidth = rightX - detailsX;
     const paperOutsets = resolveDialogPaperOutsets(this.panel.contentInsets);
     setDialogPaperSectionBounds(
       this.summaryFrame,
@@ -387,7 +388,7 @@ export class PixiPlayerInfoDialog extends RetainedGlobalDialog {
       return;
     }
 
-    this.profileWidget.position.set(0, SUMMARY_PADDING_TOP);
+    this.profileWidget.position.set(leftX, SUMMARY_PADDING_TOP);
     this.profileWidget.scale.set(PORTRAIT_SIZE / 186);
 
     let nameX = detailsX;
@@ -401,7 +402,7 @@ export class PixiPlayerInfoDialog extends RetainedGlobalDialog {
       nameX += allianceWidth + 4;
     }
     this.name.position.set(nameX, SUMMARY_PADDING_TOP + 1);
-    this.name.setWrapWidth(Math.max(0, PLAYER_CONTENT_WIDTH - nameX));
+    this.name.setWrapWidth(Math.max(0, rightX - nameX));
 
     const levelY = SUMMARY_PADDING_TOP + 1 + DETAIL_ROW_PITCH;
     const prestigeY = levelY + DETAIL_ROW_PITCH;
@@ -413,9 +414,9 @@ export class PixiPlayerInfoDialog extends RetainedGlobalDialog {
       prestigeY,
     );
 
-    const statsRightX = rightX - STATS_PADDING_X;
+    const statsRightX = rightX;
     this.totalCoinLabel.position.set(
-      STATS_PADDING_X,
+      leftX,
       STATS_Y + STATS_PADDING_Y,
     );
     this.totalCoinValue.position.set(
@@ -423,7 +424,7 @@ export class PixiPlayerInfoDialog extends RetainedGlobalDialog {
       STATS_Y + STATS_PADDING_Y,
     );
     this.totalPotionsLabel.position.set(
-      STATS_PADDING_X,
+      leftX,
       STATS_Y + STATS_PADDING_Y + STATS_ROW_PITCH,
     );
     this.totalPotionsValue.position.set(
@@ -431,7 +432,7 @@ export class PixiPlayerInfoDialog extends RetainedGlobalDialog {
       STATS_Y + STATS_PADDING_Y + STATS_ROW_PITCH,
     );
     this.totalHerbsLabel.position.set(
-      STATS_PADDING_X,
+      leftX,
       STATS_Y + STATS_PADDING_Y + STATS_ROW_PITCH * 2,
     );
     this.totalHerbsValue.position.set(
@@ -439,7 +440,7 @@ export class PixiPlayerInfoDialog extends RetainedGlobalDialog {
       STATS_Y + STATS_PADDING_Y + STATS_ROW_PITCH * 2,
     );
     this.lastSeenLabel.position.set(
-      STATS_PADDING_X,
+      leftX,
       STATS_Y + STATS_PADDING_Y + STATS_ROW_PITCH * 3,
     );
     this.lastSeenValue.position.set(
@@ -447,7 +448,7 @@ export class PixiPlayerInfoDialog extends RetainedGlobalDialog {
       STATS_Y + STATS_PADDING_Y + STATS_ROW_PITCH * 3,
     );
     this.timePlayedLabel.position.set(
-      STATS_PADDING_X,
+      leftX,
       STATS_Y + STATS_PADDING_Y + STATS_ROW_PITCH * 4,
     );
     this.timePlayedValue.position.set(

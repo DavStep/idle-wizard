@@ -3,7 +3,7 @@ import { describe, expect, it } from 'vitest';
 import { PlayerLevelBalanceManager } from './PlayerLevelBalanceManager.js';
 
 describe('PlayerLevelBalanceManager', () => {
-  it('keeps base mana and starter room caps before level one', () => {
+  it('keeps starter room caps before level one', () => {
     const manager = new PlayerLevelBalanceManager();
 
     expect(manager.getEffects(0)).toEqual({
@@ -12,8 +12,6 @@ describe('PlayerLevelBalanceManager', () => {
       maxShopSlots: 0,
       maxNpcMarketStands: 0,
       maxPlayerMarketStands: 0,
-      maxManaCap: 50,
-      manaPerSecond: 1,
     });
     expect(manager.getCrystalRewardThroughLevel(0)).toBe(0);
     expect(manager.getCrystalRewardForLevelRange(0, 1)).toBe(1);
@@ -29,17 +27,11 @@ describe('PlayerLevelBalanceManager', () => {
     expect(manager.getRequiredLevelForCauldron(3)).toBeNull();
   });
 
-  it('uses faster default mana regen gains early and smaller gains later', () => {
+  it('does not expose mana as a player-level effect', () => {
     const manager = new PlayerLevelBalanceManager();
 
-    expect(manager.getEffects(1).manaPerSecond).toBe(1);
-    expect(manager.getEffects(2).manaPerSecond).toBe(2);
-    expect(manager.getEffects(5).manaPerSecond).toBe(5);
-    expect(manager.getEffects(6).manaPerSecond).toBe(5.5);
-    expect(manager.getEffects(10).manaPerSecond).toBe(7.5);
-    expect(manager.getEffects(11).manaPerSecond).toBe(7.75);
-    expect(manager.getEffects(50).manaPerSecond).toBe(17.5);
-    expect(manager.getEffects(100).manaPerSecond).toBe(30);
+    expect(manager.getEffects(1)).not.toHaveProperty('maxManaCap');
+    expect(manager.getEffects(100)).not.toHaveProperty('manaPerSecond');
   });
 
   it('describes cap, feature, and research milestone text from config', () => {
@@ -79,15 +71,11 @@ describe('PlayerLevelBalanceManager', () => {
       'max cauldrons 1',
       'unlocks garden',
       'allows researching "Mana Cap"',
-      'max mana cap 50',
-      'mana regen 1/sec',
       'crystal reward 2',
     ]);
     expect(manager.getLevelSummaries(1)[2].effects).toEqual([
       'max garden tiles 2',
       'unlocks chat',
-      'max mana cap 70',
-      'mana regen 1.2/sec',
       'crystal reward 2',
     ]);
     expect(manager.getLevelSummaries(1)[1].totals).toEqual({
@@ -96,8 +84,6 @@ describe('PlayerLevelBalanceManager', () => {
       maxShopSlots: 1,
       maxNpcMarketStands: 1,
       maxPlayerMarketStands: 1,
-      maxManaCap: 60,
-      manaPerSecond: 1.1,
     });
     expect(manager.getLevelSummaries(1)[2].totals).toEqual({
       maxGardenTiles: 2,
@@ -105,8 +91,6 @@ describe('PlayerLevelBalanceManager', () => {
       maxShopSlots: 1,
       maxNpcMarketStands: 1,
       maxPlayerMarketStands: 1,
-      maxManaCap: 70,
-      manaPerSecond: 1.2,
     });
     expect(manager.getCrystalRewardForLevel(1)).toBe(2);
     expect(manager.getCrystalRewardForLevel(3)).toBe(2);
@@ -118,12 +102,10 @@ describe('PlayerLevelBalanceManager', () => {
       maxShopSlots: 1,
       maxNpcMarketStands: 1,
       maxPlayerMarketStands: 1,
-      maxManaCap: 70,
-      manaPerSecond: 1.2,
     });
   });
 
-  it('accepts configured mana regen level ranges', () => {
+  it('ignores legacy configured mana level ranges', () => {
     const manager = new PlayerLevelBalanceManager({
       balance: {
         maxLevel: 4,
@@ -148,9 +130,7 @@ describe('PlayerLevelBalanceManager', () => {
       },
     });
 
-    expect(manager.getEffects(1).manaPerSecond).toBe(1);
-    expect(manager.getEffects(2).manaPerSecond).toBe(3);
-    expect(manager.getEffects(3).manaPerSecond).toBe(5);
-    expect(manager.getEffects(4).manaPerSecond).toBe(5.5);
+    expect(manager.getEffects(1)).not.toHaveProperty('manaPerSecond');
+    expect(manager.getEffects(4)).not.toHaveProperty('maxManaCap');
   });
 });

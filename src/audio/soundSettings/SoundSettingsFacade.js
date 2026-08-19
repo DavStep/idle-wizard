@@ -69,6 +69,16 @@ export class SoundSettingsFacade {
     return this.preferenceManager.subscribe(listener);
   }
 
+  setAppActive(active) {
+    for (const facade of [
+      this.backgroundMusicFacade,
+      this.gardenSoundFacade,
+      this.uiClickSoundFacade,
+    ]) {
+      facade?.setAppActive?.(active);
+    }
+  }
+
   syncPreferences(snapshot = this.getSnapshot()) {
     const musicVolume = normalizeVolume(
       snapshot.musicVolume,

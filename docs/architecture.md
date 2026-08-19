@@ -20,7 +20,7 @@ Every feature has a facade and dedicated managers. Facades explain the feature i
 
 ## Room Pages
 
-A page is one room the player is looking at, not a web route. Workshop is the default page. Bottom navigation order starts as `Brewing -> Garden -> Workshop -> Research -> Market`; Prestige stays in the former quests slot and appears after its level gate.
+A page is one room the player is looking at, not a web route. Workshop is the default page. Bottom navigation order starts as `Brewing -> Garden -> Workshop -> Market -> Research`; Prestige stays in the former quests slot and appears after its level gate.
 
 Page code can build DOM, popups, tabs, scroll cues, notifications, and tutorial targets. Gameplay effects must go through facades. Page managers should render snapshots and keep interactive nodes stable across updates.
 

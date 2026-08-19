@@ -121,16 +121,6 @@ describe('levelPayoffSummary', () => {
         value: '+1',
         notice: '+1 cauldron',
       },
-      {
-        label: 'mana capacity',
-        value: '+50 mana',
-        notice: '+50 mana capacity',
-      },
-      {
-        label: 'mana regeneration',
-        value: '+1/sec mana',
-        notice: '+1/sec mana regeneration',
-      },
     ]);
   });
 
@@ -143,16 +133,6 @@ describe('levelPayoffSummary', () => {
         valueLinePageIds: { garden: 'garden', research: 'research' },
         valueLineNotices: { garden: 'garden unlocked', research: 'research unlocked' },
         notice: 'garden unlocked, research unlocked',
-      },
-      {
-        label: 'mana capacity',
-        value: '+50 mana',
-        notice: '+50 mana capacity',
-      },
-      {
-        label: 'mana regeneration',
-        value: '+1/sec mana',
-        notice: '+1/sec mana regeneration',
       },
       {
         label: 'bonus',
@@ -174,16 +154,6 @@ describe('levelPayoffSummary', () => {
           leaderboard: 'leaderboard available',
         },
         notice: 'leaderboard available',
-      },
-      {
-        label: 'mana capacity',
-        value: '+50 mana',
-        notice: '+50 mana capacity',
-      },
-      {
-        label: 'mana regeneration',
-        value: '+1/sec mana',
-        notice: '+1/sec mana regeneration',
       },
       {
         label: 'bonus',
@@ -211,16 +181,6 @@ describe('levelPayoffSummary', () => {
         notice: 'brewing unlocked, discoveries available, alliance available, inbox available',
       },
       {
-        label: 'mana capacity',
-        value: '+50 mana',
-        notice: '+50 mana capacity',
-      },
-      {
-        label: 'mana regeneration',
-        value: '+1/sec mana',
-        notice: '+1/sec mana regeneration',
-      },
-      {
         label: 'bonus',
         value: '+1 crystal',
         notice: '+1 crystal',
@@ -239,16 +199,6 @@ describe('levelPayoffSummary', () => {
         label: 'cauldrons',
         value: '+1',
         notice: '+1 cauldron',
-      },
-      {
-        label: 'mana capacity',
-        value: '+50 mana',
-        notice: '+50 mana capacity',
-      },
-      {
-        label: 'mana regeneration',
-        value: '+1/sec mana',
-        notice: '+1/sec mana regeneration',
       },
       {
         label: 'bonus',

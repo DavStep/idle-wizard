@@ -88,6 +88,7 @@ export const BREWING_HUD_GEOMETRY = Object.freeze({
   ingredientColumns: 3,
   ingredientRows: 2,
   ingredientSlots: 6,
+  missingIngredientIconSize: 28,
 });
 
 const ASSETS = Object.freeze({
@@ -140,6 +141,11 @@ const RETAINED_INGREDIENT_COUNT_STYLE = Object.freeze({
   fontSize: 8,
   lineHeight: 9,
 });
+const BREWING_MISSING_INGREDIENT_LABEL_STYLE = Object.freeze({
+  fontSize: 8,
+  lineHeight: 9,
+  align: 'center',
+});
 const INGREDIENT_SLOT_BORDER_INSETS = Object.freeze({
   top: 12,
   right: 12,
@@ -157,7 +163,7 @@ const INGREDIENT_ORBIT_MOTION_DURATION_MS = 260;
 const CAULDRON_INGREDIENT_IMPACT_DURATION_MS = 220;
 const CAULDRON_COMPLETION_MOTION_DURATION_MS = 320;
 const PREPARED_LIQUID_CYCLE_MS = 2_400;
-const BREWING_LIQUID_CYCLE_MS = 1_100;
+const BREWING_LIQUID_CYCLE_MS = 900;
 const CAULDRON_AMBIENT_TRAVEL = 0.45;
 const CAULDRON_AMBIENT_SCALE_X = 0.006;
 const CAULDRON_AMBIENT_SCALE_Y = 0.004;
@@ -498,10 +504,30 @@ export class BrewingHudPixi {
       label: 'brewing-batch-progress',
       tone: 'root',
     });
+    this.progress.root.visible = false;
+    this.progress.root.renderable = false;
+    this.statusMessage = centeredText('', {
+      ...BREWING_DETAIL_TEXT_STYLE.body,
+      wordWrap: true,
+      wordWrapWidth: 250,
+    });
+    this.statusMessage.anchor.set(0.5, 0);
+    this.missingIngredientsRoot = new Container({
+      label: 'brewing-missing-ingredients',
+    });
+    this.missingIngredientViews = Array.from(
+      { length: BREWING_HUD_GEOMETRY.ingredientSlots },
+      (_unused, index) => createMissingIngredientView(index),
+    );
+    this.missingIngredientsRoot.addChild(
+      ...this.missingIngredientViews.map((view) => view.root),
+    );
     this.detailPanel.body.addChild(
       this.phaseLabel,
       this.phaseTime,
       this.progress.root,
+      this.statusMessage,
+      this.missingIngredientsRoot,
     );
     this.swipeRegistration =
       this.inputRouter?.registerPageSwipe?.({
@@ -772,6 +798,21 @@ export class BrewingHudPixi {
       this.startIngredientArrivalMotion(firstArrivingSlot, now);
     }
 
+    const lacksIngredients =
+      !active &&
+      Boolean(recipe) &&
+      cauldron.recipeReadiness?.hasEnoughIngredients === false;
+    const missingIngredients = lacksIngredients
+        ? resolveMissingRecipeIngredients(recipe)
+        : [];
+    this.bindMissingIngredients(missingIngredients);
+    const hasMissingIngredients = lacksIngredients;
+    const hasMissingMana =
+      !active &&
+      Boolean(recipe) &&
+      !hasMissingIngredients &&
+      cauldron.recipeReadiness?.hasEnoughMana === false;
+
     setText(
       this.phaseLabel,
       active
@@ -779,15 +820,74 @@ export class BrewingHudPixi {
           ? 'Ready to Collect'
           : toTitleCase(active.phase)
         : recipe
-          ? cauldron.recipeReadiness?.hasEnoughIngredients === false
-            ? 'Need Herbs'
-            : cauldron.recipeReadiness?.hasEnoughMana === false
-              ? 'Need Mana'
+          ? hasMissingIngredients
+            ? 'Missing ingredients'
+            : hasMissingMana
+              ? 'Not enough mana'
               : 'Ready to Brew'
+          : 'No potion selected',
+    );
+    setText(
+      this.statusMessage,
+      !active && !recipe
+        ? 'Choose a recipe to start brewing.'
+        : hasMissingIngredients && missingIngredients.length === 0
+          ? 'Restock the required herbs to continue.'
+        : hasMissingMana
+          ? 'Restore mana to brew this potion.'
           : '',
     );
+    this.statusMessage.visible = Boolean(this.statusMessage.text);
+    this.statusMessage.renderable = this.statusMessage.visible;
     this.syncActiveTimer(active, now);
     this.updateActiveTimer(now);
+  }
+
+  bindMissingIngredients(ingredients = []) {
+    this.missingIngredientViews.forEach((view, index) => {
+      const ingredient = ingredients[index] ?? null;
+      const key = ingredient?.itemKey ?? ingredient?.key ?? null;
+      view.icon.texture = getAtlasTexture(
+        this.assetManager,
+        key ? getHerbIconFrameName(key) : null,
+      );
+      view.icon.visible =
+        Boolean(ingredient) && view.icon.texture !== Texture.EMPTY;
+      view.icon.renderable = view.icon.visible;
+      setText(
+        view.label,
+        ingredient ? toTitleCase(ingredient.label ?? key ?? '') : '',
+      );
+      setText(view.count, ingredient ? `x${ingredient.missingQuantity}` : '');
+      view.root.visible = Boolean(ingredient);
+      view.root.renderable = view.root.visible;
+    });
+    this.missingIngredientsRoot.visible = ingredients.length > 0;
+    this.missingIngredientsRoot.renderable =
+      this.missingIngredientsRoot.visible;
+    this.layoutMissingIngredients();
+  }
+
+  layoutMissingIngredients() {
+    const visibleViews = this.missingIngredientViews.filter(
+      (view) => view.root.visible,
+    );
+    if (visibleViews.length === 0 || !Number.isFinite(this.batchStatusWidth)) {
+      return;
+    }
+    const cellWidth = Math.min(58, this.batchStatusWidth / visibleViews.length);
+    const usedWidth = cellWidth * visibleViews.length;
+    const startX = (this.batchStatusWidth - usedWidth) / 2;
+    visibleViews.forEach((view, index) => {
+      const centerX = startX + cellWidth * (index + 0.5);
+      view.root.position.set(centerX, 0);
+      view.icon.position.set(0, 15);
+      view.icon.width = BREWING_HUD_GEOMETRY.missingIngredientIconSize;
+      view.icon.height = BREWING_HUD_GEOMETRY.missingIngredientIconSize;
+      view.count.position.set(11, 1);
+      view.label.position.set(0, 31);
+      view.label.style.wordWrapWidth = Math.max(34, cellWidth - 2);
+    });
   }
 
   getTimerNow() {
@@ -800,7 +900,11 @@ export class BrewingHudPixi {
   }
 
   syncActiveTimer(active, now) {
-    if (!active) {
+    const timed =
+      active?.phase === 'brewing' || active?.phase === 'bottling';
+    this.progress.root.visible = timed;
+    this.progress.root.renderable = timed;
+    if (!timed) {
       this.progress.clearTimer(0);
       return;
     }
@@ -812,16 +916,13 @@ export class BrewingHudPixi {
 
   updateActiveTimer(now) {
     const active = this.getSelectedCauldron()?.activeBrew ?? null;
-    if (!active) {
+    const timed =
+      active?.phase === 'brewing' || active?.phase === 'bottling';
+    this.progress.root.visible = timed;
+    this.progress.root.renderable = timed;
+    if (!timed) {
       this.progress.clearTimer(0);
       setText(this.phaseTime, '');
-      return;
-    }
-
-    const canCollect = active.canCollect === true;
-    if (canCollect) {
-      this.progress.clearTimer(1);
-      setText(this.phaseTime, 'Complete');
       return;
     }
 
@@ -1149,6 +1250,13 @@ export class BrewingHudPixi {
     this.phaseLabel.position.set(78, 10);
     this.phaseTime.position.set(detailWidth - 12, 12);
     this.progress.setBounds(78, 34, detailWidth - 90, 11);
+    this.batchStatusWidth = detailWidth - 90;
+    this.statusMessage.position.set(
+      78 + this.batchStatusWidth / 2,
+      34,
+    );
+    this.missingIngredientsRoot.position.set(78, 24);
+    this.layoutMissingIngredients();
     this.emptyCauldron.setBounds(
       sourceWidth -
         edge -
@@ -1215,6 +1323,20 @@ export class BrewingHudPixi {
       fill: this.theme.text,
       padding: BREWING_STATUS_TEXTURE_PADDING,
     });
+    applyTextTheme(this.statusMessage, this.theme, {
+      ...BREWING_DETAIL_TEXT_STYLE.body,
+      fill: this.theme.muted,
+    });
+    for (const view of this.missingIngredientViews) {
+      applyTextTheme(view.label, this.theme, {
+        ...BREWING_MISSING_INGREDIENT_LABEL_STYLE,
+        fill: this.theme.text,
+      });
+      applyTextTheme(view.count, this.theme, {
+        ...RETAINED_INGREDIENT_COUNT_STYLE,
+        fill: this.theme.notificationRed ?? '#c1121f',
+      });
+    }
     for (const button of [
       this.previous,
       this.next,
@@ -1698,7 +1820,7 @@ export class BrewingHudPixi {
         this.cauldronMotionMode === 'complete')
     ) {
       const strength =
-        this.cauldronMotionMode === 'brewing' ? 1 : 0.45;
+        this.cauldronMotionMode === 'brewing' ? 1.3 : 0.45;
       const offsetY = wave * CAULDRON_AMBIENT_TRAVEL * strength;
       const scaleX = 1 + wave * CAULDRON_AMBIENT_SCALE_X * strength;
       const scaleY = 1 - wave * CAULDRON_AMBIENT_SCALE_Y * strength;
@@ -1778,18 +1900,18 @@ export class BrewingHudPixi {
     if (this.cauldronMotionMode === 'brewing') {
       const cycle = elapsed / BREWING_LIQUID_CYCLE_MS;
       const bubbles = [
-        { offset: 0, x: -14, drift: 2.5, radius: 1.7 },
-        { offset: 0.34, x: 4, drift: -2, radius: 1.25 },
-        { offset: 0.68, x: 16, drift: 1.5, radius: 1.4 },
+        { offset: 0, x: -14, drift: 3, radius: 1.9, rise: 19 },
+        { offset: 0.3, x: 4, drift: -2.5, radius: 1.45, rise: 23 },
+        { offset: 0.63, x: 16, drift: 2, radius: 1.6, rise: 20 },
       ];
       for (const bubble of bubbles) {
         const phase = (cycle + bubble.offset) % 1;
-        const alpha = Math.sin(Math.PI * phase) * 0.62;
+        const alpha = Math.sin(Math.PI * phase) * 0.72;
         graphics
           .circle(
             centerX + bubble.x + Math.sin(phase * Math.PI) * bubble.drift,
-            liquidY + 2 - phase * 11,
-            bubble.radius + phase * 0.65,
+            liquidY + 3 - phase * bubble.rise,
+            bubble.radius + phase * 0.85,
           )
           .stroke({ color: 0xdaf4ff, width: 1, alpha });
       }
@@ -2407,6 +2529,43 @@ function normalizeRequirements(rows, herbs, stagedIngredients = []) {
     });
 }
 
+function resolveMissingRecipeIngredients(recipe = {}) {
+  const missingByKey = new Map();
+  for (const ingredient of recipe.ingredients ?? []) {
+    const key = ingredient?.itemKey ?? ingredient?.key;
+    if (!key) {
+      continue;
+    }
+    const required = Math.max(
+      1,
+      Math.floor(Number(ingredient?.quantity) || 1),
+    );
+    const owned = Math.max(
+      0,
+      Math.floor(Number(ingredient?.owned) || 0),
+    );
+    const missingQuantity = Math.max(0, required - owned);
+    if (missingQuantity === 0) {
+      continue;
+    }
+    const existing = missingByKey.get(key);
+    if (existing) {
+      existing.missingQuantity += missingQuantity;
+      continue;
+    }
+    missingByKey.set(key, {
+      itemKey: key,
+      key,
+      label: ingredient.label ?? ingredient.name ?? key,
+      missingQuantity,
+    });
+  }
+  return [...missingByKey.values()].slice(
+    0,
+    BREWING_HUD_GEOMETRY.ingredientSlots,
+  );
+}
+
 function resolveIngredientPositions(width, offsetY = 0) {
   const top =
     BREWING_HUD_GEOMETRY.carouselContentOffset +
@@ -2483,6 +2642,26 @@ function toTitleCase(value) {
 
 function centeredText(text, style) {
   return createText(text, { ...style, align: 'center' });
+}
+
+function createMissingIngredientView(index) {
+  const root = new Container({
+    label: `brewing-missing-ingredient-${index}`,
+  });
+  const icon = new Sprite(Texture.EMPTY);
+  icon.anchor.set(0.5);
+  const label = centeredText('', {
+    ...BREWING_MISSING_INGREDIENT_LABEL_STYLE,
+    wordWrap: true,
+    wordWrapWidth: 56,
+  });
+  label.anchor.set(0.5, 0);
+  const count = centeredText('', RETAINED_INGREDIENT_COUNT_STYLE);
+  count.anchor.set(0.5, 0);
+  root.addChild(icon, label, count);
+  root.visible = false;
+  root.renderable = false;
+  return { root, icon, label, count };
 }
 
 function getTexture(assetManager, id) {
@@ -2697,6 +2876,14 @@ export function resolveBrewingPrimaryState(cauldron = {}) {
         label: 'Collect',
         enabled: true,
         variant: 'green',
+      };
+    }
+    if (!active) {
+      return {
+        id: 'cancel',
+        label: 'Stop Auto',
+        enabled: true,
+        variant: 'yellow',
       };
     }
     return {

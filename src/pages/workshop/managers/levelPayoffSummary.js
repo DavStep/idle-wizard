@@ -33,18 +33,6 @@ const TOTAL_PAYOFFS = [
     formatValue: (delta) => `+${formatNumber(delta)}`,
     formatNotice: (delta) => `+${formatNumber(delta)} player stand${delta === 1 ? '' : 's'}`,
   },
-  {
-    key: 'maxManaCap',
-    label: 'mana capacity',
-    formatValue: (delta) => `+${formatNumber(delta)} mana`,
-    formatNotice: (delta) => `+${formatNumber(delta)} mana capacity`,
-  },
-  {
-    key: 'manaPerSecond',
-    label: 'mana regeneration',
-    formatValue: (delta) => `+${formatNumber(delta)}/sec mana`,
-    formatNotice: (delta) => `+${formatNumber(delta)}/sec mana regeneration`,
-  },
 ];
 
 const WORKSHOP_UNLOCKS = [

@@ -1235,7 +1235,12 @@
       "kind": "dialog",
       "production": true,
       "coverage": {
-        "devUi": ["market", "traderStallLoader"],
+        "devUi": [
+          "market",
+          "playerMarketRequest",
+          "playerMarketSell",
+          "traderStallLoader"
+        ],
         "domSelectors": [
           ".shop-page__crystal-support-dialog",
           ".shop-page__demand-dialog",

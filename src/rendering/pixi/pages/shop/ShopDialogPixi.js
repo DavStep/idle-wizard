@@ -20,6 +20,8 @@ import {
   getSeedPackItemFrameName,
 } from '../../../../assets/items/seeds/seedIconFrames.js';
 import { BasePixiRetainedView } from '../../primitives/BasePixiRetainedView.js';
+import { getPlayerFrameTint } from '../../../../player/playerFrames.js';
+import { PlayerProfileWidget } from '../../global/chrome/PlayerProfileWidgets.js';
 import { ClickableWidget } from '../../primitives/ClickableWidget.js';
 import { PixiTextButton } from '../../primitives/PixiTextButton.js';
 import {
@@ -69,6 +71,7 @@ export const SHOP_DIALOG_IDS = Object.freeze({
   REQUEST: 'shop.request',
   LISTING: 'shop.listing',
   MARKET: 'shop.market',
+  BUY: 'shop.buy',
   TRADE_HISTORY: 'shop.tradeHistory',
   SUPPORT: 'shop.support',
 });
@@ -81,8 +84,7 @@ const AMOUNT_DELTAS = Object.freeze([-100, -10, -1, 1, 10, 100]);
 const DEFAULT_DIALOG_WIDTH = 304;
 const WIDE_DIALOG_WIDTH = 344;
 const LEDGER_DIALOG_WIDTH = DEFAULT_DIALOG_WIDTH;
-const DEFAULT_DIALOG_HEIGHT = 364;
-const STALL_DIALOG_HEIGHT = 464;
+const TALL_LIST_DIALOG_HEIGHT = 464;
 const LEDGER_DIALOG_HEIGHT = 382;
 const LEDGER_ROW_HEIGHT = 58;
 const LEDGER_SCROLL_VIEWPORT_BOTTOM_INSET = 10;
@@ -112,13 +114,20 @@ const PLAYER_LISTING_ACTIONS_Y =
   PLAYER_LISTING_FIELD_Y + 38 + 7;
 const PLAYER_LISTING_SELECTION_HEIGHT =
   PLAYER_LISTING_ACTIONS_Y + STALL_ACTION_HEIGHT + 6;
-const STALL_ITEM_ICON_SIZE = 28;
+const LEDGER_ITEM_ICON_SIZE = 32;
+const LEDGER_POTION_ICON_SIZE = 40;
+const INVENTORY_CHOICE_ITEM_ICON_SIZE = 32;
+const INVENTORY_CHOICE_POTION_ICON_SIZE = 36;
 const STALL_SELECTED_CHECK_SIZE = 27;
 const AUTOMATION_COG_TEXTURE_ID = PIXI_ROOT_RUN_ASSETS.settingsGear;
 const SETTINGS_ROW_EXPANSION_HEIGHT =
   PIXI_ROOT_RUN_GEOMETRY.settings.knobSize + 8;
 const SETTINGS_ROW_EXPANDED_CONTROL_RAISE = 3;
 const SETTINGS_ROW_EXPANSION_DURATION_MS = 240;
+const SETTINGS_ROW_COLLAPSE_CONTROL_HIDE_MS = 80;
+const SETTINGS_ROW_COLLAPSE_CONTROL_HIDE_FRACTION =
+  SETTINGS_ROW_COLLAPSE_CONTROL_HIDE_MS /
+  SETTINGS_ROW_EXPANSION_DURATION_MS;
 const SETTINGS_ROW_PRESS_SCALE = 0.97;
 const SETTINGS_ROW_RELEASE_PEAK_SCALE = 1.035;
 const SETTINGS_ROW_RELEASE_DURATION_MS = 180;
@@ -131,12 +140,35 @@ const AUTO_SUMMON_REVEAL_DURATION_MS = 240;
 const AUTO_SUMMON_REVEAL_START_SCALE = 0.8;
 const AUTO_SUMMON_REVEAL_OVERSHOOT_SCALE = 1.02;
 const AUTO_SUMMON_REVEAL_OVERSHOOT_PROGRESS = 0.72;
+const PLAYER_MARKET_OFFER_ROW_HEIGHT =
+  PIXI_ROOT_RUN_GEOMETRY.settings.rowPitch;
+const PLAYER_MARKET_AVATAR_SIZE = 37;
+const PLAYER_MARKET_ITEM_ICON_SIZE = 17;
+const PLAYER_MARKET_PRICE_OPTICAL_Y = 1;
+const PLAYER_MARKET_LIST_FRAME_WIDTH =
+  RETAINED_DIALOG_LIST_GEOMETRY.rowFrameWidth +
+  (WIDE_DIALOG_WIDTH - DEFAULT_DIALOG_WIDTH) +
+  4;
+const PLAYER_MARKET_BUY_SELLER_HEIGHT = 76;
+const PLAYER_MARKET_BUY_ITEM_HEIGHT = 192;
+const PLAYER_MARKET_TAG_COLORS = Object.freeze({
+  ink: '#634934',
+  red: '#9b3439',
+  amber: '#9a6d1f',
+  green: '#397a42',
+  teal: '#337b78',
+  blue: '#3e6392',
+  violet: '#74518e',
+  magenta: '#934a78',
+  brown: '#704b35',
+  slate: '#596271',
+});
 
 const DIALOG_CONFIG = Object.freeze({
   [SHOP_DIALOG_IDS.STALL]: Object.freeze({
     title: 'Load Stall',
     width: DEFAULT_DIALOG_WIDTH,
-    height: STALL_DIALOG_HEIGHT,
+    height: TALL_LIST_DIALOG_HEIGHT,
     rowHeight: PIXI_ROOT_RUN_GEOMETRY.settings.rowPitch,
     hasPrimaryVerticalScroll: true,
     splitPaper: Object.freeze({
@@ -166,7 +198,7 @@ const DIALOG_CONFIG = Object.freeze({
   [SHOP_DIALOG_IDS.REQUEST]: Object.freeze({
     title: 'Request',
     width: DEFAULT_DIALOG_WIDTH,
-    height: DEFAULT_DIALOG_HEIGHT,
+    height: TALL_LIST_DIALOG_HEIGHT,
     rowHeight: PIXI_ROOT_RUN_GEOMETRY.settings.rowPitch,
     hasPrimaryVerticalScroll: true,
     splitPaper: Object.freeze({
@@ -186,7 +218,7 @@ const DIALOG_CONFIG = Object.freeze({
   [SHOP_DIALOG_IDS.LISTING]: Object.freeze({
     title: 'Sell',
     width: DEFAULT_DIALOG_WIDTH,
-    height: STALL_DIALOG_HEIGHT,
+    height: TALL_LIST_DIALOG_HEIGHT,
     rowHeight: PIXI_ROOT_RUN_GEOMETRY.settings.rowPitch,
     hasPrimaryVerticalScroll: true,
     splitPaper: Object.freeze({
@@ -208,16 +240,40 @@ const DIALOG_CONFIG = Object.freeze({
   [SHOP_DIALOG_IDS.MARKET]: Object.freeze({
     title: 'Player Market',
     width: WIDE_DIALOG_WIDTH,
-    height: STALL_DIALOG_HEIGHT,
-    rowHeight: 50,
-    rowVariant: 'market-compact',
-    actionsPlacement: 'before-list',
+    height: TALL_LIST_DIALOG_HEIGHT,
+    rowHeight: PLAYER_MARKET_OFFER_ROW_HEIGHT,
+    rowVariant: 'player-market-offer',
     hasPrimaryVerticalScroll: true,
+    splitPaper: Object.freeze({
+      selectionHeight: 198,
+      selectionStatusHeight: 198,
+      summaryY: 5,
+      summaryPitch: 22,
+      fieldsY: 28,
+      fieldPitch: 43,
+      fieldHeight: 38,
+      actionsY: 158,
+      actionHeight: STALL_ACTION_HEIGHT,
+      statusPlacement: 'item',
+      listTitleHeight: 25,
+      listFrameWidth: PLAYER_MARKET_LIST_FRAME_WIDTH,
+    }),
+  }),
+  [SHOP_DIALOG_IDS.BUY]: Object.freeze({
+    title: 'Buy Offer',
+    width: DEFAULT_DIALOG_WIDTH,
+    height: 346,
+    rowHeight: PIXI_ROOT_RUN_GEOMETRY.settings.rowPitch,
+    layoutKind: 'market-buy',
+    splitPaper: Object.freeze({
+      selectionHeight: PLAYER_MARKET_BUY_SELLER_HEIGHT,
+      selectionStatusHeight: PLAYER_MARKET_BUY_SELLER_HEIGHT,
+    }),
   }),
   [SHOP_DIALOG_IDS.TRADE_HISTORY]: Object.freeze({
     title: 'Trade History',
     width: WIDE_DIALOG_WIDTH,
-    height: DEFAULT_DIALOG_HEIGHT,
+    height: TALL_LIST_DIALOG_HEIGHT,
     rowHeight: 36,
     hasPrimaryVerticalScroll: true,
   }),
@@ -391,6 +447,28 @@ export class ShopDialogPixi extends BasePixiRetainedView {
       align: 'center',
       label: `${dialogId}:status`,
     });
+    this.sectionTitleLabel = new PixiTextLabel({
+      fontWeight: 'bold',
+      label: `${dialogId}:sectionTitle`,
+    });
+    this.listTitleLabel = new PixiTextLabel({
+      fontWeight: 'bold',
+      label: `${dialogId}:listTitle`,
+    });
+    this.sellerSummary = new PlayerMarketSellerSummary({
+      assetManager,
+      label: `${dialogId}:sellerSummary`,
+    });
+    this.purchaseTotal = new PixiResourceLabel({
+      assetManager,
+      resource: 'coin',
+      includeResourceName: true,
+      fontSize: PIXI_UI_GEOMETRY.bodyFontSize,
+      fontWeight: 'bold',
+      label: `${dialogId}:purchaseTotal`,
+    });
+    this.purchaseTotal.visible = false;
+    this.purchaseTotal.renderable = false;
     this.amountSelector = new AmountSelectorPixi({
       assetManager,
       inputRouter,
@@ -604,6 +682,9 @@ export class ShopDialogPixi extends BasePixiRetainedView {
       this.itemSection,
       this.featuredItemRow.root,
       this.summaryLayer,
+      this.sectionTitleLabel,
+      this.listTitleLabel,
+      this.sellerSummary.root,
       this.messageLabel,
       this.rangeControl,
       this.settingsToggle,
@@ -612,6 +693,7 @@ export class ShopDialogPixi extends BasePixiRetainedView {
       this.fieldLayer,
       this.list.root,
       this.actionLayer,
+      this.purchaseTotal,
       this.statusLabel,
     ];
     if (dialogId !== WORKSHOP_SUMMON_INFO_DIALOG_ID) {
@@ -656,6 +738,24 @@ export class ShopDialogPixi extends BasePixiRetainedView {
     this.messageLabel.visible = Boolean(this.model.message);
     this.statusLabel.setText(this.model.status ?? '');
     this.statusLabel.visible = Boolean(this.model.status);
+    this.statusLabel.renderable = this.statusLabel.visible;
+    this.sectionTitleLabel.setText(this.model.sectionTitle ?? '');
+    this.sectionTitleLabel.visible = Boolean(this.model.sectionTitle);
+    this.sectionTitleLabel.renderable = this.sectionTitleLabel.visible;
+    this.listTitleLabel.setText(this.model.listTitle ?? '');
+    this.listTitleLabel.visible = Boolean(this.model.listTitle);
+    this.listTitleLabel.renderable = this.listTitleLabel.visible;
+    this.sellerSummary.bind(this.model.seller ?? null);
+    const totalLabel = String(this.model.totalLabel ?? '');
+    this.purchaseTotal.visible = Boolean(totalLabel);
+    this.purchaseTotal.renderable = this.purchaseTotal.visible;
+    if (totalLabel) {
+      this.purchaseTotal.bind('total', {
+        resource: 'coin',
+        amount: totalLabel.replace(/\s*coin$/i, ''),
+        includeResourceName: true,
+      });
+    }
     this.summaryRows.reconcile(this.model.summaryRows);
     if (this.model.featuredItem) {
       this.featuredItemRow.bind(
@@ -706,6 +806,10 @@ export class ShopDialogPixi extends BasePixiRetainedView {
     this.contentTheme = contentTheme;
     this.messageLabel?.applyTheme(contentTheme);
     this.statusLabel?.applyTheme(contentTheme);
+    this.sectionTitleLabel?.applyTheme(contentTheme);
+    this.listTitleLabel?.applyTheme(contentTheme);
+    this.sellerSummary?.applyTheme(contentTheme);
+    this.purchaseTotal?.applyTheme(contentTheme);
     this.amountSelector?.applyTheme(contentTheme);
     this.rangeControl?.applyTheme(contentTheme);
     this.settingsToggle?.applyTheme(contentTheme);
@@ -889,6 +993,12 @@ export class ShopDialogPixi extends BasePixiRetainedView {
 
     const bodyWidth = this.panel.contentBoxWidth;
     const bodyHeight = this.panel.contentBoxHeight;
+    if (this.config.layoutKind === 'market-buy') {
+      this.relayoutMarketBuy(bodyWidth, bodyHeight);
+      this.relayoutTabs(null);
+      this.redrawBackdrop();
+      return;
+    }
     if (this.config.splitPaper) {
       this.relayoutSplitSettings(
         bodyWidth,
@@ -1080,7 +1190,8 @@ export class ShopDialogPixi extends BasePixiRetainedView {
     const showsSelectionSection =
       this.dialogId !== WORKSHOP_SUMMON_INFO_DIALOG_ID ||
       this.model.autoSummonUnlocked === true;
-    const statusHeight = this.statusLabel.visible
+    const statusInItem = splitPaper.statusPlacement === 'item';
+    const statusHeight = this.statusLabel.visible && !statusInItem
       ? PIXI_UI_GEOMETRY.rowMinHeight
       : 0;
     const selectionHeight = statusHeight > 0
@@ -1116,6 +1227,9 @@ export class ShopDialogPixi extends BasePixiRetainedView {
     );
     const contentX = 0;
     const contentWidth = bodyWidth;
+    const listTitleHeight = this.listTitleLabel.visible
+      ? Math.max(0, finiteOr(splitPaper.listTitleHeight, 0))
+      : 0;
 
     this.selectionSectionBounds = {
       x: 0,
@@ -1133,6 +1247,17 @@ export class ShopDialogPixi extends BasePixiRetainedView {
     this.selectionSection.renderable = showsSelectionSection;
     this.summaryLayer.visible = showsSelectionSection;
     this.summaryLayer.renderable = showsSelectionSection;
+    this.sectionTitleLabel.visible =
+      showsSelectionSection && Boolean(this.model.sectionTitle);
+    this.sectionTitleLabel.renderable = this.sectionTitleLabel.visible;
+    if (this.sectionTitleLabel.visible) {
+      this.sectionTitleLabel.position.set(contentX, 5);
+    }
+    this.listTitleLabel.visible = Boolean(this.model.listTitle);
+    this.listTitleLabel.renderable = this.listTitleLabel.visible;
+    if (this.listTitleLabel.visible) {
+      this.listTitleLabel.position.set(contentX, itemY + 6);
+    }
     this.itemSection.visible = true;
     this.itemSection.renderable = true;
     if (showsSelectionSection) {
@@ -1256,6 +1381,15 @@ export class ShopDialogPixi extends BasePixiRetainedView {
         splitPaper.statusY,
       );
     }
+    if (statusInItem && this.statusLabel.visible) {
+      this.statusLabel.position.set(
+        Math.max(
+          contentX,
+          (bodyWidth - this.statusLabel.measuredWidth) / 2,
+        ),
+        itemY + listTitleHeight + 8,
+      );
+    }
 
     const listFrameWidth = finiteOr(
       splitPaper.listFrameWidth,
@@ -1268,9 +1402,9 @@ export class ShopDialogPixi extends BasePixiRetainedView {
     });
     this.list.setBounds(
       listLayout.x,
-      itemY,
+      itemY + listTitleHeight,
       listLayout.viewportWidth,
-      itemHeight,
+      Math.max(0, itemHeight - listTitleHeight),
       listLayout.rowWidth,
     );
     this.list.root.visible = this.model.items.length > 0;
@@ -1281,6 +1415,95 @@ export class ShopDialogPixi extends BasePixiRetainedView {
         selectionHeight,
       );
     }
+  }
+
+  relayoutMarketBuy(bodyWidth, bodyHeight) {
+    const paperOutsets = resolveDialogPaperOutsets(
+      this.panel.contentInsets,
+    );
+    const sellerHeight = PLAYER_MARKET_BUY_SELLER_HEIGHT;
+    const itemY =
+      sellerHeight +
+      paperOutsets.bottom +
+      PIXI_DIALOG_SPLIT_PAPER_GEOMETRY.sectionGap +
+      paperOutsets.top;
+    const itemHeight = Math.max(
+      PLAYER_MARKET_BUY_ITEM_HEIGHT,
+      bodyHeight - itemY,
+    );
+
+    this.selectionSection.visible = true;
+    this.selectionSection.renderable = true;
+    this.itemSection.visible = true;
+    this.itemSection.renderable = true;
+    setDialogPaperSectionBounds(
+      this.selectionSection,
+      { x: 0, y: 0, width: bodyWidth, height: sellerHeight },
+      paperOutsets,
+    );
+    setDialogPaperSectionBounds(
+      this.itemSection,
+      { x: 0, y: itemY, width: bodyWidth, height: itemHeight },
+      paperOutsets,
+    );
+
+    this.sectionTitleLabel.setText('Seller');
+    this.sectionTitleLabel.visible = true;
+    this.sectionTitleLabel.renderable = true;
+    this.sectionTitleLabel.position.set(0, 5);
+    this.listTitleLabel.setText('Item');
+    this.listTitleLabel.visible = true;
+    this.listTitleLabel.renderable = true;
+    this.listTitleLabel.position.set(0, itemY + 5);
+    this.sellerSummary.setBounds(0, 22, bodyWidth, sellerHeight - 22);
+
+    this.featuredItemRow.root.visible = Boolean(this.model.featuredItem);
+    this.featuredItemRow.root.renderable = this.featuredItemRow.root.visible;
+    if (this.featuredItemRow.root.visible) {
+      this.featuredItemRow.setBounds(
+        0,
+        itemY + 23,
+        bodyWidth,
+        PIXI_ROOT_RUN_GEOMETRY.settings.rowPitch,
+      );
+    }
+    if (this.rangeControl.visible) {
+      this.rangeControl.setBounds(
+        -STALL_RANGE_HORIZONTAL_OUTSET,
+        itemY + 82,
+        bodyWidth + STALL_RANGE_HORIZONTAL_OUTSET * 2,
+        16,
+      );
+    }
+    if (this.purchaseTotal.visible) {
+      this.purchaseTotal.position.set(
+        bodyWidth - this.purchaseTotal.measuredWidth,
+        itemY + 112,
+      );
+    }
+    layoutButtons(
+      this.actions?.getWidgets?.() ?? [],
+      0,
+      itemY + 137,
+      bodyWidth,
+      STALL_ACTION_HEIGHT,
+      5,
+    );
+    if (this.statusLabel.visible) {
+      this.statusLabel.position.set(
+        Math.max(0, (bodyWidth - this.statusLabel.measuredWidth) / 2),
+        itemY + 176,
+      );
+    }
+
+    this.summaryLayer.visible = false;
+    this.summaryLayer.renderable = false;
+    this.fieldLayer.visible = false;
+    this.fieldLayer.renderable = false;
+    this.list.root.visible = false;
+    this.list.root.renderable = false;
+    this.messageLabel.visible = false;
+    this.messageLabel.renderable = false;
   }
 
   applyActionLabelOpticalOffset() {
@@ -1477,6 +1700,8 @@ export class ShopDialogPixi extends BasePixiRetainedView {
     this.tabPool.destroy();
     this.list.destroy();
     this.featuredItemRow.destroy();
+    this.sellerSummary.destroy();
+    this.purchaseTotal.destroy({ children: true });
     this.amountSelector.destroy();
     this.rangeControl.destroy();
     this.settingsToggle.destroy();
@@ -2021,6 +2246,353 @@ export class AmountSelectorPixi {
   }
 }
 
+export class PlayerMarketSellerSummary {
+  constructor({ assetManager, label }) {
+    this.assetManager = assetManager;
+    this.root = new Container({ label });
+    this.avatar = new PlayerProfileWidget({
+      assets: assetManager,
+      label: `${label}:avatar`,
+    });
+    this.tag = new PixiTextLabel({
+      fontSize: PIXI_UI_GEOMETRY.borderLabelFontSize,
+      fontWeight: 'bold',
+      label: `${label}:tag`,
+    });
+    this.username = new PixiTextLabel({
+      fontWeight: 'bold',
+      label: `${label}:username`,
+    });
+    this.detail = new PixiTextLabel({
+      fontSize: PIXI_UI_GEOMETRY.borderLabelFontSize,
+      color: 'muted',
+      label: `${label}:detail`,
+    });
+    this.root.addChild(this.avatar, this.tag, this.username, this.detail);
+    this.model = null;
+    this.root.visible = false;
+    this.root.renderable = false;
+  }
+
+  bind(model) {
+    this.model = model;
+    this.root.visible = Boolean(model);
+    this.root.renderable = this.root.visible;
+    if (!model) {
+      return;
+    }
+    this.avatar
+      .setTexture(resolvePlayerCharacterTexture(this.assetManager, model.character))
+      .setBackgroundTint(getPlayerFrameTint(model.frame));
+    const tag = normalizeAllianceTag(model.allianceTag);
+    this.tag.setText(tag ? `[${tag}]` : '');
+    this.tag.visible = Boolean(tag);
+    this.tag.renderable = this.tag.visible;
+    this.username.setText(String(model.username ?? 'Wizard'));
+    this.detail.setText(String(model.detail ?? ''));
+    this.detail.visible = Boolean(this.detail.text);
+    this.detail.renderable = this.detail.visible;
+    this.applyTheme(this.theme);
+  }
+
+  setBounds(x, y, width, height) {
+    this.root.position.set(x, y);
+    const avatarSize = Math.min(48, Math.max(36, height - 2));
+    this.avatar.scale.set(avatarSize / 186);
+    this.avatar.position.set(0, Math.max(0, (height - avatarSize) / 2));
+    const textX = avatarSize + 7;
+    const identityY = this.detail.visible
+      ? 5
+      : Math.max(4, Math.round((height - 16) / 2));
+    this.tag.position.set(textX, identityY);
+    this.username.position.set(
+      textX + (this.tag.visible ? this.tag.measuredWidth + 3 : 0),
+      identityY - 1,
+    );
+    this.username.setWrapWidth(Math.max(0, width - this.username.x));
+    this.detail.position.set(textX, 27);
+  }
+
+  applyTheme(theme) {
+    this.theme = theme ?? DEFAULT_PIXI_THEME_SNAPSHOT;
+    this.tag.applyTheme(this.theme);
+    this.tag.setColor(resolveAllianceTagColor(this.model?.allianceTagColor));
+    this.username.applyTheme(this.theme);
+    this.detail.applyTheme(this.theme);
+  }
+
+  destroy() {
+    this.root.destroy({ children: true });
+  }
+}
+
+/**
+ * Player-market listing row derived from the shared leaderboard identity row.
+ * The row body stays passive; only the fixed Buy action is interactive.
+ */
+export class PlayerMarketOfferRow {
+  constructor({
+    assetManager,
+    inputRouter,
+    semanticRegistry,
+    label,
+  }) {
+    this.assetManager = assetManager;
+    this.semanticRegistry = semanticRegistry;
+    this.root = new Container({ label });
+    this.frame = new PixiNineSliceFrame({
+      texture: Texture.EMPTY,
+      sourceInsets: PIXI_ROOT_RUN_GEOMETRY.settings.rowSourceInsets,
+      borderInsets: PIXI_ROOT_RUN_GEOMETRY.settings.rowBorderInsets,
+      label: `${label}:frame`,
+    });
+    this.avatar = new PlayerProfileWidget({
+      assets: assetManager,
+      label: `${label}:avatar`,
+    });
+    this.tag = new PixiTextLabel({
+      fontSize: PIXI_UI_GEOMETRY.borderLabelFontSize,
+      fontWeight: 'bold',
+      label: `${label}:tag`,
+    });
+    this.username = new PixiTextLabel({
+      fontWeight: 'bold',
+      label: `${label}:username`,
+    });
+    this.itemIcon = createItemSprite(`${label}:itemIcon`);
+    this.itemIconOverlay = createItemSprite(`${label}:itemIconOverlay`);
+    this.itemLabel = new PixiTextLabel({
+      fontSize: PIXI_UI_GEOMETRY.borderLabelFontSize,
+      label: `${label}:item`,
+    });
+    this.price = new PixiResourceLabel({
+      assetManager,
+      resource: 'coin',
+      includeResourceName: false,
+      fontSize: PIXI_UI_GEOMETRY.borderLabelFontSize,
+      fontWeight: 'bold',
+      label: `${label}:price`,
+    });
+    this.eachLabel = new PixiTextLabel({
+      text: 'each',
+      fontSize: PIXI_UI_GEOMETRY.borderLabelFontSize,
+      label: `${label}:each`,
+    });
+    this.buyButton = new PixiTextButton({
+      assetManager,
+      inputRouter,
+      width: 62,
+      height: 28,
+      sizeTier: 30,
+      variant: 'green',
+      label: `${label}:buy`,
+    });
+    this.root.addChild(
+      this.frame,
+      this.avatar,
+      this.tag,
+      this.username,
+      this.itemIcon,
+      this.itemIconOverlay,
+      this.itemLabel,
+      this.price,
+      this.eachLabel,
+      this.buyButton,
+    );
+    this.root.eventMode = 'passive';
+    this.model = null;
+    this.semanticId = null;
+    this.semanticDefinition = null;
+  }
+
+  bind(key, model = {}) {
+    this.unregisterSemantic();
+    this.key = key;
+    this.model = model;
+    this.root.visible = model.hidden !== true;
+    this.root.renderable = this.root.visible;
+    this.avatar
+      .setTexture(resolvePlayerCharacterTexture(this.assetManager, model.character))
+      .setBackgroundTint(getPlayerFrameTint(model.frame));
+    const tag = normalizeAllianceTag(model.allianceTag);
+    this.tag.setText(tag ? `[${tag}]` : '');
+    this.tag.visible = Boolean(tag);
+    this.tag.renderable = this.tag.visible;
+    this.username.setText(String(model.username ?? 'Wizard'));
+    this.itemLabel.setText(
+      `${model.itemLabel ?? 'Item'} ${model.quantityLabel ?? ''}`.trim(),
+    );
+    const iconFrames = resolveItemIconFrames(model);
+    bindItemSprite(
+      this.itemIcon,
+      this.assetManager,
+      iconFrames.base,
+      iconFrames.texture,
+    );
+    bindItemSprite(
+      this.itemIconOverlay,
+      this.assetManager,
+      iconFrames.overlay,
+    );
+    this.price.bind(key, {
+      resource: 'coin',
+      amount: String(model.priceLabel ?? '').replace(/\s*coin$/i, ''),
+      includeResourceName: true,
+    });
+    const hasAction = Boolean(model.actionLabel && model.action);
+    this.buyButton.bind(
+      key,
+      {
+        label: model.actionLabel ?? '',
+        enabled: model.enabled !== false && hasAction,
+        variant: model.actionVariant ?? 'green',
+        hidden: !hasAction,
+      },
+      model.action,
+    );
+    this.buyButton.visible = hasAction;
+    this.buyButton.renderable = hasAction;
+    this.semanticId = hasAction ? model.semanticId ?? null : null;
+    if (this.semanticRegistry && this.semanticId) {
+      this.semanticDefinition = this.semanticRegistry.register({
+        semanticId: this.semanticId,
+        displayObject: this.buyButton,
+        state: () => ({
+          enabled: this.buyButton.enabled,
+          interactive: true,
+          visible: this.root.visible && this.buyButton.visible,
+        }),
+        activate: (payload) => model.action?.(payload),
+      });
+    }
+    this.applyTheme(this.theme);
+  }
+
+  setBounds(x, y, width, height = PLAYER_MARKET_OFFER_ROW_HEIGHT) {
+    this.root.position.set(x, y);
+    const rowGap = PIXI_ROOT_RUN_GEOMETRY.settings.rowGap;
+    const frameWidth = Math.max(0, width - rowGap);
+    const frameHeight = Math.max(0, height - rowGap);
+    this.frame.position.set(0, rowGap / 2);
+    this.frame.setSize(
+      frameWidth,
+      frameHeight,
+      PIXI_ROOT_RUN_GEOMETRY.settings.rowBorderInsets,
+    );
+    this.avatar.scale.set(PLAYER_MARKET_AVATAR_SIZE / 186);
+    this.avatar.position.set(7, (height - PLAYER_MARKET_AVATAR_SIZE) / 2);
+    const textX = 7 + PLAYER_MARKET_AVATAR_SIZE + 5;
+    const actionWidth = this.buyButton.visible ? 62 : 0;
+    const actionX = frameWidth - 7 - actionWidth;
+    this.tag.position.set(textX, 10);
+    this.username.position.set(
+      textX + (this.tag.visible ? this.tag.measuredWidth + 3 : 0),
+      9,
+    );
+    this.username.setWrapWidth(0);
+    fitPlayerMarketLabel(
+      this.username,
+      Math.max(0, actionX - 6 - this.username.x),
+    );
+    const iconSize = PLAYER_MARKET_ITEM_ICON_SIZE;
+    const contentY = 27;
+    setSeedPackCompositeBounds(
+      this.itemIcon,
+      this.itemIconOverlay,
+      textX + iconSize / 2,
+      34,
+      iconSize,
+      0,
+    );
+    this.itemLabel.position.set(textX + iconSize + 4, contentY);
+    this.itemLabel.setWrapWidth(0);
+    this.itemLabel.scale.set(1);
+    this.layoutPriceContent();
+    const contentRight = actionWidth > 0 ? actionX - 5 : frameWidth - 8;
+    const itemLabelWidth = Math.max(
+      0,
+      contentRight -
+        this.itemLabel.x -
+        6 -
+        this.price.measuredWidth -
+        3 -
+        this.eachLabel.measuredWidth,
+    );
+    fitPlayerMarketLabel(this.itemLabel, itemLabelWidth);
+    this.price.position.set(
+      this.itemLabel.x +
+        this.itemLabel.measuredWidth * this.itemLabel.scale.x +
+        6,
+      contentY + PLAYER_MARKET_PRICE_OPTICAL_Y,
+    );
+    this.eachLabel.position.set(
+      this.price.x + this.price.measuredWidth + 3,
+      contentY,
+    );
+    if (this.buyButton.visible) {
+      this.buyButton.position.set(actionX, (height - 28) / 2);
+      this.buyButton.setSize(actionWidth, 28);
+    }
+  }
+
+  applyTheme(theme) {
+    this.theme = theme ?? DEFAULT_PIXI_THEME_SNAPSHOT;
+    this.frame.setTexture(
+      this.assetManager?.getTexture?.(PIXI_ROOT_RUN_ASSETS.settingsRow) ??
+        Texture.EMPTY,
+      PIXI_ROOT_RUN_GEOMETRY.settings.rowSourceInsets,
+    );
+    this.tag.applyTheme(this.theme);
+    this.tag.setColor(resolveAllianceTagColor(this.model?.allianceTagColor));
+    this.username.applyTheme(this.theme);
+    this.itemLabel.applyTheme(this.theme);
+    this.price.applyTheme(this.theme);
+    this.layoutPriceContent();
+    this.eachLabel.applyTheme(this.theme);
+    this.buyButton.applyTheme(this.theme);
+  }
+
+  layoutPriceContent() {
+    if (!this.price.icon.visible) {
+      return;
+    }
+    const centerY = this.price.fontSize * 0.5;
+    this.price.amountLabel.position.set(0, centerY);
+    this.price.icon.position.set(
+      this.price.amountLabel.measuredWidth + this.price.fontSize * 0.14,
+      centerY,
+    );
+  }
+
+  reset() {
+    this.unregisterSemantic();
+    this.model = null;
+    this.key = null;
+    this.root.visible = false;
+    this.root.renderable = false;
+    this.itemIcon.texture = Texture.EMPTY;
+    this.itemIcon.visible = false;
+    this.itemIconOverlay.texture = Texture.EMPTY;
+    this.itemIconOverlay.visible = false;
+    this.buyButton.reset();
+  }
+
+  unregisterSemantic() {
+    if (this.semanticDefinition && this.semanticId) {
+      this.semanticRegistry?.unregister?.(this.semanticId, {
+        displayObject: this.buyButton,
+      });
+    }
+    this.semanticDefinition = null;
+    this.semanticId = null;
+  }
+
+  destroy() {
+    this.unregisterSemantic();
+    this.root.destroy({ children: true });
+  }
+}
+
 class VirtualShopDialogList {
   constructor({
     assetManager,
@@ -2057,6 +2629,7 @@ class VirtualShopDialogList {
     this.incomingStartFraction = 0;
     this.outgoingStartFraction = 0;
     this.expansionProgress = 1;
+    this.collapseControlProgress = 0;
     this.expansionFrame = null;
     this.expansionStartedAt = null;
     this.contentPaddingTop = PIXI_UI_GEOMETRY.dialogScrollPaddingTop;
@@ -2091,7 +2664,14 @@ class VirtualShopDialogList {
                 paperPresentation: true,
                 label: `${label}:row`,
               })
-          : this.rowVariant === 'summon-seed-preference'
+            : this.rowVariant === 'player-market-offer'
+              ? new PlayerMarketOfferRow({
+                  assetManager,
+                  inputRouter,
+                  semanticRegistry,
+                  label: `${label}:row`,
+                })
+            : this.rowVariant === 'summon-seed-preference'
             ? new SummonSeedPreferenceRowPixi({
                 assetManager,
                 inputRouter,
@@ -2232,6 +2812,7 @@ class VirtualShopDialogList {
       this.incomingStartFraction = 0;
       this.outgoingStartFraction = 0;
       this.expansionProgress = 1;
+      this.collapseControlProgress = 0;
       this.expandedControl?.bind(null);
       this.refreshContentHeight();
       this.renderWindow(true);
@@ -2259,6 +2840,7 @@ class VirtualShopDialogList {
     this.expandedKey = nextKey;
     this.incomingStartFraction = nextFraction;
     this.expansionProgress = 0;
+    this.collapseControlProgress = 0;
     this.expansionStartedAt = null;
     this.syncExpandedControl();
 
@@ -2291,7 +2873,22 @@ class VirtualShopDialogList {
           SETTINGS_ROW_EXPANSION_DURATION_MS,
       ),
     );
-    this.expansionProgress = easeOutQuart(linearProgress);
+    const sequencedCollapse = this.isSequencedCollapse();
+    const rowProgress = sequencedCollapse
+      ? clamp01(
+          (linearProgress - SETTINGS_ROW_COLLAPSE_CONTROL_HIDE_FRACTION) /
+            (1 - SETTINGS_ROW_COLLAPSE_CONTROL_HIDE_FRACTION),
+        )
+      : linearProgress;
+    this.expansionProgress = easeOutQuart(rowProgress);
+    this.collapseControlProgress = sequencedCollapse
+      ? easeOutQuart(
+          clamp01(
+            linearProgress /
+              SETTINGS_ROW_COLLAPSE_CONTROL_HIDE_FRACTION,
+          ),
+        )
+      : 0;
     this.refreshContentHeight();
     this.renderWindow(true);
     this.scrollExpandedRowIntoView();
@@ -2312,6 +2909,7 @@ class VirtualShopDialogList {
     this.incomingStartFraction =
       this.expandedKey === null ? 0 : 1;
     this.expansionProgress = 1;
+    this.collapseControlProgress = 0;
     this.syncExpandedControl();
     this.refreshContentHeight();
     this.renderWindow(true);
@@ -2324,6 +2922,10 @@ class VirtualShopDialogList {
     }
     this.expansionFrame = null;
     this.expansionStartedAt = null;
+  }
+
+  isSequencedCollapse() {
+    return this.expandedKey === null && this.outgoingKey !== null;
   }
 
   createLayout() {
@@ -2450,7 +3052,12 @@ class VirtualShopDialogList {
           )
         : 1 -
           (1 - SETTINGS_ROW_DISCLOSURE_START_SCALE) *
-            easeOutQuart(this.expansionProgress);
+            (this.isSequencedCollapse()
+              ? this.collapseControlProgress
+              : easeOutQuart(this.expansionProgress));
+    const disclosureAlpha = this.isSequencedCollapse()
+      ? 1 - this.collapseControlProgress
+      : 1;
     this.expandedControl.pivot.set(
       controlWidth / 2,
       controlHeight / 2,
@@ -2460,8 +3067,9 @@ class VirtualShopDialogList {
       controlY + controlHeight / 2,
     );
     this.expandedControl.scale.set(disclosureScale);
-    this.expandedControl.alpha = 1;
-    this.expandedControl.visible = visibility > 0;
+    this.expandedControl.alpha = disclosureAlpha;
+    this.expandedControl.visible =
+      visibility > 0 && disclosureAlpha > 0;
     this.expandedControl.renderable = this.expandedControl.visible;
   }
 
@@ -2700,7 +3308,11 @@ export class MarketLedgerRowPixi extends ClickableWidget {
     const backgroundHeight = Math.max(0, this.height - rowGap);
     const backgroundY = rowGap / 2;
     const padding = 7;
-    const iconSize = 32;
+    const iconSize = resolveItemIconSize(
+      this.item,
+      LEDGER_ITEM_ICON_SIZE,
+      LEDGER_POTION_ICON_SIZE,
+    );
     const contentLeft = padding + iconSize + 7;
     const contentRight = Math.max(contentLeft, backgroundWidth - padding);
     const columnGap = 8;
@@ -3070,9 +3682,10 @@ export class RootRunInventoryChoiceRowPixi extends ClickableWidget {
     const valueWidth = this.getValueLayoutWidth();
     if (!this.useSettingsStyle) {
       const hasItemIcon = this.itemIcon.visible;
-      const itemIconSize = Math.max(
-        1,
-        finiteOr(this.item?.iconSize, STALL_ITEM_ICON_SIZE),
+      const itemIconSize = resolveItemIconSize(
+        this.item,
+        INVENTORY_CHOICE_ITEM_ICON_SIZE,
+        INVENTORY_CHOICE_POTION_ICON_SIZE,
       );
       const contentLeft = hasItemIcon ? itemIconSize + 6 : 0;
       if (hasItemIcon) {
@@ -3114,9 +3727,10 @@ export class RootRunInventoryChoiceRowPixi extends ClickableWidget {
     }
 
     const hasItemIcon = this.itemIcon.visible;
-    const itemIconSize = Math.max(
-      1,
-      finiteOr(this.item?.iconSize, STALL_ITEM_ICON_SIZE),
+    const itemIconSize = resolveItemIconSize(
+      this.item,
+      INVENTORY_CHOICE_ITEM_ICON_SIZE,
+      INVENTORY_CHOICE_POTION_ICON_SIZE,
     );
     const rowPadding = PIXI_ROOT_RUN_GEOMETRY.settings.rowPadding;
     const rowGap = PIXI_ROOT_RUN_GEOMETRY.settings.rowGap;
@@ -3272,12 +3886,19 @@ export class RootRunInventoryChoiceRowPixi extends ClickableWidget {
 
 /**
  * Summoning Seeds row with a dedicated weight button in the right value slot.
- * The whole row still toggles disclosure on validated release, but only the
- * nested weight button owns press/release motion.
+ * The row body is passive. Only the nested weight button owns disclosure,
+ * press/release motion, sound, and haptics.
  */
 export class SummonSeedPreferenceRowPixi extends RootRunInventoryChoiceRowPixi {
   constructor(options = {}) {
     super(options);
+    if (typeof this.registration === 'function') {
+      this.registration();
+    } else {
+      this.registration?.unregister?.();
+    }
+    this.registration = null;
+    this.syncClickableInteraction();
     this.preferenceButton = new PixiTextButton({
       assetManager: options.assetManager,
       inputRouter: options.inputRouter,
@@ -3305,6 +3926,23 @@ export class SummonSeedPreferenceRowPixi extends RootRunInventoryChoiceRowPixi {
       },
       this.action,
     );
+    if (this.semanticDefinition && this.semanticId) {
+      this.semanticRegistry?.unregister?.(this.semanticId, {
+        displayObject: this.root,
+      });
+      this.semanticDefinition = this.semanticRegistry?.register?.({
+        semanticId: this.semanticId,
+        tutorialId: item.tutorialId ?? null,
+        displayObject: this.preferenceButton,
+        state: () => ({
+          enabled: this.enabled,
+          interactive: Boolean(this.action),
+          expanded: this.expanded,
+          visible: this.root.visible && this.root.renderable,
+        }),
+        activate: (payload) => this.action?.(payload),
+      }) ?? null;
+    }
   }
 
   setBounds(x, y, width, height, summaryHeight = height) {
@@ -3320,6 +3958,25 @@ export class SummonSeedPreferenceRowPixi extends RootRunInventoryChoiceRowPixi {
 
   getValueLayoutWidth() {
     return SUMMON_SEED_PREFERENCE_BUTTON_WIDTH;
+  }
+
+  syncClickableInteraction() {
+    this.root.eventMode = 'passive';
+    this.root.cursor = 'default';
+    if (this.pressed) {
+      this.setPressed(false);
+    }
+    return this;
+  }
+
+  unregisterSemantic() {
+    if (this.semanticDefinition && this.semanticId) {
+      this.semanticRegistry?.unregister?.(this.semanticId, {
+        displayObject: this.preferenceButton ?? this.root,
+      });
+    }
+    this.semanticDefinition = null;
+    this.semanticId = null;
   }
 
   setPressed(pressed) {
@@ -3572,6 +4229,57 @@ function resolveItemIconFrames(model = {}) {
   return { base: null, overlay: null, texture: null };
 }
 
+function resolvePlayerCharacterTexture(assetManager, character) {
+  const key = String(character ?? 'elara')
+    .trim()
+    .toLowerCase()
+    .replaceAll(/[^a-z0-9_-]/g, '');
+  try {
+    return (
+      assetManager?.getTexture?.(
+        `source:assets/avatars/${key || 'elara'}.png`,
+      ) ??
+      assetManager?.getTexture?.('source:assets/avatars/elara.png') ??
+      Texture.EMPTY
+    );
+  } catch {
+    return Texture.EMPTY;
+  }
+}
+
+function normalizeAllianceTag(value) {
+  return String(value ?? '')
+    .trim()
+    .toUpperCase()
+    .slice(0, 5);
+}
+
+function resolveAllianceTagColor(value) {
+  const key = String(value ?? 'ink').trim().toLowerCase();
+  return PLAYER_MARKET_TAG_COLORS[key] ?? PLAYER_MARKET_TAG_COLORS.ink;
+}
+
+function fitPlayerMarketLabel(label, maxWidth) {
+  label.scale.set(1);
+  const width = Math.max(0, Number(maxWidth) || 0);
+  if (width > 0 && label.measuredWidth > width) {
+    label.scale.set(Math.max(0.78, width / label.measuredWidth));
+  }
+}
+
+function resolveItemIconSize(model = {}, defaultSize, potionSize) {
+  const itemKind = String(
+    model.itemKind ?? model.icon?.kind ?? '',
+  ).toLowerCase();
+  return Math.max(
+    1,
+    finiteOr(
+      model.iconSize,
+      itemKind === 'potion' ? potionSize : defaultSize,
+    ),
+  );
+}
+
 function orderChildren(container, widgets) {
   const children = widgets.map((widget) => widget.root ?? widget);
   const retained = new Set(children);
@@ -3591,6 +4299,10 @@ function orderChildren(container, widgets) {
 
 function easeOutQuart(progress) {
   return 1 - (1 - progress) ** 4;
+}
+
+function clamp01(value) {
+  return Math.min(1, Math.max(0, value));
 }
 
 function sampleAutoSummonRevealScale(progress) {

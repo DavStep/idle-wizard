@@ -1,17 +1,5 @@
-const DEFAULT_MANA_PER_SECOND_PER_LEVEL_RANGES = [
-  { fromLevel: 2, toLevel: 5, amount: 1 },
-  { fromLevel: 6, toLevel: 10, amount: 0.5 },
-  { fromLevel: 11, amount: 0.25 },
-];
-
 export const DEFAULT_PLAYER_LEVEL_BALANCE = {
   "maxLevel": 100,
-  "mana": {
-    "baseMaxManaCap": 50,
-    "maxManaCapPerLevel": 50,
-    "baseManaPerSecond": 1,
-    "manaPerSecondPerLevelRanges": DEFAULT_MANA_PER_SECOND_PER_LEVEL_RANGES
-  },
   "crystal": {
     "perLevel": 1
   },
@@ -109,13 +97,11 @@ export class PlayerLevelBalanceManager {
 
   setBalance(balance) {
     const maxLevel = this.readMaxLevel(balance);
-    const manaProgression = this.readManaProgression(balance, maxLevel);
     const crystalRewards = this.readCrystalRewards(balance);
     const milestones = this.readMilestones(balance, maxLevel);
 
     this.balance = balance;
     this.maxLevel = maxLevel;
-    this.manaProgression = manaProgression;
     this.crystalRewards = crystalRewards;
     this.milestones = milestones;
     this.revision += 1;
@@ -155,67 +141,14 @@ export class PlayerLevelBalanceManager {
 
   getEffects(levelNumber) {
     const level = this.getLevel(levelNumber);
-    const manaEffects = this.getManaEffects(levelNumber);
 
-    const effects = {
+    return {
       maxGardenTiles: level.maxGardenTiles,
       maxCauldrons: level.maxCauldrons,
       maxShopSlots: level.maxNpcMarketStands,
       maxNpcMarketStands: level.maxNpcMarketStands,
       maxPlayerMarketStands: level.maxPlayerMarketStands,
     };
-
-    if (manaEffects) {
-      effects.maxManaCap = manaEffects.maxManaCap;
-      effects.manaPerSecond = manaEffects.manaPerSecond;
-    }
-
-    return effects;
-  }
-
-  getManaEffects(levelNumber) {
-    if (!this.manaProgression) {
-      return null;
-    }
-
-    const safeLevel = Math.max(1, this.clampLevelNumber(levelNumber));
-
-    return {
-      maxManaCap: this.roundStat(
-        this.manaProgression.baseMaxManaCap +
-          (safeLevel - 1) * this.manaProgression.maxManaCapPerLevel,
-      ),
-      manaPerSecond: this.roundStat(
-        this.manaProgression.baseManaPerSecond +
-          this.getManaPerSecondIncrease(safeLevel),
-      ),
-    };
-  }
-
-  getManaPerSecondIncrease(levelNumber) {
-    if (Array.isArray(this.manaProgression.manaPerSecondPerLevelRanges)) {
-      return this.getRangeStatIncrease(
-        this.manaProgression.manaPerSecondPerLevelRanges,
-        levelNumber,
-      );
-    }
-
-    return (levelNumber - 1) * this.manaProgression.manaPerSecondPerLevel;
-  }
-
-  getRangeStatIncrease(ranges, levelNumber) {
-    const safeLevel = Math.max(1, this.clampLevelNumber(levelNumber));
-
-    return ranges.reduce((total, range) => {
-      const fromLevel = Math.max(2, range.fromLevel);
-      const toLevel = Math.min(safeLevel, range.toLevel);
-
-      if (toLevel < fromLevel) {
-        return total;
-      }
-
-      return total + (toLevel - fromLevel + 1) * range.amount;
-    }, 0);
   }
 
   getCrystalRewardForLevel() {
@@ -334,31 +267,10 @@ export class PlayerLevelBalanceManager {
   describeLevelSummary({ levelNumber, milestone, previousMilestone }) {
     const effects = [
       ...(milestone ? this.describeLevel(milestone, previousMilestone) : []),
-      ...this.describeManaLevel(levelNumber),
       ...this.describeCrystalLevel(levelNumber),
     ];
 
     return effects.length > 0 ? effects : ['no new unlock'];
-  }
-
-  describeManaLevel(levelNumber) {
-    if (!this.manaProgression) {
-      return [];
-    }
-
-    const effects = [];
-    const manaEffects = this.getManaEffects(levelNumber);
-    const previousManaEffects = levelNumber > 1 ? this.getManaEffects(levelNumber - 1) : null;
-
-    if (!previousManaEffects || manaEffects.maxManaCap > previousManaEffects.maxManaCap) {
-      effects.push(`max mana cap ${this.formatStat(manaEffects.maxManaCap)}`);
-    }
-
-    if (!previousManaEffects || manaEffects.manaPerSecond > previousManaEffects.manaPerSecond) {
-      effects.push(`mana regen ${this.formatStat(manaEffects.manaPerSecond)}/sec`);
-    }
-
-    return effects;
   }
 
   describeCrystalLevel(levelNumber) {
@@ -461,99 +373,6 @@ export class PlayerLevelBalanceManager {
     });
   }
 
-  readManaProgression(balance = this.balance, maxLevel = this.maxLevel) {
-    const mana = balance?.mana ?? balance?.manaProgression;
-
-    if (mana === undefined) {
-      return null;
-    }
-
-    const manaPerSecondPerLevelRanges = this.readManaPerSecondPerLevelRanges(
-      mana.manaPerSecondPerLevelRanges ?? mana.perSecondPerLevelRanges,
-      maxLevel,
-    );
-    const legacyManaPerSecondPerLevel =
-      mana.manaPerSecondPerLevel ?? mana.perSecondPerLevel;
-
-    return {
-      baseMaxManaCap: this.readNonNegativeNumber(
-        mana.baseMaxManaCap ?? mana.baseCap,
-        'mana.baseMaxManaCap',
-      ),
-      maxManaCapPerLevel: this.readNonNegativeNumber(
-        mana.maxManaCapPerLevel ?? mana.capPerLevel,
-        'mana.maxManaCapPerLevel',
-      ),
-      baseManaPerSecond: this.readNonNegativeNumber(
-        mana.baseManaPerSecond ?? mana.basePerSecond,
-        'mana.baseManaPerSecond',
-      ),
-      manaPerSecondPerLevelRanges,
-      manaPerSecondPerLevel:
-        manaPerSecondPerLevelRanges === null
-          ? this.readNonNegativeNumber(
-              legacyManaPerSecondPerLevel,
-              'mana.manaPerSecondPerLevel',
-            )
-          : 0,
-    };
-  }
-
-  readManaPerSecondPerLevelRanges(value, maxLevel) {
-    if (value === undefined) {
-      return null;
-    }
-
-    if (!Array.isArray(value) || value.length <= 0) {
-      throw new Error('game_config.playerLevel mana.manaPerSecondPerLevelRanges must be an array.');
-    }
-
-    let expectedFromLevel = 2;
-
-    const ranges = value.map((range, index) => {
-      if (!range || typeof range !== 'object' || Array.isArray(range)) {
-        throw new Error(
-          'game_config.playerLevel mana.manaPerSecondPerLevelRanges entries must be objects.',
-        );
-      }
-
-      const fromLevel = range.fromLevel ?? range.minLevel ?? range.level;
-      const toLevel = range.toLevel ?? range.maxLevel ?? maxLevel;
-      const amount = range.amount ?? range.perLevel ?? range.perSecond;
-
-      if (
-        !Number.isInteger(fromLevel) ||
-        !Number.isInteger(toLevel) ||
-        fromLevel !== expectedFromLevel ||
-        toLevel < fromLevel ||
-        toLevel > maxLevel
-      ) {
-        throw new Error(
-          'game_config.playerLevel mana.manaPerSecondPerLevelRanges must cover each level after 1 once.',
-        );
-      }
-
-      expectedFromLevel = toLevel + 1;
-
-      return {
-        fromLevel,
-        toLevel,
-        amount: this.readNonNegativeNumber(
-          amount,
-          `mana.manaPerSecondPerLevelRanges[${index}].amount`,
-        ),
-      };
-    });
-
-    if (maxLevel > 1 && expectedFromLevel !== maxLevel + 1) {
-      throw new Error(
-        'game_config.playerLevel mana.manaPerSecondPerLevelRanges must cover each level after 1 once.',
-      );
-    }
-
-    return ranges;
-  }
-
   readCrystalRewards(balance = this.balance) {
     const crystal = balance?.crystal;
 
@@ -590,14 +409,6 @@ export class PlayerLevelBalanceManager {
     }
 
     return [...value];
-  }
-
-  readNonNegativeNumber(value, key) {
-    if (!Number.isFinite(value) || value < 0) {
-      throw new Error(`game_config.playerLevel ${key} must be a non-negative number.`);
-    }
-
-    return value;
   }
 
   readNonNegativeInteger(value, key) {

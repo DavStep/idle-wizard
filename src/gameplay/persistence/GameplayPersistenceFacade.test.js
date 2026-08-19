@@ -11,7 +11,12 @@ function createSnapshotFacade(snapshot = {}) {
   };
 }
 
-function createPersistenceFacade({ storageManager, windowRef, documentRef } = {}) {
+function createPersistenceFacade({
+  storageManager,
+  windowRef,
+  documentRef,
+  now = () => 123,
+} = {}) {
   const resourceFacade = createSnapshotFacade();
 
   return new GameplayPersistenceFacade({
@@ -35,7 +40,7 @@ function createPersistenceFacade({ storageManager, windowRef, documentRef } = {}
     personalTasksFacade: resourceFacade,
     worldNoticeFacade: resourceFacade,
     guildFacade: resourceFacade,
-    now: () => 123,
+    now,
     windowRef,
     documentRef,
   });
@@ -92,6 +97,28 @@ describe('GameplayPersistenceFacade', () => {
       tasks: {},
     });
     expect(facade.createSave().clientSaveSequence).toBe(1);
+  });
+
+  it('uses the client save clock for offline catch-up after server normalization', () => {
+    const facade = createPersistenceFacade({ now: () => 61_000 });
+
+    expect(
+      facade.getOfflineDeltaSeconds({
+        savedAt: 121_000,
+        clientSavedAt: 1_000,
+      }),
+    ).toBe(60);
+  });
+
+  it('falls back to the save timestamp when no client timestamp exists', () => {
+    const facade = createPersistenceFacade({ now: () => 61_000 });
+
+    expect(
+      facade.getOfflineDeltaSeconds({
+        savedAt: 1_000,
+        clientSavedAt: 0,
+      }),
+    ).toBe(60);
   });
 
   it('flushes the latest save before page reload and when the page hides', () => {

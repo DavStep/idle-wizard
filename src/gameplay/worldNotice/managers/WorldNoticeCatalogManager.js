@@ -38,7 +38,6 @@ function eventQuest({
   situation,
   description,
   donationOptions,
-  requiredPoints = 600,
 }) {
   return {
     requestKey,
@@ -47,7 +46,6 @@ function eventQuest({
     title,
     situation,
     description,
-    requiredQuantity: requiredPoints,
     donationOptions,
   };
 }
@@ -89,7 +87,6 @@ const WORLD_NOTICE_EVENTS = Object.freeze([
         situation: 'Crowded houses keep the fever moving after sunset.',
         description: 'Donate coin so families can rent spare rooms until the quarter is clean again.',
         donationOptions: [coinDonation()],
-        requiredPoints: 900,
       }),
     ],
     outcomes: {
@@ -135,7 +132,6 @@ const WORLD_NOTICE_EVENTS = Object.freeze([
         situation: 'Messengers are wearing through boots faster than the quartermaster can count them.',
         description: 'Donate coin for fresh boots, horse feed, and bridge tolls before reports stop moving.',
         donationOptions: [coinDonation()],
-        requiredPoints: 900,
       }),
     ],
     outcomes: {
@@ -181,7 +177,6 @@ const WORLD_NOTICE_EVENTS = Object.freeze([
         situation: 'Merchants will close their stalls if the first crown week starts with unpaid road guards.',
         description: 'Donate coin to keep the road watches fed until the new crown signs the ledgers.',
         donationOptions: [coinDonation()],
-        requiredPoints: 900,
       }),
     ],
     outcomes: {
@@ -227,7 +222,6 @@ const WORLD_NOTICE_EVENTS = Object.freeze([
         situation: 'No one is stepping under the old road without paid rope hands above them.',
         description: 'Donate coin for ropes, chalk, and the workers brave enough to hold the line.',
         donationOptions: [coinDonation()],
-        requiredPoints: 900,
       }),
     ],
     outcomes: {
@@ -273,7 +267,6 @@ const WORLD_NOTICE_EVENTS = Object.freeze([
         situation: 'Whole furrows have been cut away to keep the blight from crossing the road.',
         description: 'Donate coin for seed, carts, and wages while the fields are replanted.',
         donationOptions: [coinDonation()],
-        requiredPoints: 900,
       }),
     ],
     outcomes: {
@@ -319,7 +312,6 @@ const WORLD_NOTICE_EVENTS = Object.freeze([
         situation: 'Market stalls are empty where the lost wagons should have stood.',
         description: 'Donate coin so sellers can replace bread, lamp oil, and mule feed until the carts return.',
         donationOptions: [coinDonation()],
-        requiredPoints: 900,
       }),
     ],
     outcomes: {
@@ -365,7 +357,6 @@ const WORLD_NOTICE_EVENTS = Object.freeze([
         situation: 'Children are carrying empty cups because the mill well cannot be trusted.',
         description: 'Donate coin for clean barrels from the north spring until the well clears.',
         donationOptions: [coinDonation()],
-        requiredPoints: 900,
       }),
     ],
     outcomes: {
@@ -411,7 +402,6 @@ const WORLD_NOTICE_EVENTS = Object.freeze([
         situation: 'The bell ringers were promised lunch three proclamations ago.',
         description: 'Donate coin so the bells keep ringing until the last oath is read.',
         donationOptions: [coinDonation()],
-        requiredPoints: 900,
       }),
     ],
     outcomes: {
@@ -457,7 +447,6 @@ const WORLD_NOTICE_EVENTS = Object.freeze([
         situation: 'The scholars refuse to leave the field until the comet does.',
         description: 'Donate coin for tents, ink, and hot food while the sky keeps scratching itself open.',
         donationOptions: [coinDonation()],
-        requiredPoints: 900,
       }),
     ],
     outcomes: {
@@ -503,7 +492,6 @@ const WORLD_NOTICE_EVENTS = Object.freeze([
         situation: 'The watch has names, but no coin for riders willing to chase them.',
         description: 'Donate coin for road bounties, spare tack, and lantern oil on the north mile.',
         donationOptions: [coinDonation()],
-        requiredPoints: 900,
       }),
     ],
     outcomes: {
@@ -543,10 +531,9 @@ export class WorldNoticeCatalogManager {
     return WORLD_NOTICE_EVENTS[index % WORLD_NOTICE_EVENTS.length];
   }
 
-  createNoticeState({ periodKey, weekIndex, resetAtMs, anchorLevel, levelCoinBudget }) {
+  createNoticeState({ periodKey, weekIndex, resetAtMs, anchorLevel }) {
     const event = this.getEventForWeek(weekIndex);
     const level = Math.max(WORLD_NOTICE_UNLOCK_LEVEL, Math.floor(Number(anchorLevel) || 0));
-    const baseCoin = Math.max(0, Math.floor(Number(levelCoinBudget) || level * level * 10));
 
     return {
       version: WORLD_NOTICE_STATE_VERSION,
@@ -567,14 +554,12 @@ export class WorldNoticeCatalogManager {
           eventId: event.eventId,
           periodKey,
           request,
-          anchorLevel: level,
-          levelCoinBudget: baseCoin,
         }),
       ),
     };
   }
 
-  createRequestState({ eventId, periodKey, request, anchorLevel, levelCoinBudget }) {
+  createRequestState({ eventId, periodKey, request }) {
     const actionType = request.actionType ?? WORLD_NOTICE_ACTIONS.DONATE_RESOURCES;
     return {
       requestId: `${periodKey}:${eventId}:${request.requestKey}`,
@@ -584,58 +569,11 @@ export class WorldNoticeCatalogManager {
       title: request.title ?? request.label,
       situation: request.situation ?? '',
       description: request.description ?? '',
-      requiredQuantity: this.getRequiredQuantity({
-        actionType,
-        anchorLevel,
-        levelCoinBudget,
-        requiredQuantity: request.requiredQuantity,
-      }),
-      progressQuantity: 0,
       pointProgressQuantity: 0,
       contributionPoints: 0,
       donationOptions: this.sanitizeDonationOptions(request.donationOptions),
       donationProgress: {},
-      completed: false,
     };
-  }
-
-  getRequiredQuantity({ actionType, anchorLevel, levelCoinBudget, requiredQuantity = null }) {
-    const explicitQuantity = Math.floor(Number(requiredQuantity));
-
-    if (Number.isInteger(explicitQuantity) && explicitQuantity > 0) {
-      return explicitQuantity;
-    }
-
-    const level = Math.max(WORLD_NOTICE_UNLOCK_LEVEL, Math.floor(Number(anchorLevel) || 0));
-    const coinBudget = Math.max(0, Math.floor(Number(levelCoinBudget) || 0));
-
-    switch (actionType) {
-      case WORLD_NOTICE_ACTIONS.BREW_POTIONS:
-        return this.clamp(Math.round(3 + level / 2), 5, 30);
-      case WORLD_NOTICE_ACTIONS.COMPLETE_RESEARCH:
-        return 1;
-      case WORLD_NOTICE_ACTIONS.DONATE_COIN:
-        return this.roundToFive(Math.max(15, coinBudget * 0.08));
-      case WORLD_NOTICE_ACTIONS.DONATE_RESOURCES:
-        return this.roundToFive(Math.max(600, coinBudget * 1.5));
-      case WORLD_NOTICE_ACTIONS.EARN_COIN:
-        return this.roundToFive(Math.max(50, coinBudget * 0.5));
-      case WORLD_NOTICE_ACTIONS.HARVEST_HERBS:
-        return this.roundToFive(15 + level * 3);
-      case WORLD_NOTICE_ACTIONS.SELL_ITEMS:
-        return this.roundToFive(20 + level * 5);
-      case WORLD_NOTICE_ACTIONS.SUMMON_SEEDS:
-        return this.roundToFive(20 + level * 5);
-      default:
-        return 1;
-    }
-  }
-
-  getRewardCoin(anchorLevel, levelCoinBudget) {
-    const level = Math.max(WORLD_NOTICE_UNLOCK_LEVEL, Math.floor(Number(anchorLevel) || 0));
-    const coinBudget = Math.max(0, Math.floor(Number(levelCoinBudget) || 0));
-
-    return this.roundToFive(Math.max(10, coinBudget * 0.08 + level));
   }
 
   sanitizeNotice(notice) {
@@ -712,17 +650,9 @@ export class WorldNoticeCatalogManager {
       return null;
     }
 
-    const requiredQuantity = Math.max(
-      1,
-      Math.floor(Number(catalogRequest?.requiredQuantity ?? request.requiredQuantity) || 1),
-    );
-    const progressQuantity = Math.max(
-      0,
-      Math.min(requiredQuantity, Math.floor(Number(request.progressQuantity) || 0)),
-    );
     const pointProgressQuantity = Number.isFinite(request.pointProgressQuantity)
       ? Math.max(0, Math.floor(request.pointProgressQuantity))
-      : progressQuantity;
+      : Math.max(0, Math.floor(Number(request.progressQuantity) || 0));
 
     return {
       requestId,
@@ -747,8 +677,6 @@ export class WorldNoticeCatalogManager {
           : typeof request.description === 'string'
             ? request.description
             : '',
-      requiredQuantity,
-      progressQuantity,
       pointProgressQuantity,
       contributionPoints: Math.max(
         0,
@@ -758,7 +686,6 @@ export class WorldNoticeCatalogManager {
         catalogRequest?.donationOptions ?? request.donationOptions,
       ),
       donationProgress: this.sanitizeDonationProgress(request.donationProgress),
-      completed: Boolean(request.completed) || progressQuantity >= requiredQuantity,
     };
   }
 
@@ -826,12 +753,4 @@ export class WorldNoticeCatalogManager {
     );
   }
 
-  roundToFive(value) {
-    const rounded = Math.round((Number(value) || 0) / 5) * 5;
-    return Math.max(5, rounded);
-  }
-
-  clamp(value, min, max) {
-    return Math.max(min, Math.min(max, value));
-  }
 }

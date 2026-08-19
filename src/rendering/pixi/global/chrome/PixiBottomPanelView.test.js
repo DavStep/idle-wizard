@@ -33,8 +33,8 @@ describe('PixiBottomPanelView', () => {
       'brewing',
       'garden',
       'workshop',
-      'research',
       'shop',
+      'research',
     ]);
     expect(PIXI_GUILD_HUD_TABS.map(({ icon }) => icon)).toEqual([
       'icon-workshop-house-tab.png',
@@ -202,21 +202,21 @@ describe('PixiBottomPanelView', () => {
     });
 
     for (const visibleIds of [
-      ['brewing', 'garden', 'workshop', 'research', 'shop'],
+      ['brewing', 'garden', 'workshop', 'shop', 'research'],
       [
         'brewing',
         'garden',
         'workshop',
-        'research',
         'shop',
+        'research',
         'advancedBrewing',
       ],
       [
         'brewing',
         'garden',
         'workshop',
-        'research',
         'shop',
+        'research',
         'advancedBrewing',
         'advancedGarden',
       ],
@@ -270,8 +270,8 @@ describe('PixiBottomPanelView', () => {
         'brewing',
         'garden',
         'workshop',
-        'research',
         'shop',
+        'research',
         'advancedBrewing',
         'advancedGarden',
       ]),
@@ -299,8 +299,8 @@ describe('PixiBottomPanelView', () => {
         'brewing',
         'garden',
         'workshop',
-        'research',
         'shop',
+        'research',
       ]),
     });
 
@@ -366,8 +366,8 @@ describe('PixiBottomPanelView', () => {
         'brewing',
         'garden',
         'workshop',
-        'research',
         'shop',
+        'research',
       ]),
     });
 
@@ -398,8 +398,8 @@ describe('PixiBottomPanelView', () => {
         'brewing',
         'garden',
         'workshop',
-        'research',
         'shop',
+        'research',
       ]),
     });
 
@@ -413,8 +413,8 @@ describe('PixiBottomPanelView', () => {
         'brewing',
         'garden',
         'workshop',
-        'research',
         'shop',
+        'research',
       ]),
     });
 
@@ -450,8 +450,8 @@ describe('PixiBottomPanelView', () => {
         ...pageStates([
           'brewing',
           'workshop',
-          'research',
           'shop',
+          'research',
         ]),
         {
           id: 'garden',
@@ -688,8 +688,8 @@ describe('PixiBottomPanelView', () => {
         ...pageStates([
           'brewing',
           'workshop',
-          'research',
           'shop',
+          'research',
         ]),
         {
           id: 'garden',
@@ -704,8 +704,8 @@ describe('PixiBottomPanelView', () => {
         'brewing',
         'garden',
         'workshop',
-        'research',
         'shop',
+        'research',
       ]),
     });
 
@@ -739,8 +739,8 @@ describe('PixiBottomPanelView', () => {
           'brewing',
           'garden',
           'workshop',
-          'research',
           'shop',
+          'research',
         ]).filter(({ id }) => id !== 'garden'),
         {
           id: 'garden',
@@ -798,8 +798,8 @@ describe('PixiBottomPanelView', () => {
         ...pageStates([
           'brewing',
           'workshop',
-          'research',
           'shop',
+          'research',
         ]),
         {
           id: 'garden',

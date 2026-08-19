@@ -238,13 +238,12 @@ export class ResearchFacade {
     return this.getCompletedItemTimerLevel({
       getId: itemTimerResearchIds.herbGrowth,
       itemKey: herbKey,
-      maxLevel: this.researchDefinitionManager.getHerbGrowthResearchMaxLevel(herbKey),
+      maxLevel: this.researchDefinitionManager.getHerbGrowthResearchMaxLevel(),
     });
   }
 
   getReducedHerbGrowthDurationMs(herbKey, durationMs) {
-    const maxLevel =
-      this.researchDefinitionManager.getHerbGrowthResearchMaxLevel(herbKey);
+    const maxLevel = this.researchDefinitionManager.getHerbGrowthResearchMaxLevel();
     return applyItemTimerResearchReduction(
       durationMs,
       this.getCompletedHerbGrowthLevel(herbKey),
@@ -256,14 +255,12 @@ export class ResearchFacade {
     return this.getCompletedItemTimerLevel({
       getId: itemTimerResearchIds.potionBrewing,
       itemKey: potionKey,
-      maxLevel:
-        this.researchDefinitionManager.getPotionBrewingResearchMaxLevel(potionKey),
+      maxLevel: this.researchDefinitionManager.getPotionBrewingResearchMaxLevel(),
     });
   }
 
   getReducedPotionBrewingDurationMs(potionKey, durationMs) {
-    const maxLevel =
-      this.researchDefinitionManager.getPotionBrewingResearchMaxLevel(potionKey);
+    const maxLevel = this.researchDefinitionManager.getPotionBrewingResearchMaxLevel();
     return applyItemTimerResearchReduction(
       durationMs,
       this.getCompletedPotionBrewingLevel(potionKey),

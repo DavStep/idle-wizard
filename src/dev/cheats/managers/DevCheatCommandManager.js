@@ -103,7 +103,7 @@ const CHEAT_HELP = Object.freeze([
   'cheats.unlockPlayerStands(3)',
   'cheats.unlockMarketStands(3)',
   'cheats.setMarketState("full")',
-  'cheats.setWorldEventState("complete")',
+  'cheats.setWorldEventState("highscore")',
   'cheats.setGuildState("full")',
   'cheats.setBackendState("offline")',
   'cheats.listDialogs()',
@@ -243,6 +243,20 @@ const UI_SURFACE_DEFINITIONS = Object.freeze([
     dialogId: 'market',
     options: { tab: 'npm', popup: 'sell' },
     aliases: ['stallLoader', 'loadStall'],
+  },
+  {
+    id: 'playerMarketRequest',
+    kind: 'dialog',
+    dialogId: 'market',
+    options: { tab: 'player', popup: 'request' },
+    aliases: ['requestDialog'],
+  },
+  {
+    id: 'playerMarketSell',
+    kind: 'dialog',
+    dialogId: 'market',
+    options: { tab: 'player', popup: 'listing' },
+    aliases: ['sellDialog'],
   },
   { id: 'guildCharter', kind: 'dialog', dialogId: 'guildCharter' },
   { id: 'guildSettings', kind: 'dialog', dialogId: 'guildSettings' },
@@ -1091,7 +1105,6 @@ export class DevCheatCommandManager {
       completedIds,
       inProgress: [],
     });
-    this.gameplayFacade.syncPlayerLevelManaEffects?.();
     this.gameplayFacade.syncRubyFromPrestige?.();
 
     const nextCompletedIds =
@@ -1597,20 +1610,12 @@ export class DevCheatCommandManager {
       return { ok: false, reason: 'world_event_unavailable' };
     }
 
-    const ratio =
-      preset === 'complete' || preset === 'completed'
-        ? 1
-        : preset === 'almostdone'
-          ? 0.95
-          : preset === 'half' || preset === 'partial'
-            ? 0.5
-            : 0;
     const points =
       Number.isFinite(Number(options.points))
         ? Math.max(0, Math.floor(Number(options.points)))
         : preset === 'qualify' || preset === 'qualified'
           ? 2_000
-          : preset === 'complete' || preset === 'completed'
+        : preset === 'highscore'
             ? 2_750
             : preset === 'half' || preset === 'partial'
               ? 900
@@ -1619,18 +1624,12 @@ export class DevCheatCommandManager {
     current.contributionPoints = points;
     const requestCount = Math.max(1, (current.requests ?? []).length);
     current.requests = (current.requests ?? []).map((request) => {
-      const requiredQuantity = Math.max(1, Math.floor(Number(request.requiredQuantity) || 1));
-      const progressQuantity = Math.max(
-        0,
-        Math.min(requiredQuantity, Math.floor(requiredQuantity * ratio)),
-      );
+      const requestPoints = Math.floor(points / requestCount);
 
       return {
         ...request,
-        progressQuantity,
-        pointProgressQuantity: progressQuantity,
-        contributionPoints: Math.floor(points / requestCount),
-        completed: progressQuantity >= requiredQuantity,
+        pointProgressQuantity: requestPoints,
+        contributionPoints: requestPoints,
       };
     });
 
@@ -2395,7 +2394,7 @@ export class DevCheatCommandManager {
       }),
       inventory: this.setInventoryPreset('overflow'),
       market: this.setMarketState('full', { slots: 5, quantity: 999 }),
-      worldEvent: this.setWorldEventState('complete', { leaderboardCount: 24 }),
+      worldEvent: this.setWorldEventState('highscore', { leaderboardCount: 24 }),
       guild: this.setGuildState('claimable', {
         name: 'Very Long QA Guild Name',
         tag: 'LONG',
@@ -3537,7 +3536,6 @@ export class DevCheatCommandManager {
       currentLevel: level,
       tasks: [],
     });
-    this.gameplayFacade.syncPlayerLevelManaEffects?.();
   }
 
   ensureLevelAtLeast(level) {

@@ -1,4 +1,40 @@
 {
+  "manaUpgradeSeries": {
+    "firstPlayerLevel": 2,
+    "maxPlayerLevel": 100,
+    "durationSeconds": 5,
+    "earlyTargetPlayerLevel": 17,
+    "maxCostCoin": 1000000000,
+    "capacity": {
+      "baseCostCoin": 25,
+      "level17CostCoin": 30000,
+      "level44CostCoin": 6000000,
+      "level100CostCoin": 700000000,
+      "increase": 50
+    },
+    "generation": {
+      "baseCostCoin": 50,
+      "level17CostCoin": 45000,
+      "level44CostCoin": 9000000,
+      "level100CostCoin": 1000000000,
+      "increasePerLevelRanges": [
+        {
+          "fromPlayerLevel": 2,
+          "toPlayerLevel": 5,
+          "amount": 1
+        },
+        {
+          "fromPlayerLevel": 6,
+          "toPlayerLevel": 10,
+          "amount": 0.5
+        },
+        {
+          "fromPlayerLevel": 11,
+          "amount": 0.25
+        }
+      ]
+    }
+  },
   "researchCostsCoin": {
     "unlockSeed:sageSeed": 0,
     "unlockSeed:mintSeed": 0,

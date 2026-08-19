@@ -46,10 +46,21 @@ import {
   gardenBulkResearchLevels,
 } from '../../garden/gardenBulkResearch.js';
 import {
+  applyItemTimerResearchReduction,
   getItemTimerResearchMaxLevel,
+  getItemTimerResearchDurationSeconds,
   itemTimerResearchIds,
   itemTimerResearchStepPercent,
 } from '../itemTimerResearch.js';
+import {
+  getManaGenerationResearchIncrease,
+  getManaGenerationThroughPlayerLevel,
+  getManaResearchRank,
+  manaResearchFirstPlayerLevel,
+  manaResearchIds,
+  manaResearchMaxPlayerLevel,
+  manaResearchSeriesIds,
+} from '../manaResearch.js';
 
 const summonSeedResearches = [
   {
@@ -258,14 +269,14 @@ export class ResearchDefinitionManager {
   getRegularResearchBoxes({ includeHiddenRecipeUnlocks = false } = {}) {
     const boxes = [
       {
-        id: 'seedUnlocks',
-        label: 'seed unlock researches',
-        researches: this.getSeedUnlockResearches(),
+        id: 'manaSphere',
+        label: 'mana sphere research',
+        researches: this.getManaResearches(),
       },
       {
-        id: 'herbGrowthMastery',
-        label: 'herb growing mastery',
-        researches: this.getHerbGrowthResearches(),
+        id: 'seedUnlocks',
+        label: 'seed research',
+        researches: this.getSeedResearches(),
       },
       {
         id: 'summonSeeds',
@@ -301,17 +312,56 @@ export class ResearchDefinitionManager {
     if (includeHiddenRecipeUnlocks || this.areRecipeUnlocksVisible()) {
       boxes.push({
         id: 'recipeUnlocks',
-        label: 'recipe unlocks research',
-        researches: this.getRecipeUnlockResearches(),
-      });
-      boxes.push({
-        id: 'potionBrewingMastery',
-        label: 'potion brewing mastery',
-        researches: this.getPotionBrewingResearches(),
+        label: 'potion research',
+        researches: this.getPotionResearches(),
       });
     }
 
     return boxes;
+  }
+
+  getManaResearches() {
+    const capacityResearches = [];
+    const generationResearches = [];
+
+    for (
+      let playerLevel = manaResearchFirstPlayerLevel;
+      playerLevel <= manaResearchMaxPlayerLevel;
+      playerLevel += 1
+    ) {
+      const rank = getManaResearchRank(playerLevel);
+      const previousPlayerLevel = playerLevel - 1;
+      const generationIncrease = getManaGenerationResearchIncrease(playerLevel);
+      const previousGeneration = getManaGenerationThroughPlayerLevel(previousPlayerLevel);
+      const nextGeneration = getManaGenerationThroughPlayerLevel(playerLevel);
+
+      capacityResearches.push({
+        id: manaResearchIds.capacity(playerLevel),
+        label: `mana capacity lvl ${playerLevel}`,
+        displayName: 'mana capacity',
+        value: '+50 mana',
+        showEffect: true,
+        seriesId: manaResearchSeriesIds.capacity,
+        requiredPlayerLevel: playerLevel,
+        requiredResearchIds:
+          rank > 1 ? [manaResearchIds.capacity(previousPlayerLevel)] : [],
+        description: `increases mana capacity from ${50 + (rank - 1) * 50} to ${50 + rank * 50}.`,
+      });
+      generationResearches.push({
+        id: manaResearchIds.generation(playerLevel),
+        label: `mana generation lvl ${playerLevel}`,
+        displayName: 'mana generation',
+        value: `+${generationIncrease}/sec`,
+        showEffect: true,
+        seriesId: manaResearchSeriesIds.generation,
+        requiredPlayerLevel: playerLevel,
+        requiredResearchIds:
+          rank > 1 ? [manaResearchIds.generation(previousPlayerLevel)] : [],
+        description: `increases mana generation from ${previousGeneration}/sec to ${nextGeneration}/sec.`,
+      });
+    }
+
+    return [...capacityResearches, ...generationResearches];
   }
 
   areRecipeUnlocksVisible() {
@@ -378,19 +428,42 @@ export class ResearchDefinitionManager {
   }
 
   getHerbGrowthResearches() {
-    return this.itemsFacade.getHerbDefinitions().flatMap((herb, catalogIndex) =>
+    return this.itemsFacade.getHerbDefinitions().flatMap((herb) =>
       this.getItemTimerResearches({
         item: herb,
-        maxLevel: getItemTimerResearchMaxLevel(catalogIndex),
+        maxLevel: getItemTimerResearchMaxLevel(),
         getId: itemTimerResearchIds.herbGrowth,
         seriesId: `timer:herbGrowth:${herb.key}`,
         firstRequiredResearchIds: [
           `unlockSeed:${herb.key.replace(/Herb$/, 'Seed')}`,
         ],
         displayName: `${herb.label} growing`,
-        description: `reduces ${herb.label} growing time by 5%.`,
+        durationMs: herb.growthDurationMs,
       }),
     );
+  }
+
+  getSeedResearches() {
+    const unlockResearchBySeedKey = new Map(
+      this.getSeedUnlockResearches().map((research) => [
+        research.id.slice('unlockSeed:'.length),
+        research,
+      ]),
+    );
+    const growthResearchBySeedKey = new Map();
+    for (const research of this.getHerbGrowthResearches()) {
+      const seedKey = research.itemKey.replace(/Herb$/, 'Seed');
+      const seedResearches = growthResearchBySeedKey.get(seedKey) ?? [];
+      seedResearches.push(research);
+      growthResearchBySeedKey.set(seedKey, seedResearches);
+    }
+
+    return this.itemsFacade.getSeedDefinitions().flatMap((seed) => [
+      ...(unlockResearchBySeedKey.has(seed.key)
+        ? [unlockResearchBySeedKey.get(seed.key)]
+        : []),
+      ...(growthResearchBySeedKey.get(seed.key) ?? []),
+    ]);
   }
 
   getRecipeUnlockResearches() {
@@ -417,24 +490,46 @@ export class ResearchDefinitionManager {
 
   getPotionBrewingResearches() {
     return this.getPotionTimerDefinitionsInResearchOrder().flatMap(
-      (potion, catalogIndex) => {
+      (potion) => {
         const discoveredByCurrentPlayer =
           this.isDiscoveredRecipe(potion) &&
           this.potionDiscoveryFacade?.isDiscoveredByCurrentPlayer?.(potion.key) === true;
 
         return this.getItemTimerResearches({
           item: potion,
-          maxLevel: getItemTimerResearchMaxLevel(catalogIndex),
+          maxLevel: getItemTimerResearchMaxLevel(),
           getId: itemTimerResearchIds.potionBrewing,
           seriesId: `timer:potionBrewing:${potion.key}`,
           firstRequiredResearchIds: discoveredByCurrentPlayer
             ? []
             : [`unlockRecipe:${potion.key}`],
           displayName: `${potion.label} brewing`,
-          description: `reduces ${potion.label} brewing time by 5%.`,
+          durationMs: this.itemsFacade.getPotionRecipe(potion.key).brewDurationMs,
         });
       },
     );
+  }
+
+  getPotionResearches() {
+    const unlockResearchByPotionKey = new Map(
+      this.getRecipeUnlockResearches().map((research) => [
+        research.id.slice('unlockRecipe:'.length),
+        research,
+      ]),
+    );
+    const brewingResearchByPotionKey = new Map();
+    for (const research of this.getPotionBrewingResearches()) {
+      const potionResearches = brewingResearchByPotionKey.get(research.itemKey) ?? [];
+      potionResearches.push(research);
+      brewingResearchByPotionKey.set(research.itemKey, potionResearches);
+    }
+
+    return this.getPotionTimerDefinitionsInResearchOrder().flatMap((potion) => [
+      ...(unlockResearchByPotionKey.has(potion.key)
+        ? [unlockResearchByPotionKey.get(potion.key)]
+        : []),
+      ...(brewingResearchByPotionKey.get(potion.key) ?? []),
+    ]);
   }
 
   getItemTimerResearches({
@@ -444,12 +539,23 @@ export class ResearchDefinitionManager {
     seriesId,
     firstRequiredResearchIds,
     displayName,
-    description,
+    durationMs,
   }) {
     return Array.from({ length: maxLevel }, (_value, index) => {
       const level = index + 1;
+      const currentDurationMs = applyItemTimerResearchReduction(
+        durationMs,
+        level - 1,
+        maxLevel,
+      );
+      const nextDurationMs = applyItemTimerResearchReduction(
+        durationMs,
+        level,
+        maxLevel,
+      );
       return {
         id: getId(item.key, level),
+        durationSeconds: getItemTimerResearchDurationSeconds(durationMs, level),
         label: `${displayName} lvl ${level}`,
         displayName,
         value: `-${itemTimerResearchStepPercent}% time`,
@@ -459,9 +565,10 @@ export class ResearchDefinitionManager {
         seriesId,
         itemKind: item.kind,
         itemKey: item.key,
+        artExtraKey: 'timerReduction',
         requiredResearchIds:
           level > 1 ? [getId(item.key, level - 1)] : firstRequiredResearchIds,
-        description,
+        description: `reduces ${displayName} time from ${formatItemTimerDuration(currentDurationMs)} to ${formatItemTimerDuration(nextDurationMs)}.`,
       };
     });
   }
@@ -514,7 +621,7 @@ export class ResearchDefinitionManager {
         .map((potion) => `unlockRecipe:${potion.key}`),
       ...this.itemsFacade.getUnknownPotionDefinitions().flatMap((potion) =>
         Array.from(
-          { length: getItemTimerResearchMaxLevel(Number.MAX_SAFE_INTEGER) },
+          { length: getItemTimerResearchMaxLevel() },
           (_value, index) =>
             itemTimerResearchIds.potionBrewing(potion.key, index + 1),
         ),
@@ -522,20 +629,12 @@ export class ResearchDefinitionManager {
     ];
   }
 
-  getHerbGrowthResearchMaxLevel(herbKey) {
-    const index = this.itemsFacade
-      .getHerbDefinitions()
-      .findIndex((herb) => herb.key === herbKey);
-    return getItemTimerResearchMaxLevel(index < 0 ? Number.MAX_SAFE_INTEGER : index);
+  getHerbGrowthResearchMaxLevel() {
+    return getItemTimerResearchMaxLevel();
   }
 
-  getPotionBrewingResearchMaxLevel(potionKey) {
-    const allPotions = [
-      ...this.itemsFacade.getRecipePotionDefinitions(),
-      ...this.itemsFacade.getUnknownPotionDefinitions(),
-    ];
-    const index = allPotions.findIndex((potion) => potion.key === potionKey);
-    return getItemTimerResearchMaxLevel(index < 0 ? Number.MAX_SAFE_INTEGER : index);
+  getPotionBrewingResearchMaxLevel() {
+    return getItemTimerResearchMaxLevel();
   }
 
   hasPersistentResearch(researchId) {
@@ -1231,4 +1330,17 @@ export class ResearchDefinitionManager {
       completedIds.has(requiredResearchId),
     );
   }
+}
+
+function formatItemTimerDuration(durationMs) {
+  const totalSeconds = Math.round(Math.max(0, Number(durationMs) || 0) / 10) / 100;
+
+  if (totalSeconds < 60) {
+    return `${totalSeconds}s`;
+  }
+
+  const minutes = Math.floor(totalSeconds / 60);
+  const seconds = Math.round((totalSeconds - minutes * 60) * 100) / 100;
+
+  return seconds > 0 ? `${minutes}m ${seconds}s` : `${minutes}m`;
 }

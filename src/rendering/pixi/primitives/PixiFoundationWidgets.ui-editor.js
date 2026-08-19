@@ -417,7 +417,7 @@ export default [
     sectionId: FOUNDATION_SECTION,
     properties: [
       { label: 'Production class', value: 'PixiBottomPanelView' },
-      { label: 'Default tabs', value: 'Brewing, Garden, Workshop, Research, Market' },
+      { label: 'Default tabs', value: 'Brewing, Garden, Workshop, Market, Research' },
     ],
     usages: [
       {
@@ -856,7 +856,7 @@ async function mountBottomRoomTabs(context, fixture) {
       selectControl('page', 'Selected room', () => state.currentPageId, (value) => {
         state.currentPageId = value;
         refresh();
-      }, ['brewing', 'garden', 'workshop', 'research', 'shop', 'guild', 'prestige']),
+      }, ['brewing', 'garden', 'workshop', 'shop', 'research', 'guild', 'prestige']),
       selectControl('hud-mode', 'HUD mode', () => state.hudMode, (value) => {
         state.hudMode = value;
         state.currentPageId = ['guild', 'prestige'].includes(value)
@@ -876,7 +876,7 @@ async function mountBottomRoomTabs(context, fixture) {
   };
 
   function bottomPanelModel() {
-    const ids = ['brewing', 'garden', 'workshop', 'research', 'shop'];
+    const ids = ['brewing', 'garden', 'workshop', 'shop', 'research'];
     return {
       actions: {
         showPage: (pageId) => {
@@ -1309,7 +1309,7 @@ function createBottomRoomTabsThumbnail() {
       view.bind({
         currentPageId: 'workshop',
         notifications: {},
-        pages: ['brewing', 'garden', 'workshop', 'research', 'shop'].map((id) => ({ id, unlocked: true, visible: true })),
+        pages: ['brewing', 'garden', 'workshop', 'shop', 'research'].map((id) => ({ id, unlocked: true, visible: true })),
         reveal: { rooms: true },
       });
       view.activate();

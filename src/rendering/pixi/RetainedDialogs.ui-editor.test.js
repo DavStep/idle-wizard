@@ -694,7 +694,7 @@ describe('retained dialog UI editor integrations', () => {
       'function',
     );
     expect(worldEventQuestRowIntegration.scenarios.map(({ id }) => id)).toEqual(
-      ['available', 'unavailable', 'completed'],
+      ['available', 'unavailable'],
     );
     expect(dialogIntegration.scenarios.map(({ id }) => id)).toEqual([
       'quests',

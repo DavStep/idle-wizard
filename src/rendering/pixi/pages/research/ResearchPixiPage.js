@@ -295,6 +295,8 @@ export const RESEARCH_PIXI_GEOMETRY = Object.freeze({
   artHeight: 52,
   artworkSize: 57,
   seedArtworkSize: 46,
+  artExtraWidth: 22,
+  artExtraHeight: 29,
   nameX: 10,
   nameY: 0,
   nameMaxWidth: 225,
@@ -311,7 +313,7 @@ export const RESEARCH_PIXI_GEOMETRY = Object.freeze({
   actionHeight: 64,
   costWidth: 72,
   costHeight: 42,
-  progressBottom: 7,
+  progressBottom: 9,
   progressHeight: PIXI_UI_GEOMETRY.progressTotalHeight,
 });
 
@@ -328,6 +330,7 @@ export const RESEARCH_ROW_TEXT = Object.freeze({
   researchingLineHeight: 11,
   researchingTimerFontSize: 9,
   researchingTimerLineHeight: 10,
+  researchingTimerOffsetY: -2,
   buttonStrokeWidth: 3.5,
   costContentScale: 0.88,
 });
@@ -1032,6 +1035,7 @@ export class ResearchBoxWidget {
       : false;
     this.visibilityButton.visible = this.hasCompletedResearch === true;
     this.visibilityButton.renderable = this.hasCompletedResearch === true;
+    this.visibilityButton.setEnabled(this.hasCompletedResearch === true);
     this.visibilityIcon.alpha = showing ? 1 : 0.45;
     this.visibilityButton.alpha = showing ? 1 : 0.72;
   }
@@ -1363,6 +1367,11 @@ export class ResearchRowWidget {
       label: 'research-row-art-overlay',
       roundPixels: true,
     });
+    this.artExtra = new Sprite({
+      texture: Texture.EMPTY,
+      label: 'research-row-art-extra',
+      roundPixels: true,
+    });
     this.name = createText('', {
       fontSize: RESEARCH_ROW_TEXT.nameFontSize,
       lineHeight: RESEARCH_ROW_TEXT.nameLineHeight,
@@ -1439,6 +1448,7 @@ export class ResearchRowWidget {
       assetManager,
       label: 'research-row-progress',
       tone: 'yellow',
+      usePlayerStyle: false,
     });
     this.lockedOverlay = new PixiNineSliceFrame({
       texture: Texture.EMPTY,
@@ -1474,6 +1484,7 @@ export class ResearchRowWidget {
       this.artWell,
       this.art,
       this.artOverlay,
+      this.artExtra,
       this.name,
       this.nameStars,
       this.description,
@@ -1729,6 +1740,19 @@ export class ResearchRowWidget {
       this.artOverlay.height = 0;
       this.artOverlay.rotation = 0;
     }
+    if (this.artExtra.visible) {
+      this.artExtra.anchor.set(0.5);
+      this.artExtra.position.set(
+        geometry.artX + geometry.artWidth - geometry.artExtraWidth / 2,
+        geometry.artY + geometry.contentOffsetY + geometry.artHeight -
+          geometry.artExtraHeight / 2,
+      );
+      this.artExtra.width = geometry.artExtraWidth;
+      this.artExtra.height = geometry.artExtraHeight;
+    } else {
+      this.artExtra.width = 0;
+      this.artExtra.height = 0;
+    }
     this.name.position.set(
       geometry.nameX,
       geometry.nameY + geometry.contentOffsetY,
@@ -1937,14 +1961,7 @@ export class ResearchRowWidget {
     const { remainingMs } = this.progress.updateTimer(
       finiteOr(now, this.timeSource()),
     );
-    this.researchedButton.setModel({
-      amountLabel: this.formatInProgressButtonLabel(this.research),
-      resource: 'none',
-      enabled: false,
-      action: null,
-    });
     this.setResearchingTimer(formatRemainingTime(remainingMs));
-    this.styleStatusButton();
   }
 
   formatInProgressButtonLabel(research) {
@@ -1954,10 +1971,21 @@ export class ResearchRowWidget {
   }
 
   setResearchingTimer(timer) {
-    this.researchingTimerLabel.setText(timer);
-    const visible = Boolean(String(timer ?? '').trim());
+    const text = String(timer ?? '');
+    const visible = Boolean(text.trim());
+    if (
+      this.researchingTimerLabel.text === text &&
+      this.researchingTimerLabel.visible === visible &&
+      this.researchingTimerLabel.renderable === visible
+    ) {
+      return false;
+    }
+    if (this.researchingTimerLabel.text !== text) {
+      this.researchingTimerLabel.setText(text);
+    }
     this.researchingTimerLabel.visible = visible;
     this.researchingTimerLabel.renderable = visible;
+    return true;
   }
 
   styleStatusButton() {
@@ -1984,7 +2012,8 @@ export class ResearchRowWidget {
       });
     this.researchingTimerLabel.position.set(
       this.researchedButton.buttonWidth / 2,
-      this.researchedButton.buttonHeight * 0.68,
+      this.researchedButton.buttonHeight * 0.68 +
+        RESEARCH_ROW_TEXT.researchingTimerOffsetY,
     );
     this.researchingTimerLabel.visible =
       inProgress && Boolean(this.researchingTimerLabel.text);
@@ -2011,6 +2040,8 @@ export class ResearchRowWidget {
     );
     this.art.filters = null;
     this.art.tint = 0xffffff;
+    this.artExtra.filters = null;
+    this.artExtra.tint = 0xffffff;
     this.lockedOverlay.setTexture(
       this.resolveTexture(PIXI_ROOT_RUN_ASSETS.researchCard),
       CARD_SOURCE_INSETS,
@@ -2113,6 +2144,9 @@ export class ResearchRowWidget {
     this.artOverlay.visible = false;
     this.artOverlay.renderable = false;
     this.artOverlay.rotation = 0;
+    this.artExtra.texture = this.resolveTexture(research?.artExtraAssetId);
+    this.artExtra.visible = this.artExtra.texture !== Texture.EMPTY;
+    this.artExtra.renderable = this.artExtra.visible;
 
     if (this.usesSeedPackArtwork) {
       bindPixiSeedPackIcon({

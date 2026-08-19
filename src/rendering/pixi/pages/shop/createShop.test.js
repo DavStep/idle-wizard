@@ -378,7 +378,7 @@ describe('createShop', () => {
     ]);
   });
 
-  it('projects Title Case player-market filters and applies all three criteria', () => {
+  it('keeps the Player Market filter section visible and applies all three criteria', () => {
     const uiActions = {
       applyMarketFilters: vi.fn(),
       clearMarketFilters: vi.fn(),
@@ -422,7 +422,7 @@ describe('createShop', () => {
       actions: { ui: uiActions },
       uiState: {
         marketBrowseTab: 'selling',
-        marketFiltersOpen: true,
+        marketFiltersOpen: false,
         marketFilterDraft: {
           item: 'sage',
           minPrice: '6',
@@ -456,10 +456,12 @@ describe('createShop', () => {
     expect(market.items).toMatchObject([
       {
         id: 'sage-mira',
-        indexLabel: '1.',
-        itemLabel: 'Sage Seed (2) · mira',
+        username: 'mira',
+        itemLabel: 'Sage Seed',
+        quantityLabel: 'x2',
         priceLabel: '8 coin',
         valueResourceKey: 'coin',
+        actionLabel: 'Buy',
       },
     ]);
 
@@ -473,6 +475,81 @@ describe('createShop', () => {
     market.tabs[1].action();
     expect(uiActions.selectMarketBrowseTab).toHaveBeenCalledWith(
       'buying',
+    );
+  });
+
+  it('projects a selected offer into a seller section and quantity-based Buy dialog', () => {
+    const setMarketBuyQuantity = vi.fn();
+    const confirmMarketBuy = vi.fn();
+    const model = createShop({
+      gameplaySnapshot: { coin: { current: 100 } },
+      playerInfoSnapshot: {
+        players: [
+          {
+            identity: 'seller-1',
+            username: 'Mira',
+            allianceName: 'Night Owls',
+            allianceTag: 'OWL',
+            allianceTagColor: 'violet',
+            character: 'mira',
+            frame: 'violet',
+          },
+        ],
+      },
+      playerShopSnapshot: {
+        connected: true,
+        listings: [
+          {
+            listingKey: 'listing-1',
+            sellerIdentity: 'seller-1',
+            username: 'Mira',
+            itemKey: 'sageSeed',
+            itemLabel: 'sage seed',
+            itemKind: 'seed',
+            quantity: 12,
+            priceCoin: 8,
+          },
+        ],
+      },
+      actions: {
+        ui: { confirmMarketBuy, setMarketBuyQuantity },
+      },
+      uiState: {
+        marketBuyListingKey: 'listing-1',
+        marketBuyQuantity: 3,
+      },
+    });
+
+    expect(model.shop.dialogs.market.items[0]).toMatchObject({
+      username: 'Mira',
+      allianceTag: 'OWL',
+      character: 'mira',
+      frame: 'violet',
+      actionLabel: 'Buy',
+    });
+    expect(model.shop.dialogs.buy).toMatchObject({
+      title: 'Buy Offer',
+      seller: {
+        username: 'Mira',
+        allianceTag: 'OWL',
+        detail: 'Night Owls',
+      },
+      featuredItem: {
+        label: 'Sage Seed',
+        detail: 'Buying x3',
+        quantityLabel: 'x3',
+      },
+      range: { min: 1, max: 12, value: 3 },
+      totalLabel: '24 coin',
+      actions: [{ id: 'buy', label: 'Buy', enabled: true }],
+    });
+
+    model.shop.dialogs.buy.range.onChange(5);
+    expect(setMarketBuyQuantity).toHaveBeenCalledWith(5);
+    model.shop.dialogs.buy.actions[0].action();
+    expect(confirmMarketBuy).toHaveBeenCalledWith(
+      expect.objectContaining({ listingKey: 'listing-1' }),
+      3,
     );
   });
 

@@ -109,9 +109,11 @@ Open `/src/dev/uiRecipes/garden-seed-picker.html` for the deterministic,
 non-persistent four-row visual-reference state.
 Open `/src/dev/uiRecipes/garden-plots.html` for the deterministic,
 non-persistent empty-plot state used to verify label removal and the `no seed`
-press flyout. Add `?overflow=1` for the valid 12-plot state used to verify
-vertical drag, wheel scrolling, the overflow-only scrollbar, and hard resting
-bounds. Add `?growing=1&progress=gradient` for the four-growing-plot regression
+press flyout. Add `?planting=1` to make empty plots accept the selected seed
+and replay the production planted-tile seed-pack flyout. Add `?overflow=1` for
+the valid 12-plot state used to verify vertical drag, wheel scrolling, the
+overflow-only scrollbar, and hard resting bounds. Add
+`?growing=1&progress=gradient` for the four-growing-plot regression
 state that verifies Garden timer rails keep their green role color even when
 the player-wide progress style is gradient. The default recipe shows both
 researched bulk actions with a selected Nettle seed; use `?bulk=plant` for the

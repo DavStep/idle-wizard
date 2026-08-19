@@ -13,6 +13,7 @@ import { stallStaffingResearchIds } from '../stallStaffingResearch.js';
 import { gardenBulkResearchIds } from '../../garden/gardenBulkResearch.js';
 import { discoveredPotionResearchCostGoldByKey } from '../../../../spacetimedb/src/discoveredPotionResearch.ts';
 import { itemTimerResearchIds } from '../itemTimerResearch.js';
+import { manaResearchIds } from '../manaResearch.js';
 
 describe('ResearchBalanceManager', () => {
   it('caps research durations at four hours', () => {
@@ -72,8 +73,15 @@ describe('ResearchBalanceManager', () => {
     expect(manager.getDurationSeconds('unlockRecipe:pearlrootDraught')).toBe(14_400);
     expect(manager.getDurationSeconds('unlockRecipe:ashenMemory')).toBe(0);
     expect(
-      manager.getDurationSeconds(itemTimerResearchIds.herbGrowth('sageHerb', 1)),
-    ).toBe(5);
+      manager.getDurationSeconds(itemTimerResearchIds.herbGrowth('sageHerb', 1), {
+        defaultDurationSeconds: 12,
+      }),
+    ).toBe(12);
+    expect(
+      manager.getDurationSeconds(itemTimerResearchIds.herbGrowth('pearlrootHerb', 19), {
+        defaultDurationSeconds: 18_278,
+      }),
+    ).toBe(18_278);
     expect(
       manager.getCost(itemTimerResearchIds.herbGrowth('sageHerb', 2)),
     ).toEqual({ amount: 38, currency: 'coin' });
@@ -122,6 +130,29 @@ describe('ResearchBalanceManager', () => {
     expect(manager.getCost(advancedResearchIds.cauldronBrewing(5, 1))).toEqual({
       amount: 1,
       currency: 'emerald',
+    });
+  });
+
+  it('prices mana upgrades as short coin research with their gameplay effects', () => {
+    const manager = new ResearchBalanceManager();
+
+    expect(manager.getCost(manaResearchIds.capacity(17))).toEqual({
+      amount: 30_000,
+      currency: 'coin',
+    });
+    expect(manager.getCost(manaResearchIds.generation(17))).toEqual({
+      amount: 45_000,
+      currency: 'coin',
+    });
+    expect(manager.getDurationSeconds(manaResearchIds.capacity(17))).toBe(5);
+    expect(manager.getDurationSeconds(manaResearchIds.generation(17))).toBe(5);
+    expect(manager.getResearchEffect(manaResearchIds.capacity(17))).toEqual({
+      type: 'manaCap',
+      amount: 50,
+    });
+    expect(manager.getResearchEffect(manaResearchIds.generation(17))).toEqual({
+      type: 'manaPerSecond',
+      amount: 0.25,
     });
   });
 

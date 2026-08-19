@@ -26,6 +26,7 @@ function createLifecycle({
   pagesFacade,
   playerFacade,
   reload,
+  soundSettingsFacade,
 } = {}) {
   const root = document.createElement('div');
   const shell = document.createElement('main');
@@ -164,6 +165,7 @@ function createLifecycle({
       }),
       unmount: vi.fn(),
     },
+    soundSettingsFacade,
     deployRefreshManager: {
       mount: vi.fn(),
       unmount: vi.fn(),
@@ -370,6 +372,24 @@ describe('AppLifecycleManager', () => {
     expect(lifecycle.renderFacade.stopFrameLoop).toHaveBeenCalledTimes(1);
     expect(lifecycle.gameplayTickManager.start).toHaveBeenCalledTimes(2);
     expect(lifecycle.backendFacade.start).toHaveBeenCalledTimes(1);
+  });
+
+  it('gates audio from the native app lifecycle even when document visibility does not change', async () => {
+    const soundSettingsFacade = { setAppActive: vi.fn() };
+    const { lifecycle, hideApp, showApp } = createLifecycle({
+      soundSettingsFacade,
+    });
+
+    lifecycle.start();
+    await flushPromises();
+    hideApp();
+    showApp();
+
+    expect(soundSettingsFacade.setAppActive.mock.calls).toEqual([
+      [true],
+      [false],
+      [true],
+    ]);
   });
 
   it('applies hidden-time catch-up before restarting the frame loop', async () => {

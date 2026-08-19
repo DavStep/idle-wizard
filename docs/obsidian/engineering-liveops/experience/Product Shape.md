@@ -99,7 +99,7 @@ experience_type: product-shape
 - Level requirements can be typed action rows; only `turnIn` consumes inventory, while `research`, `summon`, `grow`, `brew`, and `sell` progress from gameplay events and auto-complete at target.
 - Backend task config normalization can reset stored legacy `game_config.tasks` rows to the embedded default; changing default task JSON can immediately rebalance existing players after backend publish.
 - Level requirement pacing should be sawtooth by decade: early relief after each wall, steady middle build, hard level 9, and boss/wall level 10.
-- Room navigation order is `Brewing -> Garden -> Workshop -> Research -> Market`; Workshop stays the default page. The internal page id is `shop`.
+- Room navigation order is `Brewing -> Garden -> Workshop -> Market -> Research`; Workshop stays the default page. The internal Market page id is `shop`.
 - Market has no `PageUnlockManager` requirement; gate market-only subscriptions on current page visibility, not unlock state.
 - Show all five room pages in a shared bottom tab panel; keep tab font weight stable and use the selected frame for the current page.
 - Bottom panel wrapper transparency needs a late `.style-panel.room-bottom-panel` reset after themed frame rules; leave the tab buttons to own their surfaces.
@@ -127,8 +127,8 @@ experience_type: product-shape
 - Weekly event v1 should stay mostly solo; no new combat mode, map mode, event-only economy, or mandatory weekly power gate.
 - Weekly event resolution should avoid hard fail: the world resolves, and player contribution changes weak/decent/strong outcome text plus archive/history flavor.
 - Weekly event requests should grant contribution points, not immediate completion rewards; leaderboard rewards require 2000 points to qualify.
-- Weekly event request completion caps visible progress/response only; matching actions keep adding contribution points after completion.
-- World event donation options stay navigable after completion and at zero owned quantity; the picker shows the shortage and gates only its final confirmation.
+- Weekly event donation requests have no per-request goal or completion state; every accepted donation adds leaderboard points for the full event duration.
+- World event donation options stay navigable at zero owned quantity; the picker shows the shortage and gates only its final confirmation.
 - Weekly event tasks have no contribution limit; show accumulated contribution like `earned 175 coin`, never `25/50`, remaining, or capped target copy.
 - Weekly event task labels should start with the literal counted action (`earn coin`, `sell items`, `complete research`) before event flavor; flavor-only labels read like hidden mechanics.
 - Weekly event task titles use the normal HUD title treatment; reserve semantic color/icons for resources, progress, action roles, selection, and notifications.
@@ -350,7 +350,7 @@ experience_type: product-shape
 - Cauldron star display starts at 0 stars; the first cauldron level-up costs 2 crystal and displays 1 star while the internal brew multiplier becomes 2.
 - Plot and cauldron star UI should render `level - 1` upgrade stars; unupgraded multiplier level 1 is 0 filled stars with three empty slots.
 - SpacetimeDB task runtime config can still expose legacy `completionCostGold` or `completionCostCoin`; normalize either into `coinBudget` for daily/world scaling and never expose it as a level-up price.
-- Player-level mana progression is mirrored in frontend defaults and SpacetimeDB default/validator/backfill; update all three when changing the regen curve.
+- Mana progression is regular coin research, mirrored in frontend definitions, balance simulation, and the SpacetimeDB research catalog/defaults; keep its rank effects, price curve, prerequisites, and level gates aligned across those paths.
 - Crystal plot/cauldron upgrades should read as `level up` / `lvl N` in player UI; keep legacy internal research ids if needed, but do not present them as ordinary research.
 - Expandable room-box collapse should use a measured wrapper height; `grid-template-rows` collapse snapped instantly in in-app browser QA.
 - Workshop summon button text must overlay the summon circle, not stack below it; stacking drops the label into the secondary action row.

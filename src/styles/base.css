@@ -215,7 +215,7 @@
   --style-progress-root-edge: #bd72f3;
   --style-progress-blue-fill: #2d8fe6;
   --style-progress-blue-edge: #72c8ff;
-  --style-progress-green-fill: #4aa83f;
+  --style-progress-green-fill: #99bb46;
   --style-progress-green-edge: #8bdc69;
   --style-progress-yellow-fill: #f5c542;
   --style-progress-yellow-edge: #ffee7d;
@@ -11054,7 +11054,23 @@ div.workshop-page__discovery-row {
   height: 46px;
 }
 
+.research-page__research-art-extra {
+  position: absolute;
+  right: 0;
+  bottom: 0;
+  display: block;
+  width: 22px;
+  height: 29px;
+  object-fit: contain;
+  pointer-events: none;
+}
+
 .research-page__row.is-locked .research-page__research-art-image {
+  filter: none;
+  opacity: 1;
+}
+
+.research-page__row.is-locked .research-page__research-art-extra {
   filter: none;
   opacity: 1;
 }

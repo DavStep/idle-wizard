@@ -25,7 +25,7 @@ export default defineUiEditorIntegration({
     },
     {
       label: 'Contract',
-      value: 'Disclosure row with a color-coded weight button and button-only press motion',
+      value: 'Passive seed row with a color-coded button-only disclosure target',
     },
   ],
   scenarios: [

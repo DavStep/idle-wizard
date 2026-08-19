@@ -403,6 +403,37 @@ describe('BackendFacade', () => {
     });
   });
 
+  it('stays offline when initial gameplay-save hydration times out', async () => {
+    const { backendFacade } = createBackendWithFakes();
+    const onGameplaySaveReady = vi.fn();
+    const onOffline = vi.fn();
+    const onOnline = vi.fn();
+    backendFacade.gameplaySaveFacade.connect.mockImplementation(
+      (_connection, _identity, { onReady } = {}) => {
+        onReady?.({ ok: false, reason: 'gameplay_save_timeout' });
+        return true;
+      },
+    );
+
+    await backendFacade.start({
+      gameplayFacade: {
+        consumeProgressResetPending: vi.fn(() => false),
+      },
+      playerFacade: {},
+      onGameplaySaveReady,
+      onOnline,
+      onOffline,
+    });
+    await flushPromises();
+
+    expect(onGameplaySaveReady).not.toHaveBeenCalled();
+    expect(onOnline).not.toHaveBeenCalled();
+    expect(onOffline).toHaveBeenCalledWith({
+      reason: 'gameplay_save_timeout',
+    });
+    expect(backendFacade.gameplaySaveFacade.disconnect).toHaveBeenCalledTimes(1);
+  });
+
   it('disconnects and reports offline when gameplay save sync gets stuck', async () => {
     const { backendFacade, getSyncUnhealthyHandler } = createBackendWithFakes();
     const onOffline = vi.fn();

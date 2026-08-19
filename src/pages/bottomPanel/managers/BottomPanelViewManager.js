@@ -16,8 +16,8 @@ export const BOTTOM_PANEL_TABS = [
   { id: 'brewing', label: 'Brewing' },
   { id: 'garden', label: 'Garden' },
   { id: 'workshop', label: 'Workshop' },
-  { id: 'research', label: 'Research' },
   { id: 'shop', label: 'Market' },
+  { id: 'research', label: 'Research' },
 ];
 
 export const OPTIONAL_BOTTOM_PANEL_TABS = [

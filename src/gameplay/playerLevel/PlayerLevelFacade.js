@@ -52,19 +52,6 @@ export class PlayerLevelFacade {
     return this.getEffects().maxPlayerMarketStands;
   }
 
-  getManaEffects() {
-    const { maxManaCap, manaPerSecond } = this.getEffects();
-    return { maxManaCap, manaPerSecond };
-  }
-
-  getMaxManaCap() {
-    return this.getEffects().maxManaCap;
-  }
-
-  getManaPerSecond() {
-    return this.getEffects().manaPerSecond;
-  }
-
   getCrystalRewardForLevel(levelNumber) {
     return this.playerLevelBalanceManager.getCrystalRewardForLevel(levelNumber);
   }

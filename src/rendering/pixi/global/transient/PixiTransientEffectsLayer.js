@@ -82,6 +82,7 @@ const ITEM_DROP_SIZES = Object.freeze({
   potion: 36,
 });
 const GARDEN_MAX_VISUAL_SEED_DROPS = 6;
+const GARDEN_SEED_DROP_SIZE = ITEM_DROP_SIZES.seed * 0.75;
 const REWARD_FLYOUT_VISUALS = Object.freeze({
   backgroundColor: 0x000000,
   backgroundAlpha: 0.62,
@@ -940,6 +941,7 @@ export function createRewardVisualPresentation(event) {
           seed: event.seed,
           index,
           anchorId: `garden.plot.${event.tileNumber}`,
+          size: GARDEN_SEED_DROP_SIZE,
         }),
       ),
     };
@@ -2044,6 +2046,7 @@ function createSeedDrop({
   seed,
   index,
   anchorId = 'workshop.summonArea',
+  size,
 }) {
   const itemFrameName = getSeedPackItemFrameName(seed);
   const textureModel = itemFrameName
@@ -2060,6 +2063,7 @@ function createSeedDrop({
     ...textureModel,
     anchorId,
     anchorYRatio: 0.5,
+    ...(Number.isFinite(size) ? { size } : {}),
   };
 }
 

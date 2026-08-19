@@ -11,7 +11,8 @@ experience_type: gameplay-economy
 
 # Experience: Gameplay Economy
 
-- Mana has generation and a cap; both progress through player-level rewards. The old mana research rows are removed.
+- Item timer mastery study durations must derive from the matching configured herb growth or potion brewing duration and mastery rank on both client and backend; never restore a flat shared duration fallback.
+- Mana has generation and a cap; both progress through separate sequential coin-research lanes gated by player level.
 - Cookie Clicker-like balance needs a compounding production spine; current Idle Wizard has prestige but still lacks random boost events, achievement multipliers, and producer-tier buy scaling.
 - Summoning seeds consumes mana.
 - Canonical seed display names use title case: Sage, Mint, Nettle, Lavender, Briar, Glowcap, Mandrake, Sunroot, Moonflower, Frostmoss, Dreambell, Star Anise, Bloodrose, Dragonpepper, Silverleaf, Yarrow, Hyssop, Valerian, Comfrey, Nightshade, Belladonna, Wormwood, Snowdrop, Pearlroot.
@@ -53,13 +54,13 @@ experience_type: gameplay-economy
 - Research timers are capped at `4 hours`; premium-currency research is intentionally quick.
 - Emerald research time reduction applies only when starting future research; it does not rewrite active timers.
 - Crystal plot/cauldron level-up prices are upgrade-rank based, not slot based: first level-up costs 2 crystal, second costs 4, for any plot/cauldron.
-- Mana production and cap are level rewards only; mana sphere research rows were removed, and each level gives the old research step values (+50 cap, +1/sec).
+- Mana Sphere research has one capacity and one generation rank per player level from 2 through 100. Capacity always adds `50`; generation preserves the former curve (`+1/sec` through level 5, `+0.5/sec` through 10, then `+0.25/sec`). Level 17 costs are `30k` capacity and `45k` generation, and later ranks rise toward `700m`/`1b` at level 100.
 - Seed/herb unlock research and recipe unlock research are catalog-ordered; each row requires the previous row before it can be bought.
 - `unlockSeed:sageSeed` costs `0` and displays as `free`; seed summoning stays locked until that research is completed.
 - Summon multiplier research is ordered `x2 -> x3 -> x4 -> x5`; each later multiplier requires the previous one.
 - `summonSeedsX2` through `summonSeedsX5` use the highest completed multiplier; summon cost and rolled seed count both scale from 10 mana.
 - Initial local gameplay defaults: mana cap `50`, mana generation `1/second`, seed summon cost `10`, and configured herb growth ranges from `12s` to `962s` across the 24-herb catalog.
-- Timer mastery stores only the live configured herb/recipe duration. Derive its uplift from the item's mastery-rank cap (`90 + 5 * ranks`) so full mastery ends 10% faster than the former balance without retaining a redundant legacy timer.
+- Every herb and potion timer-mastery series has 19 ranks. The reduction model therefore uses `185%` as its starting scale and reaches `90 / 185` of the configured production timer at full mastery.
 - Crystal is the hard currency; it appears in the top panel only where usable, player levels grant `playerLevel.crystal.perLevel` starting at level 1, and plot/cauldron multiplier research spends it.
 - Ruby is the prestige currency; it appears in the top panel only where usable, and automation research spends it.
 - Prestige ruby is derived from completed prestige milestones minus committed ruby automation research costs; save prestige milestone data and do not treat raw ruby as permanent across prestige resets.

@@ -140,10 +140,10 @@ describe('WorldNoticeFacade', () => {
     expect(snapshot.unlocked).toBe(true);
     expect(snapshot.current).toMatchObject({
       anchorLevel: 4,
-      completedRequests: 0,
-      totalRequests: WORLD_NOTICE_MAX_REQUESTS,
       responseLabel: 'small response',
     });
+    expect(snapshot.current).not.toHaveProperty('completedRequests');
+    expect(snapshot.current).not.toHaveProperty('totalRequests');
     expect(snapshot.current.headline).toBeTruthy();
     expect(snapshot.current.requests).toHaveLength(WORLD_NOTICE_MAX_REQUESTS);
     expect(snapshot.current.requests.every((request) => request.title)).toBe(true);
@@ -305,9 +305,12 @@ describe('WorldNoticeFacade', () => {
 
     expect(result.changed).toBe(true);
     expect(updatedRequest).toMatchObject({
-      progressQuantity: 360,
       contributionPoints: 360,
     });
+    expect(updatedRequest).not.toHaveProperty('requiredQuantity');
+    expect(updatedRequest).not.toHaveProperty('progressQuantity');
+    expect(updatedRequest).not.toHaveProperty('remainingQuantity');
+    expect(updatedRequest).not.toHaveProperty('completed');
     expect(updatedOption).toMatchObject({
       contributedQuantity: 2,
       contributionPoints: 360,
@@ -320,8 +323,8 @@ describe('WorldNoticeFacade', () => {
     expect(itemsFacade.getQuantity('briarWard')).toBe(1);
   });
 
-  it('continues adding donation points after the quest is complete', () => {
-    const { facade } = createFacade({ level: 4, coin: 1000 });
+  it('keeps donations uncapped without exposing a per-request goal', () => {
+    const { facade, coinFacade } = createFacade({ level: 4, coin: 2000 });
     const coinRequest = facade.getSnapshot().current.requests.find((request) =>
       request.donationOptions.some((option) => option.resourceType === 'coin'),
     );
@@ -329,10 +332,10 @@ describe('WorldNoticeFacade', () => {
       (candidate) => candidate.resourceType === 'coin',
     );
 
-    const completionResult = facade.donateResource(
+    const firstResult = facade.donateResource(
       coinRequest.requestId,
       option.optionKey,
-      coinRequest.requiredQuantity,
+      1000,
     );
     const extraResult = facade.donateResource(coinRequest.requestId, option.optionKey, 3);
     const updatedRequest = facade
@@ -345,12 +348,16 @@ describe('WorldNoticeFacade', () => {
       pointsAdded: 3,
     });
     expect(updatedRequest).toMatchObject({
-      completed: true,
-      progressQuantity: coinRequest.requiredQuantity,
-      contributionPoints: completionResult.pointsAdded + 3,
+      contributedQuantity: 1003,
+      contributionPoints: firstResult.pointsAdded + 3,
     });
+    expect(updatedRequest).not.toHaveProperty('requiredQuantity');
+    expect(updatedRequest).not.toHaveProperty('progressQuantity');
+    expect(updatedRequest).not.toHaveProperty('remainingQuantity');
+    expect(updatedRequest).not.toHaveProperty('completed');
+    expect(coinFacade.current).toBe(997);
     expect(facade.getSnapshot().current.leaderboard.currentPoints).toBe(
-      completionResult.pointsAdded + 3,
+      firstResult.pointsAdded + 3,
     );
   });
 
@@ -371,7 +378,7 @@ describe('WorldNoticeFacade', () => {
       donatedCoin: 1000,
       pointsAdded: 1000,
     });
-    expect(updatedRequest.completed).toBe(true);
+    expect(updatedRequest).not.toHaveProperty('completed');
     expect(updatedRequest.contributedQuantity).toBe(1000);
     expect(coinFacade.current).toBe(0);
   });
@@ -394,12 +401,13 @@ describe('WorldNoticeFacade', () => {
       pointsAdded: 250,
     });
     expect(updatedRequest).toMatchObject({
-      completed: false,
-      progressQuantity: 250,
       contributedQuantity: 250,
-      remainingQuantity: 650,
       maxDonateQuantity: 750,
     });
+    expect(updatedRequest).not.toHaveProperty('requiredQuantity');
+    expect(updatedRequest).not.toHaveProperty('progressQuantity');
+    expect(updatedRequest).not.toHaveProperty('remainingQuantity');
+    expect(updatedRequest).not.toHaveProperty('completed');
     expect(coinFacade.current).toBe(750);
     expect(facade.donateCoin(donateRequest.requestId, 0)).toMatchObject({
       ok: false,

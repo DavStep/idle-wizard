@@ -164,6 +164,7 @@ export class AppFacade {
       interactionLockManager: this.interactionLockManager,
       textClipboardGuardManager: this.textClipboardGuardManager,
       appVisibilityManager: new AppVisibilityManager({ appPlugin: CapacitorApp }),
+      soundSettingsFacade: this.soundSettingsFacade,
     });
     this.startPromise = null;
     this.disposed = false;

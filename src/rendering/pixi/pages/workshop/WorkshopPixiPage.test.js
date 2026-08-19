@@ -409,7 +409,7 @@ describe('WorkshopPixiPage', () => {
     harness.dispose();
   });
 
-  it('fills to the reached point and keeps the white shine without boinking the rail', () => {
+  it('lands the white shine before filling to the reached point without boinking the rail', () => {
     const motion = createWorkshopMotionHarness();
     const questCompletionMotionCoordinator =
       new QuestCompletionMotionCoordinator();
@@ -432,22 +432,29 @@ describe('WorkshopPixiPage', () => {
     progressedModel.workshop.tasks.rows[0].required = 3;
     harness.page.bind(progressedModel);
 
-    motion.runAt(110);
-    expect(outgoingRow.displayedProgress).toBeGreaterThan(0.5);
-    expect(outgoingRow.displayedProgress).toBeLessThan(2 / 3);
-    expect(outgoingRow.progressShineRoot.visible).toBe(false);
-    expect(outgoingRow.progress.root.scale.x).toBe(1);
-
-    motion.runAt(220);
-    expect(outgoingRow.displayedProgress).toBeCloseTo(2 / 3);
     expect(outgoingRow.progressShineRoot.visible).toBe(true);
     const initialShineX = outgoingRow.progressShine.x;
 
-    motion.runAt(370);
+    motion.runAt(150);
+    expect(outgoingRow.displayedProgress).toBe(0.5);
     expect(outgoingRow.progressShine.x).toBeGreaterThan(initialShineX);
     expect(outgoingRow.progress.root.scale.x).toBe(1);
 
-    motion.runAt(540);
+    motion.runAt(299);
+    expect(outgoingRow.displayedProgress).toBe(0.5);
+    expect(outgoingRow.progressShineRoot.visible).toBe(true);
+
+    motion.runAt(300);
+    expect(outgoingRow.displayedProgress).toBe(0.5);
+    expect(outgoingRow.progressShineRoot.visible).toBe(false);
+
+    motion.runAt(410);
+    expect(outgoingRow.displayedProgress).toBeGreaterThan(0.5);
+    expect(outgoingRow.displayedProgress).toBeLessThan(2 / 3);
+    expect(outgoingRow.progress.root.scale.x).toBe(1);
+
+    motion.runAt(520);
+    expect(outgoingRow.displayedProgress).toBeCloseTo(2 / 3);
     expect(outgoingRow.progressShineRoot.visible).toBe(false);
     expect(outgoingRow.progress.root.scale.x).toBe(1);
   });
@@ -486,10 +493,15 @@ describe('WorkshopPixiPage', () => {
     expect(harness.page.tasks.rows.get('request-2')).toBeNull();
 
     motion.runAt(260);
-    expect(outgoingRow.displayedProgress).toBe(1);
+    expect(outgoingRow.displayedProgress).toBe(0.5);
     expect(outgoingRow.progressShineRoot.visible).toBe(true);
 
+    motion.runAt(300);
+    expect(outgoingRow.displayedProgress).toBe(0.5);
+    expect(outgoingRow.progressShineRoot.visible).toBe(false);
+
     motion.runAt(560);
+    expect(outgoingRow.displayedProgress).toBe(1);
     expect(outgoingRow.progressShineRoot.visible).toBe(false);
     expect(outgoingRow.progress.root.scale.x).toBe(1);
 
@@ -1411,6 +1423,7 @@ describe('WorkshopPixiPage', () => {
         ...firstQuest,
         id: 'quest:seal',
         title: 'Protect The Seal',
+        completed: true,
         donationOptions: firstQuest.donationOptions.slice(0, 1).map(
           (option) => ({
             ...option,
@@ -1458,6 +1471,8 @@ describe('WorkshopPixiPage', () => {
       dialog.worldEventHeaderArt.width,
     );
     expect(dialog.rows.getWidgets()).toHaveLength(2);
+    expect(row.card.alpha).toBe(1);
+    expect(secondRow.card.alpha).toBe(1);
     expect(dialog.scroll.width).toBe(314);
     expect(row.width).toBe(314);
     expect(secondRow.width).toBe(314);
@@ -1854,6 +1869,11 @@ describe('WorkshopPixiPage', () => {
     expect(dialog.dropSettingsSlider.visible).toBe(false);
     const reserveRow = dialog.summaryRows.getWidgets().find((row) => row.key === 'reserve');
     let seedRows = dialog.list.rows.getWidgets();
+    expect(
+      seedRows.map((row) =>
+        Math.max(row.itemIcon.width, row.itemIcon.height),
+      ),
+    ).toEqual(seedRows.map(() => 32));
     expect(reserveRow.valueLabel.visible).toBe(false);
     expect(reserveRow.valueResource).toMatchObject({
       visible: true,
@@ -2006,8 +2026,16 @@ describe('WorkshopPixiPage', () => {
     harness.dispose();
   });
 
-  it('keeps row taps motionless and gives press feedback only to the preference button', () => {
-    const inputRouter = new PixiInputRouter();
+  it('keeps the seed row passive and routes press feedback through only its preference button', () => {
+    const hapticsFacade = { playUiTap: vi.fn() };
+    const uiClickSoundFacade = {
+      playClick: vi.fn(),
+      unlock: vi.fn(),
+    };
+    const inputRouter = new PixiInputRouter({
+      hapticsFacade,
+      uiClickSoundFacade,
+    });
     const harness = createHarness({
       inputRouter,
     });
@@ -2015,6 +2043,8 @@ describe('WorkshopPixiPage', () => {
     model.workshop.dialogs.summonInfo = createSummonInfoDialogModel({
       unlocked: true,
     });
+    model.workshop.dialogs.summonInfo.items[0].semanticId =
+      'workshop.summonInfo.seed.sageSeed';
 
     harness.page.bind(model);
     harness.page.openDialog('summonInfo');
@@ -2028,14 +2058,30 @@ describe('WorkshopPixiPage', () => {
       .getRegistrations('press')
       .find((candidate) => candidate.displayObject === row.preferenceButton);
 
-    expect(rowRegistration?.haptic).toBe('light');
-    rowRegistration.onPressChange(true, { confirmed: false });
-    expect(row.visual.scale.x).toBe(1);
+    expect(rowRegistration).toBeUndefined();
+    expect(row.root.cursor).toBe('default');
+    expect(
+      harness.semanticTargets.get(
+        'workshop.summonInfo.seed.sageSeed',
+      )?.displayObject,
+    ).toBe(row.preferenceButton);
     expect(row.background.alpha).toBe(1);
+    expect(row.visual.scale.x).toBe(1);
 
-    rowRegistration.onPressChange(false, { confirmed: true });
-    expect(row.background.alpha).toBe(1);
-    expect(row.visual.scale.x).toBe(1);
+    const rowBounds = row.root.getBounds();
+    const rowBodyPoint = {
+      x: rowBounds.x + 20,
+      y: rowBounds.y + rowBounds.height / 2,
+    };
+    inputRouter.onPointerDown(
+      createPointerEvent(row.root, 'pointerdown', rowBodyPoint),
+    );
+    inputRouter.onPointerUp(
+      createPointerEvent(row.root, 'pointerup', rowBodyPoint),
+    );
+    expect(hapticsFacade.playUiTap).not.toHaveBeenCalled();
+    expect(uiClickSoundFacade.playClick).not.toHaveBeenCalled();
+    expect(dialog.list.expandedKey).toBeNull();
 
     expect(buttonRegistration?.haptic()).toBe('light');
     buttonRegistration.onPressChange(true, { confirmed: false });
@@ -2370,7 +2416,71 @@ describe('WorkshopPixiPage', () => {
     harness.dispose();
   });
 
-  it('keeps a rapid seed-row tap valid while the previous disclosure settles', () => {
+  it('hides the seed slider before shrinking its row on collapse', () => {
+    const frames = [];
+    let frameId = 0;
+    const requestFrame = vi.fn((callback) => {
+      frames.push(callback);
+      frameId += 1;
+      return frameId;
+    });
+    const harness = createHarness({
+      requestFrame,
+      cancelFrame: vi.fn(),
+      reducedMotion: false,
+    });
+    const model = createWorkshopViewModel();
+    model.workshop.dialogs.summonInfo = createSummonInfoDialogModel({
+      unlocked: true,
+    });
+
+    harness.page.bind(model);
+    harness.page.openDialog('summonInfo');
+    const dialog = harness.dialogs.get('workshop.summonInfo');
+    const collapsedHeight = dialog.list.rows.getWidgets()[0].height;
+
+    dialog.list.rows.getWidgets()[0].action();
+    frames.shift()(0);
+    frames.shift()(240);
+    expect(dialog.list.rows.getWidgets()[0].height).toBe(
+      collapsedHeight + 31,
+    );
+
+    dialog.list.rows.getWidgets()[0].action();
+    frames.shift()(240);
+    frames.shift()(300);
+
+    expect(dialog.dropSettingsSlider.alpha).toBeGreaterThan(0);
+    expect(dialog.dropSettingsSlider.alpha).toBeLessThan(1);
+    expect(dialog.list.rows.getWidgets()[0].height).toBe(
+      collapsedHeight + 31,
+    );
+
+    frames.shift()(320);
+    expect(dialog.dropSettingsSlider.visible).toBe(false);
+    expect(dialog.list.rows.getWidgets()[0].height).toBe(
+      collapsedHeight + 31,
+    );
+
+    frames.shift()(400);
+    expect(dialog.dropSettingsSlider.visible).toBe(false);
+    expect(dialog.list.rows.getWidgets()[0].height).toBeGreaterThan(
+      collapsedHeight,
+    );
+    expect(dialog.list.rows.getWidgets()[0].height).toBeLessThan(
+      collapsedHeight + 31,
+    );
+
+    frames.shift()(480);
+    expect(dialog.dropSettingsSlider.visible).toBe(false);
+    expect(dialog.list.rows.getWidgets()[0].height).toBe(collapsedHeight);
+    expect(dialog.list.expandedKey).toBeNull();
+
+    harness.page.destroy();
+    harness.dispose();
+  });
+
+  it('keeps a rapid seed preference-button tap valid while the previous disclosure settles', () => {
     const frames = [];
     let frameId = 0;
     const requestFrame = vi.fn((callback) => {
@@ -2405,18 +2515,26 @@ describe('WorkshopPixiPage', () => {
     sageRow.action();
     frames.shift()(0);
 
-    const mintBounds = mintRow.root.getBounds();
+    const mintBounds = mintRow.preferenceButton.getBounds();
     const mintPoint = {
       x: mintBounds.x + mintBounds.width / 2,
       y: mintBounds.y + mintBounds.height / 2,
     };
     inputRouter.onPointerDown(
-      createPointerEvent(mintRow.root, 'pointerdown', mintPoint),
+      createPointerEvent(
+        mintRow.preferenceButton,
+        'pointerdown',
+        mintPoint,
+      ),
     );
 
     frames.shift()(240);
     inputRouter.onPointerUp(
-      createPointerEvent(dialog.list.root, 'pointerup', mintPoint),
+      createPointerEvent(
+        mintRow.preferenceButton,
+        'pointerup',
+        mintPoint,
+      ),
     );
 
     expect(dialog.list.expandedKey).toBe('mintSeed');
@@ -3218,10 +3336,8 @@ describe('WorkshopPixiPage', () => {
     expect(rows.every((row) => row.background.frameHeight === 44)).toBe(true);
     expect(rows.every((row) => row.itemIcon.visible)).toBe(true);
     expect(
-      rows.every(
-        (row) => Math.max(row.itemIcon.width, row.itemIcon.height) === 28,
-      ),
-    ).toBe(true);
+      rows.map((row) => Math.max(row.itemIcon.width, row.itemIcon.height)),
+    ).toEqual([32, 32, 32, 36, 32]);
     expect(
       rows.every(
         (row) =>

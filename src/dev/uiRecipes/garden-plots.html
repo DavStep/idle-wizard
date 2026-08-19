@@ -37,9 +37,13 @@
     <script type="module">
       import '@fontsource/lilita-one/400.css';
       import { PixiAssetManager } from '/src/rendering/pixi/assets/PixiAssetManager.js';
-      import { PixiTransientEffectsLayer } from '/src/rendering/pixi/global/transient/PixiTransientEffectsLayer.js';
+      import {
+        PixiTransientEffectsLayer,
+        createRewardFlyoutPresentation,
+      } from '/src/rendering/pixi/global/transient/PixiTransientEffectsLayer.js';
       import { PixiInputRouter } from '/src/rendering/pixi/input/PixiInputRouter.js';
       import { GardenPixiPage } from '/src/rendering/pixi/pages/garden/GardenPixiPage.js';
+      import { SemanticTargetRegistry } from '/src/rendering/pixi/retained/index.js';
       import { PixiApplicationManager } from '/src/rendering/pixi/runtime/PixiApplicationManager.js';
       import { createPixiThemeSnapshot } from '/src/rendering/pixi/theme/PixiThemeTokens.js';
 
@@ -53,6 +57,7 @@
       ]);
 
       const inputRouter = new PixiInputRouter();
+      const semanticTargets = new SemanticTargetRegistry();
       inputRouter.mount({
         root: applicationManager.app.stage,
         canvas,
@@ -61,12 +66,14 @@
         assets: assetManager,
         application: applicationManager.app,
         parent: applicationManager.layers.transient,
+        semanticRegistry: semanticTargets,
       });
       transientEffects.activate();
 
       const params = new URLSearchParams(window.location.search);
       const overflow = params.get('overflow') === '1';
       const growing = params.get('growing') === '1';
+      const planting = params.get('planting') === '1';
       const bulkActions = params.get('bulk') || 'all';
       const progressBar = params.get('progress') || 'regular';
       const theme = params.get('theme') || undefined;
@@ -95,7 +102,7 @@
               level: tileNumber === 1 ? 2 : 1,
               phase: 'empty',
               hasSelectedSeed: true,
-              canPlantSelectedSeed: false,
+              canPlantSelectedSeed: planting,
               toolbarSeedItemTypeId: 1,
               actionText: '',
               semanticId: `garden.plot.${tileNumber}`,
@@ -127,17 +134,20 @@
           progressBar,
           bulkActions,
           motion: 'shared-transient',
+          planting: planting ? 'enabled' : 'disabled',
         },
       );
 
       const page = new GardenPixiPage({
         assetManager,
         inputRouter,
+        semanticTargets,
         ticker: applicationManager.app.ticker,
         theme: createPixiThemeSnapshot({ progressBar, theme }),
         timeSource: () => 0,
       });
       page.layout(applicationManager.projection);
+      transientEffects.layout(applicationManager.projection);
       page.bind({
         garden: {
           now: 0,
@@ -173,6 +183,20 @@
                 tooltip:
                   'You need to research first to unlock buying this slot.',
               };
+            }
+            if (planting) {
+              transientEffects.emitReward(
+                createRewardFlyoutPresentation({
+                  type: 'garden_seed_planted',
+                  eventId: `garden-recipe-plant-${plot.tileNumber}`,
+                  seed: { key: 'nettleSeed', label: 'Nettle' },
+                  quantity: 3,
+                  tileNumber: plot.tileNumber,
+                }),
+              );
+              document.querySelector('#garden-plots-recipe-state').dataset.feedback =
+                'seed planted';
+              return { ok: true, tileNumber: plot.tileNumber };
             }
             transientEffects.emitReward({
               message: 'no seed',

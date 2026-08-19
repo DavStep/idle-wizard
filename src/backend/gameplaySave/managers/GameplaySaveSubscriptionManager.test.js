@@ -39,7 +39,7 @@ function createSaveTable(rows) {
   };
 }
 
-function createConnection(table) {
+function createConnection(table, { autoApply = true } = {}) {
   const subscription = {
     isEnded: () => false,
     unsubscribe: vi.fn(),
@@ -55,7 +55,9 @@ function createConnection(table) {
     },
     subscribe(query) {
       this.query = query;
-      this.applied();
+      if (autoApply) {
+        this.applied();
+      }
       return subscription;
     },
   };
@@ -174,6 +176,74 @@ describe('GameplaySaveSubscriptionManager', () => {
       ok: false,
       reason: 'gameplay_save_missing',
     });
+  });
+
+  it('reports stalled initial hydration as a timeout exactly once', () => {
+    let timeoutCallback = null;
+    const setTimeoutFn = vi.fn((callback) => {
+      timeoutCallback = callback;
+      return 7;
+    });
+    const clearTimeoutFn = vi.fn();
+    const table = createSaveTable([]);
+    const connection = createConnection(table, { autoApply: false });
+    const ready = vi.fn();
+    const manager = new GameplaySaveSubscriptionManager({
+      readyTimeoutMs: 1_000,
+      setTimeoutFn,
+      clearTimeoutFn,
+    });
+
+    manager.connect(connection, 'mine', { onReady: ready });
+
+    expect(setTimeoutFn).toHaveBeenCalledWith(expect.any(Function), 1_000);
+    expect(ready).not.toHaveBeenCalled();
+
+    timeoutCallback();
+    connection.builder.applied();
+
+    expect(ready).toHaveBeenCalledTimes(1);
+    expect(ready).toHaveBeenCalledWith({
+      ok: false,
+      reason: 'gameplay_save_timeout',
+    });
+    expect(clearTimeoutFn).not.toHaveBeenCalled();
+  });
+
+  it('clears the hydration timeout when the subscription applies', () => {
+    const setTimeoutFn = vi.fn(() => 9);
+    const clearTimeoutFn = vi.fn();
+    const table = createSaveTable([]);
+    const connection = createConnection(table);
+    const manager = new GameplaySaveSubscriptionManager({
+      readyTimeoutMs: 1_000,
+      setTimeoutFn,
+      clearTimeoutFn,
+    });
+
+    manager.connect(connection, 'mine');
+
+    expect(clearTimeoutFn).toHaveBeenCalledWith(9);
+  });
+
+  it('clears the hydration timeout on subscription error and disconnect', () => {
+    const timeoutIds = [11, 12];
+    const setTimeoutFn = vi.fn(() => timeoutIds.shift());
+    const clearTimeoutFn = vi.fn();
+    const table = createSaveTable([]);
+    const connection = createConnection(table, { autoApply: false });
+    const manager = new GameplaySaveSubscriptionManager({
+      readyTimeoutMs: 1_000,
+      setTimeoutFn,
+      clearTimeoutFn,
+    });
+
+    manager.connect(connection, 'mine');
+    connection.builder.error();
+    manager.connect(connection, 'mine');
+    manager.disconnect();
+
+    expect(clearTimeoutFn.mock.calls).toEqual([[11], [12]]);
   });
 
   it('cleans up when synchronous ready work disconnects hydration', () => {

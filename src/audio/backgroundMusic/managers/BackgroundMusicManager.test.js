@@ -82,6 +82,28 @@ describe('BackgroundMusicManager', () => {
 
     manager.destroy();
   });
+
+  it('pauses for native app inactivity even when the WebView document stays visible', async () => {
+    const audio = createAudio();
+    const documentRef = createDocument();
+    const manager = new BackgroundMusicManager({
+      audioFactory: () => audio,
+      documentRef,
+    });
+
+    manager.start();
+    await Promise.resolve();
+    manager.setAppActive(false);
+
+    expect(documentRef.visibilityState).toBe('visible');
+    expect(audio.pause).toHaveBeenCalledTimes(1);
+
+    manager.setAppActive(true);
+    await Promise.resolve();
+    expect(audio.play).toHaveBeenCalledTimes(2);
+
+    manager.destroy();
+  });
 });
 
 function createAudio() {

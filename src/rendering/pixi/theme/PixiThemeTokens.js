@@ -107,7 +107,7 @@ export const PIXI_PROGRESS_VISUALS = Object.freeze({
       textStroke: PIXI_TEXT_STROKE_COLOR,
     }),
     green: Object.freeze({
-      fill: '#4aa83f',
+      fill: '#99bb46',
       edge: '#8bdc69',
       text: '#4aa83f',
       textStroke: PIXI_TEXT_STROKE_COLOR,

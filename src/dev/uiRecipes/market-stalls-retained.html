@@ -242,11 +242,11 @@
         connected: true,
         proceedsCoin: 42,
         listings: [
-          { listingKey: 'mira-sage', username: 'Mira', itemKey: 'sageSeed', itemLabel: 'sage seed', itemKind: 'seed', quantity: 8, priceCoin: 12 },
-          { listingKey: 'rowan-mint', username: 'Rowan', itemKey: 'mintSeed', itemLabel: 'mint seed', itemKind: 'seed', quantity: 5, priceCoin: 18 },
-          { listingKey: 'juniper-briar', username: 'Juniper', itemKey: 'briarSeed', itemLabel: 'briar seed', itemKind: 'seed', quantity: 3, priceCoin: 25 },
-          { listingKey: 'orin-sage', username: 'Orin', itemKey: 'sageSeed', itemLabel: 'sage seed', itemKind: 'seed', quantity: 12, priceCoin: 7 },
-          { listingKey: 'elara-mint', username: 'Elara', itemKey: 'mintSeed', itemLabel: 'mint seed', itemKind: 'seed', quantity: 4, priceCoin: 16 },
+          { listingKey: 'mira-sage', sellerIdentity: 'mira-id', username: 'Mira', itemKey: 'sageSeed', itemLabel: 'sage seed', itemKind: 'seed', quantity: 8, priceCoin: 12 },
+          { listingKey: 'rowan-mint', sellerIdentity: 'rowan-id', username: 'Rowan', itemKey: 'mintSeed', itemLabel: 'mint seed', itemKind: 'seed', quantity: 5, priceCoin: 18 },
+          { listingKey: 'juniper-briar', sellerIdentity: 'juniper-id', username: 'Juniper', itemKey: 'briarSeed', itemLabel: 'briar seed', itemKind: 'seed', quantity: 3, priceCoin: 25 },
+          { listingKey: 'orin-sage', sellerIdentity: 'orin-id', username: 'Orin', itemKey: 'sageSeed', itemLabel: 'sage seed', itemKind: 'seed', quantity: 12, priceCoin: 7 },
+          { listingKey: 'elara-mint', sellerIdentity: 'elara-id', username: 'Elara', itemKey: 'mintSeed', itemLabel: 'mint seed', itemKind: 'seed', quantity: 4, priceCoin: 16 },
         ],
         ownListings: [],
         requests: [
@@ -256,6 +256,15 @@
         ownRequests: [],
         tradeHistory: [],
       };
+      const playerInfoSnapshot = {
+        players: [
+          { identity: 'mira-id', username: 'Mira', allianceName: 'Night Owls', allianceTag: 'OWL', allianceTagColor: 'blue', character: 'elara', frame: 'gold' },
+          { identity: 'rowan-id', username: 'Rowan', allianceName: 'Ash Wardens', allianceTag: 'ASH', allianceTagColor: 'orange', character: 'rowan', frame: 'classic' },
+          { identity: 'juniper-id', username: 'Juniper', allianceName: 'Fern Circle', allianceTag: 'FERN', allianceTagColor: 'green', character: 'elara', frame: 'classic' },
+          { identity: 'orin-id', username: 'Orin', allianceTag: '', allianceTagColor: 'ink', character: 'rowan', frame: 'classic' },
+          { identity: 'elara-id', username: 'Elara', allianceName: 'Moon Guild', allianceTag: 'MOON', allianceTagColor: 'purple', character: 'elara', frame: 'gold' },
+        ],
+      };
 
       const canvas = document.querySelector('canvas');
       const query = new URLSearchParams(window.location.search);
@@ -264,7 +273,7 @@
         query.get('tab'),
       )
         ? query.get('tab')
-        : ['request', 'listing', 'market'].includes(dialogQuery)
+        : ['request', 'listing', 'market', 'buy'].includes(dialogQuery)
           ? 'players'
           : 'traders';
       if (query.get('proceeds') === 'none') {
@@ -288,6 +297,7 @@
       const showRequestDialog = dialogQuery === 'request';
       const showListingDialog = dialogQuery === 'listing';
       const showMarketDialog = dialogQuery === 'market';
+      const showBuyDialog = dialogQuery === 'buy';
       const showListingReference =
         query.get('listingState') === 'reference';
       const requestStatus = query.get('requestStatus') ?? '';
@@ -451,11 +461,11 @@
       let requestItemKind = 'seed';
       let listingItemKind = 'seed';
       let marketBrowseTab = 'selling';
-      let marketFiltersOpen = query.get('filters') === 'open';
-      let marketFilterDraft = marketFiltersOpen
-        ? { item: 'Sage', minPrice: '8', username: 'Mira' }
-        : { item: '', minPrice: '', username: '' };
+      let marketFilterDraft = { item: '', minPrice: '', username: '' };
       let marketFilterApplied = { item: '', minPrice: '', username: '' };
+      let marketBuyListingKey = showBuyDialog ? 'mira-sage' : null;
+      let marketBuyQuantity = showBuyDialog ? 3 : 1;
+      let marketBuyStatus = '';
       let requestDraft = {
         itemTypeId: 1,
         itemKey: 'sageSeed',
@@ -480,12 +490,15 @@
             ? nextViewModel.shop.players.requests.slots[0].dialog
             : dialogId === SHOP_DIALOG_IDS.MARKET
               ? nextViewModel.shop.dialogs.market
+              : dialogId === SHOP_DIALOG_IDS.BUY
+                ? nextViewModel.shop.dialogs.buy
               : nextViewModel.shop.players.market.slots[0].dialog;
         page.openDialog(dialogId, dialog);
       };
       const createViewModel = () =>
         createShop({
           gameplaySnapshot,
+          playerInfoSnapshot,
           playerShopSnapshot,
           notificationSnapshot: showNotifiedEmptyStall
             ? {
@@ -500,9 +513,11 @@
           uiState: {
             ledgerKind,
             marketBrowseTab,
-            marketFiltersOpen,
             marketFilterDraft,
             marketFilterApplied,
+            marketBuyListingKey,
+            marketBuyQuantity,
+            marketBuyStatus,
             ...(showStallDialog
               ? {
                   stallTargetQuantityBySlot: {
@@ -610,12 +625,6 @@
                 rebindDialog(SHOP_DIALOG_IDS.MARKET);
                 return true;
               },
-              openMarketFilters() {
-                marketFilterDraft = { ...marketFilterApplied };
-                marketFiltersOpen = true;
-                rebindDialog(SHOP_DIALOG_IDS.MARKET);
-                return true;
-              },
               setMarketFilterDraft(field, value) {
                 marketFilterDraft = {
                   ...marketFilterDraft,
@@ -625,16 +634,45 @@
               },
               applyMarketFilters() {
                 marketFilterApplied = { ...marketFilterDraft };
-                marketFiltersOpen = false;
                 rebindDialog(SHOP_DIALOG_IDS.MARKET);
                 return true;
               },
               clearMarketFilters() {
                 marketFilterDraft = { item: '', minPrice: '', username: '' };
                 marketFilterApplied = { item: '', minPrice: '', username: '' };
-                marketFiltersOpen = false;
                 rebindDialog(SHOP_DIALOG_IDS.MARKET);
                 return true;
+              },
+              openMarketBuy(listing) {
+                marketBuyListingKey = String(listing?.listingKey ?? '');
+                marketBuyQuantity = 1;
+                marketBuyStatus = '';
+                rebindDialog(SHOP_DIALOG_IDS.BUY);
+                return true;
+              },
+              setMarketBuyQuantity(value) {
+                const listing = playerShopSnapshot.listings.find(
+                  (candidate) => candidate.listingKey === marketBuyListingKey,
+                );
+                marketBuyQuantity = Math.max(
+                  1,
+                  Math.min(
+                    Math.max(1, Number(listing?.quantity) || 1),
+                    Math.floor(Number(value) || 1),
+                  ),
+                );
+                marketBuyStatus = '';
+                rebindDialog(SHOP_DIALOG_IDS.BUY);
+                return true;
+              },
+              confirmMarketBuy(listing, quantity) {
+                window.__marketRecipeLastBuy = {
+                  listingKey: listing?.listingKey,
+                  itemKey: listing?.itemKey,
+                  quantity,
+                  totalPriceCoin: Number(listing?.priceCoin) * Number(quantity),
+                };
+                return dialogRegistry.close(SHOP_DIALOG_IDS.BUY);
               },
               selectRequestItem(slotNumber, item) {
                 requestItemKind = item.kind;
@@ -763,6 +801,11 @@
         page.openDialog(
           SHOP_DIALOG_IDS.MARKET,
           viewModel.shop.dialogs.market,
+        );
+      } else if (showBuyDialog) {
+        page.openDialog(
+          SHOP_DIALOG_IDS.BUY,
+          viewModel.shop.dialogs.buy,
         );
       }
     </script>

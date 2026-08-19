@@ -41,7 +41,7 @@ For examples and copy patterns, read `references/event-patterns.md`.
 - Use amount picker, not one-tap donation.
 - Show points in the picker before confirm.
 - Show per-option accumulated points: `total 300 points`.
-- Completion caps visible quest progress only; contribution points keep accumulating after completion.
+- Donation quests have no per-quest target or completion state; every accepted donation adds points for the full event duration.
 - Leaderboard uses total contribution points.
 
 ## Event-Only Potions

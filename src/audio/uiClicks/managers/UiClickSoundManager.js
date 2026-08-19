@@ -103,10 +103,14 @@ export class UiClickSoundManager {
     this.logger = logger;
     this.enabled = true;
     this.volume = 1;
+    this.appActive = true;
     this.context = null;
     this.masterGain = null;
     this.audioUnavailable = false;
     this.resumePromise = null;
+    this.suspendPromise = null;
+    this.playbackGeneration = 0;
+    this.activeVoices = new Set();
     this.buffers = new Map();
     this.bufferPromises = new Map();
     this.sampleData = new Map();
@@ -171,8 +175,21 @@ export class UiClickSoundManager {
     this.syncMasterGain();
   }
 
+  setAppActive(active) {
+    const nextActive = active !== false;
+    if (this.appActive === nextActive) {
+      return;
+    }
+
+    this.appActive = nextActive;
+    if (!this.appActive) {
+      this.cancelActivePlayback();
+      void this.suspendContext();
+    }
+  }
+
   unlock() {
-    if (!this.enabled) {
+    if (!this.enabled || !this.appActive) {
       return;
     }
 
@@ -217,7 +234,12 @@ export class UiClickSoundManager {
     } = {},
   ) {
     const cue = this.cues.get(cueId);
-    if (!this.enabled || !cue || this.isThrottled(cueId, cue)) {
+    if (
+      !this.enabled ||
+      !this.appActive ||
+      !cue ||
+      this.isThrottled(cueId, cue)
+    ) {
       return false;
     }
 
@@ -229,6 +251,7 @@ export class UiClickSoundManager {
     this.lastPlayAtMsByCue.set(cueId, this.now());
     this.playCueNow(context, cueId, cue, {
       fallbackTone,
+      playbackGeneration: this.playbackGeneration,
       repeatCount,
       repeatIntervalSeconds,
     });
@@ -237,9 +260,11 @@ export class UiClickSoundManager {
 
   destroy() {
     const context = this.context;
+    this.cancelActivePlayback();
     this.context = null;
     this.masterGain = null;
     this.resumePromise = null;
+    this.suspendPromise = null;
     this.buffers.clear();
     this.bufferPromises.clear();
     this.sampleData.clear();
@@ -297,8 +322,11 @@ export class UiClickSoundManager {
 
   resumeContext() {
     const context = this.context;
-    if (!context || isContextClosed(context)) {
+    if (!context || isContextClosed(context) || !this.appActive) {
       return Promise.resolve(false);
+    }
+    if (this.suspendPromise) {
+      return this.suspendPromise.then(() => this.resumeContext());
     }
     if (isContextRunning(context)) {
       return Promise.resolve(true);
@@ -319,6 +347,27 @@ export class UiClickSoundManager {
     return this.resumePromise;
   }
 
+  suspendContext() {
+    const context = this.context;
+    if (!context || isContextClosed(context) || !context.suspend) {
+      return Promise.resolve(false);
+    }
+    if (this.suspendPromise) {
+      return this.suspendPromise;
+    }
+
+    this.suspendPromise = Promise.resolve(context.suspend())
+      .then(() => !isContextRunning(context))
+      .catch((error) => {
+        this.logger?.warn?.('Unable to suspend UI sound audio context.', error);
+        return false;
+      })
+      .finally(() => {
+        this.suspendPromise = null;
+      });
+    return this.suspendPromise;
+  }
+
   syncMasterGain() {
     if (this.masterGain) {
       this.masterGain.gain.value = this.enabled
@@ -331,12 +380,18 @@ export class UiClickSoundManager {
     context,
     cueId,
     cue,
-    { fallbackTone, repeatCount, repeatIntervalSeconds },
+    {
+      fallbackTone,
+      playbackGeneration,
+      repeatCount,
+      repeatIntervalSeconds,
+    },
   ) {
     const url = this.chooseVariant(cueId, cue.urls);
     const buffer = url ? this.buffers.get(url) : null;
     if (buffer) {
       this.scheduleSamples(context, buffer, cue, {
+        playbackGeneration,
         repeatCount,
         repeatIntervalSeconds,
       });
@@ -344,7 +399,7 @@ export class UiClickSoundManager {
     }
 
     if (fallbackTone && (!url || !this.sampleData.has(url))) {
-      this.playFallbackTone(context);
+      this.playFallbackTone(context, playbackGeneration);
     }
     if (!url || (fallbackTone && !this.sampleData.has(url))) {
       return;
@@ -354,10 +409,13 @@ export class UiClickSoundManager {
       if (
         loadedBuffer &&
         this.enabled &&
+        this.appActive &&
         this.context === context &&
+        this.playbackGeneration === playbackGeneration &&
         isContextRunning(context)
       ) {
         this.scheduleSamples(context, loadedBuffer, cue, {
+          playbackGeneration,
           repeatCount,
           repeatIntervalSeconds,
         });
@@ -389,19 +447,42 @@ export class UiClickSoundManager {
     context,
     buffer,
     cue,
-    { repeatCount = 1, repeatIntervalSeconds = 0 } = {},
+    {
+      playbackGeneration = this.playbackGeneration,
+      repeatCount = 1,
+      repeatIntervalSeconds = 0,
+    } = {},
   ) {
     for (let index = 0; index < repeatCount; index += 1) {
+      if (
+        !this.appActive ||
+        this.playbackGeneration !== playbackGeneration
+      ) {
+        return;
+      }
       this.scheduleSample(
         context,
         buffer,
         cue,
         index * repeatIntervalSeconds,
+        playbackGeneration,
       );
     }
   }
 
-  scheduleSample(context, buffer, cue, delaySeconds = 0) {
+  scheduleSample(
+    context,
+    buffer,
+    cue,
+    delaySeconds = 0,
+    playbackGeneration = this.playbackGeneration,
+  ) {
+    if (
+      !this.appActive ||
+      this.playbackGeneration !== playbackGeneration
+    ) {
+      return;
+    }
     const source = context.createBufferSource();
     const gain = context.createGain();
     const startAt = (context.currentTime ?? 0) + delaySeconds;
@@ -414,15 +495,36 @@ export class UiClickSoundManager {
     setAudioParamValue(gain.gain, cue.gain, startAt);
     source.connect(gain);
     gain.connect(this.masterGain ?? context.destination);
-    source.onended = () => {
+    const voice = {
+      stop: () => {
+        try {
+          source.stop?.();
+        } catch {
+          // A source can already have ended while the app is suspending.
+        }
+        source.disconnect?.();
+        gain.disconnect?.();
+      },
+    };
+    const cleanup = () => {
+      this.activeVoices.delete(voice);
       source.disconnect?.();
       gain.disconnect?.();
     };
+    source.onended = cleanup;
+    this.activeVoices.add(voice);
     source.start(startAt);
   }
 
-  playFallbackTone(context) {
-    if (!context.createOscillator) {
+  playFallbackTone(
+    context,
+    playbackGeneration = this.playbackGeneration,
+  ) {
+    if (
+      !context.createOscillator ||
+      !this.appActive ||
+      this.playbackGeneration !== playbackGeneration
+    ) {
       return;
     }
 
@@ -452,12 +554,35 @@ export class UiClickSoundManager {
     rampAudioParamValue(gain.gain, 0.0001, endAt);
     oscillator.connect(gain);
     gain.connect(this.masterGain ?? context.destination);
-    oscillator.onended = () => {
+    const voice = {
+      stop: () => {
+        try {
+          oscillator.stop?.();
+        } catch {
+          // An oscillator can already have ended while the app is suspending.
+        }
+        oscillator.disconnect?.();
+        gain.disconnect?.();
+      },
+    };
+    const cleanup = () => {
+      this.activeVoices.delete(voice);
       oscillator.disconnect?.();
       gain.disconnect?.();
     };
+    oscillator.onended = cleanup;
+    this.activeVoices.add(voice);
     oscillator.start(startAt);
     oscillator.stop(endAt + 0.02);
+  }
+
+  cancelActivePlayback() {
+    this.playbackGeneration += 1;
+    const voices = [...this.activeVoices];
+    this.activeVoices.clear();
+    for (const voice of voices) {
+      voice.stop();
+    }
   }
 
   prefetchSampleData(url) {

@@ -25,6 +25,7 @@ import {
 import {
   PIXI_ROOT_RUN_ASSETS,
   PIXI_UI_GEOMETRY,
+  createPixiThemeSnapshot,
   resolvePixiTextStrokeWidth,
 } from '../../theme/PixiThemeTokens.js';
 
@@ -204,6 +205,63 @@ describe('ResearchPixiPage', () => {
     harness.dispose();
   });
 
+  it('keeps a pooled completed-research toggle interactive after switching tabs away and back', () => {
+    const harness = createHarness();
+    const viewModel = createResearchViewModel();
+    viewModel.research.tabs[0].boxes[0].researches.unshift({
+      id: 'sage',
+      displayName: 'sage',
+      effect: '+1 sage',
+      displayValue: 'Researched',
+      completed: true,
+      state: 'completed',
+    });
+    viewModel.research.tabs.push({
+      id: 'advanced',
+      label: 'advanced research',
+      boxes: [
+        {
+          id: 'plots',
+          label: 'plots',
+          researches: [
+            {
+              id: 'plot-growth',
+              displayName: 'plot growth',
+              effect: '+1 plot growth',
+              displayValue: 'Researched',
+              completed: true,
+              state: 'completed',
+            },
+          ],
+        },
+      ],
+    });
+
+    harness.page.bind(viewModel);
+    harness.page.bind({
+      ...viewModel,
+      research: {
+        ...viewModel.research,
+        selectedTabId: 'advanced',
+      },
+    });
+    harness.page.bind(viewModel);
+
+    const box = harness.page.boxes.get('herbs');
+    const toggleTarget = harness.semanticTargets.resolve(
+      'research.completed.regular.herbs',
+    );
+    expect(box.visibilityButton.visible).toBe(true);
+    expect(box.visibilityButton.eventMode).toBe('static');
+    expect(toggleTarget.state).toMatchObject({
+      enabled: true,
+      interactive: true,
+    });
+
+    harness.page.destroy();
+    harness.dispose();
+  });
+
   it('hides the completed-research toggle when a section has nothing to hide', () => {
     const harness = createHarness();
 
@@ -323,6 +381,7 @@ describe('ResearchPixiPage', () => {
     const seedPackTexture = new Texture();
     const silverleafTexture = new Texture();
     const potionTexture = new Texture();
+    const timerTexture = new Texture();
     const atlasTextures = new Map([
       ['seed:pack', seedPackTexture],
       ['herb:silverleafHerb', silverleafTexture],
@@ -332,8 +391,11 @@ describe('ResearchPixiPage', () => {
       getAtlasTexture(frameName) {
         return atlasTextures.get(frameName) ?? Texture.EMPTY;
       },
-      getTexture() {
-        return genericTexture;
+      getTexture(assetId) {
+        return assetId ===
+          'source:assets/icons/research/icon-research-time.png'
+          ? timerTexture
+          : genericTexture;
       },
       has() {
         return true;
@@ -377,6 +439,8 @@ describe('ResearchPixiPage', () => {
       displayName: 'silverleaf growing',
       itemKind: 'herb',
       itemKey: 'silverleafHerb',
+      artExtraAssetId:
+        'source:assets/icons/research/icon-research-time.png',
     });
     harness.page.bind(model);
 
@@ -385,6 +449,12 @@ describe('ResearchPixiPage', () => {
     );
     expect(herbRow.art.texture).toBe(silverleafTexture);
     expect(herbRow.artOverlay.visible).toBe(false);
+    expect(herbRow.artExtra.texture).toBe(timerTexture);
+    expect(herbRow.artExtra.visible).toBe(true);
+    expect(herbRow.artExtra).toMatchObject({
+      width: RESEARCH_PIXI_GEOMETRY.artExtraWidth,
+      height: RESEARCH_PIXI_GEOMETRY.artExtraHeight,
+    });
 
     harness.page.destroy();
     harness.dispose();
@@ -705,11 +775,22 @@ describe('ResearchPixiPage', () => {
           2,
     );
     expect(row.progress.root.position.x).toBe(252 / 3);
+    expect(row.progress.root.position.y).toBe(
+      RESEARCH_PIXI_GEOMETRY.rowHeight -
+        RESEARCH_PIXI_GEOMETRY.progressBottom -
+        RESEARCH_PIXI_GEOMETRY.progressHeight,
+    );
     expect(row.progress.width).toBe(422 / 3);
     expect(row.progress).toMatchObject({
       tone: 'yellow',
       height: 10,
     });
+    expect(row.progress.control.usePlayerStyle).toBe(false);
+    row.applyTheme(
+      createPixiThemeSnapshot({ progressBar: 'gradient' }),
+    );
+    expect(row.progress.gradient).toBeNull();
+    expect(row.progress.control.fillColor).toBe('#f5c542');
     expect(row.costButton).toMatchObject({
       buttonWidth: 72,
       buttonHeight: 42,
@@ -975,6 +1056,10 @@ describe('ResearchPixiPage', () => {
     expect(ticker.add).toHaveBeenCalledWith(harness.page.tickHandler);
     expect(harness.dialogs.getStats().constructed).toBe(0);
 
+    const setStatusModel = vi.spyOn(row.researchedButton, 'setModel');
+    const styleStatusButton = vi.spyOn(row, 'styleStatusButton');
+    const setTimerText = vi.spyOn(row.researchingTimerLabel, 'setText');
+
     now = 3_000;
     harness.page.tick();
     expect(row.researchedButton.visible).toBe(true);
@@ -986,7 +1071,21 @@ describe('ResearchPixiPage', () => {
     expect(row.researchingTimerLabel.x).toBe(
       row.researchedButton.buttonWidth / 2,
     );
+    expect(row.researchingTimerLabel.y).toBe(
+      row.researchedButton.buttonHeight * 0.68 - 2,
+    );
     expect(row.readonlyValue.visible).toBe(false);
+    expect(setStatusModel).not.toHaveBeenCalled();
+    expect(styleStatusButton).not.toHaveBeenCalled();
+    expect(setTimerText).toHaveBeenCalledTimes(1);
+
+    setTimerText.mockClear();
+    now = 3_250;
+    harness.page.tick();
+    expect(row.researchingTimerLabel.text).toBe('3s');
+    expect(setStatusModel).not.toHaveBeenCalled();
+    expect(styleStatusButton).not.toHaveBeenCalled();
+    expect(setTimerText).not.toHaveBeenCalled();
 
     harness.page.deactivate();
     expect(ticker.remove).toHaveBeenCalledWith(harness.page.tickHandler);

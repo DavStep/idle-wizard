@@ -53,6 +53,13 @@ describe('Root Run settings controls', () => {
     milestoneCircle.mockClear();
     slider.setBounds(0, 0, 200);
 
+    expect(harness.gestures[0]).toMatchObject({
+      axis: 'x',
+      excludePageSwipe: true,
+      excludeScroll: true,
+      kind: 'drag',
+    });
+
     expect(harness.assetManager.getTexture).toHaveBeenCalledWith(
       PIXI_ROOT_RUN_ASSETS.settingsKnob,
     );

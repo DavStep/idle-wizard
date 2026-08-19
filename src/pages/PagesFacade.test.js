@@ -3757,7 +3757,7 @@ describe('PagesFacade', () => {
     expect(stage.querySelector('.workshop-page__summon-message')).toBeNull();
     expect(
       [...stage.querySelectorAll('.room-bottom-panel__tab')].map((button) => button.textContent),
-    ).toEqual(['Brewing', 'Garden', 'Workshop', 'Research', 'Market']);
+    ).toEqual(['Brewing', 'Garden', 'Workshop', 'Market', 'Research']);
     expect(stage.querySelector('.room-bottom-panel__tab.is-selected')?.dataset.pageId).toBe(
       'workshop',
     );
@@ -4020,7 +4020,7 @@ describe('PagesFacade', () => {
     );
     expect(
       [...stage.querySelectorAll('.room-bottom-panel__tab')].map((button) => button.dataset.pageId),
-    ).toEqual(['prestige', 'brewing', 'garden', 'workshop', 'research', 'shop']);
+    ).toEqual(['prestige', 'brewing', 'garden', 'workshop', 'shop', 'research']);
 
     clickRoomTab(stage, 'research');
     expect(pagesFacade.getCurrentPageId()).toBe('research');
@@ -9280,7 +9280,7 @@ describe('PagesFacade', () => {
     );
   });
 
-  it('orders rooms as Brewing, Garden, Workshop, Research, Market with Workshop default', () => {
+  it('orders rooms as Brewing, Garden, Workshop, Market, Research with Workshop default', () => {
     const stage = document.createElement('section');
     const gameplayFacade = createGameplayFacadeFake();
     unlockWorkshopSecondaryActions(gameplayFacade);
@@ -10680,8 +10680,8 @@ describe('PagesFacade', () => {
 
     dispatchAllowedSwipe(stage);
 
-    expect(pagesFacade.getCurrentPageId()).toBe('research');
-    expect(stage.querySelector('.research-page')).not.toBeNull();
+    expect(pagesFacade.getCurrentPageId()).toBe('shop');
+    expect(stage.querySelector('.shop-page')).not.toBeNull();
 
     dispatchAllowedSwipe(stage, { startX: 120, endX: 320 });
 
@@ -10691,16 +10691,16 @@ describe('PagesFacade', () => {
     dispatchAllowedSwipe(stage);
     dispatchAllowedSwipe(stage);
 
-    expect(pagesFacade.getCurrentPageId()).toBe('shop');
-    expect(stage.querySelector('.shop-page')).not.toBeNull();
+    expect(pagesFacade.getCurrentPageId()).toBe('research');
+    expect(stage.querySelector('.research-page')).not.toBeNull();
 
     dispatchAllowedSwipe(stage);
 
-    expect(pagesFacade.getCurrentPageId()).toBe('shop');
+    expect(pagesFacade.getCurrentPageId()).toBe('research');
 
     dispatchAllowedSwipe(stage, { startX: 120, endX: 320 });
 
-    expect(pagesFacade.getCurrentPageId()).toBe('research');
+    expect(pagesFacade.getCurrentPageId()).toBe('shop');
   });
 
   it('keeps brewing world drag gestures from triggering room swipe navigation', () => {
@@ -10740,16 +10740,17 @@ describe('PagesFacade', () => {
     });
 
     pagesFacade.mount(stage);
+    clickRoomTab(stage, 'shop');
 
     dispatchTouchSwipe(stage);
 
     const popup = stage.querySelector('.room-bottom-panel__lock-popup');
 
-    expect(pagesFacade.getCurrentPageId()).toBe('workshop');
-    expect(stage.querySelector('.workshop-page')).not.toBeNull();
+    expect(pagesFacade.getCurrentPageId()).toBe('shop');
+    expect(stage.querySelector('.shop-page')).not.toBeNull();
     expect(stage.querySelector('.research-page')).toBeNull();
     expect(stage.querySelector('.room-bottom-panel__tab.is-selected')?.dataset.pageId).toBe(
-      'workshop',
+      'shop',
     );
     expect(popup?.hidden).toBe(false);
     expect(popup?.dataset.pageId).toBe('research');
@@ -10777,7 +10778,7 @@ describe('PagesFacade', () => {
     const startTouch = createTouch(7, 320, 360, stage);
     const moveTouch = createTouch(7, 220, 360, stage);
     const endTouch = createTouch(7, 120, 360, stage);
-    const researchTab = stage.querySelector('.room-bottom-panel__tab[data-page-id="research"]');
+    const marketTab = stage.querySelector('.room-bottom-panel__tab[data-page-id="shop"]');
 
     stage.dispatchEvent(
       createTouchEvent('touchstart', {
@@ -10794,7 +10795,7 @@ describe('PagesFacade', () => {
 
     expect(stage.dataset.pageSwipeActive).toBe('true');
     expect(stage.style.getPropertyValue('--page-swipe-offset')).not.toBe('');
-    expect(researchTab?.classList.contains('is-swipe-target')).toBe(true);
+    expect(marketTab?.classList.contains('is-swipe-target')).toBe(true);
 
     stage.dispatchEvent(
       createTouchEvent('touchend', {
@@ -10803,11 +10804,11 @@ describe('PagesFacade', () => {
       }),
     );
 
-    expect(pagesFacade.getCurrentPageId()).toBe('research');
+    expect(pagesFacade.getCurrentPageId()).toBe('shop');
     expect(stage.dataset.pageSwipeActive).toBeUndefined();
     expect(stage.style.getPropertyValue('--page-swipe-offset')).toBe('');
-    expect(researchTab?.classList.contains('is-selected')).toBe(true);
-    expect(researchTab?.classList.contains('is-swipe-target')).toBe(false);
+    expect(marketTab?.classList.contains('is-selected')).toBe(true);
+    expect(marketTab?.classList.contains('is-swipe-target')).toBe(false);
   });
 
   it('accepts intentional diagonal swipes without taking vertical drags', () => {
@@ -10823,7 +10824,7 @@ describe('PagesFacade', () => {
 
     dispatchTouchSwipe(stage, { endY: 520 });
 
-    expect(pagesFacade.getCurrentPageId()).toBe('research');
+    expect(pagesFacade.getCurrentPageId()).toBe('shop');
 
     dispatchTouchSwipe(stage, {
       startX: 320,
@@ -10832,7 +10833,7 @@ describe('PagesFacade', () => {
       endY: 700,
     });
 
-    expect(pagesFacade.getCurrentPageId()).toBe('research');
+    expect(pagesFacade.getCurrentPageId()).toBe('shop');
   });
 
   it('keeps page scroll roots swipeable after an ambiguous diagonal start', () => {
@@ -10848,10 +10849,10 @@ describe('PagesFacade', () => {
     pagesFacade.show('research');
 
     const scrollRoot = stage.querySelector('.research-page__box-list');
-    const startTouch = createTouch(12, 500, 600, scrollRoot);
-    const firstMoveTouch = createTouch(12, 486, 616, scrollRoot);
-    const secondMoveTouch = createTouch(12, 390, 650, scrollRoot);
-    const endTouch = createTouch(12, 250, 690, scrollRoot);
+    const startTouch = createTouch(12, 250, 600, scrollRoot);
+    const firstMoveTouch = createTouch(12, 264, 616, scrollRoot);
+    const secondMoveTouch = createTouch(12, 360, 650, scrollRoot);
+    const endTouch = createTouch(12, 500, 690, scrollRoot);
 
     scrollRoot.dispatchEvent(
       createTouchEvent('touchstart', {
@@ -10948,7 +10949,7 @@ describe('PagesFacade', () => {
       pagesFacade.mount(stage);
       dispatchPointerSwipe(stage);
 
-      expect(pagesFacade.getCurrentPageId()).toBe('research');
+      expect(pagesFacade.getCurrentPageId()).toBe('shop');
     } finally {
       if (originalTouchEvent) {
         Object.defineProperty(window, 'TouchEvent', {
@@ -11019,7 +11020,7 @@ describe('PagesFacade', () => {
 
     const researchLabel = stage.querySelector('.research-page__research-label');
 
-    dispatchTouchSwipe(researchLabel);
+    dispatchTouchSwipe(researchLabel, { startX: 120, endX: 320 });
 
     expect(pagesFacade.getCurrentPageId()).toBe('shop');
     expect(stage.querySelector('.shop-page')).not.toBeNull();

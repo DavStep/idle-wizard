@@ -429,7 +429,7 @@ describe('PixiViewModelFactory', () => {
       weight: 30,
       visible: true,
       timer: '2d 4h',
-      notification: true,
+      notification: false,
     });
     expect(
       model.workshop.features.find((feature) => feature.id === 'prestige'),
@@ -657,7 +657,12 @@ describe('PixiViewModelFactory', () => {
       'quest:weekly-1:new-crown:crowd',
       'quest:weekly-1:new-crown:seal',
     ]);
-    expect(tasks.rows[1].donationOptions[0].notification).toBe(false);
+    expect(tasks.rows.every((row) => !Object.hasOwn(row, 'completed'))).toBe(true);
+    expect(
+      tasks.rows.every((row) =>
+        row.donationOptions.every((option) => option.notification === false),
+      ),
+    ).toBe(true);
     expect(tasks.rows[0]).toEqual(
       expect.objectContaining({
         id: 'quest:weekly-1:new-crown:crowd',
@@ -674,7 +679,7 @@ describe('PixiViewModelFactory', () => {
             totalLabel: '80 points total',
             actionLabel: 'Donate',
             enabled: true,
-            notification: true,
+            notification: false,
             onActivate: expect.any(Function),
           }),
         ],
@@ -2536,6 +2541,35 @@ describe('PixiViewModelFactory', () => {
     expect(potionBox.researches[0]).toMatchObject({
       itemKind: 'potion',
       itemKey: 'minorHealingPotion',
+    });
+  });
+
+  it('projects the shared timer companion for item timer research artwork', () => {
+    const factory = new PixiViewModelFactory();
+    const model = factory.createResearch({
+      gameplay: {
+        research: {
+          boxes: [
+            {
+              id: 'seedUnlocks',
+              researches: [
+                {
+                  id: 'timer:herbGrowth:sageHerb:1',
+                  label: 'sage growing lvl 1',
+                  itemKind: 'herb',
+                  itemKey: 'sageHerb',
+                  artExtraKey: 'timerReduction',
+                },
+              ],
+            },
+          ],
+        },
+      },
+    });
+
+    expect(model.research.tabs[0].boxes[0].researches[0]).toMatchObject({
+      artExtraAssetId:
+        'source:assets/icons/research/icon-research-time.png',
     });
   });
 

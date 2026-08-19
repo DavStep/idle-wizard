@@ -1,4 +1,5 @@
 const OWN_PLAYER_GAMEPLAY_SAVE_QUERY = 'SELECT * FROM own_player_gameplay_save';
+const DEFAULT_READY_TIMEOUT_MS = 15_000;
 const EMPTY_SNAPSHOT = {
   connected: false,
   save: null,
@@ -6,8 +7,16 @@ const EMPTY_SNAPSHOT = {
 };
 
 export class GameplaySaveSubscriptionManager {
-  constructor({ onSnapshot } = {}) {
+  constructor({
+    onSnapshot,
+    readyTimeoutMs = DEFAULT_READY_TIMEOUT_MS,
+    setTimeoutFn = globalThis.setTimeout.bind(globalThis),
+    clearTimeoutFn = globalThis.clearTimeout.bind(globalThis),
+  } = {}) {
     this.onSnapshot = onSnapshot;
+    this.readyTimeoutMs = readyTimeoutMs;
+    this.setTimeoutFn = setTimeoutFn;
+    this.clearTimeoutFn = clearTimeoutFn;
     this.connection = null;
     this.identity = null;
     this.table = null;
@@ -15,6 +24,7 @@ export class GameplaySaveSubscriptionManager {
     this.snapshot = { ...EMPTY_SNAPSHOT };
     this.readyCallback = null;
     this.readyDelivered = false;
+    this.readyTimeoutId = null;
     this.handleTableInsert = (_context, row) => this.publishFromRow(row);
     this.handleTableUpdate = (_context, _oldRow, newRow) =>
       this.publishFromRow(newRow);
@@ -43,6 +53,7 @@ export class GameplaySaveSubscriptionManager {
 
     const table = this.table;
     this.bindTable(table);
+    this.armReadyTimeout();
     const subscription = connection
       .subscriptionBuilder()
       .onApplied(() => {
@@ -75,6 +86,7 @@ export class GameplaySaveSubscriptionManager {
   }
 
   disconnect() {
+    this.clearReadyTimeout();
     this.unbindTable(this.table);
 
     if (this.subscription && !this.subscription.isEnded?.()) {
@@ -153,7 +165,32 @@ export class GameplaySaveSubscriptionManager {
     }
 
     this.readyDelivered = true;
+    this.clearReadyTimeout();
     this.readyCallback?.(result);
+  }
+
+  armReadyTimeout() {
+    this.clearReadyTimeout();
+    if (!Number.isFinite(this.readyTimeoutMs) || this.readyTimeoutMs <= 0) {
+      return;
+    }
+
+    this.readyTimeoutId = this.setTimeoutFn(() => {
+      this.readyTimeoutId = null;
+      this.deliverReady({
+        ok: false,
+        reason: 'gameplay_save_timeout',
+      });
+    }, this.readyTimeoutMs);
+  }
+
+  clearReadyTimeout() {
+    if (this.readyTimeoutId === null) {
+      return;
+    }
+
+    this.clearTimeoutFn(this.readyTimeoutId);
+    this.readyTimeoutId = null;
   }
 
   toTimestampMs(value) {

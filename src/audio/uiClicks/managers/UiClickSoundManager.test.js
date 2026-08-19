@@ -4,6 +4,7 @@ import { afterEach, describe, expect, it, vi } from 'vitest';
 import { UiClickSoundManager } from './UiClickSoundManager.js';
 
 function makeFakeAudioContextConstructor({
+  autoEndSources = true,
   initialState = 'running',
   deferResume = false,
 } = {}) {
@@ -18,8 +19,10 @@ function makeFakeAudioContextConstructor({
     sourcePlaybackRates: [],
     sourceStartTimes: [],
     resumeCount: 0,
+    suspendCount: 0,
     oscillatorStartCount: 0,
     sourceStartCount: 0,
+    sourceStopCount: 0,
   };
 
   function makeAudioParam(initialValue = 0) {
@@ -78,9 +81,14 @@ function makeFakeAudioContextConstructor({
           stats.sourceGains.push(source.connectedGain?.gain?.value ?? 0);
           stats.sourceStartTimes.push(startAt);
           stats.sourceStartCount += 1;
+          if (autoEndSources) {
+            source.onended?.();
+          }
+        }),
+        stop: vi.fn(() => {
+          stats.sourceStopCount += 1;
           source.onended?.();
         }),
-        stop: vi.fn(),
       };
       return source;
     }
@@ -117,6 +125,12 @@ function makeFakeAudioContextConstructor({
         });
       }
       this.state = 'running';
+      return Promise.resolve();
+    }
+
+    suspend() {
+      stats.suspendCount += 1;
+      this.state = 'suspended';
       return Promise.resolve();
     }
 
@@ -307,6 +321,41 @@ describe('UiClickSoundManager', () => {
 
     expect(manager.playClick()).toBe(true);
     expect(stats.oscillatorStartCount).toBe(1);
+  });
+
+  it('drops cues while the native app is inactive and waits for a fresh gesture to resume', async () => {
+    const { AudioContextConstructor, stats } = makeFakeAudioContextConstructor({
+      autoEndSources: false,
+    });
+    const manager = new UiClickSoundManager({
+      clickSampleUrl: null,
+      dialogOpenSampleUrls: ['/ui-fly.wav'],
+      purchaseSampleUrls: [],
+      windowRef: {
+        AudioContext: AudioContextConstructor,
+        fetch: makeFakeFetch(),
+      },
+    });
+
+    await flushPromises();
+    expect(manager.playDialogOpen()).toBe(true);
+    await flushPromises();
+
+    manager.setAppActive(false);
+    await flushPromises();
+
+    expect(stats.suspendCount).toBe(1);
+    expect(stats.sourceStopCount).toBe(1);
+    expect(manager.playDialogOpen()).toBe(false);
+    manager.unlock();
+    expect(stats.resumeCount).toBe(0);
+
+    manager.setAppActive(true);
+    manager.unlock();
+    await flushPromises();
+
+    expect(stats.resumeCount).toBe(1);
+    expect(manager.playClick()).toBe(true);
   });
 
   it('does not create audio work while disabled', () => {

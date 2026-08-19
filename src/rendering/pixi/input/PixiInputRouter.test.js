@@ -530,6 +530,41 @@ describe('PixiInputRouter', () => {
     expect(activate).toHaveBeenCalledTimes(1);
   });
 
+  it('does not preview ancestor scrolling when a nested drag excludes scroll', () => {
+    const harness = createHarness({ dragThreshold: 5 });
+    const scrollView = displayObject(harness.root);
+    const slider = displayObject(scrollView);
+    const scrollDown = vi.fn(() => true);
+    const scrollMove = vi.fn(() => true);
+    const dragMove = vi.fn();
+
+    harness.router.registerScrollRegion({
+      id: 'dialog-scroll',
+      displayObject: scrollView,
+      getOffset: () => 50,
+      maxOffset: 200,
+      onScrollPointerDown: scrollDown,
+      onScrollPointerMove: scrollMove,
+      onScrollPointerUp: vi.fn(),
+    });
+    harness.router.registerDragSource({
+      id: 'slider-drag',
+      displayObject: slider,
+      excludeScroll: true,
+      threshold: 5,
+      onDragStart: vi.fn(() => true),
+      onDragMove: dragMove,
+    });
+
+    harness.emitRoot('pointerdown', pointerEvent(slider, 1, 100, 100));
+    harness.emitRoot('globalpointermove', pointerEvent(slider, 1, 108, 103));
+    harness.emitRoot('pointerup', pointerEvent(slider, 1, 108, 103));
+
+    expect(scrollDown).not.toHaveBeenCalled();
+    expect(scrollMove).not.toHaveBeenCalled();
+    expect(dragMove).toHaveBeenCalledTimes(1);
+  });
+
   it('honors page-swipe exclusions and lets an owned pan win', () => {
     const harness = createHarness({
       gestureLock: 5,

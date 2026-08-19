@@ -45,7 +45,7 @@ inventory changes, offers, or backend results. A presenter binds this shape:
       }]
     },
     dialogs: {
-      stall, ledger, request, listing, market, tradeHistory, support
+      stall, ledger, request, listing, market, buy, tradeHistory, support
     }
   },
   actions: {
@@ -67,9 +67,12 @@ Rows in long market/history dialogs are viewport-windowed and keyed by `id`.
 Actions are invoked directly and are expected to call the authoritative
 gameplay/backend facade. Whole-dialog footer tabs render only when at least two
 choices are available; one-category dialogs use the complete paper/content
-height instead. Load Stall and Sell use a dedicated `464px` authored shell at
-`390x844`; their item-list viewports absorb additional portrait height and keep
-the transaction controls and footer tabs fixed outside the managed scroll.
+height instead. Load Stall, Request, Sell, Player Market, and Trade History use
+the shared `464px` tall-list shell at `390x844`; their primary-list viewports
+absorb additional portrait height and keep transaction controls and footer tabs
+fixed outside the managed scroll. Market Ledger and Summoning Seeds retain
+their feature-specific authored heights, while Buy Offer, Support, and Donate
+remain compact fixed-content dialogs.
 
 The compatibility adapter also accepts the current raw `shelf`,
 `playerShelf`, `coinOffer`, `dailyCrystalOffer`, and `crystalOffers` snapshot names during cutover.
@@ -84,7 +87,7 @@ and tails extend below the raised front panel.
 Loaded stall rows reuse the Research art-well frame, but contain item artwork
 inside that well. The loaded quantity sits over the artwork as white,
 dark-stroked text without a badge background. The sale batch size uses the
-shortened `30x27px` red downward badge in the upper-right content lane, `10px`
+source-proportional `29x31px` red downward badge in the upper-right content lane, `10px`
 before the fixed Select/Cancel action and protruding `2px` above the card, with
 centered white, dark-stroked `xN` text. The sale rail ends before its compact
 timer, and the timer ends `6px` before the fixed action column.
@@ -124,10 +127,15 @@ listing slot, a dedicated compact claim-proceeds row, and bottom-border actions
 on the final card. Add `&proceeds=none` to isolate the empty-request state
 without the claim-proceeds row, and add `&requests=empty` to render one empty
 request slot.
-Add `?dialog=market` to open Browse Market directly with Title Case copy,
-shared compact Market rows, and canonical coin icons. Add `&filters=open` to
-show the Item, Min Price, and Username filter fields with their Clear and Apply
-Filter actions.
+Add `?dialog=market` to open Browse Market directly. Its upper paper always
+shows Item, Min Price, and Username with Clear and Apply Filter; its lower
+Offers/Requests paper uses the Leaderboard's compact row pitch, framed avatar,
+and paper-edge inset rhythm. Rows have no list indexes; their lowered identity
+line sits above one contained item/count, unit-price coin art, and `each` line,
+with an explicit fixed-right Buy action. Add
+`?dialog=buy` to open the selected-offer confirmation directly with the seller
+identity in a separate upper paper and the selected item, integer quantity
+slider, calculated total, and Buy action in the lower paper.
 Add `?dialog=request` to open the retained Request picker directly with
 `Coins Per Item` and `Max Quantity` fields. Add `&requestStatus=offline` to
 verify visible submission-failure feedback. Add `?dialog=listing` to open the
@@ -152,6 +160,7 @@ four exact states `0`, `1`, `2`, and `3`.
 createShop({
   gameplaySnapshot,       // GameplayFacade.getSnapshot()
   playerShopSnapshot,     // PlayerShopBackendFacade.getSnapshot()
+  playerInfoSnapshot,     // PlayerInfoBackendFacade.getSnapshot()
   notificationSnapshot,  // PageNotificationStateManager snapshot
   selectedTabId,
   uiState: {
@@ -161,7 +170,12 @@ createShop({
     requestDraftBySlot,
     listingDraftBySlot,
     ledgerKind,
-    marketBrowseTab
+    marketBrowseTab,
+    marketFilterDraft,
+    marketFilterApplied,
+    marketBuyListingKey,
+    marketBuyQuantity,
+    marketBuyStatus
   },
   gameplayActions,        // existing GameplayFacade
   playerShopActions,      // existing PlayerShopBackendFacade

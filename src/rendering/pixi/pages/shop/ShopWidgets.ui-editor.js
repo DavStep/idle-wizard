@@ -20,6 +20,7 @@ import {
   DialogField,
   DialogSummaryRow,
   MarketLedgerRowPixi,
+  PlayerMarketOfferRow,
 } from './ShopDialogPixi.js';
 
 const WIDTH = 342;
@@ -36,6 +37,7 @@ export default [
   widget('compound.market-stalls-section', 'Market Stalls Section', ['compound.market-stall'], stallsSectionControl, [scenario('loaded', 'Loaded stalls', {}), scenario('empty', 'Empty stall', { empty: true })]),
   widget('compound.market-rows-section', 'Market Rows Section', ['compound.market-compact-row'], rowsSectionControl, [scenario('requests', 'Requests', {}), scenario('empty', 'Empty', { empty: true })]),
   widget('compound.market-ledger-row', 'Market Ledger Row', ['primitive.resource-label', 'primitive.star-level-label'], ledgerRowControl, [scenario('available', 'Available to buy', { state: 'available' }), scenario('no-stock', 'No trader stock', { state: 'no-stock' }), scenario('other-market', 'Different market', { state: 'other-market' })]),
+  widget('compound.player-market-offer-row', 'Player Market Offer Row', ['compound.player-profile', 'primitive.resource-label', 'text-button'], playerMarketOfferRowControl, [scenario('listing', 'Listing', {}), scenario('alliance', 'Alliance seller', { alliance: true }), scenario('request', 'Request without Buy', { request: true })]),
   widget('compound.dialog-summary-row', 'Dialog Summary Row', [], summaryRowControl, [scenario('plain', 'Plain', {}), scenario('resource', 'Resource value', { resource: true }), scenario('item', 'Item icon', { item: true })]),
   widget('compound.dialog-field', 'Dialog Field', ['primitive.text-field'], fieldControl, [scenario('integer', 'Integer', { inputKind: 'integer' }), scenario('text', 'Text', { inputKind: 'text' }), scenario('multiline', 'Multiline', { inputKind: 'text', multiline: true })]),
   widget('compound.amount-selector', 'Amount Selector', ['text-button', 'primitive.text-field'], amountControl, [scenario('enabled', 'Enabled', {}), scenario('disabled', 'Disabled', { disabled: true })]),
@@ -137,6 +139,32 @@ function ledgerRowControl({ assets, input, fixture }) {
   });
   control.setBounds(0, 0, LEDGER_ROW_WIDTH, 58);
   return wrap(control.root, LEDGER_ROW_WIDTH, 58, () => control.destroy(), { control });
+}
+
+function playerMarketOfferRowControl({ assets, input, fixture }) {
+  const control = new PlayerMarketOfferRow({
+    assetManager: assets,
+    inputRouter: input,
+    label: 'ui-lab:player-market-offer',
+  });
+  control.bind('listing', {
+    username: 'Mira',
+    allianceTag: fixture.alliance ? 'OWL' : '',
+    allianceTagColor: 'violet',
+    character: 'elara',
+    frame: 'violet',
+    itemLabel: 'Sage Seed',
+    itemKind: 'seed',
+    itemKey: 'sageSeed',
+    quantityLabel: 'x12',
+    priceLabel: '8 coin',
+    actionLabel: fixture.request ? '' : 'Buy',
+    actionVariant: 'green',
+    action: fixture.request ? null : () => true,
+  });
+  control.applyTheme(createDialogContentTheme(DEFAULT_PIXI_THEME_SNAPSHOT));
+  control.setBounds(0, 0, WIDTH, 72);
+  return wrap(control.root, WIDTH, 72, () => control.destroy(), { control });
 }
 
 function summaryRowControl({ assets, input, fixture }) {

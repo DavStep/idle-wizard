@@ -56,6 +56,7 @@ export class GardenSoundManager {
     this.logger = logger;
     this.enabled = true;
     this.volume = 1;
+    this.appActive = true;
     this.activeClips = new Set();
     this.cues = new Map([
       ['plant', this.createCue(plantSampleUrls)],
@@ -81,6 +82,13 @@ export class GardenSoundManager {
     }
   }
 
+  setAppActive(active) {
+    this.appActive = active !== false;
+    if (!this.appActive) {
+      this.stopActiveClips();
+    }
+  }
+
   playPlant() {
     return this.playCue('plant');
   }
@@ -91,7 +99,7 @@ export class GardenSoundManager {
 
   playCue(cueId) {
     const cue = this.cues.get(cueId);
-    if (!this.enabled || !cue || cue.urls.length === 0) {
+    if (!this.enabled || !this.appActive || !cue || cue.urls.length === 0) {
       return false;
     }
 

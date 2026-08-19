@@ -16,6 +16,7 @@ import {
   gardenBulkResearchLevels,
 } from '../../garden/gardenBulkResearch.js';
 import { itemTimerResearchIds } from '../itemTimerResearch.js';
+import { manaResearchIds } from '../manaResearch.js';
 
 function createManager() {
   let maxGardenTiles = 10;
@@ -65,41 +66,116 @@ describe('ResearchDefinitionManager', () => {
     ]);
   });
 
-  it('adds independent item timer mastery chains to regular research', () => {
+  it('offers level-gated sequential mana capacity and generation research', () => {
+    const { manager } = createManager();
+    const manaBox = manager
+      .getRegularResearchBoxes()
+      .find((box) => box.id === 'manaSphere');
+
+    expect(manaBox?.researches).toHaveLength(198);
+    expect(manaBox?.researches[0]).toMatchObject({
+      id: manaResearchIds.capacity(2),
+      requiredPlayerLevel: 2,
+      requiredResearchIds: [],
+      value: '+50 mana',
+      description: 'increases mana capacity from 50 to 100.',
+    });
+    expect(manaBox?.researches[1]).toMatchObject({
+      id: manaResearchIds.capacity(3),
+      requiredPlayerLevel: 3,
+      requiredResearchIds: [manaResearchIds.capacity(2)],
+    });
+    expect(manaBox?.researches[99]).toMatchObject({
+      id: manaResearchIds.generation(2),
+      requiredPlayerLevel: 2,
+      requiredResearchIds: [],
+      value: '+1/sec',
+      description: 'increases mana generation from 1/sec to 2/sec.',
+    });
+    expect(manaBox?.researches[114]).toMatchObject({
+      id: manaResearchIds.generation(17),
+      requiredPlayerLevel: 17,
+      requiredResearchIds: [manaResearchIds.generation(16)],
+      value: '+0.25/sec',
+      description: 'increases mana generation from 9/sec to 9.25/sec.',
+    });
+  });
+
+  it('places each item unlock directly before its timer mastery chain', () => {
     const { manager } = createManager();
     const regularBoxes = manager.getRegularResearchBoxes({
       includeHiddenRecipeUnlocks: true,
     });
-    const herbResearches = regularBoxes.find(
-      (box) => box.id === 'herbGrowthMastery',
-    )?.researches;
-    const potionResearches = regularBoxes.find(
-      (box) => box.id === 'potionBrewingMastery',
-    )?.researches;
+    const seedBox = regularBoxes.find((box) => box.id === 'seedUnlocks');
+    const herbResearches = seedBox?.researches;
+    const potionBox = regularBoxes.find((box) => box.id === 'recipeUnlocks');
+    const potionResearches = potionBox?.researches;
 
     expect(herbResearches?.filter((research) => research.itemKey === 'sageHerb'))
-      .toHaveLength(2);
+      .toHaveLength(19);
     expect(herbResearches?.filter((research) => research.itemKey === 'mintHerb'))
-      .toHaveLength(4);
+      .toHaveLength(19);
     expect(herbResearches?.filter((research) => research.itemKey === 'glowcapHerb'))
       .toHaveLength(19);
-    expect(herbResearches?.[0]).toMatchObject({
+    expect(seedBox?.label).toBe('seed research');
+    expect(herbResearches?.slice(0, 4).map((research) => research.id)).toEqual([
+      'unlockSeed:sageSeed',
+      itemTimerResearchIds.herbGrowth('sageHerb', 1),
+      itemTimerResearchIds.herbGrowth('sageHerb', 2),
+      itemTimerResearchIds.herbGrowth('sageHerb', 3),
+    ]);
+    expect(herbResearches?.find(
+      (research) =>
+        research.id === itemTimerResearchIds.herbGrowth('sageHerb', 1),
+    )).toMatchObject({
       id: itemTimerResearchIds.herbGrowth('sageHerb', 1),
+      durationSeconds: 12,
       itemKind: 'herb',
       itemKey: 'sageHerb',
+      artExtraKey: 'timerReduction',
       requiredResearchIds: ['unlockSeed:sageSeed'],
-      starMaxLevel: 2,
+      starMaxLevel: 19,
     });
     expect(potionResearches?.filter((research) => research.itemKey === 'manaTonic'))
-      .toHaveLength(2);
+      .toHaveLength(19);
+    expect(potionBox?.label).toBe('potion research');
+    expect(potionResearches?.slice(0, 4).map((research) => research.id)).toEqual([
+      'unlockRecipe:manaTonic',
+      itemTimerResearchIds.potionBrewing('manaTonic', 1),
+      itemTimerResearchIds.potionBrewing('manaTonic', 2),
+      itemTimerResearchIds.potionBrewing('manaTonic', 3),
+    ]);
     expect(potionResearches?.find(
       (research) =>
         research.id === itemTimerResearchIds.potionBrewing('manaTonic', 1),
     )).toMatchObject({
+      durationSeconds: 30,
       itemKind: 'potion',
+      artExtraKey: 'timerReduction',
       requiredResearchIds: ['unlockRecipe:manaTonic'],
-      starMaxLevel: 2,
+      starMaxLevel: 19,
     });
+    expect(manager.getResearch(
+      itemTimerResearchIds.herbGrowth('pearlrootHerb', 19),
+    )).toMatchObject({ durationSeconds: 18_278 });
+    expect(
+      herbResearches
+        ?.filter((research) => research.itemKey === 'sageHerb')
+        .slice(0, 2)
+        .map((research) => research.description),
+    ).toEqual([
+      'reduces sage growing time from 12s to 11.68s.',
+      'reduces sage growing time from 11.68s to 11.35s.',
+    ]);
+    expect(
+      potionResearches
+        ?.filter((research) => research.itemKey === 'manaTonic')
+        .slice(0, 2)
+        .map((research) => research.description),
+    ).toEqual([
+      'reduces mana tonic brewing time from 30s to 29.19s.',
+      'reduces mana tonic brewing time from 29.19s to 28.38s.',
+    ]);
   });
 
   it('reuses research definitions for the same visible state', () => {

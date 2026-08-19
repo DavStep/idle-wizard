@@ -524,7 +524,7 @@ describe('ShopPixiPage', () => {
     inputRouter.destroy();
   });
 
-  it('renders the sale batch in a compact red top-right badge', () => {
+  it('renders the sale batch in an aspect-correct red top-right badge', () => {
     const getTexture = vi.fn(() => Texture.EMPTY);
     const harness = createHarness({
       assetManager: {
@@ -550,12 +550,16 @@ describe('ShopPixiPage', () => {
     expect(stall.batchBadge).toMatchObject({
       visible: true,
       renderable: true,
-      width: 30,
-      height: 27,
+      width: 29,
+      height: 31,
       y: -2,
     });
+    expect(stall.batchBadge.width / stall.batchBadge.height).toBeCloseTo(
+      184 / 196,
+      2,
+    );
     expect(stall.batch.x).toBe(stall.batchBadge.x);
-    expect(stall.batch.y).toBe(8);
+    expect(stall.batch.y).toBe(9);
     expect(stall.batchBadge.x + stall.batchBadge.width / 2).toBe(
       stall.priceAction.x - 10,
     );
@@ -1055,6 +1059,8 @@ describe('ShopPixiPage', () => {
     expect(row.availabilityStars.tone).toBe('orange');
     expect(row.availabilityStars.starCount).toBe(1);
     expect(row.availabilityStars.x).toBeGreaterThan(row.availability.x);
+    expect(row.itemIcon.width).toBe(40);
+    expect(row.itemIcon.height).toBe(40);
 
     harness.page.destroy();
     harness.dispose();
@@ -1189,6 +1195,41 @@ describe('ShopPixiPage', () => {
     harness.dispose();
   });
 
+  it.each([
+    [SHOP_DIALOG_IDS.REQUEST, 'Request'],
+    [SHOP_DIALOG_IDS.TRADE_HISTORY, 'Trade History'],
+  ])(
+    'uses the tall primary-list shell for %s at the authored mobile viewport and grows it on taller ones',
+    (dialogId, title) => {
+      const harness = createHarness();
+      harness.page.bind(createShopViewModel());
+      harness.page.activate();
+      harness.page.openDialog(dialogId, {
+        title,
+        items: Array.from({ length: 12 }, (_, index) => ({
+          id: `item-${index}`,
+          label: `Item ${index + 1}`,
+        })),
+      });
+      const dialog = harness.dialogs.get(dialogId);
+
+      dialog.layout({ sourceWidth: 390, sourceHeight: 844 });
+      const authoredViewportListHeight = dialog.list.height;
+
+      expect(dialog.panel.coreHeight).toBe(464);
+
+      dialog.layout({ sourceWidth: 390, sourceHeight: 944 });
+
+      expect(dialog.panel.coreHeight).toBe(564);
+      expect(dialog.list.height).toBeGreaterThan(
+        authoredViewportListHeight,
+      );
+
+      harness.page.destroy();
+      harness.dispose();
+    },
+  );
+
   it('hides a lone Market Ledger tab and gives its footer space to the list', () => {
     const harness = createHarness();
     harness.page.bind(createShopViewModel());
@@ -1230,7 +1271,7 @@ describe('ShopPixiPage', () => {
     harness.dispose();
   });
 
-  it('renders Player Market listings with the shared compact row and coin icon', () => {
+  it('renders Player Market offers with leaderboard-style identity, no index, and a Buy action', () => {
     const getAtlasTexture = vi.fn((frameName) => {
       if (frameName === 'resource:seed') {
         throw new Error(`Missing Pixi atlas frame: ${frameName}`);
@@ -1271,10 +1312,81 @@ describe('ShopPixiPage', () => {
 
     expect(getAtlasTexture).not.toHaveBeenCalledWith('resource:seed');
     expect(getAtlasTexture).toHaveBeenCalledWith('resource:coin');
-    expect(row.indexLabel.text).toBe('1.');
-    expect(row.itemLabel.text).toBe('Sage Seed (2) · Mira');
-    expect(row.valueResource.visible).toBe(true);
-    expect(row.valueLabel.visible).toBe(false);
+    expect(row.indexLabel).toBeUndefined();
+    expect(row.username.text).toBe('Mira');
+    expect(row.itemLabel.text).toBe('Sage Seed x2');
+    expect(row.price.visible).toBe(true);
+    expect(row.buyButton.visible).toBe(true);
+    expect(row.frame.frameWidth).toBeCloseTo(326);
+    expect(row.frame.frameHeight).toBeCloseTo(
+      PIXI_ROOT_RUN_GEOMETRY.settings.rowPitch -
+        PIXI_ROOT_RUN_GEOMETRY.settings.rowGap,
+    );
+    expect(row.avatar.scale.x * 186).toBeCloseTo(37);
+    expect(row.tag.y).toBe(10);
+    expect(row.itemIcon.height).toBeCloseTo(17);
+    expect(row.price.y).toBe(row.itemLabel.y + 1);
+    expect(row.eachLabel.y).toBe(row.itemLabel.y);
+    expect(row.price.x).toBeGreaterThan(
+      row.itemLabel.x + row.itemLabel.measuredWidth,
+    );
+    expect(row.price.amountLabel.x).toBe(0);
+    expect(row.price.icon.x).toBeGreaterThan(
+      row.price.amountLabel.measuredWidth,
+    );
+    expect(row.eachLabel.text).toBe('each');
+    expect(row.eachLabel.x).toBeGreaterThan(
+      row.price.x + row.price.measuredWidth,
+    );
+
+    harness.page.destroy();
+    harness.dispose();
+  });
+
+  it('lays out Buy Offer as separate seller and item papers with an integer slider', () => {
+    const harness = createHarness();
+    harness.page.bind(createShopViewModel());
+    harness.page.activate();
+    harness.page.openDialog(SHOP_DIALOG_IDS.BUY, {
+      title: 'Buy Offer',
+      seller: {
+        username: 'Mira',
+        allianceTag: 'OWL',
+        allianceTagColor: 'violet',
+        character: 'elara',
+        frame: 'violet',
+      },
+      featuredItem: {
+        id: 'sage-offer',
+        label: 'Sage Seed',
+        detail: '12 Available',
+        itemKey: 'sageSeed',
+        itemKind: 'seed',
+        quantityLabel: 'x3',
+      },
+      range: {
+        enabled: true,
+        min: 1,
+        max: 12,
+        step: 1,
+        value: 3,
+        onChange: vi.fn(),
+      },
+      totalLabel: '24 coin',
+      actions: [
+        { id: 'buy', label: 'Buy', variant: 'green', action: vi.fn() },
+      ],
+    });
+
+    const dialog = harness.dialogs.get(SHOP_DIALOG_IDS.BUY);
+    expect(dialog.selectionSection.visible).toBe(true);
+    expect(dialog.itemSection.visible).toBe(true);
+    expect(dialog.sellerSummary.username.text).toBe('Mira');
+    expect(dialog.sellerSummary.tag.text).toBe('[OWL]');
+    expect(dialog.featuredItemRow.label.text).toBe('Sage Seed');
+    expect(dialog.rangeControl.value).toBe(3);
+    expect(dialog.purchaseTotal.amountLabel.text).toBe('24');
+    expect(dialog.actions.getWidgets()[0].control.textLabel.text).toBe('Buy');
 
     harness.page.destroy();
     harness.dispose();
@@ -1426,6 +1538,9 @@ describe('ShopPixiPage', () => {
     );
     expect(row.itemIcon.visible).toBe(true);
     expect(row.itemIconOverlay.visible).toBe(true);
+    expect(
+      Math.max(row.itemIcon.width, row.itemIcon.height),
+    ).toBeCloseTo(32);
     expect(
       row.itemIconOverlay.width / row.itemIcon.width,
     ).toBeCloseTo(0.44);
@@ -1602,6 +1717,12 @@ describe('ShopPixiPage', () => {
     });
 
     const request = harness.dialogs.get(SHOP_DIALOG_IDS.REQUEST);
+    expect(
+      Math.max(
+        request.list.rows.get('sageSeed').itemIcon.width,
+        request.list.rows.get('sageSeed').itemIcon.height,
+      ),
+    ).toBeCloseTo(32);
     expect(request.panel.paperFrame.visible).toBe(false);
     expect(request.selectionSection.visible).toBe(true);
     expect(request.itemSection.visible).toBe(true);
@@ -1667,6 +1788,12 @@ describe('ShopPixiPage', () => {
     });
 
     const listing = harness.dialogs.get(SHOP_DIALOG_IDS.LISTING);
+    expect(
+      Math.max(
+        listing.list.rows.get('sageSeed').itemIcon.width,
+        listing.list.rows.get('sageSeed').itemIcon.height,
+      ),
+    ).toBeCloseTo(32);
     expect(listing.panel.paperFrame.visible).toBe(false);
     expect(listing.rangeControl.visible).toBe(true);
     expect(listing.rangeControl).toMatchObject({

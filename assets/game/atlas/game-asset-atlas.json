@@ -27,8 +27,8 @@
     },
     "herb:bloodroseHerb": {
       "frame": {
-        "x": 32,
-        "y": 1195,
+        "x": 1881,
+        "y": 1035,
         "w": 89,
         "h": 128
       },
@@ -127,7 +127,7 @@
     },
     "herb:dreambellHerb": {
       "frame": {
-        "x": 1113,
+        "x": 1100,
         "y": 1195,
         "w": 128,
         "h": 122
@@ -177,7 +177,7 @@
     },
     "herb:glowcapHerb": {
       "frame": {
-        "x": 1725,
+        "x": 1712,
         "y": 1195,
         "w": 128,
         "h": 117
@@ -502,7 +502,7 @@
     },
     "herb:sunrootHerb": {
       "frame": {
-        "x": 1758,
+        "x": 1632,
         "y": 1035,
         "w": 93,
         "h": 128
@@ -1002,7 +1002,7 @@
     },
     "ingredient:fallenAngelFeather": {
       "frame": {
-        "x": 1885,
+        "x": 1872,
         "y": 1195,
         "w": 93,
         "h": 117
@@ -1052,7 +1052,7 @@
     },
     "ingredient:firstFlameFragment": {
       "frame": {
-        "x": 1621,
+        "x": 1608,
         "y": 1195,
         "w": 72,
         "h": 121
@@ -1527,7 +1527,7 @@
     },
     "ingredient:phoenixFeather": {
       "frame": {
-        "x": 1389,
+        "x": 1376,
         "y": 1195,
         "w": 81,
         "h": 122
@@ -1702,7 +1702,7 @@
     },
     "ingredient:starEaterTooth": {
       "frame": {
-        "x": 1502,
+        "x": 1489,
         "y": 1195,
         "w": 87,
         "h": 121
@@ -2002,7 +2002,7 @@
     },
     "ingredient:worldSerpentVenom": {
       "frame": {
-        "x": 1273,
+        "x": 1260,
         "y": 1195,
         "w": 84,
         "h": 122
@@ -3077,7 +3077,7 @@
     },
     "research:autoBrew": {
       "frame": {
-        "x": 153,
+        "x": 140,
         "y": 1195,
         "w": 128,
         "h": 125
@@ -3102,7 +3102,7 @@
     },
     "research:automationReserve": {
       "frame": {
-        "x": 313,
+        "x": 300,
         "y": 1195,
         "w": 128,
         "h": 125
@@ -3177,7 +3177,7 @@
     },
     "research:cauldronBrewing": {
       "frame": {
-        "x": 473,
+        "x": 460,
         "y": 1195,
         "w": 128,
         "h": 125
@@ -3202,7 +3202,7 @@
     },
     "research:cauldronCapacity": {
       "frame": {
-        "x": 793,
+        "x": 780,
         "y": 1195,
         "w": 128,
         "h": 124
@@ -3227,7 +3227,7 @@
     },
     "research:cauldronLevel": {
       "frame": {
-        "x": 633,
+        "x": 620,
         "y": 1195,
         "w": 128,
         "h": 125
@@ -3352,7 +3352,7 @@
     },
     "research:researchCost": {
       "frame": {
-        "x": 953,
+        "x": 940,
         "y": 1195,
         "w": 128,
         "h": 123
@@ -3377,9 +3377,9 @@
     },
     "research:researchTime": {
       "frame": {
-        "x": 1632,
-        "y": 1035,
-        "w": 94,
+        "x": 32,
+        "y": 1195,
+        "w": 76,
         "h": 128
       },
       "rotated": false,
@@ -3387,11 +3387,11 @@
       "spriteSourceSize": {
         "x": 0,
         "y": 0,
-        "w": 94,
+        "w": 76,
         "h": 128
       },
       "sourceSize": {
-        "w": 94,
+        "w": 76,
         "h": 128
       },
       "originalSourceSize": {
@@ -3652,7 +3652,7 @@
     },
     "tool:herbCuttingScissorsClosed": {
       "frame": {
-        "x": 1883,
+        "x": 1757,
         "y": 1035,
         "w": 92,
         "h": 128

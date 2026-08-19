@@ -37,6 +37,10 @@ export class ResearchPurchaseManager {
         researchId,
       };
     }
+    const research = this.researchDefinitionManager.getResearch(
+      normalizedResearchId,
+      researchOptions,
+    );
 
     const cost = this.getResearchCost(normalizedResearchId);
 
@@ -105,7 +109,9 @@ export class ResearchPurchaseManager {
     }
 
     const durationSeconds = this.getReducedDurationSeconds(
-      this.researchBalanceManager.getDurationSeconds(normalizedResearchId),
+      this.researchBalanceManager.getDurationSeconds(normalizedResearchId, {
+        defaultDurationSeconds: research?.durationSeconds ?? 0,
+      }),
     );
 
     if (!this.getCurrencyFacade(cost.currency)?.spend(cost.amount)) {

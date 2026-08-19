@@ -10,10 +10,18 @@ import {
   gardenBulkResearchLevels,
 } from '../src/gameplay/garden/gardenBulkResearch.js';
 import {
+  createManaResearchCostsCoin,
+  getManaGenerationResearchIncrease,
+  manaResearchDurationSeconds,
+  manaResearchFirstPlayerLevel,
+  manaResearchIds,
+  manaResearchMaxPlayerLevel,
+} from '../src/gameplay/research/manaResearch.js';
+import {
   applyItemTimerResearchReduction,
   createItemTimerResearchCosts,
+  getItemTimerResearchDurationSeconds,
   getItemTimerResearchMaxLevel,
-  itemTimerResearchDurationSeconds,
   itemTimerResearchIds,
 } from '../src/gameplay/research/itemTimerResearch.js';
 
@@ -263,6 +271,7 @@ class BalanceSimulator {
 
       this.state.inProgressResearch.delete(researchId);
       this.state.completedResearch.add(researchId);
+      this.applyManaResearchEffect(researchId);
       this.addEvent(`research complete: ${this.getResearchLabel(researchId)}`);
     }
   }
@@ -394,6 +403,7 @@ class BalanceSimulator {
         this.addEvent(`research start: ${research.label}`);
       } else {
         this.state.completedResearch.add(research.id);
+        this.applyManaResearchEffect(research.id);
         this.addEvent(`research complete: ${research.label}`);
       }
 
@@ -404,7 +414,7 @@ class BalanceSimulator {
   }
 
   canBuyResearch(research) {
-    if (!this.isResearchUnlockedForLevel(research.id)) {
+    if (!this.isResearchUnlockedForLevel(research)) {
       return false;
     }
 
@@ -427,8 +437,10 @@ class BalanceSimulator {
     return this.canSpendCurrency(cost.currency, cost.amount);
   }
 
-  isResearchUnlockedForLevel(researchId) {
+  isResearchUnlockedForLevel(research) {
+    const researchId = research.id;
     const requiredLevel =
+      research.requiredPlayerLevel ??
       SEED_RESEARCH_LEVELS[researchId] ??
       RECIPE_RESEARCH_LEVELS[researchId] ??
       (researchId === gardenBulkResearchIds.plantAll
@@ -1070,9 +1082,15 @@ class BalanceSimulator {
   }
 
   syncLevelEffects() {
-    const mana = this.getManaForLevel(this.state.level);
+    const completedManaResearchIds = [...this.state.completedResearch].filter((researchId) =>
+      /^(?:manaSphereCap|manaProductionRate):\d+$/.test(researchId),
+    );
+    const mana = this.getManaForLevel();
     this.state.mana.cap = mana.maxManaCap;
     this.state.mana.perSecond = mana.manaPerSecond;
+    for (const researchId of completedManaResearchIds) {
+      this.applyManaResearchEffect(researchId);
+    }
     this.state.mana.current = Math.min(this.state.mana.current, this.state.mana.cap);
 
     const maxCauldrons = this.getMaxByLevel(this.state.level, 'maxCauldrons');
@@ -1081,14 +1099,24 @@ class BalanceSimulator {
     }
   }
 
-  getManaForLevel(level) {
-    const safeLevel = Math.max(1, Math.floor(Number(level) || 1));
-    const mana = playerLevelBalance.mana;
-
+  getManaForLevel() {
     return {
-      maxManaCap: mana.baseMaxManaCap + (safeLevel - 1) * mana.maxManaCapPerLevel,
-      manaPerSecond: mana.baseManaPerSecond + (safeLevel - 1) * mana.manaPerSecondPerLevel,
+      maxManaCap: 50,
+      manaPerSecond: 1,
     };
+  }
+
+  applyManaResearchEffect(researchId) {
+    if (/^manaSphereCap:\d+$/.test(researchId)) {
+      this.state.mana.cap += 50;
+      return;
+    }
+
+    const generationMatch = /^manaProductionRate:(\d+)$/.exec(researchId);
+    if (generationMatch) {
+      const playerLevel = Number(generationMatch[1]) + manaResearchFirstPlayerLevel - 1;
+      this.state.mana.perSecond += getManaGenerationResearchIncrease(playerLevel);
+    }
   }
 
   getMaxByLevel(level, key) {
@@ -1320,6 +1348,34 @@ function getRecipeUnlockOrderIndex(potionKey) {
 function createResearchCatalog({ herbDefinitions, recipes, seedDefinitions }) {
   const catalog = [];
 
+  for (
+    let playerLevel = manaResearchFirstPlayerLevel;
+    playerLevel <= manaResearchMaxPlayerLevel;
+    playerLevel += 1
+  ) {
+    const previousPlayerLevel = playerLevel - 1;
+    catalog.push(
+      {
+        id: manaResearchIds.capacity(playerLevel),
+        label: `mana capacity lvl ${playerLevel}`,
+        requiredPlayerLevel: playerLevel,
+        requiredResearchIds:
+          playerLevel > manaResearchFirstPlayerLevel
+            ? [manaResearchIds.capacity(previousPlayerLevel)]
+            : [],
+      },
+      {
+        id: manaResearchIds.generation(playerLevel),
+        label: `mana generation lvl ${playerLevel}`,
+        requiredPlayerLevel: playerLevel,
+        requiredResearchIds:
+          playerLevel > manaResearchFirstPlayerLevel
+            ? [manaResearchIds.generation(previousPlayerLevel)]
+            : [],
+      },
+    );
+  }
+
   seedDefinitions.forEach((seed, index) => {
     const previous = seedDefinitions[index - 1];
     catalog.push({
@@ -1365,6 +1421,10 @@ function createResearchCatalog({ herbDefinitions, recipes, seedDefinitions }) {
     for (let level = 1; level <= maxLevel; level += 1) {
       catalog.push({
         id: itemTimerResearchIds.herbGrowth(herb.key, level),
+        durationSeconds: getItemTimerResearchDurationSeconds(
+          herb.growthDurationMs,
+          level,
+        ),
         label: `${herb.label} growing lvl ${level}`,
         requiredResearchIds:
           level > 1
@@ -1379,6 +1439,10 @@ function createResearchCatalog({ herbDefinitions, recipes, seedDefinitions }) {
     for (let level = 1; level <= maxLevel; level += 1) {
       catalog.push({
         id: itemTimerResearchIds.potionBrewing(recipe.key, level),
+        durationSeconds: getItemTimerResearchDurationSeconds(
+          recipe.brewDurationMs,
+          level,
+        ),
         label: `${recipe.label} brewing lvl ${level}`,
         requiredResearchIds:
           level > 1
@@ -1407,6 +1471,10 @@ function createResearchCatalog({ herbDefinitions, recipes, seedDefinitions }) {
 
 function createResearchCosts() {
   const costs = new Map();
+
+  Object.entries(createManaResearchCostsCoin()).forEach(([id, amount]) => {
+    costs.set(id, { currency: 'coin', amount });
+  });
 
   Object.entries(researchBalance.researchCostsCoin).forEach(([id, amount]) => {
     costs.set(id, { currency: 'coin', amount });
@@ -1464,8 +1532,12 @@ function createResearchDurations(researchCatalog = []) {
 
   for (const researchId of researchCatalog
     .map((research) => research.id)
-    .filter((id) => id.startsWith('timer:'))) {
-    durations.set(researchId, itemTimerResearchDurationSeconds);
+    .filter((id) => /^(?:manaSphereCap|manaProductionRate):\d+$/.test(id))) {
+    durations.set(researchId, manaResearchDurationSeconds);
+  }
+
+  for (const research of researchCatalog.filter((entry) => entry.id.startsWith('timer:'))) {
+    durations.set(research.id, research.durationSeconds);
   }
 
   return durations;

@@ -95,4 +95,22 @@ describe('GardenSoundManager', () => {
     expect(manager.playPlant()).toBe(false);
     expect(manager.playHarvest()).toBe(false);
   });
+
+  it('stops active clips and rejects new cues while the native app is inactive', () => {
+    const { audioFactory, clips } = createAudioHarness();
+    const manager = new GardenSoundManager({
+      audioFactory,
+      plantSampleUrls: ['plant.wav'],
+      harvestSampleUrls: [],
+    });
+
+    expect(manager.playPlant()).toBe(true);
+    manager.setAppActive(false);
+
+    expect(clips[0].pause).toHaveBeenCalledTimes(1);
+    expect(manager.playPlant()).toBe(false);
+
+    manager.setAppActive(true);
+    expect(manager.playPlant()).toBe(true);
+  });
 });

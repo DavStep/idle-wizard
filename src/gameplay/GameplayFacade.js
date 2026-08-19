@@ -261,7 +261,6 @@ export class GameplayFacade {
       const taskLevelCompletion = this.completeReadyTaskLevels({
         announce: false,
       });
-      this.syncPlayerLevelManaEffects();
       const backfilledCrystal =
         this.levelUpCrystalRewardManager.grantMissingForCurrentLevel();
       if (backfilledCrystal > 0 || taskLevelCompletion?.advanced) {
@@ -342,7 +341,6 @@ export class GameplayFacade {
     this.syncRubyFromPrestige();
     const backfilledCrystal =
       this.levelUpCrystalRewardManager.grantMissingForCurrentLevel();
-    this.syncPlayerLevelManaEffects();
     this.tasksFacade.syncCurrentLevelStateRequirements();
     const taskLevelCompletion = loaded
       ? this.completeReadyTaskLevels({ announce: false })
@@ -490,7 +488,6 @@ export class GameplayFacade {
       result.levelBefore ?? result.level,
       result.currentLevel,
     );
-    this.syncPlayerLevelManaEffects();
 
     if (announce) {
       void this.worldChatFacade?.announceLevelUp?.(result.currentLevel);
@@ -620,7 +617,6 @@ export class GameplayFacade {
       inboxRewards: this.inboxRewardsFacade.getPersistenceSnapshot(),
       stats: this.statsFacade.getPersistenceSnapshot(),
     });
-    this.syncPlayerLevelManaEffects();
     this.syncRubyFromPrestige({ resetRun: true });
   }
 
@@ -1949,7 +1945,6 @@ export class GameplayFacade {
     const backfilledCrystal = loaded
       ? this.levelUpCrystalRewardManager.grantMissingForCurrentLevel()
       : 0;
-    this.syncPlayerLevelManaEffects();
     this.tasksFacade.syncCurrentLevelStateRequirements();
     const taskLevelCompletion = loaded
       ? this.completeReadyTaskLevels({ announce: false })
@@ -1982,7 +1977,6 @@ export class GameplayFacade {
     this.shopFacade.syncActiveMarketLicence();
     this.syncRubyFromPrestige();
     this.levelUpCrystalRewardManager.grantMissingForCurrentLevel();
-    this.syncPlayerLevelManaEffects();
     this.tasksFacade.syncCurrentLevelStateRequirements();
     this.publishSnapshot();
     return true;
@@ -2021,12 +2015,6 @@ export class GameplayFacade {
         this.publishSnapshot();
       }
     });
-  }
-
-  syncPlayerLevelManaEffects() {
-    this.manaFacade.setLevelUpgradeEffects(
-      this.playerLevelFacade.getManaEffects(),
-    );
   }
 
   applyOfflineTimerCatchup(ecsFacade) {

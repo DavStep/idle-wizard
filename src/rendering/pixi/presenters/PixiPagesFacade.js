@@ -191,6 +191,7 @@ export class PixiPagesFacade {
     this.nativeBackHandle = null;
     this.releaseNpcMarket = null;
     this.releasePlayerMarket = null;
+    this.releasePlayerInfoMarket = null;
     this.releaseTradeAlliancePublic = null;
     this.gameplaySnapshot = {};
     this.playerSnapshot = {};
@@ -202,6 +203,7 @@ export class PixiPagesFacade {
     this.worldEventLeaderboardSnapshot = {};
     this.playerInboxSnapshot = {};
     this.playerShopSnapshot = {};
+    this.playerInfoSnapshot = {};
     this.tradeAllianceSnapshot = {};
     this.pageStates = [];
     this.notifications = { pages: {}, active: false };
@@ -224,6 +226,9 @@ export class PixiPagesFacade {
     this.shopMarketFiltersOpen = false;
     this.shopMarketFilterDraft = createEmptyMarketFilters();
     this.shopMarketFilterApplied = createEmptyMarketFilters();
+    this.shopMarketBuyListingKey = null;
+    this.shopMarketBuyQuantity = 1;
+    this.shopMarketBuyStatus = "";
     this.shopStallItemTypeIdBySlot = new Map();
     this.shopStallTargetQuantityBySlot = new Map();
     this.shopStallItemKindBySlot = new Map();
@@ -378,6 +383,7 @@ export class PixiPagesFacade {
       this.worldEventLeaderboardFacade?.getSnapshot?.() ?? {};
     this.playerInboxSnapshot = this.playerInboxFacade?.getSnapshot?.() ?? {};
     this.playerShopSnapshot = this.playerShopFacade?.getSnapshot?.() ?? {};
+    this.playerInfoSnapshot = this.playerInfoFacade?.getSnapshot?.() ?? {};
     this.tradeAllianceSnapshot =
       this.tradeAllianceFacade?.getSnapshot?.() ?? {};
   }
@@ -440,6 +446,13 @@ export class PixiPagesFacade {
       this.playerShopFacade?.subscribe?.((snapshot) => {
         this.playerShopSnapshot = snapshot ?? {};
         this.refresh();
+      }),
+    );
+    this.trackSubscription(
+      this.playerInfoFacade?.subscribe?.((snapshot) => {
+        this.playerInfoSnapshot = snapshot ?? {};
+        this.refreshShopMarketDialog();
+        this.refreshShopBuyDialog();
       }),
     );
     this.trackSubscription(
@@ -906,6 +919,7 @@ export class PixiPagesFacade {
         viewModel = createShopPixiViewModel({
           gameplaySnapshot: this.gameplaySnapshot,
           playerShopSnapshot: this.playerShopSnapshot,
+          playerInfoSnapshot: this.playerInfoSnapshot,
           notificationSnapshot: pageNotification,
           selectedTabId: this.shopTabId,
           gameplayActions: this.gameplayFacade,
@@ -917,6 +931,9 @@ export class PixiPagesFacade {
             marketFiltersOpen: this.shopMarketFiltersOpen,
             marketFilterDraft: this.shopMarketFilterDraft,
             marketFilterApplied: this.shopMarketFilterApplied,
+            marketBuyListingKey: this.shopMarketBuyListingKey,
+            marketBuyQuantity: this.shopMarketBuyQuantity,
+            marketBuyStatus: this.shopMarketBuyStatus,
             selectedRequestSlotNumber: this.shopSelectedRequestSlotNumber,
             stallItemTypeIdBySlot: Object.fromEntries(
               this.shopStallItemTypeIdBySlot,
@@ -1067,6 +1084,22 @@ export class PixiPagesFacade {
     const market = viewModel.shop?.dialogs?.market;
     if (market) {
       runtime.getPage("shop")?.openDialog?.(SHOP_DIALOG_IDS.MARKET, market);
+    }
+    return viewModel;
+  }
+
+  refreshShopBuyDialog() {
+    const viewModel = this.refreshPage("shop");
+    const runtime = this.requireRuntime();
+    if (
+      !viewModel ||
+      !runtime.getOpenDialogIds?.().includes(SHOP_DIALOG_IDS.BUY)
+    ) {
+      return viewModel;
+    }
+    const buy = viewModel.shop?.dialogs?.buy;
+    if (buy) {
+      runtime.getPage("shop")?.openDialog?.(SHOP_DIALOG_IDS.BUY, buy);
     }
     return viewModel;
   }
@@ -1700,9 +1733,85 @@ export class PixiPagesFacade {
         clearMarketFilters: () => {
           this.shopMarketFilterDraft = createEmptyMarketFilters();
           this.shopMarketFilterApplied = createEmptyMarketFilters();
-          this.shopMarketFiltersOpen = false;
           this.refreshShopMarketDialog();
           return true;
+        },
+        openMarketBuy: (listing) => {
+          const listingKey = String(listing?.listingKey ?? "");
+          if (!listingKey) {
+            return false;
+          }
+          this.shopMarketBuyListingKey = listingKey;
+          this.shopMarketBuyQuantity = 1;
+          this.shopMarketBuyStatus = "";
+          const viewModel = this.refreshPage("shop");
+          const buy = viewModel?.shop?.dialogs?.buy;
+          return buy
+            ? this.requireRuntime()
+                .getPage("shop")
+                ?.openDialog?.(SHOP_DIALOG_IDS.BUY, buy) ?? false
+            : false;
+        },
+        setMarketBuyQuantity: (value) => {
+          this.shopMarketBuyQuantity = Math.max(
+            1,
+            Math.floor(Number(value) || 1),
+          );
+          this.shopMarketBuyStatus = "";
+          this.refreshShopBuyDialog();
+          return true;
+        },
+        confirmMarketBuy: async (listing, quantity) => {
+          const buyQuantity = Math.max(
+            1,
+            Math.min(
+              Math.max(1, Math.floor(Number(listing?.quantity) || 1)),
+              Math.floor(Number(quantity) || 1),
+            ),
+          );
+          const totalPriceCoin = Math.ceil(
+            Math.max(0, Number(listing?.priceCoin) || 0) * buyQuantity,
+          );
+          const currentCoin = Math.max(
+            0,
+            Number(this.gameplaySnapshot?.coin?.current) || 0,
+          );
+          if (currentCoin < totalPriceCoin) {
+            this.shopMarketBuyStatus = "Not Enough Coin";
+            this.refreshShopBuyDialog();
+            return { ok: false, reason: "not_enough_coin" };
+          }
+
+          this.shopMarketBuyStatus = "Buying";
+          this.refreshShopBuyDialog();
+          const published = await this.playerShopFacade?.buyListing?.({
+            listingKey: listing?.listingKey,
+            quantity: buyQuantity,
+          });
+          if (published === false || published?.ok === false) {
+            this.shopMarketBuyStatus = "Buy Failed";
+            this.refreshShopBuyDialog();
+            return published ?? { ok: false, reason: "buy_failed" };
+          }
+
+          const result = this.gameplayFacade?.buyPlayerShopListingItem?.({
+            listingKey: listing?.listingKey,
+            itemKey: listing?.itemKey,
+            quantity: buyQuantity,
+            priceCoin: listing?.priceCoin,
+          });
+          if (result === false || result?.ok === false) {
+            this.shopMarketBuyStatus = "Buy Failed";
+            this.refreshShopBuyDialog();
+            return result ?? { ok: false, reason: "buy_failed" };
+          }
+
+          this.shopMarketBuyListingKey = null;
+          this.shopMarketBuyQuantity = 1;
+          this.shopMarketBuyStatus = "";
+          this.requireRuntime().closeDialog(SHOP_DIALOG_IDS.BUY);
+          this.refreshShopMarketDialog();
+          return result;
         },
         selectStallItem: (slotNumber, item) => {
           const safeSlotNumber = Math.max(
@@ -1951,7 +2060,7 @@ export class PixiPagesFacade {
       if (plot?.phase === "ready") {
         const result = gameplay?.startGardenHarvest?.(plot.tileNumber);
         if (result?.ok === true) {
-          this.gardenSoundFacade?.playHarvest?.();
+          this.uiClickSoundFacade?.playSummon?.(1);
         }
         return result;
       }
@@ -2735,7 +2844,9 @@ export class PixiPagesFacade {
       },
       collectBrew: (cauldronIndex) => {
         const result = gameplay?.collectBrewing?.(cauldronIndex);
-        if (result?.ok === false) {
+        if (result?.ok === true) {
+          this.uiClickSoundFacade?.playSummon?.(1);
+        } else if (result?.ok === false) {
           this.experienceFacade?.transientEffects?.emitReward?.({
             message: "No potion is ready to collect",
             flyoutKey: "brewing-collect-empty",
@@ -2962,6 +3073,13 @@ export class PixiPagesFacade {
       this.releasePlayerMarket();
       this.releasePlayerMarket = null;
     }
+    if (shouldRetainPlayers && !this.releasePlayerInfoMarket) {
+      this.releasePlayerInfoMarket =
+        this.playerInfoFacade?.retainPublicData?.() ?? null;
+    } else if (!shouldRetainPlayers && this.releasePlayerInfoMarket) {
+      this.releasePlayerInfoMarket();
+      this.releasePlayerInfoMarket = null;
+    }
 
     const shouldRetainTradeAlliance = this.currentPageId === "workshop";
     if (shouldRetainTradeAlliance && !this.releaseTradeAlliancePublic) {
@@ -2978,6 +3096,8 @@ export class PixiPagesFacade {
     this.releaseNpcMarket = null;
     this.releasePlayerMarket?.();
     this.releasePlayerMarket = null;
+    this.releasePlayerInfoMarket?.();
+    this.releasePlayerInfoMarket = null;
     this.releaseTradeAlliancePublic?.();
     this.releaseTradeAlliancePublic = null;
   }

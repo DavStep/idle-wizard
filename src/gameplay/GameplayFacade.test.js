@@ -13,6 +13,7 @@ import { researchTimeResearchIds } from "./research/researchTimeResearch.js";
 import { stallStaffingResearchIds } from "./research/stallStaffingResearch.js";
 import { taskRequirementTypes } from "./tasks/taskRequirementTypes.js";
 import { gardenBulkResearchIds } from "./garden/gardenBulkResearch.js";
+import { manaResearchIds } from "./research/manaResearch.js";
 
 function createMemoryStorage() {
   const values = new Map();
@@ -75,7 +76,6 @@ function applyLevelOneTestBaseline(gameplayFacade) {
     currentLevel: 1,
     tasks: [],
   });
-  gameplayFacade.syncPlayerLevelManaEffects();
   gameplayFacade.manaFacade.applyPersistenceSnapshot({
     current: 30,
     cap: 50,
@@ -975,7 +975,7 @@ describe("GameplayFacade", () => {
     });
   });
 
-  it("adds mana cap and regen when player level advances", () => {
+  it("moves mana cap and generation gains from level-up into coin research", () => {
     const { gameplayFacade } = createGameplay();
 
     expect(gameplayFacade.getSnapshot().mana).toMatchObject({
@@ -986,14 +986,34 @@ describe("GameplayFacade", () => {
     finishCurrentTaskLevel(gameplayFacade);
 
     expect(gameplayFacade.getSnapshot().tasks.currentLevel).toBe(2);
-    expect(gameplayFacade.getSnapshot().mana.cap).toBe(100);
-    expect(gameplayFacade.getSnapshot().mana.perSecond).toBeCloseTo(2);
+    expect(gameplayFacade.getSnapshot().mana).toMatchObject({ cap: 50, perSecond: 1 });
+
+    gameplayFacade.coinFacade.add(75);
+    expect(gameplayFacade.buyResearch(manaResearchIds.capacity(2))).toMatchObject({
+      ok: true,
+      cost: 25,
+    });
+    expect(gameplayFacade.buyResearch(manaResearchIds.generation(2))).toMatchObject({
+      ok: true,
+      cost: 50,
+    });
+    expect(gameplayFacade.getSnapshot().mana).toMatchObject({ cap: 100, perSecond: 2 });
 
     finishCurrentTaskLevel(gameplayFacade);
 
     expect(gameplayFacade.getSnapshot().tasks.currentLevel).toBe(3);
-    expect(gameplayFacade.getSnapshot().mana.cap).toBe(150);
-    expect(gameplayFacade.getSnapshot().mana.perSecond).toBeCloseTo(3);
+    expect(gameplayFacade.getSnapshot().mana).toMatchObject({ cap: 100, perSecond: 2 });
+
+    gameplayFacade.coinFacade.add(120);
+    expect(gameplayFacade.buyResearch(manaResearchIds.capacity(3))).toMatchObject({
+      ok: true,
+      cost: 40,
+    });
+    expect(gameplayFacade.buyResearch(manaResearchIds.generation(3))).toMatchObject({
+      ok: true,
+      cost: 80,
+    });
+    expect(gameplayFacade.getSnapshot().mana).toMatchObject({ cap: 150, perSecond: 3 });
   });
 
   it("grants configured crystal when player level advances", () => {
@@ -1084,8 +1104,8 @@ describe("GameplayFacade", () => {
     });
     expect(snapshot.mana).toMatchObject({
       current: 0,
-      cap: 250,
-      perSecond: 5,
+      cap: 50,
+      perSecond: 1,
     });
   }, 30_000);
 
@@ -1193,6 +1213,7 @@ describe("GameplayFacade", () => {
       ok: true,
       preference: "medium",
     });
+    gameplayFacade.manaFacade.fill();
     expect(gameplayFacade.getSnapshot().seedSummoning.canSummon).toBe(true);
     expect(gameplayFacade.summonSeed()).toMatchObject({
       ok: true,
@@ -2323,7 +2344,7 @@ describe("GameplayFacade", () => {
     });
   });
 
-  it("drops removed mana research effects from legacy saves", () => {
+  it("restores completed mana research effects from legacy saves", () => {
     const persistenceStorage = createMemoryStorage();
     persistenceStorage.setItem(
       "idle-wizard.gameplay.save",
@@ -2355,11 +2376,15 @@ describe("GameplayFacade", () => {
 
     expect(
       second.gameplayFacade.getSnapshot().research.completedResearchIds,
-    ).toEqual(["unlockSeed:sageSeed"]);
+    ).toEqual([
+      "manaSphereCap:1",
+      "manaProductionRate:1",
+      "unlockSeed:sageSeed",
+    ]);
     expect(second.gameplayFacade.getSnapshot().mana).toMatchObject({
       current: 20,
-      cap: 50,
-      perSecond: 1,
+      cap: 100,
+      perSecond: 2,
     });
   });
 
@@ -2808,13 +2833,31 @@ describe("GameplayFacade", () => {
       costCurrency: "crystal",
     });
     expect(research.boxes.map((box) => box.id)).toEqual([
+      "manaSphere",
       "seedUnlocks",
-      "herbGrowthMastery",
       "summonSeeds",
       "gardenBulkActions",
     ]);
-    expect(research.boxes[0].researches).toHaveLength(24);
-    expect(research.boxes[0].researches[0]).toEqual({
+    expect(research.boxes[0].researches).toEqual([
+      expect.objectContaining({
+        id: manaResearchIds.capacity(2),
+        label: "mana capacity lvl 2",
+        value: "locked",
+        effect: "+50 mana",
+        requiredPlayerLevel: 2,
+        costCoin: 25,
+      }),
+      expect.objectContaining({
+        id: manaResearchIds.generation(2),
+        label: "mana generation lvl 2",
+        value: "locked",
+        effect: "+1/sec",
+        requiredPlayerLevel: 2,
+        costCoin: 50,
+      }),
+    ]);
+    expect(research.boxes[1].researches).toHaveLength(25);
+    expect(research.boxes[1].researches[0]).toEqual({
       id: "unlockSeed:sageSeed",
       label: "sage seed",
       value: "researched",
@@ -2824,12 +2867,12 @@ describe("GameplayFacade", () => {
       completed: true,
       canResearch: false,
     });
-    expect(research.boxes[1].researches[0]).toMatchObject({
+    expect(research.boxes[1].researches[1]).toMatchObject({
       id: "timer:herbGrowth:sageHerb:1",
       itemKind: "herb",
       itemKey: "sageHerb",
       starLevel: 1,
-      starMaxLevel: 2,
+      starMaxLevel: 19,
       value: "25 coin",
       costCoin: 25,
       canResearch: false,
@@ -2885,8 +2928,8 @@ describe("GameplayFacade", () => {
     advanceToLevel(gameplayFacade, 3);
     const levelThreeResearch = gameplayFacade.getSnapshot().research;
     expect(levelThreeResearch.boxes.map((box) => box.id)).toEqual([
+      "manaSphere",
       "seedUnlocks",
-      "herbGrowthMastery",
       "summonSeeds",
       "gardenBulkActions",
     ]);
@@ -2894,12 +2937,11 @@ describe("GameplayFacade", () => {
     advanceToLevel(gameplayFacade, 4);
     const levelFourResearch = gameplayFacade.getSnapshot().research;
     expect(levelFourResearch.boxes.map((box) => box.id)).toEqual([
+      "manaSphere",
       "seedUnlocks",
-      "herbGrowthMastery",
       "summonSeeds",
       "gardenBulkActions",
       "recipeUnlocks",
-      "potionBrewingMastery",
     ]);
     expect(levelFourResearch.boxes[4].researches).toHaveLength(28);
     expect(levelFourResearch.boxes[4].researches[0]).toEqual({
@@ -3062,7 +3104,7 @@ describe("GameplayFacade", () => {
       "unlockSeed:sageSeed",
     ]);
     expect(
-      gameplayFacade.getSnapshot().research.boxes[0].researches[1],
+      findResearchSnapshot(gameplayFacade, "unlockSeed:mintSeed"),
     ).toMatchObject({
       id: "unlockSeed:mintSeed",
       value: "researching",
@@ -3077,7 +3119,7 @@ describe("GameplayFacade", () => {
     ecsFacade.update({ timerDeltaSeconds: 59 });
 
     expect(
-      gameplayFacade.getSnapshot().research.boxes[0].researches[1],
+      findResearchSnapshot(gameplayFacade, "unlockSeed:mintSeed"),
     ).toMatchObject({
       value: "researching",
       inProgress: true,
@@ -3150,8 +3192,43 @@ describe("GameplayFacade", () => {
       offlineSeconds: 60,
     });
     expect(report.rows).toEqual([{ type: "npc_market_sold", coin: 5 }]);
+    expect(gameplayFacade.getSnapshot().mana).toMatchObject({
+      current: manaCap,
+      cap: manaCap,
+    });
     expect(gameplayFacade.consumeWhileAwayReports()).toEqual([]);
     expect(gameplayFacade.getSnapshot().persistence.awayReportRevision).toBe(1);
+  });
+
+  it("shows when automation spends mana recovered during resume catch-up", () => {
+    const { ecsFacade, gameplayFacade } = createGameplay();
+    gameplayFacade.researchFacade.applyPersistenceSnapshot({
+      completedIds: [
+        "unlockSeed:sageSeed",
+        automationResearchIds.autoSeedSpawn(),
+      ],
+    });
+    gameplayFacade.manaFacade.setCurrent(0);
+
+    gameplayFacade.applyAwayTimerCatchup(ecsFacade, {
+      deltaSeconds: 60,
+      source: "resume",
+    });
+
+    expect(gameplayFacade.getSnapshot().mana).toMatchObject({
+      current: 40,
+      cap: 50,
+    });
+    expect(gameplayFacade.getSnapshot().inventory).toEqual([
+      expect.objectContaining({ key: "sageSeed", quantity: 1 }),
+    ]);
+    expect(gameplayFacade.consumeWhileAwayReports()).toEqual([
+      expect.objectContaining({
+        source: "resume",
+        offlineSeconds: 60,
+        rows: [{ type: "auto_seed_summoned", quantity: 1 }],
+      }),
+    ]);
   });
 
   it("buys automation research with ruby and auto summons seeds", () => {
@@ -3905,20 +3982,24 @@ describe("GameplayFacade", () => {
     expect(levelUpAnnouncements).toEqual([2]);
   });
 
-  it("rejects removed mana research ids", () => {
+  it("requires player level before buying the first mana researches", () => {
     const { gameplayFacade } = createGameplay();
 
     gameplayFacade.coinFacade.add(150);
 
     expect(gameplayFacade.buyResearch("manaSphereCap:1")).toEqual({
       ok: false,
-      reason: "unknown_research",
+      reason: "missing_required_level",
       researchId: "manaSphereCap:1",
+      requiredPlayerLevel: 2,
+      cost: 25,
     });
     expect(gameplayFacade.buyResearch("manaProductionRate:1")).toEqual({
       ok: false,
-      reason: "unknown_research",
+      reason: "missing_required_level",
       researchId: "manaProductionRate:1",
+      requiredPlayerLevel: 2,
+      cost: 50,
     });
     expect(gameplayFacade.getSnapshot().mana).toMatchObject({
       cap: 50,
@@ -3926,15 +4007,17 @@ describe("GameplayFacade", () => {
     });
   });
 
-  it("rejects removed mana research levels out of order as unknown", () => {
+  it("requires mana research levels in order", () => {
     const { gameplayFacade } = createGameplay();
 
-    gameplayFacade.coinFacade.add(20);
+    gameplayFacade.coinFacade.add(100);
 
     expect(gameplayFacade.buyResearch("manaProductionRate:2")).toEqual({
       ok: false,
-      reason: "unknown_research",
+      reason: "missing_required_research",
       researchId: "manaProductionRate:2",
+      requiredResearchId: "manaProductionRate:1",
+      cost: 80,
     });
     expect(gameplayFacade.getSnapshot().mana.perSecond).toBe(1);
   });
@@ -4202,7 +4285,7 @@ describe("GameplayFacade", () => {
       manaCost: 12,
       durationMs: 30_000,
     });
-    expect(gameplayFacade.getSnapshot().mana.current).toBe(78);
+    expect(gameplayFacade.getSnapshot().mana.current).toBe(30);
     expect(gameplayFacade.getSnapshot().brewing.ingredients).toEqual([]);
     expect(gameplayFacade.getSnapshot().inventory).toEqual([]);
     expect(gameplayFacade.getSnapshot().brewing.activeBrew).toMatchObject({
@@ -4280,7 +4363,6 @@ describe("GameplayFacade", () => {
     const { ecsFacade, gameplayFacade } = createGameplay();
 
     advanceToLevel(gameplayFacade, 5);
-    gameplayFacade.syncPlayerLevelManaEffects();
     gameplayFacade.manaFacade.fill();
     gameplayFacade.itemsFacade.addItem(1001, 6);
     gameplayFacade.coinFacade.add(180);
@@ -4378,7 +4460,6 @@ describe("GameplayFacade", () => {
     const { ecsFacade, gameplayFacade } = createGameplay();
 
     advanceToLevel(gameplayFacade, 5);
-    gameplayFacade.syncPlayerLevelManaEffects();
     gameplayFacade.manaFacade.fill();
     gameplayFacade.coinFacade.add(500);
     gameplayFacade.rubyFacade.add(3);
@@ -4462,7 +4543,6 @@ describe("GameplayFacade", () => {
     const first = createGameplay({ persistenceStorage });
 
     advanceToLevel(first.gameplayFacade, 5);
-    first.gameplayFacade.syncPlayerLevelManaEffects();
     first.gameplayFacade.itemsFacade.addItem(1001, 6);
     first.gameplayFacade.itemsFacade.addItem(2001, 2);
     first.gameplayFacade.coinFacade.add(180);
@@ -4647,7 +4727,7 @@ describe("GameplayFacade", () => {
     gameplayFacade.itemsFacade.addItem(1001, 6);
     ecsFacade.update({ deltaSeconds: 12 });
 
-    expect(gameplayFacade.getSnapshot().mana.current).toBe(78);
+    expect(gameplayFacade.getSnapshot().mana.current).toBe(30);
     expect(gameplayFacade.getSnapshot().brewing.ingredients).toEqual([]);
     expect(gameplayFacade.getSnapshot().brewing).toMatchObject({
       autoBrewEnabled: true,

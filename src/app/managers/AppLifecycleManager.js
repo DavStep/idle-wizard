@@ -29,6 +29,7 @@ export class AppLifecycleManager {
     connectionRetryManager = new AppConnectionRetryManager(),
     gameplayTickManager = new AppGameplayTickManager(),
     appVisibilityManager = new AppVisibilityManager(),
+    soundSettingsFacade = null,
     deployRefreshManager,
     liveUpdateGateManager,
     appThemeManager,
@@ -53,6 +54,7 @@ export class AppLifecycleManager {
     this.connectionRetryManager = connectionRetryManager;
     this.gameplayTickManager = gameplayTickManager;
     this.appVisibilityManager = appVisibilityManager;
+    this.soundSettingsFacade = soundSettingsFacade;
     this.deployRefreshManager = deployRefreshManager;
     this.liveUpdateGateManager = liveUpdateGateManager;
     this.appThemeManager = appThemeManager;
@@ -109,6 +111,7 @@ export class AppLifecycleManager {
       onVisible: () => this.handleAppVisible(),
     });
     this.appVisible = this.appVisibilityManager.visible !== false;
+    this.soundSettingsFacade?.setAppActive?.(this.appVisible);
     this.onlineGateManager.showConnecting({ progressValue: 1 });
     this.maintenanceUnsubscribe = this.maintenanceFacade?.subscribe?.((snapshot) => {
       this.handleMaintenanceChange(snapshot);
@@ -671,6 +674,7 @@ export class AppLifecycleManager {
     }
 
     this.appVisible = false;
+    this.soundSettingsFacade?.setAppActive?.(false);
     this.hiddenAtMs = this.now();
     this.connectionRetryManager.clear();
     this.stopFrameLoop();
@@ -685,6 +689,7 @@ export class AppLifecycleManager {
     }
 
     this.appVisible = true;
+    this.soundSettingsFacade?.setAppActive?.(true);
 
     if (this.backendOnline) {
       this.applyMaintenanceState();

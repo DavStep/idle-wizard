@@ -101,6 +101,7 @@ export class RootRunSettingsSliderPixi extends Container {
         axis: 'x',
         fallbackHitTest: Boolean(tutorialId),
         excludePageSwipe: true,
+        excludeScroll: true,
         enabled: () => this.isInteractive(),
         onStart: (payload) => this.setFromPayload(payload),
         onMove: (payload) => this.setFromPayload(payload),

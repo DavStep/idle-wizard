@@ -12,7 +12,7 @@ world: gdd
 The default room order is:
 
 ```text
-Brewing -> Garden -> Workshop -> Research -> Market
+Brewing -> Garden -> Workshop -> Market -> Research
 ```
 
 Workshop is the first and central room. Prestige is gated and appears only when

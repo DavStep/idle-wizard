@@ -311,14 +311,14 @@ describe('BrewingPixiPage', () => {
       hasEnoughMana: true,
     };
     harness.page.bind(model);
-    expect(harness.page.hud.phaseLabel.text).toBe('Need Herbs');
+    expect(harness.page.hud.phaseLabel.text).toBe('Missing ingredients');
 
     model.brewing.cauldrons[0].recipeReadiness = {
       hasEnoughIngredients: true,
       hasEnoughMana: false,
     };
     harness.page.bind(model);
-    expect(harness.page.hud.phaseLabel.text).toBe('Need Mana');
+    expect(harness.page.hud.phaseLabel.text).toBe('Not enough mana');
 
     harness.page.destroy();
     harness.dispose();
@@ -557,6 +557,10 @@ describe('BrewingPixiPage', () => {
     );
     expect(herbDialog.modal.title).toBe('choose herb');
     expect(herbDialog.modal.panel.paperFrame.visible).toBe(true);
+    const herbRow = herbDialog.rows.get('sage-herb');
+    expect(
+      Math.max(herbRow.itemIcon.width, herbRow.itemIcon.height),
+    ).toBeCloseTo(32);
     expect('selectionPaper' in herbDialog).toBe(false);
     expect('listPaper' in herbDialog).toBe(false);
     expect('amountSelection' in herbDialog).toBe(false);
@@ -1311,8 +1315,11 @@ describe('BrewingPixiPage', () => {
     harness.page.tick(now);
     expect(harness.page.hud.cauldronMotionMode).toBe('brewing');
     expect(
+      Math.abs(harness.page.hud.cauldronArt.y - restArt.y),
+    ).toBeGreaterThan(0.55);
+    expect(
       harness.page.hud.cauldronStateFx.getLocalBounds().height,
-    ).toBeGreaterThan(0);
+    ).toBeGreaterThan(18);
     expectContainedCauldronRegistration(harness.page.hud);
 
     vi.stubGlobal(
@@ -1723,7 +1730,7 @@ describe('BrewingPixiPage', () => {
     expect(harness.page.hud.autoBrew.control.variant).toBe('green');
     expect(harness.page.hud.autoBrew.selected).toBe(false);
     expect(harness.page.hud.quantity.text.text).toBe('x1');
-    expect(harness.page.hud.brew.text.text).toBe('Cancel');
+    expect(harness.page.hud.brew.text.text).toBe('Stop Auto');
     expect(harness.page.hud.brew.variant).toBe('yellow');
     expect(harness.page.hud.brew.control.variant).toBe('yellow');
     expect(harness.page.hud.settings).toBeUndefined();
@@ -1914,7 +1921,7 @@ describe('BrewingPixiPage', () => {
       left: 12,
     });
     expect(harness.page.hud.progress.width).toBe(268);
-    expect(harness.page.hud.phaseLabel.text).toBe('');
+    expect(harness.page.hud.phaseLabel.text).toBe('No potion selected');
     expect(harness.page.hud.phaseTime.text).toBe('');
     expect(harness.page.hud.cancel).toBeUndefined();
     expect(harness.page.hud.collect).toBeUndefined();
@@ -2147,7 +2154,7 @@ describe('BrewingPixiPage', () => {
       [
         { autoBrewEnabled: true, autoBrewArmed: true },
         'cancel',
-        'Cancel',
+        'Stop Auto',
         'yellow',
         true,
       ],
@@ -2216,6 +2223,67 @@ describe('BrewingPixiPage', () => {
     harness.dispose();
   });
 
+  it('replaces idle progress with empty and missing-ingredient guidance', () => {
+    const harness = createHarness();
+    const model = createBrewingViewModel();
+    const cauldron = model.brewing.cauldrons[0];
+
+    cauldron.ingredients = [];
+    cauldron.selectedRecipe = null;
+    harness.page.bind(model);
+
+    expect(harness.page.hud.progress.root.visible).toBe(false);
+    expect(harness.page.hud.phaseLabel.text).toBe('No potion selected');
+    expect(harness.page.hud.statusMessage.text).toBe(
+      'Choose a recipe to start brewing.',
+    );
+
+    cauldron.selectedRecipe = {
+      key: 'sage-tonic',
+      label: 'sage tonic',
+      ingredients: [
+        {
+          itemKey: 'sageHerb',
+          label: 'sage',
+          quantity: 3,
+          owned: 1,
+        },
+      ],
+    };
+    cauldron.recipeReadiness = {
+      hasEnoughIngredients: false,
+      hasEnoughMana: true,
+    };
+    cauldron.primaryAction = { id: 'brew', enabled: false };
+    harness.page.bind(model);
+
+    expect(harness.page.hud.progress.root.visible).toBe(false);
+    expect(harness.page.hud.phaseLabel.text).toBe('Missing ingredients');
+    expect(harness.page.hud.missingIngredientViews[0].root.visible).toBe(true);
+    expect(harness.page.hud.missingIngredientViews[0].label.text).toBe('Sage');
+    expect(harness.page.hud.missingIngredientViews[0].count.text).toBe('x2');
+    expect(harness.page.hud.missingIngredientViews[0].icon).toBeDefined();
+
+    cauldron.autoBrewEnabled = true;
+    cauldron.autoBrewArmed = true;
+    harness.page.bind(model);
+    expect(harness.page.hud.brew.text.text).toBe('Stop Auto');
+
+    cauldron.activeBrew = {
+      key: 'sage-tonic',
+      label: 'sage tonic',
+      phase: 'brewing',
+      durationMs: 10_000,
+      endTimeMs: 5_000,
+    };
+    harness.page.bind(model);
+    expect(harness.page.hud.progress.root.visible).toBe(true);
+    expect(harness.page.hud.missingIngredientsRoot.visible).toBe(false);
+
+    harness.page.destroy();
+    harness.dispose();
+  });
+
   it('keeps a retained recipe brewable after collecting the previous batch', () => {
     const harness = createHarness();
     const model = createBrewingViewModel();
@@ -2278,7 +2346,7 @@ describe('BrewingPixiPage', () => {
 
     cauldron.autoBrewArmed = true;
     harness.page.bind(model);
-    expect(harness.page.hud.brew.text.text).toBe('Cancel');
+    expect(harness.page.hud.brew.text.text).toBe('Stop Auto');
     expect(harness.page.hud.brew.handleTap()).toBe(true);
     expect(model.actions.toggleAutoBrew).toHaveBeenCalledWith(0);
 

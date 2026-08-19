@@ -53,6 +53,7 @@ const DEFAULT_CRYSTAL_OFFERS = Object.freeze([
  * @param {{
  *   gameplaySnapshot?: object,
  *   playerShopSnapshot?: object,
+ *   playerInfoSnapshot?: object,
  *   notificationSnapshot?: object | null,
  *   selectedTabId?: 'traders' | 'players' | 'crystals' | 'npm' | 'player',
  *   uiState?: object,
@@ -69,6 +70,7 @@ export function createShop(options = {}) {
   const gameplaySnapshot = options.gameplaySnapshot ?? {};
   const shop = gameplaySnapshot.shop ?? gameplaySnapshot;
   const playerShop = options.playerShopSnapshot ?? {};
+  const playerInfo = options.playerInfoSnapshot ?? {};
   const actions = options.actions ?? {};
   const gameplayActions =
     options.gameplayActions ?? actions.gameplay ?? actions;
@@ -146,6 +148,14 @@ export function createShop(options = {}) {
       uiState,
     }),
     market: createMarketDialog({
+      playerInfo,
+      playerShop,
+      uiActions,
+      uiState,
+    }),
+    buy: createMarketBuyDialog({
+      gameplaySnapshot,
+      playerInfo,
       playerShop,
       uiActions,
       uiState,
@@ -1175,9 +1185,8 @@ function createLedgerDialog({
   };
 }
 
-function createMarketDialog({ playerShop, uiActions, uiState }) {
+function createMarketDialog({ playerInfo, playerShop, uiActions, uiState }) {
   const selectedTab = uiState.marketBrowseTab ?? 'selling';
-  const filtersOpen = uiState.marketFiltersOpen === true;
   const draftFilters = normalizeMarketFilters(
     uiState.marketFilterDraft,
   );
@@ -1194,6 +1203,8 @@ function createMarketDialog({ playerShop, uiActions, uiState }) {
   const hasAppliedFilters = marketFiltersAreActive(appliedFilters);
   return {
     title: 'Player Market',
+    sectionTitle: 'Filter',
+    listTitle: selectedTab === 'buying' ? 'Requests' : 'Offers',
     status:
       playerShop.connected === false
         ? 'Offline'
@@ -1204,8 +1215,7 @@ function createMarketDialog({ playerShop, uiActions, uiState }) {
           : hasAppliedFilters
             ? `${rows.length} Matching ${rows.length === 1 ? 'Offer' : 'Offers'}`
             : '',
-    fields: filtersOpen
-      ? [
+    fields: [
           {
             id: 'item',
             label: 'Item',
@@ -1242,10 +1252,8 @@ function createMarketDialog({ playerShop, uiActions, uiState }) {
                 value,
               ]),
           },
-        ]
-      : [],
-    actions: filtersOpen
-      ? [
+        ],
+    actions: [
           {
             id: 'clearFilters',
             label: 'Clear',
@@ -1262,16 +1270,6 @@ function createMarketDialog({ playerShop, uiActions, uiState }) {
             action: () =>
               callFirst(uiActions, ['applyMarketFilters'], []),
           },
-        ]
-      : [
-          {
-            id: 'openFilters',
-            label: hasAppliedFilters ? 'Edit Filter' : 'Filter',
-            semanticId: 'shop.market.filter.open',
-            variant: 'yellow',
-            action: () =>
-              callFirst(uiActions, ['openMarketFilters'], []),
-          },
         ],
     items: rows.map((row, index) => {
       const rowId =
@@ -1281,26 +1279,23 @@ function createMarketDialog({ playerShop, uiActions, uiState }) {
         index;
       return {
         id: rowId,
-        indexLabel: `${index + 1}.`,
-        itemLabel: `${toTitleCase(row.itemLabel ?? 'Item')} (${nonNegativeInteger(
-          row.quantity,
-        )}) · ${row.username ?? 'Wizard'}`,
+        ...resolveMarketPlayerProfile(playerInfo, row),
+        itemLabel: toTitleCase(row.itemLabel ?? 'Item'),
+        quantityLabel: `x${nonNegativeInteger(row.quantity)}`,
         priceLabel: formatCoinPriceText(row.priceCoin),
         itemKey: row.itemKey,
         itemKind: row.itemKind,
         valueResourceKey: 'coin',
+        actionLabel: selectedTab === 'selling' ? 'Buy' : '',
+        actionVariant: selectedTab === 'selling' ? 'green' : null,
         semanticId:
           selectedTab === 'buying'
             ? `shop.market.request.${rowId}`
             : `shop.market.listing.${rowId}`,
-        action: () =>
-          callFirst(
-            uiActions,
-            selectedTab === 'buying'
-              ? ['fulfillPlayerRequest']
-              : ['buyPlayerListing'],
-            [row],
-          ),
+        action:
+          selectedTab === 'selling'
+            ? () => callFirst(uiActions, ['openMarketBuy'], [row])
+            : null,
       };
     }),
     tabs: [
@@ -1325,6 +1320,111 @@ function createMarketDialog({ playerShop, uiActions, uiState }) {
           ]),
       },
     ],
+  };
+}
+
+function createMarketBuyDialog({
+  gameplaySnapshot,
+  playerInfo,
+  playerShop,
+  uiActions,
+  uiState,
+}) {
+  const listingKey = String(uiState.marketBuyListingKey ?? '');
+  const listing = safeArray(playerShop.listings).find(
+    (candidate) => String(candidate.listingKey ?? '') === listingKey,
+  );
+  if (!listing) {
+    return {
+      title: 'Buy Offer',
+      status: listingKey ? 'Offer Unavailable' : '',
+      actions: [],
+      range: null,
+    };
+  }
+
+  const maximumQuantity = Math.max(1, nonNegativeInteger(listing.quantity));
+  const quantity = Math.max(
+    1,
+    Math.min(maximumQuantity, positiveInteger(uiState.marketBuyQuantity) ?? 1),
+  );
+  const unitPrice = Math.max(0, Number(listing.priceCoin) || 0);
+  const totalPriceCoin = Math.ceil(unitPrice * quantity);
+  const currentCoin = Math.max(
+    0,
+    Number(gameplaySnapshot?.coin?.current ?? gameplaySnapshot?.coin) || 0,
+  );
+  const canBuy =
+    playerShop.connected !== false &&
+    maximumQuantity > 0 &&
+    unitPrice > 0 &&
+    currentCoin >= totalPriceCoin;
+
+  return {
+    title: 'Buy Offer',
+    seller: resolveMarketPlayerProfile(playerInfo, listing),
+    featuredItem: {
+      id: listing.listingKey,
+      label: toTitleCase(listing.itemLabel ?? 'Item'),
+      detail: `Buying x${quantity}`,
+      itemKey: listing.itemKey,
+      itemKind: listing.itemKind,
+      quantityLabel: `x${quantity}`,
+      selected: true,
+    },
+    range: {
+      enabled: maximumQuantity > 1,
+      tone: 'yellow',
+      min: 1,
+      max: maximumQuantity,
+      step: 1,
+      value: quantity,
+      onChange: (value) =>
+        callFirst(uiActions, ['setMarketBuyQuantity'], [value]),
+    },
+    totalLabel: formatCoinPriceText(totalPriceCoin),
+    status:
+      uiState.marketBuyStatus ||
+      (playerShop.connected === false
+        ? 'Offline'
+        : currentCoin < totalPriceCoin
+          ? 'Not Enough Coin'
+          : ''),
+    actions: [
+      {
+        id: 'buy',
+        label: 'Buy',
+        semanticId: 'shop.market.buy.confirm',
+        variant: 'green',
+        enabled: canBuy,
+        action: () =>
+          callFirst(uiActions, ['confirmMarketBuy'], [listing, quantity]),
+      },
+    ],
+  };
+}
+
+function resolveMarketPlayerProfile(playerInfo, row = {}) {
+  const identity = String(
+    row.sellerIdentity ?? row.requesterIdentity ?? row.identity ?? '',
+  );
+  const username = String(row.username ?? 'Wizard');
+  const profile = safeArray(playerInfo?.players).find((candidate) => {
+    const candidateIdentity = String(candidate?.identity ?? '');
+    return identity
+      ? candidateIdentity === identity
+      : String(candidate?.username ?? '').toLocaleLowerCase() ===
+          username.toLocaleLowerCase();
+  });
+  return {
+    identity,
+    username: profile?.username ?? username,
+    allianceTag: profile?.allianceTag ?? row.allianceTag ?? '',
+    detail: profile?.allianceName ?? row.allianceName ?? '',
+    allianceTagColor:
+      profile?.allianceTagColor ?? row.allianceTagColor ?? 'ink',
+    character: profile?.character ?? row.character ?? 'elara',
+    frame: profile?.frame ?? row.frame ?? 'classic',
   };
 }
 

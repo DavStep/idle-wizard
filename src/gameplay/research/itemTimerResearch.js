@@ -1,9 +1,6 @@
 export const itemTimerResearchStepPercent = 5;
 export const itemTimerResearchFinalPercentOfOriginal = 90;
-export const itemTimerResearchLateGameMaxLevel = 19;
-export const itemTimerResearchDurationSeconds = 5;
-
-const earlyMaxLevels = Object.freeze([2, 4, 7, 10, 14]);
+export const itemTimerResearchMaxLevel = 19;
 
 export const itemTimerResearchIds = Object.freeze({
   herbGrowth: (herbKey, level) => `timer:herbGrowth:${herbKey}:${level}`,
@@ -11,16 +8,26 @@ export const itemTimerResearchIds = Object.freeze({
     `timer:potionBrewing:${potionKey}:${level}`,
 });
 
-export function getItemTimerResearchMaxLevel(catalogIndex) {
-  const safeIndex = Math.max(0, Math.floor(Number(catalogIndex) || 0));
-  return earlyMaxLevels[safeIndex] ?? itemTimerResearchLateGameMaxLevel;
+export function getItemTimerResearchMaxLevel() {
+  return itemTimerResearchMaxLevel;
 }
 
-export function getItemTimerConfiguredPercent(catalogIndex) {
+export function getItemTimerConfiguredPercent() {
   return (
     itemTimerResearchFinalPercentOfOriginal +
-    itemTimerResearchStepPercent * getItemTimerResearchMaxLevel(catalogIndex)
+    itemTimerResearchStepPercent * getItemTimerResearchMaxLevel()
   );
+}
+
+export function getItemTimerResearchDurationSeconds(configuredDurationMs, level) {
+  const safeDurationMs = Math.max(0, Number(configuredDurationMs) || 0);
+  const safeLevel = Math.max(1, Math.floor(Number(level) || 1));
+
+  if (safeDurationMs <= 0) {
+    return 0;
+  }
+
+  return Math.max(5, Math.ceil((safeDurationMs / 1_000) * safeLevel));
 }
 
 export function applyItemTimerResearchReduction(
@@ -93,11 +100,11 @@ function createResearchSeriesCosts({
   );
   const costs = {};
 
-  unlockEntries.forEach(([researchId, unlockCost], catalogIndex) => {
+  unlockEntries.forEach(([researchId, unlockCost]) => {
     const unlockKey = researchId.slice(unlockPrefix.length);
     const itemKey = getItemKey(unlockKey);
     const baseCost = starterBaseCosts[unlockKey] ?? unlockCost;
-    const maxLevel = getItemTimerResearchMaxLevel(catalogIndex);
+    const maxLevel = getItemTimerResearchMaxLevel();
 
     for (let level = 1; level <= maxLevel; level += 1) {
       costs[getId(itemKey, level)] = getItemTimerResearchCost(baseCost, level);

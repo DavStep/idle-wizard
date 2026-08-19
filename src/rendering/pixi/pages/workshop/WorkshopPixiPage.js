@@ -1576,6 +1576,8 @@ export class WorkshopTaskRow {
       !this.page.root.visible ||
       nextProgress <= this.displayedProgress
     ) {
+      this.progressMotion = null;
+      this.progressFeedback = null;
       this.setProgressImmediate(nextProgress);
       return;
     }
@@ -1590,12 +1592,11 @@ export class WorkshopTaskRow {
     this.progressMotion = {
       start: this.displayedProgress,
       end: nextProgress,
-      startedAtMs: now,
+      startedAtMs: now + QUEST_REQUEST_SHINE_DURATION_MS,
       durationMs: Math.max(1, Number(durationMs) || REQUEST_PROGRESS_UPDATE_DURATION_MS),
       completion,
     };
-    this.progressFeedback = null;
-    this.updateShineVisibility();
+    this.startProgressFeedback(now, nextProgress);
     this.scheduleMotionFrame();
   }
 
@@ -1632,14 +1633,10 @@ export class WorkshopTaskRow {
       this.progress.setProgress(this.displayedProgress);
       this.layoutProgressShine();
       if (progress >= 1) {
-        const feedbackStartedAtMs =
-          this.progressMotion.startedAtMs +
-          this.progressMotion.durationMs;
         this.progressMotion = null;
         this.displayedProgress = this.targetProgress;
         this.progress.setProgress(this.displayedProgress);
         this.layoutProgressShine();
-        this.startProgressFeedback(feedbackStartedAtMs);
       }
     }
 
@@ -1656,7 +1653,10 @@ export class WorkshopTaskRow {
     return keepAnimating;
   }
 
-  startProgressFeedback(startedAtMs = this.page.timeSource()) {
+  startProgressFeedback(
+    startedAtMs = this.page.timeSource(),
+    targetProgress = this.targetProgress,
+  ) {
     if (
       this.page.reducedMotion?.() === true ||
       !this.page.root.visible
@@ -1666,7 +1666,9 @@ export class WorkshopTaskRow {
     }
     this.progressFeedback = {
       startedAtMs,
+      targetProgress: clampUnit(targetProgress),
     };
+    this.layoutProgressShine();
     this.updateShineVisibility();
     this.updateProgressFeedback(this.progressFeedback.startedAtMs);
     this.scheduleMotionFrame();
@@ -1702,7 +1704,10 @@ export class WorkshopTaskRow {
     const border = PIXI_UI_GEOMETRY.progressRailBorderWidth;
     const innerWidth = Math.max(0, this.progress.width - border * 2);
     const innerHeight = Math.max(0, this.progress.height - border * 2);
-    const fillWidth = innerWidth * this.displayedProgress;
+    const shineLimit = this.progressFeedback
+      ? this.progressFeedback.targetProgress
+      : this.displayedProgress;
+    const fillWidth = innerWidth * shineLimit;
     this.progressShineMask.clear();
     if (fillWidth <= 0 || innerHeight <= 0) {
       this.progressShineLayout = null;

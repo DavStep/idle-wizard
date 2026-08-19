@@ -68,12 +68,11 @@ export class WorldNoticeFacade {
       );
     }
 
-    const result = this.progressManager.recordAction(notice, normalizedActionType, amount);
     this.contributionManager.addPoints(notice, pointsAdded);
 
     return {
-      ok: result.changed || scoringChanged,
-      changed: result.changed || scoringChanged,
+      ok: scoringChanged,
+      changed: scoringChanged,
       pointsAdded,
     };
   }
@@ -170,7 +169,6 @@ export class WorldNoticeFacade {
     );
     this.contributionManager.addRequestPoints(request, pointsAdded);
     this.addDonationProgress(request, option, donation, pointsAdded);
-    this.progressManager.applyProgress(request, pointsAdded);
     this.contributionManager.addPoints(notice, pointsAdded);
 
     const result = {
@@ -380,7 +378,6 @@ export class WorldNoticeFacade {
     this.state.current = this.catalogManager.createNoticeState({
       ...currentPeriod,
       anchorLevel: this.getCurrentLevel(),
-      levelCoinBudget: this.getLevelCoinBudget(),
     });
 
     return this.state.current;
@@ -389,7 +386,6 @@ export class WorldNoticeFacade {
   createNoticeSnapshot(notice) {
     const responseTier = this.progressManager.getResponseTier(notice);
     const requests = Array.isArray(notice?.requests) ? notice.requests : [];
-    const completedRequests = requests.filter((request) => request.completed).length;
     const resetLabel = this.periodManager.formatResetLabel(notice.resetAtMs);
 
     return {
@@ -404,8 +400,6 @@ export class WorldNoticeFacade {
       tags: [...(notice.tags ?? [])],
       headline: notice.headline,
       body: [...(notice.body ?? [])],
-      completedRequests,
-      totalRequests: requests.length,
       responseTier,
       responseLabel: this.getResponseLabel(responseTier),
       outcome: notice.outcomes?.[responseTier] ?? '',
@@ -417,19 +411,12 @@ export class WorldNoticeFacade {
   }
 
   createRequestSnapshot(request) {
-    const requiredQuantity = Math.max(1, Math.floor(Number(request.requiredQuantity) || 1));
-    const progressQuantity = Math.max(
-      0,
-      Math.min(requiredQuantity, Math.floor(Number(request.progressQuantity) || 0)),
-    );
-    const completed = Boolean(request.completed) || progressQuantity >= requiredQuantity;
     const contributionPoints = Math.max(
       0,
       Math.floor(Number(request.contributionPoints) || 0),
     );
     const contributedQuantity =
       this.contributionManager.getRequestPointProgressQuantity(request);
-    const remainingQuantity = Math.max(0, requiredQuantity - progressQuantity);
     const currentCoin = Math.max(
       0,
       Math.floor(Number(this.coinFacade?.getSnapshot?.().current) || 0),
@@ -459,12 +446,7 @@ export class WorldNoticeFacade {
       title: request.title ?? request.label,
       situation: request.situation ?? '',
       description: request.description ?? '',
-      requiredQuantity,
-      progressQuantity,
       contributedQuantity,
-      remainingQuantity,
-      progress: progressQuantity / requiredQuantity,
-      completed,
       contributionPoints,
       pointText: this.contributionManager.getActionPointText(request.actionType),
       collectedPointText: this.formatPoints(contributionPoints),
@@ -473,7 +455,7 @@ export class WorldNoticeFacade {
       availableQuantity,
       maxDonateQuantity,
       donationOptions,
-      actionText: this.getRequestActionText({ request, completed, canDonate }),
+      actionText: this.getRequestActionText({ request, canDonate }),
     };
   }
 
@@ -510,11 +492,7 @@ export class WorldNoticeFacade {
     };
   }
 
-  getRequestActionText({ request, completed, canDonate }) {
-    if (completed && !this.isDonationRequest(request)) {
-      return 'done';
-    }
-
+  getRequestActionText({ request, canDonate }) {
     if (this.isDonationRequest(request)) {
       return canDonate ? 'donate' : 'need items';
     }
@@ -609,17 +587,6 @@ export class WorldNoticeFacade {
     }
 
     return 1;
-  }
-
-  getLevelCoinBudget() {
-    const budget = this.tasksFacade?.getLevelCoinBudget?.(this.getCurrentLevel());
-
-    if (Number.isFinite(budget) && budget >= 0) {
-      return Math.floor(budget);
-    }
-
-    const level = this.getCurrentLevel();
-    return Math.max(0, Math.floor(level * level * 10));
   }
 
   isUnlocked() {

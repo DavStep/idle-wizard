@@ -4,6 +4,14 @@ These are developer-to-player Discord posts. Describe features only in Idle
 Wizard terms; do not mention other game names, source projects, ports, or
 implementation provenance.
 
+## 0.3.75
+
+Mana progression now lives in Research. Every wizard level from 2 onward unlocks one Mana Capacity rank and one Mana Generation rank, giving you a new coin-powered path for shaping the Workshop while preserving the mana strength available through the previous level curve.
+
+Herb-growing and potion-brewing mastery have also become full 19-rank long-term studies for every item. Each catalogue places its mastery directly after the matching unlock, shows the exact production time improvement, and scales study duration from the work being improved.
+
+World Event requests now stay open for the entire event. They no longer complete or dim after a target; every listed donation remains available and keeps adding leaderboard points while the event is active.
+
 ## 0.3.73
 
 Research now offers growing-speed mastery for every herb and brewing-speed mastery for every potion. Each item has its own rank series, letting you invest directly in the crops and recipes that matter most to your Workshop.

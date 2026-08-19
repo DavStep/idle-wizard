@@ -405,6 +405,22 @@ describe('retained global Pixi dialogs', () => {
     expect(player.summaryFrame.parent).toBe(player.panel.content);
     expect(player.statsFrame).toBeInstanceOf(PixiNineSliceFrame);
     expect(player.statsFrame.parent).toBe(player.panel.content);
+    expect(player.profileWidget.x - player.summaryFrame.x).toBeLessThanOrEqual(
+      15,
+    );
+    expect(
+      player.summaryFrame.x +
+        player.summaryFrame.frameWidth -
+        player.levelValue.x,
+    ).toBeLessThanOrEqual(15);
+    expect(player.totalCoinLabel.x - player.statsFrame.x).toBeLessThanOrEqual(
+      15,
+    );
+    expect(
+      player.statsFrame.x +
+        player.statsFrame.frameWidth -
+        player.totalPotionsValue.x,
+    ).toBeLessThanOrEqual(15);
     expect(
       player.statsFrame.y -
         (player.summaryFrame.y + player.summaryFrame.frameHeight),
@@ -441,9 +457,9 @@ describe('retained global Pixi dialogs', () => {
     expect(player.timePlayedLabel.text).toBe('Time Played');
     expect(
       player.totalCoinValue.x + player.totalCoinValue.measuredWidth,
-    ).toBeCloseTo(250);
-    expect(player.totalPotionsValue.x).toBe(250);
-    expect(player.totalHerbsValue.x).toBe(250);
+    ).toBeCloseTo(270);
+    expect(player.totalPotionsValue.x).toBe(270);
+    expect(player.totalHerbsValue.x).toBe(270);
     expect(player.cosmeticsButton.textLabel.text).toBe('Cosmetics');
     expect(player.cosmeticsButton.variant).toBe('yellow');
     expect(player.cosmeticsButton.x - player.summaryFrame.x).toBe(2);
@@ -1938,6 +1954,14 @@ describe('retained global Pixi dialogs', () => {
       announcement.rowsLayer.position.y,
     );
     expect(announcement.levelRewardRowBackings).toHaveLength(1);
+    expect(announcement.levelRewardRowBackings[0]).toMatchObject({
+      tint: 0x000000,
+    });
+    expect(
+      announcement.levelRewardRowBackings[0].sprites.every(
+        (slice) => slice.alpha === 0.55,
+      ),
+    ).toBe(true);
     expect(
       announcement.rows.collection.getWidgets()[0].keyLabel.stroke,
     ).toEqual({
@@ -1976,6 +2000,10 @@ describe('retained global Pixi dialogs', () => {
       variant: 'banner-rows',
       title: 'Research Complete!',
       dismissible: false,
+      research: {
+        starLevel: 1,
+        starMaxLevel: 2,
+      },
       animation: {
         kind: 'research-complete',
         titleDelayMs: 40,
@@ -1998,6 +2026,8 @@ describe('retained global Pixi dialogs', () => {
           boldValue: true,
           color: '#ffffff',
           valueColor: '#ffffff',
+          starLevel: 1,
+          starSlotCount: 2,
         },
       ],
     });
@@ -2010,6 +2040,13 @@ describe('retained global Pixi dialogs', () => {
     expect(announcement.researchItem.icon.visible).toBe(true);
     expect(announcement.researchItem.icon.width).toBeGreaterThanOrEqual(70);
     expect(announcement.researchItem.label.text).toBe('');
+    expect(announcement.researchStars).toBeInstanceOf(PixiStarLevelLabel);
+    expect(announcement.researchStars.visible).toBe(true);
+    expect(announcement.researchStars.starCount).toBe(1);
+    expect(announcement.researchStars.slotCount).toBe(2);
+    expect(announcement.researchStars.parent).toBe(
+      announcement.rows.collection.getWidgets()[0].root,
+    );
     expect(announcement.researchItemLayer.position.x).toBeLessThan(
       announcement.rowsLayer.position.x,
     );
@@ -2019,6 +2056,14 @@ describe('retained global Pixi dialogs', () => {
     );
     expect(announcement.continuePrompt.visible).toBe(false);
     expect(announcement.levelRewardRowBackings).toHaveLength(1);
+    expect(announcement.levelRewardRowBackings[0]).toMatchObject({
+      tint: 0x000000,
+    });
+    expect(
+      announcement.levelRewardRowBackings[0].sprites.every(
+        (slice) => slice.alpha === 0.55,
+      ),
+    ).toBe(true);
     expect(
       announcement.rows.collection.getWidgets()[0].keyLabel.stroke,
     ).toEqual({

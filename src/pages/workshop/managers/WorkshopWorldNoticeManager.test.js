@@ -780,7 +780,7 @@ describe('WorkshopWorldNoticeManager', () => {
     ).toEqual(['points', '450', '125']);
   });
 
-  it('shows the event button notification while the current event has open requests', () => {
+  it('does not show completion notifications for uncapped donation routes', () => {
     const snapshot = createWorldNoticeSnapshot();
     const gameplayFacade = createGameplayFacadeFake(snapshot);
     const manager = new WorkshopWorldNoticeManager({ gameplayFacade });
@@ -790,7 +790,7 @@ describe('WorkshopWorldNoticeManager', () => {
     manager.mount(parent, popupParent);
 
     const openButton = parent.querySelector('.workshop-page__world-notice-open');
-    expect(openButton?.dataset.notification).toBe('true');
+    expect(openButton?.dataset.notification).toBeUndefined();
 
     openButton.click();
     const donationButtons = [...popupParent.querySelectorAll(
@@ -799,14 +799,11 @@ describe('WorkshopWorldNoticeManager', () => {
     expect(donationButtons.map((button) => button.dataset.notification)).toEqual([
       undefined,
       undefined,
-      'true',
-      'true',
+      undefined,
+      undefined,
     ]);
 
-    for (const request of snapshot.worldNotice.current.requests) {
-      request.completed = true;
-    }
-    snapshot.worldNotice.current.completedRequests = snapshot.worldNotice.current.totalRequests;
+    snapshot.worldNotice.current.leaderboard.currentPoints += 2500;
     gameplayFacade.emit(snapshot);
 
     expect(openButton?.dataset.notification).toBeUndefined();

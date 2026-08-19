@@ -774,38 +774,76 @@ function createShopDialogModel(dialogId, key, subscribe) {
   if (dialogId === SHOP_DIALOG_IDS.MARKET) {
     return {
       title: 'Player Market',
+      sectionTitle: 'Filter',
+      listTitle: 'Offers',
       status: key === 'a' ? '3 Matching Offers' : '',
-      fields:
-        key === 'a'
-          ? [
+      fields: [
               { id: 'item', label: 'Item', value: 'Sage Seed' },
               { id: 'minPrice', label: 'Min Price', value: '5' },
               { id: 'username', label: 'Username', value: 'Mira' },
-            ]
-          : [],
+            ],
       items: [
         ['Mira', 'Sage Seed', 12],
         ['Rowan', 'Mint Seed', 18],
         ['Juniper', 'Briar Seed', 25],
       ].map(([username, itemLabel, priceCoin], index) => ({
         id: `shop-market-${key}-${index}`,
-        indexLabel: `${index + 1}.`,
-        itemLabel: `${itemLabel} (${index + 2}) · ${username}`,
+        username,
+        allianceTag: index === 0 ? 'OWL' : '',
+        allianceTagColor: 'violet',
+        character: 'elara',
+        frame: 'classic',
+        itemLabel,
+        itemKind: 'seed',
+        itemKey: `${itemLabel.toLowerCase().replaceAll(' ', '')}`,
+        quantityLabel: `x${index + 2}`,
         priceLabel: `${priceCoin} coin`,
         valueResourceKey: 'coin',
+        actionLabel: 'Buy',
+        actionVariant: 'green',
         action: accept,
       })),
-      actions:
-        key === 'a'
-          ? [
+      actions: [
               { id: 'clear', label: 'Clear', action: accept },
               { id: 'apply', label: 'Apply Filter', action: accept },
-            ]
-          : [{ id: 'filter', label: 'Filter', action: accept }],
+            ],
       tabs: [
         { id: 'selling', label: 'Selling', selected: true, action: accept },
         { id: 'buying', label: 'Buying', action: accept },
       ],
+      subscribe,
+    };
+  }
+
+  if (dialogId === SHOP_DIALOG_IDS.BUY) {
+    return {
+      title: 'Buy Offer',
+      seller: {
+        username: key === 'a' ? 'Mira' : 'Rowan',
+        allianceTag: 'OWL',
+        allianceTagColor: 'violet',
+        character: 'elara',
+        frame: 'violet',
+      },
+      featuredItem: {
+        id: `buy-item-${key}`,
+        label: 'Sage Seed',
+        detail: '12 Available',
+        itemKey: 'sageSeed',
+        itemKind: 'seed',
+        quantityLabel: key === 'a' ? 'x3' : 'x5',
+      },
+      range: {
+        enabled: true,
+        min: 1,
+        max: 12,
+        step: 1,
+        value: key === 'a' ? 3 : 5,
+        tone: 'yellow',
+        onChange: accept,
+      },
+      totalLabel: key === 'a' ? '24 coin' : '40 coin',
+      actions: [{ id: 'buy', label: 'Buy', variant: 'green', action: accept }],
       subscribe,
     };
   }

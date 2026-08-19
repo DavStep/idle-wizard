@@ -34,8 +34,14 @@ import {
 import {
   createItemTimerResearchCosts,
   isItemTimerResearchId,
-  itemTimerResearchDurationSeconds,
 } from '../itemTimerResearch.js';
+import {
+  createManaResearchCostsCoin,
+  getManaGenerationResearchIncrease,
+  getManaResearchPlayerLevel,
+  manaResearchDurationSeconds,
+  manaResearchSeriesIds,
+} from '../manaResearch.js';
 
 const maxResearchDurationSeconds = 4 * 60 * 60;
 const quickResearchDurationSeconds = minimumResearchDurationSeconds;
@@ -117,6 +123,7 @@ const recipeResearchDurationSecondsById = {
 
 const DEFAULT_RESEARCH_BALANCE = {
   researchCostsCoin: {
+    ...createManaResearchCostsCoin(),
     'unlockSeed:sageSeed': 0,
     'unlockSeed:mintSeed': 0,
     'unlockSeed:nettleSeed': 400,
@@ -339,8 +346,11 @@ function getDefaultResearchDurationSeconds(
   researchId,
   { costsCrystal = {}, costsRuby = {}, costsEmerald = {} } = {},
 ) {
-  if (isItemTimerResearchId(researchId)) {
-    return itemTimerResearchDurationSeconds;
+  if (
+    getManaResearchPlayerLevel(researchId, manaResearchSeriesIds.capacity) !== null ||
+    getManaResearchPlayerLevel(researchId, manaResearchSeriesIds.generation) !== null
+  ) {
+    return manaResearchDurationSeconds;
   }
 
   if (
@@ -500,19 +510,42 @@ export class ResearchBalanceManager {
     return cost.currency === 'emerald' ? cost.amount : 0;
   }
 
-  getDurationSeconds(researchId) {
+  getDurationSeconds(researchId, { defaultDurationSeconds = 0 } = {}) {
     const normalizedResearchId = this.normalizeResearchId(researchId);
     const durationSeconds =
       this.runtimeConfigByResearchId.get(normalizedResearchId)?.durationSeconds ??
       this.durationSecondsByResearchId[normalizedResearchId] ??
-      (isItemTimerResearchId(normalizedResearchId)
-        ? itemTimerResearchDurationSeconds
-        : 0);
+      defaultDurationSeconds;
 
-    return this.normalizeDurationSeconds(durationSeconds);
+    return this.normalizeDurationSeconds(durationSeconds, normalizedResearchId);
   }
 
-  getResearchEffect() {
+  getResearchEffect(researchId) {
+    const normalizedResearchId = this.normalizeResearchId(researchId);
+    const capacityPlayerLevel = getManaResearchPlayerLevel(
+      normalizedResearchId,
+      manaResearchSeriesIds.capacity,
+    );
+
+    if (capacityPlayerLevel !== null) {
+      return {
+        type: 'manaCap',
+        amount: 50,
+      };
+    }
+
+    const generationPlayerLevel = getManaResearchPlayerLevel(
+      normalizedResearchId,
+      manaResearchSeriesIds.generation,
+    );
+
+    if (generationPlayerLevel !== null) {
+      return {
+        type: 'manaPerSecond',
+        amount: getManaGenerationResearchIncrease(generationPlayerLevel),
+      };
+    }
+
     return null;
   }
 
@@ -537,7 +570,10 @@ export class ResearchBalanceManager {
 
       this.runtimeConfigByResearchId.set(researchId, {
         costCoin: this.normalizeOptionalCostCoin(config?.costCoin),
-        durationSeconds: this.normalizeOptionalDurationSeconds(config?.durationSeconds),
+        durationSeconds: this.normalizeOptionalDurationSeconds(
+          config?.durationSeconds,
+          researchId,
+        ),
         enabled: config?.enabled !== false,
       });
     }
@@ -561,15 +597,15 @@ export class ResearchBalanceManager {
     return Math.floor(value);
   }
 
-  normalizeOptionalDurationSeconds(durationSeconds) {
+  normalizeOptionalDurationSeconds(durationSeconds, researchId = '') {
     if (durationSeconds === undefined || durationSeconds === null) {
       return undefined;
     }
 
-    return this.normalizeDurationSeconds(durationSeconds);
+    return this.normalizeDurationSeconds(durationSeconds, researchId);
   }
 
-  normalizeDurationSeconds(durationSeconds) {
+  normalizeDurationSeconds(durationSeconds, researchId = '') {
     const value = Number(durationSeconds);
 
     if (!Number.isFinite(value) || value < 0) {
@@ -582,10 +618,14 @@ export class ResearchBalanceManager {
       return 0;
     }
 
-    return Math.min(
-      maxResearchDurationSeconds,
-      Math.max(minimumResearchDurationSeconds, wholeDurationSeconds),
+    const minimumDurationSeconds = Math.max(
+      minimumResearchDurationSeconds,
+      wholeDurationSeconds,
     );
+
+    return isItemTimerResearchId(researchId)
+      ? minimumDurationSeconds
+      : Math.min(maxResearchDurationSeconds, minimumDurationSeconds);
   }
 
   readCostCoinByResearchId() {

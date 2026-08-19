@@ -20,6 +20,10 @@ export class BackgroundMusicFacade {
     this.manager.setVolume(volume);
   }
 
+  setAppActive(active) {
+    this.manager.setAppActive(active);
+  }
+
   destroy() {
     this.manager.destroy();
   }

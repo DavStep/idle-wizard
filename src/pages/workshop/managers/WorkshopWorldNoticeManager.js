@@ -411,7 +411,7 @@ export class WorkshopWorldNoticeManager {
       )} points. ${notice.resetLabel}`,
     );
     this.renderTimer(notice.resetLabel);
-    setNotificationBadge(this.refs.openButton, hasIncompleteNoticeRequests(notice));
+    setNotificationBadge(this.refs.openButton, false);
   }
 
   renderTimer(resetLabel) {
@@ -841,7 +841,7 @@ export class WorkshopWorldNoticeManager {
     button.className = 'style-button workshop-page__world-notice-request-action';
     button.type = 'button';
     button.textContent = 'donate';
-    setNotificationBadge(button, request?.completed !== true);
+    setNotificationBadge(button, false);
     button.addEventListener('click', () => this.showDonateDialog(request, option));
     return button;
   }
@@ -1256,8 +1256,6 @@ export class WorkshopWorldNoticeManager {
     switch (reason) {
       case 'bad_amount':
         return 'bad amount';
-      case 'completed':
-        return 'already done';
       case 'locked':
         return 'event locked';
       case 'not_enough_coin':
@@ -1628,14 +1626,4 @@ export class WorkshopWorldNoticeManager {
 
     return safePlayerLevel;
   }
-}
-
-function hasIncompleteNoticeRequests(notice) {
-  const requests = notice?.requests;
-
-  if (Array.isArray(requests) && requests.length > 0) {
-    return requests.some((request) => request?.completed !== true);
-  }
-
-  return Number(notice?.completedRequests ?? 0) < Number(notice?.totalRequests ?? 0);
 }

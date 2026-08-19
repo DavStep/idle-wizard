@@ -852,7 +852,7 @@ describe('base styles', () => {
     expect(rootRule).toContain('--style-progress-root-edge: #bd72f3;');
     expect(rootRule).toContain('--style-progress-blue-fill: #2d8fe6;');
     expect(rootRule).toContain('--style-progress-blue-edge: #72c8ff;');
-    expect(rootRule).toContain('--style-progress-green-fill: #4aa83f;');
+    expect(rootRule).toContain('--style-progress-green-fill: #99bb46;');
     expect(rootRule).toContain('--style-progress-green-edge: #8bdc69;');
     expect(rootRule).toContain('--style-progress-yellow-fill: #f5c542;');
     expect(rootRule).toContain('--style-progress-yellow-edge: #ffee7d;');

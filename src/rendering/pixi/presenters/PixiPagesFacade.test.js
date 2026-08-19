@@ -1388,6 +1388,83 @@ describe("PixiPagesFacade", () => {
     );
   });
 
+  it("opens a retained Buy Offer dialog and purchases the selected quantity", async () => {
+    const gameplaySnapshot = createGameplaySnapshot();
+    const listing = {
+      listingKey: "mira-sage",
+      sellerIdentity: "mira-id",
+      username: "mira",
+      itemKey: "sageSeed",
+      itemKind: "seed",
+      itemLabel: "sage seed",
+      quantity: 5,
+      priceCoin: 8,
+    };
+    const harness = createHarness({ gameplaySnapshot });
+    harness.dependencies.playerShopFacade.getSnapshot.mockReturnValue({
+      connected: true,
+      listings: [listing],
+      requests: [],
+    });
+    harness.dependencies.playerShopFacade.buyListing = vi.fn(async () => ({
+      ok: true,
+    }));
+    harness.dependencies.playerInfoFacade = createSnapshotFacade({
+      players: [
+        {
+          identity: "mira-id",
+          username: "Mira",
+          allianceName: "Night Owls",
+          allianceTag: "OWL",
+          character: "elara",
+          frame: "gold",
+        },
+      ],
+    });
+    harness.gameplayFacade.buyPlayerShopListingItem = vi.fn(() => ({
+      ok: true,
+    }));
+    const pages = new PixiPagesFacade(harness.dependencies);
+    pages.mount();
+    pages.show("shop");
+
+    let shop = harness.getBoundPage("shop").shop;
+    shop.dialogs.market.items[0].action();
+    expect(harness.pageSurface.openDialog).toHaveBeenCalledWith(
+      "shop.buy",
+      expect.objectContaining({
+        seller: expect.objectContaining({
+          username: "Mira",
+          allianceTag: "OWL",
+        }),
+        range: expect.objectContaining({ max: 5, value: 1 }),
+      }),
+    );
+
+    harness.runtime.getOpenDialogIds.mockReturnValue(["shop.buy"]);
+    shop = harness.getBoundPage("shop").shop;
+    shop.dialogs.buy.range.onChange(3);
+    shop = harness.getBoundPage("shop").shop;
+    expect(shop.dialogs.buy).toMatchObject({
+      totalLabel: "24 coin",
+      range: { value: 3 },
+    });
+
+    await shop.dialogs.buy.actions[0].action();
+
+    expect(harness.dependencies.playerShopFacade.buyListing).toHaveBeenCalledWith({
+      listingKey: "mira-sage",
+      quantity: 3,
+    });
+    expect(harness.gameplayFacade.buyPlayerShopListingItem).toHaveBeenCalledWith({
+      listingKey: "mira-sage",
+      itemKey: "sageSeed",
+      quantity: 3,
+      priceCoin: 8,
+    });
+    expect(harness.runtime.closeDialog).toHaveBeenCalledWith("shop.buy");
+  });
+
   it("submits retained player requests through backend then gameplay", async () => {
     const gameplaySnapshot = createPlayerRequestGameplaySnapshot();
     const harness = createHarness({ gameplaySnapshot });
@@ -1765,7 +1842,7 @@ describe("PixiPagesFacade", () => {
       movement: { screen: { x: -24, y: 1 } },
     });
     expect(harness.bottomSurface.setSwipeTargetPageId).toHaveBeenLastCalledWith(
-      "research",
+      "shop",
     );
 
     swipe.onSwipeEnd();
@@ -1849,7 +1926,7 @@ describe("PixiPagesFacade", () => {
     ]);
   });
 
-  it("plays the harvest cue only after a ready Garden plot starts harvesting", () => {
+  it("plays the summon pop only after a ready Garden plot starts harvesting", () => {
     const gameplaySnapshot = createGameplaySnapshot();
     gameplaySnapshot.garden.plot = {
       maxTiles: 1,
@@ -1875,14 +1952,34 @@ describe("PixiPagesFacade", () => {
       ok: true,
       tileNumber: 1,
     });
-    expect(harness.gardenSoundFacade.playHarvest).toHaveBeenCalledTimes(1);
+    expect(harness.uiClickSoundFacade.playSummon).toHaveBeenCalledTimes(1);
+    expect(harness.uiClickSoundFacade.playSummon).toHaveBeenCalledWith(1);
 
     expect(harness.getBoundPage("garden").actions.activatePlot(plot)).toEqual({
       ok: false,
       reason: "not_ready",
       tileNumber: 1,
     });
-    expect(harness.gardenSoundFacade.playHarvest).toHaveBeenCalledTimes(1);
+    expect(harness.uiClickSoundFacade.playSummon).toHaveBeenCalledTimes(1);
+  });
+
+  it("plays the summon pop only after a potion is collected", () => {
+    const harness = createHarness();
+    harness.gameplayFacade.collectBrewing
+      .mockReturnValueOnce({ ok: true, quantity: 2 })
+      .mockReturnValueOnce({ ok: false, reason: "no_brew" });
+    const pages = new PixiPagesFacade(harness.dependencies);
+    pages.mount();
+
+    expect(pages.show("brewing")).toBe(true);
+    const collectBrew = harness.getBoundPage("brewing").actions.collectBrew;
+
+    expect(collectBrew(0)).toEqual({ ok: true, quantity: 2 });
+    expect(harness.uiClickSoundFacade.playSummon).toHaveBeenCalledTimes(1);
+    expect(harness.uiClickSoundFacade.playSummon).toHaveBeenCalledWith(1);
+
+    expect(collectBrew(0)).toEqual({ ok: false, reason: "no_brew" });
+    expect(harness.uiClickSoundFacade.playSummon).toHaveBeenCalledTimes(1);
   });
 
   it("accelerates active Garden plots while preserving an intentional seed swap", () => {

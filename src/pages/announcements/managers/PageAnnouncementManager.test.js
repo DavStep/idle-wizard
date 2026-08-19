@@ -168,8 +168,6 @@ describe('PageAnnouncementManager', () => {
       ['unlocks', 'market'],
       ['garden plots', '+2'],
       ['cauldrons', '+1'],
-      ['mana capacity', '+50 mana'],
-      ['mana regeneration', '+1/sec mana'],
     ]);
     expect(layer?.dataset.announcementUnlockDelayMs).toBe('21180');
 
@@ -236,8 +234,6 @@ describe('PageAnnouncementManager', () => {
       ]),
     ).toEqual([
       ['unlocks', 'garden / research'],
-      ['mana capacity', '+50 mana'],
-      ['mana regeneration', '+1/sec mana'],
       ['bonus', '+1 crystal'],
     ]);
   });

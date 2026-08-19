@@ -5,6 +5,14 @@ upload script posts the section whose heading matches `package.json` `version`.
 Write these developer-to-player notes only in Idle Wizard terms. Do not mention
 other game names, source projects, ports, or implementation provenance.
 
+## 0.3.75
+
+- Added dedicated Mana Capacity and Mana Generation research, with one new rank unlocked at every wizard level and the full research paths preserving the previous mana curve.
+- Expanded every herb- and potion-speed mastery into a 19-rank long-term study path, with clearer ordering, duration previews, and research times based on the production being improved.
+- Changed World Event requests into uncapped donation exchanges that remain available for the full event, so every contribution can keep adding leaderboard points.
+- Redesigned Browse Market offers with always-visible filters, compact seller rows, and a dedicated quantity-and-total confirmation before buying.
+- Improved room navigation, currency and research artwork, action sounds, touch handling, request progress feedback, and recovery from stalled save loading or suspended mobile audio.
+
 ## 0.3.74
 
 - Updated Guild quest requests with new illustrated road artwork.

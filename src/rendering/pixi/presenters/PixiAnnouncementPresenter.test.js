@@ -150,8 +150,6 @@ describe('PixiAnnouncementPresenter', () => {
         ]),
     ).toEqual([
       ['Unlocks', 'Garden / Research', null],
-      ['Mana Capacity', '+50', 'resource:mana'],
-      ['Mana Regeneration', '+1/sec', 'resource:mana'],
       ['Bonus', '+1', 'resource:crystal'],
     ]);
     expect(
@@ -160,8 +158,6 @@ describe('PixiAnnouncementPresenter', () => {
         .rows.slice(1)
         .map(({ countUp }) => countUp),
     ).toEqual([
-      { from: 50, to: 100, suffix: '', gain: 50 },
-      { from: 1, to: 2, suffix: '/sec' },
       { from: 1, to: 2, suffix: '' },
     ]);
 
@@ -268,6 +264,56 @@ describe('PixiAnnouncementPresenter', () => {
 
     harness.publishGameplay();
     expect(harness.runtime.openDialog).toHaveBeenCalledTimes(1);
+  });
+
+  it('preserves item mastery art and star data for research-complete announcements', () => {
+    const snapshot = createSnapshot();
+    const harness = createHarness({ snapshot });
+    const presenter = harness.createPresenter();
+    presenter.mount();
+    const mastery = {
+      id: 'timer:herbGrowth:sageHerb:1',
+      label: 'sage growing lvl 1',
+      displayName: 'sage growing',
+      effect: '-5% time',
+      value: '★',
+      completed: true,
+      itemKind: 'herb',
+      itemKey: 'sageHerb',
+      starLevel: 1,
+      starMaxLevel: 2,
+    };
+    snapshot.research.tabs[0].boxes[0].researches.push(mastery);
+    snapshot.research.completedResearchIds = [mastery.id];
+
+    harness.publishGameplay();
+
+    expect(harness.getLastModel()).toMatchObject({
+      kind: 'research',
+      research: {
+        displayName: 'sage growing',
+        itemKind: 'herb',
+        itemKey: 'sageHerb',
+        starLevel: 1,
+        starMaxLevel: 2,
+      },
+      icon: {
+        frameName: 'herb:sageHerb',
+        silhouetteFrameName: 'herb:sageHerb',
+      },
+    });
+    expect(harness.getLastModel().rows).toEqual([
+      expect.objectContaining({
+        label: 'Research',
+        value: 'Sage Growing',
+        starLevel: 1,
+        starSlotCount: 2,
+      }),
+      expect.objectContaining({
+        label: 'Effect',
+        value: '-5% time',
+      }),
+    ]);
   });
 
   it('suppresses normal announcements from an away catch-up and opens only its report', () => {
@@ -423,8 +469,8 @@ describe('PixiAnnouncementPresenter', () => {
       preview: true,
       dismissible: true,
       icon: {
-        frameName: 'research:fastSell',
-        silhouetteFrameName: 'research:fastSell',
+        frameName: 'herb:sageHerb',
+        silhouetteFrameName: 'herb:sageHerb',
       },
       animation: {
         kind: 'research-complete',
@@ -435,11 +481,13 @@ describe('PixiAnnouncementPresenter', () => {
     expect(harness.getLastModel().rows).toEqual([
       expect.objectContaining({
         label: 'Research',
-        value: 'Staff Stall 1',
+        value: 'Sage Growing',
+        starLevel: 1,
+        starSlotCount: 2,
       }),
       expect.objectContaining({
         label: 'Effect',
-        value: 'Sells 2 items per cycle',
+        value: '-5% time',
       }),
     ]);
     expect(harness.timers).toHaveLength(0);

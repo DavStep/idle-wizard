@@ -688,6 +688,9 @@ describe('reward flyout presenter', () => {
         itemFrameName: 'herb:mintHerb',
       }),
     ]);
+    expect(seedReward.itemDrops.every((drop) => drop.size === undefined)).toBe(
+      true,
+    );
 
     const plantedSeedReward = createRewardFlyoutPresentation({
       type: 'garden_seed_planted',
@@ -706,6 +709,7 @@ describe('reward flyout presenter', () => {
           itemFrameName: 'herb:mintHerb',
           anchorId: 'garden.plot.2',
           anchorYRatio: 0.5,
+          size: 25.5,
         }),
       ]),
     );

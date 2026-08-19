@@ -29,6 +29,7 @@ export class BackgroundMusicManager {
     this.audio = null;
     this.enabled = true;
     this.volume = 1;
+    this.appActive = true;
     this.started = false;
     this.disposed = false;
     this.gestureListenersInstalled = false;
@@ -69,8 +70,20 @@ export class BackgroundMusicManager {
     }
   }
 
+  setAppActive(active) {
+    const nextActive = active !== false;
+    if (this.appActive === nextActive) {
+      return;
+    }
+
+    this.appActive = nextActive;
+    if (this.started) {
+      this.syncPlayback();
+    }
+  }
+
   syncPlayback() {
-    if (!this.enabled || this.isDocumentHidden()) {
+    if (!this.enabled || !this.appActive || this.isDocumentHidden()) {
       this.pause();
       this.removeGestureListeners();
       return;
@@ -84,6 +97,7 @@ export class BackgroundMusicManager {
       !this.started ||
       this.disposed ||
       !this.enabled ||
+      !this.appActive ||
       this.isDocumentHidden()
     ) {
       return false;

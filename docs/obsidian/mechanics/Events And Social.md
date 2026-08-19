@@ -18,8 +18,8 @@ daily quests add points to daily and weekly reward tracks.
 ## Weekly World Events
 
 World events give normal gameplay actions a world-news reason for the week.
-Requests award contribution points; progress can complete a request, but
-matching actions keep adding contribution points after completion.
+Donation requests have no individual goal or completion state. Every donation
+adds contribution points for the full event duration.
 
 ## Guild
 

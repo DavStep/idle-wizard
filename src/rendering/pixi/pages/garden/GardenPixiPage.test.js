@@ -369,7 +369,7 @@ describe("GardenPixiPage", () => {
     });
     expect(seedRow.itemIcon.visible).toBe(true);
     expect(seedRow.itemIconOverlay.visible).toBe(true);
-    expect(seedRow.itemIcon.width).toBeLessThanOrEqual(28);
+    expect(seedRow.itemIcon.width).toBeLessThanOrEqual(32);
     expect(seedRow.itemIconOverlay.width / seedRow.itemIcon.width).toBeCloseTo(
       0.44,
     );

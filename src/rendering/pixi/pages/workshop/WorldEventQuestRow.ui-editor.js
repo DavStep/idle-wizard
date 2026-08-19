@@ -46,15 +46,6 @@ export default defineUiEditorIntegration({
       label: 'Donations unavailable',
       mount: mountWorldEventQuestRow,
     },
-    {
-      fixture: createQuestFixture({
-        completed: true,
-        pointsLabel: '1,240 points',
-      }),
-      id: 'completed',
-      label: 'Completed request',
-      mount: mountWorldEventQuestRow,
-    },
   ],
   sectionId: 'composite-widgets',
   usages: [
@@ -175,7 +166,6 @@ function hierarchy(primary, id, label, type, textTarget = null) {
 
 function createQuestFixture(overrides = {}) {
   return {
-    completed: false,
     description: 'The coronation bells have people cheering, arguing, and fainting in the same street. Donate calming draughts so the crowd stays upright.',
     donationOptions: [
       {

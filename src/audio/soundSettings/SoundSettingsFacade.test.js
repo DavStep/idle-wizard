@@ -6,12 +6,15 @@ import { SoundSettingsFacade } from './SoundSettingsFacade.js';
 describe('SoundSettingsFacade', () => {
   it('syncs music and sfx preferences to their audio features', () => {
     const backgroundMusicFacade = {
+      setAppActive: vi.fn(),
       setVolume: vi.fn(),
     };
     const uiClickSoundFacade = {
+      setAppActive: vi.fn(),
       setVolume: vi.fn(),
     };
     const gardenSoundFacade = {
+      setAppActive: vi.fn(),
       setVolume: vi.fn(),
     };
     const facade = new SoundSettingsFacade({
@@ -39,6 +42,17 @@ describe('SoundSettingsFacade', () => {
       [1],
       [0.25],
     ]);
+
+    facade.setAppActive(false);
+    facade.setAppActive(true);
+
+    for (const audioFacade of [
+      backgroundMusicFacade,
+      gardenSoundFacade,
+      uiClickSoundFacade,
+    ]) {
+      expect(audioFacade.setAppActive.mock.calls).toEqual([[false], [true]]);
+    }
 
     facade.destroy();
   });

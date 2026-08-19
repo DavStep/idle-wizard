@@ -1180,6 +1180,50 @@ describe('ResearchBoxListManager', () => {
     stage.remove();
   });
 
+  it('adds the shared timer companion to item timer artwork in the DOM fallback', () => {
+    const snapshot = {
+      research: {
+        boxes: [
+          {
+            id: 'seedUnlocks',
+            label: 'seed research',
+            researches: [
+              {
+                id: 'timer:herbGrowth:sageHerb:1',
+                label: 'sage growing lvl 1',
+                displayName: 'sage growing',
+                value: '25 coin',
+                itemKind: 'herb',
+                itemKey: 'sageHerb',
+                artExtraKey: 'timerReduction',
+                canResearch: true,
+              },
+            ],
+          },
+        ],
+      },
+    };
+    const manager = new ResearchBoxListManager({
+      gameplayFacade: createGameplayFacade(snapshot),
+    });
+    const stage = document.createElement('section');
+    document.body.append(stage);
+
+    manager.mount(stage);
+
+    const art = stage.querySelector('.research-page__research-art');
+    expect(
+      art?.querySelector('.research-page__research-art-image')?.dataset
+        .assetAtlasFrame,
+    ).toBe('herb:sageHerb');
+    expect(
+      art?.querySelector('.research-page__research-art-extra')?.getAttribute('src'),
+    ).toContain('icon-research-time.png');
+
+    manager.unmount();
+    stage.remove();
+  });
+
   it('does not render a timed research slot limit', () => {
     const snapshot = {
       playerLevel: { currentLevel: 17 },

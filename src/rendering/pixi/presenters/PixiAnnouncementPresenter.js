@@ -396,12 +396,18 @@ export class PixiAnnouncementPresenter {
 
   showResearchCompletePreview({
     research = {
-      id: 'advanced:stallStaffing:1',
-      label: 'Staff Stall 1',
-      effect: 'Sells 2 items per cycle',
-      value: 'researched',
+      id: 'timer:herbGrowth:sageHerb:1',
+      label: 'Sage Growing Lvl 1',
+      displayName: 'Sage Growing',
+      description: 'Reduces Sage growing time by 5%.',
+      effect: '-5% time',
+      value: '★',
       actionType: 'research',
-      costCurrency: 'ruby',
+      costCurrency: 'coin',
+      itemKind: 'herb',
+      itemKey: 'sageHerb',
+      starLevel: 1,
+      starMaxLevel: 2,
     },
   } = {}) {
     if (!this.mounted) {
@@ -1257,7 +1263,15 @@ function createResearchPresentationRows(
         research.actionType === 'levelUp'
           ? 'Upgrade'
           : 'Research',
-      value: toTitleCase(research.label ?? 'Research'),
+      value: toTitleCase(
+        research.displayName ?? research.label ?? 'Research',
+      ),
+      ...(Math.floor(Number(research.starLevel) || 0) > 0
+        ? {
+            starLevel: Math.floor(Number(research.starLevel)),
+            starSlotCount: getResearchStarSlotCount(research),
+          }
+        : {}),
     },
   ];
   if (detail) {
@@ -1270,6 +1284,11 @@ function createResearchPresentationRows(
     });
   }
   return rows;
+}
+
+function getResearchStarSlotCount(research = {}) {
+  const maxLevel = Math.floor(Number(research.starMaxLevel) || 0);
+  return maxLevel === 2 ? 2 : 3;
 }
 
 function createLevelPresentationRows(rows, toLevel) {
@@ -1549,6 +1568,8 @@ function getResearchSnapshot(
     id: researchId,
     label:
       research.label ?? formatResearchId(researchId),
+    displayName: research.displayName ?? null,
+    description: research.description ?? '',
     effect: research.effect ?? '',
     value: research.value ?? '',
     actionType: research.actionType ?? 'research',
@@ -1556,6 +1577,9 @@ function getResearchSnapshot(
       research.costCurrency ??
       inferResearchCurrency(research),
     starLevel: research.starLevel ?? null,
+    starMaxLevel: research.starMaxLevel ?? null,
+    itemKind: research.itemKind ?? null,
+    itemKey: research.itemKey ?? null,
   };
 }
 
@@ -1597,6 +1621,9 @@ function formatResearchId(researchId) {
 }
 
 function getResearchDetailText(research = {}) {
+  if (Math.floor(Number(research.starLevel) || 0) > 0) {
+    return research.effect || research.description || '';
+  }
   if (research.value === 'researched') {
     return research.effect || '';
   }
@@ -1612,6 +1639,14 @@ function getResearchDetailText(research = {}) {
 
 function getResearchIconFrameName(research = {}) {
   const researchId = String(research.id ?? '');
+  const itemKind = String(research.itemKind ?? '').toLowerCase();
+  const itemKey = String(research.itemKey ?? '').trim();
+  if (itemKind === 'herb' && itemKey) {
+    return getHerbIconFrameName(itemKey);
+  }
+  if (itemKind === 'potion' && itemKey) {
+    return getPotionIconFrameName(itemKey);
+  }
   if (researchId.startsWith('unlockSeed:')) {
     return 'seed:pack';
   }

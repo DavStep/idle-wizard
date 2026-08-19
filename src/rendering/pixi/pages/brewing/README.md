@@ -138,7 +138,11 @@ appears only in the existing `xN` configuration control.
 
 The framed action section begins with the predicted potion inside the shared
 Research-row art well. With no selected ingredients or recipe, the well stays
-present as an empty solid squircle. Phase/timer progress sits beside it.
+present as an empty solid squircle and the status reads `No potion selected`.
+The timer rail appears beside the well only while brewing or bottling. A
+selected recipe blocked by stock replaces the rail with `Missing ingredients`
+and grouped herb art, names, and red `xN` shortages; mana-blocked idle uses
+compact recovery copy instead of an empty rail.
 That batch-detail rail uses the shared default purple fill.
 The shortened panel is bottom-anchored `3px` above the World Chat title
 overhang and ends with one wide primary button. The expanded preview uses the
@@ -189,14 +193,16 @@ button follows the brewing state: a truly empty cauldron is yellow
 top-right `Recipes` control; manual idle after a recipe or ingredient is staged
 is `Brew`, brewing and bottling are yellow `Cancel`, brewed is `Bottle`, and
 bottled is `Collect`. Newly enabled Auto remains unarmed and keeps the normal
-`Brew` action available; a successful first brew arms the repeating loop. Armed
-Auto shows `Collect` only while output is ready; otherwise it shows yellow `Cancel`.
+`Brew` action available; a successful first brew arms the repeating loop.
+Armed Auto shows `Collect` while output is ready, `Cancel` while an unfinished
+batch is active, and `Stop Auto` while waiting for resources.
 After Collect, a retained selected recipe keeps `Brew` as the one-tap repeat
 action: when enough herbs and mana remain, it restages the recipe and starts the
-next batch. Otherwise the action is disabled and the phase reads `Need Herbs`
-or `Need Mana` while the slot counts explain the shortage.
-Armed idle Auto `Cancel` disables Auto, while active `Cancel` destroys the unfinished
-batch only after the shared confirmation dialog warns that the unfinished
+next batch. Otherwise the action is disabled and the phase reads
+`Missing ingredients` or `Not enough mana` while the slot counts explain the
+shortage.
+Armed idle Auto `Stop Auto` disables Auto, while active `Cancel` destroys the
+unfinished batch only after the shared confirmation dialog warns that the unfinished
 potion, herbs, and mana will be lost. Enabling Auto first copies the
 retained page's selected recipe into the authoritative Auto recipe, then enables
 the mode. Cancel has no icon.
@@ -247,5 +253,5 @@ Add
 to reopen the active-brew regression state. It reapplies the selected theme,
 keeps reduced motion enabled, and exposes the live rail value through
 `#brewing-ready-hud-recipe-state[data-progress]`.
-Use `?state=active&motionMs=275` to freeze the active cauldron at the liquid
+Use `?state=active&motionMs=225` to freeze the active cauldron at the liquid
 cycle's highest point for reproducible containment screenshots.

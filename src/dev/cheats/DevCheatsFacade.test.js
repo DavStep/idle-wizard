@@ -3,7 +3,6 @@ import { describe, expect, it, vi } from 'vitest';
 import { EcsFacade } from '../../ecs/EcsFacade.js';
 import { GameplayFacade } from '../../gameplay/GameplayFacade.js';
 import { GAMEPLAY_SAVE_VERSION } from '../../gameplay/persistence/managers/GameplayMigrationManager.js';
-import { WORLD_NOTICE_MAX_REQUESTS } from '../../gameplay/worldNotice/WorldNoticeFacade.js';
 import { PlayerFacade } from '../../player/PlayerFacade.js';
 import { DevCheatsFacade } from './DevCheatsFacade.js';
 
@@ -799,12 +798,11 @@ describe('DevCheatsFacade', () => {
 
     facade.mount();
 
-    expect(target.cheats.setWorldEventState('complete', { leaderboardCount: 2 }))
+    expect(target.cheats.setWorldEventState('highscore', { leaderboardCount: 2 }))
       .toMatchObject({
         ok: true,
         worldNotice: {
           current: {
-            completedRequests: WORLD_NOTICE_MAX_REQUESTS,
             leaderboard: {
               currentPoints: 2750,
             },
@@ -911,6 +909,14 @@ describe('DevCheatsFacade', () => {
         expect.objectContaining({
           id: 'traderStallLoader',
           command: 'cheats.openUi("traderStallLoader")',
+        }),
+        expect.objectContaining({
+          id: 'playerMarketRequest',
+          command: 'cheats.openUi("playerMarketRequest")',
+        }),
+        expect.objectContaining({
+          id: 'playerMarketSell',
+          command: 'cheats.openUi("playerMarketSell")',
         }),
         expect.objectContaining({
           id: 'stats',
@@ -1026,6 +1032,24 @@ describe('DevCheatsFacade', () => {
     expect(pagesFacade.openDialog).toHaveBeenLastCalledWith('market', {
       tab: 'npm',
       popup: 'sell',
+    });
+
+    expect(target.cheats.openUi('playerMarketRequest')).toMatchObject({
+      ok: true,
+      surfaceId: 'playerMarketRequest',
+    });
+    expect(pagesFacade.openDialog).toHaveBeenLastCalledWith('market', {
+      tab: 'player',
+      popup: 'request',
+    });
+
+    expect(target.cheats.openUi('playerMarketSell')).toMatchObject({
+      ok: true,
+      surfaceId: 'playerMarketSell',
+    });
+    expect(pagesFacade.openDialog).toHaveBeenLastCalledWith('market', {
+      tab: 'player',
+      popup: 'listing',
     });
 
     expect(target.cheats.openUi('discoveries')).toMatchObject({

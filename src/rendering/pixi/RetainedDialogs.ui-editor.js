@@ -130,6 +130,7 @@ const DIALOG_CHILD_WIDGET_IDS = Object.freeze({
   ]),
   [GLOBAL_DIALOG_IDS.ANNOUNCEMENT]: Object.freeze([
     'compound.feature-unlock-announcement-item',
+    STAR_LEVEL_WIDGET_ID,
   ]),
   [GLOBAL_DIALOG_IDS.CONFIRMATION]: Object.freeze(['text-button']),
   'workshop.bag': Object.freeze([
@@ -200,8 +201,15 @@ const DIALOG_CHILD_WIDGET_IDS = Object.freeze({
   ]),
   'shop.market': Object.freeze([
     'compound.dialog-field',
-    'compound.market-compact-row',
+    'compound.player-market-offer-row',
     'tab-button',
+    'text-button',
+  ]),
+  'shop.buy': Object.freeze([
+    'compound.player-profile',
+    'compound.inventory-choice-row',
+    'primitive.resource-label',
+    'primitive.settings-slider',
     'text-button',
   ]),
   'shop.tradeHistory': Object.freeze(['compound.market-compact-row']),
@@ -272,6 +280,7 @@ const DIALOG_LABELS = Object.freeze({
   'shop.request': 'Create Request',
   'shop.listing': 'Sell Listing',
   'shop.market': 'Player Market',
+  'shop.buy': 'Buy Offer',
   'shop.tradeHistory': 'Trade History',
   'shop.support': 'Support',
   'guild.charter': 'Guild Charter',
@@ -1209,6 +1218,33 @@ function createDialogContentHierarchy(dialogId, dialog, content) {
 }
 
 function createReusableDialogContentHierarchy(dialogId, dialog) {
+  if (dialogId === GLOBAL_DIALOG_IDS.ANNOUNCEMENT) {
+    return [
+      ...(dialog.unlockItems?.collection?.getWidgets?.() ?? []).map((item, index) =>
+        createUiEditorPixiHierarchyComponent({
+          displayObjects: [item.root],
+          id: `${dialogId}:unlock:${item.data?.id ?? index}`,
+          label: 'FeatureUnlock:FeatureUnlockAnnouncementItem',
+          libraryEntryId: 'compound.feature-unlock-announcement-item',
+          primary: item.root,
+          type: 'widget',
+        }),
+      ),
+      ...(dialog.researchStars?.visible
+        ? [
+            createUiEditorPixiHierarchyComponent({
+              displayObjects: [dialog.researchStars],
+              id: `${dialogId}:research-stars`,
+              label: 'ResearchRank:PixiStarLevelLabel',
+              libraryEntryId: STAR_LEVEL_WIDGET_ID,
+              primary: dialog.researchStars,
+              type: 'widget',
+            }),
+          ]
+        : []),
+    ];
+  }
+
   if (dialogId === GLOBAL_DIALOG_IDS.ALLIANCE) {
     return [
       ...(dialog.summaryRows?.getWidgets?.() ?? []).map((row, index) =>
@@ -1790,6 +1826,37 @@ const GLOBAL_DIALOG_SCENARIOS = Object.freeze({
       ],
       kind: 'unlock',
       title: 'Garden Unlocked',
+    })),
+    scenario('research', 'Research complete', () => ({
+      animation: { kind: 'research-complete' },
+      dismissible: true,
+      icon: {
+        frameName: 'herb:sageHerb',
+        silhouetteFrameName: 'herb:sageHerb',
+      },
+      kind: 'research',
+      research: {
+        starLevel: 1,
+        starMaxLevel: 2,
+      },
+      rows: [
+        {
+          id: 'research:name',
+          kind: 'row',
+          label: 'Research',
+          starLevel: 1,
+          starSlotCount: 2,
+          value: 'Sage Growing',
+        },
+        {
+          id: 'research:effect',
+          kind: 'row',
+          label: 'Effect',
+          value: '-5% time',
+        },
+      ],
+      title: 'Research Complete!',
+      variant: 'banner-rows',
     })),
   ]),
   [GLOBAL_DIALOG_IDS.CONFIRMATION]: Object.freeze([

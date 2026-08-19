@@ -8,6 +8,7 @@ import {
 import {
   PixiTextButton,
   PixiNineSliceFrame,
+  PixiStarLevelLabel,
   PixiTextLabel,
 } from '../../primitives/index.js';
 import { layoutPixiSeedPackIcon } from '../../primitives/PixiSeedPackIcon.js';
@@ -36,6 +37,8 @@ const WHILE_AWAY_CONTENT_PADDING_TOP =
   RETAINED_DIALOG_SCROLL_GEOMETRY.contentPaddingTop;
 const ANNOUNCEMENT_BACKDROP_ALPHA = 0.68;
 const LEVEL_REWARDS_BACKDROP_ALPHA = 0.88;
+const LEVEL_REWARD_ROW_BACKING_TINT = 0x000000;
+const LEVEL_REWARD_ROW_BACKING_ALPHA = 0.55;
 const LEVEL_REWARD_ROW_GAP = 6;
 const LEVEL_REWARD_ROW_INSET_X = 5;
 const RESEARCH_COMPLETE_ICON_TO_ROWS_GAP = 6;
@@ -307,6 +310,14 @@ export class PixiAnnouncementSurface extends RetainedGlobalDialog {
       maxSize: 40,
       theme: this.theme,
     });
+    this.researchStars = new PixiStarLevelLabel({
+      assetManager: this.context.assets,
+      size: 12,
+      gap: 1,
+      label: `${dialogId}:researchStars`,
+    });
+    this.researchStars.visible = false;
+    this.researchStars.renderable = false;
     this.unlockItems = new FeatureUnlockAnnouncementItems({
       parent: this.unlockItemsLayer,
       assets: this.context.assets,
@@ -330,6 +341,7 @@ export class PixiAnnouncementSurface extends RetainedGlobalDialog {
       this.stopAnnouncementMotion();
     }
     this.announcementModel = normalizeAnnouncementModel(viewModel);
+    this.resetResearchStars();
     const model = this.announcementModel;
     const bannerRows = isBannerRowsAnnouncement(model);
     this.backdropAlpha =
@@ -389,6 +401,7 @@ export class PixiAnnouncementSurface extends RetainedGlobalDialog {
         });
       } else {
         this.rows.reconcile(model.rows);
+        this.bindResearchStars(model);
         this.syncLevelRewardRowBackings(
           this.rows.collection.getWidgets().length,
         );
@@ -699,6 +712,7 @@ export class PixiAnnouncementSurface extends RetainedGlobalDialog {
         this.layoutLevelRewardRowBackings(
           rowsWidth,
         );
+        this.layoutResearchStars();
       }
       if (levelRewards) {
         this.continuePrompt.position.set(
@@ -741,6 +755,9 @@ export class PixiAnnouncementSurface extends RetainedGlobalDialog {
 
   destroyDialog() {
     this.stopAnnouncementMotion();
+    this.resetResearchStars();
+    this.researchStars?.destroy({ children: true });
+    this.researchStars = null;
     this.rows?.destroy();
     this.rows = null;
     this.reportScroll?.destroy();
@@ -1443,7 +1460,10 @@ export class PixiAnnouncementSurface extends RetainedGlobalDialog {
           PIXI_ROOT_RUN_GEOMETRY.settings.rowBorderInsets,
         label: `${this.dialogId}:levelRewardRowBacking:${index}`,
       });
-      backing.tint = 0x24252c;
+      backing.tint = LEVEL_REWARD_ROW_BACKING_TINT;
+      for (const slice of backing.sprites) {
+        slice.alpha = LEVEL_REWARD_ROW_BACKING_ALPHA;
+      }
       this.levelRewardRowBackings.push(backing);
       this.levelRewardRowsBackingLayer.addChild(backing);
     }
@@ -1496,6 +1516,53 @@ export class PixiAnnouncementSurface extends RetainedGlobalDialog {
         LEVEL_REWARD_ROW_TEXT_STROKE,
       );
     }
+  }
+
+  bindResearchStars(model = {}) {
+    const row = this.rows.collection
+      .getWidgets()
+      .find((candidate) => Number(candidate.data?.starLevel) > 0);
+    const starLevel = Math.floor(
+      Number(row?.data?.starLevel ?? model.research?.starLevel) || 0,
+    );
+    if (!row || starLevel <= 0 || !this.researchStars) {
+      return;
+    }
+    this.researchStars.setLevel(starLevel, {
+      slotCount:
+        row.data.starSlotCount ??
+        (Number(model.research?.starMaxLevel) === 2 ? 2 : 3),
+    });
+    this.researchStars.visible = true;
+    this.researchStars.renderable = true;
+    row.root.addChild(this.researchStars);
+  }
+
+  layoutResearchStars() {
+    const stars = this.researchStars;
+    const row = stars?.parent
+      ? this.rows.collection
+          .getWidgets()
+          .find((candidate) => candidate.root === stars.parent)
+      : null;
+    if (!row || !stars.visible) {
+      return;
+    }
+    const gap = 3;
+    stars.position.set(
+      Math.max(0, row.rowWidth - stars.width),
+      Math.max(0, (row.rowHeight - stars.height) / 2),
+    );
+    row.valueLabel.position.x = Math.max(0, stars.x - gap);
+  }
+
+  resetResearchStars() {
+    if (!this.researchStars) {
+      return;
+    }
+    this.researchStars.parent?.removeChild(this.researchStars);
+    this.researchStars.visible = false;
+    this.researchStars.renderable = false;
   }
 
   hasLevelRewardCountUp() {

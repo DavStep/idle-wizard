@@ -32,30 +32,70 @@ export default defineUiEditorIntegration({
     },
   ],
   scenarios: [
-    { fixture: { phase: 'ready' }, id: 'ready', label: 'Ready to brew', mount: mountBrewing },
-    { fixture: { phase: 'brewing' }, id: 'brewing', label: 'Brewing', mount: mountBrewing },
-    { fixture: { phase: 'complete' }, id: 'complete', label: 'Ready to collect', mount: mountBrewing },
+    {
+      fixture: { phase: 'empty' },
+      id: 'empty',
+      label: 'No potion selected',
+      mount: mountBrewing,
+    },
+    {
+      fixture: { phase: 'missing' },
+      id: 'missing',
+      label: 'Missing ingredients',
+      mount: mountBrewing,
+    },
+    {
+      fixture: { phase: 'ready' },
+      id: 'ready',
+      label: 'Ready to brew',
+      mount: mountBrewing,
+    },
+    {
+      fixture: { phase: 'brewing' },
+      id: 'brewing',
+      label: 'Brewing',
+      mount: mountBrewing,
+    },
+    {
+      fixture: { phase: 'complete' },
+      id: 'complete',
+      label: 'Ready to collect',
+      mount: mountBrewing,
+    },
   ],
 });
 
 async function mountBrewing(context, fixture) {
   const state = {
-    active: fixture.phase === 'ready' ? null : createActiveBrew(fixture.phase),
-    ingredients: [
-      { key: 'sageHerb', label: 'Sage', quantity: 1 },
-      { key: 'mintHerb', label: 'Mint', quantity: 1 },
-    ],
+    active: ['empty', 'missing', 'ready'].includes(fixture.phase)
+      ? null
+      : createActiveBrew(fixture.phase),
+    ingredients:
+      fixture.phase === 'empty'
+        ? []
+        : [
+            { key: 'sageHerb', label: 'Sage', quantity: 1 },
+            { key: 'mintHerb', label: 'Mint', quantity: 1 },
+          ],
     quantity: 1,
-    selectedRecipe: {
-      ingredients: [
-        { itemKey: 'sageHerb', label: 'Sage', quantity: 1 },
-        { itemKey: 'mintHerb', label: 'Mint', quantity: 1 },
-      ],
-      key: 'minorManaPotion',
-      label: 'Minor Mana Potion',
-      ownedQuantity: 2,
-      rarity: 'common',
-    },
+    selectedRecipe:
+      fixture.phase === 'empty'
+        ? null
+        : {
+            ingredients: [
+              {
+                itemKey: 'sageHerb',
+                label: 'Sage',
+                quantity: 2,
+                owned: fixture.phase === 'missing' ? 0 : 2,
+              },
+              { itemKey: 'mintHerb', label: 'Mint', quantity: 1 },
+            ],
+            key: 'minorManaPotion',
+            label: 'Minor Mana Potion',
+            ownedQuantity: 2,
+            rarity: 'common',
+          },
   };
   let hud = null;
   const createModel = () => ({
@@ -70,11 +110,23 @@ async function mountBrewing(context, fixture) {
         ingredients: state.ingredients,
         level: 2,
         maxBrewQuantity: 3,
+        recipeReadiness: state.selectedRecipe
+          ? {
+              hasEnoughIngredients: fixture.phase !== 'missing',
+              hasEnoughMana: true,
+            }
+          : null,
         primaryAction: state.active
           ? state.active.canCollect
             ? { enabled: true, id: 'collect', label: 'Collect' }
             : { enabled: true, id: 'cancel', label: 'Cancel' }
-          : { enabled: true, id: 'brew', label: 'Brew' },
+          : state.selectedRecipe
+            ? {
+                enabled: fixture.phase !== 'missing',
+                id: 'brew',
+                label: 'Brew',
+              }
+            : { enabled: true, id: 'recipes', label: 'Choose Recipe' },
         quantityAction: {
           enabled: !state.active,
           label: `x${state.quantity}`,
@@ -152,6 +204,7 @@ async function mountBrewing(context, fixture) {
     assetFilter: ({ id }) =>
       id.includes('/ui/') ||
       id.includes('/icons/') ||
+      id.includes('/items/') ||
       id.includes('/rooms/brewing/'),
     component: 'BrewingHudPixi',
     createControl: ({ assets, input }) => {

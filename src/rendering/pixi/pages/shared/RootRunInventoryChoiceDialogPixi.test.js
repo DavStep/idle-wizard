@@ -39,6 +39,9 @@ describe('RootRunInventoryChoiceRowPixi', () => {
 
     expect(row.label.fontSize).toBe(14);
     expect(row.detail.fontSize).toBe(13);
+    expect(
+      Math.max(row.itemIcon.width, row.itemIcon.height),
+    ).toBeCloseTo(32);
     expect(row.selectedIndicator.width).toBeCloseTo(27);
     expect(row.selectedIndicator.height).toBeCloseTo(27);
     expect(row.selectedIndicator.x).toBeCloseTo(
@@ -47,6 +50,18 @@ describe('RootRunInventoryChoiceRowPixi', () => {
     expect(row.selectedIndicator.y).toBeCloseTo(
       row.summaryHeight / 2,
     );
+
+    row.bind('manaTonic', {
+      detail: '3 Available',
+      enabled: true,
+      itemKind: 'potion',
+      key: 'manaTonic',
+      label: 'Mana Tonic',
+    });
+    row.setBounds(0, 0, 276, 50, 50);
+    expect(
+      Math.max(row.itemIcon.width, row.itemIcon.height),
+    ).toBeCloseTo(36);
 
     row.destroy();
   });

@@ -74,6 +74,8 @@ const DIALOG_PAPER_BOTTOM_INSET =
 const BAG_SCROLL_VIEWPORT_TOP_INSET = 4;
 const BAG_TAB_COLUMN_COUNT = 3;
 const BAG_TAB_ROW_GAP = 4;
+const BAG_ITEM_ICON_SIZE = 32;
+const BAG_POTION_ICON_SIZE = 36;
 const STATS_SCROLL_VIEWPORT_TOP_INSET = 6;
 const STATS_SCROLLBAR_SHIFT_RIGHT = 4;
 const LEADERBOARD_FOOTER_ROW_GAP = 4;
@@ -3164,9 +3166,8 @@ export class WorldEventQuestRow {
       ) ?? Texture.EMPTY,
       PIXI_ROOT_RUN_GEOMETRY.dialog.paperSourceInsets,
     );
-    this.card.alpha = this.model?.completed === true ? 0.72 : 1;
-    const textColor =
-      this.model?.completed === true ? resolvedTheme.muted : resolvedTheme.text;
+    this.card.alpha = 1;
+    const textColor = resolvedTheme.text;
     applyTextTheme(this.title, resolvedTheme, {
       fontSize: 13,
       lineHeight: WORLD_EVENT_QUEST_TITLE_HEIGHT,
@@ -5733,7 +5734,15 @@ class WorkshopBagInventoryRow extends RootRunInventoryChoiceRowPixi {
   }
 
   bind(model) {
-    super.bind(model?.id ?? model?.key ?? '', model ?? {});
+    const itemKind = String(model?.itemKind ?? '').toLowerCase();
+    super.bind(model?.id ?? model?.key ?? '', {
+      ...(model ?? {}),
+      iconSize:
+        model?.iconSize ??
+        (itemKind === 'potion'
+          ? BAG_POTION_ICON_SIZE
+          : BAG_ITEM_ICON_SIZE),
+    });
     this.applyTheme(this.dialog.contentTheme ?? this.dialog.theme);
   }
 

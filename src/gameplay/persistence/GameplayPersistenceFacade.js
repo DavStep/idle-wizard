@@ -205,10 +205,15 @@ export class GameplayPersistenceFacade {
   }
 
   getOfflineDeltaSeconds(save) {
-    if (!Number.isFinite(save?.savedAt)) {
+    const savedAt =
+      Number.isFinite(save?.clientSavedAt) && save.clientSavedAt > 0
+        ? save.clientSavedAt
+        : save?.savedAt;
+
+    if (!Number.isFinite(savedAt)) {
       return 0;
     }
 
-    return Math.max(0, (this.now() - save.savedAt) / 1_000);
+    return Math.max(0, (this.now() - savedAt) / 1_000);
   }
 }

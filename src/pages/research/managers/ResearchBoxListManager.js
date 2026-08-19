@@ -54,14 +54,6 @@ const RESEARCH_ARTWORK_BY_BOX_ID = Object.freeze({
     '../../../../assets/game/source/icons/research/icon-research-plot-growth.png',
     import.meta.url,
   ).href,
-  herbGrowthMastery: new URL(
-    '../../../../assets/game/source/icons/research/icon-research-plot-growth.png',
-    import.meta.url,
-  ).href,
-  potionBrewingMastery: new URL(
-    '../../../../assets/game/source/icons/research/icon-research-cauldron-brewing.png',
-    import.meta.url,
-  ).href,
   plotPlanting: new URL(
     '../../../../assets/game/source/icons/research/icon-research-plot-level.png',
     import.meta.url,
@@ -93,6 +85,10 @@ const RESEARCH_ARTWORK_BY_BOX_ID = Object.freeze({
 });
 const RESEARCH_CAULDRON_LEVEL_ARTWORK = new URL(
   '../../../../assets/game/source/icons/research/icon-research-cauldron-level.png',
+  import.meta.url,
+).href;
+const RESEARCH_TIMER_REDUCTION_ARTWORK = new URL(
+  '../../../../assets/game/source/icons/research/icon-research-time.png',
   import.meta.url,
 ).href;
 const RESEARCH_FALLBACK_ARTWORK = new URL(
@@ -712,6 +708,7 @@ export class ResearchBoxListManager {
     key.replaceChildren(...this.createResearchLabelParts(research));
     artwork.replaceChildren(
       this.createResearchArtworkContent(boxId, research),
+      ...this.createResearchArtworkExtra(research),
     );
     const val =
       research.locked
@@ -760,6 +757,7 @@ export class ResearchBoxListManager {
       research.description,
       research.itemKind ?? '',
       research.itemKey ?? '',
+      research.artExtraKey ?? '',
       research.costCurrency ?? '',
       research.completed,
       research.inProgress,
@@ -809,7 +807,10 @@ export class ResearchBoxListManager {
     root.className = 'research-page__research-art';
     root.setAttribute('aria-hidden', 'true');
 
-    root.append(this.createResearchArtworkContent(boxId, research));
+    root.append(
+      this.createResearchArtworkContent(boxId, research),
+      ...this.createResearchArtworkExtra(research),
+    );
     return root;
   }
 
@@ -860,6 +861,19 @@ export class ResearchBoxListManager {
     image.alt = '';
     image.draggable = false;
     return image;
+  }
+
+  createResearchArtworkExtra(research) {
+    if (research?.artExtraKey !== 'timerReduction') {
+      return [];
+    }
+
+    const image = document.createElement('img');
+    image.className = 'research-page__research-art-extra';
+    image.src = RESEARCH_TIMER_REDUCTION_ARTWORK;
+    image.alt = '';
+    image.draggable = false;
+    return [image];
   }
 
   getResearchArtworkUrl(boxId, researchId) {

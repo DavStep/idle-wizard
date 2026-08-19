@@ -14,7 +14,7 @@ const harness = vi.hoisted(() => ({
     destroy: vi.fn(),
     layout: vi.fn(),
     root: {},
-    tabs: ['brewing', 'garden', 'workshop', 'research', 'shop'].map((id) => ({
+    tabs: ['brewing', 'garden', 'workshop', 'shop', 'research'].map((id) => ({
       definition: {
         id,
         label: id === 'shop' ? 'Market' : id[0].toUpperCase() + id.slice(1),
@@ -32,8 +32,8 @@ vi.mock('../global/chrome/PixiBottomPanelView.js', () => ({
     { id: 'brewing', label: 'Brewing' },
     { id: 'garden', label: 'Garden' },
     { id: 'workshop', label: 'Workshop' },
-    { id: 'research', label: 'Research' },
     { id: 'shop', label: 'Market' },
+    { id: 'research', label: 'Research' },
   ],
   PIXI_GUILD_HUD_TABS: [
     { guildTabId: 'hall', id: 'guild.hall', label: 'Hall' },
@@ -104,8 +104,8 @@ describe('Pixi foundation UI editor integrations', () => {
       'Brewing tab',
       'Garden tab',
       'Workshop tab',
-      'Research tab',
       'Market tab',
+      'Research tab',
     ]);
     expect(
       result.control.atomicComponents.every(

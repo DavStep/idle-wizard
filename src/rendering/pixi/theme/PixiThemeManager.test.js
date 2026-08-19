@@ -4,6 +4,7 @@ import { PixiThemeManager } from './PixiThemeManager.js';
 import {
   createPixiThemeSnapshot,
   DEFAULT_PIXI_THEME_SNAPSHOT,
+  PIXI_PROGRESS_VISUALS,
   PIXI_UI_GEOMETRY,
 } from './PixiThemeTokens.js';
 
@@ -26,6 +27,7 @@ describe('Pixi theme tokens', () => {
       text: '#d4d4d4',
       stroke: '#3f465c',
     });
+    expect(PIXI_PROGRESS_VISUALS.tones.green.fill).toBe('#99bb46');
   });
 
   it('normalizes aliases and resolves the full visual settings snapshot', () => {
