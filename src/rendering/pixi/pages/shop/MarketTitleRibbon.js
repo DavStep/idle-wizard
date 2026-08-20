@@ -12,14 +12,19 @@ const TITLE_TEXT = '#ffffff';
 const TITLE_STROKE = '#160e19';
 
 /**
- * Static Market licence identity ribbon.
+ * Shared static identity ribbon.
  *
- * The title and all three star slots are measured together and optically
- * centered on the ribbon's raised front panel.
+ * The ranked Market state measures its title and star slots as one centered
+ * group. Title-only consumers center the title without reserving star space.
  */
 export class MarketTitleRibbon {
-  constructor({ assetManager = null } = {}) {
+  constructor({
+    assetManager = null,
+    label = 'shop:marketTitleRibbon',
+    showStars = true,
+  } = {}) {
     this.assetManager = assetManager;
+    this.showStars = showStars !== false;
     this.geometry = PIXI_ROOT_RUN_GEOMETRY.marketTitleRibbon;
     this.assetId = PIXI_ROOT_RUN_ASSETS.marketTitleRibbon;
     this.width = this.geometry.width;
@@ -28,14 +33,14 @@ export class MarketTitleRibbon {
     this.contentGroupRight = 0;
     this.contentGroupCenterX = 0;
 
-    this.root = new Container({ label: 'shop:marketTitleRibbon' });
+    this.root = new Container({ label });
     this.frame = new PixiNineSliceFrame({
       texture: this.resolveTexture(this.assetId),
       sourceInsets: this.geometry.sourceInsets,
       borderInsets: this.geometry.borderInsets,
       width: this.width,
       height: this.height,
-      label: 'shop:marketTitleRibbon:frame',
+      label: `${label}:frame`,
     });
     this.title = new PixiTextLabel({
       fontSize: this.geometry.titleFontSize,
@@ -47,14 +52,16 @@ export class MarketTitleRibbon {
         width: this.geometry.titleStroke,
       },
       anchor: { x: 0.5, y: 0.5 },
-      label: 'shop:marketTitleRibbon:title',
+      label: `${label}:title`,
     });
     this.stars = new PixiStarLevelLabel({
       assetManager,
       size: this.geometry.starSize,
       gap: this.geometry.starGap,
-      label: 'shop:marketTitleRibbon:stars',
+      label: `${label}:stars`,
     });
+    this.stars.visible = this.showStars;
+    this.stars.renderable = this.showStars;
     this.root.addChild(this.frame, this.title, this.stars);
     this.layout();
   }
@@ -64,7 +71,9 @@ export class MarketTitleRibbon {
       .setFontSize(this.geometry.titleFontSize)
       .setLineHeight(this.geometry.titleLineHeight)
       .setText(label);
-    this.stars.setLevel(rank);
+    if (this.showStars) {
+      this.stars.setLevel(rank);
+    }
     this.layout();
   }
 
@@ -120,20 +129,23 @@ export class MarketTitleRibbon {
       this.contentGroupLeft + this.title.measuredWidth / 2,
       contentCenterY,
     );
-    this.stars.position.set(
-      this.contentGroupLeft +
-        this.title.measuredWidth +
-        geometry.contentGap,
-      contentCenterY - this.stars.starSize / 2,
-    );
+    if (this.showStars) {
+      this.stars.position.set(
+        this.contentGroupLeft +
+          this.title.measuredWidth +
+          geometry.contentGap,
+        contentCenterY - this.stars.starSize / 2,
+      );
+    }
   }
 
   measureContentWidth() {
-    return (
-      this.title.measuredWidth +
+    if (!this.showStars) {
+      return this.title.measuredWidth;
+    }
+    return this.title.measuredWidth +
       this.geometry.contentGap +
-      this.stars.measuredWidth
-    );
+      this.stars.measuredWidth;
   }
 
   resolveTexture(assetId) {

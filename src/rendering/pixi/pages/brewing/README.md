@@ -101,8 +101,9 @@ reserves six ingredient row-heights without drawing empty rows, so mana and time
 share one stable baseline across recipes with different ingredient counts. Those
 rows use aligned `Required mana:` / `Required Time:` labels and right-aligned
 values, with the canonical mana icon after its numeric value. Unlocked recipe actions read
-`Select` on the shared green positive-action skin; locked recipes retain the
-yellow `Research` action. Ingredient owned values are presenter-projected
+`Select` on the shared green positive-action skin. Known locked recipes are
+passive and read `Not researched` over the same Settings-row nine-slice used by
+Workshop Bag rows; the Recipes dialog never starts research. Ingredient owned values are presenter-projected
 available herb counts for the selected cauldron, after subtracting herbs staged
 in other cauldrons. Open `http://127.0.0.1:55173/?devUi=brewing.recipes` for the
 deterministic real-app visual-QA state.

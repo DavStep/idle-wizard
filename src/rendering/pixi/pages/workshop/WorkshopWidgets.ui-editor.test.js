@@ -25,6 +25,14 @@ describe('Workshop widget UI editor integrations', () => {
       scenarios.every(({ mount }) => typeof mount === 'function')),
     ).toBe(true);
     expect(
+      integrations.find(({ id }) => id === 'compound.workshop-task-panel')
+        ?.childWidgetIds,
+    ).toEqual([
+      'compound.market-title-ribbon',
+      'compound.workshop-task-row',
+      'text-button',
+    ]);
+    expect(
       integrations.find(
         ({ id }) => id === 'compound.world-event-donation-option-row',
       )?.childWidgetIds,

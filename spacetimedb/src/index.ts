@@ -238,6 +238,7 @@ const PERIOD_LOOP_ANCHOR_MICROS = 1_780_876_800_000_000n; // 2026-06-08 00:00 UT
 const PLAYER_DATA_RESET_GUARD_MICROS = 1_781_298_268_808_000n;
 const STARTUP_MAINTENANCE_STATE_KEY = 'startup-maintenance:direct-sell-stands-v2';
 const PLAYER_LEVEL_CAULDRON_CAP_BACKFILL_STATE_KEY = 'game-config:player-level-cauldron-cap-v1';
+const SHOP_STALL_PURCHASE_CONFIG_BACKFILL_STATE_KEY = 'game-config:shop-stall-purchases-v1';
 const SMALL_TOWN_FIXED_PRICE_BACKFILL_STATE_KEY = 'npc-market:small-town-fixed-prices-v1';
 const NPC_MARKET_CATALOG_PRICE_REBASE_STATE_KEY = 'npc-market:catalog-prices-2-5x-v1';
 const RESERVED_USERNAMES = new Set(['admin', 'system']);
@@ -5672,7 +5673,7 @@ const LEGACY_GARDEN_TILE_COSTS_GOLD_20 = [
 const DEFAULT_SHOP_CONFIG_JSON = toGameConfigJson({
   shopShelf: {
     initialUnlockedSlots: 0,
-    slotCostsGold: [0, 50, 150, 400, 1000],
+    slotCostsCoin: [50, 150, 400, 1000, 2500],
     autoSellSeconds: 5,
   },
 });
@@ -14101,16 +14102,16 @@ function validateShopGameConfig(value: unknown) {
     throw new Error('Invalid shop config.');
   }
 
-  const slotCostsGold = shopShelf.slotCostsGold;
+  const slotCostsCoin = shopShelf.slotCostsCoin ?? shopShelf.slotCostsGold;
   const initialUnlockedSlots = Number(shopShelf.initialUnlockedSlots ?? 0);
   const autoSellSeconds = Number(shopShelf.autoSellSeconds);
 
-  validateCostList(slotCostsGold, 1, MAX_PLAYER_SHOP_SLOTS);
+  validateCostList(slotCostsCoin, 1, MAX_PLAYER_SHOP_SLOTS);
 
   if (
     !Number.isInteger(initialUnlockedSlots) ||
     initialUnlockedSlots < 0 ||
-    initialUnlockedSlots > (slotCostsGold as unknown[]).length ||
+    initialUnlockedSlots > (slotCostsCoin as unknown[]).length ||
     !Number.isFinite(autoSellSeconds) ||
     autoSellSeconds <= 0 ||
     autoSellSeconds > MAX_GAME_CONFIG_RESOURCE_LIMIT
@@ -16355,6 +16356,45 @@ function runPlayerLevelCauldronCapBackfillOnce(ctx: IdleWizardReducerCtx) {
   backfillPlayerLevelCauldronCaps(ctx);
   ctx.db.maintenanceState.insert({
     stateKey: PLAYER_LEVEL_CAULDRON_CAP_BACKFILL_STATE_KEY,
+    appliedAt: ctx.timestamp,
+  });
+}
+
+function runShopStallPurchaseConfigBackfillOnce(ctx: IdleWizardReducerCtx) {
+  if (ctx.db.maintenanceState.stateKey.find(SHOP_STALL_PURCHASE_CONFIG_BACKFILL_STATE_KEY)) {
+    return;
+  }
+
+  const row = ctx.db.gameConfig.configKey.find('shop');
+  if (row) {
+    let config: any;
+    try {
+      config = JSON.parse(row.configJson);
+    } catch {
+      config = null;
+    }
+
+    const shopShelf = config?.shopShelf;
+    if (shopShelf && typeof shopShelf === 'object' && !Array.isArray(shopShelf)) {
+      const { slotCostsGold: _legacySlotCostsGold, ...currentShelf } = shopShelf;
+      const configJson = validateGameConfigJson('shop', JSON.stringify({
+        ...config,
+        shopShelf: {
+          ...currentShelf,
+          initialUnlockedSlots: 0,
+          slotCostsCoin: [50, 150, 400, 1000, 2500],
+        },
+      }));
+      ctx.db.gameConfig.configKey.update({
+        ...row,
+        configJson,
+        updatedAt: ctx.timestamp,
+      });
+    }
+  }
+
+  ctx.db.maintenanceState.insert({
+    stateKey: SHOP_STALL_PURCHASE_CONFIG_BACKFILL_STATE_KEY,
     appliedAt: ctx.timestamp,
   });
 }
@@ -18632,6 +18672,7 @@ export const onConnect = spacetimedb.clientConnected((ctx) => {
   ensureGameConfigCatalog(ctx);
   runStartupMaintenanceOnce(ctx);
   runPlayerLevelCauldronCapBackfillOnce(ctx);
+  runShopStallPurchaseConfigBackfillOnce(ctx);
   ensureNpcMarketCatalog(ctx);
   runSmallTownFixedPriceBackfillOnce(ctx);
   runNpcMarketCatalogPriceRebaseOnce(ctx);
@@ -18673,6 +18714,7 @@ export const init = spacetimedb.init((ctx) => {
   ensureGameConfigCatalog(ctx);
   runStartupMaintenanceOnce(ctx);
   runPlayerLevelCauldronCapBackfillOnce(ctx);
+  runShopStallPurchaseConfigBackfillOnce(ctx);
   ensureNpcMarketCatalog(ctx);
   runSmallTownFixedPriceBackfillOnce(ctx);
   runNpcMarketCatalogPriceRebaseOnce(ctx);

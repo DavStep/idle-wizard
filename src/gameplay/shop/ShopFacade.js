@@ -326,9 +326,10 @@ export class ShopFacade {
   getSnapshot() {
     const market = this.getActiveMarketLicence();
     const marketStallCount = this.syncMarketCapacity();
-    const unlockedSlots = this.shopShelfEntityManager.getUnlockedSlots();
+    const ownedUnlockedSlots = this.shopShelfEntityManager.getUnlockedSlots();
+    const unlockedSlots = Math.min(ownedUnlockedSlots, marketStallCount);
     const maxUnlockedSlotsByLevel = this.getMaxPurchasableNpcMarketStands();
-    const nextSlotNumber = unlockedSlots + 1;
+    const nextSlotNumber = ownedUnlockedSlots + 1;
     const hasNextMarketSlot = nextSlotNumber <= marketStallCount;
     const nextSlotCost = hasNextMarketSlot
       ? this.shopBalanceManager.getSlotCost(nextSlotNumber)

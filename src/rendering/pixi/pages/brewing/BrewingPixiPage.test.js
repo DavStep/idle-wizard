@@ -14,6 +14,7 @@ import { DialogRegistry } from '../../retained/DialogRegistry.js';
 import { PageRegistry } from '../../retained/PageRegistry.js';
 import { SemanticTargetRegistry } from '../../retained/SemanticTargetRegistry.js';
 import {
+  PIXI_ROOT_RUN_ASSETS,
   PIXI_ROOT_RUN_GEOMETRY,
   PIXI_UI_GEOMETRY,
   resolvePixiTextStrokeWidth,
@@ -584,7 +585,9 @@ describe('BrewingPixiPage', () => {
   });
 
   it('keeps the recipe book inside the retained dialog cap with readable paper styling', () => {
-    const harness = createHarness();
+    const assetManager = createPixiAssetManagerFake(Texture);
+    assetManager.getTexture = vi.fn(() => Texture.EMPTY);
+    const harness = createHarness({ assetManager });
     const researchRecipe = vi.fn(() => true);
 
     harness.page.openDialog('recipes', {
@@ -677,22 +680,32 @@ describe('BrewingPixiPage', () => {
         unavailableCard.pageFrame.frameWidth,
     );
     expect(card.select).toBeInstanceOf(PixiTextButton);
-    expect(card.select.variant).toBe('yellow');
-    expect(card.select.textLabel.text).toBe('Research');
-    expect(card.select.enabled).toBe(true);
-    expect(card.select.activate()).toBe(true);
-    expect(researchRecipe.mock.calls[0][0]).toEqual(
-      expect.objectContaining({ key: 'manaTonic' }),
+    expect(card.select.visible).toBe(false);
+    expect(card.select.enabled).toBe(false);
+    expect(card.researchStatus.visible).toBe(true);
+    expect(card.researchStatusLabel.text).toBe('Not researched');
+    expect(card.researchStatusBackground.frameWidth).toBe(
+      card.pageFrame.frameWidth - 14,
     );
-    expect(unavailableCard.select.variant).toBe('yellow');
-    expect(unavailableCard.select.textLabel.text).toBe('Research');
+    expect(card.researchStatusBackground.frameHeight).toBe(30);
+    expect(assetManager.getTexture).toHaveBeenCalledWith(
+      PIXI_ROOT_RUN_ASSETS.settingsRow,
+    );
+    expect(card.researchStatusBackground.sourceInsets).toEqual(
+      PIXI_ROOT_RUN_GEOMETRY.settings.rowSourceInsets,
+    );
+    expect(card.activateRecipeAction()).toBe(false);
+    expect(researchRecipe).not.toHaveBeenCalled();
+    expect(unavailableCard.select.visible).toBe(false);
     expect(unavailableCard.select.enabled).toBe(false);
+    expect(unavailableCard.researchStatus.visible).toBe(true);
+    expect(unavailableCard.researchStatusLabel.text).toBe('Not researched');
 
     harness.page.destroy();
     harness.dispose();
   });
 
-  it('shows a shared discovered recipe as researchable instead of unknown', () => {
+  it('shows a shared discovered recipe as known but not researched', () => {
     const harness = createHarness();
     const researchRecipe = vi.fn(() => ({ ok: true }));
 
@@ -730,15 +743,14 @@ describe('BrewingPixiPage', () => {
     expect(card.name.text).toBe('Ashen memory');
     expect(card.icon.alpha).toBe(1);
     expect(card.costValue.text).toBe('36');
-    expect(card.select.textLabel.text).toBe('Research');
-    expect(card.select.enabled).toBe(true);
+    expect(card.select.visible).toBe(false);
+    expect(card.select.enabled).toBe(false);
+    expect(card.researchStatus.visible).toBe(true);
+    expect(card.researchStatusLabel.text).toBe('Not researched');
     expect(ingredient.required.text).toBe('Lavender');
     expect(ingredient.owned.text).toBe('2/1');
-    expect(card.select.activate()).toMatchObject({ ok: true });
-    expect(researchRecipe).toHaveBeenCalledWith(
-      expect.objectContaining({ key: 'ashenMemory' }),
-      undefined,
-    );
+    expect(card.activateRecipeAction()).toBe(false);
+    expect(researchRecipe).not.toHaveBeenCalled();
 
     harness.page.destroy();
     harness.dispose();

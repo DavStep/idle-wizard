@@ -341,6 +341,7 @@
       );
       const showNotifiedEmptyStall =
         query.get('stalls') === 'empty-notified';
+      const showUnlockStall = query.get('stalls') === 'unlock';
       if (query.get('stalls') === 'full') {
         const slotTemplates = gameplaySnapshot.shop.shelf.slots;
         gameplaySnapshot.shop.shelf.slots = Array.from(
@@ -364,6 +365,26 @@
             batchSize: 1,
           },
         ];
+      }
+      if (showUnlockStall) {
+        gameplaySnapshot.coin.current = 80;
+        gameplaySnapshot.shop.market = {
+          name: 'Small Town Market',
+          rank: 1,
+        };
+        gameplaySnapshot.shop.shelf = {
+          ...gameplaySnapshot.shop.shelf,
+          unlockedSlots: 0,
+          maxSlots: 1,
+          maxUnlockedSlotsByLevel: 1,
+          slotCosts: [50, 150, 400, 1000, 2500],
+          nextSlotNumber: 1,
+          nextSlotCost: 50,
+          nextSlotLockedByLevel: false,
+          nextSlotRequiresLevel: null,
+          selectedSlotNumber: null,
+          slots: [{ slotNumber: 1, unlocked: false }],
+        };
       }
       if (showStallDialog) {
         if (showOverflowItems) {
@@ -537,6 +558,23 @@
             listingItemKindBySlot: { 1: listingItemKind },
           },
           gameplayActions: {
+            buyShopShelfSlot() {
+              const shelf = gameplaySnapshot.shop.shelf;
+              if (!showUnlockStall || shelf.unlockedSlots > 0) {
+                return { ok: false, reason: 'max_slots' };
+              }
+              if (gameplaySnapshot.coin.current < shelf.nextSlotCost) {
+                return { ok: false, reason: 'insufficient_coin' };
+              }
+              gameplaySnapshot.coin.current -= shelf.nextSlotCost;
+              shelf.unlockedSlots = 1;
+              shelf.nextSlotNumber = null;
+              shelf.nextSlotCost = null;
+              shelf.selectedSlotNumber = 1;
+              shelf.slots = [{ slotNumber: 1, unlocked: true, batchSize: 1 }];
+              page.bind(createViewModel());
+              return { ok: true, slotNumber: 1, cost: 50 };
+            },
             collectShopDailyCrystalOffer() {
               const offer = gameplaySnapshot.shop.dailyCrystalOffer;
               if (!offer.canCollect) {

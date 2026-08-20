@@ -31,6 +31,7 @@ import {
   WORKSHOP_SUMMON_INFO_DIALOG_ID,
   WORKSHOP_WORLD_EVENT_DONATE_DIALOG_ID,
 } from '../shop/ShopDialogPixi.js';
+import { MarketTitleRibbon } from '../shop/MarketTitleRibbon.js';
 import {
   AMBIENT_FIREFLY_COUNT,
   AmbientFireflyLayer,
@@ -236,6 +237,9 @@ const WORKSHOP_TASK_DEFAULT_PROGRESS_TOP =
   WORKSHOP_TASK_ICON_SIZE + WORKSHOP_TASK_PROGRESS_GAP;
 const WORKSHOP_TASK_DEFAULT_ROW_HEIGHT =
   WORKSHOP_TASK_DEFAULT_PROGRESS_TOP + PIXI_UI_GEOMETRY.progressTotalHeight;
+const WORKSHOP_REQUEST_TITLE_RIBBON_WIDTH = 300;
+const WORKSHOP_REQUEST_TITLE_RIBBON_Y = -18;
+const WORKSHOP_REQUEST_CONTENT_TOP = 42;
 const WORKSHOP_SIDE_LABEL_FILL = '#ffffff';
 const WORKSHOP_SIDE_LABEL_STROKE = '#0a0a0a';
 const REQUEST_PROGRESS_UPDATE_DURATION_MS = 220;
@@ -989,6 +993,13 @@ export class WorkshopTaskPanel {
     });
     this.background.eventMode = 'none';
     this.root.addChildAt(this.background, 0);
+    this.titleRibbon = new MarketTitleRibbon({
+      assetManager,
+      label: 'workshop-tasks:title-ribbon',
+      showStars: false,
+    });
+    this.titleRibbon.root.eventMode = 'none';
+    this.titleRibbon.bind("Elara's Request");
     this.next = createText('', {
       ...RETAINED_TEXT_STYLES.body,
       wordWrapWidth: 308,
@@ -1022,6 +1033,7 @@ export class WorkshopTaskPanel {
       this.pinButton.root,
       this.expandButton.root,
     );
+    this.root.addChild(this.titleRibbon.root);
     this.rowPool = new WidgetPool({
       name: 'workshop task row pool',
       counters,
@@ -1040,6 +1052,8 @@ export class WorkshopTaskPanel {
     });
     this.panel.title.eventMode = 'none';
     this.panel.title.cursor = 'default';
+    this.panel.title.visible = false;
+    this.panel.titleBacking.visible = false;
 
     this.height = 34;
     this.pendingModel = null;
@@ -1079,7 +1093,11 @@ export class WorkshopTaskPanel {
 
   applyModel(model) {
     this.model = model;
-    this.panel.setTitle(this.model.title ?? "Elara's Request");
+    const title = this.model.title ?? "Elara's Request";
+    this.panel.setTitle(title);
+    this.panel.title.visible = false;
+    this.panel.titleBacking.visible = false;
+    this.titleRibbon.bind(title);
     setText(this.next, this.model.nextText ?? this.model.next ?? '');
     setText(this.rewards, normalizeRows(this.model.rewardLines ?? this.model.rewards).join('\n'));
     this.rows.reconcile(normalizeRows(this.model.rows ?? this.model.tasks));
@@ -1233,7 +1251,14 @@ export class WorkshopTaskPanel {
     this.x = x;
     this.y = y;
     this.width = width;
-    let contentY = 8;
+    this.titleRibbon.setMaxWidth(
+      Math.min(WORKSHOP_REQUEST_TITLE_RIBBON_WIDTH, width - 24),
+    );
+    this.titleRibbon.root.position.set(
+      (width - this.titleRibbon.width) / 2,
+      WORKSHOP_REQUEST_TITLE_RIBBON_Y,
+    );
+    let contentY = WORKSHOP_REQUEST_CONTENT_TOP;
     this.next.position.set(10, contentY);
     contentY += this.next.text ? this.next.height + 3 : 0;
 
@@ -1250,7 +1275,10 @@ export class WorkshopTaskPanel {
       contentY += this.rewards.height + 5;
     }
 
-    this.height = Math.max(34, Math.ceil(contentY + 9));
+    this.height = Math.max(
+      WORKSHOP_REQUEST_CONTENT_TOP + 34,
+      Math.ceil(contentY + 9),
+    );
     this.panel.setBounds(x, y, width, this.height);
     this.background.setSize(
       width,

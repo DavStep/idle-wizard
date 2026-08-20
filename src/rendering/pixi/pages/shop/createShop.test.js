@@ -1150,4 +1150,42 @@ describe('createShop', () => {
       itemKind: 'seed',
     });
   });
+
+  it('projects the next locked trader stall as a direct coin purchase', () => {
+    const buyShopShelfSlot = vi.fn(() => ({
+      ok: true,
+      cost: 50,
+      slotNumber: 1,
+    }));
+    const model = createShop({
+      gameplaySnapshot: {
+        coin: { current: 50 },
+        shop: {
+          shelf: {
+            nextSlotNumber: 1,
+            nextSlotCost: 50,
+            nextSlotLockedByLevel: false,
+            slots: [{ slotNumber: 1, unlocked: false }],
+          },
+        },
+      },
+      gameplayActions: { buyShopShelfSlot },
+    });
+
+    expect(model.shop.traders.stalls[0]).toMatchObject({
+      slotNumber: 1,
+      buySlot: true,
+      costCoin: 50,
+      affordable: true,
+      enabled: true,
+      selected: false,
+    });
+
+    expect(model.shop.traders.stalls[0].action()).toEqual({
+      ok: true,
+      cost: 50,
+      slotNumber: 1,
+    });
+    expect(buyShopShelfSlot).toHaveBeenCalledOnce();
+  });
 });

@@ -92,6 +92,7 @@ experience_type: development-operations
 - Production web builds should set `VITE_SPACETIME_URI=https://maincloud.spacetimedb.com` and publish the module with `npm run stdb:publish:maincloud`.
 - Backend release detection must compare `spacetimedb/` with the previous release commit, not only the dirty worktree; otherwise a precommitted schema can ship only to the client.
 - Release automation must let `.env.production` override `.env.local` for `VITE_*`; otherwise local SpacetimeDB values can leak into release APKs.
+- Release automation must fingerprint the prepared tracked and untracked inputs before validation and abort before backend publish/commit if the shared worktree changes; otherwise concurrent edits can enter the release after local tests pass.
 - Ignored `public/qa-data/` is still Vite/Capacitor build input; delete or move it outside `public/` before any production web or Android build, or player QA saves can ship in `dist`/APK assets.
 - For safe Maincloud schema deploys, append new columns to existing tables, give them `default(...)`, and publish with `--delete-data=never`; otherwise existing player/account rows may block migration.
 - SpacetimeDB table column order matters; adding a column before existing fields is treated as a reorder/manual migration, so append new fields at the end.

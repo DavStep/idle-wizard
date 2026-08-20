@@ -226,16 +226,17 @@ export class PixiLoadingSplash extends Container {
       .clear()
       .rect(artLeft, 0, artWidth, sourceHeight)
       .fill(this.horizontalGradient);
+    const identityRowY = safeTop + SPLASH_VERSION_INSET;
     this.versionLabel.position.set(
       artLeft + SPLASH_VERSION_INSET,
-      safeTop + SPLASH_VERSION_INSET,
+      identityRowY,
     );
     const copyX =
       artLeft + artWidth - SPLASH_VERSION_INSET - SPLASH_IDENTITY_COPY_WIDTH;
-    this.copyButton?.position.set(copyX, SPLASH_VERSION_INSET);
+    this.copyButton?.position.set(copyX, identityRowY);
     this.userIdLabel.position.set(
       copyX - SPLASH_IDENTITY_GAP,
-      SPLASH_VERSION_INSET + SPLASH_IDENTITY_COPY_HEIGHT / 2,
+      identityRowY + SPLASH_IDENTITY_COPY_HEIGHT / 2,
     );
     this.loadingLabel.position.set(
       PIXI_UI_GEOMETRY.sourceWidth / 2,

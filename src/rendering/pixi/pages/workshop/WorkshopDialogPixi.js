@@ -2131,16 +2131,18 @@ export class WorkshopDialogPixi {
     this.headerMeta.visible = false;
     this.status.visible = false;
     this.status.renderable = false;
+    const creating = this.viewModel.settings?.mode === 'create';
+    this.panel.setPaperVisible(!creating);
     const paneTop =
       this.panel.paperFrame.y +
       RETAINED_DIALOG_SCROLL_GEOMETRY.contentPaddingTop;
     const paperBottom =
       footerTabLayout?.paperBottom ?? height - DIALOG_PAPER_BOTTOM_INSET;
     pane.setBounds(
-      PIXI_UI_GEOMETRY.dialogPadding,
-      paneTop,
+      creating ? 0 : PIXI_UI_GEOMETRY.dialogPadding,
+      creating ? 0 : paneTop,
       WORKSHOP_DIALOG_CONTENT_WIDTH,
-      Math.max(0, paperBottom - paneTop),
+      Math.max(0, paperBottom - (creating ? 0 : paneTop)),
     );
     this.tabsLayer.position.set(
       footerTabLayout?.rowX ?? 152,
@@ -3779,6 +3781,28 @@ class AllianceSettingsPane {
     this.root = new Container({ label: `${dialog.dialogId}-settings` });
     this.root.visible = false;
     this.root.renderable = false;
+    this.createBannerSection = createDialogPaperSection(
+      dialog.panel.paperFrame.texture,
+      `${dialog.dialogId}-create-banner-section`,
+    );
+    this.createIdentitySection = createDialogPaperSection(
+      dialog.panel.paperFrame.texture,
+      `${dialog.dialogId}-create-identity-section`,
+    );
+    this.createAccessSection = createDialogPaperSection(
+      dialog.panel.paperFrame.texture,
+      `${dialog.dialogId}-create-access-section`,
+    );
+    this.createSections = [
+      this.createBannerSection,
+      this.createIdentitySection,
+      this.createAccessSection,
+    ];
+    this.createSections.forEach((section) => {
+      section.visible = false;
+      section.renderable = false;
+    });
+    this.root.addChild(...this.createSections);
     this.fieldSpecs = [
       ['name', 'Name', 24],
       ['tag', 'Tag', 5],
@@ -3951,6 +3975,7 @@ class AllianceSettingsPane {
     this.root.visible = visible;
     this.root.renderable = visible;
     if (!visible) {
+      this.setCreateSectionsVisible(false);
       for (const field of this.fields.values()) {
         field.blur();
       }
@@ -3985,10 +4010,13 @@ class AllianceSettingsPane {
     const editable = this.model.editable === true;
     const creating = this.model.mode === 'create';
     const editingBanner = this.model.mode === 'banner';
+    this.setCreateSectionsVisible(creating);
     for (const [key, field] of this.fields) {
       const label = this.labels.get(key);
       const visible =
-        editable && !editingBanner && (!creating || key !== 'notice');
+        editable &&
+        !editingBanner &&
+        (!creating || key === 'name' || key === 'tag');
       field.visible = visible;
       field.renderable = visible;
       label.visible = visible;
@@ -4090,6 +4118,13 @@ class AllianceSettingsPane {
     setText(this.status, this.statusText);
   }
 
+  setCreateSectionsVisible(visible) {
+    for (const section of this.createSections) {
+      section.visible = visible;
+      section.renderable = visible;
+    }
+  }
+
   selectJoinMode(joinMode) {
     if (!this.draft || this.saving) {
       return false;
@@ -4178,12 +4213,13 @@ class AllianceSettingsPane {
       this.status.position.set(0, 235);
       return;
     }
+    if (this.model?.mode === 'create') {
+      this.layoutCreateSections(width);
+      return;
+    }
     const fieldHeight = 40;
-    const visibleFieldSpecs = this.fieldSpecs.filter(
-      ([key]) => this.model?.mode !== 'create' || key !== 'notice',
-    );
     let fieldY = 0;
-    visibleFieldSpecs.forEach(([key]) => {
+    this.fieldSpecs.forEach(([key]) => {
       this.labels.get(key).position.set(0, fieldY);
       const field = this.fields.get(key);
       field.position.set(0, fieldY + 13);
@@ -4198,10 +4234,6 @@ class AllianceSettingsPane {
         fieldY += fieldHeight;
       }
     });
-    if (this.model?.mode === 'create') {
-      this.layoutBannerEditor(fieldY, { compact: true });
-      fieldY += 142;
-    }
     const joinY = fieldY;
     this.joinModeLabel.position.set(0, joinY);
     const joinButtonY = joinY + 13;
@@ -4217,56 +4249,135 @@ class AllianceSettingsPane {
     });
     const actionY = joinButtonY + 34;
     const actionGap = 8;
-    const creating = this.model?.mode === 'create';
-    const actionWidth = creating ? width : (width - actionGap) / 2;
+    const actionWidth = (width - actionGap) / 2;
     this.saveButton.setBounds(0, actionY, actionWidth, 28);
-    if (!creating) {
-      this.disbandButton.setBounds(
-        actionWidth + actionGap,
-        actionY,
-        actionWidth,
-        28,
-      );
-    }
+    this.disbandButton.setBounds(
+      actionWidth + actionGap,
+      actionY,
+      actionWidth,
+      28,
+    );
     this.status.position.set(0, actionY + 32);
   }
 
-  layoutBannerEditor(y, { compact = false } = {}) {
+  layoutCreateSections(width) {
+    const paperOutsets = resolveDialogPaperOutsets({
+      top: PIXI_UI_GEOMETRY.dialogPadding,
+      right: PIXI_UI_GEOMETRY.dialogPadding,
+      bottom: PIXI_UI_GEOMETRY.dialogPadding,
+      left: PIXI_UI_GEOMETRY.dialogPadding,
+    });
+    const contentInsetTop =
+      PIXI_DIALOG_SPLIT_PAPER_GEOMETRY.contentInsetTop;
+    const contentInsetBottom =
+      PIXI_DIALOG_SPLIT_PAPER_GEOMETRY.contentInsetBottom;
+    const sectionGap = PIXI_DIALOG_SPLIT_PAPER_GEOMETRY.sectionGap;
+    const contentX = PIXI_UI_GEOMETRY.dialogPadding;
+    let sectionY = PIXI_UI_GEOMETRY.dialogPadding;
+
+    const layoutSection = (section, contentHeight) => {
+      setDialogPaperSectionBounds(
+        section,
+        {
+          x: contentX,
+          y: sectionY,
+          width,
+          height: contentInsetTop + contentHeight + contentInsetBottom,
+        },
+        paperOutsets,
+      );
+      const contentY = sectionY + contentInsetTop;
+      sectionY =
+        section.y +
+        section.frameHeight +
+        sectionGap +
+        paperOutsets.top;
+      return contentY;
+    };
+
+    const bannerY = layoutSection(this.createBannerSection, 128);
+    this.layoutBannerEditor(bannerY, { compact: true, x: contentX });
+
+    const identityY = layoutSection(this.createIdentitySection, 109);
+    const identityFieldPitch = 38;
+    this.labels.get('name').position.set(contentX, identityY);
+    this.fields.get('name').position.set(contentX, identityY + 13);
+    this.fields.get('name').setSize(width, 25);
+    this.labels.get('tag').position.set(
+      contentX,
+      identityY + identityFieldPitch,
+    );
+    this.fields.get('tag').position.set(
+      contentX,
+      identityY + identityFieldPitch + 13,
+    );
+    this.fields.get('tag').setSize(width, 25);
+    this.tagColorLabel.position.set(
+      contentX,
+      identityY + identityFieldPitch * 2,
+    );
+    this.tagColorSwatchLayer.position.set(
+      contentX,
+      identityY + identityFieldPitch * 2 + 13,
+    );
+    this.swatches.forEach((swatch, index) => {
+      swatch.setBounds(index * 25, 0, 20);
+    });
+
+    const accessY = layoutSection(this.createAccessSection, 92);
+    this.joinModeLabel.position.set(contentX, accessY);
+    const joinButtonY = accessY + 13;
+    const joinGap = 6;
+    const joinWidth = (width - joinGap * 2) / 3;
+    this.joinModeButtons.forEach((button, index) => {
+      button.setBounds(
+        contentX + index * (joinWidth + joinGap),
+        joinButtonY,
+        joinWidth,
+        28,
+      );
+    });
+    const actionY = joinButtonY + 34;
+    this.saveButton.setBounds(contentX, actionY, width, 28);
+    this.status.position.set(contentX, actionY + 32);
+  }
+
+  layoutBannerEditor(y, { compact = false, x = 0 } = {}) {
     if (!compact) {
-      this.bannerPreview.position.set(0, y);
+      this.bannerPreview.position.set(x, y);
       this.bannerPreview.setSize(86, 100);
-      this.emblemLabel.position.set(96, y);
-      this.emblemOptionLayer.position.set(96, y + 17);
+      this.emblemLabel.position.set(x + 96, y);
+      this.emblemOptionLayer.position.set(x + 96, y + 17);
       this.emblemOptions.forEach((option, index) => {
         option.setBounds((index % 6) * 28, Math.floor(index / 6) * 28, 24);
       });
-      this.bannerColorLabel.position.set(0, y + 104);
-      this.bannerColorSwatchLayer.position.set(0, y + 119);
+      this.bannerColorLabel.position.set(x, y + 104);
+      this.bannerColorSwatchLayer.position.set(x, y + 119);
       this.bannerColorSwatches.forEach((swatch, index) => {
         swatch.setBounds(index * 25, 0, 20);
       });
-      this.emblemColorLabel.position.set(0, y + 151);
-      this.emblemColorSwatchLayer.position.set(0, y + 166);
+      this.emblemColorLabel.position.set(x, y + 151);
+      this.emblemColorSwatchLayer.position.set(x, y + 166);
       this.emblemColorSwatches.forEach((swatch, index) => {
         swatch.setBounds(index * 25, 0, 20);
       });
       return;
     }
 
-    this.bannerPreview.position.set(0, y);
-    this.bannerPreview.setSize(60, 70);
-    this.emblemLabel.position.set(72, y);
-    this.emblemOptionLayer.position.set(72, y + 15);
+    this.bannerPreview.position.set(x, y);
+    this.bannerPreview.setSize(56, 64);
+    this.emblemLabel.position.set(x + 68, y);
+    this.emblemOptionLayer.position.set(x + 68, y + 14);
     this.emblemOptions.forEach((option, index) => {
-      option.setBounds((index % 6) * 24, Math.floor(index / 6) * 24, 20);
+      option.setBounds((index % 6) * 22, Math.floor(index / 6) * 22, 18);
     });
-    this.bannerColorLabel.position.set(0, y + 67);
-    this.bannerColorSwatchLayer.position.set(0, y + 80);
+    this.bannerColorLabel.position.set(x, y + 58);
+    this.bannerColorSwatchLayer.position.set(x, y + 71);
     this.bannerColorSwatches.forEach((swatch, index) => {
       swatch.setBounds(index * 25, 0, 20);
     });
-    this.emblemColorLabel.position.set(0, y + 104);
-    this.emblemColorSwatchLayer.position.set(0, y + 117);
+    this.emblemColorLabel.position.set(x, y + 95);
+    this.emblemColorSwatchLayer.position.set(x, y + 108);
     this.emblemColorSwatches.forEach((swatch, index) => {
       swatch.setBounds(index * 25, 0, 20);
     });

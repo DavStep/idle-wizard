@@ -15,6 +15,7 @@ import {
   PixiDialogFrame,
 } from '../../primitives/PixiDialogFrame.js';
 import { PixiNineSliceFrame } from '../../primitives/PixiNineSliceFrame.js';
+import { PixiCostButton } from '../../primitives/PixiCostButton.js';
 import { PixiStarLevelLabel } from '../../primitives/PixiStarLevelLabel.js';
 import {
   PIXI_PROGRESS_VISUALS,
@@ -206,6 +207,15 @@ describe('ShopPixiPage', () => {
     expect(
       harness.semanticRegistry.get('shop.stall.1')?.displayObject,
     ).toBe(stall.priceAction);
+    const stallBounds = stall.root.getBounds();
+    expect(
+      harness.semanticRegistry.getBounds('shop.stall.1'),
+    ).toEqual({
+      x: stallBounds.x,
+      y: stallBounds.y,
+      width: stallBounds.width,
+      height: stallBounds.height,
+    });
     expect(harness.page.stallsSection.ledgerButton.text.text).toBe(
       'Market Ledger',
     );
@@ -366,6 +376,51 @@ describe('ShopPixiPage', () => {
     expect(stall.priceAction.y).toBe(
       (stall.height - stall.priceAction.hitArea.height) / 2,
     );
+
+    harness.page.destroy();
+    harness.dispose();
+  });
+
+  it('renders the next trader stall as a dotted stacked-cost unlock', () => {
+    const harness = createHarness();
+    const buy = vi.fn(() => ({ ok: true }));
+    const model = createShopViewModel();
+    model.shop.traders.stalls[0] = {
+      id: 'stall-1',
+      slotNumber: 1,
+      buySlot: true,
+      costCoin: 50,
+      affordable: true,
+      enabled: true,
+      selected: false,
+      action: buy,
+    };
+
+    harness.page.bind(model);
+    harness.page.activate();
+
+    const stall = harness.page.stallsSection.stalls.get('stall-1');
+    const dottedBounds = stall.buyFrame.getLocalBounds();
+    expect(stall.frame.visible).toBe(false);
+    expect(dottedBounds).toMatchObject({
+      minX: -0.5,
+      minY: -0.5,
+      maxX: stall.width + 0.5,
+      maxY: stall.height + 0.5,
+    });
+    expect(stall.buyCostButton).toBeInstanceOf(PixiCostButton);
+    expect(stall.buyCostButton).toMatchObject({
+      stacked: true,
+      visible: true,
+      renderable: true,
+      costState: 'available',
+      resource: 'coin',
+    });
+    expect(stall.buyCostButton.actionTextLabel.text).toBe('Unlock');
+    expect(stall.buyCostButton.amountLabel.text).toBe('50');
+
+    stall.buyCostButton.activate();
+    expect(buy).toHaveBeenCalledOnce();
 
     harness.page.destroy();
     harness.dispose();

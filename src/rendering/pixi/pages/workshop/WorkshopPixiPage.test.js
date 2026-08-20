@@ -6,7 +6,10 @@ import { describe, expect, it, vi } from 'vitest';
 
 import { DialogRegistry } from '../../retained/DialogRegistry.js';
 import { PixiInputRouter } from '../../input/PixiInputRouter.js';
-import { PixiDialogFrame } from '../../primitives/PixiDialogFrame.js';
+import {
+  PIXI_DIALOG_SPLIT_PAPER_GEOMETRY,
+  PixiDialogFrame,
+} from '../../primitives/PixiDialogFrame.js';
 import { PixiOwnedDialogSurface } from '../../primitives/PixiOwnedDialogSurface.js';
 import { PixiNineSliceFrame } from '../../primitives/PixiNineSliceFrame.js';
 import { PixiTextButton } from '../../primitives/PixiTextButton.js';
@@ -330,6 +333,10 @@ describe('WorkshopPixiPage', () => {
 
     expect(harness.dialogs.has('workshop.tasksInfo')).toBe(false);
     expect(harness.page.tasks.panel.title.eventMode).toBe('none');
+    expect(harness.page.tasks.panel.title.visible).toBe(false);
+    expect(harness.page.tasks.titleRibbon.root.eventMode).toBe('none');
+    expect(harness.page.tasks.titleRibbon.title.text).toBe("Elara's Request");
+    expect(harness.page.tasks.titleRibbon.stars.visible).toBe(false);
 
     harness.page.tasks.panel.title.emit('pointertap');
 
@@ -386,7 +393,15 @@ describe('WorkshopPixiPage', () => {
     expect(row.value.style.fontSize).toBe(16);
     expect(row.progress.root.y).toBe(38);
     expect(row.getPreferredHeight()).toBe(48);
-    expect(harness.page.tasks.height).toBeGreaterThanOrEqual(69);
+    expect(harness.page.tasks.height).toBeGreaterThanOrEqual(103);
+
+    const ribbon = harness.page.tasks.titleRibbon;
+    expect(ribbon.root.y).toBe(-18);
+    expect(ribbon.root.x + ribbon.contentGroupCenterX).toBeCloseTo(
+      harness.page.tasks.width / 2,
+    );
+    expect(ribbon.title.fontSize).toBe(20);
+    expect(row.root.y).toBeGreaterThanOrEqual(42);
 
     harness.page.destroy();
     harness.dispose();
@@ -407,7 +422,7 @@ describe('WorkshopPixiPage', () => {
       row.progress.root.y - 6,
     );
     expect(row.getPreferredHeight()).toBeGreaterThan(48);
-    expect(harness.page.tasks.height).toBeGreaterThan(69);
+    expect(harness.page.tasks.height).toBeGreaterThan(103);
 
     harness.page.destroy();
     harness.dispose();
@@ -3251,9 +3266,30 @@ describe('WorkshopPixiPage', () => {
     const pane = dialog.allianceSettingsPane;
     expect(pane.root.visible).toBe(true);
     expect(pane.fields.get('notice').visible).toBe(false);
+    expect(pane.fields.get('description').visible).toBe(false);
     expect(pane.saveButton.text.text).toBe('Create Alliance');
     expect(pane.disbandButton.root.visible).toBe(false);
     expect(dialog.tabs.getWidgets()).toHaveLength(2);
+    expect(dialog.panel.paperFrame.visible).toBe(false);
+    expect(pane.createSections.every((section) => section.visible)).toBe(true);
+    expect(
+      pane.createIdentitySection.y -
+        (pane.createBannerSection.y + pane.createBannerSection.frameHeight),
+    ).toBe(PIXI_DIALOG_SPLIT_PAPER_GEOMETRY.sectionGap);
+    expect(
+      pane.createAccessSection.y -
+        (pane.createIdentitySection.y + pane.createIdentitySection.frameHeight),
+    ).toBe(PIXI_DIALOG_SPLIT_PAPER_GEOMETRY.sectionGap);
+    expect(pane.root.x).toBe(0);
+    expect(pane.root.y).toBe(0);
+    expect(pane.createBannerSection.x).toBeCloseTo(dialog.panel.paperFrame.x);
+    expect(pane.createBannerSection.frameWidth).toBeCloseTo(
+      dialog.panel.paperFrame.frameWidth,
+    );
+    expect(pane.bannerPreview.y).toBeLessThan(pane.labels.get('name').y);
+    expect(
+      pane.createAccessSection.y + pane.createAccessSection.frameHeight,
+    ).toBeLessThan(dialog.tabsLayer.y);
 
     pane.fields.get('name').setValue('Moon Traders', { notify: true });
     pane.fields.get('tag').setValue('MOON', { notify: true });

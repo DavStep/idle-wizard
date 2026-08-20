@@ -16,7 +16,9 @@ import {
   getSeedPackBaseFrameName,
   getSeedPackItemFrameName,
 } from '../../../../assets/items/seeds/seedIconFrames.js';
+import { formatCoinPriceText } from '../../../../shared/coinPrice.js';
 import { BasePixiRetainedView } from '../../primitives/BasePixiRetainedView.js';
+import { PixiCostButton } from '../../primitives/PixiCostButton.js';
 import { PixiTextButton } from '../../primitives/PixiTextButton.js';
 import { PixiTabButton } from '../../primitives/PixiTabButton.js';
 import { PIXI_DIALOG_PALETTE } from '../../primitives/PixiDialogFrame.js';
@@ -79,6 +81,8 @@ const OFFER_ACTION_WIDTH = 72;
 const OFFER_ACTION_HEIGHT = 28;
 const STALL_SELECT_ACTION_WIDTH = 72;
 const STALL_SELECT_ACTION_HEIGHT = 42;
+const STALL_UNLOCK_ACTION_WIDTH = 92;
+const STALL_UNLOCK_ACTION_HEIGHT = 52;
 const MARKET_OFFER_WIDE_HEIGHT = STALL_CARD_HEIGHT;
 const MARKET_OFFER_CARD_HEIGHT = 126;
 const MARKET_OFFER_GRID_COLUMNS = 3;
@@ -864,7 +868,9 @@ export class ShopStallsSection {
         widget.bind(
           key,
           model,
-          model.selected
+          model.buySlot
+            ? () => stall.action?.(stall)
+            : model.selected
             ? () => stall.cancelAction?.(stall)
             : () => this.openStall?.(stall),
         );
@@ -1338,6 +1344,7 @@ export class ShopStallWidget {
       borderInsets: PIXI_ROOT_RUN_GEOMETRY.researchCard.borderInsets,
       label: 'shop:stall:frame',
     });
+    this.buyFrame = new Graphics({ label: 'shop:stall:buyFrame' });
     this.title = new PixiTextLabel({
       fontWeight: 'bold',
       color: STALL_TEXT_INK,
@@ -1403,6 +1410,17 @@ export class ShopStallWidget {
     });
     this.priceAction.visible = false;
     this.priceAction.renderable = false;
+    this.buyCostButton = new PixiCostButton({
+      assetManager,
+      inputRouter,
+      width: STALL_UNLOCK_ACTION_WIDTH,
+      height: STALL_UNLOCK_ACTION_HEIGHT,
+      stacked: true,
+      tone: 'green',
+      label: 'shop:stall:buyCost',
+    });
+    this.buyCostButton.visible = false;
+    this.buyCostButton.renderable = false;
     this.priceResource = new PixiResourceLabel({
       assetManager,
       resource: 'coin',
@@ -1433,6 +1451,7 @@ export class ShopStallWidget {
     });
     this.visual.addChild(
       this.frame,
+      this.buyFrame,
       this.title,
       this.stars,
       this.batchBadge,
@@ -1444,6 +1463,7 @@ export class ShopStallWidget {
       this.quantity,
       this.price,
       this.priceAction,
+      this.buyCostButton,
       this.priceResource,
       this.progress,
       this.timer,
@@ -1500,6 +1520,7 @@ export class ShopStallWidget {
     const salePriceText = stall.salePriceLabel ?? '';
     const salePriceResourceKey =
       stall.salePriceResourceKey ?? null;
+    const buySlot = stall.buySlot === true;
     const visiblePriceText =
       salePriceText || priceText;
     const visiblePriceResourceKey =
@@ -1522,6 +1543,23 @@ export class ShopStallWidget {
       },
       (payload) => this.action?.(payload),
     );
+    if (buySlot) {
+      this.priceAction.visible = false;
+      this.priceAction.renderable = false;
+    }
+    this.buyCostButton.visible = buySlot && !stall.lockedByLevel;
+    this.buyCostButton.renderable = this.buyCostButton.visible;
+    if (this.buyCostButton.visible) {
+      const costCoin = Number(stall.costCoin);
+      this.buyCostButton.setModel({
+        actionLabel: 'Unlock',
+        amountLabel: costCoin === 0 ? 'Free' : formatCoinPriceText(costCoin),
+        resource: costCoin === 0 ? 'none' : 'coin',
+        state: stall.affordable === false ? 'unaffordable' : 'available',
+        enabled: this.enabled,
+        action: (payload) => this.action?.(payload),
+      });
+    }
     this.priceResource.visible = Boolean(visiblePriceResourceKey);
     this.priceResource.renderable = this.priceResource.visible;
     if (visiblePriceResourceKey) {
@@ -1553,19 +1591,25 @@ export class ShopStallWidget {
       stall.semanticId ??
       `shop.stall.${stall.slotNumber ?? key}`;
     if (this.semanticRegistry && this.semanticId) {
-      this.semanticDisplayObject = this.priceAction.visible
-        ? this.priceAction
-        : this.root;
+      this.semanticDisplayObject = this.buyCostButton.visible
+          ? this.buyCostButton
+          : this.priceAction.visible
+            ? this.priceAction
+            : this.root;
       this.semanticDefinition = this.semanticRegistry.register({
         semanticId: this.semanticId,
         tutorialId:
           stall.tutorialId ??
           `shop:stand:${stall.slotNumber ?? key}`,
         displayObject: this.semanticDisplayObject,
+        bounds: () => this.root.getBounds(),
         state: () => ({
           enabled: this.enabled,
           interactive:
-            this.priceAction.visible && Boolean(this.action),
+            (
+              this.priceAction.visible ||
+              (this.buyCostButton.visible && this.buyCostButton.enabled)
+            ) && Boolean(this.action),
           visible: this.root.visible && this.root.renderable,
         }),
         activate: (payload) => this.action?.(payload),
@@ -1600,6 +1644,7 @@ export class ShopStallWidget {
       height,
       PIXI_ROOT_RUN_GEOMETRY.researchCard.borderInsets,
     );
+    this.buyFrame.position.set(0, 0);
     const headerY = 10 - STALL_CONTENT_RAISE;
     const iconY = 27 - STALL_CONTENT_RAISE;
     const detailY = 35 - STALL_CONTENT_RAISE;
@@ -1658,6 +1703,12 @@ export class ShopStallWidget {
       width - 10 - STALL_SELECT_ACTION_WIDTH,
       (height - STALL_SELECT_ACTION_HEIGHT) / 2,
     );
+    this.buyCostButton.setBounds(
+      (width - STALL_UNLOCK_ACTION_WIDTH) / 2,
+      (height - STALL_UNLOCK_ACTION_HEIGHT) / 2,
+      STALL_UNLOCK_ACTION_WIDTH,
+      STALL_UNLOCK_ACTION_HEIGHT,
+    );
     this.priceResource.position.set(
       width - 10 - this.priceResource.measuredWidth,
       detailY,
@@ -1701,6 +1752,7 @@ export class ShopStallWidget {
         },
       ),
     );
+    this.redrawState();
   }
 
   applyTheme(theme) {
@@ -1727,6 +1779,7 @@ export class ShopStallWidget {
     this.quantity.applyTheme(this.theme);
     this.price.applyTheme(this.theme);
     this.priceAction.applyTheme(this.theme);
+    this.buyCostButton.applyTheme(this.theme);
     this.priceResource.applyTheme(this.theme);
     this.layoutPriceResource();
     this.progress.applyTheme({
@@ -1776,6 +1829,57 @@ export class ShopStallWidget {
   }
 
   redrawState() {
+    const buySlot = this.model?.buySlot === true;
+    this.buyFrame.clear();
+    this.frame.visible = !buySlot;
+    this.frame.renderable = !buySlot;
+    if (buySlot) {
+      drawDashedRect(
+        this.buyFrame,
+        0,
+        0,
+        this.width ?? 0,
+        this.height ?? 0,
+        this.enabled ? this.theme.stroke : this.theme.disabled,
+      );
+    }
+    const showRegularContent = !buySlot;
+    this.title.visible = showRegularContent;
+    this.title.renderable = showRegularContent;
+    this.stars.visible = showRegularContent && this.stars.level > 0;
+    this.stars.renderable = this.stars.visible;
+    this.batchBadge.visible = showRegularContent && Boolean(this.batch.text);
+    this.batchBadge.renderable = this.batchBadge.visible;
+    this.batch.visible = this.batchBadge.visible;
+    this.batch.renderable = this.batch.visible;
+    this.iconFrame.visible = showRegularContent;
+    this.iconFrame.renderable = showRegularContent;
+    if (!showRegularContent) {
+      this.icon.visible = false;
+      this.icon.renderable = false;
+      this.iconOverlay.visible = false;
+      this.iconOverlay.renderable = false;
+    }
+    this.quantity.visible = showRegularContent && Boolean(this.quantity.text);
+    this.quantity.renderable = this.quantity.visible;
+    this.price.visible = showRegularContent && this.price.visible;
+    this.priceAction.visible = showRegularContent && this.priceAction.visible;
+    this.priceAction.renderable = this.priceAction.visible;
+    this.priceResource.visible = showRegularContent && this.priceResource.visible;
+    this.priceResource.renderable = this.priceResource.visible;
+    this.progress.visible = showRegularContent && this.progress.visible;
+    this.progress.renderable = this.progress.visible;
+    this.timer.visible = showRegularContent && Boolean(this.timer.text);
+    this.timer.renderable = this.timer.visible;
+    this.item.setAnchor(buySlot ? 0.5 : 0, buySlot ? 0.5 : 0);
+    if (buySlot) {
+      this.item.position.set((this.width ?? 0) / 2, (this.height ?? 0) / 2);
+      this.item.visible = !this.buyCostButton.visible && Boolean(this.item.text);
+      this.item.renderable = this.item.visible;
+    } else {
+      this.item.visible = true;
+      this.item.renderable = true;
+    }
     this.frame.alpha = 1;
     this.title.setColor(STALL_TEXT_INK);
     this.batch.setColor(STALL_QUANTITY_COLOR);
@@ -1829,6 +1933,7 @@ export class ShopStallWidget {
     this.iconOverlay.renderable = false;
     this.iconOverlay.rotation = 0;
     this.priceAction.reset();
+    this.buyCostButton.reset();
   }
 
   unregisterSemantic() {
@@ -2808,6 +2913,30 @@ function normalizeStall(stall = {}, index) {
       stall.priceText ??
       '',
   };
+}
+
+function drawDashedRect(graphics, x, y, width, height, color) {
+  const dash = 5;
+  const gap = 3;
+  const drawLine = (x1, y1, x2, y2) => {
+    const length = Math.hypot(x2 - x1, y2 - y1);
+    if (length <= 0) {
+      return;
+    }
+    const dx = (x2 - x1) / length;
+    const dy = (y2 - y1) / length;
+    for (let distance = 0; distance < length; distance += dash + gap) {
+      const end = Math.min(length, distance + dash);
+      graphics
+        .moveTo(x1 + dx * distance, y1 + dy * distance)
+        .lineTo(x1 + dx * end, y1 + dy * end);
+    }
+  };
+  drawLine(x, y, x + width, y);
+  drawLine(x + width, y, x + width, y + height);
+  drawLine(x + width, y + height, x, y + height);
+  drawLine(x, y + height, x, y);
+  graphics.stroke({ color, width: 1, alpha: 0.45 });
 }
 
 function stripResourceName(value, resource) {

@@ -11,20 +11,17 @@ status: active
 world: mechanics
 note_type: source-status
 system: market
-implementation: mixed
+implementation: complete
 source_scope: current-checkout
-verified_on: 2026-07-19
+verified_on: 2026-08-21
 ---
 
 # Market Runtime Config Status
 
-> [!warning] Shop config field mismatch
-> Backend `game_config.shop` uses `slotCostsGold`; the current client `ShopBalanceManager` requires `slotCostsCoin`.
-
-The client silently keeps its fallback when that runtime object is invalid. Effective current values are therefore:
-
-- Stand costs remain unused because market licence rank grants capacity.
-- Independent automatic stand cycle: 5 seconds.
+Backend and client both use `shopShelf.slotCostsCoin`. The authoritative default
+costs are `50`, `150`, `400`, `1,000`, and `2,500` coin, with a five-second
+independent automatic sale cycle. A one-time startup backfill converts the
+legacy `slotCostsGold` field and installs this purchase curve.
 
 Market quotes, need, stock, listings, and proceeds are live backend data and must be queried when exact current state matters.
 

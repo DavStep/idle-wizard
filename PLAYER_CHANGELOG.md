@@ -9,6 +9,7 @@ other game names, source projects, ports, or implementation provenance.
 
 - Brewing now collects finished bottled potions automatically, keeps staged cauldrons visibly empty until brewing begins, and restores the larger herb-slot artwork with clearer owned/required counts.
 - Research now reveals level- and Prestige-gated studies as they become relevant, places discovered potion recipes beside their matching progression milestones, and unlocks multi-seed summoning from level 6.
+- Trader Market stands are now purchased one at a time with coin as each player-level and market-rank milestone becomes available.
 - Trade Alliance creation now includes banner customization with clearer selected colors and larger emblems.
 - Fixed World Event leaderboards so uncapped weekly donations continue updating shared contribution totals, and made Garden and Brewing tap acceleration more responsive.
 

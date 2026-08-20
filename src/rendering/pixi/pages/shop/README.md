@@ -18,6 +18,7 @@ inventory changes, offers, or backend results. A presenter binds this shape:
         id, slotNumber, itemLabel, quantityLabel, batchLabel,
         priceLabel, salePriceLabel, salePriceResourceKey,
         resourceKey, progress, locked, notification,
+        buySlot, costCoin, affordable, lockedByLevel,
         dialog
       }],
       timerLabel,
@@ -97,6 +98,12 @@ timer, and the timer ends `6px` before the fixed action column.
 Each successful automatic sale sweeps the Research upgrade shine once across
 the selling stall while the existing bounded coin trail travels to the top
 currency display. Reduced motion skips the shine without delaying the sale.
+
+Trader capacity is purchased one stall at a time. The next eligible stall
+replaces the parchment card with the same dotted outline and stacked green
+`Unlock` cost control used by Garden plots. A higher-rank stall that is still
+blocked by player level keeps the dotted outline and shows its required level.
+Future stalls remain hidden.
 
 Open `/src/dev/uiRecipes/market-title-ribbon.html` for the deterministic
 component-level ribbon state. Open

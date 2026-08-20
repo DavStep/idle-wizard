@@ -174,6 +174,8 @@ describe('PixiLoadingSplash', () => {
       sourceHeight: 844,
       sourceOffsetX: 0,
       sourceScale: 1,
+      uiScale: 1,
+      safeInsets: { top: 47, right: 0, bottom: 0, left: 0 },
       stageLogicalWidth: 390,
     });
 
@@ -181,7 +183,10 @@ describe('PixiLoadingSplash', () => {
     expect(splash.userIdLabel.visible).toBe(true);
     expect(splash.copyButton.textLabel.text).toBe('Copy');
     expect(splash.copyButton.visible).toBe(true);
-    expect(splash.copyButton.position).toMatchObject({ x: 320, y: 12 });
+    expect(splash.versionLabel.y).toBe(59);
+    expect(splash.copyButton.x).toBe(320);
+    expect(splash.copyButton.y).toBe(splash.versionLabel.y);
+    expect(splash.userIdLabel.y).toBe(splash.copyButton.y + 12);
 
     const writeText = vi.fn().mockResolvedValue(undefined);
     Object.defineProperty(globalThis.navigator, 'clipboard', {

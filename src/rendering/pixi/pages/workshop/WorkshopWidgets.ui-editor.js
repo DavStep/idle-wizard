@@ -28,7 +28,7 @@ const WIDTH = 314;
 const ALLIANCE_DIRECTORY_PREVIEW_WIDTH = 320;
 
 export default [
-  widget('compound.workshop-task-panel', 'Workshop Task Panel', ['compound.workshop-task-row', 'text-button'], taskPanelControl, variants(['expanded', 'collapsed', 'claimable'])),
+  widget('compound.workshop-task-panel', 'Workshop Task Panel', ['compound.market-title-ribbon', 'compound.workshop-task-row', 'text-button'], taskPanelControl, variants(['expanded', 'collapsed', 'claimable'])),
   widget('compound.workshop-task-row', 'Workshop Task Row', ['text-button', 'primitive.progress-bar'], taskRowControl, variants(['progress', 'claimable', 'complete'])),
   widget('compound.workshop-summon-control', 'Workshop Summon Control', ['cost-button', 'info-button', 'primitive.notification-badge'], summonControl, variants(['available', 'unaffordable', 'notified'])),
   widget('compound.root-run-side-action', 'Root Run Side Action', ['primitive.notification-badge', 'compound.trade-alliance-banner'], sideActionControl, variants(['left', 'right', 'disabled', 'notified', 'timed', 'alliance-member'])),

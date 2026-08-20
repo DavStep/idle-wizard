@@ -26,6 +26,7 @@ import { shouldPublishBackend } from './release-backend-policy.js';
 import { waitForReleaseWorkflows } from './release-github-actions.js';
 import { shouldHostApkInGithubRelease } from './release-apk-delivery.js';
 import { waitForPublishedOta } from './verify-published-ota.mjs';
+import { captureReleaseTreeState } from './release-tree-state.js';
 
 const rootDir = process.cwd();
 const options = parseOptions(process.argv.slice(2));
@@ -81,6 +82,10 @@ if (!skipDiscord) {
   await preflightDiscordNotes(packageInfo.version);
 }
 
+step('prepare release inputs');
+run('npm', ['run', 'assets:atlas']);
+const validatedReleaseTreeState = await captureReleaseTreeState(rootDir);
+
 step('lint');
 run('npm', ['run', 'lint']);
 
@@ -106,10 +111,14 @@ try {
   fail(error.message);
 }
 
+await assertReleaseTreeUnchanged(validatedReleaseTreeState, 'before backend publish');
+
 if (shouldPublishBackend(backendMode, getBackendReleaseState())) {
   step('spacetimedb maincloud publish');
   run('npm', ['run', 'stdb:publish:maincloud'], { input: 'y\ny\n' });
 }
+
+await assertReleaseTreeUnchanged(validatedReleaseTreeState, 'before release commit');
 
 let releaseCommit = capture('git', ['rev-parse', 'HEAD']).trim();
 
@@ -177,6 +186,15 @@ if (!skipDiscord) {
 }
 
 console.log('Release complete.');
+
+async function assertReleaseTreeUnchanged(expectedState, checkpoint) {
+  const currentState = await captureReleaseTreeState(rootDir);
+  if (currentState !== expectedState) {
+    fail(
+      `Release inputs changed ${checkpoint}. The validated tree was not committed or delivered; review the new worktree changes and rerun the release.`,
+    );
+  }
+}
 
 function resolveApkPlan(mode, version) {
   if (mode.endsWith('.apk') || mode.includes('/')) {

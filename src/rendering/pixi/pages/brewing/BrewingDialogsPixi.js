@@ -9,6 +9,7 @@ import {
 import { getHerbIconFrameName } from '../../../../assets/items/herbs/herbIcons.js';
 import { getPotionIconFrameName } from '../../../../assets/items/potions/potionIcons.js';
 import { createDialogPaperSection } from '../../primitives/PixiDialogFrame.js';
+import { PixiNineSliceFrame } from '../../primitives/PixiNineSliceFrame.js';
 import { PixiTextButton } from '../../primitives/PixiTextButton.js';
 import { PixiOwnedDialogSurface } from '../../primitives/PixiOwnedDialogSurface.js';
 import { PooledCollection } from '../../retained/PooledCollection.js';
@@ -16,6 +17,7 @@ import { WidgetPool } from '../../retained/WidgetPool.js';
 import {
   DEFAULT_PIXI_THEME_SNAPSHOT,
   PIXI_ROOT_RUN_ASSETS,
+  PIXI_ROOT_RUN_GEOMETRY,
   PIXI_UI_GEOMETRY,
 } from '../../theme/PixiThemeTokens.js';
 import {
@@ -54,6 +56,7 @@ const RECIPE_INGREDIENT_ICON_GAP = 2;
 const RECIPE_MANA_ICON_SIZE = 13;
 const RECIPE_MANA_ICON_GAP = 2;
 const RECIPE_MANA_ICON_FRAME = 'resource:mana';
+const RECIPE_STATUS_HEIGHT = 30;
 const RECIPE_CHOICE_CONTENT_WIDTH = 210;
 const RECIPE_CHOICE_OUTER_WIDTH = RECIPE_CHOICE_CONTENT_WIDTH + 44;
 
@@ -510,6 +513,28 @@ export class BrewingRecipeCard {
       align: 'right',
     });
     this.durationValue.anchor.set(1, 0);
+    this.researchStatus = new Container({
+      label: `brewing-recipe-card-${instanceId}-research-status`,
+    });
+    this.researchStatus.eventMode = 'none';
+    this.researchStatusBackground = new PixiNineSliceFrame({
+      texture:
+        assetManager?.getTexture?.(PIXI_ROOT_RUN_ASSETS.settingsRow) ??
+        Texture.EMPTY,
+      sourceInsets: PIXI_ROOT_RUN_GEOMETRY.settings.rowSourceInsets,
+      borderInsets: PIXI_ROOT_RUN_GEOMETRY.settings.rowBorderInsets,
+      label: `brewing-recipe-card-${instanceId}-research-status-background`,
+    });
+    this.researchStatusBackground.eventMode = 'none';
+    this.researchStatusLabel = createText(
+      'Not researched',
+      RETAINED_TEXT_STYLES.body,
+    );
+    this.researchStatusLabel.anchor.set(0.5);
+    this.researchStatus.addChild(
+      this.researchStatusBackground,
+      this.researchStatusLabel,
+    );
     this.select = new PixiTextButton({
       assetManager,
       inputRouter,
@@ -534,6 +559,7 @@ export class BrewingRecipeCard {
       this.costIcon,
       this.duration,
       this.durationValue,
+      this.researchStatus,
       this.select,
       this.separator,
     );
@@ -620,21 +646,21 @@ export class BrewingRecipeCard {
     this.syncIconBounds();
     this.ingredients.reconcile(normalizeRows(this.model.ingredients));
     const selected = this.model.selected === true;
-    this.select.setText(
-      unknown ? 'Unknown' : locked ? 'Research' : 'Select',
-    );
-    this.select.setVariant(unknown || locked ? 'yellow' : 'green');
+    const showResearchStatus = locked && !unknown;
+    this.select.setText(unknown ? 'Unknown' : 'Select');
+    this.select.setVariant(unknown ? 'yellow' : 'green');
     const actionEnabled =
-      !unknown &&
-      (locked
-        ? this.model.canResearch === true
-        : selected || this.model.canSelect !== false);
+      !unknown && !locked && (selected || this.model.canSelect !== false);
     this.select.setEnabled(actionEnabled);
     this.select.setSelected(selected);
+    this.select.visible = !showResearchStatus;
+    this.select.renderable = !showResearchStatus;
+    this.researchStatus.visible = showResearchStatus;
+    this.researchStatus.renderable = showResearchStatus;
     this.root.visible = true;
     this.root.renderable = true;
     this.root.eventMode = 'passive';
-    if (!unknown) {
+    if (!unknown && !locked) {
       this.semanticId =
         this.model.semanticId ?? `brewing.recipe.${this.model.key ?? this.model.id}`;
       this.semanticTargets?.register?.({
@@ -658,25 +684,9 @@ export class BrewingRecipeCard {
 
   activateRecipeAction() {
     if (this.model.unlocked !== true) {
-      return this.researchRecipe();
-    }
-    return this.selectRecipe();
-  }
-
-  researchRecipe() {
-    if (this.model.canResearch !== true) {
       return false;
     }
-    const result =
-      this.model.onResearch?.(this.model) ??
-      this.actions.researchRecipe?.(this.model) ??
-      false;
-    const accepted = result === true || result?.ok === true;
-    if (accepted && this.model.unlocked !== true) {
-      this.model.canResearch = false;
-      this.select.setEnabled(false);
-    }
-    return result;
+    return this.selectRecipe();
   }
 
   selectRecipe() {
@@ -749,6 +759,19 @@ export class BrewingRecipeCard {
       width - RECIPE_CARD_CONTENT_INSET,
       metaY + 15,
     );
+    this.researchStatus.position.set(
+      RECIPE_CARD_CONTENT_INSET,
+      height - 38,
+    );
+    this.researchStatusBackground.setSize(
+      contentWidth,
+      RECIPE_STATUS_HEIGHT,
+      PIXI_ROOT_RUN_GEOMETRY.settings.rowBorderInsets,
+    );
+    this.researchStatusLabel.position.set(
+      contentWidth / 2,
+      RECIPE_STATUS_HEIGHT / 2,
+    );
     this.select.position.set(RECIPE_CARD_CONTENT_INSET, height - 38);
     this.select.setSize(contentWidth, 30);
     this.separator.visible = false;
@@ -807,6 +830,11 @@ export class BrewingRecipeCard {
       fill: masked ? this.theme.disabled : this.theme.muted,
       align: 'right',
     });
+    applyTextTheme(
+      this.researchStatusLabel,
+      this.theme,
+      RETAINED_TEXT_STYLES.body,
+    );
     this.costIcon.alpha = masked ? 0.45 : 1;
     this.select.applyTheme(this.theme);
     for (const row of this.ingredients.getWidgets()) {

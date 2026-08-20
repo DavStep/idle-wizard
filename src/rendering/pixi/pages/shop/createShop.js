@@ -292,6 +292,44 @@ function createStallModel({
   uiState,
 }) {
   const slotNumber = positiveInteger(slot.slotNumber) ?? index + 1;
+  const buySlot =
+    slot.unlocked === false && slotNumber === shelf.nextSlotNumber;
+  const costCoin = buySlot && Number.isFinite(Number(shelf.nextSlotCost))
+    ? Number(shelf.nextSlotCost)
+    : null;
+  const lockedByLevel = buySlot && shelf.nextSlotLockedByLevel === true;
+  const affordable =
+    costCoin === null ||
+    finiteNumber(gameplaySnapshot.coin?.current, 0) >= costCoin;
+  if (buySlot) {
+    return {
+      ...slot,
+      id: slot.id ?? slotNumber,
+      slotNumber,
+      title: '',
+      itemLabel: lockedByLevel
+        ? `Reach Level ${shelf.nextSlotRequiresLevel ?? ''}`.trim()
+        : '',
+      quantityLabel: '',
+      priceLabel: costCoin === null ? '' : formatCoinPriceText(costCoin),
+      priceResourceKey: costCoin > 0 ? 'coin' : null,
+      buySlot: true,
+      costCoin,
+      affordable,
+      lockedByLevel,
+      enabled: !lockedByLevel,
+      selected: false,
+      notification: false,
+      semanticId: `shop.stall.${slotNumber}`,
+      tutorialId: `shop:stand:${slotNumber}`,
+      action: () =>
+        callFirst(
+          gameplayActions,
+          ['buyShopShelfSlot', 'buyNextShelfSlot'],
+          [],
+        ),
+    };
+  }
   const loadedQuantity = nonNegativeInteger(
     slot.loadedQuantity ?? slot.sellQuantity,
   );

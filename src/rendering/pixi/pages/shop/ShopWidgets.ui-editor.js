@@ -30,8 +30,8 @@ const LEDGER_ROW_WIDTH =
 const marketAssets = ({ id }) => id.includes('/ui/') || id.includes('/icons/') || id.includes('/items/');
 
 export default [
-  widget('compound.market-title-ribbon', 'Market Title Ribbon', ['primitive.star-level-label'], ribbonControl, [scenario('rank-1', 'Rank 1', { rank: 1 }), scenario('rank-3', 'Rank 3', { rank: 3 })]),
-  widget('compound.market-stall', 'Market Stall', ['primitive.progress-bar', 'primitive.star-level-label', 'text-button', 'primitive.notification-badge'], stallControl, [scenario('selling', 'Occupied, Cancel', { state: 'selling' }), scenario('empty', 'Empty, Select', { state: 'empty' }), scenario('locked', 'Locked', { state: 'locked' })]),
+  widget('compound.market-title-ribbon', 'Market Title Ribbon', ['primitive.star-level-label'], ribbonControl, [scenario('rank-1', 'Rank 1', { rank: 1 }), scenario('rank-3', 'Rank 3', { rank: 3 }), scenario('title-only', 'Title only', { rank: 0, showStars: false, title: "Elara's Request" })]),
+  widget('compound.market-stall', 'Market Stall', ['primitive.progress-bar', 'primitive.star-level-label', 'text-button', 'cost-button', 'primitive.notification-badge'], stallControl, [scenario('selling', 'Occupied, Cancel', { state: 'selling' }), scenario('empty', 'Empty, Select', { state: 'empty' }), scenario('purchasable', 'Purchasable, Unlock', { state: 'purchasable' }), scenario('level-locked', 'Level Locked', { state: 'level-locked' })]),
   widget('compound.market-offer-card', 'Market Offer Card', ['text-button'], offerControl, [scenario('amber', 'Amber Pouch', { resourceKey: 'crystal', title: 'Amber Pouch' }), scenario('amethyst', 'Amethyst Chest', { resourceKey: 'amethyst', title: 'Amethyst Chest' }), scenario('daily', 'Daily Amber offer', { resourceKey: 'crystal', title: 'Daily Offer', wide: true }), scenario('disabled', 'Unavailable', { resourceKey: 'amethyst', title: 'Amethyst Hoard', disabled: true })]),
   widget('compound.market-compact-row', 'Market Compact Row', ['text-button', 'primitive.notification-badge'], compactRowControl, [scenario('value', 'Label and value', { mode: 'value' }), scenario('action', 'Inline action', { mode: 'action' }), scenario('disabled', 'Disabled', { mode: 'value', disabled: true })]),
   widget('compound.market-stalls-section', 'Market Stalls Section', ['compound.market-stall'], stallsSectionControl, [scenario('loaded', 'Loaded stalls', {}), scenario('empty', 'Empty stall', { empty: true })]),
@@ -63,16 +63,21 @@ function widget(id, label, childWidgetIds, factory, scenarios) {
 function scenario(id, label, fixture) { return { fixture, id, label }; }
 
 function ribbonControl({ assets, fixture }) {
-  const control = new MarketTitleRibbon({ assetManager: assets });
-  control.bind('Market', fixture.rank);
+  const control = new MarketTitleRibbon({
+    assetManager: assets,
+    showStars: fixture.showStars !== false,
+  });
+  control.bind(fixture.title ?? 'Market', fixture.rank);
   return wrap(control.root, control.width, control.height, () => control.root.destroy({ children: true }), { control });
 }
 
 function stallControl({ assets, input, fixture }) {
   const control = new ShopStallWidget({ assetManager: assets, inputRouter: input });
-  const locked = fixture.state === 'locked';
+  const locked = fixture.state === 'level-locked';
+  const purchasable = fixture.state === 'purchasable';
   const empty = fixture.state === 'empty';
-  control.bind('stall-1', { batchLabel: empty ? '' : 'x2', enabled: !locked, itemLabel: empty ? 'Empty' : locked ? 'Locked' : 'Sage Seed', locked, priceLabel: locked ? 'Locked' : empty ? 'Select' : 'Cancel', priceVariant: locked ? null : empty ? 'green' : 'red', salePriceLabel: empty || locked ? '' : '24 coin', salePriceResourceKey: empty || locked ? null : 'coin', progress: empty ? null : 0.62, selected: !empty && !locked, slotNumber: 1, starLevel: 2, timerLabel: empty ? '' : '18s' }, () => true);
+  const buySlot = purchasable || locked;
+  control.bind('stall-1', { affordable: true, batchLabel: empty || buySlot ? '' : 'x2', buySlot, costCoin: 50, enabled: !locked, itemLabel: locked ? 'Reach Level 4' : empty || purchasable ? '' : 'Sage Seed', lockedByLevel: locked, priceLabel: locked ? '' : purchasable ? '50 coin' : empty ? 'Select' : 'Cancel', priceVariant: buySlot ? null : empty ? 'green' : 'red', salePriceLabel: empty || buySlot ? '' : '24 coin', salePriceResourceKey: empty || buySlot ? null : 'coin', progress: empty || buySlot ? null : 0.62, selected: !empty && !buySlot, slotNumber: 1, starLevel: buySlot ? 0 : 2, timerLabel: empty || buySlot ? '' : '18s' }, () => true);
   control.applyTheme(DEFAULT_PIXI_THEME_SNAPSHOT);
   control.setBounds(0, 0, WIDTH, 84);
   return wrap(control.root, WIDTH, 84, () => control.destroy(), { control });
