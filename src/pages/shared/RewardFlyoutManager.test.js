@@ -293,7 +293,7 @@ describe('RewardFlyoutManager', () => {
     });
 
     const flyout = document.querySelector('.room-reward-flyout');
-    expect(flyout?.textContent).toBe('+15 coin, +1 crystal');
+    expect(flyout?.textContent).toBe('+15 coin, +1 amber');
     expect(flyout?.classList).not.toContain('is-visual-only');
     expect(document.querySelectorAll('.room-coin-particle').length).toBeGreaterThanOrEqual(3);
     expect(document.querySelector('.room-coin-amt-pop')?.textContent).toBe('+15G');

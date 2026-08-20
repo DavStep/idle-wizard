@@ -154,7 +154,7 @@ function createMailFixture(overrides = {}) {
     mailKey: 'event:new-king-crowned',
     read: false,
     rewardCollected: false,
-    rewardText: '3 crystal',
+    rewardText: '3 Amber',
     senderLabel: 'World Event',
     title: 'New King Crowned',
     ...overrides,

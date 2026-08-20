@@ -1,6 +1,13 @@
 export const manaResearchFirstPlayerLevel = 2;
 export const manaResearchMaxPlayerLevel = 100;
-export const manaResearchDurationSeconds = 5;
+export const legacyManaResearchDurationSeconds = 5;
+
+const manaResearchDurationTargets = Object.freeze([
+  { playerLevel: 2, durationSeconds: 5 },
+  { playerLevel: 17, durationSeconds: 30 * 60 },
+  { playerLevel: 44, durationSeconds: 2 * 60 * 60 },
+  { playerLevel: 100, durationSeconds: 4 * 60 * 60 },
+]);
 
 export const manaResearchSeriesIds = {
   capacity: 'manaSphereCap',
@@ -45,6 +52,52 @@ export function getManaResearchPlayerLevel(researchId, seriesId) {
 
   const playerLevel = rank + manaResearchFirstPlayerLevel - 1;
   return playerLevel <= manaResearchMaxPlayerLevel ? playerLevel : null;
+}
+
+export function getManaResearchDurationSeconds(playerLevel) {
+  const safePlayerLevel = normalizePlayerLevel(playerLevel);
+  const upperTargetIndex = manaResearchDurationTargets.findIndex(
+    (target) => safePlayerLevel <= target.playerLevel,
+  );
+
+  if (upperTargetIndex <= 0) {
+    return manaResearchDurationTargets[0].durationSeconds;
+  }
+
+  const lowerTarget = manaResearchDurationTargets[upperTargetIndex - 1];
+  const upperTarget = manaResearchDurationTargets[upperTargetIndex];
+  const progress =
+    (safePlayerLevel - lowerTarget.playerLevel) /
+    (upperTarget.playerLevel - lowerTarget.playerLevel);
+  const durationSeconds =
+    lowerTarget.durationSeconds *
+    (upperTarget.durationSeconds / lowerTarget.durationSeconds) ** progress;
+
+  return Math.round(durationSeconds);
+}
+
+export function getManaResearchDurationSecondsForId(researchId) {
+  const capacityPlayerLevel = getManaResearchPlayerLevel(
+    researchId,
+    manaResearchSeriesIds.capacity,
+  );
+  const generationPlayerLevel = getManaResearchPlayerLevel(
+    researchId,
+    manaResearchSeriesIds.generation,
+  );
+  const playerLevel = capacityPlayerLevel ?? generationPlayerLevel;
+
+  return playerLevel === null ? null : getManaResearchDurationSeconds(playerLevel);
+}
+
+export function isLegacyManaResearchDuration(researchId, durationSeconds) {
+  const defaultDurationSeconds = getManaResearchDurationSecondsForId(researchId);
+
+  return (
+    defaultDurationSeconds !== null &&
+    defaultDurationSeconds !== legacyManaResearchDurationSeconds &&
+    Math.floor(Number(durationSeconds)) === legacyManaResearchDurationSeconds
+  );
 }
 
 export function getManaCapacityResearchCostCoin(playerLevel) {

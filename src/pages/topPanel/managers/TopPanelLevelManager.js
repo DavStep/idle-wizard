@@ -328,7 +328,7 @@ export class TopPanelLevelManager {
     if (crystalRewardMatch) {
       return {
         label: 'bonus',
-        value: `+${this.formatNumber(Number(crystalRewardMatch[1]))} crystal`,
+        value: `+${this.formatNumber(Number(crystalRewardMatch[1]))} amber`,
       };
     }
 

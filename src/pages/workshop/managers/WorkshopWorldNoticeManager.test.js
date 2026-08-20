@@ -519,7 +519,7 @@ describe('WorkshopWorldNoticeManager', () => {
       [...firstRewardValue.querySelectorAll('.workshop-page__world-notice-reward-resource')].map(
         (node) => node.getAttribute('aria-label'),
       ),
-    ).toEqual(['5 emerald', '10 crystal']);
+    ).toEqual(['5 emerald', '10 amber']);
     expect(
       [
         ...firstRewardValue.querySelectorAll(

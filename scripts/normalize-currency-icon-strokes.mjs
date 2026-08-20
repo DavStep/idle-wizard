@@ -11,7 +11,8 @@ const ROOT_DIRECTORY = path.resolve(
 const ICON_DIRECTORY = path.join(ROOT_DIRECTORY, 'assets/game/source/icons');
 const COIN_ICON_FILE = 'icon-coin.png';
 const TARGET_ICON_FILES = [
-  'icon-crystal.png',
+  'icon-amber.png',
+  'icon-amethyst.png',
   'icon-emerald.png',
   'icon-mana-drop.png',
   'icon-ruby.png',

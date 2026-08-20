@@ -157,8 +157,9 @@ describe('createIdleWizardAssetEntries', () => {
     );
 
     expect(currencyAssets.map(({ label }) => label).sort()).toEqual([
+      'icon-amber.png',
+      'icon-amethyst.png',
       'icon-coin.png',
-      'icon-crystal.png',
       'icon-emerald.png',
       'icon-mana-drop.png',
       'icon-ruby.png',

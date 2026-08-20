@@ -23,6 +23,7 @@ import {
 } from './WorkshopPixiPage.js';
 
 const WIDTH = 314;
+const ALLIANCE_DIRECTORY_PREVIEW_WIDTH = 320;
 
 export default [
   widget('compound.workshop-task-panel', 'Workshop Task Panel', ['compound.workshop-task-row', 'text-button'], taskPanelControl, variants(['expanded', 'collapsed', 'claimable'])),
@@ -30,7 +31,7 @@ export default [
   widget('compound.workshop-summon-control', 'Workshop Summon Control', ['cost-button', 'info-button', 'primitive.notification-badge'], summonControl, variants(['available', 'unaffordable', 'notified'])),
   widget('compound.root-run-side-action', 'Root Run Side Action', ['primitive.notification-badge'], sideActionControl, variants(['left', 'right', 'disabled', 'notified', 'timed'])),
   widget('compound.world-event-donation-option-row', 'World Event Donation Option Row', ['text-button', 'primitive.notification-badge'], donationOptionControl, variants(['available', 'notified', 'unavailable', 'seed-pack'])),
-  widget('compound.alliance-directory-row', 'Alliance Directory Row', ['compound.alliance-member-row', 'primitive.managed-scroll-area', 'text-button'], allianceDirectoryControl, variants(['collapsed', 'expanded', 'full'])),
+  widget('compound.alliance-directory-row', 'Alliance Directory Row', ['compound.player-profile', 'primitive.resource-label', 'text-button'], allianceDirectoryControl, variants(['join', 'apply', 'cancel', 'closed', 'overflow'])),
   widget('compound.alliance-member-row', 'Alliance Member Row', ['compound.player-profile', 'text-button'], allianceMemberControl, variants(['leader', 'member', 'passive'])),
   widget('compound.alliance-quest-row', 'Alliance Quest Row', ['primitive.resource-label', 'text-button'], allianceQuestControl, variants(['fill', 'route', 'claim', 'claimed', 'overflow'])),
   widget('compound.leaderboard-row', 'Leaderboard Row', ['compound.player-profile', 'primitive.star-level-label', 'primitive.resource-label'], leaderboardRowControl, variants(['player', 'current-player', 'alliance', 'world-event-points'])),
@@ -266,13 +267,39 @@ function worldEventRewardRowControl({ assets, input, fixture = { state: 'two-rew
   return wrap(control, 258, 50);
 }
 
-function allianceDirectoryControl({ assets, input, fixture = { state: 'collapsed' }, context }) {
+function allianceDirectoryControl({ assets, input, fixture = { state: 'join' }, context }) {
   const control = new AllianceDirectoryRow({ dialog: dialogStub(assets, input) });
-  const expanded = fixture.state !== 'collapsed';
-  const members = Array.from({ length: fixture.state === 'full' ? 7 : 3 }, (_, index) => ({ id: index, username: ['Elara', 'Morrow', 'Thistle'][index % 3], character: ['elara', 'mira', 'juniper'][index % 3], roleLabel: index === 0 ? 'Trade Master' : 'Trader', levelLabel: `Lv ${12 - index}`, onActivate: () => true }));
-  control.bind({ tag: 'OWL', name: 'Night Owls', totalIncomeLabel: '12.4K', memberCount: members.length, memberCapacity: 50, expanded, members, onActivate: () => context?.emit('allianceExpanded') ?? true, action: { label: 'View Alliance', enabled: true, onActivate: () => true } });
-  control.setBounds(0, 0, WIDTH, control.getPreferredHeight());
-  return wrap(control, WIDTH, control.getPreferredHeight());
+  const action = {
+    apply: { label: 'Apply', variant: 'green', enabled: true },
+    cancel: { label: 'Cancel', variant: 'brown-dark', enabled: true },
+    closed: { label: 'Closed', variant: 'gray', enabled: false },
+  }[fixture.state] ?? { label: 'Join', variant: 'green', enabled: true };
+  control.bind({
+    tag: fixture.state === 'overflow' ? 'ROOT' : 'OWL',
+    name: fixture.state === 'overflow' ? 'The Fellowship of Patient Night Traders' : 'Night Owls',
+    leaderName: fixture.state === 'overflow' ? 'ArchwizardLongname' : 'Elara',
+    leaderCharacter: 'elara',
+    leaderFrame: 'violet',
+    totalIncomeLabel: fixture.state === 'overflow' ? '987.6m' : '12.4k',
+    memberCount: 18,
+    memberCapacity: 50,
+    onActivate: () => context?.emit('allianceOpened') ?? true,
+    action: {
+      ...action,
+      onActivate: action.enabled ? () => context?.emit('allianceAction') ?? true : null,
+    },
+  });
+  control.setBounds(
+    0,
+    0,
+    ALLIANCE_DIRECTORY_PREVIEW_WIDTH,
+    control.getPreferredHeight(),
+  );
+  return wrap(
+    control,
+    ALLIANCE_DIRECTORY_PREVIEW_WIDTH,
+    control.getPreferredHeight(),
+  );
 }
 
 function potionDiscoveryControl({ assets, input, fixture = { state: 'discovered' }, context }) {

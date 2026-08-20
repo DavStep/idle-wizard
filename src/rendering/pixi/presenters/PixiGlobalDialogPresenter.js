@@ -24,6 +24,7 @@ const LEVEL_RESOURCE_BY_KEY = Object.freeze({
 });
 const LEVEL_RESOURCE_ICON_FRAME = Object.freeze({
   crystal: 'resource:crystal',
+  amethyst: 'resource:amethyst',
   mana: 'resource:mana',
 });
 

@@ -200,6 +200,7 @@ describe('asset structure', () => {
       'research:autoHarvest',
     ];
     const retiredSourcePaths = [
+      'assets/game/source/icons/icon-research.png',
       'assets/game/source/items/potions/potion-generic.png',
       'assets/game/source/icons/research/icon-research-auto-bottle.png',
       'assets/game/source/icons/research/icon-research-auto-harvest.png',
@@ -244,6 +245,31 @@ describe('asset structure', () => {
     expect(generatorSource).not.toMatch(
       /icon-(?:coin|crystal|emerald|ruby|mana-drop)/,
     );
+
+    const timeIcon = PNG.sync.read(
+      fs.readFileSync(
+        path.join(
+          ROOT,
+          'assets/game/source/icons/research/icon-research-time.png',
+        ),
+      ),
+    );
+    let sandPixels = 0;
+    let purpleSandPixels = 0;
+    for (let offset = 0; offset < timeIcon.data.length; offset += 4) {
+      const red = timeIcon.data[offset];
+      const green = timeIcon.data[offset + 1];
+      const blue = timeIcon.data[offset + 2];
+      const alpha = timeIcon.data[offset + 3];
+      sandPixels += Number(
+        alpha > 0 && red > 150 && green > 90 && blue < 145 && red > green,
+      );
+      purpleSandPixels += Number(
+        alpha > 0 && blue - red > 18 && red - green > 18,
+      );
+    }
+    expect(sandPixels).toBeGreaterThan(100);
+    expect(purpleSandPixels).toBe(0);
   });
 });
 

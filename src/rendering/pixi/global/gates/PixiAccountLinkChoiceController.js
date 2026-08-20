@@ -116,7 +116,7 @@ export class PixiAccountLinkChoiceController {
       ruby,
     } = this.describeSaveDetails(save);
     const summary =
-      `Level ${level}, ${coin} Coin, ${crystal} Crystal, ` +
+      `Level ${level}, ${coin} Coin, ${crystal} Amber, ` +
       `${emerald} Emerald, ${ruby} Ruby`;
     return usernameText ? `${usernameText}, ${summary}` : summary;
   }

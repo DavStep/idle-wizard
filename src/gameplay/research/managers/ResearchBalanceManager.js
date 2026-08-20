@@ -38,8 +38,9 @@ import {
 import {
   createManaResearchCostsCoin,
   getManaGenerationResearchIncrease,
+  getManaResearchDurationSecondsForId,
   getManaResearchPlayerLevel,
-  manaResearchDurationSeconds,
+  isLegacyManaResearchDuration,
   manaResearchSeriesIds,
 } from '../manaResearch.js';
 
@@ -346,10 +347,9 @@ function getDefaultResearchDurationSeconds(
   researchId,
   { costsCrystal = {}, costsRuby = {}, costsEmerald = {} } = {},
 ) {
-  if (
-    getManaResearchPlayerLevel(researchId, manaResearchSeriesIds.capacity) !== null ||
-    getManaResearchPlayerLevel(researchId, manaResearchSeriesIds.generation) !== null
-  ) {
+  const manaResearchDurationSeconds = getManaResearchDurationSecondsForId(researchId);
+
+  if (manaResearchDurationSeconds !== null) {
     return manaResearchDurationSeconds;
   }
 
@@ -358,7 +358,7 @@ function getDefaultResearchDurationSeconds(
     costsRuby[researchId] !== undefined ||
     costsEmerald[researchId] !== undefined
   ) {
-    return quickResearchDurationSeconds;
+    return 0;
   }
 
   if (seedResearchDurationSecondsById[researchId] !== undefined) {
@@ -512,12 +512,35 @@ export class ResearchBalanceManager {
 
   getDurationSeconds(researchId, { defaultDurationSeconds = 0 } = {}) {
     const normalizedResearchId = this.normalizeResearchId(researchId);
-    const durationSeconds =
-      this.runtimeConfigByResearchId.get(normalizedResearchId)?.durationSeconds ??
+
+    if (this.isInstantResearch(normalizedResearchId)) {
+      return 0;
+    }
+
+    const fallbackDurationSeconds =
+      getManaResearchDurationSecondsForId(normalizedResearchId) ??
       this.durationSecondsByResearchId[normalizedResearchId] ??
       defaultDurationSeconds;
+    const configuredDurationSeconds =
+      this.runtimeConfigByResearchId.get(normalizedResearchId)?.durationSeconds ??
+      this.durationSecondsByResearchId[normalizedResearchId];
+    const durationSeconds = isLegacyManaResearchDuration(
+      normalizedResearchId,
+      configuredDurationSeconds,
+    )
+      ? fallbackDurationSeconds
+      : configuredDurationSeconds ?? fallbackDurationSeconds;
 
     return this.normalizeDurationSeconds(durationSeconds, normalizedResearchId);
+  }
+
+  isInstantResearch(researchId) {
+    const normalizedResearchId = this.normalizeResearchId(researchId);
+    return (
+      Number.isFinite(this.costCrystalByResearchId[normalizedResearchId]) ||
+      Number.isFinite(this.costRubyByResearchId[normalizedResearchId]) ||
+      Number.isFinite(this.costEmeraldByResearchId[normalizedResearchId])
+    );
   }
 
   getResearchEffect(researchId) {

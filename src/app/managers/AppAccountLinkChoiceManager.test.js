@@ -34,8 +34,8 @@ describe('AppAccountLinkChoiceManager', () => {
         .querySelector('.app-account-link-choice__dialog')
         .classList.contains('style-dialog--system'),
     ).toBe(false);
-    expect(stage.textContent).toContain('level 5, 12 coin, 2 crystal');
-    expect(stage.textContent).toContain('username Mira, level 2, 3 coin, 0 crystal');
+    expect(stage.textContent).toContain('level 5, 12 coin, 2 amber');
+    expect(stage.textContent).toContain('username Mira, level 2, 3 coin, 0 amber');
     expect(stage.textContent).toContain(
       'the progress you do not select will be lost',
     );

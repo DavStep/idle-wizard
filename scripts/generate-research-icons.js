@@ -21,10 +21,23 @@ const sourcePaths = Object.freeze({
   lens: 'art-source/research-icons/primitives/research-lens.png',
   pack: 'art-source/research-icons/primitives/seed-pack.png',
   plot: 'art-source/research-icons/primitives/plot.png',
+  plus: createPlusPrimitive,
   stall: 'art-source/research-icons/primitives/market-stall.png',
 });
 
 const recipes = Object.freeze([
+  [
+    'icon-research-generic.png',
+    [mainLayer('lens')],
+  ],
+  [
+    'icon-research-mana-capacity-up.png',
+    [layer('arrow', 32, 20, 192, 216, { shadow: true })],
+  ],
+  [
+    'icon-research-mana-generation-plus.png',
+    [layer('plus', 32, 32, 192, 192, { shadow: true })],
+  ],
   [
     'icon-research-summon-multiplier.png',
     [
@@ -170,11 +183,124 @@ function reductionArrowLayer() {
 
 function loadSources(paths) {
   return Object.fromEntries(
-    Object.entries(paths).map(([key, relativePath]) => [
-      key,
-      trimTransparent(readPngAsset(relativePath)),
-    ]),
+    Object.entries(paths).map(([key, source]) => {
+      const image = trimTransparent(
+        typeof source === 'function' ? source() : readPngAsset(source),
+      );
+      return [key, key === 'hourglass' ? recolorHourglassSand(image) : image];
+    }),
   );
+}
+
+function recolorHourglassSand(source) {
+  const darkSand = [173, 116, 54];
+  const lightSand = [235, 199, 119];
+
+  for (let offset = 0; offset < source.data.length; offset += 4) {
+    const red = source.data[offset];
+    const green = source.data[offset + 1];
+    const blue = source.data[offset + 2];
+    const alpha = source.data[offset + 3];
+
+    if (alpha <= 0 || blue - red <= 18 || red - green <= 18) {
+      continue;
+    }
+
+    const progress = clamp((blue - 135) / 100, 0, 1);
+    source.data[offset] = Math.round(
+      darkSand[0] + (lightSand[0] - darkSand[0]) * progress,
+    );
+    source.data[offset + 1] = Math.round(
+      darkSand[1] + (lightSand[1] - darkSand[1]) * progress,
+    );
+    source.data[offset + 2] = Math.round(
+      darkSand[2] + (lightSand[2] - darkSand[2]) * progress,
+    );
+  }
+
+  return source;
+}
+
+function createPlusPrimitive() {
+  const image = new PNG({ width: SIZE, height: SIZE });
+  const samplesPerAxis = 4;
+  const outerRects = [
+    { x: 24, y: 88, width: 208, height: 80, radius: 24 },
+    { x: 88, y: 24, width: 80, height: 208, radius: 24 },
+  ];
+  const innerRects = [
+    { x: 39, y: 101, width: 178, height: 54, radius: 14 },
+    { x: 101, y: 39, width: 54, height: 178, radius: 14 },
+  ];
+
+  for (let y = 0; y < SIZE; y += 1) {
+    for (let x = 0; x < SIZE; x += 1) {
+      let outerCoverage = 0;
+      let innerCoverage = 0;
+
+      for (let sampleY = 0; sampleY < samplesPerAxis; sampleY += 1) {
+        for (let sampleX = 0; sampleX < samplesPerAxis; sampleX += 1) {
+          const pointX = x + (sampleX + 0.5) / samplesPerAxis;
+          const pointY = y + (sampleY + 0.5) / samplesPerAxis;
+          outerCoverage += Number(
+            outerRects.some((rect) => pointInRoundedRect(pointX, pointY, rect)),
+          );
+          innerCoverage += Number(
+            innerRects.some((rect) => pointInRoundedRect(pointX, pointY, rect)),
+          );
+        }
+      }
+
+      const sampleCount = samplesPerAxis ** 2;
+      const outerAlpha = outerCoverage / sampleCount;
+      const innerAlpha = innerCoverage / sampleCount;
+      if (outerAlpha <= 0) {
+        continue;
+      }
+
+      const gradientProgress = Math.max(0, Math.min(1, (y - 39) / 178));
+      const innerColor = [
+        Math.round(255),
+        Math.round(218 - 62 * gradientProgress),
+        Math.round(62 - 57 * gradientProgress),
+      ];
+      const outlineColor = [34, 22, 26];
+      const outlineAlpha = Math.max(0, outerAlpha - innerAlpha);
+      const finalAlpha = Math.min(1, outlineAlpha + innerAlpha);
+      const offset = (y * SIZE + x) * 4;
+
+      image.data[offset] = Math.round(
+        (outlineColor[0] * outlineAlpha + innerColor[0] * innerAlpha) /
+          finalAlpha,
+      );
+      image.data[offset + 1] = Math.round(
+        (outlineColor[1] * outlineAlpha + innerColor[1] * innerAlpha) /
+          finalAlpha,
+      );
+      image.data[offset + 2] = Math.round(
+        (outlineColor[2] * outlineAlpha + innerColor[2] * innerAlpha) /
+          finalAlpha,
+      );
+      image.data[offset + 3] = Math.round(finalAlpha * 255);
+    }
+  }
+
+  return image;
+}
+
+function pointInRoundedRect(x, y, rect) {
+  const radius = Math.min(rect.radius, rect.width / 2, rect.height / 2);
+  const centerX = Math.max(
+    rect.x + radius,
+    Math.min(x, rect.x + rect.width - radius),
+  );
+  const centerY = Math.max(
+    rect.y + radius,
+    Math.min(y, rect.y + rect.height - radius),
+  );
+  const deltaX = x - centerX;
+  const deltaY = y - centerY;
+  return deltaX * deltaX + deltaY * deltaY <= radius * radius;
 }
 
 function readPngAsset(relativePath) {

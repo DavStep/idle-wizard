@@ -171,6 +171,9 @@ export class PixiLoadingSplash extends Container {
     const labelY =
       sourceHeight * (1 - SPLASH_LABEL_BOTTOM_RATIO) -
       PIXI_UI_GEOMETRY.bodyFontSize / 2;
+    const safeTop =
+      Math.max(0, Number(projection.safeInsets?.top) || 0) /
+      Math.max(Number(projection.uiScale) || 1, Number.EPSILON);
 
     this.background
       .clear()
@@ -189,7 +192,7 @@ export class PixiLoadingSplash extends Container {
       .fill(this.horizontalGradient);
     this.versionLabel.position.set(
       artLeft + SPLASH_VERSION_INSET,
-      SPLASH_VERSION_INSET,
+      safeTop + SPLASH_VERSION_INSET,
     );
     const copyX =
       artLeft + artWidth - SPLASH_VERSION_INSET - SPLASH_IDENTITY_COPY_WIDTH;

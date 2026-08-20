@@ -234,7 +234,8 @@ export default [
     scenarios: [
       { fixture: { amount: '12,450', resource: 'coin' }, id: 'coin', label: 'Coin', mount: mountResourceLabel },
       { fixture: { amount: '320', resource: 'mana' }, id: 'mana', label: 'Mana', mount: mountResourceLabel },
-      { fixture: { amount: '18', resource: 'crystal' }, id: 'crystal', label: 'Crystal', mount: mountResourceLabel },
+      { fixture: { amount: '18', resource: 'crystal' }, id: 'amber', label: 'Amber', mount: mountResourceLabel },
+      { fixture: { amount: '240', resource: 'amethyst' }, id: 'amethyst', label: 'Amethyst', mount: mountResourceLabel },
     ],
   }),
   defineUiEditorIntegration({
@@ -351,7 +352,8 @@ export default [
     scenarios: [
       { fixture: { amount: '12.4K', resource: 'coin' }, id: 'coin', label: 'Coin', mount: mountHudCurrency },
       { fixture: { amount: '320', resource: 'mana' }, id: 'mana', label: 'Mana', mount: mountHudCurrency },
-      { fixture: { amount: '18', resource: 'crystal' }, id: 'crystal', label: 'Crystal', mount: mountHudCurrency },
+      { fixture: { amount: '18', resource: 'crystal' }, id: 'amber', label: 'Amber', mount: mountHudCurrency },
+      { fixture: { amount: '240', resource: 'amethyst' }, id: 'amethyst', label: 'Amethyst', mount: mountHudCurrency },
     ],
   }),
   defineUiEditorIntegration({
@@ -667,7 +669,7 @@ async function mountResourceLabel(_context, fixture) {
       selectControl('resource', 'Resource', () => state.resource, (value) => {
         state.resource = value;
         label.setResource(value);
-      }, ['coin', 'mana', 'crystal', 'ruby', 'emerald']),
+      }, ['coin', 'mana', 'crystal', 'amethyst', 'ruby', 'emerald']),
       textControl('amount', 'Amount', () => state.amount, (value) => {
         state.amount = String(value);
         label.setAmount(state.amount);
@@ -805,7 +807,7 @@ async function mountHudCurrency(_context, fixture) {
       selectControl('resource', 'Resource', () => state.resource, (value) => {
         state.resource = value;
         capsule.setResource(value);
-      }, ['coin', 'mana', 'crystal', 'ruby', 'emerald']),
+      }, ['coin', 'mana', 'crystal', 'amethyst', 'ruby', 'emerald']),
       textControl('amount', 'Amount', () => state.amount, (value) => {
         state.amount = String(value);
         capsule.setAmount(state.amount);

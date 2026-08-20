@@ -4,6 +4,14 @@ These are developer-to-player Discord posts. Describe features only in Idle
 Wizard terms; do not mention other game names, source projects, ports, or
 implementation provenance.
 
+## 0.3.79
+
+Amethyst has arrived as a new Research gem. Every active timed study now shows an Amethyst action based on its remaining time—one Amethyst per minute, rounded up—and using it completes the study immediately through the normal reward flow.
+
+Mana Capacity and Mana Generation now grow into true long-term study paths. Their timers rise smoothly from five seconds at level 2 to thirty minutes at level 17, two hours at level 44, and four hours at level 100. Amber, Ruby, and Emerald studies now complete instantly, keeping timers focused on regular coin Research.
+
+The former Crystal currency is now called Amber throughout the game, with existing balances preserved. The Market's Gems tab now presents Amber and Amethyst together, while Research has clearer utility grouping, live progress timers, and refreshed study artwork.
+
 ## 0.3.75
 
 Mana progression now lives in Research. Every wizard level from 2 onward unlocks one Mana Capacity rank and one Mana Generation rank, giving you a new coin-powered path for shaping the Workshop while preserving the mana strength available through the previous level curve.

@@ -5,8 +5,13 @@ import {
   getManaCapacityResearchCostCoin,
   getManaGenerationResearchCostCoin,
   getManaGenerationThroughPlayerLevel,
+  getManaResearchDurationSeconds,
   manaResearchIds,
 } from './manaResearch.js';
+import {
+  getManaResearchDurationSeconds as getBackendManaResearchDurationSeconds,
+  isLegacyManaResearchDuration as isLegacyBackendManaResearchDuration,
+} from '../../../spacetimedb/src/manaResearch.ts';
 
 describe('manaResearch', () => {
   it('starts affordably and reaches the intended level 17 prices', () => {
@@ -23,6 +28,28 @@ describe('manaResearch', () => {
       );
       expect(getManaGenerationResearchCostCoin(playerLevel)).toBeGreaterThan(
         getManaGenerationResearchCostCoin(playerLevel - 1),
+      );
+    }
+  });
+
+  it('progresses mana research timers through the approved duration anchors', () => {
+    expect(getManaResearchDurationSeconds(2)).toBe(5);
+    expect(getManaResearchDurationSeconds(17)).toBe(30 * 60);
+    expect(getManaResearchDurationSeconds(44)).toBe(2 * 60 * 60);
+    expect(getManaResearchDurationSeconds(100)).toBe(4 * 60 * 60);
+    expect(isLegacyBackendManaResearchDuration(manaResearchIds.capacity(17), 5)).toBe(
+      true,
+    );
+    expect(isLegacyBackendManaResearchDuration(manaResearchIds.capacity(2), 5)).toBe(
+      false,
+    );
+
+    for (let playerLevel = 3; playerLevel <= 100; playerLevel += 1) {
+      expect(getManaResearchDurationSeconds(playerLevel)).toBeGreaterThan(
+        getManaResearchDurationSeconds(playerLevel - 1),
+      );
+      expect(getBackendManaResearchDurationSeconds(playerLevel)).toBe(
+        getManaResearchDurationSeconds(playerLevel),
       );
     }
   });

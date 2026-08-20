@@ -26,7 +26,6 @@ const PUBLIC_ASSET_PATHS = Object.freeze([
   '/spine/tutorial-pointer/pointer.png',
   '/spine/tutorial-pointer/pointer.skel',
   '/ui/intro-dialog-panel.9.png',
-  '/ui/root-run-level-star.png',
   '/ui/root-run-dialog/expedition-dialog-front.9.png',
   '/ui/xp-stars.png',
 ]);

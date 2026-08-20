@@ -1887,7 +1887,7 @@ describe('ShopPixiPage', () => {
       [...harness.page.tabButtons.values()].map(
         (button) => button.textLabel.text,
       ),
-    ).toEqual(['Traders', 'Players', 'Crystals']);
+    ).toEqual(['Traders', 'Players', 'Gems']);
     expect(
       [...harness.page.tabButtons.values()].map((button) => button.variant),
     ).toEqual(['tab', 'tab', 'tab']);
@@ -1942,7 +1942,7 @@ describe('ShopPixiPage', () => {
     );
     expect(
       harness.page.crystalOffersSection.titlePlaque.title.text,
-    ).toBe('Crystals');
+    ).toBe('Gems');
     expect(harness.page.coinOfferSection.titlePlaque.variant).toBe(
       'crystal',
     );
@@ -1989,8 +1989,10 @@ describe('ShopPixiPage', () => {
         .displayObject,
     ).toBe(coinOffer.actionButton);
 
-    const crystalOffer =
-      harness.page.crystalOffersSection.rows.get('crystal-1');
+    const amberOffer =
+      harness.page.crystalOffersSection.rows.get('amber-1');
+    const amethystOffer =
+      harness.page.crystalOffersSection.rows.get('amethyst-100');
     const dailyCrystalOffer =
       harness.page.crystalOffersSection.rows.get('dailyCrystalOffer');
     expect(dailyCrystalOffer.title.text).toBe('Daily Offer');
@@ -2001,18 +2003,21 @@ describe('ShopPixiPage', () => {
       harness.semanticRegistry.require('shop.dailyCrystalOffer.collect')
         .displayObject,
     ).toBe(dailyCrystalOffer.actionButton);
-    expect(crystalOffer.frame).toBeInstanceOf(PixiNineSliceFrame);
-    expect(crystalOffer.frame.borderInsets).toEqual(
+    expect(amberOffer.frame).toBeInstanceOf(PixiNineSliceFrame);
+    expect(amberOffer.frame.borderInsets).toEqual(
       PIXI_ROOT_RUN_GEOMETRY.researchCard.borderInsets,
     );
-    expect(crystalOffer.title.text).toBe('Crystal Offer');
-    expect(crystalOffer.icon.visible).toBe(true);
-    expect(crystalOffer.amountLabel.text).toBe('10');
-    expect(crystalOffer.actionButton.textLabel.text).toBe('$0.99');
-    expect(crystalOffer.actionButton.variant).toBe('green');
-    expect(crystalOffer.actionButton.resolveRootRunVariant()).toBe(
+    expect(amberOffer.title.text).toBe('Amber');
+    expect(amberOffer.icon.visible).toBe(true);
+    expect(amberOffer.amountLabel.text).toBe('1');
+    expect(amberOffer.actionButton.textLabel.text).toBe('$4.99');
+    expect(amberOffer.actionButton.variant).toBe('green');
+    expect(amberOffer.actionButton.resolveRootRunVariant()).toBe(
       'green',
     );
+    expect(amethystOffer.title.text).toBe('Amethyst');
+    expect(amethystOffer.amountLabel.text).toBe('100');
+    expect(amethystOffer.actionButton.textLabel.text).toBe('$4.99');
     expect(getTexture).toHaveBeenCalledWith(
       PIXI_ROOT_RUN_ASSETS.researchCard,
     );
@@ -2435,16 +2440,26 @@ function createShopViewModel({
           canCollect: true,
         },
         dailyCrystalOffer: {
-          rewardLabel: '1 crystal',
+          rewardLabel: '1 amber',
           actionLabel: 'free',
           canCollect: true,
         },
         offers: [
           {
-            id: 'crystal-1',
-            crystalCount: 10,
-            bundleLabel: '10 crystals',
-            priceLabel: '$0.99',
+            id: 'amber-1',
+            resourceKey: 'crystal',
+            amount: 1,
+            title: 'Amber',
+            bundleLabel: '1 amber',
+            priceLabel: '$4.99',
+          },
+          {
+            id: 'amethyst-100',
+            resourceKey: 'amethyst',
+            amount: 100,
+            title: 'Amethyst',
+            bundleLabel: '100 amethyst',
+            priceLabel: '$4.99',
           },
         ],
       },

@@ -11,7 +11,7 @@ import {
 } from '../../../../assets/items/seeds/seedIconFrames.js';
 
 const RESOURCE_MATCH =
-  /\b(?:crystals?|emeralds?|coin|herbs?|mana|rubies|ruby|seeds?)\b/gi;
+  /\b(?:ambers?|amethysts?|crystals?|emeralds?|coin|herbs?|mana|rubies|ruby|seeds?)\b/gi;
 const RESOURCE_AMOUNT_PREFIX =
   /([+-]?(?:(?:\d[\d,]*(?:\.\d+)?(?:[a-z])?(?:\s*-\s*\d[\d,]*(?:\.\d+)?(?:[a-z])?)?)|(?:\d[\d,]*(?:\/\d[\d,]*)+)|\?)(?:\s*\/\s*(?:(?:\d[\d,]*(?:\.\d+)?(?:[a-z])?)|\?))?\s+)$/i;
 const GENERIC_SEED_LABELS = new Set([
@@ -20,6 +20,7 @@ const GENERIC_SEED_LABELS = new Set([
 ]);
 const RESOURCE_FRAMES = Object.freeze({
   crystal: 'resource:crystal',
+  amethyst: 'resource:amethyst',
   emerald: 'resource:emerald',
   coin: 'resource:coin',
   herb: getHerbIconFrameName('sageHerb'),
@@ -212,6 +213,12 @@ function getAmountPrefix(value) {
 
 function normalizeResource(label) {
   const resource = String(label).toLowerCase();
+  if (resource === 'amber' || resource === 'ambers') {
+    return 'crystal';
+  }
+  if (resource === 'amethysts') {
+    return 'amethyst';
+  }
   if (resource === 'crystals') {
     return 'crystal';
   }

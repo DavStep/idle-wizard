@@ -63,7 +63,7 @@ function rowControl({ assets, input, fixture }) {
 
 function confirmControl({ assets, input, fixture }) {
   const control = new PrestigeConfirmPanel({ assetManager: assets, inputRouter: input, onCancel() {}, onProceed() {} });
-  control.bind({ lines: fixture.state === 'long-copy' ? ['This resets Mana, Coin, items, research, Garden, Brewing, and level tasks.', 'Daily and weekly task timers continue.'] : ['Return to level 1 and receive 10 crystal?'] });
+  control.bind({ lines: fixture.state === 'long-copy' ? ['This resets Mana, Coin, items, research, Garden, Brewing, and level tasks.', 'Daily and weekly task timers continue.'] : ['Return to level 1 and receive 10 Amber?'] });
   control.applyTheme(DEFAULT_PIXI_THEME_SNAPSHOT); control.setBounds(0, 0, WIDTH);
   return wrap(control, WIDTH, control.height);
 }

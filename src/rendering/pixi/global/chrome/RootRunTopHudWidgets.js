@@ -24,11 +24,12 @@ const HUD_ASSETS = Object.freeze({
   levelPanel: PIXI_ROOT_RUN_ASSETS.topHudLevelPanel,
   levelTrack: PIXI_ROOT_RUN_ASSETS.topHudLevelTrack,
   levelFill: PIXI_ROOT_RUN_ASSETS.topHudLevelFill,
-  levelStar: 'public:ui/root-run-level-star.png',
+  levelStar: PIXI_ROOT_RUN_ASSETS.topHudLevelStar,
 });
 
 const AVATAR_SIZE = 186;
 const CURRENCY_WIDTH = 208;
+const CURRENCY_MIN_WIDTH = 148;
 const CURRENCY_HEIGHT = 66;
 const SETTINGS_SIZE = 122;
 const LEVEL_WIDTH = 662;
@@ -103,7 +104,7 @@ export class RootRunHudCurrencyCapsule extends Container {
     label = 'topPanel:currency',
   } = {}) {
     super({ label });
-    this.capsuleWidth = Math.max(CURRENCY_WIDTH, Number(width) || 0);
+    this.capsuleWidth = Math.max(CURRENCY_MIN_WIDTH, Number(width) || CURRENCY_WIDTH);
     this.background = createNineSlice({
       texture: assets.getTexture(HUD_ASSETS.currency),
       insets: { left: 21, top: 21, right: 21, bottom: 21 },
@@ -143,7 +144,7 @@ export class RootRunHudCurrencyCapsule extends Container {
   }
 
   setWidth(width) {
-    this.capsuleWidth = Math.max(CURRENCY_WIDTH, Number(width) || 0);
+    this.capsuleWidth = Math.max(CURRENCY_MIN_WIDTH, Number(width) || CURRENCY_WIDTH);
     this.background.setSize(this.capsuleWidth, CURRENCY_HEIGHT);
     this.layoutContent();
     return this;

@@ -128,6 +128,15 @@ const STATUS_ASSETS = [
 ];
 
 const RESEARCH_ASSETS = [
+  ['research:generic', 'assets/game/source/icons/research/icon-research-generic.png'],
+  [
+    'research:manaCapacityUp',
+    'assets/game/source/icons/research/icon-research-mana-capacity-up.png',
+  ],
+  [
+    'research:manaGenerationPlus',
+    'assets/game/source/icons/research/icon-research-mana-generation-plus.png',
+  ],
   ['research:autoBrew', 'assets/game/source/icons/research/icon-research-auto-brew.png'],
   ['research:autoPlant', 'assets/game/source/icons/research/icon-research-auto-plant.png'],
   [
@@ -167,10 +176,15 @@ const RESEARCH_ASSETS = [
 
 const ASSETS = [
   ['resource:coin', 'assets/game/source/icons/icon-coin.png', 96],
-  ['resource:crystal', 'assets/game/source/icons/icon-crystal.png', 96],
+  ['resource:crystal', 'assets/game/source/icons/icon-amber.png', 96],
+  ['resource:amethyst', 'assets/game/source/icons/icon-amethyst.png', 96],
   ['resource:emerald', 'assets/game/source/icons/icon-emerald.png', 96],
   ['resource:mana', 'assets/game/source/icons/icon-mana-drop.png', 96],
-  ['resource:research', 'assets/game/source/icons/icon-research.png', 96],
+  [
+    'resource:research',
+    'assets/game/source/icons/research/icon-research-generic.png',
+    96,
+  ],
   ['resource:ruby', 'assets/game/source/icons/icon-ruby.png', 96],
   ['seed:pack', 'assets/game/source/items/seeds/seed-pack.png', 128, { trimTransparent: true }],
   ...HERB_ASSETS.map(([frameName, filePath]) => [
@@ -208,10 +222,10 @@ const ASSETS = [
 ];
 const FULL_RESOLUTION_ATLAS_SOURCE_PATHS = new Set([
   'assets/game/source/icons/icon-coin.png',
-  'assets/game/source/icons/icon-crystal.png',
+  'assets/game/source/icons/icon-amber.png',
+  'assets/game/source/icons/icon-amethyst.png',
   'assets/game/source/icons/icon-emerald.png',
   'assets/game/source/icons/icon-mana-drop.png',
-  'assets/game/source/icons/icon-research.png',
   'assets/game/source/icons/icon-ruby.png',
   ...RESEARCH_ASSETS.map(([, sourcePath]) => sourcePath),
   ...STATUS_ASSETS.map(([, sourcePath]) => sourcePath),

@@ -5,6 +5,7 @@ import {
   PIXI_STARTUP_ASSET_IDS,
   resolvePixiPublicAssetUrl,
 } from './PixiProductionAssetManifest.js';
+import { PIXI_ROOT_RUN_ASSETS } from '../theme/PixiThemeTokens.js';
 
 describe('PixiProductionAssetManifest', () => {
   it('marks the loading splash as the startup asset phase', () => {
@@ -39,6 +40,20 @@ describe('PixiProductionAssetManifest', () => {
       kind: 'atlas-frame',
       frameName: 'source:assets/icons/icon-bag.png',
     });
+    expect(
+      sourceAssets.find(
+        ({ id }) => id === PIXI_ROOT_RUN_ASSETS.topHudLevelStar,
+      ),
+    ).toMatchObject({
+      atlasId: expect.stringMatching(/^atlas:shared-/),
+      kind: 'atlas-frame',
+      frameName: PIXI_ROOT_RUN_ASSETS.topHudLevelStar,
+    });
+    expect(
+      PIXI_PRODUCTION_ASSET_MANIFEST.some(
+        ({ id }) => id === 'public:ui/root-run-level-star.png',
+      ),
+    ).toBe(false);
     expect(
       sourceAssets.find(
         ({ id }) =>

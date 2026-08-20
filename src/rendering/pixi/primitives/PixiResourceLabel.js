@@ -9,6 +9,7 @@ import { PixiTextLabel } from './PixiTextLabel.js';
 const RESOURCE_FRAMES = Object.freeze({
   coin: 'resource:coin',
   crystal: 'resource:crystal',
+  amethyst: 'resource:amethyst',
   emerald: 'resource:emerald',
   herb: 'herb:sageHerb',
   mana: 'resource:mana',
@@ -95,7 +96,9 @@ export class PixiResourceLabel extends Container {
 
   relayout() {
     const iconMode = this.theme.iconMode === 'icons';
-    const resourceName = this.includeResourceName ? ` ${this.resource}` : '';
+    const resourceName = this.includeResourceName
+      ? ` ${this.resource === 'crystal' ? 'amber' : this.resource}`
+      : '';
     this.amountLabel.setText(
       iconMode ? this.amount : `${this.amount}${resourceName}`,
     );

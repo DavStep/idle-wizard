@@ -32,7 +32,7 @@ const marketAssets = ({ id }) => id.includes('/ui/') || id.includes('/icons/') |
 export default [
   widget('compound.market-title-ribbon', 'Market Title Ribbon', ['primitive.star-level-label'], ribbonControl, [scenario('rank-1', 'Rank 1', { rank: 1 }), scenario('rank-3', 'Rank 3', { rank: 3 })]),
   widget('compound.market-stall', 'Market Stall', ['primitive.progress-bar', 'primitive.star-level-label', 'text-button', 'primitive.notification-badge'], stallControl, [scenario('selling', 'Occupied, Cancel', { state: 'selling' }), scenario('empty', 'Empty, Select', { state: 'empty' }), scenario('locked', 'Locked', { state: 'locked' })]),
-  widget('compound.market-offer-row', 'Market Offer Row', ['text-button'], offerControl, [scenario('coin', 'Coin offer', { resourceKey: 'coin' }), scenario('crystal', 'Crystal offer', { resourceKey: 'crystal' }), scenario('disabled', 'Unavailable', { resourceKey: 'crystal', disabled: true })]),
+  widget('compound.market-offer-row', 'Market Offer Row', ['text-button'], offerControl, [scenario('coin', 'Coin offer', { resourceKey: 'coin' }), scenario('amber', 'Amber offer', { resourceKey: 'crystal' }), scenario('amethyst', 'Amethyst offer', { resourceKey: 'amethyst' }), scenario('disabled', 'Unavailable', { resourceKey: 'amethyst', disabled: true })]),
   widget('compound.market-compact-row', 'Market Compact Row', ['text-button', 'primitive.notification-badge'], compactRowControl, [scenario('value', 'Label and value', { mode: 'value' }), scenario('action', 'Inline action', { mode: 'action' }), scenario('disabled', 'Disabled', { mode: 'value', disabled: true })]),
   widget('compound.market-stalls-section', 'Market Stalls Section', ['compound.market-stall'], stallsSectionControl, [scenario('loaded', 'Loaded stalls', {}), scenario('empty', 'Empty stall', { empty: true })]),
   widget('compound.market-rows-section', 'Market Rows Section', ['compound.market-compact-row'], rowsSectionControl, [scenario('requests', 'Requests', {}), scenario('empty', 'Empty', { empty: true })]),
@@ -80,7 +80,7 @@ function stallControl({ assets, input, fixture }) {
 
 function offerControl({ assets, input, fixture }) {
   const control = new MarketOfferRow({ assetManager: assets, inputRouter: input, label: 'ui-lab:offer' });
-  control.bind('offer', { amountLabel: fixture.resourceKey === 'coin' ? '500' : '12', enabled: !fixture.disabled, priceLabel: fixture.disabled ? 'Unavailable' : 'Buy', resourceKey: fixture.resourceKey, title: fixture.resourceKey === 'coin' ? 'Coin Purse' : 'Crystal Cache' }, () => true);
+  control.bind('offer', { amountLabel: fixture.resourceKey === 'coin' ? '500' : fixture.resourceKey === 'amethyst' ? '100' : '12', enabled: !fixture.disabled, priceLabel: fixture.disabled ? 'Unavailable' : 'Buy', resourceKey: fixture.resourceKey, title: fixture.resourceKey === 'coin' ? 'Coin Purse' : fixture.resourceKey === 'amethyst' ? 'Amethyst Cache' : 'Amber Cache' }, () => true);
   control.applyTheme(DEFAULT_PIXI_THEME_SNAPSHOT);
   control.setBounds(0, 0, WIDTH, 84);
   return wrap(control.root, WIDTH, 84, () => control.destroy(), { control });

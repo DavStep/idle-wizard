@@ -46,6 +46,10 @@ const RESEARCH_ARTWORK_BY_BOX_ID = Object.freeze({
     '../../../../assets/game/source/icons/research/icon-research-cauldron-capacity.png',
     import.meta.url,
   ).href,
+  gardenBulkActions: new URL(
+    '../../../../assets/game/source/icons/research/icon-research-auto-plant.png',
+    import.meta.url,
+  ).href,
   plotCapacity: new URL(
     '../../../../assets/game/source/icons/research/icon-research-plot-capacity.png',
     import.meta.url,
@@ -87,8 +91,16 @@ const RESEARCH_CAULDRON_LEVEL_ARTWORK = new URL(
   '../../../../assets/game/source/icons/research/icon-research-cauldron-level.png',
   import.meta.url,
 ).href;
-const RESEARCH_MANA_CAPACITY_ARTWORK = new URL(
+const RESEARCH_MANA_ARTWORK = new URL(
   '../../../../assets/game/source/icons/icon-mana-drop.png',
+  import.meta.url,
+).href;
+const RESEARCH_MANA_CAPACITY_MODIFIER_ARTWORK = new URL(
+  '../../../../assets/game/source/icons/research/icon-research-mana-capacity-up.png',
+  import.meta.url,
+).href;
+const RESEARCH_MANA_GENERATION_MODIFIER_ARTWORK = new URL(
+  '../../../../assets/game/source/icons/research/icon-research-mana-generation-plus.png',
   import.meta.url,
 ).href;
 const RESEARCH_TIMER_REDUCTION_ARTWORK = new URL(
@@ -96,7 +108,7 @@ const RESEARCH_TIMER_REDUCTION_ARTWORK = new URL(
   import.meta.url,
 ).href;
 const RESEARCH_FALLBACK_ARTWORK = new URL(
-  '../../../../assets/game/source/icons/icon-research.png',
+  '../../../../assets/game/source/icons/research/icon-research-generic.png',
   import.meta.url,
 ).href;
 
@@ -767,6 +779,8 @@ export class ResearchBoxListManager {
       research.inProgress,
       research.locked,
       research.canResearch,
+      research.skipCostAmethyst ?? '',
+      research.canSkipResearch ?? '',
       research.lockReason ?? '',
     ].join('|');
   }
@@ -868,21 +882,43 @@ export class ResearchBoxListManager {
   }
 
   createResearchArtworkExtra(research) {
-    if (research?.artExtraKey !== 'timerReduction') {
+    const researchId = String(research?.id ?? '');
+    const artworkUrl = researchId.startsWith('manaSphereCap:')
+      ? RESEARCH_MANA_CAPACITY_MODIFIER_ARTWORK
+      : researchId.startsWith('manaProductionRate:')
+        ? RESEARCH_MANA_GENERATION_MODIFIER_ARTWORK
+        : research?.artExtraKey === 'timerReduction'
+          ? RESEARCH_TIMER_REDUCTION_ARTWORK
+          : null;
+    if (!artworkUrl) {
       return [];
     }
 
     const image = document.createElement('img');
     image.className = 'research-page__research-art-extra';
-    image.src = RESEARCH_TIMER_REDUCTION_ARTWORK;
+    if (research?.artExtraKey === 'timerReduction') {
+      image.classList.add('is-timer-reduction');
+    }
+    image.src = artworkUrl;
     image.alt = '';
     image.draggable = false;
     return [image];
   }
 
   getResearchArtworkUrl(boxId, researchId) {
-    if (String(researchId ?? '').startsWith('manaSphereCap:')) {
-      return RESEARCH_MANA_CAPACITY_ARTWORK;
+    if (String(researchId ?? '').startsWith('summonSeedsX')) {
+      return RESEARCH_ARTWORK_BY_BOX_ID.summonSeeds;
+    }
+
+    if (String(researchId ?? '').startsWith('garden:')) {
+      return RESEARCH_ARTWORK_BY_BOX_ID.gardenBulkActions;
+    }
+
+    if (
+      String(researchId ?? '').startsWith('manaSphereCap:') ||
+      String(researchId ?? '').startsWith('manaProductionRate:')
+    ) {
+      return RESEARCH_MANA_ARTWORK;
     }
 
     if (String(researchId ?? '').startsWith('emerald:cauldronBrewing:')) {
@@ -1071,23 +1107,28 @@ export class ResearchBoxListManager {
     button.className =
       'row_val style-button style-cost-button style-cost-button--yellow research-page__research-button research-page__research-button--in-progress research-page__research-value';
     button.type = 'button';
-    button.disabled = true;
+    button.disabled = research.canSkipResearch !== true;
+    button.classList.toggle('is-unaffordable', button.disabled);
+    button.setAttribute(
+      'aria-label',
+      `skip ${this.formatResearchName(research)} for ${Math.max(
+        1,
+        Math.floor(Number(research.skipCostAmethyst) || 1),
+      )} Amethyst`,
+    );
+    button.title = button.disabled ? 'not enough amethyst' : '';
+    button.addEventListener('click', () =>
+      this.gameplayFacade.skipResearchTime(research.id),
+    );
 
     const content = document.createElement('span');
     content.className =
       'style-cost-button__plain-label research-page__research-status-content';
-    const label = document.createElement('span');
-    label.className = 'research-page__research-value-label';
-    const gap = document.createElement('span');
-    gap.className = 'research-page__research-value-gap';
-    const timer = document.createElement('span');
-    timer.className = 'research-page__research-value-timer';
-    content.append(label, gap, timer);
-    button.append(content);
-    this.setResearchValueStatus(
-      { value: button, valueLabel: label, valueGap: gap, valueTimer: timer },
-      research,
+    setResourceIconText(
+      content,
+      `${Math.max(1, Math.floor(Number(research.skipCostAmethyst) || 1))} amethyst`,
     );
+    button.append(content);
     return button;
   }
 
@@ -1174,10 +1215,13 @@ export class ResearchBoxListManager {
         setTimerProgressFill(ref.progressFill, research, {
           onUpdate: ({ remainingMs, percent }) => {
             this.setResearchValueStatus(ref, { ...research, remainingMs });
+            this.setText(
+              ref.progressText,
+              this.formatResearchTimer({ remainingMs }),
+            );
             this.setAttribute(ref.progress, 'aria-valuenow', String(percent));
           },
         });
-        this.setText(ref.progressText, '');
       }
     }
   }
@@ -1193,7 +1237,7 @@ export class ResearchBoxListManager {
       research?.actionType === 'levelUp' ? 'Leveling Up' : 'Researching',
     );
     this.setText(ref.valueGap, '');
-    this.setText(ref.valueTimer, timer);
+    this.setText(ref.valueTimer, '');
     this.setAttribute(
       ref.value,
       'aria-label',

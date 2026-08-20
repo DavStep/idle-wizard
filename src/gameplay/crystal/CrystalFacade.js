@@ -3,7 +3,7 @@ import { CrystalSpendManager } from './managers/CrystalSpendManager.js';
 
 export class CrystalFacade {
   static explain =
-    'Crystal is hard currency used to level up plots and cauldrons into larger batches.';
+    'Amber is hard currency used to level up plots and cauldrons into larger batches; its internal save key remains crystal for compatibility.';
 
   constructor({ initialCurrent = 0 } = {}) {
     this.crystalEntityManager = new CrystalEntityManager({ initialCurrent });

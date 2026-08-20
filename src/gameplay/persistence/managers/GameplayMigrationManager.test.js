@@ -81,6 +81,23 @@ describe('GameplayMigrationManager', () => {
     });
   });
 
+  it('keeps the internal Amber key and the separate Amethyst branch', () => {
+    const manager = new GameplayMigrationManager();
+
+    expect(
+      manager.migrate({
+        version: 3,
+        savedAt: 123,
+        crystal: { current: 7 },
+        amethyst: { current: 240 },
+      }),
+    ).toMatchObject({
+      version: GAMEPLAY_SAVE_VERSION,
+      crystal: { current: 7 },
+      amethyst: { current: 240 },
+    });
+  });
+
   it('adds empty stats when migrating version 9 saves', () => {
     const manager = new GameplayMigrationManager();
 

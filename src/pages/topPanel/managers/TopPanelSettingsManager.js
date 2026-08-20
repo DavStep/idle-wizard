@@ -828,7 +828,7 @@ export class TopPanelSettingsManager {
         price.classList.toggle('is-unaffordable', !researched && !canResearch);
         price.setAttribute(
           'aria-label',
-          `${label}, ${statusLabel}${canResearch ? '' : researched ? '' : ', not enough crystal'}`,
+          `${label}, ${statusLabel}${canResearch ? '' : researched ? '' : ', not enough amber'}`,
         );
       }
     }
@@ -882,12 +882,12 @@ export class TopPanelSettingsManager {
   }
 
   formatVisualSettingPrice(costCrystal) {
-    return costCrystal > 0 ? `${costCrystal} crystal` : 'free';
+    return costCrystal > 0 ? `${costCrystal} Amber` : 'free';
   }
 
   getVisualSettingErrorMessage(reason) {
     if (reason === 'not_enough_crystal') {
-      return 'not enough crystal';
+      return 'not enough amber';
     }
 
     if (reason === 'already_researched') {

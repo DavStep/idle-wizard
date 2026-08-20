@@ -56,6 +56,7 @@ export const FEATURE_UNLOCK_PREVIEW_PAGE_IDS = Object.freeze({
 const RESOURCE_ICON_FRAMES = Object.freeze({
   coin: 'resource:coin',
   crystal: 'resource:crystal',
+  amethyst: 'resource:amethyst',
   emerald: 'resource:emerald',
   mana: 'resource:mana',
   research: 'resource:research',
@@ -352,7 +353,7 @@ export class PixiAnnouncementPresenter {
       },
       {
         label: 'bonus',
-        value: '+1 crystal',
+        value: '+1 amber',
         countUp: { from: 2, to: 3 },
       },
     ],
@@ -1423,9 +1424,10 @@ function stripResourceName(value, resource) {
   if (!resource) {
     return String(value ?? '').trim();
   }
+  const displayResource = resource === 'crystal' ? '(?:amber|crystal)' : escapeRegExp(resource);
   return String(value ?? '')
     .replace(
-      new RegExp(`\\s*${escapeRegExp(resource)}\\s*$`, 'i'),
+      new RegExp(`\\s*${displayResource}\\s*$`, 'i'),
       '',
     )
     .trim();
@@ -1599,7 +1601,11 @@ function inferResearchCurrency(research = {}) {
   const value = String(
     research.value ?? research.effect ?? '',
   ).toLowerCase();
+  if (value.includes('amber')) {
+    return 'crystal';
+  }
   for (const currency of [
+    'amethyst',
     'crystal',
     'ruby',
     'emerald',
@@ -1793,12 +1799,14 @@ function inferResource(value) {
   const match = String(value ?? '')
     .toLowerCase()
     .match(
-      /\b(coin|crystals?|emeralds?|mana|rub(?:y|ies)|seeds?|herbs?)\b/,
+      /\b(coin|ambers?|amethysts?|crystals?|emeralds?|mana|rub(?:y|ies)|seeds?|herbs?)\b/,
     );
   if (!match) {
     return null;
   }
   return match[1]
+    .replace(/^ambers?$/, 'crystal')
+    .replace(/^amethysts$/, 'amethyst')
     .replace(/^crystals$/, 'crystal')
     .replace(/^emeralds$/, 'emerald')
     .replace(/^rubies$/, 'ruby')

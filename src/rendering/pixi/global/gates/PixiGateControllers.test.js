@@ -861,9 +861,9 @@ describe('retained Pixi gate controllers', () => {
 
     expect(view.bind).toHaveBeenLastCalledWith({
       deviceSummary:
-        'Level 3, 4 Coin, 5 Crystal, 6 Emerald, 7 Ruby',
+        'Level 3, 4 Coin, 5 Amber, 6 Emerald, 7 Ruby',
       accountSummary:
-        'Mira, Level 6, 7 Coin, 8 Crystal, 9 Emerald, 10 Ruby',
+        'Mira, Level 6, 7 Coin, 8 Amber, 9 Emerald, 10 Ruby',
       device: {
         level: 3,
         coin: 4,

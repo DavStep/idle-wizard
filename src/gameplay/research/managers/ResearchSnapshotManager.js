@@ -3,6 +3,7 @@ import { formatCoinAmount } from '../../../shared/coinPrice.js';
 
 export class ResearchSnapshotManager {
   constructor({
+    amethystFacade,
     crystalFacade,
     emeraldFacade,
     coinFacade,
@@ -11,7 +12,9 @@ export class ResearchSnapshotManager {
     researchBalanceManager,
     researchDefinitionManager,
     researchStateEntityManager,
+    researchTimeSkipManager,
   }) {
+    this.amethystFacade = amethystFacade;
     this.crystalFacade = crystalFacade;
     this.emeraldFacade = emeraldFacade;
     this.coinFacade = coinFacade;
@@ -20,6 +23,7 @@ export class ResearchSnapshotManager {
     this.researchBalanceManager = researchBalanceManager;
     this.researchDefinitionManager = researchDefinitionManager;
     this.researchStateEntityManager = researchStateEntityManager;
+    this.researchTimeSkipManager = researchTimeSkipManager;
   }
 
   getSnapshot({ unlockedPlotCount, unlockedCauldronCount } = {}) {
@@ -77,6 +81,9 @@ export class ResearchSnapshotManager {
     const cost = this.getResearchCost(research.id);
     const completed = this.researchStateEntityManager.isCompleted(research.id);
     const progress = this.researchStateEntityManager.getProgressSnapshot(research.id);
+    const skipCostAmethyst = progress.inProgress
+      ? this.researchTimeSkipManager.getCost(research.id)
+      : 0;
     const requiredResearchIds = research.requiredResearchIds ?? [];
     const hasRequiredResearch = requiredResearchIds.every((requiredResearchId) =>
       this.researchStateEntityManager.isCompleted(requiredResearchId),
@@ -125,6 +132,8 @@ export class ResearchSnapshotManager {
             totalMs: Math.round(progress.totalSeconds * 1000),
             remainingMs: Math.round(progress.remainingSeconds * 1000),
             progress: progress.progress,
+            skipCostAmethyst,
+            canSkipResearch: this.amethystFacade.canSpend(skipCostAmethyst),
           }
         : {}),
       ...(locked ? { locked: true } : {}),
@@ -203,7 +212,7 @@ export class ResearchSnapshotManager {
       return `${formatCoinAmount(cost.amount)} coin`;
     }
 
-    return `${cost.amount} ${cost.currency}`;
+    return `${cost.amount} ${cost.currency === 'crystal' ? 'amber' : cost.currency}`;
   }
 
   formatDuration(seconds) {

@@ -2577,18 +2577,18 @@ describe('WorkshopPixiPage', () => {
     harness.dispose();
   });
 
-  it('renders keyed expandable alliance rows with a 4.5-member nested viewport', () => {
-    const toggle = vi.fn();
+  it('renders keyed leaderboard-style alliance rows with leader, totals, and inline action', () => {
+    const openAlliance = vi.fn();
     const join = vi.fn();
-    const openPlayer = vi.fn();
     const assetManager = createPixiAssetManagerFake(Texture);
+    assetManager.getTexture = vi.fn(() => new Texture());
     assetManager.getAtlasTexture = vi.fn(() => new Texture());
     const harness = createHarness({ assetManager });
     const model = createWorkshopViewModel();
     model.workshop.dialogs.alliance = {
       title: 'trade alliance',
       directory: true,
-      status: 'not in an alliance',
+      status: '',
       rows: [
         {
           id: 'dbp',
@@ -2596,26 +2596,17 @@ describe('WorkshopPixiPage', () => {
           name: 'Dominion of Bug Players',
           tag: 'DBP',
           tagColor: 'violet',
+          leaderName: 'Wizard 0',
           totalIncomeLabel: '12.4k',
           memberCount: 6,
           memberCapacity: 50,
-          expanded: true,
-          onActivate: toggle,
+          onActivate: openAlliance,
           action: {
-            label: 'Join Alliance',
+            label: 'Join',
             variant: 'green',
             enabled: true,
             onActivate: join,
           },
-          members: Array.from({ length: 6 }, (_, index) => ({
-            id: `member-${index}`,
-            username: `Wizard ${index}`,
-            character: index === 0 ? 'mira' : 'elara',
-            frame: index === 0 ? 'violet' : 'classic',
-            roleLabel: index === 0 ? 'Trade Master' : 'Trader',
-            levelLabel: `Lv ${18 - index}`,
-            onActivate: openPlayer,
-          })),
         },
         {
           id: 'solo',
@@ -2623,10 +2614,10 @@ describe('WorkshopPixiPage', () => {
           name: 'Solo Warriors',
           tag: 'SW',
           tagColor: 'teal',
+          leaderName: 'Solo',
           totalIncomeLabel: '8.15k',
           memberCount: 1,
           memberCapacity: 50,
-          expanded: false,
           onActivate: vi.fn(),
           action: {
             label: 'Apply',
@@ -2634,7 +2625,6 @@ describe('WorkshopPixiPage', () => {
             enabled: true,
             onActivate: vi.fn(),
           },
-          members: [],
         },
       ],
     };
@@ -2644,32 +2634,58 @@ describe('WorkshopPixiPage', () => {
 
     const dialog = harness.dialogs.get('workshop.alliance');
     const row = dialog.rows.get('dbp');
-    const collapsedRow = dialog.rows.get('solo');
+    const applyRow = dialog.rows.get('solo');
+    expect(dialog.status.text).toBe('');
     expect(row.tag.text).toBe('[DBP]');
     expect(row.tag.style.stroke?.width ?? 0).toBe(0);
     expect(row.name.text).toBe('Dominion of Bug Players');
-    expect(row.total.text).toBe('12.4k');
-    expect(row.coin.visible).toBe(true);
-    expect(row.getPreferredHeight()).toBeGreaterThan(30);
-    expect(collapsedRow.getPreferredHeight()).toBe(30);
-    expect(row.memberWidgets.size).toBe(6);
-    expect(row.memberViewport.height).toBe(50 * 4.5);
-    expect(row.memberViewport.contentHeight).toBe(50 * 6);
-    expect(row.memberViewport.scrollbarTrack.visible).toBe(true);
-    expect(row.action.text.text).toBe('Join Alliance');
+    expect(row.tag.style.fontSize).toBe(row.name.style.fontSize);
+    expect(row.leaderName.text).toBe('Wizard 0');
+    expect(row.leaderRole.text).toBe('Leader');
+    expect(row.leaderAvatarWidget.visible).toBe(true);
+    expect(row.leaderAvatarWidget.width).toBe(28);
+    expect(row.leaderAvatarWidget.x).toBeLessThan(row.leaderName.x);
+    expect(row.leaderName.y).toBeLessThan(row.leaderRole.y);
+    expect(row.memberCount.text).toBe('6/50');
+    expect(row.memberCount.anchor.x).toBe(1);
+    expect(row.memberCount.y).toBe(8);
+    expect(row.memberCount.y).toBeLessThan(row.leaderName.y);
+    expect(row.total.amountLabel.textObject.text).toBe('12.4k');
+    expect(row.totalSuffix.text).toBe('total');
+    expect(row.total.x).toBeLessThan(row.totalSuffix.x);
+    expect(row.total.icon.visible).toBe(true);
+    expect(row.banner.visible).toBe(true);
+    expect(row.banner.width).toBe(56);
+    expect(row.banner.y - row.banner.height / 2).toBe(7);
+    expect(row.getPreferredHeight()).toBe(78);
+    expect(applyRow.getPreferredHeight()).toBe(78);
+    const expectedDirectoryPaperWidth =
+      PIXI_ROOT_RUN_GEOMETRY.dialog.innerBoardWidth + 16;
+    expect(dialog.panel.paperFrame.visible).toBe(false);
+    expect(row.background).toBeInstanceOf(PixiNineSliceFrame);
+    expect(row.background.texture).toBe(dialog.panel.paperFrame.texture);
+    expect(row.background.frameWidth).toBe(expectedDirectoryPaperWidth);
+    expect(row.background.frameHeight).toBe(78);
+    expect(row.sectionRule).toBeUndefined();
+    expect(applyRow.root.y - row.root.y).toBe(83);
+    expect(dialog.scroll.width).toBe(
+      expectedDirectoryPaperWidth +
+        RETAINED_DIALOG_LIST_GEOMETRY.scrollbarViewportOutset,
+    );
+    expect(dialog.scroll.root.x).toBeCloseTo(
+      (dialog.panel.coreWidth - expectedDirectoryPaperWidth) / 2,
+    );
+    expect(row.leaderName.y).toBeLessThan(row.totalSuffix.y);
+    expect(row.action.root.y + 14).toBeCloseTo(
+      (row.leaderName.y + row.total.y + row.total.fontSize) / 2,
+    );
+    expect(row.action.text.text).toBe('Join');
     expect(row.action.control.variant).toBe('green');
-    const firstMember = row.memberWidgets.get('member-0');
-    expect(firstMember.avatarWidget.avatarFrame.tint).toBe(0xddb6ff);
-    expect(firstMember.visual.eventMode).toBe('none');
 
     row.summaryHit.handleTap();
     row.action.handleTap();
-    firstMember.hitTarget.handleTap();
-    expect(toggle).toHaveBeenCalledTimes(1);
+    expect(openAlliance).toHaveBeenCalledTimes(1);
     expect(join).toHaveBeenCalledTimes(1);
-    expect(openPlayer).toHaveBeenCalledWith(
-      expect.objectContaining({ id: 'member-0' }),
-    );
 
     model.workshop.dialogs.alliance.rows[0] = {
       ...model.workshop.dialogs.alliance.rows[0],

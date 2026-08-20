@@ -738,7 +738,7 @@ function createTradeAllianceDirectoryFixture() {
   return {
     title: 'Trade Alliance',
     directory: true,
-    status: 'Not in an alliance',
+    status: '',
     rows: [
       {
         id: 'night-owls',

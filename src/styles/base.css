@@ -10857,13 +10857,7 @@ div.workshop-page__discovery-row {
 
 .research-page__research-button--in-progress
   .research-page__research-value-timer {
-  display: block;
-  align-self: stretch;
-  width: 100%;
-  color: #d4d4d4;
-  font-size: 10px;
-  line-height: 10px;
-  text-align: center;
+  display: none;
 }
 
 .style-button.style-cost-button.style-cost-button--yellow.research-page__research-button--in-progress:disabled {
@@ -10877,14 +10871,28 @@ div.workshop-page__discovery-row {
     var(--style-research-card-width) - var(--style-research-card-info-left) -
       var(--style-research-card-info-width)
   );
-  bottom: 7px;
+  bottom: 10px;
   left: var(--style-research-card-info-left);
   width: auto;
   margin: 0;
 }
 
-.research-page__research-progress-text {
+.research-page__research-progress
+  .research-page__research-progress-text {
+  position: absolute;
+  inset: 0;
+  z-index: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: #ffffff;
+  font-size: 9px;
+  line-height: 10px;
   text-align: center;
+  -webkit-text-stroke: var(--style-text-stroke-width)
+    var(--style-text-stroke-color);
+  paint-order: stroke fill;
+  pointer-events: none;
 }
 
 .style-button.research-page__research-button {
@@ -11063,6 +11071,11 @@ div.workshop-page__discovery-row {
   height: 24px;
   object-fit: contain;
   pointer-events: none;
+}
+
+.research-page__research-art-extra.is-timer-reduction {
+  width: 37.18px;
+  height: 40.56px;
 }
 
 .research-page__row.is-locked .research-page__research-art-image {

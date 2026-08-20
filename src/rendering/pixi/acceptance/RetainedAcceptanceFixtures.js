@@ -176,7 +176,7 @@ export function createDialogViewModel(
       text:
         key === 'a'
           ? [
-              '• Resets Mana, Coin, Crystal, items, ordinary Research, Garden, Brewing, and level tasks.',
+              '• Resets Mana, Coin, Amber, items, ordinary Research, Garden, Brewing, and level tasks.',
               '• Daily and weekly task timers continue.',
               '• Lower unclaimed milestones are credited automatically.',
               '• Prestige Points permanently unlock Market licences.',
@@ -509,13 +509,13 @@ function createPrestigeModel(key) {
         { id: 'points', label: 'points' },
       ],
       summary: {
-        lines: [`run ${key}`, 'receive crystal'],
+        lines: [`run ${key}`, 'receive Amber'],
       },
       milestones: [1, 2].map((index) => ({
         id: `milestone-${key}-${index}`,
         level: index * 10,
         title: `level ${index * 10}`,
-        reward: `${index * 10} crystal`,
+        reward: `${index * 10} Amber`,
         canComplete: true,
         confirm: {
           milestoneId: `milestone-${key}-${index}`,
@@ -675,14 +675,14 @@ function createShopModel(key, subscribe) {
           canCollect: true,
         },
         dailyCrystalOffer: {
-          rewardLabel: '1 crystal',
+          rewardLabel: '1 Amber',
           actionLabel: 'free',
           canCollect: true,
         },
         offers: [1, 2].map((index) => ({
           id: `crystal-${key}-${index}`,
           crystalCount: (slotOffset + index) * 10,
-          bundleLabel: `${(slotOffset + index) * 10} crystals`,
+          bundleLabel: `${(slotOffset + index) * 10} Amber`,
           priceLabel: `$${index}.99`,
         })),
       },

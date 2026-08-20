@@ -81,8 +81,11 @@
             (recipeTab === 'settings' && settingsAccessible)
           ? recipeTab
           : 'home';
-      let expandedAllianceId = null;
-
+      const actionEvents = [];
+      function recordAction(event) {
+        actionEvents.push(event);
+        canvas.dataset.lastAction = JSON.stringify(event);
+      }
       const directorySnapshot = {
         connected: true,
         ownAlliance: null,
@@ -95,6 +98,7 @@
             tag: 'OWL',
             tagColor: 'violet',
             joinMode: 'open',
+            leaderIdentity: 'mira',
             memberCount: 18,
             totalIncome: 1_240_000,
           },
@@ -104,6 +108,7 @@
             tag: 'SUN',
             tagColor: 'amber',
             joinMode: 'apply',
+            leaderIdentity: 'sol',
             memberCount: 11,
             totalIncome: 815_000,
           },
@@ -113,6 +118,7 @@
             tag: 'ROOT',
             tagColor: 'green',
             joinMode: 'closed',
+            leaderIdentity: 'rowan',
             memberCount: 7,
             totalIncome: 348_000,
           },
@@ -135,6 +141,24 @@
             frame: 'emerald',
             playerLevel: 18,
             role: 'trader',
+          },
+          {
+            allianceId: 'sun-circle',
+            memberIdentity: 'sol',
+            username: 'Sol',
+            character: 'elara',
+            frame: 'sun',
+            playerLevel: 21,
+            role: 'tradeMaster',
+          },
+          {
+            allianceId: 'root-keepers',
+            memberIdentity: 'rowan',
+            username: 'Rowan',
+            character: 'rowan',
+            frame: 'emerald',
+            playerLevel: 19,
+            role: 'tradeMaster',
           },
         ],
       };
@@ -191,11 +215,36 @@
           dialog.bind(
             viewModelFactory.createAllianceDialog(
               directorySnapshot,
-              expandedAllianceId,
+              null,
               {
-                selectAlliance: (allianceId) => {
-                  expandedAllianceId =
-                    expandedAllianceId === allianceId ? null : allianceId;
+                openAlliance: (alliance) => {
+                  recordAction({
+                    type: 'open',
+                    allianceId: alliance.allianceId,
+                  });
+                  runtime.openDialog(GLOBAL_DIALOG_IDS.ALLIANCE, {
+                    alliance,
+                  });
+                  return true;
+                },
+                joinAlliance: (allianceId) => {
+                  recordAction({ type: 'join', allianceId });
+                  return true;
+                },
+                applyAlliance: (allianceId) => {
+                  recordAction({ type: 'apply', allianceId });
+                  directorySnapshot.ownApplications = [
+                    {
+                      applicationKey: `application-${allianceId}`,
+                      allianceId,
+                    },
+                  ];
+                  bindDialog();
+                  return true;
+                },
+                cancelAllianceApplication: (applicationKey) => {
+                  recordAction({ type: 'cancel', applicationKey });
+                  directorySnapshot.ownApplications = [];
                   bindDialog();
                   return true;
                 },
@@ -250,6 +299,7 @@
 
       window.__allianceRecipe = {
         applicationManager,
+        actionEvents,
         dialog,
         directorySnapshot,
         runtime,

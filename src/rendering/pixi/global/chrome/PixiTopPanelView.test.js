@@ -45,6 +45,7 @@ describe('PixiTopPanelView', () => {
       frameTint: 0xb54c40,
       mana: { current: 41.9, cap: 80, perSecond: 2.25 },
       coin: 1200,
+      amethyst: 320,
       contextCurrency: {
         resource: 'ruby',
         amount: 9,
@@ -76,11 +77,13 @@ describe('PixiTopPanelView', () => {
     expect(view.mana.amount).toBe('41/80');
     expect(view.manaRate.text).toBe('+2.25/s');
     expect(view.coin.amount).toBe('1.2k');
+    expect(view.amethyst.amount).toBe('320');
+    expect(semanticRegistry.has('top.amethyst')).toBe(true);
     expect(view.contextCurrency.resource).toBe('ruby');
     expect(semanticRegistry.has('top.contextCurrency')).toBe(true);
     expect(view.levelValue.text).toBe('4');
     expect(assets.getTexture).toHaveBeenCalledWith(
-      'public:ui/root-run-level-star.png',
+      PIXI_ROOT_RUN_ASSETS.topHudLevelStar,
     );
     expect(view.questRail.visible).toBe(true);
     expect(view.topHudRoot.position).toMatchObject({
@@ -186,12 +189,14 @@ describe('PixiTopPanelView', () => {
     expect(view.levelRail.panel.width).toBe(754);
     expect(view.levelRail.track.width).toBe(729);
     expect(view.coin.position.x).toBe(209);
-    expect(view.contextCurrency.position.x).toBe(466);
-    expect(view.mana.position.x).toBe(723);
-    expect(view.coin.background.width).toBe(240);
-    expect(view.contextCurrency.background.width).toBe(240);
-    expect(view.mana.background.width).toBe(240);
-    expect(view.manaRate.position.x).toBe(843);
+    expect(view.mana.position.x).toBe(400);
+    expect(view.amethyst.position.x).toBe(591);
+    expect(view.contextCurrency.position.x).toBe(782);
+    expect(view.coin.background.width).toBe(181);
+    expect(view.mana.background.width).toBe(181);
+    expect(view.amethyst.background.width).toBe(181);
+    expect(view.contextCurrency.background.width).toBe(181);
+    expect(view.manaRate.position.x).toBe(490.5);
 
     const avatarLeftInset = view.topHudRoot.position.x;
     const settingsRightInset =
@@ -207,7 +212,7 @@ describe('PixiTopPanelView', () => {
       view.levelRail.position.x +
         view.levelRail.hitArea.width,
     ).toBe(
-      view.mana.position.x + view.mana.background.width,
+      view.contextCurrency.position.x + view.contextCurrency.background.width,
     );
     expect(view.levelRail.track).toBeInstanceOf(
       NineSliceSprite,

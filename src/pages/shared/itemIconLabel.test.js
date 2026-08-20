@@ -177,7 +177,7 @@ describe('item icon labels', () => {
     );
 
     expect(element.textContent).toBe(
-      'brewed mana tonic, harvested sage, found star anise seed, sold mint seed for 2 coin, 5 crystals, 1 emerald, 3 rubies, and 6 herbs',
+      'brewed mana tonic, harvested sage, found star anise seed, sold mint seed for 2 coin, 5 amber, 1 emerald, 3 rubies, and 6 herbs',
     );
     expect(element.querySelector('.style-potion-label')).not.toBeNull();
     expect(element.querySelector('.style-herb-label')).not.toBeNull();

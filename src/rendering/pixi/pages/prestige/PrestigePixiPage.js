@@ -39,7 +39,7 @@ import {
 } from '../workshop/RetainedPageKit.js';
 
 export const PRESTIGE_DESCRIPTION_LINES = Object.freeze([
-  'Resets Mana, Coin, Crystal, items, ordinary Research, Garden, Brewing, and level tasks.',
+  'Resets Mana, Coin, Amber, items, ordinary Research, Garden, Brewing, and level tasks.',
   'Daily and weekly task timers continue.',
   'Lower unclaimed milestones are credited automatically.',
   'Prestige Points permanently unlock Market licences.',

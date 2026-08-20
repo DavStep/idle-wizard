@@ -1319,7 +1319,7 @@ describe('BrewingPixiPage', () => {
     ).toBeGreaterThan(0.55);
     expect(
       harness.page.hud.cauldronStateFx.getLocalBounds().height,
-    ).toBeGreaterThan(18);
+    ).toBeGreaterThan(48);
     expectContainedCauldronRegistration(harness.page.hud);
 
     vi.stubGlobal(
@@ -2235,7 +2235,12 @@ describe('BrewingPixiPage', () => {
     expect(harness.page.hud.progress.root.visible).toBe(false);
     expect(harness.page.hud.phaseLabel.text).toBe('No potion selected');
     expect(harness.page.hud.statusMessage.text).toBe(
-      'Choose a recipe to start brewing.',
+      'Choose a recipe to start brewing',
+    );
+    expect(harness.page.hud.statusMessage.style.align).toBe('left');
+    expect(harness.page.hud.statusMessage.anchor.x).toBe(0);
+    expect(harness.page.hud.statusMessage.x).toBe(
+      harness.page.hud.phaseLabel.x,
     );
 
     cauldron.selectedRecipe = {

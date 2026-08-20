@@ -5,7 +5,7 @@ import { setSelectedTabState } from '../../shared/selectedTabState.js';
 const MARKET_TABS = [
   { id: 'npm', label: 'Traders' },
   { id: 'player', label: 'Players' },
-  { id: 'crystals', label: 'Crystals' },
+  { id: 'crystals', label: 'Gems' },
 ];
 
 export class ShopMarketTabsManager {

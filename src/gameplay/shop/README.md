@@ -20,6 +20,6 @@ The player market uses the same market-rank slot count and item-grade catalogue 
 
 Player requests store the maximum quantity the player wants to buy and the coin offered per item. Player sale listings choose their reserved quantity with the shared integer slider and store a separate coin price per item.
 
-The crystals tab has two manual free offers. The coin offer grants current player level `* 20` coin, then enters a two-hour cooldown. The daily crystal offer grants `1` crystal, then enters a 24-hour cooldown. Both cooldowns catch up offline, but neither reward is granted until the player collects it.
+The visible Gems tab has two manual free offers. The coin offer grants current player level `* 20` coin, then enters a two-hour cooldown. The daily Amber offer uses the internal `dailyCrystalOffer` key, grants `1` Amber, then enters a 24-hour cooldown. Both cooldowns catch up offline, but neither reward is granted until the player collects it. Paid display offers include Amber bundles and matching-price Amethyst bundles at 100× the quantity; transactions remain unavailable.
 
 Security boundary: shared NPC demand, stock, market scope, item keys, and per-call quantity limits are server-validated. Player inventory and coin remain client-owned in the current architecture, so this is shared-market coordination rather than server-authoritative economy settlement.

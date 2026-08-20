@@ -9,6 +9,7 @@ describe('PixiViewModelFactory', () => {
       gameplay: {
         mana: { current: 40, cap: 50, perSecond: 1 },
         coin: { current: 12 },
+        amethyst: { current: 320 },
         ruby: { current: 3 },
         persistence: { loadRevision: 7 },
         tasks: {
@@ -31,6 +32,7 @@ describe('PixiViewModelFactory', () => {
       username: 'Mira',
       level: 4,
       loadRevision: 7,
+      amethyst: 320,
       contextCurrency: {
         resource: 'ruby',
         amount: 3,
@@ -1650,12 +1652,11 @@ describe('PixiViewModelFactory', () => {
     expect(claimAllianceQuest).toHaveBeenCalledWith('earn-coin');
   });
 
-  it('projects expandable alliance directory rows with members, totals, and state actions', () => {
-    const selectAlliance = vi.fn();
+  it('projects leaderboard-style alliance directory rows with leaders, totals, and state actions', () => {
+    const openAlliance = vi.fn();
     const joinAlliance = vi.fn();
     const applyAlliance = vi.fn();
     const cancelAllianceApplication = vi.fn();
-    const openPlayer = vi.fn();
     const alliances = [
       {
         allianceId: 'dbp',
@@ -1663,6 +1664,7 @@ describe('PixiViewModelFactory', () => {
         tag: 'DBP',
         tagColor: 'violet',
         joinMode: 'open',
+        leaderIdentity: 'member-0',
         memberCount: 6,
         totalIncome: 12_450,
       },
@@ -1708,42 +1710,35 @@ describe('PixiViewModelFactory', () => {
       },
       'dbp',
       {
-        selectAlliance,
+        openAlliance,
         joinAlliance,
         applyAlliance,
         cancelAllianceApplication,
-        openPlayer,
       },
     );
 
     expect(dialog.directory).toBe(true);
-    expect(dialog.status).toBe('Not in an alliance');
+    expect(dialog.status).toBe('');
     expect(dialog.rows).toHaveLength(3);
     expect(dialog.rows[0]).toMatchObject({
       id: 'dbp',
       type: 'allianceDirectory',
       tag: 'DBP',
       tagColor: 'violet',
+      leaderName: 'Wizard 0',
+      leaderCharacter: 'mira',
+      leaderFrame: 'violet',
       totalIncomeLabel: '12.4k',
       memberCount: 6,
       memberCapacity: 50,
-      expanded: true,
       action: {
-        label: 'Join Alliance',
+        label: 'Join',
         variant: 'green',
         enabled: true,
       },
     });
-    expect(dialog.rows[0].members[0]).toMatchObject({
-      identity: 'member-0',
-      username: 'Wizard 0',
-      character: 'mira',
-      frame: 'violet',
-      roleLabel: 'Trade Master',
-      levelLabel: 'Lv 18',
-    });
     expect(dialog.rows[1].action).toMatchObject({
-      label: 'Cancel Application',
+      label: 'Cancel',
       variant: 'brown-dark',
       enabled: true,
     });
@@ -1755,18 +1750,9 @@ describe('PixiViewModelFactory', () => {
 
     dialog.rows[0].onActivate();
     dialog.rows[0].action.onActivate();
-    dialog.rows[0].members[0].onActivate();
     dialog.rows[1].action.onActivate();
-    expect(selectAlliance).toHaveBeenCalledWith('dbp');
+    expect(openAlliance).toHaveBeenCalledWith(alliances[0]);
     expect(joinAlliance).toHaveBeenCalledWith('dbp');
-    expect(openPlayer).toHaveBeenCalledWith(
-      expect.objectContaining({
-        identity: 'member-0',
-        username: 'Wizard 0',
-        character: 'mira',
-        frame: 'violet',
-      }),
-    );
     expect(cancelAllianceApplication).toHaveBeenCalledWith('application-solo');
     expect(applyAlliance).not.toHaveBeenCalled();
   });
@@ -1794,7 +1780,7 @@ describe('PixiViewModelFactory', () => {
     expect(browseDialog).toMatchObject({
       directory: true,
       selectedTabId: 'browse',
-      status: 'Not in an alliance',
+      status: '',
       tabs: [
         { id: 'browse', label: 'Browse', selected: true },
         { id: 'create', label: 'Create', selected: false },
@@ -2257,7 +2243,7 @@ describe('PixiViewModelFactory', () => {
 
     expect(prestige.prestige.summary.lines).toEqual([
       'Level 10 > Level 5',
-      'on prestige: 12 crystal 1 ruby 0 emerald total',
+      'on prestige: 12 amber 1 ruby 0 emerald total',
     ]);
     expect(prestige.prestige.summary).toMatchObject({
       headline: 'Ready at Level 10',
@@ -2268,7 +2254,7 @@ describe('PixiViewModelFactory', () => {
       id: 'level-10',
       title: 'Level 10',
       state: 'ready',
-      reward: 'reward: 12 crystal 1 ruby',
+      reward: 'reward: 12 amber 1 ruby',
       rewardResources: [
         { resource: 'crystal', amount: 12 },
         { resource: 'ruby', amount: 1 },
@@ -2287,7 +2273,7 @@ describe('PixiViewModelFactory', () => {
     });
   });
 
-  it('uses the mana icon only for mana capacity research artwork', () => {
+  it('uses the mana icon with distinct capacity and generation modifiers', () => {
     const factory = new PixiViewModelFactory();
     const model = factory.createResearch({
       gameplay: {
@@ -2316,7 +2302,48 @@ describe('PixiViewModelFactory', () => {
       'source:assets/icons/icon-mana-drop.png',
     );
     expect(generation.artAssetId).toBe(
-      'source:assets/icons/icon-research.png',
+      'source:assets/icons/icon-mana-drop.png',
+    );
+    expect(capacity.artExtraAssetId).toBe(
+      'source:assets/icons/research/icon-research-mana-capacity-up.png',
+    );
+    expect(generation.artExtraAssetId).toBe(
+      'source:assets/icons/research/icon-research-mana-generation-plus.png',
+    );
+  });
+
+  it('preserves each research family artwork in utility unlocks', () => {
+    const factory = new PixiViewModelFactory();
+    const model = factory.createResearch({
+      gameplay: {
+        research: {
+          tabs: [
+            {
+              id: 'regular',
+              boxes: [
+                {
+                  id: 'utilityUnlocks',
+                  researches: [
+                    { id: 'manaSphereCap:1', label: 'mana capacity' },
+                    { id: 'summonSeedsX2', label: 'summon seed' },
+                    { id: 'garden:plantAll', label: 'plant all' },
+                  ],
+                },
+              ],
+            },
+          ],
+        },
+      },
+    });
+    const [mana, summon, garden] =
+      model.research.tabs[0].boxes[0].allResearches;
+
+    expect(mana.artAssetId).toBe('source:assets/icons/icon-mana-drop.png');
+    expect(summon.artAssetId).toBe(
+      'source:assets/icons/research/icon-research-summon-multiplier.png',
+    );
+    expect(garden.artAssetId).toBe(
+      'source:assets/icons/research/icon-research-auto-plant.png',
     );
   });
 
@@ -2325,7 +2352,7 @@ describe('PixiViewModelFactory', () => {
     const research = {
       tabs: [
         { id: 'regular', label: 'regular research', boxes: [] },
-        { id: 'emerald', label: 'crystal research', boxes: [] },
+        { id: 'emerald', label: 'amber research', boxes: [] },
         { id: 'automation', label: 'automation', boxes: [] },
         { id: 'advanced', label: 'advanced research', boxes: [] },
       ],

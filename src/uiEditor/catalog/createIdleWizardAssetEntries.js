@@ -40,7 +40,8 @@ const SOURCE_NINE_SLICE_BY_ASSET_ID = new Map(
 );
 const CURRENCY_SOURCE_PATHS = new Set([
   'icons/icon-coin.png',
-  'icons/icon-crystal.png',
+  'icons/icon-amber.png',
+  'icons/icon-amethyst.png',
   'icons/icon-emerald.png',
   'icons/icon-mana-drop.png',
   'icons/icon-ruby.png',

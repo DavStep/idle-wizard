@@ -6,6 +6,7 @@ import { TopPanelResourceDisplayManager } from './TopPanelResourceDisplayManager
 
 function createRefs() {
   return {
+    amethystValue: document.createElement('span'),
     contextCurrency: document.createElement('span'),
     contextCurrencyValue: document.createElement('span'),
     coinValue: document.createElement('span'),
@@ -18,6 +19,34 @@ function createRefs() {
 }
 
 describe('TopPanelResourceDisplayManager', () => {
+  it('always shows Amethyst plus the contextual fourth currency', () => {
+    const refs = createRefs();
+    const gameplayFacade = {
+      getSnapshot: vi.fn(() => ({
+        amethyst: { current: 6 },
+        coin: { current: 7 },
+        crystal: { current: 8 },
+        ruby: { current: 9 },
+        mana: { current: 10, cap: 50, perSecond: 1 },
+        tasks: { currentLevel: 2 },
+      })),
+      subscribe: vi.fn(() => vi.fn()),
+    };
+    const manager = new TopPanelResourceDisplayManager({ gameplayFacade });
+
+    manager.mount(refs);
+
+    expect(refs.amethystValue.textContent).toBe('6 amethyst');
+    expect(refs.contextCurrency.hidden).toBe(false);
+    expect(refs.contextCurrency.getAttribute('aria-label')).toBe('amber');
+    expect(refs.contextCurrencyValue.textContent).toBe('8 amber');
+
+    manager.setContextCurrency('ruby');
+
+    expect(refs.contextCurrency.getAttribute('aria-label')).toBe('ruby');
+    expect(refs.contextCurrencyValue.textContent).toBe('9 ruby');
+  });
+
   it('renders frame resource updates without needing a full gameplay snapshot', () => {
     let frameListener = null;
     const refs = createRefs();

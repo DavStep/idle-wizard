@@ -38,6 +38,18 @@ export default [
       researchRowScenario('in-progress', 'Researching'),
       researchRowScenario('completed', 'Researched'),
       {
+        fixture: { manaModifier: 'capacity', state: 'available' },
+        id: 'mana-capacity',
+        label: 'Mana Capacity',
+        mount: mountResearchRow,
+      },
+      {
+        fixture: { manaModifier: 'generation', state: 'available' },
+        id: 'mana-generation',
+        label: 'Mana Generation',
+        mount: mountResearchRow,
+      },
+      {
         fixture: { itemTimer: true, state: 'available' },
         id: 'item-timer',
         label: 'Item Timer',
@@ -67,7 +79,7 @@ export default [
       stationTitleScenario('regular', 'Herbal Studies'),
       stationTitleScenario('automation', 'Automation Studies'),
       stationTitleScenario('advanced', 'Advanced Studies'),
-      stationTitleScenario('crystal', 'Crystal Studies'),
+      stationTitleScenario('crystal', 'Amber Studies'),
     ],
     usages: [
       {
@@ -104,6 +116,12 @@ export default [
         fixture: { states: ['available', 'in-progress', 'completed'] },
         id: 'multiple-rows',
         label: 'Multiple rows',
+        mount: mountResearchBox,
+      },
+      {
+        fixture: { states: ['mana-capacity', 'mana-generation'] },
+        id: 'mana-icons',
+        label: 'Mana icons',
         mount: mountResearchBox,
       },
     ],
@@ -236,15 +254,26 @@ function createResearchRowControl({
   };
 }
 
-function createResearchRowModel({ itemTimer = false, state }) {
+function createResearchRowModel({ itemTimer = false, manaModifier = null, state }) {
   const completed = state === 'completed';
   const inProgress = state === 'in-progress';
   const locked = state === 'locked';
   const unavailable = state === 'unavailable';
   return {
-    artAssetId: RESEARCH_ART_ASSET_ID,
+    artAssetId: manaModifier
+      ? 'source:assets/icons/icon-mana-drop.png'
+      : RESEARCH_ART_ASSET_ID,
+    ...(manaModifier
+      ? {
+          artExtraAssetId:
+            manaModifier === 'capacity'
+              ? 'source:assets/icons/research/icon-research-mana-capacity-up.png'
+              : 'source:assets/icons/research/icon-research-mana-generation-plus.png',
+        }
+      : {}),
     ...(itemTimer
       ? {
+          artExtraKey: 'timerReduction',
           artExtraAssetId:
             'source:assets/icons/research/icon-research-time.png',
           itemKey: 'mintHerb',
@@ -258,10 +287,28 @@ function createResearchRowModel({ itemTimer = false, state }) {
       lockPrompt: locked ? 'Complete prior research' : '',
       resource: 'coin',
     },
-    displayName: itemTimer ? 'Mint Growing' : 'Mint Cultivation',
+    displayName: manaModifier
+      ? manaModifier === 'capacity'
+        ? 'Mana Capacity'
+        : 'Mana Generation'
+      : itemTimer
+        ? 'Mint Growing'
+        : 'Mint Cultivation',
     displayValue: completed ? 'Researched' : '25 coin',
-    effect: completed ? 'Growth improved' : 'Learn to grow mint',
-    id: itemTimer ? 'timer:herbGrowth:mintHerb:1' : 'mint-cultivation',
+    effect: manaModifier
+      ? manaModifier === 'capacity'
+        ? 'Increases mana capacity'
+        : 'Increases mana generation'
+      : completed
+        ? 'Growth improved'
+        : 'Learn to grow mint',
+    id: manaModifier
+      ? manaModifier === 'capacity'
+        ? 'manaSphereCap:1'
+        : 'manaProductionRate:1'
+      : itemTimer
+        ? 'timer:herbGrowth:mintHerb:1'
+        : 'mint-cultivation',
     inProgress,
     locked,
     state,
@@ -343,6 +390,15 @@ function createResearchBoxControl({ assets, fixture, input, now }) {
     page.toggleCompletedResearches('herbs');
   }
   const rows = fixture.states.map((state, index) => {
+    const manaModifier = state === 'mana-capacity'
+      ? 'capacity'
+      : state === 'mana-generation'
+        ? 'generation'
+        : null;
+    const rowModel = createResearchRowModel({
+      manaModifier,
+      state: manaModifier ? 'available' : state,
+    });
     const row = new ResearchRowWidget({
       assetManager: assets,
       page,
@@ -351,9 +407,11 @@ function createResearchBoxControl({ assets, fixture, input, now }) {
     });
     row.bind(
       {
-        ...createResearchRowModel({ state }),
-        displayName: ['Mint Cultivation', 'Sage Mastery', 'Herbal Memory'][index],
-        id: `research-editor-${index}`,
+        ...rowModel,
+        displayName: manaModifier
+          ? rowModel.displayName
+          : ['Mint Cultivation', 'Sage Mastery', 'Herbal Memory'][index],
+        id: manaModifier ? rowModel.id : `research-editor-${index}`,
       },
       { buy: () => true, locked: () => true },
       'herbs',

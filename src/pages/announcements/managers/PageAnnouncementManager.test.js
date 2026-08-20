@@ -234,7 +234,7 @@ describe('PageAnnouncementManager', () => {
       ]),
     ).toEqual([
       ['unlocks', 'garden / research'],
-      ['bonus', '+1 crystal'],
+      ['bonus', '+1 amber'],
     ]);
   });
 

@@ -8,37 +8,33 @@ import { ShopStallVisibilityManager } from '../../../../pages/shop/managers/Shop
 
 const stallVisibilityManager = new ShopStallVisibilityManager();
 
+const AMBER_PRICES = Object.freeze([
+  [1, '$4.99'],
+  [2, '$8.99'],
+  [5, '$19.99'],
+  [10, '$36.99'],
+  [20, '$69.99'],
+  [50, '$159.99'],
+]);
 const DEFAULT_CRYSTAL_OFFERS = Object.freeze([
-  Object.freeze({
-    crystalCount: 1,
-    bundleLabel: '1 crystal',
-    priceLabel: '$4.99',
-  }),
-  Object.freeze({
-    crystalCount: 2,
-    bundleLabel: '2 crystals',
-    priceLabel: '$8.99',
-  }),
-  Object.freeze({
-    crystalCount: 5,
-    bundleLabel: '5 crystals',
-    priceLabel: '$19.99',
-  }),
-  Object.freeze({
-    crystalCount: 10,
-    bundleLabel: '10 crystals',
-    priceLabel: '$36.99',
-  }),
-  Object.freeze({
-    crystalCount: 20,
-    bundleLabel: '20 crystals',
-    priceLabel: '$69.99',
-  }),
-  Object.freeze({
-    crystalCount: 50,
-    bundleLabel: '50 crystals',
-    priceLabel: '$159.99',
-  }),
+  ...AMBER_PRICES.map(([amount, priceLabel]) => Object.freeze({
+    id: `amber-${amount}`,
+    resourceKey: 'crystal',
+    crystalCount: amount,
+    amount,
+    title: 'Amber',
+    bundleLabel: `${amount} amber`,
+    priceLabel,
+  })),
+  ...AMBER_PRICES.map(([amount, priceLabel]) => Object.freeze({
+    id: `amethyst-${amount * 100}`,
+    resourceKey: 'amethyst',
+    amethystCount: amount * 100,
+    amount: amount * 100,
+    title: 'Amethyst',
+    bundleLabel: `${amount * 100} amethyst`,
+    priceLabel,
+  })),
 ]);
 
 /**
@@ -229,7 +225,13 @@ export function createShop(options = {}) {
         ),
         offers: crystalOffers.map((offer, index) => ({
           ...offer,
-          id: offer.id ?? offer.crystalCount ?? index,
+          id: offer.id ?? offer.amethystCount ?? offer.crystalCount ?? index,
+          resourceKey: offer.resourceKey ?? 'crystal',
+          amountLabel:
+            offer.amountLabel ??
+            offer.amount ??
+            offer.amethystCount ??
+            offer.crystalCount,
           enabled: offer.enabled !== false,
           dialog: dialogs.support,
         })),
@@ -1511,7 +1513,7 @@ function createDailyCrystalOfferModel(offer) {
   }
   return {
     ...offer,
-    rewardLabel: `${nonNegativeInteger(offer.rewardCrystal)} crystal`,
+    rewardLabel: `${nonNegativeInteger(offer.rewardCrystal)} amber`,
     actionLabel: offer.canCollect
       ? 'free'
       : formatRemainingTime(

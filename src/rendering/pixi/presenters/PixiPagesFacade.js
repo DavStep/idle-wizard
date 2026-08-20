@@ -1376,6 +1376,15 @@ export class PixiPagesFacade {
           });
           return result;
         },
+        skipResearchTime: (researchId) => {
+          const result = gameplay?.skipResearchTime?.(researchId);
+          this.emitPurchaseSpendBurstForResult(result, {
+            anchorId: `research.${researchId}`,
+            resource: "amethyst",
+            amount: result?.cost,
+          });
+          return result;
+        },
         showLockedReason: () => false,
         selectTab: (tabId) => {
           this.researchTabId = String(tabId || "regular");

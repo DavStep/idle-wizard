@@ -32,7 +32,7 @@ export class PersonalTaskRewardManager {
     }
 
     if (crystal > 0) {
-      parts.push(`+${crystal} crystal`);
+      parts.push(`+${crystal} amber`);
     }
 
     return parts.join(', ');

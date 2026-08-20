@@ -2,7 +2,12 @@
   "manaUpgradeSeries": {
     "firstPlayerLevel": 2,
     "maxPlayerLevel": 100,
-    "durationSeconds": 5,
+    "durationTargetsSeconds": {
+      "level2": 5,
+      "level17": 1800,
+      "level44": 7200,
+      "level100": 14400
+    },
     "earlyTargetPlayerLevel": 17,
     "maxCostCoin": 1000000000,
     "capacity": {

@@ -7,6 +7,8 @@ export const RESOURCE_ICON_LABEL_CLASS = 'style-resource-label';
 
 const RESOURCE_ICON_FRAME_NAMES = Object.freeze({
   crystal: 'resource:crystal',
+  amber: 'resource:crystal',
+  amethyst: 'resource:amethyst',
   emerald: 'resource:emerald',
   coin: 'resource:coin',
   herb: getHerbIconFrameName('sageHerb'),
@@ -16,9 +18,9 @@ const RESOURCE_ICON_FRAME_NAMES = Object.freeze({
 });
 const GENERIC_SEED_ICON = Object.freeze({ key: 'sageSeed', label: 'sage seed' });
 
-const RESOURCE_WORD_PATTERN = /\b(?:crystals?|emeralds?|coin|herbs?|mana|rubies|ruby|seeds?)\b/;
+const RESOURCE_WORD_PATTERN = /\b(?:ambers?|amethysts?|crystals?|emeralds?|coin|herbs?|mana|rubies|ruby|seeds?)\b/;
 const RESOURCE_WORD_MATCH_PATTERN =
-  /\b(?:crystals?|emeralds?|coin|herbs?|mana|rubies|ruby|seeds?)\b/gi;
+  /\b(?:ambers?|amethysts?|crystals?|emeralds?|coin|herbs?|mana|rubies|ruby|seeds?)\b/gi;
 const RESOURCE_AMOUNT_PREFIX_PATTERN =
   /([+-]?(?:(?:\d[\d,]*(?:\.\d+)?(?:[a-z])?(?:\s*-\s*\d[\d,]*(?:\.\d+)?(?:[a-z])?)?)|(?:\d[\d,]*(?:\/\d[\d,]*)+)|\?)(?:\s*\/\s*(?:(?:\d[\d,]*(?:\.\d+)?(?:[a-z])?)|\?))?\s+)$/i;
 const MANA_NON_RESOURCE_PHRASE_PATTERN = /^\s+(?:sphere|tonic)\b/i;
@@ -65,7 +67,7 @@ export function createResourceIconLabel(resource, label = resource, { amountPref
 
   const text = document.createElement('span');
   text.className = `${RESOURCE_ICON_LABEL_CLASS}__text`;
-  text.textContent = String(label ?? normalizedResource);
+  text.textContent = normalizeDisplayLabel(normalizedResource, label);
 
   root.append(icon, text);
   return root;
@@ -176,6 +178,14 @@ function normalizeResource(resource) {
     return 'crystal';
   }
 
+  if (normalizedResource === 'ambers') {
+    return 'amber';
+  }
+
+  if (normalizedResource === 'amethysts') {
+    return 'amethyst';
+  }
+
   if (normalizedResource === 'rubies') {
     return 'ruby';
   }
@@ -193,4 +203,12 @@ function normalizeResource(resource) {
   }
 
   return normalizedResource;
+}
+
+function normalizeDisplayLabel(resource, label) {
+  const value = String(label ?? resource);
+  if (resource !== 'crystal' || !/^crystals?$/i.test(value)) {
+    return value;
+  }
+  return /^[A-Z]/.test(value) ? 'Amber' : 'amber';
 }

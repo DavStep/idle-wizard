@@ -63,7 +63,7 @@ import { SHOP_DIALOG_IDS, ShopDialogPixi } from './ShopDialogPixi.js';
 const SHOP_TABS = Object.freeze([
   Object.freeze({ id: 'traders', legacyId: 'npm', label: 'Traders' }),
   Object.freeze({ id: 'players', legacyId: 'player', label: 'Players' }),
-  Object.freeze({ id: 'crystals', legacyId: 'crystals', label: 'Crystals' }),
+  Object.freeze({ id: 'crystals', legacyId: 'crystals', label: 'Gems' }),
 ]);
 
 const PAGE_SCROLL_CUT = 6;
@@ -246,7 +246,7 @@ export class ShopPixiPage extends BasePixiRetainedView {
     });
     this.crystalOffersSection = new ShopRowsSection({
       page: this,
-      title: 'Crystals',
+      title: 'Gems',
       assetManager,
       inputRouter,
       semanticRegistry,
@@ -388,7 +388,7 @@ export class ShopPixiPage extends BasePixiRetainedView {
                 resourceKey: 'crystal',
                 amountLabel: stripResourceName(
                   this.model.crystals.dailyCrystalOffer.rewardLabel ?? '',
-                  'crystal',
+                  'amber',
                 ),
                 value:
                   this.model.crystals.dailyCrystalOffer.actionLabel ??
@@ -412,21 +412,23 @@ export class ShopPixiPage extends BasePixiRetainedView {
           : []),
         ...this.model.crystals.offers.map((offer, index) => ({
           ...offer,
-          id: offer.id ?? offer.crystalCount ?? index,
-          title: offer.title ?? 'Crystal Offer',
-          resourceKey: 'crystal',
+          id: offer.id ?? offer.amethystCount ?? offer.crystalCount ?? index,
+          title: offer.title ?? 'Gem Offer',
+          resourceKey: offer.resourceKey ?? 'crystal',
           amountLabel:
             offer.amountLabel ??
+            offer.amount ??
+            offer.amethystCount ??
             offer.crystalCount ??
             stripResourceName(
               offer.bundleLabel ?? offer.label ?? '',
-              'crystal',
+              offer.resourceKey === 'amethyst' ? 'amethyst' : 'amber',
             ),
           value: offer.priceLabel ?? offer.value ?? '',
           valueVariant: 'green',
           semanticId:
             offer.semanticId ??
-            `shop.crystalOffer.${offer.crystalCount ?? index}`,
+            `shop.gemOffer.${offer.resourceKey ?? 'crystal'}.${offer.amount ?? offer.amethystCount ?? offer.crystalCount ?? index}`,
           action: () =>
             offer.action?.(offer) ??
             this.openDialog(
@@ -2635,7 +2637,7 @@ function normalizeShopViewModel(viewModel = {}) {
               ...rawDailyCrystalOffer,
               rewardLabel:
                 rawDailyCrystalOffer.rewardLabel ??
-                `${rawDailyCrystalOffer.rewardCrystal ?? 1} crystal`,
+                `${rawDailyCrystalOffer.rewardCrystal ?? 1} amber`,
               actionLabel: rawDailyCrystalOffer.canCollect
                 ? 'free'
                 : rawDailyCrystalOffer.timerLabel ?? '',

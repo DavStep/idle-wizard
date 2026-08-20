@@ -438,7 +438,7 @@ describe('PixiTransientEffectsLayer', () => {
       (entry) => entry.kind === 'amount',
     );
     expect(amount.widget.label.text).toBe('+1');
-    expect(amount.widget.label.textObject.style.fill).toBe('#cdaef2');
+    expect(amount.widget.label.textObject.style.fill).toBe('#e6a83d');
 
     const reducedLayer = new PixiTransientEffectsLayer({
       assets: createAssets(),
@@ -644,7 +644,7 @@ describe('reward flyout presenter', () => {
       crystal: 1,
       source: 'shop_daily_crystal_offer',
     });
-    expect(crystalReward.message).toBe('collected 1 crystal');
+    expect(crystalReward.message).toBe('collected 1 amber');
     expect(crystalReward.runs).toEqual(
       expect.arrayContaining([
         expect.objectContaining({
@@ -850,7 +850,7 @@ describe('reward flyout presenter', () => {
         ],
         toId: 'top.contextCurrency',
         showParticles: true,
-        title: 'collected 1 crystal',
+        title: 'collected 1 amber',
       },
     });
 
@@ -871,7 +871,7 @@ describe('reward flyout presenter', () => {
         ],
         toId: 'top.coin',
         showParticles: true,
-        title: '+15 coin, +1 crystal',
+        title: '+15 coin, +1 amber',
       },
     });
   });

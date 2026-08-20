@@ -164,6 +164,7 @@ const CAULDRON_INGREDIENT_IMPACT_DURATION_MS = 220;
 const CAULDRON_COMPLETION_MOTION_DURATION_MS = 320;
 const PREPARED_LIQUID_CYCLE_MS = 2_400;
 const BREWING_LIQUID_CYCLE_MS = 900;
+const CAULDRON_BUBBLE_RISE_SCALE = 4;
 const CAULDRON_AMBIENT_TRAVEL = 0.45;
 const CAULDRON_AMBIENT_SCALE_X = 0.006;
 const CAULDRON_AMBIENT_SCALE_Y = 0.004;
@@ -506,12 +507,11 @@ export class BrewingHudPixi {
     });
     this.progress.root.visible = false;
     this.progress.root.renderable = false;
-    this.statusMessage = centeredText('', {
+    this.statusMessage = createText('', {
       ...BREWING_DETAIL_TEXT_STYLE.body,
       wordWrap: true,
       wordWrapWidth: 250,
     });
-    this.statusMessage.anchor.set(0.5, 0);
     this.missingIngredientsRoot = new Container({
       label: 'brewing-missing-ingredients',
     });
@@ -830,7 +830,7 @@ export class BrewingHudPixi {
     setText(
       this.statusMessage,
       !active && !recipe
-        ? 'Choose a recipe to start brewing.'
+        ? 'Choose a recipe to start brewing'
         : hasMissingIngredients && missingIngredients.length === 0
           ? 'Restock the required herbs to continue.'
         : hasMissingMana
@@ -1251,10 +1251,7 @@ export class BrewingHudPixi {
     this.phaseTime.position.set(detailWidth - 12, 12);
     this.progress.setBounds(78, 34, detailWidth - 90, 11);
     this.batchStatusWidth = detailWidth - 90;
-    this.statusMessage.position.set(
-      78 + this.batchStatusWidth / 2,
-      34,
-    );
+    this.statusMessage.position.set(this.phaseLabel.x, 34);
     this.missingIngredientsRoot.position.set(78, 24);
     this.layoutMissingIngredients();
     this.emptyCauldron.setBounds(
@@ -1910,7 +1907,7 @@ export class BrewingHudPixi {
         graphics
           .circle(
             centerX + bubble.x + Math.sin(phase * Math.PI) * bubble.drift,
-            liquidY + 3 - phase * bubble.rise,
+            liquidY + 3 - phase * bubble.rise * CAULDRON_BUBBLE_RISE_SCALE,
             bubble.radius + phase * 0.85,
           )
           .stroke({ color: 0xdaf4ff, width: 1, alpha });

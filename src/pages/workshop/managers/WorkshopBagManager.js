@@ -17,8 +17,10 @@ const BAG_TABS = [
 const CURRENCY_ROWS = [
   { id: 'mana', label: 'mana' },
   { id: 'coin', label: 'coin' },
-  { id: 'crystal', label: 'crystal' },
+  { id: 'crystal', label: 'amber' },
+  { id: 'amethyst', label: 'amethyst' },
   { id: 'ruby', label: 'ruby' },
+  { id: 'emerald', label: 'emerald' },
 ];
 
 export class WorkshopBagManager {

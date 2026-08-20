@@ -134,9 +134,10 @@ export class PlayerInboxSubscriptionManager {
       items: this.parseItemRewards(row.itemRewardsJson ?? row.item_rewards_json),
     };
     const hasReward = this.hasReward(reward);
-    const rewardText =
+    const rewardText = this.normalizeRewardText(
       String(row.rewardText ?? row.reward_text ?? '').trim() ||
-      this.createRewardText(reward);
+        this.createRewardText(reward),
+    );
 
     return {
       mailKey: String(row.mailKey ?? row.mail_key ?? ''),
@@ -181,7 +182,7 @@ export class PlayerInboxSubscriptionManager {
 
     for (const key of ['coin', 'crystal', 'ruby', 'emerald']) {
       if (reward[key] > 0) {
-        parts.push(`${reward[key]} ${key}`);
+        parts.push(`${reward[key]} ${key === 'crystal' ? 'amber' : key}`);
       }
     }
 
@@ -190,6 +191,12 @@ export class PlayerInboxSubscriptionManager {
     }
 
     return parts.join(', ');
+  }
+
+  normalizeRewardText(value) {
+    return String(value ?? '').replace(/\bcrystals?\b/gi, (label) =>
+      /^[A-Z]/.test(label) ? 'Amber' : 'amber',
+    );
   }
 
   hasReward(reward) {

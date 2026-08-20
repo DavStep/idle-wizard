@@ -46,6 +46,10 @@ import {
   isLegacyItemTimerResearchDuration,
 } from './itemTimerResearch';
 import {
+  getManaResearchDurationSecondsForId,
+  isLegacyManaResearchDuration,
+} from './manaResearch';
+import {
   createIdentityOnlyPlayerReset,
   createInvalidatedPlayerSession,
   DEFAULT_PLAYER_CHARACTER,
@@ -199,6 +203,7 @@ const MAX_PLAYER_SAVE_CAULDRONS = 20;
 const MAX_PLAYER_SAVE_MANA_CURRENT = 5_000;
 const MAX_PLAYER_SAVE_MANA_PER_SECOND = 100;
 const MAX_PLAYER_SAVE_CURRENT_CRYSTAL = 100;
+const MAX_PLAYER_SAVE_CURRENT_AMETHYST = 1_000_000;
 const MAX_PLAYER_SAVE_CURRENT_EMERALD = 10_000;
 const MAX_PLAYER_SAVE_CURRENT_RUBY = 10_000;
 const MAX_PLAYER_SAVE_BATCH_MULTIPLIER = 5;
@@ -4252,7 +4257,6 @@ function getAutomationDefaultCostCrystalById(): Record<string, number> {
 
 const MANA_RESEARCH_FIRST_PLAYER_LEVEL = 2;
 const MANA_RESEARCH_MAX_PLAYER_LEVEL = 100;
-const MANA_RESEARCH_DURATION_SECONDS = 5n;
 const MANA_RESEARCH_EARLY_TARGET_PLAYER_LEVEL = 17;
 const MANA_RESEARCH_MID_TARGET_PLAYER_LEVEL = 44;
 const MANA_RESEARCH_MAX_COST_GOLD = 1_000_000_000;
@@ -4830,8 +4834,10 @@ function getLegacyDefaultResearchDurationSeconds(index: number): bigint {
 }
 
 function getDefaultResearchDurationSeconds(researchId: string): bigint {
-  if (/^(?:manaSphereCap|manaProductionRate):\d+$/.test(researchId)) {
-    return MANA_RESEARCH_DURATION_SECONDS;
+  const manaResearchDurationSeconds = getManaResearchDurationSecondsForId(researchId);
+
+  if (manaResearchDurationSeconds !== null) {
+    return BigInt(manaResearchDurationSeconds);
   }
 
   if (researchId.startsWith('timer:')) {
@@ -4843,7 +4849,7 @@ function getDefaultResearchDurationSeconds(researchId: string): bigint {
     researchDefaultCostRubyById[researchId] !== undefined ||
     researchDefaultCostEmeraldById[researchId] !== undefined
   ) {
-    return QUICK_RESEARCH_DURATION_SECONDS;
+    return 0n;
   }
 
   if (seedResearchDurationSecondsById[researchId] !== undefined) {
@@ -8693,6 +8699,11 @@ function normalizeStoredResearchDurationSeconds(
   if (isLegacyItemTimerResearchDuration(researchId, durationSeconds)) {
     return fallback;
   }
+
+  if (isLegacyManaResearchDuration(researchId, durationSeconds)) {
+    return fallback;
+  }
+
   const legacyDefaultDurationSeconds = researchLegacyDefaultDurationSecondsById[researchId];
 
   if (
@@ -8942,7 +8953,26 @@ function normalizeGameConfigJson(
         ...defaultResearchDurationsSeconds,
         ...removeLegacySplitAutomationEntries(existingDurations),
       };
+      let replacedPremiumDuration = false;
       let replacedLegacyDuration = false;
+
+      for (const researchId of researchCurrencyCostIds) {
+        if (Number(nextDurations[researchId]) === 0) {
+          continue;
+        }
+
+        nextDurations[researchId] = 0;
+        replacedPremiumDuration = true;
+      }
+
+      for (const [researchId, currentDurationSeconds] of Object.entries(nextDurations)) {
+        if (!isLegacyManaResearchDuration(researchId, Number(currentDurationSeconds))) {
+          continue;
+        }
+
+        nextDurations[researchId] = defaultResearchDurationsSeconds[researchId];
+        replacedLegacyDuration = true;
+      }
 
       for (const [researchId, legacyDurationSeconds] of Object.entries(
         researchLegacyDefaultDurationSecondsById,
@@ -9008,6 +9038,7 @@ function normalizeGameConfigJson(
 
       if (
         missingDuration ||
+        replacedPremiumDuration ||
         replacedLegacyDuration ||
         JSON.stringify(existingDurations) !== JSON.stringify(nextDurations)
       ) {
@@ -9911,6 +9942,9 @@ function normalizePlayerGameplaySave(
     coin: normalizedCoin,
     gold: normalizedCoin,
     crystal: normalizeSaveCrystal(save.crystal, minimumCurrentCrystal),
+    amethyst: normalizeSaveAmethyst(
+      Object.hasOwn(save, 'amethyst') ? save.amethyst : previousSave.amethyst,
+    ),
     emerald: normalizeSaveEmerald(save.emerald),
     ruby: normalizeSaveRuby(save.ruby),
     logs: normalizeSaveLogs(save.logs),
@@ -10675,6 +10709,19 @@ function normalizeSaveCrystal(value: unknown, minimumCurrent = 0) {
       Math.max(current, minimumCurrent),
       0,
       MAX_PLAYER_SAVE_CURRENT_CRYSTAL,
+    ),
+  };
+}
+
+function normalizeSaveAmethyst(value: unknown) {
+  const amethyst = isRecord(value) ? value : {};
+
+  return {
+    current: clampSaveInteger(
+      amethyst.current,
+      0,
+      MAX_PLAYER_SAVE_CURRENT_AMETHYST,
+      0,
     ),
   };
 }

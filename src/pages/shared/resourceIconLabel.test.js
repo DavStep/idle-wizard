@@ -14,7 +14,7 @@ describe('resource icon labels', () => {
     );
 
     expect(element.textContent).toBe(
-      'cost 10 mana, 2 coin, 5 crystals, 1 emerald, 3 rubies, 4 seeds, and 6 herbs',
+      'cost 10 mana, 2 coin, 5 amber, 1 emerald, 3 rubies, 4 seeds, and 6 herbs',
     );
     expect(
       [...element.querySelectorAll('.style-resource-label__icon')].map(
@@ -34,7 +34,7 @@ describe('resource icon labels', () => {
       '2',
     );
     expect(element.querySelector('.style-resource-label--crystal')?.textContent).toBe(
-      '5 crystals',
+      '5 amber',
     );
     expect(element.querySelector('.style-resource-label--emerald')?.textContent).toBe(
       '1 emerald',

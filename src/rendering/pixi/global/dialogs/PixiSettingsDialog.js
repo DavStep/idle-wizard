@@ -1471,7 +1471,7 @@ function normalizeVisualOption({
     researched: isResearched !== false,
     enabled: option.enabled !== false,
     priceLabel: String(
-      option.priceLabel ?? (safeCost > 0 ? `${safeCost} crystal` : 'free'),
+      option.priceLabel ?? (safeCost > 0 ? `${safeCost} Amber` : 'free'),
     ),
     priceHidden: option.priceHidden === true,
   };

@@ -22,7 +22,7 @@ export default defineUiEditorIntegration({
   scenarios: [
     { fixture: { tab: 'traders' }, id: 'traders', label: 'Traders', mount: mount },
     { fixture: { tab: 'players' }, id: 'players', label: 'Players', mount: mount },
-    { fixture: { tab: 'crystals' }, id: 'crystals', label: 'Crystals', mount: mount },
+    { fixture: { tab: 'crystals' }, id: 'gems', label: 'Gems', mount: mount },
   ],
 });
 
@@ -42,5 +42,5 @@ async function mount(_context, fixture) {
 }
 
 function createModel(selectedTabId) {
-  return { shop: { selectedTabId, market: { name: 'Small Town Market', rank: 2 }, traders: { timerLabel: 'refresh 2m', stalls: [{ id: 'stall-1', slotNumber: 1, starLevel: 2, itemLabel: 'Sage Seed', quantityLabel: 'x4', priceLabel: '12 coin', priceResourceKey: 'coin', progress: 0.52, timerLabel: '18s' }, { id: 'stall-2', slotNumber: 2, itemLabel: 'Empty', progress: null }] }, players: { requests: { countLabel: '1/3', slots: [{ id: 'request-1', slotNumber: 1, itemLabel: 'Mint Herb x3', value: '42 coin' }] }, market: { countLabel: '1/3', slots: [{ id: 'listing-1', slotNumber: 1, itemLabel: 'Sage Seed x5', value: '24 coin' }] } }, crystals: { coinOffer: { rewardLabel: '500 coin', actionLabel: 'Collect', canCollect: true }, dailyCrystalOffer: { rewardLabel: '1 crystal', actionLabel: 'Free', canCollect: true }, offers: [{ id: 'crystal-1', crystalCount: 10, bundleLabel: '10 Crystals', priceLabel: '$0.99' }] } } };
+  return { shop: { selectedTabId, market: { name: 'Small Town Market', rank: 2 }, traders: { timerLabel: 'refresh 2m', stalls: [{ id: 'stall-1', slotNumber: 1, starLevel: 2, itemLabel: 'Sage Seed', quantityLabel: 'x4', priceLabel: '12 coin', priceResourceKey: 'coin', progress: 0.52, timerLabel: '18s' }, { id: 'stall-2', slotNumber: 2, itemLabel: 'Empty', progress: null }] }, players: { requests: { countLabel: '1/3', slots: [{ id: 'request-1', slotNumber: 1, itemLabel: 'Mint Herb x3', value: '42 coin' }] }, market: { countLabel: '1/3', slots: [{ id: 'listing-1', slotNumber: 1, itemLabel: 'Sage Seed x5', value: '24 coin' }] } }, crystals: { coinOffer: { rewardLabel: '500 coin', actionLabel: 'Collect', canCollect: true }, dailyCrystalOffer: { rewardLabel: '1 amber', actionLabel: 'Free', canCollect: true }, offers: [{ id: 'amber-1', resourceKey: 'crystal', amount: 1, bundleLabel: '1 Amber', priceLabel: '$4.99' }, { id: 'amethyst-100', resourceKey: 'amethyst', amount: 100, bundleLabel: '100 Amethyst', priceLabel: '$4.99' }] } } };
 }

@@ -55,15 +55,15 @@ describe('ResearchBalanceManager', () => {
     expect(manager.getDurationSeconds('exactStudy')).toBe(0);
   });
 
-  it('uses the default research time curve by currency and content type', () => {
+  it('keeps only regular coin research timed', () => {
     const manager = new ResearchBalanceManager();
 
-    expect(manager.getDurationSeconds('automation:autoPlantTile:1')).toBe(5);
-    expect(manager.getDurationSeconds(stallStaffingResearchIds.capacity(1))).toBe(5);
-    expect(manager.getDurationSeconds(automationReserveResearchIds.controls(1))).toBe(5);
-    expect(manager.getDurationSeconds(researchTimeResearchIds.reduction(1))).toBe(5);
-    expect(manager.getDurationSeconds(researchCostResearchIds.reduction(1))).toBe(5);
-    expect(manager.getDurationSeconds('emerald:plotPlanting:1:2')).toBe(5);
+    expect(manager.getDurationSeconds('automation:autoPlantTile:1')).toBe(0);
+    expect(manager.getDurationSeconds(stallStaffingResearchIds.capacity(1))).toBe(0);
+    expect(manager.getDurationSeconds(automationReserveResearchIds.controls(1))).toBe(0);
+    expect(manager.getDurationSeconds(researchTimeResearchIds.reduction(1))).toBe(0);
+    expect(manager.getDurationSeconds(researchCostResearchIds.reduction(1))).toBe(0);
+    expect(manager.getDurationSeconds('emerald:plotPlanting:1:2')).toBe(0);
     expect(manager.getDurationSeconds('unlockSeed:sageSeed')).toBe(5);
     expect(manager.getDurationSeconds('unlockSeed:mintSeed')).toBe(60);
     expect(manager.getDurationSeconds('unlockSeed:glowcapSeed')).toBe(300);
@@ -133,7 +133,22 @@ describe('ResearchBalanceManager', () => {
     });
   });
 
-  it('prices mana upgrades as short coin research with their gameplay effects', () => {
+  it('ignores runtime timer overrides for premium research', () => {
+    const manager = new ResearchBalanceManager();
+    const researchId = automationResearchIds.autoPlantTile(1);
+
+    manager.setRuntimeConfigs([
+      {
+        researchId,
+        durationSeconds: 600,
+        enabled: true,
+      },
+    ]);
+
+    expect(manager.getDurationSeconds(researchId)).toBe(0);
+  });
+
+  it('prices mana upgrades with progressive timers and their gameplay effects', () => {
     const manager = new ResearchBalanceManager();
 
     expect(manager.getCost(manaResearchIds.capacity(17))).toEqual({
@@ -144,8 +159,10 @@ describe('ResearchBalanceManager', () => {
       amount: 45_000,
       currency: 'coin',
     });
-    expect(manager.getDurationSeconds(manaResearchIds.capacity(17))).toBe(5);
-    expect(manager.getDurationSeconds(manaResearchIds.generation(17))).toBe(5);
+    expect(manager.getDurationSeconds(manaResearchIds.capacity(2))).toBe(5);
+    expect(manager.getDurationSeconds(manaResearchIds.capacity(17))).toBe(30 * 60);
+    expect(manager.getDurationSeconds(manaResearchIds.generation(44))).toBe(2 * 60 * 60);
+    expect(manager.getDurationSeconds(manaResearchIds.generation(100))).toBe(4 * 60 * 60);
     expect(manager.getResearchEffect(manaResearchIds.capacity(17))).toEqual({
       type: 'manaCap',
       amount: 50,
@@ -154,6 +171,21 @@ describe('ResearchBalanceManager', () => {
       type: 'manaPerSecond',
       amount: 0.25,
     });
+  });
+
+  it('replaces stale five-second mana runtime timers with rank progression', () => {
+    const manager = new ResearchBalanceManager();
+    const researchId = manaResearchIds.capacity(17);
+
+    manager.setRuntimeConfigs([
+      {
+        researchId,
+        durationSeconds: 5,
+        enabled: true,
+      },
+    ]);
+
+    expect(manager.getDurationSeconds(researchId)).toBe(30 * 60);
   });
 
   it('applies research cost reduction to coin research costs', () => {

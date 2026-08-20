@@ -191,8 +191,8 @@ function getCrystalRows(snapshot, levelAfter) {
   return [
     {
       label: 'bonus',
-      value: `+${formatNumber(amount)} crystal`,
-      notice: `+${formatNumber(amount)} crystal`,
+      value: `+${formatNumber(amount)} amber`,
+      notice: `+${formatNumber(amount)} amber`,
     },
   ];
 }

@@ -12,7 +12,7 @@ import {
 import {
   createManaResearchCostsCoin,
   getManaGenerationResearchIncrease,
-  manaResearchDurationSeconds,
+  getManaResearchDurationSecondsForId,
   manaResearchFirstPlayerLevel,
   manaResearchIds,
   manaResearchMaxPlayerLevel,
@@ -1533,7 +1533,7 @@ function createResearchDurations(researchCatalog = []) {
   for (const researchId of researchCatalog
     .map((research) => research.id)
     .filter((id) => /^(?:manaSphereCap|manaProductionRate):\d+$/.test(id))) {
-    durations.set(researchId, manaResearchDurationSeconds);
+    durations.set(researchId, getManaResearchDurationSecondsForId(researchId));
   }
 
   for (const research of researchCatalog.filter((entry) => entry.id.startsWith('timer:'))) {

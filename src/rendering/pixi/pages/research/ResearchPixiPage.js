@@ -56,7 +56,7 @@ const MAX_LOCKED_ROWS_PER_BOX = 1;
 export const RESEARCH_PAPER_INK = '#634934';
 export const RESEARCH_PROGRESS_INK = '#725737';
 export const RESEARCH_RANK_INK = '#ffeecf';
-const RESEARCH_TIMER_INK = '#d4d4d4';
+const RESEARCH_TIMER_INK = '#ffffff';
 const RESEARCH_LOCKED_OVERLAY_ALPHA = 0.3;
 const RESEARCH_BUTTON_SHINE_DURATION_MS = 220;
 export const RESEARCH_WIDGET_SHINE_DURATION_MS = 300;
@@ -89,7 +89,7 @@ const RESEARCH_TIMER_REVISION_FIELDS = new Set([
 export const RESEARCH_RANK_FONT =
   '"Lilita One", "Arial Black", Arial, sans-serif';
 const RESOURCE_WORD_MATCH_PATTERN =
-  /\b(?:crystals?|emeralds?|coin|herbs?|mana|rubies|ruby|seeds?)\b/i;
+  /\b(?:ambers?|amethysts?|crystals?|emeralds?|coin|herbs?|mana|rubies|ruby|seeds?)\b/i;
 const RESOURCE_AMOUNT_PREFIX_PATTERN =
   /([+-]?(?:(?:\d[\d,]*(?:\.\d+)?(?:[a-z])?(?:\s*-\s*\d[\d,]*(?:\.\d+)?(?:[a-z])?)?)|(?:\d[\d,]*(?:\/\d[\d,]*)+)|\?)(?:\s*\/\s*(?:(?:\d[\d,]*(?:\.\d+)?(?:[a-z])?)|\?))?\s+)$/i;
 const MANA_NON_RESOURCE_PHRASE_PATTERN = /^\s+(?:sphere|tonic)\b/i;
@@ -194,6 +194,17 @@ const RESEARCH_CARD_WIDTH =
   RETAINED_PAGE_GEOMETRY.width -
   RETAINED_PAGE_GEOMETRY.contentEdge * 2 -
   RESEARCH_CARD_OFFSET_X;
+const RESEARCH_ART_RIGHT_X = 13 + 52;
+const RESEARCH_VALUE_WIDTH = 281 / 3;
+const RESEARCH_ACTION_RIGHT = 30 / 3;
+const RESEARCH_COST_WIDTH = 72;
+const RESEARCH_COST_LEFT_X =
+  RESEARCH_CARD_WIDTH -
+  RESEARCH_ACTION_RIGHT -
+  (RESEARCH_VALUE_WIDTH - RESEARCH_COST_WIDTH) / 2 -
+  RESEARCH_COST_WIDTH;
+const RESEARCH_MIDDLE_CONTENT_CENTER_X =
+  (RESEARCH_ART_RIGHT_X + RESEARCH_COST_LEFT_X) / 2;
 
 export function getResearchWidgetBounceScale(progress) {
   if (!Number.isFinite(progress) || progress < 0 || progress > 1) {
@@ -297,23 +308,24 @@ export const RESEARCH_PIXI_GEOMETRY = Object.freeze({
   seedArtworkSize: 46,
   artExtraWidth: 22,
   artExtraHeight: 24,
+  timerReductionArtExtraScale: 1.69,
   nameX: 10,
   nameY: 0,
   nameMaxWidth: 225,
-  infoX: 252 / 3,
+  infoX: RESEARCH_MIDDLE_CONTENT_CENTER_X - 422 / 3 / 2,
   infoWidth: 422 / 3,
-  descriptionX: 74,
+  descriptionX: RESEARCH_MIDDLE_CONTENT_CENTER_X - 160 / 2,
   descriptionY: 24,
   descriptionWidth: 160,
   descriptionBottom: 7,
   descriptionOpticalOffsetY: -10,
-  valueWidth: 281 / 3,
-  actionRight: 30 / 3,
+  valueWidth: RESEARCH_VALUE_WIDTH,
+  actionRight: RESEARCH_ACTION_RIGHT,
   actionTop: 8,
   actionHeight: 64,
-  costWidth: 72,
+  costWidth: RESEARCH_COST_WIDTH,
   costHeight: 42,
-  progressBottom: 9,
+  progressBottom: 12,
   progressHeight: PIXI_UI_GEOMETRY.progressTotalHeight,
 });
 
@@ -330,7 +342,6 @@ export const RESEARCH_ROW_TEXT = Object.freeze({
   researchingLineHeight: 11,
   researchingTimerFontSize: 9,
   researchingTimerLineHeight: 10,
-  researchingTimerOffsetY: -2,
   buttonStrokeWidth: 3.5,
   costContentScale: 0.88,
 });
@@ -583,6 +594,13 @@ export class ResearchPixiPage extends BaseRetainedPixiPage {
         return (
           research.onBuy?.(research.id) ??
           this.currentActions?.buyResearch?.(research.id)
+        );
+      },
+      skip: (research) => {
+        this.hideLockTooltip();
+        return (
+          research.onSkip?.(research.id) ??
+          this.currentActions?.skipResearchTime?.(research.id)
         );
       },
       locked: (research, target) => {
@@ -1402,6 +1420,7 @@ export class ResearchRowWidget {
     this.valueButton.text = this.costButton.amountLabel.textObject;
     this.researchedButton = new PixiCostButton({
       assetManager,
+      inputRouter: this.page.inputRouter,
       research: true,
       tone: 'yellow',
       width: RESEARCH_PIXI_GEOMETRY.costWidth,
@@ -1435,7 +1454,6 @@ export class ResearchRowWidget {
     });
     this.researchingTimerLabel.visible = false;
     this.researchingTimerLabel.renderable = false;
-    this.researchedButton.visual.addChild(this.researchingTimerLabel);
     this.readonlyValue = new ResearchReadonlyValue({
       assetManager,
       label: 'research-row-readonly-value',
@@ -1450,6 +1468,7 @@ export class ResearchRowWidget {
       tone: 'yellow',
       usePlayerStyle: false,
     });
+    this.progress.root.addChild(this.researchingTimerLabel);
     this.lockedOverlay = new PixiNineSliceFrame({
       texture: Texture.EMPTY,
       sourceInsets: CARD_SOURCE_INSETS,
@@ -1580,14 +1599,13 @@ export class ResearchRowWidget {
         ),
       );
     this.researchedButton.setModel({
-      amountLabel: this.formatInProgressButtonLabel(research),
-      resource: 'none',
-      enabled: false,
-      action: null,
+      amountLabel: research.skip?.amountLabel ?? research.skipCostAmethyst ?? 1,
+      resource: 'amethyst',
+      state: research.skip?.enabled === true ? 'available' : 'unaffordable',
+      enabled: research.skip?.enabled === true,
+      action: () => this.skipResearch(research),
     });
     this.setResearchingTimer(inProgress ? remainingLabel : '');
-    this.researchedButton.eventMode = 'none';
-    this.researchedButton.cursor = 'default';
     this.readonlyValue.visible =
       !interactive && !researched && !inProgress && starLevel <= 0;
     this.readonlyValue.renderable = this.readonlyValue.visible;
@@ -1741,14 +1759,19 @@ export class ResearchRowWidget {
       this.artOverlay.rotation = 0;
     }
     if (this.artExtra.visible) {
+      const artExtraScale = this.usesTimerReductionArtwork
+        ? geometry.timerReductionArtExtraScale
+        : 1;
+      const artExtraWidth = geometry.artExtraWidth * artExtraScale;
+      const artExtraHeight = geometry.artExtraHeight * artExtraScale;
       this.artExtra.anchor.set(0.5);
       this.artExtra.position.set(
-        geometry.artX + geometry.artWidth - geometry.artExtraWidth / 2,
+        geometry.artX + geometry.artWidth - artExtraWidth / 2,
         geometry.artY + geometry.contentOffsetY + geometry.artHeight -
-          geometry.artExtraHeight / 2,
+          artExtraHeight / 2,
       );
-      this.artExtra.width = geometry.artExtraWidth;
-      this.artExtra.height = geometry.artExtraHeight;
+      this.artExtra.width = artExtraWidth;
+      this.artExtra.height = artExtraHeight;
     } else {
       this.artExtra.width = 0;
       this.artExtra.height = 0;
@@ -1809,6 +1832,7 @@ export class ResearchRowWidget {
       geometry.infoWidth,
       geometry.progressHeight,
     );
+    this.styleStatusButton();
     const infoWidth = geometry.cardWidth;
     this.labelHit.hitArea = new Rectangle(
       geometry.cardOffsetX,
@@ -1831,6 +1855,10 @@ export class ResearchRowWidget {
       this.startPurchaseEffect();
     }
     return result;
+  }
+
+  skipResearch(research) {
+    return this.actions?.skip?.(research);
   }
 
   layoutPurchaseEffect() {
@@ -2011,20 +2039,17 @@ export class ResearchRowWidget {
         width: RESEARCH_ROW_TEXT.buttonStrokeWidth,
       });
     this.researchingTimerLabel.position.set(
-      this.researchedButton.buttonWidth / 2,
-      this.researchedButton.buttonHeight * 0.68 +
-        RESEARCH_ROW_TEXT.researchingTimerOffsetY,
+      this.progress.width / 2,
+      this.progress.height / 2,
     );
     this.researchingTimerLabel.visible =
       inProgress && Boolean(this.researchingTimerLabel.text);
     this.researchingTimerLabel.renderable =
       this.researchingTimerLabel.visible;
-    if (inProgress) {
-      this.researchedButton.amountLabel.position.set(
-        this.researchedButton.buttonWidth / 2,
-        this.researchedButton.buttonHeight * 0.34,
-      );
-    }
+    this.researchedButton.amountLabel.position.set(
+      this.researchedButton.buttonWidth / 2,
+      this.researchedButton.buttonHeight / 2,
+    );
   }
 
   applyTheme(theme) {
@@ -2144,6 +2169,8 @@ export class ResearchRowWidget {
     this.artOverlay.visible = false;
     this.artOverlay.renderable = false;
     this.artOverlay.rotation = 0;
+    this.usesTimerReductionArtwork =
+      research?.artExtraKey === 'timerReduction';
     this.artExtra.texture = this.resolveTexture(research?.artExtraAssetId);
     this.artExtra.visible = this.artExtra.texture !== Texture.EMPTY;
     this.artExtra.renderable = this.artExtra.visible;
@@ -2376,6 +2403,8 @@ function lerp(start, end, progress) {
 
 function normalizeResearchResource(resource) {
   const normalized = String(resource ?? '').trim().toLowerCase();
+  if (normalized === 'amber' || normalized === 'ambers') return 'crystal';
+  if (normalized === 'amethysts') return 'amethyst';
   if (normalized === 'crystals') return 'crystal';
   if (normalized === 'emeralds') return 'emerald';
   if (normalized === 'rubies') return 'ruby';

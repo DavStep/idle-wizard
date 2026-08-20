@@ -5,6 +5,12 @@ upload script posts the section whose heading matches `package.json` `version`.
 Write these developer-to-player notes only in Idle Wizard terms. Do not mention
 other game names, source projects, ports, or implementation provenance.
 
+## 0.3.79
+
+- Added Amethyst, a new gem that can instantly finish active Research for one Amethyst per remaining minute.
+- Expanded Mana Capacity and Mana Generation studies from their quick starter timing into a smooth long-term curve, while making Amber, Ruby, and Emerald studies complete instantly.
+- Renamed Crystal to Amber throughout the player-facing game, expanded the Market's Gems tab with Amethyst bundles, and refined Research timers, utility studies, currency displays, rewards, and Trade Alliance browsing.
+
 ## 0.3.78
 
 - Improved startup updates so required downloads finish before account connection, while outdated app installs now show clear upgrade instructions instead of continuing with an incompatible version.

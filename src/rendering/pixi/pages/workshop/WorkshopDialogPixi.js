@@ -177,24 +177,23 @@ const WORLD_CHAT_TAG_COLORS = Object.freeze({
   brown: '#704b35',
   slate: '#596271',
 });
-const ALLIANCE_DIRECTORY_HEADER_HEIGHT = 30;
+const ALLIANCE_DIRECTORY_ROW_HEIGHT = 78;
+const ALLIANCE_DIRECTORY_BANNER_SIZE = 56;
+const ALLIANCE_DIRECTORY_LEADER_PROFILE_SIZE = 28;
+const ALLIANCE_DIRECTORY_INFO_TOP = 29;
+const ALLIANCE_DIRECTORY_INFO_LINE_GAP = 30;
+const ALLIANCE_DIRECTORY_LEADER_ROLE_GAP = 14;
+const ALLIANCE_DIRECTORY_BANNER_TOP = 7;
+const ALLIANCE_DIRECTORY_SECTION_INSET = 8;
+const ALLIANCE_DIRECTORY_PAPER_WIDTH =
+  PIXI_ROOT_RUN_GEOMETRY.dialog.innerBoardWidth + 16;
+const ALLIANCE_DIRECTORY_SECTION_GAP = 5;
 const ALLIANCE_MEMBER_ROW_HEIGHT = PIXI_ROOT_RUN_GEOMETRY.settings.rowPitch;
 const ALLIANCE_QUEST_ROW_HEIGHT = PIXI_ROOT_RUN_GEOMETRY.settings.rowPitch;
 const ALLIANCE_QUEST_SCROLL_BOTTOM_INSET =
   DIALOG_PAPER_BOTTOM_INSET + RETAINED_DIALOG_SCROLL_GEOMETRY.contentPaddingTop;
 const ALLIANCE_QUEST_ITEM_ICON_SIZE = 36;
 const ALLIANCE_MEMBER_AVATAR_SIZE = LEADERBOARD_AVATAR_SIZE;
-const ALLIANCE_MEMBER_VISIBLE_ROWS = 4.5;
-const ALLIANCE_MEMBER_VIEWPORT_HEIGHT =
-  ALLIANCE_MEMBER_ROW_HEIGHT * ALLIANCE_MEMBER_VISIBLE_ROWS;
-const ALLIANCE_DIRECTORY_ACTION_HEIGHT = 30;
-const ALLIANCE_DIRECTORY_EXPANDED_HEIGHT =
-  ALLIANCE_DIRECTORY_HEADER_HEIGHT +
-  18 +
-  ALLIANCE_MEMBER_VIEWPORT_HEIGHT +
-  8 +
-  ALLIANCE_DIRECTORY_ACTION_HEIGHT +
-  8;
 const OWNED_ALLIANCE_SECTION_GAP = PIXI_DIALOG_SPLIT_PAPER_GEOMETRY.sectionGap;
 const OWNED_ALLIANCE_SECTION_FRAME_TOP = PIXI_UI_GEOMETRY.dialogPadding;
 const OWNED_ALLIANCE_SECTION_CONTENT_TOP =
@@ -231,6 +230,7 @@ const PERSONAL_TASK_SECTION_ROW_GAP = 2;
 const RESOURCE_ICON_FRAMES = Object.freeze({
   coin: 'resource:coin',
   crystal: 'resource:crystal',
+  amethyst: 'resource:amethyst',
   emerald: 'resource:emerald',
   mana: 'resource:mana',
   ruby: 'resource:ruby',
@@ -975,7 +975,9 @@ export class WorkshopDialogPixi {
       this.allianceSettingsPane.bind(this.viewModel.settings);
       this.scroll.root.visible = !this.ownedAllianceLayout && !settingsVisible;
       this.scroll.root.renderable = !this.ownedAllianceLayout && !settingsVisible;
-      this.panel.setPaperVisible(!this.ownedAllianceLayout);
+      this.panel.setPaperVisible(
+        !this.ownedAllianceLayout && this.viewModel.directory !== true,
+      );
       this.copy.visible = !this.ownedAllianceLayout && Boolean(this.copy.text);
       this.copy.renderable = this.copy.visible;
       this.headerHeadline.renderable = !this.ownedAllianceLayout && hasHeader;
@@ -1102,30 +1104,34 @@ export class WorkshopDialogPixi {
         : this.isWorldEventDialog &&
               this.viewModel.rowWidget === 'worldEventQuest'
           ? WORLD_EVENT_SECTION_GAP
-          : this.isLeaderboardDialog ||
-              (this.isWorldEventDialog &&
-                (this.viewModel.rowWidget === 'leaderboard' ||
-                  this.viewModel.rowWidget === 'worldEventReward')) ||
-              (this.isAllianceDialog &&
-                this.viewModel.rowWidget === 'allianceQuest')
-            ? 0
-            : 4;
+          : this.isAllianceDialog && this.viewModel.directory
+            ? ALLIANCE_DIRECTORY_SECTION_GAP
+            : this.isLeaderboardDialog ||
+                (this.isWorldEventDialog &&
+                  (this.viewModel.rowWidget === 'leaderboard' ||
+                    this.viewModel.rowWidget === 'worldEventReward')) ||
+                (this.isAllianceDialog &&
+                  this.viewModel.rowWidget === 'allianceQuest')
+              ? 0
+              : 4;
     const rowWidth = this.isWorldChatDialog
       ? this.scroll.width - WORLD_CHAT_ROW_SCROLLBAR_GUTTER
       : this.isBagDialog
         ? this.bagRowWidth ?? WORKSHOP_DIALOG_CONTENT_WIDTH
-      : this.isWorldEventDialog &&
-          this.viewModel.rowWidget === 'worldEventQuest'
-        ? this.scroll.width
-        : this.isLeaderboardDialog ||
-            (this.isWorldEventDialog &&
-              (this.viewModel.rowWidget === 'leaderboard' ||
-                this.viewModel.rowWidget === 'worldEventReward'))
-          ? this.leaderboardRowWidth ?? WORKSHOP_DIALOG_CONTENT_WIDTH
-          : this.isAllianceDialog &&
-              this.viewModel.rowWidget === 'allianceQuest'
-            ? this.allianceQuestRowWidth || WORKSHOP_DIALOG_CONTENT_WIDTH
-            : WORKSHOP_DIALOG_CONTENT_WIDTH;
+        : this.isAllianceDialog && this.viewModel.directory
+          ? this.allianceDirectoryRowWidth ?? WORKSHOP_DIALOG_CONTENT_WIDTH
+          : this.isWorldEventDialog &&
+              this.viewModel.rowWidget === 'worldEventQuest'
+            ? this.scroll.width
+            : this.isLeaderboardDialog ||
+                (this.isWorldEventDialog &&
+                  (this.viewModel.rowWidget === 'leaderboard' ||
+                    this.viewModel.rowWidget === 'worldEventReward'))
+              ? this.leaderboardRowWidth ?? WORKSHOP_DIALOG_CONTENT_WIDTH
+              : this.isAllianceDialog &&
+                  this.viewModel.rowWidget === 'allianceQuest'
+                ? this.allianceQuestRowWidth || WORKSHOP_DIALOG_CONTENT_WIDTH
+                : WORKSHOP_DIALOG_CONTENT_WIDTH;
     const preferredHeights = widgets.map((widget) =>
       widget.getPreferredHeight(rowWidth),
     );
@@ -1737,6 +1743,8 @@ export class WorkshopDialogPixi {
     }
     const usesAllianceQuestRows =
       this.isAllianceDialog && this.viewModel.rowWidget === 'allianceQuest';
+    const usesAllianceDirectoryRows =
+      this.isAllianceDialog && this.viewModel.directory === true;
     if (!tabsInShellFooter && this.isWorldChatDialog && composerHeight > 0) {
       const paperBottom = height - 52;
       this.panel.paperFrame.setSize(
@@ -1784,6 +1792,23 @@ export class WorkshopDialogPixi {
     if (bagListLayout) {
       this.bagRowWidth = bagListLayout.rowWidth;
     }
+    const allianceDirectoryListLayout = usesAllianceDirectoryRows
+      ? {
+          x:
+            (WORKSHOP_DIALOG_CONTENT_WIDTH -
+              ALLIANCE_DIRECTORY_PAPER_WIDTH) /
+            2,
+          viewportWidth:
+            ALLIANCE_DIRECTORY_PAPER_WIDTH +
+            RETAINED_DIALOG_LIST_GEOMETRY.scrollbarViewportOutset,
+          rowWidth:
+            ALLIANCE_DIRECTORY_PAPER_WIDTH +
+            PIXI_ROOT_RUN_GEOMETRY.settings.rowGap,
+        }
+      : null;
+    if (allianceDirectoryListLayout) {
+      this.allianceDirectoryRowWidth = allianceDirectoryListLayout.rowWidth;
+    }
     const allianceQuestListLayout = usesAllianceQuestRows
       ? resolveRetainedDialogListLayout({
           bodyWidth: WORKSHOP_DIALOG_CONTENT_WIDTH,
@@ -1802,18 +1827,22 @@ export class WorkshopDialogPixi {
         ? WORLD_CHAT_CONTENT_INSET_X
         : bagListLayout
           ? 20 + bagListLayout.x
-        : usesAllianceQuestRows
-          ? 20 + allianceQuestListLayout.x
-          : 20,
+          : allianceDirectoryListLayout
+            ? 20 + allianceDirectoryListLayout.x
+            : usesAllianceQuestRows
+              ? 20 + allianceQuestListLayout.x
+              : 20,
       DIALOG_SCROLL_VIEWPORT_TOP +
         copyHeight +
         headerHeight +
         this.scrollViewportTopInset,
       usesAllianceQuestRows
         ? allianceQuestListLayout.viewportWidth
-        : bagListLayout
-          ? bagListLayout.viewportWidth
-        : this.scrollViewportWidth,
+        : allianceDirectoryListLayout
+          ? allianceDirectoryListLayout.viewportWidth
+          : bagListLayout
+            ? bagListLayout.viewportWidth
+            : this.scrollViewportWidth,
       height -
         DIALOG_SCROLL_VIEWPORT_TOP -
         (usesAllianceQuestRows
@@ -1826,7 +1855,12 @@ export class WorkshopDialogPixi {
         shellFooterPaperReduction -
         this.scrollViewportTopInset,
     );
-    if (this.isWorldChatDialog || bagListLayout || usesAllianceQuestRows) {
+    if (
+      this.isWorldChatDialog ||
+      bagListLayout ||
+      allianceDirectoryListLayout ||
+      usesAllianceQuestRows
+    ) {
       this.orderRows(this.rows.getWidgets());
     }
     this.tabsLayer.position.set(
@@ -4218,35 +4252,46 @@ export class AllianceDirectoryRow {
   constructor({ dialog }) {
     this.dialog = dialog;
     this.model = null;
-    this.expanded = false;
     this.width = WORKSHOP_DIALOG_CONTENT_WIDTH;
     this.targetIds = [];
-    this.memberWidgets = new Map();
     this.root = new Container({
       label: `${dialog.dialogId}-alliance-directory-row`,
     });
-    this.frame = new Graphics({
-      label: `${dialog.dialogId}-alliance-directory-frame`,
-    });
+    this.background = createDialogPaperSection(
+      dialog.panel.paperFrame.texture,
+      `${dialog.dialogId}-alliance-directory-paper`,
+    );
     this.summaryHit = new RetainedButton({
       assetManager: dialog.assetManager,
       buttonLabel: `${dialog.dialogId}-alliance-directory-summary`,
       inputRouter: dialog.inputRouter,
       variant: 'inline',
     });
-    this.tag = createText('', RETAINED_TEXT_STYLES.bold);
-    this.name = createText('', RETAINED_TEXT_STYLES.body);
-    this.total = createText('', RETAINED_TEXT_STYLES.body);
-    this.total.anchor.set(1, 0);
-    this.coin = new Sprite(Texture.EMPTY);
-    this.coin.anchor.set(0.5);
-    this.membersLabel = createText('members', RETAINED_TEXT_STYLES.border);
+    this.banner = new Sprite(Texture.EMPTY);
+    this.banner.label = `${this.root.label}:banner`;
+    this.banner.anchor.set(0.5);
+    this.tag = createText('', {
+      ...RETAINED_TEXT_STYLES.border,
+      fontWeight: '700',
+    });
+    this.name = createText('', RETAINED_TEXT_STYLES.bold);
+    this.leaderAvatarWidget = new PlayerProfileWidget({
+      assets: dialog.assetManager,
+      texture: Texture.EMPTY,
+      label: `${dialog.dialogId}-alliance-directory-leader-avatar`,
+    });
+    this.leaderName = createText('', RETAINED_TEXT_STYLES.border);
+    this.leaderRole = createText('Leader', RETAINED_TEXT_STYLES.border);
     this.memberCount = createText('', RETAINED_TEXT_STYLES.border);
     this.memberCount.anchor.set(1, 0);
-    this.memberViewport = new RetainedScrollArea({
+    this.totalSuffix = createText('total', RETAINED_TEXT_STYLES.border);
+    this.total = new PixiResourceLabel({
       assetManager: dialog.assetManager,
-      label: `${dialog.dialogId}-alliance-member-scroll`,
-      inputRouter: dialog.inputRouter,
+      resource: 'coin',
+      includeResourceName: false,
+      fontSize: PIXI_UI_GEOMETRY.bodyFontSize,
+      fontWeight: 'bold',
+      label: `${this.root.label}:total`,
     });
     this.action = new RetainedButton({
       assetManager: dialog.assetManager,
@@ -4254,23 +4299,19 @@ export class AllianceDirectoryRow {
       inputRouter: dialog.inputRouter,
       variant: 'green',
     });
-    this.details = new Container({
-      label: `${dialog.dialogId}-alliance-directory-details`,
-    });
-    this.details.addChild(
-      this.membersLabel,
-      this.memberCount,
-      this.memberViewport.root,
-      this.action.root,
-    );
     this.root.addChild(
-      this.frame,
-      this.summaryHit.root,
+      this.background,
+      this.banner,
       this.tag,
       this.name,
+      this.leaderAvatarWidget,
+      this.leaderName,
+      this.leaderRole,
+      this.memberCount,
       this.total,
-      this.coin,
-      this.details,
+      this.totalSuffix,
+      this.summaryHit.root,
+      this.action.root,
     );
   }
 
@@ -4278,11 +4319,12 @@ export class AllianceDirectoryRow {
     this.unregisterTargets();
     this.model = model ?? {};
     this.root.visible = true;
-    this.expanded = this.model.expanded === true;
     const tag = normalizeWorldChatTag(this.model.tag);
     setText(this.tag, tag ? `[${tag}]` : '');
     setText(this.name, this.model.name ?? 'Alliance');
-    setText(this.total, this.model.totalIncomeLabel ?? '0');
+    setText(this.leaderName, this.model.leaderName ?? 'Unknown');
+    setText(this.leaderRole, 'Leader');
+    setText(this.totalSuffix, 'total');
     setText(
       this.memberCount,
       `${Math.max(0, Number(this.model.memberCount) || 0)}/${Math.max(
@@ -4290,17 +4332,34 @@ export class AllianceDirectoryRow {
         Number(this.model.memberCapacity) || 50,
       )}`,
     );
-    this.coin.texture = resolveAtlasTexture(
-      this.dialog.assetManager,
-      'resource:coin',
-    );
-    this.coin.visible = this.coin.texture !== Texture.EMPTY;
+    this.leaderAvatarWidget
+      .setTexture(
+        resolveCharacterTexture(
+          this.dialog.assetManager,
+          this.model.leaderCharacter,
+        ),
+      )
+      .setBackgroundTint(getPlayerFrameTint(this.model.leaderFrame));
+    this.total.bind(this.model.id, {
+      amount: this.model.totalIncomeLabel ?? '0',
+      includeResourceName: false,
+      resource: 'coin',
+    });
+    this.banner.texture =
+      this.dialog.assetManager?.getTexture?.(
+        'source:assets/icons/icon-side-alliance-root-run.png',
+      ) ?? Texture.EMPTY;
+    this.banner.visible = this.banner.texture !== Texture.EMPTY;
+    this.banner.renderable = this.banner.visible;
     this.summaryHit.setModel({
       label: '',
       enabled: typeof this.model.onActivate === 'function',
       action: () => this.model.onActivate?.(this.model),
     });
     const actionModel = this.model.action ?? {};
+    const hasAction = Boolean(actionModel.label);
+    this.action.root.visible = hasAction;
+    this.action.root.renderable = hasAction;
     this.action.variant = actionModel.variant ?? 'green';
     this.action.control.setVariant(this.action.variant);
     this.action.setModel({
@@ -4308,46 +4367,8 @@ export class AllianceDirectoryRow {
       enabled: actionModel.enabled !== false,
       action: () => actionModel.onActivate?.(this.model),
     });
-    this.details.visible = this.expanded;
-    this.details.renderable = this.expanded;
-    this.reconcileMembers(this.model.members ?? []);
     this.registerTargets();
     this.applyTheme(this.dialog.contentTheme ?? this.dialog.theme);
-  }
-
-  reconcileMembers(members) {
-    const nextIds = new Set();
-    for (const [index, member] of members.entries()) {
-      const id = String(member.id ?? member.memberIdentity ?? index);
-      nextIds.add(id);
-      let widget = this.memberWidgets.get(id);
-      if (!widget) {
-        widget = new AllianceMemberRow({ dialog: this.dialog });
-        this.memberWidgets.set(id, widget);
-      }
-      widget.bind(member);
-    }
-
-    for (const [id, widget] of this.memberWidgets) {
-      if (!nextIds.has(id)) {
-        widget.destroy();
-        this.memberWidgets.delete(id);
-      }
-    }
-
-    this.memberViewport.content.removeChildren();
-    let y = 0;
-    for (const [index, member] of members.entries()) {
-      const id = String(member.id ?? member.memberIdentity ?? index);
-      const widget = this.memberWidgets.get(id);
-      if (!widget) {
-        continue;
-      }
-      this.memberViewport.content.addChild(widget.root);
-      widget.setBounds(0, y, 236, ALLIANCE_MEMBER_ROW_HEIGHT);
-      y += ALLIANCE_MEMBER_ROW_HEIGHT;
-    }
-    this.memberViewport.setContentHeight(y);
   }
 
   registerTargets() {
@@ -4365,12 +4386,11 @@ export class AllianceDirectoryRow {
         state: () => ({
           enabled: typeof this.model?.onActivate === 'function',
           interactive: typeof this.model?.onActivate === 'function',
-          expanded: this.expanded,
         }),
         activate: () => this.model?.onActivate?.(this.model) ?? false,
       });
     }
-    if (actionId && this.expanded) {
+    if (actionId) {
       this.targetIds.push(actionId);
       this.dialog.registerTarget({
         semanticId: actionId,
@@ -4378,61 +4398,77 @@ export class AllianceDirectoryRow {
         state: () => ({
           enabled: this.model?.action?.enabled !== false,
           interactive: typeof this.model?.action?.onActivate === 'function',
+          visible: this.action.root.visible,
         }),
         activate: () => this.model?.action?.onActivate?.(this.model) ?? false,
       });
     }
   }
 
-  setBounds(x, y, width, height) {
+  setBounds(x, y, width, height = ALLIANCE_DIRECTORY_ROW_HEIGHT) {
     this.root.position.set(x, y);
     this.width = width;
-    this.summaryHit.setBounds(0, 0, width, ALLIANCE_DIRECTORY_HEADER_HEIGHT);
-    this.tag.position.set(8, 7);
-    this.name.position.set(8 + (this.tag.text ? this.tag.width + 5 : 0), 7);
-    const coinSize = 14;
-    const coinRight = width - 7;
-    this.coin.position.set(
-      coinRight - coinSize / 2,
-      ALLIANCE_DIRECTORY_HEADER_HEIGHT / 2,
+    const rowGap = PIXI_ROOT_RUN_GEOMETRY.settings.rowGap;
+    const sectionWidth = Math.max(0, width - rowGap);
+    this.background.position.set(0, 0);
+    this.background.setSize(
+      sectionWidth,
+      height,
+      PIXI_ROOT_RUN_GEOMETRY.dialog.paperBorderInsets,
     );
-    this.coin.width = coinSize;
-    this.coin.height = coinSize;
-    this.total.position.set(
-      coinRight - (this.coin.visible ? coinSize + 3 : 0),
-      7,
+    this.summaryHit.setBounds(0, 0, sectionWidth, height);
+    const bannerSize = ALLIANCE_DIRECTORY_BANNER_SIZE;
+    this.banner.position.set(
+      ALLIANCE_DIRECTORY_SECTION_INSET + bannerSize / 2,
+      ALLIANCE_DIRECTORY_BANNER_TOP + bannerSize / 2,
     );
-    const nameWidth = Math.max(
-      1,
-      this.total.x - this.total.width - 6 - this.name.x,
+    this.banner.width = bannerSize;
+    this.banner.height = bannerSize;
+    const textX = ALLIANCE_DIRECTORY_SECTION_INSET + bannerSize + 7;
+    const actionWidth = 62;
+    const actionX = sectionWidth - 7 - actionWidth;
+    this.tag.position.set(textX, 8);
+    this.name.position.set(textX + (this.tag.text ? this.tag.width + 3 : 0), 7);
+    this.memberCount.position.set(sectionWidth - 10, 8);
+    fitLeaderboardText(
+      this.name,
+      Math.max(
+        1,
+        this.memberCount.x - this.memberCount.width - 6 - this.name.x,
+      ),
     );
-    this.name.scale.x =
-      this.name.width > nameWidth
-        ? Math.max(0.72, nameWidth / this.name.width)
-        : 1;
-    this.details.position.set(0, ALLIANCE_DIRECTORY_HEADER_HEIGHT + 2);
-    this.membersLabel.position.set(8, 1);
-    this.memberCount.position.set(width - 8, 1);
-    this.memberViewport.setBounds(
-      8,
-      18,
-      236,
-      this.expanded ? ALLIANCE_MEMBER_VIEWPORT_HEIGHT : 0,
+
+    const leaderY = ALLIANCE_DIRECTORY_INFO_TOP;
+    const totalY = leaderY + ALLIANCE_DIRECTORY_INFO_LINE_GAP;
+    const leaderAvatarX = textX;
+    const leaderAvatarScale =
+      ALLIANCE_DIRECTORY_LEADER_PROFILE_SIZE / PLAYER_PROFILE_SIZE;
+    this.leaderAvatarWidget.scale.set(leaderAvatarScale);
+    this.leaderAvatarWidget.position.set(leaderAvatarX, leaderY - 1);
+    this.leaderName.position.set(
+      leaderAvatarX + ALLIANCE_DIRECTORY_LEADER_PROFILE_SIZE + 4,
+      leaderY,
     );
-    this.action.setBounds(
-      8,
-      18 + ALLIANCE_MEMBER_VIEWPORT_HEIGHT + 6,
-      width - 16,
-      ALLIANCE_DIRECTORY_ACTION_HEIGHT,
+    this.leaderRole.position.set(
+      this.leaderName.x,
+      leaderY + ALLIANCE_DIRECTORY_LEADER_ROLE_GAP,
     );
-    this.root.hitArea = new Rectangle(0, 0, width, height);
-    this.redrawFrame();
+    fitLeaderboardText(
+      this.leaderName,
+      Math.max(1, actionX - 5 - this.leaderName.x),
+    );
+    this.total.position.set(textX, totalY);
+    this.totalSuffix.position.set(textX + this.total.measuredWidth + 3, totalY);
+    if (this.action.root.visible) {
+      const metadataCenterY =
+        (this.leaderName.y + this.total.y + this.total.fontSize) / 2;
+      this.action.setBounds(actionX, metadataCenterY - 14, actionWidth, 28);
+    }
+    this.root.hitArea = new Rectangle(0, 0, sectionWidth, height);
   }
 
   getPreferredHeight() {
-    return this.expanded
-      ? ALLIANCE_DIRECTORY_EXPANDED_HEIGHT
-      : ALLIANCE_DIRECTORY_HEADER_HEIGHT;
+    return ALLIANCE_DIRECTORY_ROW_HEIGHT;
   }
 
   applyTheme(theme) {
@@ -4440,69 +4476,44 @@ export class AllianceDirectoryRow {
     this.theme = resolvedTheme;
     applyTextTheme(this.tag, resolvedTheme, {
       ...RETAINED_TEXT_STYLES.bold,
-      fontSize: 12,
       fill:
         WORLD_CHAT_TAG_COLORS[
           normalizeWorldChatTagColor(this.model?.tagColor)
         ] ?? WORLD_CHAT_TAG_COLORS.ink,
     });
     applyTextTheme(this.name, resolvedTheme, {
-      ...RETAINED_TEXT_STYLES.body,
-      fontWeight: '700',
+      ...RETAINED_TEXT_STYLES.bold,
       fill: resolvedTheme.text,
     });
-    applyTextTheme(this.total, resolvedTheme, {
-      ...RETAINED_TEXT_STYLES.body,
-      align: 'right',
-      fill: resolvedTheme.resourceColors?.coin ?? resolvedTheme.text,
+    applyTextTheme(this.leaderName, resolvedTheme, {
+      ...RETAINED_TEXT_STYLES.border,
+      fill: resolvedTheme.text,
     });
-    applyTextTheme(this.membersLabel, resolvedTheme, {
+    applyTextTheme(this.leaderRole, resolvedTheme, {
       ...RETAINED_TEXT_STYLES.border,
       fill: resolvedTheme.muted,
     });
     applyTextTheme(this.memberCount, resolvedTheme, {
       ...RETAINED_TEXT_STYLES.border,
-      align: 'right',
       fill: resolvedTheme.muted,
     });
+    applyTextTheme(this.totalSuffix, resolvedTheme, {
+      ...RETAINED_TEXT_STYLES.border,
+      fill: resolvedTheme.muted,
+    });
+    this.total.applyTheme(resolvedTheme);
     this.summaryHit.applyTheme(resolvedTheme);
     this.action.applyTheme(resolvedTheme);
-    for (const widget of this.memberWidgets.values()) {
-      widget.applyTheme(resolvedTheme);
-    }
-    this.redrawFrame();
-  }
-
-  redrawFrame() {
-    if (!this.theme) {
-      return;
-    }
-    this.frame
-      .clear()
-      .roundRect(0, 0, this.width, this.getPreferredHeight(), 5)
-      .fill({
-        color: this.theme.surface,
-        alpha: this.expanded ? 0.82 : 0.38,
-      })
-      .stroke({
-        color: this.expanded
-          ? (this.theme.strokeStrong ?? this.theme.stroke)
-          : this.theme.stroke,
-        width: this.expanded ? 2 : 1,
-      });
   }
 
   reset() {
     this.unregisterTargets();
-    for (const widget of this.memberWidgets.values()) {
-      widget.destroy();
-    }
-    this.memberWidgets.clear();
-    this.memberViewport.content.removeChildren();
-    this.memberViewport.setContentHeight(0);
     this.model = null;
-    this.expanded = false;
     this.root.visible = false;
+    this.banner.texture = Texture.EMPTY;
+    this.leaderAvatarWidget
+      .setTexture(Texture.EMPTY)
+      .setBackgroundTint(0xffffff);
     this.summaryHit.setModel({ label: '', enabled: false });
     this.action.setModel({ label: '', enabled: false });
   }
@@ -4516,13 +4527,8 @@ export class AllianceDirectoryRow {
 
   destroy() {
     this.unregisterTargets();
-    for (const widget of this.memberWidgets.values()) {
-      widget.destroy();
-    }
-    this.memberWidgets.clear();
     this.summaryHit.destroy();
     this.action.destroy();
-    this.memberViewport.destroy();
     this.root.destroy({ children: true });
   }
 }

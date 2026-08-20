@@ -50,9 +50,9 @@ experience_type: gameplay-economy
 - Research prices come from SpacetimeDB `research_config`/`game_config.research`; seed unlock research gates summon drops, and recipe unlock research gates known potion brewing.
 - Garden bulk controls are regular coin studies: `garden:plantAll` at level 5 for 1,000 coin, followed by `garden:harvestAll` at level 10 for 10,000 coin.
 - Live regular-coin research prices are overridden by `research_config`; prod price changes must update both `game_config.research` and matching `research_config` rows.
-- Research completion time comes from `research_config.durationSeconds`; client `game_config.research.researchDurationsSeconds` is the bootstrap fallback.
-- Research timers are capped at `4 hours`; premium-currency research is intentionally quick.
-- Emerald research time reduction applies only when starting future research; it does not rewrite active timers.
+- Regular research completion time comes from `research_config.durationSeconds`; client `game_config.research.researchDurationsSeconds` is the bootstrap fallback.
+- Research timers are capped at `4 hours`; crystal, ruby automation, and emerald advanced research are always instant in both client balance rules and server `game_config.research` normalization.
+- Emerald research time reduction applies only when starting future regular research; it does not rewrite active timers.
 - Crystal plot/cauldron level-up prices are upgrade-rank based, not slot based: first level-up costs 2 crystal, second costs 4, for any plot/cauldron.
 - Mana Sphere research has one capacity and one generation rank per player level from 2 through 100. Capacity always adds `50`; generation preserves the former curve (`+1/sec` through level 5, `+0.5/sec` through 10, then `+0.25/sec`). Level 17 costs are `30k` capacity and `45k` generation, and later ranks rise toward `700m`/`1b` at level 100.
 - Seed/herb unlock research and recipe unlock research are catalog-ordered; each row requires the previous row before it can be bought.
@@ -61,12 +61,13 @@ experience_type: gameplay-economy
 - `summonSeedsX2` through `summonSeedsX5` use the highest completed multiplier; summon cost and rolled seed count both scale from 10 mana.
 - Initial local gameplay defaults: mana cap `50`, mana generation `1/second`, seed summon cost `10`, and configured herb growth ranges from `12s` to `962s` across the 24-herb catalog.
 - Every herb and potion timer-mastery series has 19 ranks. The reduction model therefore uses `185%` as its starting scale and reaches `90 / 185` of the configured production timer at full mastery.
-- Crystal is the hard currency; it appears in the top panel only where usable, player levels grant `playerLevel.crystal.perLevel` starting at level 1, and plot/cauldron multiplier research spends it.
+- Amber is the player-facing hard currency; retain internal/save key `crystal` with no balance migration. It is the contextual fourth top-HUD currency, player levels grant `playerLevel.crystal.perLevel` starting at level 1, and plot/cauldron multiplier research spends it.
+- Amethyst is a separate persistent currency starting at 0 and is always one of the three primary top-HUD currencies. Research skips cost `ceil(remainingSeconds / 60)` Amethyst and complete through the normal research-completion path.
 - Ruby is the prestige currency; it appears in the top panel only where usable, and automation research spends it.
 - Prestige ruby is derived from completed prestige milestones minus committed ruby automation research costs; save prestige milestone data and do not treat raw ruby as permanent across prestige resets.
 - Prestige resets run data but preserves current emerald currency; advanced emerald research remains run-scoped unless explicitly made permanent.
-- Crystal shop offers live as the third tab inside Market; rows show a two-hour coin offer, a daily free `1` crystal offer, and paid crystal bundles with no `each` or note columns.
-- Crystal shop price controls open a support-unavailable popup; do not add payment or crystal grant logic until transactions are requested.
+- The internal `crystals` Market tab is player-facing as Gems; rows show a two-hour coin offer, a daily free `1` Amber offer, paid Amber bundles, and matching-price Amethyst bundles at 100× quantity.
+- Paid Amber and Amethyst price controls open a support-unavailable popup; do not add payment or currency grant logic until transactions are requested.
 - Future resource info or shortfall dialogs should be catalog-backed with source/use rows and explicit goto ids; unknown resource ids should fail loudly, not fall back to generic text.
 - Early task levels must not require items gated far beyond the current research tier; use larger quantities of near-tier seeds, herbs, and potions instead.
 - Task persistence stores progress rows for all configured task ids, even on level 1; the visible task list must come from the current-level snapshot, not the raw save array.
@@ -108,8 +109,8 @@ experience_type: gameplay-economy
 - Player market server listings own market quantity, while local gameplay owns inventory and coin changes after reducer success.
 - Player market listing prices should use only global sanity caps and trade-total limits; do not cap by item base price multiplier, because cheap seeds need arbitrary player-set prices.
 - Player market publishing depends on `ENABLE_PLAYER_SHOP_EXCHANGE`; when false, server reducers throw and the UI shows `listing failed`.
-- Market page uses visible `traders` / `players` / `crystals` tabs; legacy internal NPC tab id can remain `npm`.
-- Crystal tab coin offer grants current level * 20 coin only on manual collect, then starts a 2h cooldown; offline time can clear cooldown but must not auto-claim coin; ready state owns Market/crystals notification dots.
+- Market page uses visible Traders / Players / Gems labels while retaining internal `traders` / `players` / `crystals` ids; legacy internal NPC tab id can remain `npm`.
+- Gems-tab coin offer grants current level * 20 coin only on manual collect, then starts a 2h cooldown; offline time can clear cooldown but must not auto-claim coin; ready state owns Market/crystals notification dots.
 - Player market requests publish to backend request rows for public `buying` visibility; fulfillment is still not a server trade without escrow/delivery semantics.
 - Player market request item pickers should source catalog/inventory snapshots, not NPC price or sell rows.
 - NPC stalls and player listing/request slots equal active market rank; keep inaccessible legacy slot data saved but inactive.

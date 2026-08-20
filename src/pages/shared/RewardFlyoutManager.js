@@ -1074,7 +1074,7 @@ export class RewardFlyoutManager {
 
     if (event.type === 'crystal_collected') {
       const crystal = Math.max(0, Math.floor(Number(event.crystal) || 0));
-      return `collected ${crystal} ${crystal === 1 ? 'crystal' : 'crystals'}`;
+      return `collected ${crystal} amber`;
     }
 
     if (event.type === 'personal_task_reward_claimed') {
@@ -1122,7 +1122,7 @@ export class RewardFlyoutManager {
     }
 
     if (crystal > 0) {
-      parts.push(`+${crystal} crystal`);
+      parts.push(`+${crystal} amber`);
     }
 
     return parts.join(', ') || 'reward claimed';

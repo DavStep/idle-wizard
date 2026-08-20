@@ -11,7 +11,8 @@ const ICON_DIRECTORY = path.resolve(
 const CURRENCY_ICON_FILES = [
   'icon-mana-drop.png',
   'icon-coin.png',
-  'icon-crystal.png',
+  'icon-amber.png',
+  'icon-amethyst.png',
   'icon-ruby.png',
   'icon-emerald.png',
 ];
@@ -40,9 +41,9 @@ describe('currency icon assets', () => {
     expect(partialAlphaPixels).toBeGreaterThan(200);
   });
 
-  it('keeps the crystal tall and optically full inside its canvas', () => {
+  it('keeps the amethyst tall and optically full inside its canvas', () => {
     const image = PNG.sync.read(
-      fs.readFileSync(path.join(ICON_DIRECTORY, 'icon-crystal.png')),
+      fs.readFileSync(path.join(ICON_DIRECTORY, 'icon-amethyst.png')),
     );
     let minX = image.width;
     let minY = image.height;

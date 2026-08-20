@@ -5,6 +5,7 @@ import { ResearchProcessManager } from './managers/ResearchProcessManager.js';
 import { ResearchPurchaseManager } from './managers/ResearchPurchaseManager.js';
 import { ResearchSnapshotManager } from './managers/ResearchSnapshotManager.js';
 import { ResearchStateEntityManager } from './managers/ResearchStateEntityManager.js';
+import { ResearchTimeSkipManager } from './managers/ResearchTimeSkipManager.js';
 import {
   advancedResearchIds,
   advancedResearchMaxLevel,
@@ -51,9 +52,10 @@ import {
 
 export class ResearchFacade {
   static explain =
-    'Research lets the wizard spend coin, crystal, ruby, or emerald on studies that unlock seeds, recipes, automation, and speed upgrades.';
+    'Research lets the wizard spend coin, Amber, ruby, or emerald on studies, while Amethyst can finish an active timer early.';
 
   constructor({
+    amethystFacade,
     crystalFacade,
     emeraldFacade,
     coinFacade,
@@ -64,6 +66,12 @@ export class ResearchFacade {
     prestigeFacade,
     rubyFacade,
   }) {
+    const resolvedAmethystFacade = amethystFacade ?? {
+      add: () => {},
+      canSpend: () => false,
+      getSnapshot: () => ({ current: 0 }),
+      spend: () => false,
+    };
     this.researchBalanceManager = new ResearchBalanceManager();
     this.researchDefinitionManager = new ResearchDefinitionManager({
       itemsFacade,
@@ -97,7 +105,13 @@ export class ResearchFacade {
       researchManaEffectManager: this.researchManaEffectManager,
       researchStateEntityManager: this.researchStateEntityManager,
     });
+    this.researchTimeSkipManager = new ResearchTimeSkipManager({
+      amethystFacade: resolvedAmethystFacade,
+      researchProcessManager: this.researchProcessManager,
+      researchStateEntityManager: this.researchStateEntityManager,
+    });
     this.researchSnapshotManager = new ResearchSnapshotManager({
+      amethystFacade: resolvedAmethystFacade,
       crystalFacade,
       emeraldFacade,
       coinFacade,
@@ -106,6 +120,7 @@ export class ResearchFacade {
       researchBalanceManager: this.researchBalanceManager,
       researchDefinitionManager: this.researchDefinitionManager,
       researchStateEntityManager: this.researchStateEntityManager,
+      researchTimeSkipManager: this.researchTimeSkipManager,
     });
     this.initialized = false;
   }
@@ -141,6 +156,10 @@ export class ResearchFacade {
 
   buyResearch(researchId) {
     return this.researchPurchaseManager.buyResearch(researchId);
+  }
+
+  skipResearchTime(researchId) {
+    return this.researchTimeSkipManager.skip(researchId);
   }
 
   hasCompletedResearch(researchId) {
@@ -556,12 +575,23 @@ export class ResearchFacade {
     }
 
     if (Array.isArray(snapshot.inProgress)) {
+      const migratedResearches = snapshot.inProgress.map((research) => ({
+        ...research,
+        researchId: migrateLegacyResearchId(research?.researchId),
+      }));
+
       this.researchStateEntityManager.setInProgressResearches(
-        snapshot.inProgress.map((research) => ({
-          ...research,
-          researchId: migrateLegacyResearchId(research?.researchId),
-        })),
+        migratedResearches.filter(
+          (research) =>
+            !this.researchBalanceManager.isInstantResearch(research.researchId),
+        ),
       );
+
+      for (const research of migratedResearches) {
+        if (this.researchBalanceManager.isInstantResearch(research.researchId)) {
+          this.researchStateEntityManager.complete(research.researchId);
+        }
+      }
     }
 
     this.researchStateEntityManager.setCrystalCostsByResearchId(snapshot.crystalCostById);

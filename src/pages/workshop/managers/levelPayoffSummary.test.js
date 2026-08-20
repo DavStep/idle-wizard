@@ -136,8 +136,8 @@ describe('levelPayoffSummary', () => {
       },
       {
         label: 'bonus',
-        value: '+1 crystal',
-        notice: '+1 crystal',
+        value: '+1 amber',
+        notice: '+1 amber',
       },
     ]);
   });
@@ -157,8 +157,8 @@ describe('levelPayoffSummary', () => {
       },
       {
         label: 'bonus',
-        value: '+1 crystal',
-        notice: '+1 crystal',
+        value: '+1 amber',
+        notice: '+1 amber',
       },
     ]);
   });
@@ -182,8 +182,8 @@ describe('levelPayoffSummary', () => {
       },
       {
         label: 'bonus',
-        value: '+1 crystal',
-        notice: '+1 crystal',
+        value: '+1 amber',
+        notice: '+1 amber',
       },
     ]);
   });
@@ -202,8 +202,8 @@ describe('levelPayoffSummary', () => {
       },
       {
         label: 'bonus',
-        value: '+1 crystal',
-        notice: '+1 crystal',
+        value: '+1 amber',
+        notice: '+1 amber',
       },
     ]);
   });

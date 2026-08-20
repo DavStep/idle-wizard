@@ -12,7 +12,7 @@ import { isRewardEventForPage } from '../shared/rewardEventPage.js';
 
 export class ShopPageFacade {
   static explain =
-    'Shows the market room, where players sell to trader demand, trade with other players, and see crystal prices.';
+    'Shows the market room, where players sell to trader demand, trade with other players, and see Amber and Amethyst prices.';
 
   constructor({
     gameplayFacade,

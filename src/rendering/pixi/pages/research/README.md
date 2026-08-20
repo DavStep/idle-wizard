@@ -5,12 +5,12 @@ research view model; research costs, prerequisites, lock reasons, ordering, and
 completion rules remain outside rendering.
 
 Expected view-model fields are `tabs`, `selectedTabId`, and decorated
-`boxes[].researches[]`. Actions are supplied as `selectTab`, `buyResearch`, and
-`showLockedReason`.
+`boxes[].researches[]`. Actions are supplied as `selectTab`, `buyResearch`,
+`skipResearchTime`, and `showLockedReason`.
 
 Category title plaques use the selected tab as their visual variant: Regular
 is yellow, Automation is red, Advanced is emerald green, and the `emerald`
-Crystal Research tab is purple. The visible category title remains the primary
+Amber Research tab is purple. The visible category title remains the primary
 identifier. The shared plaque renders at `75%` of its authored nine-slice
 geometry in Research and every cross-room consumer.
 
@@ -25,7 +25,9 @@ Rows and boxes are keyed and pooled. Research labels are passive; the cost
 button owns available purchases. Selecting a locked row keeps the requirement
 off the cost button and opens the retained theme tooltip instead.
 Completed rows replace the action button with the shared checkmark centered in
-the same fixed status slot. Active timers keep the yellow `Researching` button.
+the same fixed status slot. Active timers reuse the yellow cost control as an
+Amethyst skip action. The displayed cost is `ceil(remainingSeconds / 60)` and
+the white outlined countdown stays centered over the yellow progress rail.
 
 Item-unlock rows consume `itemKind` and `itemKey`: seeds render the shared
 seed-pack plus matching herb mark, and potion recipes render the exact potion

@@ -26,6 +26,7 @@ const LEVEL_REWARD_REVEAL_DELAY_MS = 1180;
 const RESOURCE_ICON_FRAMES = Object.freeze({
   coin: 'resource:coin',
   crystal: 'resource:crystal',
+  amethyst: 'resource:amethyst',
   emerald: 'resource:emerald',
   mana: 'resource:mana',
   research: 'resource:research',
@@ -424,8 +425,12 @@ export class PageAnnouncementManager {
   inferResearchCurrency(research = {}) {
     const value = String(research.value ?? research.effect ?? '').toLowerCase();
 
-    if (value.includes('crystal')) {
+    if (value.includes('amber') || value.includes('crystal')) {
       return 'crystal';
+    }
+
+    if (value.includes('amethyst')) {
+      return 'amethyst';
     }
 
     if (value.includes('ruby')) {

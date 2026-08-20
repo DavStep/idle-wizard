@@ -112,10 +112,14 @@ export class TopPanelViewManager {
 
     const identityRow = document.createElement('div');
     identityRow.className = 'room-top-panel__identity-row';
-    const contextCurrency = this.createResource('crystal', '0 crystal');
+    const contextCurrency = this.createResource('crystal', '0 amber');
     const rightStatus = document.createElement('div');
     rightStatus.className = 'room-top-panel__right-status';
-    rightStatus.append(this.createResource('coin', '0 coin'), contextCurrency);
+    rightStatus.append(
+      this.createResource('coin', '0 coin'),
+      this.createResource('amethyst', '0 amethyst'),
+      contextCurrency,
+    );
     identityRow.append(this.refs.usernameButton, rightStatus);
 
     this.refs.resources = document.createElement('div');
@@ -192,6 +196,10 @@ export class TopPanelViewManager {
 
     if (label === 'coin') {
       this.refs.coinValue = val;
+    }
+
+    if (label === 'amethyst') {
+      this.refs.amethystValue = val;
     }
 
     if (label === 'crystal') {

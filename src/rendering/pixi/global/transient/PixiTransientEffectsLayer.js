@@ -70,6 +70,7 @@ const SPEND_BURST = Object.freeze({
 const SPEND_RESOURCE_FRAMES = Object.freeze({
   coin: 'resource:coin',
   crystal: 'resource:crystal',
+  amethyst: 'resource:amethyst',
   emerald: 'resource:emerald',
   herb: 'herb:sageHerb',
   mana: 'resource:mana',
@@ -871,7 +872,7 @@ export function formatRewardEventMessage(event) {
       0,
       Math.floor(Number(event.crystal) || 0),
     );
-    return `collected ${crystal} ${crystal === 1 ? 'crystal' : 'crystals'}`;
+    return `collected ${crystal} amber`;
   }
   if (event.type === 'personal_task_reward_claimed') {
     const coin = Math.max(0, Math.floor(Number(event.coin) || 0));
@@ -884,7 +885,7 @@ export function formatRewardEventMessage(event) {
       parts.push(`+${formatCoinPriceText(coin)}`);
     }
     if (crystal > 0) {
-      parts.push(`+${crystal} crystal`);
+      parts.push(`+${crystal} amber`);
     }
     return parts.join(', ') || 'reward claimed';
   }

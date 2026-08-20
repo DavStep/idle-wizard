@@ -162,6 +162,7 @@ export const PIXI_ROOT_RUN_ASSETS = Object.freeze({
   topHudCurrency: 'source:assets/ui/white-squircle/white-squircle-20.9.png',
   topHudSettings: 'source:assets/ui/white-squircle/white-squircle-40.9.png',
   topHudLevelPanel: 'source:assets/ui/white-squircle/white-squircle-30.9.png',
+  topHudLevelStar: 'source:assets/ui/root-run-level-star.png',
   topHudLevelTrack: 'source:assets/ui/root-run-top-hud/level-progress-track.9.png',
   topHudLevelFill:
     'source:assets/ui/root-run-top-hud/level-progress-fill-mask.9.png',
@@ -472,7 +473,8 @@ const THEME_TOKENS = Object.freeze({
     resourceColors: Object.freeze({
       ...SHARED_RESOURCE_COLORS,
       coin: '#e6ca53',
-      crystal: '#cdaef2',
+      crystal: '#e6a83d',
+      amethyst: '#cdaef2',
       emerald: '#7ccd8e',
       ruby: '#ff9189',
       seed: '#e2ae88',
@@ -521,7 +523,8 @@ const THEME_TOKENS = Object.freeze({
     resourceColors: Object.freeze({
       ...SHARED_RESOURCE_COLORS,
       coin: '#f2d36c',
-      crystal: '#d8b9f7',
+      crystal: '#f2ba52',
+      amethyst: '#d8b9f7',
       emerald: '#84d394',
       ruby: '#ff9b92',
       seed: '#efbb91',

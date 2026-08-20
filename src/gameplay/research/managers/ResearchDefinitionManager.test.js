@@ -66,39 +66,82 @@ describe('ResearchDefinitionManager', () => {
     ]);
   });
 
-  it('offers level-gated sequential mana capacity and generation research', () => {
+  it('combines mana, summon, and garden researches under utility unlocks', () => {
     const { manager } = createManager();
-    const manaBox = manager
+    const utilityBox = manager
       .getRegularResearchBoxes()
-      .find((box) => box.id === 'manaSphere');
+      .find((box) => box.id === 'utilityUnlocks');
 
-    expect(manaBox?.researches).toHaveLength(198);
-    expect(manaBox?.researches[0]).toMatchObject({
+    expect(utilityBox?.label).toBe('utility unlocks');
+    expect(utilityBox?.researches).toHaveLength(204);
+    expect(utilityBox?.researches[0]).toMatchObject({
       id: manaResearchIds.capacity(2),
       requiredPlayerLevel: 2,
       requiredResearchIds: [],
       value: '+50 mana',
       description: 'increases mana capacity from 50 to 100.',
     });
-    expect(manaBox?.researches[1]).toMatchObject({
+    expect(utilityBox?.researches[1]).toMatchObject({
       id: manaResearchIds.capacity(3),
       requiredPlayerLevel: 3,
       requiredResearchIds: [manaResearchIds.capacity(2)],
     });
-    expect(manaBox?.researches[99]).toMatchObject({
+    expect(utilityBox?.researches[99]).toMatchObject({
       id: manaResearchIds.generation(2),
       requiredPlayerLevel: 2,
       requiredResearchIds: [],
       value: '+1/sec',
       description: 'increases mana generation from 1/sec to 2/sec.',
     });
-    expect(manaBox?.researches[114]).toMatchObject({
+    expect(utilityBox?.researches[114]).toMatchObject({
       id: manaResearchIds.generation(17),
       requiredPlayerLevel: 17,
       requiredResearchIds: [manaResearchIds.generation(16)],
       value: '+0.25/sec',
       description: 'increases mana generation from 9/sec to 9.25/sec.',
     });
+    expect(utilityBox?.researches.slice(198, 202)).toMatchObject([
+      {
+        id: 'summonSeedsX2',
+        displayName: 'summon seed',
+        value: 'x2 seeds',
+        starLevel: 1,
+        starMaxLevel: 4,
+        seriesId: 'summonSeeds',
+        requiredResearchIds: [],
+      },
+      {
+        id: 'summonSeedsX3',
+        displayName: 'summon seed',
+        value: 'x3 seeds',
+        starLevel: 2,
+        starMaxLevel: 4,
+        seriesId: 'summonSeeds',
+        requiredResearchIds: ['summonSeedsX2'],
+      },
+      {
+        id: 'summonSeedsX4',
+        displayName: 'summon seed',
+        value: 'x4 seeds',
+        starLevel: 3,
+        starMaxLevel: 4,
+        seriesId: 'summonSeeds',
+        requiredResearchIds: ['summonSeedsX3'],
+      },
+      {
+        id: 'summonSeedsX5',
+        displayName: 'summon seed',
+        value: 'x5 seeds',
+        starLevel: 4,
+        starMaxLevel: 4,
+        seriesId: 'summonSeeds',
+        requiredResearchIds: ['summonSeedsX4'],
+      },
+    ]);
+    expect(utilityBox?.researches.slice(202).map((research) => research.id)).toEqual([
+      gardenBulkResearchIds.plantAll,
+      gardenBulkResearchIds.harvestAll,
+    ]);
   });
 
   it('places each item unlock directly before its timer mastery chain', () => {

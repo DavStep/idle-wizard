@@ -103,7 +103,7 @@ describe('PlayerInboxSubscriptionManager', () => {
         createdAt: createTimestamp(2_000),
         read: false,
         rewardCollected: false,
-        rewardText: '5 coin, 2 crystal, 3 sageSeed',
+        rewardText: '5 coin, 2 amber, 3 sageSeed',
         coinReward: 5n,
         crystalReward: 2,
         rubyReward: 0,
@@ -132,7 +132,7 @@ describe('PlayerInboxSubscriptionManager', () => {
           read: false,
           hasReward: true,
           rewardCollected: false,
-          rewardText: '5 coin, 2 crystal, 3 sageSeed',
+          rewardText: '5 coin, 2 amber, 3 sageSeed',
           reward: {
             coin: 5,
             crystal: 2,

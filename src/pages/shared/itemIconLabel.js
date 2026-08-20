@@ -19,7 +19,7 @@ export const POTION_ICON_LABEL_CLASS = 'style-potion-label';
 export const INGREDIENT_ICON_LABEL_CLASS = 'style-ingredient-label';
 
 const RESOURCE_WORD_MATCH_PATTERN =
-  /\b(?:crystals?|emeralds?|coin|herbs?|mana|rubies|ruby|seeds?)\b/gi;
+  /\b(?:ambers?|amethysts?|crystals?|emeralds?|coin|herbs?|mana|rubies|ruby|seeds?)\b/gi;
 const MANA_NON_RESOURCE_PHRASE_PATTERN = /^\s+sphere\b/i;
 const GENERIC_SEED_LABELS = new Set(['choose seed', 'summon seed']);
 
@@ -313,6 +313,14 @@ function normalizeResourceMatch(label) {
 
   if (normalizedLabel === 'crystals') {
     return 'crystal';
+  }
+
+  if (normalizedLabel === 'amber' || normalizedLabel === 'ambers') {
+    return 'amber';
+  }
+
+  if (normalizedLabel === 'amethysts') {
+    return 'amethyst';
   }
 
   if (normalizedLabel === 'rubies') {

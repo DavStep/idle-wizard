@@ -81,7 +81,7 @@ describe('TopPanelLevelManager', () => {
     expect(getRows(refs.levelAddedRows)).toEqual([
       ['Mana Capacity', '+50 mana'],
       ['Mana Regeneration', '+1/sec mana'],
-      ['Bonus', '+1 crystal'],
+      ['Bonus', '+1 amber'],
     ]);
     expect(refs.levelAddedRows.textContent).not.toContain('Garden Plots');
     expect(refs.levelTotalRows.textContent).toContain('Garden Plots3');
@@ -91,7 +91,7 @@ describe('TopPanelLevelManager', () => {
     expect(getRows(refs.levelAddedRows)).toEqual([
       ['Mana Capacity', '+50 mana'],
       ['Mana Regeneration', '+1/sec mana'],
-      ['Bonus', '+1 crystal'],
+      ['Bonus', '+1 amber'],
     ]);
     expect(refs.levelAddedRows.textContent).not.toContain('Cauldrons');
     expect(refs.levelTotalRows.textContent).toContain('Cauldrons2');

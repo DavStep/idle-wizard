@@ -46,11 +46,11 @@ const LEVEL_X = 203;
 const LEVEL_SETTINGS_GAP = 21;
 const LEVEL_WIDTH = SETTINGS_X - LEVEL_SETTINGS_GAP - LEVEL_X;
 const CURRENCY_X = 209;
-const CURRENCY_GAP = 17;
+const CURRENCY_GAP = 10;
 const CURRENCY_SETTINGS_GAP = 21;
 const CURRENCY_WIDTH =
-  (SETTINGS_X - CURRENCY_SETTINGS_GAP - CURRENCY_X - CURRENCY_GAP * 2) /
-  3;
+  (SETTINGS_X - CURRENCY_SETTINGS_GAP - CURRENCY_X - CURRENCY_GAP * 3) /
+  4;
 const TOP_PANEL_BACKGROUND_HEIGHT =
   PIXI_UI_GEOMETRY.roomContentTop -
   PIXI_UI_GEOMETRY.topPanelContentGap;
@@ -195,6 +195,13 @@ export class PixiTopPanelView extends BasePixiRetainedView {
       width: CURRENCY_WIDTH,
       label: 'topPanel:mana',
     });
+    this.amethyst = new RootRunHudCurrencyCapsule({
+      assets,
+      resource: 'amethyst',
+      amount: '0',
+      width: CURRENCY_WIDTH,
+      label: 'topPanel:amethyst',
+    });
     this.manaRate = new PixiTextLabel({
       text: '+0/s',
       fontSize: 27,
@@ -222,12 +229,16 @@ export class PixiTopPanelView extends BasePixiRetainedView {
 
     this.levelRail.position.set(LEVEL_X, 4);
     this.coin.position.set(CURRENCY_X, 108);
-    this.contextCurrency.position.set(
+    this.mana.position.set(
       CURRENCY_X + CURRENCY_WIDTH + CURRENCY_GAP,
       108,
     );
-    this.mana.position.set(
+    this.amethyst.position.set(
       CURRENCY_X + (CURRENCY_WIDTH + CURRENCY_GAP) * 2,
+      108,
+    );
+    this.contextCurrency.position.set(
+      CURRENCY_X + (CURRENCY_WIDTH + CURRENCY_GAP) * 3,
       108,
     );
     this.manaRate.position.set(
@@ -238,8 +249,9 @@ export class PixiTopPanelView extends BasePixiRetainedView {
     this.topHudRoot.addChild(
       this.levelRail,
       this.coin,
-      this.contextCurrency,
       this.mana,
+      this.amethyst,
+      this.contextCurrency,
       this.manaRate,
       this.avatarViewport,
       this.usernameControl,
@@ -254,7 +266,7 @@ export class PixiTopPanelView extends BasePixiRetainedView {
       .fill({ color: '#ffd447', alpha: 1 });
     this.questFlightGlow.label = 'topPanel:questFlightGlow';
     this.questFlightStar = new Sprite({
-      texture: assets.getTexture('public:ui/root-run-level-star.png'),
+      texture: assets.getTexture(PIXI_ROOT_RUN_ASSETS.topHudLevelStar),
       label: 'topPanel:questFlightStar',
       roundPixels: true,
     });
@@ -383,6 +395,10 @@ export class PixiTopPanelView extends BasePixiRetainedView {
       displayObject: this.coin,
     });
     this.registerSemanticTarget({
+      semanticId: 'top.amethyst',
+      displayObject: this.amethyst,
+    });
+    this.registerSemanticTarget({
       semanticId: 'top.contextCurrency',
       displayObject: this.contextCurrency,
     });
@@ -476,6 +492,7 @@ export class PixiTopPanelView extends BasePixiRetainedView {
     );
     this.manaRate.setText(formatManaRate(mana.perSecond));
     this.coin.setAmount(formatCompactNumber(model.coin ?? 0));
+    this.amethyst.setAmount(formatCompactNumber(model.amethyst ?? 0));
     this.contextCurrency
       .setResource(context.resource)
       .setAmount(formatCompactNumber(context.amount));
@@ -484,6 +501,8 @@ export class PixiTopPanelView extends BasePixiRetainedView {
     this.contextCurrency.renderable = this.contextCurrency.visible;
     this.coin.visible = topVisible && reveal.resources !== false;
     this.coin.renderable = this.coin.visible;
+    this.amethyst.visible = topVisible && reveal.resources !== false;
+    this.amethyst.renderable = this.amethyst.visible;
 
     this.levelRail.visible = topVisible && level !== null;
     this.levelRail.renderable = this.levelRail.visible;
@@ -511,6 +530,7 @@ export class PixiTopPanelView extends BasePixiRetainedView {
     );
     this.username.applyTheme(theme);
     this.coin.applyTheme(theme);
+    this.amethyst.applyTheme(theme);
     this.contextCurrency.applyTheme(theme);
     this.mana.applyTheme(theme);
     this.manaRate.applyTheme(theme);

@@ -170,14 +170,43 @@ const RESEARCH_ART_ASSET_BY_BOX_ID = Object.freeze({
 });
 const RESEARCH_CAULDRON_LEVEL_ART_ASSET =
   'source:assets/icons/research/icon-research-cauldron-level.png';
-const RESEARCH_MANA_CAPACITY_ART_ASSET =
+const RESEARCH_MANA_ART_ASSET =
   'source:assets/icons/icon-mana-drop.png';
+const RESEARCH_MANA_CAPACITY_MODIFIER_ASSET =
+  'source:assets/icons/research/icon-research-mana-capacity-up.png';
+const RESEARCH_MANA_GENERATION_MODIFIER_ASSET =
+  'source:assets/icons/research/icon-research-mana-generation-plus.png';
 const RESEARCH_ART_EXTRA_ASSET_BY_KEY = Object.freeze({
   timerReduction:
     'source:assets/icons/research/icon-research-time.png',
 });
 const RESEARCH_FALLBACK_ART_ASSET =
-  'source:assets/icons/icon-research.png';
+  'source:assets/icons/research/icon-research-generic.png';
+
+function getResearchItemArtAssetId(item, fallbackArtAssetId) {
+  const researchId = String(item?.id ?? '');
+
+  if (
+    researchId.startsWith('manaSphereCap:') ||
+    researchId.startsWith('manaProductionRate:')
+  ) {
+    return RESEARCH_MANA_ART_ASSET;
+  }
+
+  if (researchId.startsWith('summonSeedsX')) {
+    return RESEARCH_ART_ASSET_BY_BOX_ID.summonSeeds;
+  }
+
+  if (researchId.startsWith('garden:')) {
+    return RESEARCH_ART_ASSET_BY_BOX_ID.gardenBulkActions;
+  }
+
+  if (researchId.startsWith('emerald:cauldronBrewing:')) {
+    return RESEARCH_CAULDRON_LEVEL_ART_ASSET;
+  }
+
+  return fallbackArtAssetId;
+}
 const WORLD_CHAT_PRESTIGE_ICON_ASSET =
   'source:assets/icons/icon-prestige-star.png';
 const WORLD_CHAT_PRESTIGE_DETAIL_PATTERN =
@@ -216,6 +245,7 @@ export class PixiViewModelFactory {
       showAvatar: true,
       mana: gameplay.mana ?? {},
       coin: gameplay.coin?.current ?? 0,
+      amethyst: gameplay.amethyst?.current ?? 0,
       contextCurrency: {
         resource: contextResource ?? 'crystal',
         amount:
@@ -836,10 +866,11 @@ export class PixiViewModelFactory {
 
   createAllianceDialog(
     tradeAlliance = {},
-    expandedAllianceId = null,
+    legacyExpandedAllianceId = null,
     actions = {},
     selectedTabId = 'home',
   ) {
+    void legacyExpandedAllianceId;
     const alliance =
       tradeAlliance.alliance ??
       tradeAlliance.currentAlliance ??
@@ -874,9 +905,7 @@ export class PixiViewModelFactory {
         status:
           tradeAlliance.connected === false
             ? 'Connecting...'
-            : creating
-              ? ''
-              : 'Not in an alliance',
+            : '',
         settings: creating
           ? {
               allianceId: 'new-alliance',
@@ -897,34 +926,21 @@ export class PixiViewModelFactory {
             (entry) => entry.allianceId === allianceId,
           );
           const joinMode = candidate.joinMode ?? 'apply';
-          const memberRows = members
-            .filter((member) => member.allianceId === allianceId)
-            .map((member, memberIndex) => {
-              const player = createTradeAlliancePlayerRequest(member);
-              return {
-                id:
-                  player.identity ||
-                  `${allianceId}:member:${memberIndex}`,
-                identity: player.identity,
-                memberIdentity: member.memberIdentity ?? '',
-                username: player.username,
-                character: player.character,
-                frame: player.frame,
-                roleLabel:
-                  TRADE_ALLIANCE_ROLE_LABELS[member.role] ??
-                  member.role ??
-                  'trader',
-                levelLabel: `Lv ${normalizeVisibleLevel(member.playerLevel) ?? 1}`,
-                semanticId: `workshop.alliance.member.${
-                  player.identity || memberIndex
-                }`,
-                onActivate: () => actions.openPlayer?.(player),
-              };
-            });
+          const candidateMembers = members.filter(
+            (member) => member.allianceId === allianceId,
+          );
+          const leader =
+            candidateMembers.find(
+              (member) =>
+                candidate.leaderIdentity &&
+                String(member.memberIdentity) ===
+                  String(candidate.leaderIdentity),
+            ) ??
+            candidateMembers.find((member) => member.role === 'tradeMaster');
           const action =
             application
               ? {
-                  label: 'Cancel Application',
+                  label: 'Cancel',
                   variant: 'brown-dark',
                   enabled: true,
                   onActivate: () =>
@@ -934,7 +950,7 @@ export class PixiViewModelFactory {
                 }
               : joinMode === 'open'
                 ? {
-                    label: 'Join Alliance',
+                    label: 'Join',
                     variant: 'green',
                     enabled: true,
                     onActivate: () => actions.joinAlliance?.(allianceId),
@@ -959,18 +975,26 @@ export class PixiViewModelFactory {
             name: candidate.name ?? candidate.allianceName ?? 'Alliance',
             tag: candidate.tag ?? '',
             tagColor: candidate.tagColor ?? 'ink',
+            leaderName:
+              candidate.leaderName ??
+              candidate.leaderUsername ??
+              leader?.username ??
+              'Unknown',
+            leaderCharacter:
+              candidate.leaderCharacter ?? leader?.character ?? 'elara',
+            leaderFrame: candidate.leaderFrame ?? leader?.frame ?? 'classic',
             totalIncomeLabel: formatCoinAmount(candidate.totalIncome ?? 0),
             memberCount: Math.max(
-              memberRows.length,
+              candidateMembers.length,
               Math.floor(Number(candidate.memberCount) || 0),
             ),
             memberCapacity: 50,
-            members: memberRows,
-            expanded:
-              String(allianceId) === String(expandedAllianceId ?? ''),
             action,
             semanticId: `workshop.alliance.directory.${allianceId}`,
-            onActivate: () => actions.selectAlliance?.(allianceId),
+            onActivate:
+              typeof actions.openAlliance === 'function'
+                ? () => actions.openAlliance(candidate)
+                : () => actions.selectAlliance?.(allianceId),
           };
         }),
       };
@@ -2066,7 +2090,7 @@ function createTradeAllianceQuestRows(tradeAlliance, allianceId, actions) {
         )}/${formatWholeNumber(quest.minContribution)}`,
         value: `${formatWholeNumber(quest.progress)}/${formatWholeNumber(
           quest.target,
-        )}\n${formatWholeNumber(quest.crystalReward)} Crystal`,
+        )}\n${formatWholeNumber(quest.crystalReward)} Amber`,
         height: 48,
         actionLabel,
         actionVariant: enabled ? 'green' : 'gray',
@@ -2493,12 +2517,12 @@ function createResearchBoxModel(
     RESEARCH_FALLBACK_ART_ASSET;
   const allResearches = (box.researches ?? []).map((item) =>
     createResearchItemModel(item, {
-      artAssetId:
-        String(item.id ?? '').startsWith('manaSphereCap:')
-          ? RESEARCH_MANA_CAPACITY_ART_ASSET
-          : String(item.id ?? '').startsWith('emerald:cauldronBrewing:')
-          ? RESEARCH_CAULDRON_LEVEL_ART_ASSET
-          : artAssetId,
+      artAssetId: getResearchItemArtAssetId(item, artAssetId),
+      artExtraAssetId: String(item.id ?? '').startsWith('manaSphereCap:')
+        ? RESEARCH_MANA_CAPACITY_MODIFIER_ASSET
+        : String(item.id ?? '').startsWith('manaProductionRate:')
+          ? RESEARCH_MANA_GENERATION_MODIFIER_ASSET
+          : null,
       completedResearchIds,
       playerLevel,
       prestigeCount,
@@ -2523,6 +2547,7 @@ function createResearchItemModel(
   item = {},
   {
     artAssetId,
+    artExtraAssetId,
     completedResearchIds,
     playerLevel,
     prestigeCount,
@@ -2543,8 +2568,6 @@ function createResearchItemModel(
   const description = getResearchDescription(item, displayName);
   const actionNoun = item.actionType === 'levelUp' ? 'level up' : 'research';
   const actionVerb = actionNoun;
-  const inProgressLabel =
-    item.actionType === 'levelUp' ? 'leveling up' : 'researching';
   const rankCurrent = item.completed === true ? 1 : 0;
   const cost = createResearchCostModel(item, {
     displayName: displayTitle,
@@ -2581,7 +2604,9 @@ function createResearchItemModel(
     artKey: artAssetId,
     artAssetId,
     artExtraAssetId:
-      RESEARCH_ART_EXTRA_ASSET_BY_KEY[item.artExtraKey] ?? null,
+      artExtraAssetId ??
+      RESEARCH_ART_EXTRA_ASSET_BY_KEY[item.artExtraKey] ??
+      null,
     rank: {
       current: rankCurrent,
       total: 1,
@@ -2591,6 +2616,7 @@ function createResearchItemModel(
     star,
     cost,
     timer,
+    skip: createResearchSkipModel(item, displayTitle),
     itemKind,
     itemKey,
     resourceKey:
@@ -2627,10 +2653,7 @@ function createResearchItemModel(
             lockReason,
           )}`
         : item.inProgress
-          ? `${formatResearchName(
-              item,
-              displayTitle,
-            )} is ${inProgressLabel}`
+          ? `skip ${formatResearchName(item, displayTitle)} for ${item.skipCostAmethyst ?? 1} Amethyst`
           : `${actionVerb} ${formatResearchName(
               item,
               displayTitle,
@@ -2640,6 +2663,18 @@ function createResearchItemModel(
         displayTitle,
       )} ${actionNoun} progress`,
     },
+  };
+}
+
+function createResearchSkipModel(item = {}, displayName = 'research') {
+  const amount = Math.max(1, Math.floor(Number(item.skipCostAmethyst) || 1));
+  return {
+    amount,
+    amountLabel: String(amount),
+    currency: 'amethyst',
+    resource: 'amethyst',
+    enabled: item.inProgress === true && item.canSkipResearch === true,
+    ariaLabel: `skip ${displayName} for ${amount} Amethyst`,
   };
 }
 
@@ -3009,7 +3044,7 @@ function createPrestigeMilestone(milestone = {}, { upcoming = false } = {}) {
     reward: `reward: ${Math.max(
       0,
       Math.floor(Number(milestone.nextRun?.crystal) || 0),
-    )} crystal ${Math.max(
+    )} amber ${Math.max(
       0,
       Math.floor(
         Number(milestone.creditedRuby ?? milestone.rewardRuby) || 0,
@@ -3048,7 +3083,7 @@ function createPrestigeMilestone(milestone = {}, { upcoming = false } = {}) {
         `start level ${milestone.nextRun?.level ?? 1}`,
         `mana ${Math.floor(Number(milestone.nextRun?.mana) || 0)}`,
         `coin ${Math.floor(Number(milestone.nextRun?.coin) || 0)}`,
-        `crystal ${Math.floor(Number(milestone.nextRun?.crystal) || 0)}`,
+        `amber ${Math.floor(Number(milestone.nextRun?.crystal) || 0)}`,
         `emerald ${Math.floor(Number(milestone.nextRun?.emerald) || 0)}`,
         `ruby ${Math.floor(Number(milestone.nextRun?.ruby) || 0)}`,
       ],
@@ -3148,7 +3183,7 @@ function formatMarketLicenceTooltip(licence = {}) {
 
 function formatPrestigeTotals(nextRun = {}) {
   return [
-    `${Math.floor(Number(nextRun.crystal) || 0)} crystal`,
+    `${Math.floor(Number(nextRun.crystal) || 0)} amber`,
     `${Math.floor(Number(nextRun.ruby) || 0)} ruby`,
     `${Math.floor(Number(nextRun.emerald) || 0)} emerald`,
     'total',
@@ -3174,11 +3209,11 @@ function createCurrencyRows(gameplay) {
       itemKind: 'resource',
       itemKey: 'mana',
     },
-    ...['coin', 'crystal', 'ruby', 'emerald']
+    ...['coin', 'crystal', 'amethyst', 'ruby', 'emerald']
       .filter((resource) => gameplay[resource])
       .map((resource) => ({
         id: resource,
-        label: toTitleCase(resource),
+        label: resource === 'crystal' ? 'Amber' : toTitleCase(resource),
         value: String(
           Math.floor(Number(gameplay[resource]?.current) || 0),
         ),

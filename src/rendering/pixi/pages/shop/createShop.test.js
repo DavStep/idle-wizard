@@ -243,9 +243,20 @@ describe('createShop', () => {
       notification: true,
     });
     expect(model.shop.crystals.dailyCrystalOffer).toMatchObject({
-      rewardLabel: '1 crystal',
+      rewardLabel: '1 amber',
       actionLabel: 'free',
       notification: true,
+    });
+    expect(model.shop.crystals.offers).toHaveLength(12);
+    expect(model.shop.crystals.offers[0]).toMatchObject({
+      resourceKey: 'crystal',
+      amount: 1,
+      priceLabel: '$4.99',
+    });
+    expect(model.shop.crystals.offers[6]).toMatchObject({
+      resourceKey: 'amethyst',
+      amount: 100,
+      priceLabel: '$4.99',
     });
     expect(model.shop.dialogs.ledger.items[0]).toMatchObject({
       label: 'Sage Seed',

@@ -45,7 +45,7 @@ function createGameplayFacade(snapshot, overrides = {}) {
 }
 
 describe('ResearchBoxListManager', () => {
-  it('uses the mana icon only for mana capacity research artwork', () => {
+  it('uses the mana icon with distinct capacity and generation modifiers', () => {
     const manager = new ResearchBoxListManager();
 
     expect(
@@ -53,7 +53,35 @@ describe('ResearchBoxListManager', () => {
     ).toContain('icon-mana-drop.png');
     expect(
       manager.getResearchArtworkUrl('manaSphere', 'manaProductionRate:1'),
-    ).toContain('icon-research.png');
+    ).toContain('icon-mana-drop.png');
+
+    const capacityExtra = manager.createResearchArtworkExtra({
+      id: 'manaSphereCap:1',
+    });
+    const generationExtra = manager.createResearchArtworkExtra({
+      id: 'manaProductionRate:1',
+    });
+
+    expect(capacityExtra[0]?.src).toContain(
+      'icon-research-mana-capacity-up.png',
+    );
+    expect(generationExtra[0]?.src).toContain(
+      'icon-research-mana-generation-plus.png',
+    );
+  });
+
+  it('preserves utility-specific artwork inside the combined section', () => {
+    const manager = new ResearchBoxListManager();
+
+    expect(
+      manager.getResearchArtworkUrl('utilityUnlocks', 'summonSeedsX2'),
+    ).toContain('icon-research-summon-multiplier.png');
+    expect(
+      manager.getResearchArtworkUrl('utilityUnlocks', 'garden:plantAll'),
+    ).toContain('icon-research-auto-plant.png');
+    expect(
+      manager.getResearchArtworkUrl('utilityUnlocks', 'manaSphereCap:1'),
+    ).toContain('icon-mana-drop.png');
   });
 
   it('renders research tab button labels in Title Case', () => {
@@ -63,7 +91,7 @@ describe('ResearchBoxListManager', () => {
           { id: 'regular', label: 'regular research', boxes: [] },
           { id: 'automation', label: 'automation', boxes: [] },
           { id: 'advanced', label: 'advanced research', boxes: [] },
-          { id: 'crystal', label: 'crystal research', boxes: [] },
+          { id: 'crystal', label: 'amber research', boxes: [] },
         ],
       },
     };
@@ -82,7 +110,7 @@ describe('ResearchBoxListManager', () => {
       'Regular Research',
       'Automation',
       'Advanced Research',
-      'Crystal Research',
+      'Amber Research',
     ]);
   });
 
@@ -448,7 +476,7 @@ describe('ResearchBoxListManager', () => {
           },
           {
             id: 'emerald',
-            label: 'crystal research',
+            label: 'amber research',
             boxes: [
               {
                 id: 'cauldronBrewing',
@@ -1092,6 +1120,9 @@ describe('ResearchBoxListManager', () => {
     const value = stage.querySelector('.research-page__research-value');
     const label = stage.querySelector('.research-page__research-value-label');
     const timer = stage.querySelector('.research-page__research-value-timer');
+    const progressTimer = stage.querySelector(
+      '.research-page__research-progress-text',
+    );
     const fill = stage.querySelector('.research-page__research-progress-fill');
 
     expect(
@@ -1099,15 +1130,22 @@ describe('ResearchBoxListManager', () => {
     ).toBe(true);
     expect(value?.classList.contains('style-cost-button--yellow')).toBe(true);
     expect(value?.disabled).toBe(true);
-    expect(label?.textContent).toBe('Researching');
-    expect(timer?.textContent).toBe('1m 15s');
+    expect(label).toBeNull();
+    expect(timer).toBeNull();
+    expect(value?.textContent).toBe('1 amethyst');
+    expect(progressTimer?.textContent).toBe('1m 15s');
     const css = readFileSync(`${cwd()}/src/styles/base.css`, 'utf8');
     const timerRule = css.match(
-      /\.research-page__research-button--in-progress\s+\.research-page__research-value-timer\s*\{(?<body>[^}]*)\}/,
+      /\.research-page__research-progress\s+\.research-page__research-progress-text\s*\{(?<body>[^}]*)\}/,
     )?.groups?.body;
-    expect(timerRule).toContain('color: #d4d4d4;');
+    expect(timerRule).toContain('color: #ffffff;');
+    expect(timerRule).toContain('align-items: center;');
+    expect(timerRule).toContain('justify-content: center;');
     expect(timerRule).toContain('text-align: center;');
-    expect(timerRule).toContain('width: 100%;');
+    const progressRule = css.match(
+      /\.research-page__research-progress\s*\{(?<body>[^}]*)\}/,
+    )?.groups?.body;
+    expect(progressRule).toContain('bottom: 10px;');
     expect(fill?.style.width).toBe('37.5%');
 
     for (const callback of frameCallbacks) {
@@ -1230,6 +1268,9 @@ describe('ResearchBoxListManager', () => {
     expect(
       art?.querySelector('.research-page__research-art-extra')?.getAttribute('src'),
     ).toContain('icon-research-time.png');
+    expect(
+      art?.querySelector('.research-page__research-art-extra')?.classList,
+    ).toContain('is-timer-reduction');
 
     manager.unmount();
     stage.remove();

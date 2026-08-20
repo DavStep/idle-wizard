@@ -1,4 +1,5 @@
 import { AutomationFacade } from "./automation/AutomationFacade.js";
+import { AmethystFacade } from "./amethyst/AmethystFacade.js";
 import { BrewingFacade } from "./brewing/BrewingFacade.js";
 import { CrystalFacade } from "./crystal/CrystalFacade.js";
 import { EmeraldFacade } from "./emerald/EmeraldFacade.js";
@@ -71,6 +72,7 @@ export class GameplayFacade {
     this.manaFacade = new ManaFacade();
     this.coinFacade = new CoinFacade();
     this.crystalFacade = new CrystalFacade();
+    this.amethystFacade = new AmethystFacade();
     this.emeraldFacade = new EmeraldFacade();
     this.rubyFacade = new RubyFacade();
     this.inboxRewardsFacade = new InboxRewardsFacade({
@@ -94,6 +96,7 @@ export class GameplayFacade {
       playerLevelFacade: this.playerLevelFacade,
     });
     this.researchFacade = new ResearchFacade({
+      amethystFacade: this.amethystFacade,
       crystalFacade: this.crystalFacade,
       emeraldFacade: this.emeraldFacade,
       coinFacade: this.coinFacade,
@@ -187,6 +190,7 @@ export class GameplayFacade {
       manaFacade: this.manaFacade,
       coinFacade: this.coinFacade,
       crystalFacade: this.crystalFacade,
+      amethystFacade: this.amethystFacade,
       emeraldFacade: this.emeraldFacade,
       rubyFacade: this.rubyFacade,
       inboxRewardsFacade: this.inboxRewardsFacade,
@@ -320,6 +324,7 @@ export class GameplayFacade {
     this.manaFacade.initialize(ecsManagers);
     this.coinFacade.initialize(ecsManagers);
     this.crystalFacade.initialize(ecsManagers);
+    this.amethystFacade.initialize(ecsManagers);
     this.emeraldFacade.initialize(ecsManagers);
     this.rubyFacade.initialize(ecsManagers);
     this.tasksFacade.initialize(ecsManagers);
@@ -552,6 +557,12 @@ export class GameplayFacade {
     return result;
   }
 
+  skipResearchTime(researchId) {
+    const result = this.researchFacade.skipResearchTime(researchId);
+    this.publishAndSaveSnapshot();
+    return result;
+  }
+
   setPrestigeRunFocus(focusId) {
     const result = this.prestigeFacade.setRunFocus(focusId);
     this.publishAndSaveSnapshot();
@@ -571,6 +582,7 @@ export class GameplayFacade {
     const crystal = {
       current: this.getPrestigeResetCrystalCurrent(prestigeResetLevel),
     };
+    const amethyst = this.amethystFacade.getSnapshot();
     const visualSettings = this.visualSettingsFacade.getPersistenceSnapshot();
     const automation = this.automationFacade.getPersistenceSnapshot();
     const seedSummoning = this.seedSummoningFacade.getPersistenceSnapshot();
@@ -587,6 +599,7 @@ export class GameplayFacade {
         totalGenerated: 0,
       },
       crystal,
+      amethyst,
       emerald,
       ruby: {
         current: 0,
@@ -1643,6 +1656,7 @@ export class GameplayFacade {
       mana: this.manaFacade.getSnapshot(),
       coin: this.coinFacade.getSnapshot(),
       crystal: this.crystalFacade.getSnapshot(),
+      amethyst: this.amethystFacade.getSnapshot(),
       emerald: this.emeraldFacade.getSnapshot(),
       ruby: this.rubyFacade.getSnapshot(),
       inventory: this.itemsFacade.getInventorySnapshot(),
@@ -1845,6 +1859,7 @@ export class GameplayFacade {
       mana: this.manaFacade.getSnapshot(),
       coin: this.coinFacade.getSnapshot(),
       crystal: this.crystalFacade.getSnapshot(),
+      amethyst: this.amethystFacade.getSnapshot(),
       emerald: this.emeraldFacade.getSnapshot(),
       ruby: this.rubyFacade.getSnapshot(),
       tasks: {
@@ -1863,6 +1878,7 @@ export class GameplayFacade {
       manaPerSecond: Number(mana.perSecond) || 0,
       coin: Math.floor(Number(resources.coin?.current) || 0),
       crystal: Math.floor(Number(resources.crystal?.current) || 0),
+      amethyst: Math.floor(Number(resources.amethyst?.current) || 0),
       emerald: Math.floor(Number(resources.emerald?.current) || 0),
       ruby: Math.floor(Number(resources.ruby?.current) || 0),
       level: normalizeFrameLevel(resources.tasks?.currentLevel),

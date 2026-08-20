@@ -40,6 +40,9 @@ function createGameplayFacadeFake() {
     crystal: {
       current: 0,
     },
+    amethyst: {
+      current: 0,
+    },
     emerald: {
       current: 0,
     },
@@ -1078,7 +1081,7 @@ function createGameplayFacadeFake() {
     },
     {
       id: 'emerald',
-      label: 'crystal research',
+      label: 'amber research',
       boxes: emeraldResearchBoxes,
     },
   ];
@@ -3829,9 +3832,9 @@ describe('PagesFacade', () => {
       topPanel
         .querySelector('.room-top-panel__resources')
         ?.classList.contains('has-special-currency'),
-    ).toBe(false);
-    expect(topPanel.querySelector('.room-top-panel__resource[aria-label="crystal"]')?.hidden).toBe(
-      true,
+    ).toBe(true);
+    expect(topPanel.querySelector('.room-top-panel__resource[aria-label="amber"]')?.hidden).toBe(
+      false,
     );
   });
 
@@ -4054,7 +4057,7 @@ describe('PagesFacade', () => {
     clickRoomTab(stage, 'research');
 
     const resources = stage.querySelector('.room-top-panel__resources');
-    expect(resources?.classList.contains('has-special-currency')).toBe(false);
+    expect(resources?.classList.contains('has-special-currency')).toBe(true);
 
     const clickResearchTab = (label) => {
       const button = [...stage.querySelectorAll('.research-page__tab-button')].find(
@@ -4094,20 +4097,21 @@ describe('PagesFacade', () => {
         .assetAtlasFrame,
     ).toBe('resource:emerald');
 
-    clickResearchTab('Crystal Research');
+    clickResearchTab('Amber Research');
 
-    const crystal = stage.querySelector('.room-top-panel__resource[aria-label="crystal"]');
+    const crystal = stage.querySelector('.room-top-panel__resource[aria-label="amber"]');
     expect(crystal?.hidden).toBe(false);
-    expect(crystal?.textContent).toBe('0 crystal');
+    expect(crystal?.textContent).toBe('0 amber');
     expect(
-      crystal?.querySelector('.style-resource-label--crystal .style-resource-label__icon')?.dataset
+      crystal?.querySelector('.style-resource-label--amber .style-resource-label__icon')?.dataset
         .assetAtlasFrame,
     ).toBe('resource:crystal');
 
     clickResearchTab('Regular Research');
-    expect(resources?.classList.contains('has-special-currency')).toBe(false);
-    expect(ruby?.hidden).toBe(true);
-    expect(emerald?.hidden).toBe(true);
+    expect(resources?.classList.contains('has-special-currency')).toBe(true);
+    const amber = stage.querySelector('.room-top-panel__resource[aria-label="amber"]');
+    expect(amber?.hidden).toBe(false);
+    expect(amber?.textContent).toBe('0 amber');
   });
 
   it('keeps top panel coin amount and unit in one fitted value', () => {
@@ -4692,7 +4696,7 @@ describe('PagesFacade', () => {
       'Mana Regeneration+1/sec mana',
     );
     expect(levelPopup.querySelector('.room-top-panel__level-added-rows')?.textContent).toContain(
-      'Bonus+1 crystal',
+      'Bonus+1 amber',
     );
     expect(levelPopup.querySelector('.room-top-panel__level-total-rows')?.textContent).toContain(
       'Garden Plots3',
@@ -4710,7 +4714,7 @@ describe('PagesFacade', () => {
     ).not.toBeNull();
     expect(
       levelPopup.querySelector(
-        '.room-top-panel__level-added-rows .style-resource-label--crystal .style-resource-label__icon',
+        '.room-top-panel__level-added-rows .style-resource-label--amber .style-resource-label__icon',
       ),
     ).not.toBeNull();
 
@@ -4725,7 +4729,7 @@ describe('PagesFacade', () => {
       '.room-top-panel__level-total-rows .room-top-panel__level-effect-row',
     );
     expect(level3AddedText).toContain('Mana Capacity+50 mana');
-    expect(level3AddedText).toContain('Bonus+1 crystal');
+    expect(level3AddedText).toContain('Bonus+1 amber');
     expect(level3TotalRow.querySelector('.room-top-panel__level-effect-label')?.textContent).toBe(
       'Garden Plots',
     );
@@ -6085,7 +6089,7 @@ describe('PagesFacade', () => {
       'prestige resets the current run',
     );
     expect(page.querySelector('.prestige-page__description')?.textContent).toContain(
-      'mana, coin, crystal, items, ordinary research, garden, brewing, and level tasks reset.',
+      'mana, coin, amber, items, ordinary research, garden, brewing, and level tasks reset.',
     );
     expect(page.querySelector('.prestige-page__description')?.textContent).toContain(
       'daily and weekly task progress keeps its normal reset timer.',
@@ -6111,11 +6115,11 @@ describe('PagesFacade', () => {
       'level 40 > level 20',
     );
     expect(summary?.querySelector('.workshop-page__prestige-receive')?.textContent).toBe(
-      'on prestige: 20 crystal 4 ruby 0 emerald total',
+      'on prestige: 20 amber 4 ruby 0 emerald total',
     );
     expect(summary?.getAttribute('data-resource-color')).toBeNull();
     expect(summary?.querySelector('[data-resource-color="crystal"]')?.textContent).toBe(
-      '20 crystal',
+      '20 amber',
     );
     expect(summary?.querySelector('[data-resource-color="ruby"]')?.textContent).toBe('4 ruby');
     expect(summary?.querySelector('[data-resource-color="emerald"]')?.textContent).toBe(
@@ -6131,13 +6135,13 @@ describe('PagesFacade', () => {
     expect(milestoneRows[0]?.classList.contains('style-box')).toBe(true);
     expect(milestoneRows[0]?.dataset.prestigeState).toBe('included');
     expect(milestoneRows[0]?.querySelector('.workshop-page__prestige-reward')?.textContent).toBe(
-      'reward: 5 crystal 1 ruby',
+      'reward: 5 amber 1 ruby',
     );
     expect(milestoneRows[0]?.querySelector('.workshop-page__prestige-action')).toBeNull();
     expect(milestoneRows[3]?.dataset.prestigeState).toBe('ready');
     expect(
       page.querySelector(
-        '.workshop-page__prestige-reward .style-resource-label--crystal .style-resource-label__icon',
+        '.workshop-page__prestige-reward .style-resource-label--amber .style-resource-label__icon',
       )?.dataset.assetAtlasFrame,
     ).toBe('resource:crystal');
     expect(
@@ -6154,9 +6158,9 @@ describe('PagesFacade', () => {
     expect(page.textContent).not.toContain('higher prestige available');
     expect(page.textContent).toContain('also credits levels 10, 20, 30, 40');
     expect(page.textContent).toContain('level 40 > level 20');
-    expect(page.textContent).toContain('on prestige: 20 crystal 4 ruby 0 emerald total');
+    expect(page.textContent).toContain('on prestige: 20 amber 4 ruby 0 emerald total');
     expect(page.textContent).toContain('start level20');
-    expect(page.textContent).toContain('crystal20 crystal');
+    expect(page.textContent).toContain('amber20 amber');
     expect(page.textContent).toContain('emerald0 emerald');
     expect(page.textContent).toContain('ruby4 ruby');
 
@@ -6328,11 +6332,11 @@ describe('PagesFacade', () => {
       'level 20 > level 10',
     );
     expect(summary?.querySelector('.workshop-page__prestige-receive')?.textContent).toBe(
-      'on prestige: 10 crystal 3 ruby 3 emerald total',
+      'on prestige: 10 amber 3 ruby 3 emerald total',
     );
     expect(summary?.getAttribute('data-resource-color')).toBeNull();
     expect(summary?.querySelector('[data-resource-color="crystal"]')?.textContent).toBe(
-      '10 crystal',
+      '10 amber',
     );
     expect(summary?.querySelector('[data-resource-color="ruby"]')?.textContent).toBe('3 ruby');
     expect(summary?.querySelector('[data-resource-color="emerald"]')?.textContent).toBe(
@@ -6565,11 +6569,15 @@ describe('PagesFacade', () => {
     expect(rows.map((row) => row.querySelector('.row_key')?.textContent)).toEqual([
       'mana',
       'coin',
-      'crystal',
+      'amber',
+      'amethyst',
       'ruby',
+      'emerald',
     ]);
     expect(rows.map((row) => row.querySelector('.row_val')?.textContent)).toEqual([
       '0/50',
+      '0',
+      '0',
       '0',
       '0',
       '0',
@@ -9385,7 +9393,7 @@ describe('PagesFacade', () => {
     expect(stage.querySelector('.research-page__content')?.textContent).toContain('mana tonic');
     expect(
       [...stage.querySelectorAll('.research-page__tab-button')].map((button) => button.textContent),
-    ).toEqual(['Regular Research', 'Automation', 'Advanced Research', 'Crystal Research']);
+    ).toEqual(['Regular Research', 'Automation', 'Advanced Research', 'Amber Research']);
     expect(stage.querySelector('.research-page__box-list')?.nextElementSibling).toBe(
       stage.querySelector('.research-page__tabs'),
     );
@@ -9403,7 +9411,7 @@ describe('PagesFacade', () => {
       [...stage.querySelectorAll('.shop-page__market-tab-button')].map(
         (button) => button.textContent,
       ),
-    ).toEqual(['Traders', 'Players', 'Crystals']);
+    ).toEqual(['Traders', 'Players', 'Gems']);
     expect(
       stage.querySelector('.shop-page__market-tab-button')?.getAttribute('aria-selected'),
     ).toBe('true');
@@ -9418,7 +9426,7 @@ describe('PagesFacade', () => {
     expect(stage.querySelector('.shop-page__market-panel--crystals')?.hidden).toBe(true);
 
     const crystalsTab = [...stage.querySelectorAll('.shop-page__market-tab-button')].find(
-      (button) => button.textContent === 'Crystals',
+      (button) => button.textContent === 'Gems',
     );
     expect(
       stage.querySelector('.room-bottom-panel__tab[data-page-id="shop"]')?.dataset.notification,
@@ -9443,7 +9451,7 @@ describe('PagesFacade', () => {
     expect(coinCollectButton?.dataset.notification).toBeUndefined();
     expect(crystalsTab?.dataset.notification).toBeUndefined();
     expect(stage.querySelector('.shop-page__crystal-offers')).not.toBeNull();
-    expect(stage.querySelector('.shop-page__crystal-offers')?.textContent).toContain('Crystals');
+    expect(stage.querySelector('.shop-page__crystal-offers')?.textContent).toContain('Gems');
     expect(stage.querySelector('.shop-page__crystal-offers')?.textContent).not.toContain('each');
     expect(stage.querySelector('.shop-page__crystal-offers')?.textContent).not.toContain('note');
     expect(stage.querySelector('.shop-page__crystal-offers')?.textContent).not.toContain('base');
@@ -9452,21 +9460,27 @@ describe('PagesFacade', () => {
         ...stage.querySelectorAll('.shop-page__crystal-row:not(.shop-page__crystal-row--header)'),
       ].map((row) => row.textContent),
     ).toEqual([
-      '1 Crystal$4.99',
-      '2 Crystals$8.99',
-      '5 Crystals$19.99',
-      '10 Crystals$36.99',
-      '20 Crystals$69.99',
-      '50 Crystals$159.99',
+      '1 Amber$4.99',
+      '2 Amber$8.99',
+      '5 Amber$19.99',
+      '10 Amber$36.99',
+      '20 Amber$69.99',
+      '50 Amber$159.99',
+      '100 Amethyst$4.99',
+      '200 Amethyst$8.99',
+      '500 Amethyst$19.99',
+      '1000 Amethyst$36.99',
+      '2000 Amethyst$69.99',
+      '5000 Amethyst$159.99',
     ]);
     expect(
       stage
         .querySelector('.shop-page__crystal-row[data-crystal-count="50"]')
         ?.getAttribute('aria-label'),
-    ).toBe('50 Crystals, $159.99');
+    ).toBe('50 Amber, $159.99');
     expect(
       stage.querySelector(
-        '.shop-page__crystal-row[data-crystal-count="50"] .style-resource-label--crystal .style-resource-label__icon',
+        '.shop-page__crystal-row[data-crystal-count="50"] .style-resource-label--amber .style-resource-label__icon',
       )?.dataset.assetAtlasFrame,
     ).toBe('resource:crystal');
     const crystalPriceButton = stage.querySelector(
@@ -9829,7 +9843,7 @@ describe('PagesFacade', () => {
       (button) => button.textContent === 'Advanced Research',
     );
     const emeraldTab = [...stage.querySelectorAll('.research-page__tab-button')].find(
-      (button) => button.textContent === 'Crystal Research',
+      (button) => button.textContent === 'Amber Research',
     );
 
     expect(automationTab).not.toBeNull();
@@ -9848,7 +9862,7 @@ describe('PagesFacade', () => {
     expect(stage.querySelector('.research-page__content')?.textContent).toContain(
       'automate plot 1',
     );
-    expect(stage.querySelector('.research-page__content')?.textContent).toContain('1 crystal');
+    expect(stage.querySelector('.research-page__content')?.textContent).toContain('1 amber');
     expect(stage.querySelector('.research-page__content')?.textContent).not.toContain(
       'Seed Unlock Researches',
     );
@@ -11543,10 +11557,8 @@ describe('PagesFacade', () => {
     const statusButton = row?.querySelector('.research-page__research-button--in-progress');
     expect(statusButton?.classList.contains('style-cost-button--yellow')).toBe(true);
     expect(statusButton?.disabled).toBe(true);
-    expect(row?.querySelector('.research-page__research-value-label')?.textContent).toBe(
-      'Researching',
-    );
-    expect(row?.querySelector('.research-page__research-value-timer')?.textContent).toBe('8s');
+    expect(statusButton?.textContent).toBe('1 amethyst');
+    expect(statusButton?.getAttribute('aria-label')).toContain('for 1 Amethyst');
     expect(progressBar?.classList.contains('style-progress')).toBe(true);
     expect(progressBar?.classList.contains('style-progress--timer')).toBe(true);
     expect(progressBar?.getAttribute('role')).toBe('progressbar');
@@ -11554,18 +11566,21 @@ describe('PagesFacade', () => {
     expect(progressBar?.querySelector('.research-page__research-progress-fill')?.style.width).toBe(
       '25%',
     );
+    expect(progressBar?.querySelector('.research-page__research-progress-text')?.textContent).toBe(
+      '8s',
+    );
 
     research.remainingMs = 2_000;
     research.progress = 0.8;
     gameplayFacade.publishSnapshot();
 
-    expect(row?.querySelector('.research-page__research-value-label')?.textContent).toBe(
-      'Researching',
-    );
-    expect(row?.querySelector('.research-page__research-value-timer')?.textContent).toBe('2s');
+    expect(statusButton?.textContent).toBe('1 amethyst');
     expect(progressBar?.getAttribute('aria-valuenow')).toBe('80');
     expect(progressBar?.querySelector('.research-page__research-progress-fill')?.style.width).toBe(
       '80%',
+    );
+    expect(progressBar?.querySelector('.research-page__research-progress-text')?.textContent).toBe(
+      '2s',
     );
   });
 

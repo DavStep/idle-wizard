@@ -917,7 +917,10 @@ export class WorkshopWorldNoticeManager {
     return rewards.flatMap((reward) => {
       const label = document.createElement('span');
       label.className = 'workshop-page__world-notice-reward-resource';
-      label.setAttribute('aria-label', `${this.formatNumber(reward.amount)} ${reward.resource}`);
+      label.setAttribute(
+        'aria-label',
+        `${this.formatNumber(reward.amount)} ${reward.resource === 'crystal' ? 'amber' : reward.resource}`,
+      );
 
       const amount = document.createElement('span');
       amount.className = 'workshop-page__world-notice-reward-amount';

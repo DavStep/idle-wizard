@@ -19,6 +19,12 @@ const PIXI_AUTHORED_VIEWPORT = Object.freeze({
 
 const TEXT_ENTRY_PROJECTION_RELEASE_DELAY_MS = 500;
 const ANDROID_MAX_RENDER_FPS = 60;
+const EMPTY_SAFE_INSETS = Object.freeze({
+  top: 0,
+  right: 0,
+  bottom: 0,
+  left: 0,
+});
 
 function defaultSpineRuntimeImporter() {
   return import('@esotericsoftware/spine-pixi-v8');
@@ -75,6 +81,7 @@ export class PixiApplicationManager {
     this.visibleHeight = null;
     this.textEntryActive = false;
     this.splashViewportActive = false;
+    this.splashSafeInsets = EMPTY_SAFE_INSETS;
     this.destroyed = false;
     this.handleResize = () => this.scheduleResize();
     this.handleContextLost = (event) => event.preventDefault?.();
@@ -301,9 +308,24 @@ export class PixiApplicationManager {
     if (this.splashViewportActive === nextActive) {
       return this.projection;
     }
+    if (nextActive) {
+      this.splashSafeInsets = this.measureSplashSafeInsets();
+    }
     this.splashViewportActive = nextActive;
     this.canvas.classList?.toggle('is-splash-viewport', nextActive);
-    return this.resizeNow();
+    const projection = this.resizeNow();
+    if (!nextActive) {
+      this.splashSafeInsets = EMPTY_SAFE_INSETS;
+    }
+    return projection;
+  }
+
+  measureSplashSafeInsets() {
+    const canvasRect = this.canvas.getBoundingClientRect?.();
+    return {
+      ...EMPTY_SAFE_INSETS,
+      top: Math.max(0, Number(canvasRect?.top) || 0),
+    };
   }
 
   resizeNow() {
@@ -350,6 +372,9 @@ export class PixiApplicationManager {
       height,
       visibleHeight: this.resolveVisibleViewportHeight(height),
       keyboardInset: this.keyboardInset,
+      safeInsets: this.splashViewportActive
+        ? this.splashSafeInsets
+        : EMPTY_SAFE_INSETS,
     });
   }
 
@@ -460,6 +485,7 @@ export class PixiApplicationManager {
     this.cancelTextEntryProjectionRelease();
     this.projectionManager.unlockTextEntry({ force: true });
     this.splashViewportActive = false;
+    this.splashSafeInsets = EMPTY_SAFE_INSETS;
     this.canvas.classList?.remove('is-splash-viewport');
     this.removeListeners();
     this.listeners.clear();

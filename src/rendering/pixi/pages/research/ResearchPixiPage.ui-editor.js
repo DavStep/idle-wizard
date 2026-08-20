@@ -62,7 +62,7 @@ async function mountResearch(context, fixture) {
         },
         ...(fixture.state === 'locked-tabs'
           ? [
-              createLockedResearchTab('emerald', 'Crystal Research', 4),
+              createLockedResearchTab('emerald', 'Amber Research', 4),
               createLockedResearchTab('automation', 'Automation', 7),
               createLockedResearchTab('advanced', 'Advanced Research', 10),
             ]

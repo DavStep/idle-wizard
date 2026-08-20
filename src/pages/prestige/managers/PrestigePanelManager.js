@@ -246,13 +246,13 @@ export class PrestigePanelManager {
         'prestige resets the current run into a new run from the shown start level.',
       ),
       this.createDescriptionLine(
-        'mana, coin, crystal, items, ordinary research, garden, brewing, and level tasks reset.',
+        'mana, coin, amber, items, ordinary research, garden, brewing, and level tasks reset.',
       ),
       this.createDescriptionLine(
         'daily and weekly task progress keeps its normal reset timer.',
       ),
       this.createDescriptionLine(
-        'the shown crystal, ruby, and emerald totals start the next run.',
+        'the shown amber, ruby, and emerald totals start the next run.',
       ),
       this.createDescriptionLine(
         'claiming a milestone also credits lower unclaimed milestones.',
@@ -749,7 +749,7 @@ export class PrestigePanelManager {
     addLine('start level', document.createTextNode(String(nextRun.level ?? 1)));
     addLine('mana', this.createResourceValue('mana', nextRun.mana));
     addLine('coin', this.createResourceValue('coin', nextRun.coin));
-    addLine('crystal', this.createResourceValue('crystal', nextRun.crystal));
+    addLine('amber', this.createResourceValue('crystal', nextRun.crystal));
     addLine('emerald', this.createResourceValue('emerald', nextRun.emerald));
     addLine('ruby', this.createResourceValue('ruby', nextRun.ruby));
 
@@ -769,7 +769,7 @@ export class PrestigePanelManager {
     const nextRun = milestone?.nextRun ?? {};
 
     if (Object.prototype.hasOwnProperty.call(nextRun, 'crystal')) {
-      parts.push(`${this.normalizeResourceAmount(nextRun.crystal)} crystal`);
+      parts.push(`${this.normalizeResourceAmount(nextRun.crystal)} amber`);
     }
 
     parts.push(

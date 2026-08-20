@@ -41,7 +41,7 @@ inventory changes, offers, or backend results. A presenter binds this shape:
         rewardLabel, actionLabel, timerLabel, canCollect, notification
       },
       offers: [{
-        id, crystalCount, bundleLabel, priceLabel, enabled, dialog
+        id, resourceKey, amount, bundleLabel, priceLabel, enabled, dialog
       }]
     },
     dialogs: {
@@ -110,14 +110,15 @@ rolled-up orange NPC-listing notification on both the Traders tab and the
 stall's Select action.
 Add `?saleShine=loop` to replay the successful-sale shine on Stall 1 for
 motion and native-pixel capture QA.
-Add `?tab=crystals` to open the Crystal Market tab with its deterministic
-cooling-down coin offer, ready daily free crystal offer, and six crystal
-bundles. Add `&coinOffer=ready` to show the ready green Collect action and
+Add `?tab=crystals` to open the visible Gems tab with its deterministic
+cooling-down coin offer, ready daily free Amber offer, six Amber bundles, and
+six Amethyst bundles. Amethyst quantities are 100× the corresponding Amber
+quantity at the same price. Add `&coinOffer=ready` to show the ready green Collect action and
 `&dailyCrystalOffer=cooldown` to show the daily offer's disabled countdown.
 Add `&claimFlyout=crystal` to include the production top panel and replay the
 daily Free claim's crystal travel into its HUD counter.
 Currency offers use the reusable `MarketOfferRow`: the stall card frame and
-art well hold a coin or crystal icon with the amount over the art, the offer
+art well hold a coin, Amber, or Amethyst icon with the amount over the art, the offer
 name sits at the top-left, and a fixed right-side green button carries the
 price or ready `Collect` action. Cooling-down coin offers keep the same
 geometry and swap the action to the shared disabled gray state.

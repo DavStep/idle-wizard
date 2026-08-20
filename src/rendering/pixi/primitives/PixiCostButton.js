@@ -27,6 +27,7 @@ const RESEARCH_LOCK_REASON_STROKE = Object.freeze({
 const COST_RESOURCE_FRAMES = Object.freeze({
   mana: 'resource:mana',
   crystal: 'resource:crystal',
+  amethyst: 'resource:amethyst',
   emerald: 'resource:emerald',
   ruby: 'resource:ruby',
 });
@@ -509,11 +510,13 @@ function isShortStackedTone(tone) {
 
 function parseCostLabel(value, explicitResource) {
   const raw = String(value ?? '').trim();
-  const match = raw.match(/^(.+?)\s+(Coin|Crystal|Ruby|Emerald)s?$/i);
+  const match = raw.match(/^(.+?)\s+(Coin|Amber|Amethyst|Crystal|Ruby|Emerald)s?$/i);
   const plainLabel = /^(?:free|locked)$/i.test(raw);
   const resource = plainLabel
     ? 'none'
-    : normalizeResource(explicitResource ?? match?.[2]);
+    : normalizeResource(
+        explicitResource ?? (match?.[2]?.toLowerCase() === 'amber' ? 'crystal' : match?.[2]),
+      );
   return Object.freeze({
     amount: match?.[1]?.trim() ?? raw,
     resource,
@@ -525,7 +528,7 @@ function normalizeResource(value) {
     .trim()
     .toLowerCase()
     .replace(/s$/, '');
-  return ['coin', 'mana', 'crystal', 'ruby', 'emerald'].includes(normalized)
+  return ['coin', 'mana', 'crystal', 'amethyst', 'ruby', 'emerald'].includes(normalized)
     ? normalized
     : 'none';
 }

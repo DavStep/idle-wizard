@@ -32,15 +32,27 @@ export class ResearchProcessManager {
 
     this.researchManaEffectManager.syncCompletedEffects();
 
-    for (const researchId of completedResearchIds) {
-      const research = this.researchDefinitionManager.getResearch(researchId);
+    completedResearchIds.forEach((researchId) => this.notifyResearchComplete(researchId));
+  }
 
-      this.onResearchComplete?.({
-        researchId,
-        label: research?.label ?? researchId,
-        actionType: research?.actionType ?? 'research',
-      });
+  finishResearch(researchId) {
+    if (!this.researchStateEntityManager.isInProgress(researchId)) {
+      return false;
     }
+
+    this.researchStateEntityManager.complete(researchId);
+    this.researchManaEffectManager.syncCompletedEffects();
+    this.notifyResearchComplete(researchId);
+    return true;
+  }
+
+  notifyResearchComplete(researchId) {
+    const research = this.researchDefinitionManager.getResearch(researchId);
+    this.onResearchComplete?.({
+      researchId,
+      label: research?.label ?? researchId,
+      actionType: research?.actionType ?? 'research',
+    });
   }
 
   getTimerDeltaSeconds(frame = {}) {

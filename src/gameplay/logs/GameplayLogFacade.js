@@ -93,7 +93,7 @@ export class GameplayLogFacade {
       return null;
     }
 
-    return this.logManager.add(`claimed alliance ${questLabel} for ${amount} crystal`);
+    return this.logManager.add(`claimed alliance ${questLabel} for ${amount} amber`);
   }
 
   getSnapshot() {

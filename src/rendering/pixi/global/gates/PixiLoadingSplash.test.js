@@ -45,6 +45,8 @@ describe('PixiLoadingSplash', () => {
       sourceHeight: 2170 / 3,
       sourceOffsetX: 0,
       sourceScale: 3,
+      uiScale: 1,
+      safeInsets: { top: 47, right: 0, bottom: 0, left: 0 },
       stageLogicalWidth: 1080,
     };
 
@@ -70,7 +72,7 @@ describe('PixiLoadingSplash', () => {
     expect(splash.versionLabel.textObject.style.fontFamily).toBe(
       splash.loadingLabel.textObject.style.fontFamily,
     );
-    expect(splash.versionLabel.position).toMatchObject({ x: 12, y: 12 });
+    expect(splash.versionLabel.position).toMatchObject({ x: 12, y: 59 });
     expect(splash.progressBar).toBeInstanceOf(PixiProgressBar);
     expect(splash.progressBar.barHeight).toBe(
       PIXI_UI_GEOMETRY.progressTotalHeight,

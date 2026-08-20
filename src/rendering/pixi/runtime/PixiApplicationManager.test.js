@@ -321,15 +321,30 @@ describe('PixiApplicationManager', () => {
   it('temporarily expands the loading splash across mobile safe areas', async () => {
     const app = createFakeApplication();
     const canvas = createCanvas({ width: 390, height: 844 });
+    canvas.getBoundingClientRect = () => ({
+      top: 47,
+      right: 390,
+      bottom: 844,
+      left: 0,
+      width: 390,
+      height: 797,
+    });
     const manager = new PixiApplicationManager({
       canvas,
       createApplication: () => app,
+      windowTarget: {
+        innerWidth: 390,
+        innerHeight: 844,
+        addEventListener: vi.fn(),
+        removeEventListener: vi.fn(),
+      },
     });
     await manager.initialize();
 
     manager.setSplashViewportActive(true);
 
     expect(canvas.classList.contains('is-splash-viewport')).toBe(true);
+    expect(manager.getProjection().safeInsets.top).toBe(47);
     expect(app.renderer.resize).toHaveBeenCalled();
 
     manager.setSplashViewportActive(false);

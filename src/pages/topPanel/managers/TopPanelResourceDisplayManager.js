@@ -8,7 +8,7 @@ export class TopPanelResourceDisplayManager {
     this.refs = null;
     this.unsubscribe = null;
     this.frameResourceUnsubscribe = null;
-    this.contextCurrency = null;
+    this.contextCurrency = 'crystal';
     this.latestSnapshot = null;
   }
 
@@ -52,6 +52,10 @@ export class TopPanelResourceDisplayManager {
     this.setManaValueTutorialTarget();
     this.setText(this.refs.manaRateText ?? this.refs.manaRateValue, formatManaRate(mana.perSecond));
     this.setResourceText(this.refs.coinValue, coinText);
+    this.setResourceText(
+      this.refs.amethystValue,
+      `${Math.floor(snapshot.amethyst?.current ?? 0)} amethyst`,
+    );
     this.renderContextCurrency(snapshot);
     this.setText(this.refs.levelValue, level === null ? '' : String(level));
     this.setHidden(this.refs.levelButton ?? this.refs.levelValue, level === null);
@@ -77,7 +81,7 @@ export class TopPanelResourceDisplayManager {
   setContextCurrency(currency) {
     const normalizedCurrency = ['crystal', 'ruby', 'emerald'].includes(currency)
       ? currency
-      : null;
+      : 'crystal';
 
     if (this.contextCurrency === normalizedCurrency) {
       return;
@@ -88,8 +92,8 @@ export class TopPanelResourceDisplayManager {
   }
 
   renderContextCurrency(snapshot) {
-    const currency = this.contextCurrency;
-    const showCurrency = Boolean(currency);
+    const currency = this.contextCurrency ?? 'crystal';
+    const showCurrency = true;
     const resource = this.refs.contextCurrency;
 
     this.refs.resources?.classList.toggle('has-special-currency', showCurrency);
@@ -105,9 +109,12 @@ export class TopPanelResourceDisplayManager {
     }
 
     const current = snapshot[currency]?.current ?? 0;
-    this.setAttribute(resource, 'aria-label', currency);
+    this.setAttribute(resource, 'aria-label', currency === 'crystal' ? 'amber' : currency);
     setResourceColor(resource, currency);
-    this.setResourceText(this.refs.contextCurrencyValue, `${Math.floor(current)} ${currency}`);
+    this.setResourceText(
+      this.refs.contextCurrencyValue,
+      `${Math.floor(current)} ${currency === 'crystal' ? 'amber' : currency}`,
+    );
   }
 
   setText(element, text) {

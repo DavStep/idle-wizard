@@ -3,34 +3,40 @@ import { setResourceIconText } from '../../shared/resourceIconLabel.js';
 export const CRYSTAL_OFFERS = [
   {
     crystalCount: 1,
-    bundleLabel: '1 Crystal',
+    bundleLabel: '1 Amber',
     priceLabel: '$4.99',
   },
   {
     crystalCount: 2,
-    bundleLabel: '2 Crystals',
+    bundleLabel: '2 Amber',
     priceLabel: '$8.99',
   },
   {
     crystalCount: 5,
-    bundleLabel: '5 Crystals',
+    bundleLabel: '5 Amber',
     priceLabel: '$19.99',
   },
   {
     crystalCount: 10,
-    bundleLabel: '10 Crystals',
+    bundleLabel: '10 Amber',
     priceLabel: '$36.99',
   },
   {
     crystalCount: 20,
-    bundleLabel: '20 Crystals',
+    bundleLabel: '20 Amber',
     priceLabel: '$69.99',
   },
   {
     crystalCount: 50,
-    bundleLabel: '50 Crystals',
+    bundleLabel: '50 Amber',
     priceLabel: '$159.99',
   },
+  { amethystCount: 100, bundleLabel: '100 Amethyst', priceLabel: '$4.99' },
+  { amethystCount: 200, bundleLabel: '200 Amethyst', priceLabel: '$8.99' },
+  { amethystCount: 500, bundleLabel: '500 Amethyst', priceLabel: '$19.99' },
+  { amethystCount: 1000, bundleLabel: '1000 Amethyst', priceLabel: '$36.99' },
+  { amethystCount: 2000, bundleLabel: '2000 Amethyst', priceLabel: '$69.99' },
+  { amethystCount: 5000, bundleLabel: '5000 Amethyst', priceLabel: '$159.99' },
 ];
 
 const SUPPORT_UNAVAILABLE_MESSAGE =
@@ -69,7 +75,7 @@ export class ShopCrystalOfferManager {
 
     this.root = document.createElement('section');
     this.root.className = 'shop-page__crystal-offers style-box';
-    this.root.setAttribute('aria-label', 'Crystal offers');
+    this.root.setAttribute('aria-label', 'Gem offers');
     this.root.append(this.createTitle(), this.createHeader(), this.createRows());
     this.refs.popup = this.createSupportPopup();
     parent.append(this.root);
@@ -94,7 +100,7 @@ export class ShopCrystalOfferManager {
   createTitle() {
     const title = document.createElement('div');
     title.className = 'style-box__title';
-    title.textContent = 'Crystals';
+    title.textContent = 'Gems';
     return title;
   }
 
@@ -132,7 +138,7 @@ export class ShopCrystalOfferManager {
       'aria-label',
       `${offer.bundleLabel}, ${offer.priceLabel}`,
     );
-    row.dataset.crystalCount = String(offer.crystalCount);
+    row.dataset.crystalCount = String(offer.crystalCount ?? offer.amethystCount);
 
     const bundle = document.createElement('span');
     bundle.className = 'shop-page__crystal-bundle';
@@ -159,7 +165,7 @@ export class ShopCrystalOfferManager {
 
     const dialog = document.createElement('section');
     dialog.className = 'shop-page__crystal-support-dialog style-dialog';
-    dialog.setAttribute('aria-label', 'Crystal support unavailable');
+    dialog.setAttribute('aria-label', 'Gem support unavailable');
     dialog.setAttribute('aria-modal', 'true');
     dialog.setAttribute('role', 'dialog');
     dialog.tabIndex = -1;

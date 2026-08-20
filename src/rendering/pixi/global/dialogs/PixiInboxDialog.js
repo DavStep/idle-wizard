@@ -46,10 +46,11 @@ const MAIL_MIN_HEIGHT = 88;
 const MAIL_CLAIM_HEIGHT = 30;
 const INBOX_EMPTY_FONT_SIZE = 20;
 const INBOX_REWARD_RESOURCE_PATTERN =
-  /\b(?:crystals?|emeralds?|coin|herbs?|mana|rubies|ruby|seeds?)\b/gi;
+  /\b(?:ambers?|amethysts?|crystals?|emeralds?|coin|herbs?|mana|rubies|ruby|seeds?)\b/gi;
 const INBOX_REWARD_RESOURCE_FRAMES = Object.freeze({
   coin: 'resource:coin',
   crystal: 'resource:crystal',
+  amethyst: 'resource:amethyst',
   emerald: 'resource:emerald',
   herb: 'herb:sageHerb',
   mana: 'resource:mana',
@@ -727,6 +728,12 @@ function getAtlasTexture(assetManager, frameName) {
 
 function normalizeRewardResource(value) {
   const normalized = String(value ?? '').trim().toLowerCase();
+  if (normalized === 'amber' || normalized === 'ambers') {
+    return 'crystal';
+  }
+  if (normalized === 'amethysts') {
+    return 'amethyst';
+  }
   if (normalized === 'crystals') {
     return 'crystal';
   }

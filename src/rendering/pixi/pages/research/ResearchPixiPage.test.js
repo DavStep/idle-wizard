@@ -439,6 +439,7 @@ describe('ResearchPixiPage', () => {
       displayName: 'silverleaf growing',
       itemKind: 'herb',
       itemKey: 'silverleafHerb',
+      artExtraKey: 'timerReduction',
       artExtraAssetId:
         'source:assets/icons/research/icon-research-time.png',
     });
@@ -451,10 +452,8 @@ describe('ResearchPixiPage', () => {
     expect(herbRow.artOverlay.visible).toBe(false);
     expect(herbRow.artExtra.texture).toBe(timerTexture);
     expect(herbRow.artExtra.visible).toBe(true);
-    expect(herbRow.artExtra).toMatchObject({
-      width: RESEARCH_PIXI_GEOMETRY.artExtraWidth,
-      height: RESEARCH_PIXI_GEOMETRY.artExtraHeight,
-    });
+    expect(herbRow.artExtra.width).toBeCloseTo(37.18);
+    expect(herbRow.artExtra.height).toBeCloseTo(40.56);
 
     harness.page.destroy();
     harness.dispose();
@@ -466,7 +465,7 @@ describe('ResearchPixiPage', () => {
     model.research.tabs.push(
       {
         id: 'emerald',
-        label: 'crystal research',
+        label: 'amber research',
         boxes: [],
       },
       {
@@ -511,7 +510,7 @@ describe('ResearchPixiPage', () => {
     const tabs = harness.page.tabs.getWidgets();
     expect(tabs.map((tab) => tab.control.textLabel.text)).toEqual([
       'Regular Research',
-      'Crystal Research',
+      'Amber Research',
       'Automation',
       'Advanced Research',
     ]);
@@ -558,7 +557,7 @@ describe('ResearchPixiPage', () => {
     model.actions.selectTab = selectTab;
     model.research.tabs.push({
       id: 'emerald',
-      label: 'crystal research',
+      label: 'amber research',
       boxes: [],
       locked: true,
       unlocked: false,
@@ -767,6 +766,14 @@ describe('ResearchPixiPage', () => {
     expect(row.description.position.x).toBe(
       RESEARCH_PIXI_GEOMETRY.descriptionX,
     );
+    const middleContentCenter =
+      (row.artWell.x + row.artWell.frameWidth + row.costButton.x) / 2;
+    expect(
+      row.description.x + RESEARCH_PIXI_GEOMETRY.descriptionWidth / 2,
+    ).toBeCloseTo(middleContentCenter);
+    expect(row.progress.root.x + row.progress.width / 2).toBeCloseTo(
+      middleContentCenter,
+    );
     expect(row.costButton.position.y).toBe(
       RESEARCH_PIXI_GEOMETRY.actionTop +
         RESEARCH_PIXI_GEOMETRY.contentOffsetY +
@@ -774,12 +781,15 @@ describe('ResearchPixiPage', () => {
           RESEARCH_PIXI_GEOMETRY.costHeight) /
           2,
     );
-    expect(row.progress.root.position.x).toBe(252 / 3);
+    expect(row.progress.root.position.x).toBe(
+      RESEARCH_PIXI_GEOMETRY.infoX,
+    );
     expect(row.progress.root.position.y).toBe(
       RESEARCH_PIXI_GEOMETRY.rowHeight -
         RESEARCH_PIXI_GEOMETRY.progressBottom -
         RESEARCH_PIXI_GEOMETRY.progressHeight,
     );
+    expect(RESEARCH_PIXI_GEOMETRY.progressBottom).toBe(12);
     expect(row.progress.width).toBe(422 / 3);
     expect(row.progress).toMatchObject({
       tone: 'yellow',
@@ -1064,16 +1074,20 @@ describe('ResearchPixiPage', () => {
     harness.page.tick();
     expect(row.researchedButton.visible).toBe(true);
     expect(row.researchedButton.tone).toBe('yellow');
-    expect(row.researchedButton.amountLabel.text).toBe('Researching');
+    expect(row.researchedButton.amountLabel.text).toBe('1');
+    expect(row.researchedButton.resource).toBe('amethyst');
     expect(row.researchingTimerLabel.text).toBe('3s');
     expect(row.progress.progress).toBeCloseTo(0.7);
-    expect(row.researchingTimerLabel.colorToken).toBe('#d4d4d4');
+    expect(row.researchingTimerLabel.colorToken).toBe('#ffffff');
+    expect(row.researchingTimerLabel.parent).toBe(row.progress.root);
     expect(row.researchingTimerLabel.x).toBe(
-      row.researchedButton.buttonWidth / 2,
+      row.progress.width / 2,
     );
-    expect(row.researchingTimerLabel.y).toBe(
-      row.researchedButton.buttonHeight * 0.68 - 2,
-    );
+    expect(row.researchingTimerLabel.y).toBe(row.progress.height / 2);
+    expect(row.researchedButton.amountLabel.position).toMatchObject({
+      x: row.researchedButton.buttonWidth / 2,
+      y: row.researchedButton.buttonHeight / 2,
+    });
     expect(row.readonlyValue.visible).toBe(false);
     expect(setStatusModel).not.toHaveBeenCalled();
     expect(styleStatusButton).not.toHaveBeenCalled();
@@ -1183,12 +1197,15 @@ describe('ResearchPixiPage', () => {
     expect(value.visible).toBe(false);
     expect(row.researchedButton.visible).toBe(true);
     expect(row.researchedButton.tone).toBe('yellow');
-    expect(row.researchedButton.amountLabel.text).toBe('Researching');
+    expect(row.researchedButton.amountLabel.text).toBe('1');
+    expect(row.researchedButton.resource).toBe('amethyst');
     expect(row.researchingTimerLabel.text).toBe('5s');
-    expect(row.researchingTimerLabel.colorToken).toBe('#d4d4d4');
+    expect(row.researchingTimerLabel.colorToken).toBe('#ffffff');
+    expect(row.researchingTimerLabel.parent).toBe(row.progress.root);
     expect(row.researchingTimerLabel.x).toBe(
-      row.researchedButton.buttonWidth / 2,
+      row.progress.width / 2,
     );
+    expect(row.researchingTimerLabel.y).toBe(row.progress.height / 2);
 
     harness.page.destroy();
     harness.dispose();

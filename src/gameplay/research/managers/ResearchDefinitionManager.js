@@ -62,35 +62,24 @@ import {
   manaResearchSeriesIds,
 } from '../manaResearch.js';
 
-const summonSeedResearches = [
-  {
-    id: 'summonSeedsX2',
-    label: 'x2 summon',
-    value: '20 mana',
-    description: 'summons 2 researched seeds for 20 mana.',
-  },
-  {
-    id: 'summonSeedsX3',
-    label: 'x3 summon',
-    value: '30 mana',
-    requiredResearchIds: ['summonSeedsX2'],
-    description: 'summons 3 researched seeds for 30 mana.',
-  },
-  {
-    id: 'summonSeedsX4',
-    label: 'x4 summon',
-    value: '40 mana',
-    requiredResearchIds: ['summonSeedsX3'],
-    description: 'summons 4 researched seeds for 40 mana.',
-  },
-  {
-    id: 'summonSeedsX5',
-    label: 'x5 summon',
-    value: '50 mana',
-    requiredResearchIds: ['summonSeedsX4'],
-    description: 'summons 5 researched seeds for 50 mana.',
-  },
-];
+const summonSeedResearches = Array.from({ length: 4 }, (_value, index) => {
+  const level = index + 1;
+  const multiplier = level + 1;
+
+  return {
+    id: `summonSeedsX${multiplier}`,
+    label: `summon seed lvl ${level}`,
+    displayName: 'summon seed',
+    value: `x${multiplier} seeds`,
+    showEffect: true,
+    starLevel: level,
+    starMaxLevel: 4,
+    seriesId: 'summonSeeds',
+    requiredResearchIds:
+      level > 1 ? [`summonSeedsX${multiplier - 1}`] : [],
+    description: `summons ${multiplier} researched seeds for ${multiplier * 10} mana.`,
+  };
+});
 
 const seedUnlockRequiredPlayerLevels = {
   mintSeed: 2,
@@ -232,7 +221,7 @@ export class ResearchDefinitionManager {
       },
       {
         id: 'emerald',
-        label: 'crystal research',
+        label: 'amber research',
         boxes: this.getEmeraldResearchBoxes({
           includeLevelLockedAutomation,
           completedResearchIds,
@@ -269,43 +258,18 @@ export class ResearchDefinitionManager {
   getRegularResearchBoxes({ includeHiddenRecipeUnlocks = false } = {}) {
     const boxes = [
       {
-        id: 'manaSphere',
-        label: 'mana sphere research',
-        researches: this.getManaResearches(),
+        id: 'utilityUnlocks',
+        label: 'utility unlocks',
+        researches: [
+          ...this.getManaResearches(),
+          ...summonSeedResearches,
+          ...this.getGardenBulkActionResearches(),
+        ],
       },
       {
         id: 'seedUnlocks',
         label: 'seed research',
         researches: this.getSeedResearches(),
-      },
-      {
-        id: 'summonSeeds',
-        label: 'summon seeds unlock',
-        researches: summonSeedResearches,
-      },
-      {
-        id: 'gardenBulkActions',
-        label: 'garden action research',
-        researches: [
-          {
-            id: gardenBulkResearchIds.plantAll,
-            label: 'plant all',
-            value: 'bulk action',
-            requiredPlayerLevel: gardenBulkResearchLevels.plantAll,
-            requiredResearchIds: [],
-            seriesId: 'gardenBulkActions',
-            description: 'plants the selected seed in every empty plot that has enough seed.',
-          },
-          {
-            id: gardenBulkResearchIds.harvestAll,
-            label: 'harvest all',
-            value: 'bulk action',
-            requiredPlayerLevel: gardenBulkResearchLevels.harvestAll,
-            requiredResearchIds: [gardenBulkResearchIds.plantAll],
-            seriesId: 'gardenBulkActions',
-            description: 'starts harvesting every ready garden plot.',
-          },
-        ],
       },
     ];
 
@@ -318,6 +282,29 @@ export class ResearchDefinitionManager {
     }
 
     return boxes;
+  }
+
+  getGardenBulkActionResearches() {
+    return [
+      {
+        id: gardenBulkResearchIds.plantAll,
+        label: 'plant all',
+        value: 'bulk action',
+        requiredPlayerLevel: gardenBulkResearchLevels.plantAll,
+        requiredResearchIds: [],
+        seriesId: 'gardenBulkActions',
+        description: 'plants the selected seed in every empty plot that has enough seed.',
+      },
+      {
+        id: gardenBulkResearchIds.harvestAll,
+        label: 'harvest all',
+        value: 'bulk action',
+        requiredPlayerLevel: gardenBulkResearchLevels.harvestAll,
+        requiredResearchIds: [gardenBulkResearchIds.plantAll],
+        seriesId: 'gardenBulkActions',
+        description: 'starts harvesting every ready garden plot.',
+      },
+    ];
   }
 
   getManaResearches() {
