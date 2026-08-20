@@ -182,6 +182,10 @@ describe('WorkshopDiscoveriesManager', () => {
     expect(parent.querySelector('.workshop-page__discovery-recipe-book')).not.toBeNull();
     expect(parent.querySelector('.brewing-page__recipe-select-button')).toBeNull();
     expect(getPagePotionNames(parent)).toEqual([['unknown potion'], ['silverleaf quiet']]);
+    expect(
+      parent.querySelector('.workshop-page__discovery-potion-row.is-unknown .brewing-page__recipe-potion-icon')
+        ?.dataset.assetAtlasFrame,
+    ).toBe('status:lockDefault');
     expect(parent.querySelector('.workshop-page__discovery-recipe-page-label')?.textContent).toBe(
       'pages 1-2/3',
     );

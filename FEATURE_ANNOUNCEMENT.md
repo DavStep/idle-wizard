@@ -4,6 +4,12 @@ These are developer-to-player Discord posts. Describe features only in Idle
 Wizard terms; do not mention other game names, source projects, ports, or
 implementation provenance.
 
+## 0.3.80
+
+Trade Alliances can now create their own banner. Editors can choose from eleven emblems, ten cloth colors, and ten emblem colors, with a live preview before saving. The finished banner follows the alliance into Browse, Alliance Info, and alliance leaderboard rows so every group has a clearer identity.
+
+This release also brings a glowing illustrated hearth beneath active Brewing cauldrons, makes ingredient requirements easier to read, shows the next stall payout directly in the Market, and gives Gem bundles a compact layout for faster comparison.
+
 ## 0.3.79
 
 Amethyst has arrived as a new Research gem. Every active timed study now shows an Amethyst action based on its remaining time—one Amethyst per minute, rounded up—and using it completes the study immediately through the normal reward flow.

@@ -65,6 +65,11 @@ describe('PixiLoadingSplash', () => {
     expect(splash.loadingLabel.textObject.style.fontFamily).toBe(
       PIXI_FONT_FAMILIES['lilita-one'],
     );
+    expect(splash.loadingLabel.text).toBe('Loading');
+    expect(splash.statusLabel.text).toBe('Loading assets...');
+    expect(splash.statusLabel.fontSize).toBe(10);
+    expect(splash.statusLabel.y).toBeGreaterThan(splash.loadingLabel.y);
+    expect(splash.statusLabel.y).toBeLessThan(splash.progressBar.y);
     expect(splash.versionLabel.text).toMatch(/^v\d+\.\d+\.\d+$/u);
     expect(splash.versionLabel.fontFamily).toBe(
       splash.loadingLabel.fontFamily,
@@ -79,6 +84,46 @@ describe('PixiLoadingSplash', () => {
     );
     expect(splash.progressBar.theme.progress.key).toBe('gradient');
     expect(splash.progressBar.end).toBe(0.5);
+
+    splash.destroy({ children: true });
+  });
+
+  it('shows phase and issue detail under the fixed Loading label', () => {
+    const splash = new PixiLoadingSplash({
+      assets: {
+        getTexture: () => Texture.EMPTY,
+      },
+    });
+
+    splash.setStatus('Connecting user...');
+    expect(splash.loadingLabel.text).toBe('Loading');
+    expect(splash.statusLabel.text).toBe('Connecting user...');
+
+    splash.setText('Issue: Server is paused.');
+    expect(splash.loadingLabel.text).toBe('Loading');
+    expect(splash.statusLabel.text).toBe('Issue: Server is paused.');
+
+    splash.destroy({ children: true });
+  });
+
+  it('preserves an indeterminate range through viewport layout', () => {
+    const splash = new PixiLoadingSplash({
+      assets: {
+        getTexture: () => Texture.EMPTY,
+      },
+    });
+
+    splash.setProgressRange(0.36, 0.64);
+    splash.layout({
+      viewportPx: { width: 390, height: 844 },
+      sourceHeight: 844,
+      sourceOffsetX: 0,
+      sourceScale: 1,
+      stageLogicalWidth: 390,
+    });
+
+    expect(splash.progressBar.start).toBe(0.36);
+    expect(splash.progressBar.end).toBe(0.64);
 
     splash.destroy({ children: true });
   });

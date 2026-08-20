@@ -108,6 +108,8 @@ export class PixiUiRuntimeFacade {
       await this.assetManager.loadRemaining({
         onProgress: (progress) => this.startupView?.setProgress?.(progress),
       });
+      this.startupView?.setStatus?.('Preparing game...');
+      this.applicationManager.getApplication().render?.();
     } else {
       await this.assetManager.loadAll();
     }
@@ -198,6 +200,7 @@ export class PixiUiRuntimeFacade {
     this.startupView = view;
     view.applyTheme?.(this.themeManager.getSnapshot());
     view.layout?.(this.applicationManager.getProjection());
+    view.setStatus?.('Loading assets...');
     view.setProgress?.(0);
     this.applicationManager.getLayers().interactionLocks.addChild(view);
     this.applicationManager.setSplashViewportActive?.(true);

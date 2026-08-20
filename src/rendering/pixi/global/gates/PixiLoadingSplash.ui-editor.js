@@ -15,13 +15,14 @@ export default defineUiEditorIntegration({
   label: 'App Loading Splash',
   properties: [
     { label: 'Production class', value: 'PixiLoadingSplash' },
-    { label: 'Contract', value: 'Safe-area loading art, status label, and shared progress rail' },
+    { label: 'Contract', value: 'Safe-area loading art, phase detail, issue detail, and shared progress rail' },
   ],
   scenarios: [
-    { fixture: { progress: 0.2, text: 'Connecting to server' }, id: 'connecting', label: 'Connecting', mount: mountLoadingSplash },
-    { fixture: { progress: 0.68, text: 'Loading game' }, id: 'loading', label: 'Loading', mount: mountLoadingSplash },
-    { fixture: { progress: 0.42, text: 'Updating 10.1 MB / 24.0 MB' }, id: 'updating', label: 'Updating', mount: mountLoadingSplash },
-    { fixture: { progress: 1, text: 'Ready' }, id: 'ready', label: 'Ready', mount: mountLoadingSplash },
+    { fixture: { progress: 0.2, status: 'Connecting user...' }, id: 'connecting', label: 'Connecting', mount: mountLoadingSplash },
+    { fixture: { progress: 0.68, status: 'Loading assets...' }, id: 'loading', label: 'Loading', mount: mountLoadingSplash },
+    { fixture: { progress: 0.42, status: 'Updating 10.1 MB / 24.0 MB' }, id: 'updating', label: 'Updating', mount: mountLoadingSplash },
+    { fixture: { progress: 0, status: 'Issue: Server is paused.' }, id: 'issue', label: 'Issue', mount: mountLoadingSplash },
+    { fixture: { progress: 1, status: 'Ready' }, id: 'ready', label: 'Ready', mount: mountLoadingSplash },
   ],
   sectionId: 'composite-widgets',
   usages: [
@@ -37,7 +38,7 @@ function createLoadingSplashThumbnail() {
       assets,
       fixture: {
         progress: 0.68,
-        text: 'Loading game',
+        status: 'Loading assets...',
         userId: '12345678abcdef12345678abcdef12345678',
       },
       projection: createProjection(),
@@ -73,12 +74,12 @@ async function mountLoadingSplash(_context, fixture) {
         type: 'range',
       },
       {
-        getValue: () => state.text,
+        getValue: () => state.status,
         id: 'status',
         label: 'Status',
         setValue: (value) => {
-          state.text = String(value);
-          splash.setText(state.text);
+          state.status = String(value);
+          splash.setStatus(state.status);
         },
         type: 'text',
       },
@@ -91,7 +92,7 @@ function createLoadingSplashControl({ assets, fixture, projection }) {
     assets,
     getUserId: () => fixture.userId,
   });
-  splash.setText(fixture.text);
+  splash.setStatus(fixture.status);
   splash.setProgress(fixture.progress);
   splash.layout(projection ?? createProjection());
   return {

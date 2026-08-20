@@ -218,9 +218,12 @@ describe('AppLifecycleManager', () => {
     lifecycle.start();
     await flushPromises();
 
-    expect(lifecycle.onlineGateManager.showConnecting).toHaveBeenCalledTimes(1);
-    expect(lifecycle.onlineGateManager.showConnecting).toHaveBeenCalledWith({
-      progressValue: 1,
+    expect(lifecycle.onlineGateManager.showConnecting).toHaveBeenCalledTimes(2);
+    expect(lifecycle.onlineGateManager.showConnecting).toHaveBeenNthCalledWith(1, {
+      status: 'Connecting user...',
+    });
+    expect(lifecycle.onlineGateManager.showConnecting).toHaveBeenNthCalledWith(2, {
+      status: 'Connecting to server...',
     });
     expect(lifecycle.renderFacade.mount).toHaveBeenCalledWith(stage);
     expect(
@@ -290,7 +293,7 @@ describe('AppLifecycleManager', () => {
     );
     expect(lifecycle.gameplayTickManager.stop).toHaveBeenCalledTimes(1);
     expect(lifecycle.renderFacade.stopFrameLoop).toHaveBeenCalledTimes(1);
-    expect(lifecycle.onlineGateManager.showConnecting).toHaveBeenCalledTimes(2);
+    expect(lifecycle.onlineGateManager.showConnecting).toHaveBeenCalledTimes(3);
     expect(lifecycle.onlineGateManager.showOffline).not.toHaveBeenCalled();
     expect(lifecycle.connectionRetryManager.schedule).toHaveBeenCalledTimes(1);
 
@@ -310,7 +313,7 @@ describe('AppLifecycleManager', () => {
 
     expect(lifecycle.gameplayTickManager.stop).toHaveBeenCalledTimes(1);
     expect(lifecycle.renderFacade.stopFrameLoop).toHaveBeenCalledTimes(1);
-    expect(lifecycle.onlineGateManager.showConnecting).toHaveBeenCalledTimes(2);
+    expect(lifecycle.onlineGateManager.showConnecting).toHaveBeenCalledTimes(3);
     expect(lifecycle.onlineGateManager.showOffline).not.toHaveBeenCalled();
     expect(lifecycle.connectionRetryManager.schedule).toHaveBeenCalledTimes(1);
 
@@ -334,13 +337,13 @@ describe('AppLifecycleManager', () => {
       1,
     );
     expect(lifecycle.connectionRetryManager.schedule).not.toHaveBeenCalled();
-    expect(lifecycle.onlineGateManager.showConnecting).toHaveBeenCalledTimes(1);
+    expect(lifecycle.onlineGateManager.showConnecting).toHaveBeenCalledTimes(2);
     expect(lifecycle.backendFacade.start).toHaveBeenCalledTimes(1);
 
     showApp();
     await flushPromises();
 
-    expect(lifecycle.onlineGateManager.showConnecting).toHaveBeenCalledTimes(2);
+    expect(lifecycle.onlineGateManager.showConnecting).toHaveBeenCalledTimes(3);
     expect(lifecycle.backendFacade.start).toHaveBeenCalledTimes(2);
   });
 
@@ -503,7 +506,7 @@ describe('AppLifecycleManager', () => {
 
     expect(lifecycle.gameplayTickManager.start).not.toHaveBeenCalled();
     expect(lifecycle.renderFacade.startFrameLoop).not.toHaveBeenCalled();
-    expect(lifecycle.onlineGateManager.showConnecting).toHaveBeenCalledTimes(2);
+    expect(lifecycle.onlineGateManager.showConnecting).toHaveBeenCalledTimes(3);
     expect(lifecycle.onlineGateManager.showOffline).not.toHaveBeenCalled();
     expect(lifecycle.connectionRetryManager.schedule).toHaveBeenCalledTimes(1);
 
@@ -522,7 +525,7 @@ describe('AppLifecycleManager', () => {
 
     expect(lifecycle.gameplayTickManager.start).not.toHaveBeenCalled();
     expect(lifecycle.renderFacade.startFrameLoop).not.toHaveBeenCalled();
-    expect(lifecycle.onlineGateManager.showConnecting).toHaveBeenCalledTimes(2);
+    expect(lifecycle.onlineGateManager.showConnecting).toHaveBeenCalledTimes(3);
     expect(lifecycle.onlineGateManager.showOffline).not.toHaveBeenCalled();
     expect(lifecycle.connectionRetryManager.schedule).toHaveBeenCalledTimes(1);
 
@@ -571,7 +574,7 @@ describe('AppLifecycleManager', () => {
     });
     expect(signOut).toHaveBeenCalledTimes(1);
     expect(lifecycle.onlineGateManager.showOffline).not.toHaveBeenCalled();
-    expect(lifecycle.onlineGateManager.showConnecting).toHaveBeenCalledTimes(2);
+    expect(lifecycle.onlineGateManager.showConnecting).toHaveBeenCalledTimes(3);
     expect(lifecycle.backendFacade.start).toHaveBeenCalledTimes(2);
   });
 
@@ -745,13 +748,13 @@ describe('AppLifecycleManager', () => {
     await flushPromises();
 
     expect(freshStartChoiceManager.choose).toHaveBeenCalledTimes(1);
-    expect(lifecycle.onlineGateManager.showConnecting).toHaveBeenCalledTimes(1);
+    expect(lifecycle.onlineGateManager.showConnecting).toHaveBeenCalledTimes(2);
     expect(lifecycle.onlineGateManager.hide).toHaveBeenCalledTimes(1);
 
     hideApp();
     showApp();
 
-    expect(lifecycle.onlineGateManager.showConnecting).toHaveBeenCalledTimes(1);
+    expect(lifecycle.onlineGateManager.showConnecting).toHaveBeenCalledTimes(2);
     expect(lifecycle.onlineGateManager.hide).toHaveBeenCalledTimes(2);
 
     resolveChoice(FRESH_START_CHOICE_START_FRESH);

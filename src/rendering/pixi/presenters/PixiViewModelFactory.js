@@ -9,6 +9,11 @@ import { parseWorldChatSystemPlayerAnnouncement } from '../../../pages/workshop/
 import { getPlayerFrameTint } from '../../../player/playerFrames.js';
 import { marketLicences } from '../../../shared/marketLicence.js';
 import {
+  DEFAULT_TRADE_ALLIANCE_BANNER_COLOR,
+  DEFAULT_TRADE_ALLIANCE_EMBLEM_COLOR,
+} from '../../../shared/tradeAllianceBannerColors.js';
+import { DEFAULT_TRADE_ALLIANCE_EMBLEM } from '../../../shared/tradeAllianceEmblems.js';
+import {
   getOwnTradeAllianceQuestContribution,
   getTradeAllianceQuestParticipationLock,
   isTradeAllianceQuestClaimable,
@@ -112,6 +117,7 @@ const TRADE_ALLIANCE_SOLO_TABS = Object.freeze([
 const TRADE_ALLIANCE_MEMBER_TABS = Object.freeze([
   Object.freeze({ id: 'home', label: 'Home' }),
   Object.freeze({ id: 'quests', label: 'Quests' }),
+  Object.freeze({ id: 'banner', label: 'Banner' }),
   Object.freeze({ id: 'settings', label: 'Settings' }),
 ]);
 const SEED_DROP_PREFERENCES = Object.freeze([
@@ -975,6 +981,12 @@ export class PixiViewModelFactory {
             name: candidate.name ?? candidate.allianceName ?? 'Alliance',
             tag: candidate.tag ?? '',
             tagColor: candidate.tagColor ?? 'ink',
+            bannerColor:
+              candidate.bannerColor ?? DEFAULT_TRADE_ALLIANCE_BANNER_COLOR,
+            emblemColor:
+              candidate.emblemColor ?? DEFAULT_TRADE_ALLIANCE_EMBLEM_COLOR,
+            emblemId:
+              candidate.emblemId ?? DEFAULT_TRADE_ALLIANCE_EMBLEM,
             leaderName:
               candidate.leaderName ??
               candidate.leaderUsername ??
@@ -1041,7 +1053,9 @@ export class PixiViewModelFactory {
     const canEditSettings = tradeAlliance.canEditSettings === true;
     const memberTabs = canEditSettings
       ? TRADE_ALLIANCE_MEMBER_TABS
-      : TRADE_ALLIANCE_MEMBER_TABS.filter((tab) => tab.id !== 'settings');
+      : TRADE_ALLIANCE_MEMBER_TABS.filter(
+          (tab) => tab.id !== 'settings' && tab.id !== 'banner',
+        );
     const safeTabId = memberTabs.some(
       (tab) => tab.id === selectedTabId,
     )
@@ -1126,12 +1140,19 @@ export class PixiViewModelFactory {
           ? 'No Alliance Quests'
           : '',
       settings:
-        safeTabId === 'settings'
+        safeTabId === 'settings' || safeTabId === 'banner'
           ? {
               allianceId,
+              mode: safeTabId === 'banner' ? 'banner' : 'settings',
               name,
               tag,
               tagColor: alliance.tagColor ?? 'ink',
+              bannerColor:
+                alliance.bannerColor ?? DEFAULT_TRADE_ALLIANCE_BANNER_COLOR,
+              emblemColor:
+                alliance.emblemColor ?? DEFAULT_TRADE_ALLIANCE_EMBLEM_COLOR,
+              emblemId:
+                alliance.emblemId ?? DEFAULT_TRADE_ALLIANCE_EMBLEM,
               description: String(alliance.description ?? ''),
               notice: String(alliance.notice ?? ''),
               joinMode,
@@ -1178,6 +1199,12 @@ export class PixiViewModelFactory {
             allianceTag: String(alliance.tag ?? alliance.allianceTag ?? '').trim(),
             allianceTagColor:
               alliance.tagColor ?? alliance.allianceTagColor ?? 'ink',
+            bannerColor:
+              alliance.bannerColor ?? DEFAULT_TRADE_ALLIANCE_BANNER_COLOR,
+            emblemColor:
+              alliance.emblemColor ?? DEFAULT_TRADE_ALLIANCE_EMBLEM_COLOR,
+            emblemId:
+              alliance.emblemId ?? DEFAULT_TRADE_ALLIANCE_EMBLEM,
             memberCount: Math.max(0, Math.floor(Number(alliance.memberCount) || 0)),
             totalCoinLabel: formatCoinAmount(
               alliance[period.valueKey] ??
@@ -2245,6 +2272,16 @@ function createWorkshopFeatures({
       notification: Boolean(notifications.alliance),
       allianceTagColor:
         alliance?.tagColor ?? alliance?.allianceTagColor ?? 'red',
+      allianceFlag: alliance
+        ? {
+            bannerColor:
+              alliance.bannerColor ?? DEFAULT_TRADE_ALLIANCE_BANNER_COLOR,
+            emblemColor:
+              alliance.emblemColor ?? DEFAULT_TRADE_ALLIANCE_EMBLEM_COLOR,
+            emblemId:
+              alliance.emblemId ?? DEFAULT_TRADE_ALLIANCE_EMBLEM,
+          }
+        : null,
     },
     {
       id: 'inbox',

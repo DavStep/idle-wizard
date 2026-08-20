@@ -32,6 +32,7 @@ const ROOT_RUN_SIDE_ICON_FILES = Object.freeze([
 const CONVERTED_PNG_ICON_FILES = Object.freeze([
   'icon-alliance-banner-base.png',
   'icon-alliance-banner-cloth-mask.png',
+  'icon-alliance-banner-emblem.png',
   'icon-leaderboard-trophy.png',
   'icon-discoveries-journal.png',
 ]);
@@ -233,5 +234,30 @@ describe('Workshop action icon assets', () => {
     expect(bytes.length).toBeGreaterThan(1_000);
     expect(bytes.subarray(1, 4).toString('ascii')).toBe('PNG');
     expect(() => PNG.sync.read(bytes)).not.toThrow();
+  });
+
+  it('derives the configurable banner layers from the canonical single-tail pennant', () => {
+    const source = PNG.sync.read(
+      fs.readFileSync(path.join(ICON_DIRECTORY, 'icon-side-alliance-root-run.png')),
+    );
+    const base = PNG.sync.read(
+      fs.readFileSync(path.join(ICON_DIRECTORY, 'icon-alliance-banner-base.png')),
+    );
+    const cloth = PNG.sync.read(
+      fs.readFileSync(path.join(ICON_DIRECTORY, 'icon-alliance-banner-cloth-mask.png')),
+    );
+
+    expect(base.width).toBe(source.width);
+    expect(base.height).toBe(source.height);
+    expect(cloth.width).toBe(source.width);
+    expect(cloth.height).toBe(source.height);
+
+    for (let offset = 3; offset < source.data.length; offset += 4) {
+      const sourceAlpha = source.data[offset];
+      const baseAlpha = base.data[offset];
+      const clothAlpha = cloth.data[offset];
+      expect(Math.max(baseAlpha, clothAlpha)).toBe(sourceAlpha);
+      expect(baseAlpha > 0 && clothAlpha > 0).toBe(false);
+    }
   });
 });

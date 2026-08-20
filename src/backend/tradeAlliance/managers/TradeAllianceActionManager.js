@@ -1,4 +1,9 @@
 import { normalizeTradeAllianceTagColor } from '../../../shared/tradeAllianceTagColors.js';
+import {
+  normalizeTradeAllianceBannerColor,
+  normalizeTradeAllianceEmblemColor,
+} from '../../../shared/tradeAllianceBannerColors.js';
+import { normalizeTradeAllianceEmblem } from '../../../shared/tradeAllianceEmblems.js';
 import { getChatFailureReason } from '../../shared/chatFailureReasons.js';
 
 const MAX_MESSAGE_LENGTH = 160;
@@ -18,21 +23,46 @@ export class TradeAllianceActionManager {
     this.connection = null;
   }
 
-  createAlliance({ name, tag, tagColor, description = '', joinMode = 'apply' } = {}) {
+  createAlliance({
+    name,
+    tag,
+    tagColor,
+    bannerColor,
+    emblemColor,
+    emblemId,
+    description = '',
+    joinMode = 'apply',
+  } = {}) {
     return this.callReducer('createTradeAlliance', 'create_trade_alliance', {
       name: this.normalizeName(name),
       tag: this.normalizeTag(tag),
       tagColor: normalizeTradeAllianceTagColor(tagColor),
+      bannerColor: normalizeTradeAllianceBannerColor(bannerColor),
+      emblemColor: normalizeTradeAllianceEmblemColor(emblemColor),
+      emblemId: normalizeTradeAllianceEmblem(emblemId),
       description: this.normalizeText(description, 240),
       joinMode: this.normalizeJoinMode(joinMode),
     });
   }
 
-  updateProfile({ name, tag, tagColor, description = '', notice = '', joinMode = 'apply' } = {}) {
+  updateProfile({
+    name,
+    tag,
+    tagColor,
+    bannerColor,
+    emblemColor,
+    emblemId,
+    description = '',
+    notice = '',
+    joinMode = 'apply',
+  } = {}) {
     return this.callReducer('updateTradeAllianceProfile', 'update_trade_alliance_profile', {
       name: this.normalizeName(name),
       tag: this.normalizeTag(tag),
       tagColor: normalizeTradeAllianceTagColor(tagColor),
+      bannerColor: normalizeTradeAllianceBannerColor(bannerColor),
+      emblemColor: normalizeTradeAllianceEmblemColor(emblemColor),
+      emblemId: normalizeTradeAllianceEmblem(emblemId),
       description: this.normalizeText(description, 240),
       notice: this.normalizeText(notice, 240),
       joinMode: this.normalizeJoinMode(joinMode),

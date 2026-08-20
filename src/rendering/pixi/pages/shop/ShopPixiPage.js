@@ -79,9 +79,13 @@ const OFFER_ACTION_WIDTH = 72;
 const OFFER_ACTION_HEIGHT = 28;
 const STALL_SELECT_ACTION_WIDTH = 72;
 const STALL_SELECT_ACTION_HEIGHT = 42;
-const MARKET_OFFER_CARD_HEIGHT = STALL_CARD_HEIGHT;
+const MARKET_OFFER_WIDE_HEIGHT = STALL_CARD_HEIGHT;
+const MARKET_OFFER_CARD_HEIGHT = 126;
+const MARKET_OFFER_GRID_COLUMNS = 3;
+const MARKET_OFFER_GRID_GAP = 6;
 const MARKET_OFFER_ACTION_WIDTH = STALL_SELECT_ACTION_WIDTH;
 const MARKET_OFFER_ACTION_HEIGHT = STALL_SELECT_ACTION_HEIGHT;
+const MARKET_OFFER_CARD_ACTION_HEIGHT = 36;
 const MARKET_OFFER_ICON_SIZE = 38;
 const BORDER_ACTION_EDGE_INSET = 12;
 const BORDER_ACTION_GAP = 6;
@@ -254,7 +258,7 @@ export class ShopPixiPage extends BasePixiRetainedView {
       rowHeight: OFFER_ROW_HEIGHT,
       label: 'shop:crystalOffers',
       titleVariant: 'crystal',
-      rowPresentation: 'offer',
+      rowPresentation: 'offer-grid',
     });
 
     this.panelScrolls
@@ -382,6 +386,7 @@ export class ShopPixiPage extends BasePixiRetainedView {
           ? [
               {
                 id: 'dailyCrystalOffer',
+                fullWidth: true,
                 title:
                   this.model.crystals.dailyCrystalOffer.title ??
                   'Daily Offer',
@@ -412,6 +417,7 @@ export class ShopPixiPage extends BasePixiRetainedView {
           : []),
         ...this.model.crystals.offers.map((offer, index) => ({
           ...offer,
+          compact: true,
           id: offer.id ?? offer.amethystCount ?? offer.crystalCount ?? index,
           title: offer.title ?? 'Gem Offer',
           resourceKey: offer.resourceKey ?? 'crystal',
@@ -1004,8 +1010,9 @@ export class ShopRowsSection {
               inputRouter,
               semanticRegistry,
             })
-          : this.rowPresentation === 'offer'
-            ? new MarketOfferRow({
+          : this.rowPresentation === 'offer' ||
+              this.rowPresentation === 'offer-grid'
+            ? new MarketOfferCard({
                 assetManager,
                 inputRouter,
                 semanticRegistry,
@@ -1123,16 +1130,21 @@ export class ShopRowsSection {
       this.rowPresentation === 'stall'
         ? STALL_CARD_HEIGHT
         : this.rowPresentation === 'offer'
-          ? MARKET_OFFER_CARD_HEIGHT
+          ? MARKET_OFFER_WIDE_HEIGHT
         : Math.max(OFFER_CARD_MIN_HEIGHT, this.rowHeight);
     const trailingRowHeight = Math.max(
       OFFER_CARD_MIN_HEIGHT,
       this.rowHeight,
     );
     let rowsHeight =
-      rowCount > 0
-        ? rowCount * rowHeight + (rowCount - 1) * CARD_GAP
-        : 0;
+      this.rowPresentation === 'offer-grid'
+        ? createOfferGridLayout(
+            this.rows.getWidgets(),
+            PIXI_UI_GEOMETRY.sourceWidth,
+          ).height
+        : rowCount > 0
+          ? rowCount * rowHeight + (rowCount - 1) * CARD_GAP
+          : 0;
     if (trailingRowCount > 0) {
       rowsHeight +=
         (rowsHeight > 0 ? CARD_GAP : 0) +
@@ -1163,7 +1175,7 @@ export class ShopRowsSection {
       this.rowPresentation === 'stall'
         ? STALL_CARD_HEIGHT
         : this.rowPresentation === 'offer'
-          ? MARKET_OFFER_CARD_HEIGHT
+          ? MARKET_OFFER_WIDE_HEIGHT
         : Math.max(OFFER_CARD_MIN_HEIGHT, this.rowHeight);
     const trailingRowHeight = Math.max(
       OFFER_CARD_MIN_HEIGHT,
@@ -1175,14 +1187,30 @@ export class ShopRowsSection {
       STATION_TITLE_HEIGHT + STATION_TITLE_ROW_GAP,
     );
     let rowY = 0;
-    for (const row of this.rows.getWidgets()) {
-      row.setBounds(
-        0,
-        rowY,
+    if (this.rowPresentation === 'offer-grid') {
+      const grid = createOfferGridLayout(
+        this.rows.getWidgets(),
         contentWidth,
-        rowHeight,
       );
-      rowY += rowHeight + CARD_GAP;
+      for (const item of grid.items) {
+        item.row.setBounds(
+          item.x,
+          item.y,
+          item.width,
+          item.height,
+        );
+      }
+      rowY = grid.height + (grid.height > 0 ? CARD_GAP : 0);
+    } else {
+      for (const row of this.rows.getWidgets()) {
+        row.setBounds(
+          0,
+          rowY,
+          contentWidth,
+          rowHeight,
+        );
+        rowY += rowHeight + CARD_GAP;
+      }
     }
     this.trailingRowsLayer.position.set(0, rowY);
     let trailingRowY = 0;
@@ -1236,6 +1264,58 @@ export class ShopRowsSection {
     this.actionPool.destroy();
     this.root.destroy({ children: true });
   }
+}
+
+function createOfferGridLayout(rows, width) {
+  const safeWidth = Math.max(0, Number(width) || 0);
+  const compactWidth =
+    (safeWidth -
+      MARKET_OFFER_GRID_GAP * (MARKET_OFFER_GRID_COLUMNS - 1)) /
+    MARKET_OFFER_GRID_COLUMNS;
+  const items = [];
+  let column = 0;
+  let y = 0;
+
+  for (const row of rows) {
+    const fullWidth = row.model?.fullWidth === true || !row.compact;
+    if (fullWidth) {
+      if (column > 0) {
+        y += MARKET_OFFER_CARD_HEIGHT + MARKET_OFFER_GRID_GAP;
+        column = 0;
+      }
+      items.push({
+        row,
+        x: 0,
+        y,
+        width: safeWidth,
+        height: MARKET_OFFER_WIDE_HEIGHT,
+      });
+      y += MARKET_OFFER_WIDE_HEIGHT + MARKET_OFFER_GRID_GAP;
+      continue;
+    }
+
+    items.push({
+      row,
+      x: column * (compactWidth + MARKET_OFFER_GRID_GAP),
+      y,
+      width: compactWidth,
+      height: MARKET_OFFER_CARD_HEIGHT,
+    });
+    column += 1;
+    if (column === MARKET_OFFER_GRID_COLUMNS) {
+      y += MARKET_OFFER_CARD_HEIGHT + MARKET_OFFER_GRID_GAP;
+      column = 0;
+    }
+  }
+
+  if (column > 0) {
+    y += MARKET_OFFER_CARD_HEIGHT + MARKET_OFFER_GRID_GAP;
+  }
+
+  return {
+    items,
+    height: Math.max(0, y - MARKET_OFFER_GRID_GAP),
+  };
 }
 
 export class ShopStallWidget {
@@ -1417,6 +1497,14 @@ export class ShopStallWidget {
     const priceText = stall.priceLabel ?? stall.price ?? '';
     const priceResourceKey = stall.priceResourceKey ?? null;
     const priceActionVariant = stall.priceVariant ?? null;
+    const salePriceText = stall.salePriceLabel ?? '';
+    const salePriceResourceKey =
+      stall.salePriceResourceKey ?? null;
+    const visiblePriceText =
+      salePriceText || priceText;
+    const visiblePriceResourceKey =
+      salePriceResourceKey ||
+      (!priceActionVariant ? priceResourceKey : null);
     this.price.setText(formatTitleCase(priceText));
     this.price.visible = !priceResourceKey && !priceActionVariant;
     this.price.renderable = this.price.visible;
@@ -1434,12 +1522,15 @@ export class ShopStallWidget {
       },
       (payload) => this.action?.(payload),
     );
-    this.priceResource.visible = Boolean(priceResourceKey);
+    this.priceResource.visible = Boolean(visiblePriceResourceKey);
     this.priceResource.renderable = this.priceResource.visible;
-    if (priceResourceKey) {
+    if (visiblePriceResourceKey) {
       this.priceResource.bind(key, {
-        resource: priceResourceKey,
-        amount: stripResourceName(priceText, priceResourceKey),
+        resource: visiblePriceResourceKey,
+        amount: stripResourceName(
+          visiblePriceText,
+          visiblePriceResourceKey,
+        ),
         includeResourceName: false,
       });
     }
@@ -1558,7 +1649,6 @@ export class ShopStallWidget {
       this.iconOverlay.rotation = 0;
     }
     this.item.position.set(70, detailY);
-    this.item.setWrapWidth(Math.max(0, width - 160));
     this.quantity.position.set(
       iconCenterX,
       this.iconFrame.y + STALL_ART_WELL_SIZE - 2,
@@ -1573,6 +1663,12 @@ export class ShopStallWidget {
       detailY,
     );
     this.layoutPriceResource();
+    const itemRight = this.priceResource.visible
+      ? this.priceResource.x - 4
+      : actionLeft - STALL_ACTION_CONTENT_GAP;
+    this.item.setWrapWidth(
+      Math.max(0, itemRight - this.item.x),
+    );
     const timerWidth = Math.max(18, this.timer.measuredWidth);
     const timerRight = actionLeft - STALL_ACTION_CONTENT_GAP;
     const progressRight =
@@ -1707,8 +1803,11 @@ export class ShopStallWidget {
       contentCenterY,
     );
     if (Number.isFinite(this.width)) {
+      const priceRight = this.priceAction.visible
+        ? this.priceAction.x - STALL_ACTION_CONTENT_GAP
+        : this.width - 10;
       this.priceResource.position.x =
-        this.width - 10 - this.priceResource.measuredWidth;
+        priceRight - this.priceResource.measuredWidth;
     }
   }
 
@@ -1757,7 +1856,7 @@ export class ShopStallWidget {
   }
 }
 
-export class MarketOfferRow {
+export class MarketOfferCard {
   constructor({
     assetManager,
     inputRouter,
@@ -1776,6 +1875,8 @@ export class MarketOfferRow {
     this.title = new PixiTextLabel({
       fontWeight: 'bold',
       color: STALL_TEXT_INK,
+      align: 'center',
+      anchor: { x: 0.5, y: 0 },
       label: `${label}:title`,
     });
     this.iconFrame = new PixiNineSliceFrame({
@@ -1828,6 +1929,7 @@ export class MarketOfferRow {
     this.unregisterSemantic();
     this.key = key;
     this.model = model;
+    this.compact = model.compact === true;
     this.root.visible = model.hidden !== true;
     this.root.renderable = this.root.visible;
     this.enabled = model.enabled !== false && model.locked !== true;
@@ -1887,16 +1989,23 @@ export class MarketOfferRow {
       height,
       PIXI_ROOT_RUN_GEOMETRY.researchCard.borderInsets,
     );
-    this.title.position.set(10, 5);
-    this.title.setWrapWidth(
-      Math.max(
-        0,
-        width -
-          MARKET_OFFER_ACTION_WIDTH -
-          OFFER_CARD_PADDING_X * 3,
-      ),
-    );
-    this.iconFrame.position.set(10, 22);
+    if (this.compact) {
+      this.title.position.set(width / 2, 7);
+      this.title.setWrapWidth(Math.max(0, width - 12));
+      this.iconFrame.position.set(
+        (width - STALL_ART_WELL_SIZE) / 2,
+        27,
+      );
+    } else {
+      const contentWidth =
+        width - MARKET_OFFER_ACTION_WIDTH - OFFER_CARD_PADDING_X * 3;
+      this.title.position.set(
+        OFFER_CARD_PADDING_X + contentWidth / 2,
+        5,
+      );
+      this.title.setWrapWidth(Math.max(0, contentWidth));
+      this.iconFrame.position.set(10, 22);
+    }
     this.iconFrame.setSize(
       STALL_ART_WELL_SIZE,
       STALL_ART_WELL_SIZE,
@@ -1913,10 +2022,28 @@ export class MarketOfferRow {
       iconCenterX,
       this.iconFrame.y + STALL_ART_WELL_SIZE - 2,
     );
-    this.actionButton.position.set(
-      width - OFFER_CARD_PADDING_X - MARKET_OFFER_ACTION_WIDTH,
-      (height - MARKET_OFFER_ACTION_HEIGHT) / 2,
-    );
+    if (this.compact) {
+      const buttonWidth = Math.max(0, width - 16);
+      this.actionButton.setSizeTier(30);
+      this.actionButton.setSize(
+        buttonWidth,
+        MARKET_OFFER_CARD_ACTION_HEIGHT,
+      );
+      this.actionButton.position.set(
+        (width - buttonWidth) / 2,
+        height - MARKET_OFFER_CARD_ACTION_HEIGHT - 6,
+      );
+    } else {
+      this.actionButton.setSizeTier(50);
+      this.actionButton.setSize(
+        MARKET_OFFER_ACTION_WIDTH,
+        MARKET_OFFER_ACTION_HEIGHT,
+      );
+      this.actionButton.position.set(
+        width - OFFER_CARD_PADDING_X - MARKET_OFFER_ACTION_WIDTH,
+        (height - MARKET_OFFER_ACTION_HEIGHT) / 2,
+      );
+    }
   }
 
   applyTheme(theme) {
@@ -1958,6 +2085,7 @@ export class MarketOfferRow {
     this.unregisterSemantic();
     this.key = null;
     this.model = null;
+    this.compact = false;
     this.action = null;
     this.enabled = false;
     this.resourceKey = '';

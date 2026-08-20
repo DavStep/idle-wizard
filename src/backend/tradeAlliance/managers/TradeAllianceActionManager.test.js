@@ -3,6 +3,32 @@ import { describe, expect, it, vi } from 'vitest';
 import { TradeAllianceActionManager } from './TradeAllianceActionManager.js';
 
 describe('TradeAllianceActionManager', () => {
+  it('normalizes banner colors in alliance profile writes', async () => {
+    const updateTradeAllianceProfile = vi.fn().mockResolvedValue(undefined);
+    const manager = new TradeAllianceActionManager();
+    manager.connect({ reducers: { updateTradeAllianceProfile } });
+
+    await manager.updateProfile({
+      name: '  Moon   Traders ',
+      tag: ' moon ',
+      tagColor: 'violet',
+      bannerColor: 'RED',
+      emblemColor: 'white',
+      emblemId: 'OWL',
+      joinMode: 'open',
+    });
+
+    expect(updateTradeAllianceProfile).toHaveBeenCalledWith(
+      expect.objectContaining({
+        name: 'Moon Traders',
+        tag: 'MOON',
+        bannerColor: 'red',
+        emblemColor: 'white',
+        emblemId: 'owl',
+      }),
+    );
+  });
+
   it('normalizes and sends alliance chat messages through the reducer', async () => {
     const sendTradeAllianceChatMessage = vi.fn().mockResolvedValue(undefined);
     const manager = new TradeAllianceActionManager();

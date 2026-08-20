@@ -14,6 +14,7 @@ describe('Brewing widget UI editor integrations', () => {
       'compound.brewing-recipe-card',
       'compound.brewing-recipe-ingredient-row',
       'compound.brewing-batch-detail',
+      'compound.brewing-cauldron-hearth',
       'compound.brewing-ingredient-picker-slot',
       'compound.brewing-automation-toggle',
     ]);

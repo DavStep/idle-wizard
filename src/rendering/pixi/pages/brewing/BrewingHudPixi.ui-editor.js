@@ -12,6 +12,7 @@ export default defineUiEditorIntegration({
     'text-button',
     'cost-button',
     'compound.brewing-batch-detail',
+    'compound.brewing-cauldron-hearth',
     'compound.brewing-ingredient-picker-slot',
     'primitive.progress-bar',
     'primitive.star-level-label',

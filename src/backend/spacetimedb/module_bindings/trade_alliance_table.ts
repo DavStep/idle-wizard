@@ -30,4 +30,7 @@ export default __t.row({
   monthlyIncome: __t.u64().name("monthly_income"),
   monthKey: __t.string().name("month_key"),
   tagColor: __t.string().name("tag_color"),
+  bannerColor: __t.string().name("banner_color"),
+  emblemColor: __t.string().name("emblem_color"),
+  emblemId: __t.string().name("emblem_id"),
 });

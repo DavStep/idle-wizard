@@ -25,7 +25,7 @@ describe('Market, Guild, and Prestige UI editor coverage', () => {
       'feature.prestige-room',
       'compound.market-title-ribbon',
       'compound.market-stall',
-      'compound.market-offer-row',
+      'compound.market-offer-card',
       'compound.market-compact-row',
       'compound.market-stalls-section',
       'compound.market-rows-section',

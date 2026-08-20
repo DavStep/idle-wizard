@@ -5,6 +5,13 @@ upload script posts the section whose heading matches `package.json` `version`.
 Write these developer-to-player notes only in Idle Wizard terms. Do not mention
 other game names, source projects, ports, or implementation provenance.
 
+## 0.3.80
+
+- Added customizable Trade Alliance banners with selectable emblems plus separate cloth and emblem colors, now shown across alliance browsing, details, and leaderboards.
+- Brought Brewing cauldrons to life with illustrated hearth fires during brewing and bottling, clearer ingredient requirements, and refined recipe controls.
+- Improved the Market with visible stall payouts, sale feedback that travels to the coin counter, and compact Gem bundle cards that are easier to compare.
+- Fixed shared hidden-recipe Research so it now starts its ten-minute timer instead of completing instantly from the Recipes dialog, while refining Research skip actions, startup status messages, and text fields across the game.
+
 ## 0.3.79
 
 - Added Amethyst, a new gem that can instantly finish active Research for one Amethyst per remaining minute.

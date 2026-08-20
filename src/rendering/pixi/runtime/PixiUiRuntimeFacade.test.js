@@ -144,6 +144,7 @@ describe('PixiUiRuntimeFacade', () => {
       applyTheme: vi.fn(),
       layout: vi.fn(),
       setProgress: vi.fn(),
+      setStatus: vi.fn(),
     });
     const runtime = new PixiUiRuntimeFacade({
       ...harness,
@@ -157,6 +158,7 @@ describe('PixiUiRuntimeFacade', () => {
 
     expect(harness.assetManager.loadCritical).toHaveBeenCalledTimes(1);
     expect(startupView.parent).toBe(harness.layers.interactionLocks);
+    expect(startupView.setStatus).toHaveBeenCalledWith('Loading assets...');
     expect(startupView.setProgress).toHaveBeenLastCalledWith(0.25);
     expect(
       harness.applicationManager.setSplashViewportActive,
@@ -165,6 +167,7 @@ describe('PixiUiRuntimeFacade', () => {
     finishRemainingAssets();
     await initializePromise;
 
+    expect(startupView.setStatus).toHaveBeenLastCalledWith('Preparing game...');
     expect(startupView.setProgress).toHaveBeenLastCalledWith(1);
     expect(startupView.destroyed).toBe(true);
     expect(

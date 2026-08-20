@@ -4,6 +4,22 @@ import {
   getTradeAllianceTagColorCssValue,
   normalizeTradeAllianceTagColor,
 } from '../../../shared/tradeAllianceTagColors.js';
+import {
+  DEFAULT_TRADE_ALLIANCE_BANNER_COLOR,
+  DEFAULT_TRADE_ALLIANCE_EMBLEM_COLOR,
+  TRADE_ALLIANCE_BANNER_COLORS,
+  TRADE_ALLIANCE_EMBLEM_COLORS,
+  getTradeAllianceBannerColor,
+  getTradeAllianceEmblemColor,
+  normalizeTradeAllianceBannerColor,
+  normalizeTradeAllianceEmblemColor,
+} from '../../../shared/tradeAllianceBannerColors.js';
+import {
+  DEFAULT_TRADE_ALLIANCE_EMBLEM,
+  TRADE_ALLIANCE_EMBLEMS,
+  getTradeAllianceEmblem,
+  normalizeTradeAllianceEmblem,
+} from '../../../shared/tradeAllianceEmblems.js';
 import { formatCoinPriceText } from '../../../shared/coinPrice.js';
 import { createAllianceTagSpan } from '../../shared/allianceTagLabel.js';
 import { createPlayerInfoLink } from '../../shared/playerInfoLink.js';
@@ -21,6 +37,14 @@ import {
 
 const ALLIANCE_ICON_URL = new URL(
   '../../../../assets/game/source/icons/icon-side-alliance-root-run.png',
+  import.meta.url,
+).href;
+const ALLIANCE_BANNER_BASE_URL = new URL(
+  '../../../../assets/game/source/icons/icon-alliance-banner-base.png',
+  import.meta.url,
+).href;
+const ALLIANCE_BANNER_CLOTH_URL = new URL(
+  '../../../../assets/game/source/icons/icon-alliance-banner-cloth-mask.png',
   import.meta.url,
 ).href;
 
@@ -48,6 +72,7 @@ const SOLO_TABS = [
 const MEMBER_TABS = [
   { id: 'home', label: 'home' },
   { id: 'quests', label: 'quests' },
+  { id: 'banner', label: 'banner' },
   { id: 'settings', label: 'settings' },
 ];
 const ITEM_FILL_QUEST_TYPE = 'itemFill';
@@ -84,6 +109,7 @@ export class WorkshopTradeAllianceManager {
     this.memberEditVisible = false;
     this.selectedMemberIdentity = null;
     this.formDrafts = {
+      banner: null,
       create: null,
       settings: null,
     };
@@ -162,12 +188,40 @@ export class WorkshopTradeAllianceManager {
     icon.decoding = 'async';
     icon.setAttribute('aria-hidden', 'true');
 
+    const flag = document.createElement('span');
+    flag.className = 'workshop-page__trade-alliance-button-flag';
+    flag.hidden = true;
+
+    const flagBase = document.createElement('img');
+    flagBase.className = 'workshop-page__trade-alliance-button-flag-base';
+    flagBase.src = ALLIANCE_BANNER_BASE_URL;
+    flagBase.alt = '';
+    flagBase.loading = 'lazy';
+    flagBase.decoding = 'async';
+
+    const flagCloth = document.createElement('span');
+    flagCloth.className = 'workshop-page__trade-alliance-button-flag-cloth';
+    flagCloth.style.maskImage = `url("${ALLIANCE_BANNER_CLOTH_URL}")`;
+    flagCloth.style.webkitMaskImage = `url("${ALLIANCE_BANNER_CLOTH_URL}")`;
+
+    const flagEmblem = document.createElement('span');
+    flagEmblem.className = 'workshop-page__trade-alliance-button-flag-emblem';
+    const defaultEmblemUrl = getTradeAllianceEmblem().url;
+    flagEmblem.style.maskImage = `url("${defaultEmblemUrl}")`;
+    flagEmblem.style.webkitMaskImage = `url("${defaultEmblemUrl}")`;
+    flag.append(flagBase, flagCloth, flagEmblem);
+
+    this.refs.buttonIcon = icon;
+    this.refs.buttonFlag = flag;
+    this.refs.buttonFlagCloth = flagCloth;
+    this.refs.buttonFlagEmblem = flagEmblem;
+
     const label = document.createElement('span');
     label.className =
       'workshop-page__panel-button-label workshop-page__feature-character-label workshop-page__trade-alliance-button-label';
     label.textContent = 'Alliance';
 
-    iconFrame.append(icon);
+    iconFrame.append(icon, flag);
     button.append(iconFrame, label);
     button.addEventListener('click', () => this.show());
     return button;
@@ -342,6 +396,7 @@ export class WorkshopTradeAllianceManager {
     this.memberEditVisible = false;
     this.selectedMemberIdentity = null;
     this.formDrafts = {
+      banner: null,
       create: null,
       settings: null,
     };
@@ -421,7 +476,9 @@ export class WorkshopTradeAllianceManager {
   getMemberTabs() {
     return this.lastSnapshot.canEditSettings
       ? MEMBER_TABS
-      : MEMBER_TABS.filter((tab) => tab.id !== 'settings');
+      : MEMBER_TABS.filter(
+          (tab) => tab.id !== 'settings' && tab.id !== 'banner',
+        );
   }
 
   renderTitle(ownAlliance) {
@@ -442,6 +499,22 @@ export class WorkshopTradeAllianceManager {
       'aria-label',
       ownAlliance?.name ? `open alliance ${ownAlliance.name}` : 'open trade alliance',
     );
+    const hasAlliance = Boolean(ownAlliance);
+    if (this.refs.buttonIcon) {
+      this.refs.buttonIcon.hidden = hasAlliance;
+    }
+    if (this.refs.buttonFlag) {
+      this.refs.buttonFlag.hidden = !hasAlliance;
+    }
+    if (hasAlliance) {
+      this.refs.buttonFlagCloth.style.backgroundColor =
+        getTradeAllianceBannerColor(ownAlliance.bannerColor).value;
+      this.refs.buttonFlagEmblem.style.backgroundColor =
+        getTradeAllianceEmblemColor(ownAlliance.emblemColor).value;
+      const emblemUrl = getTradeAllianceEmblem(ownAlliance.emblemId).url;
+      this.refs.buttonFlagEmblem.style.maskImage = `url("${emblemUrl}")`;
+      this.refs.buttonFlagEmblem.style.webkitMaskImage = `url("${emblemUrl}")`;
+    }
   }
 
   renderSoloView(tabId) {
@@ -577,11 +650,15 @@ export class WorkshopTradeAllianceManager {
     event.preventDefault();
     this.captureFormDraft('create', form);
     const formData = new window.FormData(form);
+    const draft = this.formDrafts.create;
     await this.runAction(() =>
       this.tradeAllianceFacade.createAlliance({
         name: formData.get('name'),
         tag: formData.get('tag'),
         tagColor: formData.get('tagColor'),
+        bannerColor: draft.bannerColor,
+        emblemColor: draft.emblemColor,
+        emblemId: draft.emblemId,
         description: formData.get('description'),
         joinMode: formData.get('joinMode'),
       }),
@@ -596,6 +673,11 @@ export class WorkshopTradeAllianceManager {
 
     if (tabId === 'settings') {
       this.renderSettingsView();
+      return;
+    }
+
+    if (tabId === 'banner') {
+      this.renderBannerView();
       return;
     }
 
@@ -1073,14 +1155,111 @@ export class WorkshopTradeAllianceManager {
     event.preventDefault();
     this.captureFormDraft('settings', form);
     const formData = new window.FormData(form);
+    const draft = this.formDrafts.settings;
     await this.runAction(() =>
       this.tradeAllianceFacade.updateProfile({
         name: formData.get('name'),
         tag: formData.get('tag'),
         tagColor: formData.get('tagColor'),
+        bannerColor: draft.bannerColor,
+        emblemColor: draft.emblemColor,
+        emblemId: draft.emblemId,
         description: formData.get('description'),
         notice: formData.get('notice'),
         joinMode: formData.get('joinMode'),
+      }),
+    );
+  }
+
+  renderBannerView() {
+    if (!this.lastSnapshot.canEditSettings) {
+      this.refs.content.replaceChildren(this.createEmptyRow('trade master only'));
+      return;
+    }
+
+    const alliance = this.lastSnapshot.ownAlliance;
+    const draft = this.getFormDraft('banner', alliance);
+    const form = document.createElement('form');
+    form.className = 'workshop-page__trade-alliance-form';
+    const preview = document.createElement('div');
+    preview.className = 'workshop-page__trade-alliance-banner-preview';
+    const base = document.createElement('img');
+    base.src = ALLIANCE_BANNER_BASE_URL;
+    base.alt = '';
+    const cloth = document.createElement('span');
+    const emblem = document.createElement('span');
+    cloth.className = 'workshop-page__trade-alliance-banner-cloth';
+    emblem.className = 'workshop-page__trade-alliance-banner-emblem';
+    cloth.style.setProperty('--banner-mask', `url(${ALLIANCE_BANNER_CLOTH_URL})`);
+    emblem.style.setProperty(
+      '--banner-mask',
+      `url(${getTradeAllianceEmblem(draft.emblemId).url})`,
+    );
+    preview.append(base, cloth, emblem);
+
+    const syncPreview = () => {
+      const data = new window.FormData(form);
+      cloth.style.backgroundColor = getTradeAllianceBannerColor(
+        data.get('bannerColor'),
+      ).value;
+      emblem.style.backgroundColor = getTradeAllianceEmblemColor(
+        data.get('emblemColor'),
+      ).value;
+      emblem.style.setProperty(
+        '--banner-mask',
+        `url(${getTradeAllianceEmblem(data.get('emblemId')).url})`,
+      );
+      form
+        .querySelector('.workshop-page__trade-alliance-emblem-field')
+        ?.style.setProperty(
+          '--workshop-alliance-emblem-color',
+          getTradeAllianceEmblemColor(data.get('emblemColor')).value,
+        );
+    };
+    form.addEventListener('change', syncPreview);
+    form.addEventListener('submit', (event) => this.onBannerSubmit(event, form));
+    const submitButton = this.createSubmitButton('save banner');
+    this.bindSubmitClick(submitButton, form);
+    form.append(
+      preview,
+      this.createEmblemField(draft.emblemId),
+      this.createColorField({
+        colors: TRADE_ALLIANCE_BANNER_COLORS,
+        label: 'banner color',
+        name: 'bannerColor',
+        normalize: normalizeTradeAllianceBannerColor,
+        value: draft.bannerColor,
+      }),
+      this.createColorField({
+        colors: TRADE_ALLIANCE_EMBLEM_COLORS,
+        label: 'emblem color',
+        name: 'emblemColor',
+        normalize: normalizeTradeAllianceEmblemColor,
+        value: draft.emblemColor,
+      }),
+      submitButton,
+    );
+    this.bindFormDraft(form, 'banner');
+    syncPreview();
+    this.refs.content.replaceChildren(form);
+  }
+
+  async onBannerSubmit(event, form) {
+    event.preventDefault();
+    this.captureFormDraft('banner', form);
+    const alliance = this.lastSnapshot.ownAlliance;
+    const draft = this.formDrafts.banner;
+    await this.runAction(() =>
+      this.tradeAllianceFacade.updateProfile({
+        name: alliance.name,
+        tag: alliance.tag,
+        tagColor: alliance.tagColor,
+        bannerColor: draft.bannerColor,
+        emblemColor: draft.emblemColor,
+        emblemId: draft.emblemId,
+        description: alliance.description,
+        notice: alliance.notice,
+        joinMode: alliance.joinMode,
       }),
     );
   }
@@ -1129,7 +1308,20 @@ export class WorkshopTradeAllianceManager {
   }
 
   createTagColorField(label, value = DEFAULT_TRADE_ALLIANCE_TAG_COLOR) {
-    const selectedColorId = normalizeTradeAllianceTagColor(value);
+    return this.createColorField({
+      colors: TRADE_ALLIANCE_TAG_COLORS.map((color) => ({
+        ...color,
+        value: getTradeAllianceTagColorCssValue(color.id),
+      })),
+      label,
+      name: 'tagColor',
+      normalize: normalizeTradeAllianceTagColor,
+      value,
+    });
+  }
+
+  createColorField({ colors, label, name, normalize, value }) {
+    const selectedColorId = normalize(value);
     const field = document.createElement('fieldset');
     field.className =
       'workshop-page__trade-alliance-field workshop-page__trade-alliance-color-field';
@@ -1139,7 +1331,7 @@ export class WorkshopTradeAllianceManager {
 
     const input = document.createElement('input');
     input.type = 'hidden';
-    input.name = 'tagColor';
+    input.name = name;
     input.value = selectedColorId;
 
     const swatches = document.createElement('div');
@@ -1147,13 +1339,13 @@ export class WorkshopTradeAllianceManager {
     swatches.setAttribute('role', 'radiogroup');
     swatches.setAttribute('aria-label', label);
 
-    const buttons = TRADE_ALLIANCE_TAG_COLORS.map((color) => {
+    const buttons = colors.map((color) => {
       const button = document.createElement('button');
       button.className = 'workshop-page__trade-alliance-color-swatch';
       button.type = 'button';
       button.style.setProperty(
         '--workshop-alliance-swatch-color',
-        getTradeAllianceTagColorCssValue(color.id),
+        color.value,
       );
       button.setAttribute('role', 'radio');
       button.setAttribute('aria-label', color.label);
@@ -1163,7 +1355,7 @@ export class WorkshopTradeAllianceManager {
     });
 
     const setSelected = (colorId) => {
-      const normalizedColorId = normalizeTradeAllianceTagColor(colorId);
+      const normalizedColorId = normalize(colorId);
       input.value = normalizedColorId;
       for (const button of buttons) {
         const selected = button.dataset.colorId === normalizedColorId;
@@ -1174,11 +1366,70 @@ export class WorkshopTradeAllianceManager {
     };
 
     for (const button of buttons) {
-      button.addEventListener('click', () => setSelected(button.dataset.colorId));
+      button.addEventListener('click', () => {
+        setSelected(button.dataset.colorId);
+        input.dispatchEvent(new window.Event('change', { bubbles: true }));
+      });
     }
 
     setSelected(selectedColorId);
     field.append(legend, input, swatches);
+    return field;
+  }
+
+  createEmblemField(value = DEFAULT_TRADE_ALLIANCE_EMBLEM) {
+    const selectedEmblemId = normalizeTradeAllianceEmblem(value);
+    const field = document.createElement('fieldset');
+    field.className =
+      'workshop-page__trade-alliance-field workshop-page__trade-alliance-emblem-field';
+
+    const legend = document.createElement('legend');
+    legend.textContent = 'emblem';
+
+    const input = document.createElement('input');
+    input.type = 'hidden';
+    input.name = 'emblemId';
+    input.value = selectedEmblemId;
+
+    const options = document.createElement('div');
+    options.className = 'workshop-page__trade-alliance-emblem-options';
+    options.setAttribute('role', 'radiogroup');
+    options.setAttribute('aria-label', 'emblem');
+
+    const buttons = TRADE_ALLIANCE_EMBLEMS.map((emblem) => {
+      const button = document.createElement('button');
+      button.className = 'workshop-page__trade-alliance-emblem-option';
+      button.type = 'button';
+      button.setAttribute('role', 'radio');
+      button.setAttribute('aria-label', emblem.label);
+      button.dataset.emblemId = emblem.id;
+      const icon = document.createElement('span');
+      icon.style.setProperty('--workshop-alliance-emblem-mask', `url(${emblem.url})`);
+      button.append(icon);
+      options.append(button);
+      return button;
+    });
+
+    const setSelected = (emblemId) => {
+      const normalizedEmblemId = normalizeTradeAllianceEmblem(emblemId);
+      input.value = normalizedEmblemId;
+      for (const button of buttons) {
+        const selected = button.dataset.emblemId === normalizedEmblemId;
+        button.classList.toggle('is-selected', selected);
+        button.setAttribute('aria-checked', selected ? 'true' : 'false');
+        button.tabIndex = selected ? 0 : -1;
+      }
+    };
+
+    for (const button of buttons) {
+      button.addEventListener('click', () => {
+        setSelected(button.dataset.emblemId);
+        input.dispatchEvent(new window.Event('change', { bubbles: true }));
+      });
+    }
+
+    setSelected(selectedEmblemId);
+    field.append(legend, input, options);
     return field;
   }
 
@@ -1745,8 +1996,11 @@ export class WorkshopTradeAllianceManager {
       return;
     }
 
-    if (this.lastSnapshot.ownAlliance && this.selectedMemberTabId === 'settings') {
-      this.captureFormDraft('settings', form);
+    if (
+      this.lastSnapshot.ownAlliance &&
+      (this.selectedMemberTabId === 'settings' || this.selectedMemberTabId === 'banner')
+    ) {
+      this.captureFormDraft(this.selectedMemberTabId, form);
     }
   }
 
@@ -1761,13 +2015,28 @@ export class WorkshopTradeAllianceManager {
     }
 
     const formData = new window.FormData(form);
+    const previous = this.formDrafts[kind] ?? {};
+    const read = (name, fallback) =>
+      form.elements.namedItem(name) ? String(formData.get(name) ?? fallback) : fallback;
     this.formDrafts[kind] = {
-      name: String(formData.get('name') ?? ''),
-      tag: String(formData.get('tag') ?? ''),
-      tagColor: String(formData.get('tagColor') ?? DEFAULT_TRADE_ALLIANCE_TAG_COLOR),
-      description: String(formData.get('description') ?? ''),
-      notice: String(formData.get('notice') ?? ''),
-      joinMode: String(formData.get('joinMode') ?? 'apply') || 'apply',
+      name: read('name', previous.name ?? ''),
+      tag: read('tag', previous.tag ?? ''),
+      tagColor: read('tagColor', previous.tagColor ?? DEFAULT_TRADE_ALLIANCE_TAG_COLOR),
+      bannerColor: read(
+        'bannerColor',
+        previous.bannerColor ?? DEFAULT_TRADE_ALLIANCE_BANNER_COLOR,
+      ),
+      emblemColor: read(
+        'emblemColor',
+        previous.emblemColor ?? DEFAULT_TRADE_ALLIANCE_EMBLEM_COLOR,
+      ),
+      emblemId: read(
+        'emblemId',
+        previous.emblemId ?? DEFAULT_TRADE_ALLIANCE_EMBLEM,
+      ),
+      description: read('description', previous.description ?? ''),
+      notice: read('notice', previous.notice ?? ''),
+      joinMode: read('joinMode', previous.joinMode ?? 'apply') || 'apply',
     };
   }
 
@@ -1784,6 +2053,9 @@ export class WorkshopTradeAllianceManager {
       name: String(profile.name ?? ''),
       tag: String(profile.tag ?? ''),
       tagColor: normalizeTradeAllianceTagColor(profile.tagColor),
+      bannerColor: normalizeTradeAllianceBannerColor(profile.bannerColor),
+      emblemColor: normalizeTradeAllianceEmblemColor(profile.emblemColor),
+      emblemId: normalizeTradeAllianceEmblem(profile.emblemId),
       description: String(profile.description ?? ''),
       notice: String(profile.notice ?? ''),
       joinMode: JOIN_MODE_LABELS[profile.joinMode] ? profile.joinMode : 'apply',

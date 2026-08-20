@@ -211,7 +211,7 @@ describe('BrewingPageFacade', () => {
     facade.recipeBookManager.show();
 
     const byline = stage.querySelector('.brewing-page__recipe-discovery-row');
-    expect(byline?.textContent).toBe('- discovered by Ada');
+    expect(byline?.textContent).toBe('- Discovered by Ada');
 
     stage
       .querySelector('.brewing-page__recipe-discovery-name')

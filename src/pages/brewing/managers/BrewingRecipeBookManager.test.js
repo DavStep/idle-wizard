@@ -197,9 +197,9 @@ describe('BrewingRecipeBookManager', () => {
     const row = parent.querySelector('.brewing-page__recipe-row');
 
     expect(row?.classList.contains('is-unknown')).toBe(false);
-    expect(description?.textContent).toContain('discovered by Ada');
+    expect(description?.textContent).toContain('Discovered by Ada');
     expect(description?.contains(discoveryRow)).toBe(true);
-    expect(discoveryRow?.textContent).toBe('- discovered by Ada');
+    expect(discoveryRow?.textContent).toBe('- Discovered by Ada');
     expect(discoveryRow?.dataset.resourceColor).toBe('crystal');
     expect(discoverer?.textContent).toBe('Ada');
     expect(discoverer?.className).toBe(
@@ -233,7 +233,7 @@ describe('BrewingRecipeBookManager', () => {
 
     expect(row.tagName).toBe('DIV');
     expect(action.classList.contains('style-button')).toBe(true);
-    expect(action.textContent).toBe('selected');
+    expect(action.textContent).toBe('Selected');
     expect(action.getAttribute('aria-pressed')).toBe('true');
     expect(action.getAttribute('aria-label')).toBe(
       'unselect minor healing potion recipe',
@@ -264,7 +264,7 @@ describe('BrewingRecipeBookManager', () => {
     expect(icon).not.toBeNull();
     expect(description).not.toBeNull();
     expect(ingredients).not.toBeNull();
-    expect(name?.textContent).toBe('minor healing potion');
+    expect(name?.textContent).toBe('Minor healing potion');
     expect(name?.classList.contains('style-potion-label')).toBe(false);
     expect(name?.querySelector('.style-potion-label__icon')).toBeNull();
     expect(
@@ -326,17 +326,61 @@ describe('BrewingRecipeBookManager', () => {
     manager.show();
 
     expect(parent.querySelector('.style-box__title')?.textContent).toBe(
-      'recipes: learned 1/2',
+      'Recipes: Learned 1/2',
     );
     expect(parent.querySelector('.brewing-page__recipes-dialog')?.getAttribute('aria-label')).toBe(
-      'recipes: learned 1/2',
+      'Recipes: Learned 1/2',
     );
 
     cauldronIndex = 2;
     manager.render(snapshot);
 
     expect(parent.querySelector('.style-box__title')?.textContent).toBe(
-      'recipes: learned 1/2',
+      'Recipes: Learned 1/2',
+    );
+
+    manager.unmount();
+    parent.remove();
+  });
+
+  it('starts recipes dialog labels and copy with uppercase letters', () => {
+    const parent = document.createElement('div');
+    document.body.append(parent);
+    const manager = new BrewingRecipeBookManager({
+      gameplayFacade: createGameplayFacadeFake(createSnapshot()),
+      getSelectedRecipeKey: () => null,
+      onSelectRecipe: () => {},
+    });
+
+    manager.mount(parent);
+
+    expect(parent.querySelector('.style-box__title')?.textContent).toBe(
+      'Recipes: Learned 1/1',
+    );
+    expect(parent.querySelector('.brewing-page__recipes-close')?.textContent).toBe('Close');
+    expect(
+      [...parent.querySelectorAll('.brewing-page__recipe-page-button')].map(
+        (button) => button.textContent,
+      ),
+    ).toEqual(['Prev', 'Next']);
+    expect(parent.querySelector('.brewing-page__recipe-page-label')?.textContent).toBe(
+      'Page 1/1',
+    );
+    expect(parent.querySelector('.brewing-page__recipe-name')?.textContent).toBe(
+      'Minor healing potion',
+    );
+    expect(parent.querySelector('.brewing-page__recipe-info-text')?.textContent).toBe(
+      'A small healer bottle for cuts, fever, and road work.',
+    );
+    expect(parent.querySelector('.brewing-page__recipe-ingredient-required')?.textContent).toBe(
+      '- 1 Sage',
+    );
+    expect(parent.querySelector('.brewing-page__recipe-ingredient-owned')?.textContent).toBe(
+      'Owned 1',
+    );
+    expect(parent.querySelector('.brewing-page__recipe-duration')?.textContent).toBe('Time: 10s');
+    expect(parent.querySelector('.brewing-page__recipe-select-button')?.textContent).toBe(
+      'Select',
     );
 
     manager.unmount();
@@ -366,7 +410,7 @@ describe('BrewingRecipeBookManager', () => {
       'true',
     );
     expect(parent.querySelector('.brewing-page__recipe-select-button').textContent).toBe(
-      'selected',
+      'Selected',
     );
 
     manager.unmount();
@@ -480,41 +524,41 @@ describe('BrewingRecipeBookManager', () => {
     const [lockedRow, unknownRow] = rows;
 
     expect(rows.map((row) => row.querySelector('.brewing-page__recipe-name')?.textContent)).toEqual([
-      'minor healing potion',
-      'unknown potion',
+      'Minor healing potion',
+      'Unknown potion',
     ]);
     expect(lockedRow.classList.contains('is-locked')).toBe(true);
     expect(lockedRow.classList.contains('is-unknown')).toBe(false);
     expect(lockedRow.querySelector('.brewing-page__recipe-select-button')?.textContent).toBe(
-      'research',
+      'Research',
     );
     expect(lockedRow.querySelector('.brewing-page__recipe-select-button')?.disabled).toBe(true);
-    expect(lockedRow.textContent).toContain('- 2 sage');
+    expect(lockedRow.textContent).toContain('- 2 Sage');
     expect(lockedRow.textContent).toContain('14 mana required');
-    expect(lockedRow.textContent).toContain('time: 35s');
+    expect(lockedRow.textContent).toContain('Time: 35s');
 
     expect(unknownRow.classList.contains('is-locked')).toBe(true);
     expect(unknownRow.classList.contains('is-unknown')).toBe(true);
     expect(unknownRow.dataset.tutorialId).toBeUndefined();
     expect(unknownRow.querySelector('.brewing-page__recipe-name')?.getAttribute('aria-label')).toBe(
-      'unknown',
+      'Unknown',
     );
     expect(unknownRow.querySelector('.brewing-page__recipe-select-button')?.textContent).toBe(
-      'unknown',
+      'Unknown',
     );
     expect(unknownRow.querySelector('.brewing-page__recipe-select-button')?.disabled).toBe(true);
     expect(
       unknownRow.querySelector('.brewing-page__recipe-potion-icon')?.dataset.assetAtlasFrame,
-    ).toBe('potion:ashenMemory');
+    ).toBe('status:lockDefault');
     expect(
       unknownRow
         .querySelector('.brewing-page__recipe-potion-icon')
         ?.classList.contains('is-silhouette'),
-    ).toBe(true);
+    ).toBe(false);
     expect(unknownRow.textContent).toContain('- 1 ??????');
-    expect(unknownRow.textContent).toContain('owned ?');
+    expect(unknownRow.textContent).toContain('Owned ?');
     expect(unknownRow.textContent).toContain('? mana required');
-    expect(unknownRow.textContent).toContain('time: ?s');
+    expect(unknownRow.textContent).toContain('Time: ?s');
     expect(unknownRow.textContent).not.toContain('ashen memory');
     expect(unknownRow.textContent).not.toContain('lavender');
 
@@ -578,7 +622,7 @@ describe('BrewingRecipeBookManager', () => {
       'false',
     );
     expect(parent.querySelector('.brewing-page__recipe-select-button').textContent).toBe(
-      'select',
+      'Select',
     );
 
     manager.unmount();
@@ -695,8 +739,8 @@ describe('BrewingRecipeBookManager', () => {
     );
 
     expect(ingredients).toEqual([
-      { required: '- 2 briar', owned: 'owned 7', unavailable: false },
-      { required: '- 2 sage', owned: 'owned 1', unavailable: true },
+      { required: '- 2 Briar', owned: 'Owned 7', unavailable: false },
+      { required: '- 2 Sage', owned: 'Owned 1', unavailable: true },
     ]);
     const required = parent.querySelector('.brewing-page__recipe-ingredient-required');
 
@@ -711,7 +755,7 @@ describe('BrewingRecipeBookManager', () => {
       parent
         .querySelector('.brewing-page__recipe-ingredient-row')
         ?.querySelector('.brewing-page__recipe-ingredient-owned')?.textContent,
-    ).toBe('owned 8');
+    ).toBe('Owned 8');
 
     manager.unmount();
     parent.remove();
@@ -833,11 +877,11 @@ describe('BrewingRecipeBookManager', () => {
         ),
       ),
     ).toEqual([
-      ['mana tonic'],
-      ['minor healing potion'],
+      ['Mana tonic'],
+      ['Minor healing potion'],
     ]);
     expect(parent.querySelector('.brewing-page__recipe-page-label')?.textContent).toBe(
-      'pages 1-2/5',
+      'Pages 1-2/5',
     );
 
     parent
@@ -851,11 +895,11 @@ describe('BrewingRecipeBookManager', () => {
         ),
       ),
     ).toEqual([
-      ['nettle vigor'],
-      ['calming draught'],
+      ['Nettle vigor'],
+      ['Calming draught'],
     ]);
     expect(parent.querySelector('.brewing-page__recipe-page-label')?.textContent).toBe(
-      'pages 3-4/5',
+      'Pages 3-4/5',
     );
 
     manager.unmount();
@@ -917,7 +961,7 @@ describe('BrewingRecipeBookManager', () => {
     expect(ghosts).toHaveLength(2);
     expect(ghosts[0].getAttribute('aria-hidden')).toBe('true');
     expect(ghosts[0].inert).toBe(true);
-    expect(ghosts[0].textContent).toContain('mana tonic');
+    expect(ghosts[0].textContent).toContain('Mana tonic');
     expect(ghosts[0].querySelector('[data-tutorial-id]')).toBeNull();
     expect(ghosts[0].querySelector('button')?.getAttribute('tabindex')).toBe('-1');
     expect(
@@ -926,7 +970,7 @@ describe('BrewingRecipeBookManager', () => {
           row.querySelector('.brewing-page__recipe-name')?.textContent,
         ),
       ),
-    ).toEqual([['nettle vigor'], []]);
+    ).toEqual([['Nettle vigor'], []]);
 
     manager.clearBookTurnClass();
 
@@ -1012,8 +1056,8 @@ describe('BrewingRecipeBookManager', () => {
         owned: row.querySelector('.brewing-page__recipe-ingredient-owned')?.textContent,
       })),
     ).toEqual([
-      { required: '- 3 x 3 sage', owned: 'owned 9' },
-      { required: '- 3 x 1 nettle', owned: 'owned 3' },
+      { required: '- 3 x 3 Sage', owned: 'Owned 9' },
+      { required: '- 3 x 1 Nettle', owned: 'Owned 3' },
     ]);
 
     snapshot.brewing.cauldrons[0].brewQuantity = 1;

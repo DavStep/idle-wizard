@@ -118,7 +118,10 @@ const recipeResearchDurationSecondsById = {
   'unlockRecipe:snowdropBreath': 210 * 60,
   'unlockRecipe:pearlrootDraught': 240 * 60,
   ...Object.fromEntries(
-    Object.keys(discoveredRecipeResearchCostsCoin).map((researchId) => [researchId, 0]),
+    Object.keys(discoveredRecipeResearchCostsCoin).map((researchId) => [
+      researchId,
+      defaultResearchDurationSeconds,
+    ]),
   ),
 };
 

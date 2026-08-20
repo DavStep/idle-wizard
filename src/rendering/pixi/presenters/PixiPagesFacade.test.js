@@ -455,6 +455,10 @@ describe("PixiPagesFacade", () => {
 
   it("emits spend bursts only after successful purchases", () => {
     const harness = createHarness();
+    const capturedResearchAnchor = { x: 286, y: 321 };
+    harness.transientEffects.resolveAnchor.mockReturnValue(
+      capturedResearchAnchor,
+    );
     harness.gameplayFacade.summonSeed.mockReturnValue({
       ok: true,
       cost: 10,
@@ -493,11 +497,19 @@ describe("PixiPagesFacade", () => {
     research.actions.buyResearch("manaProductionRate:1");
     research.actions.buyResearch("manaProductionRate:1");
 
+    expect(
+      harness.transientEffects.resolveAnchor.mock.invocationCallOrder[0],
+    ).toBeLessThan(
+      harness.gameplayFacade.buyResearch.mock.invocationCallOrder[0],
+    );
+    expect(harness.transientEffects.resolveAnchor).toHaveBeenCalledWith(
+      "research.manaProductionRate:1",
+    );
     expect(harness.transientEffects.emitReward).toHaveBeenNthCalledWith(1, {
       visualOnly: true,
       spendBursts: [
         {
-          anchorId: "research.manaProductionRate:1",
+          anchor: capturedResearchAnchor,
           resource: "crystal",
         },
       ],
@@ -2570,6 +2582,7 @@ function createHarness({ gameplaySnapshot = createGameplaySnapshot() } = {}) {
   };
   const transientEffects = {
     emitReward: vi.fn(),
+    resolveAnchor: vi.fn(() => null),
   };
   const highlightSurface = { root: { label: "actionHighlightScene" } };
   const runtime = {

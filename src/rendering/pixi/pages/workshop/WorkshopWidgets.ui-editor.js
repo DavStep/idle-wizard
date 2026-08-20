@@ -2,10 +2,12 @@ import { defineUiEditorIntegration } from '../../../../uiEditor/sdk/defineUiEdit
 import { createUiEditorPixiSurface } from '../../../../uiEditor/widgets/createUiEditorPixiSurface.js';
 import { createUiEditorPixiThumbnail } from '../../../../uiEditor/widgets/createUiEditorPixiThumbnail.js';
 import { createDialogContentTheme } from '../../primitives/PixiDialogFrame.js';
+import { AllianceFlagWidget } from '../../primitives/AllianceFlagWidget.js';
 import { DEFAULT_PIXI_THEME_SNAPSHOT, PIXI_ROOT_RUN_ASSETS } from '../../theme/PixiThemeTokens.js';
 import {
   AllianceQuestRow,
   AllianceDirectoryRow,
+  AllianceEmblemOption,
   AllianceMemberRow,
   LeaderboardRowPixi,
   PotionDiscoveryPagePixi,
@@ -29,12 +31,14 @@ export default [
   widget('compound.workshop-task-panel', 'Workshop Task Panel', ['compound.workshop-task-row', 'text-button'], taskPanelControl, variants(['expanded', 'collapsed', 'claimable'])),
   widget('compound.workshop-task-row', 'Workshop Task Row', ['text-button', 'primitive.progress-bar'], taskRowControl, variants(['progress', 'claimable', 'complete'])),
   widget('compound.workshop-summon-control', 'Workshop Summon Control', ['cost-button', 'info-button', 'primitive.notification-badge'], summonControl, variants(['available', 'unaffordable', 'notified'])),
-  widget('compound.root-run-side-action', 'Root Run Side Action', ['primitive.notification-badge'], sideActionControl, variants(['left', 'right', 'disabled', 'notified', 'timed'])),
+  widget('compound.root-run-side-action', 'Root Run Side Action', ['primitive.notification-badge', 'compound.trade-alliance-banner'], sideActionControl, variants(['left', 'right', 'disabled', 'notified', 'timed', 'alliance-member'])),
   widget('compound.world-event-donation-option-row', 'World Event Donation Option Row', ['text-button', 'primitive.notification-badge'], donationOptionControl, variants(['available', 'notified', 'unavailable', 'seed-pack'])),
-  widget('compound.alliance-directory-row', 'Alliance Directory Row', ['compound.player-profile', 'primitive.resource-label', 'text-button'], allianceDirectoryControl, variants(['join', 'apply', 'cancel', 'closed', 'overflow'])),
+  widget('compound.trade-alliance-banner', 'Alliance Flag', [], allianceBannerControl, variants(['unity', 'crown', 'crescent', 'crossed-wands', 'owl', 'flame', 'oak-leaf', 'key', 'tower', 'sunburst', 'hourglass'])),
+  widget('primitive.alliance-emblem-option', 'Alliance Emblem Option', [], allianceEmblemOptionControl, variants(['unity', 'crown', 'crescent', 'crossed-wands', 'owl', 'flame', 'oak-leaf', 'key', 'tower', 'sunburst', 'hourglass'])),
+  widget('compound.alliance-directory-row', 'Alliance Directory Row', ['compound.trade-alliance-banner', 'compound.player-profile', 'primitive.resource-label', 'text-button'], allianceDirectoryControl, variants(['join', 'apply', 'cancel', 'closed', 'overflow'])),
   widget('compound.alliance-member-row', 'Alliance Member Row', ['compound.player-profile', 'text-button'], allianceMemberControl, variants(['leader', 'member', 'passive'])),
   widget('compound.alliance-quest-row', 'Alliance Quest Row', ['primitive.resource-label', 'text-button'], allianceQuestControl, variants(['fill', 'route', 'claim', 'claimed', 'overflow'])),
-  widget('compound.leaderboard-row', 'Leaderboard Row', ['compound.player-profile', 'primitive.star-level-label', 'primitive.resource-label'], leaderboardRowControl, variants(['player', 'current-player', 'alliance', 'world-event-points'])),
+  widget('compound.leaderboard-row', 'Leaderboard Row', ['compound.player-profile', 'compound.trade-alliance-banner', 'primitive.star-level-label', 'primitive.resource-label'], leaderboardRowControl, variants(['player', 'current-player', 'alliance', 'world-event-points'])),
   widget('compound.world-event-reward-row', 'World Event Reward Row', [], worldEventRewardRowControl, variants(['two-rewards', 'current-rank', 'one-reward', 'long-rank'])),
   widget('compound.potion-discovery-page', 'Potion Discovery Page', [], potionDiscoveryControl, variants(['discovered', 'undiscovered', 'long-recipe'])),
   widget('compound.workshop-dialog-row', 'Workshop Dialog Row', ['text-button', 'primitive.inline-text'], dialogRowControl, variants(['value', 'resource', 'action', 'locked'])),
@@ -78,6 +82,8 @@ function productionClass(id) {
     'compound.workshop-summon-control': 'WorkshopSummonControl',
     'compound.root-run-side-action': 'WorkshopIconPanelAction / WorkshopFeatureButton',
     'compound.world-event-donation-option-row': 'WorldEventDonationOptionRow',
+    'compound.trade-alliance-banner': 'AllianceFlagWidget',
+    'primitive.alliance-emblem-option': 'AllianceEmblemOption',
     'compound.alliance-directory-row': 'AllianceDirectoryRow',
     'compound.alliance-member-row': 'AllianceMemberRow',
     'compound.alliance-quest-row': 'AllianceQuestRow',
@@ -109,6 +115,11 @@ function dialogStub(assets, input) {
     dialogId: 'workshop.editor',
     inputRouter: input,
     isBagDialog: false,
+    panel: {
+      paperFrame: {
+        texture: assets?.getTexture?.(PIXI_ROOT_RUN_ASSETS.dialogPaper),
+      },
+    },
     registerTarget() {},
     theme: DEFAULT_PIXI_THEME_SNAPSHOT,
     unregisterTarget() {},
@@ -147,13 +158,15 @@ function summonControl({ assets, input, fixture = { state: 'available' }, contex
 
 function sideActionControl({ assets, input, fixture = { state: 'left' }, context }) {
   const state = fixture.state;
-  const feature = state === 'timed';
+  const feature = state === 'timed' || state === 'alliance-member';
   const page = pageStub(input, context);
   const control = feature
     ? new WorkshopFeatureButton({ page, assetManager: assets })
     : new WorkshopIconPanelAction({ page, assetManager: assets, id: 'bag', label: 'Bag', side: state === 'right' ? 'right' : 'left', textureId: PIXI_ROOT_RUN_ASSETS.workshopBag, onActivate: () => context?.emit('sideAction') ?? true });
   if (feature) {
-    control.bind({ id: 'worldEvent', label: 'Event', side: 'right', weight: 30, enabled: true, visible: true, timer: '2d 4h', onActivate: () => context?.emit('sideAction') ?? true });
+    control.bind(state === 'alliance-member'
+      ? { id: 'alliance', label: 'Alliance', side: 'left', weight: 10, enabled: true, visible: true, allianceFlag: { bannerColor: 'violet', emblemColor: 'white', emblemId: 'owl' }, onActivate: () => context?.emit('sideAction') ?? true }
+      : { id: 'worldEvent', label: 'Event', side: 'right', weight: 30, enabled: true, visible: true, timer: '2d 4h', onActivate: () => context?.emit('sideAction') ?? true });
     control.setBounds(0, 0, ROOT_RUN_SIDE_ACTION_GEOMETRY.hitWidth ?? 50);
   } else {
     control.setModel({ label: 'Bag', side: state === 'right' ? 'right' : 'left', enabled: state !== 'disabled', notification: state === 'notified', visible: true, action: () => context?.emit('sideAction') ?? true });
@@ -216,6 +229,9 @@ function leaderboardRowControl({ assets, input, fixture = { state: 'player' }, c
           name: 'Night Owls',
           allianceTag: 'OWL',
           allianceTagColor: 'violet',
+          bannerColor: 'violet',
+          emblemColor: 'white',
+          emblemId: 'sunburst',
           memberCount: 34,
           totalCoinLabel: '707k',
           onActivate: () => context?.emit('allianceOpened') ?? true,
@@ -283,6 +299,9 @@ function allianceDirectoryControl({ assets, input, fixture = { state: 'join' }, 
     totalIncomeLabel: fixture.state === 'overflow' ? '987.6m' : '12.4k',
     memberCount: 18,
     memberCapacity: 50,
+    bannerColor: fixture.state === 'overflow' ? 'violet' : 'blue',
+    emblemColor: fixture.state === 'overflow' ? 'magenta' : 'gold',
+    emblemId: fixture.state === 'overflow' ? 'crossed-wands' : 'oak-leaf',
     onActivate: () => context?.emit('allianceOpened') ?? true,
     action: {
       ...action,
@@ -300,6 +319,41 @@ function allianceDirectoryControl({ assets, input, fixture = { state: 'join' }, 
     ALLIANCE_DIRECTORY_PREVIEW_WIDTH,
     control.getPreferredHeight(),
   );
+}
+
+function allianceBannerControl({ assets, fixture = { state: 'blue-gold' } }) {
+  const colors = {
+    crown: { bannerColor: 'red', emblemColor: 'white', emblemId: 'crown' },
+    owl: { bannerColor: 'violet', emblemColor: 'gold', emblemId: 'owl' },
+    flame: { bannerColor: 'ink', emblemColor: 'amber', emblemId: 'flame' },
+  }[fixture.state] ?? { bannerColor: 'blue', emblemColor: 'gold', emblemId: fixture.state };
+  const control = new AllianceFlagWidget({
+    assetManager: assets,
+    label: 'workshop-editor-trade-alliance-banner',
+  });
+  control.setColors(colors);
+  control.setSize(86, 100);
+  return {
+    control,
+    destroy: () => control.destroy({ children: true }),
+    height: control.flagHeight,
+    root: control,
+    width: control.flagWidth,
+  };
+}
+
+function allianceEmblemOptionControl({ assets, input, fixture = { state: 'unity' }, context }) {
+  const control = new AllianceEmblemOption({
+    assetManager: assets,
+    inputRouter: input,
+    emblemId: fixture.state,
+    label: `workshop-editor-alliance-emblem-${fixture.state}`,
+    action: () => context?.emit('emblemSelected', { emblemId: fixture.state }) ?? true,
+  });
+  control.setSelected(true);
+  control.setTint(0xfff9ed);
+  control.setBounds(0, 0, 32);
+  return wrap(control, 32, 32);
 }
 
 function potionDiscoveryControl({ assets, input, fixture = { state: 'discovered' }, context }) {

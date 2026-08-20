@@ -357,6 +357,9 @@ export const OwnTradeAllianceOverviewResult = __t.object("OwnTradeAllianceOvervi
   normalizedName: __t.string(),
   tag: __t.string(),
   tagColor: __t.string(),
+  bannerColor: __t.string(),
+  emblemColor: __t.string(),
+  emblemId: __t.string(),
   description: __t.string(),
   notice: __t.string(),
   joinMode: __t.string(),
@@ -731,6 +734,9 @@ export const TradeAlliance = __t.object("TradeAlliance", {
   monthlyIncome: __t.u64(),
   monthKey: __t.string(),
   tagColor: __t.string(),
+  bannerColor: __t.string(),
+  emblemColor: __t.string(),
+  emblemId: __t.string(),
 });
 export type TradeAlliance = __Infer<typeof TradeAlliance>;
 
@@ -886,6 +892,9 @@ export const TradeAllianceSnapshotResult = __t.object("TradeAllianceSnapshotResu
   normalizedName: __t.string(),
   tag: __t.string(),
   tagColor: __t.string(),
+  bannerColor: __t.string(),
+  emblemColor: __t.string(),
+  emblemId: __t.string(),
   description: __t.string(),
   notice: __t.string(),
   joinMode: __t.string(),

@@ -16,6 +16,14 @@ export const discoveredPotionResearchCostGoldByKey: Record<string, bigint> = {
   bloodlightWard: 819_200n,
 };
 
+export const discoveredPotionResearchDurationSecondsByKey: Record<string, bigint> =
+  Object.fromEntries(
+    Object.keys(discoveredPotionResearchCostGoldByKey).map((potionKey) => [
+      potionKey,
+      10n * 60n,
+    ]),
+  );
+
 export function createDiscoveredPotionResearchCatalog(
   potions: DiscoveredPotion[],
 ) {

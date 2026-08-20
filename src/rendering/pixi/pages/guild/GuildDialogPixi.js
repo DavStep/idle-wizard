@@ -1430,14 +1430,18 @@ export class GuildColorSwatch {
     semanticRegistry,
     semanticId,
     colorId,
+    colorValue = null,
     action,
     label,
   }) {
     this.root = new Container();
     this.root.label = label;
+    this.root.eventMode = 'static';
+    this.root.cursor = 'pointer';
     this.graphic = new Graphics();
     this.root.addChild(this.graphic);
     this.colorId = colorId;
+    this.colorValue = colorValue;
     this.action = action;
     this.selected = false;
     this.theme = DEFAULT_PIXI_THEME_SNAPSHOT;
@@ -1480,7 +1484,8 @@ export class GuildColorSwatch {
   }
 
   redraw() {
-    const color = SWATCH_COLORS[this.colorId] ?? this.theme.text;
+    const color =
+      this.colorValue ?? SWATCH_COLORS[this.colorId] ?? this.theme.text;
     this.graphic
       .clear()
       .rect(0, 0, this.size ?? 20, this.size ?? 20)

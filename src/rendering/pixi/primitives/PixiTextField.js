@@ -16,23 +16,17 @@ import {
 import { PixiNineSliceFrame } from './PixiNineSliceFrame.js';
 import { PixiTextLabel } from './PixiTextLabel.js';
 
-const BROWN_INSET_TEXT = '#ffe7c8';
-const BROWN_INSET_PLACEHOLDER = '#c8a67a';
-const BROWN_INSET_FOCUS = '#f1b84b';
+const INSET_TEXT = '#ffe7c8';
+const INSET_PLACEHOLDER = '#c8a67a';
+const INSET_FOCUS = '#f1b84b';
 const MULTILINE_LINE_HEIGHT = 16;
 const CARET_WIDTH = 1;
 const CARET_BLINK_HALF_CYCLE_MS = 530;
 
-function resolveInsetSkin(variant) {
-  if (variant === 'clean-inset') {
-    return {
-      assetId: PIXI_ROOT_RUN_ASSETS.textFieldCleanInset,
-      geometry: PIXI_ROOT_RUN_GEOMETRY.textFieldCleanInset,
-    };
-  }
+function resolveInsetSkin() {
   return {
-    assetId: PIXI_ROOT_RUN_ASSETS.textFieldBrownInset,
-    geometry: PIXI_ROOT_RUN_GEOMETRY.textFieldBrownInset,
+    assetId: PIXI_ROOT_RUN_ASSETS.textFieldCleanInset,
+    geometry: PIXI_ROOT_RUN_GEOMETRY.textFieldCleanInset,
   };
 }
 
@@ -53,7 +47,7 @@ export class PixiTextField extends Container {
     onChange = null,
     onKeyboardInset = null,
     motionRuntime = null,
-    variant = 'brown-inset',
+    variant = 'clean-inset',
     label = 'textField',
   } = {}) {
     super();
@@ -92,14 +86,14 @@ export class PixiTextField extends Container {
       motionRuntime?.prefersReducedMotion ?? prefersReducedMotion;
     this.caretBlinkFrame = null;
     this.caretBlinkStartedAt = null;
-    const insetSkin = resolveInsetSkin(variant);
+    const insetSkin = resolveInsetSkin();
     this.insetFrame = new PixiNineSliceFrame({
       texture: assetManager?.getTexture?.(insetSkin.assetId) ?? Texture.EMPTY,
       sourceInsets: insetSkin.geometry.sourceInsets,
       borderInsets: insetSkin.geometry.borderInsets,
       width,
       height,
-      label: `${label}:brownInsetFrame`,
+      label: `${label}:cleanInsetFrame`,
     });
     this.focusGraphic = new Graphics({ label: `${label}:focus` });
     this.selectionGraphic = new Graphics();
@@ -289,7 +283,7 @@ export class PixiTextField extends Container {
   }
 
   setVariant(variant) {
-    this.variant = String(variant || 'brown-inset');
+    this.variant = String(variant || 'clean-inset');
     this.relayout();
     return this;
   }
@@ -298,7 +292,7 @@ export class PixiTextField extends Container {
     const border = PIXI_UI_GEOMETRY.ordinaryBorderWidth;
     const paddingX = PIXI_UI_GEOMETRY.panelPaddingX;
     const paddingY = PIXI_UI_GEOMETRY.panelPaddingY;
-    const insetSkin = resolveInsetSkin(this.variant);
+    const insetSkin = resolveInsetSkin();
     this.insetFrame.setSkin({
       assetId: insetSkin.assetId,
       borderInsets: insetSkin.geometry.borderInsets,
@@ -308,9 +302,8 @@ export class PixiTextField extends Container {
         this.assetManager?.getTexture?.(insetSkin.assetId) ?? Texture.EMPTY,
       width: this.fieldWidth,
     });
-    const brownInset = this.variant === 'brown-inset';
     const cleanInset = this.variant === 'clean-inset';
-    const illustratedInset = brownInset || cleanInset;
+    const illustratedInset = cleanInset;
     const accountUsername = this.variant === 'account-username';
     const textInsetX = accountUsername ? 0 : border + paddingX;
     const textInsetY =
@@ -346,9 +339,8 @@ export class PixiTextField extends Container {
 
   redrawTextState() {
     const showingPlaceholder = this.value.length === 0 && !this.focused;
-    const brownInset = this.variant === 'brown-inset';
     const cleanInset = this.variant === 'clean-inset';
-    const illustratedInset = brownInset || cleanInset;
+    const illustratedInset = cleanInset;
     const accountUsername = this.variant === 'account-username';
     this.textLabel
       .setText(showingPlaceholder ? this.placeholder : this.value)
@@ -357,8 +349,8 @@ export class PixiTextField extends Container {
           ? '#ffffff'
           : illustratedInset
           ? showingPlaceholder
-            ? BROWN_INSET_PLACEHOLDER
-            : BROWN_INSET_TEXT
+            ? INSET_PLACEHOLDER
+            : INSET_TEXT
           : showingPlaceholder
             ? 'muted'
             : 'text',
@@ -387,20 +379,18 @@ export class PixiTextField extends Container {
     }
 
     if (illustratedInset) {
-      const focusInset = cleanInset ? 1 : -1;
-      const focusExpansion = cleanInset ? -2 : 2;
       this.focusGraphic
         .roundRect(
-          focusInset,
-          focusInset,
-          Math.max(0, this.fieldWidth + focusExpansion),
-          Math.max(0, this.fieldHeight + focusExpansion),
-          cleanInset ? 4 : 5,
+          1,
+          1,
+          Math.max(0, this.fieldWidth - 2),
+          Math.max(0, this.fieldHeight - 2),
+          4,
         )
         .stroke({
-          color: BROWN_INSET_FOCUS,
-          width: cleanInset ? 1 : 2,
-          alpha: cleanInset ? 0.9 : 1,
+          color: INSET_FOCUS,
+          width: 1,
+          alpha: 0.9,
           join: 'round',
         });
     }
@@ -418,7 +408,7 @@ export class PixiTextField extends Container {
       accountUsername
         ? '#ffffff'
         : illustratedInset
-          ? BROWN_INSET_TEXT
+          ? INSET_TEXT
           : this.theme.text,
     );
     this.caretGraphic
@@ -432,7 +422,7 @@ export class PixiTextField extends Container {
         accountUsername
           ? '#ffffff'
           : illustratedInset
-            ? BROWN_INSET_TEXT
+            ? INSET_TEXT
             : this.theme.text,
       );
     this.caretGraphic.alpha = 1;

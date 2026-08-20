@@ -1,4 +1,9 @@
 export { BasePixiRetainedView } from './BasePixiRetainedView.js';
+export {
+  ALLIANCE_FLAG_ASSETS,
+  ALLIANCE_FLAG_GEOMETRY,
+  AllianceFlagWidget,
+} from './AllianceFlagWidget.js';
 export { ClickableWidget } from './ClickableWidget.js';
 export { PixiBaseButton } from './PixiBaseButton.js';
 export { PixiTextButton } from './PixiTextButton.js';

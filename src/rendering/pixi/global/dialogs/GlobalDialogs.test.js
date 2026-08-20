@@ -201,6 +201,13 @@ describe('retained global Pixi dialogs', () => {
     expect(alliance.panel.paperFrame.visible).toBe(false);
     expect(alliance.summaryPaper.texture).toBe(alliance.panel.paperFrame.texture);
     expect(alliance.membersPaper.texture).toBe(alliance.panel.paperFrame.texture);
+    expect(alliance.allianceFlag).toMatchObject({
+      bannerColor: 'violet',
+      emblemColor: 'white',
+      flagWidth: 56,
+      flagHeight: 56,
+    });
+    expect(alliance.identityLabel.x).toBe(63);
     expect(
       alliance.membersSection.y + alliance.membersPaper.y -
         (alliance.summaryPaper.y + alliance.summaryPaper.frameHeight),
@@ -2035,6 +2042,9 @@ describe('retained global Pixi dialogs', () => {
     expect(announcement.backdrop.tint).toBe(0x000000);
     expect(announcement.levelBannerLayer.visible).toBe(true);
     expect(announcement.levelBannerTitle.text).toBe('Research Complete!');
+    expect(announcement.panel.position.y).toBe(
+      PIXI_UI_GEOMETRY.sourceHeight / 2 - 48,
+    );
     expect(announcement.rowsLayer.visible).toBe(true);
     expect(announcement.researchItemLayer.visible).toBe(true);
     expect(announcement.researchItem.icon.visible).toBe(true);
@@ -2478,6 +2488,8 @@ function createAlliance() {
     memberCount: 1,
     seasonIncome: 1200,
     description: 'a quiet trading hall.',
+    bannerColor: 'violet',
+    emblemColor: 'white',
   };
 }
 

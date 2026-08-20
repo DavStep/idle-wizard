@@ -86,12 +86,12 @@
         onActivate: () => true,
       }));
       const alliances = [
-        ['Night Owls', 'OWL', 'violet', 48, '13.9m'],
-        ['Sun Circle', 'SUN', 'amber', 42, '707k'],
-        ['Root Keepers', 'ROOT', 'green', 37, '613k'],
-        ['Ashen Pact', 'ASH', 'red', 31, '93.3k'],
-        ['Moon Garden', 'MOON', 'blue', 28, '57.8k'],
-        ['Copper Circle', 'COP', 'brown', 22, '53.5k'],
+        ['Night Owls', 'OWL', 'violet', 'violet', 'white', 48, '13.9m'],
+        ['Sun Circle', 'SUN', 'amber', 'red', 'gold', 42, '707k'],
+        ['Root Keepers', 'ROOT', 'green', 'green', 'silver', 37, '613k'],
+        ['Ashen Pact', 'ASH', 'red', 'ink', 'red', 31, '93.3k'],
+        ['Moon Garden', 'MOON', 'blue', 'blue', 'violet', 28, '57.8k'],
+        ['Copper Circle', 'COP', 'brown', 'brown', 'amber', 22, '53.5k'],
       ].map((entry, index) => ({
         id: `alliance-${index}`,
         type: 'leaderboardAlliance',
@@ -99,8 +99,11 @@
         name: entry[0],
         allianceTag: entry[1],
         allianceTagColor: entry[2],
-        memberCount: entry[3],
-        totalCoinLabel: entry[4],
+        bannerColor: entry[3],
+        emblemColor: entry[4],
+        emblemId: ['owl', 'sunburst', 'oak-leaf', 'flame', 'crescent', 'key'][index],
+        memberCount: entry[5],
+        totalCoinLabel: entry[6],
         semanticId: `leaderboard:alliance:${index}`,
         onActivate: () => true,
       }));

@@ -423,6 +423,10 @@ describe('PixiViewModelFactory', () => {
       visible: true,
       notification: true,
       allianceTagColor: 'green',
+      allianceFlag: {
+        bannerColor: 'blue',
+        emblemColor: 'gold',
+      },
     });
     expect(
       model.workshop.features.find((feature) => feature.id === 'worldEvent'),
@@ -1231,6 +1235,8 @@ describe('PixiViewModelFactory', () => {
           type: 'leaderboardAlliance',
           rank: 1,
           name: 'Moon',
+          bannerColor: 'blue',
+          emblemColor: 'gold',
           totalCoinLabel: '25',
         },
       ],
@@ -1538,6 +1544,7 @@ describe('PixiViewModelFactory', () => {
     expect(alliance.tabs.map((tab) => tab.label)).toEqual([
       'Home',
       'Quests',
+      'Banner',
       'Settings',
     ]);
     expect(alliance.members[0]).toMatchObject({

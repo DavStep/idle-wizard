@@ -2,7 +2,7 @@
 
 import { readFileSync } from 'node:fs';
 import { cwd } from 'node:process';
-import { afterEach, describe, expect, it } from 'vitest';
+import { afterEach, describe, expect, it, vi } from 'vitest';
 
 import { WorkshopTradeAllianceManager } from './WorkshopTradeAllianceManager.js';
 
@@ -130,7 +130,7 @@ describe('WorkshopTradeAllianceManager styles', () => {
     manager.unmount();
   });
 
-  it('renders a tag-colored layered banner icon for the Workshop alliance button', () => {
+  it('renders the colored alliance flag for members and the discovery icon for solo players', () => {
     const tradeAllianceFacade = createTradeAllianceFacadeFake({
       connected: true,
       ownAlliance: {
@@ -138,6 +138,8 @@ describe('WorkshopTradeAllianceManager styles', () => {
         name: 'All Seeing Void',
         tag: 'VOID',
         tagColor: 'blue',
+        bannerColor: 'violet',
+        emblemColor: 'white',
         memberCount: 1,
         seasonIncome: 0,
         dailyIncome: 0,
@@ -164,10 +166,13 @@ describe('WorkshopTradeAllianceManager styles', () => {
     expect(root?.dataset.panelSide).toBe('left');
     expect(button?.textContent).toBe('Alliance');
     expect(button?.getAttribute('aria-label')).toBe('open alliance All Seeing Void');
-    expect(button?.querySelector('.workshop-page__trade-alliance-button-icon-cloth')).toBeNull();
-    expect(
-      button?.querySelector('.workshop-page__trade-alliance-button-icon')?.getAttribute('src'),
-    ).toContain('icon-side-alliance-root-run.png');
+    const icon = button?.querySelector('.workshop-page__trade-alliance-button-icon');
+    const flag = button?.querySelector('.workshop-page__trade-alliance-button-flag');
+    expect(icon?.hidden).toBe(true);
+    expect(flag?.hidden).toBe(false);
+    expect(flag?.querySelector('.workshop-page__trade-alliance-button-flag-base')?.getAttribute('src')).toContain('icon-alliance-banner-base.png');
+    expect(flag?.querySelector('.workshop-page__trade-alliance-button-flag-cloth')?.style.backgroundColor).toBe('rgb(103, 73, 141)');
+    expect(flag?.querySelector('.workshop-page__trade-alliance-button-flag-emblem')?.style.backgroundColor).toBe('rgb(255, 249, 237)');
 
     tradeAllianceFacade.emit({
       connected: true,
@@ -178,6 +183,8 @@ describe('WorkshopTradeAllianceManager styles', () => {
     });
 
     expect(button?.getAttribute('aria-label')).toBe('open trade alliance');
+    expect(icon?.hidden).toBe(false);
+    expect(flag?.hidden).toBe(true);
 
     manager.unmount();
   });
@@ -397,6 +404,65 @@ describe('WorkshopTradeAllianceManager styles', () => {
     expect(document.activeElement).toBe(refreshedNameInput);
     expect(refreshedNameInput.selectionStart).toBe(3);
     expect(refreshedNameInput.selectionEnd).toBe(3);
+  });
+
+  it('saves banner and emblem colors without dropping alliance profile fields', async () => {
+    const updateProfile = vi.fn(async () => ({ ok: true }));
+    const tradeAllianceFacade = {
+      ...createTradeAllianceFacadeFake({
+        connected: true,
+        ownAlliance: {
+          allianceId: 'alliance-1',
+          name: 'All Seeing Void',
+          tag: 'VOID',
+          tagColor: 'violet',
+          bannerColor: 'blue',
+          emblemColor: 'gold',
+          emblemId: 'owl',
+          description: 'Patient traders.',
+          notice: 'Support the route.',
+          joinMode: 'apply',
+          memberCount: 1,
+        },
+        ownMember: { memberIdentity: 'self', role: 'tradeMaster' },
+        canEditSettings: true,
+        members: [],
+        quests: [],
+      }),
+      updateProfile,
+    };
+    const { popupParent, manager } = mountManager(tradeAllianceFacade);
+    const popup = popupParent.querySelector('.workshop-page__trade-alliance-popup');
+    const bannerTab = [...popup.querySelectorAll(
+      '.workshop-page__trade-alliance-tab-button',
+    )].find((button) => button.textContent === 'banner');
+    bannerTab.click();
+
+    const palettes = popup.querySelectorAll(
+      '.workshop-page__trade-alliance-color-swatches',
+    );
+    palettes[0].querySelector('[data-color-id="red"]').click();
+    palettes[1].querySelector('[data-color-id="white"]').click();
+    const emblemOptions = popup.querySelectorAll(
+      '.workshop-page__trade-alliance-emblem-option',
+    );
+    expect(emblemOptions).toHaveLength(11);
+    popup.querySelector('[data-emblem-id="flame"]').click();
+    popup.querySelector('button[type="submit"]').click();
+    await Promise.resolve();
+
+    expect(updateProfile).toHaveBeenCalledWith({
+      name: 'All Seeing Void',
+      tag: 'VOID',
+      tagColor: 'violet',
+      bannerColor: 'red',
+      emblemColor: 'white',
+      emblemId: 'flame',
+      description: 'Patient traders.',
+      notice: 'Support the route.',
+      joinMode: 'apply',
+    });
+    manager.unmount();
   });
 
   it('hides settings when the current alliance member cannot edit them', () => {

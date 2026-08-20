@@ -3,6 +3,7 @@ import { describe, expect, it } from 'vitest';
 import {
   createDiscoveredPotionResearchCatalog,
   discoveredPotionResearchCostGoldByKey,
+  discoveredPotionResearchDurationSecondsByKey,
 } from './discoveredPotionResearch';
 
 describe('discovered potion research catalog', () => {
@@ -27,6 +28,14 @@ describe('discovered potion research catalog', () => {
       },
     ]);
     expect(Object.keys(discoveredPotionResearchCostGoldByKey)).toHaveLength(10);
+    expect(discoveredPotionResearchDurationSecondsByKey).toEqual(
+      Object.fromEntries(
+        Object.keys(discoveredPotionResearchCostGoldByKey).map((potionKey) => [
+          potionKey,
+          600n,
+        ]),
+      ),
+    );
   });
 
 });

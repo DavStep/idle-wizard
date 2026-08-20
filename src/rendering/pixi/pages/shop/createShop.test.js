@@ -53,7 +53,7 @@ describe('createShop', () => {
                 sellKey: 'sageSeed',
                 sellLabel: 'sage seed',
                 loadedQuantity: 2,
-                batchSize: 1,
+                batchSize: 2,
                 sellCoin: 2,
                 sellProgressSeconds: 15,
               },
@@ -157,10 +157,13 @@ describe('createShop', () => {
       rank: 2,
     });
     expect(model.shop.traders.stalls[0]).toMatchObject({
+      batchLabel: 'x2',
       itemKey: 'sageSeed',
       itemKind: 'seed',
       itemLabel: 'sage seed',
-      priceLabel: '2 coin',
+      priceLabel: '4 coin',
+      salePriceLabel: '4 coin',
+      salePriceResourceKey: 'coin',
       progress: 0.25,
       timerLabel: '45s',
       selected: true,
@@ -251,13 +254,29 @@ describe('createShop', () => {
     expect(model.shop.crystals.offers[0]).toMatchObject({
       resourceKey: 'crystal',
       amount: 1,
+      title: 'Amber Pouch',
       priceLabel: '$4.99',
     });
     expect(model.shop.crystals.offers[6]).toMatchObject({
       resourceKey: 'amethyst',
       amount: 100,
+      title: 'Amethyst Pouch',
       priceLabel: '$4.99',
     });
+    expect(model.shop.crystals.offers.map(({ title }) => title)).toEqual([
+      'Amber Pouch',
+      'Amber Bag',
+      'Amber Pile',
+      'Amber Chest',
+      'Amber Trove',
+      'Amber Hoard',
+      'Amethyst Pouch',
+      'Amethyst Bag',
+      'Amethyst Pile',
+      'Amethyst Chest',
+      'Amethyst Trove',
+      'Amethyst Hoard',
+    ]);
     expect(model.shop.dialogs.ledger.items[0]).toMatchObject({
       label: 'Sage Seed',
       detail: 'stock 4 · buyers 6',

@@ -28,6 +28,7 @@ describe('Pixi theme tokens', () => {
       stroke: '#3f465c',
     });
     expect(PIXI_PROGRESS_VISUALS.tones.green.fill).toBe('#99bb46');
+    expect(PIXI_PROGRESS_VISUALS.tones.green.edge).toBe('#d6ec3e');
   });
 
   it('normalizes aliases and resolves the full visual settings snapshot', () => {

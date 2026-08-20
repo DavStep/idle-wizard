@@ -104,6 +104,21 @@
             requiredResearchIds: [],
           },
           {
+            id: 'recipe:active-skip',
+            label: 'active timer skip',
+            value: 'researching',
+            completed: false,
+            inProgress: true,
+            canResearch: false,
+            canSkipResearch: true,
+            skipCostAmethyst: 2,
+            totalMs: 120_000,
+            remainingMs: 75_000,
+            progress: 0.375,
+            description: 'shows the blue Skip label above its Amethyst cost.',
+            requiredResearchIds: [],
+          },
+          {
             id: 'recipe:free',
             label: 'free research',
             value: 'free',
@@ -207,6 +222,10 @@
         },
         buyResearch: (researchId) => {
           status.textContent = `pressed ${researchId}`;
+          return { ok: true, researchId };
+        },
+        skipResearchTime: (researchId) => {
+          status.textContent = `skipped ${researchId}`;
           return { ok: true, researchId };
         },
       };

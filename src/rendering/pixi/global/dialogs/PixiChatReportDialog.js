@@ -26,7 +26,7 @@ const CHAT_REPORT_CONTENT_HEIGHT =
 /**
  * Focused report form opened from a selected World Chat message.
  *
- * It reuses the shared player-dialog shell, brown-inset multiline field, and
+ * It reuses the shared player-dialog shell, clean-inset multiline field, and
  * regular text button. Message selection and moderation authority stay with
  * the presenting feature.
  */

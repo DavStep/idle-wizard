@@ -12,6 +12,7 @@ import {
   getPotionIconFrameName,
 } from '../../assets/items/potions/potionIcons.js';
 import { appendResourceIconMatchParts } from './resourceIconLabel.js';
+import { createStatusIcon, STATUS_ICON_LOCK } from './statusIcon.js';
 
 export const SEED_ICON_LABEL_CLASS = 'style-seed-label';
 export const HERB_ICON_LABEL_CLASS = 'style-herb-label';
@@ -64,6 +65,7 @@ export function setItemIconLabel(element, kind, itemKey = null) {
       kind: 'potion',
       className: POTION_ICON_LABEL_CLASS,
       getIconFrameName: getPotionIconFrameName,
+      createIconSprite: createPotionIconSprite,
     });
     return;
   }
@@ -376,7 +378,18 @@ function createHerbIconImage(itemKey) {
 }
 
 function createPotionIconImage(itemKey) {
-  return createImageItemIconSprite(POTION_ICON_LABEL_CLASS, getPotionIconFrameName(itemKey));
+  return createPotionIconSprite({
+    className: POTION_ICON_LABEL_CLASS,
+    frameName: getPotionIconFrameName(itemKey),
+  });
+}
+
+function createPotionIconSprite({ className, frameName }) {
+  if (frameName === getPotionIconFrameName('unknownPotion')) {
+    return createStatusIcon(`${className}__icon`, STATUS_ICON_LOCK);
+  }
+
+  return createImageItemIconSprite(className, frameName);
 }
 
 function createImageItemIconSprite(className, frameName) {

@@ -108,7 +108,7 @@ export const PIXI_PROGRESS_VISUALS = Object.freeze({
     }),
     green: Object.freeze({
       fill: '#99bb46',
-      edge: '#8bdc69',
+      edge: '#d6ec3e',
       text: '#4aa83f',
       textStroke: PIXI_TEXT_STROKE_COLOR,
     }),
@@ -139,7 +139,6 @@ export const PIXI_ROOT_RUN_ASSETS = Object.freeze({
     'source:assets/ui/regular-button/gray-button-50.9.png',
   buttonBrownDark: 'source:assets/ui/regular-button/dark-brown-button-50.9.png',
   buttonBrownLight: 'source:assets/ui/regular-button/brown-button-50.9.png',
-  textFieldBrownInset: 'source:assets/ui/root-run-world-chat/world-chat-text-field.9.png',
   textFieldCleanInset: 'source:assets/ui/root-run-world-chat/world-chat-text-field-clean.9.png',
   coin: 'source:assets/icons/icon-coin.png',
   settingsKnob: 'source:assets/ui/root-run-settings/settings-knob.png',
@@ -327,15 +326,6 @@ export const PIXI_ROOT_RUN_GEOMETRY = Object.freeze({
   compactButton: Object.freeze({
     sourceInsets: Object.freeze({ top: 100, right: 52, bottom: 68, left: 86 }),
     borderInsets: Object.freeze({ top: 16, right: 7, bottom: 11, left: 20 }),
-  }),
-  textFieldBrownInset: Object.freeze({
-    sourceInsets: Object.freeze({ top: 26, right: 26, bottom: 26, left: 26 }),
-    borderInsets: Object.freeze({
-      top: 26 / 3,
-      right: 26 / 3,
-      bottom: 26 / 3,
-      left: 26 / 3,
-    }),
   }),
   textFieldCleanInset: Object.freeze({
     sourceInsets: Object.freeze({ top: 26, right: 26, bottom: 26, left: 26 }),

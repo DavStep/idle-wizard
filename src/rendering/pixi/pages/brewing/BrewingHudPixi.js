@@ -80,21 +80,30 @@ export const BREWING_HUD_GEOMETRY = Object.freeze({
   navigationSlotGap: 4,
   navigationPotionNameOpticalNudge: 2,
   navigationIconOpticalNudge: 0.7,
-  ingredientSlotWidth: 56,
+  ingredientSlotWidth: 72,
   ingredientSlotHeight: 54,
-  ingredientIconSize: 38,
-  ingredientIconCenterY: 21,
-  ingredientNameY: 41,
+  ingredientIconSize: 20,
+  ingredientContentInset: 5,
+  ingredientContentGap: 4,
   ingredientColumns: 3,
   ingredientRows: 2,
   ingredientSlots: 6,
   missingIngredientIconSize: 28,
+  hearthWidth: 66,
+  hearthWoodHeight: 33,
+  hearthFlameWidth: 54,
+  hearthFlameHeight: 36,
+  hearthOuterFlameWidth: 132,
+  hearthOuterFlameHeight: 52,
+  hearthOffsetY: 56,
 });
 
 const ASSETS = Object.freeze({
   cauldron: 'source:assets/rooms/brewing/cauldron/cauldron-empty.png',
   cauldronLiquidMask:
     'source:assets/rooms/brewing/cauldron/cauldron-liquid-mask.png',
+  hearthWood: 'source:assets/rooms/brewing/hearth/hearth-wood.png',
+  hearthFlame: 'source:assets/rooms/brewing/hearth/hearth-flame.png',
   previous: 'source:assets/ui/brewing-carousel/chevron-left.png',
   next: 'source:assets/ui/brewing-carousel/chevron-right.png',
   settings: PIXI_ROOT_RUN_ASSETS.settingsGear,
@@ -131,11 +140,9 @@ const BREWING_CAULDRON_REWARD_ANCHOR_ID =
   'brewing.cauldron.liquid';
 const BREWING_STATUS_TEXTURE_PADDING = 1;
 const RETAINED_INGREDIENT_NAME_STYLE = Object.freeze({
-  fontSize: 10,
-  lineHeight: 11,
-  align: 'center',
-  wordWrap: true,
-  wordWrapWidth: 54,
+  fontSize: 9,
+  lineHeight: 10,
+  align: 'left',
 });
 const RETAINED_INGREDIENT_COUNT_STYLE = Object.freeze({
   fontSize: 8,
@@ -169,6 +176,9 @@ const CAULDRON_AMBIENT_TRAVEL = 0.45;
 const CAULDRON_AMBIENT_SCALE_X = 0.006;
 const CAULDRON_AMBIENT_SCALE_Y = 0.004;
 const USED_INGREDIENT_CONTENT_ALPHA = 0.34;
+const HEARTH_IGNITION_DURATION_MS = 220;
+const HEARTH_EXTINGUISH_DURATION_MS = 150;
+const HEARTH_FLICKER_CYCLE_MS = 760;
 
 export class BrewingHudPixi {
   constructor({
@@ -242,6 +252,7 @@ export class BrewingHudPixi {
     this.cauldronArt = new Sprite(getTexture(assetManager, ASSETS.cauldron));
     this.cauldronArt.anchor.set(0.5);
     this.cauldronArt.label = 'brewing-carousel-cauldron-art';
+    this.cauldronHearth = new BrewingCauldronHearth({ assetManager });
     this.cauldronTapRegistration =
       this.inputRouter?.registerPressTarget?.({
         id: 'brewing.cauldron.tap',
@@ -303,6 +314,7 @@ export class BrewingHudPixi {
       this.counter,
       this.recipeOrbit,
       this.recipeOrbitFeedback,
+      this.cauldronHearth.root,
       this.cauldronArt,
       this.cauldronLiquid,
       this.cauldronLiquidHighlight,
@@ -703,6 +715,13 @@ export class BrewingHudPixi {
     }
     this.setCauldronMotionMode(
       resolveCauldronMotionMode(cauldron, primaryState),
+      motionNow,
+    );
+    this.cauldronHearth.bind(
+      {
+        lit: unlocked && isCauldronHearthLit(cauldron),
+        visible: unlocked,
+      },
       motionNow,
     );
     this.setCauldronActionVisibility(unlocked, cauldron);
@@ -1129,6 +1148,10 @@ export class BrewingHudPixi {
     this.cauldronArt.position.set(width / 2, cauldronCenterY);
     this.cauldronArt.width = 116;
     this.cauldronArt.height = 94;
+    this.cauldronHearth.setBounds(
+      width / 2,
+      cauldronCenterY + BREWING_HUD_GEOMETRY.hearthOffsetY,
+    );
     this.cauldronLiquid.position.set(
       this.cauldronArt.x,
       this.cauldronArt.y,
@@ -1575,6 +1598,10 @@ export class BrewingHudPixi {
       slot.updateMotion(now, { active, reducedMotion });
     }
     this.updateCauldronStateMotion(now, {
+      active,
+      reducedMotion,
+    });
+    this.cauldronHearth.updateMotion(now, {
       active,
       reducedMotion,
     });
@@ -2043,6 +2070,15 @@ export class BrewingHudPixi {
       settleScaleY,
       settleRotation,
     );
+    applyCauldronSettle(
+      this.cauldronHearth.root,
+      rest.hearth,
+      offset,
+      settleAlpha,
+      settleScaleX,
+      settleScaleY,
+      settleRotation,
+    );
     this.lockArt.x = rest.lock.x + offset;
     this.lockArt.alpha = rest.lock.alpha * settleAlpha;
     this.cauldronLiquidHighlight.x =
@@ -2059,6 +2095,7 @@ export class BrewingHudPixi {
     this.cauldronChangeRestState = {
       art: captureDisplayState(this.cauldronArt),
       liquid: captureDisplayState(this.cauldronLiquid),
+      hearth: captureDisplayState(this.cauldronHearth.root),
       lock: captureDisplayState(this.lockArt),
       highlightX: this.cauldronLiquidHighlight.x,
       highlightY: this.cauldronLiquidHighlight.y,
@@ -2074,6 +2111,7 @@ export class BrewingHudPixi {
     }
     restoreDisplayState(this.cauldronArt, rest.art);
     restoreDisplayState(this.cauldronLiquid, rest.liquid);
+    restoreDisplayState(this.cauldronHearth.root, rest.hearth);
     restoreDisplayState(this.lockArt, rest.lock);
     this.cauldronLiquidHighlight.position.set(
       rest.highlightX,
@@ -2126,6 +2164,7 @@ export class BrewingHudPixi {
     }
     this.unlockCostButton.destroy({ children: true });
     this.cauldronArt.filters = null;
+    this.cauldronHearth.destroy();
     this.lockedCauldronFilter?.destroy?.();
     this.lockedCauldronFilter = null;
     this.potionPreviewFrame.filters = null;
@@ -2135,6 +2174,195 @@ export class BrewingHudPixi {
     }
     this.carouselPanel.destroy();
     this.detailPanel.destroy();
+  }
+}
+
+export class BrewingCauldronHearth {
+  constructor({ assetManager = null } = {}) {
+    this.root = new Container({ label: 'brewing-cauldron-hearth' });
+    this.root.eventMode = 'none';
+    this.glow = new Graphics({ label: 'brewing-cauldron-hearth-glow' });
+    this.wood = new Sprite(getTexture(assetManager, ASSETS.hearthWood));
+    this.wood.anchor.set(0.5, 1);
+    this.wood.tint = 0x745044;
+    this.wood.label = 'brewing-cauldron-hearth-wood';
+    this.flameBack = new Sprite(
+      getTexture(assetManager, ASSETS.hearthFlame),
+    );
+    this.flameBack.anchor.set(0.5, 1);
+    this.flameBack.label = 'brewing-cauldron-hearth-flame-back';
+    this.flameFront = new Sprite(
+      getTexture(assetManager, ASSETS.hearthFlame),
+    );
+    this.flameFront.anchor.set(0.5, 1);
+    this.flameFront.label = 'brewing-cauldron-hearth-flame-front';
+    this.sparks = new Graphics({ label: 'brewing-cauldron-hearth-sparks' });
+    this.root.addChild(
+      this.glow,
+      this.wood,
+      this.flameBack,
+      this.flameFront,
+      this.sparks,
+    );
+    this.visible = true;
+    this.litTarget = false;
+    this.litMix = 0;
+    this.litTransition = null;
+    this.motionStartedAt = 0;
+    this.baseFlameScale = {
+      backX: 1,
+      backY: 1,
+      frontX: 1,
+      frontY: 1,
+    };
+    this.drawGlow();
+    this.setBounds(0, 0);
+    this.applyStaticFlame(0);
+  }
+
+  bind({ lit = false, visible = true } = {}, now = 0) {
+    this.visible = visible !== false;
+    this.root.visible = this.visible;
+    this.root.renderable = this.visible;
+    const nextLit = lit === true && this.visible;
+    if (nextLit === this.litTarget) {
+      return;
+    }
+    this.litTarget = nextLit;
+    this.litTransition = {
+      from: this.litMix,
+      startedAt: Number(now) || 0,
+      to: nextLit ? 1 : 0,
+      durationMs: nextLit
+        ? HEARTH_IGNITION_DURATION_MS
+        : HEARTH_EXTINGUISH_DURATION_MS,
+    };
+    if (nextLit) {
+      this.motionStartedAt = Number(now) || 0;
+    }
+  }
+
+  setBounds(x, y) {
+    this.root.position.set(x, y);
+    this.wood.position.set(0, 0);
+    this.wood.width = BREWING_HUD_GEOMETRY.hearthWidth;
+    this.wood.height = BREWING_HUD_GEOMETRY.hearthWoodHeight;
+    this.flameBack.position.set(0, -1);
+    this.flameBack.width = BREWING_HUD_GEOMETRY.hearthOuterFlameWidth;
+    this.flameBack.height = BREWING_HUD_GEOMETRY.hearthOuterFlameHeight;
+    this.flameFront.position.set(0, 0);
+    this.flameFront.width = BREWING_HUD_GEOMETRY.hearthFlameWidth;
+    this.flameFront.height = BREWING_HUD_GEOMETRY.hearthFlameHeight;
+    this.baseFlameScale = {
+      backX: this.flameBack.scale.x,
+      backY: this.flameBack.scale.y,
+      frontX: this.flameFront.scale.x,
+      frontY: this.flameFront.scale.y,
+    };
+    this.drawGlow();
+    this.applyStaticFlame(this.litMix);
+  }
+
+  updateMotion(
+    now,
+    { active = true, reducedMotion = false } = {},
+  ) {
+    const time = Number(now) || 0;
+    this.updateLitTransition(time, reducedMotion);
+    const mix = this.litMix;
+    this.flameBack.visible = mix > 0.001;
+    this.flameBack.renderable = this.flameBack.visible;
+    this.flameFront.visible = mix > 0.001;
+    this.flameFront.renderable = this.flameFront.visible;
+    this.glow.visible = mix > 0.001;
+    this.glow.renderable = this.glow.visible;
+    if (!this.visible || mix <= 0.001) {
+      this.applyStaticFlame(0);
+      this.sparks.clear();
+      return;
+    }
+    if (!active || reducedMotion) {
+      this.applyStaticFlame(mix);
+      this.sparks.clear();
+      return;
+    }
+
+    const elapsed = Math.max(0, time - this.motionStartedAt);
+    const primaryWave = Math.sin(
+      (elapsed / HEARTH_FLICKER_CYCLE_MS) * Math.PI * 2,
+    );
+    const secondaryWave = Math.sin(
+      (elapsed / (HEARTH_FLICKER_CYCLE_MS * 0.63)) * Math.PI * 2 + 1.1,
+    );
+    const { backX, backY, frontX, frontY } = this.baseFlameScale;
+    this.flameBack.scale.set(
+      backX * (0.96 - secondaryWave * 0.035),
+      backY * (0.98 + primaryWave * 0.045),
+    );
+    this.flameBack.rotation = -0.012 + secondaryWave * 0.01;
+    this.flameBack.x = -primaryWave * 0.9;
+    this.flameBack.alpha = mix * (0.56 + (secondaryWave + 1) * 0.08);
+    this.flameFront.scale.set(
+      frontX * (0.97 + primaryWave * 0.035),
+      frontY * (0.985 - secondaryWave * 0.04),
+    );
+    this.flameFront.rotation = 0.008 + primaryWave * 0.009;
+    this.flameFront.x = secondaryWave * 0.8;
+    this.flameFront.alpha = mix * (0.78 + (primaryWave + 1) * 0.08);
+    this.glow.alpha = mix * (0.82 + (primaryWave + 1) * 0.07);
+    this.sparks.clear();
+  }
+
+  updateLitTransition(now, reducedMotion) {
+    if (reducedMotion) {
+      this.litMix = this.litTarget ? 1 : 0;
+      this.litTransition = null;
+      return;
+    }
+    const transition = this.litTransition;
+    if (!transition) {
+      return;
+    }
+    const progress = clamp(
+      (now - transition.startedAt) / transition.durationMs,
+      0,
+      1,
+    );
+    this.litMix = lerpValue(
+      transition.from,
+      transition.to,
+      easeOutQuint(progress),
+    );
+    if (progress >= 1) {
+      this.litMix = transition.to;
+      this.litTransition = null;
+    }
+  }
+
+  applyStaticFlame(mix) {
+    const { backX, backY, frontX, frontY } = this.baseFlameScale;
+    this.flameBack.position.set(0, -1);
+    this.flameBack.scale.set(backX * 0.97, backY);
+    this.flameBack.rotation = -0.01;
+    this.flameBack.alpha = mix * 0.66;
+    this.flameFront.position.set(0, 0);
+    this.flameFront.scale.set(frontX, frontY);
+    this.flameFront.rotation = 0.006;
+    this.flameFront.alpha = mix * 0.9;
+    this.glow.alpha = mix * 0.9;
+  }
+
+  drawGlow() {
+    this.glow
+      .clear()
+      .ellipse(0, -15, 46, 22)
+      .fill({ color: 0xff6b16, alpha: 0.08 })
+      .ellipse(0, -10, 32, 16)
+      .fill({ color: 0xffc12b, alpha: 0.07 });
+  }
+
+  destroy() {
+    this.root.destroy({ children: true });
   }
 }
 
@@ -2271,21 +2499,20 @@ export class BrewingIngredientPickerSlot {
     });
     this.icon = new Sprite(Texture.EMPTY);
     this.icon.anchor.set(0.5);
-    this.name = centeredText('', RETAINED_INGREDIENT_NAME_STYLE);
-    this.name.anchor.set(0.5, 0);
+    this.name = createText('', RETAINED_INGREDIENT_NAME_STYLE);
+    this.name.anchor.set(0, 0.5);
+    this.requiredQuantity = createText('', RETAINED_INGREDIENT_COUNT_STYLE);
+    this.requiredQuantity.anchor.set(0, 0.5);
+    this.labelGroup = new Container({
+      label: `brewing-ingredient-picker-slot-${index}-label`,
+    });
+    this.labelGroup.addChild(this.name, this.requiredQuantity);
     this.contentMotion = new Container({
       label: `brewing-ingredient-picker-slot-${index}-content-motion`,
     });
-    this.countGroup = new Container();
-    this.missingCount = centeredText('', RETAINED_INGREDIENT_COUNT_STYLE);
-    this.requiredCount = centeredText('', RETAINED_INGREDIENT_COUNT_STYLE);
-    this.missingCount.anchor.set(0, 0);
-    this.requiredCount.anchor.set(0, 0);
-    this.countGroup.addChild(this.missingCount, this.requiredCount);
     this.contentMotion.addChild(
       this.icon,
-      this.name,
-      this.countGroup,
+      this.labelGroup,
     );
     this.control.visual.addChild(this.frame, this.contentMotion);
     this.model = null;
@@ -2345,24 +2572,15 @@ export class BrewingIngredientPickerSlot {
     const required = Math.max(1, Math.floor(Number(model?.quantity) || 1));
     const owned = Math.max(0, Math.floor(Number(model?.owned) || 0));
     const missing = Boolean(model) && showMissing && owned < required;
-    const showCount = Boolean(model) && showMissing;
     this.countMissing = missing;
-    setText(
-      this.missingCount,
-      showCount ? String(Math.min(owned, required)) : '',
-    );
-    setText(this.requiredCount, showCount ? `/${required}` : '');
-    this.countGroup.visible = showCount;
-    this.countGroup.renderable = showCount;
-    this.missingCount.visible = showCount;
-    this.missingCount.renderable = showCount;
-    this.requiredCount.visible = showCount;
-    this.requiredCount.renderable = showCount;
+    setText(this.requiredQuantity, model ? `x${required}` : '');
+    this.labelGroup.visible = Boolean(model);
+    this.labelGroup.renderable = Boolean(model);
     this.decorative = decorative && !model;
     this.hasBoundModel = true;
     this.stagedSignature = nextStagedSignature;
     this.applyCountTheme();
-    this.layoutCount();
+    this.layoutContent();
     this.redraw();
     if (shouldAnimateArrival) {
       this.startArrivalMotion(now, { reducedMotion });
@@ -2378,28 +2596,41 @@ export class BrewingIngredientPickerSlot {
     this.frame.setSize(width, height, this.frameInsets);
     this.contentMotion.pivot.set(width / 2, height / 2);
     this.contentMotion.position.set(width / 2, height / 2);
+    const contentCenterY = height / 2;
     this.icon.position.set(
-      width / 2,
-      BREWING_HUD_GEOMETRY.ingredientIconCenterY,
+      BREWING_HUD_GEOMETRY.ingredientContentInset +
+        BREWING_HUD_GEOMETRY.ingredientIconSize / 2,
+      contentCenterY,
     );
     this.icon.width = BREWING_HUD_GEOMETRY.ingredientIconSize;
     this.icon.height = BREWING_HUD_GEOMETRY.ingredientIconSize;
-    this.name.position.set(
-      width / 2,
-      BREWING_HUD_GEOMETRY.ingredientNameY,
-    );
-    this.name.style.wordWrapWidth = width - 8;
-    this.layoutCount();
+    this.layoutContent();
     this.redraw();
   }
 
-  layoutCount() {
-    this.missingCount.position.set(0, 0);
-    this.requiredCount.position.set(this.missingCount.width, 0);
-    this.countGroup.position.set(
-      Math.max(3, (this.width ?? 0) - this.countGroup.width - 4),
-      2,
+  layoutContent() {
+    const labelX =
+      BREWING_HUD_GEOMETRY.ingredientContentInset +
+      BREWING_HUD_GEOMETRY.ingredientIconSize +
+      BREWING_HUD_GEOMETRY.ingredientContentGap;
+    const availableWidth = Math.max(
+      0,
+      (this.width ?? 0) -
+        labelX -
+        BREWING_HUD_GEOMETRY.ingredientContentInset,
     );
+    this.name.position.set(0, 0);
+    this.requiredQuantity.position.set(
+      this.name.width + BREWING_HUD_GEOMETRY.ingredientContentGap,
+      0,
+    );
+    this.labelGroup.scale.set(1);
+    if (availableWidth > 0 && this.labelGroup.width > availableWidth) {
+      this.labelGroup.scale.set(
+        Math.max(0.78, availableWidth / this.labelGroup.width),
+      );
+    }
+    this.labelGroup.position.set(labelX, (this.height ?? 0) / 2);
   }
 
   redraw() {
@@ -2472,15 +2703,11 @@ export class BrewingIngredientPickerSlot {
       fill: theme?.text ?? '#d4d4d4',
     });
     this.applyCountTheme();
-    applyTextTheme(this.requiredCount, theme, {
-      ...RETAINED_INGREDIENT_COUNT_STYLE,
-      fill: theme?.text ?? '#d4d4d4',
-    });
-    this.layoutCount();
+    this.layoutContent();
   }
 
   applyCountTheme() {
-    applyTextTheme(this.missingCount, this.theme, {
+    applyTextTheme(this.requiredQuantity, this.theme, {
       ...RETAINED_INGREDIENT_COUNT_STYLE,
       fill: this.countMissing
         ? this.theme?.notificationRed ?? '#c1121f'
@@ -2572,13 +2799,14 @@ function resolveIngredientPositions(width, offsetY = 0) {
     offsetY;
   const middle = top + BREWING_HUD_GEOMETRY.ingredientRowGap;
   const bottom = middle + BREWING_HUD_GEOMETRY.ingredientRowGap;
+  const halfSlotWidth = BREWING_HUD_GEOMETRY.ingredientSlotWidth / 2;
   return [
-    { x: 58, y: top },
-    { x: 10, y: middle },
-    { x: 50, y: bottom },
-    { x: width - 106, y: bottom },
-    { x: width - 66, y: middle },
-    { x: width - 114, y: top },
+    { x: 86 - halfSlotWidth, y: top },
+    { x: 38 - halfSlotWidth, y: middle },
+    { x: 78 - halfSlotWidth, y: bottom },
+    { x: width - 78 - halfSlotWidth, y: bottom },
+    { x: width - 38 - halfSlotWidth, y: middle },
+    { x: width - 86 - halfSlotWidth, y: top },
   ];
 }
 
@@ -2860,6 +3088,26 @@ function resolveCauldronMotionMode(cauldron = {}, primaryState = {}) {
   return 'idle';
 }
 
+function isCauldronHearthLit(cauldron = {}) {
+  const active = cauldron.activeBrew ?? null;
+  if (!active) {
+    return false;
+  }
+  if (
+    active.canCollect === true ||
+    active.canStartBottling === true ||
+    active.phase === 'brewed' ||
+    active.phase === 'ready'
+  ) {
+    return false;
+  }
+  return (
+    active.phase === undefined ||
+    active.phase === 'brewing' ||
+    active.phase === 'bottling'
+  );
+}
+
 export function resolveBrewingPrimaryState(cauldron = {}) {
   const active = cauldron.activeBrew ?? null;
   const auto =
@@ -2933,7 +3181,7 @@ export function resolveBrewingPrimaryState(cauldron = {}) {
       id: 'recipes',
       label: 'Choose Recipe',
       enabled: cauldron.canSelectRecipe !== false,
-      variant: 'yellow',
+      variant: 'green',
     };
   }
 

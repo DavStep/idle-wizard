@@ -108,7 +108,7 @@ describe('item icon labels', () => {
     expect(trimmedFrameCount).toBeGreaterThan(20);
   });
 
-  it('marks wasted and unknown potion labels with distinct potion icons', () => {
+  it('keeps wasted potion art but replaces unknown potion art with the shared lock', () => {
     const wasted = document.createElement('span');
     wasted.textContent = 'wasted potion';
     const unknown = document.createElement('span');
@@ -121,18 +121,18 @@ describe('item icon labels', () => {
       'potion:wastedPotion',
     );
     expect(unknown.querySelector('.style-potion-label__icon')?.dataset.assetAtlasFrame).toBe(
-      'potion:unknownPotion',
+      'status:lockDefault',
     );
   });
 
-  it('uses the unknown potion icon when a potion key has no dedicated frame', () => {
+  it('uses the shared lock when a potion key has no dedicated frame', () => {
     const element = document.createElement('span');
     element.textContent = 'mystery potion';
 
     setItemIconLabel(element, 'potion', 'missingPotion');
 
     expect(element.querySelector('.style-potion-label__icon')?.dataset.assetAtlasFrame).toBe(
-      'potion:unknownPotion',
+      'status:lockDefault',
     );
   });
 

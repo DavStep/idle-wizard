@@ -18,10 +18,15 @@ export class PixiOnlineGateController {
     return this.view?.root ?? null;
   }
 
-  showConnecting({ preview = false, progressValue } = {}) {
+  showConnecting({
+    preview = false,
+    progressValue,
+    status = '',
+    reason = '',
+  } = {}) {
     const model = {
       presentation: 'splash',
-      message: 'Loading game',
+      message: status || getConnectingStatus(reason),
       progress: true,
     };
     if (Number.isFinite(progressValue)) {
@@ -36,7 +41,11 @@ export class PixiOnlineGateController {
 
   showOffline(reason) {
     if (reason !== 'account_in_use') {
-      this.showConnecting();
+      this.show({
+        presentation: 'splash',
+        message: getOfflineIssueStatus(reason),
+        progress: false,
+      });
       return;
     }
 
@@ -105,4 +114,28 @@ export class PixiOnlineGateController {
     this.view?.hide();
     this.view = null;
   }
+}
+
+export function getConnectingStatus(reason) {
+  return reason === 'connect_timeout'
+    ? 'Connection timed out. Retrying...'
+    : reason === 'disconnect'
+      ? 'Connection lost. Retrying...'
+      : reason === 'gameplay_save_timeout'
+        ? 'Player data took too long. Retrying...'
+        : reason === 'connect_error'
+          ? 'Connection failed. Retrying...'
+          : 'Connecting user...';
+}
+
+export function getOfflineIssueStatus(reason) {
+  return reason === 'bindings_missing'
+    ? 'Issue: Server bindings are missing.'
+    : reason === 'server_paused'
+      ? 'Issue: Server is paused.'
+      : reason === 'server_no_energy'
+        ? 'Issue: Server is out of energy.'
+        : reason === 'gameplay_save_ready_error'
+          ? 'Issue: Player data could not be loaded.'
+          : 'Issue: Server is unavailable.';
 }

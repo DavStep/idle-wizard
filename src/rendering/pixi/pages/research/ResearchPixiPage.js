@@ -318,7 +318,7 @@ export const RESEARCH_PIXI_GEOMETRY = Object.freeze({
   descriptionY: 24,
   descriptionWidth: 160,
   descriptionBottom: 7,
-  descriptionOpticalOffsetY: -10,
+  descriptionOpticalOffsetY: -12,
   valueWidth: RESEARCH_VALUE_WIDTH,
   actionRight: RESEARCH_ACTION_RIGHT,
   actionTop: 8,
@@ -1422,7 +1422,8 @@ export class ResearchRowWidget {
       assetManager,
       inputRouter: this.page.inputRouter,
       research: true,
-      tone: 'yellow',
+      stacked: true,
+      tone: 'blue',
       width: RESEARCH_PIXI_GEOMETRY.costWidth,
       height: RESEARCH_PIXI_GEOMETRY.costHeight,
       contentScale: RESEARCH_ROW_TEXT.costContentScale,
@@ -1599,10 +1600,11 @@ export class ResearchRowWidget {
         ),
       );
     this.researchedButton.setModel({
+      actionLabel: 'Skip',
       amountLabel: research.skip?.amountLabel ?? research.skipCostAmethyst ?? 1,
       resource: 'amethyst',
       state: research.skip?.enabled === true ? 'available' : 'unaffordable',
-      enabled: research.skip?.enabled === true,
+      enabled: true,
       action: () => this.skipResearch(research),
     });
     this.setResearchingTimer(inProgress ? remainingLabel : '');
@@ -2020,14 +2022,6 @@ export class ResearchRowWidget {
     const inProgress =
       this.research?.timer?.active === true ||
       this.research?.inProgress === true;
-    this.researchedButton.amountLabel
-      .setFontSize(RESEARCH_ROW_TEXT.researchingFontSize)
-      .setLineHeight(RESEARCH_ROW_TEXT.researchingLineHeight)
-      .setAlign('center')
-      .setStroke({
-        color: '#0a0a0a',
-        width: RESEARCH_ROW_TEXT.buttonStrokeWidth,
-      });
     this.researchingTimerLabel
       .setFontFamily(RESEARCH_RANK_FONT)
       .setFontSize(RESEARCH_ROW_TEXT.researchingTimerFontSize)
@@ -2046,10 +2040,6 @@ export class ResearchRowWidget {
       inProgress && Boolean(this.researchingTimerLabel.text);
     this.researchingTimerLabel.renderable =
       this.researchingTimerLabel.visible;
-    this.researchedButton.amountLabel.position.set(
-      this.researchedButton.buttonWidth / 2,
-      this.researchedButton.buttonHeight / 2,
-    );
   }
 
   applyTheme(theme) {

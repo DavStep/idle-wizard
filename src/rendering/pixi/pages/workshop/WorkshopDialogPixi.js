@@ -11,6 +11,18 @@ import {
   TRADE_ALLIANCE_TAG_COLORS,
   normalizeTradeAllianceTagColor,
 } from '../../../../shared/tradeAllianceTagColors.js';
+import {
+  TRADE_ALLIANCE_BANNER_COLORS,
+  TRADE_ALLIANCE_EMBLEM_COLORS,
+  getTradeAllianceEmblemColor,
+  normalizeTradeAllianceBannerColor,
+  normalizeTradeAllianceEmblemColor,
+} from '../../../../shared/tradeAllianceBannerColors.js';
+import {
+  TRADE_ALLIANCE_EMBLEMS,
+  getTradeAllianceEmblem,
+  normalizeTradeAllianceEmblem,
+} from '../../../../shared/tradeAllianceEmblems.js';
 import { PixiTextButton } from '../../primitives/PixiTextButton.js';
 import { ClickableWidget } from '../../primitives/ClickableWidget.js';
 import {
@@ -32,6 +44,7 @@ import { layoutPixiSeedPackIcon } from '../../primitives/PixiSeedPackIcon.js';
 import { PixiStarLevelLabel } from '../../primitives/PixiStarLevelLabel.js';
 import { PixiTextLabel } from '../../primitives/PixiTextLabel.js';
 import { PixiTextField } from '../../primitives/PixiTextField.js';
+import { AllianceFlagWidget } from '../../primitives/AllianceFlagWidget.js';
 import { PooledCollection } from '../../retained/PooledCollection.js';
 import { WidgetPool } from '../../retained/WidgetPool.js';
 import {
@@ -154,6 +167,8 @@ const DISCOVERY_PAGE_WIDTH =
 const DISCOVERY_PAGE_HEIGHT = 341;
 const DISCOVERY_PAGE_CONTENT_INSET = 7;
 const DISCOVERY_ICON_SIZE = 46;
+const UNKNOWN_POTION_ICON_FRAME = 'status:lockDefault';
+const UNKNOWN_POTION_ICON_ASPECT_RATIO = 53 / 60;
 const DISCOVERY_HEADER_GAP = 5;
 const DISCOVERY_INGREDIENT_ROW_HEIGHT = 20;
 const DISCOVERY_INGREDIENT_ICON_SIZE = 14;
@@ -3814,6 +3829,73 @@ class AllianceSettingsPane {
     this.tagColorSwatchLayer.addChild(
       ...this.swatches.map((swatch) => swatch.root),
     );
+    this.bannerPreview = new AllianceFlagWidget({
+      assetManager: dialog.assetManager,
+      label: `${dialog.dialogId}-settings-banner-preview`,
+    });
+    this.emblemLabel = createText('Emblem', RETAINED_TEXT_STYLES.border);
+    this.emblemOptionLayer = new Container({
+      label: `${dialog.dialogId}-settings-emblem-options`,
+    });
+    this.emblemOptions = TRADE_ALLIANCE_EMBLEMS.map(
+      (emblem) =>
+        new AllianceEmblemOption({
+          assetManager: dialog.assetManager,
+          inputRouter: dialog.inputRouter,
+          semanticRegistry: dialog.semanticTargets,
+          semanticId: `${dialog.dialogId}.banner.emblem.${emblem.id}`,
+          emblemId: emblem.id,
+          label: `${dialog.dialogId}-banner-emblem-${emblem.id}`,
+          action: () => this.selectEmblem(emblem.id),
+        }),
+    );
+    this.emblemOptionLayer.addChild(
+      ...this.emblemOptions.map((option) => option.root),
+    );
+    this.bannerColorLabel = createText(
+      'Banner Color',
+      RETAINED_TEXT_STYLES.border,
+    );
+    this.bannerColorSwatchLayer = new Container({
+      label: `${dialog.dialogId}-settings-banner-color-swatches`,
+    });
+    this.bannerColorSwatches = TRADE_ALLIANCE_BANNER_COLORS.map(
+      (color) =>
+        new GuildColorSwatch({
+          inputRouter: dialog.inputRouter,
+          semanticRegistry: dialog.semanticTargets,
+          semanticId: `${dialog.dialogId}.banner.bannerColor.${color.id}`,
+          colorId: color.id,
+          colorValue: color.value,
+          label: `${dialog.dialogId}-banner-color-${color.id}`,
+          action: () => this.selectBannerColor(color.id),
+        }),
+    );
+    this.bannerColorSwatchLayer.addChild(
+      ...this.bannerColorSwatches.map((swatch) => swatch.root),
+    );
+    this.emblemColorLabel = createText(
+      'Emblem Color',
+      RETAINED_TEXT_STYLES.border,
+    );
+    this.emblemColorSwatchLayer = new Container({
+      label: `${dialog.dialogId}-settings-emblem-color-swatches`,
+    });
+    this.emblemColorSwatches = TRADE_ALLIANCE_EMBLEM_COLORS.map(
+      (color) =>
+        new GuildColorSwatch({
+          inputRouter: dialog.inputRouter,
+          semanticRegistry: dialog.semanticTargets,
+          semanticId: `${dialog.dialogId}.banner.emblemColor.${color.id}`,
+          colorId: color.id,
+          colorValue: color.value,
+          label: `${dialog.dialogId}-emblem-color-${color.id}`,
+          action: () => this.selectEmblemColor(color.id),
+        }),
+    );
+    this.emblemColorSwatchLayer.addChild(
+      ...this.emblemColorSwatches.map((swatch) => swatch.root),
+    );
     this.joinModeLabel = createText('Join Mode', RETAINED_TEXT_STYLES.border);
     this.joinModeButtons = ['open', 'apply', 'closed'].map(
       (joinMode) =>
@@ -3845,6 +3927,13 @@ class AllianceSettingsPane {
     this.root.addChild(
       this.tagColorLabel,
       this.tagColorSwatchLayer,
+      this.bannerPreview,
+      this.emblemLabel,
+      this.emblemOptionLayer,
+      this.bannerColorLabel,
+      this.bannerColorSwatchLayer,
+      this.emblemColorLabel,
+      this.emblemColorSwatchLayer,
       this.joinModeLabel,
       ...this.joinModeButtons.map((button) => button.root),
       this.saveButton.root,
@@ -3875,6 +3964,13 @@ class AllianceSettingsPane {
         name: this.model.name ?? '',
         tag: this.model.tag ?? '',
         tagColor: this.model.tagColor ?? 'ink',
+        bannerColor: normalizeTradeAllianceBannerColor(
+          this.model.bannerColor,
+        ),
+        emblemColor: normalizeTradeAllianceEmblemColor(
+          this.model.emblemColor,
+        ),
+        emblemId: normalizeTradeAllianceEmblem(this.model.emblemId),
         description: this.model.description ?? '',
         notice: this.model.notice ?? '',
         joinMode: this.model.joinMode ?? 'apply',
@@ -3885,9 +3981,11 @@ class AllianceSettingsPane {
     }
     const editable = this.model.editable === true;
     const creating = this.model.mode === 'create';
+    const editingBanner = this.model.mode === 'banner';
     for (const [key, field] of this.fields) {
       const label = this.labels.get(key);
-      const visible = editable && (!creating || key !== 'notice');
+      const visible =
+        editable && !editingBanner && (!creating || key !== 'notice');
       field.visible = visible;
       field.renderable = visible;
       label.visible = visible;
@@ -3896,24 +3994,62 @@ class AllianceSettingsPane {
         field.blur();
       }
     }
-    this.tagColorLabel.visible = editable;
-    this.tagColorLabel.renderable = editable;
-    this.tagColorSwatchLayer.visible = editable;
-    this.tagColorSwatchLayer.renderable = editable;
+    this.tagColorLabel.visible = editable && !editingBanner;
+    this.tagColorLabel.renderable = editable && !editingBanner;
+    this.tagColorSwatchLayer.visible = editable && !editingBanner;
+    this.tagColorSwatchLayer.renderable = editable && !editingBanner;
     const selectedTagColor = normalizeTradeAllianceTagColor(
       this.draft?.tagColor,
     );
     for (const swatch of this.swatches) {
-      swatch.root.visible = editable;
-      swatch.root.renderable = editable;
+      swatch.root.visible = editable && !editingBanner;
+      swatch.root.renderable = editable && !editingBanner;
       swatch.setSelected(swatch.colorId === selectedTagColor);
     }
-    this.joinModeLabel.visible = editable;
-    this.joinModeLabel.renderable = editable;
+    this.bannerPreview.visible = editable && editingBanner;
+    this.bannerPreview.renderable = editable && editingBanner;
+    this.emblemLabel.visible = editable && editingBanner;
+    this.emblemLabel.renderable = editable && editingBanner;
+    this.emblemOptionLayer.visible = editable && editingBanner;
+    this.emblemOptionLayer.renderable = editable && editingBanner;
+    this.bannerColorLabel.visible = editable && editingBanner;
+    this.bannerColorLabel.renderable = editable && editingBanner;
+    this.bannerColorSwatchLayer.visible = editable && editingBanner;
+    this.bannerColorSwatchLayer.renderable = editable && editingBanner;
+    this.emblemColorLabel.visible = editable && editingBanner;
+    this.emblemColorLabel.renderable = editable && editingBanner;
+    this.emblemColorSwatchLayer.visible = editable && editingBanner;
+    this.emblemColorSwatchLayer.renderable = editable && editingBanner;
+    this.bannerPreview.setColors({
+      bannerColor: this.draft?.bannerColor,
+      emblemColor: this.draft?.emblemColor,
+      emblemId: this.draft?.emblemId,
+    });
+    const emblemTint = getTradeAllianceEmblemColor(
+      this.draft?.emblemColor,
+    ).value;
+    for (const option of this.emblemOptions) {
+      option.root.visible = editable && editingBanner;
+      option.root.renderable = editable && editingBanner;
+      option.setSelected(option.emblemId === this.draft?.emblemId);
+      option.setTint(emblemTint);
+    }
+    for (const swatch of this.bannerColorSwatches) {
+      swatch.root.visible = editable && editingBanner;
+      swatch.root.renderable = editable && editingBanner;
+      swatch.setSelected(swatch.colorId === this.draft?.bannerColor);
+    }
+    for (const swatch of this.emblemColorSwatches) {
+      swatch.root.visible = editable && editingBanner;
+      swatch.root.renderable = editable && editingBanner;
+      swatch.setSelected(swatch.colorId === this.draft?.emblemColor);
+    }
+    this.joinModeLabel.visible = editable && !editingBanner;
+    this.joinModeLabel.renderable = editable && !editingBanner;
     this.joinModeButtons.forEach((button, index) => {
       const joinMode = ['open', 'apply', 'closed'][index];
-      button.root.visible = editable;
-      button.root.renderable = editable;
+      button.root.visible = editable && !editingBanner;
+      button.root.renderable = editable && !editingBanner;
       button.setModel({
         label: joinMode[0].toUpperCase() + joinMode.slice(1),
         selected: this.draft?.joinMode === joinMode,
@@ -3928,14 +4064,16 @@ class AllianceSettingsPane {
         ? creating
           ? 'Creating'
           : 'Saving'
-        : creating
+        : editingBanner
+          ? 'Save Banner'
+          : creating
           ? 'Create Alliance'
           : 'Save',
       enabled: editable && !this.saving,
       action: () => this.save(),
     });
-    this.disbandButton.root.visible = editable && !creating;
-    this.disbandButton.root.renderable = editable && !creating;
+    this.disbandButton.root.visible = editable && !creating && !editingBanner;
+    this.disbandButton.root.renderable = editable && !creating && !editingBanner;
     this.disbandButton.setModel({
       label: this.model.canDisband ? 'Disband' : 'Remove Members First',
       enabled:
@@ -3963,6 +4101,36 @@ class AllianceSettingsPane {
       return false;
     }
     this.draft.tagColor = normalizeTradeAllianceTagColor(tagColor);
+    this.dirty = true;
+    this.bind(this.model);
+    return true;
+  }
+
+  selectBannerColor(bannerColor) {
+    if (!this.draft || this.saving) {
+      return false;
+    }
+    this.draft.bannerColor = normalizeTradeAllianceBannerColor(bannerColor);
+    this.dirty = true;
+    this.bind(this.model);
+    return true;
+  }
+
+  selectEmblemColor(emblemColor) {
+    if (!this.draft || this.saving) {
+      return false;
+    }
+    this.draft.emblemColor = normalizeTradeAllianceEmblemColor(emblemColor);
+    this.dirty = true;
+    this.bind(this.model);
+    return true;
+  }
+
+  selectEmblem(emblemId) {
+    if (!this.draft || this.saving) {
+      return false;
+    }
+    this.draft.emblemId = normalizeTradeAllianceEmblem(emblemId);
     this.dirty = true;
     this.bind(this.model);
     return true;
@@ -3998,6 +4166,30 @@ class AllianceSettingsPane {
     this.root.position.set(x, y);
     if (this.model?.editable !== true) {
       this.status.position.set(0, 8);
+      return;
+    }
+    if (this.model?.mode === 'banner') {
+      const previewWidth = 86;
+      const previewHeight = 100;
+      this.bannerPreview.position.set(0, 0);
+      this.bannerPreview.setSize(previewWidth, previewHeight);
+      this.emblemLabel.position.set(96, 0);
+      this.emblemOptionLayer.position.set(96, 17);
+      this.emblemOptions.forEach((option, index) => {
+        option.setBounds((index % 6) * 28, Math.floor(index / 6) * 28, 24);
+      });
+      this.bannerColorLabel.position.set(0, 104);
+      this.bannerColorSwatchLayer.position.set(0, 119);
+      this.bannerColorSwatches.forEach((swatch, index) => {
+        swatch.setBounds(index * 25, 0, 20);
+      });
+      this.emblemColorLabel.position.set(0, 151);
+      this.emblemColorSwatchLayer.position.set(0, 166);
+      this.emblemColorSwatches.forEach((swatch, index) => {
+        swatch.setBounds(index * 25, 0, 20);
+      });
+      this.saveButton.setBounds(0, 203, width, 28);
+      this.status.position.set(0, 235);
       return;
     }
     const fieldHeight = 40;
@@ -4066,6 +4258,30 @@ class AllianceSettingsPane {
       swatch.applyTheme(resolvedTheme);
     }
     applyTextTheme(
+      this.emblemLabel,
+      resolvedTheme,
+      RETAINED_TEXT_STYLES.border,
+    );
+    for (const option of this.emblemOptions) {
+      option.applyTheme(resolvedTheme);
+    }
+    applyTextTheme(
+      this.bannerColorLabel,
+      resolvedTheme,
+      RETAINED_TEXT_STYLES.border,
+    );
+    applyTextTheme(
+      this.emblemColorLabel,
+      resolvedTheme,
+      RETAINED_TEXT_STYLES.border,
+    );
+    for (const swatch of this.bannerColorSwatches) {
+      swatch.applyTheme(resolvedTheme);
+    }
+    for (const swatch of this.emblemColorSwatches) {
+      swatch.applyTheme(resolvedTheme);
+    }
+    applyTextTheme(
       this.joinModeLabel,
       resolvedTheme,
       RETAINED_TEXT_STYLES.border,
@@ -4087,9 +4303,120 @@ class AllianceSettingsPane {
     for (const swatch of this.swatches) {
       swatch.destroy();
     }
+    for (const swatch of this.bannerColorSwatches) {
+      swatch.destroy();
+    }
+    for (const option of this.emblemOptions) {
+      option.destroy();
+    }
+    for (const swatch of this.emblemColorSwatches) {
+      swatch.destroy();
+    }
     this.joinModeButtons.forEach((button) => button.destroy());
     this.saveButton.destroy();
     this.disbandButton.destroy();
+    this.root.destroy({ children: true });
+  }
+}
+
+export class AllianceEmblemOption {
+  constructor({
+    assetManager,
+    inputRouter,
+    semanticRegistry,
+    semanticId,
+    emblemId,
+    action,
+    label,
+  }) {
+    this.root = new Container({ label });
+    this.root.eventMode = 'static';
+    this.root.cursor = 'pointer';
+    this.background = new Graphics({ label: `${label}:background` });
+    this.emblemId = normalizeTradeAllianceEmblem(emblemId);
+    this.icon = new Sprite({
+      texture:
+        assetManager?.getTexture?.(
+          getTradeAllianceEmblem(this.emblemId).assetId,
+        ) ?? Texture.EMPTY,
+      anchor: 0.5,
+      label: `${label}:icon`,
+      roundPixels: true,
+    });
+    this.icon.visible = this.icon.texture !== Texture.EMPTY;
+    this.icon.renderable = this.icon.visible;
+    this.root.addChild(this.background, this.icon);
+    this.action = action;
+    this.selected = false;
+    this.theme = DEFAULT_PIXI_THEME_SNAPSHOT;
+    this.registration =
+      inputRouter?.registerPressTarget?.(this.root, {
+        enabled: () => this.root.visible && this.root.renderable,
+        onActivate: () => this.action?.(),
+        haptic: 'selection',
+      }) ?? null;
+    this.semanticRegistry = semanticRegistry;
+    this.semanticId = semanticId;
+    this.semanticDefinition =
+      semanticRegistry?.register?.({
+        semanticId,
+        displayObject: this.root,
+        state: () => ({
+          enabled: true,
+          interactive: true,
+          visible: this.root.visible && this.root.renderable,
+          selected: this.selected,
+        }),
+        activate: () => this.action?.(),
+      }) ?? null;
+  }
+
+  setSelected(selected) {
+    this.selected = Boolean(selected);
+    this.redraw();
+  }
+
+  setTint(tint) {
+    this.icon.tint = tint;
+  }
+
+  setBounds(x, y, size = 24) {
+    this.root.position.set(x, y);
+    this.size = size;
+    this.root.hitArea = new Rectangle(0, 0, size, size);
+    this.icon.position.set(size / 2, size / 2);
+    this.icon.width = size - 5;
+    this.icon.height = size - 5;
+    this.redraw();
+  }
+
+  applyTheme(theme) {
+    this.theme = theme ?? DEFAULT_PIXI_THEME_SNAPSHOT;
+    this.redraw();
+  }
+
+  redraw() {
+    const size = this.size ?? 24;
+    this.background
+      .clear()
+      .roundRect(0, 0, size, size, 3)
+      .fill(this.selected ? this.theme.surface : this.theme.panelFill)
+      .stroke({
+        color: this.selected ? this.theme.text : this.theme.stroke,
+        width: this.selected ? 2 : 1,
+        alignment: 1,
+      });
+  }
+
+  destroy() {
+    this.registration?.();
+    this.registration = null;
+    if (this.semanticDefinition) {
+      this.semanticRegistry?.unregister?.(this.semanticId, {
+        displayObject: this.root,
+      });
+      this.semanticDefinition = null;
+    }
     this.root.destroy({ children: true });
   }
 }
@@ -4267,9 +4594,10 @@ export class AllianceDirectoryRow {
       inputRouter: dialog.inputRouter,
       variant: 'inline',
     });
-    this.banner = new Sprite(Texture.EMPTY);
-    this.banner.label = `${this.root.label}:banner`;
-    this.banner.anchor.set(0.5);
+    this.banner = new AllianceFlagWidget({
+      assetManager: dialog.assetManager,
+      label: `${this.root.label}:banner`,
+    });
     this.tag = createText('', {
       ...RETAINED_TEXT_STYLES.border,
       fontWeight: '700',
@@ -4345,12 +4673,13 @@ export class AllianceDirectoryRow {
       includeResourceName: false,
       resource: 'coin',
     });
-    this.banner.texture =
-      this.dialog.assetManager?.getTexture?.(
-        'source:assets/icons/icon-side-alliance-root-run.png',
-      ) ?? Texture.EMPTY;
-    this.banner.visible = this.banner.texture !== Texture.EMPTY;
-    this.banner.renderable = this.banner.visible;
+    this.banner.setColors({
+      bannerColor: this.model.bannerColor,
+      emblemColor: this.model.emblemColor,
+      emblemId: this.model.emblemId,
+    });
+    this.banner.visible = true;
+    this.banner.renderable = true;
     this.summaryHit.setModel({
       label: '',
       enabled: typeof this.model.onActivate === 'function',
@@ -4418,12 +4747,12 @@ export class AllianceDirectoryRow {
     );
     this.summaryHit.setBounds(0, 0, sectionWidth, height);
     const bannerSize = ALLIANCE_DIRECTORY_BANNER_SIZE;
+    this.banner.setSize(bannerSize, bannerSize);
     this.banner.position.set(
-      ALLIANCE_DIRECTORY_SECTION_INSET + bannerSize / 2,
-      ALLIANCE_DIRECTORY_BANNER_TOP + bannerSize / 2,
+      ALLIANCE_DIRECTORY_SECTION_INSET +
+        (bannerSize - this.banner.flagWidth) / 2,
+      ALLIANCE_DIRECTORY_BANNER_TOP,
     );
-    this.banner.width = bannerSize;
-    this.banner.height = bannerSize;
     const textX = ALLIANCE_DIRECTORY_SECTION_INSET + bannerSize + 7;
     const actionWidth = 62;
     const actionX = sectionWidth - 7 - actionWidth;
@@ -4510,7 +4839,7 @@ export class AllianceDirectoryRow {
     this.unregisterTargets();
     this.model = null;
     this.root.visible = false;
-    this.banner.texture = Texture.EMPTY;
+    this.banner.setColors({});
     this.leaderAvatarWidget
       .setTexture(Texture.EMPTY)
       .setBackgroundTint(0xffffff);
@@ -4751,9 +5080,12 @@ export class PotionDiscoveryPagePixi {
     );
     this.potionIcon.texture = resolveAtlasTexture(
       this.dialog.assetManager,
-      getPotionIconFrameName(this.model.potionKey),
+      this.discovered
+        ? getPotionIconFrameName(this.model.potionKey)
+        : UNKNOWN_POTION_ICON_FRAME,
     );
-    this.potionIcon.alpha = this.discovered ? 1 : 0.38;
+    this.potionIcon.alpha = 1;
+    this.syncPotionIconBounds();
     this.manaIcon.texture = resolveAtlasTexture(
       this.dialog.assetManager,
       RESOURCE_ICON_FRAMES.mana,
@@ -4803,12 +5135,7 @@ export class PotionDiscoveryPagePixi {
       0,
       width - DISCOVERY_PAGE_CONTENT_INSET * 2,
     );
-    this.potionIcon.position.set(
-      DISCOVERY_PAGE_CONTENT_INSET - 4,
-      DISCOVERY_PAGE_CONTENT_INSET + 3,
-    );
-    this.potionIcon.width = DISCOVERY_ICON_SIZE;
-    this.potionIcon.height = DISCOVERY_ICON_SIZE;
+    this.syncPotionIconBounds();
     this.name.position.set(
       DISCOVERY_PAGE_CONTENT_INSET +
         DISCOVERY_ICON_SIZE +
@@ -4881,6 +5208,18 @@ export class PotionDiscoveryPagePixi {
       this.royaltyIcon.x - DISCOVERY_RESOURCE_ICON_GAP,
       metadataY + DISCOVERY_METADATA_ROW_HEIGHT * 2,
     );
+  }
+
+  syncPotionIconBounds() {
+    const width = this.discovered
+      ? DISCOVERY_ICON_SIZE
+      : DISCOVERY_ICON_SIZE * UNKNOWN_POTION_ICON_ASPECT_RATIO;
+    this.potionIcon.position.set(
+      DISCOVERY_PAGE_CONTENT_INSET - 4 + (DISCOVERY_ICON_SIZE - width) / 2,
+      DISCOVERY_PAGE_CONTENT_INSET + 3,
+    );
+    this.potionIcon.width = width;
+    this.potionIcon.height = DISCOVERY_ICON_SIZE;
   }
 
   getPreferredHeight() {
@@ -5053,9 +5392,10 @@ export class LeaderboardRowPixi extends ClickableWidget {
       texture: Texture.EMPTY,
       label: `${this.root.label}:profile`,
     });
-    this.allianceIcon = new Sprite(Texture.EMPTY);
-    this.allianceIcon.label = `${this.root.label}:alliance-icon`;
-    this.allianceIcon.anchor.set(0.5);
+    this.allianceFlag = new AllianceFlagWidget({
+      assetManager: dialog.assetManager,
+      label: `${this.root.label}:alliance-flag`,
+    });
     this.tag = createText('', {
       ...RETAINED_TEXT_STYLES.border,
       fontWeight: '700',
@@ -5083,7 +5423,7 @@ export class LeaderboardRowPixi extends ClickableWidget {
       this.currentOutline,
       this.rank,
       this.avatarWidget,
-      this.allianceIcon,
+      this.allianceFlag,
       this.tag,
       this.name,
       this.level,
@@ -5131,12 +5471,15 @@ export class LeaderboardRowPixi extends ClickableWidget {
         )
         .setBackgroundTint(getPlayerFrameTint(this.model.frame));
     }
-    this.allianceIcon.texture =
-      this.dialog.assetManager?.getTexture?.(
-        'source:assets/icons/icon-side-alliance-root-run.png',
-      ) ?? Texture.EMPTY;
-    this.allianceIcon.visible = !player && this.allianceIcon.texture !== Texture.EMPTY;
-    this.allianceIcon.renderable = this.allianceIcon.visible;
+    this.allianceFlag.visible = !player;
+    this.allianceFlag.renderable = !player;
+    if (!player) {
+      this.allianceFlag.setColors({
+        bannerColor: this.model.bannerColor,
+        emblemColor: this.model.emblemColor,
+        emblemId: this.model.emblemId,
+      });
+    }
     this.prestigeStars.visible = player && prestigeCount > 0;
     this.prestigeStars.renderable = this.prestigeStars.visible;
     const usesPointsTotal = this.model.totalMetric === 'points';
@@ -5199,9 +5542,12 @@ export class LeaderboardRowPixi extends ClickableWidget {
     const avatarScale = LEADERBOARD_AVATAR_SIZE / 186;
     this.avatarWidget.scale.set(avatarScale);
     this.avatarWidget.position.set(identityX, (height - LEADERBOARD_AVATAR_SIZE) / 2);
-    this.allianceIcon.position.set(identityX + LEADERBOARD_AVATAR_SIZE / 2, height / 2);
-    this.allianceIcon.width = LEADERBOARD_AVATAR_SIZE - 2;
-    this.allianceIcon.height = LEADERBOARD_AVATAR_SIZE - 2;
+    const flagSize = LEADERBOARD_AVATAR_SIZE - 2;
+    this.allianceFlag.setSize(flagSize, flagSize);
+    this.allianceFlag.position.set(
+      identityX + (LEADERBOARD_AVATAR_SIZE - this.allianceFlag.flagWidth) / 2,
+      (height - this.allianceFlag.flagHeight) / 2,
+    );
     const textX = identityX + LEADERBOARD_AVATAR_SIZE + 5;
     this.tag.position.set(textX, 7);
     this.name.position.set(textX + (this.tag.text ? this.tag.width + 3 : 0), 6);

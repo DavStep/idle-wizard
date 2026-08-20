@@ -88,7 +88,10 @@ export class AppLifecycleManager {
     this.reauthorizationFlowActive = false;
   }
 
-  start({ connectBackend = true } = {}) {
+  start({
+    connectBackend = true,
+    loadingStatus = 'Connecting user...',
+  } = {}) {
     if (this.started) {
       return;
     }
@@ -115,7 +118,7 @@ export class AppLifecycleManager {
     });
     this.appVisible = this.appVisibilityManager.visible !== false;
     this.soundSettingsFacade?.setAppActive?.(this.appVisible);
-    this.onlineGateManager.showConnecting({ progressValue: 1 });
+    this.onlineGateManager.showConnecting({ status: loadingStatus });
     this.maintenanceUnsubscribe = this.maintenanceFacade?.subscribe?.((snapshot) => {
       this.handleMaintenanceChange(snapshot);
     }) ?? null;
@@ -138,6 +141,7 @@ export class AppLifecycleManager {
     }
 
     this.backendConnectionAllowed = true;
+    this.onlineGateManager.showConnecting({ status: 'Connecting user...' });
     void this.startBackendConnectionFlow();
     return true;
   }
@@ -171,6 +175,10 @@ export class AppLifecycleManager {
       if (!this.started || this.stopping) {
         return;
       }
+
+      this.onlineGateManager.showConnecting({
+        status: 'Connecting to server...',
+      });
 
       let promptedBeforeConnect = false;
       if (
@@ -268,6 +276,9 @@ export class AppLifecycleManager {
     { save, pendingHydratedSave } = {},
     { enableSaveSending } = {},
   ) {
+    this.onlineGateManager.showConnecting({
+      status: 'Loading player data...',
+    });
     const accountLinkSave = this.getPendingAccountLinkSave();
     const saveToLoad = accountLinkSave
       ? save
@@ -682,7 +693,7 @@ export class AppLifecycleManager {
     }
 
     if (this.isTransientOfflineReason(reason)) {
-      this.onlineGateManager.showConnecting();
+      this.onlineGateManager.showConnecting({ reason });
       this.scheduleBackendReconnect();
       return;
     }

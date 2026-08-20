@@ -43,15 +43,18 @@
       import { SemanticTargetRegistry } from '/src/rendering/pixi/retained/SemanticTargetRegistry.js';
       import { PixiApplicationManager } from '/src/rendering/pixi/runtime/PixiApplicationManager.js';
       import { PixiUiRuntimeFacade } from '/src/rendering/pixi/runtime/PixiUiRuntimeFacade.js';
+      import { TextEntryService } from '/src/rendering/textEntry/TextEntryService.js';
 
       const canvas = document.querySelector('canvas');
       const applicationManager = new PixiApplicationManager({ canvas });
       const assetManager = new PixiAssetManager();
       const inputRouter = new PixiInputRouter();
+      const textEntryService = new TextEntryService({ canvas });
       const runtime = new PixiUiRuntimeFacade({
         applicationManager,
         assetManager,
         inputRouter,
+        textEntryService,
       });
 
       registerGlobalDialogFactories(runtime);
@@ -65,6 +68,7 @@
         onClose: () => false,
         parent: applicationManager.layers.dialogsSource,
         semanticTargets,
+        textEntryService,
       });
       const recipeParams = new URLSearchParams(window.location.search);
       const recipeMode = recipeParams.get('mode');
@@ -78,7 +82,8 @@
           ? 'create'
           : 'browse'
         : recipeTab === 'quests' ||
-            (recipeTab === 'settings' && settingsAccessible)
+            ((recipeTab === 'banner' || recipeTab === 'settings') &&
+              settingsAccessible)
           ? recipeTab
           : 'home';
       const actionEvents = [];
@@ -97,6 +102,9 @@
             name: 'Night Owls',
             tag: 'OWL',
             tagColor: 'violet',
+            bannerColor: 'violet',
+            emblemColor: 'white',
+            emblemId: 'owl',
             joinMode: 'open',
             leaderIdentity: 'mira',
             memberCount: 18,
@@ -107,6 +115,9 @@
             name: 'Sun Circle',
             tag: 'SUN',
             tagColor: 'amber',
+            bannerColor: 'red',
+            emblemColor: 'gold',
+            emblemId: 'sunburst',
             joinMode: 'apply',
             leaderIdentity: 'sol',
             memberCount: 11,
@@ -117,6 +128,9 @@
             name: 'Root Keepers',
             tag: 'ROOT',
             tagColor: 'green',
+            bannerColor: 'green',
+            emblemColor: 'silver',
+            emblemId: 'oak-leaf',
             joinMode: 'closed',
             leaderIdentity: 'rowan',
             memberCount: 7,
@@ -202,12 +216,24 @@
         name: 'Night Owls',
         tag: 'OWL',
         tagColor: 'violet',
+        bannerColor: 'blue',
+        emblemColor: 'gold',
+        emblemId: 'owl',
         description: 'Patient traders building a stronger market together.',
         notice: 'Weekly goal: support every active member.',
         joinMode: 'apply',
         editable: true,
         canDisband: false,
-        onSave: async () => ({ ok: true }),
+        onSave: async (profile) => {
+          Object.assign(settings, profile);
+          recordAction({
+            type: selectedTabId === 'banner' ? 'save-banner' : 'save-settings',
+            bannerColor: profile.bannerColor,
+            emblemColor: profile.emblemColor,
+          });
+          bindDialog();
+          return { ok: true };
+        },
       };
 
       function bindDialog() {
@@ -271,7 +297,16 @@
         }
 
         const tabs = homeModel.tabs
-          .filter((tab) => settingsAccessible || tab.id !== 'settings')
+          .flatMap((tab) =>
+            tab.id === 'settings'
+              ? [{ id: 'banner', label: 'Banner' }, tab]
+              : [tab],
+          )
+          .filter(
+            (tab) =>
+              settingsAccessible ||
+              (tab.id !== 'banner' && tab.id !== 'settings'),
+          )
           .map((tab) => ({
             ...tab,
             selected: tab.id === selectedTabId,
@@ -289,7 +324,13 @@
           ownedAllianceHome: selectedTabId === 'home',
           rowWidget: selectedTabId === 'quests' ? 'allianceQuest' : null,
           rows: selectedTabId === 'quests' ? questRows : homeModel.members,
-          settings: selectedTabId === 'settings' ? settings : null,
+          settings:
+            selectedTabId === 'settings' || selectedTabId === 'banner'
+              ? {
+                  ...settings,
+                  mode: selectedTabId,
+                }
+              : null,
         });
         dialog.layout(applicationManager.projection);
       }

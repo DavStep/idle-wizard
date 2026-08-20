@@ -835,10 +835,25 @@ describe('base styles', () => {
     expect(dialogBackingRule).toContain('background: transparent;');
   });
 
-  it('uses the shared purple Root Rush capsule for progress rails', () => {
+  it('uses the shared Root Rush capsule colors and matches the green button stroke', () => {
     const rootRule = getRuleBody(/:root\s*\{(?<body>[^}]*)\}/);
     const progressRule = getRuleBody(/\.style-progress\s*\{(?<body>[^}]*)\}/);
     const fillRule = getRuleBody(/\.style-progress__fill\s*\{(?<body>[^}]*)\}/);
+    const greenButton = PNG.sync.read(
+      readFileSync(
+        `${cwd()}/assets/game/source/ui/regular-button/green-button-50.9.png`,
+      ),
+    );
+    const strokePixelIndex =
+      (8 * greenButton.width + Math.floor(greenButton.width / 2)) * 4;
+    const greenButtonStroke = [...greenButton.data.subarray(
+      strokePixelIndex,
+      strokePixelIndex + 4,
+    )];
+    const greenButtonStrokeHex = `#${greenButtonStroke
+      .slice(0, 3)
+      .map((channel) => channel.toString(16).padStart(2, '0'))
+      .join('')}`;
 
     expect(rootRule).toContain('--style-progress-rail-border-width: 1px;');
     expect(rootRule).toContain('--style-progress-height: 8px;');
@@ -853,7 +868,10 @@ describe('base styles', () => {
     expect(rootRule).toContain('--style-progress-blue-fill: #2d8fe6;');
     expect(rootRule).toContain('--style-progress-blue-edge: #72c8ff;');
     expect(rootRule).toContain('--style-progress-green-fill: #99bb46;');
-    expect(rootRule).toContain('--style-progress-green-edge: #8bdc69;');
+    expect(greenButtonStroke).toEqual([214, 236, 62, 255]);
+    expect(rootRule).toContain(
+      `--style-progress-green-edge: ${greenButtonStrokeHex};`,
+    );
     expect(rootRule).toContain('--style-progress-yellow-fill: #f5c542;');
     expect(rootRule).toContain('--style-progress-yellow-edge: #ffee7d;');
     expect(progressRule).toContain('background: var(--style-progress-rail-background);');

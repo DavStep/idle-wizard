@@ -81,7 +81,7 @@ The game should look like a polished fantasy workshop HUD: layered illustrated r
 
 ## Text Inputs
 
-- Retained player-authored text and number fields use the shared brown inset `PixiTextField` nine-slice by default, including chat composers, usernames, naming fields, feedback, and amount editors. Reuse the same chrome at the required width and height; do not create feature-local input frames. An approved specialized surface may explicitly request the legacy `control` variant.
+- Retained player-authored text and number fields use the shared clean inset `PixiTextField` nine-slice by default, including chat composers, usernames, naming fields, feedback, and amount editors. Reuse the same rimless dark chrome at the required width and height; do not create feature-local input frames. An approved specialized surface may explicitly request the legacy `control` variant.
 
 ## Motion
 

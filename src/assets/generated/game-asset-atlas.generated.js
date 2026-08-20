@@ -120,32 +120,31 @@ import standaloneSource114Url from '../../../assets/game/source/ui/root-run-top-
 import standaloneSource115Url from '../../../assets/game/source/ui/root-run-top-hud/level-progress-fill-mask.9.png';
 import standaloneSource116Url from '../../../assets/game/source/ui/root-run-top-hud/level-progress-track.9.png';
 import standaloneSource117Url from '../../../assets/game/source/ui/root-run-world-chat/world-chat-text-field-clean.9.png';
-import standaloneSource118Url from '../../../assets/game/source/ui/root-run-world-chat/world-chat-text-field.9.png';
-import standaloneSource119Url from '../../../assets/game/source/ui/style-box-panel.9.png';
-import standaloneSource120Url from '../../../assets/game/source/ui/white-squircle/white-squircle-10.9.png';
-import standaloneSource121Url from '../../../assets/game/source/ui/white-squircle/white-squircle-114.9.png';
-import standaloneSource122Url from '../../../assets/game/source/ui/white-squircle/white-squircle-15.9.png';
-import standaloneSource123Url from '../../../assets/game/source/ui/white-squircle/white-squircle-16.9.png';
-import standaloneSource124Url from '../../../assets/game/source/ui/white-squircle/white-squircle-19.9.png';
-import standaloneSource125Url from '../../../assets/game/source/ui/white-squircle/white-squircle-2.9.png';
-import standaloneSource126Url from '../../../assets/game/source/ui/white-squircle/white-squircle-20.9.png';
-import standaloneSource127Url from '../../../assets/game/source/ui/white-squircle/white-squircle-25.9.png';
-import standaloneSource128Url from '../../../assets/game/source/ui/white-squircle/white-squircle-30.9.png';
-import standaloneSource129Url from '../../../assets/game/source/ui/white-squircle/white-squircle-35.9.png';
-import standaloneSource130Url from '../../../assets/game/source/ui/white-squircle/white-squircle-4.9.png';
-import standaloneSource131Url from '../../../assets/game/source/ui/white-squircle/white-squircle-40.9.png';
-import standaloneSource132Url from '../../../assets/game/source/ui/white-squircle/white-squircle-50.9.png';
-import standaloneSource133Url from '../../../assets/game/source/ui/white-squircle/white-squircle-55.9.png';
-import standaloneSource134Url from '../../../assets/game/source/ui/white-squircle/white-squircle-6.9.png';
-import standaloneSource135Url from '../../../assets/game/source/ui/white-squircle/white-squircle-60.9.png';
-import standaloneSource136Url from '../../../assets/game/source/ui/white-squircle/white-squircle-70.9.png';
-import standaloneSource137Url from '../../../assets/game/source/ui/white-squircle/white-squircle-80.9.png';
-import standaloneSource138Url from '../../../assets/game/source/ui/white-squircle/white-squircle-90.9.png';
-import standaloneSource139Url from '../../../assets/game/source/world-events/exploration-discovery.png';
-import standaloneSource140Url from '../../../assets/game/source/world-events/military-danger.png';
-import standaloneSource141Url from '../../../assets/game/source/world-events/political-change.png';
-import standaloneSource142Url from '../../../assets/game/source/world-events/trade-disruption.png';
-import standaloneSource143Url from '../../../assets/game/source/world-events/village-crisis.png';
+import standaloneSource118Url from '../../../assets/game/source/ui/style-box-panel.9.png';
+import standaloneSource119Url from '../../../assets/game/source/ui/white-squircle/white-squircle-10.9.png';
+import standaloneSource120Url from '../../../assets/game/source/ui/white-squircle/white-squircle-114.9.png';
+import standaloneSource121Url from '../../../assets/game/source/ui/white-squircle/white-squircle-15.9.png';
+import standaloneSource122Url from '../../../assets/game/source/ui/white-squircle/white-squircle-16.9.png';
+import standaloneSource123Url from '../../../assets/game/source/ui/white-squircle/white-squircle-19.9.png';
+import standaloneSource124Url from '../../../assets/game/source/ui/white-squircle/white-squircle-2.9.png';
+import standaloneSource125Url from '../../../assets/game/source/ui/white-squircle/white-squircle-20.9.png';
+import standaloneSource126Url from '../../../assets/game/source/ui/white-squircle/white-squircle-25.9.png';
+import standaloneSource127Url from '../../../assets/game/source/ui/white-squircle/white-squircle-30.9.png';
+import standaloneSource128Url from '../../../assets/game/source/ui/white-squircle/white-squircle-35.9.png';
+import standaloneSource129Url from '../../../assets/game/source/ui/white-squircle/white-squircle-4.9.png';
+import standaloneSource130Url from '../../../assets/game/source/ui/white-squircle/white-squircle-40.9.png';
+import standaloneSource131Url from '../../../assets/game/source/ui/white-squircle/white-squircle-50.9.png';
+import standaloneSource132Url from '../../../assets/game/source/ui/white-squircle/white-squircle-55.9.png';
+import standaloneSource133Url from '../../../assets/game/source/ui/white-squircle/white-squircle-6.9.png';
+import standaloneSource134Url from '../../../assets/game/source/ui/white-squircle/white-squircle-60.9.png';
+import standaloneSource135Url from '../../../assets/game/source/ui/white-squircle/white-squircle-70.9.png';
+import standaloneSource136Url from '../../../assets/game/source/ui/white-squircle/white-squircle-80.9.png';
+import standaloneSource137Url from '../../../assets/game/source/ui/white-squircle/white-squircle-90.9.png';
+import standaloneSource138Url from '../../../assets/game/source/world-events/exploration-discovery.png';
+import standaloneSource139Url from '../../../assets/game/source/world-events/military-danger.png';
+import standaloneSource140Url from '../../../assets/game/source/world-events/political-change.png';
+import standaloneSource141Url from '../../../assets/game/source/world-events/trade-disruption.png';
+import standaloneSource142Url from '../../../assets/game/source/world-events/village-crisis.png';
 
 export const gameAssetAtlases = Object.freeze([
   Object.freeze({
@@ -266,6 +265,17 @@ const ATLAS_BACKED_SOURCE_IDS = new Set([
   "source:assets/characters/traveler.png",
   "source:assets/icons/icon-alliance-banner-base.png",
   "source:assets/icons/icon-alliance-banner-cloth-mask.png",
+  "source:assets/icons/icon-alliance-banner-emblem.png",
+  "source:assets/icons/icon-alliance-emblem-crescent.png",
+  "source:assets/icons/icon-alliance-emblem-crossed-wands.png",
+  "source:assets/icons/icon-alliance-emblem-crown.png",
+  "source:assets/icons/icon-alliance-emblem-flame.png",
+  "source:assets/icons/icon-alliance-emblem-hourglass.png",
+  "source:assets/icons/icon-alliance-emblem-key.png",
+  "source:assets/icons/icon-alliance-emblem-oak-leaf.png",
+  "source:assets/icons/icon-alliance-emblem-owl.png",
+  "source:assets/icons/icon-alliance-emblem-sunburst.png",
+  "source:assets/icons/icon-alliance-emblem-tower.png",
   "source:assets/icons/icon-bag.png",
   "source:assets/icons/icon-brewing-recipes-preview.png",
   "source:assets/icons/icon-crystal.png",
@@ -415,6 +425,8 @@ const ATLAS_BACKED_SOURCE_IDS = new Set([
   "source:assets/items/potions/potion-wormwood-purge.png",
   "source:assets/items/potions/potion-yarrow-poultice.png",
   "source:assets/items/seeds/seed-pack.png",
+  "source:assets/rooms/brewing/hearth/hearth-flame.png",
+  "source:assets/rooms/brewing/hearth/hearth-wood.png",
   "source:assets/rooms/garden/plots/outpost-plot-ground-level-2.png",
   "source:assets/rooms/garden/plots/outpost-plot-ground-level-3.png",
   "source:assets/rooms/garden/plots/outpost-plot-ground-level-4.png",
@@ -1091,133 +1103,128 @@ export const gameStandaloneSourceAssets = Object.freeze([
     kind: 'texture',
   }),
   Object.freeze({
-    id: "source:assets/ui/root-run-world-chat/world-chat-text-field.9.png",
+    id: "source:assets/ui/style-box-panel.9.png",
     src: standaloneSource118Url,
     kind: 'texture',
   }),
   Object.freeze({
-    id: "source:assets/ui/style-box-panel.9.png",
+    id: "source:assets/ui/white-squircle/white-squircle-10.9.png",
     src: standaloneSource119Url,
     kind: 'texture',
   }),
   Object.freeze({
-    id: "source:assets/ui/white-squircle/white-squircle-10.9.png",
+    id: "source:assets/ui/white-squircle/white-squircle-114.9.png",
     src: standaloneSource120Url,
     kind: 'texture',
   }),
   Object.freeze({
-    id: "source:assets/ui/white-squircle/white-squircle-114.9.png",
+    id: "source:assets/ui/white-squircle/white-squircle-15.9.png",
     src: standaloneSource121Url,
     kind: 'texture',
   }),
   Object.freeze({
-    id: "source:assets/ui/white-squircle/white-squircle-15.9.png",
+    id: "source:assets/ui/white-squircle/white-squircle-16.9.png",
     src: standaloneSource122Url,
     kind: 'texture',
   }),
   Object.freeze({
-    id: "source:assets/ui/white-squircle/white-squircle-16.9.png",
+    id: "source:assets/ui/white-squircle/white-squircle-19.9.png",
     src: standaloneSource123Url,
     kind: 'texture',
   }),
   Object.freeze({
-    id: "source:assets/ui/white-squircle/white-squircle-19.9.png",
+    id: "source:assets/ui/white-squircle/white-squircle-2.9.png",
     src: standaloneSource124Url,
     kind: 'texture',
   }),
   Object.freeze({
-    id: "source:assets/ui/white-squircle/white-squircle-2.9.png",
+    id: "source:assets/ui/white-squircle/white-squircle-20.9.png",
     src: standaloneSource125Url,
     kind: 'texture',
   }),
   Object.freeze({
-    id: "source:assets/ui/white-squircle/white-squircle-20.9.png",
+    id: "source:assets/ui/white-squircle/white-squircle-25.9.png",
     src: standaloneSource126Url,
     kind: 'texture',
   }),
   Object.freeze({
-    id: "source:assets/ui/white-squircle/white-squircle-25.9.png",
+    id: "source:assets/ui/white-squircle/white-squircle-30.9.png",
     src: standaloneSource127Url,
     kind: 'texture',
   }),
   Object.freeze({
-    id: "source:assets/ui/white-squircle/white-squircle-30.9.png",
+    id: "source:assets/ui/white-squircle/white-squircle-35.9.png",
     src: standaloneSource128Url,
     kind: 'texture',
   }),
   Object.freeze({
-    id: "source:assets/ui/white-squircle/white-squircle-35.9.png",
+    id: "source:assets/ui/white-squircle/white-squircle-4.9.png",
     src: standaloneSource129Url,
     kind: 'texture',
   }),
   Object.freeze({
-    id: "source:assets/ui/white-squircle/white-squircle-4.9.png",
+    id: "source:assets/ui/white-squircle/white-squircle-40.9.png",
     src: standaloneSource130Url,
     kind: 'texture',
   }),
   Object.freeze({
-    id: "source:assets/ui/white-squircle/white-squircle-40.9.png",
+    id: "source:assets/ui/white-squircle/white-squircle-50.9.png",
     src: standaloneSource131Url,
     kind: 'texture',
   }),
   Object.freeze({
-    id: "source:assets/ui/white-squircle/white-squircle-50.9.png",
+    id: "source:assets/ui/white-squircle/white-squircle-55.9.png",
     src: standaloneSource132Url,
     kind: 'texture',
   }),
   Object.freeze({
-    id: "source:assets/ui/white-squircle/white-squircle-55.9.png",
+    id: "source:assets/ui/white-squircle/white-squircle-6.9.png",
     src: standaloneSource133Url,
     kind: 'texture',
   }),
   Object.freeze({
-    id: "source:assets/ui/white-squircle/white-squircle-6.9.png",
+    id: "source:assets/ui/white-squircle/white-squircle-60.9.png",
     src: standaloneSource134Url,
     kind: 'texture',
   }),
   Object.freeze({
-    id: "source:assets/ui/white-squircle/white-squircle-60.9.png",
+    id: "source:assets/ui/white-squircle/white-squircle-70.9.png",
     src: standaloneSource135Url,
     kind: 'texture',
   }),
   Object.freeze({
-    id: "source:assets/ui/white-squircle/white-squircle-70.9.png",
+    id: "source:assets/ui/white-squircle/white-squircle-80.9.png",
     src: standaloneSource136Url,
     kind: 'texture',
   }),
   Object.freeze({
-    id: "source:assets/ui/white-squircle/white-squircle-80.9.png",
+    id: "source:assets/ui/white-squircle/white-squircle-90.9.png",
     src: standaloneSource137Url,
     kind: 'texture',
   }),
   Object.freeze({
-    id: "source:assets/ui/white-squircle/white-squircle-90.9.png",
+    id: "source:assets/world-events/exploration-discovery.png",
     src: standaloneSource138Url,
     kind: 'texture',
   }),
   Object.freeze({
-    id: "source:assets/world-events/exploration-discovery.png",
+    id: "source:assets/world-events/military-danger.png",
     src: standaloneSource139Url,
     kind: 'texture',
   }),
   Object.freeze({
-    id: "source:assets/world-events/military-danger.png",
+    id: "source:assets/world-events/political-change.png",
     src: standaloneSource140Url,
     kind: 'texture',
   }),
   Object.freeze({
-    id: "source:assets/world-events/political-change.png",
+    id: "source:assets/world-events/trade-disruption.png",
     src: standaloneSource141Url,
     kind: 'texture',
   }),
   Object.freeze({
-    id: "source:assets/world-events/trade-disruption.png",
-    src: standaloneSource142Url,
-    kind: 'texture',
-  }),
-  Object.freeze({
     id: "source:assets/world-events/village-crisis.png",
-    src: standaloneSource143Url,
+    src: standaloneSource142Url,
     kind: 'texture',
   })
 ]);

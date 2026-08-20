@@ -1,7 +1,11 @@
 import { Container } from 'pixi.js';
 
 import { formatCoinAmount } from '../../../../shared/coinPrice.js';
-import { PixiTextButton, PixiTextLabel } from '../../primitives/index.js';
+import {
+  AllianceFlagWidget,
+  PixiTextButton,
+  PixiTextLabel,
+} from '../../primitives/index.js';
 import {
   PIXI_DIALOG_FOOTER_TABS_GEOMETRY,
   PIXI_DIALOG_SPLIT_PAPER_GEOMETRY,
@@ -40,6 +44,8 @@ const ALLIANCE_MEMBER_ROW_HEIGHT = PIXI_ROOT_RUN_GEOMETRY.settings.rowPitch;
 const SECTION_GAP = PIXI_DIALOG_SPLIT_PAPER_GEOMETRY.sectionGap;
 const SECTION_CONTENT_TOP = PIXI_DIALOG_SPLIT_PAPER_GEOMETRY.contentInsetTop;
 const SECTION_CONTENT_BOTTOM = PIXI_DIALOG_SPLIT_PAPER_GEOMETRY.contentInsetBottom;
+const ALLIANCE_INFO_FLAG_SIZE = 56;
+const ALLIANCE_INFO_FLAG_GAP = 7;
 const STATUS_HEIGHT = 16;
 const JOIN_MODE_LABELS = Object.freeze({
   open: 'Open',
@@ -82,6 +88,10 @@ export class PixiAllianceInfoDialog extends RetainedGlobalDialog {
       this.panel.paperFrame.texture,
       `${dialogId}:tradeInfoPaper`,
     );
+    this.allianceFlag = new AllianceFlagWidget({
+      assetManager: this.assetManager,
+      label: `${dialogId}:allianceFlag`,
+    });
     this.identityLabel = createText('', RETAINED_TEXT_STYLES.bold);
     this.detailLabel = createText('', {
       ...RETAINED_TEXT_STYLES.border,
@@ -91,6 +101,7 @@ export class PixiAllianceInfoDialog extends RetainedGlobalDialog {
     this.summaryRowsLayer = new Container({ label: `${dialogId}:tradeInfoRows` });
     this.summarySection.addChild(
       this.summaryPaper,
+      this.allianceFlag,
       this.identityLabel,
       this.detailLabel,
       this.summaryRowsLayer,
@@ -177,6 +188,13 @@ export class PixiAllianceInfoDialog extends RetainedGlobalDialog {
     this.panel.setTitle(this.allianceModel.title);
     this.statusText = String(viewModel.status ?? '');
     setText(this.identityLabel, this.allianceModel.title);
+    this.allianceFlag.setColors({
+      bannerColor: this.allianceModel.bannerColor,
+      emblemColor: this.allianceModel.emblemColor,
+      emblemId: this.allianceModel.emblemId,
+    });
+    this.allianceFlag.visible = !this.allianceModel.loading;
+    this.allianceFlag.renderable = this.allianceFlag.visible;
     setText(
       this.detailLabel,
       [this.allianceModel.description, this.allianceModel.notice]
@@ -385,14 +403,23 @@ export class PixiAllianceInfoDialog extends RetainedGlobalDialog {
     });
 
     this.summarySection.position.set(0, 0);
-    this.identityLabel.position.set(0, SECTION_CONTENT_TOP);
+    this.allianceFlag.setSize(ALLIANCE_INFO_FLAG_SIZE, ALLIANCE_INFO_FLAG_SIZE);
+    this.allianceFlag.position.set(0, SECTION_CONTENT_TOP);
+    const identityX = this.allianceFlag.visible
+      ? this.allianceFlag.flagWidth + ALLIANCE_INFO_FLAG_GAP
+      : 0;
+    this.identityLabel.position.set(identityX, SECTION_CONTENT_TOP);
     const detailY = this.identityLabel.y + Math.ceil(this.identityLabel.height) + 2;
-    this.detailLabel.position.set(0, detailY);
+    this.detailLabel.position.set(identityX, detailY);
     this.detailLabel.style.wordWrap = true;
-    this.detailLabel.style.wordWrapWidth = ALLIANCE_CONTENT_WIDTH;
-    const rowsY =
+    this.detailLabel.style.wordWrapWidth = ALLIANCE_CONTENT_WIDTH - identityX;
+    const textBottom =
       detailY +
-      (this.detailLabel.text ? Math.ceil(this.detailLabel.height) + 4 : 0);
+      (this.detailLabel.text ? Math.ceil(this.detailLabel.height) : 0);
+    const flagBottom = this.allianceFlag.visible
+      ? this.allianceFlag.y + this.allianceFlag.flagHeight
+      : SECTION_CONTENT_TOP;
+    const rowsY = Math.max(textBottom, flagBottom) + 4;
     this.summaryRowsLayer.position.set(0, rowsY);
     this.orderSummaryRows();
     const summaryContentHeight =
@@ -573,6 +600,9 @@ function normalizeAllianceModel(model = {}) {
     ),
     description: String(alliance.description ?? '').trim(),
     notice: String(alliance.notice ?? '').trim(),
+    bannerColor: alliance.bannerColor,
+    emblemColor: alliance.emblemColor,
+    emblemId: alliance.emblemId,
     members: suppliedMembers.map(normalizeMember),
     action: pending
       ? { kind: 'pending', label: 'Pending', enabled: false }

@@ -39,15 +39,20 @@ describe('AppFacade live-update startup ordering', () => {
     const startPromise = app.start();
 
     expect(events).toEqual(['app-ready', 'render-initialize']);
+    await Promise.resolve();
+    expect(events).toEqual(['app-ready', 'render-initialize', 'update-check']);
 
     finishRender();
     await expect(startPromise).resolves.toBe(app);
     expect(events).toEqual([
       'app-ready',
       'render-initialize',
-      'music-start',
-      ['lifecycle-start', { connectBackend: false }],
       'update-check',
+      'music-start',
+      ['lifecycle-start', {
+        connectBackend: false,
+        loadingStatus: 'Checking for updates...',
+      }],
       'backend-start',
     ]);
   });

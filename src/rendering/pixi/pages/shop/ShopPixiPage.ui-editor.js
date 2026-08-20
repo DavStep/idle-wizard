@@ -9,7 +9,7 @@ export default defineUiEditorIntegration({
     'compound.market-stalls-section',
     'compound.market-stall',
     'compound.market-rows-section',
-    'compound.market-offer-row',
+    'compound.market-offer-card',
     'compound.market-compact-row',
     'text-button',
   ],
@@ -42,5 +42,15 @@ async function mount(_context, fixture) {
 }
 
 function createModel(selectedTabId) {
-  return { shop: { selectedTabId, market: { name: 'Small Town Market', rank: 2 }, traders: { timerLabel: 'refresh 2m', stalls: [{ id: 'stall-1', slotNumber: 1, starLevel: 2, itemLabel: 'Sage Seed', quantityLabel: 'x4', priceLabel: '12 coin', priceResourceKey: 'coin', progress: 0.52, timerLabel: '18s' }, { id: 'stall-2', slotNumber: 2, itemLabel: 'Empty', progress: null }] }, players: { requests: { countLabel: '1/3', slots: [{ id: 'request-1', slotNumber: 1, itemLabel: 'Mint Herb x3', value: '42 coin' }] }, market: { countLabel: '1/3', slots: [{ id: 'listing-1', slotNumber: 1, itemLabel: 'Sage Seed x5', value: '24 coin' }] } }, crystals: { coinOffer: { rewardLabel: '500 coin', actionLabel: 'Collect', canCollect: true }, dailyCrystalOffer: { rewardLabel: '1 amber', actionLabel: 'Free', canCollect: true }, offers: [{ id: 'amber-1', resourceKey: 'crystal', amount: 1, bundleLabel: '1 Amber', priceLabel: '$4.99' }, { id: 'amethyst-100', resourceKey: 'amethyst', amount: 100, bundleLabel: '100 Amethyst', priceLabel: '$4.99' }] } } };
+  return { shop: { selectedTabId, market: { name: 'Small Town Market', rank: 2 }, traders: { timerLabel: 'refresh 2m', stalls: [{ id: 'stall-1', slotNumber: 1, starLevel: 2, itemLabel: 'Sage Seed', quantityLabel: 'x4', batchLabel: 'x2', priceLabel: '12 coin', priceResourceKey: 'coin', salePriceLabel: '24 coin', salePriceResourceKey: 'coin', progress: 0.52, timerLabel: '18s' }, { id: 'stall-2', slotNumber: 2, itemLabel: 'Empty', progress: null }] }, players: { requests: { countLabel: '1/3', slots: [{ id: 'request-1', slotNumber: 1, itemLabel: 'Mint Herb x3', value: '42 coin' }] }, market: { countLabel: '1/3', slots: [{ id: 'listing-1', slotNumber: 1, itemLabel: 'Sage Seed x5', value: '24 coin' }] } }, crystals: { coinOffer: { rewardLabel: '500 coin', actionLabel: 'Collect', canCollect: true }, dailyCrystalOffer: { rewardLabel: '1 amber', actionLabel: 'Free', canCollect: true }, offers: createGemOffers() } } };
+}
+
+function createGemOffers() {
+  const amounts = [1, 2, 5, 10, 20, 50];
+  const names = ['Pouch', 'Bag', 'Pile', 'Chest', 'Trove', 'Hoard'];
+  const prices = ['$4.99', '$8.99', '$19.99', '$36.99', '$69.99', '$159.99'];
+  return [
+    ...amounts.map((amount, index) => ({ id: `amber-${amount}`, resourceKey: 'crystal', amount, title: `Amber ${names[index]}`, priceLabel: prices[index] })),
+    ...amounts.map((amount, index) => ({ id: `amethyst-${amount * 100}`, resourceKey: 'amethyst', amount: amount * 100, title: `Amethyst ${names[index]}`, priceLabel: prices[index] })),
+  ];
 }

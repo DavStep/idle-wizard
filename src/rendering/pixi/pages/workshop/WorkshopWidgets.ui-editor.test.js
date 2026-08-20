@@ -10,6 +10,8 @@ describe('Workshop widget UI editor integrations', () => {
       'compound.workshop-summon-control',
       'compound.root-run-side-action',
       'compound.world-event-donation-option-row',
+      'compound.trade-alliance-banner',
+      'primitive.alliance-emblem-option',
       'compound.alliance-directory-row',
       'compound.alliance-member-row',
       'compound.alliance-quest-row',
@@ -33,10 +35,51 @@ describe('Workshop widget UI editor integrations', () => {
       )?.scenarios.map(({ id }) => id),
     ).toEqual(['available', 'notified', 'unavailable', 'seed-pack']);
     expect(
+      integrations.find(({ id }) => id === 'compound.trade-alliance-banner')
+        ?.scenarios.map(({ id }) => id),
+    ).toEqual([
+      'unity',
+      'crown',
+      'crescent',
+      'crossed-wands',
+      'owl',
+      'flame',
+      'oak-leaf',
+      'key',
+      'tower',
+      'sunburst',
+      'hourglass',
+    ]);
+    expect(
+      integrations.find(({ id }) => id === 'primitive.alliance-emblem-option')
+        ?.scenarios,
+    ).toHaveLength(11);
+    expect(
+      integrations.find(({ id }) => id === 'compound.root-run-side-action')
+        ?.childWidgetIds,
+    ).toEqual([
+      'primitive.notification-badge',
+      'compound.trade-alliance-banner',
+    ]);
+    expect(
+      integrations.find(({ id }) => id === 'compound.root-run-side-action')
+        ?.scenarios.map(({ id }) => id),
+    ).toContain('alliance-member');
+    expect(
+      integrations.find(({ id }) => id === 'compound.alliance-directory-row')
+        ?.childWidgetIds,
+    ).toEqual([
+      'compound.trade-alliance-banner',
+      'compound.player-profile',
+      'primitive.resource-label',
+      'text-button',
+    ]);
+    expect(
       integrations.find(({ id }) => id === 'compound.leaderboard-row')
         ?.childWidgetIds,
     ).toEqual([
       'compound.player-profile',
+      'compound.trade-alliance-banner',
       'primitive.star-level-label',
       'primitive.resource-label',
     ]);

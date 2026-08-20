@@ -8,14 +8,14 @@ Coin research follows an achievement curve. After the free Sage and Mint onboard
 
 Regular Research also contains one independent 19-rank speed-mastery series for every herb and potion. Seed Research presents each seed unlock directly before that seed's herb-growth ranks, and Potion Research presents each recipe unlock directly before that potion's brewing-time ranks, so the matching improvement is the next step in each catalogue. Each rank removes another five percentage points of the modeled pre-mastery timer and describes the absolute current-to-next duration. Its uncapped research time is `ceil(configured herb growth or potion brew seconds × rank)`, keeping early ranks quick while the later ranks become long-term studies. Full mastery reduces the configured production timer to `90 / 185` of its unmastered value. Rank prices start from the matching unlock price (with `25`/`50`-coin starter exceptions) and compound by `1.5x`, making the final ranks late-game purchases. Configured item and recipe durations are the only base timers; no duplicate legacy duration is stored. Item mastery stacks before advanced plot/cauldron speed research.
 
-Globally discovered hidden recipes appear immediately as independent, instant
-coin studies for players other than the discoverer. Each costs twice the seed
-research price of its latest-progression ingredient, tying the study to the
-earliest point when its recipe can be brewed. They have no separate level or
-recipe-chain prerequisite. Completed discovery studies persist through server
-save round trips like other run research. The original discoverer keeps the
-recipe learned from server discovery ownership and does not receive a redundant
-study.
+Globally discovered hidden recipes appear immediately as independent, timed
+coin studies for players other than the discoverer. Each takes ten minutes and
+costs twice the seed research price of its latest-progression ingredient, tying
+the study to the earliest point when its recipe can be brewed. They have no
+separate level or recipe-chain prerequisite. Completed discovery studies persist
+through server save round trips like other run research. The original discoverer
+keeps the recipe learned from server discovery ownership and does not receive a
+redundant study.
 
 Every timed research takes at least five seconds after research-time reductions. An explicit zero duration remains the internal instant-research sentinel.
 

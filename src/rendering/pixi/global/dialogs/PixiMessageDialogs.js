@@ -58,6 +58,7 @@ const LEVEL_REWARD_CONTINUE_HEIGHT = 20;
 const LEVEL_REWARD_CONTINUE_DELAY_MS = 150;
 const LEVEL_REWARD_COUNT_DELAY_MS = 120;
 const LEVEL_REWARD_COUNT_DURATION_MS = 700;
+const RESEARCH_COMPLETE_PANEL_OFFSET_Y = -20;
 const CONFIRMATION_WIDTH = 260;
 const CONFIRMATION_MIN_CONTENT_HEIGHT = 124;
 const CONFIRMATION_BUTTON_HEIGHT = 30;
@@ -479,9 +480,15 @@ export class PixiAnnouncementSurface extends RetainedGlobalDialog {
     if (!this.panel) {
       return;
     }
-    this.panel.y += this.announcementModel?.framed
+    const baseOffset = this.announcementModel?.framed
       ? -20
       : -28;
+    const researchCompleteOffset =
+      this.announcementModel?.kind === 'research' &&
+      isBannerRowsAnnouncement(this.announcementModel)
+        ? RESEARCH_COMPLETE_PANEL_OFFSET_Y
+        : 0;
+    this.panel.y += baseOffset + researchCompleteOffset;
   }
 
   getModalContentRoots() {

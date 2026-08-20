@@ -34,6 +34,7 @@ experience_type: style
 - Image-backed item labels such as seeds, herbs, and potions need `setItemIconLabel` after label text is current.
 - Foreground, item, action, and status icons must preserve their authored aspect ratio with contain/fit sizing; never stretch an icon to fill both dimensions. Stretching is allowed only when the asset is intentionally used as a background.
 - For small illustrated HUD icon contour corrections, normalize true inner and outer linework to one source-width band before thickening; uniform dark-pixel dilation also expands pupils and shadow masses, making otherwise equal strokes read inconsistent at runtime scale.
+- Small props attached beneath a room landmark, such as the Brewing hearth, use the bottom-tab icon family's broad color masses and restrained highlights, share the landmark feet's grounding band, then render behind the landmark so silhouette occlusion—not foreground overlap—establishes physical depth.
 - Body-level reward visual nodes must size from fitted stage CSS variables, not `vw`; otherwise mobile item drops ignore the scaled room UI and look tiny.
 - Reward particles anchored to room controls must measure and animate in `.game-stage` coordinates, not raw `document.body` viewport coords; the fitted stage can drift or double body-fixed positions on web/mobile.
 - Icon-mode reward text should hide only after visual nodes actually spawn; reduced-motion/mobile fallbacks need visible text.
@@ -118,7 +119,7 @@ experience_type: style
 - Research tabs follow progression order and unlock permanently from the highest level reached: Regular, Crystal at 4, Automation at 7, and Advanced at 10. Locked tabs keep release input only to show `Unlocks at level N`, never change selection, use the shared gray button skin, hide notifications, and replace their label with the centered shared lock icon.
 - Automation research is target-specific (`automation:autoPlantTile:1`, `automation:autoBrewCauldron:1`): one plot study combines plant + harvest, and one cauldron study combines brew + bottle.
 - Research blocks should render only the next locked row; keep deeper locked research hidden until earlier items unlock.
-- Completed research rows replace the action button with the shared checkmark centered in the same fixed value slot; keep `researched` as the accessible state label. Active research timers retain the yellow status button.
+- Completed research rows replace the action button with the shared checkmark centered in the same fixed value slot; keep `researched` as the accessible state label. Active research timers reuse the blue stacked cost button with `Skip` above the Amethyst icon and amount.
 - Locked research rows reuse the normal card, art-well, artwork, and copy colors under one `30%` black overlay; keep the gray locked action as the explicit state cue instead of swapping the whole row to dark monochrome assets.
 - Research rows use the shared station-upgrade-card family: keep the Root Run card width but compress the row to `80px`, use a `52x52px` left art well with `57px` standard artwork and a `46px` seed-pack composite, a fixed smaller middle description, and a `72x42px` cost/status button. The title and description share the row ink color. Single-level studies have no rank marker; true levelled studies show two or three shared star slots directly after the name. Render the art-well squircle with its source `49 49 50 50` margins through a dynamically sized Pixi nine-slice; stretching the source PNG as a normal background turns it into an oval. Intentionally omit the bottom `current ▶ next` capsule.
 - Shared image-backed cost buttons must wrap plain labels such as `free` or `locked` in a positioned label above the skin pseudo-element; resource-cost labels already own that foreground layer.
@@ -156,6 +157,7 @@ experience_type: style
 - Seed summon logs list exact seed labels/counts, never a generic `summoned N seeds`.
 - Inventory info lists separate item type knowledge from unlock state: balance catalog item types are known by default; only explicitly unknown zero-count rows show fixed-length ASCII with `locked`; action pickers show only unlocked/researched or owned items.
 - Unknown item/potion masks use static six-character `??????` labels with `aria-label="unknown"`; do not use animated matrix/glitch text.
+- Unknown potions use the shared lock icon in place of potion art across labels, Brewing Recipes, and Workshop Discoveries; fit the lock at its natural aspect ratio inside the existing art slot.
 - Tabbed popups put whole-dialog category tabs inside the bordered `.style-dialog` brown footer; keep modal role/focus on the wrapper.
 - Keep `6px` between the paper and footer tabs and `10px` from the complete tab row to the brown shell bottom.
 - Popup tab buttons and popup titles use the same shared `3/13` proportional logical-surface stroke.
@@ -169,7 +171,7 @@ experience_type: style
 - Guild quest page turns must keep the dialog, list-paper, and detail-paper 9-slice nodes mounted; rebuilding those `border-image` nodes causes a black Chromium/WebView repaint frame during the transition.
 - Room UI layer uses `box-sizing: content-box`; wrappers that center fixed-width `.style-dialog` content must account for dialog padding and borders.
 - Padded inputs inside flex columns need `box-sizing: border-box` or explicit width math; content-box `width: 100%` overflows columns.
-- Retained player-authored text and number fields default to the shared brown inset `PixiTextField` nine-slice, including chat, username, naming, feedback, and amount entry; vary dimensions and behavior, not feature-local input chrome.
+- Retained player-authored text and number fields default to the shared clean inset `PixiTextField` nine-slice used by World Chat, including chat, username, naming, feedback, and amount entry; vary dimensions and behavior, not feature-local input chrome.
 - Full-width padded dialog buttons also need `box-sizing: border-box`; otherwise their right borders clip outside the popup content.
 - Shop sell picker shows `empty` as the first normal item option, not as a custom separate control.
 - Market stand, request, and listing cards are passive outside their fixed action: green `Select` opens an empty slot and red `Cancel` clears an occupied slot. Reserve that action column in layout too—the sale rail, adjacent timer, and upper-right `xN` badge must all stop before it. Do not restore whole-card activation on Traders or Players.
@@ -334,7 +336,7 @@ experience_type: style
 - Logs popup should auto-pin new entries only while the player is at top; preserve manual scroll position otherwise.
 - Timed progress bars should visually match the logs dialog rail: 3px high, compact black border, black fill, no visible timer label inside the rail.
 - Smooth timed progress bars with compositor `transform` transitions from the latest snapshot to completion; do not raise gameplay snapshot cadence just to reduce visible stepping.
-- Brewing selected recipe requirements render as stable one-herb orbit slots with item art and name only; do not show owned/required ratios.
+- Brewing selected recipe requirements render as stable one-herb orbit slots with one left-aligned `icon Name xN` row; do not show owned/required ratios, and color only a missing `xN` red.
 - Brewing selected recipe rows are correction targets through tap/ARIA only; do not reintroduce visible `next` or `remove` text into the cauldron body.
 - Reposition the retained Brewing orbit with its header gap; keep its `60px` ingredient-row pitch and `128x87px` ellipse radii independent so extra page height cannot stretch the orbit into a circle.
 - Garden plot `.is-empty` means the plot has no active plant, not that its selected seed label is unavailable; selected seed labels still follow the row's normal state color.
@@ -354,12 +356,14 @@ experience_type: style
 - Retained button architecture is `PixiBaseButton` for fitted chrome plus input/state, `PixiTextButton` for the added label, and `PixiTabButton` for selected/resting tab skins. UI Editor hierarchy must expose the inherited BaseButton as a widget, not mislabel it as a Background image. Retained dialog tabs use `RetainedButton` with the shared `resolveDialogFooterTabLayout` and `setDialogPaperAboveFooterTabs` geometry; do not build feature-local tab rows or place whole-dialog tabs outside the shell. When a dialog intentionally uses multiple paper sections, hide the generic full paper frame so those sections sit directly on the brown shell instead of nesting paper inside paper; render every split section with the shared Expedition paper nine-slice and end the final section at the shared footer boundary.
 - Stall allocation rows and their slider knob reuse the exact Root Run Settings qUIck assets and `/3` source geometry: 50px row pitch, 8px content insets, and a 23px knob. Do not redraw either surface with `Graphics`.
 - Settings-backed catalogue rows use `resolveRetainedDialogListLayout` to occupy the shared `282px` visible frame in both split-paper and continuous-paper dialogs; the standard `264px` text column is too narrow for this row chrome.
+- Trade Alliance identity art is one shared layered `AllianceFlagWidget` derived from the canonical purple `icon-side-alliance-root-run.png`: narrow single-tail cloth, straight gold-ended rod, tintable cloth mask, and a large tintable white emblem with a thick dark contour. It is the source for the member Workshop HUD action, Alliance Info, directory rows, and leaderboard alliance rows; the unaffiliated HUD alone keeps the plain purple discovery icon. Never restore the obsolete bulky split-tail scroll silhouette. Keep the fixed ten dark-cloth roles, ten bright-emblem roles, and eleven simple emblem silhouettes as data; do not bake combinations into separate flag images.
 - Load Stall allocation state is an exact target item quantity, not a percentage. Bind the slider from `0` through total matching stock at step `1` so thumb movement, `Mark xN`, the tutorial gate, and the gameplay write cannot disagree.
 - Loaded trader stalls show batch size in the compact red downward badge at the card's top-right with a `14px` right inset and source-proportional `29x31px` geometry; center white, dark-stroked `xN` against the badge's visible face instead of leaving it as plain brown text.
 
 ## Runtime art sources
 
 - Keep high-resolution generation masters outside `assets/game/source`; the production asset manifest includes every PNG below that tree. Put only runtime-sized finals there, or intermediate art will inflate web and APK builds.
+- After adding a runtime PNG under `assets/game/source`, rebuild `assets:atlas` and restart an already-running Vite process before browser QA; the live Pixi asset manager can otherwise keep the pre-generation standalone manifest and report the new texture missing.
 - Build research icon families from shared plot, cauldron, seed-pack, hourglass, and action-overlay masters. Do not independently generate each final icon or identical gameplay concepts will drift; keep currencies out of research artwork.
 - Pixi `ColorMatrixFilter.grayscale(1)` sums RGB channels and clips bright art; locked cauldron artwork that intentionally stays monochrome should use the Idle Outpost luminance weights `0.2125/0.7154/0.0721` and neutralize sprite tint RGB.
 - Grayscale and monochrome shaders are icon-only. Disabled buttons must swap to the shared gray button asset instead of filtering colored button chrome.

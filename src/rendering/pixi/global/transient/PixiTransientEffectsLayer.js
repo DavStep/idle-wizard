@@ -659,7 +659,10 @@ export class PixiTransientEffectsLayer extends BasePixiRetainedView {
         this.semanticRegistry,
         anchor,
       );
-      bounds = snapshot
+      bounds =
+        snapshot &&
+        snapshot.state?.visible !== false &&
+        snapshot.state?.active !== false
         ? projectSemanticBoundsToSource(
             snapshot.bounds,
             this.projection,

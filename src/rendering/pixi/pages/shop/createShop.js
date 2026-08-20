@@ -16,22 +16,30 @@ const AMBER_PRICES = Object.freeze([
   [20, '$69.99'],
   [50, '$159.99'],
 ]);
+const GEM_BUNDLE_NAMES = Object.freeze([
+  'Pouch',
+  'Bag',
+  'Pile',
+  'Chest',
+  'Trove',
+  'Hoard',
+]);
 const DEFAULT_CRYSTAL_OFFERS = Object.freeze([
-  ...AMBER_PRICES.map(([amount, priceLabel]) => Object.freeze({
+  ...AMBER_PRICES.map(([amount, priceLabel], index) => Object.freeze({
     id: `amber-${amount}`,
     resourceKey: 'crystal',
     crystalCount: amount,
     amount,
-    title: 'Amber',
+    title: `Amber ${GEM_BUNDLE_NAMES[index]}`,
     bundleLabel: `${amount} amber`,
     priceLabel,
   })),
-  ...AMBER_PRICES.map(([amount, priceLabel]) => Object.freeze({
+  ...AMBER_PRICES.map(([amount, priceLabel], index) => Object.freeze({
     id: `amethyst-${amount * 100}`,
     resourceKey: 'amethyst',
     amethystCount: amount * 100,
     amount: amount * 100,
-    title: 'Amethyst',
+    title: `Amethyst ${GEM_BUNDLE_NAMES[index]}`,
     bundleLabel: `${amount * 100} amethyst`,
     priceLabel,
   })),
@@ -406,6 +414,8 @@ function createStallModel({
     priceLabel: price,
     priceVariant: price === 'select' ? 'green' : null,
     priceResourceKey: loaded ? 'coin' : null,
+    salePriceLabel: loaded ? price : '',
+    salePriceResourceKey: loaded ? 'coin' : null,
     progress:
       loaded && durationSeconds > 0
         ? Math.max(

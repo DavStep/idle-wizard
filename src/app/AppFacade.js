@@ -185,14 +185,22 @@ export class AppFacade {
       // Mark OTA bundles ready before heavy rendering work can hit the native
       // rollback deadline. A later start() call retries transient failures.
     });
+    const liveUpdateCheckPromise = Promise.resolve()
+      .then(() => this.liveUpdateManager.start())
+      .catch(() => ({ status: 'unavailable' }));
 
     this.startPromise = this.renderFacade
       .initialize({ playerFacade: this.playerFacade })
       .then(async () => {
         if (!this.disposed) {
           this.backgroundMusicFacade?.start?.();
-          this.lifecycleManager.start({ connectBackend: false });
-          const canContinueStartup = await this.checkForLiveUpdate();
+          this.lifecycleManager.start({
+            connectBackend: false,
+            loadingStatus: 'Checking for updates...',
+          });
+          const canContinueStartup = await this.checkForLiveUpdate(
+            liveUpdateCheckPromise,
+          );
           if (canContinueStartup && !this.disposed) {
             this.lifecycleManager.resumeBackendConnectionFlow();
           }
@@ -202,9 +210,11 @@ export class AppFacade {
     return this.startPromise;
   }
 
-  async checkForLiveUpdate() {
+  async checkForLiveUpdate(checkPromise = null) {
     try {
-      this.liveUpdateCheckResult = await this.liveUpdateManager.start();
+      this.liveUpdateCheckResult = await (
+        checkPromise ?? this.liveUpdateManager.start()
+      );
       return !this.presentLiveUpdateIfReady();
     } catch {
       // A failed update probe never blocks a playable bundled APK.

@@ -82,6 +82,7 @@
   --style-yellow-button-frame-width: 17px 7px 12px 20px;
   --style-yellow-button-text: #fff;
   --style-yellow-button-text-stroke: var(--style-text-stroke-color);
+  --style-blue-button-frame: url("../../assets/game/source/ui/regular-button/blue-button-50.9.png");
   --style-green-button-frame: url("../../assets/game/source/ui/regular-button/green-button-50.9.png");
   --style-red-button-frame: url("../../assets/game/source/ui/regular-button/red-button-50.9.png");
   --style-green-button-disabled-frame: url("../../assets/game/source/ui/regular-button/gray-button-50.9.png");
@@ -216,7 +217,7 @@
   --style-progress-blue-fill: #2d8fe6;
   --style-progress-blue-edge: #72c8ff;
   --style-progress-green-fill: #99bb46;
-  --style-progress-green-edge: #8bdc69;
+  --style-progress-green-edge: #d6ec3e;
   --style-progress-yellow-fill: #f5c542;
   --style-progress-yellow-edge: #ffee7d;
   --style-progress-fill-background: var(--style-progress-root-fill);
@@ -7291,6 +7292,53 @@ body {
   -webkit-user-drag: none;
 }
 
+.workshop-page__trade-alliance-button-flag {
+  position: absolute;
+  inset: 0;
+  display: block;
+  width: 100%;
+  height: 100%;
+  scale: 0.72;
+  transform-origin: center;
+}
+
+.workshop-page__trade-alliance-button-flag[hidden] {
+  display: none;
+}
+
+.workshop-page__trade-alliance-button-flag-base,
+.workshop-page__trade-alliance-button-flag-cloth {
+  position: absolute;
+  inset: 0;
+  display: block;
+  width: 100%;
+  height: 100%;
+}
+
+.workshop-page__trade-alliance-button-flag-base {
+  object-fit: contain;
+}
+
+.workshop-page__trade-alliance-button-flag-cloth,
+.workshop-page__trade-alliance-button-flag-emblem {
+  -webkit-mask-repeat: no-repeat;
+  -webkit-mask-position: center;
+  -webkit-mask-size: contain;
+  mask-repeat: no-repeat;
+  mask-position: center;
+  mask-size: contain;
+  pointer-events: none;
+}
+
+.workshop-page__trade-alliance-button-flag-emblem {
+  position: absolute;
+  top: 31.25%;
+  left: 34.375%;
+  display: block;
+  width: 31.25%;
+  height: 31.25%;
+}
+
 .workshop-page__bag-button-label,
 .workshop-page__stats-button-label,
 .workshop-page__mail-button-label,
@@ -9023,6 +9071,38 @@ div.workshop-page__discovery-row {
   margin: 0;
 }
 
+.workshop-page__trade-alliance-banner-preview {
+  position: relative;
+  width: 86px;
+  height: 86px;
+  margin: 0 auto 4px;
+}
+
+.workshop-page__trade-alliance-banner-preview img,
+.workshop-page__trade-alliance-banner-cloth {
+  position: absolute;
+  inset: 0;
+  display: block;
+  width: 100%;
+  height: 100%;
+}
+
+.workshop-page__trade-alliance-banner-cloth,
+.workshop-page__trade-alliance-banner-emblem {
+  pointer-events: none;
+  mask: var(--banner-mask) center / 100% 100% no-repeat;
+  -webkit-mask: var(--banner-mask) center / 100% 100% no-repeat;
+}
+
+.workshop-page__trade-alliance-banner-emblem {
+  position: absolute;
+  top: 27px;
+  left: 29.5px;
+  display: block;
+  width: 27px;
+  height: 27px;
+}
+
 .workshop-page__trade-alliance-field {
   display: grid;
   gap: 2px;
@@ -9032,6 +9112,54 @@ div.workshop-page__discovery-row {
   padding: 0;
   margin: 0;
   border: 0;
+}
+
+.workshop-page__trade-alliance-emblem-field {
+  padding: 0;
+  margin: 0;
+  border: 0;
+}
+
+.workshop-page__trade-alliance-emblem-field legend {
+  padding: 0;
+}
+
+.workshop-page__trade-alliance-emblem-options {
+  display: grid;
+  grid-template-columns: repeat(6, 24px);
+  gap: 4px;
+  margin-bottom: 5px;
+}
+
+.workshop-page__trade-alliance-emblem-option {
+  box-sizing: border-box;
+  display: grid;
+  width: 24px;
+  height: 24px;
+  padding: 2px;
+  appearance: none;
+  place-items: center;
+  cursor: pointer;
+  background: #d8b983;
+  border: var(--style-border);
+  border-radius: 3px;
+}
+
+.workshop-page__trade-alliance-emblem-option span {
+  display: block;
+  width: 18px;
+  height: 18px;
+  pointer-events: none;
+  background: var(--workshop-alliance-emblem-color, #fff9ed);
+  mask: var(--workshop-alliance-emblem-mask) center / contain no-repeat;
+  -webkit-mask: var(--workshop-alliance-emblem-mask) center / contain no-repeat;
+}
+
+.workshop-page__trade-alliance-emblem-option.is-selected,
+.workshop-page__trade-alliance-emblem-option:focus-visible {
+  background: #553b28;
+  outline: var(--style-border-strong);
+  outline-offset: 1px;
 }
 
 .workshop-page__trade-alliance-color-field legend {
@@ -10844,10 +10972,41 @@ div.workshop-page__discovery-row {
   align-items: center;
   justify-content: center;
   width: calc(100% - 12px);
-  color: var(--style-yellow-button-text);
+  color: #fff;
   font-size: 12px;
   line-height: 12px;
   white-space: normal;
+}
+
+.research-page__research-status-action {
+  font-size: 10px;
+  line-height: 10px;
+}
+
+.research-page__research-status-cost,
+.research-page__research-status-cost > .style-resource-label {
+  display: inline-flex;
+  gap: 2px;
+  align-items: center;
+  justify-content: center;
+  line-height: 12px;
+}
+
+.research-page__research-status-cost .style-resource-label__icon {
+  display: inline-block;
+  order: 1;
+  width: 14px;
+  height: 14px;
+  margin: 0;
+}
+
+.research-page__research-status-cost .style-resource-label__amount {
+  order: 2;
+}
+
+.research-page__research-status-cost
+  :is(.style-resource-label__spacer, .style-resource-label__text) {
+  display: none;
 }
 
 .research-page__research-button--in-progress
@@ -10860,7 +11019,7 @@ div.workshop-page__discovery-row {
   display: none;
 }
 
-.style-button.style-cost-button.style-cost-button--yellow.research-page__research-button--in-progress:disabled {
+.style-button.style-cost-button.style-cost-button--blue.research-page__research-button--in-progress:disabled {
   filter: none;
   opacity: 1;
 }
@@ -10931,8 +11090,8 @@ div.workshop-page__discovery-row {
   height: 28px;
 }
 
-.style-button.style-cost-button.style-cost-button--yellow.research-page__research-button--in-progress:disabled::after {
-  border-image-source: var(--style-yellow-button-frame);
+.style-button.style-cost-button.style-cost-button--blue.research-page__research-button--in-progress::after {
+  border-image-source: var(--style-blue-button-frame);
 }
 
 .style-button.style-cost-button.research-page__research-button {
@@ -10953,7 +11112,9 @@ div.workshop-page__discovery-row {
   line-height: normal;
 }
 
-.style-button.style-cost-button.research-page__research-button.is-unaffordable::after {
+.style-button.style-cost-button.research-page__research-button.is-unaffordable:not(
+    .research-page__research-button--in-progress
+  )::after {
   border-image-source: var(--style-green-button-frame);
 }
 

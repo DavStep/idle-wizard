@@ -26,7 +26,7 @@ import {
   PixiOnlineGateView,
   PixiOnlineGateController,
   sampleAccountDialogOpenScale,
-  sampleSplashProgress,
+  sampleIndeterminateProgressRange,
   formatMegabytes,
 } from './index.js';
 
@@ -473,7 +473,7 @@ describe('retained Pixi gate controllers', () => {
     controller.showConnecting();
     expect(view.bind).toHaveBeenLastCalledWith({
       presentation: 'splash',
-      message: 'Loading game',
+      message: 'Connecting user...',
       progress: true,
     });
 
@@ -511,8 +511,8 @@ describe('retained Pixi gate controllers', () => {
     controller.showOffline('bindings_missing');
     expect(view.bind).toHaveBeenLastCalledWith({
       presentation: 'splash',
-      message: 'Loading game',
-      progress: true,
+      message: 'Issue: Server bindings are missing.',
+      progress: false,
     });
 
     controller.showOffline('account_in_use');
@@ -566,7 +566,7 @@ describe('retained Pixi gate controllers', () => {
     });
     view.bind({
       presentation: 'splash',
-      message: 'Loading game',
+      message: 'Connecting to server...',
       progress: true,
     });
 
@@ -582,26 +582,31 @@ describe('retained Pixi gate controllers', () => {
     expect(view.splash.art.height).toBeGreaterThan(sourceHeight);
     expect(view.splash.art.x).toBe(PIXI_UI_GEOMETRY.sourceWidth / 2);
     expect(view.splash.art.y).toBe(0);
-    expect(view.splash.loadingLabel.text).toBe('Loading game');
+    expect(view.splash.loadingLabel.text).toBe('Loading');
+    expect(view.splash.statusLabel.text).toBe('Connecting to server...');
     expect(view.splash.loadingLabel.x).toBe(
       PIXI_UI_GEOMETRY.sourceWidth / 2,
     );
 
-    view.tick(1620);
-    expect(view.splashProgressValue).toBeCloseTo(0.72, 5);
-    view.tick(1380);
-    expect(view.splashProgressValue).toBe(1);
+    view.tick(550);
+    expect(view.splash.progressBar.start).toBeGreaterThan(0);
+    expect(view.splash.progressBar.end).toBeLessThan(1);
+    view.tick(550);
+    expect(view.splash.progressBar.end).not.toBe(1);
 
     view.hide();
     expect(onSplashViewportChange).toHaveBeenLastCalledWith(false);
     view.destroy();
   });
 
-  it('uses the source splash progress keyframes', () => {
-    expect(sampleSplashProgress(0)).toBe(0);
-    expect(sampleSplashProgress(0.54)).toBe(0.72);
-    expect(sampleSplashProgress(0.82)).toBe(0.92);
-    expect(sampleSplashProgress(1)).toBe(1);
+  it('uses a looping indeterminate range for unmeasurable connection work', () => {
+    expect(sampleIndeterminateProgressRange(0)).toEqual({ start: 0, end: 0.28 });
+    expect(sampleIndeterminateProgressRange(550).start).toBeCloseTo(0.36, 5);
+    expect(sampleIndeterminateProgressRange(550).end).toBeCloseTo(0.64, 5);
+    expect(sampleIndeterminateProgressRange(1100)).toEqual({
+      start: 0,
+      end: 0.28,
+    });
   });
 
   it('uses exact native progress for a live-update splash', () => {
@@ -624,7 +629,8 @@ describe('retained Pixi gate controllers', () => {
     });
 
     expect(view.splashProgressValue).toBe(0.25);
-    expect(view.splash.loadingLabel.text).toBe('Updating 6.0 MB / 24.0 MB');
+    expect(view.splash.loadingLabel.text).toBe('Loading');
+    expect(view.splash.statusLabel.text).toBe('Updating 6.0 MB / 24.0 MB');
     expect(application.ticker.add).not.toHaveBeenCalled();
     view.destroy();
   });
@@ -705,7 +711,7 @@ describe('retained Pixi gate controllers', () => {
 
     expect(view.progress.theme.progress.key).toBe('gradient');
     expect(view.progress.gradient).not.toBeNull();
-    expect(view.splash.progressGradient).not.toBeNull();
+    expect(view.splash.progressBar.gradient).not.toBeNull();
 
     view.destroy();
   });
@@ -721,7 +727,7 @@ describe('retained Pixi gate controllers', () => {
 
     expect(view.bind).toHaveBeenLastCalledWith({
       presentation: 'splash',
-      message: 'Loading game',
+      message: 'Connecting user...',
       progress: true,
     });
     expect(view.hide).not.toHaveBeenCalled();

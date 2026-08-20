@@ -14,6 +14,9 @@ export default {
   name: __t.string(),
   tag: __t.string(),
   tagColor: __t.string(),
+  bannerColor: __t.string(),
+  emblemColor: __t.string(),
+  emblemId: __t.string(),
   description: __t.string(),
   joinMode: __t.string(),
 };

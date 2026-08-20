@@ -12,6 +12,7 @@ import {
 } from '../../../../pages/shared/notificationTone.js';
 import { PixiNotificationBadge } from '../../global/transient/PixiNotificationBadges.js';
 import { ClickableWidget } from '../../primitives/ClickableWidget.js';
+import { AllianceFlagWidget } from '../../primitives/AllianceFlagWidget.js';
 import { PixiCostButton } from '../../primitives/PixiCostButton.js';
 import { PixiInfoButton } from '../../primitives/PixiInfoButton.js';
 import { PixiNineSliceFrame } from '../../primitives/PixiNineSliceFrame.js';
@@ -2301,13 +2302,15 @@ export class WorkshopFeatureButton {
     this.iconFrame = new Container({
       label: 'workshop-feature-button:icon-frame',
     });
-    this.cloth = new Sprite(Texture.EMPTY);
-    this.cloth.label = 'workshop-feature-button:cloth';
-    this.cloth.anchor.set(0.5);
-    this.cloth.visible = false;
     this.icon = new Sprite(Texture.EMPTY);
     this.icon.label = 'workshop-feature-button:icon';
     this.icon.anchor.set(0.5);
+    this.allianceFlag = new AllianceFlagWidget({
+      assetManager,
+      label: 'workshop-feature-button:alliance-flag',
+    });
+    this.allianceFlag.visible = false;
+    this.allianceFlag.renderable = false;
     this.label = createText('', {
       fontSize: ROOT_RUN_SIDE_ACTION_GEOMETRY.labelFontSize,
       lineHeight: ROOT_RUN_SIDE_ACTION_GEOMETRY.labelLineHeight,
@@ -2318,10 +2321,7 @@ export class WorkshopFeatureButton {
     });
     this.notification = new PixiNotificationBadge({ assetManager });
     this.notification.root.label = 'workshop-feature-button:notification';
-    // The DOM reference paints the alliance-color cloth mask over the
-    // illustrated banner base. Keep that order here or the opaque base hides
-    // the selected alliance tint entirely.
-    this.iconFrame.addChild(this.icon, this.cloth);
+    this.iconFrame.addChild(this.icon, this.allianceFlag);
     this.root.addChild(this.iconFrame, this.label, this.timer);
     this.handleTap = () => {
       if (this.model?.enabled === false) {
@@ -2401,7 +2401,8 @@ export class WorkshopFeatureButton {
   resolvePresentation() {
     const presentation = WORKSHOP_FEATURE_PRESENTATIONS[this.model?.id] ?? {};
     const assetId = this.model?.assetId ?? presentation.assetId;
-    const clothAssetId = this.model?.clothAssetId ?? presentation.clothAssetId;
+    const allianceFlagModel =
+      this.model?.id === 'alliance' ? this.model.allianceFlag : null;
     this.presentation = presentation;
     this.icon.texture =
       this.model?.iconFrame && this.assetManager?.getAtlasTexture
@@ -2409,12 +2410,13 @@ export class WorkshopFeatureButton {
         : assetId && this.assetManager?.getTexture
           ? (this.assetManager.getTexture(assetId) ?? Texture.EMPTY)
           : Texture.EMPTY;
-    this.cloth.texture =
-      clothAssetId && this.assetManager?.getTexture
-        ? (this.assetManager.getTexture(clothAssetId) ?? Texture.EMPTY)
-        : Texture.EMPTY;
-    this.icon.visible = this.icon.texture !== Texture.EMPTY;
-    this.cloth.visible = this.cloth.texture !== Texture.EMPTY;
+    this.icon.visible = !allianceFlagModel && this.icon.texture !== Texture.EMPTY;
+    this.icon.renderable = this.icon.visible;
+    this.allianceFlag.visible = Boolean(allianceFlagModel);
+    this.allianceFlag.renderable = this.allianceFlag.visible;
+    if (allianceFlagModel) {
+      this.allianceFlag.setColors(allianceFlagModel);
+    }
   }
 
   layoutVisual() {
@@ -2427,15 +2429,18 @@ export class WorkshopFeatureButton {
         (this.presentation?.scale ?? 1) * ROOT_RUN_SIDE_ACTION_GEOMETRY.iconScale,
       mirrored: this.side === 'right' && this.presentation?.mirrorOnRight === true,
     });
-    layoutContainedSprite(this.cloth, frameWidth, frameHeight, {
-      scale:
-        (this.presentation?.scale ?? 1) * ROOT_RUN_SIDE_ACTION_GEOMETRY.iconScale,
-    });
     const iconX =
       frameWidth / 2 +
       (this.side === 'right' ? 1 : -1) * ROOT_RUN_SIDE_ACTION_GEOMETRY.iconEdgeNudge;
     this.icon.x = iconX;
-    this.cloth.x = iconX;
+    const flagSize = Math.min(frameWidth, frameHeight) *
+      (this.presentation?.scale ?? 1) *
+      ROOT_RUN_SIDE_ACTION_GEOMETRY.iconScale;
+    this.allianceFlag.setSize(flagSize, flagSize);
+    this.allianceFlag.position.set(
+      iconX - this.allianceFlag.flagWidth / 2,
+      frameHeight / 2 - this.allianceFlag.flagHeight / 2,
+    );
     this.iconFrame.pivot.set(frameWidth / 2, frameHeight / 2);
     this.iconFrame.position.set(frameLeft + frameWidth / 2, frameTop + frameHeight / 2);
     this.iconFrameBaseY = this.iconFrame.y;
@@ -2477,7 +2482,7 @@ export class WorkshopFeatureButton {
       color: theme.surface,
     }, this.timer.style.fontSize);
     this.icon.alpha = this.model?.enabled === false ? 0.55 : 1;
-    this.cloth.alpha = this.icon.alpha;
+    this.allianceFlag.alpha = this.icon.alpha;
     this.notification.applyTheme(theme);
   }
 
@@ -2493,7 +2498,8 @@ export class WorkshopFeatureButton {
     this.weight = 0;
     this.setPressed(false);
     this.icon.texture = Texture.EMPTY;
-    this.cloth.texture = Texture.EMPTY;
+    this.allianceFlag.visible = false;
+    this.allianceFlag.renderable = false;
     this.notification.reset();
     this.root.visible = false;
     this.root.eventMode = 'none';

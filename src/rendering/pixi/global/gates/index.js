@@ -25,5 +25,5 @@ export {
 } from './PixiLiveUpdateController.js';
 export {
   PixiOnlineGateView,
-  sampleSplashProgress,
+  sampleIndeterminateProgressRange,
 } from './PixiOnlineGateView.js';

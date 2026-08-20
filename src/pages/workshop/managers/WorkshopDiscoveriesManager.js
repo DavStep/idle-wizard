@@ -4,10 +4,8 @@ import { setItemIconLabel } from '../../shared/itemIconLabel.js';
 import { createPlayerInfoLink } from '../../shared/playerInfoLink.js';
 import { setSelectedTabState } from '../../shared/selectedTabState.js';
 import { MYSTERY_TEXT_LABEL } from '../../shared/mysteryText.js';
-import {
-  createAssetAtlasMaskedSprite,
-  createAssetAtlasSprite,
-} from '../../../assets/atlas/atlasSprite.js';
+import { createStatusIcon, STATUS_ICON_LOCK } from '../../shared/statusIcon.js';
+import { createAssetAtlasSprite } from '../../../assets/atlas/atlasSprite.js';
 import { getPotionIconFrameName } from '../../../assets/items/potions/potionIcons.js';
 import { formatCoinPriceText } from '../../../shared/coinPrice.js';
 
@@ -551,12 +549,11 @@ export class WorkshopDiscoveriesManager {
     const frameName = getPotionIconFrameName(iconKey);
     const icon =
       (silhouette
-        ? createAssetAtlasMaskedSprite('brewing-page__recipe-potion-icon', frameName)
+        ? createStatusIcon('brewing-page__recipe-potion-icon', STATUS_ICON_LOCK)
         : createAssetAtlasSprite('brewing-page__recipe-potion-icon', frameName)) ??
       document.createElement('span');
 
     icon.classList.add('brewing-page__recipe-potion-icon');
-    icon.classList.toggle('is-silhouette', silhouette);
     icon.setAttribute('aria-hidden', 'true');
     return icon;
   }

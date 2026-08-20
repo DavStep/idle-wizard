@@ -1105,7 +1105,7 @@ export class ResearchBoxListManager {
   createInProgressStatusButton(research) {
     const button = document.createElement('button');
     button.className =
-      'row_val style-button style-cost-button style-cost-button--yellow research-page__research-button research-page__research-button--in-progress research-page__research-value';
+      'row_val style-button style-cost-button style-cost-button--blue research-page__research-button research-page__research-button--in-progress research-page__research-value';
     button.type = 'button';
     button.disabled = research.canSkipResearch !== true;
     button.classList.toggle('is-unaffordable', button.disabled);
@@ -1124,10 +1124,16 @@ export class ResearchBoxListManager {
     const content = document.createElement('span');
     content.className =
       'style-cost-button__plain-label research-page__research-status-content';
+    const actionLabel = document.createElement('span');
+    actionLabel.className = 'research-page__research-status-action';
+    actionLabel.textContent = 'Skip';
+    const costLabel = document.createElement('span');
+    costLabel.className = 'research-page__research-status-cost';
     setResourceIconText(
-      content,
+      costLabel,
       `${Math.max(1, Math.floor(Number(research.skipCostAmethyst) || 1))} amethyst`,
     );
+    content.append(actionLabel, costLabel);
     button.append(content);
     return button;
   }

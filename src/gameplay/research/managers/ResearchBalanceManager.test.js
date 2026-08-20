@@ -71,7 +71,7 @@ describe('ResearchBalanceManager', () => {
     expect(manager.getDurationSeconds('unlockRecipe:manaTonic')).toBe(10);
     expect(manager.getDurationSeconds('unlockRecipe:briarWard')).toBe(300);
     expect(manager.getDurationSeconds('unlockRecipe:pearlrootDraught')).toBe(14_400);
-    expect(manager.getDurationSeconds('unlockRecipe:ashenMemory')).toBe(0);
+    expect(manager.getDurationSeconds('unlockRecipe:ashenMemory')).toBe(600);
     expect(
       manager.getDurationSeconds(itemTimerResearchIds.herbGrowth('sageHerb', 1), {
         defaultDurationSeconds: 12,
@@ -310,7 +310,7 @@ describe('ResearchBalanceManager', () => {
       expect(research.getCost(`unlockRecipe:${potion.key}`).amount).toBe(
         Number(discoveredPotionResearchCostGoldByKey[potion.key]),
       );
-      expect(research.getDurationSeconds(`unlockRecipe:${potion.key}`)).toBe(0);
+      expect(research.getDurationSeconds(`unlockRecipe:${potion.key}`)).toBe(600);
     }
   });
 

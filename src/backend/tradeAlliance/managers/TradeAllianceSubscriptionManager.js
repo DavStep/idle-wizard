@@ -1,6 +1,11 @@
 import { normalizePlayerCharacter } from '../../../player/playerCharacters.js';
 import { normalizePlayerFrame } from '../../../player/playerFrames.js';
 import { normalizeTradeAllianceTagColor } from '../../../shared/tradeAllianceTagColors.js';
+import {
+  normalizeTradeAllianceBannerColor,
+  normalizeTradeAllianceEmblemColor,
+} from '../../../shared/tradeAllianceBannerColors.js';
+import { normalizeTradeAllianceEmblem } from '../../../shared/tradeAllianceEmblems.js';
 
 const ALLIANCES_QUERY = 'SELECT * FROM trade_alliance_snapshot';
 const MEMBERS_QUERY = 'SELECT * FROM trade_alliance_member_snapshot';
@@ -454,6 +459,9 @@ export class TradeAllianceSubscriptionManager {
         normalizedName: String(row.normalizedName ?? row.normalized_name ?? ''),
         tag: String(row.tag ?? ''),
         tagColor: normalizeTradeAllianceTagColor(row.tagColor ?? row.tag_color),
+        bannerColor: normalizeTradeAllianceBannerColor(row.bannerColor ?? row.banner_color),
+        emblemColor: normalizeTradeAllianceEmblemColor(row.emblemColor ?? row.emblem_color),
+        emblemId: normalizeTradeAllianceEmblem(row.emblemId ?? row.emblem_id),
         description: String(row.description ?? ''),
         notice: String(row.notice ?? ''),
         joinMode: String(row.joinMode ?? row.join_mode ?? 'apply'),
@@ -480,6 +488,9 @@ export class TradeAllianceSubscriptionManager {
       normalizedName: String(row.normalizedName ?? row.normalized_name ?? ''),
       tag: String(row.tag ?? ''),
       tagColor: normalizeTradeAllianceTagColor(row.tagColor ?? row.tag_color),
+      bannerColor: normalizeTradeAllianceBannerColor(row.bannerColor ?? row.banner_color),
+      emblemColor: normalizeTradeAllianceEmblemColor(row.emblemColor ?? row.emblem_color),
+      emblemId: normalizeTradeAllianceEmblem(row.emblemId ?? row.emblem_id),
       description: String(row.description ?? ''),
       notice: String(row.notice ?? ''),
       joinMode: String(row.joinMode ?? row.join_mode ?? 'apply'),

@@ -16,7 +16,8 @@ inventory changes, offers, or backend results. A presenter binds this shape:
     traders: {
       stalls: [{
         id, slotNumber, itemLabel, quantityLabel, batchLabel,
-        priceLabel, resourceKey, progress, locked, notification,
+        priceLabel, salePriceLabel, salePriceResourceKey,
+        resourceKey, progress, locked, notification,
         dialog
       }],
       timerLabel,
@@ -89,7 +90,9 @@ inside that well. The loaded quantity sits over the artwork as white,
 dark-stroked text without a badge background. The sale batch size uses the
 source-proportional `29x31px` red downward badge in the upper-right content lane, `10px`
 before the fixed Select/Cancel action and protruding `2px` above the card, with
-centered white, dark-stroked `xN` text. The sale rail ends before its compact
+centered white, dark-stroked `xN` text. The item-name row ends with the next
+batch payout, derived from the current trader unit price and the active `xN`
+batch, immediately before the fixed Cancel column. The sale rail ends before its compact
 timer, and the timer ends `6px` before the fixed action column.
 Each successful automatic sale sweeps the Research upgrade shine once across
 the selling stall while the existing bounded coin trail travels to the top
@@ -110,6 +113,10 @@ rolled-up orange NPC-listing notification on both the Traders tab and the
 stall's Select action.
 Add `?saleShine=loop` to replay the successful-sale shine on Stall 1 for
 motion and native-pixel capture QA.
+Add `?saleFlyout=loop` to include the production top panel and repeatedly send
+the Stall 1 `x2` payout from its visible price to the top coin counter. This is
+the deterministic regression state for sale-trail origin, amount pop, capped
+coin particles, destination pulse, and fitted-wide projection.
 Add `?tab=crystals` to open the visible Gems tab with its deterministic
 cooling-down coin offer, ready daily free Amber offer, six Amber bundles, and
 six Amethyst bundles. Amethyst quantities are 100× the corresponding Amber
@@ -117,11 +124,12 @@ quantity at the same price. Add `&coinOffer=ready` to show the ready green Colle
 `&dailyCrystalOffer=cooldown` to show the daily offer's disabled countdown.
 Add `&claimFlyout=crystal` to include the production top panel and replay the
 daily Free claim's crystal travel into its HUD counter.
-Currency offers use the reusable `MarketOfferRow`: the stall card frame and
-art well hold a coin, Amber, or Amethyst icon with the amount over the art, the offer
-name sits at the top-left, and a fixed right-side green button carries the
-price or ready `Collect` action. Cooling-down coin offers keep the same
-geometry and swap the action to the shared disabled gray state.
+Currency offers use the reusable `MarketOfferCard`. Coin and daily Amber
+offers retain the wide layout. Paid Amber and Amethyst bundles use the compact
+three-column layout: a centered size name, the framed resource art and amount,
+then a full-width green price button. The six ascending bundle names are Pouch,
+Bag, Pile, Chest, Trove, and Hoard. Cooling-down free offers keep their geometry
+and swap the action to the shared disabled gray state.
 Add `?tab=players` to open the Player Market tab with its station-title
 sections, the same retained stand widget used by Traders for each request and
 listing slot, a dedicated compact claim-proceeds row, and bottom-border actions

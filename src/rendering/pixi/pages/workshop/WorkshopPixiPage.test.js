@@ -2655,8 +2655,11 @@ describe('WorkshopPixiPage', () => {
     expect(row.total.x).toBeLessThan(row.totalSuffix.x);
     expect(row.total.icon.visible).toBe(true);
     expect(row.banner.visible).toBe(true);
-    expect(row.banner.width).toBe(56);
-    expect(row.banner.y - row.banner.height / 2).toBe(7);
+    expect(row.banner.flagHeight).toBe(56);
+    expect(row.banner.flagWidth).toBe(56);
+    expect(row.banner.y).toBe(7);
+    expect(row.banner.bannerColor).toBe('blue');
+    expect(row.banner.emblemColor).toBe('gold');
     expect(row.getPreferredHeight()).toBe(78);
     expect(applyRow.getPreferredHeight()).toBe(78);
     const expectedDirectoryPaperWidth =
@@ -2714,7 +2717,7 @@ describe('WorkshopPixiPage', () => {
       ownedAlliance: true,
       ownedAllianceHome: true,
       selectedTabId: 'home',
-      tabs: ['home', 'quests', 'settings'].map((id) => ({
+      tabs: ['home', 'quests', 'banner', 'settings'].map((id) => ({
         id,
         label: id[0].toUpperCase() + id.slice(1),
         selected: id === 'home',
@@ -2784,7 +2787,7 @@ describe('WorkshopPixiPage', () => {
     expect(member.level.text).toBe('Lv 12');
     expect(member.background.frameHeight).toBe(44);
     expect(member.root.parent).toBe(dialog.allianceMembersSection.scroll.content);
-    expect(dialog.tabs.getWidgets()).toHaveLength(3);
+    expect(dialog.tabs.getWidgets()).toHaveLength(4);
     expect(dialog.tabsLayer.visible).toBe(true);
     expect(dialog.tabsLayer.y).toBeLessThan(dialog.panel.coreHeight);
 
@@ -2817,7 +2820,7 @@ describe('WorkshopPixiPage', () => {
       ownedAlliance: true,
       rowWidget: 'allianceQuest',
       selectedTabId: 'quests',
-      tabs: ['home', 'quests', 'settings'].map((id) => ({
+      tabs: ['home', 'quests', 'banner', 'settings'].map((id) => ({
         id,
         label: id[0].toUpperCase() + id.slice(1),
         selected: id === 'quests',
@@ -2892,7 +2895,7 @@ describe('WorkshopPixiPage', () => {
       dialog.panel.paperFrame.y + dialog.panel.paperFrame.frameHeight -
         (dialog.scroll.root.y + dialog.scroll.height),
     ).toBe(dialog.scrollContentPaddingTop);
-    expect(tabs[1].root.x - (tabs[0].root.x + tabs[0].width)).toBe(8);
+    expect(tabs[1].root.x - (tabs[0].root.x + tabs[0].width)).toBe(6);
     expect(
       dialog.tabsLayer.y -
         (dialog.panel.paperFrame.y + dialog.panel.paperFrame.frameHeight),
@@ -2958,7 +2961,7 @@ describe('WorkshopPixiPage', () => {
   it('keeps the larger adaptive Trade Alliance height stable across tabs', () => {
     const harness = createHarness();
     const model = createWorkshopViewModel();
-    const tabIds = ['home', 'quests', 'settings'];
+    const tabIds = ['home', 'quests', 'banner', 'settings'];
     const createAllianceModel = (selectedTabId) => ({
       title: 'Trade Alliance',
       ownedAlliance: true,
@@ -2991,11 +2994,14 @@ describe('WorkshopPixiPage', () => {
           ? [{ id: 'quest', label: 'Supply The Market', value: '4/10' }]
           : [],
       settings:
-        selectedTabId === 'settings'
+        selectedTabId === 'settings' || selectedTabId === 'banner'
           ? {
               allianceId: 'moss',
+              mode: selectedTabId,
               name: 'Moss Hall',
               tag: 'MOSS',
+              bannerColor: 'blue',
+              emblemColor: 'gold',
               joinMode: 'apply',
               editable: true,
               canDisband: false,
@@ -3016,8 +3022,8 @@ describe('WorkshopPixiPage', () => {
         return dialog.modal.fixedBounds.height;
       });
 
-    expect(heightsAt(844)).toEqual([470, 470, 470]);
-    expect(heightsAt(944)).toEqual([570, 570, 570]);
+    expect(heightsAt(844)).toEqual([470, 470, 470, 470]);
+    expect(heightsAt(944)).toEqual([570, 570, 570, 570]);
 
     harness.page.destroy();
     harness.dispose();
@@ -3031,7 +3037,7 @@ describe('WorkshopPixiPage', () => {
       title: 'Trade Alliance',
       ownedAlliance: true,
       selectedTabId: 'settings',
-      tabs: ['home', 'quests', 'settings'].map((id) => ({
+      tabs: ['home', 'quests', 'banner', 'settings'].map((id) => ({
         id,
         label: id[0].toUpperCase() + id.slice(1),
         selected: id === 'settings',
@@ -3066,7 +3072,7 @@ describe('WorkshopPixiPage', () => {
     expect(pane.swatches.find((swatch) => swatch.selected)?.colorId).toBe(
       'green',
     );
-    expect(dialog.tabs.getWidgets()).toHaveLength(3);
+    expect(dialog.tabs.getWidgets()).toHaveLength(4);
     expect(dialog.panel.paperFrame.visible).toBe(true);
     expect(pane.root.y).toBe(
       dialog.panel.paperFrame.y +
@@ -3082,6 +3088,76 @@ describe('WorkshopPixiPage', () => {
         tag: 'MOSS',
         tagColor: 'violet',
         joinMode: 'open',
+      }),
+    );
+
+    harness.page.destroy();
+    harness.dispose();
+  });
+
+  it('configures alliance banner and emblem colors from ten-option palettes', async () => {
+    const onSave = vi.fn(async () => ({ ok: true }));
+    const assetManager = createPixiAssetManagerFake(Texture);
+    assetManager.getTexture = vi.fn(() => new Texture());
+    const harness = createHarness({ assetManager });
+    const model = createWorkshopViewModel();
+    model.workshop.dialogs.alliance = {
+      title: 'Trade Alliance',
+      ownedAlliance: true,
+      selectedTabId: 'banner',
+      tabs: ['home', 'quests', 'banner', 'settings'].map((id) => ({
+        id,
+        label: id[0].toUpperCase() + id.slice(1),
+        selected: id === 'banner',
+        onSelect: vi.fn(),
+      })),
+      settings: {
+        allianceId: 'moss',
+        mode: 'banner',
+        name: 'Moss Hall',
+        tag: 'MOSS',
+        tagColor: 'green',
+        bannerColor: 'blue',
+        emblemColor: 'gold',
+        emblemId: 'owl',
+        description: 'Patient traders.',
+        notice: 'Help one another.',
+        joinMode: 'apply',
+        editable: true,
+        onSave,
+      },
+      rows: [],
+      members: [],
+    };
+
+    harness.page.bind(model);
+    harness.page.openDialog('alliance');
+
+    const pane = harness.dialogs.get('workshop.alliance').allianceSettingsPane;
+    expect(pane.bannerPreview.visible).toBe(true);
+    expect(pane.bannerPreview.bannerColor).toBe('blue');
+    expect(pane.bannerPreview.emblemColor).toBe('gold');
+    expect(pane.bannerPreview.emblemId).toBe('owl');
+    expect(pane.emblemOptions).toHaveLength(11);
+    expect(pane.bannerColorSwatches).toHaveLength(10);
+    expect(pane.emblemColorSwatches).toHaveLength(10);
+    expect(pane.bannerColorSwatches[0].root.eventMode).toBe('static');
+    expect(pane.emblemColorSwatches[0].root.eventMode).toBe('static');
+    expect(pane.fields.get('name').visible).toBe(false);
+    expect(pane.saveButton.text.text).toBe('Save Banner');
+
+    pane.selectBannerColor('red');
+    pane.selectEmblemColor('white');
+    pane.selectEmblem('flame');
+    expect(pane.bannerPreview.bannerColor).toBe('red');
+    expect(pane.bannerPreview.emblemColor).toBe('white');
+    expect(pane.bannerPreview.emblemId).toBe('flame');
+    await pane.save();
+    expect(onSave).toHaveBeenCalledWith(
+      expect.objectContaining({
+        bannerColor: 'red',
+        emblemColor: 'white',
+        emblemId: 'flame',
       }),
     );
 
@@ -3229,7 +3305,9 @@ describe('WorkshopPixiPage', () => {
   });
 
   it('pages potion discoveries two at a time like the Recipes book', () => {
-    const harness = createHarness();
+    const assetManager = createPixiAssetManagerFake(Texture);
+    assetManager.getAtlasTexture = vi.fn(() => new Texture());
+    const harness = createHarness({ assetManager });
     const model = createWorkshopViewModel();
     model.workshop.dialogs.discoveries = {
       title: 'Discoveries',
@@ -3245,6 +3323,12 @@ describe('WorkshopPixiPage', () => {
 
     const dialog = harness.dialogs.get('workshop.discoveries');
     expect(dialog.discoveryBook.children).toHaveLength(2);
+    expect(assetManager.getAtlasTexture).toHaveBeenCalledWith('status:lockDefault');
+    expect(dialog.rows.get('potion:0').potionIcon.alpha).toBe(1);
+    expect(
+      dialog.rows.get('potion:0').potionIcon.width /
+        dialog.rows.get('potion:0').potionIcon.height,
+    ).toBeCloseTo(53 / 60);
     expect(dialog.discoveryPageLabel.text).toBe('1-2 / 3');
     expect(dialog.discoveryPrevious.enabled).toBe(false);
     expect(dialog.discoveryNext.enabled).toBe(true);
@@ -4435,7 +4519,18 @@ describe('WorkshopPixiPage', () => {
     );
     expect(assetManager.getTexture).toHaveBeenCalledWith(PIXI_ROOT_RUN_ASSETS.workshopWorldEvent);
     const alliance = harness.page.features.get('alliance');
-    expect(alliance.cloth.visible).toBe(false);
+    expect(alliance.allianceFlag.visible).toBe(false);
+    model.workshop.features[0].allianceFlag = {
+      bannerColor: 'violet',
+      emblemColor: 'white',
+    };
+    harness.page.bind(model);
+    expect(alliance.icon.visible).toBe(false);
+    expect(alliance.allianceFlag.visible).toBe(true);
+    expect(alliance.allianceFlag).toMatchObject({
+      bannerColor: 'violet',
+      emblemColor: 'white',
+    });
     const event = harness.page.features.get('worldEvent');
     expect(event.timer.text).toBe('2d 4h');
     expect(event.notification.root.visible).toBe(true);

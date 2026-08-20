@@ -101,6 +101,8 @@ const WORLD_EVENT_QUEST_ROW_WIDGET_ID = 'compound.world-event-quest-row';
 const ALLIANCE_DIRECTORY_ROW_WIDGET_ID = 'compound.alliance-directory-row';
 const ALLIANCE_MEMBER_ROW_WIDGET_ID = 'compound.alliance-member-row';
 const ALLIANCE_QUEST_ROW_WIDGET_ID = 'compound.alliance-quest-row';
+const ALLIANCE_FLAG_WIDGET_ID = 'compound.trade-alliance-banner';
+const ALLIANCE_EMBLEM_OPTION_WIDGET_ID = 'primitive.alliance-emblem-option';
 
 const DIALOG_CHILD_WIDGET_IDS = Object.freeze({
   [GLOBAL_DIALOG_IDS.SETTINGS]: Object.freeze([
@@ -124,6 +126,7 @@ const DIALOG_CHILD_WIDGET_IDS = Object.freeze({
   ]),
   [GLOBAL_DIALOG_IDS.LEVEL]: Object.freeze(['text-button']),
   [GLOBAL_DIALOG_IDS.ALLIANCE]: Object.freeze([
+    ALLIANCE_FLAG_WIDGET_ID,
     'compound.workshop-dialog-row',
     ALLIANCE_MEMBER_ROW_WIDGET_ID,
     'text-button',
@@ -140,10 +143,12 @@ const DIALOG_CHILD_WIDGET_IDS = Object.freeze({
   'workshop.stats': Object.freeze(['compound.workshop-dialog-row']),
   'workshop.inbox': Object.freeze(['compound.workshop-dialog-row']),
   'workshop.alliance': Object.freeze([
+    ALLIANCE_FLAG_WIDGET_ID,
     'compound.alliance-directory-row',
     'compound.alliance-member-row',
     ALLIANCE_QUEST_ROW_WIDGET_ID,
     'primitive.guild-color-swatch',
+    ALLIANCE_EMBLEM_OPTION_WIDGET_ID,
     'primitive.resource-label',
     'primitive.text-field',
     'tab-button',
@@ -334,6 +339,7 @@ function createDialogScenarios(dialogId) {
       scenario('owned', 'Owned alliance', () => createUiEditorDialogFixture(dialogId, 0)),
       scenario('browse', 'Browse alliances', () => createUiEditorDialogFixture(dialogId, 1)),
       scenario('create', 'Create alliance', () => createUiEditorDialogFixture(dialogId, 2)),
+      scenario('banner', 'Banner editor', () => createUiEditorDialogFixture(dialogId, 3)),
     ].map((entry) => ({
       ...entry,
       mount: (context, fixture) =>
@@ -516,9 +522,12 @@ export function createUiEditorDialogFixture(dialogId, variantIndex = 0) {
     if (variantIndex === 0) {
       return createDialogViewModel(dialogId, 'a');
     }
-    return variantIndex === 1
-      ? createTradeAllianceDirectoryFixture()
-      : createTradeAllianceCreateFixture();
+    if (variantIndex === 1) {
+      return createTradeAllianceDirectoryFixture();
+    }
+    return variantIndex === 2
+      ? createTradeAllianceCreateFixture()
+      : createTradeAllianceBannerFixture();
   }
   if (dialogId === 'workshop.leaderboard') {
     return createLeaderboardDialogFixture(variantIndex);
@@ -781,6 +790,38 @@ function createTradeAllianceCreateFixture() {
       description: '',
       joinMode: 'apply',
       editable: true,
+      onSave: async () => ({ ok: true }),
+    },
+    rows: [],
+  };
+}
+
+function createTradeAllianceBannerFixture() {
+  const fixture = createDialogViewModel('workshop.alliance', 'a');
+  return {
+    ...fixture,
+    ownedAllianceHome: false,
+    selectedTabId: 'banner',
+    tabs: ['home', 'quests', 'banner', 'settings'].map((id) => ({
+      id,
+      label: id[0].toUpperCase() + id.slice(1),
+      selected: id === 'banner',
+      onSelect: () => true,
+    })),
+    settings: {
+      allianceId: 'night-owls',
+      mode: 'banner',
+      name: 'Night Owls',
+      tag: 'OWL',
+      tagColor: 'violet',
+      bannerColor: 'violet',
+      emblemColor: 'white',
+      emblemId: 'owl',
+      description: fixture.tradeInfo.description,
+      notice: fixture.tradeInfo.notice,
+      joinMode: 'apply',
+      editable: true,
+      canDisband: false,
       onSave: async () => ({ ok: true }),
     },
     rows: [],
@@ -1247,6 +1288,18 @@ function createReusableDialogContentHierarchy(dialogId, dialog) {
 
   if (dialogId === GLOBAL_DIALOG_IDS.ALLIANCE) {
     return [
+      ...(dialog.allianceFlag?.visible
+        ? [
+            createUiEditorPixiHierarchyComponent({
+              displayObjects: [dialog.allianceFlag],
+              id: `${dialogId}:flag`,
+              label: 'AllianceFlag:AllianceFlagWidget',
+              libraryEntryId: ALLIANCE_FLAG_WIDGET_ID,
+              primary: dialog.allianceFlag,
+              type: 'widget',
+            }),
+          ]
+        : []),
       ...(dialog.summaryRows?.getWidgets?.() ?? []).map((row, index) =>
         createUiEditorPixiHierarchyComponent({
           displayObjects: [row.root],
@@ -1393,7 +1446,11 @@ function createReusableDialogContentHierarchy(dialogId, dialog) {
           type: 'widget',
         }),
       );
-    const settingsSwatches = (settingsPane?.swatches ?? [])
+    const settingsSwatches = [
+      ...(settingsPane?.swatches ?? []),
+      ...(settingsPane?.bannerColorSwatches ?? []),
+      ...(settingsPane?.emblemColorSwatches ?? []),
+    ]
       .filter((swatch) => swatch.root.visible)
       .map((swatch) =>
         createUiEditorPixiHierarchyComponent({
@@ -1402,6 +1459,18 @@ function createReusableDialogContentHierarchy(dialogId, dialog) {
           label: `${titleCaseIdentifier(swatch.colorId)}:GuildColorSwatch`,
           libraryEntryId: 'primitive.guild-color-swatch',
           primary: swatch.root,
+          type: 'widget',
+        }),
+      );
+    const emblemOptions = (settingsPane?.emblemOptions ?? [])
+      .filter((option) => option.root.visible)
+      .map((option) =>
+        createUiEditorPixiHierarchyComponent({
+          displayObjects: [option.root],
+          id: `${dialogId}:banner:emblem:${option.emblemId}`,
+          label: `${titleCaseIdentifier(option.emblemId)}:AllianceEmblemOption`,
+          libraryEntryId: ALLIANCE_EMBLEM_OPTION_WIDGET_ID,
+          primary: option.root,
           type: 'widget',
         }),
       );
@@ -1421,6 +1490,18 @@ function createReusableDialogContentHierarchy(dialogId, dialog) {
         }),
       );
     return [
+      ...(settingsPane?.bannerPreview?.visible
+        ? [
+            createUiEditorPixiHierarchyComponent({
+              displayObjects: [settingsPane.bannerPreview],
+              id: `${dialogId}:banner:preview`,
+              label: 'BannerPreview:AllianceFlagWidget',
+              libraryEntryId: ALLIANCE_FLAG_WIDGET_ID,
+              primary: settingsPane.bannerPreview,
+              type: 'widget',
+            }),
+          ]
+        : []),
       ...directoryRows.map((row, index) =>
         createUiEditorPixiHierarchyComponent({
           displayObjects: [row.root],
@@ -1443,6 +1524,7 @@ function createReusableDialogContentHierarchy(dialogId, dialog) {
       ),
       ...settingsFields,
       ...settingsSwatches,
+      ...emblemOptions,
       ...settingsActions,
     ];
   }
@@ -1725,6 +1807,9 @@ const GLOBAL_DIALOG_SCENARIOS = Object.freeze({
         notice: 'Weekly goal: support every active member.',
         seasonIncome: 84520,
         tag: 'NIGHT',
+        bannerColor: 'violet',
+        emblemColor: 'white',
+        emblemId: 'owl',
       },
       members: [
         {

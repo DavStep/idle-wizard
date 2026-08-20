@@ -39,6 +39,7 @@ import {
 import {
   createDiscoveredPotionResearchCatalog,
   discoveredPotionResearchCostGoldByKey,
+  discoveredPotionResearchDurationSecondsByKey,
 } from './discoveredPotionResearch';
 import {
   getItemTimerResearchDurationSeconds,
@@ -131,6 +132,9 @@ const MAX_PLAYER_INBOX_ITEM_REWARDS = 16;
 const MAX_PLAYER_INBOX_ITEM_REWARD_QUANTITY = 100_000;
 const MAX_PLAYER_INBOX_COIN_REWARD = 250_000;
 const DEFAULT_TRADE_ALLIANCE_TAG_COLOR = 'ink';
+const DEFAULT_TRADE_ALLIANCE_BANNER_COLOR = 'blue';
+const DEFAULT_TRADE_ALLIANCE_EMBLEM_COLOR = 'gold';
+const DEFAULT_TRADE_ALLIANCE_EMBLEM = 'unity';
 const WORLD_CHAT_RATE_LIMIT_WINDOW_MICROS = 15n * 1_000_000n;
 const WORLD_CHAT_RATE_LIMIT_MAX_MESSAGES = 3;
 const WORLD_CHAT_GLOBAL_RATE_LIMIT_MAX_MESSAGES = 8;
@@ -257,6 +261,43 @@ const TRADE_ALLIANCE_TAG_COLORS = new Set([
   'magenta',
   'brown',
   'slate',
+]);
+const TRADE_ALLIANCE_BANNER_COLORS = new Set([
+  'ink',
+  'red',
+  'amber',
+  'green',
+  'teal',
+  'blue',
+  'violet',
+  'magenta',
+  'brown',
+  'slate',
+]);
+const TRADE_ALLIANCE_EMBLEM_COLORS = new Set([
+  'white',
+  'gold',
+  'silver',
+  'red',
+  'amber',
+  'green',
+  'teal',
+  'blue',
+  'violet',
+  'magenta',
+]);
+const TRADE_ALLIANCE_EMBLEMS = new Set([
+  'unity',
+  'crown',
+  'crescent',
+  'crossed-wands',
+  'owl',
+  'flame',
+  'oak-leaf',
+  'key',
+  'tower',
+  'sunburst',
+  'hourglass',
 ]);
 const PLAYER_THEME_ALIASES = new Map([
   ['midnight', 'night'],
@@ -4762,10 +4803,12 @@ const recipeResearchDurationSecondsById: Record<string, bigint> = {
   'unlockRecipe:snowdropBreath': 210n * 60n,
   'unlockRecipe:pearlrootDraught': 240n * 60n,
   ...Object.fromEntries(
-    Object.keys(discoveredPotionResearchCostGoldByKey).map((potionKey) => [
-      `unlockRecipe:${potionKey}`,
-      0n,
-    ]),
+    Object.entries(discoveredPotionResearchDurationSecondsByKey).map(
+      ([potionKey, durationSeconds]) => [
+        `unlockRecipe:${potionKey}`,
+        durationSeconds,
+      ],
+    ),
   ),
 };
 
@@ -4780,6 +4823,12 @@ const researchLegacyCostGoldById: Record<string, readonly bigint[]> = {
 
 const researchLegacyDurationSecondsById: Record<string, bigint> = {
   'unlockRecipe:manaTonic': 600n,
+  ...Object.fromEntries(
+    Object.keys(discoveredPotionResearchDurationSecondsByKey).map((potionKey) => [
+      `unlockRecipe:${potionKey}`,
+      0n,
+    ]),
+  ),
 };
 
 const researchAdditionalLegacyDurationSecondsById: Record<string, readonly bigint[]> = {
@@ -5999,6 +6048,9 @@ const spacetimedb = schema({
       monthlyIncome: t.u64().default(0n),
       monthKey: t.string().default(''),
       tagColor: t.string().default(DEFAULT_TRADE_ALLIANCE_TAG_COLOR),
+      bannerColor: t.string().default(DEFAULT_TRADE_ALLIANCE_BANNER_COLOR),
+      emblemColor: t.string().default(DEFAULT_TRADE_ALLIANCE_EMBLEM_COLOR),
+      emblemId: t.string().default(DEFAULT_TRADE_ALLIANCE_EMBLEM),
     },
   ),
   tradeAllianceMember: table(
@@ -6608,6 +6660,9 @@ const ownTradeAllianceOverviewResult = t.option(
     normalizedName: t.string(),
     tag: t.string(),
     tagColor: t.string(),
+    bannerColor: t.string(),
+    emblemColor: t.string(),
+    emblemId: t.string(),
     description: t.string(),
     notice: t.string(),
     joinMode: t.string(),
@@ -6761,6 +6816,9 @@ const tradeAllianceSnapshotResult = t.array(
     normalizedName: t.string(),
     tag: t.string(),
     tagColor: t.string(),
+    bannerColor: t.string(),
+    emblemColor: t.string(),
+    emblemId: t.string(),
     description: t.string(),
     notice: t.string(),
     joinMode: t.string(),
@@ -7250,6 +7308,9 @@ export const own_trade_alliance_overview = spacetimedb.view(
       normalizedName: alliance.normalizedName,
       tag: alliance.tag,
       tagColor: alliance.tagColor,
+      bannerColor: alliance.bannerColor,
+      emblemColor: alliance.emblemColor,
+      emblemId: alliance.emblemId,
       description: alliance.description,
       notice: alliance.notice,
       joinMode: alliance.joinMode,
@@ -7626,6 +7687,34 @@ function normalizeTradeAllianceTagColor(tagColor: string | undefined): string {
   return TRADE_ALLIANCE_TAG_COLORS.has(safeTagColor)
     ? safeTagColor
     : DEFAULT_TRADE_ALLIANCE_TAG_COLOR;
+}
+
+function normalizeTradeAllianceBannerColor(
+  bannerColor: string | undefined,
+): string {
+  const safeBannerColor = String(bannerColor ?? '').trim().toLowerCase();
+
+  return TRADE_ALLIANCE_BANNER_COLORS.has(safeBannerColor)
+    ? safeBannerColor
+    : DEFAULT_TRADE_ALLIANCE_BANNER_COLOR;
+}
+
+function normalizeTradeAllianceEmblemColor(
+  emblemColor: string | undefined,
+): string {
+  const safeEmblemColor = String(emblemColor ?? '').trim().toLowerCase();
+
+  return TRADE_ALLIANCE_EMBLEM_COLORS.has(safeEmblemColor)
+    ? safeEmblemColor
+    : DEFAULT_TRADE_ALLIANCE_EMBLEM_COLOR;
+}
+
+function normalizeTradeAllianceEmblem(emblemId: string | undefined): string {
+  const safeEmblemId = String(emblemId ?? '').trim().toLowerCase();
+
+  return TRADE_ALLIANCE_EMBLEMS.has(safeEmblemId)
+    ? safeEmblemId
+    : DEFAULT_TRADE_ALLIANCE_EMBLEM;
 }
 
 function normalizeTradeAllianceDescription(description: string): string {
@@ -19706,10 +19795,13 @@ export const create_trade_alliance = spacetimedb.reducer(
     name: t.string(),
     tag: t.string(),
     tagColor: t.string(),
+    bannerColor: t.string(),
+    emblemColor: t.string(),
+    emblemId: t.string(),
     description: t.string(),
     joinMode: t.string(),
   },
-  (ctx, { name, tag, tagColor, description, joinMode }) => {
+  (ctx, { name, tag, tagColor, bannerColor, emblemColor, emblemId, description, joinMode }) => {
     assertActivePlayerSession(ctx);
     const player = assertTradeAllianceUnlocked(ctx);
 
@@ -19722,6 +19814,9 @@ export const create_trade_alliance = spacetimedb.reducer(
     const normalizedName = getTradeAllianceNormalizedName(safeName);
     const safeTag = validateTradeAllianceTag(tag);
     const safeTagColor = normalizeTradeAllianceTagColor(tagColor);
+    const safeBannerColor = normalizeTradeAllianceBannerColor(bannerColor);
+    const safeEmblemColor = normalizeTradeAllianceEmblemColor(emblemColor);
+    const safeEmblemId = normalizeTradeAllianceEmblem(emblemId);
     const safeDescription = normalizeTradeAllianceDescription(description);
     const safeJoinMode = normalizeTradeAllianceJoinMode(joinMode);
 
@@ -19749,6 +19844,9 @@ export const create_trade_alliance = spacetimedb.reducer(
       dailyIncome: 0n,
       createdAt: ctx.timestamp,
       updatedAt: ctx.timestamp,
+      bannerColor: safeBannerColor,
+      emblemColor: safeEmblemColor,
+      emblemId: safeEmblemId,
     });
 
     ctx.db.tradeAllianceMember.insert({
@@ -19772,11 +19870,14 @@ export const update_trade_alliance_profile = spacetimedb.reducer(
     name: t.string(),
     tag: t.string(),
     tagColor: t.string(),
+    bannerColor: t.string(),
+    emblemColor: t.string(),
+    emblemId: t.string(),
     description: t.string(),
     notice: t.string(),
     joinMode: t.string(),
   },
-  (ctx, { name, tag, tagColor, description, notice, joinMode }) => {
+  (ctx, { name, tag, tagColor, bannerColor, emblemColor, emblemId, description, notice, joinMode }) => {
     assertActivePlayerSession(ctx);
 
     const member = getTradeAllianceMember(ctx);
@@ -19791,6 +19892,9 @@ export const update_trade_alliance_profile = spacetimedb.reducer(
     const normalizedName = getTradeAllianceNormalizedName(safeName);
     const safeTag = validateTradeAllianceTag(tag);
     const safeTagColor = normalizeTradeAllianceTagColor(tagColor);
+    const safeBannerColor = normalizeTradeAllianceBannerColor(bannerColor);
+    const safeEmblemColor = normalizeTradeAllianceEmblemColor(emblemColor);
+    const safeEmblemId = normalizeTradeAllianceEmblem(emblemId);
 
     assertTradeAllianceNameAvailable(ctx, normalizedName, allianceKey);
     assertTradeAllianceTagAvailable(ctx, safeTag, allianceKey);
@@ -19801,6 +19905,9 @@ export const update_trade_alliance_profile = spacetimedb.reducer(
       normalizedName,
       tag: safeTag,
       tagColor: safeTagColor,
+      bannerColor: safeBannerColor,
+      emblemColor: safeEmblemColor,
+      emblemId: safeEmblemId,
       description: normalizeTradeAllianceDescription(description),
       notice: normalizeTradeAllianceNotice(notice),
       joinMode: normalizeTradeAllianceJoinMode(joinMode),

@@ -36,6 +36,8 @@ identified from the router.
 | Bottom room navigation and alternate HUD category tabs | named `Bottom room tab` / `Bottom HUD Text Tab` entries in `Current Library` |
 | Expand/collapse behavior | `Expandable Boxes` |
 | Dialog shells, tabs, scrolling, and close controls | `Popup Structure` |
+| Alliance flag preview and identity art | named `Alliance Flag Widget` entry in `Current Library` |
+| Alliance emblem silhouette selector | named `Alliance Emblem Option` entry in `Current Library` |
 
 ## Verification route
 

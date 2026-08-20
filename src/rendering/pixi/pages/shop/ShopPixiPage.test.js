@@ -199,7 +199,8 @@ describe('ShopPixiPage', () => {
     expect(stall.item.text).toBe('Sage');
     expect(stall.price.text).toBe('Cancel');
     expect(stall.price.visible).toBe(false);
-    expect(stall.priceResource.visible).toBe(false);
+    expect(stall.priceResource.visible).toBe(true);
+    expect(stall.priceResource.amountLabel.text).toBe('10');
     expect(stall.priceAction.textLabel.text).toBe('Cancel');
     expect(stall.priceAction.variant).toBe('red');
     expect(
@@ -585,10 +586,19 @@ describe('ShopPixiPage', () => {
     const timerLeft = stall.timer.x - stall.timer.measuredWidth;
     const batchRight =
       stall.batchBadge.x + stall.batchBadge.width / 2;
+    const priceRight =
+      stall.priceResource.x + stall.priceResource.measuredWidth;
 
+    expect(stall.priceAction.textLabel.text).toBe('Cancel');
+    expect(stall.priceResource.visible).toBe(true);
+    expect(stall.priceResource.amountLabel.text).toBe('10');
     expect(progressRight).toBeLessThan(timerLeft);
     expect(stall.timer.x).toBeLessThan(actionLeft);
     expect(batchRight).toBeLessThan(actionLeft);
+    expect(priceRight).toBeLessThan(actionLeft);
+    expect(
+      stall.item.x + stall.item.measuredWidth,
+    ).toBeLessThanOrEqual(stall.priceResource.x - 4);
     expect(stall.batchBadge.x).toBeGreaterThan(stall.width / 2);
 
     harness.page.destroy();
@@ -1930,6 +1940,24 @@ describe('ShopPixiPage', () => {
     });
     const viewModel = createShopViewModel();
     viewModel.shop.selectedTabId = 'crystals';
+    viewModel.shop.crystals.offers.splice(
+      1,
+      0,
+      {
+        id: 'amber-2',
+        resourceKey: 'crystal',
+        amount: 2,
+        title: 'Amber Bag',
+        priceLabel: '$8.99',
+      },
+      {
+        id: 'amber-5',
+        resourceKey: 'crystal',
+        amount: 5,
+        title: 'Amber Pile',
+        priceLabel: '$19.99',
+      },
+    );
 
     harness.page.bind(viewModel);
     harness.page.activate();
@@ -1991,6 +2019,10 @@ describe('ShopPixiPage', () => {
 
     const amberOffer =
       harness.page.crystalOffersSection.rows.get('amber-1');
+    const amberBagOffer =
+      harness.page.crystalOffersSection.rows.get('amber-2');
+    const amberPileOffer =
+      harness.page.crystalOffersSection.rows.get('amber-5');
     const amethystOffer =
       harness.page.crystalOffersSection.rows.get('amethyst-100');
     const dailyCrystalOffer =
@@ -2007,17 +2039,41 @@ describe('ShopPixiPage', () => {
     expect(amberOffer.frame.borderInsets).toEqual(
       PIXI_ROOT_RUN_GEOMETRY.researchCard.borderInsets,
     );
-    expect(amberOffer.title.text).toBe('Amber');
+    expect(amberOffer.title.text).toBe('Amber Pouch');
     expect(amberOffer.icon.visible).toBe(true);
     expect(amberOffer.amountLabel.text).toBe('1');
+    expect(amberOffer.title.position.x).toBe(
+      amberOffer.width / 2,
+    );
+    expect(amberOffer.actionButton.position.y).toBeGreaterThan(
+      amberOffer.iconFrame.position.y + amberOffer.iconFrame.height,
+    );
+    expect(amberOffer.actionButton.buttonWidth).toBeLessThan(
+      amberOffer.width,
+    );
     expect(amberOffer.actionButton.textLabel.text).toBe('$4.99');
     expect(amberOffer.actionButton.variant).toBe('green');
     expect(amberOffer.actionButton.resolveRootRunVariant()).toBe(
       'green',
     );
-    expect(amethystOffer.title.text).toBe('Amethyst');
+    expect(amethystOffer.title.text).toBe('Amethyst Pouch');
     expect(amethystOffer.amountLabel.text).toBe('100');
     expect(amethystOffer.actionButton.textLabel.text).toBe('$4.99');
+    expect(amberOffer.root.position.y).toBe(
+      amberBagOffer.root.position.y,
+    );
+    expect(amberBagOffer.root.position.y).toBe(
+      amberPileOffer.root.position.y,
+    );
+    expect(amberOffer.root.position.x).toBeLessThan(
+      amberBagOffer.root.position.x,
+    );
+    expect(amberBagOffer.root.position.x).toBeLessThan(
+      amberPileOffer.root.position.x,
+    );
+    expect(amethystOffer.root.position.y).toBeGreaterThan(
+      amberOffer.root.position.y,
+    );
     expect(getTexture).toHaveBeenCalledWith(
       PIXI_ROOT_RUN_ASSETS.researchCard,
     );
@@ -2392,6 +2448,8 @@ function createShopViewModel({
             itemLabel: 'sage',
             quantityLabel: '2',
             priceLabel: stallPrice,
+            salePriceLabel: stallPrice,
+            salePriceResourceKey: 'coin',
             progress: 0.5,
             dialog: {
               title: 'load stall',
@@ -2449,7 +2507,7 @@ function createShopViewModel({
             id: 'amber-1',
             resourceKey: 'crystal',
             amount: 1,
-            title: 'Amber',
+            title: 'Amber Pouch',
             bundleLabel: '1 amber',
             priceLabel: '$4.99',
           },
@@ -2457,7 +2515,7 @@ function createShopViewModel({
             id: 'amethyst-100',
             resourceKey: 'amethyst',
             amount: 100,
-            title: 'Amethyst',
+            title: 'Amethyst Pouch',
             bundleLabel: '100 amethyst',
             priceLabel: '$4.99',
           },

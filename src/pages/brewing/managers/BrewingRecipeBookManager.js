@@ -3,10 +3,8 @@ import { setResourceIconText } from '../../shared/resourceIconLabel.js';
 import { setItemIconLabel } from '../../shared/itemIconLabel.js';
 import { MYSTERY_TEXT_LABEL } from '../../shared/mysteryText.js';
 import { createPlayerInfoLink } from '../../shared/playerInfoLink.js';
-import {
-  createAssetAtlasMaskedSprite,
-  createAssetAtlasSprite,
-} from '../../../assets/atlas/atlasSprite.js';
+import { createStatusIcon, STATUS_ICON_LOCK } from '../../shared/statusIcon.js';
+import { createAssetAtlasSprite } from '../../../assets/atlas/atlasSprite.js';
 import { getPotionIconFrameName } from '../../../assets/items/potions/potionIcons.js';
 
 const RECIPES_PER_PAGE = 1;
@@ -14,6 +12,11 @@ const PAGES_PER_SPREAD = 2;
 const RECIPES_PER_SPREAD = RECIPES_PER_PAGE * PAGES_PER_SPREAD;
 const BOOK_SWIPE_THRESHOLD = 30;
 const BOOK_TURN_CLASS_MS = 220;
+
+function capitalizeFirstLetter(value) {
+  const text = String(value ?? '');
+  return text ? `${text[0].toUpperCase()}${text.slice(1)}` : text;
+}
 
 const POTION_INFO_BY_KEY = Object.freeze({
   manaTonic: 'a plain workshop tonic for waking tired tools and tired hands.',
@@ -151,20 +154,20 @@ export class BrewingRecipeBookManager {
 
     const dialog = document.createElement('section');
     dialog.className = 'brewing-page__recipes-dialog style-dialog';
-    dialog.setAttribute('aria-label', 'recipes');
+    dialog.setAttribute('aria-label', 'Recipes');
     dialog.setAttribute('aria-modal', 'true');
     dialog.setAttribute('role', 'dialog');
     dialog.tabIndex = -1;
 
     const title = document.createElement('div');
     title.className = 'style-box__title';
-    title.textContent = 'recipes';
+    title.textContent = 'Recipes';
 
     const closeButton = document.createElement('button');
     closeButton.className = 'style-button brewing-page__recipes-close';
     closeButton.type = 'button';
     closeButton.dataset.tutorialId = 'brewing:recipes:close';
-    closeButton.textContent = 'close';
+    closeButton.textContent = 'Close';
     closeButton.addEventListener('click', () => this.hide());
 
     const book = this.createRecipeBook();
@@ -217,7 +220,7 @@ export class BrewingRecipeBookManager {
     const previousButton = document.createElement('button');
     previousButton.className = 'brewing-page__recipe-page-button';
     previousButton.type = 'button';
-    previousButton.textContent = 'prev';
+    previousButton.textContent = 'Prev';
     previousButton.addEventListener('click', () => this.showPreviousSpread());
 
     const pageLabel = document.createElement('span');
@@ -226,7 +229,7 @@ export class BrewingRecipeBookManager {
     const nextButton = document.createElement('button');
     nextButton.className = 'brewing-page__recipe-page-button';
     nextButton.type = 'button';
-    nextButton.textContent = 'next';
+    nextButton.textContent = 'Next';
     nextButton.addEventListener('click', () => this.showNextSpread());
 
     root.append(previousButton, pageLabel, nextButton);
@@ -291,7 +294,7 @@ export class BrewingRecipeBookManager {
 
   renderTitle(recipes = []) {
     const learnedCount = recipes.filter((recipe) => recipe?.unlocked === true).length;
-    const title = `recipes: learned ${learnedCount}/${recipes.length}`;
+    const title = `Recipes: Learned ${learnedCount}/${recipes.length}`;
 
     this.setText(this.refs.title, title);
     this.setAttribute(this.refs.dialog, 'aria-label', title);
@@ -338,7 +341,7 @@ export class BrewingRecipeBookManager {
   ) {
     if (recipes.length === 0) {
       return {
-        left: [this.createRecipePageEmpty('no recipes')],
+        left: [this.createRecipePageEmpty('No recipes')],
         right: [this.createRecipePageEmpty('')],
       };
     }
@@ -373,7 +376,7 @@ export class BrewingRecipeBookManager {
     const rows = [];
 
     if (pageRecipes.length === 0) {
-      rows.push(this.createRecipePageEmpty('no more recipes'));
+      rows.push(this.createRecipePageEmpty('No more recipes'));
       return rows;
     }
 
@@ -415,7 +418,7 @@ export class BrewingRecipeBookManager {
     const selectButton = document.createElement('button');
     selectButton.className = 'style-button brewing-page__recipe-select-button';
     selectButton.type = 'button';
-    selectButton.textContent = selected ? 'selected' : display.actionLabel;
+    selectButton.textContent = selected ? 'Selected' : display.actionLabel;
     selectButton.disabled = display.locked || !canSelect;
     selectButton.setAttribute('aria-pressed', selected ? 'true' : 'false');
     selectButton.setAttribute(
@@ -428,7 +431,7 @@ export class BrewingRecipeBookManager {
     label.className = 'row_key brewing-page__recipe-name';
     label.textContent = display.label;
     if (display.unknown) {
-      label.setAttribute('aria-label', 'unknown');
+      label.setAttribute('aria-label', 'Unknown');
     }
 
     const discoveryRow = this.createRecipeDiscoveryRow(display);
@@ -471,7 +474,7 @@ export class BrewingRecipeBookManager {
 
     const duration = document.createElement('span');
     duration.className = 'brewing-page__recipe-duration';
-    duration.textContent = `time: ${
+    duration.textContent = `Time: ${
       display.unknown ? '?s' : this.formatDuration(recipe.brewDurationMs)
     }`;
 
@@ -490,13 +493,13 @@ export class BrewingRecipeBookManager {
     return {
       unknown,
       locked,
-      label: unknown ? 'unknown potion' : recipe.label,
+      label: unknown ? 'Unknown potion' : capitalizeFirstLetter(recipe.label),
       iconKey: recipe?.key,
       iconSilhouette: unknown,
-      actionLabel: unknown ? 'unknown' : locked ? 'research' : 'select',
+      actionLabel: unknown ? 'Unknown' : locked ? 'Research' : 'Select',
       infoText: unknown
-        ? 'a recipe not yet named in the workshop book.'
-        : this.getPotionInfo(recipe),
+        ? 'A recipe not yet named in the workshop book.'
+        : capitalizeFirstLetter(this.getPotionInfo(recipe)),
       discoveredByUsername: this.getRecipeDiscovererName(recipe),
       discoveredByIdentity: this.getRecipeDiscovererIdentity(recipe),
     };
@@ -571,7 +574,7 @@ export class BrewingRecipeBookManager {
     row.className = 'brewing-page__recipe-discovery-row';
     setResourceColor(row, 'crystal');
     row.append(
-      '- discovered by ',
+      '- Discovered by ',
       createPlayerInfoLink(
         {
           identity: display.discoveredByIdentity,
@@ -591,12 +594,11 @@ export class BrewingRecipeBookManager {
     const frameName = getPotionIconFrameName(iconKey);
     const icon =
       (silhouette
-        ? createAssetAtlasMaskedSprite('brewing-page__recipe-potion-icon', frameName)
+        ? createStatusIcon('brewing-page__recipe-potion-icon', STATUS_ICON_LOCK)
         : createAssetAtlasSprite('brewing-page__recipe-potion-icon', frameName)) ??
       document.createElement('span');
 
     icon.classList.add('brewing-page__recipe-potion-icon');
-    icon.classList.toggle('is-silhouette', silhouette);
     icon.setAttribute('aria-hidden', 'true');
     return icon;
   }
@@ -627,7 +629,7 @@ export class BrewingRecipeBookManager {
     }
 
     const label = String(recipe?.label ?? 'potion').trim() || 'potion';
-    return `a recorded ${label} recipe from the workshop shelves.`;
+    return `A recorded ${label} recipe from the workshop shelves.`;
   }
 
   renderPagination(recipeCount) {
@@ -637,8 +639,8 @@ export class BrewingRecipeBookManager {
     const rightPageNumber = Math.min(leftPageNumber + 1, pageCount);
     const label =
       leftPageNumber === rightPageNumber
-        ? `page ${leftPageNumber}/${pageCount}`
-        : `pages ${leftPageNumber}-${rightPageNumber}/${pageCount}`;
+        ? `Page ${leftPageNumber}/${pageCount}`
+        : `Pages ${leftPageNumber}-${rightPageNumber}/${pageCount}`;
 
     this.setText(this.refs.pageLabel, label);
     this.setDisabled(this.refs.previousSpreadButton, this.currentSpreadIndex <= 0);
@@ -852,7 +854,7 @@ export class BrewingRecipeBookManager {
     if (ingredients.length === 0) {
       const empty = document.createElement('div');
       empty.className = 'brewing-page__recipe-ingredient-row';
-      empty.textContent = 'none';
+      empty.textContent = 'None';
       root.append(empty);
       return root;
     }
@@ -887,7 +889,7 @@ export class BrewingRecipeBookManager {
 
         const owned = document.createElement('span');
         owned.className = 'brewing-page__recipe-ingredient-owned';
-        owned.textContent = masked ? 'owned ?' : `owned ${ownedQuantity}`;
+        owned.textContent = masked ? 'Owned ?' : `Owned ${ownedQuantity}`;
 
         row.append(required, owned);
         return row;
@@ -978,7 +980,7 @@ export class BrewingRecipeBookManager {
 
   createIngredientIconLabel(ingredient) {
     const label = document.createElement('span');
-    label.textContent = ingredient.label;
+    label.textContent = capitalizeFirstLetter(ingredient.label);
     setItemIconLabel(label, 'herb', ingredient.key);
     return label;
   }

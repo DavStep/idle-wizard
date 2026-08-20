@@ -766,6 +766,7 @@ describe('ResearchPixiPage', () => {
     expect(row.description.position.x).toBe(
       RESEARCH_PIXI_GEOMETRY.descriptionX,
     );
+    expect(RESEARCH_PIXI_GEOMETRY.descriptionOpticalOffsetY).toBe(-12);
     const middleContentCenter =
       (row.artWell.x + row.artWell.frameWidth + row.costButton.x) / 2;
     expect(
@@ -807,8 +808,13 @@ describe('ResearchPixiPage', () => {
     });
     expect(row.costButton.amountLabel.fontSize).toBeCloseTo(17 * 0.88);
     expect(row.costButton.resourceIcon.width).toBeCloseTo(23 * 0.88);
-    expect(row.researchedButton.amountLabel.fontSize).toBe(10);
-    expect(row.researchedButton.amountLabel.textObject.style.fontSize).toBe(10);
+    expect(row.researchedButton.showLabel).toBe(true);
+    expect(row.researchedButton.tone).toBe('blue');
+    expect(row.researchedButton.actionTextLabel.text).toBe('Skip');
+    expect(row.researchedButton.amountLabel.fontSize).toBeCloseTo(13 * 0.88);
+    expect(row.researchedButton.amountLabel.textObject.style.fontSize).toBeCloseTo(
+      13 * 0.88,
+    );
     expect(box.title.text).toBe('Herbs');
     expect(box.title.style).toMatchObject({
       fontFamily: '"Lilita One", "Arial Black", Arial, sans-serif',
@@ -1073,7 +1079,8 @@ describe('ResearchPixiPage', () => {
     now = 3_000;
     harness.page.tick();
     expect(row.researchedButton.visible).toBe(true);
-    expect(row.researchedButton.tone).toBe('yellow');
+    expect(row.researchedButton.tone).toBe('blue');
+    expect(row.researchedButton.actionTextLabel.text).toBe('Skip');
     expect(row.researchedButton.amountLabel.text).toBe('1');
     expect(row.researchedButton.resource).toBe('amethyst');
     expect(row.researchingTimerLabel.text).toBe('3s');
@@ -1084,10 +1091,12 @@ describe('ResearchPixiPage', () => {
       row.progress.width / 2,
     );
     expect(row.researchingTimerLabel.y).toBe(row.progress.height / 2);
-    expect(row.researchedButton.amountLabel.position).toMatchObject({
-      x: row.researchedButton.buttonWidth / 2,
-      y: row.researchedButton.buttonHeight / 2,
-    });
+    expect(row.researchedButton.actionTextLabel.y).toBeLessThan(
+      row.researchedButton.amountLabel.y,
+    );
+    expect(row.researchedButton.resourceIcon.y).toBe(
+      row.researchedButton.amountLabel.y,
+    );
     expect(row.readonlyValue.visible).toBe(false);
     expect(setStatusModel).not.toHaveBeenCalled();
     expect(styleStatusButton).not.toHaveBeenCalled();
@@ -1196,7 +1205,8 @@ describe('ResearchPixiPage', () => {
     expect(harness.page.rows.get('mint')).toBe(row);
     expect(value.visible).toBe(false);
     expect(row.researchedButton.visible).toBe(true);
-    expect(row.researchedButton.tone).toBe('yellow');
+    expect(row.researchedButton.tone).toBe('blue');
+    expect(row.researchedButton.actionTextLabel.text).toBe('Skip');
     expect(row.researchedButton.amountLabel.text).toBe('1');
     expect(row.researchedButton.resource).toBe('amethyst');
     expect(row.researchingTimerLabel.text).toBe('5s');

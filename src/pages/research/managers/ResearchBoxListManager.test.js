@@ -908,7 +908,7 @@ describe('ResearchBoxListManager', () => {
       /\.research-page__row\.is-locked\s+\.research-page__research-art-image\s*\{[^}]*filter:\s*none;[^}]*opacity:\s*1;/,
     );
     expect(css).toMatch(
-      /\.style-button\.style-cost-button\.research-page__research-button\.is-unaffordable::after\s*\{[^}]*border-image-source:\s*var\(--style-green-button-frame\);/,
+      /\.style-button\.style-cost-button\.research-page__research-button\.is-unaffordable:not\(\s*\.research-page__research-button--in-progress\s*\)::after\s*\{[^}]*border-image-source:\s*var\(--style-green-button-frame\);/,
     );
     expect(css).toMatch(
       /\.style-button\.style-cost-button\.research-page__research-button\.is-unaffordable\s+\.style-resource-label__amount\s*\{[^}]*color:\s*#c1121f;/,
@@ -1128,13 +1128,24 @@ describe('ResearchBoxListManager', () => {
     expect(
       value?.classList.contains('research-page__research-button--in-progress'),
     ).toBe(true);
-    expect(value?.classList.contains('style-cost-button--yellow')).toBe(true);
+    expect(value?.classList.contains('style-cost-button--blue')).toBe(true);
     expect(value?.disabled).toBe(true);
     expect(label).toBeNull();
     expect(timer).toBeNull();
-    expect(value?.textContent).toBe('1 amethyst');
+    expect(
+      value?.querySelector('.research-page__research-status-action')?.textContent,
+    ).toBe('Skip');
+    expect(
+      value?.querySelector('.style-resource-label__amount')?.textContent,
+    ).toBe('1');
+    expect(
+      value?.querySelector('.style-resource-label__icon'),
+    ).not.toBeNull();
     expect(progressTimer?.textContent).toBe('1m 15s');
     const css = readFileSync(`${cwd()}/src/styles/base.css`, 'utf8');
+    expect(css).toMatch(
+      /style-cost-button--blue\.research-page__research-button--in-progress::after\s*\{[^}]*border-image-source:\s*var\(--style-blue-button-frame\);/,
+    );
     const timerRule = css.match(
       /\.research-page__research-progress\s+\.research-page__research-progress-text\s*\{(?<body>[^}]*)\}/,
     )?.groups?.body;

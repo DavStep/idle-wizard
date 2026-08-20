@@ -22,7 +22,8 @@ const SPLASH_TEXTURE_ID =
 const SPLASH_IMAGE_ASPECT = 818 / 1923;
 const SPLASH_BAR_WIDTH_RATIO = 0.84;
 const SPLASH_BAR_BOTTOM_RATIO = 0.0465;
-const SPLASH_LABEL_BOTTOM_RATIO = 0.0695;
+const SPLASH_STATUS_BAR_GAP = 10;
+const SPLASH_LABEL_STATUS_GAP = 17;
 const SPLASH_VERSION_INSET = 12;
 const SPLASH_IDENTITY_GAP = 6;
 const SPLASH_IDENTITY_COPY_WIDTH = 58;
@@ -37,6 +38,7 @@ export class PixiLoadingSplash extends Container {
     this.assets = assets;
     this.projection = null;
     this.progressValue = 0;
+    this.progressRange = null;
     this.userId = null;
     this.getUserId =
       typeof getUserId === 'function' ? getUserId : () => '';
@@ -55,7 +57,7 @@ export class PixiLoadingSplash extends Container {
       label: 'loadingSplash:horizontalShade',
     });
     this.loadingLabel = new PixiTextLabel({
-      text: 'Loading game',
+      text: 'Loading',
       fontSize: PIXI_UI_GEOMETRY.bodyFontSize,
       fontWeight: 'normal',
       fontFamily: PIXI_FONT_FAMILIES['lilita-one'],
@@ -64,6 +66,17 @@ export class PixiLoadingSplash extends Container {
       color: '#fff0bf',
       stroke: { color: '#05030a', width: 2 },
       label: 'loadingSplash:label',
+    });
+    this.statusLabel = new PixiTextLabel({
+      text: 'Loading assets...',
+      fontSize: 10,
+      fontWeight: 'normal',
+      fontFamily: PIXI_FONT_FAMILIES['lilita-one'],
+      anchor: { x: 0.5, y: 0.5 },
+      align: 'center',
+      color: '#fff0bf',
+      stroke: { color: '#05030a', width: 2 },
+      label: 'loadingSplash:status',
     });
     this.versionLabel = new PixiTextLabel({
       text: `v${getClientReleaseVersion()}`,
@@ -125,24 +138,48 @@ export class PixiLoadingSplash extends Container {
       this.versionLabel,
       this.userIdLabel,
       this.loadingLabel,
+      this.statusLabel,
       this.progressBar,
     );
     this.syncUserIdentity();
   }
 
   setText(text) {
-    this.loadingLabel.setText(text ?? 'Loading game');
+    return this.setStatus(text);
+  }
+
+  setStatus(text) {
+    this.statusLabel.setText(text ?? 'Loading assets...');
     this.syncUserIdentity();
+    return this;
   }
 
   setProgress(value) {
+    this.progressRange = null;
     this.progressValue = Math.max(0, Math.min(1, Number(value) || 0));
     this.progressBar.setProgress(this.progressValue);
     this.syncUserIdentity();
+    return this;
+  }
+
+  setProgressRange(start, end) {
+    const normalizedStart = Math.max(0, Math.min(1, Number(start) || 0));
+    const normalizedEnd = Math.max(
+      normalizedStart,
+      Math.min(1, Number(end) || 0),
+    );
+    this.progressRange = {
+      start: normalizedStart,
+      end: normalizedEnd,
+    };
+    this.progressBar.setRange(normalizedStart, normalizedEnd);
+    this.syncUserIdentity();
+    return this;
   }
 
   applyTheme(theme) {
     this.loadingLabel.applyTheme(theme);
+    this.statusLabel.applyTheme(theme);
     this.versionLabel.applyTheme(theme);
     this.userIdLabel.applyTheme(theme);
     this.copyButton?.applyTheme(theme);
@@ -168,9 +205,8 @@ export class PixiLoadingSplash extends Container {
     const barHeight = PIXI_UI_GEOMETRY.progressTotalHeight;
     const barX = PIXI_UI_GEOMETRY.sourceWidth / 2 - barWidth / 2;
     const barY = sourceHeight * (1 - SPLASH_BAR_BOTTOM_RATIO) - barHeight;
-    const labelY =
-      sourceHeight * (1 - SPLASH_LABEL_BOTTOM_RATIO) -
-      PIXI_UI_GEOMETRY.bodyFontSize / 2;
+    const statusY = barY - SPLASH_STATUS_BAR_GAP;
+    const labelY = statusY - SPLASH_LABEL_STATUS_GAP;
     const safeTop =
       Math.max(0, Number(projection.safeInsets?.top) || 0) /
       Math.max(Number(projection.uiScale) || 1, Number.EPSILON);
@@ -205,9 +241,20 @@ export class PixiLoadingSplash extends Container {
       PIXI_UI_GEOMETRY.sourceWidth / 2,
       labelY,
     );
+    this.statusLabel.position.set(
+      PIXI_UI_GEOMETRY.sourceWidth / 2,
+      statusY,
+    );
     this.progressBar.position.set(barX, barY);
     this.progressBar.setSize(barWidth, barHeight);
-    this.progressBar.setProgress(this.progressValue);
+    if (this.progressRange) {
+      this.progressBar.setRange(
+        this.progressRange.start,
+        this.progressRange.end,
+      );
+    } else {
+      this.progressBar.setProgress(this.progressValue);
+    }
   }
 
   syncUserIdentity() {

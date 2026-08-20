@@ -115,9 +115,10 @@ horizontal anchors just outside the two lower ingredient tiles and share the
 potion-name Y axis, so navigation sits beside the selected recipe identity.
 All six cells are real gameplay ingredient slots; recipes
 may continue using fewer. Ingredient slots reuse the ordinary room-panel skin
-and show item art, name, and a compact `owned/required` count. Repeated herbs
-allocate owned stock across their ordered slots, so three Sage requirements with
-two owned herbs read `1/1`, `1/1`, and `0/1`. Pressing an available slot opens `Choose Herb`, the
+and show one left-aligned row with item art, name, and required quantity, such
+as `Sage x3`. A missing requirement colors only its quantity red. Repeated herbs
+still allocate owned stock across their ordered slots for readiness without
+exposing ownership ratios in the orbit. Pressing an available slot opens `Choose Herb`, the
 same retained inventory-choice dialog used by Garden `Choose Seed`, with herb
 art and availability rows in one continuous paper. It has no selected-herb
 summary or quantity controls. Choosing a herb replaces the target slot with
@@ -188,7 +189,7 @@ action panel aligns to the same `16px` room edges as World Chat, and the potion
 art uses the larger preview fit inside its existing well.
 
 The action section keeps existing retained button semantics. The single primary
-button follows the brewing state: a truly empty cauldron is yellow
+button follows the brewing state: a truly empty cauldron is green
 `Choose Recipe` and opens the same retained recipe dialog as the compact
 top-right `Recipes` control; manual idle after a recipe or ingredient is staged
 is `Brew`, brewing and bottling are yellow `Cancel`, brewed is `Bottle`, and
@@ -219,6 +220,14 @@ receive/recipe-receive/buy feedback reuses the cauldron display tree. Prepared
 liquid shows one sparse ripple; an active brew adds three bounded bubbles and a
 small highlight drift. The ambient cycle moves and scales the cauldron and its
 source liquid mask together, keeping the liquid registered below the rim. A
+selected unlocked cauldron also keeps its matched dark illustrated wood hearth
+visible. The hearth is unlit while idle, prepared, complete, or ready;
+brewing and bottling alone crossfade into a compact bright core and a wider,
+dimmer outer fire. The outer layer escapes around the cauldron's lower sides
+while the low-detail fuel and fire share the feet's silhouette band and render
+behind the cauldron, so the body and legs occlude them as one grounded
+landmark. Reduced motion keeps one static lit frame, and locked
+cauldrons hide the complete hearth. A
 newly staged herb eases into its unchanged slot and lights its connector once.
 Brew completion adds one compact liquid ring and a contained cauldron-and-liquid
 squash, and primary action changes ease the replacement label into the

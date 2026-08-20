@@ -78,6 +78,9 @@ function createOverviewRow() {
     normalizedName: 'all seeing void',
     tag: 'VOID',
     tagColor: 'violet',
+    bannerColor: 'red',
+    emblemColor: 'white',
+    emblemId: 'owl',
     description: '',
     notice: '',
     joinMode: 'apply',
@@ -181,6 +184,9 @@ describe('TradeAllianceSubscriptionManager', () => {
     expect(manager.getSnapshot().ownAlliance).toMatchObject({
       tag: 'VOID',
       tagColor: 'violet',
+      bannerColor: 'red',
+      emblemColor: 'white',
+      emblemId: 'owl',
     });
     expect(manager.getSnapshot().allianceChatMessages[0]).toMatchObject({
       username: 'wizard',

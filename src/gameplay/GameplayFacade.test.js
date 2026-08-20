@@ -5844,6 +5844,9 @@ describe("GameplayFacade", () => {
       ...potionDiscoveryFacade,
       isDiscoveredByCurrentPlayer: () => false,
     });
+    makeResearchInstant(secondGameplayFacade, {
+      "unlockRecipe:ashenMemory": 600,
+    });
     secondGameplayFacade.itemsFacade.addItem(1001, 1);
     secondGameplayFacade.itemsFacade.addItem(1004, 1);
     secondGameplayFacade.itemsFacade.addItem(1010, 1);
@@ -5866,7 +5869,34 @@ describe("GameplayFacade", () => {
     ).toMatchObject({
       ok: true,
       cost: 102_400,
+      durationSeconds: 600,
+      remainingSeconds: 600,
     });
+    expect(
+      secondGameplayFacade.getSnapshot().research.inProgressResearches,
+    ).toEqual([
+      expect.objectContaining({
+        researchId: "unlockRecipe:ashenMemory",
+        remainingSeconds: 600,
+      }),
+    ]);
+    expect(
+      secondGameplayFacade
+        .getSnapshot()
+        .brewing.recipes.find((recipe) => recipe.key === "ashenMemory"),
+    ).toMatchObject({
+      discovered: true,
+      unlocked: false,
+    });
+
+    secondEcsFacade.update({ deltaSeconds: 599 });
+    expect(
+      secondGameplayFacade
+        .getSnapshot()
+        .brewing.recipes.find((recipe) => recipe.key === "ashenMemory"),
+    ).toMatchObject({ unlocked: false });
+
+    secondEcsFacade.update({ deltaSeconds: 1 });
     expect(secondGameplayFacade.getSnapshot().brewing).toMatchObject({
       buttonLabel: "brew ashen memory",
       manaCost: 36,

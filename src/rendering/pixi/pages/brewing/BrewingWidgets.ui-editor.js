@@ -8,6 +8,7 @@ import { BrewingRecipeCard, BrewingRecipeIngredientRow } from './BrewingDialogsP
 import {
   BREWING_HUD_GEOMETRY,
   BrewingAutomationSettingsDialogPixi,
+  BrewingCauldronHearth,
   BrewingHudPixi,
   BrewingIngredientPickerSlot,
 } from './BrewingHudPixi.js';
@@ -33,6 +34,7 @@ export default [
   widget('compound.brewing-recipe-card', 'Brewing Recipe Card', ['text-button', 'compound.brewing-recipe-ingredient-row'], recipeCardControl, variants(['available', 'selected', 'research', 'unknown'])),
   widget('compound.brewing-recipe-ingredient-row', 'Brewing Recipe Ingredient Row', [], recipeIngredientControl, variants(['available', 'missing', 'unknown'])),
   widget('compound.brewing-batch-detail', 'Brewing Batch Detail', ['compound.brewing-ingredient-picker-slot', 'primitive.progress-bar'], batchDetailControl, variants(['empty', 'missing', 'ready', 'brewing', 'complete'])),
+  widget('compound.brewing-cauldron-hearth', 'Brewing Cauldron Hearth', [], cauldronHearthControl, variants(['idle', 'lit', 'reduced-motion'])),
   widget('compound.brewing-ingredient-picker-slot', 'Brewing Ingredient Picker Slot', ['text-button'], ingredientSlotControl, variants(['filled', 'used', 'missing', 'empty'])),
   widget('compound.brewing-automation-toggle', 'Brewing Automation Inclusion', ['text-button'], automationToggleControl, variants(['included', 'unavailable'])),
 ];
@@ -83,6 +85,7 @@ function resolveProductionClass(id) {
     'compound.brewing-recipe-card': 'BrewingRecipeCard',
     'compound.brewing-recipe-ingredient-row': 'BrewingRecipeIngredientRow',
     'compound.brewing-batch-detail': 'BrewingHudPixi.detailPanel',
+    'compound.brewing-cauldron-hearth': 'BrewingCauldronHearth',
     'compound.brewing-ingredient-picker-slot': 'BrewingIngredientPickerSlot',
     'compound.brewing-automation-toggle': 'BrewingAutomationSettingsDialogPixi.toggle',
   })[id];
@@ -293,6 +296,25 @@ function batchDetailControl({ assets, input, fixture = { state: 'ready' }, conte
   return { control: hud, destroy: () => hud.destroy(), height: BREWING_HUD_GEOMETRY.detailHeight, root, width: 358 };
 }
 
+function cauldronHearthControl({ assets, fixture = { state: 'idle' }, context }) {
+  const control = new BrewingCauldronHearth({ assetManager: assets });
+  const reducedMotion = fixture.state === 'reduced-motion';
+  const lit = fixture.state !== 'idle';
+  const now = context?.clock.now() ?? 1_000;
+  control.bind({ lit, visible: true }, now - HEARTH_EDITOR_SETTLE_MS);
+  control.setBounds(55, 88);
+  control.updateMotion(now, { active: true, reducedMotion });
+  if (context?.clock) {
+    context.registerCleanup(
+      context.clock.subscribe((nextNow) => {
+        control.updateMotion(nextNow, { active: true, reducedMotion });
+        context.invalidate();
+      }),
+    );
+  }
+  return wrap(control, 110, 92);
+}
+
 function ingredientSlotControl({ assets, input, fixture = { state: 'filled' }, context }) {
   const control = new BrewingIngredientPickerSlot({ index: 0, assetManager: assets, inputRouter: input, onActivate: () => context?.emit('ingredientSlotActivated') ?? true });
   const empty = fixture.state === 'empty';
@@ -320,3 +342,5 @@ function brewingAssetFilter({ id }) {
   const assetId = String(id ?? '');
   return assetId.includes('/ui/') || assetId.includes('/icons/') || assetId.includes('/items/') || assetId.includes('/rooms/brewing/');
 }
+
+const HEARTH_EDITOR_SETTLE_MS = 220;

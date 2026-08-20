@@ -353,9 +353,17 @@
         .filter(Boolean)
         .join(',');
       recipeState.dataset.visibleSlotCounts = hud.ingredientSlots
-        .map((slot) => `${slot.missingCount.text}${slot.requiredCount.text}`)
+        .map((slot) => slot.requiredQuantity?.text ?? '')
         .filter(Boolean)
         .join(',');
+      recipeState.dataset.hearthWoodVisible = String(
+        hud.cauldronHearth.wood.visible && hud.cauldronHearth.root.visible,
+      );
+      recipeState.dataset.hearthLitMix = hud.cauldronHearth.litMix.toFixed(4);
+      recipeState.dataset.hearthFlameAlpha =
+        hud.cauldronHearth.flameFront.alpha.toFixed(4);
+      recipeState.dataset.hearthSparkHeight =
+        hud.cauldronHearth.sparks.getLocalBounds().height.toFixed(4);
       if (
         state === 'collect' &&
         parameters.get('frame') === 'mid'

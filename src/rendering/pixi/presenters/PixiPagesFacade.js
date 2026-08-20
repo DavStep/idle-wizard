@@ -81,6 +81,7 @@ const WORKSHOP_ALLIANCE_TAB_IDS = new Set([
   "create",
   "home",
   "quests",
+  "banner",
   "settings",
 ]);
 const WORKSHOP_LEADERBOARD_TAB_IDS = new Set(["singlePlayer", "alliance"]);
@@ -1368,18 +1369,30 @@ export class PixiPagesFacade {
       },
       research: {
         buyResearch: (researchId) => {
+          const anchorId = `research.${researchId}`;
+          const anchor =
+            this.experienceFacade?.transientEffects?.resolveAnchor?.(
+              anchorId,
+            ) ?? null;
           const result = gameplay?.buyResearch?.(researchId);
           this.emitPurchaseSpendBurstForResult(result, {
-            anchorId: `research.${researchId}`,
+            anchor,
+            anchorId,
             resource: result?.costCurrency ?? "coin",
             amount: result?.cost,
           });
           return result;
         },
         skipResearchTime: (researchId) => {
+          const anchorId = `research.${researchId}`;
+          const anchor =
+            this.experienceFacade?.transientEffects?.resolveAnchor?.(
+              anchorId,
+            ) ?? null;
           const result = gameplay?.skipResearchTime?.(researchId);
           this.emitPurchaseSpendBurstForResult(result, {
-            anchorId: `research.${researchId}`,
+            anchor,
+            anchorId,
             resource: "amethyst",
             amount: result?.cost,
           });
@@ -1965,10 +1978,16 @@ export class PixiPagesFacade {
 
   emitPurchaseSpendBurstForResult(
     result,
-    { anchorId, resource = "coin", amount = null } = {},
+    { anchor = null, anchorId, resource = "coin", amount = null } = {},
   ) {
     const spentAmount = Number(amount ?? result?.cost ?? 0);
-    if (result?.ok !== true || spentAmount <= 0 || !anchorId) {
+    const hasCapturedAnchor =
+      Number.isFinite(anchor?.x) && Number.isFinite(anchor?.y);
+    if (
+      result?.ok !== true ||
+      spentAmount <= 0 ||
+      (!hasCapturedAnchor && !anchorId)
+    ) {
       return false;
     }
     this.uiClickSoundFacade?.playPurchase?.();
@@ -1976,7 +1995,7 @@ export class PixiPagesFacade {
       visualOnly: true,
       spendBursts: [
         {
-          anchorId,
+          ...(hasCapturedAnchor ? { anchor } : { anchorId }),
           resource,
         },
       ],
@@ -2390,7 +2409,7 @@ export class PixiPagesFacade {
       recipeReadiness,
       primaryAction,
       recipesDialog: {
-        title: "recipes",
+        title: "Recipes",
         cauldronIndex: index,
         recipes: brewing.recipes ?? [],
       },
@@ -2568,7 +2587,7 @@ export class PixiPagesFacade {
         .getPage("brewing")
         .openDialog("recipes", {
           open: true,
-          title: "recipes",
+          title: "Recipes",
           cauldronIndex,
           recipes: this.decorateBrewingRecipes(
             this.gameplaySnapshot.brewing?.recipes,

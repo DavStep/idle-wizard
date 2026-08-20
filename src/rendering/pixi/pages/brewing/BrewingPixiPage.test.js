@@ -116,17 +116,25 @@ describe('BrewingPixiPage', () => {
     });
     expect(registration.haptic()).toBe('light');
     expect(slot.icon.position).toMatchObject({
-      x: BREWING_HUD_GEOMETRY.ingredientSlotWidth / 2,
-      y: BREWING_HUD_GEOMETRY.ingredientIconCenterY,
+      x:
+        BREWING_HUD_GEOMETRY.ingredientContentInset +
+        BREWING_HUD_GEOMETRY.ingredientIconSize / 2,
+      y: BREWING_HUD_GEOMETRY.ingredientSlotHeight / 2,
     });
     expect(slot.icon.width).toBe(BREWING_HUD_GEOMETRY.ingredientIconSize);
     expect(slot.icon.height).toBe(BREWING_HUD_GEOMETRY.ingredientIconSize);
-    expect(slot.name.position).toMatchObject({
-      x: BREWING_HUD_GEOMETRY.ingredientSlotWidth / 2,
-      y: BREWING_HUD_GEOMETRY.ingredientNameY,
+    expect(slot.labelGroup.position).toMatchObject({
+      x:
+        BREWING_HUD_GEOMETRY.ingredientContentInset +
+        BREWING_HUD_GEOMETRY.ingredientIconSize +
+        BREWING_HUD_GEOMETRY.ingredientContentGap,
+      y: BREWING_HUD_GEOMETRY.ingredientSlotHeight / 2,
     });
-    expect(slot.name.style.fontSize).toBe(10);
-    expect(slot.name.style.lineHeight).toBe(11);
+    expect(slot.name.anchor).toMatchObject({ x: 0, y: 0.5 });
+    expect(slot.name.style.fontSize).toBe(9);
+    expect(slot.name.style.lineHeight).toBe(10);
+    expect(slot.requiredQuantity.text).toBe('x1');
+    expect(slot.requiredQuantity.x).toBeGreaterThan(slot.name.width);
 
     registration.onPressChange(true, { confirmed: false });
     expect(slot.control.visual.scale.x).toBe(0.94);
@@ -262,7 +270,7 @@ describe('BrewingPixiPage', () => {
     harness.dispose();
   });
 
-  it('shows owned/required on every selected-recipe ingredient slot', () => {
+  it('shows one left-aligned icon, name, and required quantity row', () => {
     const harness = createHarness();
     const model = createBrewingViewModel();
     model.brewing.cauldrons[0].ingredients = [];
@@ -274,7 +282,7 @@ describe('BrewingPixiPage', () => {
           key: 'sage',
           label: 'sage',
           owned: 0,
-          quantity: 1,
+          quantity: 3,
         },
       ],
     };
@@ -282,28 +290,30 @@ describe('BrewingPixiPage', () => {
     harness.page.bind(model);
 
     const slot = harness.page.hud.ingredientSlots[0];
-    expect(slot.missingCount.text).toBe('0');
-    expect(slot.missingCount.style.fill).toBe('#c1121f');
-    expect(slot.requiredCount.text).toBe('/1');
-    expect(slot.requiredCount.style.fill).toBe('#d4d4d4');
-    expect(slot.missingCount.visible).toBe(true);
-    expect(slot.requiredCount.visible).toBe(true);
+    expect(slot.name.text).toBe('Sage');
+    expect(slot.requiredQuantity.text).toBe('x3');
+    expect(slot.requiredQuantity.style.fill).toBe('#c1121f');
+    expect(slot.requiredQuantity.visible).toBe(true);
+    expect(slot.icon.x).toBeLessThan(slot.labelGroup.x);
+    expect(slot.name.y).toBe(slot.requiredQuantity.y);
+    expect(slot.labelGroup.x + slot.labelGroup.width).toBeLessThanOrEqual(
+      BREWING_HUD_GEOMETRY.ingredientSlotWidth -
+        BREWING_HUD_GEOMETRY.ingredientContentInset,
+    );
 
     model.brewing.cauldrons[0].ingredients = [
       {
         key: 'sage',
         label: 'sage',
-        quantity: 1,
+        quantity: 3,
       },
     ];
-    model.brewing.cauldrons[0].selectedRecipe.ingredients[0].owned = 1;
+    model.brewing.cauldrons[0].selectedRecipe.ingredients[0].owned = 3;
     harness.page.bind(model);
 
-    expect(slot.missingCount.text).toBe('1');
-    expect(slot.missingCount.style.fill).toBe('#d4d4d4');
-    expect(slot.requiredCount.text).toBe('/1');
-    expect(slot.missingCount.visible).toBe(true);
-    expect(slot.requiredCount.visible).toBe(true);
+    expect(slot.requiredQuantity.text).toBe('x3');
+    expect(slot.requiredQuantity.style.fill).toBe('#d4d4d4');
+    expect(slot.requiredQuantity.visible).toBe(true);
 
     model.brewing.cauldrons[0].ingredients = [];
     model.brewing.cauldrons[0].recipeReadiness = {
@@ -585,6 +595,7 @@ describe('BrewingPixiPage', () => {
     const researchRecipe = vi.fn(() => true);
 
     harness.page.openDialog('recipes', {
+      title: 'recipes',
       recipes: [
         {
           id: 'mana-tonic',
@@ -592,6 +603,7 @@ describe('BrewingPixiPage', () => {
           label: 'mana tonic',
           unlocked: false,
           canResearch: true,
+          infoText: 'a plain workshop tonic for waking tired tools.',
           manaCost: 12,
           brewDurationMs: 30_000,
           ingredients: [
@@ -610,6 +622,7 @@ describe('BrewingPixiPage', () => {
           label: 'minor healing potion',
           unlocked: false,
           canResearch: false,
+          infoText: 'a plain workshop tonic for waking tired tools.',
           manaCost: 14,
           brewDurationMs: 35_000,
           ingredients: [],
@@ -624,6 +637,7 @@ describe('BrewingPixiPage', () => {
     const ingredient = card.ingredients.getWidgets()[0];
     const contentTheme = dialog.modal.getContentTheme();
 
+    expect(dialog.modal.title).toBe('Recipes');
     expect(dialog.modal.panel.coreWidth).toBe(304);
     expect(dialog.modal.panel.outerFrame.frameWidth).toBe(324);
     expect(dialog.modal.panel.paperFrame.visible).toBe(false);
@@ -634,6 +648,8 @@ describe('BrewingPixiPage', () => {
     expect(card.pageFrame.frameWidth).toBe(155);
     expect(card.pageFrame.frameHeight).toBe(341);
     expect(unavailableCard.root.x - (card.root.x + card.pageFrame.frameWidth)).toBe(2);
+    expect(card.name.text).toBe('Mana tonic');
+    expect(card.info.text).toBe('A plain workshop tonic for waking tired tools.');
     expect(card.name.style.fill).toBe(contentTheme.text);
     expect(card.cost.text).toBe('Required mana:');
     expect(card.cost.style.fill).toBe(contentTheme.text);
@@ -647,7 +663,7 @@ describe('BrewingPixiPage', () => {
     expect(ingredient.required.style.fill).toBe(
       contentTheme.resourceColors.herb,
     );
-    expect(ingredient.required.text).toBe('sage');
+    expect(ingredient.required.text).toBe('Sage');
     expect(ingredient.owned.text).toBe('0/3');
     expect(ingredient.icon.visible).toBe(true);
     expect(ingredient.icon.width).toBe(14);
@@ -718,18 +734,51 @@ describe('BrewingPixiPage', () => {
       .cards.getWidgets()[0];
     const ingredient = card.ingredients.getWidgets()[0];
 
-    expect(card.name.text).toBe('ashen memory');
+    expect(card.name.text).toBe('Ashen memory');
     expect(card.icon.alpha).toBe(1);
     expect(card.costValue.text).toBe('36');
     expect(card.select.textLabel.text).toBe('Research');
     expect(card.select.enabled).toBe(true);
-    expect(ingredient.required.text).toBe('lavender');
+    expect(ingredient.required.text).toBe('Lavender');
     expect(ingredient.owned.text).toBe('2/1');
     expect(card.select.activate()).toMatchObject({ ok: true });
     expect(researchRecipe).toHaveBeenCalledWith(
       expect.objectContaining({ key: 'ashenMemory' }),
       undefined,
     );
+
+    harness.page.destroy();
+    harness.dispose();
+  });
+
+  it('uses the shared lock in place of unknown potion art', () => {
+    const assetManager = createPixiAssetManagerFake(Texture);
+    assetManager.getAtlasTexture = vi.fn(() => new Texture());
+    const harness = createHarness({ assetManager });
+
+    harness.page.openDialog('recipes', {
+      recipes: [
+        {
+          key: 'ashenMemory',
+          label: 'ashen memory',
+          unlocked: false,
+          discovered: false,
+          unknown: true,
+          known: false,
+          discoveryType: 'unknown',
+          ingredients: [],
+        },
+      ],
+    });
+
+    const card = harness.dialogs
+      .get('brewing.recipes')
+      .cards.getWidgets()[0];
+
+    expect(assetManager.getAtlasTexture).toHaveBeenCalledWith('status:lockDefault');
+    expect(assetManager.getAtlasTexture).not.toHaveBeenCalledWith('potion:ashenMemory');
+    expect(card.icon.alpha).toBe(1);
+    expect(card.icon.width / card.icon.height).toBeCloseTo(53 / 60);
 
     harness.page.destroy();
     harness.dispose();
@@ -2107,7 +2156,7 @@ describe('BrewingPixiPage', () => {
 
   it('maps manual and automatic brewing phases to one primary action', () => {
     const states = [
-      [{}, 'recipes', 'Choose Recipe', 'yellow', true],
+      [{}, 'recipes', 'Choose Recipe', 'green', true],
       [
         {
           selectedRecipe: { key: 'mana-tonic' },
@@ -2213,7 +2262,7 @@ describe('BrewingPixiPage', () => {
     expect(harness.page.hud.recipes.text.text).toBe('Recipes');
     expect(harness.page.hud.recipes.root.visible).toBe(true);
     expect(harness.page.hud.brew.text.text).toBe('Choose Recipe');
-    expect(harness.page.hud.brew.variant).toBe('yellow');
+    expect(harness.page.hud.brew.variant).toBe('green');
     expect(harness.page.hud.brew.enabled).toBe(true);
     expect(harness.page.hud.brew.handleTap()).toBe(true);
     expect(openRecipes).toHaveBeenCalledWith(0);
@@ -2429,6 +2478,82 @@ describe('BrewingPixiPage', () => {
         harness.page.hud.cauldronLiquid,
       ),
     );
+
+    harness.page.destroy();
+    harness.dispose();
+  });
+
+  it('keeps wood idle, lights only during progress, and freezes under reduced motion', () => {
+    let now = 0;
+    const harness = createHarness({ timeSource: () => now });
+    const model = createBrewingViewModel();
+    const cauldron = model.brewing.cauldrons[0];
+
+    harness.page.bind(model);
+    harness.page.activate();
+    harness.page.tick(now);
+    const hearth = harness.page.hud.cauldronHearth;
+    expect(hearth.root.visible).toBe(true);
+    expect(hearth.wood.visible).toBe(true);
+    expect(hearth.flameFront.alpha).toBe(0);
+    expect(hearth.flameBack.alpha).toBe(0);
+    expect(hearth.wood.tint).toBe(0x745044);
+    expect(hearth.wood.y).toBe(0);
+    expect(BREWING_HUD_GEOMETRY.hearthOffsetY).toBeGreaterThanOrEqual(54);
+    expect(BREWING_HUD_GEOMETRY.hearthOffsetY).toBeLessThanOrEqual(58);
+    expect(BREWING_HUD_GEOMETRY.hearthOuterFlameWidth).toBeGreaterThan(
+      BREWING_HUD_GEOMETRY.hearthFlameWidth,
+    );
+    expect(BREWING_HUD_GEOMETRY.hearthOuterFlameHeight).toBeGreaterThan(
+      BREWING_HUD_GEOMETRY.hearthFlameHeight,
+    );
+    expect(hearth.flameBack.width).toBeGreaterThan(
+      hearth.flameFront.width,
+    );
+    expect(
+      harness.page.hud.carouselPanel.body.getChildIndex(hearth.root),
+    ).toBeLessThan(
+      harness.page.hud.carouselPanel.body.getChildIndex(
+        harness.page.hud.cauldronArt,
+      ),
+    );
+
+    cauldron.activeBrew = {
+      key: 'sage-tonic',
+      label: 'sage tonic',
+      phase: 'brewing',
+      durationMs: 10_000,
+      endTimeMs: 10_000,
+    };
+    model.brewing.now = now;
+    harness.page.bind(model);
+    now = 260;
+    harness.page.tick(now);
+    expect(hearth.litMix).toBe(1);
+    expect(hearth.flameFront.alpha).toBeGreaterThan(0.75);
+    expect(hearth.flameBack.alpha).toBeGreaterThan(0.2);
+    expect(hearth.sparks.getLocalBounds().height).toBe(0);
+
+    const animatedRotation = hearth.flameFront.rotation;
+    hearth.updateMotion(now + 100, { active: true, reducedMotion: true });
+    expect(hearth.flameFront.alpha).toBe(0.9);
+    expect(hearth.flameFront.rotation).toBeCloseTo(0.006);
+    expect(hearth.flameFront.rotation).not.toBe(animatedRotation);
+    expect(hearth.sparks.getLocalBounds().height).toBe(0);
+
+    cauldron.activeBrew = {
+      ...cauldron.activeBrew,
+      phase: 'ready',
+      canCollect: true,
+    };
+    now = 500;
+    model.brewing.now = now;
+    harness.page.bind(model);
+    now = 680;
+    harness.page.tick(now);
+    expect(hearth.litMix).toBe(0);
+    expect(hearth.flameFront.alpha).toBe(0);
+    expect(hearth.wood.visible).toBe(true);
 
     harness.page.destroy();
     harness.dispose();

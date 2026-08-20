@@ -14,13 +14,8 @@ const ONLINE_GATE_MIN_MESSAGE_TOP_OFFSET = 4;
 const ONLINE_GATE_MESSAGE_ACTION_GAP = 12;
 const ONLINE_GATE_PRESENTATION_DIALOG = 'dialog';
 const ONLINE_GATE_PRESENTATION_SPLASH = 'splash';
-const SPLASH_PROGRESS_DURATION_MS = 3000;
-const SPLASH_PROGRESS_KEYFRAMES = Object.freeze([
-  Object.freeze({ time: 0, value: 0 }),
-  Object.freeze({ time: 0.54, value: 0.72 }),
-  Object.freeze({ time: 0.82, value: 0.92 }),
-  Object.freeze({ time: 1, value: 1 }),
-]);
+const INDETERMINATE_PROGRESS_DURATION_MS = 1100;
+const INDETERMINATE_PROGRESS_WIDTH = 0.28;
 
 export class PixiOnlineGateView extends PixiModalSurface {
   constructor({
@@ -56,6 +51,7 @@ export class PixiOnlineGateView extends PixiModalSurface {
     this.elapsedMs = 0;
     this.splashProgressValue = 0;
     this.explicitSplashProgress = false;
+    this.splashIndeterminate = false;
     this.splash = new PixiLoadingSplash({ assets, inputRouter, getUserId });
     this.root.removeChild(this.panel);
     this.root.addChild(this.splash, this.panel);
@@ -84,7 +80,6 @@ export class PixiOnlineGateView extends PixiModalSurface {
   }
 
   onBind(viewModel = {}) {
-    const previousPresentation = this.presentation;
     this.model = viewModel;
     this.presentation =
       viewModel.presentation === ONLINE_GATE_PRESENTATION_SPLASH
@@ -93,23 +88,25 @@ export class PixiOnlineGateView extends PixiModalSurface {
     this.syncPresentation();
 
     if (this.presentation === ONLINE_GATE_PRESENTATION_SPLASH) {
-      this.splash.setText(viewModel.message ?? 'Loading game');
+      this.splash.setStatus(viewModel.message ?? 'Connecting user...');
       this.explicitSplashProgress = Number.isFinite(viewModel.progressValue);
+      this.splashIndeterminate =
+        !this.explicitSplashProgress && viewModel.progress !== false;
       if (this.explicitSplashProgress) {
         this.splashProgressValue = Math.max(
           0,
           Math.min(1, Number(viewModel.progressValue)),
         );
         this.splash.setProgress(this.splashProgressValue);
-      }
-      if (
-        !this.explicitSplashProgress &&
-        (previousPresentation !== ONLINE_GATE_PRESENTATION_SPLASH ||
-          !this.shown)
-      ) {
+      } else if (this.splashIndeterminate) {
         this.elapsedMs = 0;
-        this.splashProgressValue = prefersReducedMotion() ? 1 : 0;
-        this.splash.setProgress(this.splashProgressValue);
+        const range = prefersReducedMotion()
+          ? { start: 0.36, end: 0.64 }
+          : sampleIndeterminateProgressRange(0);
+        this.splash.setProgressRange(range.start, range.end);
+      } else {
+        this.splashProgressValue = 0;
+        this.splash.setProgress(0);
       }
       this.show();
       this.layoutSplash();
@@ -119,6 +116,7 @@ export class PixiOnlineGateView extends PixiModalSurface {
 
     this.panel.setTitle(viewModel.title ?? '');
     this.explicitSplashProgress = false;
+    this.splashIndeterminate = false;
     this.message.setText(viewModel.message ?? '');
     this.progress.visible = viewModel.progress === true;
     this.progress.renderable = this.progress.visible;
@@ -253,17 +251,17 @@ export class PixiOnlineGateView extends PixiModalSurface {
 
   tick(deltaMs) {
     if (this.presentation === ONLINE_GATE_PRESENTATION_SPLASH) {
-      if (this.splashProgressValue >= 1) {
+      if (!this.splashIndeterminate) {
         return;
       }
-      this.elapsedMs = Math.min(
-        SPLASH_PROGRESS_DURATION_MS,
-        this.elapsedMs + (Number(deltaMs) || 0),
+      this.elapsedMs =
+        (this.elapsedMs + (Number(deltaMs) || 0)) %
+        INDETERMINATE_PROGRESS_DURATION_MS;
+      const range = sampleIndeterminateProgressRange(this.elapsedMs);
+      this.splash.setProgressRange(
+        range.start,
+        range.end,
       );
-      this.splashProgressValue = sampleSplashProgress(
-        this.elapsedMs / SPLASH_PROGRESS_DURATION_MS,
-      );
-      this.splash.setProgress(this.splashProgressValue);
       return;
     }
 
@@ -284,7 +282,7 @@ export class PixiOnlineGateView extends PixiModalSurface {
       this.active &&
       this.shown &&
       (this.presentation === ONLINE_GATE_PRESENTATION_SPLASH
-        ? !this.explicitSplashProgress
+        ? this.splashIndeterminate && !prefersReducedMotion()
         : this.progress.visible)
     ) {
       this.application?.ticker?.add?.(this.handleTick);
@@ -301,20 +299,16 @@ export class PixiOnlineGateView extends PixiModalSurface {
   }
 }
 
-export function sampleSplashProgress(progress) {
-  const normalizedProgress = Math.max(0, Math.min(1, Number(progress) || 0));
-  for (let index = 1; index < SPLASH_PROGRESS_KEYFRAMES.length; index += 1) {
-    const previous = SPLASH_PROGRESS_KEYFRAMES[index - 1];
-    const next = SPLASH_PROGRESS_KEYFRAMES[index];
-    if (normalizedProgress > next.time) {
-      continue;
-    }
-    const span = next.time - previous.time;
-    const localProgress =
-      span > 0 ? (normalizedProgress - previous.time) / span : 1;
-    return previous.value + (next.value - previous.value) * localProgress;
-  }
-  return 1;
+export function sampleIndeterminateProgressRange(elapsedMs) {
+  const progress =
+    ((Math.max(0, Number(elapsedMs) || 0) %
+      INDETERMINATE_PROGRESS_DURATION_MS) /
+      INDETERMINATE_PROGRESS_DURATION_MS);
+  const start = progress * (1 - INDETERMINATE_PROGRESS_WIDTH);
+  return {
+    start,
+    end: start + INDETERMINATE_PROGRESS_WIDTH,
+  };
 }
 
 function prefersReducedMotion() {

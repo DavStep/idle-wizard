@@ -548,6 +548,75 @@ describe('PixiTransientEffectsLayer', () => {
     });
     expect(layer.getStats().active.spend).toBe(0);
   });
+
+  it('keeps semantic spend anchors in source space on portrait and wide screens', () => {
+    const records = {
+      'research.mint': {
+        bounds: { x: 750, y: 900, width: 216, height: 126 },
+      },
+    };
+    const layer = new PixiTransientEffectsLayer({
+      assets: createAssets(),
+      semanticRegistry: createSemanticRegistry(records),
+    });
+
+    layer.layout({
+      sourceScale: 3,
+      authoredOffsetX: 0,
+      sourceWidth: 360,
+      sourceHeight: 844,
+    });
+    expect(layer.resolveAnchor('research.mint')).toEqual({
+      x: 286,
+      y: 321,
+    });
+
+    records['research.mint'].bounds = {
+      x: 2_190,
+      y: 900,
+      width: 216,
+      height: 126,
+    };
+    layer.layout({
+      sourceScale: 3,
+      authoredOffsetX: 1_440,
+      sourceWidth: 360,
+      sourceHeight: 844,
+    });
+    expect(layer.resolveAnchor('research.mint')).toEqual({
+      x: 286,
+      y: 321,
+    });
+  });
+
+  it('falls back from a hidden sold-price anchor to the visible stall', () => {
+    const layer = new PixiTransientEffectsLayer({
+      assets: createAssets(),
+      semanticRegistry: createSemanticRegistry({
+        'shop.stall.1.price': {
+          bounds: { x: 0, y: 0, width: 0, height: 0 },
+          state: { visible: false },
+        },
+        'shop.stall.1': {
+          bounds: { x: 30, y: 120, width: 330, height: 84 },
+          state: { visible: true },
+        },
+      }),
+    });
+    layer.layout({
+      sourceScale: 1,
+      authoredOffsetX: 0,
+      sourceWidth: 390,
+      sourceHeight: 844,
+    });
+
+    expect(
+      layer.resolveAnchor([
+        'shop.stall.1.price',
+        'shop.stall.1',
+      ]),
+    ).toEqual({ x: 195, y: 162 });
+  });
 });
 
 describe('PooledPixiNotificationBadges', () => {
@@ -924,6 +993,7 @@ function createSemanticRegistry(records) {
           visible: true,
           enabled: true,
           interactive: false,
+          ...(record.state ?? {}),
         },
       };
     },
