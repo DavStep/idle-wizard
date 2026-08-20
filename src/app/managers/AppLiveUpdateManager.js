@@ -61,6 +61,10 @@ export class AppLiveUpdateManager {
   }
 
   async startOnce() {
+    return this.checkNow();
+  }
+
+  async checkNow() {
     if (!this.enabled || !this.isNativePlatform()) {
       return { status: 'disabled' };
     }
@@ -70,6 +74,10 @@ export class AppLiveUpdateManager {
   }
 
   async checkForUpdate() {
+    this.pendingManifest = null;
+    this.pendingBundle = null;
+    this.failedBundle = null;
+
     try {
       const manifest = this.normalizeManifest(await this.fetchManifest());
       if (!manifest) {

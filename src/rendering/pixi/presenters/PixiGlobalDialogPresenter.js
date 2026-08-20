@@ -47,6 +47,8 @@ export class PixiGlobalDialogPresenter {
     tradeAllianceFacade = null,
     hapticsFacade = null,
     soundSettingsFacade = null,
+    checkForUpdates = null,
+    installUpdate = null,
     reload = () => globalThis.location?.reload?.(),
     copyText = defaultCopyText,
   } = {}) {
@@ -65,6 +67,8 @@ export class PixiGlobalDialogPresenter {
     this.tradeAllianceFacade = tradeAllianceFacade;
     this.hapticsFacade = hapticsFacade;
     this.soundSettingsFacade = soundSettingsFacade;
+    this.checkForUpdatesAction = checkForUpdates;
+    this.installUpdateAction = installUpdate;
     this.reload = reload;
     this.copyText = copyText;
     this.mounted = false;
@@ -320,6 +324,8 @@ export class PixiGlobalDialogPresenter {
           : {}),
         connectAccount: () =>
           this.toggleAccountConnection(dialogId),
+        checkForUpdates: () =>
+          this.checkForUpdates(),
         togglePreference: (key, enabled) =>
           this.setPreference(key, enabled),
         copyUserId: (userId) =>
@@ -333,6 +339,101 @@ export class PixiGlobalDialogPresenter {
           ) ?? { ok: false, reason: 'gameplay_unavailable' },
       },
     };
+  }
+
+  async checkForUpdates() {
+    let result;
+    try {
+      result = await this.checkForUpdatesAction?.();
+    } catch {
+      result = { status: 'unavailable' };
+    }
+
+    const status = String(result?.status ?? 'unavailable');
+    if (
+      status === 'available' ||
+      status === 'ready' ||
+      status === 'failed_bundle'
+    ) {
+      const version = String(result?.version ?? '').trim();
+      this.open(GLOBAL_DIALOG_IDS.CONFIRMATION, {
+        title: 'Update Available',
+        message: version
+          ? `Version ${version} is available. Update now?`
+          : 'An update is available. Update now?',
+        cancelLabel: 'Later',
+        cancelColor: 'yellow',
+        confirmLabel: 'Update',
+        confirmColor: 'green',
+        actions: {
+          confirm: () => {
+            if (typeof this.installUpdateAction !== 'function') {
+              return {
+                ok: false,
+                message: 'Update unavailable',
+              };
+            }
+            try {
+              void Promise.resolve(this.installUpdateAction()).catch(() => {});
+            } catch {
+              return {
+                ok: false,
+                message: 'Update unavailable',
+              };
+            }
+            return true;
+          },
+        },
+      });
+      return result;
+    }
+
+    if (status === 'native_update_required') {
+      const minimumVersion = String(
+        result?.minimumNativeVersion ?? '',
+      ).trim();
+      this.open(GLOBAL_DIALOG_IDS.ANNOUNCEMENT, {
+        title: 'Update Required',
+        copy: minimumVersion
+          ? `Install Idle Wizard ${minimumVersion} or newer, then reopen the game.`
+          : 'Install the latest Idle Wizard app, then reopen the game.',
+        contentHeight: 104,
+        dismissible: true,
+        framed: true,
+      });
+      return result;
+    }
+
+    if (status === 'up_to_date' || status === 'disabled') {
+      this.open(GLOBAL_DIALOG_IDS.ANNOUNCEMENT, {
+        title: 'Updates',
+        copy: 'Idle Wizard is up to date.',
+        contentHeight: 104,
+        dismissible: true,
+        framed: true,
+      });
+      return result;
+    }
+
+    if (status === 'unsupported_platform') {
+      this.open(GLOBAL_DIALOG_IDS.ANNOUNCEMENT, {
+        title: 'Updates',
+        copy: 'No update is available for this device.',
+        contentHeight: 104,
+        dismissible: true,
+        framed: true,
+      });
+      return result;
+    }
+
+    this.open(GLOBAL_DIALOG_IDS.ANNOUNCEMENT, {
+      title: 'Update Check Failed',
+      copy: 'Could not check for updates. Check your connection and try again.',
+      contentHeight: 104,
+      dismissible: true,
+      framed: true,
+    });
+    return result ?? { status: 'unavailable' };
   }
 
   createLevelModel() {

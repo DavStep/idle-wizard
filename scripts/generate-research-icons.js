@@ -194,8 +194,8 @@ function loadSources(paths) {
 }
 
 function recolorHourglassSand(source) {
-  const darkSand = [173, 116, 54];
-  const lightSand = [235, 199, 119];
+  const darkSand = [255, 108, 0];
+  const lightSand = [255, 210, 48];
 
   for (let offset = 0; offset < source.data.length; offset += 4) {
     const red = source.data[offset];

@@ -10,7 +10,10 @@ import {
 import { formatRemainingTime } from '../../../../pages/shared/timerDisplay.js';
 import { getPotionIconFrameName } from '../../../../assets/items/potions/potionIcons.js';
 import { getHerbIconFrameName } from '../../../../assets/items/herbs/herbIcons.js';
-import { PixiCostButton } from '../../primitives/PixiCostButton.js';
+import {
+  PIXI_COST_BUTTON_GEOMETRY,
+  PixiCostButton,
+} from '../../primitives/PixiCostButton.js';
 import { PixiBaseButton } from '../../primitives/PixiBaseButton.js';
 import { PixiNineSliceFrame } from '../../primitives/PixiNineSliceFrame.js';
 import {
@@ -309,6 +312,7 @@ export const RESEARCH_PIXI_GEOMETRY = Object.freeze({
   artExtraWidth: 22,
   artExtraHeight: 24,
   timerReductionArtExtraScale: 1.69,
+  timerReductionArtExtraOffsetY: 6,
   nameX: 10,
   nameY: 0,
   nameMaxWidth: 225,
@@ -344,6 +348,8 @@ export const RESEARCH_ROW_TEXT = Object.freeze({
   researchingTimerLineHeight: 10,
   buttonStrokeWidth: 3.5,
   costContentScale: 0.88,
+  skipActionFontSize:
+    PIXI_COST_BUTTON_GEOMETRY.stackedActionFontSize * 0.88,
 });
 
 function fitResearchDescription(description, geometry) {
@@ -645,6 +651,60 @@ export class ResearchPixiPage extends BaseRetainedPixiPage {
   hideLockTooltip() {
     this.lockTooltipResearchId = null;
     this.lockTooltip?.hide();
+  }
+
+  navigateToTarget({ tabId = null, targetId, indication = 'boink' } = {}) {
+    const normalizedTargetId = String(targetId ?? '').trim();
+    const normalizedTabId = String(tabId ?? '').trim();
+
+    if (!normalizedTargetId) {
+      return { ok: false, reason: 'invalid_navigation_target' };
+    }
+
+    if (normalizedTabId && normalizedTabId !== this.selectedTabId) {
+      const selected = this.currentActions?.selectTab?.(normalizedTabId);
+      if (selected === false) {
+        return {
+          ok: false,
+          reason: 'navigation_tab_unavailable',
+          pageId: 'research',
+          tabId: normalizedTabId,
+          targetId: normalizedTargetId,
+        };
+      }
+    }
+
+    const row = this.rows.get(normalizedTargetId);
+    const box = row ? this.boxes.get(row.boxId) : null;
+    if (!row || !box) {
+      return {
+        ok: false,
+        reason: 'navigation_target_unavailable',
+        pageId: 'research',
+        tabId: normalizedTabId || this.selectedTabId,
+        targetId: normalizedTargetId,
+      };
+    }
+
+    this.hideLockTooltip();
+    const rowCenterY =
+      box.root.y +
+      box.rowsLayer.y +
+      row.root.y +
+      RESEARCH_PIXI_GEOMETRY.rowHeight / 2;
+    this.scroll.scrollTo(rowCenterY - this.scroll.height / 2);
+    const indicated = indication === 'boink'
+      ? row.startAttentionEffect()
+      : false;
+
+    return {
+      ok: true,
+      pageId: 'research',
+      tabId: normalizedTabId || this.selectedTabId,
+      targetId: normalizedTargetId,
+      centered: true,
+      indicated,
+    };
   }
 
   bindTab(button, tab) {
@@ -1764,13 +1824,17 @@ export class ResearchRowWidget {
       const artExtraScale = this.usesTimerReductionArtwork
         ? geometry.timerReductionArtExtraScale
         : 1;
+      const artExtraOffsetY = this.usesTimerReductionArtwork
+        ? geometry.timerReductionArtExtraOffsetY
+        : 0;
       const artExtraWidth = geometry.artExtraWidth * artExtraScale;
       const artExtraHeight = geometry.artExtraHeight * artExtraScale;
       this.artExtra.anchor.set(0.5);
       this.artExtra.position.set(
         geometry.artX + geometry.artWidth - artExtraWidth / 2,
         geometry.artY + geometry.contentOffsetY + geometry.artHeight -
-          artExtraHeight / 2,
+          artExtraHeight / 2 +
+          artExtraOffsetY,
       );
       this.artExtra.width = artExtraWidth;
       this.artExtra.height = artExtraHeight;
@@ -1905,7 +1969,7 @@ export class ResearchRowWidget {
     );
   }
 
-  startPurchaseEffect() {
+  startPurchaseEffect({ shine = true } = {}) {
     this.finishPurchaseEffect();
     if (this.prefersReducedMotion?.() === true) {
       return false;
@@ -1918,18 +1982,23 @@ export class ResearchRowWidget {
       baseScaleY: this.root.scale.y,
       baseOriginX: this.root.origin.x,
       baseOriginY: this.root.origin.y,
+      shine,
     };
     this.root.origin.set(
       RESEARCH_PIXI_GEOMETRY.cardOffsetX +
         RESEARCH_PIXI_GEOMETRY.cardWidth / 2,
       RESEARCH_PIXI_GEOMETRY.rowHeight / 2,
     );
-    this.widgetShine.root.visible = true;
-    this.widgetShine.root.renderable = true;
-    this.buttonShine.root.visible = true;
-    this.buttonShine.root.renderable = true;
+    this.widgetShine.root.visible = shine;
+    this.widgetShine.root.renderable = shine;
+    this.buttonShine.root.visible = shine;
+    this.buttonShine.root.renderable = shine;
     this.updatePurchaseEffect(now);
     return true;
+  }
+
+  startAttentionEffect() {
+    return this.startPurchaseEffect({ shine: false });
   }
 
   updatePurchaseEffect(now) {
@@ -1951,14 +2020,16 @@ export class ResearchRowWidget {
       effect.baseScaleX * bounceScale,
       effect.baseScaleY * bounceScale,
     );
-    updateResearchShine(
-      this.widgetShine,
-      elapsedMs / RESEARCH_WIDGET_SHINE_DURATION_MS,
-    );
-    updateResearchShine(
-      this.buttonShine,
-      elapsedMs / RESEARCH_BUTTON_SHINE_DURATION_MS,
-    );
+    if (effect.shine) {
+      updateResearchShine(
+        this.widgetShine,
+        elapsedMs / RESEARCH_WIDGET_SHINE_DURATION_MS,
+      );
+      updateResearchShine(
+        this.buttonShine,
+        elapsedMs / RESEARCH_BUTTON_SHINE_DURATION_MS,
+      );
+    }
 
     if (bounceProgress < 1) {
       return true;
@@ -2032,6 +2103,9 @@ export class ResearchRowWidget {
         color: '#0a0a0a',
         width: RESEARCH_ROW_TEXT.buttonStrokeWidth,
       });
+    this.researchedButton.actionTextLabel.setFontSize(
+      RESEARCH_ROW_TEXT.skipActionFontSize,
+    );
     this.researchingTimerLabel.position.set(
       this.progress.width / 2,
       this.progress.height / 2,

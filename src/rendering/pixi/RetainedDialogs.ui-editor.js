@@ -1651,6 +1651,7 @@ const GLOBAL_DIALOG_SCENARIOS = Object.freeze({
         version: '0.9.0',
       },
       preferences: { haptics: true, music: 72, sfx: 58, theme: false },
+      actions: { checkForUpdates: () => new Promise(() => {}) },
       tabId: 'configurations',
     })),
     scenario('wizard', 'Wizard profile', () => ({

@@ -2,8 +2,8 @@ import { describe, expect, it, vi } from 'vitest';
 
 import { GardenSnapshotManager } from './GardenSnapshotManager.js';
 
-describe('GardenSnapshotManager', () => {
-  it('exposes plot level from emerald plot level ups', () => {
+describe("GardenSnapshotManager", () => {
+  it("exposes plot level from emerald plot level ups", () => {
     const manager = new GardenSnapshotManager({
       gardenBalanceManager: {},
       gardenTileEntityManager: {
@@ -15,7 +15,7 @@ describe('GardenSnapshotManager', () => {
             seedItemTypeId: null,
             herbItemTypeId: null,
             harvestQuantity: 1,
-            phase: 'empty',
+            phase: "empty",
             totalMs: 0,
             remainingMs: 0,
             progress: 0,
@@ -27,13 +27,20 @@ describe('GardenSnapshotManager', () => {
       },
       playerLevelFacade: {},
       researchFacade: {
-        getPlotPlantingMultiplier: vi.fn((plotNumber) => (plotNumber === 1 ? 3 : 1)),
+        hasCompletedResearch: vi.fn(() => true),
+        getPlotPlantingMultiplier: vi.fn((plotNumber) =>
+          plotNumber === 1 ? 3 : 1,
+        ),
       },
     });
 
     expect(manager.getTileSnapshots()[0]).toMatchObject({
       tileNumber: 1,
       level: 3,
+      automationAvailable: true,
+      autoEnabled: true,
+      maxPlantQuantity: 3,
+      plantQuantity: 3,
     });
   });
 });

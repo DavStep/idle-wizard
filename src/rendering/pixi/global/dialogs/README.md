@@ -12,6 +12,11 @@ while the panel scales from `0.94` through the center (`1.02`) or top-panel
 (`1.015`) overshoot and settles at `1`. Reduced-motion mode displays the settled
 state immediately; close and shutdown cancel and restore all motion state.
 
+The Settings configuration pane exposes the application-owned live-update
+probe through a standard yellow text button. The button is single-flight while
+checking. Up-to-date and failed probes use the retained announcement surface;
+available bundles use the retained confirmation surface before installation.
+
 The shared retained-global base caps the visible Root Run shell at `324px`,
 leaving a `5%` inset on both sides of the `360px` source screen. After the
 shell outsets and dialog padding, retained global dialog content is at most

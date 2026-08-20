@@ -9,6 +9,9 @@ Nine warm fireflies drift behind the plot grid and action bar. They reuse the
 shared retained ambient layer, animate only while Garden is active, dim in Day,
 and settle into a static constellation when reduced motion is requested.
 
+The room identity is the shared full-width title-only ribbon in its green
+semantic skin. It renders `Garden` without rank-star slots above the plot grid.
+
 The page consumes display-ready presenter data:
 
 ```js
@@ -20,6 +23,8 @@ The page consumes display-ready presenter data:
       phase, label, labelResource, actionText,
       disabled, visible, buySlot, notification,
       herbKey, plantFrame,
+      automationAvailable, autoEnabled,
+      automationSeed, plantQuantity, maxPlantQuantity, harvestQuantity,
       progress: { durationMs, remainingMs, endTimeMs, progress },
       toolbarSeedItemTypeId, semanticId, tutorialId,
       onActivate
@@ -48,7 +53,8 @@ The page consumes display-ready presenter data:
   },
   actions: {
     activatePlot, activatePlotLabel,
-    openSeedPicker, plantAll, harvestAll,
+    openSeedPicker, openPlotSeedPicker, plantAll, harvestAll,
+    togglePlotAutomation, selectPlotQuantity,
     selectSeed, confirmCancel, confirmSwap, closeDialog
   }
 }
@@ -63,6 +69,16 @@ rounded near-black outline.
 The next purchasable plot uses the shared green stacked cost button with
 `Unlock` above the coin row; its affordable-action notification stays on that
 button rather than the surrounding plot frame.
+Completing a plot's combined automation research replaces that plot's compact
+grid cell with the production-backed Automated Garden Plot variant. Its long
+soil asset spans `220x84px`, renders the committed crop as one through five
+plant instances, and owns one `44px` control stack on the right. The seed icon
+sets that plot's future crop, Auto toggles the existing combined plant/harvest
+loop, and `xN` cycles through the researched plot multiplier for the next crop;
+the active crop keeps its committed count.
+Legacy saves keep Auto on and default `xN` to the current multiplier. Mixed
+manual and automated plots lay out in source order; each automated plot takes a
+complete row and the next manual plot resumes the three-column grid below it.
 Plots and seed-dialog rows are keyed high-water pools. The persistent
 `GardenSeedActionBar` keeps one room-level seed choice and opens the retained
 seed picker. Its researched `Plant All` and `Harvest All` actions reuse the

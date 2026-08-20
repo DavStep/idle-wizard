@@ -138,6 +138,7 @@ experience_type: gameplay-economy
 - Garden herb harvest reward drops should originate from the plant inside the plot box; use the progress rail only as a row-mode fallback.
 - Garden plot soil art should read as soil at level 1; avoid parchment-white defaults, and deepen upgraded soil from a rich brown starting point.
 - Garden plot upgrade art should use per-level soil sprites: higher levels get darker and cleaner with fewer rocks/weeds; tinting one base sprite is too subtle.
+- Researched Garden automation uses one full-width mixed-grid row: a coherent five-slot bed plus a right-side seed/Auto/xN stack. Persist Auto and xN per plot, default legacy Auto on, and render no more than five committed herbs.
 - Garden plot bottom-left star labels can look like dark rocks in screenshots; inspect DOM/assets before redrawing soil decoration.
 - Keep herbs below the plot with enough space for active progress rows; bounded plot scrolling is acceptable once many plots are unlocked.
 - Garden page overflow belongs to `.garden-page__ui-layer`; plot and herb boxes should grow to content instead of using fixed inner row heights.

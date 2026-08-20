@@ -160,6 +160,19 @@ export class ClickableWidget {
     this.releaseFrame = this.requestFrame(tick);
   }
 
+  startAttentionEffect() {
+    this.cancelReleaseAnimation();
+    this.pressed = false;
+    this.onClickablePressStateChanged(false);
+    if (this.reducedMotion()) {
+      this.clickableVisual.scale.set(1);
+      return false;
+    }
+    this.clickableVisual.scale.set(this.pressScale);
+    this.startReleaseAnimation();
+    return true;
+  }
+
   cancelReleaseAnimation() {
     if (this.releaseFrame !== null) {
       this.cancelFrame(this.releaseFrame);

@@ -15,6 +15,8 @@ export const gardenTilePhaseNames = Object.freeze([
 export const GardenTile = {
   tileNumber: [],
   isUnlocked: [],
+  autoEnabled: [],
+  plantQuantity: [],
   selectedSeedItemTypeId: [],
   seedItemTypeId: [],
   herbItemTypeId: [],

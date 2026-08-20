@@ -9,6 +9,13 @@ Nine restrained warm fireflies drift behind the cauldron HUD and every
 interactive control. They reuse the shared retained ambient layer, animate only
 while Brewing is active, dim in Day, and remain still under reduced motion.
 
+The selected cauldron uses the shared full-width identity ribbon with the blue
+semantic skin, `Cauldron N` copy, and the existing three rank-star slots. The
+small Recipes header button is intentionally absent: an empty cauldron opens
+Recipes through the primary `Choose Recipe` action, which also retains the
+`brewing:recipes` tutorial target. Batch quantity and Auto sit together on the
+lower left, aligned opposite the existing Empty control on the lower right.
+
 The preferred renderer-neutral view model is:
 
 ```js
@@ -103,7 +110,9 @@ rows use aligned `Required mana:` / `Required Time:` labels and right-aligned
 values, with the canonical mana icon after its numeric value. Unlocked recipe actions read
 `Select` on the shared green positive-action skin. Known locked recipes are
 passive and read `Not researched` over the same Settings-row nine-slice used by
-Workshop Bag rows; the Recipes dialog never starts research. Ingredient owned values are presenter-projected
+Workshop Bag rows. While a recipe is being studied, the same passive row reads
+`Researching: <time left>` and counts down from the Research snapshot; the
+Recipes dialog never starts research. Ingredient owned values are presenter-projected
 available herb counts for the selected cauldron, after subtracting herbs staged
 in other cauldrons. Open `http://127.0.0.1:55173/?devUi=brewing.recipes` for the
 deterministic real-app visual-QA state.
@@ -150,12 +159,13 @@ That batch-detail rail uses the shared default purple fill.
 The shortened panel is bottom-anchored `3px` above the World Chat title
 overhang and ends with one wide primary button. The expanded preview uses the
 freed height for the cauldron orbit and recipe identity; its first ingredient
-row starts below the compact configuration controls so the complete cauldron
+row starts below the centered title ribbon so the complete cauldron
 composition sits in the lower half of the preview. The orbit remains a wide,
 vertically pressed ellipse; extra page height changes its vertical placement,
 not its proportions.
-Compact Recipes, Auto, and `xN` controls sit outside the panel in the carousel
-header, right-aligned beside the cauldron title plaque.
+The empty-state `Choose Recipe` primary action opens Recipes. Compact Auto and
+`xN` controls sit outside the panel in the lower control row, packed from the
+left opposite the right-aligned Empty action.
 
 Boundary chevrons are removed instead of showing a disabled arrow. Carousel
 dots contain every unlocked cauldron plus exactly one next purchasable locked
@@ -163,8 +173,7 @@ slot, stopping at five. A level- or research-gated future slot is omitted until
 it can be purchased. The `N/5` counter stays hidden while only one cauldron is
 owned.
 The selected cauldron title and shared three-slot star rank sit together inside
-the blue Brewing variant of the shared Research station title plaque. The
-plaque connects to the screen's left edge above the carousel orbit.
+the centered blue Brewing title ribbon above the carousel orbit.
 Selecting the next purchasable locked slot keeps the cauldron art visible with
 the Idle Outpost luminance-weighted monochrome filter and overlays the shared
 lock icon. It hides recipes, auto brew, and brew plus the old unlock
@@ -181,11 +190,11 @@ gear-only button with the visible label `Auto` over the gear's lower edge and a
 larger invisible hit region. It stays hidden until that cauldron's automation
 research is complete. Auto Off uses the static yellow skin. Auto On uses the
 green skin and advances the gear in short mechanical steps while the page is
-active; reduced motion keeps the green gear static. Recipes and the narrower
-`xN` control stay yellow and retain larger invisible tap regions. The quantity
+active; reduced motion keeps the green gear static. The `xN` control stays
+yellow and retains a larger invisible tap region. The quantity
 control stays hidden until x2 batch research is complete; quantity is never
 folded into the primary Brew label. All visible configuration buttons share one
-fixed height and pack from the right edge without reserving locked-control
+fixed height and pack from the left edge without reserving locked-control
 slots. The shortened
 action panel aligns to the same `16px` room edges as World Chat, and the potion
 art uses the larger preview fit inside its existing well.

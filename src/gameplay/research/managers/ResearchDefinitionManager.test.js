@@ -222,6 +222,27 @@ describe('ResearchDefinitionManager', () => {
     ]);
   });
 
+  it('keeps the baseline sage seed unlock internal instead of showing it as completed research', () => {
+    const { manager } = createManager();
+    const seedResearches = manager
+      .getVisibleResearchTabs(['unlockSeed:sageSeed'])
+      .find((tab) => tab.id === 'regular')
+      ?.boxes.find((box) => box.id === 'seedUnlocks')
+      ?.researches;
+
+    expect(seedResearches?.map((research) => research.id)).not.toContain(
+      'unlockSeed:sageSeed',
+    );
+    expect(seedResearches?.[0]).toMatchObject({
+      id: itemTimerResearchIds.herbGrowth('sageHerb', 1),
+      displayName: 'sage growing',
+    });
+    expect(manager.getConfiguredResearch('unlockSeed:sageSeed')).toMatchObject({
+      id: 'unlockSeed:sageSeed',
+      value: 'drop',
+    });
+  });
+
   it('reuses research definitions for the same visible state', () => {
     const { manager } = createManager();
     const firstTabs = manager.getResearchTabs();

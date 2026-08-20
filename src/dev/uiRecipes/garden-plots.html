@@ -73,22 +73,47 @@
       const params = new URLSearchParams(window.location.search);
       const overflow = params.get('overflow') === '1';
       const growing = params.get('growing') === '1';
+      const automated = params.get('automated') === '1';
       const planting = params.get('planting') === '1';
       const bulkActions = params.get('bulk') || 'all';
       const progressBar = params.get('progress') || 'regular';
       const theme = params.get('theme') || undefined;
-      const emptyPlotCount = growing ? 4 : overflow ? 11 : 5;
+      const emptyPlotCount = automated ? 3 : growing ? 4 : overflow ? 11 : 5;
       const plots = Array.from(
         { length: emptyPlotCount },
         (_, index) => index + 1,
       ).map((tileNumber) =>
-        growing
+        automated && tileNumber === 1
+          ? {
+              id: `plot-${tileNumber}`,
+              tileNumber,
+              level: 5,
+              phase: 'growing',
+              herbKey: 'mintHerb',
+              actionText: 'growing',
+              automationAvailable: true,
+              autoEnabled: true,
+              automationSeed: {
+                key: 'mintSeed',
+                label: 'Mint',
+                quantity: 75,
+              },
+              plantQuantity: 5,
+              maxPlantQuantity: 5,
+              harvestQuantity: 5,
+              process: {
+                durationMs: 10_000,
+                endTimeMs: 7_500,
+              },
+              semanticId: `garden.plot.${tileNumber}`,
+            }
+          : growing
           ? {
               id: `plot-${tileNumber}`,
               tileNumber,
               level: tileNumber <= 2 ? 2 : 1,
               phase: 'growing',
-              herbKey: 'sage',
+              herbKey: 'sageHerb',
               actionText: 'growing',
               process: {
                 durationMs: 10_000,
@@ -130,7 +155,12 @@
         document.querySelector('#garden-plots-recipe-state').dataset,
         {
           emptyPlots: growing ? '0' : String(emptyPlotCount),
-          growingPlots: growing ? String(emptyPlotCount) : '0',
+          growingPlots: growing
+            ? String(emptyPlotCount)
+            : automated
+              ? '1'
+              : '0',
+          automatedPlots: automated ? '1' : '0',
           progressBar,
           bulkActions,
           motion: 'shared-transient',
@@ -225,6 +255,21 @@
             document.querySelector('#garden-plots-recipe-state').dataset.feedback =
               'open seeds';
             return { ok: true };
+          },
+          openPlotSeedPicker: () => {
+            document.querySelector('#garden-plots-recipe-state').dataset.feedback =
+              'open plot seeds';
+            return { ok: true };
+          },
+          togglePlotAutomation: () => {
+            document.querySelector('#garden-plots-recipe-state').dataset.feedback =
+              'toggle plot automation';
+            return { ok: true };
+          },
+          selectPlotQuantity: (_plot, quantity) => {
+            document.querySelector('#garden-plots-recipe-state').dataset.feedback =
+              `plot quantity ${quantity}`;
+            return { ok: true, quantity };
           },
         },
       });

@@ -9454,7 +9454,8 @@ describe('PagesFacade', () => {
     expect(coinCollectButton?.dataset.notification).toBeUndefined();
     expect(crystalsTab?.dataset.notification).toBeUndefined();
     expect(stage.querySelector('.shop-page__crystal-offers')).not.toBeNull();
-    expect(stage.querySelector('.shop-page__crystal-offers')?.textContent).toContain('Gems');
+    expect(stage.querySelector('.shop-page__crystal-offers')?.textContent).toContain('Amber');
+    expect(stage.querySelector('.shop-page__crystal-offers')?.textContent).toContain('Amethyst');
     expect(stage.querySelector('.shop-page__crystal-offers')?.textContent).not.toContain('each');
     expect(stage.querySelector('.shop-page__crystal-offers')?.textContent).not.toContain('note');
     expect(stage.querySelector('.shop-page__crystal-offers')?.textContent).not.toContain('base');

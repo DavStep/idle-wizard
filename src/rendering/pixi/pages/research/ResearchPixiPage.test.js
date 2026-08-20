@@ -136,6 +136,91 @@ describe('ResearchPixiPage', () => {
     reduced.dispose();
   });
 
+  it('selects, centers, and boinks an exact research navigation target', () => {
+    let now = 1_000;
+    const harness = createHarness({ timeSource: () => now });
+    const model = createResearchViewModel();
+    model.research.tabs.push({
+      id: 'advanced',
+      label: 'advanced research',
+      boxes: Array.from({ length: 4 }, (_, boxIndex) => ({
+        id: `advanced-${boxIndex}`,
+        label: `advanced ${boxIndex}`,
+        researches: Array.from({ length: 2 }, (_, rowIndex) => ({
+          id: `advanced:${boxIndex}:${rowIndex}`,
+          displayName: `advanced ${boxIndex} ${rowIndex}`,
+          effect: '+1 capacity',
+          displayValue: '25 coin',
+          canResearch: true,
+        })),
+      })),
+    });
+    model.actions.selectTab = vi.fn((tabId) => {
+      model.research.selectedTabId = tabId;
+      harness.page.bind(model);
+      return true;
+    });
+    harness.page.bind(model);
+
+    const result = harness.page.navigateToTarget({
+      tabId: 'advanced',
+      targetId: 'advanced:2:0',
+      indication: 'boink',
+    });
+    const row = harness.page.rows.get('advanced:2:0');
+    const box = harness.page.boxes.get(row.boxId);
+    const rowCenterY =
+      box.root.y +
+      box.rowsLayer.y +
+      row.root.y +
+      RESEARCH_PIXI_GEOMETRY.rowHeight / 2;
+
+    expect(model.actions.selectTab).toHaveBeenCalledWith('advanced');
+    expect(harness.page.selectedTabId).toBe('advanced');
+    expect(harness.page.scroll.offsetY).toBeCloseTo(
+      rowCenterY - harness.page.scroll.height / 2,
+    );
+    expect(result).toEqual({
+      ok: true,
+      pageId: 'research',
+      tabId: 'advanced',
+      targetId: 'advanced:2:0',
+      centered: true,
+      indicated: true,
+    });
+    expect(row.purchaseEffect).toMatchObject({ shine: false });
+    expect(row.widgetShine.root.visible).toBe(false);
+    expect(row.buttonShine.root.visible).toBe(false);
+
+    now += 100;
+    row.updateTime(now);
+    expect(row.root.scale.x).toBeGreaterThan(1);
+
+    harness.page.destroy();
+    harness.dispose();
+  });
+
+  it('centers navigation targets without motion for reduced-motion players', () => {
+    const harness = createHarness({ prefersReducedMotion: () => true });
+    harness.page.bind(createResearchViewModel());
+
+    expect(
+      harness.page.navigateToTarget({
+        tabId: 'regular',
+        targetId: 'mint',
+        indication: 'boink',
+      }),
+    ).toMatchObject({
+      ok: true,
+      centered: true,
+      indicated: false,
+    });
+    expect(harness.page.rows.get('mint').purchaseEffect).toBeNull();
+
+    harness.page.destroy();
+    harness.dispose();
+  });
+
   it('builds once and keeps keyed boxes and research rows across updates', () => {
     const harness = createHarness();
     const pages = new PageRegistry({
@@ -454,6 +539,13 @@ describe('ResearchPixiPage', () => {
     expect(herbRow.artExtra.visible).toBe(true);
     expect(herbRow.artExtra.width).toBeCloseTo(37.18);
     expect(herbRow.artExtra.height).toBeCloseTo(40.56);
+    expect(herbRow.artExtra.y).toBeCloseTo(
+      RESEARCH_PIXI_GEOMETRY.artY +
+        RESEARCH_PIXI_GEOMETRY.contentOffsetY +
+        RESEARCH_PIXI_GEOMETRY.artHeight -
+        40.56 / 2 +
+        6,
+    );
 
     harness.page.destroy();
     harness.dispose();
@@ -811,6 +903,9 @@ describe('ResearchPixiPage', () => {
     expect(row.researchedButton.showLabel).toBe(true);
     expect(row.researchedButton.tone).toBe('blue');
     expect(row.researchedButton.actionTextLabel.text).toBe('Skip');
+    expect(row.researchedButton.actionTextLabel.fontSize).toBeCloseTo(
+      14 * 0.88,
+    );
     expect(row.researchedButton.amountLabel.fontSize).toBeCloseTo(13 * 0.88);
     expect(row.researchedButton.amountLabel.textObject.style.fontSize).toBeCloseTo(
       13 * 0.88,

@@ -376,6 +376,19 @@ export class PixiBaseButton extends Container {
     this.releaseFrame = requestFrame(tick);
   }
 
+  startAttentionEffect() {
+    this.cancelReleaseAnimation();
+    this.pressed = false;
+    this.syncAppearance();
+    if (prefersReducedMotion()) {
+      this.visual.scale.set(1);
+      return false;
+    }
+    this.visual.scale.set(0.94);
+    this.startReleaseAnimation();
+    return true;
+  }
+
   cancelReleaseAnimation() {
     if (this.releaseFrame) {
       cancelFrame(this.releaseFrame);

@@ -27,6 +27,7 @@ import { setNotificationBadge } from '../../shared/notificationBadge.js';
 import { setResourceColor } from '../../shared/resourceColor.js';
 import { setResourceIconText } from '../../shared/resourceIconLabel.js';
 import { setSelectedTabState } from '../../shared/selectedTabState.js';
+import { createStatusIcon, STATUS_ICON_CHECK } from '../../shared/statusIcon.js';
 import {
   getOwnTradeAllianceQuestContribution,
   getTradeAllianceQuestParticipationLock,
@@ -1405,7 +1406,16 @@ export class WorkshopTradeAllianceManager {
       button.dataset.emblemId = emblem.id;
       const icon = document.createElement('span');
       icon.style.setProperty('--workshop-alliance-emblem-mask', `url(${emblem.url})`);
-      button.append(icon);
+      const checkmark = createStatusIcon(
+        'workshop-page__trade-alliance-emblem-option-checkmark',
+        STATUS_ICON_CHECK,
+      );
+      if (checkmark) {
+        checkmark.hidden = true;
+        button.append(icon, checkmark);
+      } else {
+        button.append(icon);
+      }
       options.append(button);
       return button;
     });
@@ -1418,6 +1428,12 @@ export class WorkshopTradeAllianceManager {
         button.classList.toggle('is-selected', selected);
         button.setAttribute('aria-checked', selected ? 'true' : 'false');
         button.tabIndex = selected ? 0 : -1;
+        const checkmark = button.querySelector(
+          '.workshop-page__trade-alliance-emblem-option-checkmark',
+        );
+        if (checkmark) {
+          checkmark.hidden = !selected;
+        }
       }
     };
 

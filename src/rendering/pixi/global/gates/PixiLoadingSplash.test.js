@@ -1,5 +1,11 @@
 // @vitest-environment jsdom
+/* global process */
 
+import { createHash } from 'node:crypto';
+import { readFileSync } from 'node:fs';
+import { resolve } from 'node:path';
+
+import { PNG } from 'pngjs';
 import { Texture } from 'pixi.js';
 import { describe, expect, it, vi } from 'vitest';
 
@@ -15,7 +21,52 @@ import { PixiLoadingSplash } from './PixiLoadingSplash.js';
 
 installPixiPageTestCanvas();
 
+const SPLASH_SOURCE_PATH = resolve(
+  process.cwd(),
+  'assets/game/source/ui/idle-witch-craft-splash/splash-screen.png',
+);
+const TITLE_EDIT_BOUNDS = Object.freeze({
+  left: 100,
+  top: 145,
+  right: 720,
+  bottom: 610,
+});
+const APPROVED_BACKGROUND_HASH =
+  'f0dd127413758ddf177183ac60b55a76379362725343740f07f61412e31ffade';
+
 describe('PixiLoadingSplash', () => {
+  it('preserves the approved background pixels outside the title edit', () => {
+    const splash = PNG.sync.read(readFileSync(SPLASH_SOURCE_PATH));
+    const backgroundPixels = [];
+
+    expect([splash.width, splash.height]).toEqual([818, 1923]);
+
+    for (let y = 0; y < splash.height; y += 1) {
+      for (let x = 0; x < splash.width; x += 1) {
+        const isTitleEdit =
+          x >= TITLE_EDIT_BOUNDS.left &&
+          x <= TITLE_EDIT_BOUNDS.right &&
+          y >= TITLE_EDIT_BOUNDS.top &&
+          y <= TITLE_EDIT_BOUNDS.bottom;
+        if (isTitleEdit) {
+          continue;
+        }
+        const pixelOffset = (y * splash.width + x) * 4;
+        backgroundPixels.push(
+          splash.data[pixelOffset],
+          splash.data[pixelOffset + 1],
+          splash.data[pixelOffset + 2],
+        );
+      }
+    }
+
+    expect(
+      createHash('sha256')
+        .update(Uint8Array.from(backgroundPixels))
+        .digest('hex'),
+    ).toBe(APPROVED_BACKGROUND_HASH);
+  });
+
   it('constructs after the startup-only asset phase', async () => {
     const assets = new PixiAssetManager({
       assets: { load: async () => Texture.EMPTY },

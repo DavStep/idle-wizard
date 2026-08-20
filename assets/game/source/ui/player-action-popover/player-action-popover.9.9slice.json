@@ -1,0 +1,62 @@
+{
+  "version": 1,
+  "format": "png",
+  "asset": "player-action-popover.9.png",
+  "source": {
+    "path": "output/player-action-popover/player-action-popover-polished-source.png",
+    "width": 180,
+    "height": 123,
+    "mode": "RGBA",
+    "crop": {
+      "x": 44,
+      "y": 90,
+      "width": 1372,
+      "height": 937
+    }
+  },
+  "sourceCropSize": {
+    "width": 180,
+    "height": 123
+  },
+  "slice": {
+    "left": 34,
+    "top": 42,
+    "right": 34,
+    "bottom": 22
+  },
+  "mode": "distilled",
+  "distill": {
+    "sampleX": 90,
+    "sampleY": 61,
+    "centerWidth": 8,
+    "centerHeight": 8,
+    "cornerSource": "source",
+    "edgeSource": "source"
+  },
+  "rendering": {
+    "stretch": "edges-and-center",
+    "outputInsets": {
+      "left": 34,
+      "top": 42,
+      "right": 34,
+      "bottom": 22
+    },
+    "minimumCenter": {
+      "width": 1,
+      "height": 1
+    },
+    "minimumSize": {
+      "width": 69,
+      "height": 65
+    },
+    "qaResample": "nearest",
+    "browserPreviewSmoothingDefault": false
+  },
+  "validation": {
+    "rasterOnly": true,
+    "pngSignatureChecked": true,
+    "naturalRoundTripExact": true,
+    "cornerRoundTripExact": true,
+    "transparentGutters": false
+  }
+}

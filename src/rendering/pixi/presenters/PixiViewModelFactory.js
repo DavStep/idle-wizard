@@ -3,7 +3,10 @@ import {
   formatCoinPriceText,
 } from '../../../shared/coinPrice.js';
 import { formatBigNumber } from '../../../shared/bigNumber.js';
-import { getItemDisplay } from '../../../pages/shared/itemResearchStatus.js';
+import {
+  getItemDisplay,
+  getItemResearchId,
+} from '../../../pages/shared/itemResearchStatus.js';
 import { formatRemainingTime } from '../../../pages/shared/timerDisplay.js';
 import { parseWorldChatSystemPlayerAnnouncement } from '../../../pages/workshop/worldChatSystemAnnouncement.js';
 import { getPlayerFrameTint } from '../../../player/playerFrames.js';
@@ -409,6 +412,7 @@ export class PixiViewModelFactory {
             dialogState.bagTabId,
             actions.selectBagTab,
             pageStates,
+            actions,
           ),
           stats: this.createStatsDialog(
             gameplay,
@@ -456,8 +460,7 @@ export class PixiViewModelFactory {
 
   createTaskRow(task, actions = {}) {
     const automatic = task.autoProgress === true;
-    const canNavigate =
-      automatic && typeof actions.navigateToTask === 'function';
+    const canNavigate = typeof actions.navigateToTask === 'function';
     const current = Math.max(0, Number(task.progressQuantity) || 0);
     const required = Math.max(0, Number(task.requiredQuantity) || 0);
     return {
@@ -698,6 +701,7 @@ export class PixiViewModelFactory {
     selectedTabId = 'currencies',
     onSelectTab = null,
     pageStates = null,
+    actions = {},
   ) {
     const visibleTabs = getVisibleBagTabs(pageStates);
     const safeTabId = visibleTabs.some((tab) => tab.id === selectedTabId)
@@ -718,7 +722,7 @@ export class PixiViewModelFactory {
       rows:
         safeTabId === 'currencies'
           ? createCurrencyRows(gameplay)
-          : createBagItemRows(gameplay, safeTabId),
+          : createBagItemRows(gameplay, safeTabId, actions),
     };
   }
 
@@ -3292,7 +3296,7 @@ function createCurrencyRows(gameplay) {
   ];
 }
 
-function createBagItemRows(gameplay, tabId) {
+function createBagItemRows(gameplay, tabId, actions = {}) {
   const singular = tabId.slice(0, -1);
   const items =
     tabId === 'seeds'
@@ -3303,23 +3307,45 @@ function createBagItemRows(gameplay, tabId) {
             (item) => item.kind === singular,
           );
   return (items ?? [])
-    .map((item) => ({
-      ...item,
-      kind: item.kind ?? singular,
-    }))
+    .map((item) => {
+      const normalizedItem = {
+        ...item,
+        kind: item.kind ?? singular,
+      };
+      return {
+        ...normalizedItem,
+        display: getItemDisplay(
+          gameplay,
+          normalizedItem,
+          normalizedItem.quantity,
+        ),
+      };
+    })
     .filter((item) =>
       tabId === 'ingredients'
         ? Number(item.quantity) > 0
-        : getItemDisplay(gameplay, item, item.quantity).unlocked,
+        : item.display.unlocked || (!item.display.unknown && item.display.locked),
     )
-    .map((item) => ({
-      id: item.key ?? item.itemTypeId,
-      label: toTitleCase(item.label ?? splitCamelCase(item.key)),
-      value: String(Math.floor(Number(item.quantity) || 0)),
-      resourceKey: singular,
-      itemKind: singular,
-      itemKey: item.key,
-    }));
+    .map((item) => {
+      const researchId = getItemResearchId(item);
+      const locked = item.display.locked === true && Boolean(researchId);
+      return {
+        id: item.key ?? item.itemTypeId,
+        label: toTitleCase(item.display.label ?? item.label ?? splitCamelCase(item.key)),
+        value: item.display.quantity,
+        resourceKey: singular,
+        itemKind: singular,
+        itemKey: item.key,
+        locked,
+        researchId,
+        semanticId: `workshop.bag.${singular}.${item.key ?? item.itemTypeId}`,
+        ...(locked
+          ? {
+              action: () => actions.navigateToResearch?.(researchId) ?? false,
+            }
+          : {}),
+      };
+    });
 }
 
 function getVisibleBagTabs(pageStates) {

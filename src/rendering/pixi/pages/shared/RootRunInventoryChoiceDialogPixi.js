@@ -183,6 +183,10 @@ export class RootRunInventoryChoiceDialogPixi {
     );
   }
 
+  navigateToTarget({ targetId, indication = 'boink' } = {}) {
+    return this.list.navigateToTarget(targetId, { indication });
+  }
+
   activate() {
     this.modal.activate();
   }

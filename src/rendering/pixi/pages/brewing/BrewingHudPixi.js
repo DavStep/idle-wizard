@@ -22,7 +22,6 @@ import { PixiNineSliceFrame } from '../../primitives/PixiNineSliceFrame.js';
 import {
   createTimedProgressWindow,
 } from '../../primitives/PixiProgressBar.js';
-import { PixiStarLevelLabel } from '../../primitives/PixiStarLevelLabel.js';
 import {
   DEFAULT_PIXI_THEME_SNAPSHOT,
   PIXI_ROOT_RUN_ASSETS,
@@ -39,7 +38,7 @@ import {
   createText,
   setText,
 } from '../workshop/RetainedPageKit.js';
-import { ResearchStationTitlePlaque } from '../research/ResearchPixiPage.js';
+import { MarketTitleRibbon } from '../shop/MarketTitleRibbon.js';
 
 export const BREWING_HUD_GEOMETRY = Object.freeze({
   edge: 16,
@@ -50,11 +49,10 @@ export const BREWING_HUD_GEOMETRY = Object.freeze({
   detailChatGap: 3,
   detailInset: 0,
   detailContentInset: 10,
-  recipeButtonWidth: 58,
-  autoButtonWidth: 32,
-  configurationButtonHeight: PIXI_UI_GEOMETRY.roomControlHeight,
-  quantityButtonWidth: 32,
-  configurationGap: 12,
+  autoButtonWidth: 44,
+  configurationButtonHeight: 48,
+  quantityButtonWidth: 44,
+  configurationGap: 6,
   autoIconHeight: 21,
   autoLabelY: 21,
   autoHitSize: 44,
@@ -69,8 +67,8 @@ export const BREWING_HUD_GEOMETRY = Object.freeze({
   quantityHitSize: 44,
   potionIconSize: 50,
   carouselContentOffset: 32,
-  configurationTopOffset: 5,
-  previewTopGap: 84,
+  titleHeight: PIXI_ROOT_RUN_GEOMETRY.marketTitleRibbon.height,
+  previewTopGap: 62,
   ingredientRowGap: 60,
   ingredientOrbitRadiusY: 87,
   previewIdentityGap: 26,
@@ -228,19 +226,12 @@ export class BrewingHudPixi {
     });
     this.root.addChild(this.carouselPanel.root, this.detailPanel.root);
 
-    this.cauldronStars = new PixiStarLevelLabel({
+    this.cauldronTitlePlaque = new MarketTitleRibbon({
       assetManager,
-      size: 12,
-      gap: 1,
-      label: 'brewing-carousel-cauldron-stars',
+      assetId: PIXI_ROOT_RUN_ASSETS.marketTitleRibbonBlue,
+      label: 'brewing-carousel-cauldron-title-ribbon',
     });
-    this.cauldronTitlePlaque = new ResearchStationTitlePlaque({
-      assetManager,
-      trailingContent: this.cauldronStars,
-      trailingGap: 6,
-    });
-    this.cauldronTitlePlaque.root.label =
-      'brewing-carousel-cauldron-title-plaque';
+    this.cauldronStars = this.cauldronTitlePlaque.stars;
     this.cauldronTitle = this.cauldronTitlePlaque.title;
     this.counter = centeredText('', RETAINED_TEXT_STYLES.bold);
     this.counter.anchor.set(1, 0);
@@ -259,10 +250,12 @@ export class BrewingHudPixi {
       this.inputRouter?.registerPressTarget?.({
         id: 'brewing.cauldron.tap',
         displayObject: this.cauldronArt,
-        enabled: () => this.canAccelerateSelectedCauldron(),
+        enabled: () =>
+          this.canAccelerateSelectedCauldron() ||
+          this.isSelectedCauldronResearchLocked(),
         slop: 12,
         sound: false,
-        onActivate: () => this.accelerateSelectedCauldron(),
+        onActivate: () => this.activateSelectedCauldron(),
       }) ?? null;
     this.semanticTargets?.register?.({
       semanticId: BREWING_CAULDRON_REWARD_ANCHOR_ID,
@@ -285,11 +278,15 @@ export class BrewingHudPixi {
           this.root.renderable &&
           this.cauldronArt.visible &&
           this.cauldronArt.renderable,
-        interactive: this.canAccelerateSelectedCauldron(),
-        enabled: this.canAccelerateSelectedCauldron(),
+        interactive:
+          this.canAccelerateSelectedCauldron() ||
+          this.isSelectedCauldronResearchLocked(),
+        enabled:
+          this.canAccelerateSelectedCauldron() ||
+          this.isSelectedCauldronResearchLocked(),
         active: !this.root.destroyed,
       }),
-      activate: () => this.accelerateSelectedCauldron(),
+      activate: () => this.activateSelectedCauldron(),
     });
     this.cauldronLiquid = new Sprite(
       getTexture(assetManager, ASSETS.cauldronLiquidMask),
@@ -331,13 +328,6 @@ export class BrewingHudPixi {
     );
     this.next = this.createButton('next', '', 'gray', () =>
       this.page?.selectCauldron?.(this.selectedIndex + 1),
-    );
-    this.recipes = this.createButton(
-      'recipes',
-      'Recipes',
-      'yellow',
-      () => this.actions.openRecipes?.(this.selectedIndex),
-      'brewing:recipes',
     );
     this.autoBrew = this.createButton('autobrew', 'Auto', 'yellow', () =>
       this.actions.toggleAutoBrew?.(this.selectedIndex),
@@ -422,7 +412,6 @@ export class BrewingHudPixi {
     for (const button of [
       this.previous,
       this.next,
-      this.recipes,
       this.autoBrew,
       this.emptyCauldron,
       this.quantity,
@@ -430,6 +419,24 @@ export class BrewingHudPixi {
     ]) {
       this.root.addChild(button.root);
     }
+    this.semanticTargets?.register?.({
+      semanticId: 'brewing.recipes',
+      tutorialId: 'brewing:recipes',
+      displayObject: this.brew.root,
+      state: () => ({
+        active: !this.root.destroyed,
+        enabled: this.primaryState?.id === 'recipes',
+        interactive: this.primaryState?.id === 'recipes',
+        visible:
+          this.brew.root.visible &&
+          this.brew.root.renderable &&
+          this.primaryState?.id === 'recipes',
+      }),
+      activate: () =>
+        this.primaryState?.id === 'recipes'
+          ? this.activatePrimaryAction()
+          : false,
+    });
     this.root.addChild(this.unlockCostButton);
 
     this.potionPreviewFrame = new PixiNineSliceFrame({
@@ -486,10 +493,11 @@ export class BrewingHudPixi {
           assetManager,
           inputRouter,
           semanticTargets,
-          onActivate: () =>
+          onActivate: (ingredient) =>
             this.actions.openHerbPicker?.(
               this.selectedIndex,
               index,
+              ingredient,
             ),
         }),
     );
@@ -602,7 +610,7 @@ export class BrewingHudPixi {
     this.cauldronStars.renderable = unlocked;
     this.cauldronTitlePlaque.bind(
       unlocked ? `Cauldron ${number}` : 'Locked Cauldron',
-      'brewing',
+      unlocked ? cauldron?.level ?? 1 : 0,
     );
     this.layoutCarouselHeader();
     const unlockedCount = cauldrons.filter(
@@ -643,11 +651,6 @@ export class BrewingHudPixi {
     this.next.root.renderable = this.next.root.visible;
 
     const active = cauldron?.activeBrew ?? null;
-    this.recipes.setModel({
-      label: 'Recipes',
-      enabled: unlocked && cauldron?.canSelectRecipe !== false && !active,
-      action: () => this.actions.openRecipes?.(this.selectedIndex),
-    });
     const autoBrewEnabled = cauldron?.autoBrewEnabled === true;
     const autoBrewVariant = autoBrewEnabled ? 'green' : 'yellow';
     this.autoBrew.variant = autoBrewVariant;
@@ -1051,6 +1054,26 @@ export class BrewingHudPixi {
     );
   }
 
+  isSelectedCauldronResearchLocked() {
+    const cauldron = this.getSelectedCauldron();
+    return (
+      cauldron?.unlocked === false &&
+      cauldron?.nextCauldronLockedByResearch === true &&
+      Boolean(cauldron?.nextCauldronRequiresResearchId)
+    );
+  }
+
+  activateSelectedCauldron() {
+    if (this.isSelectedCauldronResearchLocked()) {
+      return (
+        this.actions.navigateLockedCauldronResearch?.(
+          this.getSelectedCauldron(),
+        ) ?? false
+      );
+    }
+    return this.accelerateSelectedCauldron();
+  }
+
   accelerateSelectedCauldron() {
     if (!this.canAccelerateSelectedCauldron()) {
       return {
@@ -1358,7 +1381,6 @@ export class BrewingHudPixi {
     for (const button of [
       this.previous,
       this.next,
-      this.recipes,
       this.autoBrew,
       this.emptyCauldron,
       this.quantity,
@@ -1376,11 +1398,9 @@ export class BrewingHudPixi {
   }
 
   layoutCarouselHeader() {
-    this.cauldronTitlePlaque.setMaxWidth(
-      this.carouselPanel.width + BREWING_HUD_GEOMETRY.edge,
-    );
+    this.cauldronTitlePlaque.setMaxWidth(this.sourceWidth);
     this.cauldronTitlePlaque.root.position.set(
-      -BREWING_HUD_GEOMETRY.edge,
+      (this.carouselPanel.width - this.cauldronTitlePlaque.width) / 2,
       BREWING_HUD_GEOMETRY.carouselContentOffset,
     );
   }
@@ -1439,8 +1459,6 @@ export class BrewingHudPixi {
     const quantityVisible =
       unlocked && isBrewingQuantityActionVisible(cauldron);
 
-    this.recipes.root.visible = unlocked;
-    this.recipes.root.renderable = unlocked;
     this.emptyCauldron.root.visible = unlocked;
     this.emptyCauldron.root.renderable = unlocked;
     this.brew.root.visible = unlocked;
@@ -1457,30 +1475,23 @@ export class BrewingHudPixi {
       return;
     }
 
-    const controlsTop =
-      BREWING_HUD_GEOMETRY.top +
-      BREWING_HUD_GEOMETRY.carouselContentOffset +
-      BREWING_HUD_GEOMETRY.configurationTopOffset;
-    let right =
-      sourceWidth - BREWING_HUD_GEOMETRY.edge;
+    let left = BREWING_HUD_GEOMETRY.edge;
     const controls = [
       [this.quantity, BREWING_HUD_GEOMETRY.quantityButtonWidth],
       [this.autoBrew, BREWING_HUD_GEOMETRY.autoButtonWidth],
-      [this.recipes, BREWING_HUD_GEOMETRY.recipeButtonWidth],
     ];
 
     for (const [button, width] of controls) {
       if (!button.root.visible) {
         continue;
       }
-      const x = right - width;
       button.setBounds(
-        x,
-        controlsTop,
+        left,
+        this.emptyCauldron.root.y,
         width,
         BREWING_HUD_GEOMETRY.configurationButtonHeight,
       );
-      right = x - BREWING_HUD_GEOMETRY.configurationGap;
+      left += width + BREWING_HUD_GEOMETRY.configurationGap;
     }
 
     layoutCompactHitArea(
@@ -2147,12 +2158,15 @@ export class BrewingHudPixi {
       'brewing.cauldron.tap',
       { displayObject: this.cauldronArt },
     );
+    this.semanticTargets?.unregister?.(
+      'brewing.recipes',
+      { displayObject: this.brew.root },
+    );
     releaseRegistration(this.cauldronTapRegistration);
     releaseRegistration(this.swipeRegistration);
     for (const button of [
       this.previous,
       this.next,
-      this.recipes,
       this.autoBrew,
       this.emptyCauldron,
       this.quantity,
@@ -2483,7 +2497,7 @@ export class BrewingIngredientPickerSlot {
       semanticRegistry: semanticTargets,
       semanticId: `brewing.ingredient-slot.${index}`,
       text: '',
-      action: () => this.onActivate?.() ?? false,
+      action: () => this.onActivate?.(this.model) ?? false,
       haptic: 'light',
       variant: 'inline',
       label: `brewing-ingredient-picker-slot-${index}`,
@@ -2792,8 +2806,7 @@ function resolveMissingRecipeIngredients(recipe = {}) {
 function resolveIngredientPositions(width, offsetY = 0) {
   const top =
     BREWING_HUD_GEOMETRY.carouselContentOffset +
-    BREWING_HUD_GEOMETRY.configurationTopOffset +
-    BREWING_HUD_GEOMETRY.configurationButtonHeight +
+    BREWING_HUD_GEOMETRY.titleHeight +
     BREWING_HUD_GEOMETRY.previewTopGap +
     offsetY;
   const middle = top + BREWING_HUD_GEOMETRY.ingredientRowGap;

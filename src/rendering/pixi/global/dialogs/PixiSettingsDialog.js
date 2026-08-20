@@ -101,8 +101,8 @@ const ACCOUNT_SAVE_HEIGHT = 52;
 const ACCOUNT_SAVE_FONT_SIZE = 16;
 const ACCOUNT_SAVE_GAP = 8;
 const ACCOUNT_BOTTOM_GAP = 8;
-const SETTINGS_DEVICE_CONTENT_HEIGHT = 442;
-const SETTINGS_DEVICE_SCROLL_HEIGHT = 422;
+const SETTINGS_DEVICE_CONTENT_HEIGHT = 480;
+const SETTINGS_DEVICE_SCROLL_HEIGHT = 460;
 const SETTINGS_TABS = new Set(['account', 'report', 'configurations']);
 const FEEDBACK_KINDS = Object.freeze([
   Object.freeze({
@@ -160,6 +160,9 @@ const DEVICE_ACCOUNT_BUTTON_GAP = 6;
 const DEVICE_ACCOUNT_BUTTON_WIDTH = 218;
 const DEVICE_ACCOUNT_BUTTON_HEIGHT = 30;
 const DEVICE_ACCOUNT_FOOTER_GAP = 12;
+const DEVICE_UPDATE_BUTTON_GAP = 8;
+const DEVICE_UPDATE_BUTTON_WIDTH = 218;
+const DEVICE_UPDATE_BUTTON_HEIGHT = 30;
 
 /**
  * Retained single-pane surface used by settings, feedback, username, and
@@ -191,6 +194,7 @@ export class PixiSettingsDialog extends RetainedGlobalDialog {
     this.feedbackKind = normalizeFeedbackKind(initialFeedbackKind);
     this.feedbackDraft = '';
     this.feedbackPending = false;
+    this.updateCheckPending = false;
     this.accountChoiceTab = 'avatar';
     this.accountDraft = { username: '', character: 'elara', frame: 'classic' };
     this.accountDraftDirty = false;
@@ -537,6 +541,18 @@ export class PixiSettingsDialog extends RetainedGlobalDialog {
       width: SETTINGS_CONTENT_WIDTH,
       label: `${this.dialogId}:identityFooter`,
     });
+    this.updateCheckButton = new PixiTextButton({
+      assetManager: this.context.assets,
+      inputRouter: this.context.inputRouter,
+      semanticRegistry: this.context.semanticRegistry,
+      semanticId: `${this.dialogId}.updates.check`,
+      text: 'Check for updates',
+      width: DEVICE_UPDATE_BUTTON_WIDTH,
+      height: DEVICE_UPDATE_BUTTON_HEIGHT,
+      variant: 'yellow',
+      action: () => this.checkForUpdates(),
+      label: `${this.dialogId}:updateCheck`,
+    });
     this.configurationsLayer.addChild(
       this.devicePanel,
       this.themePanel,
@@ -545,6 +561,7 @@ export class PixiSettingsDialog extends RetainedGlobalDialog {
       this.accountStatus,
       this.accountConnectButton,
       this.identityFooter,
+      this.updateCheckButton,
     );
   }
 
@@ -655,6 +672,7 @@ export class PixiSettingsDialog extends RetainedGlobalDialog {
       userId: model.account.userId,
       onCopy: this.actions.copyUserId ?? copyTextToClipboard,
     });
+    this.syncUpdateCheckState(model.updates.enabled);
 
     this.refreshAccountChoices();
     this.refreshAccountPreview();
@@ -969,7 +987,16 @@ export class PixiSettingsDialog extends RetainedGlobalDialog {
     y = accountPanelY + DEVICE_ACCOUNT_PANEL_HEIGHT + DEVICE_ACCOUNT_FOOTER_GAP;
     this.identityFooter.position.set(0, y);
     this.identityFooter.setWidth(SETTINGS_CONTENT_WIDTH);
-    y += this.identityFooter.footerHeight;
+    y += this.identityFooter.footerHeight + DEVICE_UPDATE_BUTTON_GAP;
+    this.updateCheckButton.position.set(
+      (SETTINGS_CONTENT_WIDTH - DEVICE_UPDATE_BUTTON_WIDTH) / 2,
+      y,
+    );
+    this.updateCheckButton.setSize(
+      DEVICE_UPDATE_BUTTON_WIDTH,
+      DEVICE_UPDATE_BUTTON_HEIGHT,
+    );
+    y += DEVICE_UPDATE_BUTTON_HEIGHT;
     return y;
   }
 
@@ -1232,6 +1259,31 @@ export class PixiSettingsDialog extends RetainedGlobalDialog {
     return result ?? true;
   }
 
+  async checkForUpdates() {
+    if (this.updateCheckPending || !this.settingsModel?.updates?.enabled) {
+      return false;
+    }
+    const action = this.actions.checkForUpdates;
+    if (typeof action !== 'function') {
+      return false;
+    }
+
+    this.updateCheckPending = true;
+    this.syncUpdateCheckState(true);
+    try {
+      return await action();
+    } finally {
+      this.updateCheckPending = false;
+      this.syncUpdateCheckState(this.settingsModel?.updates?.enabled);
+    }
+  }
+
+  syncUpdateCheckState(enabled = true) {
+    this.updateCheckButton
+      ?.setText(this.updateCheckPending ? 'Checking...' : 'Check for updates')
+      .setEnabled(Boolean(enabled) && !this.updateCheckPending);
+  }
+
   runAction(name, ...args) {
     return this.actions[name]?.(...args) ?? false;
   }
@@ -1254,6 +1306,7 @@ export class PixiSettingsDialog extends RetainedGlobalDialog {
       this.accountSave,
       this.feedbackSend,
       this.accountConnectButton,
+      this.updateCheckButton,
       ...(this.feedbackKindButtons?.map(({ button }) => button) ?? []),
     ]) {
       button?.applyTheme(theme);
@@ -1312,6 +1365,8 @@ export class PixiSettingsDialog extends RetainedGlobalDialog {
     this.usernameField.blur();
     this.feedbackField.blur();
     this.feedbackPending = false;
+    this.updateCheckPending = false;
+    this.syncUpdateCheckState(this.settingsModel?.updates?.enabled);
     this.accountDraftDirty = false;
     this.actions.deactivate?.();
   }
@@ -1417,6 +1472,9 @@ function normalizeSettingsModel(
       value: String(feedback.value ?? ''),
       status: String(feedback.status ?? ''),
       pending: feedback.pending === true,
+    },
+    updates: {
+      enabled: settings.updates?.enabled !== false,
     },
     preferences: {
       haptics: settings.preferences?.haptics ?? settings.hapticsEnabled ?? true,

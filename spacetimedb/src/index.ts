@@ -23,7 +23,10 @@ import {
   normalizeSaveClientTimestamp,
 } from './saveClientTimestampNormalizer';
 import { normalizeSaveSelectedNumber } from './saveSelectedNumberNormalizer';
-import { normalizeGardenSelectedSeedItemKey } from './saveGardenNormalizer';
+import {
+  normalizeGardenPlotAutomationSettings,
+  normalizeGardenSelectedSeedItemKey,
+} from './saveGardenNormalizer';
 import { normalizeResearchForSaveMerge } from './playerGameplayResearchMerge';
 import { assertMarketScope, getMarketScopedKey, normalizeMarketId } from './marketScope';
 import {
@@ -36,6 +39,10 @@ import {
   rebaseNpcMarketCatalogConfig,
   resetNpcMarketTuningScores,
 } from './npcMarketPriceRebase';
+import {
+  DEFAULT_SHOP_AUTO_SELL_SECONDS,
+  restoreFiveSecondShopTimer,
+} from './shopConfig';
 import {
   createDiscoveredPotionResearchCatalog,
   discoveredPotionResearchCostGoldByKey,
@@ -239,6 +246,7 @@ const PLAYER_DATA_RESET_GUARD_MICROS = 1_781_298_268_808_000n;
 const STARTUP_MAINTENANCE_STATE_KEY = 'startup-maintenance:direct-sell-stands-v2';
 const PLAYER_LEVEL_CAULDRON_CAP_BACKFILL_STATE_KEY = 'game-config:player-level-cauldron-cap-v1';
 const SHOP_STALL_PURCHASE_CONFIG_BACKFILL_STATE_KEY = 'game-config:shop-stall-purchases-v1';
+const SHOP_AUTO_SELL_TIMER_BACKFILL_STATE_KEY = 'game-config:shop-auto-sell-five-seconds-v1';
 const SMALL_TOWN_FIXED_PRICE_BACKFILL_STATE_KEY = 'npc-market:small-town-fixed-prices-v1';
 const NPC_MARKET_CATALOG_PRICE_REBASE_STATE_KEY = 'npc-market:catalog-prices-2-5x-v1';
 const RESERVED_USERNAMES = new Set(['admin', 'system']);
@@ -5674,7 +5682,7 @@ const DEFAULT_SHOP_CONFIG_JSON = toGameConfigJson({
   shopShelf: {
     initialUnlockedSlots: 0,
     slotCostsCoin: [50, 150, 400, 1000, 2500],
-    autoSellSeconds: 5,
+    autoSellSeconds: DEFAULT_SHOP_AUTO_SELL_SECONDS,
   },
 });
 const DEFAULT_RESEARCH_CONFIG_JSON = toGameConfigJson({
@@ -12208,9 +12216,14 @@ function normalizeSaveGardenTile(
   );
   const hasSeed = itemCatalog.get(seedItemKey) === 'seed';
   const hasHerb = itemCatalog.get(herbItemKey) === 'herb';
+  const automationSettings = normalizeGardenPlotAutomationSettings(
+    value,
+    MAX_PLAYER_SAVE_BATCH_MULTIPLIER,
+  );
 
   return {
     tileNumber,
+    ...automationSettings,
     selectedSeedItemKey: itemCatalog.get(selectedSeedItemKey) === 'seed'
       ? selectedSeedItemKey
       : null,
@@ -16399,6 +16412,37 @@ function runShopStallPurchaseConfigBackfillOnce(ctx: IdleWizardReducerCtx) {
   });
 }
 
+function runShopAutoSellTimerBackfillOnce(ctx: IdleWizardReducerCtx) {
+  if (ctx.db.maintenanceState.stateKey.find(SHOP_AUTO_SELL_TIMER_BACKFILL_STATE_KEY)) {
+    return;
+  }
+
+  const row = ctx.db.gameConfig.configKey.find('shop');
+  if (row) {
+    let config: unknown;
+    try {
+      config = JSON.parse(row.configJson);
+    } catch {
+      config = null;
+    }
+
+    const restoredConfig = restoreFiveSecondShopTimer(config);
+    if (restoredConfig && restoredConfig !== config) {
+      const configJson = validateGameConfigJson('shop', JSON.stringify(restoredConfig));
+      ctx.db.gameConfig.configKey.update({
+        ...row,
+        configJson,
+        updatedAt: ctx.timestamp,
+      });
+    }
+  }
+
+  ctx.db.maintenanceState.insert({
+    stateKey: SHOP_AUTO_SELL_TIMER_BACKFILL_STATE_KEY,
+    appliedAt: ctx.timestamp,
+  });
+}
+
 function runSmallTownFixedPriceBackfillOnce(ctx: IdleWizardReducerCtx) {
   if (ctx.db.maintenanceState.stateKey.find(SMALL_TOWN_FIXED_PRICE_BACKFILL_STATE_KEY)) {
     return;
@@ -16555,7 +16599,7 @@ function backfillShopConfigForIndependentStalls(ctx: IdleWizardReducerCtx) {
   }
 
   if (
-    Number(shopShelf.autoSellSeconds) === 5 &&
+    Number(shopShelf.autoSellSeconds) === DEFAULT_SHOP_AUTO_SELL_SECONDS &&
     Number(shopShelf.initialUnlockedSlots ?? 0) === 0
   ) {
     return;
@@ -16566,7 +16610,7 @@ function backfillShopConfigForIndependentStalls(ctx: IdleWizardReducerCtx) {
     shopShelf: {
       ...shopShelf,
       initialUnlockedSlots: 0,
-      autoSellSeconds: 5,
+      autoSellSeconds: DEFAULT_SHOP_AUTO_SELL_SECONDS,
     },
   }));
 
@@ -18673,6 +18717,7 @@ export const onConnect = spacetimedb.clientConnected((ctx) => {
   runStartupMaintenanceOnce(ctx);
   runPlayerLevelCauldronCapBackfillOnce(ctx);
   runShopStallPurchaseConfigBackfillOnce(ctx);
+  runShopAutoSellTimerBackfillOnce(ctx);
   ensureNpcMarketCatalog(ctx);
   runSmallTownFixedPriceBackfillOnce(ctx);
   runNpcMarketCatalogPriceRebaseOnce(ctx);
@@ -18715,6 +18760,7 @@ export const init = spacetimedb.init((ctx) => {
   runStartupMaintenanceOnce(ctx);
   runPlayerLevelCauldronCapBackfillOnce(ctx);
   runShopStallPurchaseConfigBackfillOnce(ctx);
+  runShopAutoSellTimerBackfillOnce(ctx);
   ensureNpcMarketCatalog(ctx);
   runSmallTownFixedPriceBackfillOnce(ctx);
   runNpcMarketCatalogPriceRebaseOnce(ctx);

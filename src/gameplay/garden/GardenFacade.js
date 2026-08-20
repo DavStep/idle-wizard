@@ -114,6 +114,45 @@ export class GardenFacade {
     return this.gardenPlantingManager.selectSeed(tileNumber, seedTypeId);
   }
 
+  selectAutomationSeed(tileNumber, seedTypeId) {
+    return this.gardenPlantingManager.selectAutomationSeed(
+      tileNumber,
+      seedTypeId,
+    );
+  }
+
+  setAutomationEnabled(tileNumber, enabled) {
+    if (!this.gardenTileEntityManager.isTileUnlocked(tileNumber)) {
+      return { ok: false, reason: "tile_locked", tileNumber };
+    }
+    this.gardenTileEntityManager.setAutomationEnabled(tileNumber, enabled);
+    return { ok: true, tileNumber, enabled: enabled !== false };
+  }
+
+  toggleAutomationEnabled(tileNumber) {
+    return this.setAutomationEnabled(
+      tileNumber,
+      !this.gardenTileEntityManager.isAutomationEnabled(tileNumber),
+    );
+  }
+
+  setPlantQuantity(tileNumber, quantity) {
+    if (!this.gardenTileEntityManager.isTileUnlocked(tileNumber)) {
+      return { ok: false, reason: "tile_locked", tileNumber };
+    }
+    const maxQuantity = this.gardenSnapshotManager.getPlotLevel(tileNumber);
+    const safeQuantity = Math.floor(Number(quantity));
+    if (
+      !Number.isInteger(safeQuantity) ||
+      safeQuantity < 1 ||
+      safeQuantity > maxQuantity
+    ) {
+      return { ok: false, reason: "invalid_quantity", tileNumber, maxQuantity };
+    }
+    this.gardenTileEntityManager.setPlantQuantity(tileNumber, safeQuantity);
+    return { ok: true, tileNumber, quantity: safeQuantity, maxQuantity };
+  }
+
   plantSelectedSeed(tileNumber) {
     return this.gardenPlantingManager.plantSelectedSeed(tileNumber);
   }
@@ -159,6 +198,8 @@ export class GardenFacade {
       unlockedTiles: this.gardenTileEntityManager.getUnlockedTiles(),
       tiles: this.gardenSnapshotManager.getTileSnapshots().map((tile) => ({
         tileNumber: tile.tileNumber,
+        autoEnabled: tile.autoEnabled !== false,
+        plantQuantity: tile.plantQuantity,
         selectedSeedItemKey: tile.selectedSeedKey,
         seedItemKey: tile.seedKey,
         herbItemKey: tile.herbKey,
@@ -239,6 +280,8 @@ export class GardenFacade {
 
     return {
       tileNumber: tile.tileNumber,
+      autoEnabled: tile.autoEnabled !== false,
+      plantQuantity: Math.max(0, Math.floor(Number(tile.plantQuantity) || 0)),
       selectedSeedItemTypeId: selectedSeed?.id ?? 0,
       seedItemTypeId: seed?.id ?? 0,
       herbItemTypeId: herb?.id ?? 0,

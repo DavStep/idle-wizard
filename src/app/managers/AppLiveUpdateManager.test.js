@@ -262,6 +262,32 @@ describe('AppLiveUpdateManager', () => {
       cache: 'no-store',
     });
   });
+
+  it('runs a fresh manual check and clears stale bundle state', async () => {
+    const updater = createUpdater();
+    const manager = createManager({ updater });
+    manager.pendingBundle = {
+      id: 'old-bundle',
+      version: '0.3.48',
+      status: 'success',
+    };
+    manager.failedBundle = {
+      id: 'old-failure',
+      version: '0.3.47',
+      status: 'error',
+    };
+
+    await expect(manager.checkNow()).resolves.toEqual({
+      size: 24 * 1024 * 1024,
+      status: 'available',
+      version: '0.3.49',
+    });
+
+    expect(manager.pendingBundle).toBeNull();
+    expect(manager.failedBundle).toBeNull();
+    expect(updater.notifyAppReady).toHaveBeenCalledOnce();
+    expect(updater.current).toHaveBeenCalledOnce();
+  });
 });
 
 describe('compareVersions', () => {

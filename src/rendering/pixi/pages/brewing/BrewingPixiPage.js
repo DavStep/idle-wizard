@@ -348,6 +348,7 @@ export class BrewingPixiPage extends BaseRetainedPixiPage {
             assetManager: this.assetManager,
             counters,
             onClose: () => this.closeDialog('recipes'),
+            timeSource: this.timeSource,
             theme: this.theme,
           }),
       );
@@ -523,6 +524,51 @@ export class BrewingPixiPage extends BaseRetainedPixiPage {
     return true;
   }
 
+  navigateToTarget({
+    dialogId = null,
+    targetId,
+    indication = 'boink',
+    cauldronIndex = 0,
+    slotIndex = 0,
+  } = {}) {
+    const target = String(targetId ?? '').trim();
+    if (!target) {
+      return false;
+    }
+
+    if (dialogId === 'herbs' || target.startsWith('brewing.herb.')) {
+      const opened = this.currentActions?.openHerbPicker?.(
+        cauldronIndex,
+        slotIndex,
+      );
+      if (opened === false || opened?.ok === false) {
+        return false;
+      }
+      return (
+        this.focusDialogTarget('herbs', { targetId: target, indication })
+      );
+    }
+
+    if (dialogId === 'recipes' || target.startsWith('brewing.recipe.')) {
+      const opened = this.currentActions?.openRecipes?.(cauldronIndex);
+      if (opened === false || opened?.ok === false) {
+        return false;
+      }
+      return (
+        this.focusDialogTarget('recipes', { targetId: target, indication })
+      );
+    }
+
+    return false;
+  }
+
+  focusDialogTarget(kind, target) {
+    const dialogId = BREWING_DIALOG_IDS[kind];
+    return (
+      this.dialogRegistry?.get?.(dialogId)?.navigateToTarget?.(target) ?? false
+    );
+  }
+
   closeDialog(kind) {
     const dialogId = BREWING_DIALOG_IDS[kind];
     if (!dialogId) {
@@ -684,6 +730,9 @@ export class BrewingPixiPage extends BaseRetainedPixiPage {
     for (const row of this.herbInventory?.rows?.getWidgets?.() ?? []) {
       row.updateMotion(now);
     }
+    this.dialogRegistry
+      ?.get?.(BREWING_DIALOG_IDS.recipes)
+      ?.updateTime?.(now);
     this.updateGhostMotions(now);
   }
 

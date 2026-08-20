@@ -2105,7 +2105,7 @@ describe('PixiViewModelFactory', () => {
     ]);
   });
 
-  it('hides locked zero-count items from retained Bag rows', () => {
+  it('keeps known locked zero-count items navigable from retained Bag rows', () => {
     const factory = new PixiViewModelFactory();
     const gameplay = {
       seedInventory: [
@@ -2142,6 +2142,15 @@ describe('PixiViewModelFactory', () => {
         id: 'sageSeed',
         label: 'Sage Seed',
         value: '0',
+        locked: false,
+      }),
+      expect.objectContaining({
+        id: 'mintSeed',
+        label: 'Mint Seed',
+        value: 'locked',
+        locked: true,
+        researchId: 'unlockSeed:mintSeed',
+        action: expect.any(Function),
       }),
       expect.objectContaining({
         id: 'nettleSeed',

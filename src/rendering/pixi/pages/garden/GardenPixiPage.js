@@ -20,6 +20,7 @@ import { PooledCollection } from "../../retained/PooledCollection.js";
 import { WidgetPool } from "../../retained/WidgetPool.js";
 import {
   DEFAULT_PIXI_THEME_SNAPSHOT,
+  PIXI_ROOT_RUN_ASSETS,
   PIXI_UI_GEOMETRY,
 } from "../../theme/PixiThemeTokens.js";
 import {
@@ -45,9 +46,11 @@ import {
   AmbientFireflyLayer,
 } from "../shared/AmbientFireflyLayer.js";
 import { PixiTooltip } from "../shared/PixiTooltip.js";
+import { MarketTitleRibbon } from "../shop/MarketTitleRibbon.js";
 
 export const GARDEN_PIXI_GEOMETRY = Object.freeze({
   plotListTop: 120,
+  titleTop: PIXI_UI_GEOMETRY.roomContentTop,
   plotListBottom: RETAINED_PAGE_GEOMETRY.chatClearance,
   gridPaddingTop: 24,
   gridPaddingBottom: 24,
@@ -62,6 +65,11 @@ export const GARDEN_PIXI_GEOMETRY = Object.freeze({
   buyButtonHeight: 48,
   progressWidth: 80,
   progressHeight: PIXI_UI_GEOMETRY.progressTotalHeight,
+  automatedPlotWidth: 220,
+  automatedControlWidth: 44,
+  automatedControlGap: 6,
+  automatedButtonGap: 4,
+  automatedPlantSlots: 5,
   actionBarBottom: RETAINED_PAGE_GEOMETRY.chatClearance,
   actionButtonHeight: PIXI_UI_GEOMETRY.roomControlHeight,
   actionButtonGap: 8,
@@ -90,6 +98,8 @@ const GARDEN_DIALOG_IDS = Object.freeze({
 });
 const SOIL_ASSET_ID =
   "source:assets/rooms/garden/plots/outpost-plot-ground-level-5.png";
+const AUTOMATED_SOIL_ASSET_ID =
+  "source:assets/rooms/garden/plots/outpost-plot-ground-automated.png";
 /**
  * Retained Garden room. The display tree and router registrations are built
  * once; presenters provide formatted rows and action callbacks through bind().
@@ -146,7 +156,19 @@ export class GardenPixiPage extends BaseRetainedPixiPage {
       label: "garden-page-scroll",
       inputRouter: this.inputRouter,
     });
-    this.content.addChild(this.fireflies.root, this.plotScroll.root);
+    this.titleRibbon = new MarketTitleRibbon({
+      assetManager: this.assetManager,
+      assetId: PIXI_ROOT_RUN_ASSETS.marketTitleRibbonGreen,
+      label: "garden:title-ribbon",
+      showStars: false,
+    });
+    this.titleRibbon.bind("Garden");
+    this.titleRibbon.root.eventMode = "none";
+    this.content.addChild(
+      this.fireflies.root,
+      this.titleRibbon.root,
+      this.plotScroll.root,
+    );
     this.plotPool = new WidgetPool({
       name: "garden plot pool",
       counters,
@@ -249,7 +271,6 @@ export class GardenPixiPage extends BaseRetainedPixiPage {
       (plot) => plot?.hidden !== true && plot?.visible !== false,
     );
     this.plots.reconcile(plots);
-    this.syncPlotContentHeight(plots.length);
     this.actionBar.bind(garden.actionBar ?? {}, this.currentActions);
     this.syncDialogs(garden.dialogs ?? {});
     this.layoutPage(this.sourceWidth, this.sourceHeight);
@@ -286,6 +307,22 @@ export class GardenPixiPage extends BaseRetainedPixiPage {
     const normalized = this.normalizeDialogModel(kind, model ?? {});
     this.dialogRegistry.open(dialogId, normalized);
     return true;
+  }
+
+  navigateToTarget({ targetId, indication = "boink" } = {}) {
+    const target = String(targetId ?? "").trim();
+    if (!target.startsWith("garden.seed.")) {
+      return false;
+    }
+    const opened = this.currentActions?.openSeedPicker?.();
+    if (opened === false || opened?.ok === false) {
+      return false;
+    }
+    return (
+      this.dialogRegistry
+        ?.get?.(GARDEN_DIALOG_IDS.seed)
+        ?.navigateToTarget?.({ targetId: target, indication }) ?? false
+    );
   }
 
   closeDialog(kind) {
@@ -386,17 +423,12 @@ export class GardenPixiPage extends BaseRetainedPixiPage {
     }
   }
 
-  syncPlotContentHeight(plotCount) {
-    const rows = Math.max(
-      1,
-      Math.ceil(
-        Math.max(0, Number(plotCount) || 0) / GARDEN_PIXI_GEOMETRY.columns,
-      ),
-    );
+  syncPlotContentHeight(rows) {
+    const safeRows = Math.max(1, Math.floor(Number(rows) || 0));
     this.plotScroll.setContentHeight(
       GARDEN_PIXI_GEOMETRY.gridPaddingTop +
-        rows * GARDEN_PIXI_GEOMETRY.rowHeight +
-        Math.max(0, rows - 1) * GARDEN_PIXI_GEOMETRY.rowGap +
+        safeRows * GARDEN_PIXI_GEOMETRY.rowHeight +
+        Math.max(0, safeRows - 1) * GARDEN_PIXI_GEOMETRY.rowGap +
         GARDEN_PIXI_GEOMETRY.gridPaddingBottom,
     );
   }
@@ -418,6 +450,11 @@ export class GardenPixiPage extends BaseRetainedPixiPage {
       this.viewModel,
     );
     this.fireflies?.setBounds(sourceWidth, sourceHeight);
+    this.titleRibbon.setMaxWidth(sourceWidth);
+    this.titleRibbon.root.position.set(
+      (sourceWidth - this.titleRibbon.width) / 2,
+      GARDEN_PIXI_GEOMETRY.titleTop,
+    );
     const plotListHeight = Math.max(
       0,
       sourceHeight -
@@ -448,9 +485,24 @@ export class GardenPixiPage extends BaseRetainedPixiPage {
         GARDEN_PIXI_GEOMETRY.gridPaddingX * 2 -
         GARDEN_PIXI_GEOMETRY.columnGap * (GARDEN_PIXI_GEOMETRY.columns - 1)) /
       GARDEN_PIXI_GEOMETRY.columns;
-    this.plots.getWidgets().forEach((plot, index) => {
-      const column = index % GARDEN_PIXI_GEOMETRY.columns;
-      const row = Math.floor(index / GARDEN_PIXI_GEOMETRY.columns);
+    let row = 0;
+    let column = 0;
+    this.plots.getWidgets().forEach((plot) => {
+      if (plot.isAutomated) {
+        if (column > 0) {
+          row += 1;
+          column = 0;
+        }
+        plot.setBounds(
+          GARDEN_PIXI_GEOMETRY.gridPaddingX,
+          GARDEN_PIXI_GEOMETRY.gridPaddingTop +
+            row *
+              (GARDEN_PIXI_GEOMETRY.rowHeight + GARDEN_PIXI_GEOMETRY.rowGap),
+          contentWidth - GARDEN_PIXI_GEOMETRY.gridPaddingX * 2,
+        );
+        row += 1;
+        return;
+      }
       plot.setBounds(
         GARDEN_PIXI_GEOMETRY.gridPaddingX +
           column * (cellWidth + GARDEN_PIXI_GEOMETRY.columnGap),
@@ -458,7 +510,13 @@ export class GardenPixiPage extends BaseRetainedPixiPage {
           row * (GARDEN_PIXI_GEOMETRY.rowHeight + GARDEN_PIXI_GEOMETRY.rowGap),
         cellWidth,
       );
+      column += 1;
+      if (column >= GARDEN_PIXI_GEOMETRY.columns) {
+        column = 0;
+        row += 1;
+      }
     });
+    this.syncPlotContentHeight(row + (column > 0 ? 1 : 0));
   }
 
   destroyPage() {
@@ -469,6 +527,7 @@ export class GardenPixiPage extends BaseRetainedPixiPage {
     this.plotScroll?.destroy();
     this.actionBar?.destroy();
     this.plotTooltip?.destroy();
+    this.titleRibbon?.root.destroy({ children: true });
   }
 }
 
@@ -704,6 +763,9 @@ export class GardenPlotWidget {
     this.tapScaleY = 1;
     this.tapRotation = 0;
     this.semanticIds = [];
+    this.isAutomated = false;
+    this.visualPlotWidth = GARDEN_PIXI_GEOMETRY.plotWidth;
+    this.frameX = 0;
     this.root = new Container({ label: `garden-plot-${instanceId}` });
     this.frame = new Container({ label: `garden-plot-${instanceId}-frame` });
     this.soil = new Sprite(Texture.EMPTY);
@@ -724,14 +786,22 @@ export class GardenPlotWidget {
     this.tapPlantMotion = new Container({
       label: `garden-plot-${instanceId}-tap-plant-motion`,
     });
-    this.plantMotion = new Container({
-      label: `garden-plot-${instanceId}-plant-motion`,
-    });
-    this.plant = new Sprite(Texture.EMPTY);
-    this.plant.label = `garden-plot-${instanceId}-plant`;
-    this.plant.anchor.set(0.5, 1);
-    this.plantMotion.addChild(this.plant);
-    this.tapPlantMotion.addChild(this.plantMotion);
+    this.plantSlots = Array.from(
+      { length: GARDEN_PIXI_GEOMETRY.automatedPlantSlots },
+      (_value, index) => {
+        const motion = new Container({
+          label: `garden-plot-${instanceId}-plant-motion-${index + 1}`,
+        });
+        const plant = new Sprite(Texture.EMPTY);
+        plant.label = `garden-plot-${instanceId}-plant-${index + 1}`;
+        plant.anchor.set(0.5, 1);
+        motion.addChild(plant);
+        this.tapPlantMotion.addChild(motion);
+        return { motion, plant };
+      },
+    );
+    this.plantMotion = this.plantSlots[0].motion;
+    this.plant = this.plantSlots[0].plant;
     this.action = createText("", {
       fontSize: 9,
       lineHeight: 11,
@@ -784,6 +854,43 @@ export class GardenPlotWidget {
     this.tapFeedback.anchor.set(0.5);
     this.tapFeedback.visible = false;
     this.tapFeedback.renderable = false;
+    this.seedButton = new PixiTextButton({
+      assetManager,
+      inputRouter,
+      semanticRegistry: semanticTargets,
+      semanticId: `garden.plot.instance.${instanceId}.seed`,
+      text: "",
+      variant: "yellow",
+      label: `garden-plot-${instanceId}-seed-button`,
+    });
+    this.seedPack = new Sprite(Texture.EMPTY);
+    this.seedPack.anchor.set(0.5);
+    this.seedItem = new Sprite(Texture.EMPTY);
+    this.seedItem.anchor.set(0.5);
+    this.seedButton.visual.addChild(this.seedPack, this.seedItem);
+    this.autoButton = new PixiTextButton({
+      assetManager,
+      inputRouter,
+      semanticRegistry: semanticTargets,
+      semanticId: `garden.plot.instance.${instanceId}.auto`,
+      text: "Auto",
+      variant: "yellow",
+      label: `garden-plot-${instanceId}-auto-button`,
+    });
+    this.autoGear = new Sprite(
+      getTexture(assetManager, PIXI_ROOT_RUN_ASSETS.settingsGear),
+    );
+    this.autoGear.anchor.set(0.5);
+    this.autoButton.visual.addChild(this.autoGear);
+    this.quantityButton = new PixiTextButton({
+      assetManager,
+      inputRouter,
+      semanticRegistry: semanticTargets,
+      semanticId: `garden.plot.instance.${instanceId}.quantity`,
+      text: "x1",
+      variant: "yellow",
+      label: `garden-plot-${instanceId}-quantity-button`,
+    });
     this.frame.addChild(
       this.soil,
       this.buyFrame,
@@ -796,7 +903,14 @@ export class GardenPlotWidget {
       this.tapBurst,
       this.tapFeedback,
     );
-    this.root.addChild(this.frame, this.progress.root, this.notification);
+    this.root.addChild(
+      this.frame,
+      this.progress.root,
+      this.notification,
+      this.seedButton,
+      this.autoButton,
+      this.quantityButton,
+    );
     this.pressRegistration =
       this.inputRouter?.registerPressTarget?.({
         id: `garden.plot.instance.${instanceId}`,
@@ -839,6 +953,13 @@ export class GardenPlotWidget {
     const tileNumber =
       this.model.tileNumber ?? this.model.number ?? this.model.id;
     const visible = this.model.hidden !== true && this.model.visible !== false;
+    this.isAutomated =
+      this.model.automationAvailable === true &&
+      this.model.buySlot !== true &&
+      this.model.isBuySlot !== true;
+    this.visualPlotWidth = this.isAutomated
+      ? GARDEN_PIXI_GEOMETRY.automatedPlotWidth
+      : GARDEN_PIXI_GEOMETRY.plotWidth;
     this.enabled =
       visible &&
       this.model.disabled !== true &&
@@ -851,21 +972,95 @@ export class GardenPlotWidget {
     this.level.setLevel(plotLevel - 1);
     setText(this.action, resolveActionText(this.model));
     this.syncBuyCostButton();
-    this.soil.texture = getTexture(this.assetManager, SOIL_ASSET_ID);
+    this.soil.texture = getTexture(
+      this.assetManager,
+      this.isAutomated ? AUTOMATED_SOIL_ASSET_ID : SOIL_ASSET_ID,
+    );
     const herbFrame =
       this.model.plantFrame ??
       getHerbIconFrameName(this.model.herbKey ?? this.model.plant?.key ?? "");
-    this.plant.texture = herbFrame
-      ? getAtlasTexture(this.assetManager, herbFrame)
-      : Texture.EMPTY;
-    this.plant.visible = Boolean(herbFrame);
+    const visiblePlantCount = this.isAutomated
+      ? Math.min(
+          GARDEN_PIXI_GEOMETRY.automatedPlantSlots,
+          Math.max(
+            1,
+            Math.floor(
+              Number(
+                this.model.phase === "empty"
+                  ? this.model.plantQuantity
+                  : this.model.harvestQuantity,
+              ) || 1,
+            ),
+          ),
+        )
+      : 1;
+    this.plantSlots.forEach(({ plant }, index) => {
+      plant.texture = herbFrame
+        ? getAtlasTexture(this.assetManager, herbFrame)
+        : Texture.EMPTY;
+      plant.visible = Boolean(herbFrame) && index < visiblePlantCount;
+      plant.renderable = plant.visible;
+    });
     this.scissorsMotion.visible = this.model.phase === "harvesting";
     this.scissors.visible = this.scissorsMotion.visible;
     this.scissorsOpen.visible = this.scissorsMotion.visible;
+    this.bindAutomationControls();
     this.syncNotificationBadges();
     this.registerSemanticTargets(tileNumber);
     this.applyTheme(this.theme);
     this.updateTime(this.page.timeSource());
+  }
+
+  bindAutomationControls() {
+    const visible = this.isAutomated;
+    for (const button of [
+      this.seedButton,
+      this.autoButton,
+      this.quantityButton,
+    ]) {
+      button.visible = visible;
+      button.renderable = visible;
+    }
+    if (!visible) {
+      return;
+    }
+
+    bindPixiSeedPackIcon({
+      assetManager: this.assetManager,
+      base: this.seedPack,
+      item: this.seedItem,
+      seed: this.model.automationSeed,
+    });
+    this.seedButton
+      .setText("")
+      .setEnabled(true)
+      .setAction(() => this.actions.openPlotSeedPicker?.(this.model) ?? false);
+
+    const autoEnabled = this.model.autoEnabled !== false;
+    this.autoButton.setVariant(autoEnabled ? "green" : "yellow");
+    this.autoButton
+      .setText("Auto")
+      .setEnabled(true)
+      .setAction(
+        () => this.actions.togglePlotAutomation?.(this.model) ?? false,
+      );
+
+    const maxQuantity = Math.min(
+      GARDEN_PIXI_GEOMETRY.automatedPlantSlots,
+      Math.max(1, Math.floor(Number(this.model.maxPlantQuantity) || 1)),
+    );
+    const quantity = Math.min(
+      maxQuantity,
+      Math.max(1, Math.floor(Number(this.model.plantQuantity) || maxQuantity)),
+    );
+    const nextQuantity = quantity >= maxQuantity ? 1 : quantity + 1;
+    this.quantityButton
+      .setText(`x${quantity}`)
+      .setEnabled(true)
+      .setAction(
+        () =>
+          this.actions.selectPlotQuantity?.(this.model, nextQuantity) ?? false,
+      );
   }
 
   registerSemanticTargets(tileNumber) {
@@ -939,31 +1134,48 @@ export class GardenPlotWidget {
   setBounds(x, y, width) {
     this.root.position.set(x, y);
     this.width = width;
+    const controlsWidth = this.isAutomated
+      ? GARDEN_PIXI_GEOMETRY.automatedControlWidth +
+        GARDEN_PIXI_GEOMETRY.automatedControlGap
+      : 0;
+    const groupWidth = this.visualPlotWidth + controlsWidth;
+    this.frameX = Math.max(0, (width - groupWidth) / 2);
     this.root.hitArea = new Rectangle(
       0,
       0,
       width,
       GARDEN_PIXI_GEOMETRY.rowHeight,
     );
-    this.soil.width = GARDEN_PIXI_GEOMETRY.plotWidth;
+    this.frame.hitArea = new Rectangle(
+      0,
+      0,
+      this.visualPlotWidth,
+      GARDEN_PIXI_GEOMETRY.plotHeight,
+    );
+    this.soil.width = this.visualPlotWidth;
     this.soil.height = GARDEN_PIXI_GEOMETRY.plotHeight;
     this.buyFrame.position.set(0, 0);
     this.number.position.set(10, 6);
     this.level.position.set(5, GARDEN_PIXI_GEOMETRY.plotHeight - 19);
-    this.plantMotion.position.set(
-      GARDEN_PIXI_GEOMETRY.plotWidth / 2,
-      GARDEN_PIXI_GEOMETRY.plotHeight - 20,
-    );
-    this.plant.position.set(0, 0);
-    this.plant.width = 57.2;
-    this.plant.height = 62.4;
+    this.plantSlots.forEach(({ motion, plant }, index) => {
+      const slotCount = this.isAutomated
+        ? GARDEN_PIXI_GEOMETRY.automatedPlantSlots
+        : 1;
+      const slotX = this.isAutomated
+        ? 25 +
+          index * ((this.visualPlotWidth - 50) / Math.max(1, slotCount - 1))
+        : this.visualPlotWidth / 2;
+      motion.position.set(slotX, GARDEN_PIXI_GEOMETRY.plotHeight - 20);
+      plant.position.set(0, 0);
+      plant.width = this.isAutomated ? 48 : 57.2;
+      plant.height = this.isAutomated ? 52.4 : 62.4;
+    });
     this.action.position.set(
-      GARDEN_PIXI_GEOMETRY.plotWidth - 5,
+      this.visualPlotWidth - 5,
       GARDEN_PIXI_GEOMETRY.plotHeight - 3,
     );
     this.buyCostButton.setBounds(
-      (GARDEN_PIXI_GEOMETRY.plotWidth - GARDEN_PIXI_GEOMETRY.buyButtonWidth) /
-        2,
+      (this.visualPlotWidth - GARDEN_PIXI_GEOMETRY.buyButtonWidth) / 2,
       (GARDEN_PIXI_GEOMETRY.plotHeight - GARDEN_PIXI_GEOMETRY.buyButtonHeight) /
         2,
       GARDEN_PIXI_GEOMETRY.buyButtonWidth,
@@ -975,23 +1187,69 @@ export class GardenPlotWidget {
     this.scissorsOpen.height = 30;
     this.scissorsMotion.pivot.set(14.4, 17.4);
     this.tapFeedback.position.set(
-      GARDEN_PIXI_GEOMETRY.plotWidth / 2,
+      this.visualPlotWidth / 2,
       GARDEN_PIXI_GEOMETRY.plotHeight / 2,
     );
     this.notificationBadge.placeAtTopRight({
-      x: (width - GARDEN_PIXI_GEOMETRY.plotWidth) / 2,
+      x: this.frameX,
       y: 0,
-      width: GARDEN_PIXI_GEOMETRY.plotWidth,
+      width: this.visualPlotWidth,
       height: GARDEN_PIXI_GEOMETRY.plotHeight,
     });
     this.progress.setBounds(
-      (width - GARDEN_PIXI_GEOMETRY.progressWidth) / 2,
+      this.frameX +
+        (this.visualPlotWidth -
+          (this.isAutomated
+            ? this.visualPlotWidth - 8
+            : GARDEN_PIXI_GEOMETRY.progressWidth)) /
+          2,
       GARDEN_PIXI_GEOMETRY.plotHeight + 3,
-      GARDEN_PIXI_GEOMETRY.progressWidth,
+      this.isAutomated
+        ? this.visualPlotWidth - 8
+        : GARDEN_PIXI_GEOMETRY.progressWidth,
       GARDEN_PIXI_GEOMETRY.progressHeight,
     );
+    this.layoutAutomationControls();
     this.setPressed(this.pressed);
     this.redraw();
+  }
+
+  layoutAutomationControls() {
+    if (!this.isAutomated) {
+      return;
+    }
+    const controlWidth = GARDEN_PIXI_GEOMETRY.automatedControlWidth;
+    const gap = GARDEN_PIXI_GEOMETRY.automatedButtonGap;
+    const buttonHeight = (GARDEN_PIXI_GEOMETRY.plotHeight - gap * 2) / 3;
+    const x =
+      this.frameX +
+      this.visualPlotWidth +
+      GARDEN_PIXI_GEOMETRY.automatedControlGap;
+    [this.seedButton, this.autoButton, this.quantityButton].forEach(
+      (button, index) => {
+        button.position.set(0, 0);
+        button.setSize(controlWidth, buttonHeight);
+        button.position.set(x, index * (buttonHeight + gap));
+      },
+    );
+    layoutPixiSeedPackIcon({
+      base: this.seedPack,
+      item: this.seedItem,
+      x: controlWidth / 2,
+      y: buttonHeight / 2,
+      width: 20,
+      height: 20,
+    });
+    this.autoGear.position.set(controlWidth / 2, 7);
+    this.autoGear.width = 11;
+    this.autoGear.height = 11;
+    this.autoButton.textLabel.setFontSize(9).setLineHeight(10);
+    this.autoButton.textLabel.position.set(controlWidth / 2, buttonHeight - 7);
+    this.quantityButton.textLabel.setFontSize(11).setLineHeight(12);
+    this.quantityButton.textLabel.position.set(
+      controlWidth / 2,
+      buttonHeight / 2,
+    );
   }
 
   setPressed(pressed) {
@@ -1007,12 +1265,11 @@ export class GardenPlotWidget {
     );
     this.frame.rotation = this.tapRotation;
     this.frame.pivot.set(
-      GARDEN_PIXI_GEOMETRY.plotWidth / 2,
+      this.visualPlotWidth / 2,
       GARDEN_PIXI_GEOMETRY.plotHeight / 2,
     );
     this.frame.position.set(
-      (this.width - GARDEN_PIXI_GEOMETRY.plotWidth) / 2 +
-        GARDEN_PIXI_GEOMETRY.plotWidth / 2,
+      this.frameX + this.visualPlotWidth / 2,
       GARDEN_PIXI_GEOMETRY.plotHeight / 2 +
         (this.pressed ? 1 : 0) +
         this.receiveOffsetY +
@@ -1073,30 +1330,39 @@ export class GardenPlotWidget {
           )
         : 1;
     const growthScale = phase === "growing" ? 0.42 + growingProgress * 0.58 : 1;
-    this.plantMotion.position.set(
-      GARDEN_PIXI_GEOMETRY.plotWidth / 2,
-      GARDEN_PIXI_GEOMETRY.plotHeight - 20,
-    );
-    this.plantMotion.scale.set(growthScale);
-    this.plantMotion.rotation = 0;
-
-    if (phase === "growing") {
-      const progress = loopProgress(
-        now + (((tileNumber - 1) * 421) % GARDEN_GROWING_WIND_MS),
-        GARDEN_GROWING_WIND_MS,
+    this.plantSlots.forEach(({ motion }, index) => {
+      const slotCount = this.isAutomated
+        ? GARDEN_PIXI_GEOMETRY.automatedPlantSlots
+        : 1;
+      motion.position.set(
+        this.isAutomated
+          ? 25 +
+              index * ((this.visualPlotWidth - 50) / Math.max(1, slotCount - 1))
+          : this.visualPlotWidth / 2,
+        GARDEN_PIXI_GEOMETRY.plotHeight - 20,
       );
+      motion.scale.set(growthScale);
+      motion.rotation = 0;
+
+      if (phase === "growing") {
+        const progress = loopProgress(
+          now +
+            (((tileNumber - 1) * 421 + index * 137) % GARDEN_GROWING_WIND_MS),
+          GARDEN_GROWING_WIND_MS,
+        );
       const sway =
         progress < 0.5
           ? lerp(-1.8, 2.1, softEase(progress / 0.5))
           : lerp(2.1, -1.8, softEase((progress - 0.5) / 0.5));
-      this.plantMotion.rotation = degreesToRadians(sway);
-    } else if (phase === "ready" || phase === "harvesting") {
-      const progress = loopProgress(
-        now + (((tileNumber - 1) * 317) % GARDEN_READY_LIFT_MS),
-        GARDEN_READY_LIFT_MS,
-      );
-      applyReadyPlantMotion(this.plantMotion, progress, growthScale);
-    }
+        motion.rotation = degreesToRadians(sway);
+      } else if (phase === "ready" || phase === "harvesting") {
+        const progress = loopProgress(
+          now + (((tileNumber - 1) * 317 + index * 83) % GARDEN_READY_LIFT_MS),
+          GARDEN_READY_LIFT_MS,
+        );
+        applyReadyPlantMotion(motion, progress, growthScale);
+      }
+    });
 
     if (phase === "harvesting") {
       const progress = loopProgress(now, GARDEN_SCISSORS_SNIP_MS);
@@ -1104,7 +1370,7 @@ export class GardenPlotWidget {
       this.scissors.alpha = open ? 0 : 1;
       this.scissorsOpen.alpha = open ? 1 : 0;
       this.scissorsMotion.position.set(
-        61 + 14.4 + (open ? -13 : -15),
+        this.visualPlotWidth - 27 + 14.4 + (open ? -13 : -15),
         29 + 17.4 + (open ? -2 : 0),
       );
       this.scissorsMotion.rotation = degreesToRadians(open ? -7 : -20);
@@ -1154,7 +1420,7 @@ export class GardenPlotWidget {
       this.tapFeedback.renderable = showLabel;
       this.tapFeedback.alpha = 1;
       this.tapFeedback.position.set(
-        GARDEN_PIXI_GEOMETRY.plotWidth / 2,
+        this.visualPlotWidth / 2,
         GARDEN_PIXI_GEOMETRY.plotHeight / 2 - 9,
       );
       this.tapBurst.clear();
@@ -1270,6 +1536,10 @@ export class GardenPlotWidget {
     });
     this.buyCostButton.applyTheme(this.theme);
     this.progress.applyTheme(this.theme);
+    this.seedButton.applyTheme(this.theme);
+    this.autoButton.applyTheme(this.theme);
+    this.quantityButton.applyTheme(this.theme);
+    this.layoutAutomationControls();
     this.redraw();
   }
 
@@ -1327,7 +1597,7 @@ export class GardenPlotWidget {
       this.level.visible = false;
       this.action.anchor.set(0.5);
       this.action.position.set(
-        GARDEN_PIXI_GEOMETRY.plotWidth / 2,
+        this.visualPlotWidth / 2,
         GARDEN_PIXI_GEOMETRY.plotHeight / 2,
       );
     } else {
@@ -1338,12 +1608,12 @@ export class GardenPlotWidget {
       if (this.model.phase === "empty") {
         this.action.anchor.set(0.5);
         this.action.position.set(
-          GARDEN_PIXI_GEOMETRY.plotWidth / 2,
+          this.visualPlotWidth / 2,
           GARDEN_PIXI_GEOMETRY.plotHeight / 2,
         );
       } else {
         this.action.position.set(
-          GARDEN_PIXI_GEOMETRY.plotWidth - 5,
+          this.visualPlotWidth - 5,
           GARDEN_PIXI_GEOMETRY.plotHeight - 3,
         );
       }
@@ -1358,6 +1628,9 @@ export class GardenPlotWidget {
     this.progress.clearTimer(0);
     this.actions = {};
     this.enabled = false;
+    this.isAutomated = false;
+    this.visualPlotWidth = GARDEN_PIXI_GEOMETRY.plotWidth;
+    this.frameX = 0;
     this.pressed = false;
     this.root.visible = false;
     this.root.renderable = false;
@@ -1387,13 +1660,25 @@ export class GardenPlotWidget {
     this.buyCostButton.reset();
     this.progress.setProgress(0);
     this.progress.root.visible = false;
-    this.plantMotion.position.set(0, 0);
-    this.plantMotion.scale.set(1);
-    this.plantMotion.rotation = 0;
+    this.plantSlots.forEach(({ motion, plant }) => {
+      motion.position.set(0, 0);
+      motion.scale.set(1);
+      motion.rotation = 0;
+      plant.visible = false;
+      plant.renderable = false;
+    });
     this.tapPlantMotion.position.set(0, 0);
     this.tapPlantMotion.scale.set(1);
     this.tapPlantMotion.rotation = 0;
-    this.plant.visible = false;
+    for (const button of [
+      this.seedButton,
+      this.autoButton,
+      this.quantityButton,
+    ]) {
+      button.visible = false;
+      button.renderable = false;
+      button.setEnabled(false);
+    }
     this.scissors.visible = false;
     this.scissorsOpen.visible = false;
     this.scissorsMotion.visible = false;
@@ -1415,6 +1700,9 @@ export class GardenPlotWidget {
     this.unregisterSemanticTargets();
     releaseRegistration(this.pressRegistration);
     this.progress.destroy();
+    this.seedButton.destroy({ children: true });
+    this.autoButton.destroy({ children: true });
+    this.quantityButton.destroy({ children: true });
     this.root.destroy({ children: true });
   }
 }

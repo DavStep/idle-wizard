@@ -5,6 +5,15 @@ upload script posts the section whose heading matches `package.json` `version`.
 Write these developer-to-player notes only in Idle Wizard terms. Do not mention
 other game names, source projects, ports, or implementation provenance.
 
+## 0.3.82
+
+- Fixed Trader Market stalls accidentally taking 30 minutes to sell; sales are back to a 5-second cycle and the countdown now sits inside the progress bar.
+- Expanded Garden automation with per-plot seed, quantity, and Auto controls, plus a wider automated plot that shows every planted crop.
+- Garden capacity gates now jump directly to the required Advanced Research row, and Brewing recipes show the live countdown while their research is underway.
+- Split Market gem bundles into clearer Amber and Amethyst sections, with claim timing shown on free offers.
+- Refined Trade Alliance creation with a larger banner, clearer color and emblem selection, and a new Dragon emblem.
+- Improved remembered-account reconnects so a rejected sign-in token can safely fall back to the wizard's stored account without interfering with account linking.
+
 ## 0.3.81
 
 - Brewing now collects finished bottled potions automatically, keeps staged cauldrons visibly empty until brewing begins, and restores the larger herb-slot artwork with clearer owned/required counts.

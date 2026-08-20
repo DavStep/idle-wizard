@@ -17,7 +17,7 @@ inventory changes, offers, or backend results. A presenter binds this shape:
       stalls: [{
         id, slotNumber, itemLabel, quantityLabel, batchLabel,
         priceLabel, salePriceLabel, salePriceResourceKey,
-        resourceKey, progress, locked, notification,
+        resourceKey, progress, timerLabel, locked, notification,
         buySlot, costCoin, affordable, lockedByLevel,
         dialog
       }],
@@ -93,8 +93,9 @@ source-proportional `29x31px` red downward badge in the upper-right content lane
 before the fixed Select/Cancel action and protruding `2px` above the card, with
 centered white, dark-stroked `xN` text. The item-name row ends with the next
 batch payout, derived from the current trader unit price and the active `xN`
-batch, immediately before the fixed Cancel column. The sale rail ends before its compact
-timer, and the timer ends `6px` before the fixed action column.
+batch, immediately before the fixed Cancel column. The compact white outlined
+sale timer is centered over the purple sale rail, which ends `6px` before the
+fixed action column.
 Each successful automatic sale sweeps the Research upgrade shine once across
 the selling stall while the existing bounded coin trail travels to the top
 currency display. Reduced motion skips the shine without delaying the sale.
@@ -131,8 +132,11 @@ quantity at the same price. Add `&coinOffer=ready` to show the ready green Colle
 `&dailyCrystalOffer=cooldown` to show the daily offer's disabled countdown.
 Add `&claimFlyout=crystal` to include the production top panel and replay the
 daily Free claim's crystal travel into its HUD counter.
-Currency offers use the reusable `MarketOfferCard`. Coin and daily Amber
-offers retain the wide layout. Paid Amber and Amethyst bundles use the compact
+Currency offers use the reusable `MarketOfferCard`. Coin stays in its own
+section. Amber and Amethyst packs have separate station-title sections, with
+the daily Amber offer first in the Amber section. Coin and daily Amber offers
+retain the wide layout, restore their left-aligned titles, and state their
+2-hour or 24-hour claim cadence beside the reward art. Paid Amber and Amethyst bundles use the compact
 three-column layout: a centered size name, the framed resource art and amount,
 then a full-width green price button. The six ascending bundle names are Pouch,
 Bag, Pile, Chest, Trove, and Hoard. Cooling-down free offers keep their geometry

@@ -11,11 +11,11 @@ export default defineUiEditorIntegration({
   childWidgetIds: [
     'text-button',
     'cost-button',
+    'compound.market-title-ribbon',
     'compound.brewing-batch-detail',
     'compound.brewing-cauldron-hearth',
     'compound.brewing-ingredient-picker-slot',
     'primitive.progress-bar',
-    'primitive.star-level-label',
   ],
   folderPath: ['Brewing'],
   id: 'feature.brewing-hud',

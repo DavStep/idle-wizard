@@ -183,4 +183,31 @@ describe('AppFacade live-update startup ordering', () => {
       minimumVersion: '0.4.0',
     });
   });
+
+  it('runs a fresh update probe when settings requests one', async () => {
+    const app = Object.create(AppFacade.prototype);
+    app.disposed = false;
+    app.liveUpdateInProgress = false;
+    app.liveUpdateCheckResult = { status: 'up_to_date', version: '0.3.49' };
+    app.liveUpdateManager = {
+      checkNow: vi.fn(() =>
+        Promise.resolve({
+          status: 'available',
+          size: 24 * 1024 * 1024,
+          version: '0.4.0',
+        }),
+      ),
+    };
+
+    await expect(app.checkForLiveUpdateManually()).resolves.toEqual({
+      status: 'available',
+      size: 24 * 1024 * 1024,
+      version: '0.4.0',
+    });
+    expect(app.liveUpdateManager.checkNow).toHaveBeenCalledOnce();
+    expect(app.liveUpdateCheckResult).toMatchObject({
+      status: 'available',
+      version: '0.4.0',
+    });
+  });
 });

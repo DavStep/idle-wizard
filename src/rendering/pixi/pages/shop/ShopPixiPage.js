@@ -52,6 +52,8 @@ import {
   RESEARCH_WIDGET_SHINE_DURATION_MS,
   RESEARCH_WIDGET_SHINE_HEIGHT_SCALE,
   RESEARCH_PIXI_GEOMETRY,
+  RESEARCH_RANK_FONT,
+  RESEARCH_ROW_TEXT,
   ResearchStationTitlePlaque,
   updateResearchShine,
 } from '../research/ResearchPixiPage.js';
@@ -105,7 +107,6 @@ const STALL_BATCH_BADGE_ACTION_GAP = 10;
 const STALL_BATCH_BADGE_TOP = -2;
 const STALL_BATCH_TEXT_CENTER_Y = 11;
 const STALL_ACTION_CONTENT_GAP = 6;
-const STALL_PROGRESS_TIMER_GAP = 4;
 const STALL_ART_WELL_SIZE = 52;
 const STALL_ARTWORK_SIZE = 44;
 const STALL_QUANTITY_COLOR = '#ffffff';
@@ -252,15 +253,27 @@ export class ShopPixiPage extends BasePixiRetainedView {
       titleVariant: 'crystal',
       rowPresentation: 'offer',
     });
-    this.crystalOffersSection = new ShopRowsSection({
+    this.amberOffersSection = new ShopRowsSection({
       page: this,
-      title: 'Gems',
+      title: 'Amber',
       assetManager,
       inputRouter,
       semanticRegistry,
       counters,
       rowHeight: OFFER_ROW_HEIGHT,
-      label: 'shop:crystalOffers',
+      label: 'shop:amberOffers',
+      titleVariant: 'crystal',
+      rowPresentation: 'offer-grid',
+    });
+    this.amethystOffersSection = new ShopRowsSection({
+      page: this,
+      title: 'Amethyst',
+      assetManager,
+      inputRouter,
+      semanticRegistry,
+      counters,
+      rowHeight: OFFER_ROW_HEIGHT,
+      label: 'shop:amethystOffers',
       titleVariant: 'crystal',
       rowPresentation: 'offer-grid',
     });
@@ -278,7 +291,8 @@ export class ShopPixiPage extends BasePixiRetainedView {
       .get('crystals')
       .content.addChild(
         this.coinOfferSection.root,
-        this.crystalOffersSection.root,
+        this.amberOffersSection.root,
+        this.amethystOffersSection.root,
       );
 
     this.uiLayer.addChild(this.identityLayer, this.tabLayer);
@@ -358,6 +372,9 @@ export class ShopPixiPage extends BasePixiRetainedView {
               title:
                 this.model.crystals.coinOffer.title ??
                 'Coin Offer',
+              claimCadence:
+                this.model.crystals.coinOffer.claimCadence ??
+                'Claim every 2 hours',
               resourceKey: 'coin',
               amountLabel: stripResourceName(
                 this.model.crystals.coinOffer.rewardLabel ?? '',
@@ -384,70 +401,31 @@ export class ShopPixiPage extends BasePixiRetainedView {
           ]
         : [],
     );
-    this.crystalOffersSection.bind(
-      [
-        ...(this.model.crystals.dailyCrystalOffer
-          ? [
-              {
-                id: 'dailyCrystalOffer',
-                fullWidth: true,
-                title:
-                  this.model.crystals.dailyCrystalOffer.title ??
-                  'Daily Offer',
-                resourceKey: 'crystal',
-                amountLabel: stripResourceName(
-                  this.model.crystals.dailyCrystalOffer.rewardLabel ?? '',
-                  'amber',
-                ),
-                value:
-                  this.model.crystals.dailyCrystalOffer.actionLabel ??
-                  (this.model.crystals.dailyCrystalOffer.canCollect
-                    ? 'free'
-                    : this.model.crystals.dailyCrystalOffer.timerLabel ?? ''),
-                valueVariant: 'green',
-                valueMuted:
-                  this.model.crystals.dailyCrystalOffer.canCollect !== true,
-                enabled:
-                  this.model.crystals.dailyCrystalOffer.canCollect === true,
-                notification:
-                  this.model.crystals.dailyCrystalOffer.notification ??
-                  this.model.crystals.dailyCrystalOffer.canCollect === true,
-                semanticId: 'shop.dailyCrystalOffer.collect',
-                action:
-                  this.model.crystals.dailyCrystalOffer.action ??
-                  this.currentActions.collectDailyCrystalOffer,
-              },
-            ]
-          : []),
-        ...this.model.crystals.offers.map((offer, index) => ({
-          ...offer,
-          compact: true,
-          id: offer.id ?? offer.amethystCount ?? offer.crystalCount ?? index,
-          title: offer.title ?? 'Gem Offer',
-          resourceKey: offer.resourceKey ?? 'crystal',
-          amountLabel:
-            offer.amountLabel ??
-            offer.amount ??
-            offer.amethystCount ??
-            offer.crystalCount ??
-            stripResourceName(
-              offer.bundleLabel ?? offer.label ?? '',
-              offer.resourceKey === 'amethyst' ? 'amethyst' : 'amber',
-            ),
-          value: offer.priceLabel ?? offer.value ?? '',
-          valueVariant: 'green',
-          semanticId:
-            offer.semanticId ??
-            `shop.gemOffer.${offer.resourceKey ?? 'crystal'}.${offer.amount ?? offer.amethystCount ?? offer.crystalCount ?? index}`,
-          action: () =>
-            offer.action?.(offer) ??
-            this.openDialog(
-              SHOP_DIALOG_IDS.SUPPORT,
-              offer.dialog ?? this.model.dialogs.support ?? {},
-            ),
-        })),
-      ],
+    const paidGemOffers = this.model.crystals.offers.map(
+      (offer, index) =>
+        normalizePaidGemOffer(offer, index, () =>
+          this.openDialog(
+            SHOP_DIALOG_IDS.SUPPORT,
+            offer.dialog ?? this.model.dialogs.support ?? {},
+          ),
+        ),
     );
+    const amberOffers = paidGemOffers.filter(
+      (offer) => offer.resourceKey !== 'amethyst',
+    );
+    const amethystOffers = paidGemOffers.filter(
+      (offer) => offer.resourceKey === 'amethyst',
+    );
+    if (this.model.crystals.dailyCrystalOffer) {
+      amberOffers.unshift(
+        createDailyAmberOffer(
+          this.model.crystals.dailyCrystalOffer,
+          this.currentActions,
+        ),
+      );
+    }
+    this.amberOffersSection.bind(amberOffers);
+    this.amethystOffersSection.bind(amethystOffers);
 
     this.applySelectedTab();
     this.relayoutSections();
@@ -559,6 +537,60 @@ export class ShopPixiPage extends BasePixiRetainedView {
     }
     this.selectedTabId = normalized;
     this.applySelectedTab();
+    return true;
+  }
+
+  navigateToTarget({
+    tabId = 'traders',
+    dialogId = null,
+    slotNumber = null,
+    targetId,
+    indication = 'boink',
+  } = {}) {
+    const target = String(targetId ?? '').trim();
+    if (!target || !this.selectTab(tabId)) {
+      return false;
+    }
+
+    if (dialogId) {
+      const resolvedDialogId = SHOP_DIALOG_IDS[String(dialogId).toUpperCase()] ??
+        `shop.${dialogId}`;
+      let payload = this.model.dialogs?.[dialogId] ?? {};
+      if (dialogId === 'stall') {
+        const stall = this.model.traders.stalls.find(
+          (candidate) => Number(candidate.slotNumber) === Number(slotNumber),
+        );
+        if (!stall) {
+          return false;
+        }
+        payload = stall.dialog ?? stall;
+      }
+      if (!this.openDialog(resolvedDialogId, payload)) {
+        return false;
+      }
+      return (
+        this.dialogRegistry
+          ?.get?.(resolvedDialogId)
+          ?.navigateToTarget?.({ targetId: target, indication }) ?? false
+      );
+    }
+
+    const definition = this.semanticRegistry?.get?.(target);
+    if (!definition) {
+      return false;
+    }
+    const scroll = this.panelScrolls.get(normalizeTabId(tabId));
+    const displayObject = definition.displayObject;
+    const targetY = getRelativeDisplayY(displayObject, scroll?.content);
+    if (scroll && Number.isFinite(targetY)) {
+      const targetHeight = Math.max(0, Number(displayObject?.height) || 0);
+      scroll.scrollTo(
+        targetY - Math.max(0, (scroll.height - targetHeight) / 2),
+      );
+    }
+    if (indication === 'boink') {
+      displayObject?.startAttentionEffect?.();
+    }
     return true;
   }
 
@@ -730,15 +762,24 @@ export class ShopPixiPage extends BasePixiRetainedView {
       coinHeight,
     );
     crystalY += coinHeight + SECTION_GAP;
-    const offersHeight =
-      this.crystalOffersSection.getPreferredHeight(stallsWidth);
-    this.crystalOffersSection.setBounds(
+    const amberHeight =
+      this.amberOffersSection.getPreferredHeight(stallsWidth);
+    this.amberOffersSection.setBounds(
       0,
       crystalY,
       stallsWidth,
-      offersHeight,
+      amberHeight,
     );
-    crystalY += offersHeight + PAGE_SCROLL_CUT;
+    crystalY += amberHeight + SECTION_GAP;
+    const amethystHeight =
+      this.amethystOffersSection.getPreferredHeight(stallsWidth);
+    this.amethystOffersSection.setBounds(
+      0,
+      crystalY,
+      stallsWidth,
+      amethystHeight,
+    );
+    crystalY += amethystHeight + PAGE_SCROLL_CUT;
     this.panelScrolls.get('crystals').setContentHeight(crystalY);
   }
 
@@ -781,7 +822,8 @@ export class ShopPixiPage extends BasePixiRetainedView {
       this.requestsSection,
       this.playerMarketSection,
       this.coinOfferSection,
-      this.crystalOffersSection,
+      this.amberOffersSection,
+      this.amethystOffersSection,
     ].filter(Boolean);
   }
 
@@ -1434,9 +1476,16 @@ export class ShopStallWidget {
       label: 'shop:stall:progress',
     });
     this.timer = new PixiTextLabel({
-      fontSize: PIXI_UI_GEOMETRY.tinyFontSize,
-      anchor: { x: 1, y: 0.5 },
-      color: STALL_TEXT_INK,
+      fontFamily: RESEARCH_RANK_FONT,
+      fontSize: RESEARCH_ROW_TEXT.researchingTimerFontSize,
+      lineHeight: RESEARCH_ROW_TEXT.researchingTimerLineHeight,
+      align: 'center',
+      anchor: { x: 0.5, y: 0.5 },
+      color: '#ffffff',
+      stroke: {
+        color: '#0a0a0a',
+        width: RESEARCH_ROW_TEXT.buttonStrokeWidth,
+      },
       label: 'shop:stall:timer',
     });
     this.notificationBadge = new PixiNotificationBadge({ assetManager });
@@ -1580,7 +1629,7 @@ export class ShopStallWidget {
       stall.progress !== undefined &&
       stall.paused !== true;
     this.timer.setText(stall.timerLabel ?? stall.pauseLabel ?? '');
-    this.timer.setColor(stall.paused ? 'muted' : 'text');
+    this.styleTimer(stall.paused === true);
     bindStallItemIcon({
       assetManager: this.assetManager,
       base: this.icon,
@@ -1720,17 +1769,17 @@ export class ShopStallWidget {
     this.item.setWrapWidth(
       Math.max(0, itemRight - this.item.x),
     );
-    const timerWidth = Math.max(18, this.timer.measuredWidth);
     const timerRight = actionLeft - STALL_ACTION_CONTENT_GAP;
-    const progressRight =
-      timerRight - timerWidth - STALL_PROGRESS_TIMER_GAP;
+    const progressRight = timerRight;
     this.progress.position.set(70, progressY);
     this.progress.setSize(
       Math.max(0, progressRight - this.progress.x),
       PIXI_UI_GEOMETRY.progressTotalHeight,
     );
     this.timer.position.set(
-      timerRight,
+      this.model.paused === true
+        ? timerRight
+        : this.progress.x + this.progress.barWidth / 2,
       progressY + PIXI_UI_GEOMETRY.progressTotalHeight / 2,
     );
     this.notificationBadge.placeAtTopRight({
@@ -1788,6 +1837,32 @@ export class ShopStallWidget {
     });
     this.timer.applyTheme(this.theme);
     this.redrawState();
+  }
+
+  styleTimer(paused) {
+    if (paused) {
+      this.timer
+        .setFontFamily(null)
+        .setFontSize(PIXI_UI_GEOMETRY.tinyFontSize)
+        .setLineHeight(PIXI_UI_GEOMETRY.tinyFontSize)
+        .setAlign('right')
+        .setAnchor(1, 0.5)
+        .setColor('muted')
+        .setStroke(null);
+      return;
+    }
+
+    this.timer
+      .setFontFamily(RESEARCH_RANK_FONT)
+      .setFontSize(RESEARCH_ROW_TEXT.researchingTimerFontSize)
+      .setLineHeight(RESEARCH_ROW_TEXT.researchingTimerLineHeight)
+      .setAlign('center')
+      .setAnchor(0.5, 0.5)
+      .setColor('#ffffff')
+      .setStroke({
+        color: '#0a0a0a',
+        width: RESEARCH_ROW_TEXT.buttonStrokeWidth,
+      });
   }
 
   startSaleShine() {
@@ -1887,7 +1962,7 @@ export class ShopStallWidget {
     this.quantity.setColor(STALL_QUANTITY_COLOR);
     this.price.setColor(STALL_TEXT_INK);
     this.priceResource.amountLabel.setColor(STALL_TEXT_INK);
-    this.timer.setColor(STALL_TEXT_INK);
+    this.styleTimer(this.model?.paused === true);
     this.notificationBadge
       .setTone(this.model?.notificationTone)
       .setActive(
@@ -1984,6 +2059,12 @@ export class MarketOfferCard {
       anchor: { x: 0.5, y: 0 },
       label: `${label}:title`,
     });
+    this.claimCadence = new PixiTextLabel({
+      fontSize: PIXI_UI_GEOMETRY.borderLabelFontSize,
+      color: STALL_MUTED_INK,
+      anchor: { x: 0, y: 0.5 },
+      label: `${label}:claimCadence`,
+    });
     this.iconFrame = new PixiNineSliceFrame({
       texture: Texture.EMPTY,
       sourceInsets: STALL_ART_SOURCE_INSETS,
@@ -2018,6 +2099,7 @@ export class MarketOfferCard {
     this.root.addChild(
       this.frame,
       this.title,
+      this.claimCadence,
       this.iconFrame,
       this.icon,
       this.amountLabel,
@@ -2042,6 +2124,9 @@ export class MarketOfferCard {
     this.title.setText(
       formatTitleCase(model.title ?? model.label ?? 'Offer'),
     );
+    this.claimCadence.setText(model.claimCadence ?? '');
+    this.claimCadence.visible = Boolean(this.claimCadence.text);
+    this.claimCadence.renderable = this.claimCadence.visible;
     this.amountLabel.setText(String(model.amountLabel ?? ''));
     this.amountLabel.visible = Boolean(this.amountLabel.text);
     this.amountLabel.renderable = this.amountLabel.visible;
@@ -2095,8 +2180,12 @@ export class MarketOfferCard {
       PIXI_ROOT_RUN_GEOMETRY.researchCard.borderInsets,
     );
     if (this.compact) {
+      this.title.setAnchor(0.5, 0);
+      this.title.setAlign('center');
       this.title.position.set(width / 2, 7);
       this.title.setWrapWidth(Math.max(0, width - 12));
+      this.claimCadence.visible = false;
+      this.claimCadence.renderable = false;
       this.iconFrame.position.set(
         (width - STALL_ART_WELL_SIZE) / 2,
         27,
@@ -2104,9 +2193,19 @@ export class MarketOfferCard {
     } else {
       const contentWidth =
         width - MARKET_OFFER_ACTION_WIDTH - OFFER_CARD_PADDING_X * 3;
-      this.title.position.set(
-        OFFER_CARD_PADDING_X + contentWidth / 2,
-        5,
+      const actionX =
+        width - OFFER_CARD_PADDING_X - MARKET_OFFER_ACTION_WIDTH;
+      const claimCadenceX =
+        OFFER_CARD_PADDING_X + STALL_ART_WELL_SIZE + 8;
+      this.title.setAnchor(0, 0);
+      this.title.setAlign('left');
+      this.title.position.set(10, 5);
+      this.claimCadence.position.set(
+        claimCadenceX,
+        height / 2,
+      );
+      this.claimCadence.setWrapWidth(
+        Math.max(0, actionX - claimCadenceX - 8),
       );
       this.title.setWrapWidth(Math.max(0, contentWidth));
       this.iconFrame.position.set(10, 22);
@@ -2167,6 +2266,8 @@ export class MarketOfferCard {
     );
     this.title.applyTheme(this.theme);
     this.title.setColor(STALL_TEXT_INK);
+    this.claimCadence.applyTheme(this.theme);
+    this.claimCadence.setColor(STALL_MUTED_INK);
     this.amountLabel.applyTheme(this.theme);
     this.amountLabel.setColor(STALL_QUANTITY_COLOR);
     this.actionButton.applyTheme(this.theme);
@@ -2191,6 +2292,9 @@ export class MarketOfferCard {
     this.key = null;
     this.model = null;
     this.compact = false;
+    this.claimCadence.setText('');
+    this.claimCadence.visible = false;
+    this.claimCadence.renderable = false;
     this.action = null;
     this.enabled = false;
     this.resourceKey = '';
@@ -2939,6 +3043,65 @@ function drawDashedRect(graphics, x, y, width, height, color) {
   graphics.stroke({ color, width: 1, alpha: 0.45 });
 }
 
+function createDailyAmberOffer(dailyOffer, actions) {
+  return {
+    id: 'dailyCrystalOffer',
+    fullWidth: true,
+    title: dailyOffer.title ?? 'Daily Offer',
+    claimCadence:
+      dailyOffer.claimCadence ?? 'Claim every 24 hours',
+    resourceKey: 'crystal',
+    amountLabel: stripResourceName(
+      dailyOffer.rewardLabel ?? '',
+      'amber',
+    ),
+    value:
+      dailyOffer.actionLabel ??
+      (dailyOffer.canCollect
+        ? 'free'
+        : dailyOffer.timerLabel ?? ''),
+    valueVariant: 'green',
+    valueMuted: dailyOffer.canCollect !== true,
+    enabled: dailyOffer.canCollect === true,
+    notification:
+      dailyOffer.notification ?? dailyOffer.canCollect === true,
+    semanticId: 'shop.dailyCrystalOffer.collect',
+    action:
+      dailyOffer.action ?? actions.collectDailyCrystalOffer,
+  };
+}
+
+function normalizePaidGemOffer(offer, index, openSupportDialog) {
+  const resourceKey =
+    offer.resourceKey ??
+    (offer.amethystCount != null ? 'amethyst' : 'crystal');
+  const amount =
+    offer.amount ?? offer.amethystCount ?? offer.crystalCount ?? index;
+
+  return {
+    ...offer,
+    compact: true,
+    id: offer.id ?? offer.amethystCount ?? offer.crystalCount ?? index,
+    title: offer.title ?? 'Gem Offer',
+    resourceKey,
+    amountLabel:
+      offer.amountLabel ??
+      offer.amount ??
+      offer.amethystCount ??
+      offer.crystalCount ??
+      stripResourceName(
+        offer.bundleLabel ?? offer.label ?? '',
+        resourceKey === 'amethyst' ? 'amethyst' : 'amber',
+      ),
+    value: offer.priceLabel ?? offer.value ?? '',
+    valueVariant: 'green',
+    semanticId:
+      offer.semanticId ??
+      `shop.gemOffer.${resourceKey}.${amount}`,
+    action: () => offer.action?.(offer) ?? openSupportDialog(),
+  };
+}
+
 function stripResourceName(value, resource) {
   const text = String(value ?? '').trim();
   const resourceName = String(resource ?? '').trim().toLowerCase();
@@ -3067,6 +3230,19 @@ function normalizeTabId(tabId) {
   return SHOP_TABS.some((tab) => tab.id === value)
     ? value
     : 'traders';
+}
+
+function getRelativeDisplayY(displayObject, ancestor) {
+  if (!displayObject || !ancestor) {
+    return Number.NaN;
+  }
+  let y = 0;
+  let current = displayObject;
+  while (current && current !== ancestor) {
+    y += Number(current.y) || 0;
+    current = current.parent;
+  }
+  return current === ancestor ? y : Number.NaN;
 }
 
 function getShopTabNotification(model, tabId) {

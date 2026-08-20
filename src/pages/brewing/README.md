@@ -9,7 +9,15 @@ Day.
 
 It renders a pannable brewing world, cauldron nodes, bottom icon buttons that expand inline herb and potion boxes, a recipe-only selection dialog opened from the current cauldron, the next buyable cauldron, brew and bottle actions, navigation, and the bottom page name.
 The Recipes dialog uses sentence-case player copy: its title, potion and ingredient names, descriptions, navigation, status, and action labels start with uppercase letters.
-Known locked recipes show the passive `Not researched` status on the shared Bag-row background; research remains owned by the Research room.
+Known locked recipes show the passive `Not researched` status on the shared
+Bag-row background. While that recipe is being studied, the same status reads
+`Researching: <time left>` and counts down; research remains owned by the
+Research room.
+Tapping a research-locked next cauldron opens its exact capacity study in
+Research. Tapping a missing recipe ingredient opens the herb picker, centers
+that exact herb row, and gives it one short attention boink. A brew request
+opens the Recipes book directly to its required potion card and boinks the
+card's existing action control.
 Tapping the active cauldron during brewing or bottling removes up to one second
 from its timer, with the same per-target cooldown used by Garden plots.
 A potion automatically granted after bottling plays the same short pop used by

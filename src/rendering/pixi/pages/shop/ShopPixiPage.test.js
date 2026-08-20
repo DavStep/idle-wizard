@@ -124,6 +124,7 @@ describe('ShopPixiPage', () => {
     });
     const viewModel = createShopViewModel();
     viewModel.shop.traders.stalls[0].priceResourceKey = 'coin';
+    viewModel.shop.traders.stalls[0].timerLabel = '3s';
     harness.page.bind(viewModel);
     harness.page.activate();
 
@@ -249,10 +250,47 @@ describe('ShopPixiPage', () => {
     expect(stall.item.y).toBe(30);
     expect(stall.price.y).toBe(30);
     expect(stall.progress.y).toBe(60);
+    expect(stall.timer.text).toBe('3s');
+    expect(stall.timer.textObject.anchor.x).toBe(0.5);
     expect(stall.timer.textObject.anchor.y).toBe(0.5);
+    expect(stall.timer.x).toBe(
+      stall.progress.x + stall.progress.barWidth / 2,
+    );
     expect(stall.timer.y).toBe(
       stall.progress.y + stall.progress.barHeight / 2,
     );
+    expect(stall.timer.textObject.style.fill).toBe('#ffffff');
+    expect(stall.timer.textObject.style.stroke).toMatchObject({
+      color: '#0a0a0a',
+      width: resolvePixiTextStrokeWidth(9),
+    });
+
+    harness.page.destroy();
+    harness.dispose();
+  });
+
+  it('selects the exact notified Market tab and centers its claim control', () => {
+    const harness = createHarness();
+    const viewModel = createShopViewModel();
+    viewModel.shop.crystals.dailyCrystalOffer = {
+      title: 'Daily Offer',
+      rewardLabel: '1 amber',
+      actionLabel: 'free',
+      canCollect: true,
+      notification: true,
+    };
+    harness.page.bind(viewModel);
+    harness.page.activate();
+
+    expect(
+      harness.page.navigateToTarget({
+        tabId: 'crystals',
+        targetId: 'shop.dailyCrystalOffer.collect',
+        indication: 'boink',
+      }),
+    ).toBe(true);
+    expect(harness.page.selectedTabId).toBe('crystals');
+    expect(harness.page.panelScrolls.get('crystals').root.visible).toBe(true);
 
     harness.page.destroy();
     harness.dispose();
@@ -627,7 +665,7 @@ describe('ShopPixiPage', () => {
     harness.dispose();
   });
 
-  it('keeps the sale rail, timer, and batch badge clear of Cancel', () => {
+  it('centers the sale timer inside a rail that stays clear of Cancel', () => {
     const harness = createHarness();
     const viewModel = createShopViewModel();
     viewModel.shop.traders.stalls[0].batchLabel = 'x3';
@@ -638,7 +676,6 @@ describe('ShopPixiPage', () => {
     const stall = harness.page.stallsSection.stalls.get('stall-1');
     const actionLeft = stall.priceAction.x;
     const progressRight = stall.progress.x + stall.progress.barWidth;
-    const timerLeft = stall.timer.x - stall.timer.measuredWidth;
     const batchRight =
       stall.batchBadge.x + stall.batchBadge.width / 2;
     const priceRight =
@@ -647,8 +684,10 @@ describe('ShopPixiPage', () => {
     expect(stall.priceAction.textLabel.text).toBe('Cancel');
     expect(stall.priceResource.visible).toBe(true);
     expect(stall.priceResource.amountLabel.text).toBe('10');
-    expect(progressRight).toBeLessThan(timerLeft);
-    expect(stall.timer.x).toBeLessThan(actionLeft);
+    expect(progressRight).toBe(actionLeft - 6);
+    expect(stall.timer.x).toBe(
+      stall.progress.x + stall.progress.barWidth / 2,
+    );
     expect(batchRight).toBeLessThan(actionLeft);
     expect(priceRight).toBeLessThan(actionLeft);
     expect(
@@ -2024,17 +2063,24 @@ describe('ShopPixiPage', () => {
       'Coin Offer',
     );
     expect(
-      harness.page.crystalOffersSection.titlePlaque.title.text,
-    ).toBe('Gems');
+      harness.page.amberOffersSection.titlePlaque.title.text,
+    ).toBe('Amber');
+    expect(
+      harness.page.amethystOffersSection.titlePlaque.title.text,
+    ).toBe('Amethyst');
     expect(harness.page.coinOfferSection.titlePlaque.variant).toBe(
       'crystal',
     );
     expect(
-      harness.page.crystalOffersSection.titlePlaque.variant,
+      harness.page.amberOffersSection.titlePlaque.variant,
+    ).toBe('crystal');
+    expect(
+      harness.page.amethystOffersSection.titlePlaque.variant,
     ).toBe('crystal');
     expect(harness.page.coinOfferSection.panel).toBeUndefined();
     expect(harness.page.coinOfferSection.card).toBeUndefined();
-    expect(harness.page.crystalOffersSection.card).toBeUndefined();
+    expect(harness.page.amberOffersSection.card).toBeUndefined();
+    expect(harness.page.amethystOffersSection.card).toBeUndefined();
 
     const coinOffer =
       harness.page.coinOfferSection.rows.get('coinOffer');
@@ -2073,15 +2119,21 @@ describe('ShopPixiPage', () => {
     ).toBe(coinOffer.actionButton);
 
     const amberOffer =
-      harness.page.crystalOffersSection.rows.get('amber-1');
+      harness.page.amberOffersSection.rows.get('amber-1');
     const amberBagOffer =
-      harness.page.crystalOffersSection.rows.get('amber-2');
+      harness.page.amberOffersSection.rows.get('amber-2');
     const amberPileOffer =
-      harness.page.crystalOffersSection.rows.get('amber-5');
+      harness.page.amberOffersSection.rows.get('amber-5');
     const amethystOffer =
-      harness.page.crystalOffersSection.rows.get('amethyst-100');
+      harness.page.amethystOffersSection.rows.get('amethyst-100');
     const dailyCrystalOffer =
-      harness.page.crystalOffersSection.rows.get('dailyCrystalOffer');
+      harness.page.amberOffersSection.rows.get('dailyCrystalOffer');
+    expect(
+      harness.page.amberOffersSection.rows.get('amethyst-100'),
+    ).toBeNull();
+    expect(
+      harness.page.amethystOffersSection.rows.get('amber-1'),
+    ).toBeNull();
     expect(dailyCrystalOffer.title.text).toBe('Daily Offer');
     expect(dailyCrystalOffer.amountLabel.text).toBe('1');
     expect(dailyCrystalOffer.actionButton.textLabel.text).toBe('Free');
@@ -2126,8 +2178,10 @@ describe('ShopPixiPage', () => {
     expect(amberBagOffer.root.position.x).toBeLessThan(
       amberPileOffer.root.position.x,
     );
-    expect(amethystOffer.root.position.y).toBeGreaterThan(
-      amberOffer.root.position.y,
+    expect(
+      harness.page.amethystOffersSection.root.position.y,
+    ).toBeGreaterThan(
+      harness.page.amberOffersSection.root.position.y,
     );
     expect(getTexture).toHaveBeenCalledWith(
       PIXI_ROOT_RUN_ASSETS.researchCard,
@@ -2168,7 +2222,7 @@ describe('ShopPixiPage', () => {
     };
     harness.page.bind(viewModel);
     const coolingDailyOffer =
-      harness.page.crystalOffersSection.rows.get('dailyCrystalOffer');
+      harness.page.amberOffersSection.rows.get('dailyCrystalOffer');
     expect(coolingDailyOffer.actionButton.textLabel.text).toBe('23h 59m');
     expect(coolingDailyOffer.actionButton.enabled).toBe(false);
     expect(
@@ -2179,6 +2233,38 @@ describe('ShopPixiPage', () => {
       interactive: false,
       visible: true,
     });
+
+    harness.page.destroy();
+    harness.dispose();
+  });
+
+  it('keeps free-offer titles left-aligned and shows each claim cadence', () => {
+    const harness = createHarness();
+    const viewModel = createShopViewModel();
+    viewModel.shop.selectedTabId = 'crystals';
+
+    harness.page.bind(viewModel);
+    harness.page.activate();
+
+    const coinOffer =
+      harness.page.coinOfferSection.rows.get('coinOffer');
+    const gemOfferSection =
+      harness.page.amberOffersSection ??
+      harness.page.crystalOffersSection;
+    const dailyOffer =
+      gemOfferSection.rows.get('dailyCrystalOffer');
+    const paidOffer = gemOfferSection.rows.get('amber-1');
+
+    expect(coinOffer.title.position.x).toBe(10);
+    expect(coinOffer.title.textObject.anchor.x).toBe(0);
+    expect(coinOffer.claimCadence.text).toBe('Claim every 2 hours');
+    expect(coinOffer.claimCadence.visible).toBe(true);
+    expect(dailyOffer.title.position.x).toBe(10);
+    expect(dailyOffer.title.textObject.anchor.x).toBe(0);
+    expect(dailyOffer.claimCadence.text).toBe('Claim every 24 hours');
+    expect(dailyOffer.claimCadence.visible).toBe(true);
+    expect(paidOffer.title.textObject.anchor.x).toBe(0.5);
+    expect(paidOffer.claimCadence.visible).toBe(false);
 
     harness.page.destroy();
     harness.dispose();

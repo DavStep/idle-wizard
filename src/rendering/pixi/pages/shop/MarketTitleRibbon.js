@@ -20,13 +20,15 @@ const TITLE_STROKE = '#160e19';
 export class MarketTitleRibbon {
   constructor({
     assetManager = null,
+    assetId = PIXI_ROOT_RUN_ASSETS.marketTitleRibbon,
+    geometry = PIXI_ROOT_RUN_GEOMETRY.marketTitleRibbon,
     label = 'shop:marketTitleRibbon',
     showStars = true,
   } = {}) {
     this.assetManager = assetManager;
     this.showStars = showStars !== false;
-    this.geometry = PIXI_ROOT_RUN_GEOMETRY.marketTitleRibbon;
-    this.assetId = PIXI_ROOT_RUN_ASSETS.marketTitleRibbon;
+    this.geometry = geometry;
+    this.assetId = assetId;
     this.width = this.geometry.width;
     this.height = this.geometry.height;
     this.contentGroupLeft = 0;

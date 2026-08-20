@@ -14,55 +14,154 @@ import {
 const WIDGETS = [
   defineUiEditorIntegration({
     apiVersion: 1,
-    childWidgetIds: ['text-button'],
-    createThumbnail: () => createGardenThumbnail('compound.garden-seed-action-bar', createActionBarControl),
-    folderPath: ['Garden'],
-    id: 'compound.garden-seed-action-bar',
-    kind: 'widget',
-    label: 'Garden Seed Action Bar',
-    sectionId: 'composite-widgets',
-    properties: productionProperties('GardenSeedActionBar', 'Selected seed indicator and bulk garden actions'),
+    childWidgetIds: ["text-button"],
+    createThumbnail: () =>
+      createGardenThumbnail(
+        "compound.garden-seed-action-bar",
+        createActionBarControl,
+      ),
+    folderPath: ["Garden"],
+    id: "compound.garden-seed-action-bar",
+    kind: "widget",
+    label: "Garden Seed Action Bar",
+    sectionId: "composite-widgets",
+    properties: productionProperties(
+      "GardenSeedActionBar",
+      "Selected seed indicator and bulk garden actions",
+    ),
     scenarios: [
-      scenario('selected', 'Seed selected', { selected: true, canPlantAll: true, canHarvestAll: true }, mountActionBar),
-      scenario('seeds-only', 'Seeds only', { selected: false, canPlantAll: false, canHarvestAll: false }, mountActionBar),
-      scenario('harvest-ready', 'Harvest ready', { selected: true, canPlantAll: false, canHarvestAll: true, readyHarvestCount: 3 }, mountActionBar),
+      scenario(
+        "selected",
+        "Seed selected",
+        { selected: true, canPlantAll: true, canHarvestAll: true },
+        mountActionBar,
+      ),
+      scenario(
+        "seeds-only",
+        "Seeds only",
+        { selected: false, canPlantAll: false, canHarvestAll: false },
+        mountActionBar,
+      ),
+      scenario(
+        "harvest-ready",
+        "Harvest ready",
+        {
+          selected: true,
+          canPlantAll: false,
+          canHarvestAll: true,
+          readyHarvestCount: 3,
+        },
+        mountActionBar,
+      ),
     ],
-    usages: productionUsage('Garden room footer actions'),
+    usages: productionUsage("Garden room footer actions"),
   }),
   defineUiEditorIntegration({
     apiVersion: 1,
-    childWidgetIds: ['cost-button', 'primitive.progress-bar', 'primitive.star-level-label'],
-    createThumbnail: () => createGardenThumbnail('compound.garden-plot', createPlotControl),
-    folderPath: ['Garden'],
-    id: 'compound.garden-plot',
-    kind: 'widget',
-    label: 'Garden Plot',
-    sectionId: 'composite-widgets',
-    properties: productionProperties('GardenPlotWidget', 'One purchasable, plantable, growing, harvestable, or tap-accelerating garden plot'),
-    scenarios: [
-      scenario('empty', 'Empty plot', plotFixture('empty'), mountPlot),
-      scenario('growing', 'Growing herb', plotFixture('growing'), mountPlot),
-      scenario('tap-feedback', 'Tap feedback', plotFixture('tap-feedback'), mountPlot),
-      scenario('ready', 'Ready to harvest', plotFixture('ready'), mountPlot),
-      scenario('locked', 'Locked slot', plotFixture('locked'), mountPlot),
-      scenario('purchasable', 'Purchasable slot', plotFixture('purchasable'), mountPlot),
+    childWidgetIds: [
+      "cost-button",
+      "primitive.progress-bar",
+      "primitive.star-level-label",
     ],
-    usages: productionUsage('Garden room plot grid'),
+    createThumbnail: () =>
+      createGardenThumbnail("compound.garden-plot", createPlotControl),
+    folderPath: ["Garden"],
+    id: "compound.garden-plot",
+    kind: "widget",
+    label: "Garden Plot",
+    sectionId: "composite-widgets",
+    properties: productionProperties(
+      "GardenPlotWidget",
+      "One purchasable, plantable, growing, harvestable, or tap-accelerating garden plot",
+    ),
+    scenarios: [
+      scenario("empty", "Empty plot", plotFixture("empty"), mountPlot),
+      scenario("growing", "Growing herb", plotFixture("growing"), mountPlot),
+      scenario(
+        "tap-feedback",
+        "Tap feedback",
+        plotFixture("tap-feedback"),
+        mountPlot,
+      ),
+      scenario("ready", "Ready to harvest", plotFixture("ready"), mountPlot),
+      scenario("locked", "Locked slot", plotFixture("locked"), mountPlot),
+      scenario(
+        "purchasable",
+        "Purchasable slot",
+        plotFixture("purchasable"),
+        mountPlot,
+      ),
+    ],
+    usages: productionUsage("Garden room plot grid"),
   }),
   defineUiEditorIntegration({
     apiVersion: 1,
-    createThumbnail: () => createGardenThumbnail('compound.garden-plot-tooltip', createTooltipControl),
-    folderPath: ['Garden'],
-    id: 'compound.garden-plot-tooltip',
-    kind: 'widget',
-    label: 'Garden Plot Tooltip',
-    sectionId: 'composite-widgets',
-    properties: productionProperties('GardenPlotTooltip', 'Compact plot action explanation anchored near a plot'),
-    scenarios: [
-      scenario('blocked', 'Blocked action', { copy: 'Select a seed before planting this plot.' }, mountTooltip),
-      scenario('locked', 'Locked action', { copy: 'Reach level 7 to unlock this garden plot.' }, mountTooltip),
+    childWidgetIds: [
+      "text-button",
+      "primitive.progress-bar",
+      "primitive.star-level-label",
     ],
-    usages: productionUsage('Garden plot contextual feedback'),
+    createThumbnail: () =>
+      createGardenThumbnail(
+        "compound.automated-garden-plot",
+        createAutomatedPlotControl,
+      ),
+    folderPath: ["Garden"],
+    id: "compound.automated-garden-plot",
+    kind: "widget",
+    label: "Automated Garden Plot",
+    sectionId: "composite-widgets",
+    properties: productionProperties(
+      "GardenPlotWidget",
+      "Wide five-slot automated plot with seed, Auto, and xN controls",
+    ),
+    scenarios: [
+      scenario(
+        "auto-on-x5",
+        "Auto on · x5",
+        automatedPlotFixture({ autoEnabled: true, quantity: 5 }),
+        mountPlot,
+      ),
+      scenario(
+        "auto-off-x3",
+        "Auto off · x3",
+        automatedPlotFixture({ autoEnabled: false, quantity: 3 }),
+        mountPlot,
+      ),
+    ],
+    usages: productionUsage("Garden room automated plot rows"),
+  }),
+  defineUiEditorIntegration({
+    apiVersion: 1,
+    createThumbnail: () =>
+      createGardenThumbnail(
+        "compound.garden-plot-tooltip",
+        createTooltipControl,
+      ),
+    folderPath: ["Garden"],
+    id: "compound.garden-plot-tooltip",
+    kind: "widget",
+    label: "Garden Plot Tooltip",
+    sectionId: "composite-widgets",
+    properties: productionProperties(
+      "GardenPlotTooltip",
+      "Compact plot action explanation anchored near a plot",
+    ),
+    scenarios: [
+      scenario(
+        "blocked",
+        "Blocked action",
+        { copy: "Select a seed before planting this plot." },
+        mountTooltip,
+      ),
+      scenario(
+        "locked",
+        "Locked action",
+        { copy: "Reach level 7 to unlock this garden plot." },
+        mountTooltip,
+      ),
+    ],
+    usages: productionUsage("Garden plot contextual feedback"),
   }),
 ];
 
@@ -100,7 +199,12 @@ async function mountActionBar(context, fixture) {
   });
 }
 
-function createActionBarControl({ assets, fixture = { selected: true, canPlantAll: true, canHarvestAll: true }, input, context = null }) {
+function createActionBarControl({
+  assets,
+  fixture = { selected: true, canPlantAll: true, canHarvestAll: true },
+  input,
+  context = null,
+}) {
   const root = new Container({ label: 'garden-seed-action-bar-preview' });
   const bar = new GardenSeedActionBar({ assetManager: assets, inputRouter: input, reducedMotion: true });
   bar.bind({
@@ -128,23 +232,63 @@ async function mountPlot(context, fixture) {
   });
 }
 
-function createPlotControl({ assets, fixture = plotFixture('growing'), input, context = null }) {
+function createPlotControl({
+  assets,
+  fixture = plotFixture("growing"),
+  input,
+  context = null,
+}) {
   const page = {
     hidePlotTooltip() {},
-    showPlotTooltip(copy) { context?.emit('tooltipShown', { copy }); },
+    showPlotTooltip(copy) { context?.emit('tooltipShown', { copy });
+    },
     startSeedUsedFeedback() {},
     theme: DEFAULT_PIXI_THEME_SNAPSHOT,
     timeSource: () => context?.clock.now() ?? 2000,
   };
   const plot = new GardenPlotWidget({ instanceId: 1, page, assetManager: assets, inputRouter: input });
-  plot.bind(fixture, { activatePlot: () => context?.emit('plotActivated', { phase: fixture.phase }) ?? true });
-  plot.setBounds(0, 0, 104);
+  plot.bind(fixture, {
+    activatePlot: () =>
+      context?.emit("plotActivated", { phase: fixture.phase }) ?? true,
+    openPlotSeedPicker: () => context?.emit("seedPickerOpened") ?? true,
+    selectPlotQuantity: (_plot, quantity) =>
+      context?.emit("quantitySelected", { quantity }) ?? true,
+    togglePlotAutomation: () => context?.emit("automationToggled") ?? true,
+  });
+  const width = fixture.automationAvailable ? 310 : 104;
+  plot.setBounds(0, 0, width);
   if (fixture.tapFeedback === true) {
     const now = page.timeSource();
     plot.startTapAcceleration({ ok: true, reducedSeconds: 1, cooldownMs: 720 }, now - 336);
     plot.updateTime(now);
   }
-  return { destroy: () => plot.destroy(), height: GARDEN_PIXI_GEOMETRY.rowHeight, root: plot.root, width: 104 };
+  return {
+    destroy: () => plot.destroy(),
+    height: GARDEN_PIXI_GEOMETRY.rowHeight,
+    root: plot.root,
+    width,
+  };
+}
+
+function createAutomatedPlotControl({ assets, input }) {
+  return createPlotControl({
+    assets,
+    fixture: automatedPlotFixture({ autoEnabled: true, quantity: 5 }),
+    input,
+  });
+}
+
+function automatedPlotFixture({ autoEnabled, quantity }) {
+  return {
+    ...plotFixture("growing"),
+    automationAvailable: true,
+    autoEnabled,
+    automationSeed: { key: "mintSeed", label: "Mint", quantity: 12 },
+    level: quantity,
+    maxPlantQuantity: quantity,
+    plantQuantity: quantity,
+    harvestQuantity: quantity,
+  };
 }
 
 function plotFixture(state) {
@@ -170,7 +314,10 @@ async function mountTooltip(_context, fixture) {
   });
 }
 
-function createTooltipControl({ assets, fixture = { copy: 'Select a seed before planting this plot.' } }) {
+function createTooltipControl({
+  assets,
+  fixture = { copy: "Select a seed before planting this plot." },
+}) {
   const tooltip = new GardenPlotTooltip({ assetManager: assets });
   tooltip.bind(fixture.copy);
   tooltip.applyTheme(DEFAULT_PIXI_THEME_SNAPSHOT);

@@ -74,9 +74,18 @@ export class ShopCrystalOfferManager {
     }
 
     this.root = document.createElement('section');
-    this.root.className = 'shop-page__crystal-offers style-box';
+    this.root.className = 'shop-page__crystal-offers';
     this.root.setAttribute('aria-label', 'Gem offers');
-    this.root.append(this.createTitle(), this.createHeader(), this.createRows());
+    this.root.append(
+      this.createOfferSection(
+        'Amber',
+        this.offers.filter((offer) => offer.amethystCount == null),
+      ),
+      this.createOfferSection(
+        'Amethyst',
+        this.offers.filter((offer) => offer.amethystCount != null),
+      ),
+    );
     this.refs.popup = this.createSupportPopup();
     parent.append(this.root);
     popupParent.append(this.refs.popup);
@@ -97,10 +106,22 @@ export class ShopCrystalOfferManager {
     this.previousFocus = null;
   }
 
-  createTitle() {
+  createOfferSection(label, offers) {
+    const section = document.createElement('section');
+    section.className = 'shop-page__crystal-offer-section style-box';
+    section.setAttribute('aria-label', `${label} offers`);
+    section.append(
+      this.createTitle(label),
+      this.createHeader(),
+      this.createRows(offers),
+    );
+    return section;
+  }
+
+  createTitle(label) {
     const title = document.createElement('div');
     title.className = 'style-box__title';
-    title.textContent = 'Gems';
+    title.textContent = label;
     return title;
   }
 
@@ -118,12 +139,12 @@ export class ShopCrystalOfferManager {
     return row;
   }
 
-  createRows() {
+  createRows(offers) {
     const rows = document.createElement('div');
     rows.className = 'shop-page__crystal-rows';
     rows.setAttribute('role', 'list');
 
-    for (const offer of this.offers) {
+    for (const offer of offers) {
       rows.append(this.createOfferRow(offer));
     }
 

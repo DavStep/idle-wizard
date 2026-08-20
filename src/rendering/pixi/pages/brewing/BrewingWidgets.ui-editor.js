@@ -31,7 +31,7 @@ export default [
   widget('compound.brewing-inventory-panel', 'Brewing Inventory Panel', [], inventoryPanelControl, variants(['herbs', 'potions', 'expanded'])),
   widget('compound.brewing-inventory-row', 'Brewing Inventory Row', [], inventoryRowControl, variants(['herb', 'potion', 'empty', 'locked'])),
   widget('compound.brewing-inventory-opener', 'Brewing Inventory Opener', [], inventoryButtonControl, variants(['herbs', 'potions', 'selected'])),
-  widget('compound.brewing-recipe-card', 'Brewing Recipe Card', ['text-button', 'compound.brewing-recipe-ingredient-row'], recipeCardControl, variants(['available', 'selected', 'not-researched', 'unknown'])),
+  widget('compound.brewing-recipe-card', 'Brewing Recipe Card', ['text-button', 'compound.brewing-recipe-ingredient-row'], recipeCardControl, variants(['available', 'selected', 'not-researched', 'researching', 'unknown'])),
   widget('compound.brewing-recipe-ingredient-row', 'Brewing Recipe Ingredient Row', [], recipeIngredientControl, variants(['available', 'missing', 'unknown'])),
   widget('compound.brewing-batch-detail', 'Brewing Batch Detail', ['compound.brewing-ingredient-picker-slot', 'primitive.progress-bar'], batchDetailControl, variants(['empty', 'missing', 'ready', 'brewing', 'complete'])),
   widget('compound.brewing-cauldron-hearth', 'Brewing Cauldron Hearth', [], cauldronHearthControl, variants(['idle', 'lit', 'reduced-motion'])),
@@ -194,12 +194,13 @@ function inventoryButtonControl({ assets, input, fixture = { state: 'herbs' }, c
 }
 
 function recipeCardControl({ assets, input, fixture = { state: 'available' }, context }) {
-  const control = new BrewingRecipeCard({ instanceId: 1, assetManager: assets, inputRouter: input });
+  const control = new BrewingRecipeCard({ instanceId: 1, assetManager: assets, inputRouter: input, timeSource: () => context?.clock.now() ?? 2000 });
   const state = fixture.state;
   control.bind({
     key: 'minorManaPotion', label: 'Minor Mana Potion', description: 'Restores a small amount of mana.', manaCost: 12, brewDurationMs: 5000,
-    ingredients: [{ label: 'Mint', quantity: 2, owned: state === 'not-researched' ? 0 : 5 }, { label: 'Sage', quantity: 1, owned: 3 }],
-    known: state !== 'unknown', unknown: state === 'unknown', unlocked: !['not-researched', 'unknown'].includes(state), selected: state === 'selected',
+    ingredients: [{ label: 'Mint', quantity: 2, owned: ['not-researched', 'researching'].includes(state) ? 0 : 5 }, { label: 'Sage', quantity: 1, owned: 3 }],
+    known: state !== 'unknown', unknown: state === 'unknown', unlocked: !['not-researched', 'researching', 'unknown'].includes(state), selected: state === 'selected',
+    researchInProgress: state === 'researching', researchRemainingMs: 125_000,
   }, { selectRecipe: () => context?.emit('recipeSelected') ?? true });
   control.setBounds(0, 0, 155, 341);
   return wrap(control, 155, 341);

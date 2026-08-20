@@ -93,6 +93,8 @@ export class AppFacade {
         this.backendFacade.getTradeAllianceFacade(),
       hapticsFacade: this.hapticsFacade,
       soundSettingsFacade: this.soundSettingsFacade,
+      checkForUpdates: () => this.checkForLiveUpdateManually(),
+      installUpdate: () => this.installLiveUpdate(),
     });
     this.announcementPresenter = new PixiAnnouncementPresenter({
       renderFacade: this.renderFacade,
@@ -219,6 +221,20 @@ export class AppFacade {
     } catch {
       // A failed update probe never blocks a playable bundled APK.
       return true;
+    }
+  }
+
+  async checkForLiveUpdateManually() {
+    if (this.disposed || this.liveUpdateInProgress) {
+      return { status: 'unavailable' };
+    }
+
+    try {
+      this.liveUpdateCheckResult = await this.liveUpdateManager.checkNow();
+      return this.liveUpdateCheckResult;
+    } catch {
+      this.liveUpdateCheckResult = { status: 'unavailable' };
+      return this.liveUpdateCheckResult;
     }
   }
 

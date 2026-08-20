@@ -9134,6 +9134,7 @@ div.workshop-page__discovery-row {
 .workshop-page__trade-alliance-emblem-option {
   box-sizing: border-box;
   display: grid;
+  position: relative;
   width: 24px;
   height: 24px;
   padding: 2px;
@@ -9155,11 +9156,23 @@ div.workshop-page__discovery-row {
   -webkit-mask: var(--workshop-alliance-emblem-mask) center / contain no-repeat;
 }
 
-.workshop-page__trade-alliance-emblem-option.is-selected,
 .workshop-page__trade-alliance-emblem-option:focus-visible {
-  background: #553b28;
   outline: var(--style-border-strong);
   outline-offset: 1px;
+}
+
+.workshop-page__trade-alliance-emblem-option-checkmark {
+  position: absolute;
+  right: -2px;
+  bottom: -2px;
+  display: block;
+  width: 11px;
+  height: 11px;
+  pointer-events: none;
+}
+
+.workshop-page__trade-alliance-emblem-option-checkmark[hidden] {
+  display: none;
 }
 
 .workshop-page__trade-alliance-color-field legend {
@@ -9270,6 +9283,8 @@ div.workshop-page__discovery-row {
   top: var(--style-room-content-top);
   right: var(--style-room-content-edge);
   left: var(--style-room-content-edge);
+  display: grid;
+  gap: 24px;
 }
 
 .shop-page__coin-offer {
@@ -11235,6 +11250,7 @@ div.workshop-page__discovery-row {
 }
 
 .research-page__research-art-extra.is-timer-reduction {
+  bottom: -6px;
   width: 37.18px;
   height: 40.56px;
 }

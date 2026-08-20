@@ -1541,6 +1541,8 @@ function createCoinOfferModel(offer) {
   }
   return {
     ...offer,
+    claimCadence:
+      offer.claimCadence ?? 'Claim every 2 hours',
     rewardLabel: formatCoinPriceText(offer.rewardCoin),
     actionLabel: offer.canCollect
       ? 'collect'
@@ -1561,6 +1563,8 @@ function createDailyCrystalOfferModel(offer) {
   }
   return {
     ...offer,
+    claimCadence:
+      offer.claimCadence ?? 'Claim every 24 hours',
     rewardLabel: `${nonNegativeInteger(offer.rewardCrystal)} amber`,
     actionLabel: offer.canCollect
       ? 'free'

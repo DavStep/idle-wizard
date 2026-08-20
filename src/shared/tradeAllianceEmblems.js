@@ -67,6 +67,12 @@ export const TRADE_ALLIANCE_EMBLEMS = Object.freeze([
     assetId: 'source:assets/icons/icon-alliance-emblem-hourglass.png',
     url: new URL('../../assets/game/source/icons/icon-alliance-emblem-hourglass.png', import.meta.url).href,
   }),
+  Object.freeze({
+    id: 'dragon',
+    label: 'Dragon',
+    assetId: 'source:assets/icons/icon-alliance-emblem-dragon.png',
+    url: new URL('../../assets/game/source/icons/icon-alliance-emblem-dragon.png', import.meta.url).href,
+  }),
 ]);
 
 const EMBLEMS_BY_ID = new Map(

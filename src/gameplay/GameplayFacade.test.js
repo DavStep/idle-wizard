@@ -994,7 +994,10 @@ describe("GameplayFacade", () => {
     finishCurrentTaskLevel(gameplayFacade);
 
     expect(gameplayFacade.getSnapshot().tasks.currentLevel).toBe(2);
-    expect(gameplayFacade.getSnapshot().mana).toMatchObject({ cap: 50, perSecond: 1 });
+    expect(gameplayFacade.getSnapshot().mana).toMatchObject({
+      cap: 50,
+      perSecond: 1,
+    });
 
     gameplayFacade.coinFacade.add(75);
     expect(gameplayFacade.buyResearch(manaResearchIds.capacity(2))).toMatchObject({
@@ -1005,12 +1008,18 @@ describe("GameplayFacade", () => {
       ok: true,
       cost: 50,
     });
-    expect(gameplayFacade.getSnapshot().mana).toMatchObject({ cap: 100, perSecond: 2 });
+    expect(gameplayFacade.getSnapshot().mana).toMatchObject({
+      cap: 100,
+      perSecond: 2,
+    });
 
     finishCurrentTaskLevel(gameplayFacade);
 
     expect(gameplayFacade.getSnapshot().tasks.currentLevel).toBe(3);
-    expect(gameplayFacade.getSnapshot().mana).toMatchObject({ cap: 100, perSecond: 2 });
+    expect(gameplayFacade.getSnapshot().mana).toMatchObject({
+      cap: 100,
+      perSecond: 2,
+    });
 
     gameplayFacade.coinFacade.add(120);
     expect(gameplayFacade.buyResearch(manaResearchIds.capacity(3))).toMatchObject({
@@ -2321,9 +2330,7 @@ describe("GameplayFacade", () => {
     });
 
     second.ecsFacade.update({ deltaSeconds: 2 });
-    expect(
-      second.gameplayFacade.getSnapshot().brewing.activeBrew,
-    ).toBeNull();
+    expect(second.gameplayFacade.getSnapshot().brewing.activeBrew).toBeNull();
     expect(second.gameplayFacade.getSnapshot().inventory).toContainEqual({
       itemTypeId: 2001,
       key: "manaTonic",
@@ -2923,19 +2930,10 @@ describe("GameplayFacade", () => {
         seriesId: "gardenBulkActions",
       }),
     ]);
-    expect(research.boxes[1].researches).toHaveLength(25);
-    expect(research.boxes[1].researches[0]).toEqual({
-      id: "unlockSeed:sageSeed",
-      label: "sage seed",
-      value: "researched",
-      effect: "drop",
-      description: "allows sage seed to drop from summon seed.",
-      costCoin: 0,
-      completed: true,
-      canResearch: false,
-    });
-    expect(research.boxes[1].researches[1]).toMatchObject({
+    expect(research.boxes[1].researches).toHaveLength(24);
+    expect(research.boxes[1].researches[0]).toMatchObject({
       id: "timer:herbGrowth:sageHerb:1",
+      displayName: "sage growing",
       itemKind: "herb",
       itemKey: "sageHerb",
       starLevel: 1,
@@ -5699,6 +5697,47 @@ describe("GameplayFacade", () => {
     second.ecsFacade.destroyWorld();
   });
 
+  it("restores per-plot Garden Auto, seed, and xN settings", () => {
+    const persistenceStorage = createMemoryStorage();
+    const first = createGameplay({ persistenceStorage });
+
+    expect(first.gameplayFacade.toggleGardenAutomationEnabled(1)).toEqual({
+      ok: true,
+      tileNumber: 1,
+      enabled: false,
+    });
+    expect(first.gameplayFacade.selectGardenAutomationSeed(1, 2)).toMatchObject(
+      { ok: true, tileNumber: 1 },
+    );
+    expect(first.gameplayFacade.setGardenPlantQuantity(1, 1)).toMatchObject({
+      ok: true,
+      quantity: 1,
+    });
+    first.gameplayFacade.shutdown();
+    first.ecsFacade.destroyWorld();
+
+    const saved = JSON.parse(
+      persistenceStorage.getItem("idle-wizard.gameplay.save"),
+    );
+    expect(saved.garden.tiles[0]).toMatchObject({
+      autoEnabled: false,
+      plantQuantity: 1,
+      selectedSeedItemKey: "mintSeed",
+    });
+
+    const second = createGameplay({ persistenceStorage });
+    expect(
+      second.gameplayFacade.getSnapshot().garden.plot.tiles[0],
+    ).toMatchObject({
+      autoEnabled: false,
+      plantQuantity: 1,
+      selectedSeedKey: "mintSeed",
+    });
+
+    second.gameplayFacade.shutdown();
+    second.ecsFacade.destroyWorld();
+  });
+
   it("plants non-sage garden seeds into their matching herbs", () => {
     const { gameplayFacade } = createGameplay();
 
@@ -6300,7 +6339,9 @@ describe("GameplayFacade", () => {
       crystal: 1,
       cooldownSeconds: 86_400,
     });
-    expect(gameplayFacade.getSnapshot().crystal.current).toBe(initialCrystal + 1);
+    expect(gameplayFacade.getSnapshot().crystal.current).toBe(
+      initialCrystal + 1,
+    );
     expect(rewardEvents).toEqual([
       expect.objectContaining({
         type: "crystal_collected",
@@ -6316,7 +6357,9 @@ describe("GameplayFacade", () => {
       ok: false,
       reason: "cooldown",
     });
-    expect(gameplayFacade.getSnapshot().crystal.current).toBe(initialCrystal + 1);
+    expect(gameplayFacade.getSnapshot().crystal.current).toBe(
+      initialCrystal + 1,
+    );
     expect(rewardEvents).toHaveLength(1);
 
     ecsFacade.update({ timerDeltaSeconds: 86_399 });

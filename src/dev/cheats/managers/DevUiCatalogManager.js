@@ -347,6 +347,8 @@ function createPreviewModel(dialogId) {
           unknown: true,
           known: false,
           canResearch: true,
+          researchInProgress: true,
+          researchRemainingMs: 125_000,
           ingredients: [
             createRecipePreviewIngredient('sageHerb', 'Sage', 7),
             createRecipePreviewIngredient('lavenderHerb', 'Lavender', 1),

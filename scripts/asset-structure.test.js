@@ -254,21 +254,26 @@ describe('asset structure', () => {
         ),
       ),
     );
-    let sandPixels = 0;
+    let orangeYellowSandPixels = 0;
+    let darkFramePixels = 0;
     let purpleSandPixels = 0;
     for (let offset = 0; offset < timeIcon.data.length; offset += 4) {
       const red = timeIcon.data[offset];
       const green = timeIcon.data[offset + 1];
       const blue = timeIcon.data[offset + 2];
       const alpha = timeIcon.data[offset + 3];
-      sandPixels += Number(
-        alpha > 0 && red > 150 && green > 90 && blue < 145 && red > green,
+      orangeYellowSandPixels += Number(
+        alpha > 0 && red > 230 && green > 100 && blue < 80 && red > green,
+      );
+      darkFramePixels += Number(
+        alpha >= 64 && red < 105 && green < 75 && blue < 110,
       );
       purpleSandPixels += Number(
         alpha > 0 && blue - red > 18 && red - green > 18,
       );
     }
-    expect(sandPixels).toBeGreaterThan(100);
+    expect(orangeYellowSandPixels).toBeGreaterThan(100);
+    expect(darkFramePixels).toBeGreaterThan(500);
     expect(purpleSandPixels).toBe(0);
   });
 });

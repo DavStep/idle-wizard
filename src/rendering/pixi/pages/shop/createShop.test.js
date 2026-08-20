@@ -243,11 +243,13 @@ describe('createShop', () => {
     expect(model.shop.crystals.coinOffer).toMatchObject({
       rewardLabel: '100 coin',
       actionLabel: 'collect',
+      claimCadence: 'Claim every 2 hours',
       notification: true,
     });
     expect(model.shop.crystals.dailyCrystalOffer).toMatchObject({
       rewardLabel: '1 amber',
       actionLabel: 'free',
+      claimCadence: 'Claim every 24 hours',
       notification: true,
     });
     expect(model.shop.crystals.offers).toHaveLength(12);

@@ -446,8 +446,30 @@ describe('WorkshopTradeAllianceManager styles', () => {
     const emblemOptions = popup.querySelectorAll(
       '.workshop-page__trade-alliance-emblem-option',
     );
-    expect(emblemOptions).toHaveLength(11);
-    popup.querySelector('[data-emblem-id="flame"]').click();
+    expect(emblemOptions).toHaveLength(12);
+    const owlOption = popup.querySelector('[data-emblem-id="owl"]');
+    const flameOption = popup.querySelector('[data-emblem-id="flame"]');
+    expect(
+      owlOption.querySelector(
+        '.workshop-page__trade-alliance-emblem-option-checkmark',
+      ).hidden,
+    ).toBe(false);
+    expect(
+      flameOption.querySelector(
+        '.workshop-page__trade-alliance-emblem-option-checkmark',
+      ).hidden,
+    ).toBe(true);
+    flameOption.click();
+    expect(
+      owlOption.querySelector(
+        '.workshop-page__trade-alliance-emblem-option-checkmark',
+      ).hidden,
+    ).toBe(true);
+    expect(
+      flameOption.querySelector(
+        '.workshop-page__trade-alliance-emblem-option-checkmark',
+      ).hidden,
+    ).toBe(false);
     popup.querySelector('button[type="submit"]').click();
     await Promise.resolve();
 

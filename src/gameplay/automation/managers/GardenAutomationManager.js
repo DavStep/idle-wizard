@@ -1,7 +1,12 @@
 import { automationResearchIds } from '../automationResearchIds.js';
 
 export class GardenAutomationManager {
-  constructor({ gardenFacade, gameplayLogFacade, onGardenSeedPlanted, researchFacade } = {}) {
+  constructor({
+    gardenFacade,
+    gameplayLogFacade,
+    onGardenSeedPlanted,
+    researchFacade,
+  } = {}) {
     this.gardenFacade = gardenFacade;
     this.gameplayLogFacade = gameplayLogFacade;
     this.onGardenSeedPlanted = onGardenSeedPlanted;
@@ -21,11 +26,17 @@ export class GardenAutomationManager {
     const tiles = this.gardenFacade.getSnapshot().plot?.tiles ?? [];
 
     for (const tile of tiles) {
-      if (!tile.unlocked || tile.phase !== 'ready') {
+      if (
+        !tile.unlocked ||
+        tile.autoEnabled === false ||
+        tile.phase !== "ready"
+      ) {
         continue;
       }
 
-      if (!this.hasResearch(automationResearchIds.autoPlantTile(tile.tileNumber))) {
+      if (
+        !this.hasResearch(automationResearchIds.autoPlantTile(tile.tileNumber))
+      ) {
         continue;
       }
 
@@ -37,11 +48,18 @@ export class GardenAutomationManager {
     const tiles = this.gardenFacade.getSnapshot().plot?.tiles ?? [];
 
     for (const tile of tiles) {
-      if (!tile.unlocked || tile.phase !== 'empty' || !tile.selectedSeedItemTypeId) {
+      if (
+        !tile.unlocked ||
+        tile.autoEnabled === false ||
+        tile.phase !== "empty" ||
+        !tile.selectedSeedItemTypeId
+      ) {
         continue;
       }
 
-      if (!this.hasResearch(automationResearchIds.autoPlantTile(tile.tileNumber))) {
+      if (
+        !this.hasResearch(automationResearchIds.autoPlantTile(tile.tileNumber))
+      ) {
         continue;
       }
 

@@ -797,6 +797,10 @@ export class ShopDialogPixi extends BasePixiRetainedView {
     }
   }
 
+  navigateToTarget({ targetId, indication = 'boink' } = {}) {
+    return this.list.navigateToTarget(targetId, { indication });
+  }
+
   onApplyTheme(theme) {
     this.theme = theme ?? DEFAULT_PIXI_THEME_SNAPSHOT;
     this.redrawBackdrop();
@@ -2969,6 +2973,31 @@ class VirtualShopDialogList {
     });
   }
 
+  navigateToTarget(targetId, { indication = 'boink' } = {}) {
+    const target = String(targetId ?? '').trim();
+    const entry = this.createLayout().find(
+      (candidate) => candidate.item.semanticId === target,
+    );
+    if (!entry) {
+      return false;
+    }
+
+    this.scroll.scrollTo(
+      entry.top - Math.max(0, (this.height - entry.height) / 2),
+    );
+    this.renderWindow(true);
+    const row = this.rows
+      .getWidgets()
+      .find((candidate) => candidate.semanticId === target);
+    if (!row) {
+      return false;
+    }
+    if (indication === 'boink') {
+      row.startAttentionEffect?.();
+    }
+    return true;
+  }
+
   expansionHeightFor(key) {
     return (
       SETTINGS_ROW_EXPANSION_HEIGHT *
@@ -3624,15 +3653,16 @@ export class RootRunInventoryChoiceRowPixi extends ClickableWidget {
       this.assetManager,
       iconFrames.overlay,
     );
-    this.itemIcon.alpha = this.enabled ? 1 : 0.45;
-    this.itemIconOverlay.alpha = this.enabled ? 1 : 0.45;
+    const visuallyLocked = item.locked === true;
+    this.itemIcon.alpha = this.enabled && !visuallyLocked ? 1 : 0.45;
+    this.itemIconOverlay.alpha = this.enabled && !visuallyLocked ? 1 : 0.45;
     this.selectedIndicator.visible = this.selected;
     this.selectedIndicator.renderable = this.selected;
     this.selectedIndicator.alpha = this.enabled ? 1 : 0.45;
     this.syncClickableInteraction();
     this.label.setColor(
       resolveThemeColor(
-        item.disabled
+        item.disabled || visuallyLocked
           ? 'disabled'
           : item.itemKind
             ? 'text'
@@ -3641,7 +3671,7 @@ export class RootRunInventoryChoiceRowPixi extends ClickableWidget {
     );
     this.value.setColor(
       resolveThemeColor(
-        item.disabled
+        item.disabled || visuallyLocked
           ? 'disabled'
           : item.valueTone
             ? resolveProgressToneText(item.valueTone)

@@ -21,8 +21,8 @@ function createManager(tiles) {
   return { gardenFacade, manager };
 }
 
-describe('GardenAutomationManager', () => {
-  it('uses plot automation to harvest its ready plant', () => {
+describe("GardenAutomationManager", () => {
+  it("uses plot automation to harvest its ready plant", () => {
     const { gardenFacade, manager } = createManager([
       { tileNumber: 1, unlocked: true, phase: 'ready' },
     ]);
@@ -32,7 +32,7 @@ describe('GardenAutomationManager', () => {
     expect(gardenFacade.startHarvest).toHaveBeenCalledWith(1);
   });
 
-  it('uses the same plot automation to plant its selected seed', () => {
+  it("uses the same plot automation to plant its selected seed", () => {
     const { gardenFacade, manager } = createManager([
       {
         tileNumber: 1,
@@ -45,5 +45,22 @@ describe('GardenAutomationManager', () => {
     manager.update();
 
     expect(gardenFacade.plantSelectedSeed).toHaveBeenCalledWith(1);
+  });
+
+  it("leaves disabled automated plots untouched", () => {
+    const { gardenFacade, manager } = createManager([
+      {
+        tileNumber: 1,
+        unlocked: true,
+        autoEnabled: false,
+        phase: "empty",
+        selectedSeedItemTypeId: 1,
+      },
+    ]);
+
+    manager.update();
+
+    expect(gardenFacade.plantSelectedSeed).not.toHaveBeenCalled();
+    expect(gardenFacade.startHarvest).not.toHaveBeenCalled();
   });
 });

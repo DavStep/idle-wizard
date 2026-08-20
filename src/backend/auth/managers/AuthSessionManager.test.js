@@ -37,7 +37,7 @@ describe('AuthSessionManager', () => {
     });
   });
 
-  it('uses an OIDC token before the stored anonymous token', async () => {
+  it('falls back to the stored account token when a routine OIDC reconnect is rejected', async () => {
     const tokenStorageManager = new AuthTokenStorageManager({
       storage: createMemoryStorage(),
     });
@@ -58,6 +58,34 @@ describe('AuthSessionManager', () => {
     sessionManager.acceptConnection({ identity: 'identity-1', token: 'stored-token' });
 
     await expect(sessionManager.getConnectionToken()).resolves.toBe('oidc-token');
+    await expect(sessionManager.getConnectionAuth()).resolves.toEqual({
+      token: 'oidc-token',
+      canRetryWithoutToken: false,
+      fallbackTokens: ['stored-token'],
+    });
+  });
+
+  it('does not fall back to the old identity during an account-link attempt', async () => {
+    const tokenStorageManager = new AuthTokenStorageManager({
+      storage: createMemoryStorage(),
+    });
+    const sessionManager = new AuthSessionManager({
+      tokenStorageManager,
+      oidcManager: {
+        getConnectionToken: () => Promise.resolve('oidc-token'),
+        getSnapshot: () => ({
+          enabled: true,
+          authenticated: true,
+          displayName: 'Dav',
+          email: 'dav@example.com',
+          error: null,
+        }),
+      },
+      hasPendingAccountLinkSave: () => true,
+    });
+
+    sessionManager.acceptConnection({ identity: 'identity-1', token: 'stored-token' });
+
     await expect(sessionManager.getConnectionAuth()).resolves.toEqual({
       token: 'oidc-token',
       canRetryWithoutToken: false,

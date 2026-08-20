@@ -145,6 +145,55 @@ describe('PixiGlobalDialogPresenter', () => {
     });
   });
 
+  it('notifies when the installed game is up to date', async () => {
+    const checkForUpdates = vi.fn(() =>
+      Promise.resolve({ status: 'up_to_date', version: '0.4.0' }),
+    );
+    const harness = createHarness({ checkForUpdates });
+    harness.presenter.mount();
+    harness.presenter.open('settings');
+
+    const settings = harness.getOpenModel(GLOBAL_DIALOG_IDS.SETTINGS);
+    await expect(settings.actions.checkForUpdates()).resolves.toEqual({
+      status: 'up_to_date',
+      version: '0.4.0',
+    });
+
+    expect(checkForUpdates).toHaveBeenCalledOnce();
+    expect(harness.getOpenModel(GLOBAL_DIALOG_IDS.ANNOUNCEMENT)).toMatchObject({
+      title: 'Updates',
+      copy: 'Idle Wizard is up to date.',
+      dismissible: true,
+      framed: true,
+    });
+  });
+
+  it('asks before installing an available update', async () => {
+    const checkForUpdates = vi.fn(() =>
+      Promise.resolve({ status: 'available', version: '0.4.1' }),
+    );
+    const installUpdate = vi.fn(() => Promise.resolve(true));
+    const harness = createHarness({ checkForUpdates, installUpdate });
+    harness.presenter.mount();
+    harness.presenter.open('settings');
+
+    await harness
+      .getOpenModel(GLOBAL_DIALOG_IDS.SETTINGS)
+      .actions.checkForUpdates();
+    const confirmation = harness.getOpenModel(
+      GLOBAL_DIALOG_IDS.CONFIRMATION,
+    );
+    expect(confirmation).toMatchObject({
+      title: 'Update Available',
+      message: 'Version 0.4.1 is available. Update now?',
+      cancelLabel: 'Later',
+      confirmLabel: 'Update',
+    });
+
+    expect(confirmation.actions.confirm()).toBe(true);
+    expect(installUpdate).toHaveBeenCalledOnce();
+  });
+
   it('gates an explicitly unnamed player surface and resumes its request once after save', () => {
     const harness = createHarness({
       playerSnapshot: { hasExplicitUsername: false },
@@ -823,6 +872,8 @@ function createHarness({
   runtimeInitialized = true,
   playerSnapshot = {},
   simulateDialogLifecycle = false,
+  checkForUpdates = null,
+  installUpdate = null,
 } = {}) {
   const factories = new Map();
   const openModels = new Map();
@@ -977,6 +1028,8 @@ function createHarness({
     tradeAllianceFacade,
     hapticsFacade,
     soundSettingsFacade,
+    checkForUpdates,
+    installUpdate,
     reload: vi.fn(),
     copyText,
   });

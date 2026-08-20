@@ -3,6 +3,8 @@ import { readFile } from 'node:fs/promises';
 import path from 'node:path';
 import { spawnSync } from 'node:child_process';
 
+const RELEASE_TREE_GIT_BUFFER_BYTES = 64 * 1024 * 1024;
+
 export async function captureReleaseTreeState(rootDir) {
   const trackedDiff = captureGit(rootDir, [
     'diff',
@@ -38,6 +40,7 @@ function captureGit(rootDir, args) {
   const result = spawnSync('git', args, {
     cwd: rootDir,
     encoding: 'utf8',
+    maxBuffer: RELEASE_TREE_GIT_BUFFER_BYTES,
     stdio: ['ignore', 'pipe', 'pipe'],
   });
 

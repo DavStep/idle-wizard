@@ -1,4 +1,5 @@
 import { gardenBulkResearchIds } from '../gardenBulkResearch.js';
+import { automationResearchIds } from "../../automation/automationResearchIds.js";
 
 export class GardenSnapshotManager {
   constructor({
@@ -103,7 +104,14 @@ export class GardenSnapshotManager {
 
       return {
         ...tile,
+        autoEnabled: tile.autoEnabled !== false,
         level: this.getPlotLevel(tile.tileNumber),
+        maxPlantQuantity: this.getPlotLevel(tile.tileNumber),
+        plantQuantity: this.getPlotPlantQuantity(tile),
+        automationAvailable:
+          this.researchFacade?.hasCompletedResearch?.(
+            automationResearchIds.autoPlantTile(tile.tileNumber),
+          ) === true,
         selectedSeedKey: selectedSeed?.key ?? null,
         selectedSeedLabel: selectedSeed?.label ?? null,
         selectedHerbKey: selectedHerb?.key ?? null,
@@ -113,7 +121,7 @@ export class GardenSnapshotManager {
         herbKey: herb?.key ?? null,
         herbLabel: herb?.label ?? null,
         process:
-          tile.phase === 'growing' || tile.phase === 'harvesting'
+          tile.phase === "growing" || tile.phase === "harvesting"
             ? {
                 phase: tile.phase,
                 totalMs: tile.totalMs,
@@ -129,6 +137,14 @@ export class GardenSnapshotManager {
     const level = this.researchFacade?.getPlotPlantingMultiplier?.(tileNumber) ?? 1;
     const safeLevel = Math.floor(Number(level));
     return Number.isInteger(safeLevel) && safeLevel > 0 ? safeLevel : 1;
+  }
+
+  getPlotPlantQuantity(tile = {}) {
+    const maxQuantity = this.getPlotLevel(tile.tileNumber);
+    const selectedQuantity = Math.floor(Number(tile.plantQuantity));
+    return Number.isInteger(selectedQuantity) && selectedQuantity > 0
+      ? Math.min(maxQuantity, selectedQuantity)
+      : maxQuantity;
   }
 
   getSeedSnapshots() {

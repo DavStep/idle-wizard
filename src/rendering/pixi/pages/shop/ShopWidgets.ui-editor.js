@@ -3,6 +3,7 @@ import { createUiEditorPixiSurface } from '../../../../uiEditor/widgets/createUi
 import { createUiEditorPixiThumbnail } from '../../../../uiEditor/widgets/createUiEditorPixiThumbnail.js';
 import {
   DEFAULT_PIXI_THEME_SNAPSHOT,
+  PIXI_ROOT_RUN_ASSETS,
   PIXI_ROOT_RUN_GEOMETRY,
 } from '../../theme/PixiThemeTokens.js';
 import { createDialogContentTheme } from '../../primitives/PixiDialogFrame.js';
@@ -30,7 +31,7 @@ const LEDGER_ROW_WIDTH =
 const marketAssets = ({ id }) => id.includes('/ui/') || id.includes('/icons/') || id.includes('/items/');
 
 export default [
-  widget('compound.market-title-ribbon', 'Market Title Ribbon', ['primitive.star-level-label'], ribbonControl, [scenario('rank-1', 'Rank 1', { rank: 1 }), scenario('rank-3', 'Rank 3', { rank: 3 }), scenario('title-only', 'Title only', { rank: 0, showStars: false, title: "Elara's Request" })]),
+  widget('compound.market-title-ribbon', 'Market Title Ribbon', ['primitive.star-level-label'], ribbonControl, [scenario('rank-1', 'Rank 1', { rank: 1 }), scenario('rank-3', 'Rank 3', { rank: 3 }), scenario('brewing', 'Brewing blue', { assetId: PIXI_ROOT_RUN_ASSETS.marketTitleRibbonBlue, rank: 2, title: 'Cauldron 1' }), scenario('garden', 'Garden green', { assetId: PIXI_ROOT_RUN_ASSETS.marketTitleRibbonGreen, rank: 0, showStars: false, title: 'Garden' }), scenario('elara-compact', 'Elara compact', { compact: true, rank: 0, showStars: false, title: "Elara's Request" })]),
   widget('compound.market-stall', 'Market Stall', ['primitive.progress-bar', 'primitive.star-level-label', 'text-button', 'cost-button', 'primitive.notification-badge'], stallControl, [scenario('selling', 'Occupied, Cancel', { state: 'selling' }), scenario('empty', 'Empty, Select', { state: 'empty' }), scenario('purchasable', 'Purchasable, Unlock', { state: 'purchasable' }), scenario('level-locked', 'Level Locked', { state: 'level-locked' })]),
   widget('compound.market-offer-card', 'Market Offer Card', ['text-button'], offerControl, [scenario('amber', 'Amber Pouch', { resourceKey: 'crystal', title: 'Amber Pouch' }), scenario('amethyst', 'Amethyst Chest', { resourceKey: 'amethyst', title: 'Amethyst Chest' }), scenario('daily', 'Daily Amber offer', { resourceKey: 'crystal', title: 'Daily Offer', wide: true }), scenario('disabled', 'Unavailable', { resourceKey: 'amethyst', title: 'Amethyst Hoard', disabled: true })]),
   widget('compound.market-compact-row', 'Market Compact Row', ['text-button', 'primitive.notification-badge'], compactRowControl, [scenario('value', 'Label and value', { mode: 'value' }), scenario('action', 'Inline action', { mode: 'action' }), scenario('disabled', 'Disabled', { mode: 'value', disabled: true })]),
@@ -63,8 +64,17 @@ function widget(id, label, childWidgetIds, factory, scenarios) {
 function scenario(id, label, fixture) { return { fixture, id, label }; }
 
 function ribbonControl({ assets, fixture }) {
+  const compact = fixture.compact === true;
   const control = new MarketTitleRibbon({
     assetManager: assets,
+    assetId:
+      fixture.assetId ??
+      (compact
+        ? PIXI_ROOT_RUN_ASSETS.workshopRequestTitleRibbon
+        : PIXI_ROOT_RUN_ASSETS.marketTitleRibbon),
+    geometry: compact
+      ? PIXI_ROOT_RUN_GEOMETRY.workshopRequestTitleRibbon
+      : PIXI_ROOT_RUN_GEOMETRY.marketTitleRibbon,
     showStars: fixture.showStars !== false,
   });
   control.bind(fixture.title ?? 'Market', fixture.rank);
@@ -85,7 +95,7 @@ function stallControl({ assets, input, fixture }) {
 
 function offerControl({ assets, input, fixture }) {
   const control = new MarketOfferCard({ assetManager: assets, inputRouter: input, label: 'ui-lab:offer' });
-  control.bind('offer', { amountLabel: fixture.resourceKey === 'amethyst' ? '1,000' : '12', compact: !fixture.wide, enabled: !fixture.disabled, fullWidth: fixture.wide, priceLabel: fixture.disabled ? 'Unavailable' : fixture.wide ? 'Free' : '$19.99', resourceKey: fixture.resourceKey, title: fixture.title }, () => true);
+  control.bind('offer', { amountLabel: fixture.resourceKey === 'amethyst' ? '1,000' : '12', claimCadence: fixture.wide ? 'Claim every 24 hours' : '', compact: !fixture.wide, enabled: !fixture.disabled, fullWidth: fixture.wide, priceLabel: fixture.disabled ? 'Unavailable' : fixture.wide ? 'Free' : '$19.99', resourceKey: fixture.resourceKey, title: fixture.title }, () => true);
   control.applyTheme(DEFAULT_PIXI_THEME_SNAPSHOT);
   const width = fixture.wide ? WIDTH : 112;
   const height = fixture.wide ? 84 : 126;

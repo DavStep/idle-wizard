@@ -26,7 +26,10 @@ export class GardenTileEntityManager {
     }
   }
 
-  configureCapacity({ initialUnlockedTiles = this.initialUnlockedTiles, maxTiles = this.maxTiles } = {}) {
+  configureCapacity({
+    initialUnlockedTiles = this.initialUnlockedTiles,
+    maxTiles = this.maxTiles,
+  } = {}) {
     this.initialUnlockedTiles = initialUnlockedTiles;
     this.maxTiles = maxTiles;
 
@@ -44,6 +47,8 @@ export class GardenTileEntityManager {
     this.ecsManagers.components.add(tileEntityId, GardenTile);
     GardenTile.tileNumber[tileEntityId] = tileNumber;
     GardenTile.isUnlocked[tileEntityId] = tileNumber <= this.initialUnlockedTiles ? 1 : 0;
+    GardenTile.autoEnabled[tileEntityId] = 1;
+    GardenTile.plantQuantity[tileEntityId] = 0;
     this.clearTileData(tileEntityId);
     this.tileEntityIds.push(tileEntityId);
   }
@@ -64,6 +69,8 @@ export class GardenTileEntityManager {
     }
 
     GardenTile.isUnlocked[nextTileEntityId] = 1;
+    GardenTile.autoEnabled[nextTileEntityId] = 1;
+    GardenTile.plantQuantity[nextTileEntityId] = 0;
     this.clearTileData(nextTileEntityId);
     return true;
   }
@@ -82,6 +89,42 @@ export class GardenTileEntityManager {
 
   getSelectedSeedItemTypeId(tileNumber) {
     return GardenTile.selectedSeedItemTypeId[this.getTileEntityId(tileNumber)] || 0;
+  }
+
+  isAutomationEnabled(tileNumber) {
+    return GardenTile.autoEnabled[this.getTileEntityId(tileNumber)] !== 0;
+  }
+
+  setAutomationEnabled(tileNumber, enabled) {
+    if (!this.isTileUnlocked(tileNumber)) {
+      return false;
+    }
+
+    GardenTile.autoEnabled[this.getTileEntityId(tileNumber)] =
+      enabled === false ? 0 : 1;
+    return true;
+  }
+
+  getPlantQuantity(tileNumber, fallback = 1) {
+    const quantity = Math.floor(
+      Number(GardenTile.plantQuantity[this.getTileEntityId(tileNumber)]),
+    );
+    return Number.isInteger(quantity) && quantity > 0
+      ? quantity
+      : this.normalizeHarvestQuantity(fallback);
+  }
+
+  setPlantQuantity(tileNumber, quantity) {
+    if (!this.isTileUnlocked(tileNumber)) {
+      return false;
+    }
+    const safeQuantity = Math.floor(Number(quantity));
+    if (!Number.isInteger(safeQuantity) || safeQuantity < 1) {
+      return false;
+    }
+
+    GardenTile.plantQuantity[this.getTileEntityId(tileNumber)] = safeQuantity;
+    return true;
   }
 
   selectSeed(tileNumber, seedItemTypeId = 0) {
@@ -138,7 +181,9 @@ export class GardenTileEntityManager {
   }
 
   reduceProcessRemainingSeconds(deltaSeconds) {
-    const safeDeltaSeconds = Number.isFinite(deltaSeconds) ? Math.max(0, deltaSeconds) : 0;
+    const safeDeltaSeconds = Number.isFinite(deltaSeconds)
+      ? Math.max(0, deltaSeconds)
+      : 0;
 
     for (const tileEntityId of this.getProcessingTileEntityIds()) {
       GardenTile.remainingSeconds[tileEntityId] = Math.max(
@@ -187,7 +232,9 @@ export class GardenTileEntityManager {
   completeFinishedGrowths() {
     const completedTiles = [];
 
-    for (const tileEntityId of this.getProcessingTileEntityIds(gardenTilePhases.growing)) {
+    for (const tileEntityId of this.getProcessingTileEntityIds(
+      gardenTilePhases.growing,
+    )) {
       if ((GardenTile.remainingSeconds[tileEntityId] ?? 0) > 0) {
         continue;
       }
@@ -204,7 +251,9 @@ export class GardenTileEntityManager {
   completeFinishedHarvests() {
     const completedHarvests = [];
 
-    for (const tileEntityId of this.getProcessingTileEntityIds(gardenTilePhases.harvesting)) {
+    for (const tileEntityId of this.getProcessingTileEntityIds(
+      gardenTilePhases.harvesting,
+    )) {
       if ((GardenTile.remainingSeconds[tileEntityId] ?? 0) > 0) {
         continue;
       }
@@ -232,6 +281,10 @@ export class GardenTileEntityManager {
       const isUnlocked = tileNumber <= safeUnlockedTiles;
       GardenTile.isUnlocked[tileEntityId] = isUnlocked ? 1 : 0;
       this.clearTileData(tileEntityId);
+      GardenTile.autoEnabled[tileEntityId] =
+        tile?.autoEnabled === false ? 0 : 1;
+      GardenTile.plantQuantity[tileEntityId] =
+        this.normalizeStoredPlantQuantity(tile?.plantQuantity);
 
       if (!isUnlocked || !tile) {
         continue;
@@ -279,15 +332,24 @@ export class GardenTileEntityManager {
       return {
         tileNumber: GardenTile.tileNumber[tileEntityId],
         unlocked: GardenTile.isUnlocked[tileEntityId] === 1,
-        selectedSeedItemTypeId: GardenTile.selectedSeedItemTypeId[tileEntityId] || null,
+        autoEnabled: GardenTile.autoEnabled[tileEntityId] !== 0,
+        plantQuantity: this.normalizeStoredPlantQuantity(
+          GardenTile.plantQuantity[tileEntityId],
+        ),
+        selectedSeedItemTypeId:
+          GardenTile.selectedSeedItemTypeId[tileEntityId] || null,
         seedItemTypeId: GardenTile.seedItemTypeId[tileEntityId] || null,
         herbItemTypeId: GardenTile.herbItemTypeId[tileEntityId] || null,
-        harvestQuantity: this.normalizeHarvestQuantity(GardenTile.harvestQuantity[tileEntityId]),
-        phase: gardenTilePhaseNames[phase] ?? 'empty',
+        harvestQuantity: this.normalizeHarvestQuantity(
+          GardenTile.harvestQuantity[tileEntityId],
+        ),
+        phase: gardenTilePhaseNames[phase] ?? "empty",
         totalMs: Math.ceil(totalSeconds * 1_000),
         remainingMs: Math.ceil(remainingSeconds * 1_000),
         progress:
-          totalSeconds <= 0 ? 0 : Math.min(1, (totalSeconds - remainingSeconds) / totalSeconds),
+          totalSeconds <= 0
+            ? 0
+            : Math.min(1, (totalSeconds - remainingSeconds) / totalSeconds),
       };
     });
   }
@@ -305,7 +367,8 @@ export class GardenTileEntityManager {
   }
 
   getProcessingTileEntityIds(phase = null) {
-    return query(this.ecsManagers.world.getWorld(), [GardenTile]).filter((tileEntityId) => {
+    return query(this.ecsManagers.world.getWorld(), [GardenTile]).filter(
+      (tileEntityId) => {
       if (GardenTile.tileNumber[tileEntityId] > this.maxTiles) {
         return false;
       }
@@ -314,7 +377,8 @@ export class GardenTileEntityManager {
       const isProcessing =
         tilePhase === gardenTilePhases.growing || tilePhase === gardenTilePhases.harvesting;
       return phase === null ? isProcessing : tilePhase === phase;
-    });
+      },
+    );
   }
 
   hasProcessingTiles() {
@@ -358,5 +422,12 @@ export class GardenTileEntityManager {
   normalizeHarvestQuantity(quantity) {
     const safeQuantity = Math.floor(Number(quantity));
     return Number.isInteger(safeQuantity) && safeQuantity > 0 ? safeQuantity : 1;
+  }
+
+  normalizeStoredPlantQuantity(quantity) {
+    const safeQuantity = Math.floor(Number(quantity));
+    return Number.isInteger(safeQuantity) && safeQuantity > 0
+      ? safeQuantity
+      : 0;
   }
 }

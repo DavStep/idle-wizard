@@ -15,6 +15,7 @@ import { PageRegistry } from "../../retained/PageRegistry.js";
 import { SemanticTargetRegistry } from "../../retained/SemanticTargetRegistry.js";
 import {
   PIXI_PROGRESS_VISUALS,
+  PIXI_ROOT_RUN_ASSETS,
   PIXI_UI_GEOMETRY,
   createPixiThemeSnapshot,
   resolvePixiTextStrokeWidth,
@@ -350,6 +351,12 @@ describe("GardenPixiPage", () => {
     expect(harness.inputRouter.getTopModal()?.id).toBe("garden.seed");
     expect(harness.semanticTargets.activate("garden.seed.sage")).toBe(true);
     expect(selectSeed).toHaveBeenCalledTimes(1);
+    expect(
+      dialog.navigateToTarget({
+        targetId: "garden.seed.sage",
+        indication: "boink",
+      }),
+    ).toBe(true);
     const seedRow = dialog.rows.get("sage");
     expect(dialog.modal.panel.coreWidth).toBe(304);
     expect(dialog.list.rowHeight).toBe(50);
@@ -498,6 +505,18 @@ describe("GardenPixiPage", () => {
     const plot = harness.page.plots.get("plot-1");
 
     expect(harness.page.plotScroll).toBeInstanceOf(RetainedScrollArea);
+    expect(harness.page.titleRibbon.title.text).toBe("Garden");
+    expect(harness.page.titleRibbon.assetId).toBe(
+      PIXI_ROOT_RUN_ASSETS.marketTitleRibbonGreen,
+    );
+    expect(harness.page.titleRibbon.showStars).toBe(false);
+    expect(harness.page.titleRibbon.root.position).toMatchObject({
+      x:
+        (PIXI_UI_GEOMETRY.sourceWidth -
+          harness.page.titleRibbon.width) /
+        2,
+      y: GARDEN_PIXI_GEOMETRY.titleTop,
+    });
     expect(harness.page.plotScroll.root.position).toMatchObject({
       x: 0,
       y: GARDEN_PIXI_GEOMETRY.plotListTop,
@@ -779,6 +798,110 @@ describe("GardenPixiPage", () => {
       false,
       false,
     ]);
+
+    harness.page.destroy();
+    harness.dispose();
+  });
+
+  it("renders researched automation as a wide five-slot bed with one aligned control stack", () => {
+    const harness = createHarness();
+    harness.assetManager.getTexture = vi.fn(harness.assetManager.getTexture);
+    const togglePlotAutomation = vi.fn(() => ({ ok: true }));
+    const selectPlotQuantity = vi.fn(() => ({ ok: true }));
+    const openPlotSeedPicker = vi.fn(() => true);
+    const model = createGardenViewModel();
+    model.garden.plots[0] = {
+      ...model.garden.plots[0],
+      automationAvailable: true,
+      autoEnabled: true,
+      automationSeed: { key: "sageSeed", label: "Sage", quantity: 12 },
+      plantFrame: "herb:sage",
+      level: 5,
+      maxPlantQuantity: 5,
+      plantQuantity: 5,
+      harvestQuantity: 5,
+    };
+    model.actions = {
+      ...model.actions,
+      openPlotSeedPicker,
+      selectPlotQuantity,
+      togglePlotAutomation,
+    };
+
+    harness.page.bind(model);
+    const plot = harness.page.plots.get("plot-1");
+    const buttonHeight =
+      (GARDEN_PIXI_GEOMETRY.plotHeight -
+        GARDEN_PIXI_GEOMETRY.automatedButtonGap * 2) /
+      3;
+
+    expect(plot.isAutomated).toBe(true);
+    expect(plot.soil.width).toBe(GARDEN_PIXI_GEOMETRY.automatedPlotWidth);
+    expect(harness.assetManager.getTexture).toHaveBeenCalledWith(
+      "source:assets/rooms/garden/plots/outpost-plot-ground-automated.png",
+    );
+    expect(plot.plantSlots.filter(({ plant }) => plant.visible)).toHaveLength(
+      5,
+    );
+    expect(plot.autoButton.variant).toBe("green");
+    expect(plot.quantityButton.textLabel.text).toBe("x5");
+    expect(plot.seedButton.buttonHeight).toBeCloseTo(buttonHeight);
+    expect(
+      plot.quantityButton.y + plot.quantityButton.buttonHeight,
+    ).toBeCloseTo(GARDEN_PIXI_GEOMETRY.plotHeight);
+    expect(plot.autoButton.activate()).toEqual({ ok: true });
+    expect(plot.seedButton.activate()).toBe(true);
+    expect(togglePlotAutomation).toHaveBeenCalledWith(model.garden.plots[0]);
+    expect(openPlotSeedPicker).toHaveBeenCalledWith(model.garden.plots[0]);
+
+    expect(plot.quantityButton.activate()).toEqual({ ok: true });
+    expect(selectPlotQuantity).toHaveBeenCalledWith(model.garden.plots[0], 1);
+    expect(plot.plantSlots.filter(({ plant }) => plant.visible)).toHaveLength(
+      5,
+    );
+
+    harness.page.destroy();
+    harness.dispose();
+  });
+
+  it("places automated plots on full rows before resuming the three-column grid", () => {
+    const harness = createHarness();
+    const model = createGardenViewModel();
+    model.garden.plots[0].automationAvailable = true;
+    model.garden.plots.push(
+      {
+        ...model.garden.plots[0],
+        id: "plot-2",
+        tileNumber: 2,
+        automationAvailable: false,
+      },
+      {
+        ...model.garden.plots[0],
+        id: "plot-3",
+        tileNumber: 3,
+        automationAvailable: false,
+      },
+    );
+
+    harness.page.bind(model);
+
+    expect(harness.page.plots.get("plot-1").root.y).toBe(
+      GARDEN_PIXI_GEOMETRY.gridPaddingTop,
+    );
+    expect(harness.page.plots.get("plot-2").root.y).toBe(
+      GARDEN_PIXI_GEOMETRY.gridPaddingTop +
+        GARDEN_PIXI_GEOMETRY.rowHeight +
+        GARDEN_PIXI_GEOMETRY.rowGap,
+    );
+    expect(harness.page.plots.get("plot-3").root.y).toBe(
+      harness.page.plots.get("plot-2").root.y,
+    );
+    expect(harness.page.plotScroll.contentHeight).toBe(
+      GARDEN_PIXI_GEOMETRY.gridPaddingTop +
+        GARDEN_PIXI_GEOMETRY.gridPaddingBottom +
+        GARDEN_PIXI_GEOMETRY.rowHeight * 2 +
+        GARDEN_PIXI_GEOMETRY.rowGap,
+    );
 
     harness.page.destroy();
     harness.dispose();

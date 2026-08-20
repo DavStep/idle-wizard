@@ -37,6 +37,21 @@ describe('release tree state', () => {
     expect(untrackedChangeState).not.toBe(trackedChangeState);
     expect(await captureReleaseTreeState(rootDir)).toBe(untrackedChangeState);
   });
+
+  it('fingerprints asset-heavy release diffs larger than the child-process default buffer', async () => {
+    const rootDir = await mkdtemp(path.join(tmpdir(), 'idle-wizard-release-tree-large-'));
+    tempDirectories.push(rootDir);
+    runGit(rootDir, ['init']);
+    runGit(rootDir, ['config', 'user.email', 'release-test@example.com']);
+    runGit(rootDir, ['config', 'user.name', 'Release Test']);
+    await writeFile(path.join(rootDir, 'large.txt'), 'initial\n');
+    runGit(rootDir, ['add', 'large.txt']);
+    runGit(rootDir, ['commit', '-m', 'initial']);
+
+    await writeFile(path.join(rootDir, 'large.txt'), 'x'.repeat(2 * 1024 * 1024));
+
+    await expect(captureReleaseTreeState(rootDir)).resolves.toMatch(/^[a-f0-9]{64}$/u);
+  });
 });
 
 function runGit(rootDir, args) {

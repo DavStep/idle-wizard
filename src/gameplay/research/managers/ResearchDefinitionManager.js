@@ -182,6 +182,7 @@ const recipeUnlockOrder = [
 
 const maxAutomationGardenTiles = plotCapacityEndPlotNumber;
 const maxAutomationCauldrons = cauldronCapacityEndCauldronNumber;
+const researchRoomHiddenResearchIds = new Set(['unlockSeed:sageSeed']);
 
 export class ResearchDefinitionManager {
   constructor({ itemsFacade, playerLevelFacade, prestigeFacade, researchBalanceManager }) {
@@ -1333,6 +1334,10 @@ export class ResearchDefinitionManager {
 
   isVisibleResearch(research, completedIds) {
     if (!this.researchBalanceManager.isResearchEnabled(research.id)) {
+      return false;
+    }
+
+    if (researchRoomHiddenResearchIds.has(research.id)) {
       return false;
     }
 

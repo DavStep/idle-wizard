@@ -57,11 +57,12 @@ describe('Workshop widget UI editor integrations', () => {
       'tower',
       'sunburst',
       'hourglass',
+      'dragon',
     ]);
     expect(
       integrations.find(({ id }) => id === 'primitive.alliance-emblem-option')
         ?.scenarios,
-    ).toHaveLength(11);
+    ).toHaveLength(12);
     expect(
       integrations.find(({ id }) => id === 'compound.root-run-side-action')
         ?.childWidgetIds,

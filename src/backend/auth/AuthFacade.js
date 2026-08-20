@@ -14,6 +14,13 @@ export class AuthFacade {
     this.sessionManager = new AuthSessionManager({
       tokenStorageManager: this.tokenStorageManager,
       oidcManager: this.oidcManager,
+      hasPendingAccountLinkSave: () => {
+        const attemptId = this.oidcManager.getAccountLinkAttemptId?.();
+        return Boolean(
+          attemptId &&
+            this.accountLinkSaveManager.loadPendingSave({ attemptId }),
+        );
+      },
     });
   }
 

@@ -1,7 +1,12 @@
 import { itemKinds } from '../../items/itemKinds.js';
 
 export class GardenPlantingManager {
-  constructor({ gardenBalanceManager, gardenTileEntityManager, itemsFacade, researchFacade }) {
+  constructor({
+    gardenBalanceManager,
+    gardenTileEntityManager,
+    itemsFacade,
+    researchFacade,
+  }) {
     this.gardenBalanceManager = gardenBalanceManager;
     this.gardenTileEntityManager = gardenTileEntityManager;
     this.itemsFacade = itemsFacade;
@@ -12,7 +17,7 @@ export class GardenPlantingManager {
     if (!this.gardenTileEntityManager.isTileUnlocked(tileNumber)) {
       return {
         ok: false,
-        reason: 'tile_locked',
+        reason: "tile_locked",
         tileNumber,
       };
     }
@@ -20,7 +25,7 @@ export class GardenPlantingManager {
     if (!this.gardenTileEntityManager.isTileEmpty(tileNumber)) {
       return {
         ok: false,
-        reason: 'tile_busy',
+        reason: "tile_busy",
         tileNumber,
       };
     }
@@ -39,7 +44,7 @@ export class GardenPlantingManager {
     if (!this.gardenTileEntityManager.isTileUnlocked(tileNumber)) {
       return {
         ok: false,
-        reason: 'tile_locked',
+        reason: "tile_locked",
         tileNumber,
       };
     }
@@ -47,7 +52,7 @@ export class GardenPlantingManager {
     if (!this.gardenTileEntityManager.isTileEmpty(tileNumber)) {
       return {
         ok: false,
-        reason: 'tile_busy',
+        reason: "tile_busy",
         tileNumber,
       };
     }
@@ -73,7 +78,7 @@ export class GardenPlantingManager {
 
     const plantResult = this.startSelectedSeedGrowth(tileNumber, seedResult.seed);
 
-    if (!plantResult.ok && plantResult.reason === 'not_enough_seed') {
+    if (!plantResult.ok && plantResult.reason === "not_enough_seed") {
       return {
         ok: true,
         tileNumber,
@@ -86,11 +91,44 @@ export class GardenPlantingManager {
     return plantResult.ok ? { ...plantResult, planted: true } : plantResult;
   }
 
+  selectAutomationSeed(tileNumber, seedTypeId) {
+    if (!this.gardenTileEntityManager.isTileUnlocked(tileNumber)) {
+      return {
+        ok: false,
+        reason: "tile_locked",
+        tileNumber,
+      };
+    }
+
+    if (!seedTypeId) {
+      this.gardenTileEntityManager.selectSeed(tileNumber, 0);
+      return {
+        ok: true,
+        tileNumber,
+        seed: null,
+        herb: null,
+      };
+    }
+
+    const seedResult = this.getSeedResult(seedTypeId);
+    if (!seedResult.ok) {
+      return seedResult;
+    }
+
+    this.gardenTileEntityManager.selectSeed(tileNumber, seedResult.seed.id);
+    return {
+      ok: true,
+      tileNumber,
+      seed: this.createItemResult(seedResult.seed),
+      herb: this.createItemResult(seedResult.herb),
+    };
+  }
+
   plantSelectedSeed(tileNumber) {
     if (!this.gardenTileEntityManager.isTileUnlocked(tileNumber)) {
       return {
         ok: false,
-        reason: 'tile_locked',
+        reason: "tile_locked",
         tileNumber,
       };
     }
@@ -98,7 +136,7 @@ export class GardenPlantingManager {
     if (!this.gardenTileEntityManager.isTileEmpty(tileNumber)) {
       return {
         ok: false,
-        reason: 'tile_busy',
+        reason: "tile_busy",
         tileNumber,
       };
     }
@@ -128,7 +166,7 @@ export class GardenPlantingManager {
     if (!this.gardenTileEntityManager.isTileUnlocked(tileNumber)) {
       return {
         ok: false,
-        reason: 'tile_locked',
+        reason: "tile_locked",
         tileNumber,
       };
     }
@@ -137,7 +175,7 @@ export class GardenPlantingManager {
       .getTileSnapshots()
       .find((candidate) => candidate.tileNumber === tileNumber);
 
-    if (!tile || tile.phase === 'empty') {
+    if (!tile || tile.phase === "empty") {
       return {
         ok: false,
         reason: 'tile_empty',
@@ -145,7 +183,7 @@ export class GardenPlantingManager {
       };
     }
 
-    if (tile.phase !== 'growing') {
+    if (tile.phase !== "growing") {
       return {
         ok: false,
         reason: 'not_growing',
@@ -265,7 +303,14 @@ export class GardenPlantingManager {
   getHarvestQuantity(tileNumber) {
     const multiplier = this.researchFacade?.getPlotPlantingMultiplier?.(tileNumber) ?? 1;
     const safeMultiplier = Math.floor(Number(multiplier));
-    return Number.isInteger(safeMultiplier) && safeMultiplier > 0 ? safeMultiplier : 1;
+    const maxQuantity =
+      Number.isInteger(safeMultiplier) && safeMultiplier > 0
+        ? safeMultiplier
+        : 1;
+    return Math.min(
+      maxQuantity,
+      this.gardenTileEntityManager.getPlantQuantity(tileNumber, maxQuantity),
+    );
   }
 
   getTileHarvestQuantity(tile = {}) {
@@ -310,7 +355,7 @@ export class GardenPlantingManager {
     if (!this.gardenTileEntityManager.isTileUnlocked(tileNumber)) {
       return {
         ok: false,
-        reason: 'tile_locked',
+        reason: "tile_locked",
         tileNumber,
       };
     }

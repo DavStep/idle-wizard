@@ -1,7 +1,12 @@
 export class AuthSessionManager {
-  constructor({ tokenStorageManager, oidcManager = null }) {
+  constructor({
+    tokenStorageManager,
+    oidcManager = null,
+    hasPendingAccountLinkSave = () => false,
+  }) {
     this.tokenStorageManager = tokenStorageManager;
     this.oidcManager = oidcManager;
+    this.hasPendingAccountLinkSave = hasPendingAccountLinkSave;
     this.identity = undefined;
   }
 
@@ -21,18 +26,31 @@ export class AuthSessionManager {
 
   async getConnectionAuth() {
     const oidcToken = await this.oidcManager?.getConnectionToken();
-    if (oidcToken) {
-      return {
-        token: oidcToken,
-        canRetryWithoutToken: false,
-      };
-    }
-
     const storedAuth =
       (await this.tokenStorageManager.loadConnectionAuth?.()) ?? {
         token: this.tokenStorageManager.loadToken(),
         fallbackTokens: [],
       };
+
+    if (oidcToken) {
+      const auth = {
+        token: oidcToken,
+        canRetryWithoutToken: false,
+      };
+      const fallbackTokens = this.hasPendingAccountLinkSave()
+        ? []
+        : this.uniqueTokens([
+            storedAuth.token,
+            ...(storedAuth.fallbackTokens ?? []),
+          ]).filter((token) => token !== oidcToken);
+
+      if (fallbackTokens.length > 0) {
+        auth.fallbackTokens = fallbackTokens;
+      }
+
+      return auth;
+    }
+
     const fallbackTokens = storedAuth.fallbackTokens ?? [];
     const rememberedAccount =
       this.oidcManager?.getSnapshot?.()?.remembered === true;
@@ -46,6 +64,12 @@ export class AuthSessionManager {
     }
 
     return auth;
+  }
+
+  uniqueTokens(tokens) {
+    return Array.from(
+      new Set(tokens.map((token) => String(token ?? '').trim()).filter(Boolean)),
+    );
   }
 
   async acceptConnection({ identity, token }) {

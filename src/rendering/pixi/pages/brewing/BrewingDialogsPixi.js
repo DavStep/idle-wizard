@@ -8,6 +8,7 @@ import {
 
 import { getHerbIconFrameName } from '../../../../assets/items/herbs/herbIcons.js';
 import { getPotionIconFrameName } from '../../../../assets/items/potions/potionIcons.js';
+import { formatRemainingTime } from '../../../../pages/shared/timerDisplay.js';
 import { createDialogPaperSection } from '../../primitives/PixiDialogFrame.js';
 import { PixiNineSliceFrame } from '../../primitives/PixiNineSliceFrame.js';
 import { PixiTextButton } from '../../primitives/PixiTextButton.js';
@@ -194,12 +195,14 @@ export class BrewingRecipeBookDialogPixi {
     assetManager = null,
     counters = null,
     onClose = null,
+    timeSource = () => Date.now(),
     theme = DEFAULT_PIXI_THEME_SNAPSHOT,
   } = {}) {
     this.inputRouter = inputRouter;
     this.semanticTargets = semanticTargets;
     this.assetManager = assetManager;
     this.onClose = onClose;
+    this.timeSource = timeSource;
     this.modal = new PixiOwnedDialogSurface({
       id: 'brewing.recipes',
       parent,
@@ -266,6 +269,7 @@ export class BrewingRecipeBookDialogPixi {
           inputRouter: this.inputRouter,
           semanticTargets: this.semanticTargets,
           counters,
+          timeSource: this.timeSource,
         }),
       reset: (card) => card.reset(),
       dispose: (card) => card.destroy(),
@@ -300,7 +304,21 @@ export class BrewingRecipeBookDialogPixi {
   bind(viewModel) {
     this.model = viewModel ?? {};
     this.actions = this.model.actions ?? {};
-    this.recipes = normalizeRows(this.model.recipes ?? this.model.rows);
+    const boundAtMs = this.timeSource();
+    this.recipes = normalizeRows(
+      this.model.recipes ?? this.model.rows,
+    ).map((recipe) =>
+      recipe.researchInProgress === true
+        ? {
+            ...recipe,
+            researchEndTimeMs:
+              Number.isFinite(recipe.researchEndTimeMs)
+                ? recipe.researchEndTimeMs
+                : boundAtMs +
+                  Math.max(0, Number(recipe.researchRemainingMs) || 0),
+          }
+        : recipe,
+    );
     if (Number.isInteger(this.model.spreadIndex)) {
       this.currentSpreadIndex = this.model.spreadIndex;
     }
@@ -352,6 +370,34 @@ export class BrewingRecipeBookDialogPixi {
     this.currentSpreadIndex += 1;
     this.actions.turnSpread?.(this.currentSpreadIndex);
     this.renderSpread();
+    return true;
+  }
+
+  navigateToTarget({ targetId, indication = 'boink' } = {}) {
+    const target = String(targetId ?? '').trim();
+    const recipeIndex = this.recipes.findIndex(
+      (recipe) =>
+        (recipe.semanticId ?? `brewing.recipe.${recipe.key ?? recipe.id}`) ===
+        target,
+    );
+    if (recipeIndex < 0) {
+      return false;
+    }
+
+    this.currentSpreadIndex = Math.floor(recipeIndex / 2);
+    this.renderSpread();
+    const card = this.cards.getWidgets().find(
+      (candidate) =>
+        (candidate.model?.semanticId ??
+          `brewing.recipe.${candidate.model?.key ?? candidate.model?.id}`) ===
+        target,
+    );
+    if (!card) {
+      return false;
+    }
+    if (indication === 'boink') {
+      card.startAttentionEffect();
+    }
     return true;
   }
 
@@ -448,6 +494,12 @@ export class BrewingRecipeBookDialogPixi {
     this.modal.deactivate();
   }
 
+  updateTime(now = this.timeSource()) {
+    for (const card of this.cards.getWidgets()) {
+      card.updateTime(now);
+    }
+  }
+
   destroy() {
     releaseRegistration(this.swipeRegistration);
     this.cards.destroy();
@@ -469,16 +521,19 @@ export class BrewingRecipeCard {
     inputRouter,
     semanticTargets,
     counters,
+    timeSource = () => Date.now(),
   }) {
     this.instanceId = instanceId;
     this.assetManager = assetManager;
     this.inputRouter = inputRouter;
     this.semanticTargets = semanticTargets;
+    this.timeSource = timeSource;
     this.theme = DEFAULT_PIXI_THEME_SNAPSHOT;
     this.model = {};
     this.actions = {};
     this.unknown = false;
     this.semanticId = null;
+    this.researchTimer = null;
     this.root = new Container({ label: `brewing-recipe-card-${instanceId}` });
     this.pageFrame = createDialogPaperSection(
       this.assetManager?.getTexture?.(PIXI_ROOT_RUN_ASSETS.dialogPaper) ??
@@ -657,6 +712,19 @@ export class BrewingRecipeCard {
     this.select.renderable = !showResearchStatus;
     this.researchStatus.visible = showResearchStatus;
     this.researchStatus.renderable = showResearchStatus;
+    this.researchTimer =
+      showResearchStatus && this.model.researchInProgress === true
+        ? {
+            endTimeMs: Number.isFinite(this.model.researchEndTimeMs)
+              ? this.model.researchEndTimeMs
+              : this.timeSource() +
+                Math.max(
+                  0,
+                  Number(this.model.researchRemainingMs) || 0,
+                ),
+          }
+        : null;
+    this.updateTime(this.timeSource());
     this.root.visible = true;
     this.root.renderable = true;
     this.root.eventMode = 'passive';
@@ -699,6 +767,29 @@ export class BrewingRecipeCard {
     return this.model.onSelect?.(this.model) ??
       this.actions.selectRecipe?.(this.model) ??
       true;
+  }
+
+  startAttentionEffect() {
+    return this.select.startAttentionEffect?.() ?? false;
+  }
+
+  updateTime(now = this.timeSource()) {
+    if (!this.researchStatus.visible) {
+      return;
+    }
+    const timer = this.researchTimer;
+    const remainingMs = timer
+      ? Math.max(
+          0,
+          Number(timer.endTimeMs) - Number(now),
+        )
+      : 0;
+    const label = timer
+      ? `Researching: ${formatRemainingTime(remainingMs)}`
+      : 'Not researched';
+    if (this.researchStatusLabel.text !== label) {
+      setText(this.researchStatusLabel, label);
+    }
   }
 
   orderIngredients(rows) {
@@ -848,6 +939,7 @@ export class BrewingRecipeCard {
     this.model = {};
     this.actions = {};
     this.unknown = false;
+    this.researchTimer = null;
     this.root.visible = false;
     this.root.renderable = false;
     this.root.eventMode = 'none';

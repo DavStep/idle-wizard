@@ -1,0 +1,303 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Nine-slice preview</title>
+  <style>
+    :root {
+      color-scheme: light;
+      font-family: ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+      color: #171717;
+      background: #eeeeee;
+    }
+    body {
+      margin: 0;
+      padding: 20px;
+    }
+    header, .controls, .grid, .custom, .source {
+      max-width: 1180px;
+      margin: 0 auto 18px;
+    }
+    h1 {
+      margin: 0 0 4px;
+      font-size: 18px;
+      line-height: 1.2;
+    }
+    p {
+      margin: 0;
+      color: #555;
+      font-size: 13px;
+    }
+    .controls {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 10px 18px;
+      align-items: center;
+      padding: 10px 0;
+      border-top: 1px solid #c7c7c7;
+      border-bottom: 1px solid #c7c7c7;
+    }
+    label {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      font-size: 13px;
+    }
+    input[type="range"] {
+      width: 220px;
+    }
+    select, input[type="checkbox"] {
+      accent-color: #222;
+    }
+    .grid {
+      display: grid;
+      grid-template-columns: 1fr;
+      gap: 16px;
+    }
+    .panel {
+      min-width: 0;
+    }
+    .panel-title {
+      margin: 0 0 6px;
+      font-size: 13px;
+      font-weight: 700;
+    }
+    canvas {
+      display: block;
+      max-width: 100%;
+      height: auto;
+      border: 1px solid #bbb;
+      background: transparent;
+    }
+    .source canvas {
+      image-rendering: pixelated;
+    }
+    @media (min-width: 920px) {
+      .grid {
+        grid-template-columns: 1fr 1fr;
+      }
+    }
+  </style>
+</head>
+<body>
+  <header>
+    <h1>Nine-slice preview</h1>
+    <p>Inspect original, height-stretched, width-stretched, both-stretched, and manual stretch states.</p>
+    <p id="gutterStatus"></p>
+  </header>
+
+  <section class="controls">
+    <label>background
+      <select id="background">
+        <option value="checker">checker</option>
+        <option value="white">white</option>
+        <option value="black">black</option>
+        <option value="gray">gray</option>
+        <option value="transparent">transparent</option>
+      </select>
+    </label>
+    <label><input id="guides" type="checkbox" checked> slice guides</label>
+    <label><input id="bounds" type="checkbox" checked> canvas/alpha bounds</label>
+    <label><input id="smoothing" type="checkbox"> image smoothing</label>
+    <label>width <input id="width" type="range" min="1" max="4000" value="1"> <span id="widthValue"></span></label>
+    <label>height <input id="height" type="range" min="1" max="2000" value="1"> <span id="heightValue"></span></label>
+  </section>
+
+  <section class="source panel">
+    <div class="panel-title">source asset with slice guides</div>
+    <canvas id="source"></canvas>
+  </section>
+
+  <section class="grid">
+    <div class="panel"><div class="panel-title" id="originalTitle"></div><canvas id="original"></canvas></div>
+    <div class="panel"><div class="panel-title" id="heightTitle"></div><canvas id="heightOnly"></canvas></div>
+    <div class="panel"><div class="panel-title" id="widthTitle"></div><canvas id="widthOnly"></canvas></div>
+    <div class="panel"><div class="panel-title" id="bothTitle"></div><canvas id="both"></canvas></div>
+  </section>
+
+  <section class="custom panel">
+    <div class="panel-title" id="customTitle">manual stretch</div>
+    <canvas id="custom"></canvas>
+  </section>
+
+  <script>
+    const assetUrl = "player-action-popover-9.png";
+    const metadataUrl = "player-action-popover-9.9slice.json";
+    let image;
+    let metadata;
+
+    function slice() {
+      return metadata.slice;
+    }
+
+    function drawBackground(ctx, width, height, mode) {
+      ctx.clearRect(0, 0, width, height);
+      if (mode === "transparent") return;
+      if (mode === "white" || mode === "black" || mode === "gray") {
+        ctx.fillStyle = mode === "white" ? "#fff" : mode === "black" ? "#000" : "#888";
+        ctx.fillRect(0, 0, width, height);
+        return;
+      }
+      const tile = 16;
+      for (let y = 0; y < height; y += tile) {
+        for (let x = 0; x < width; x += tile) {
+          ctx.fillStyle = ((x / tile + y / tile) % 2) ? "#d2d2d2" : "#f5f5f5";
+          ctx.fillRect(x, y, tile, tile);
+        }
+      }
+    }
+
+    function drawGuideLines(ctx, width, height) {
+      const s = slice();
+      ctx.save();
+      ctx.strokeStyle = "rgba(255, 48, 48, 0.95)";
+      ctx.lineWidth = 1;
+      ctx.setLineDash([6, 4]);
+      for (const x of [s.left, width - s.right]) {
+        ctx.beginPath();
+        ctx.moveTo(x + 0.5, 0);
+        ctx.lineTo(x + 0.5, height);
+        ctx.stroke();
+      }
+      for (const y of [s.top, height - s.bottom]) {
+        ctx.beginPath();
+        ctx.moveTo(0, y + 0.5);
+        ctx.lineTo(width, y + 0.5);
+        ctx.stroke();
+      }
+      ctx.restore();
+    }
+
+    function drawCanvasBounds(ctx, width, height) {
+      ctx.save();
+      ctx.strokeStyle = "rgba(255, 160, 0, 0.95)";
+      ctx.lineWidth = 1;
+      ctx.setLineDash([]);
+      ctx.strokeRect(0.5, 0.5, width - 1, height - 1);
+      ctx.restore();
+    }
+
+    function drawSourceAlphaBounds(ctx) {
+      const bounds = metadata.validation?.alphaBounds;
+      if (!bounds) return;
+      ctx.save();
+      ctx.strokeStyle = "rgba(0, 130, 255, 0.95)";
+      ctx.lineWidth = 1;
+      ctx.setLineDash([4, 3]);
+      ctx.strokeRect(bounds.x + 0.5, bounds.y + 0.5, bounds.width - 1, bounds.height - 1);
+      ctx.restore();
+    }
+
+    function drawBounds(ctx, width, height, includeAlpha) {
+      if (!document.getElementById("bounds").checked) return;
+      drawCanvasBounds(ctx, width, height);
+      if (includeAlpha) drawSourceAlphaBounds(ctx);
+    }
+
+    function drawNineSlice(canvas, width, height) {
+      const s = slice();
+      canvas.width = width;
+      canvas.height = height;
+      const ctx = canvas.getContext("2d");
+      ctx.imageSmoothingEnabled = document.getElementById("smoothing").checked;
+      drawBackground(ctx, width, height, document.getElementById("background").value);
+      const sw = image.naturalWidth;
+      const sh = image.naturalHeight;
+      const pieces = [
+        [0, 0, s.left, s.top, 0, 0, s.left, s.top],
+        [s.left, 0, sw - s.left - s.right, s.top, s.left, 0, width - s.left - s.right, s.top],
+        [sw - s.right, 0, s.right, s.top, width - s.right, 0, s.right, s.top],
+        [0, s.top, s.left, sh - s.top - s.bottom, 0, s.top, s.left, height - s.top - s.bottom],
+        [s.left, s.top, sw - s.left - s.right, sh - s.top - s.bottom, s.left, s.top, width - s.left - s.right, height - s.top - s.bottom],
+        [sw - s.right, s.top, s.right, sh - s.top - s.bottom, width - s.right, s.top, s.right, height - s.top - s.bottom],
+        [0, sh - s.bottom, s.left, s.bottom, 0, height - s.bottom, s.left, s.bottom],
+        [s.left, sh - s.bottom, sw - s.left - s.right, s.bottom, s.left, height - s.bottom, width - s.left - s.right, s.bottom],
+        [sw - s.right, sh - s.bottom, s.right, s.bottom, width - s.right, height - s.bottom, s.right, s.bottom],
+      ];
+      for (const piece of pieces) {
+        if (piece[2] > 0 && piece[3] > 0 && piece[6] > 0 && piece[7] > 0) {
+          ctx.drawImage(image, ...piece);
+        }
+      }
+      if (document.getElementById("guides").checked) drawGuideLines(ctx, width, height);
+      drawBounds(ctx, width, height, false);
+    }
+
+    function drawSource() {
+      const canvas = document.getElementById("source");
+      canvas.width = image.naturalWidth;
+      canvas.height = image.naturalHeight;
+      const ctx = canvas.getContext("2d");
+      ctx.imageSmoothingEnabled = false;
+      drawBackground(ctx, canvas.width, canvas.height, document.getElementById("background").value);
+      ctx.drawImage(image, 0, 0);
+      if (document.getElementById("guides").checked) drawGuideLines(ctx, canvas.width, canvas.height);
+      drawBounds(ctx, canvas.width, canvas.height, true);
+    }
+
+    function renderAll() {
+      drawSource();
+      const base = metadata.sourceCropSize || { width: image.naturalWidth, height: image.naturalHeight };
+      const examples = [
+        ["original", "originalTitle", "original", base.width, base.height],
+        ["heightOnly", "heightTitle", "height stretched", base.width, Math.max(base.height + 160, Math.ceil(base.height * 1.75))],
+        ["widthOnly", "widthTitle", "width stretched", Math.max(base.width + 240, Math.ceil(base.width * 1.45)), base.height],
+        ["both", "bothTitle", "both stretched", Math.max(base.width + 240, Math.ceil(base.width * 1.45)), Math.max(base.height + 160, Math.ceil(base.height * 1.75))],
+      ];
+      for (const [canvasId, titleId, label, width, height] of examples) {
+        document.getElementById(titleId).textContent = `${label}: ${width}x${height}`;
+        drawNineSlice(document.getElementById(canvasId), width, height);
+      }
+      renderCustom();
+    }
+
+    function renderCustom() {
+      const width = Number(document.getElementById("width").value);
+      const height = Number(document.getElementById("height").value);
+      document.getElementById("widthValue").textContent = `${width}px`;
+      document.getElementById("heightValue").textContent = `${height}px`;
+      document.getElementById("customTitle").textContent = `manual stretch: ${width}x${height}`;
+      drawNineSlice(document.getElementById("custom"), width, height);
+    }
+
+    async function boot() {
+      metadata = await fetch(metadataUrl).then((response) => response.json());
+      image = new Image();
+      image.decoding = "async";
+      image.src = assetUrl;
+      await image.decode();
+      const s = slice();
+      const base = metadata.sourceCropSize || { width: image.naturalWidth, height: image.naturalHeight };
+      const width = document.getElementById("width");
+      const height = document.getElementById("height");
+      width.min = s.left + s.right + 1;
+      height.min = s.top + s.bottom + 1;
+      width.max = Math.max(width.min, Math.ceil(base.width * 2));
+      height.max = Math.max(height.min, Math.ceil(base.height * 2));
+      width.value = base.width;
+      height.value = base.height;
+      for (const id of ["background", "guides", "smoothing"]) {
+        document.getElementById(id).addEventListener("input", renderAll);
+      }
+      document.getElementById("bounds").addEventListener("input", renderAll);
+      const gutters = metadata.validation?.transparentGutters;
+      const status = document.getElementById("gutterStatus");
+      if (gutters && Object.values(gutters).some((value) => value > 0)) {
+        status.textContent = `transparent gutters: left ${gutters.left}px, right ${gutters.right}px, top ${gutters.top}px, bottom ${gutters.bottom}px`;
+        status.style.color = "#8a4b00";
+      } else {
+        status.textContent = "no transparent outer gutters detected";
+        status.style.color = "#276228";
+      }
+      width.addEventListener("input", renderCustom);
+      height.addEventListener("input", renderCustom);
+      renderAll();
+    }
+
+    boot().catch((error) => {
+      document.body.insertAdjacentHTML("afterbegin", `<pre>${error.stack || error}</pre>`);
+    });
+  </script>
+</body>
+</html>

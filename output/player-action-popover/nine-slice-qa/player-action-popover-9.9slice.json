@@ -1,0 +1,166 @@
+{
+  "version": 1,
+  "format": "png",
+  "asset": "player-action-popover-9.png",
+  "workingAsset": "player-action-popover-9-work-x10.png",
+  "scaleWorkflow": {
+    "workScale": 10,
+    "downscaleResample": "lanczos",
+    "alphaCrop": {
+      "enabled": true,
+      "threshold": 0,
+      "crop": {
+        "x": 0,
+        "y": 2,
+        "width": 76,
+        "height": 72
+      },
+      "changed": true
+    }
+  },
+  "source": {
+    "path": "/private/tmp/idle-wizard-player-action-popover/player-action-popover-cropped.png",
+    "width": 180,
+    "height": 123,
+    "mode": "RGBA",
+    "crop": {
+      "x": 0,
+      "y": 0,
+      "width": 180,
+      "height": 123
+    }
+  },
+  "sourceCropSize": {
+    "width": 180,
+    "height": 123
+  },
+  "slice": {
+    "left": 34,
+    "top": 42,
+    "right": 34,
+    "bottom": 22
+  },
+  "mode": "distilled",
+  "distill": {
+    "sampleX": 900,
+    "sampleY": 610,
+    "centerWidth": 80,
+    "centerHeight": 80,
+    "cornerSource": "source",
+    "edgeSource": "source"
+  },
+  "cleanup": {
+    "symmetrizeCorners": false,
+    "symmetrizeEdges": false,
+    "transparentChamfer": 0,
+    "transparentChamferAaScale": 4,
+    "transparentInset": [
+      0,
+      0,
+      0,
+      0
+    ],
+    "brownBackgroundKey": null,
+    "sideGutterTrim": {
+      "transparentThroughPx": 0,
+      "fadePx": 2
+    },
+    "allowTransparentGutters": false,
+    "geometricMask": false
+  },
+  "rendering": {
+    "stretch": "edges-and-center",
+    "qaResample": "nearest",
+    "browserPreviewSmoothingDefault": false
+  },
+  "validation": {
+    "rasterOnly": true,
+    "pngSignatureChecked": true,
+    "naturalRoundTripExact": true,
+    "cornerRoundTripExact": true,
+    "alpha": {
+      "transparent": 455,
+      "translucent": 4852,
+      "opaque": 165
+    },
+    "alphaBounds": {
+      "x": 0,
+      "y": 0,
+      "width": 76,
+      "height": 72
+    },
+    "transparentGutters": {
+      "left": 0,
+      "right": 0,
+      "top": 0,
+      "bottom": 0
+    },
+    "passesNoGutterGate": true,
+    "uniqueColors": {
+      "all": 1767,
+      "corners": 1618,
+      "edges": 385
+    },
+    "workAsset": {
+      "size": {
+        "width": 760,
+        "height": 860
+      },
+      "slice": {
+        "left": 340,
+        "top": 440,
+        "right": 340,
+        "bottom": 340
+      },
+      "naturalRoundTripExact": true,
+      "cornerRoundTripExact": true,
+      "alpha": {
+        "transparent": 166364,
+        "translucent": 467291,
+        "opaque": 19945
+      },
+      "alphaBounds": {
+        "x": 0,
+        "y": 26,
+        "width": 760,
+        "height": 708
+      },
+      "transparentGutters": {
+        "left": 0,
+        "right": 0,
+        "top": 26,
+        "bottom": 126
+      },
+      "uniqueColors": {
+        "all": 20330,
+        "corners": 19769,
+        "edges": 4077
+      }
+    }
+  },
+  "qa": {
+    "sheet": "player-action-popover-9-qa-sheet.png",
+    "examples": [
+      {
+        "label": "original: 180x123",
+        "width": 180,
+        "height": 123
+      },
+      {
+        "label": "height stretched: 180x283",
+        "width": 180,
+        "height": 283
+      },
+      {
+        "label": "width stretched: 420x123",
+        "width": 420,
+        "height": 123
+      },
+      {
+        "label": "both stretched: 420x283",
+        "width": 420,
+        "height": 283
+      }
+    ]
+  }
+}

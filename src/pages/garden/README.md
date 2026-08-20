@@ -16,3 +16,17 @@ Tapping a growing or harvesting plot reduces its active timer by one second,
 then locks that plot for the complete 720ms feedback sequence. A selected seed
 that differs from the growing crop still opens the intentional swap
 confirmation. Rejected taps stay silent and do not restart feedback.
+
+Completing a numbered plot's automation study expands that plot into a wide
+five-slot bed with a per-plot seed picker, an Auto toggle, and an `xN` planting
+quantity control. The quantity is capped by that plot's researched multiplier
+and can be changed during a crop for the next cycle; active crops keep their
+committed quantity. Auto planting and harvesting pause while that plot's Auto
+toggle is off. Legacy saves default researched plot automation to on.
+
+Tapping a plot whose next capacity upgrade requires research navigates directly
+to that exact Advanced Research row, centers it in the Research list, and gives
+the row one short attention boink. The required research id comes from the
+Garden snapshot, so each capacity gate links to its own study.
+Pressing a grow request opens the Seeds picker on this page, centers the exact
+required seed row, and gives that row the same short attention boink.

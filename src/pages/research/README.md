@@ -10,9 +10,14 @@ Each research uses a compact `80px` row, preserves the Root Run station-upgrade 
 
 The description region and progress rail share the exact horizontal center of the gap between the art well and action button.
 
-Herb-growing and potion-brewing timer studies preserve the matching item as the primary art and add the shared simplified hourglass at the lower right, rendered at `169%` of its original overlay size while keeping its bottom-right anchor. The shared hourglass uses warm tan sand instead of purple, matching the plot-growth and cauldron-brewing icon composition.
+Herb-growing and potion-brewing timer studies preserve the matching item as the primary art and add the shared simplified hourglass at the lower right, rendered at `169%` of its original overlay size and nudged `6px` below its original bottom anchor. Only the shared hourglass sand is recolored to vivid orange-yellow; its dark frame and pale glass remain unchanged across the plot-growth and cauldron-brewing composites.
 
 Successful research purchases reuse Root Run's station-upgrade feedback: a `360ms` whole-row overshoot/settle bounce, a masked additive shine across the card, and a faster masked shine across the cost button. The retained sprites and masks are reused between purchases, the shared seven-icon spend burst remains the currency feedback layer, and reduced-motion players receive the state and sound change without the shine or bounce.
+
+Cross-room prerequisite links may select the owning Research tab, center the
+exact row in the retained scroll viewport, and reuse the row's short scale
+motion without the purchase shine. Reduced-motion players get the same tab and
+centered target with no boink.
 
 Each category uses the approved `Research Station Title Plaque`: the Root Run `header-red` horizontal nine-slice geometry, connected directly to the screen's left edge at `42px` source height while the research cards keep their `16px` inset. Plaque color follows the owning research tab: Regular is yellow, Automation is red, Advanced is emerald green, and Crystal is purple. The title is Title Case in `18px` Lilita One. Its width is the measured rendered label plus the fixed decorated-cap allowance, capped by the right content edge. Keep `18px` between the previous category's final row and the next plaque, then `5px` between the plaque and its first row. Level- and prestige-gated rows remain hidden until their gate is reached; active and completed rows remain revealed. A category with no revealed row does not render its plaque.
 

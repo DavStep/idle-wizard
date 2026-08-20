@@ -135,10 +135,13 @@ describe('createIdleWizardAssetEntries', () => {
     );
 
     expect(bannerAssets.map(({ label }) => label).sort()).toEqual([
+      'banner-blue-ribbon.9.png',
       'banner-blue-right.9.png',
       'banner-blue.9.png',
       'banner-cream.png',
+      'banner-green-ribbon.9.png',
       'banner-green-right.9.png',
+      'banner-purple-ribbon-compact.png',
       'banner-purple-ribbon.9.png',
       'banner-purple-right.9.png',
       'banner-purple.9.png',

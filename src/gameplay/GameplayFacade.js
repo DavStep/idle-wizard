@@ -1543,6 +1543,33 @@ export class GameplayFacade {
     return result;
   }
 
+  selectGardenAutomationSeed(tileNumber, seedTypeId) {
+    const result = this.gardenFacade.selectAutomationSeed(
+      tileNumber,
+      seedTypeId,
+    );
+    if (result.ok) {
+      this.publishAndSaveSnapshot();
+    }
+    return result;
+  }
+
+  toggleGardenAutomationEnabled(tileNumber) {
+    const result = this.gardenFacade.toggleAutomationEnabled(tileNumber);
+    if (result.ok) {
+      this.publishAndSaveSnapshot();
+    }
+    return result;
+  }
+
+  setGardenPlantQuantity(tileNumber, quantity) {
+    const result = this.gardenFacade.setPlantQuantity(tileNumber, quantity);
+    if (result.ok) {
+      this.publishAndSaveSnapshot();
+    }
+    return result;
+  }
+
   plantSelectedGardenSeed(tileNumber) {
     const result = this.gardenFacade.plantSelectedSeed(tileNumber);
     if (result.ok) {
@@ -1609,12 +1636,17 @@ export class GameplayFacade {
   getGardenSelectedSeedReservedQuantity(itemTypeId) {
     const garden =
       this.snapshotGardenForReservations ?? this.gardenFacade.getSnapshot();
-    return (garden.plot?.tiles ?? []).filter(
-      (tile) =>
-        tile.unlocked &&
-        tile.phase === "empty" &&
-        tile.selectedSeedItemTypeId === itemTypeId,
-    ).length;
+    return (garden.plot?.tiles ?? [])
+      .filter(
+        (tile) =>
+          tile.unlocked &&
+          tile.phase === "empty" &&
+          tile.selectedSeedItemTypeId === itemTypeId,
+      )
+      .reduce(
+        (total, tile) => total + Math.max(1, Number(tile.plantQuantity) || 1),
+        0,
+      );
   }
 
   subscribe(listener) {

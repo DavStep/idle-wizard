@@ -1,5 +1,6 @@
 import { DEFAULT_PAGE_SWIPE_ORDER } from "../../../pages/managers/pageOrder.js";
 import { PageUnlockManager } from "../../../pages/managers/PageUnlockManager.js";
+import { PageTargetNavigationManager } from "../../../pages/managers/PageTargetNavigationManager.js";
 import { automationResearchIds } from "../../../gameplay/automation/automationResearchIds.js";
 import { WORKSHOP_SECONDARY_ACTION_UNLOCK_LEVEL } from "../../../pages/workshop/managers/WorkshopSecondaryActionGateManager.js";
 import { getOwnTradeAllianceQuestContribution } from "../../../pages/workshop/managers/tradeAllianceQuestStatus.js";
@@ -178,6 +179,10 @@ export class PixiPagesFacade {
     this.viewModelFactory = viewModelFactory;
     this.pageUnlockManager = pageUnlockManager;
     this.notificationManager = notificationManager;
+    this.targetNavigationManager = new PageTargetNavigationManager({
+      showPage: (pageId) => this.show(pageId),
+      getPage: (pageId) => this.requireRuntime().getPage(pageId),
+    });
     this.defaultPageId = PAGE_IDS.includes(defaultPageId)
       ? defaultPageId
       : "workshop";
@@ -642,7 +647,7 @@ export class PixiPagesFacade {
           this.tutorialNotificationPolicy,
         ),
         actions: {
-          showPage: (pageId) => this.show(pageId),
+          showPage: (pageId) => this.showPageFromChrome(pageId),
           selectGuildTab: (tabId) => this.selectGuildTab(tabId),
           selectPrestigeTab: (tabId) => this.selectPrestigeTab(tabId),
           onLockedPage: () => true,
@@ -1138,10 +1143,10 @@ export class PixiPagesFacade {
       workshop: {
         openGuild: () => this.show("guild"),
         openPrestige: () => this.show("prestige"),
-        navigateToTask: (task) => {
-          const taskType = String(task?.type ?? task?.action ?? "").trim();
-          const pageId = TASK_DESTINATION_PAGE_BY_TYPE[taskType];
-          return pageId ? this.show(pageId) : false;
+        navigateToTask: (task) => this.navigateToTask(task),
+        navigateToResearch: (researchId) => {
+          this.requireRuntime().closeDialog?.("workshop.bag");
+          return this.navigateToResearch(researchId);
         },
         summonSeed: () => {
           const result = gameplay?.summonSeed?.();
@@ -1178,10 +1183,8 @@ export class PixiPagesFacade {
         sendWorldChat: (body) => this.worldChatFacade?.sendMessage?.(body),
         selectWorldChatMessageForReport: (message, options) =>
           this.selectWorldChatMessageForReport(message, options),
-        openWorldChatReport: (message) =>
-          this.openWorldChatReport(message),
-        openInbox: () =>
-          this.globalDialogPresenter?.open?.("inbox") ?? false,
+        openWorldChatReport: (message) => this.openWorldChatReport(message),
+        openInbox: () => this.globalDialogPresenter?.open?.("inbox") ?? false,
         claimInboxReward: (mailKey) =>
           this.playerInboxFacade?.claimReward?.(mailKey),
         markInboxRead: (mailKey) => this.playerInboxFacade?.markRead?.(mailKey),
@@ -1650,7 +1653,8 @@ export class PixiPagesFacade {
             return published;
           }
 
-          const selected = gameplay?.selectPlayerShopShelfSlot?.(safeSlotNumber);
+          const selected =
+            gameplay?.selectPlayerShopShelfSlot?.(safeSlotNumber);
           const result =
             selected === false || selected?.ok === false
               ? selected
@@ -1695,7 +1699,8 @@ export class PixiPagesFacade {
             this.refreshShopListingDialog(safeSlotNumber);
             return published;
           }
-          const selected = gameplay?.selectPlayerShopShelfSlot?.(safeSlotNumber);
+          const selected =
+            gameplay?.selectPlayerShopShelfSlot?.(safeSlotNumber);
           const result =
             selected === false || selected?.ok === false
               ? selected
@@ -2014,15 +2019,21 @@ export class PixiPagesFacade {
     const notificationContext = getGardenNotificationContext(
       this.gameplaySnapshot,
     );
-    const tiles = (plot.tiles ?? []).map((tile) =>
-      createGardenPlotModel({
+    const tiles = (plot.tiles ?? []).map((tile) => {
+      const automationSeed =
+        seeds.find((seed) => seed.itemTypeId === tile.selectedSeedItemTypeId) ??
+        null;
+      return createGardenPlotModel({
         tile,
         plot,
         coin: this.gameplaySnapshot.coin,
+        automationSeed: automationSeed
+          ? createGardenSelectedSeedModel(this.gameplaySnapshot, automationSeed)
+          : null,
         selectedSeed,
         ...notificationContext,
-      }),
-    );
+      });
+    });
 
     return {
       garden: {
@@ -2054,6 +2065,14 @@ export class PixiPagesFacade {
     const activatePlot = (plot) => {
       if (plot?.unlocked === false) {
         if (plot.lockReason === "research_locked") {
+          if (plot.requiredResearchId) {
+            return this.navigateTo({
+              pageId: "research",
+              tabId: this.findResearchTabId(plot.requiredResearchId),
+              targetId: plot.requiredResearchId,
+              indication: "boink",
+            });
+          }
           return {
             ok: false,
             reason: "research_locked",
@@ -2151,6 +2170,11 @@ export class PixiPagesFacade {
       activatePlot,
       activatePlotLabel: activatePlot,
       openSeedPicker: () => this.openGardenSeedDialog(),
+      openPlotSeedPicker: (plot) => this.openGardenSeedDialog(plot),
+      togglePlotAutomation: (plot) =>
+        gameplay?.toggleGardenAutomationEnabled?.(plot?.tileNumber) ?? false,
+      selectPlotQuantity: (plot, quantity) =>
+        gameplay?.setGardenPlantQuantity?.(plot?.tileNumber, quantity) ?? false,
       plantAll: () => {
         const result = gameplay?.plantAllGardenSeeds?.(
           this.gameplaySnapshot.garden?.selectedSeedItemTypeId ?? null,
@@ -2181,19 +2205,22 @@ export class PixiPagesFacade {
         }
         return result;
       },
-      selectSeed: (seed) => {
+      selectSeed: (seed, plot = null) => {
         if (!Number.isInteger(seed?.itemTypeId)) {
           return {
             ok: false,
             reason: "invalid_seed",
           };
         }
-        const result = gameplay?.selectGardenToolbarSeed?.(seed.itemTypeId) ?? {
-          ok: false,
-          reason: "unavailable",
-        };
+        const result =
+          plot?.automationAvailable === true
+            ? gameplay?.selectGardenAutomationSeed?.(
+                plot.tileNumber,
+                seed.itemTypeId,
+              )
+            : gameplay?.selectGardenToolbarSeed?.(seed.itemTypeId);
         if (result?.ok !== true) {
-          return result;
+          return result ?? { ok: false, reason: "unavailable" };
         }
         this.requireRuntime().closeDialog?.("garden.seed");
         this.refreshPage("garden");
@@ -2210,14 +2237,19 @@ export class PixiPagesFacade {
     };
   }
 
-  openGardenSeedDialog() {
+  openGardenSeedDialog(plot = null) {
+    const selectedSeedItemTypeId =
+      plot?.automationAvailable === true
+        ? plot.selectedSeedItemTypeId
+        : this.gameplaySnapshot.garden?.selectedSeedItemTypeId;
     const rows = createGardenSeedDialogRows(
       this.gameplaySnapshot,
-      this.gameplaySnapshot.garden?.selectedSeedItemTypeId,
+      selectedSeedItemTypeId,
     );
     return this.requireRuntime().getPage("garden").openDialog("seed", {
       open: true,
       title: "Choose Seed",
+      plot,
       rows,
     });
   }
@@ -2264,7 +2296,6 @@ export class PixiPagesFacade {
       Number.isInteger(brewing.nextCauldronNumber) &&
       brewing.nextCauldronNumber > cauldrons.length &&
       !brewing.nextCauldronLockedByLevel &&
-      !brewing.nextCauldronLockedByResearch &&
       Number.isFinite(Number(brewing.nextCauldronCost))
     ) {
       const nextCauldronCost = Number(brewing.nextCauldronCost);
@@ -2466,6 +2497,8 @@ export class PixiPagesFacade {
         ingredients,
         researchId,
         canResearch: research?.canResearch === true,
+        researchInProgress: research?.inProgress === true,
+        researchRemainingMs: Math.max(0, Number(research?.remainingMs) || 0),
         canSelect: false,
         selected: false,
       };
@@ -2611,12 +2644,7 @@ export class PixiPagesFacade {
     );
   }
 
-  setBrewingHerbSlotQuantity(
-    herb,
-    quantity,
-    cauldronIndex = 0,
-    slotIndex = 0,
-  ) {
+  setBrewingHerbSlotQuantity(herb, quantity, cauldronIndex = 0, slotIndex = 0) {
     if (!Number.isInteger(herb?.itemTypeId)) {
       return {
         ok: false,
@@ -2677,10 +2705,7 @@ export class PixiPagesFacade {
         },
       };
       return (
-        this.globalDialogPresenter?.open?.(
-          "confirmation",
-          confirmationModel,
-        ) ??
+        this.globalDialogPresenter?.open?.("confirmation", confirmationModel) ??
         this.requireRuntime().openDialog?.(
           "global.confirmation",
           confirmationModel,
@@ -2699,8 +2724,19 @@ export class PixiPagesFacade {
       },
       openRecipes: (cauldronIndex) =>
         this.openBrewingRecipesDialog(cauldronIndex),
-      openHerbPicker: (cauldronIndex, slotIndex) =>
-        this.openBrewingHerbDialog(cauldronIndex, slotIndex),
+      openHerbPicker: (cauldronIndex, slotIndex, ingredient = null) => {
+        const opened = this.openBrewingHerbDialog(cauldronIndex, slotIndex);
+        const itemKey = ingredient?.itemKey ?? ingredient?.key;
+        if (opened && itemKey) {
+          this.requireRuntime()
+            .getPage("brewing")
+            ?.focusDialogTarget?.("herbs", {
+              targetId: `brewing.herb.${itemKey}`,
+              indication: "boink",
+            });
+        }
+        return opened;
+      },
       selectHerb: (herb, cauldronIndex = 0, slotIndex = 0) => {
         const result = this.setBrewingHerbSlotQuantity(
           herb,
@@ -2728,6 +2764,8 @@ export class PixiPagesFacade {
         }
         return result ?? false;
       },
+      navigateLockedCauldronResearch: (cauldron) =>
+        this.navigateToResearch(cauldron?.nextCauldronRequiresResearchId),
       selectRecipe: (recipe, cauldronIndex = 0) => {
         const key = recipe?.key ?? recipe?.id ?? null;
         const result = key
@@ -2775,10 +2813,7 @@ export class PixiPagesFacade {
         return gameplay?.brewCauldron?.(index);
       },
       accelerateCauldron: (cauldronIndex = 0) => {
-        const index = Math.max(
-          0,
-          Math.floor(Number(cauldronIndex) || 0),
-        );
+        const index = Math.max(0, Math.floor(Number(cauldronIndex) || 0));
         const result =
           gameplay?.accelerateBrewingCauldron?.(index) ?? false;
         if (result?.ok === true) {
@@ -2955,6 +2990,209 @@ export class PixiPagesFacade {
     this.refreshPage(pageId, { force: true });
     this.syncExternalDataRetention();
     return true;
+  }
+
+  navigateTo(target) {
+    if (!this.mounted) {
+      return { ok: false, reason: "pages_not_mounted" };
+    }
+    return this.targetNavigationManager.navigate(target);
+  }
+
+  showPageFromChrome(pageId) {
+    if (pageId === "shop") {
+      const target = this.getShopNotificationTarget();
+      if (target) {
+        const result = this.navigateTo(target);
+        if (result === true || result?.ok === true) {
+          return true;
+        }
+      }
+    }
+    return this.show(pageId);
+  }
+
+  getShopNotificationTarget() {
+    const children = this.notifications.pages?.shop?.children ?? {};
+    if (isNotificationNavigationActive(children.playerProceeds)) {
+      return {
+        pageId: "shop",
+        tabId: "players",
+        targetId: "shop.playerMarket.claim",
+        indication: "boink",
+      };
+    }
+
+    if (isNotificationNavigationActive(children.playerMarket)) {
+      const coin = Number(this.gameplaySnapshot.coin?.current) || 0;
+      const requests = (this.playerShopSnapshot?.ownRequests ?? []).filter(
+        (request) => request?.itemKey && Number(request.quantity) > 0,
+      );
+      const listing = (this.playerShopSnapshot?.listings ?? []).find(
+        (candidate) =>
+          candidate?.itemKey &&
+          Number(candidate.quantity) > 0 &&
+          Number(candidate.priceCoin) <= coin &&
+          requests.some(
+            (request) =>
+              request.itemKey === candidate.itemKey &&
+              (!request.itemKind || request.itemKind === candidate.itemKind) &&
+              Number(request.priceCoin) >= Number(candidate.priceCoin),
+          ),
+      );
+      if (listing) {
+        const listingId =
+          listing.listingKey ?? listing.requestKey ?? listing.id;
+        if (listingId !== undefined && listingId !== null) {
+    this.shopMarketBrowseTab = "selling";
+          return {
+            pageId: "shop",
+            tabId: "players",
+            dialogId: "market",
+            targetId: `shop.market.listing.${listingId}`,
+            indication: "boink",
+          };
+        }
+      }
+      return {
+        pageId: "shop",
+        tabId: "players",
+        targetId: "shop.playerMarket.browse",
+        indication: "boink",
+      };
+    }
+
+    if (isNotificationNavigationActive(children.crystals)) {
+      const targetId = this.gameplaySnapshot.shop?.dailyCrystalOffer?.canCollect
+        ? "shop.dailyCrystalOffer.collect"
+        : "shop.coinOffer.collect";
+      return {
+        pageId: "shop",
+        tabId: "crystals",
+        targetId,
+        indication: "boink",
+      };
+    }
+
+    if (isNotificationNavigationActive(children.npcStand)) {
+      const slotNumber = this.gameplaySnapshot.shop?.shelf?.nextSlotNumber;
+      if (Number.isInteger(slotNumber)) {
+        return {
+          pageId: "shop",
+          tabId: "traders",
+          targetId: `shop.stall.${slotNumber}`,
+          indication: "boink",
+        };
+      }
+    }
+
+    if (isNotificationNavigationActive(children.npcListing)) {
+      const slot = (this.gameplaySnapshot.shop?.shelf?.slots ?? []).find(
+        (candidate) =>
+          candidate?.unlocked === true &&
+          !candidate.sellItemTypeId &&
+          !candidate.futureItemTypeId,
+      );
+      if (slot?.slotNumber) {
+        return {
+          pageId: "shop",
+          tabId: "traders",
+          targetId: `shop.stall.${slot.slotNumber}`,
+          indication: "boink",
+        };
+      }
+    }
+    return null;
+  }
+
+  navigateToResearch(researchId) {
+    const targetId = String(researchId ?? "").trim();
+    if (!targetId) {
+      return { ok: false, reason: "research_target_missing" };
+    }
+    return this.navigateTo({
+      pageId: "research",
+      tabId: this.findResearchTabId(targetId),
+      targetId,
+      indication: "boink",
+    });
+  }
+
+  navigateToTask(task = {}) {
+    const taskType = String(task.type ?? task.action ?? "").trim();
+    const itemKey = String(task.itemKey ?? "").trim();
+    if (taskType === "research") {
+      return this.navigateToResearch(task.researchId);
+    }
+    if (taskType === "summon") {
+      return this.navigateTo({
+        pageId: "workshop",
+        targetId: "workshop.summon",
+        indication: "boink",
+      });
+    }
+    if (taskType === "grow" && itemKey) {
+      const seedKey = itemKey.endsWith("Herb")
+        ? `${itemKey.slice(0, -4)}Seed`
+        : itemKey;
+      return this.navigateTo({
+        pageId: "garden",
+        targetId: `garden.seed.${seedKey}`,
+        indication: "boink",
+      });
+    }
+    if (taskType === "brew" && itemKey) {
+      return this.navigateTo({
+        pageId: "brewing",
+        dialogId: "recipes",
+        targetId: `brewing.recipe.${itemKey}`,
+        indication: "boink",
+      });
+    }
+    if (taskType === "sell" && itemKey) {
+      const slotNumber =
+        (this.gameplaySnapshot.shop?.shelf?.slots ?? []).find(
+          (slot) => slot?.unlocked === true,
+        )?.slotNumber ?? 1;
+      if (task.itemKind) {
+        this.shopStallItemKindBySlot.set(slotNumber, task.itemKind);
+      }
+      return this.navigateTo({
+        pageId: "shop",
+        tabId: "traders",
+        dialogId: "stall",
+        slotNumber,
+        targetId: `shop.stall.${slotNumber}.item.${itemKey}`,
+        indication: "boink",
+      });
+    }
+    if (taskType === "turnIn" && itemKey && task.itemKind) {
+      const tabId = `${task.itemKind}s`;
+      if (WORKSHOP_BAG_TAB_IDS.has(tabId)) {
+        this.workshopBagTabId = tabId;
+        this.refreshPage("workshop");
+        return this.navigateTo({
+          pageId: "workshop",
+          targetId: `workshop.bag.${task.itemKind}.${itemKey}`,
+          indication: "boink",
+        });
+      }
+    }
+          const pageId = TASK_DESTINATION_PAGE_BY_TYPE[taskType];
+          return pageId ? this.show(pageId) : false;
+  }
+
+  findResearchTabId(researchId) {
+    for (const tab of this.gameplaySnapshot.research?.tabs ?? []) {
+      for (const box of tab.boxes ?? []) {
+        if (
+          (box.researches ?? []).some((research) => research.id === researchId)
+        ) {
+          return tab.id;
+        }
+      }
+    }
+    return null;
   }
 
   selectGuildTab(tabId) {
@@ -3376,6 +3614,7 @@ function createGardenPlotModel({
   tile = {},
   plot = {},
   coin = {},
+  automationSeed = null,
   selectedSeed = null,
   seedQuantityById = new Map(),
   hasPlantableSeed = false,
@@ -3447,6 +3686,9 @@ function createGardenPlotModel({
       : lockedByResearch
         ? "research_locked"
         : null,
+    requiredResearchId: lockedByResearch
+      ? (plot.nextTileRequiresResearchId ?? null)
+      : null,
     costCoin: Number.isFinite(costCoin) ? costCoin : null,
     affordable,
     missingCoin:
@@ -3466,6 +3708,7 @@ function createGardenPlotModel({
     toolbarSeedItemTypeId: selectedSeed?.itemTypeId ?? null,
     toolbarSeedKey: selectedSeed?.key ?? null,
     toolbarSeedLabel: selectedSeed?.label ?? null,
+    automationSeed,
     notification:
       tile.notification === true ||
       hasGardenTileNotification({
@@ -3625,7 +3868,7 @@ function stripSeedSuffix(label) {
 }
 
 function formatPlayerRequestStatus(result) {
-  const backendMessage = String(result?.message ?? '').trim();
+  const backendMessage = String(result?.message ?? "").trim();
   if (backendMessage) {
     return backendMessage;
   }
@@ -3655,7 +3898,7 @@ function formatPlayerRequestStatus(result) {
 }
 
 function formatPlayerListingStatus(result) {
-  const backendMessage = String(result?.message ?? '').trim();
+  const backendMessage = String(result?.message ?? "").trim();
   if (backendMessage) {
     return backendMessage;
   }
@@ -3915,6 +4158,15 @@ function projectGuildBranchNotifications(children = {}) {
 }
 
 function isGuildNotificationActive(state) {
+  return (
+    state === true ||
+    state === "red" ||
+    state === "orange" ||
+    state?.active === true
+  );
+}
+
+function isNotificationNavigationActive(state) {
   return (
     state === true ||
     state === "red" ||

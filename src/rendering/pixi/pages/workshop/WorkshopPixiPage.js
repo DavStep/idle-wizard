@@ -238,8 +238,9 @@ const WORKSHOP_TASK_DEFAULT_PROGRESS_TOP =
 const WORKSHOP_TASK_DEFAULT_ROW_HEIGHT =
   WORKSHOP_TASK_DEFAULT_PROGRESS_TOP + PIXI_UI_GEOMETRY.progressTotalHeight;
 const WORKSHOP_REQUEST_TITLE_RIBBON_WIDTH = 300;
-const WORKSHOP_REQUEST_TITLE_RIBBON_Y = -18;
-const WORKSHOP_REQUEST_CONTENT_TOP = 42;
+const WORKSHOP_REQUEST_TITLE_RIBBON_SCALE = 0.805;
+const WORKSHOP_REQUEST_TITLE_RIBBON_Y = -16;
+const WORKSHOP_REQUEST_CONTENT_TOP = 19;
 const WORKSHOP_SIDE_LABEL_FILL = '#ffffff';
 const WORKSHOP_SIDE_LABEL_STROKE = '#0a0a0a';
 const REQUEST_PROGRESS_UPDATE_DURATION_MS = 220;
@@ -550,6 +551,29 @@ export class WorkshopPixiPage extends BaseRetainedPixiPage {
     this.dialogRegistry.open(dialogId, model);
     this.consumeAutoSummonUnlockReveal(shortId, model);
     return true;
+  }
+
+  navigateToTarget({ targetId, indication = 'boink' } = {}) {
+    const target = String(targetId ?? '').trim();
+    if (target === 'workshop.summon') {
+      if (indication === 'boink') {
+        this.summon.button.startAttentionEffect?.();
+      }
+      return true;
+    }
+
+    if (target.startsWith('workshop.bag.')) {
+      if (!this.openDialog('bag')) {
+        return false;
+      }
+      return (
+        this.dialogRegistry
+          ?.get?.('workshop.bag')
+          ?.navigateToTarget?.({ targetId: target, indication }) ?? false
+      );
+    }
+
+    return false;
   }
 
   rebindOpenDialogs() {
@@ -995,6 +1019,8 @@ export class WorkshopTaskPanel {
     this.root.addChildAt(this.background, 0);
     this.titleRibbon = new MarketTitleRibbon({
       assetManager,
+      assetId: PIXI_ROOT_RUN_ASSETS.workshopRequestTitleRibbon,
+      geometry: PIXI_ROOT_RUN_GEOMETRY.workshopRequestTitleRibbon,
       label: 'workshop-tasks:title-ribbon',
       showStars: false,
     });
@@ -1254,8 +1280,12 @@ export class WorkshopTaskPanel {
     this.titleRibbon.setMaxWidth(
       Math.min(WORKSHOP_REQUEST_TITLE_RIBBON_WIDTH, width - 24),
     );
+    this.titleRibbon.root.scale.set(WORKSHOP_REQUEST_TITLE_RIBBON_SCALE);
     this.titleRibbon.root.position.set(
-      (width - this.titleRibbon.width) / 2,
+      (
+        width -
+        this.titleRibbon.width * WORKSHOP_REQUEST_TITLE_RIBBON_SCALE
+      ) / 2,
       WORKSHOP_REQUEST_TITLE_RIBBON_Y,
     );
     let contentY = WORKSHOP_REQUEST_CONTENT_TOP;

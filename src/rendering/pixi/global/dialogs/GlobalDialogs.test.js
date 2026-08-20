@@ -703,6 +703,7 @@ describe('retained global Pixi dialogs', () => {
       settings.accountStatus,
       settings.accountConnectButton,
       settings.identityFooter,
+      settings.updateCheckButton,
     ]);
     expect(settings.accountConnectionPanel).toBeInstanceOf(PixiNineSliceFrame);
     expect(settings.accountConnectionPanel).toMatchObject({
@@ -721,6 +722,11 @@ describe('retained global Pixi dialogs', () => {
     expect(settings.identityFooter.copyButton.textLabel.text).toBe('Copy');
     expect(settings.identityFooter.userIdLabel.text).toBe('12345678…90abcdef');
     expect(settings.identityFooter.copyButton.variant).toBe('yellow');
+    expect(settings.updateCheckButton.variant).toBe('yellow');
+    expect(settings.updateCheckButton.textLabel.text).toBe(
+      'Check for updates',
+    );
+    expect(settings.updateCheckButton.enabled).toBe(true);
     expect(settings.scroll.physics.maxOffset).toBe(0);
     expect(
       settings.themePanel.y -
@@ -746,6 +752,35 @@ describe('retained global Pixi dialogs', () => {
     await settings.identityFooter.copyButton.activate();
     expect(copyUserId).toHaveBeenCalledWith(userId);
     expect(settings.identityFooter.copyButton.textLabel.text).toBe('Copied');
+    expect(await settings.updateCheckButton.activate()).toBe(false);
+    harness.dispose();
+  });
+
+  it('keeps the update check action single-flight while the probe is pending', async () => {
+    const harness = createHarness();
+    let finishCheck;
+    const checkForUpdates = vi.fn(
+      () => new Promise((resolve) => {
+        finishCheck = resolve;
+      }),
+    );
+    const settings = harness.registry.open(GLOBAL_DIALOG_IDS.SETTINGS, {
+      tabId: 'configurations',
+      actions: { checkForUpdates },
+    });
+
+    const firstCheck = settings.updateCheckButton.activate();
+    expect(settings.updateCheckButton.textLabel.text).toBe('Checking...');
+    expect(settings.updateCheckButton.enabled).toBe(false);
+    expect(await settings.updateCheckButton.activate()).toBe(false);
+    expect(checkForUpdates).toHaveBeenCalledOnce();
+
+    finishCheck({ status: 'up_to_date' });
+    await expect(firstCheck).resolves.toEqual({ status: 'up_to_date' });
+    expect(settings.updateCheckButton.textLabel.text).toBe(
+      'Check for updates',
+    );
+    expect(settings.updateCheckButton.enabled).toBe(true);
     harness.dispose();
   });
 
@@ -857,9 +892,9 @@ describe('retained global Pixi dialogs', () => {
     });
     expect(settings.panel).toMatchObject({
       contentBoxWidth: 264,
-      contentBoxHeight: 442,
+      contentBoxHeight: 480,
       outerWidth: 304,
-      outerHeight: 482,
+      outerHeight: 520,
     });
     expect(settings.panel.outerFrame.frameWidth).toBe(
       GLOBAL_DIALOG_GEOMETRY.maxShellWidth,
