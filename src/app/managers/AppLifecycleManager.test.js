@@ -195,6 +195,23 @@ function createLifecycle({
 }
 
 describe('AppLifecycleManager', () => {
+  it('keeps auth paused across app resume until startup explicitly releases it', async () => {
+    const { lifecycle, hideApp, showApp } = createLifecycle();
+
+    lifecycle.start({ connectBackend: false });
+    await flushPromises();
+    hideApp();
+    showApp();
+    await flushPromises();
+
+    expect(lifecycle.backendFacade.prepare).not.toHaveBeenCalled();
+
+    expect(lifecycle.resumeBackendConnectionFlow()).toBe(true);
+    await flushPromises();
+
+    expect(lifecycle.backendFacade.prepare).toHaveBeenCalledOnce();
+  });
+
   it('does not run the game loop until the server connects', async () => {
     const { lifecycle, stage, getBackendCallbacks } = createLifecycle();
 

@@ -86,6 +86,7 @@ experience_type: development-operations
 - `/deploy-version.json` can include `releaseVersion`, but deploy refresh should compare only the generated deploy `version` build id.
 - Android OTA bundles need a separate production build with base `/`; the GitHub Pages build uses `/idle-wizard/` and its absolute asset URLs do not work inside Capacitor's local origin.
 - Android OTA must remain unqueued until the player accepts the blocking in-game update prompt. Listen to native download progress for the splash, save-and-flush gameplay after download, then activate with Capacitor Updater `set`; never let `next` or an ordinary app switch replace a healthy WebView.
+- Keep backend/auth startup explicitly paused until the native/OTA version check clears; app hide/show resume paths must honor the same pause and cannot start auth behind a blocking update gate.
 - Deploy-triggered page refresh should only load compatible new code after migrations/sanitizers preserve player saves; refresh must not write defaults over hydrated user data.
 - Deploy refresh must call gameplay save-and-flush before `location.reload()` so open tabs persist current progress before swapping bundles.
 - Production web builds should set `VITE_SPACETIME_URI=https://maincloud.spacetimedb.com` and publish the module with `npm run stdb:publish:maincloud`.

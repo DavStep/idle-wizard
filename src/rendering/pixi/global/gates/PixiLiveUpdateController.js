@@ -49,6 +49,15 @@ export class PixiLiveUpdateController {
     });
   }
 
+  showNativeUpdateRequired({ minimumVersion } = {}) {
+    this.show({
+      presentation: 'dialog',
+      title: 'Update Required',
+      message: `Install Idle Wizard ${minimumVersion} or newer, then reopen the game.`,
+      progress: false,
+    });
+  }
+
   showError({ onRetry } = {}) {
     this.show({
       presentation: 'dialog',

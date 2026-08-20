@@ -66,6 +66,7 @@ export class AppLifecycleManager {
     this.frameLoopStarted = false;
     this.stopping = false;
     this.backendConnecting = false;
+    this.backendConnectionAllowed = false;
     this.backendConnectionFlowActive = false;
     this.backendConnectAttempt = 0;
     this.backendOnline = false;
@@ -87,7 +88,7 @@ export class AppLifecycleManager {
     this.reauthorizationFlowActive = false;
   }
 
-  start() {
+  start({ connectBackend = true } = {}) {
     if (this.started) {
       return;
     }
@@ -125,11 +126,29 @@ export class AppLifecycleManager {
     this.started = true;
     this.stopping = false;
     this.freshStartConfirmed = false;
+    this.backendConnectionAllowed = connectBackend;
+    if (connectBackend) {
+      void this.startBackendConnectionFlow();
+    }
+  }
+
+  resumeBackendConnectionFlow() {
+    if (!this.started || this.stopping) {
+      return false;
+    }
+
+    this.backendConnectionAllowed = true;
     void this.startBackendConnectionFlow();
+    return true;
   }
 
   async startBackendConnectionFlow() {
-    if (!this.started || this.stopping || this.backendConnectionFlowActive) {
+    if (
+      !this.started ||
+      this.stopping ||
+      !this.backendConnectionAllowed ||
+      this.backendConnectionFlowActive
+    ) {
       return;
     }
 
@@ -982,6 +1001,7 @@ export class AppLifecycleManager {
     this.stopping = true;
     this.appVisibilityManager.unmount();
     this.backendConnectionFlowActive = false;
+    this.backendConnectionAllowed = false;
     this.backendConnectAttempt += 1;
     this.backendConnecting = false;
     this.backendOnline = false;

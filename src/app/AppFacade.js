@@ -188,11 +188,14 @@ export class AppFacade {
 
     this.startPromise = this.renderFacade
       .initialize({ playerFacade: this.playerFacade })
-      .then(() => {
+      .then(async () => {
         if (!this.disposed) {
           this.backgroundMusicFacade?.start?.();
-          this.lifecycleManager.start();
-          void this.checkForLiveUpdate();
+          this.lifecycleManager.start({ connectBackend: false });
+          const canContinueStartup = await this.checkForLiveUpdate();
+          if (canContinueStartup && !this.disposed) {
+            this.lifecycleManager.resumeBackendConnectionFlow();
+          }
         }
         return this;
       });
@@ -202,9 +205,10 @@ export class AppFacade {
   async checkForLiveUpdate() {
     try {
       this.liveUpdateCheckResult = await this.liveUpdateManager.start();
-      this.presentLiveUpdateIfReady();
+      return !this.presentLiveUpdateIfReady();
     } catch {
       // A failed update probe never blocks a playable bundled APK.
+      return true;
     }
   }
 
@@ -214,7 +218,7 @@ export class AppFacade {
   }
 
   presentLiveUpdateIfReady() {
-    if (!this.playable || this.disposed || this.liveUpdateInProgress) {
+    if (this.disposed || this.liveUpdateInProgress) {
       return false;
     }
 
@@ -222,6 +226,13 @@ export class AppFacade {
     if (result?.status === 'failed_bundle') {
       this.liveUpdateGateManager?.showError({
         onRetry: () => void this.installLiveUpdate(),
+      });
+      return true;
+    }
+
+    if (result?.status === 'native_update_required') {
+      this.liveUpdateGateManager?.showNativeUpdateRequired({
+        minimumVersion: result.minimumNativeVersion,
       });
       return true;
     }
@@ -257,13 +268,20 @@ export class AppFacade {
           this.liveUpdateGateManager?.showDownloading(progress),
       });
       this.liveUpdateGateManager?.showPreparing();
-      const saved = await Promise.resolve(
-        this.gameplayFacade.savePersistenceSnapshotAndFlush(),
-      );
-      if (!saved) {
-        throw new Error('Gameplay save was not acknowledged before update.');
+      if (this.playable) {
+        const saved = await Promise.resolve(
+          this.gameplayFacade.savePersistenceSnapshotAndFlush(),
+        );
+        if (!saved) {
+          throw new Error('Gameplay save was not acknowledged before update.');
+        }
       }
       await this.liveUpdateManager.activateUpdate();
+      this.liveUpdateCheckResult = { status: 'up_to_date' };
+      this.liveUpdateGateManager?.hide();
+      if (!this.disposed) {
+        this.lifecycleManager.resumeBackendConnectionFlow();
+      }
       return true;
     } catch {
       this.liveUpdateInProgress = false;

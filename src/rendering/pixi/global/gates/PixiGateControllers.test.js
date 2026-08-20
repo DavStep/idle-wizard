@@ -661,6 +661,14 @@ describe('retained Pixi gate controllers', () => {
       progress: true,
       progressValue: 0.25,
     });
+
+    controller.showNativeUpdateRequired({ minimumVersion: '0.4.0' });
+    expect(view.bind).toHaveBeenLastCalledWith({
+      presentation: 'dialog',
+      title: 'Update Required',
+      message: 'Install Idle Wizard 0.4.0 or newer, then reopen the game.',
+      progress: false,
+    });
     expect(formatMegabytes(10.5 * 1024 * 1024)).toBe('10.5 MB');
   });
 

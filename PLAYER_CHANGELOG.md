@@ -5,6 +5,10 @@ upload script posts the section whose heading matches `package.json` `version`.
 Write these developer-to-player notes only in Idle Wizard terms. Do not mention
 other game names, source projects, ports, or implementation provenance.
 
+## 0.3.78
+
+- Improved startup updates so required downloads finish before account connection, while outdated app installs now show clear upgrade instructions instead of continuing with an incompatible version.
+
 ## 0.3.77
 
 - Fixed expired account sessions so remembered wizards are guided through reconnecting instead of silently falling back to a different account.
