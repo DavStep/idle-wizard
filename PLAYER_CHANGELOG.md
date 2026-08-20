@@ -5,6 +5,12 @@ upload script posts the section whose heading matches `package.json` `version`.
 Write these developer-to-player notes only in Idle Wizard terms. Do not mention
 other game names, source projects, ports, or implementation provenance.
 
+## 0.3.77
+
+- Fixed expired account sessions so remembered wizards are guided through reconnecting instead of silently falling back to a different account.
+- Fixed Research save merging across Prestige so newly added gated ranks and in-progress studies are preserved correctly.
+- Improved lifetime coin rankings for high-earning wizards, refined currency and Research artwork, and made startup lighter with clearer version and account details.
+
 ## 0.3.76
 
 - Fixed web text entry so spaces no longer move the caret and reverse the order of words in World Chat and other text fields.

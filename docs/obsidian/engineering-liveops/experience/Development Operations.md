@@ -15,6 +15,11 @@ experience_type: development-operations
   belongs in `assets/game/source/`; game and qUIck atlas outputs belong in
   their adjacent `atlas/` folders and must be regenerated through
   `npm run assets:atlas`, not edited by hand.
+- Let `build-asset-atlas.js` generate the production PNG import list. Never
+  restore an eager `assets/game/source/**/*.png` production glob: it emits
+  atlas source files again beside their packed frames. Shared atlas pages own
+  non-nine-slice textures up to `256x256`; startup art, nine-slices, and larger
+  illustrations stay standalone.
 - When promoting an authored source texture from `.png` to `.9.png`, update
   asset-generator inputs as well as runtime references, then run
   `npm run assets:atlas`; stale generator paths otherwise block `predev`.

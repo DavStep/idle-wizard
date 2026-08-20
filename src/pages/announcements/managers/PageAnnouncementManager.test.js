@@ -843,6 +843,7 @@ describe('PageAnnouncementManager', () => {
   });
 
   it.each([
+    ['manaSphereCap:1', 'resource:mana'],
     ['summonSeedsX2', 'research:summonMultiplier'],
     ['automation:autoSeedSpawn', 'research:autoSeedSpawn'],
     ['automation:autoPlantTile:1', 'research:autoPlant'],

@@ -1,0 +1,3965 @@
+{
+  "frames": {
+    "source:assets/avatars/adventurer_blackarmor_sword.png": {
+      "frame": {
+        "x": 184,
+        "y": 882,
+        "w": 87,
+        "h": 87
+      },
+      "rotated": false,
+      "trimmed": false,
+      "spriteSourceSize": {
+        "x": 0,
+        "y": 0,
+        "w": 87,
+        "h": 87
+      },
+      "sourceSize": {
+        "w": 87,
+        "h": 87
+      },
+      "originalSourceSize": {
+        "w": 87,
+        "h": 87
+      },
+      "source": "assets/game/source/avatars/adventurer_blackarmor_sword.png"
+    },
+    "source:assets/avatars/adventurer_blondshield_guard.png": {
+      "frame": {
+        "x": 275,
+        "y": 882,
+        "w": 87,
+        "h": 87
+      },
+      "rotated": false,
+      "trimmed": false,
+      "spriteSourceSize": {
+        "x": 0,
+        "y": 0,
+        "w": 87,
+        "h": 87
+      },
+      "sourceSize": {
+        "w": 87,
+        "h": 87
+      },
+      "originalSourceSize": {
+        "w": 87,
+        "h": 87
+      },
+      "source": "assets/game/source/avatars/adventurer_blondshield_guard.png"
+    },
+    "source:assets/avatars/adventurer_blondsword.png": {
+      "frame": {
+        "x": 366,
+        "y": 882,
+        "w": 87,
+        "h": 87
+      },
+      "rotated": false,
+      "trimmed": false,
+      "spriteSourceSize": {
+        "x": 0,
+        "y": 0,
+        "w": 87,
+        "h": 87
+      },
+      "sourceSize": {
+        "w": 87,
+        "h": 87
+      },
+      "originalSourceSize": {
+        "w": 87,
+        "h": 87
+      },
+      "source": "assets/game/source/avatars/adventurer_blondsword.png"
+    },
+    "source:assets/avatars/adventurer_bluebandana.png": {
+      "frame": {
+        "x": 457,
+        "y": 882,
+        "w": 87,
+        "h": 87
+      },
+      "rotated": false,
+      "trimmed": false,
+      "spriteSourceSize": {
+        "x": 0,
+        "y": 0,
+        "w": 87,
+        "h": 87
+      },
+      "sourceSize": {
+        "w": 87,
+        "h": 87
+      },
+      "originalSourceSize": {
+        "w": 87,
+        "h": 87
+      },
+      "source": "assets/game/source/avatars/adventurer_bluebandana.png"
+    },
+    "source:assets/avatars/adventurer_bluequiver_archer.png": {
+      "frame": {
+        "x": 548,
+        "y": 882,
+        "w": 87,
+        "h": 87
+      },
+      "rotated": false,
+      "trimmed": false,
+      "spriteSourceSize": {
+        "x": 0,
+        "y": 0,
+        "w": 87,
+        "h": 87
+      },
+      "sourceSize": {
+        "w": 87,
+        "h": 87
+      },
+      "originalSourceSize": {
+        "w": 87,
+        "h": 87
+      },
+      "source": "assets/game/source/avatars/adventurer_bluequiver_archer.png"
+    },
+    "source:assets/avatars/adventurer_bluescarf_spear.png": {
+      "frame": {
+        "x": 639,
+        "y": 882,
+        "w": 87,
+        "h": 87
+      },
+      "rotated": false,
+      "trimmed": false,
+      "spriteSourceSize": {
+        "x": 0,
+        "y": 0,
+        "w": 87,
+        "h": 87
+      },
+      "sourceSize": {
+        "w": 87,
+        "h": 87
+      },
+      "originalSourceSize": {
+        "w": 87,
+        "h": 87
+      },
+      "source": "assets/game/source/avatars/adventurer_bluescarf_spear.png"
+    },
+    "source:assets/avatars/adventurer_brownhood_archer.png": {
+      "frame": {
+        "x": 730,
+        "y": 882,
+        "w": 87,
+        "h": 87
+      },
+      "rotated": false,
+      "trimmed": false,
+      "spriteSourceSize": {
+        "x": 0,
+        "y": 0,
+        "w": 87,
+        "h": 87
+      },
+      "sourceSize": {
+        "w": 87,
+        "h": 87
+      },
+      "originalSourceSize": {
+        "w": 87,
+        "h": 87
+      },
+      "source": "assets/game/source/avatars/adventurer_brownhood_archer.png"
+    },
+    "source:assets/avatars/adventurer_cleric.png": {
+      "frame": {
+        "x": 821,
+        "y": 882,
+        "w": 87,
+        "h": 87
+      },
+      "rotated": false,
+      "trimmed": false,
+      "spriteSourceSize": {
+        "x": 0,
+        "y": 0,
+        "w": 87,
+        "h": 87
+      },
+      "sourceSize": {
+        "w": 87,
+        "h": 87
+      },
+      "originalSourceSize": {
+        "w": 87,
+        "h": 87
+      },
+      "source": "assets/game/source/avatars/adventurer_cleric.png"
+    },
+    "source:assets/avatars/adventurer_furguard.png": {
+      "frame": {
+        "x": 912,
+        "y": 882,
+        "w": 87,
+        "h": 87
+      },
+      "rotated": false,
+      "trimmed": false,
+      "spriteSourceSize": {
+        "x": 0,
+        "y": 0,
+        "w": 87,
+        "h": 87
+      },
+      "sourceSize": {
+        "w": 87,
+        "h": 87
+      },
+      "originalSourceSize": {
+        "w": 87,
+        "h": 87
+      },
+      "source": "assets/game/source/avatars/adventurer_furguard.png"
+    },
+    "source:assets/avatars/adventurer_goldshield_guard.png": {
+      "frame": {
+        "x": 1003,
+        "y": 882,
+        "w": 87,
+        "h": 87
+      },
+      "rotated": false,
+      "trimmed": false,
+      "spriteSourceSize": {
+        "x": 0,
+        "y": 0,
+        "w": 87,
+        "h": 87
+      },
+      "sourceSize": {
+        "w": 87,
+        "h": 87
+      },
+      "originalSourceSize": {
+        "w": 87,
+        "h": 87
+      },
+      "source": "assets/game/source/avatars/adventurer_goldshield_guard.png"
+    },
+    "source:assets/avatars/adventurer_grayquiver_archer.png": {
+      "frame": {
+        "x": 1094,
+        "y": 882,
+        "w": 87,
+        "h": 87
+      },
+      "rotated": false,
+      "trimmed": false,
+      "spriteSourceSize": {
+        "x": 0,
+        "y": 0,
+        "w": 87,
+        "h": 87
+      },
+      "sourceSize": {
+        "w": 87,
+        "h": 87
+      },
+      "originalSourceSize": {
+        "w": 87,
+        "h": 87
+      },
+      "source": "assets/game/source/avatars/adventurer_grayquiver_archer.png"
+    },
+    "source:assets/avatars/adventurer_greenbow_archer.png": {
+      "frame": {
+        "x": 1185,
+        "y": 882,
+        "w": 87,
+        "h": 87
+      },
+      "rotated": false,
+      "trimmed": false,
+      "spriteSourceSize": {
+        "x": 0,
+        "y": 0,
+        "w": 87,
+        "h": 87
+      },
+      "sourceSize": {
+        "w": 87,
+        "h": 87
+      },
+      "originalSourceSize": {
+        "w": 87,
+        "h": 87
+      },
+      "source": "assets/game/source/avatars/adventurer_greenbow_archer.png"
+    },
+    "source:assets/avatars/adventurer_greencloak_spear.png": {
+      "frame": {
+        "x": 1276,
+        "y": 882,
+        "w": 87,
+        "h": 87
+      },
+      "rotated": false,
+      "trimmed": false,
+      "spriteSourceSize": {
+        "x": 0,
+        "y": 0,
+        "w": 87,
+        "h": 87
+      },
+      "sourceSize": {
+        "w": 87,
+        "h": 87
+      },
+      "originalSourceSize": {
+        "w": 87,
+        "h": 87
+      },
+      "source": "assets/game/source/avatars/adventurer_greencloak_spear.png"
+    },
+    "source:assets/avatars/adventurer_greenhood_archer.png": {
+      "frame": {
+        "x": 1367,
+        "y": 882,
+        "w": 87,
+        "h": 87
+      },
+      "rotated": false,
+      "trimmed": false,
+      "spriteSourceSize": {
+        "x": 0,
+        "y": 0,
+        "w": 87,
+        "h": 87
+      },
+      "sourceSize": {
+        "w": 87,
+        "h": 87
+      },
+      "originalSourceSize": {
+        "w": 87,
+        "h": 87
+      },
+      "source": "assets/game/source/avatars/adventurer_greenhood_archer.png"
+    },
+    "source:assets/avatars/adventurer_greenscarf_dagger.png": {
+      "frame": {
+        "x": 1458,
+        "y": 882,
+        "w": 87,
+        "h": 87
+      },
+      "rotated": false,
+      "trimmed": false,
+      "spriteSourceSize": {
+        "x": 0,
+        "y": 0,
+        "w": 87,
+        "h": 87
+      },
+      "sourceSize": {
+        "w": 87,
+        "h": 87
+      },
+      "originalSourceSize": {
+        "w": 87,
+        "h": 87
+      },
+      "source": "assets/game/source/avatars/adventurer_greenscarf_dagger.png"
+    },
+    "source:assets/avatars/adventurer_greenscarf_shield.png": {
+      "frame": {
+        "x": 1549,
+        "y": 882,
+        "w": 87,
+        "h": 87
+      },
+      "rotated": false,
+      "trimmed": false,
+      "spriteSourceSize": {
+        "x": 0,
+        "y": 0,
+        "w": 87,
+        "h": 87
+      },
+      "sourceSize": {
+        "w": 87,
+        "h": 87
+      },
+      "originalSourceSize": {
+        "w": 87,
+        "h": 87
+      },
+      "source": "assets/game/source/avatars/adventurer_greenscarf_shield.png"
+    },
+    "source:assets/avatars/adventurer_headband_furguard.png": {
+      "frame": {
+        "x": 1640,
+        "y": 882,
+        "w": 87,
+        "h": 87
+      },
+      "rotated": false,
+      "trimmed": false,
+      "spriteSourceSize": {
+        "x": 0,
+        "y": 0,
+        "w": 87,
+        "h": 87
+      },
+      "sourceSize": {
+        "w": 87,
+        "h": 87
+      },
+      "originalSourceSize": {
+        "w": 87,
+        "h": 87
+      },
+      "source": "assets/game/source/avatars/adventurer_headband_furguard.png"
+    },
+    "source:assets/avatars/adventurer_helmhammer.png": {
+      "frame": {
+        "x": 1731,
+        "y": 882,
+        "w": 87,
+        "h": 87
+      },
+      "rotated": false,
+      "trimmed": false,
+      "spriteSourceSize": {
+        "x": 0,
+        "y": 0,
+        "w": 87,
+        "h": 87
+      },
+      "sourceSize": {
+        "w": 87,
+        "h": 87
+      },
+      "originalSourceSize": {
+        "w": 87,
+        "h": 87
+      },
+      "source": "assets/game/source/avatars/adventurer_helmhammer.png"
+    },
+    "source:assets/avatars/adventurer_hornhelm_axe.png": {
+      "frame": {
+        "x": 1822,
+        "y": 882,
+        "w": 87,
+        "h": 87
+      },
+      "rotated": false,
+      "trimmed": false,
+      "spriteSourceSize": {
+        "x": 0,
+        "y": 0,
+        "w": 87,
+        "h": 87
+      },
+      "sourceSize": {
+        "w": 87,
+        "h": 87
+      },
+      "originalSourceSize": {
+        "w": 87,
+        "h": 87
+      },
+      "source": "assets/game/source/avatars/adventurer_hornhelm_axe.png"
+    },
+    "source:assets/avatars/adventurer_olivehood_archer.png": {
+      "frame": {
+        "x": 1913,
+        "y": 882,
+        "w": 87,
+        "h": 87
+      },
+      "rotated": false,
+      "trimmed": false,
+      "spriteSourceSize": {
+        "x": 0,
+        "y": 0,
+        "w": 87,
+        "h": 87
+      },
+      "sourceSize": {
+        "w": 87,
+        "h": 87
+      },
+      "originalSourceSize": {
+        "w": 87,
+        "h": 87
+      },
+      "source": "assets/game/source/avatars/adventurer_olivehood_archer.png"
+    },
+    "source:assets/avatars/adventurer_packscout.png": {
+      "frame": {
+        "x": 4,
+        "y": 978,
+        "w": 87,
+        "h": 87
+      },
+      "rotated": false,
+      "trimmed": false,
+      "spriteSourceSize": {
+        "x": 0,
+        "y": 0,
+        "w": 87,
+        "h": 87
+      },
+      "sourceSize": {
+        "w": 87,
+        "h": 87
+      },
+      "originalSourceSize": {
+        "w": 87,
+        "h": 87
+      },
+      "source": "assets/game/source/avatars/adventurer_packscout.png"
+    },
+    "source:assets/avatars/adventurer_plumehelm_sword.png": {
+      "frame": {
+        "x": 95,
+        "y": 978,
+        "w": 87,
+        "h": 87
+      },
+      "rotated": false,
+      "trimmed": false,
+      "spriteSourceSize": {
+        "x": 0,
+        "y": 0,
+        "w": 87,
+        "h": 87
+      },
+      "sourceSize": {
+        "w": 87,
+        "h": 87
+      },
+      "originalSourceSize": {
+        "w": 87,
+        "h": 87
+      },
+      "source": "assets/game/source/avatars/adventurer_plumehelm_sword.png"
+    },
+    "source:assets/avatars/adventurer_purpleaxe.png": {
+      "frame": {
+        "x": 186,
+        "y": 978,
+        "w": 87,
+        "h": 87
+      },
+      "rotated": false,
+      "trimmed": false,
+      "spriteSourceSize": {
+        "x": 0,
+        "y": 0,
+        "w": 87,
+        "h": 87
+      },
+      "sourceSize": {
+        "w": 87,
+        "h": 87
+      },
+      "originalSourceSize": {
+        "w": 87,
+        "h": 87
+      },
+      "source": "assets/game/source/avatars/adventurer_purpleaxe.png"
+    },
+    "source:assets/avatars/adventurer_redaxe_guard.png": {
+      "frame": {
+        "x": 277,
+        "y": 978,
+        "w": 87,
+        "h": 87
+      },
+      "rotated": false,
+      "trimmed": false,
+      "spriteSourceSize": {
+        "x": 0,
+        "y": 0,
+        "w": 87,
+        "h": 87
+      },
+      "sourceSize": {
+        "w": 87,
+        "h": 87
+      },
+      "originalSourceSize": {
+        "w": 87,
+        "h": 87
+      },
+      "source": "assets/game/source/avatars/adventurer_redaxe_guard.png"
+    },
+    "source:assets/avatars/adventurer_redbow_archer.png": {
+      "frame": {
+        "x": 368,
+        "y": 978,
+        "w": 87,
+        "h": 87
+      },
+      "rotated": false,
+      "trimmed": false,
+      "spriteSourceSize": {
+        "x": 0,
+        "y": 0,
+        "w": 87,
+        "h": 87
+      },
+      "sourceSize": {
+        "w": 87,
+        "h": 87
+      },
+      "originalSourceSize": {
+        "w": 87,
+        "h": 87
+      },
+      "source": "assets/game/source/avatars/adventurer_redbow_archer.png"
+    },
+    "source:assets/avatars/adventurer_redplume_sword.png": {
+      "frame": {
+        "x": 459,
+        "y": 978,
+        "w": 87,
+        "h": 87
+      },
+      "rotated": false,
+      "trimmed": false,
+      "spriteSourceSize": {
+        "x": 0,
+        "y": 0,
+        "w": 87,
+        "h": 87
+      },
+      "sourceSize": {
+        "w": 87,
+        "h": 87
+      },
+      "originalSourceSize": {
+        "w": 87,
+        "h": 87
+      },
+      "source": "assets/game/source/avatars/adventurer_redplume_sword.png"
+    },
+    "source:assets/avatars/adventurer_redscarf_sword.png": {
+      "frame": {
+        "x": 550,
+        "y": 978,
+        "w": 87,
+        "h": 87
+      },
+      "rotated": false,
+      "trimmed": false,
+      "spriteSourceSize": {
+        "x": 0,
+        "y": 0,
+        "w": 87,
+        "h": 87
+      },
+      "sourceSize": {
+        "w": 87,
+        "h": 87
+      },
+      "originalSourceSize": {
+        "w": 87,
+        "h": 87
+      },
+      "source": "assets/game/source/avatars/adventurer_redscarf_sword.png"
+    },
+    "source:assets/avatars/adventurer_redspearman.png": {
+      "frame": {
+        "x": 641,
+        "y": 978,
+        "w": 87,
+        "h": 87
+      },
+      "rotated": false,
+      "trimmed": false,
+      "spriteSourceSize": {
+        "x": 0,
+        "y": 0,
+        "w": 87,
+        "h": 87
+      },
+      "sourceSize": {
+        "w": 87,
+        "h": 87
+      },
+      "originalSourceSize": {
+        "w": 87,
+        "h": 87
+      },
+      "source": "assets/game/source/avatars/adventurer_redspearman.png"
+    },
+    "source:assets/avatars/adventurer_silverhair_spear.png": {
+      "frame": {
+        "x": 732,
+        "y": 978,
+        "w": 87,
+        "h": 87
+      },
+      "rotated": false,
+      "trimmed": false,
+      "spriteSourceSize": {
+        "x": 0,
+        "y": 0,
+        "w": 87,
+        "h": 87
+      },
+      "sourceSize": {
+        "w": 87,
+        "h": 87
+      },
+      "originalSourceSize": {
+        "w": 87,
+        "h": 87
+      },
+      "source": "assets/game/source/avatars/adventurer_silverhair_spear.png"
+    },
+    "source:assets/avatars/adventurer_treasurehunter.png": {
+      "frame": {
+        "x": 823,
+        "y": 978,
+        "w": 87,
+        "h": 87
+      },
+      "rotated": false,
+      "trimmed": false,
+      "spriteSourceSize": {
+        "x": 0,
+        "y": 0,
+        "w": 87,
+        "h": 87
+      },
+      "sourceSize": {
+        "w": 87,
+        "h": 87
+      },
+      "originalSourceSize": {
+        "w": 87,
+        "h": 87
+      },
+      "source": "assets/game/source/avatars/adventurer_treasurehunter.png"
+    },
+    "source:assets/avatars/bramble.png": {
+      "frame": {
+        "x": 914,
+        "y": 978,
+        "w": 87,
+        "h": 87
+      },
+      "rotated": false,
+      "trimmed": false,
+      "spriteSourceSize": {
+        "x": 0,
+        "y": 0,
+        "w": 87,
+        "h": 87
+      },
+      "sourceSize": {
+        "w": 87,
+        "h": 87
+      },
+      "originalSourceSize": {
+        "w": 87,
+        "h": 87
+      },
+      "source": "assets/game/source/avatars/bramble.png"
+    },
+    "source:assets/avatars/corvin.png": {
+      "frame": {
+        "x": 1005,
+        "y": 978,
+        "w": 87,
+        "h": 87
+      },
+      "rotated": false,
+      "trimmed": false,
+      "spriteSourceSize": {
+        "x": 0,
+        "y": 0,
+        "w": 87,
+        "h": 87
+      },
+      "sourceSize": {
+        "w": 87,
+        "h": 87
+      },
+      "originalSourceSize": {
+        "w": 87,
+        "h": 87
+      },
+      "source": "assets/game/source/avatars/corvin.png"
+    },
+    "source:assets/avatars/elara.png": {
+      "frame": {
+        "x": 1096,
+        "y": 978,
+        "w": 87,
+        "h": 87
+      },
+      "rotated": false,
+      "trimmed": false,
+      "spriteSourceSize": {
+        "x": 0,
+        "y": 0,
+        "w": 87,
+        "h": 87
+      },
+      "sourceSize": {
+        "w": 87,
+        "h": 87
+      },
+      "originalSourceSize": {
+        "w": 87,
+        "h": 87
+      },
+      "source": "assets/game/source/avatars/elara.png"
+    },
+    "source:assets/avatars/juniper.png": {
+      "frame": {
+        "x": 1187,
+        "y": 978,
+        "w": 87,
+        "h": 87
+      },
+      "rotated": false,
+      "trimmed": false,
+      "spriteSourceSize": {
+        "x": 0,
+        "y": 0,
+        "w": 87,
+        "h": 87
+      },
+      "sourceSize": {
+        "w": 87,
+        "h": 87
+      },
+      "originalSourceSize": {
+        "w": 87,
+        "h": 87
+      },
+      "source": "assets/game/source/avatars/juniper.png"
+    },
+    "source:assets/avatars/mira.png": {
+      "frame": {
+        "x": 1278,
+        "y": 978,
+        "w": 87,
+        "h": 87
+      },
+      "rotated": false,
+      "trimmed": false,
+      "spriteSourceSize": {
+        "x": 0,
+        "y": 0,
+        "w": 87,
+        "h": 87
+      },
+      "sourceSize": {
+        "w": 87,
+        "h": 87
+      },
+      "originalSourceSize": {
+        "w": 87,
+        "h": 87
+      },
+      "source": "assets/game/source/avatars/mira.png"
+    },
+    "source:assets/avatars/rowan.png": {
+      "frame": {
+        "x": 1369,
+        "y": 978,
+        "w": 87,
+        "h": 87
+      },
+      "rotated": false,
+      "trimmed": false,
+      "spriteSourceSize": {
+        "x": 0,
+        "y": 0,
+        "w": 87,
+        "h": 87
+      },
+      "sourceSize": {
+        "w": 87,
+        "h": 87
+      },
+      "originalSourceSize": {
+        "w": 87,
+        "h": 87
+      },
+      "source": "assets/game/source/avatars/rowan.png"
+    },
+    "source:assets/characters/adventurer_blackarmor_sword.png": {
+      "frame": {
+        "x": 263,
+        "y": 542,
+        "w": 87,
+        "h": 108
+      },
+      "rotated": false,
+      "trimmed": false,
+      "spriteSourceSize": {
+        "x": 0,
+        "y": 0,
+        "w": 87,
+        "h": 108
+      },
+      "sourceSize": {
+        "w": 87,
+        "h": 108
+      },
+      "originalSourceSize": {
+        "w": 87,
+        "h": 108
+      },
+      "source": "assets/game/source/characters/adventurer_blackarmor_sword.png"
+    },
+    "source:assets/characters/adventurer_blacksmith.png": {
+      "frame": {
+        "x": 354,
+        "y": 542,
+        "w": 87,
+        "h": 108
+      },
+      "rotated": false,
+      "trimmed": false,
+      "spriteSourceSize": {
+        "x": 0,
+        "y": 0,
+        "w": 87,
+        "h": 108
+      },
+      "sourceSize": {
+        "w": 87,
+        "h": 108
+      },
+      "originalSourceSize": {
+        "w": 87,
+        "h": 108
+      },
+      "source": "assets/game/source/characters/adventurer_blacksmith.png"
+    },
+    "source:assets/characters/adventurer_blondshield_guard.png": {
+      "frame": {
+        "x": 445,
+        "y": 542,
+        "w": 87,
+        "h": 108
+      },
+      "rotated": false,
+      "trimmed": false,
+      "spriteSourceSize": {
+        "x": 0,
+        "y": 0,
+        "w": 87,
+        "h": 108
+      },
+      "sourceSize": {
+        "w": 87,
+        "h": 108
+      },
+      "originalSourceSize": {
+        "w": 87,
+        "h": 108
+      },
+      "source": "assets/game/source/characters/adventurer_blondshield_guard.png"
+    },
+    "source:assets/characters/adventurer_blondsword.png": {
+      "frame": {
+        "x": 536,
+        "y": 542,
+        "w": 87,
+        "h": 108
+      },
+      "rotated": false,
+      "trimmed": false,
+      "spriteSourceSize": {
+        "x": 0,
+        "y": 0,
+        "w": 87,
+        "h": 108
+      },
+      "sourceSize": {
+        "w": 87,
+        "h": 108
+      },
+      "originalSourceSize": {
+        "w": 87,
+        "h": 108
+      },
+      "source": "assets/game/source/characters/adventurer_blondsword.png"
+    },
+    "source:assets/characters/adventurer_bluebandana.png": {
+      "frame": {
+        "x": 627,
+        "y": 542,
+        "w": 87,
+        "h": 108
+      },
+      "rotated": false,
+      "trimmed": false,
+      "spriteSourceSize": {
+        "x": 0,
+        "y": 0,
+        "w": 87,
+        "h": 108
+      },
+      "sourceSize": {
+        "w": 87,
+        "h": 108
+      },
+      "originalSourceSize": {
+        "w": 87,
+        "h": 108
+      },
+      "source": "assets/game/source/characters/adventurer_bluebandana.png"
+    },
+    "source:assets/characters/adventurer_bluequiver_archer.png": {
+      "frame": {
+        "x": 718,
+        "y": 542,
+        "w": 87,
+        "h": 108
+      },
+      "rotated": false,
+      "trimmed": false,
+      "spriteSourceSize": {
+        "x": 0,
+        "y": 0,
+        "w": 87,
+        "h": 108
+      },
+      "sourceSize": {
+        "w": 87,
+        "h": 108
+      },
+      "originalSourceSize": {
+        "w": 87,
+        "h": 108
+      },
+      "source": "assets/game/source/characters/adventurer_bluequiver_archer.png"
+    },
+    "source:assets/characters/adventurer_bluescarf_spear.png": {
+      "frame": {
+        "x": 809,
+        "y": 542,
+        "w": 87,
+        "h": 108
+      },
+      "rotated": false,
+      "trimmed": false,
+      "spriteSourceSize": {
+        "x": 0,
+        "y": 0,
+        "w": 87,
+        "h": 108
+      },
+      "sourceSize": {
+        "w": 87,
+        "h": 108
+      },
+      "originalSourceSize": {
+        "w": 87,
+        "h": 108
+      },
+      "source": "assets/game/source/characters/adventurer_bluescarf_spear.png"
+    },
+    "source:assets/characters/adventurer_brownhood_archer.png": {
+      "frame": {
+        "x": 900,
+        "y": 542,
+        "w": 87,
+        "h": 108
+      },
+      "rotated": false,
+      "trimmed": false,
+      "spriteSourceSize": {
+        "x": 0,
+        "y": 0,
+        "w": 87,
+        "h": 108
+      },
+      "sourceSize": {
+        "w": 87,
+        "h": 108
+      },
+      "originalSourceSize": {
+        "w": 87,
+        "h": 108
+      },
+      "source": "assets/game/source/characters/adventurer_brownhood_archer.png"
+    },
+    "source:assets/characters/adventurer_cleric.png": {
+      "frame": {
+        "x": 991,
+        "y": 542,
+        "w": 87,
+        "h": 108
+      },
+      "rotated": false,
+      "trimmed": false,
+      "spriteSourceSize": {
+        "x": 0,
+        "y": 0,
+        "w": 87,
+        "h": 108
+      },
+      "sourceSize": {
+        "w": 87,
+        "h": 108
+      },
+      "originalSourceSize": {
+        "w": 87,
+        "h": 108
+      },
+      "source": "assets/game/source/characters/adventurer_cleric.png"
+    },
+    "source:assets/characters/adventurer_furguard.png": {
+      "frame": {
+        "x": 1082,
+        "y": 542,
+        "w": 87,
+        "h": 108
+      },
+      "rotated": false,
+      "trimmed": false,
+      "spriteSourceSize": {
+        "x": 0,
+        "y": 0,
+        "w": 87,
+        "h": 108
+      },
+      "sourceSize": {
+        "w": 87,
+        "h": 108
+      },
+      "originalSourceSize": {
+        "w": 87,
+        "h": 108
+      },
+      "source": "assets/game/source/characters/adventurer_furguard.png"
+    },
+    "source:assets/characters/adventurer_goldshield_guard.png": {
+      "frame": {
+        "x": 1173,
+        "y": 542,
+        "w": 87,
+        "h": 108
+      },
+      "rotated": false,
+      "trimmed": false,
+      "spriteSourceSize": {
+        "x": 0,
+        "y": 0,
+        "w": 87,
+        "h": 108
+      },
+      "sourceSize": {
+        "w": 87,
+        "h": 108
+      },
+      "originalSourceSize": {
+        "w": 87,
+        "h": 108
+      },
+      "source": "assets/game/source/characters/adventurer_goldshield_guard.png"
+    },
+    "source:assets/characters/adventurer_grayquiver_archer.png": {
+      "frame": {
+        "x": 1264,
+        "y": 542,
+        "w": 87,
+        "h": 108
+      },
+      "rotated": false,
+      "trimmed": false,
+      "spriteSourceSize": {
+        "x": 0,
+        "y": 0,
+        "w": 87,
+        "h": 108
+      },
+      "sourceSize": {
+        "w": 87,
+        "h": 108
+      },
+      "originalSourceSize": {
+        "w": 87,
+        "h": 108
+      },
+      "source": "assets/game/source/characters/adventurer_grayquiver_archer.png"
+    },
+    "source:assets/characters/adventurer_greenbow_archer.png": {
+      "frame": {
+        "x": 1355,
+        "y": 542,
+        "w": 87,
+        "h": 108
+      },
+      "rotated": false,
+      "trimmed": false,
+      "spriteSourceSize": {
+        "x": 0,
+        "y": 0,
+        "w": 87,
+        "h": 108
+      },
+      "sourceSize": {
+        "w": 87,
+        "h": 108
+      },
+      "originalSourceSize": {
+        "w": 87,
+        "h": 108
+      },
+      "source": "assets/game/source/characters/adventurer_greenbow_archer.png"
+    },
+    "source:assets/characters/adventurer_greencloak_spear.png": {
+      "frame": {
+        "x": 1446,
+        "y": 542,
+        "w": 87,
+        "h": 108
+      },
+      "rotated": false,
+      "trimmed": false,
+      "spriteSourceSize": {
+        "x": 0,
+        "y": 0,
+        "w": 87,
+        "h": 108
+      },
+      "sourceSize": {
+        "w": 87,
+        "h": 108
+      },
+      "originalSourceSize": {
+        "w": 87,
+        "h": 108
+      },
+      "source": "assets/game/source/characters/adventurer_greencloak_spear.png"
+    },
+    "source:assets/characters/adventurer_greenhood_archer.png": {
+      "frame": {
+        "x": 1537,
+        "y": 542,
+        "w": 87,
+        "h": 108
+      },
+      "rotated": false,
+      "trimmed": false,
+      "spriteSourceSize": {
+        "x": 0,
+        "y": 0,
+        "w": 87,
+        "h": 108
+      },
+      "sourceSize": {
+        "w": 87,
+        "h": 108
+      },
+      "originalSourceSize": {
+        "w": 87,
+        "h": 108
+      },
+      "source": "assets/game/source/characters/adventurer_greenhood_archer.png"
+    },
+    "source:assets/characters/adventurer_greenscarf_dagger.png": {
+      "frame": {
+        "x": 1628,
+        "y": 542,
+        "w": 87,
+        "h": 108
+      },
+      "rotated": false,
+      "trimmed": false,
+      "spriteSourceSize": {
+        "x": 0,
+        "y": 0,
+        "w": 87,
+        "h": 108
+      },
+      "sourceSize": {
+        "w": 87,
+        "h": 108
+      },
+      "originalSourceSize": {
+        "w": 87,
+        "h": 108
+      },
+      "source": "assets/game/source/characters/adventurer_greenscarf_dagger.png"
+    },
+    "source:assets/characters/adventurer_greenscarf_shield.png": {
+      "frame": {
+        "x": 1719,
+        "y": 542,
+        "w": 87,
+        "h": 108
+      },
+      "rotated": false,
+      "trimmed": false,
+      "spriteSourceSize": {
+        "x": 0,
+        "y": 0,
+        "w": 87,
+        "h": 108
+      },
+      "sourceSize": {
+        "w": 87,
+        "h": 108
+      },
+      "originalSourceSize": {
+        "w": 87,
+        "h": 108
+      },
+      "source": "assets/game/source/characters/adventurer_greenscarf_shield.png"
+    },
+    "source:assets/characters/adventurer_headband_furguard.png": {
+      "frame": {
+        "x": 1810,
+        "y": 542,
+        "w": 87,
+        "h": 108
+      },
+      "rotated": false,
+      "trimmed": false,
+      "spriteSourceSize": {
+        "x": 0,
+        "y": 0,
+        "w": 87,
+        "h": 108
+      },
+      "sourceSize": {
+        "w": 87,
+        "h": 108
+      },
+      "originalSourceSize": {
+        "w": 87,
+        "h": 108
+      },
+      "source": "assets/game/source/characters/adventurer_headband_furguard.png"
+    },
+    "source:assets/characters/adventurer_helmhammer.png": {
+      "frame": {
+        "x": 1901,
+        "y": 542,
+        "w": 87,
+        "h": 108
+      },
+      "rotated": false,
+      "trimmed": false,
+      "spriteSourceSize": {
+        "x": 0,
+        "y": 0,
+        "w": 87,
+        "h": 108
+      },
+      "sourceSize": {
+        "w": 87,
+        "h": 108
+      },
+      "originalSourceSize": {
+        "w": 87,
+        "h": 108
+      },
+      "source": "assets/game/source/characters/adventurer_helmhammer.png"
+    },
+    "source:assets/characters/adventurer_hoodblade.png": {
+      "frame": {
+        "x": 4,
+        "y": 658,
+        "w": 87,
+        "h": 108
+      },
+      "rotated": false,
+      "trimmed": false,
+      "spriteSourceSize": {
+        "x": 0,
+        "y": 0,
+        "w": 87,
+        "h": 108
+      },
+      "sourceSize": {
+        "w": 87,
+        "h": 108
+      },
+      "originalSourceSize": {
+        "w": 87,
+        "h": 108
+      },
+      "source": "assets/game/source/characters/adventurer_hoodblade.png"
+    },
+    "source:assets/characters/adventurer_hornhelm_axe.png": {
+      "frame": {
+        "x": 95,
+        "y": 658,
+        "w": 87,
+        "h": 108
+      },
+      "rotated": false,
+      "trimmed": false,
+      "spriteSourceSize": {
+        "x": 0,
+        "y": 0,
+        "w": 87,
+        "h": 108
+      },
+      "sourceSize": {
+        "w": 87,
+        "h": 108
+      },
+      "originalSourceSize": {
+        "w": 87,
+        "h": 108
+      },
+      "source": "assets/game/source/characters/adventurer_hornhelm_axe.png"
+    },
+    "source:assets/characters/adventurer_lamplighter.png": {
+      "frame": {
+        "x": 186,
+        "y": 658,
+        "w": 87,
+        "h": 108
+      },
+      "rotated": false,
+      "trimmed": false,
+      "spriteSourceSize": {
+        "x": 0,
+        "y": 0,
+        "w": 87,
+        "h": 108
+      },
+      "sourceSize": {
+        "w": 87,
+        "h": 108
+      },
+      "originalSourceSize": {
+        "w": 87,
+        "h": 108
+      },
+      "source": "assets/game/source/characters/adventurer_lamplighter.png"
+    },
+    "source:assets/characters/adventurer_minstrel.png": {
+      "frame": {
+        "x": 277,
+        "y": 658,
+        "w": 87,
+        "h": 108
+      },
+      "rotated": false,
+      "trimmed": false,
+      "spriteSourceSize": {
+        "x": 0,
+        "y": 0,
+        "w": 87,
+        "h": 108
+      },
+      "sourceSize": {
+        "w": 87,
+        "h": 108
+      },
+      "originalSourceSize": {
+        "w": 87,
+        "h": 108
+      },
+      "source": "assets/game/source/characters/adventurer_minstrel.png"
+    },
+    "source:assets/characters/adventurer_olivehood_archer.png": {
+      "frame": {
+        "x": 368,
+        "y": 658,
+        "w": 87,
+        "h": 108
+      },
+      "rotated": false,
+      "trimmed": false,
+      "spriteSourceSize": {
+        "x": 0,
+        "y": 0,
+        "w": 87,
+        "h": 108
+      },
+      "sourceSize": {
+        "w": 87,
+        "h": 108
+      },
+      "originalSourceSize": {
+        "w": 87,
+        "h": 108
+      },
+      "source": "assets/game/source/characters/adventurer_olivehood_archer.png"
+    },
+    "source:assets/characters/adventurer_packscout.png": {
+      "frame": {
+        "x": 459,
+        "y": 658,
+        "w": 87,
+        "h": 108
+      },
+      "rotated": false,
+      "trimmed": false,
+      "spriteSourceSize": {
+        "x": 0,
+        "y": 0,
+        "w": 87,
+        "h": 108
+      },
+      "sourceSize": {
+        "w": 87,
+        "h": 108
+      },
+      "originalSourceSize": {
+        "w": 87,
+        "h": 108
+      },
+      "source": "assets/game/source/characters/adventurer_packscout.png"
+    },
+    "source:assets/characters/adventurer_planter.png": {
+      "frame": {
+        "x": 550,
+        "y": 658,
+        "w": 87,
+        "h": 108
+      },
+      "rotated": false,
+      "trimmed": false,
+      "spriteSourceSize": {
+        "x": 0,
+        "y": 0,
+        "w": 87,
+        "h": 108
+      },
+      "sourceSize": {
+        "w": 87,
+        "h": 108
+      },
+      "originalSourceSize": {
+        "w": 87,
+        "h": 108
+      },
+      "source": "assets/game/source/characters/adventurer_planter.png"
+    },
+    "source:assets/characters/adventurer_plumehelm_sword.png": {
+      "frame": {
+        "x": 641,
+        "y": 658,
+        "w": 87,
+        "h": 108
+      },
+      "rotated": false,
+      "trimmed": false,
+      "spriteSourceSize": {
+        "x": 0,
+        "y": 0,
+        "w": 87,
+        "h": 108
+      },
+      "sourceSize": {
+        "w": 87,
+        "h": 108
+      },
+      "originalSourceSize": {
+        "w": 87,
+        "h": 108
+      },
+      "source": "assets/game/source/characters/adventurer_plumehelm_sword.png"
+    },
+    "source:assets/characters/adventurer_pouchrunner.png": {
+      "frame": {
+        "x": 732,
+        "y": 658,
+        "w": 87,
+        "h": 108
+      },
+      "rotated": false,
+      "trimmed": false,
+      "spriteSourceSize": {
+        "x": 0,
+        "y": 0,
+        "w": 87,
+        "h": 108
+      },
+      "sourceSize": {
+        "w": 87,
+        "h": 108
+      },
+      "originalSourceSize": {
+        "w": 87,
+        "h": 108
+      },
+      "source": "assets/game/source/characters/adventurer_pouchrunner.png"
+    },
+    "source:assets/characters/adventurer_purpleaxe.png": {
+      "frame": {
+        "x": 823,
+        "y": 658,
+        "w": 87,
+        "h": 108
+      },
+      "rotated": false,
+      "trimmed": false,
+      "spriteSourceSize": {
+        "x": 0,
+        "y": 0,
+        "w": 87,
+        "h": 108
+      },
+      "sourceSize": {
+        "w": 87,
+        "h": 108
+      },
+      "originalSourceSize": {
+        "w": 87,
+        "h": 108
+      },
+      "source": "assets/game/source/characters/adventurer_purpleaxe.png"
+    },
+    "source:assets/characters/adventurer_redaxe_guard.png": {
+      "frame": {
+        "x": 914,
+        "y": 658,
+        "w": 87,
+        "h": 108
+      },
+      "rotated": false,
+      "trimmed": false,
+      "spriteSourceSize": {
+        "x": 0,
+        "y": 0,
+        "w": 87,
+        "h": 108
+      },
+      "sourceSize": {
+        "w": 87,
+        "h": 108
+      },
+      "originalSourceSize": {
+        "w": 87,
+        "h": 108
+      },
+      "source": "assets/game/source/characters/adventurer_redaxe_guard.png"
+    },
+    "source:assets/characters/adventurer_redbow_archer.png": {
+      "frame": {
+        "x": 1005,
+        "y": 658,
+        "w": 87,
+        "h": 108
+      },
+      "rotated": false,
+      "trimmed": false,
+      "spriteSourceSize": {
+        "x": 0,
+        "y": 0,
+        "w": 87,
+        "h": 108
+      },
+      "sourceSize": {
+        "w": 87,
+        "h": 108
+      },
+      "originalSourceSize": {
+        "w": 87,
+        "h": 108
+      },
+      "source": "assets/game/source/characters/adventurer_redbow_archer.png"
+    },
+    "source:assets/characters/adventurer_redplume_sword.png": {
+      "frame": {
+        "x": 1096,
+        "y": 658,
+        "w": 87,
+        "h": 108
+      },
+      "rotated": false,
+      "trimmed": false,
+      "spriteSourceSize": {
+        "x": 0,
+        "y": 0,
+        "w": 87,
+        "h": 108
+      },
+      "sourceSize": {
+        "w": 87,
+        "h": 108
+      },
+      "originalSourceSize": {
+        "w": 87,
+        "h": 108
+      },
+      "source": "assets/game/source/characters/adventurer_redplume_sword.png"
+    },
+    "source:assets/characters/adventurer_redscarf_sword.png": {
+      "frame": {
+        "x": 1187,
+        "y": 658,
+        "w": 87,
+        "h": 108
+      },
+      "rotated": false,
+      "trimmed": false,
+      "spriteSourceSize": {
+        "x": 0,
+        "y": 0,
+        "w": 87,
+        "h": 108
+      },
+      "sourceSize": {
+        "w": 87,
+        "h": 108
+      },
+      "originalSourceSize": {
+        "w": 87,
+        "h": 108
+      },
+      "source": "assets/game/source/characters/adventurer_redscarf_sword.png"
+    },
+    "source:assets/characters/adventurer_redspearman.png": {
+      "frame": {
+        "x": 1278,
+        "y": 658,
+        "w": 87,
+        "h": 108
+      },
+      "rotated": false,
+      "trimmed": false,
+      "spriteSourceSize": {
+        "x": 0,
+        "y": 0,
+        "w": 87,
+        "h": 108
+      },
+      "sourceSize": {
+        "w": 87,
+        "h": 108
+      },
+      "originalSourceSize": {
+        "w": 87,
+        "h": 108
+      },
+      "source": "assets/game/source/characters/adventurer_redspearman.png"
+    },
+    "source:assets/characters/adventurer_sapling.png": {
+      "frame": {
+        "x": 1369,
+        "y": 658,
+        "w": 87,
+        "h": 108
+      },
+      "rotated": false,
+      "trimmed": false,
+      "spriteSourceSize": {
+        "x": 0,
+        "y": 0,
+        "w": 87,
+        "h": 108
+      },
+      "sourceSize": {
+        "w": 87,
+        "h": 108
+      },
+      "originalSourceSize": {
+        "w": 87,
+        "h": 108
+      },
+      "source": "assets/game/source/characters/adventurer_sapling.png"
+    },
+    "source:assets/characters/adventurer_scrollcap.png": {
+      "frame": {
+        "x": 1460,
+        "y": 658,
+        "w": 87,
+        "h": 108
+      },
+      "rotated": false,
+      "trimmed": false,
+      "spriteSourceSize": {
+        "x": 0,
+        "y": 0,
+        "w": 87,
+        "h": 108
+      },
+      "sourceSize": {
+        "w": 87,
+        "h": 108
+      },
+      "originalSourceSize": {
+        "w": 87,
+        "h": 108
+      },
+      "source": "assets/game/source/characters/adventurer_scrollcap.png"
+    },
+    "source:assets/characters/adventurer_shadowdagger.png": {
+      "frame": {
+        "x": 1551,
+        "y": 658,
+        "w": 87,
+        "h": 108
+      },
+      "rotated": false,
+      "trimmed": false,
+      "spriteSourceSize": {
+        "x": 0,
+        "y": 0,
+        "w": 87,
+        "h": 108
+      },
+      "sourceSize": {
+        "w": 87,
+        "h": 108
+      },
+      "originalSourceSize": {
+        "w": 87,
+        "h": 108
+      },
+      "source": "assets/game/source/characters/adventurer_shadowdagger.png"
+    },
+    "source:assets/characters/adventurer_shieldguard.png": {
+      "frame": {
+        "x": 1642,
+        "y": 658,
+        "w": 87,
+        "h": 108
+      },
+      "rotated": false,
+      "trimmed": false,
+      "spriteSourceSize": {
+        "x": 0,
+        "y": 0,
+        "w": 87,
+        "h": 108
+      },
+      "sourceSize": {
+        "w": 87,
+        "h": 108
+      },
+      "originalSourceSize": {
+        "w": 87,
+        "h": 108
+      },
+      "source": "assets/game/source/characters/adventurer_shieldguard.png"
+    },
+    "source:assets/characters/adventurer_silverhair_spear.png": {
+      "frame": {
+        "x": 1733,
+        "y": 658,
+        "w": 87,
+        "h": 108
+      },
+      "rotated": false,
+      "trimmed": false,
+      "spriteSourceSize": {
+        "x": 0,
+        "y": 0,
+        "w": 87,
+        "h": 108
+      },
+      "sourceSize": {
+        "w": 87,
+        "h": 108
+      },
+      "originalSourceSize": {
+        "w": 87,
+        "h": 108
+      },
+      "source": "assets/game/source/characters/adventurer_silverhair_spear.png"
+    },
+    "source:assets/characters/adventurer_steelward.png": {
+      "frame": {
+        "x": 1824,
+        "y": 658,
+        "w": 87,
+        "h": 108
+      },
+      "rotated": false,
+      "trimmed": false,
+      "spriteSourceSize": {
+        "x": 0,
+        "y": 0,
+        "w": 87,
+        "h": 108
+      },
+      "sourceSize": {
+        "w": 87,
+        "h": 108
+      },
+      "originalSourceSize": {
+        "w": 87,
+        "h": 108
+      },
+      "source": "assets/game/source/characters/adventurer_steelward.png"
+    },
+    "source:assets/characters/adventurer_treasurehunter.png": {
+      "frame": {
+        "x": 1915,
+        "y": 658,
+        "w": 87,
+        "h": 108
+      },
+      "rotated": false,
+      "trimmed": false,
+      "spriteSourceSize": {
+        "x": 0,
+        "y": 0,
+        "w": 87,
+        "h": 108
+      },
+      "sourceSize": {
+        "w": 87,
+        "h": 108
+      },
+      "originalSourceSize": {
+        "w": 87,
+        "h": 108
+      },
+      "source": "assets/game/source/characters/adventurer_treasurehunter.png"
+    },
+    "source:assets/characters/adventurer_troubadour.png": {
+      "frame": {
+        "x": 4,
+        "y": 770,
+        "w": 87,
+        "h": 108
+      },
+      "rotated": false,
+      "trimmed": false,
+      "spriteSourceSize": {
+        "x": 0,
+        "y": 0,
+        "w": 87,
+        "h": 108
+      },
+      "sourceSize": {
+        "w": 87,
+        "h": 108
+      },
+      "originalSourceSize": {
+        "w": 87,
+        "h": 108
+      },
+      "source": "assets/game/source/characters/adventurer_troubadour.png"
+    },
+    "source:assets/characters/adventurer_wayfinder.png": {
+      "frame": {
+        "x": 95,
+        "y": 770,
+        "w": 87,
+        "h": 108
+      },
+      "rotated": false,
+      "trimmed": false,
+      "spriteSourceSize": {
+        "x": 0,
+        "y": 0,
+        "w": 87,
+        "h": 108
+      },
+      "sourceSize": {
+        "w": 87,
+        "h": 108
+      },
+      "originalSourceSize": {
+        "w": 87,
+        "h": 108
+      },
+      "source": "assets/game/source/characters/adventurer_wayfinder.png"
+    },
+    "source:assets/characters/bard.png": {
+      "frame": {
+        "x": 186,
+        "y": 770,
+        "w": 87,
+        "h": 108
+      },
+      "rotated": false,
+      "trimmed": false,
+      "spriteSourceSize": {
+        "x": 0,
+        "y": 0,
+        "w": 87,
+        "h": 108
+      },
+      "sourceSize": {
+        "w": 87,
+        "h": 108
+      },
+      "originalSourceSize": {
+        "w": 87,
+        "h": 108
+      },
+      "source": "assets/game/source/characters/bard.png"
+    },
+    "source:assets/characters/bramble.png": {
+      "frame": {
+        "x": 277,
+        "y": 770,
+        "w": 87,
+        "h": 108
+      },
+      "rotated": false,
+      "trimmed": false,
+      "spriteSourceSize": {
+        "x": 0,
+        "y": 0,
+        "w": 87,
+        "h": 108
+      },
+      "sourceSize": {
+        "w": 87,
+        "h": 108
+      },
+      "originalSourceSize": {
+        "w": 87,
+        "h": 108
+      },
+      "source": "assets/game/source/characters/bramble.png"
+    },
+    "source:assets/characters/corvin.png": {
+      "frame": {
+        "x": 368,
+        "y": 770,
+        "w": 87,
+        "h": 108
+      },
+      "rotated": false,
+      "trimmed": false,
+      "spriteSourceSize": {
+        "x": 0,
+        "y": 0,
+        "w": 87,
+        "h": 108
+      },
+      "sourceSize": {
+        "w": 87,
+        "h": 108
+      },
+      "originalSourceSize": {
+        "w": 87,
+        "h": 108
+      },
+      "source": "assets/game/source/characters/corvin.png"
+    },
+    "source:assets/characters/elara.png": {
+      "frame": {
+        "x": 459,
+        "y": 770,
+        "w": 87,
+        "h": 108
+      },
+      "rotated": false,
+      "trimmed": false,
+      "spriteSourceSize": {
+        "x": 0,
+        "y": 0,
+        "w": 87,
+        "h": 108
+      },
+      "sourceSize": {
+        "w": 87,
+        "h": 108
+      },
+      "originalSourceSize": {
+        "w": 87,
+        "h": 108
+      },
+      "source": "assets/game/source/characters/elara.png"
+    },
+    "source:assets/characters/explorer.png": {
+      "frame": {
+        "x": 550,
+        "y": 770,
+        "w": 87,
+        "h": 108
+      },
+      "rotated": false,
+      "trimmed": false,
+      "spriteSourceSize": {
+        "x": 0,
+        "y": 0,
+        "w": 87,
+        "h": 108
+      },
+      "sourceSize": {
+        "w": 87,
+        "h": 108
+      },
+      "originalSourceSize": {
+        "w": 87,
+        "h": 108
+      },
+      "source": "assets/game/source/characters/explorer.png"
+    },
+    "source:assets/characters/guild_secretary.png": {
+      "frame": {
+        "x": 136,
+        "y": 542,
+        "w": 123,
+        "h": 108
+      },
+      "rotated": false,
+      "trimmed": false,
+      "spriteSourceSize": {
+        "x": 0,
+        "y": 0,
+        "w": 123,
+        "h": 108
+      },
+      "sourceSize": {
+        "w": 123,
+        "h": 108
+      },
+      "originalSourceSize": {
+        "w": 123,
+        "h": 108
+      },
+      "source": "assets/game/source/characters/guild_secretary.png"
+    },
+    "source:assets/characters/herbalist.png": {
+      "frame": {
+        "x": 641,
+        "y": 770,
+        "w": 87,
+        "h": 108
+      },
+      "rotated": false,
+      "trimmed": false,
+      "spriteSourceSize": {
+        "x": 0,
+        "y": 0,
+        "w": 87,
+        "h": 108
+      },
+      "sourceSize": {
+        "w": 87,
+        "h": 108
+      },
+      "originalSourceSize": {
+        "w": 87,
+        "h": 108
+      },
+      "source": "assets/game/source/characters/herbalist.png"
+    },
+    "source:assets/characters/juniper.png": {
+      "frame": {
+        "x": 732,
+        "y": 770,
+        "w": 87,
+        "h": 108
+      },
+      "rotated": false,
+      "trimmed": false,
+      "spriteSourceSize": {
+        "x": 0,
+        "y": 0,
+        "w": 87,
+        "h": 108
+      },
+      "sourceSize": {
+        "w": 87,
+        "h": 108
+      },
+      "originalSourceSize": {
+        "w": 87,
+        "h": 108
+      },
+      "source": "assets/game/source/characters/juniper.png"
+    },
+    "source:assets/characters/knight.png": {
+      "frame": {
+        "x": 823,
+        "y": 770,
+        "w": 87,
+        "h": 108
+      },
+      "rotated": false,
+      "trimmed": false,
+      "spriteSourceSize": {
+        "x": 0,
+        "y": 0,
+        "w": 87,
+        "h": 108
+      },
+      "sourceSize": {
+        "w": 87,
+        "h": 108
+      },
+      "originalSourceSize": {
+        "w": 87,
+        "h": 108
+      },
+      "source": "assets/game/source/characters/knight.png"
+    },
+    "source:assets/characters/miner.png": {
+      "frame": {
+        "x": 914,
+        "y": 770,
+        "w": 87,
+        "h": 108
+      },
+      "rotated": false,
+      "trimmed": false,
+      "spriteSourceSize": {
+        "x": 0,
+        "y": 0,
+        "w": 87,
+        "h": 108
+      },
+      "sourceSize": {
+        "w": 87,
+        "h": 108
+      },
+      "originalSourceSize": {
+        "w": 87,
+        "h": 108
+      },
+      "source": "assets/game/source/characters/miner.png"
+    },
+    "source:assets/characters/mira.png": {
+      "frame": {
+        "x": 1005,
+        "y": 770,
+        "w": 87,
+        "h": 108
+      },
+      "rotated": false,
+      "trimmed": false,
+      "spriteSourceSize": {
+        "x": 0,
+        "y": 0,
+        "w": 87,
+        "h": 108
+      },
+      "sourceSize": {
+        "w": 87,
+        "h": 108
+      },
+      "originalSourceSize": {
+        "w": 87,
+        "h": 108
+      },
+      "source": "assets/game/source/characters/mira.png"
+    },
+    "source:assets/characters/ranger.png": {
+      "frame": {
+        "x": 1096,
+        "y": 770,
+        "w": 87,
+        "h": 108
+      },
+      "rotated": false,
+      "trimmed": false,
+      "spriteSourceSize": {
+        "x": 0,
+        "y": 0,
+        "w": 87,
+        "h": 108
+      },
+      "sourceSize": {
+        "w": 87,
+        "h": 108
+      },
+      "originalSourceSize": {
+        "w": 87,
+        "h": 108
+      },
+      "source": "assets/game/source/characters/ranger.png"
+    },
+    "source:assets/characters/rogue.png": {
+      "frame": {
+        "x": 1187,
+        "y": 770,
+        "w": 87,
+        "h": 108
+      },
+      "rotated": false,
+      "trimmed": false,
+      "spriteSourceSize": {
+        "x": 0,
+        "y": 0,
+        "w": 87,
+        "h": 108
+      },
+      "sourceSize": {
+        "w": 87,
+        "h": 108
+      },
+      "originalSourceSize": {
+        "w": 87,
+        "h": 108
+      },
+      "source": "assets/game/source/characters/rogue.png"
+    },
+    "source:assets/characters/rowan.png": {
+      "frame": {
+        "x": 1278,
+        "y": 770,
+        "w": 87,
+        "h": 108
+      },
+      "rotated": false,
+      "trimmed": false,
+      "spriteSourceSize": {
+        "x": 0,
+        "y": 0,
+        "w": 87,
+        "h": 108
+      },
+      "sourceSize": {
+        "w": 87,
+        "h": 108
+      },
+      "originalSourceSize": {
+        "w": 87,
+        "h": 108
+      },
+      "source": "assets/game/source/characters/rowan.png"
+    },
+    "source:assets/characters/traveler.png": {
+      "frame": {
+        "x": 1369,
+        "y": 770,
+        "w": 87,
+        "h": 108
+      },
+      "rotated": false,
+      "trimmed": false,
+      "spriteSourceSize": {
+        "x": 0,
+        "y": 0,
+        "w": 87,
+        "h": 108
+      },
+      "sourceSize": {
+        "w": 87,
+        "h": 108
+      },
+      "originalSourceSize": {
+        "w": 87,
+        "h": 108
+      },
+      "source": "assets/game/source/characters/traveler.png"
+    },
+    "source:assets/icons/icon-alliance-banner-base.png": {
+      "frame": {
+        "x": 502,
+        "y": 410,
+        "w": 110,
+        "h": 128
+      },
+      "rotated": false,
+      "trimmed": false,
+      "spriteSourceSize": {
+        "x": 0,
+        "y": 0,
+        "w": 110,
+        "h": 128
+      },
+      "sourceSize": {
+        "w": 110,
+        "h": 128
+      },
+      "originalSourceSize": {
+        "w": 110,
+        "h": 128
+      },
+      "source": "assets/game/source/icons/icon-alliance-banner-base.png"
+    },
+    "source:assets/icons/icon-alliance-banner-cloth-mask.png": {
+      "frame": {
+        "x": 616,
+        "y": 410,
+        "w": 110,
+        "h": 128
+      },
+      "rotated": false,
+      "trimmed": false,
+      "spriteSourceSize": {
+        "x": 0,
+        "y": 0,
+        "w": 110,
+        "h": 128
+      },
+      "sourceSize": {
+        "w": 110,
+        "h": 128
+      },
+      "originalSourceSize": {
+        "w": 110,
+        "h": 128
+      },
+      "source": "assets/game/source/icons/icon-alliance-banner-cloth-mask.png"
+    },
+    "source:assets/icons/icon-bag.png": {
+      "frame": {
+        "x": 1588,
+        "y": 978,
+        "w": 73,
+        "h": 77
+      },
+      "rotated": false,
+      "trimmed": false,
+      "spriteSourceSize": {
+        "x": 0,
+        "y": 0,
+        "w": 73,
+        "h": 77
+      },
+      "sourceSize": {
+        "w": 73,
+        "h": 77
+      },
+      "originalSourceSize": {
+        "w": 73,
+        "h": 77
+      },
+      "source": "assets/game/source/icons/icon-bag.png"
+    },
+    "source:assets/icons/icon-brewing-recipes-preview.png": {
+      "frame": {
+        "x": 4,
+        "y": 4,
+        "w": 256,
+        "h": 256
+      },
+      "rotated": false,
+      "trimmed": false,
+      "spriteSourceSize": {
+        "x": 0,
+        "y": 0,
+        "w": 256,
+        "h": 256
+      },
+      "sourceSize": {
+        "w": 256,
+        "h": 256
+      },
+      "originalSourceSize": {
+        "w": 256,
+        "h": 256
+      },
+      "source": "assets/game/source/icons/icon-brewing-recipes-preview.png"
+    },
+    "source:assets/icons/icon-discoveries-journal-bag-style.png": {
+      "frame": {
+        "x": 258,
+        "y": 410,
+        "w": 118,
+        "h": 128
+      },
+      "rotated": false,
+      "trimmed": false,
+      "spriteSourceSize": {
+        "x": 0,
+        "y": 0,
+        "w": 118,
+        "h": 128
+      },
+      "sourceSize": {
+        "w": 118,
+        "h": 128
+      },
+      "originalSourceSize": {
+        "w": 118,
+        "h": 128
+      },
+      "source": "assets/game/source/icons/icon-discoveries-journal-bag-style.png"
+    },
+    "source:assets/icons/icon-discoveries-journal.png": {
+      "frame": {
+        "x": 380,
+        "y": 410,
+        "w": 118,
+        "h": 128
+      },
+      "rotated": false,
+      "trimmed": false,
+      "spriteSourceSize": {
+        "x": 0,
+        "y": 0,
+        "w": 118,
+        "h": 128
+      },
+      "sourceSize": {
+        "w": 118,
+        "h": 128
+      },
+      "originalSourceSize": {
+        "w": 118,
+        "h": 128
+      },
+      "source": "assets/game/source/icons/icon-discoveries-journal.png"
+    },
+    "source:assets/icons/icon-herb-box.png": {
+      "frame": {
+        "x": 1695,
+        "y": 770,
+        "w": 92,
+        "h": 92
+      },
+      "rotated": false,
+      "trimmed": false,
+      "spriteSourceSize": {
+        "x": 0,
+        "y": 0,
+        "w": 92,
+        "h": 92
+      },
+      "sourceSize": {
+        "w": 92,
+        "h": 92
+      },
+      "originalSourceSize": {
+        "w": 92,
+        "h": 92
+      },
+      "source": "assets/game/source/icons/icon-herb-box.png"
+    },
+    "source:assets/icons/icon-inbox-envelope-bag-style.png": {
+      "frame": {
+        "x": 1915,
+        "y": 264,
+        "w": 127,
+        "h": 128
+      },
+      "rotated": false,
+      "trimmed": false,
+      "spriteSourceSize": {
+        "x": 0,
+        "y": 0,
+        "w": 127,
+        "h": 128
+      },
+      "sourceSize": {
+        "w": 127,
+        "h": 128
+      },
+      "originalSourceSize": {
+        "w": 127,
+        "h": 128
+      },
+      "source": "assets/game/source/icons/icon-inbox-envelope-bag-style.png"
+    },
+    "source:assets/icons/icon-leaderboard-trophy-bag-style.png": {
+      "frame": {
+        "x": 4,
+        "y": 410,
+        "w": 123,
+        "h": 128
+      },
+      "rotated": false,
+      "trimmed": false,
+      "spriteSourceSize": {
+        "x": 0,
+        "y": 0,
+        "w": 123,
+        "h": 128
+      },
+      "sourceSize": {
+        "w": 123,
+        "h": 128
+      },
+      "originalSourceSize": {
+        "w": 123,
+        "h": 128
+      },
+      "source": "assets/game/source/icons/icon-leaderboard-trophy-bag-style.png"
+    },
+    "source:assets/icons/icon-leaderboard-trophy.png": {
+      "frame": {
+        "x": 131,
+        "y": 410,
+        "w": 123,
+        "h": 128
+      },
+      "rotated": false,
+      "trimmed": false,
+      "spriteSourceSize": {
+        "x": 0,
+        "y": 0,
+        "w": 123,
+        "h": 128
+      },
+      "sourceSize": {
+        "w": 123,
+        "h": 128
+      },
+      "originalSourceSize": {
+        "w": 123,
+        "h": 128
+      },
+      "source": "assets/game/source/icons/icon-leaderboard-trophy.png"
+    },
+    "source:assets/icons/icon-personal-tasks-scroll-bag-style.png": {
+      "frame": {
+        "x": 730,
+        "y": 410,
+        "w": 105,
+        "h": 128
+      },
+      "rotated": false,
+      "trimmed": false,
+      "spriteSourceSize": {
+        "x": 0,
+        "y": 0,
+        "w": 105,
+        "h": 128
+      },
+      "sourceSize": {
+        "w": 105,
+        "h": 128
+      },
+      "originalSourceSize": {
+        "w": 105,
+        "h": 128
+      },
+      "source": "assets/game/source/icons/icon-personal-tasks-scroll-bag-style.png"
+    },
+    "source:assets/icons/icon-potion-box.png": {
+      "frame": {
+        "x": 1791,
+        "y": 770,
+        "w": 92,
+        "h": 92
+      },
+      "rotated": false,
+      "trimmed": false,
+      "spriteSourceSize": {
+        "x": 0,
+        "y": 0,
+        "w": 92,
+        "h": 92
+      },
+      "sourceSize": {
+        "w": 92,
+        "h": 92
+      },
+      "originalSourceSize": {
+        "w": 92,
+        "h": 92
+      },
+      "source": "assets/game/source/icons/icon-potion-box.png"
+    },
+    "source:assets/icons/icon-prestige-star.png": {
+      "frame": {
+        "x": 1887,
+        "y": 770,
+        "w": 92,
+        "h": 92
+      },
+      "rotated": false,
+      "trimmed": false,
+      "spriteSourceSize": {
+        "x": 0,
+        "y": 0,
+        "w": 92,
+        "h": 92
+      },
+      "sourceSize": {
+        "w": 92,
+        "h": 92
+      },
+      "originalSourceSize": {
+        "w": 92,
+        "h": 92
+      },
+      "source": "assets/game/source/icons/icon-prestige-star.png"
+    },
+    "source:assets/icons/icon-quests-scroll-bag-style.png": {
+      "frame": {
+        "x": 839,
+        "y": 410,
+        "w": 95,
+        "h": 128
+      },
+      "rotated": false,
+      "trimmed": false,
+      "spriteSourceSize": {
+        "x": 0,
+        "y": 0,
+        "w": 95,
+        "h": 128
+      },
+      "sourceSize": {
+        "w": 95,
+        "h": 128
+      },
+      "originalSourceSize": {
+        "w": 95,
+        "h": 128
+      },
+      "source": "assets/game/source/icons/icon-quests-scroll-bag-style.png"
+    },
+    "source:assets/icons/icon-seed-box.png": {
+      "frame": {
+        "x": 4,
+        "y": 882,
+        "w": 92,
+        "h": 92
+      },
+      "rotated": false,
+      "trimmed": false,
+      "spriteSourceSize": {
+        "x": 0,
+        "y": 0,
+        "w": 92,
+        "h": 92
+      },
+      "sourceSize": {
+        "w": 92,
+        "h": 92
+      },
+      "originalSourceSize": {
+        "w": 92,
+        "h": 92
+      },
+      "source": "assets/game/source/icons/icon-seed-box.png"
+    },
+    "source:assets/icons/icon-side-alliance-root-run.png": {
+      "frame": {
+        "x": 463,
+        "y": 264,
+        "w": 128,
+        "h": 128
+      },
+      "rotated": false,
+      "trimmed": false,
+      "spriteSourceSize": {
+        "x": 0,
+        "y": 0,
+        "w": 128,
+        "h": 128
+      },
+      "sourceSize": {
+        "w": 128,
+        "h": 128
+      },
+      "originalSourceSize": {
+        "w": 128,
+        "h": 128
+      },
+      "source": "assets/game/source/icons/icon-side-alliance-root-run.png"
+    },
+    "source:assets/icons/icon-side-bag-root-run.png": {
+      "frame": {
+        "x": 595,
+        "y": 264,
+        "w": 128,
+        "h": 128
+      },
+      "rotated": false,
+      "trimmed": false,
+      "spriteSourceSize": {
+        "x": 0,
+        "y": 0,
+        "w": 128,
+        "h": 128
+      },
+      "sourceSize": {
+        "w": 128,
+        "h": 128
+      },
+      "originalSourceSize": {
+        "w": 128,
+        "h": 128
+      },
+      "source": "assets/game/source/icons/icon-side-bag-root-run.png"
+    },
+    "source:assets/icons/icon-side-discoveries-root-run.png": {
+      "frame": {
+        "x": 727,
+        "y": 264,
+        "w": 128,
+        "h": 128
+      },
+      "rotated": false,
+      "trimmed": false,
+      "spriteSourceSize": {
+        "x": 0,
+        "y": 0,
+        "w": 128,
+        "h": 128
+      },
+      "sourceSize": {
+        "w": 128,
+        "h": 128
+      },
+      "originalSourceSize": {
+        "w": 128,
+        "h": 128
+      },
+      "source": "assets/game/source/icons/icon-side-discoveries-root-run.png"
+    },
+    "source:assets/icons/icon-side-event-root-run.png": {
+      "frame": {
+        "x": 859,
+        "y": 264,
+        "w": 128,
+        "h": 128
+      },
+      "rotated": false,
+      "trimmed": false,
+      "spriteSourceSize": {
+        "x": 0,
+        "y": 0,
+        "w": 128,
+        "h": 128
+      },
+      "sourceSize": {
+        "w": 128,
+        "h": 128
+      },
+      "originalSourceSize": {
+        "w": 128,
+        "h": 128
+      },
+      "source": "assets/game/source/icons/icon-side-event-root-run.png"
+    },
+    "source:assets/icons/icon-side-inbox-root-run.png": {
+      "frame": {
+        "x": 991,
+        "y": 264,
+        "w": 128,
+        "h": 128
+      },
+      "rotated": false,
+      "trimmed": false,
+      "spriteSourceSize": {
+        "x": 0,
+        "y": 0,
+        "w": 128,
+        "h": 128
+      },
+      "sourceSize": {
+        "w": 128,
+        "h": 128
+      },
+      "originalSourceSize": {
+        "w": 128,
+        "h": 128
+      },
+      "source": "assets/game/source/icons/icon-side-inbox-root-run.png"
+    },
+    "source:assets/icons/icon-side-leaderboard-root-run.png": {
+      "frame": {
+        "x": 1123,
+        "y": 264,
+        "w": 128,
+        "h": 128
+      },
+      "rotated": false,
+      "trimmed": false,
+      "spriteSourceSize": {
+        "x": 0,
+        "y": 0,
+        "w": 128,
+        "h": 128
+      },
+      "sourceSize": {
+        "w": 128,
+        "h": 128
+      },
+      "originalSourceSize": {
+        "w": 128,
+        "h": 128
+      },
+      "source": "assets/game/source/icons/icon-side-leaderboard-root-run.png"
+    },
+    "source:assets/icons/icon-side-stats-root-run.png": {
+      "frame": {
+        "x": 1255,
+        "y": 264,
+        "w": 128,
+        "h": 128
+      },
+      "rotated": false,
+      "trimmed": false,
+      "spriteSourceSize": {
+        "x": 0,
+        "y": 0,
+        "w": 128,
+        "h": 128
+      },
+      "sourceSize": {
+        "w": 128,
+        "h": 128
+      },
+      "originalSourceSize": {
+        "w": 128,
+        "h": 128
+      },
+      "source": "assets/game/source/icons/icon-side-stats-root-run.png"
+    },
+    "source:assets/icons/icon-side-tasks-root-run.png": {
+      "frame": {
+        "x": 1387,
+        "y": 264,
+        "w": 128,
+        "h": 128
+      },
+      "rotated": false,
+      "trimmed": false,
+      "spriteSourceSize": {
+        "x": 0,
+        "y": 0,
+        "w": 128,
+        "h": 128
+      },
+      "sourceSize": {
+        "w": 128,
+        "h": 128
+      },
+      "originalSourceSize": {
+        "w": 128,
+        "h": 128
+      },
+      "source": "assets/game/source/icons/icon-side-tasks-root-run.png"
+    },
+    "source:assets/icons/icon-stats-ledger-bag-style.png": {
+      "frame": {
+        "x": 4,
+        "y": 542,
+        "w": 128,
+        "h": 112
+      },
+      "rotated": false,
+      "trimmed": false,
+      "spriteSourceSize": {
+        "x": 0,
+        "y": 0,
+        "w": 128,
+        "h": 112
+      },
+      "sourceSize": {
+        "w": 128,
+        "h": 112
+      },
+      "originalSourceSize": {
+        "w": 128,
+        "h": 112
+      },
+      "source": "assets/game/source/icons/icon-stats-ledger-bag-style.png"
+    },
+    "source:assets/rooms/garden/plots/outpost-plot-ground-level-2.png": {
+      "frame": {
+        "x": 1616,
+        "y": 4,
+        "w": 149,
+        "h": 142
+      },
+      "rotated": false,
+      "trimmed": false,
+      "spriteSourceSize": {
+        "x": 0,
+        "y": 0,
+        "w": 149,
+        "h": 142
+      },
+      "sourceSize": {
+        "w": 149,
+        "h": 142
+      },
+      "originalSourceSize": {
+        "w": 149,
+        "h": 142
+      },
+      "source": "assets/game/source/rooms/garden/plots/outpost-plot-ground-level-2.png"
+    },
+    "source:assets/rooms/garden/plots/outpost-plot-ground-level-3.png": {
+      "frame": {
+        "x": 1769,
+        "y": 4,
+        "w": 149,
+        "h": 142
+      },
+      "rotated": false,
+      "trimmed": false,
+      "spriteSourceSize": {
+        "x": 0,
+        "y": 0,
+        "w": 149,
+        "h": 142
+      },
+      "sourceSize": {
+        "w": 149,
+        "h": 142
+      },
+      "originalSourceSize": {
+        "w": 149,
+        "h": 142
+      },
+      "source": "assets/game/source/rooms/garden/plots/outpost-plot-ground-level-3.png"
+    },
+    "source:assets/rooms/garden/plots/outpost-plot-ground-level-4.png": {
+      "frame": {
+        "x": 4,
+        "y": 264,
+        "w": 149,
+        "h": 142
+      },
+      "rotated": false,
+      "trimmed": false,
+      "spriteSourceSize": {
+        "x": 0,
+        "y": 0,
+        "w": 149,
+        "h": 142
+      },
+      "sourceSize": {
+        "w": 149,
+        "h": 142
+      },
+      "originalSourceSize": {
+        "w": 149,
+        "h": 142
+      },
+      "source": "assets/game/source/rooms/garden/plots/outpost-plot-ground-level-4.png"
+    },
+    "source:assets/rooms/garden/plots/outpost-plot-ground-level-5.png": {
+      "frame": {
+        "x": 157,
+        "y": 264,
+        "w": 149,
+        "h": 142
+      },
+      "rotated": false,
+      "trimmed": false,
+      "spriteSourceSize": {
+        "x": 0,
+        "y": 0,
+        "w": 149,
+        "h": 142
+      },
+      "sourceSize": {
+        "w": 149,
+        "h": 142
+      },
+      "originalSourceSize": {
+        "w": 149,
+        "h": 142
+      },
+      "source": "assets/game/source/rooms/garden/plots/outpost-plot-ground-level-5.png"
+    },
+    "source:assets/rooms/garden/plots/outpost-plot-ground.png": {
+      "frame": {
+        "x": 310,
+        "y": 264,
+        "w": 149,
+        "h": 142
+      },
+      "rotated": false,
+      "trimmed": false,
+      "spriteSourceSize": {
+        "x": 0,
+        "y": 0,
+        "w": 149,
+        "h": 142
+      },
+      "sourceSize": {
+        "w": 149,
+        "h": 142
+      },
+      "originalSourceSize": {
+        "w": 149,
+        "h": 142
+      },
+      "source": "assets/game/source/rooms/garden/plots/outpost-plot-ground.png"
+    },
+    "source:assets/rooms/workshop/characters/guild-secretary.png": {
+      "frame": {
+        "x": 1297,
+        "y": 410,
+        "w": 96,
+        "h": 120
+      },
+      "rotated": false,
+      "trimmed": false,
+      "spriteSourceSize": {
+        "x": 0,
+        "y": 0,
+        "w": 96,
+        "h": 120
+      },
+      "sourceSize": {
+        "w": 96,
+        "h": 120
+      },
+      "originalSourceSize": {
+        "w": 96,
+        "h": 120
+      },
+      "source": "assets/game/source/rooms/workshop/characters/guild-secretary.png"
+    },
+    "source:assets/rooms/workshop/characters/miso.png": {
+      "frame": {
+        "x": 1397,
+        "y": 410,
+        "w": 96,
+        "h": 120
+      },
+      "rotated": false,
+      "trimmed": false,
+      "spriteSourceSize": {
+        "x": 0,
+        "y": 0,
+        "w": 96,
+        "h": 120
+      },
+      "sourceSize": {
+        "w": 96,
+        "h": 120
+      },
+      "originalSourceSize": {
+        "w": 96,
+        "h": 120
+      },
+      "source": "assets/game/source/rooms/workshop/characters/miso.png"
+    },
+    "source:assets/ui/banners/banner-cream.png": {
+      "frame": {
+        "x": 1064,
+        "y": 410,
+        "w": 229,
+        "h": 121
+      },
+      "rotated": false,
+      "trimmed": false,
+      "spriteSourceSize": {
+        "x": 0,
+        "y": 0,
+        "w": 229,
+        "h": 121
+      },
+      "sourceSize": {
+        "w": 229,
+        "h": 121
+      },
+      "originalSourceSize": {
+        "w": 229,
+        "h": 121
+      },
+      "source": "assets/game/source/ui/banners/banner-cream.png"
+    },
+    "source:assets/ui/brewing-carousel/chevron-left.png": {
+      "frame": {
+        "x": 1519,
+        "y": 264,
+        "w": 128,
+        "h": 128
+      },
+      "rotated": false,
+      "trimmed": false,
+      "spriteSourceSize": {
+        "x": 0,
+        "y": 0,
+        "w": 128,
+        "h": 128
+      },
+      "sourceSize": {
+        "w": 128,
+        "h": 128
+      },
+      "originalSourceSize": {
+        "w": 128,
+        "h": 128
+      },
+      "source": "assets/game/source/ui/brewing-carousel/chevron-left.png"
+    },
+    "source:assets/ui/brewing-carousel/chevron-right.png": {
+      "frame": {
+        "x": 1651,
+        "y": 264,
+        "w": 128,
+        "h": 128
+      },
+      "rotated": false,
+      "trimmed": false,
+      "spriteSourceSize": {
+        "x": 0,
+        "y": 0,
+        "w": 128,
+        "h": 128
+      },
+      "sourceSize": {
+        "w": 128,
+        "h": 128
+      },
+      "originalSourceSize": {
+        "w": 128,
+        "h": 128
+      },
+      "source": "assets/game/source/ui/brewing-carousel/chevron-right.png"
+    },
+    "source:assets/ui/level-star.png": {
+      "frame": {
+        "x": 264,
+        "y": 4,
+        "w": 256,
+        "h": 256
+      },
+      "rotated": false,
+      "trimmed": false,
+      "spriteSourceSize": {
+        "x": 0,
+        "y": 0,
+        "w": 256,
+        "h": 256
+      },
+      "sourceSize": {
+        "w": 256,
+        "h": 256
+      },
+      "originalSourceSize": {
+        "w": 256,
+        "h": 256
+      },
+      "source": "assets/game/source/ui/level-star.png"
+    },
+    "source:assets/ui/notification-circle-orange.png": {
+      "frame": {
+        "x": 1739,
+        "y": 978,
+        "w": 61,
+        "h": 65
+      },
+      "rotated": false,
+      "trimmed": false,
+      "spriteSourceSize": {
+        "x": 0,
+        "y": 0,
+        "w": 61,
+        "h": 65
+      },
+      "sourceSize": {
+        "w": 61,
+        "h": 65
+      },
+      "originalSourceSize": {
+        "w": 61,
+        "h": 65
+      },
+      "source": "assets/game/source/ui/notification-circle-orange.png"
+    },
+    "source:assets/ui/notification-circle-red.png": {
+      "frame": {
+        "x": 1804,
+        "y": 978,
+        "w": 61,
+        "h": 65
+      },
+      "rotated": false,
+      "trimmed": false,
+      "spriteSourceSize": {
+        "x": 0,
+        "y": 0,
+        "w": 61,
+        "h": 65
+      },
+      "sourceSize": {
+        "w": 61,
+        "h": 65
+      },
+      "originalSourceSize": {
+        "w": 61,
+        "h": 65
+      },
+      "source": "assets/game/source/ui/notification-circle-red.png"
+    },
+    "source:assets/ui/prop_info.png": {
+      "frame": {
+        "x": 303,
+        "y": 1069,
+        "w": 53,
+        "h": 57
+      },
+      "rotated": false,
+      "trimmed": false,
+      "spriteSourceSize": {
+        "x": 0,
+        "y": 0,
+        "w": 53,
+        "h": 57
+      },
+      "sourceSize": {
+        "w": 53,
+        "h": 57
+      },
+      "originalSourceSize": {
+        "w": 53,
+        "h": 57
+      },
+      "source": "assets/game/source/ui/prop_info.png"
+    },
+    "source:assets/ui/root-run-account/choice-selected.png": {
+      "frame": {
+        "x": 524,
+        "y": 4,
+        "w": 212,
+        "h": 212
+      },
+      "rotated": false,
+      "trimmed": false,
+      "spriteSourceSize": {
+        "x": 0,
+        "y": 0,
+        "w": 212,
+        "h": 212
+      },
+      "sourceSize": {
+        "w": 212,
+        "h": 212
+      },
+      "originalSourceSize": {
+        "w": 212,
+        "h": 212
+      },
+      "source": "assets/game/source/ui/root-run-account/choice-selected.png"
+    },
+    "source:assets/ui/root-run-account/choice-tile.png": {
+      "frame": {
+        "x": 1116,
+        "y": 4,
+        "w": 183,
+        "h": 183
+      },
+      "rotated": false,
+      "trimmed": false,
+      "spriteSourceSize": {
+        "x": 0,
+        "y": 0,
+        "w": 183,
+        "h": 183
+      },
+      "sourceSize": {
+        "w": 183,
+        "h": 183
+      },
+      "originalSourceSize": {
+        "w": 183,
+        "h": 183
+      },
+      "source": "assets/game/source/ui/root-run-account/choice-tile.png"
+    },
+    "source:assets/ui/root-run-account/edit-pencil.png": {
+      "frame": {
+        "x": 1665,
+        "y": 978,
+        "w": 70,
+        "h": 74
+      },
+      "rotated": false,
+      "trimmed": false,
+      "spriteSourceSize": {
+        "x": 0,
+        "y": 0,
+        "w": 70,
+        "h": 74
+      },
+      "sourceSize": {
+        "w": 70,
+        "h": 74
+      },
+      "originalSourceSize": {
+        "w": 70,
+        "h": 74
+      },
+      "source": "assets/game/source/ui/root-run-account/edit-pencil.png"
+    },
+    "source:assets/ui/root-run-dialog/expedition-dialog-close.png": {
+      "frame": {
+        "x": 938,
+        "y": 410,
+        "w": 122,
+        "h": 122
+      },
+      "rotated": false,
+      "trimmed": false,
+      "spriteSourceSize": {
+        "x": 0,
+        "y": 0,
+        "w": 122,
+        "h": 122
+      },
+      "sourceSize": {
+        "w": 122,
+        "h": 122
+      },
+      "originalSourceSize": {
+        "w": 122,
+        "h": 122
+      },
+      "source": "assets/game/source/ui/root-run-dialog/expedition-dialog-close.png"
+    },
+    "source:assets/ui/root-run-level-badge-down-red.png": {
+      "frame": {
+        "x": 740,
+        "y": 4,
+        "w": 184,
+        "h": 196
+      },
+      "rotated": false,
+      "trimmed": false,
+      "spriteSourceSize": {
+        "x": 0,
+        "y": 0,
+        "w": 184,
+        "h": 196
+      },
+      "sourceSize": {
+        "w": 184,
+        "h": 196
+      },
+      "originalSourceSize": {
+        "w": 184,
+        "h": 196
+      },
+      "source": "assets/game/source/ui/root-run-level-badge-down-red.png"
+    },
+    "source:assets/ui/root-run-level-badge-down.png": {
+      "frame": {
+        "x": 928,
+        "y": 4,
+        "w": 184,
+        "h": 196
+      },
+      "rotated": false,
+      "trimmed": false,
+      "spriteSourceSize": {
+        "x": 0,
+        "y": 0,
+        "w": 184,
+        "h": 196
+      },
+      "sourceSize": {
+        "w": 184,
+        "h": 196
+      },
+      "originalSourceSize": {
+        "w": 184,
+        "h": 196
+      },
+      "source": "assets/game/source/ui/root-run-level-badge-down.png"
+    },
+    "source:assets/ui/root-run-level-star.png": {
+      "frame": {
+        "x": 1598,
+        "y": 770,
+        "w": 93,
+        "h": 94
+      },
+      "rotated": false,
+      "trimmed": false,
+      "spriteSourceSize": {
+        "x": 0,
+        "y": 0,
+        "w": 93,
+        "h": 94
+      },
+      "sourceSize": {
+        "w": 93,
+        "h": 94
+      },
+      "originalSourceSize": {
+        "w": 93,
+        "h": 94
+      },
+      "source": "assets/game/source/ui/root-run-level-star.png"
+    },
+    "source:assets/ui/root-run-research/research-button-shine.png": {
+      "frame": {
+        "x": 1541,
+        "y": 978,
+        "w": 43,
+        "h": 81
+      },
+      "rotated": false,
+      "trimmed": false,
+      "spriteSourceSize": {
+        "x": 0,
+        "y": 0,
+        "w": 43,
+        "h": 81
+      },
+      "sourceSize": {
+        "w": 43,
+        "h": 81
+      },
+      "originalSourceSize": {
+        "w": 43,
+        "h": 81
+      },
+      "source": "assets/game/source/ui/root-run-research/research-button-shine.png"
+    },
+    "source:assets/ui/root-run-research/research-rank-badge-217x62.png": {
+      "frame": {
+        "x": 4,
+        "y": 1069,
+        "w": 217,
+        "h": 62
+      },
+      "rotated": false,
+      "trimmed": false,
+      "spriteSourceSize": {
+        "x": 0,
+        "y": 0,
+        "w": 217,
+        "h": 62
+      },
+      "sourceSize": {
+        "w": 217,
+        "h": 62
+      },
+      "originalSourceSize": {
+        "w": 217,
+        "h": 62
+      },
+      "source": "assets/game/source/ui/root-run-research/research-rank-badge-217x62.png"
+    },
+    "source:assets/ui/root-run-research/research-upgrade-bg-locked.png": {
+      "frame": {
+        "x": 1303,
+        "y": 4,
+        "w": 157,
+        "h": 150
+      },
+      "rotated": false,
+      "trimmed": false,
+      "spriteSourceSize": {
+        "x": 0,
+        "y": 0,
+        "w": 157,
+        "h": 150
+      },
+      "sourceSize": {
+        "w": 157,
+        "h": 150
+      },
+      "originalSourceSize": {
+        "w": 157,
+        "h": 150
+      },
+      "source": "assets/game/source/ui/root-run-research/research-upgrade-bg-locked.png"
+    },
+    "source:assets/ui/root-run-research/upgrade-lvl-bg.png": {
+      "frame": {
+        "x": 225,
+        "y": 1069,
+        "w": 74,
+        "h": 57
+      },
+      "rotated": false,
+      "trimmed": false,
+      "spriteSourceSize": {
+        "x": 0,
+        "y": 0,
+        "w": 74,
+        "h": 57
+      },
+      "sourceSize": {
+        "w": 74,
+        "h": 57
+      },
+      "originalSourceSize": {
+        "w": 74,
+        "h": 57
+      },
+      "source": "assets/game/source/ui/root-run-research/upgrade-lvl-bg.png"
+    },
+    "source:assets/ui/root-run-settings/settings-icon-gear.png": {
+      "frame": {
+        "x": 100,
+        "y": 882,
+        "w": 80,
+        "h": 88
+      },
+      "rotated": false,
+      "trimmed": false,
+      "spriteSourceSize": {
+        "x": 0,
+        "y": 0,
+        "w": 80,
+        "h": 88
+      },
+      "sourceSize": {
+        "w": 80,
+        "h": 88
+      },
+      "originalSourceSize": {
+        "w": 80,
+        "h": 88
+      },
+      "source": "assets/game/source/ui/root-run-settings/settings-icon-gear.png"
+    },
+    "source:assets/ui/root-run-settings/settings-icon-music.png": {
+      "frame": {
+        "x": 1761,
+        "y": 410,
+        "w": 127,
+        "h": 116
+      },
+      "rotated": false,
+      "trimmed": false,
+      "spriteSourceSize": {
+        "x": 0,
+        "y": 0,
+        "w": 127,
+        "h": 116
+      },
+      "sourceSize": {
+        "w": 127,
+        "h": 116
+      },
+      "originalSourceSize": {
+        "w": 127,
+        "h": 116
+      },
+      "source": "assets/game/source/ui/root-run-settings/settings-icon-music.png"
+    },
+    "source:assets/ui/root-run-settings/settings-icon-sound.png": {
+      "frame": {
+        "x": 1892,
+        "y": 410,
+        "w": 121,
+        "h": 114
+      },
+      "rotated": false,
+      "trimmed": false,
+      "spriteSourceSize": {
+        "x": 0,
+        "y": 0,
+        "w": 121,
+        "h": 114
+      },
+      "sourceSize": {
+        "w": 121,
+        "h": 114
+      },
+      "originalSourceSize": {
+        "w": 121,
+        "h": 114
+      },
+      "source": "assets/game/source/ui/root-run-settings/settings-icon-sound.png"
+    },
+    "source:assets/ui/root-run-settings/settings-icon-theme-day.png": {
+      "frame": {
+        "x": 1497,
+        "y": 410,
+        "w": 128,
+        "h": 116
+      },
+      "rotated": false,
+      "trimmed": false,
+      "spriteSourceSize": {
+        "x": 0,
+        "y": 0,
+        "w": 128,
+        "h": 116
+      },
+      "sourceSize": {
+        "w": 128,
+        "h": 116
+      },
+      "originalSourceSize": {
+        "w": 128,
+        "h": 116
+      },
+      "source": "assets/game/source/ui/root-run-settings/settings-icon-theme-day.png"
+    },
+    "source:assets/ui/root-run-settings/settings-icon-theme-night.png": {
+      "frame": {
+        "x": 1629,
+        "y": 410,
+        "w": 128,
+        "h": 116
+      },
+      "rotated": false,
+      "trimmed": false,
+      "spriteSourceSize": {
+        "x": 0,
+        "y": 0,
+        "w": 128,
+        "h": 116
+      },
+      "sourceSize": {
+        "w": 128,
+        "h": 116
+      },
+      "originalSourceSize": {
+        "w": 128,
+        "h": 116
+      },
+      "source": "assets/game/source/ui/root-run-settings/settings-icon-theme-night.png"
+    },
+    "source:assets/ui/root-run-settings/settings-icon-vibration.png": {
+      "frame": {
+        "x": 1460,
+        "y": 770,
+        "w": 134,
+        "h": 107
+      },
+      "rotated": false,
+      "trimmed": false,
+      "spriteSourceSize": {
+        "x": 0,
+        "y": 0,
+        "w": 134,
+        "h": 107
+      },
+      "sourceSize": {
+        "w": 134,
+        "h": 107
+      },
+      "originalSourceSize": {
+        "w": 134,
+        "h": 107
+      },
+      "source": "assets/game/source/ui/root-run-settings/settings-icon-vibration.png"
+    },
+    "source:assets/ui/root-run-settings/settings-knob.png": {
+      "frame": {
+        "x": 1460,
+        "y": 978,
+        "w": 77,
+        "h": 81
+      },
+      "rotated": false,
+      "trimmed": false,
+      "spriteSourceSize": {
+        "x": 0,
+        "y": 0,
+        "w": 77,
+        "h": 81
+      },
+      "sourceSize": {
+        "w": 77,
+        "h": 81
+      },
+      "originalSourceSize": {
+        "w": 77,
+        "h": 81
+      },
+      "source": "assets/game/source/ui/root-run-settings/settings-knob.png"
+    },
+    "source:assets/ui/root-run-top-hud/avatar-head-bg.png": {
+      "frame": {
+        "x": 1464,
+        "y": 4,
+        "w": 148,
+        "h": 149
+      },
+      "rotated": false,
+      "trimmed": false,
+      "spriteSourceSize": {
+        "x": 0,
+        "y": 0,
+        "w": 148,
+        "h": 149
+      },
+      "sourceSize": {
+        "w": 148,
+        "h": 149
+      },
+      "originalSourceSize": {
+        "w": 148,
+        "h": 149
+      },
+      "source": "assets/game/source/ui/root-run-top-hud/avatar-head-bg.png"
+    },
+    "source:assets/ui/stars/star-empty.png": {
+      "frame": {
+        "x": 360,
+        "y": 1069,
+        "w": 20,
+        "h": 20
+      },
+      "rotated": false,
+      "trimmed": false,
+      "spriteSourceSize": {
+        "x": 0,
+        "y": 0,
+        "w": 20,
+        "h": 20
+      },
+      "sourceSize": {
+        "w": 20,
+        "h": 20
+      },
+      "originalSourceSize": {
+        "w": 20,
+        "h": 20
+      },
+      "source": "assets/game/source/ui/stars/star-empty.png"
+    },
+    "source:assets/ui/stars/star-orange.png": {
+      "frame": {
+        "x": 384,
+        "y": 1069,
+        "w": 20,
+        "h": 20
+      },
+      "rotated": false,
+      "trimmed": false,
+      "spriteSourceSize": {
+        "x": 0,
+        "y": 0,
+        "w": 20,
+        "h": 20
+      },
+      "sourceSize": {
+        "w": 20,
+        "h": 20
+      },
+      "originalSourceSize": {
+        "w": 20,
+        "h": 20
+      },
+      "source": "assets/game/source/ui/stars/star-orange.png"
+    },
+    "source:assets/ui/stars/star-purple.png": {
+      "frame": {
+        "x": 408,
+        "y": 1069,
+        "w": 20,
+        "h": 20
+      },
+      "rotated": false,
+      "trimmed": false,
+      "spriteSourceSize": {
+        "x": 0,
+        "y": 0,
+        "w": 20,
+        "h": 20
+      },
+      "sourceSize": {
+        "w": 20,
+        "h": 20
+      },
+      "originalSourceSize": {
+        "w": 20,
+        "h": 20
+      },
+      "source": "assets/game/source/ui/stars/star-purple.png"
+    },
+    "source:assets/ui/stars/star-red.png": {
+      "frame": {
+        "x": 432,
+        "y": 1069,
+        "w": 20,
+        "h": 20
+      },
+      "rotated": false,
+      "trimmed": false,
+      "spriteSourceSize": {
+        "x": 0,
+        "y": 0,
+        "w": 20,
+        "h": 20
+      },
+      "sourceSize": {
+        "w": 20,
+        "h": 20
+      },
+      "originalSourceSize": {
+        "w": 20,
+        "h": 20
+      },
+      "source": "assets/game/source/ui/stars/star-red.png"
+    },
+    "source:assets/ui/stars/star-yellow.png": {
+      "frame": {
+        "x": 456,
+        "y": 1069,
+        "w": 20,
+        "h": 20
+      },
+      "rotated": false,
+      "trimmed": false,
+      "spriteSourceSize": {
+        "x": 0,
+        "y": 0,
+        "w": 20,
+        "h": 20
+      },
+      "sourceSize": {
+        "w": 20,
+        "h": 20
+      },
+      "originalSourceSize": {
+        "w": 20,
+        "h": 20
+      },
+      "source": "assets/game/source/ui/stars/star-yellow.png"
+    },
+    "source:assets/ui/tooltip-pointer.png": {
+      "frame": {
+        "x": 480,
+        "y": 1069,
+        "w": 28,
+        "h": 15
+      },
+      "rotated": false,
+      "trimmed": false,
+      "spriteSourceSize": {
+        "x": 0,
+        "y": 0,
+        "w": 28,
+        "h": 15
+      },
+      "sourceSize": {
+        "w": 28,
+        "h": 15
+      },
+      "originalSourceSize": {
+        "w": 28,
+        "h": 15
+      },
+      "source": "assets/game/source/ui/tooltip-pointer.png"
+    },
+    "source:assets/ui/xp-stars.png": {
+      "frame": {
+        "x": 1783,
+        "y": 264,
+        "w": 128,
+        "h": 128
+      },
+      "rotated": false,
+      "trimmed": false,
+      "spriteSourceSize": {
+        "x": 0,
+        "y": 0,
+        "w": 128,
+        "h": 128
+      },
+      "sourceSize": {
+        "w": 128,
+        "h": 128
+      },
+      "originalSourceSize": {
+        "w": 128,
+        "h": 128
+      },
+      "source": "assets/game/source/ui/xp-stars.png"
+    }
+  },
+  "meta": {
+    "app": "Idle Wizard asset pipeline",
+    "atlasId": "atlas:shared-0",
+    "image": "game-shared-atlas-0.png",
+    "format": "RGBA8888",
+    "scale": "1",
+    "size": {
+      "w": 2048,
+      "h": 1136
+    }
+  }
+}

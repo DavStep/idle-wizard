@@ -34,6 +34,7 @@ export class RenderFacade {
     hapticsFacade = null,
     uiClickSoundFacade = null,
     beforeDeployReload = null,
+    getUserId = () => '',
     applicationManager = null,
     inputRouter = null,
     textEntryService = null,
@@ -60,6 +61,8 @@ export class RenderFacade {
     this.legacyProgressOverlayManager = pixiProgressOverlayManager;
     this.spineRuntimeFacade = spineRuntimeFacade;
     this.uiClickSoundFacade = uiClickSoundFacade;
+    this.getUserId =
+      typeof getUserId === 'function' ? getUserId : () => '';
     this.initialized = false;
     this.destroyed = false;
     this.initializePromise = null;
@@ -93,7 +96,11 @@ export class RenderFacade {
         textEntryService: this.textEntryService,
         uiClickSoundFacade: this.uiClickSoundFacade,
         startupViewFactory: (context) =>
-          new PixiLoadingSplash({ assets: context.assets }),
+          new PixiLoadingSplash({
+            assets: context.assets,
+            inputRouter: context.inputRouter,
+            getUserId: this.getUserId,
+          }),
       });
     this.spineRuntimeFacade ??= new SpineRuntimeFacade({
       whenPixiReady: () => this.whenPixiReady(),
@@ -125,6 +132,7 @@ export class RenderFacade {
             assets: context.assets,
             inputRouter: context.inputRouter,
             application: context.application,
+            getUserId: this.getUserId,
             onSplashViewportChange: (active) =>
               this.applicationManager.setSplashViewportActive(active),
           }),

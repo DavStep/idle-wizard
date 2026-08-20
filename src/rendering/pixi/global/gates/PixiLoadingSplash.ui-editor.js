@@ -7,7 +7,7 @@ const WIDGET_ID = 'global.loading-splash';
 
 export default defineUiEditorIntegration({
   apiVersion: 1,
-  childWidgetIds: ['primitive.progress-bar', 'primitive.text-label'],
+  childWidgetIds: ['primitive.progress-bar', 'primitive.text-label', 'text-button'],
   createThumbnail: createLoadingSplashThumbnail,
   folderPath: ['Global'],
   id: WIDGET_ID,
@@ -35,7 +35,11 @@ function createLoadingSplashThumbnail() {
     component: 'PixiLoadingSplash',
     createControl: ({ assets }) => createLoadingSplashControl({
       assets,
-      fixture: { progress: 0.68, text: 'Loading game' },
+      fixture: {
+        progress: 0.68,
+        text: 'Loading game',
+        userId: '12345678abcdef12345678abcdef12345678',
+      },
       projection: createProjection(),
     }),
     id: WIDGET_ID,
@@ -83,7 +87,10 @@ async function mountLoadingSplash(_context, fixture) {
 }
 
 function createLoadingSplashControl({ assets, fixture, projection }) {
-  const splash = new PixiLoadingSplash({ assets });
+  const splash = new PixiLoadingSplash({
+    assets,
+    getUserId: () => fixture.userId,
+  });
   splash.setText(fixture.text);
   splash.setProgress(fixture.progress);
   splash.layout(projection ?? createProjection());
@@ -110,5 +117,6 @@ function createProjection() {
 function loadingAssetFilter({ id }) {
   const assetId = String(id ?? '');
   return assetId.includes('/idle-witch-craft-splash/')
-    || assetId.includes('/progress-bars/');
+    || assetId.includes('/progress-bars/')
+    || assetId.includes('/ui/regular-button/');
 }

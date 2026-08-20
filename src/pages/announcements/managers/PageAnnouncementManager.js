@@ -1027,6 +1027,10 @@ export class PageAnnouncementManager {
   getResearchIconFrameName(research = {}) {
     const researchId = String(research.id ?? '');
 
+    if (researchId.startsWith('manaSphereCap:')) {
+      return RESOURCE_ICON_FRAMES.mana;
+    }
+
     if (researchId.startsWith('unlockSeed:')) {
       return getSeedIconFrameName(researchId.slice('unlockSeed:'.length));
     }

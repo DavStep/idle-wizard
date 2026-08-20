@@ -19,7 +19,7 @@ describe('createIdleWizardAssetEntries', () => {
     const assets = createIdleWizardAssetEntries(widgets);
     const productionTextureIds = new Set(
       PIXI_PRODUCTION_ASSET_MANIFEST
-        .filter(({ kind }) => kind === 'texture')
+        .filter(({ kind }) => ['atlas-frame', 'texture'].includes(kind))
         .map(({ id }) => id),
     );
 

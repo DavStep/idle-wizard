@@ -1,15 +1,8 @@
 import {
-  gameAssetAtlasImageUrl,
+  gameAssetAtlases,
+  gameAtlasBackedSourceAssets,
+  gameStandaloneSourceAssets,
 } from '../../../assets/generated/game-asset-atlas.generated.js';
-
-const sourceRasterModules = import.meta.glob(
-  '../../../../assets/game/source/**/*.png',
-  {
-    eager: true,
-    import: 'default',
-    query: '?url',
-  },
-);
 
 const sourceDataModules = import.meta.glob(
   '../../../../assets/game/source/**/*.json',
@@ -54,22 +47,22 @@ function normalizeSourceAssetId(path) {
   return `source:${normalized}`;
 }
 
-const sourceAssets = Object.entries(sourceRasterModules).map(([path, src]) =>
-  Object.freeze({
-    id: normalizeSourceAssetId(path),
-    src,
-    kind: 'texture',
-  }),
+const sourceAssets = Object.freeze([
+  ...gameStandaloneSourceAssets,
+  ...gameAtlasBackedSourceAssets,
+]);
+const sourceAssetsById = new Map(
+  sourceAssets.map((asset) => [asset.id, asset]),
 );
 
 const publicAssets = PUBLIC_ASSET_PATHS.map((publicPath) => {
   const legacyUiPath = publicPath.startsWith('/ui/')
-    ? `../../../../assets/game/source${publicPath}`
+    ? `source:assets${publicPath}`
     : null;
   const src =
     (legacyUiPath
-      ? sourceRasterModules[legacyUiPath] ??
-        sourceDataModules[legacyUiPath]
+      ? sourceAssetsById.get(legacyUiPath)?.src ??
+        sourceDataModules[`../../../../assets/game/source${publicPath}`]
       : null) ??
     resolvePixiPublicAssetUrl(publicPath);
   return Object.freeze({
@@ -82,11 +75,11 @@ const publicAssets = PUBLIC_ASSET_PATHS.map((publicPath) => {
 });
 
 export const PIXI_PRODUCTION_ASSET_MANIFEST = Object.freeze([
-  Object.freeze({
-    id: 'atlas:game',
-    src: gameAssetAtlasImageUrl,
+  ...gameAssetAtlases.map((atlas) => Object.freeze({
+    id: atlas.id,
+    src: atlas.imageUrl,
     kind: 'texture',
-  }),
+  })),
   ...sourceAssets,
   ...publicAssets,
 ]);

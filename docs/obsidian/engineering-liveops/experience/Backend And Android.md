@@ -21,6 +21,7 @@ experience_type: backend-android
 - SpacetimeDB TypeScript UUID values expose `compareTo`/string conversion, not `isEqual`; normalize UUID keys before comparing alliance IDs.
 - Player market exchange, NPC market pressure, research announcements, potion discoveries, leaderboard totals, and public player levels must stay locked down until the server owns the matching state; capped client reports are still spoofable.
 - Generated-coin leaderboard values are stored in `leaderboard.totalIncome`; UI should prefer that over any legacy `totalGeneratedCoin` field.
+- Leaderboard income intentionally has no application-level cap; treat its client-reported `u64` totals as untrusted until coin generation becomes server-authoritative.
 - Remote `game_config` JSON must be key-specific and schema-bounded; parse-only validation is not enough because clients apply those rows at runtime.
 - Runtime balance/catalog config lives in SpacetimeDB `game_config`: `tasks`, `playerLevel`, `garden`, `shop`, `research`, `brewing`, `tradeAlliance`, `items`, and `potionRecipes`; client source defaults are only bootstrap fallbacks before subscription data applies.
 - Task balance default changes need a matching `game_config.tasks` update path, such as a narrow legacy-value normalizer or an admin upsert; valid stored rows do not change just because source defaults changed.
@@ -57,6 +58,7 @@ experience_type: backend-android
 - Gameplay-save journal reconciliation must also discard a pending save that lowers the hydrated server level unless it adds a prestige completion; revision lineage alone can otherwise replay a stale runtime snapshot forever.
 - Offline catch-up must compare timestamps from the same clock domain: use server-preserved `clientSavedAt` with client `Date.now()`, then fall back to `savedAt` for legacy/local saves, or server/device skew can suppress elapsed time.
 - A resolved SpacetimeDB reducer promise is not gameplay-save durability proof; keep the own-save subscription live and clear the local journal only after observing the exact client session/sequence in the server row.
+- Gameplay-save research merge guards must normalize each save's completed and in-progress research with that save's prestige count; the default zero count silently drops newly added prestige-gated ranks when an older gated rank forces a merge.
 - An authoritative empty gameplay-save row must replace stale runtime with the canonical fresh state, then persist and observe that baseline before gameplay opens.
 - Missing own-session rows and session subscription errors must fail closed; treating them as active lets invalidated clients continue writing, while observation errors should reconnect without deleting the gameplay-save journal.
 - Player-scoped maintenance is private server state exposed only through `own_player_maintenance`; the strictest scoped/global mode wins, locked scope closes that identity's session, and removing a locked row must force the same authoritative reload as global locked maintenance.
@@ -79,6 +81,7 @@ experience_type: backend-android
 - A stored SpacetimeDB token is already a connectable guest identity; after session takeover, an empty authoritative save should create that identity's fresh baseline instead of reopening the account-connect choice.
 - A stored SpacetimeDB token is also sufficient for a remembered Google-linked identity; startup and OTA reloads must not invoke Android Credential Manager merely to refresh an expired Google ID token. Open Google auth only from an explicit account-connect action.
 - Never retry a remembered SpacetimeDB identity anonymously after a transient connection failure; only explicit authentication rejection may rotate fallback tokens, and remembered Google accounts must fail closed instead of accepting a new anonymous token. Maincloud HTTP/2 token rejection can reach the SDK as `Failed to verify token:` with no status text, so classify that stable SDK prefix as authentication failure.
+- Preserve remembered Google profile metadata after its short-lived ID token expires, then use the durable stored SpacetimeDB token without anonymous fallback; only an explicit backend rejection should route the player through account recovery or sign-out.
 - Hydrate profile fields from the server `player` row before pushing local values; otherwise local defaults can overwrite saved DB profile data.
 - Keep `PlayerProfileSubscriptionManager.mapProfile` aligned with every persisted profile field; an omitted field normalizes to its default on reopen and can overwrite the saved choice.
 - New client-only profile visual fields must not be sent to `set_player_profile` until the SpacetimeDB player schema and generated bindings support them.

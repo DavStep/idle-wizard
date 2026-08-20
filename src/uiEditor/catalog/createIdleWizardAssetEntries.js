@@ -10,9 +10,24 @@ import {
   resolveNineSliceMinimumSize,
 } from '../../rendering/pixi/nineSlice/NineSliceCompatibility.js';
 import {
+  gameAssetAtlases,
   gameAssetAtlasFrames,
-  gameAssetAtlasSize,
 } from '../../assets/generated/game-asset-atlas.generated.js';
+
+const SOURCE_ASSET_PREVIEW_MODULES = import.meta.glob(
+  '../../../assets/game/source/**/*.png',
+  {
+    eager: true,
+    import: 'default',
+    query: '?url',
+  },
+);
+const SOURCE_ASSET_PREVIEWS_BY_ID = new Map(
+  Object.entries(SOURCE_ASSET_PREVIEW_MODULES).map(([sourcePath, src]) => [
+    `source:${sourcePath.replace(/^\.\.\/\.\.\/\.\.\/assets\/game\/source\//, 'assets/')}`,
+    src,
+  ]),
+);
 
 const ASSET_MANIFEST_BY_ID = new Map(
   PIXI_PRODUCTION_ASSET_MANIFEST.map((asset) => [asset.id, asset]),
@@ -77,7 +92,7 @@ export function createIdleWizardAssetEntries(widgetEntries = []) {
   const assetsById = new Map();
 
   for (const manifestAsset of PIXI_PRODUCTION_ASSET_MANIFEST) {
-    if (manifestAsset.kind !== 'texture') {
+    if (!['atlas-frame', 'texture'].includes(manifestAsset.kind)) {
       continue;
     }
 
@@ -152,7 +167,7 @@ function createAssetEntry(asset, suggestedSourceInsets) {
   const atlasMetadata = resolveAtlasMetadata(asset.id);
   const entry = {
     assetId: asset.id,
-    assetUrl: manifestAsset.src,
+    assetUrl: SOURCE_ASSET_PREVIEWS_BY_ID.get(asset.id) ?? manifestAsset.src,
     atlasFrames: atlasMetadata?.frames ?? null,
     atlasSize: atlasMetadata?.size ?? null,
     borderInsets: asset.borderInsets ?? null,
@@ -373,20 +388,22 @@ function createAssetProperties(
 }
 
 function resolveAtlasMetadata(assetId) {
-  if (assetId !== 'atlas:game') {
+  const atlas = gameAssetAtlases.find(({ id }) => id === assetId);
+  if (!atlas) {
     return null;
   }
 
   return Object.freeze({
     frames: Object.freeze(
       Object.entries(gameAssetAtlasFrames)
+        .filter(([, frame]) => frame.atlasId === assetId)
         .map(([name, frame]) => Object.freeze({ name, ...frame }))
         .sort((left, right) =>
           left.source.localeCompare(right.source)
           || left.name.localeCompare(right.name),
         ),
     ),
-    size: gameAssetAtlasSize,
+    size: atlas.size,
   });
 }
 

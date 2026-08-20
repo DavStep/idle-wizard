@@ -170,6 +170,8 @@ const RESEARCH_ART_ASSET_BY_BOX_ID = Object.freeze({
 });
 const RESEARCH_CAULDRON_LEVEL_ART_ASSET =
   'source:assets/icons/research/icon-research-cauldron-level.png';
+const RESEARCH_MANA_CAPACITY_ART_ASSET =
+  'source:assets/icons/icon-mana-drop.png';
 const RESEARCH_ART_EXTRA_ASSET_BY_KEY = Object.freeze({
   timerReduction:
     'source:assets/icons/research/icon-research-time.png',
@@ -2492,7 +2494,9 @@ function createResearchBoxModel(
   const allResearches = (box.researches ?? []).map((item) =>
     createResearchItemModel(item, {
       artAssetId:
-        String(item.id ?? '').startsWith('emerald:cauldronBrewing:')
+        String(item.id ?? '').startsWith('manaSphereCap:')
+          ? RESEARCH_MANA_CAPACITY_ART_ASSET
+          : String(item.id ?? '').startsWith('emerald:cauldronBrewing:')
           ? RESEARCH_CAULDRON_LEVEL_ART_ASSET
           : artAssetId,
       completedResearchIds,

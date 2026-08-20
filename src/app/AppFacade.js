@@ -60,6 +60,7 @@ export class AppFacade {
       canvas,
       hapticsFacade: this.hapticsFacade,
       uiClickSoundFacade: this.uiClickSoundFacade,
+      getUserId: () => this.backendFacade.getAuthFacade().getSnapshot()?.identity,
       beforeDeployReload: () =>
         this.gameplayFacade.savePersistenceSnapshotAndFlush(),
     });

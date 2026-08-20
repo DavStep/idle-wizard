@@ -1641,6 +1641,9 @@ function getResearchIconFrameName(research = {}) {
   const researchId = String(research.id ?? '');
   const itemKind = String(research.itemKind ?? '').toLowerCase();
   const itemKey = String(research.itemKey ?? '').trim();
+  if (researchId.startsWith('manaSphereCap:')) {
+    return RESOURCE_ICON_FRAMES.mana;
+  }
   if (itemKind === 'herb' && itemKey) {
     return getHerbIconFrameName(itemKey);
   }

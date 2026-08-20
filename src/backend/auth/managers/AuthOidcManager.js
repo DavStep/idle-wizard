@@ -704,7 +704,7 @@ export class AuthOidcManager {
     }
 
     if (this.isTokenExpired(this.user.expires_at)) {
-      this.user = this.stripNativeToken(this.user);
+      this.user = this.stripUserToken(this.user);
       this.saveNativeUser(this.user);
       this.publish();
       return undefined;
@@ -720,8 +720,8 @@ export class AuthOidcManager {
     }
 
     if (this.isTokenExpired(this.user.expires_at)) {
-      this.user = null;
-      this.clearWebGoogleUser();
+      this.user = this.stripUserToken(this.user);
+      this.saveWebGoogleUser(this.user);
       this.publish();
       return undefined;
     }
@@ -870,7 +870,7 @@ export class AuthOidcManager {
       };
 
       if (this.isTokenExpired(user.expires_at)) {
-        const userWithoutToken = this.stripNativeToken(user);
+        const userWithoutToken = this.stripUserToken(user);
         this.saveNativeUser(userWithoutToken);
         return userWithoutToken;
       }
@@ -890,12 +890,12 @@ export class AuthOidcManager {
 
     try {
       const parsed = JSON.parse(raw);
-      if (!parsed?.id_token || this.isTokenExpired(parsed.expires_at)) {
+      if (!parsed?.profile || typeof parsed.profile !== 'object') {
         this.clearWebGoogleUser();
         return null;
       }
 
-      return {
+      const user = {
         id_token: parsed.id_token,
         expires_at: parsed.expires_at,
         profile: {
@@ -909,6 +909,14 @@ export class AuthOidcManager {
         select_by: parsed.select_by ?? '',
         accountLinkAttemptId: parsed.accountLinkAttemptId ?? null,
       };
+
+      if (!user.id_token || this.isTokenExpired(user.expires_at)) {
+        const userWithoutToken = this.stripUserToken(user);
+        this.saveWebGoogleUser(userWithoutToken);
+        return userWithoutToken;
+      }
+
+      return user;
     } catch {
       this.clearWebGoogleUser();
       return null;
@@ -936,20 +944,24 @@ export class AuthOidcManager {
   }
 
   saveWebGoogleUser(user) {
-    if (!user?.id_token || this.isTokenExpired(user.expires_at) || !this.storage?.setItem) {
+    if (!user?.profile || !this.storage?.setItem) {
       return;
     }
 
-    this.storage.setItem(
-      WEB_GOOGLE_USER_STORAGE_KEY,
-      JSON.stringify({
-        id_token: user.id_token,
-        expires_at: user.expires_at,
-        profile: user.profile,
-        select_by: user.select_by ?? '',
-        accountLinkAttemptId: user.accountLinkAttemptId ?? null,
-      }),
-    );
+    const persisted = {
+      profile: user.profile,
+    };
+
+    if (user.id_token && !this.isTokenExpired(user.expires_at)) {
+      persisted.id_token = user.id_token;
+      persisted.expires_at = user.expires_at;
+      persisted.select_by = user.select_by ?? '';
+    }
+    if (user.accountLinkAttemptId) {
+      persisted.accountLinkAttemptId = user.accountLinkAttemptId;
+    }
+
+    this.storage.setItem(WEB_GOOGLE_USER_STORAGE_KEY, JSON.stringify(persisted));
   }
 
   clearNativeUser() {
@@ -960,7 +972,7 @@ export class AuthOidcManager {
     this.storage?.removeItem?.(WEB_GOOGLE_USER_STORAGE_KEY);
   }
 
-  stripNativeToken(user) {
+  stripUserToken(user) {
     return {
       profile: user.profile,
       accountLinkAttemptId: user.accountLinkAttemptId ?? null,

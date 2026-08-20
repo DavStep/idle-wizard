@@ -6,6 +6,7 @@ import {
 } from 'pixi.js';
 
 import {
+  PixiTextButton,
   PixiProgressBar,
   PixiTextLabel,
 } from '../../primitives/index.js';
@@ -14,6 +15,7 @@ import {
   PIXI_FONT_FAMILIES,
   PIXI_UI_GEOMETRY,
 } from '../../theme/PixiThemeTokens.js';
+import { getClientReleaseVersion } from '../../../../shared/clientReleaseVersion.js';
 
 const SPLASH_TEXTURE_ID =
   'source:assets/ui/idle-witch-craft-splash/splash-screen.png';
@@ -21,15 +23,23 @@ const SPLASH_IMAGE_ASPECT = 818 / 1923;
 const SPLASH_BAR_WIDTH_RATIO = 0.84;
 const SPLASH_BAR_BOTTOM_RATIO = 0.0465;
 const SPLASH_LABEL_BOTTOM_RATIO = 0.0695;
+const SPLASH_VERSION_INSET = 12;
+const SPLASH_IDENTITY_GAP = 6;
+const SPLASH_IDENTITY_COPY_WIDTH = 58;
+const SPLASH_IDENTITY_COPY_HEIGHT = 24;
 const SPLASH_PROGRESS_THEME = createPixiThemeSnapshot({
   progressBar: 'gradient',
 });
 
 export class PixiLoadingSplash extends Container {
-  constructor({ assets } = {}) {
+  constructor({ assets, inputRouter = null, getUserId = () => '' } = {}) {
     super({ label: 'loadingSplash' });
+    this.assets = assets;
     this.projection = null;
     this.progressValue = 0;
+    this.userId = null;
+    this.getUserId =
+      typeof getUserId === 'function' ? getUserId : () => '';
     this.background = new Graphics({
       label: 'loadingSplash:background',
     });
@@ -55,6 +65,25 @@ export class PixiLoadingSplash extends Container {
       stroke: { color: '#05030a', width: 2 },
       label: 'loadingSplash:label',
     });
+    this.versionLabel = new PixiTextLabel({
+      text: `v${getClientReleaseVersion()}`,
+      fontSize: PIXI_UI_GEOMETRY.bodyFontSize,
+      fontWeight: 'normal',
+      fontFamily: PIXI_FONT_FAMILIES['lilita-one'],
+      color: '#fff0bf',
+      stroke: { color: '#05030a', width: 2 },
+      label: 'loadingSplash:version',
+    });
+    this.userIdLabel = new PixiTextLabel({
+      fontSize: 10,
+      fontFamily: PIXI_FONT_FAMILIES['lilita-one'],
+      anchor: { x: 1, y: 0.5 },
+      color: '#fff0bf',
+      stroke: { color: '#05030a', width: 2 },
+      label: 'loadingSplash:userId',
+    });
+    this.inputRouter = inputRouter;
+    this.copyButton = null;
     this.progressBar = new PixiProgressBar({
       assetManager: assets,
       width: 0,
@@ -93,22 +122,30 @@ export class PixiLoadingSplash extends Container {
       this.art,
       this.verticalShade,
       this.horizontalShade,
+      this.versionLabel,
+      this.userIdLabel,
       this.loadingLabel,
       this.progressBar,
     );
+    this.syncUserIdentity();
   }
 
   setText(text) {
     this.loadingLabel.setText(text ?? 'Loading game');
+    this.syncUserIdentity();
   }
 
   setProgress(value) {
     this.progressValue = Math.max(0, Math.min(1, Number(value) || 0));
     this.progressBar.setProgress(this.progressValue);
+    this.syncUserIdentity();
   }
 
   applyTheme(theme) {
     this.loadingLabel.applyTheme(theme);
+    this.versionLabel.applyTheme(theme);
+    this.userIdLabel.applyTheme(theme);
+    this.copyButton?.applyTheme(theme);
     this.progressBar.applyTheme({
       ...theme,
       progress: SPLASH_PROGRESS_THEME.progress,
@@ -120,6 +157,7 @@ export class PixiLoadingSplash extends Container {
       return;
     }
     this.projection = projection;
+    this.syncUserIdentity();
     const sourceStageWidth =
       projection.stageLogicalWidth / projection.sourceScale;
     const sourceHeight = projection.sourceHeight;
@@ -149,6 +187,17 @@ export class PixiLoadingSplash extends Container {
       .clear()
       .rect(artLeft, 0, artWidth, sourceHeight)
       .fill(this.horizontalGradient);
+    this.versionLabel.position.set(
+      artLeft + SPLASH_VERSION_INSET,
+      SPLASH_VERSION_INSET,
+    );
+    const copyX =
+      artLeft + artWidth - SPLASH_VERSION_INSET - SPLASH_IDENTITY_COPY_WIDTH;
+    this.copyButton?.position.set(copyX, SPLASH_VERSION_INSET);
+    this.userIdLabel.position.set(
+      copyX - SPLASH_IDENTITY_GAP,
+      SPLASH_VERSION_INSET + SPLASH_IDENTITY_COPY_HEIGHT / 2,
+    );
     this.loadingLabel.position.set(
       PIXI_UI_GEOMETRY.sourceWidth / 2,
       labelY,
@@ -158,9 +207,98 @@ export class PixiLoadingSplash extends Container {
     this.progressBar.setProgress(this.progressValue);
   }
 
+  syncUserIdentity() {
+    const userId = normalizeUserId(this.getUserId());
+    if (userId === this.userId && (!userId || this.copyButton)) {
+      return;
+    }
+    this.userId = userId;
+    const hasUserId = Boolean(userId);
+    if (hasUserId && !this.copyButton && this.assets?.loaded !== false) {
+      this.copyButton = new PixiTextButton({
+        assetManager: this.assets,
+        inputRouter: this.inputRouter,
+        text: 'Copy',
+        width: SPLASH_IDENTITY_COPY_WIDTH,
+        height: SPLASH_IDENTITY_COPY_HEIGHT,
+        sizeTier: 30,
+        variant: 'yellow',
+        action: () => this.copyUserId(),
+        label: 'loadingSplash:copy',
+      });
+      this.addChild(this.copyButton);
+      if (this.projection) {
+        this.layout(this.projection);
+      }
+    }
+    this.userIdLabel.setText(hasUserId ? compactIdentity(userId) : '');
+    const identityReady = hasUserId && Boolean(this.copyButton);
+    this.copyButton
+      ?.setText('Copy')
+      .setEnabled(identityReady);
+    this.userIdLabel.visible = identityReady;
+    this.userIdLabel.renderable = identityReady;
+    if (this.copyButton) {
+      this.copyButton.visible = identityReady;
+      this.copyButton.renderable = identityReady;
+    }
+  }
+
+  async copyUserId() {
+    if (!this.userId || !this.copyButton || this.copyButton.copyPending) {
+      return false;
+    }
+    this.copyButton.copyPending = true;
+    this.copyButton.setText('...');
+    const copied = await copyTextToClipboard(this.userId);
+    this.copyButton.copyPending = false;
+    this.copyButton
+      .setText(copied ? 'Copied' : 'Retry')
+      .setEnabled(true);
+    return copied;
+  }
+
   destroy(options) {
     this.verticalGradient.destroy();
     this.horizontalGradient.destroy();
     super.destroy(options);
+  }
+}
+
+function compactIdentity(identity) {
+  const value = String(identity ?? '').trim();
+  if (value.length <= 22) {
+    return value;
+  }
+  return `${value.slice(0, 8)}…${value.slice(-8)}`;
+}
+
+function normalizeUserId(identity) {
+  if (!identity) {
+    return '';
+  }
+  if (typeof identity === 'string') {
+    return identity.trim();
+  }
+  if (typeof identity.toHexString === 'function') {
+    try {
+      return String(identity.toHexString()).trim();
+    } catch {
+      return '';
+    }
+  }
+  return String(identity).trim();
+}
+
+async function copyTextToClipboard(text) {
+  const clipboard = globalThis.navigator?.clipboard;
+  if (typeof clipboard?.writeText !== 'function') {
+    return false;
+  }
+  try {
+    await clipboard.writeText(String(text ?? ''));
+    return true;
+  } catch {
+    return false;
   }
 }

@@ -1007,6 +1007,61 @@ describe('AuthOidcManager', () => {
     );
   });
 
+  it('keeps web Google profile after the stored ID token expires', async () => {
+    const storage = createMemoryStorage();
+    const expiredToken = createFakeJwt({
+      expiresAtSeconds: Math.floor(Date.now() / 1000) - 3600,
+    });
+    storage.setItem(
+      'idle-wizard.web-google.user',
+      JSON.stringify({
+        id_token: expiredToken,
+        expires_at: Date.now() - 3600_000,
+        profile: {
+          sub: 'google-sub',
+          email: 'dav@example.com',
+          name: 'Dav',
+        },
+      }),
+    );
+    const manager = new AuthOidcManager({
+      clientId: 'client-1',
+      storage,
+      windowRef: {
+        location: {
+          origin: 'http://localhost',
+          href: 'http://localhost/',
+          search: '',
+        },
+        document: {
+          createElement: vi.fn(),
+        },
+      },
+    });
+
+    await manager.prepare();
+
+    expect(manager.getSnapshot()).toMatchObject({
+      authenticated: false,
+      remembered: true,
+      displayName: 'Dav',
+      email: 'dav@example.com',
+    });
+    await expect(manager.getConnectionToken()).resolves.toBeUndefined();
+    expect(storage.getItem('idle-wizard.web-google.user')).toBe(
+      JSON.stringify({
+        profile: {
+          sub: 'google-sub',
+          email: 'dav@example.com',
+          name: 'Dav',
+          given_name: '',
+          family_name: '',
+          picture: '',
+        },
+      }),
+    );
+  });
+
   it('reports native Google auth failures', async () => {
     const nativeGoogleAuthPlugin = {
       signIn: vi.fn(() => Promise.reject(new Error('account picker failed'))),

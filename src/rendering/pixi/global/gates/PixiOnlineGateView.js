@@ -30,6 +30,7 @@ export class PixiOnlineGateView extends PixiModalSurface {
     modalId = 'gate.online',
     label = 'onlineGate',
     onSplashViewportChange = null,
+    getUserId = () => '',
     reload = () => globalThis.location?.reload?.(),
   } = {}) {
     super({
@@ -55,7 +56,7 @@ export class PixiOnlineGateView extends PixiModalSurface {
     this.elapsedMs = 0;
     this.splashProgressValue = 0;
     this.explicitSplashProgress = false;
-    this.splash = new PixiLoadingSplash({ assets });
+    this.splash = new PixiLoadingSplash({ assets, inputRouter, getUserId });
     this.root.removeChild(this.panel);
     this.root.addChild(this.splash, this.panel);
     this.message = new PixiTextLabel({

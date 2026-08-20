@@ -45,6 +45,17 @@ function createGameplayFacade(snapshot, overrides = {}) {
 }
 
 describe('ResearchBoxListManager', () => {
+  it('uses the mana icon only for mana capacity research artwork', () => {
+    const manager = new ResearchBoxListManager();
+
+    expect(
+      manager.getResearchArtworkUrl('manaSphere', 'manaSphereCap:1'),
+    ).toContain('icon-mana-drop.png');
+    expect(
+      manager.getResearchArtworkUrl('manaSphere', 'manaProductionRate:1'),
+    ).toContain('icon-research.png');
+  });
+
   it('renders research tab button labels in Title Case', () => {
     const snapshot = {
       research: {

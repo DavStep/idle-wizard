@@ -515,6 +515,94 @@ describe('AppLifecycleManager', () => {
     expect(lifecycle.backendFacade.start).toHaveBeenCalledTimes(2);
   });
 
+  it('opens account recovery instead of retrying forever when a stored account token is rejected', async () => {
+    const signOut = vi.fn(() => Promise.resolve({ ok: true }));
+    const { lifecycle, getBackendCallbacks } = createLifecycle({
+      authFacade: {
+        getPendingAccountLinkSave: vi.fn(() => null),
+        clearPendingAccountLinkSave: vi.fn(),
+        getSnapshot: vi.fn(() => ({
+          hasToken: true,
+          oidc: {
+            enabled: true,
+            authenticated: false,
+            remembered: true,
+          },
+        })),
+        signInWithGoogle: vi.fn(),
+        signOut,
+      },
+    });
+
+    lifecycle.start();
+    await flushPromises();
+    getBackendCallbacks().onOffline({ reason: 'auth_required' });
+    await flushPromises();
+    await flushPromises();
+
+    expect(lifecycle.freshStartChoiceManager.choose).toHaveBeenCalledWith({
+      authSnapshot: {
+        hasToken: true,
+        oidc: {
+          enabled: true,
+          authenticated: false,
+          remembered: true,
+        },
+      },
+      statusText: 'Session Expired. Connect Again.',
+      keepOpenOnConnect: true,
+    });
+    expect(signOut).toHaveBeenCalledTimes(1);
+    expect(lifecycle.onlineGateManager.showOffline).not.toHaveBeenCalled();
+    expect(lifecycle.onlineGateManager.showConnecting).toHaveBeenCalledTimes(2);
+    expect(lifecycle.backendFacade.start).toHaveBeenCalledTimes(2);
+  });
+
+  it('reconnects a rejected stored account after explicit Google reauthentication', async () => {
+    let authenticated = false;
+    const signOut = vi.fn(() => Promise.resolve({ ok: true }));
+    const signInWithGoogle = vi.fn(() => {
+      authenticated = true;
+      return Promise.resolve({ ok: true, reloadRequired: true });
+    });
+    const freshStartChoiceManager = {
+      mount: vi.fn(),
+      choose: vi.fn(() => Promise.resolve(FRESH_START_CHOICE_CONNECT_ACCOUNT)),
+      render: vi.fn(),
+      hide: vi.fn(),
+      isChoosing: vi.fn(() => false),
+      unmount: vi.fn(),
+    };
+    const { lifecycle, getBackendCallbacks } = createLifecycle({
+      freshStartChoiceManager,
+      authFacade: {
+        getPendingAccountLinkSave: vi.fn(() => null),
+        clearPendingAccountLinkSave: vi.fn(),
+        getSnapshot: vi.fn(() => ({
+          hasToken: true,
+          oidc: {
+            enabled: true,
+            authenticated,
+            remembered: true,
+          },
+        })),
+        signInWithGoogle,
+        signOut,
+      },
+    });
+
+    lifecycle.start();
+    await flushPromises();
+    getBackendCallbacks().onOffline({ reason: 'auth_required' });
+    await flushPromises();
+    await flushPromises();
+
+    expect(signInWithGoogle).toHaveBeenCalledTimes(1);
+    expect(signOut).not.toHaveBeenCalled();
+    expect(lifecycle.onlineGateManager.showOffline).not.toHaveBeenCalled();
+    expect(lifecycle.backendFacade.start).toHaveBeenCalledTimes(2);
+  });
+
   it('unmounts gates and the persistent renderer before gameplay surfaces mount', async () => {
     const { lifecycle } = createLifecycle();
 

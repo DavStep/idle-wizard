@@ -258,6 +258,28 @@ export class BackendFacade {
 
   getConnectErrorReason(error) {
     const message = String(error?.message ?? error ?? '').toLowerCase();
+    const code = String(error?.code ?? error?.name ?? '').toLowerCase();
+    const status = Number(error?.status ?? error?.statusCode);
+    const trimmedStatus = Number.isFinite(status) ? status : null;
+
+    if (
+      code === 'auth_required' ||
+      code === 'unauthenticated' ||
+      code === 'unauthorized' ||
+      code === 'invalid_token' ||
+      code === 'bad_token' ||
+      trimmedStatus === 401 ||
+      trimmedStatus === 403 ||
+      message.includes('authentication required') ||
+      message.includes('failed to verify token') ||
+      /\bunauthenticated\b/.test(message) ||
+      /\bunauthorized\b/.test(message) ||
+      /\binvalid\s+token\b/.test(message) ||
+      /\bexpired\s+token\b/.test(message) ||
+      /\btoken\s+(?:invalid|expired)\b/.test(message)
+    ) {
+      return 'auth_required';
+    }
 
     if (message.includes('database is paused') || message.includes('database paused')) {
       return 'server_paused';

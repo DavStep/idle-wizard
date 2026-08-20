@@ -125,12 +125,16 @@ export class PixiAssetManager {
     const remainingAssets = this.manifest.filter(
       ({ id }) => !this.startupAssetIds.has(id),
     );
-    if (remainingAssets.some(({ src }) => /\.(?:atlas|skel)$/i.test(src))) {
+    const loadableAssets = remainingAssets.filter(
+      ({ kind }) => kind !== 'atlas-frame',
+    );
+    if (loadableAssets.some(({ src }) => /\.(?:atlas|skel)$/i.test(src))) {
       await this.prepareSpineLoaders();
     }
 
-    await this.loadManifestAssets(remainingAssets, { onProgress });
+    await this.loadManifestAssets(loadableAssets, { onProgress });
     this.buildAtlasTextures();
+    this.registerAtlasBackedSourceAssets();
     this.loaded = true;
     return this;
   }
@@ -210,18 +214,34 @@ export class PixiAssetManager {
   }
 
   buildAtlasTextures() {
-    const atlasTexture = this.textures.get('atlas:game');
-    if (!atlasTexture?.source) {
-      throw new Error('The game atlas did not load as a Pixi texture.');
-    }
-
     for (const [frameName, frame] of Object.entries(this.atlasFrames)) {
+      const atlasId = frame.atlasId ?? 'atlas:game';
+      const atlasTexture = this.textures.get(atlasId);
+      if (!atlasTexture?.source) {
+        throw new Error(`${atlasId} did not load as a Pixi texture.`);
+      }
       const texture = new this.TextureClass({
         source: atlasTexture.source,
         frame: new this.RectangleClass(frame.x, frame.y, frame.width, frame.height),
         label: `atlas:${frameName}`,
       });
       this.atlasTextures.set(frameName, texture);
+    }
+  }
+
+  registerAtlasBackedSourceAssets() {
+    for (const asset of this.manifest) {
+      if (asset.kind !== 'atlas-frame') {
+        continue;
+      }
+      const texture = this.atlasTextures.get(asset.frameName);
+      if (!texture) {
+        throw new Error(
+          `Missing atlas frame ${asset.frameName} for ${asset.id}.`,
+        );
+      }
+      this.textures.set(asset.id, texture);
+      this.values.set(asset.id, texture);
     }
   }
 

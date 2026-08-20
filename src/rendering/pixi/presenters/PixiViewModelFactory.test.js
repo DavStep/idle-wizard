@@ -2287,6 +2287,39 @@ describe('PixiViewModelFactory', () => {
     });
   });
 
+  it('uses the mana icon only for mana capacity research artwork', () => {
+    const factory = new PixiViewModelFactory();
+    const model = factory.createResearch({
+      gameplay: {
+        research: {
+          tabs: [
+            {
+              id: 'regular',
+              boxes: [
+                {
+                  id: 'manaSphere',
+                  researches: [
+                    { id: 'manaSphereCap:1', label: 'mana capacity' },
+                    { id: 'manaProductionRate:1', label: 'mana generation' },
+                  ],
+                },
+              ],
+            },
+          ],
+        },
+      },
+    });
+    const [capacity, generation] =
+      model.research.tabs[0].boxes[0].allResearches;
+
+    expect(capacity.artAssetId).toBe(
+      'source:assets/icons/icon-mana-drop.png',
+    );
+    expect(generation.artAssetId).toBe(
+      'source:assets/icons/icon-research.png',
+    );
+  });
+
   it('gates research tabs by the highest level reached and never relocks them after prestige', () => {
     const factory = new PixiViewModelFactory();
     const research = {

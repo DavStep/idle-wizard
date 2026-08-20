@@ -577,6 +577,20 @@ describe('BackendFacade', () => {
     const pausedError = new Error('database is paused');
     const noEnergyError = new Error('out of energy');
     const timeoutError = new Error('connection timed out');
+    const authRequiredError = Object.assign(
+      new Error('Account authentication required.'),
+      { code: 'auth_required' },
+    );
+    const unauthorizedError = Object.assign(
+      new Error('Unauthenticated request.'),
+      { status: 401 },
+    );
+    const unauthorizedCodeError = Object.assign(new Error('invalid token'), {
+      code: 'unauthorized',
+    });
+    const failedVerificationError = new Error(
+      'Failed to verify token: signature expired',
+    );
     const onOffline = vi.fn();
     const { backendFacade } = createBackendWithFakes({
       connectGeneratedBindings: vi
@@ -592,9 +606,29 @@ describe('BackendFacade', () => {
         .mockImplementationOnce(async ({ onConnectError }) => {
           onConnectError(timeoutError);
           return { ok: true };
+        })
+        .mockImplementationOnce(async ({ onConnectError }) => {
+          onConnectError(authRequiredError);
+          return { ok: true };
+        })
+        .mockImplementationOnce(async ({ onConnectError }) => {
+          onConnectError(unauthorizedError);
+          return { ok: true };
+        })
+        .mockImplementationOnce(async ({ onConnectError }) => {
+          onConnectError(unauthorizedCodeError);
+          return { ok: true };
+        })
+        .mockImplementationOnce(async ({ onConnectError }) => {
+          onConnectError(failedVerificationError);
+          return { ok: true };
         }),
     });
 
+    await backendFacade.start({ onOffline });
+    await backendFacade.start({ onOffline });
+    await backendFacade.start({ onOffline });
+    await backendFacade.start({ onOffline });
     await backendFacade.start({ onOffline });
     await backendFacade.start({ onOffline });
     await backendFacade.start({ onOffline });
@@ -610,6 +644,22 @@ describe('BackendFacade', () => {
     expect(onOffline).toHaveBeenNthCalledWith(3, {
       reason: 'connect_timeout',
       error: timeoutError,
+    });
+    expect(onOffline).toHaveBeenNthCalledWith(4, {
+      reason: 'auth_required',
+      error: authRequiredError,
+    });
+    expect(onOffline).toHaveBeenNthCalledWith(5, {
+      reason: 'auth_required',
+      error: unauthorizedError,
+    });
+    expect(onOffline).toHaveBeenNthCalledWith(6, {
+      reason: 'auth_required',
+      error: unauthorizedCodeError,
+    });
+    expect(onOffline).toHaveBeenNthCalledWith(7, {
+      reason: 'auth_required',
+      error: failedVerificationError,
     });
   });
 });

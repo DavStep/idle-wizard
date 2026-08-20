@@ -5,6 +5,7 @@ import {
 } from '../../rendering/pixi/global/gates/PixiAccountLinkChoiceController.js';
 import {
   FRESH_START_CHOICE_CONNECT_ACCOUNT,
+  FRESH_START_CHOICE_START_FRESH,
   PixiFreshStartChoiceController,
 } from '../../rendering/pixi/global/gates/PixiFreshStartChoiceController.js';
 import { AppGameplayTickManager } from './AppGameplayTickManager.js';
@@ -83,6 +84,7 @@ export class AppLifecycleManager {
     this.maintenanceFlushKey = '';
     this.reloadAfterLockedMaintenance = false;
     this.playableNotified = false;
+    this.reauthorizationFlowActive = false;
   }
 
   start() {
@@ -355,10 +357,11 @@ export class AppLifecycleManager {
 
   async chooseFreshStart({
     authSnapshot = null,
+    statusText: initialStatusText = null,
     keepOpenOnConnect = false,
     returnOnConnectedAccount = false,
   } = {}) {
-    let statusText = null;
+    let statusText = initialStatusText;
 
     while (!this.stopping) {
       const choice = await this.freshStartChoiceManager.choose({
@@ -369,7 +372,7 @@ export class AppLifecycleManager {
 
       if (choice !== FRESH_START_CHOICE_CONNECT_ACCOUNT) {
         this.freshStartConfirmed = true;
-        return;
+        return choice;
       }
 
       this.freshStartChoiceManager.render?.({
@@ -387,7 +390,7 @@ export class AppLifecycleManager {
 
         if (returnOnConnectedAccount && this.hasConnectableAccount()) {
           this.freshStartConfirmed = true;
-          return;
+          return choice;
         }
 
         if (result.reloadRequired) {
@@ -628,7 +631,6 @@ export class AppLifecycleManager {
     }
 
     this.backendOnline = false;
-    this.freshStartChoiceManager.hide?.();
     this.interactionLockManager.lock(reason ?? 'offline');
     this.stopFrameLoop();
 
@@ -639,6 +641,14 @@ export class AppLifecycleManager {
     }
 
     this.hiddenOfflineReason = null;
+
+    if (reason === 'auth_required') {
+      this.connectionRetryManager.clear();
+      void this.promptForAccountReauthentication();
+      return;
+    }
+
+    this.freshStartChoiceManager.hide?.();
 
     if (this.isMaintenanceActive()) {
       this.onlineGateManager.showMaintenance(this.maintenanceSnapshot);
@@ -660,6 +670,39 @@ export class AppLifecycleManager {
 
     this.connectionRetryManager.clear();
     this.onlineGateManager.showOffline(reason);
+  }
+
+  async promptForAccountReauthentication() {
+    if (
+      this.reauthorizationFlowActive ||
+      this.freshStartChoiceManager.isChoosing?.()
+    ) {
+      return;
+    }
+
+    this.reauthorizationFlowActive = true;
+    try {
+      this.onlineGateManager.hide();
+      const choice = await this.chooseFreshStart({
+        authSnapshot: this.getAuthSnapshot(),
+        statusText: 'Session Expired. Connect Again.',
+        keepOpenOnConnect: true,
+        returnOnConnectedAccount: true,
+      });
+
+      if (!this.started || this.stopping) {
+        return;
+      }
+
+      if (choice === FRESH_START_CHOICE_START_FRESH) {
+        await this.backendFacade.getAuthFacade?.()?.signOut?.();
+      }
+
+      this.onlineGateManager.showConnecting();
+      void this.connectBackend();
+    } finally {
+      this.reauthorizationFlowActive = false;
+    }
   }
 
   scheduleBackendReconnect() {

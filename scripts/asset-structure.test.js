@@ -3,6 +3,14 @@ import path from 'node:path';
 import process from 'node:process';
 
 import { describe, expect, it } from 'vitest';
+import pngjs from 'pngjs';
+
+import {
+  gameAtlasBackedSourceAssets,
+  gameStandaloneSourceAssets,
+} from '../src/assets/generated/game-asset-atlas.generated.js';
+
+const { PNG } = pngjs;
 
 const ROOT = process.cwd();
 const RUNTIME_ASSET_EXTENSION =
@@ -52,7 +60,7 @@ describe('asset structure', () => {
     expect(scatteredAssets).toEqual([]);
   });
 
-  it('keeps both generated atlases beside their metadata', () => {
+  it('keeps generated atlas pages beside their metadata', () => {
     const gameAtlasDir = path.join(ROOT, 'assets/game/atlas');
     const quickUiAtlasDir = path.join(ROOT, 'assets/quick-ui/atlas');
     const gameAtlas = JSON.parse(
@@ -68,11 +76,115 @@ describe('asset structure', () => {
     expect(Object.keys(gameAtlas.frames).length).toBeGreaterThan(0);
     expect(gameAtlas.meta.image).toBe('game-asset-atlas.png');
 
+    const sharedAtlasJsonPaths = fs.readdirSync(gameAtlasDir)
+      .filter((fileName) => /^game-shared-atlas-\d+\.json$/.test(fileName))
+      .map((fileName) => path.join(gameAtlasDir, fileName));
+    expect(sharedAtlasJsonPaths.length).toBeGreaterThan(0);
+    for (const jsonPath of sharedAtlasJsonPaths) {
+      const atlas = JSON.parse(fs.readFileSync(jsonPath, 'utf8'));
+      expect(Object.keys(atlas.frames).length).toBeGreaterThan(0);
+      expect(atlas.meta.atlasId).toMatch(/^atlas:shared-\d+$/);
+      expect(fs.existsSync(path.join(gameAtlasDir, atlas.meta.image))).toBe(
+        true,
+      );
+    }
+
     expect(fs.existsSync(path.join(quickUiAtlasDir, 'atlas.png'))).toBe(true);
     expect(fs.existsSync(path.join(quickUiAtlasDir, 'manifest.json'))).toBe(
       true,
     );
     expect(quickUiAtlas.meta.image).toBe('atlas.png');
+  });
+
+  it('does not import atlas-backed source PNGs as standalone production assets', () => {
+    const gameAtlasDir = path.join(ROOT, 'assets/game/atlas');
+    const atlasJsonPaths = fs.readdirSync(gameAtlasDir)
+      .filter((fileName) =>
+        /^(?:game-asset-atlas|game-shared-atlas-\d+)\.json$/.test(fileName),
+      )
+      .map((fileName) => path.join(gameAtlasDir, fileName));
+    const atlasSourcePaths = new Set(
+      atlasJsonPaths.flatMap((jsonPath) => {
+        const atlas = JSON.parse(fs.readFileSync(jsonPath, 'utf8'));
+        return Object.values(atlas.frames).map(({ source }) => source);
+      }),
+    );
+    const atlasBackedIds = new Set(
+      gameAtlasBackedSourceAssets.map(({ id }) => id),
+    );
+    const standaloneIds = new Set(
+      gameStandaloneSourceAssets.map(({ id }) => id),
+    );
+    const sourcePngPaths = collectFiles(path.join(ROOT, 'assets/game/source'))
+      .filter((filePath) => filePath.endsWith('.png'))
+      .map((filePath) => path.relative(ROOT, filePath).replaceAll(path.sep, '/'));
+
+    expect(
+      [...atlasBackedIds].filter((sourceId) => standaloneIds.has(sourceId)),
+    ).toEqual([]);
+    expect(
+      [...atlasBackedIds].every((sourceId) =>
+        atlasSourcePaths.has(
+          sourceId.replace(/^source:assets\//, 'assets/game/source/'),
+        ),
+      ),
+    ).toBe(true);
+    expect(atlasBackedIds.size + standaloneIds.size).toBe(
+      sourcePngPaths.length,
+    );
+  });
+
+  it('preserves every shared-atlas source pixel and source-sized frame', () => {
+    const gameAtlasDir = path.join(ROOT, 'assets/game/atlas');
+    const sharedAtlasJsonPaths = fs.readdirSync(gameAtlasDir)
+      .filter((fileName) => /^game-shared-atlas-\d+\.json$/.test(fileName))
+      .map((fileName) => path.join(gameAtlasDir, fileName));
+
+    for (const jsonPath of sharedAtlasJsonPaths) {
+      const atlas = JSON.parse(fs.readFileSync(jsonPath, 'utf8'));
+      const atlasImage = PNG.sync.read(
+        fs.readFileSync(path.join(gameAtlasDir, atlas.meta.image)),
+      );
+
+      for (const frame of Object.values(atlas.frames)) {
+        const sourceImage = PNG.sync.read(
+          fs.readFileSync(path.join(ROOT, frame.source)),
+        );
+        expect(frame.source).not.toMatch(/\.9\.png$/);
+        expect(frame.frame.w).toBe(sourceImage.width);
+        expect(frame.frame.h).toBe(sourceImage.height);
+        expect(frame.originalSourceSize).toEqual({
+          h: sourceImage.height,
+          w: sourceImage.width,
+        });
+
+        let pixelsMatch = true;
+        pixelRows: for (let y = 0; y < sourceImage.height; y += 1) {
+          for (let x = 0; x < sourceImage.width; x += 1) {
+            const sourceOffset = (y * sourceImage.width + x) * 4;
+            const atlasOffset =
+              ((frame.frame.y + y) * atlasImage.width + frame.frame.x + x) * 4;
+            if (
+              atlasImage.data[atlasOffset + 3]
+                !== sourceImage.data[sourceOffset + 3] ||
+              (sourceImage.data[sourceOffset + 3] > 0 &&
+                (
+                  atlasImage.data[atlasOffset]
+                    !== sourceImage.data[sourceOffset] ||
+                  atlasImage.data[atlasOffset + 1]
+                    !== sourceImage.data[sourceOffset + 1] ||
+                  atlasImage.data[atlasOffset + 2]
+                    !== sourceImage.data[sourceOffset + 2]
+                ))
+            ) {
+              pixelsMatch = false;
+              break pixelRows;
+            }
+          }
+        }
+        expect(pixelsMatch, frame.source).toBe(true);
+      }
+    }
   });
 
   it('keeps retired fallback and split-automation icons out of runtime assets', () => {

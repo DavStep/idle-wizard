@@ -1,7 +1,7 @@
 // @vitest-environment jsdom
 
 import { Texture } from 'pixi.js';
-import { describe, expect, it } from 'vitest';
+import { describe, expect, it, vi } from 'vitest';
 
 import { PixiAssetManager } from '../../assets/PixiAssetManager.js';
 import { installPixiPageTestCanvas } from '../../pages/workshop/PixiPageTestHarness.js';
@@ -63,6 +63,14 @@ describe('PixiLoadingSplash', () => {
     expect(splash.loadingLabel.textObject.style.fontFamily).toBe(
       PIXI_FONT_FAMILIES['lilita-one'],
     );
+    expect(splash.versionLabel.text).toMatch(/^v\d+\.\d+\.\d+$/u);
+    expect(splash.versionLabel.fontFamily).toBe(
+      splash.loadingLabel.fontFamily,
+    );
+    expect(splash.versionLabel.textObject.style.fontFamily).toBe(
+      splash.loadingLabel.textObject.style.fontFamily,
+    );
+    expect(splash.versionLabel.position).toMatchObject({ x: 12, y: 12 });
     expect(splash.progressBar).toBeInstanceOf(PixiProgressBar);
     expect(splash.progressBar.barHeight).toBe(
       PIXI_UI_GEOMETRY.progressTotalHeight,
@@ -101,5 +109,48 @@ describe('PixiLoadingSplash', () => {
     );
 
     splash.destroy({ children: true });
+  });
+
+  it('shows a compact connected identity and keeps the full value for copy', () => {
+    const fullIdentity = '12345678abcdef12345678abcdef12345678';
+    let identity = {
+      toHexString: () => fullIdentity,
+    };
+    const splash = new PixiLoadingSplash({
+      assets: {
+        getTexture: () => Texture.EMPTY,
+      },
+      getUserId: () => identity,
+    });
+    splash.layout({
+      viewportPx: { width: 390, height: 844 },
+      sourceHeight: 844,
+      sourceOffsetX: 0,
+      sourceScale: 1,
+      stageLogicalWidth: 390,
+    });
+
+    expect(splash.userIdLabel.text).toBe('12345678…12345678');
+    expect(splash.userIdLabel.visible).toBe(true);
+    expect(splash.copyButton.textLabel.text).toBe('Copy');
+    expect(splash.copyButton.visible).toBe(true);
+    expect(splash.copyButton.position).toMatchObject({ x: 320, y: 12 });
+
+    const writeText = vi.fn().mockResolvedValue(undefined);
+    Object.defineProperty(globalThis.navigator, 'clipboard', {
+      configurable: true,
+      value: { writeText },
+    });
+    return splash.copyUserId().then(() => {
+      expect(writeText).toHaveBeenCalledWith(fullIdentity);
+      expect(splash.copyButton.textLabel.text).toBe('Copied');
+
+      identity = null;
+      splash.setProgress(0.25);
+      expect(splash.userIdLabel.visible).toBe(false);
+      expect(splash.copyButton.visible).toBe(false);
+
+      splash.destroy({ children: true });
+    });
   });
 });

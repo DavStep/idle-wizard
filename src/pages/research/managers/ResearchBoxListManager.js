@@ -87,6 +87,10 @@ const RESEARCH_CAULDRON_LEVEL_ARTWORK = new URL(
   '../../../../assets/game/source/icons/research/icon-research-cauldron-level.png',
   import.meta.url,
 ).href;
+const RESEARCH_MANA_CAPACITY_ARTWORK = new URL(
+  '../../../../assets/game/source/icons/icon-mana-drop.png',
+  import.meta.url,
+).href;
 const RESEARCH_TIMER_REDUCTION_ARTWORK = new URL(
   '../../../../assets/game/source/icons/research/icon-research-time.png',
   import.meta.url,
@@ -877,6 +881,10 @@ export class ResearchBoxListManager {
   }
 
   getResearchArtworkUrl(boxId, researchId) {
+    if (String(researchId ?? '').startsWith('manaSphereCap:')) {
+      return RESEARCH_MANA_CAPACITY_ARTWORK;
+    }
+
     if (String(researchId ?? '').startsWith('emerald:cauldronBrewing:')) {
       return RESEARCH_CAULDRON_LEVEL_ARTWORK;
     }

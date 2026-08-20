@@ -58,7 +58,7 @@ export async function createUiEditorPixiSurface({
   const { canvas, host } = shell;
 
   const manifest = PIXI_PRODUCTION_ASSET_MANIFEST.filter(
-    (asset) => asset.id === 'atlas:game' || assetFilter(asset),
+    (asset) => asset.id.startsWith('atlas:') || assetFilter(asset),
   );
   const assets = new PixiAssetManager({
     atlasFrames: gameAssetAtlasFrames,

@@ -87,6 +87,57 @@ describe('PixiAssetManager', () => {
     });
   });
 
+  it('loads multiple atlas pages and resolves source aliases without loading originals', async () => {
+    const gameAtlasTexture = { source: { label: 'game-atlas-source' } };
+    const sharedAtlasTexture = { source: { label: 'shared-atlas-source' } };
+    const assets = {
+      load: vi.fn(async (src) =>
+        src === '/shared-atlas.png' ? sharedAtlasTexture : gameAtlasTexture,
+      ),
+    };
+    const sourceAssetId = 'source:assets/icons/icon-bag.png';
+    const manager = new PixiAssetManager({
+      assets,
+      TextureClass: FakeTexture,
+      RectangleClass: FakeRectangle,
+      manifest: [
+        { id: 'atlas:game', src: '/game-atlas.png', kind: 'texture' },
+        { id: 'atlas:shared-0', src: '/shared-atlas.png', kind: 'texture' },
+        {
+          id: sourceAssetId,
+          src: '/shared-atlas.png',
+          kind: 'atlas-frame',
+          atlasId: 'atlas:shared-0',
+          frameName: sourceAssetId,
+        },
+      ],
+      atlasFrames: {
+        [sourceAssetId]: {
+          atlasId: 'atlas:shared-0',
+          x: 20,
+          y: 30,
+          width: 40,
+          height: 50,
+        },
+      },
+      fontFaceSet: {
+        load: vi.fn(async () => [{}]),
+        ready: Promise.resolve(),
+      },
+    });
+
+    await manager.loadAll();
+
+    expect(assets.load).toHaveBeenCalledTimes(2);
+    expect(assets.load).not.toHaveBeenCalledWith(
+      expect.stringContaining('icon-bag'),
+    );
+    expect(manager.getTexture(sourceAssetId)).toMatchObject({
+      source: sharedAtlasTexture.source,
+      frame: { x: 20, y: 30, width: 40, height: 50 },
+    });
+  });
+
   it('fails validation instead of substituting missing production assets', async () => {
     const manager = new PixiAssetManager({
       assets: { load: vi.fn(async () => null) },

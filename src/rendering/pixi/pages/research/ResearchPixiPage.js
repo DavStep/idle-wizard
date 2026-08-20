@@ -296,7 +296,7 @@ export const RESEARCH_PIXI_GEOMETRY = Object.freeze({
   artworkSize: 57,
   seedArtworkSize: 46,
   artExtraWidth: 22,
-  artExtraHeight: 29,
+  artExtraHeight: 24,
   nameX: 10,
   nameY: 0,
   nameMaxWidth: 225,

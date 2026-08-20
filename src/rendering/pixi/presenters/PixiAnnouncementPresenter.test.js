@@ -667,6 +667,12 @@ describe('Pixi announcement presentation helpers', () => {
     ).toMatchObject({
       frameName: 'research:autoBrew',
     });
+    expect(
+      getResearchIconPresentation({ id: 'manaSphereCap:1' }),
+    ).toMatchObject({
+      frameName: 'resource:mana',
+      silhouetteFrameName: 'resource:mana',
+    });
   });
 
   it('returns effects directly consumable by the retained transient layer', () => {
