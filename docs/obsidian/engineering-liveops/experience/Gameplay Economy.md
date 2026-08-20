@@ -29,7 +29,7 @@ experience_type: gameplay-economy
 - Potion recipe ingredient order matters; every recipe entry is one ordered cauldron slot with `quantity: 1`, so repeated herbs must be repeated entries.
 - Brewing recipe-book UI should read `snapshot.brewing.recipes` and show only unlocked recipes; locked recipes stay hidden until research unlocks them.
 - Brewing `maxCauldrons` is only the level cap; bought slots persist as `brewing.unlockedCauldrons`.
-- Unknown potion recipes are named globally through SpacetimeDB discovery, but learning is player-specific: the discoverer keeps a permanent automatic unlock, while other players receive an independent instant study priced at `2x` the seed research of its latest-progression ingredient. Include every discovery research id in the server research catalog so completed studies survive save normalization and relog.
+- Unknown potion recipes are named globally through SpacetimeDB discovery, but learning is player-specific: the discoverer keeps a permanent automatic unlock, while other players receive a ten-minute Potion Research branch priced at `2x` the seed research of its latest-progression ingredient. Gate that branch at the matching regular potion milestone and require that milestone's recipe, but never make it block the main recipe chain. Include every discovery research id in the server research catalog so completed studies survive save normalization and relog.
 - Player-visible discovery reducers must not silently return behind feature flags; client success with no table row makes recipes look undiscovered.
 - Potion discovery table inserts must not depend on world-chat announcement rate limits; chat is secondary to the global unlock.
 - Potion discovery chat announcements should include the player, potion name, and full ingredient recipe, with a distinct coin system-row style.
@@ -118,6 +118,7 @@ experience_type: gameplay-economy
 - Small Town keeps fixed configured NPC prices even while shared need and stock change; demand pressure and base-price auto-tuning begin with Crossroads after the first Prestige star.
 - Hourly price history is backend-authored per market and item; the ledger may show missing points but must not fabricate them.
 - Player market request data is local gameplay-save state mirrored to backend request rows; local saves still preserve own slots across reload/server restart.
+- World event donations are uncapped for the full weekly period, so backend leaderboard normalization must preserve nonnegative contribution totals without a player-level cap; otherwise the local event total keeps growing while the shared rank row freezes.
 - Player market browse dialog groups listings by seller and lets buyers choose quantity per listing before buying.
 - Garden plot is a compact world of plot boxes, not a bordered `plots` panel or row-view toggle; show open plots plus only the next buy slot, with no future locked summary.
 - Garden plot rows use one right-aligned status/action slot; do not split phase and action into separate columns.

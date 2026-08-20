@@ -1386,12 +1386,17 @@ function createResearchCatalog({ herbDefinitions, recipes, seedDefinitions }) {
   });
 
   [
-    ['summonSeedsX2', 'x2 summon', []],
+    ['summonSeedsX2', 'x2 summon', [], 6],
     ['summonSeedsX3', 'x3 summon', ['summonSeedsX2']],
     ['summonSeedsX4', 'x4 summon', ['summonSeedsX3']],
     ['summonSeedsX5', 'x5 summon', ['summonSeedsX4']],
-  ].forEach(([id, label, requiredResearchIds]) => {
-    catalog.push({ id, label, requiredResearchIds });
+  ].forEach(([id, label, requiredResearchIds, requiredPlayerLevel]) => {
+    catalog.push({
+      id,
+      label,
+      requiredResearchIds,
+      ...(requiredPlayerLevel ? { requiredPlayerLevel } : {}),
+    });
   });
 
   catalog.push(

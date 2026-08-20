@@ -60,7 +60,7 @@ export default defineUiEditorIntegration({
     {
       fixture: { phase: 'complete' },
       id: 'complete',
-      label: 'Ready to collect',
+      label: 'Bottled fallback',
       mount: mountBrewing,
     },
   ],
@@ -119,7 +119,7 @@ async function mountBrewing(context, fixture) {
           : null,
         primaryAction: state.active
           ? state.active.canCollect
-            ? { enabled: true, id: 'collect', label: 'Collect' }
+            ? { enabled: false, id: 'complete', label: 'Bottled' }
             : { enabled: true, id: 'cancel', label: 'Cancel' }
           : state.selectedRecipe
             ? {
@@ -156,14 +156,8 @@ async function mountBrewing(context, fixture) {
         ok: reducedMs > 0,
         reducedSeconds: reducedMs / 1_000,
         remainingMs: Math.max(0, previousRemainingMs - reducedMs),
-        cooldownMs: 800,
+        cooldownMs: 720,
       };
-    },
-    collectBrew: () => {
-      context.emit('brewCollected', { potion: 'minorManaPotion' });
-      state.active = null;
-      refresh();
-      return true;
     },
     openRecipes: () => context.emit('recipesOpened'),
     emptyCauldron: () => {
@@ -260,7 +254,6 @@ async function mountBrewing(context, fixture) {
       { id: 'empty', label: 'Empty cauldron', enabled: () => !state.active && Boolean(state.selectedRecipe || state.ingredients.length), run: actions.emptyCauldron },
       { id: 'advance', label: 'Advance 1s', enabled: () => Boolean(state.active), run: () => context.clock.advance(1000) },
       { id: 'complete', label: 'Complete', enabled: () => Boolean(state.active), run: () => context.clock.advance(5000) },
-      { id: 'collect', label: 'Collect', enabled: () => state.active?.canCollect === true, run: actions.collectBrew },
     ],
   };
 }

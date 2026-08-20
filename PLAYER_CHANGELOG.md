@@ -5,6 +5,13 @@ upload script posts the section whose heading matches `package.json` `version`.
 Write these developer-to-player notes only in Idle Wizard terms. Do not mention
 other game names, source projects, ports, or implementation provenance.
 
+## 0.3.81
+
+- Brewing now collects finished bottled potions automatically, keeps staged cauldrons visibly empty until brewing begins, and restores the larger herb-slot artwork with clearer owned/required counts.
+- Research now reveals level- and Prestige-gated studies as they become relevant, places discovered potion recipes beside their matching progression milestones, and unlocks multi-seed summoning from level 6.
+- Trade Alliance creation now includes banner customization with clearer selected colors and larger emblems.
+- Fixed World Event leaderboards so uncapped weekly donations continue updating shared contribution totals, and made Garden and Brewing tap acceleration more responsive.
+
 ## 0.3.80
 
 - Added customizable Trade Alliance banners with selectable emblems plus separate cloth and emblem colors, now shown across alliance browsing, details, and leaderboards.

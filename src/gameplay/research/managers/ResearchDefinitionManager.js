@@ -75,6 +75,7 @@ const summonSeedResearches = Array.from({ length: 4 }, (_value, index) => {
     starLevel: level,
     starMaxLevel: 4,
     seriesId: 'summonSeeds',
+    ...(level === 1 ? { requiredPlayerLevel: 6 } : {}),
     requiredResearchIds:
       level > 1 ? [`summonSeedsX${multiplier - 1}`] : [],
     description: `summons ${multiplier} researched seeds for ${multiplier * 10} mana.`,
@@ -118,12 +119,22 @@ const recipeUnlockRequiredPlayerLevels = {
   venomDraught: 16,
   healingPotion: 18,
   sunrootStamina: 20,
+  rootboundResolve: 20,
   moonlitFocus: 23,
+  silverleafQuiet: 23,
   frostmossCleanse: 26,
+  ashenMemory: 26,
+  frostveinDraught: 26,
   sleepDraught: 29,
+  thornSleep: 29,
   elixirOfLife: 32,
+  glassMoonElixir: 32,
   starLuckPhiltre: 35,
+  nightOrchardTonic: 35,
+  bloodlightWard: 35,
   deepDreamVision: 38,
+  emberSight: 38,
+  starlessCourage: 38,
   pactWard: 41,
   dragonCourage: 44,
   silverleafSalve: 47,
@@ -455,21 +466,21 @@ export class ResearchDefinitionManager {
 
   getRecipeUnlockResearches() {
     return this.getRecipePotionDefinitionsInResearchOrder().map((potion, index, potions) => {
-      const previousPotion = potions[index - 1];
-      const discoveredRecipe = this.isDiscoveredRecipe(potion);
+      const previousRegularPotion = potions
+        .slice(0, index)
+        .reverse()
+        .find((candidate) => !this.isDiscoveredRecipe(candidate));
 
       return {
         id: `unlockRecipe:${potion.key}`,
         label: potion.label,
         value: 'brew',
-        ...(!discoveredRecipe && recipeUnlockRequiredPlayerLevels[potion.key]
+        ...(recipeUnlockRequiredPlayerLevels[potion.key]
           ? { requiredPlayerLevel: recipeUnlockRequiredPlayerLevels[potion.key] }
           : {}),
-        ...(discoveredRecipe
-          ? { requiredResearchIds: [] }
-          : previousPotion && !this.isDiscoveredRecipe(previousPotion)
-            ? { requiredResearchIds: [`unlockRecipe:${previousPotion.key}`] }
-            : {}),
+        ...(previousRegularPotion
+          ? { requiredResearchIds: [`unlockRecipe:${previousRegularPotion.key}`] }
+          : {}),
         description: `allows valid cauldron ingredients to brew ${potion.label}.`,
       };
     });
@@ -577,7 +588,11 @@ export class ResearchDefinitionManager {
           this.potionDiscoveryFacade?.isDiscoveredByCurrentPlayer?.(potion.key) !== true,
       );
 
-    return [...orderedPotions, ...extraPotions, ...discoveredPotions];
+    return this.orderPotionDefinitionsForResearch([
+      ...orderedPotions,
+      ...extraPotions,
+      ...discoveredPotions,
+    ]);
   }
 
   getPotionTimerDefinitionsInResearchOrder() {
@@ -591,7 +606,23 @@ export class ResearchDefinitionManager {
           this.potionDiscoveryFacade?.isDiscoveredByCurrentPlayer?.(potion.key) === true,
       );
 
-    return [...potions, ...ownDiscoveries];
+    return this.orderPotionDefinitionsForResearch([...potions, ...ownDiscoveries]);
+  }
+
+  orderPotionDefinitionsForResearch(potions) {
+    return potions
+      .map((potion, originalIndex) => ({
+        potion,
+        originalIndex,
+        requiredPlayerLevel:
+          recipeUnlockRequiredPlayerLevels[potion.key] ?? Number.POSITIVE_INFINITY,
+      }))
+      .sort(
+        (left, right) =>
+          left.requiredPlayerLevel - right.requiredPlayerLevel ||
+          left.originalIndex - right.originalIndex,
+      )
+      .map(({ potion }) => potion);
   }
 
   isDiscoveredRecipe(potion) {

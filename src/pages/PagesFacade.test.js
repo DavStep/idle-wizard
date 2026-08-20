@@ -11747,7 +11747,7 @@ describe('PagesFacade', () => {
       locked: true,
       canResearch: false,
       requiredResearchIds: ['unlockRecipe:manaTonic'],
-      requiredPlayerLevel: 5,
+      requiredPlayerLevel: 4,
       description: 'allows valid cauldron ingredients to brew minor healing potion.',
     });
 

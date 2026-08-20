@@ -224,7 +224,18 @@ const SIDE_PANEL_STAGGER_MS = 16;
 const WORKSHOP_REQUEST_TEXT_FILL = '#634934';
 const WORKSHOP_REQUEST_TITLE_FILL = '#ffffff';
 const WORKSHOP_REQUEST_TITLE_STROKE = '#0a0a0a';
-const WORKSHOP_TASK_ICON_SIZE = 24;
+const WORKSHOP_REQUEST_ROW_TEXT_STYLE = Object.freeze({
+  ...RETAINED_TEXT_STYLES.body,
+  fontSize: 16,
+  lineHeight: 19,
+});
+const WORKSHOP_TASK_ICON_SIZE = 32;
+const WORKSHOP_TASK_ROW_TEXT_TOP = 5;
+const WORKSHOP_TASK_PROGRESS_GAP = 6;
+const WORKSHOP_TASK_DEFAULT_PROGRESS_TOP =
+  WORKSHOP_TASK_ICON_SIZE + WORKSHOP_TASK_PROGRESS_GAP;
+const WORKSHOP_TASK_DEFAULT_ROW_HEIGHT =
+  WORKSHOP_TASK_DEFAULT_PROGRESS_TOP + PIXI_UI_GEOMETRY.progressTotalHeight;
 const WORKSHOP_SIDE_LABEL_FILL = '#ffffff';
 const WORKSHOP_SIDE_LABEL_STROKE = '#0a0a0a';
 const REQUEST_PROGRESS_UPDATE_DURATION_MS = 220;
@@ -1321,8 +1332,8 @@ export class WorkshopTaskRow {
     this.iconOverlay.label = 'workshop-task-row:icon-overlay';
     this.iconOverlay.anchor.set(0.5);
     this.iconOverlay.visible = false;
-    this.label = createText('', RETAINED_TEXT_STYLES.body);
-    this.value = createText('', RETAINED_TEXT_STYLES.body);
+    this.label = createText('', WORKSHOP_REQUEST_ROW_TEXT_STYLE);
+    this.value = createText('', WORKSHOP_REQUEST_ROW_TEXT_STYLE);
     this.value.anchor.set(1, 0);
     this.action = new RetainedButton({
       assetManager,
@@ -1364,6 +1375,7 @@ export class WorkshopTaskRow {
     this.progressShineRoot.visible = false;
     this.progressShineRoot.renderable = false;
     this.progress.root.addChild(this.progressShineRoot);
+    this.preferredHeight = WORKSHOP_TASK_DEFAULT_ROW_HEIGHT;
     this.displayedProgress = 0;
     this.targetProgress = 0;
     this.progressMotion = null;
@@ -1461,21 +1473,42 @@ export class WorkshopTaskRow {
         base: this.icon,
         item: this.iconOverlay,
         x: iconSize / 2,
-        y: 9,
+        y: iconSize / 2,
         width: iconSize,
         height: iconSize,
         fitPositionX: 0,
       });
     } else {
-      this.icon.position.set(iconSize / 2, 9);
+      this.icon.position.set(iconSize / 2, iconSize / 2);
       this.icon.width = iconSize;
       this.icon.height = iconSize;
       this.iconOverlay.rotation = 0;
     }
-    this.label.position.set(this.icon.visible ? iconSize + 3 : 0, 1);
-    this.value.position.set(width - (this.action.root.visible ? 64 : 0), 1);
-    this.action.setBounds(width - 58, 0, 58, 20);
-    this.progress.setBounds(0, 22, width, PIXI_UI_GEOMETRY.progressTotalHeight);
+    this.label.position.set(
+      this.icon.visible ? iconSize + 4 : 0,
+      WORKSHOP_TASK_ROW_TEXT_TOP,
+    );
+    this.value.position.set(
+      width - (this.action.root.visible ? 64 : 0),
+      WORKSHOP_TASK_ROW_TEXT_TOP,
+    );
+    this.action.setBounds(width - 58, 4, 58, 20);
+    const contentBottom = Math.max(
+      iconSize,
+      WORKSHOP_TASK_ROW_TEXT_TOP + this.label.height,
+      WORKSHOP_TASK_ROW_TEXT_TOP + this.value.height,
+      this.action.root.visible ? 24 : 0,
+    );
+    const progressTop = contentBottom + WORKSHOP_TASK_PROGRESS_GAP;
+    this.progress.setBounds(
+      0,
+      progressTop,
+      width,
+      PIXI_UI_GEOMETRY.progressTotalHeight,
+    );
+    this.preferredHeight = this.progress.root.visible
+      ? progressTop + PIXI_UI_GEOMETRY.progressTotalHeight
+      : Math.max(28, contentBottom);
     const height = this.getPreferredHeight();
     this.root.hitArea = new Rectangle(0, 0, width, height);
     this.visual.pivot.set(width / 2, height / 2);
@@ -1488,7 +1521,7 @@ export class WorkshopTaskRow {
   }
 
   getPreferredHeight() {
-    return this.progress.root.visible ? 32 : 20;
+    return this.preferredHeight;
   }
 
   containsGlobalPoint(point) {
@@ -1505,12 +1538,12 @@ export class WorkshopTaskRow {
   applyTheme(theme) {
     const color = this.model?.disabled ? theme.disabled : theme.text;
     applyWorkshopRequestTextTheme(this.label, theme, {
-      ...RETAINED_TEXT_STYLES.body,
+      ...WORKSHOP_REQUEST_ROW_TEXT_STYLE,
       fill: this.model?.disabled ? color : WORKSHOP_REQUEST_TEXT_FILL,
       wordWrapWidth: 190,
     });
     applyWorkshopRequestTextTheme(this.value, theme, {
-      ...RETAINED_TEXT_STYLES.body,
+      ...WORKSHOP_REQUEST_ROW_TEXT_STYLE,
       fill: this.model?.disabled ? color : WORKSHOP_REQUEST_TEXT_FILL,
     });
     this.action.applyTheme(theme);

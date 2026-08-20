@@ -114,11 +114,12 @@ composition sits below the title/configuration row. The chevrons keep their
 horizontal anchors just outside the two lower ingredient tiles and share the
 potion-name Y axis, so navigation sits beside the selected recipe identity.
 All six cells are real gameplay ingredient slots; recipes
-may continue using fewer. Ingredient slots reuse the ordinary room-panel skin
-and show one left-aligned row with item art, name, and required quantity, such
-as `Sage x3`. A missing requirement colors only its quantity red. Repeated herbs
-still allocate owned stock across their ordered slots for readiness without
-exposing ownership ratios in the orbit. Pressing an available slot opens `Choose Herb`, the
+may continue using fewer. Ingredient slots reuse the compact vertical room-panel
+tile: large centered herb art above the centered herb name. When a selected
+recipe is short on stock, the old compact `owned/required` count remains in the
+slot corner. The horizontal ingredient/status composition is reserved for the
+bottom batch-detail section. Repeated herbs still allocate owned stock across
+their ordered slots for readiness. Pressing an available slot opens `Choose Herb`, the
 same retained inventory-choice dialog used by Garden `Choose Seed`, with herb
 art and availability rows in one continuous paper. It has no selected-herb
 summary or quantity controls. Choosing a herb replaces the target slot with
@@ -193,11 +194,11 @@ button follows the brewing state: a truly empty cauldron is green
 `Choose Recipe` and opens the same retained recipe dialog as the compact
 top-right `Recipes` control; manual idle after a recipe or ingredient is staged
 is `Brew`, brewing and bottling are yellow `Cancel`, brewed is `Bottle`, and
-bottled is `Collect`. Newly enabled Auto remains unarmed and keeps the normal
+bottling completion automatically grants the batch and returns to `Brew`. Newly enabled Auto remains unarmed and keeps the normal
 `Brew` action available; a successful first brew arms the repeating loop.
-Armed Auto shows `Collect` while output is ready, `Cancel` while an unfinished
-batch is active, and `Stop Auto` while waiting for resources.
-After Collect, a retained selected recipe keeps `Brew` as the one-tap repeat
+Armed Auto shows `Cancel` while an unfinished batch is active and `Stop Auto`
+while waiting for resources.
+After automatic collection, a retained selected recipe keeps `Brew` as the one-tap repeat
 action: when enough herbs and mana remain, it restages the recipe and starts the
 next batch. Otherwise the action is disabled and the phase reads
 `Missing ingredients` or `Not enough mana` while the slot counts explain the
@@ -216,10 +217,11 @@ path into the visible center of the cauldron liquid. Flights use a readable
 Root Run-style `55ms` stagger and `420ms` per-item duration. Once the batch is
 active, each source slot keeps only a faint used-ingredient ghost of its herb
 art and name; the full-strength ingredient exists only in the flight. Cauldron
-receive/recipe-receive/buy feedback reuses the cauldron display tree. Prepared
-liquid shows one sparse ripple; an active brew adds three bounded bubbles and a
-small highlight drift. The ambient cycle moves and scales the cauldron and its
-source liquid mask together, keeping the liquid registered below the rim. A
+receive/recipe-receive/buy feedback reuses the cauldron display tree. A staged
+recipe keeps the cauldron visibly empty; the liquid appears only after brewing
+starts. An active brew adds three bounded bubbles and a small highlight drift.
+The ambient cycle moves and scales the cauldron and its source liquid mask
+together, keeping the liquid registered below the rim. A
 selected unlocked cauldron also keeps its matched dark illustrated wood hearth
 visible. The hearth is unlit while idle, prepared, complete, or ready;
 brewing and bottling alone crossfade into a compact bright core and a wider,
@@ -231,8 +233,8 @@ cauldrons hide the complete hearth. A
 newly staged herb eases into its unchanged slot and lights its connector once.
 Brew completion adds one compact liquid ring and a contained cauldron-and-liquid
 squash, and primary action changes ease the replacement label into the
-existing button skin. Collect uses only the shared reward drop, anchored to the
-visible center of the cauldron liquid. Changing
+existing button skin. Automatic collection uses only the shared reward drop,
+anchored to the visible center of the cauldron liquid. Changing
 the selected cauldron through a chevron or swipe plays the same compact
 directional `240ms` settle without decorative trails or particles.
 Reduced motion switches instantly. Deactivation and pool reset clear every

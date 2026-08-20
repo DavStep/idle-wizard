@@ -172,8 +172,8 @@ function profileField({ assets, input, fixture }) {
   control.setValue(fixture.state === 'tag' ? 'MOON' : 'Moonlit Order'); control.applyTheme(DEFAULT_PIXI_THEME_SNAPSHOT); control.setBounds(0, 0, WIDTH, 48); return wrap(control, WIDTH, 48);
 }
 
-function colorSwatch({ input, fixture }) {
-  const control = new GuildColorSwatch({ inputRouter: input, semanticId: 'ui.guild.color', colorId: 'violet', action: () => true, label: 'ui:guild:swatch' });
+function colorSwatch({ assets, input, fixture }) {
+  const control = new GuildColorSwatch({ assetManager: assets, inputRouter: input, semanticId: 'ui.guild.color', colorId: 'violet', action: () => true, label: 'ui:guild:swatch' });
   control.setSelected(fixture.state === 'selected'); control.setBounds(0, 0, 32); return wrap(control, 32, 32);
 }
 

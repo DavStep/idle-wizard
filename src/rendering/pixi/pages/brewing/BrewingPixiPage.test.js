@@ -99,7 +99,7 @@ describe('BrewingPixiPage', () => {
     harness.dispose();
   });
 
-  it('gives ingredient slots the shared button press animation and tap haptic', () => {
+  it('keeps orbit ingredient slots compact and vertically stacked', () => {
     const harness = createHarness();
     harness.page.bind(createBrewingViewModel());
     harness.page.activate();
@@ -116,25 +116,20 @@ describe('BrewingPixiPage', () => {
     });
     expect(registration.haptic()).toBe('light');
     expect(slot.icon.position).toMatchObject({
-      x:
-        BREWING_HUD_GEOMETRY.ingredientContentInset +
-        BREWING_HUD_GEOMETRY.ingredientIconSize / 2,
-      y: BREWING_HUD_GEOMETRY.ingredientSlotHeight / 2,
+      x: BREWING_HUD_GEOMETRY.ingredientSlotWidth / 2,
+      y: BREWING_HUD_GEOMETRY.ingredientIconCenterY,
     });
     expect(slot.icon.width).toBe(BREWING_HUD_GEOMETRY.ingredientIconSize);
     expect(slot.icon.height).toBe(BREWING_HUD_GEOMETRY.ingredientIconSize);
-    expect(slot.labelGroup.position).toMatchObject({
-      x:
-        BREWING_HUD_GEOMETRY.ingredientContentInset +
-        BREWING_HUD_GEOMETRY.ingredientIconSize +
-        BREWING_HUD_GEOMETRY.ingredientContentGap,
-      y: BREWING_HUD_GEOMETRY.ingredientSlotHeight / 2,
+    expect(slot.name.position).toMatchObject({
+      x: BREWING_HUD_GEOMETRY.ingredientSlotWidth / 2,
+      y: BREWING_HUD_GEOMETRY.ingredientNameY,
     });
-    expect(slot.name.anchor).toMatchObject({ x: 0, y: 0.5 });
-    expect(slot.name.style.fontSize).toBe(9);
-    expect(slot.name.style.lineHeight).toBe(10);
-    expect(slot.requiredQuantity.text).toBe('x1');
-    expect(slot.requiredQuantity.x).toBeGreaterThan(slot.name.width);
+    expect(BREWING_HUD_GEOMETRY.ingredientSlotWidth).toBe(56);
+    expect(slot.name.anchor).toMatchObject({ x: 0.5, y: 0 });
+    expect(slot.name.style.fontSize).toBe(10);
+    expect(slot.name.style.lineHeight).toBe(11);
+    expect(slot.icon.y).toBeLessThan(slot.name.y);
 
     registration.onPressChange(true, { confirmed: false });
     expect(slot.control.visual.scale.x).toBe(0.94);
@@ -270,7 +265,7 @@ describe('BrewingPixiPage', () => {
     harness.dispose();
   });
 
-  it('shows one left-aligned icon, name, and required quantity row', () => {
+  it('keeps owned/required shortage counts in the compact slot corner', () => {
     const harness = createHarness();
     const model = createBrewingViewModel();
     model.brewing.cauldrons[0].ingredients = [];
@@ -291,15 +286,11 @@ describe('BrewingPixiPage', () => {
 
     const slot = harness.page.hud.ingredientSlots[0];
     expect(slot.name.text).toBe('Sage');
-    expect(slot.requiredQuantity.text).toBe('x3');
-    expect(slot.requiredQuantity.style.fill).toBe('#c1121f');
-    expect(slot.requiredQuantity.visible).toBe(true);
-    expect(slot.icon.x).toBeLessThan(slot.labelGroup.x);
-    expect(slot.name.y).toBe(slot.requiredQuantity.y);
-    expect(slot.labelGroup.x + slot.labelGroup.width).toBeLessThanOrEqual(
-      BREWING_HUD_GEOMETRY.ingredientSlotWidth -
-        BREWING_HUD_GEOMETRY.ingredientContentInset,
-    );
+    expect(slot.missingCount.text).toBe('0');
+    expect(slot.missingCount.style.fill).toBe('#c1121f');
+    expect(slot.requiredCount.text).toBe('/3');
+    expect(slot.requiredCount.style.fill).toBe('#d4d4d4');
+    expect(slot.countGroup.y).toBe(2);
 
     model.brewing.cauldrons[0].ingredients = [
       {
@@ -311,9 +302,11 @@ describe('BrewingPixiPage', () => {
     model.brewing.cauldrons[0].selectedRecipe.ingredients[0].owned = 3;
     harness.page.bind(model);
 
-    expect(slot.requiredQuantity.text).toBe('x3');
-    expect(slot.requiredQuantity.style.fill).toBe('#d4d4d4');
-    expect(slot.requiredQuantity.visible).toBe(true);
+    expect(slot.missingCount.text).toBe('3');
+    expect(slot.missingCount.style.fill).toBe('#d4d4d4');
+    expect(slot.requiredCount.text).toBe('/3');
+    expect(slot.missingCount.visible).toBe(true);
+    expect(slot.requiredCount.visible).toBe(true);
 
     model.brewing.cauldrons[0].ingredients = [];
     model.brewing.cauldrons[0].recipeReadiness = {
@@ -1324,7 +1317,7 @@ describe('BrewingPixiPage', () => {
     harness.dispose();
   });
 
-  it('keeps prepared and active liquid registered inside the moving cauldron', () => {
+  it('keeps the pre-brew cauldron empty and active liquid registered inside it', () => {
     let now = 0;
     const harness = createHarness({ timeSource: () => now });
     const model = createBrewingViewModel();
@@ -1344,11 +1337,13 @@ describe('BrewingPixiPage', () => {
     now = 360;
     harness.page.tick(now);
     expect(harness.page.hud.cauldronMotionMode).toBe('prepared');
-    expect(harness.page.hud.cauldronArt.y).not.toBe(restArt.y);
+    expect(harness.page.hud.cauldronArt.y).toBe(restArt.y);
+    expect(harness.page.hud.cauldronLiquid.visible).toBe(false);
+    expect(harness.page.hud.cauldronLiquid.renderable).toBe(false);
     expectContainedCauldronRegistration(harness.page.hud);
     expect(
       harness.page.hud.cauldronStateFx.getLocalBounds().width,
-    ).toBeGreaterThan(0);
+    ).toBe(0);
 
     cauldron.activeBrew = {
       key: 'sage-tonic',
@@ -1363,6 +1358,8 @@ describe('BrewingPixiPage', () => {
     now = 1_240;
     harness.page.tick(now);
     expect(harness.page.hud.cauldronMotionMode).toBe('brewing');
+    expect(harness.page.hud.cauldronLiquid.visible).toBe(true);
+    expect(harness.page.hud.cauldronLiquid.renderable).toBe(true);
     expect(
       Math.abs(harness.page.hud.cauldronArt.y - restArt.y),
     ).toBeGreaterThan(0.55);
@@ -1388,7 +1385,7 @@ describe('BrewingPixiPage', () => {
     harness.dispose();
   });
 
-  it('punctuates brew completion and leaves collected potion art to the shared reward effect', () => {
+  it('punctuates completion without exposing a collect action', () => {
     let now = 0;
     const harness = createHarness({ timeSource: () => now });
     const model = createBrewingViewModel();
@@ -1405,8 +1402,6 @@ describe('BrewingPixiPage', () => {
       durationMs: 10_000,
       endTimeMs: 10_000,
     };
-    const collectBrew = vi.fn(() => ({ ok: true }));
-    model.actions.collectBrew = collectBrew;
     harness.page.bind(model);
     harness.page.activate();
 
@@ -1432,15 +1427,8 @@ describe('BrewingPixiPage', () => {
       harness.page.hud.cauldronStateFx.getLocalBounds().width,
     ).toBeGreaterThan(0);
 
-    harness.page.hud.potionIcon.texture = Texture.WHITE;
-    harness.page.hud.potionIcon.visible = true;
-    harness.page.hud.potionIcon.renderable = true;
-    expect(harness.page.hud.activatePrimaryAction()).toEqual({ ok: true });
-    expect(collectBrew).toHaveBeenCalledWith(0);
-    const collectMotion = [...harness.page.activeGhostMotions].find(
-      (motion) => motion.kind === 'collect',
-    );
-    expect(collectMotion).toBeUndefined();
+    expect(harness.page.hud.brew.text.text).toBe('Bottled');
+    expect(harness.page.hud.brew.enabled).toBe(false);
 
     now = 1_100;
     harness.page.tick(now);
@@ -2195,10 +2183,10 @@ describe('BrewingPixiPage', () => {
       ],
       [
         { activeBrew: { phase: 'ready', canCollect: true } },
-        'collect',
-        'Collect',
+        'complete',
+        'Bottled',
         'green',
-        true,
+        false,
       ],
       [
         { autoBrewEnabled: true, autoBrewArmed: true },
@@ -2213,10 +2201,10 @@ describe('BrewingPixiPage', () => {
           autoBrewArmed: true,
           activeBrew: { phase: 'ready', canCollect: true },
         },
-        'collect',
-        'Collect',
+        'complete',
+        'Bottled',
         'green',
-        true,
+        false,
       ],
     ];
 
@@ -2378,13 +2366,12 @@ describe('BrewingPixiPage', () => {
     harness.dispose();
   });
 
-  it('routes the single primary button through cancel, bottle, and collect actions', () => {
+  it('routes the single primary button through cancel and bottle actions', () => {
     const harness = createHarness();
     const model = createBrewingViewModel();
     const cauldron = model.brewing.cauldrons[0];
     model.actions.toggleAutoBrew = vi.fn(() => true);
     model.actions.cancelBrew = vi.fn(() => true);
-    model.actions.collectBrew = vi.fn(() => true);
     model.actions.performCauldronAction = vi.fn(() => true);
 
     cauldron.autoBrewEnabled = true;
@@ -2424,15 +2411,6 @@ describe('BrewingPixiPage', () => {
       { id: 'bottle' },
     );
 
-    cauldron.activeBrew = {
-      phase: 'ready',
-      canCollect: true,
-    };
-    harness.page.bind(model);
-    expect(harness.page.hud.brew.text.text).toBe('Collect');
-    expect(harness.page.hud.brew.handleTap()).toBe(true);
-    expect(model.actions.collectBrew).toHaveBeenCalledWith(0);
-
     harness.page.destroy();
     harness.dispose();
   });
@@ -2450,7 +2428,27 @@ describe('BrewingPixiPage', () => {
     harness.dispose();
   });
 
-  it('renders selected potion liquid inside the cauldron landmark', () => {
+  it('keeps potion liquid hidden until the selected brew starts', () => {
+    const harness = createHarness();
+    const model = createBrewingViewModel();
+    model.brewing.cauldrons[0].selectedRecipe = {
+      key: 'sage-tonic',
+      label: 'sage tonic',
+      ingredients: [{ itemKey: 'sage', label: 'sage', quantity: 1 }],
+    };
+
+    harness.page.bind(model);
+
+    expect(harness.page.hud.cauldronLiquid.visible).toBe(false);
+    expect(harness.page.hud.cauldronLiquid.renderable).toBe(false);
+    expect(harness.page.hud.cauldronLiquidHighlight.visible).toBe(false);
+    expect(harness.page.hud.cauldronLiquidHighlight.renderable).toBe(false);
+
+    harness.page.destroy();
+    harness.dispose();
+  });
+
+  it('renders active potion liquid inside the cauldron landmark', () => {
     const harness = createHarness();
 
     harness.page.bind(

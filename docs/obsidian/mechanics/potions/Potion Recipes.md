@@ -29,7 +29,7 @@ Potions are brewed from ordered herb recipes. Every potion below opens as its ow
 ## Access paths
 
 - [[mechanics/potions/Recipe Unlock Research|Recipe research]] unlocks 28 known recipes in a strict level-gated chain.
-- [[mechanics/potions/Potion Discovery|Global discovery]] reveals 10 hidden recipes after the exact ordered mix is brewed.
+- [[mechanics/potions/Potion Discovery|Global discovery]] reveals 10 hidden recipes after the exact ordered mix is brewed. For other players, each revealed recipe joins Potion Research as a level-gated optional branch.
 - [[mechanics/potions/potions/Wasted Potion|Wasted Potion]] is the failure output for unmatched mixes and has no recipe.
 
 ## Core rules

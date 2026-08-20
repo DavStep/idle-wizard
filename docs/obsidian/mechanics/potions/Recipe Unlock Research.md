@@ -11,13 +11,15 @@ system: potions
 implementation: shipped
 currency: coin
 chain: ordered
-researchable_recipes: 28
-verified_on: 2026-08-20
+researchable_recipes: 38
+verified_on: 2026-08-21
 ---
 
 # Recipe Unlock Research
 
-Twenty-eight known potion recipes unlock in one strict chain. Each potion note shows its required level, base coin cost, base duration, and prerequisite recipe.
+Twenty-eight known potion recipes unlock in one strict chain. Ten hidden recipes
+can join that same Potion Research flow after global discovery. Each potion note
+shows its required level, base coin cost, base duration, and prerequisite recipe.
 
 ![[mechanics/potions/Potion Catalog.base#Researchable Recipes]]
 
@@ -26,11 +28,13 @@ Twenty-eight known potion recipes unlock in one strict chain. Each potion note s
 - Displayed costs and durations are client fallback values. A live SpacetimeDB `research_config` row can override either value even though the broader Maincloud research object is rejected.
 - Research makes the known recipe brewable; it does not change ingredient order.
 - A hidden recipe joins the available studies after its first global discovery.
-  That discovery study takes ten minutes and is independent of the ordered
-  chain. It costs twice the seed-research price of the recipe's
-  latest-progression ingredient and persists across relogs. The discoverer does
-  not need it because discovery ownership permanently unlocks that recipe for
-  them.
+  That discovery study takes ten minutes, costs twice the seed-research price of
+  the recipe's latest-progression ingredient, and persists across relogs.
+- Hidden studies are optional branches after the regular recipe milestone for
+  their highest-tier ingredient. They use that milestone's player-level gate
+  and prerequisite, but never block the main 28-recipe chain.
+- The discoverer does not need the unlock study because discovery ownership
+  permanently unlocks that recipe for them.
 
 ## Related
 

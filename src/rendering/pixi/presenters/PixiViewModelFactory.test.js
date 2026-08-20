@@ -1809,6 +1809,9 @@ describe('PixiViewModelFactory', () => {
       settings: {
         mode: 'create',
         editable: true,
+        bannerColor: 'blue',
+        emblemColor: 'gold',
+        emblemId: 'unity',
       },
     });
     await createDialog.settings.onSave({
@@ -2354,6 +2357,43 @@ describe('PixiViewModelFactory', () => {
     );
   });
 
+  it('reveals level-gated research rows and their section only at the gate', () => {
+    const factory = new PixiViewModelFactory();
+    const research = {
+      tabs: [
+        {
+          id: 'regular',
+          boxes: [
+            {
+              id: 'utilityUnlocks',
+              label: 'utility unlocks',
+              researches: [
+                {
+                  id: 'summonSeedsX2',
+                  label: 'summon seed lvl 1',
+                  requiredPlayerLevel: 6,
+                  locked: true,
+                },
+              ],
+            },
+          ],
+        },
+      ],
+    };
+
+    const levelFive = factory.createResearch({
+      gameplay: { playerLevel: { currentLevel: 5 }, research },
+    }).research;
+    expect(levelFive.tabs[0].boxes).toEqual([]);
+
+    const levelSix = factory.createResearch({
+      gameplay: { playerLevel: { currentLevel: 6 }, research },
+    }).research;
+    expect(levelSix.tabs[0].boxes[0].allResearches).toMatchObject([
+      { id: 'summonSeedsX2' },
+    ]);
+  });
+
   it('gates research tabs by the highest level reached and never relocks them after prestige', () => {
     const factory = new PixiViewModelFactory();
     const research = {
@@ -2417,8 +2457,8 @@ describe('PixiViewModelFactory', () => {
     const factory = new PixiViewModelFactory();
     const model = factory.createResearch({
       gameplay: {
-        playerLevel: { currentLevel: 5 },
-        prestige: { completedLevels: [10] },
+        playerLevel: { currentLevel: 6 },
+        prestige: { completedLevels: [10, 20] },
         research: {
           completedResearchIds: ['unlockSeed:sage'],
           tabs: [
@@ -2481,14 +2521,14 @@ describe('PixiViewModelFactory', () => {
 
     expect(model.research.selectedTabId).toBe('emerald');
     expect(item.lockReason).toBe(
-      'requires mint research and plot 1 lvl 2 level up, level 6, and 2 prestiges.',
+      'requires mint research and plot 1 lvl 2 level up.',
     );
     expect(item.cost).toMatchObject({
       amountLabel: 'Locked',
       enabled: false,
       state: 'locked',
       lockPrompt:
-        'Requires mint research and plot 1 lvl 2 level up, level 6, and 2 prestiges',
+        'Requires mint research and plot 1 lvl 2 level up',
     });
     expect(item.info.copy).toContain(item.lockReason);
   });
@@ -2696,8 +2736,6 @@ describe('PixiViewModelFactory', () => {
     expect(tab.boxes.map((box) => box.id)).toEqual([
       'seedUnlocks',
       'plotGrowth',
-      'cauldronCapacity',
-      'researchTime',
     ]);
     expect(model.research.runFocus).toBeUndefined();
     const lockedBox = tab.boxes.find((box) => box.id === 'seedUnlocks');

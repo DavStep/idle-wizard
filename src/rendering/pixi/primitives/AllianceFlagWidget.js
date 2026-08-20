@@ -20,7 +20,7 @@ export const ALLIANCE_FLAG_ASSETS = Object.freeze({
 export const ALLIANCE_FLAG_GEOMETRY = Object.freeze({
   sourceWidth: 128,
   sourceHeight: 128,
-  emblemSize: 40,
+  emblemSize: 61.6,
   emblemY: 60,
 });
 

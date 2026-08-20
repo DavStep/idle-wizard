@@ -10,6 +10,6 @@ Each herb definition owns its configured growth duration. Regular per-herb maste
 
 `GardenTapAccelerationManager` owns manual active-plot acceleration. Each accepted
 tap removes at most one second from that plot's growth or harvest timer, then
-rejects further taps on the same plot for 800ms. The cooldown is enforced in
+rejects further taps on the same plot for 720ms. The cooldown is enforced in
 gameplay as well as rendering so direct or repeated action calls cannot bypass
 it. Cooldowns are transient and reset when a persistence snapshot is loaded.

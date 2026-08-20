@@ -17,7 +17,7 @@ describe('AllianceFlagWidget', () => {
     expect(ALLIANCE_FLAG_GEOMETRY).toEqual({
       sourceWidth: 128,
       sourceHeight: 128,
-      emblemSize: 40,
+      emblemSize: 61.6,
       emblemY: 60,
     });
   });
@@ -41,7 +41,7 @@ describe('AllianceFlagWidget', () => {
     );
     flag.setEmblem('not-real');
     expect(flag.emblemId).toBe('unity');
-    expect(flag.emblem.width).toBe(40);
+    expect(flag.emblem.width).toBe(61.6);
 
     flag.destroy({ children: true });
   });

@@ -42,6 +42,7 @@ experience_type: product-shape
 - Progress bars reset to `0` should disable transitions and snap empty; never animate backward after completion, cancel, or remount reset.
 - Research completion announcements should resolve labels/details through `ResearchFacade`; visible research tabs can hide completed series entries before the popup renders.
 - Research completion announcement icons belong in `PageAnnouncementManager` atlas-frame ID-family mapping; Research list rows use the approved station-upgrade-card art and layout family.
+- Research level/prestige reveal gates must filter both the semantic list and the retained Pixi view model; keep active/completed rows revealed, preserve prerequisite-locked next rows after a section begins, and omit a section whose revealed row list is empty.
 - Page announcement baselines must reset on gameplay persistence load; restored backend saves should not replay old level/research popups.
 - Page announcement level baselines must accept pre-level `0`; the first playable `0 -> 1` level-up should queue the level 1/market unlock notice, not treat level 1 as the initial baseline.
 - Feature unlocks should remain separate queued room announcements after the level-up card; the level-up reward row and Elara lesson copy do not replace the unlock card.
@@ -54,7 +55,7 @@ experience_type: product-shape
 - Cauldron brew/bottle success state belongs in the active brew text and progress rail; reserve cauldron messages for blocked/error feedback so stale success text does not fight the timer state.
 - Reward flyouts on Android WebView should avoid per-event dynamic `@keyframes`; use transform/opacity Web Animations API paths and cap active particles.
 - Recurring trader-stall sales use one capped three-to-four-coin trail, an amount pop, and the top-currency pulse. Do not add a simultaneous item toss or unbounded particles; that combination causes short Android WebView frame drops.
-- Potion collection reward drops should start from the visible cauldron liquid, not the potion preview/icon or whole cauldron box.
+- Potion reward drops after automatic bottling collection should start from the visible cauldron liquid, not the potion preview/icon or whole cauldron box.
 - Mana consumption updates the HUD balance only; do not animate negative mana flyouts, mana drops, or spend particles for summoning, brewing, automation, or other mana costs.
 - Cauldron potion preview labels need a fixed-width summary that can overflow the 86px potion box; `max-width: 100%` clamps labels and truncates names under world zoom.
 - Tutorial target pointers default to the Spine asset on WebGL; do not restore the old `pointing-hand.png` sprite fallback unless explicitly requested.

@@ -75,6 +75,7 @@ import {
   VISUAL_SETTINGS_COST_CATEGORIES,
 } from './visualSettingsConfig';
 import { normalizeLeaderboardIncome } from './leaderboardIncome';
+import { normalizeWorldEventLeaderboardPoints } from './worldEventLeaderboardPoints';
 import {
   defaultMarketId,
   getMarketGradeForCatalogIndex,
@@ -218,7 +219,6 @@ const MAX_PLAYER_SAVE_SHOP_DAILY_CRYSTAL_OFFER_COOLDOWN_SECONDS = 24 * 60 * 60;
 const MAX_PLAYER_SAVE_INBOX_CLAIMED_MAIL_KEYS = 500;
 const LEADERBOARD_SUMMARY_LIMIT = 100;
 const WORLD_EVENT_LEADERBOARD_SUMMARY_LIMIT = 100;
-const WORLD_EVENT_LEADERBOARD_POINTS_CAP_PER_LEVEL = 1_000_000n;
 const WORLD_EVENT_REWARD_QUALIFICATION_POINTS = 2_000n;
 const WORLD_EVENT_REWARD_SETTLEMENT_INTERVAL_MICROS = 60n * 1_000_000n;
 const WORLD_EVENT_REWARD_SETTLEMENT_STATE_PREFIX = 'world-event-reward-settlement';
@@ -10663,7 +10663,7 @@ function copyAdminWorldEventLeaderboardEntries(
       ),
       identity: targetIdentity,
       username: targetUsername,
-      points: clampWorldEventLeaderboardPoints(entry.points, targetPlayerLevel),
+      points: normalizeWorldEventLeaderboardPoints(entry.points),
       playerLevel: targetPlayerLevel,
       updatedAt: ctx.timestamp,
     });
@@ -10718,7 +10718,7 @@ function updateAdminWorldEventLeaderboardProfile(
       ...entry,
       username: safeUsername,
       playerLevel: safePlayerLevel,
-      points: clampWorldEventLeaderboardPoints(entry.points, safePlayerLevel),
+      points: normalizeWorldEventLeaderboardPoints(entry.points),
       updatedAt: ctx.timestamp,
     });
   }
@@ -14481,30 +14481,14 @@ function normalizeReportedLeaderboardTotalIncome(
   return normalizeLeaderboardIncome(toBigInt(totalGeneratedGold));
 }
 
-function getWorldEventLeaderboardPointsCap(playerLevel: number): bigint {
-  if (!ENABLE_CLIENT_REPORTED_WORLD_EVENT_POINTS) {
-    return 0n;
-  }
-
-  return BigInt(normalizePlayerLevel(playerLevel)) * WORLD_EVENT_LEADERBOARD_POINTS_CAP_PER_LEVEL;
-}
-
-function clampWorldEventLeaderboardPoints(points: bigint, playerLevel: number): bigint {
-  return clampBigInt(points, 0n, getWorldEventLeaderboardPointsCap(playerLevel));
-}
-
 function normalizeReportedWorldEventLeaderboardPoints(
   points: bigint,
-  playerLevel: number,
 ): bigint | null {
-  const safePoints = toBigInt(points);
-  const maxPoints = getWorldEventLeaderboardPointsCap(playerLevel);
-
-  if (safePoints > maxPoints) {
+  if (!ENABLE_CLIENT_REPORTED_WORLD_EVENT_POINTS) {
     return null;
   }
 
-  return safePoints;
+  return normalizeWorldEventLeaderboardPoints(toBigInt(points));
 }
 
 function getWorldEventLeaderboardKey(
@@ -19514,10 +19498,7 @@ export const set_world_event_contribution_points = spacetimedb.reducer(
 
     const player = ensurePlayer(ctx, { touchLastSeen: false });
     const safePlayerLevel = normalizePlayerLevel(player.playerLevel);
-    const reportedPoints = normalizeReportedWorldEventLeaderboardPoints(
-      points,
-      safePlayerLevel,
-    );
+    const reportedPoints = normalizeReportedWorldEventLeaderboardPoints(points);
     const contributionKey = getWorldEventLeaderboardKey(
       player.identity,
       safePeriodKey,
@@ -19525,7 +19506,7 @@ export const set_world_event_contribution_points = spacetimedb.reducer(
     );
     const existingEntry = ctx.db.worldEventLeaderboard.contributionKey.find(contributionKey);
     const currentPoints = existingEntry
-      ? clampWorldEventLeaderboardPoints(existingEntry.points, safePlayerLevel)
+      ? normalizeWorldEventLeaderboardPoints(existingEntry.points)
       : 0n;
 
     if (!hasAcceptedPlayerGameplaySave(ctx, player.identity)) {

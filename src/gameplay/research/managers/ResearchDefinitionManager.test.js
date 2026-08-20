@@ -108,6 +108,7 @@ describe('ResearchDefinitionManager', () => {
         starLevel: 1,
         starMaxLevel: 4,
         seriesId: 'summonSeeds',
+        requiredPlayerLevel: 6,
         requiredResearchIds: [],
       },
       {
@@ -257,22 +258,59 @@ describe('ResearchDefinitionManager', () => {
     expect(manager.hasConfiguredResearch('unlockRecipe:manaTonic')).toBe(true);
   });
 
-  it('offers a globally discovered hidden recipe as independent research', () => {
+  it('places globally discovered hidden recipes in the level-gated potion flow', () => {
+    const hiddenRecipeProgression = {
+      rootboundResolve: { requiredPlayerLevel: 20, requiredRecipe: 'sunrootStamina' },
+      silverleafQuiet: { requiredPlayerLevel: 23, requiredRecipe: 'moonlitFocus' },
+      ashenMemory: { requiredPlayerLevel: 26, requiredRecipe: 'frostmossCleanse' },
+      frostveinDraught: { requiredPlayerLevel: 26, requiredRecipe: 'frostmossCleanse' },
+      thornSleep: { requiredPlayerLevel: 29, requiredRecipe: 'sleepDraught' },
+      glassMoonElixir: { requiredPlayerLevel: 32, requiredRecipe: 'elixirOfLife' },
+      nightOrchardTonic: { requiredPlayerLevel: 35, requiredRecipe: 'starLuckPhiltre' },
+      bloodlightWard: { requiredPlayerLevel: 35, requiredRecipe: 'starLuckPhiltre' },
+      emberSight: { requiredPlayerLevel: 38, requiredRecipe: 'deepDreamVision' },
+      starlessCourage: { requiredPlayerLevel: 38, requiredRecipe: 'deepDreamVision' },
+    };
+    const discoveredPotionKeys = Object.keys(hiddenRecipeProgression);
     const { manager, setCurrentLevel } = createManager();
-    setCurrentLevel(1);
+    setCurrentLevel(100);
     manager.setPotionDiscoveryFacade({
-      getSnapshot: () => ({ discoveries: [{ potionKey: 'ashenMemory' }] }),
-      hasDiscoveredPotion: (potionKey) => potionKey === 'ashenMemory',
+      getSnapshot: () => ({
+        discoveries: discoveredPotionKeys.map((potionKey) => ({ potionKey })),
+      }),
+      hasDiscoveredPotion: (potionKey) => discoveredPotionKeys.includes(potionKey),
       isDiscoveredByCurrentPlayer: () => false,
     });
 
-    expect(manager.getResearch('unlockRecipe:ashenMemory')).toMatchObject({
-      id: 'unlockRecipe:ashenMemory',
-      requiredResearchIds: [],
-    });
-    expect(manager.getResearch('unlockRecipe:ashenMemory')).not.toHaveProperty(
-      'requiredPlayerLevel',
-    );
+    for (const [potionKey, progression] of Object.entries(hiddenRecipeProgression)) {
+      expect(manager.getResearch(`unlockRecipe:${potionKey}`)).toMatchObject({
+        id: `unlockRecipe:${potionKey}`,
+        requiredPlayerLevel: progression.requiredPlayerLevel,
+        requiredResearchIds: [`unlockRecipe:${progression.requiredRecipe}`],
+      });
+    }
+
+    const unlockOrder = manager
+      .getRecipeUnlockResearches()
+      .map((research) => research.id.slice('unlockRecipe:'.length));
+    const nextRegularRecipeByAnchor = {
+      sunrootStamina: 'moonlitFocus',
+      moonlitFocus: 'frostmossCleanse',
+      frostmossCleanse: 'sleepDraught',
+      sleepDraught: 'elixirOfLife',
+      elixirOfLife: 'starLuckPhiltre',
+      starLuckPhiltre: 'deepDreamVision',
+      deepDreamVision: 'pactWard',
+    };
+
+    for (const [potionKey, { requiredRecipe }] of Object.entries(hiddenRecipeProgression)) {
+      expect(unlockOrder.indexOf(potionKey)).toBeGreaterThan(
+        unlockOrder.indexOf(requiredRecipe),
+      );
+      expect(unlockOrder.indexOf(potionKey)).toBeLessThan(
+        unlockOrder.indexOf(nextRegularRecipeByAnchor[requiredRecipe]),
+      );
+    }
   });
 
   it('does not offer redundant research to the recipe discoverer', () => {

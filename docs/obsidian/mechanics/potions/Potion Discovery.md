@@ -10,7 +10,7 @@ note_type: progression-component
 system: potions
 implementation: shipped
 discoverable_recipes: 10
-verified_on: 2026-07-19
+verified_on: 2026-08-21
 ---
 
 # Potion Discovery
@@ -19,9 +19,12 @@ Ten recipes are hidden from players until someone brews their exact ordered ingr
 
 - Hidden matches preview as a wasted mix before discovery.
 - A successful first discovery writes to the global SpacetimeDB discovery table.
-- Discovery names the recipe globally. Other players can immediately buy its
-  independent instant study; its coin price is twice the seed-research price of
-  the recipe's latest-progression ingredient.
+- Discovery names the recipe globally. Other players receive its ten-minute
+  unlock study in the regular Potion Research flow; its coin price is twice the
+  seed-research price of the recipe's latest-progression ingredient.
+- The study uses the level and prerequisite of the regular potion milestone for
+  that ingredient tier. It is an optional branch and never blocks the main
+  recipe chain.
 - The first discoverer keeps the recipe learned across Prestige without
   researching it again.
 - Other players' completed discovery studies persist across relogs like normal

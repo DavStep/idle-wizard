@@ -374,6 +374,45 @@ describe('WorkshopPixiPage', () => {
     harness.dispose();
   });
 
+  it('gives the active request stronger icon, text, and vertical priority', () => {
+    const harness = createHarness();
+
+    harness.page.bind(createWorkshopViewModel());
+
+    const row = harness.page.tasks.rows.get('request-1');
+    expect(row.icon.width).toBe(32);
+    expect(row.icon.height).toBe(32);
+    expect(row.label.style.fontSize).toBe(16);
+    expect(row.value.style.fontSize).toBe(16);
+    expect(row.progress.root.y).toBe(38);
+    expect(row.getPreferredHeight()).toBe(48);
+    expect(harness.page.tasks.height).toBeGreaterThanOrEqual(69);
+
+    harness.page.destroy();
+    harness.dispose();
+  });
+
+  it('grows the priority card again when a larger request label wraps', () => {
+    const harness = createHarness();
+    const model = createWorkshopViewModel();
+    model.workshop.tasks.rows[0].label =
+      'Research Mana Tonic Brewing Speed I';
+
+    harness.page.bind(model);
+
+    const row = harness.page.tasks.rows.get('request-1');
+    expect(row.label.height).toBeGreaterThan(19);
+    expect(row.progress.root.y).toBeGreaterThan(38);
+    expect(row.label.y + row.label.height).toBeLessThanOrEqual(
+      row.progress.root.y - 6,
+    );
+    expect(row.getPreferredHeight()).toBeGreaterThan(48);
+    expect(harness.page.tasks.height).toBeGreaterThan(69);
+
+    harness.page.destroy();
+    harness.dispose();
+  });
+
   it('backs the entire Elara request widget with the shared Research row skin', () => {
     const assetManager = createPixiAssetManagerFake(Texture);
     assetManager.getTexture = vi.fn(() => Texture.EMPTY);
@@ -721,36 +760,44 @@ describe('WorkshopPixiPage', () => {
 
     expect(harness.page.inboxButton.root.position).toMatchObject({
       x: ROOT_RUN_SIDE_ACTION_GEOMETRY.stageEdge,
-      y: 175,
+      y: getExpectedSideControlsTop(harness.page),
     });
     expect(harness.page.features.get('leaderboard').root.position).toMatchObject({
       x: ROOT_RUN_SIDE_ACTION_GEOMETRY.stageEdge,
-      y: 175 + ROOT_RUN_SIDE_ACTION_GEOMETRY.rowPitch,
+      y:
+        getExpectedSideControlsTop(harness.page) +
+        ROOT_RUN_SIDE_ACTION_GEOMETRY.rowPitch,
     });
     expect(harness.page.features.get('alliance').root.position).toMatchObject({
       x: ROOT_RUN_SIDE_ACTION_GEOMETRY.stageEdge,
-      y: 175 + ROOT_RUN_SIDE_ACTION_GEOMETRY.rowPitch * 2,
+      y:
+        getExpectedSideControlsTop(harness.page) +
+        ROOT_RUN_SIDE_ACTION_GEOMETRY.rowPitch * 2,
     });
     expect(harness.page.statsButton.root.position).toMatchObject({
       x:
         PIXI_UI_GEOMETRY.sourceWidth -
         ROOT_RUN_SIDE_ACTION_GEOMETRY.stageEdge -
         ROOT_RUN_SIDE_ACTION_GEOMETRY.width,
-      y: 175,
+      y: getExpectedSideControlsTop(harness.page),
     });
     expect(harness.page.bagButton.root.position).toMatchObject({
       x:
         PIXI_UI_GEOMETRY.sourceWidth -
         ROOT_RUN_SIDE_ACTION_GEOMETRY.stageEdge -
         ROOT_RUN_SIDE_ACTION_GEOMETRY.width,
-      y: 175 + ROOT_RUN_SIDE_ACTION_GEOMETRY.rowPitch,
+      y:
+        getExpectedSideControlsTop(harness.page) +
+        ROOT_RUN_SIDE_ACTION_GEOMETRY.rowPitch,
     });
     expect(harness.page.features.get('discoveries').root.position).toMatchObject({
       x:
         PIXI_UI_GEOMETRY.sourceWidth -
         ROOT_RUN_SIDE_ACTION_GEOMETRY.stageEdge -
         ROOT_RUN_SIDE_ACTION_GEOMETRY.width,
-      y: 175 + ROOT_RUN_SIDE_ACTION_GEOMETRY.rowPitch * 2,
+      y:
+        getExpectedSideControlsTop(harness.page) +
+        ROOT_RUN_SIDE_ACTION_GEOMETRY.rowPitch * 2,
     });
 
     harness.page.destroy();
@@ -795,7 +842,10 @@ describe('WorkshopPixiPage', () => {
     harness.page.bind(model);
 
     expect(alliance.root.visible).toBe(true);
-    expect(alliance.root.position).toMatchObject({ x: 0, y: 178 });
+    expect(alliance.root.position).toMatchObject({
+      x: 0,
+      y: getExpectedSideControlsTop(harness.page) + 3,
+    });
     expect(alliance.root.alpha).toBe(0);
     expect(alliance.root.scale.x).toBe(0.96);
 
@@ -809,7 +859,7 @@ describe('WorkshopPixiPage', () => {
     frames.shift()(200);
     expect(alliance.root.position).toMatchObject({
       x: ROOT_RUN_SIDE_ACTION_GEOMETRY.stageEdge,
-      y: 175,
+      y: getExpectedSideControlsTop(harness.page),
     });
     expect(alliance.root.alpha).toBe(1);
     expect(alliance.root.scale.x).toBe(1);
@@ -895,7 +945,7 @@ describe('WorkshopPixiPage', () => {
     frames.shift()(1216);
     expect(alliance.root.position).toMatchObject({
       x: ROOT_RUN_SIDE_ACTION_GEOMETRY.stageEdge,
-      y: 175,
+      y: getExpectedSideControlsTop(harness.page),
     });
     expect(alliance.root.alpha).toBe(1);
 
@@ -948,7 +998,7 @@ describe('WorkshopPixiPage', () => {
     frames.shift()(16);
     expect(alliance.root.position).toMatchObject({
       x: ROOT_RUN_SIDE_ACTION_GEOMETRY.stageEdge,
-      y: 175,
+      y: getExpectedSideControlsTop(harness.page),
     });
     expect(alliance.root.alpha).toBe(1);
     expect(alliance.root.renderable).toBe(true);
@@ -986,7 +1036,7 @@ describe('WorkshopPixiPage', () => {
     expect(alliance.root.visible).toBe(true);
     expect(alliance.root.position).toMatchObject({
       x: ROOT_RUN_SIDE_ACTION_GEOMETRY.stageEdge,
-      y: 175,
+      y: getExpectedSideControlsTop(harness.page),
     });
     expect(alliance.root.alpha).toBe(1);
     expect(alliance.root.scale.x).toBe(1);
@@ -1042,7 +1092,7 @@ describe('WorkshopPixiPage', () => {
       haptic: 'light',
       hitTest: expect.any(Function),
     });
-    expect(row.root.hitArea).toMatchObject({ width: 338, height: 32 });
+    expect(row.root.hitArea).toMatchObject({ width: 338, height: 48 });
     registration.onPressChange(true, { confirmed: false });
     expect(row.visual.scale.x).toBeCloseTo(0.97);
     registration.onPressChange(false, { confirmed: true });
@@ -4401,27 +4451,31 @@ describe('WorkshopPixiPage', () => {
     expect(worldChatTop - summonButtonBottom).toBe(128);
     expect(harness.page.bagButton.root.position).toMatchObject({
       x: ROOT_RUN_SIDE_ACTION_GEOMETRY.stageEdge,
-      y: 175 + ROOT_RUN_SIDE_ACTION_GEOMETRY.rowPitch * 3,
+      y:
+        getExpectedSideControlsTop(harness.page) +
+        ROOT_RUN_SIDE_ACTION_GEOMETRY.rowPitch * 3,
     });
     expect(harness.page.statsButton.root.position).toMatchObject({
       x:
         PIXI_UI_GEOMETRY.sourceWidth -
         ROOT_RUN_SIDE_ACTION_GEOMETRY.stageEdge -
         ROOT_RUN_SIDE_ACTION_GEOMETRY.width,
-      y: 175,
+      y: getExpectedSideControlsTop(harness.page),
     });
     const alliance = harness.page.features.get('alliance');
     const inbox = harness.page.inboxButton;
     expect(alliance.root.position).toMatchObject({
       x: ROOT_RUN_SIDE_ACTION_GEOMETRY.stageEdge,
-      y: 175,
+      y: getExpectedSideControlsTop(harness.page),
     });
     expect(inbox.root.position).toMatchObject({
       x:
         PIXI_UI_GEOMETRY.sourceWidth -
         ROOT_RUN_SIDE_ACTION_GEOMETRY.stageEdge -
         ROOT_RUN_SIDE_ACTION_GEOMETRY.width,
-      y: 175 + ROOT_RUN_SIDE_ACTION_GEOMETRY.rowPitch,
+      y:
+        getExpectedSideControlsTop(harness.page) +
+        ROOT_RUN_SIDE_ACTION_GEOMETRY.rowPitch,
     });
     expect(alliance.panel).toBeUndefined();
     expect(alliance.root.hitArea).toMatchObject({
@@ -4553,11 +4607,11 @@ describe('WorkshopPixiPage', () => {
     expect(assetManager.getAtlasTexture).toHaveBeenCalledWith('potion:briarWard');
     const row = harness.page.tasks.rows.get('request-1');
     expect(row.icon.visible).toBe(true);
-    expect(row.icon.width).toBe(24);
-    expect(row.icon.height).toBe(24);
-    expect(row.icon.x).toBe(12);
-    expect(row.icon.y).toBe(9);
-    expect(row.label.x).toBe(27);
+    expect(row.icon.width).toBe(32);
+    expect(row.icon.height).toBe(32);
+    expect(row.icon.x).toBe(16);
+    expect(row.icon.y).toBe(16);
+    expect(row.label.x).toBe(36);
 
     model.workshop.tasks.rows[0].itemKind = 'seed';
     model.workshop.tasks.rows[0].itemKey = 'sageSeed';
@@ -5014,6 +5068,14 @@ describe('WorkshopPixiPage', () => {
     harness.dispose();
   });
 });
+
+function getExpectedSideControlsTop(page) {
+  return (
+    PIXI_UI_GEOMETRY.roomContentTop +
+    page.tasks.height +
+    ROOT_RUN_SIDE_ACTION_GEOMETRY.taskGap
+  );
+}
 
 function createPointerEvent(target, type, point = { x: 0, y: 0 }) {
   return {

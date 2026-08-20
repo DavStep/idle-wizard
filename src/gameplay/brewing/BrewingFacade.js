@@ -71,7 +71,7 @@ export class BrewingFacade {
     });
     this.brewingProcessManager = new BrewingProcessManager({
       brewingProcessEntityManager: this.brewingProcessEntityManager,
-      collectReadyBrews: () => this.collectAutoReadyBrews(),
+      collectReadyBrews: () => this.collectReadyBrews(),
     });
     this.brewingTapAccelerationManager = new BrewingTapAccelerationManager({
       brewingProcessEntityManager: this.brewingProcessEntityManager,
@@ -534,27 +534,6 @@ export class BrewingFacade {
     return collected;
   }
 
-  collectAutoReadyBrews() {
-    const readyBrews = this.brewingProcessEntityManager
-      .getActiveBrewSnapshots()
-      .filter(
-        (activeBrew) =>
-          activeBrew?.canCollect === true &&
-          this.getAutoBrewEnabled(activeBrew.cauldronIndex),
-      );
-    const collected = [];
-
-    for (const activeBrew of readyBrews) {
-      const result = this.collect(activeBrew.cauldronIndex);
-
-      if (result.ok) {
-        collected.push(result);
-      }
-    }
-
-    return collected;
-  }
-
   getSnapshot() {
     return this.brewingSnapshotManager.getSnapshot();
   }
@@ -657,7 +636,7 @@ export class BrewingFacade {
       this.restoreActiveBrew(savedCauldron?.activeBrew, itemsFacade, cauldronIndex);
     }
 
-    this.collectAutoReadyBrews();
+    this.collectReadyBrews();
   }
 
   clampUnlockedCauldronsByLevel(unlockedCauldrons) {

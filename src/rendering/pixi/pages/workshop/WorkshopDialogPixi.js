@@ -3818,6 +3818,7 @@ class AllianceSettingsPane {
     this.swatches = TRADE_ALLIANCE_TAG_COLORS.map(
       (color) =>
         new GuildColorSwatch({
+          assetManager: dialog.assetManager,
           inputRouter: dialog.inputRouter,
           semanticRegistry: dialog.semanticTargets,
           semanticId: `${dialog.dialogId}.settings.tagColor.${color.id}`,
@@ -3862,6 +3863,7 @@ class AllianceSettingsPane {
     this.bannerColorSwatches = TRADE_ALLIANCE_BANNER_COLORS.map(
       (color) =>
         new GuildColorSwatch({
+          assetManager: dialog.assetManager,
           inputRouter: dialog.inputRouter,
           semanticRegistry: dialog.semanticTargets,
           semanticId: `${dialog.dialogId}.banner.bannerColor.${color.id}`,
@@ -3884,6 +3886,7 @@ class AllianceSettingsPane {
     this.emblemColorSwatches = TRADE_ALLIANCE_EMBLEM_COLORS.map(
       (color) =>
         new GuildColorSwatch({
+          assetManager: dialog.assetManager,
           inputRouter: dialog.inputRouter,
           semanticRegistry: dialog.semanticTargets,
           semanticId: `${dialog.dialogId}.banner.emblemColor.${color.id}`,
@@ -4006,20 +4009,21 @@ class AllianceSettingsPane {
       swatch.root.renderable = editable && !editingBanner;
       swatch.setSelected(swatch.colorId === selectedTagColor);
     }
-    this.bannerPreview.visible = editable && editingBanner;
-    this.bannerPreview.renderable = editable && editingBanner;
-    this.emblemLabel.visible = editable && editingBanner;
-    this.emblemLabel.renderable = editable && editingBanner;
-    this.emblemOptionLayer.visible = editable && editingBanner;
-    this.emblemOptionLayer.renderable = editable && editingBanner;
-    this.bannerColorLabel.visible = editable && editingBanner;
-    this.bannerColorLabel.renderable = editable && editingBanner;
-    this.bannerColorSwatchLayer.visible = editable && editingBanner;
-    this.bannerColorSwatchLayer.renderable = editable && editingBanner;
-    this.emblemColorLabel.visible = editable && editingBanner;
-    this.emblemColorLabel.renderable = editable && editingBanner;
-    this.emblemColorSwatchLayer.visible = editable && editingBanner;
-    this.emblemColorSwatchLayer.renderable = editable && editingBanner;
+    const editingAllianceBanner = editable && (creating || editingBanner);
+    this.bannerPreview.visible = editingAllianceBanner;
+    this.bannerPreview.renderable = editingAllianceBanner;
+    this.emblemLabel.visible = editingAllianceBanner;
+    this.emblemLabel.renderable = editingAllianceBanner;
+    this.emblemOptionLayer.visible = editingAllianceBanner;
+    this.emblemOptionLayer.renderable = editingAllianceBanner;
+    this.bannerColorLabel.visible = editingAllianceBanner;
+    this.bannerColorLabel.renderable = editingAllianceBanner;
+    this.bannerColorSwatchLayer.visible = editingAllianceBanner;
+    this.bannerColorSwatchLayer.renderable = editingAllianceBanner;
+    this.emblemColorLabel.visible = editingAllianceBanner;
+    this.emblemColorLabel.renderable = editingAllianceBanner;
+    this.emblemColorSwatchLayer.visible = editingAllianceBanner;
+    this.emblemColorSwatchLayer.renderable = editingAllianceBanner;
     this.bannerPreview.setColors({
       bannerColor: this.draft?.bannerColor,
       emblemColor: this.draft?.emblemColor,
@@ -4029,19 +4033,19 @@ class AllianceSettingsPane {
       this.draft?.emblemColor,
     ).value;
     for (const option of this.emblemOptions) {
-      option.root.visible = editable && editingBanner;
-      option.root.renderable = editable && editingBanner;
+      option.root.visible = editingAllianceBanner;
+      option.root.renderable = editingAllianceBanner;
       option.setSelected(option.emblemId === this.draft?.emblemId);
       option.setTint(emblemTint);
     }
     for (const swatch of this.bannerColorSwatches) {
-      swatch.root.visible = editable && editingBanner;
-      swatch.root.renderable = editable && editingBanner;
+      swatch.root.visible = editingAllianceBanner;
+      swatch.root.renderable = editingAllianceBanner;
       swatch.setSelected(swatch.colorId === this.draft?.bannerColor);
     }
     for (const swatch of this.emblemColorSwatches) {
-      swatch.root.visible = editable && editingBanner;
-      swatch.root.renderable = editable && editingBanner;
+      swatch.root.visible = editingAllianceBanner;
+      swatch.root.renderable = editingAllianceBanner;
       swatch.setSelected(swatch.colorId === this.draft?.emblemColor);
     }
     this.joinModeLabel.visible = editable && !editingBanner;
@@ -4169,25 +4173,7 @@ class AllianceSettingsPane {
       return;
     }
     if (this.model?.mode === 'banner') {
-      const previewWidth = 86;
-      const previewHeight = 100;
-      this.bannerPreview.position.set(0, 0);
-      this.bannerPreview.setSize(previewWidth, previewHeight);
-      this.emblemLabel.position.set(96, 0);
-      this.emblemOptionLayer.position.set(96, 17);
-      this.emblemOptions.forEach((option, index) => {
-        option.setBounds((index % 6) * 28, Math.floor(index / 6) * 28, 24);
-      });
-      this.bannerColorLabel.position.set(0, 104);
-      this.bannerColorSwatchLayer.position.set(0, 119);
-      this.bannerColorSwatches.forEach((swatch, index) => {
-        swatch.setBounds(index * 25, 0, 20);
-      });
-      this.emblemColorLabel.position.set(0, 151);
-      this.emblemColorSwatchLayer.position.set(0, 166);
-      this.emblemColorSwatches.forEach((swatch, index) => {
-        swatch.setBounds(index * 25, 0, 20);
-      });
+      this.layoutBannerEditor(0);
       this.saveButton.setBounds(0, 203, width, 28);
       this.status.position.set(0, 235);
       return;
@@ -4212,6 +4198,10 @@ class AllianceSettingsPane {
         fieldY += fieldHeight;
       }
     });
+    if (this.model?.mode === 'create') {
+      this.layoutBannerEditor(fieldY, { compact: true });
+      fieldY += 142;
+    }
     const joinY = fieldY;
     this.joinModeLabel.position.set(0, joinY);
     const joinButtonY = joinY + 13;
@@ -4239,6 +4229,47 @@ class AllianceSettingsPane {
       );
     }
     this.status.position.set(0, actionY + 32);
+  }
+
+  layoutBannerEditor(y, { compact = false } = {}) {
+    if (!compact) {
+      this.bannerPreview.position.set(0, y);
+      this.bannerPreview.setSize(86, 100);
+      this.emblemLabel.position.set(96, y);
+      this.emblemOptionLayer.position.set(96, y + 17);
+      this.emblemOptions.forEach((option, index) => {
+        option.setBounds((index % 6) * 28, Math.floor(index / 6) * 28, 24);
+      });
+      this.bannerColorLabel.position.set(0, y + 104);
+      this.bannerColorSwatchLayer.position.set(0, y + 119);
+      this.bannerColorSwatches.forEach((swatch, index) => {
+        swatch.setBounds(index * 25, 0, 20);
+      });
+      this.emblemColorLabel.position.set(0, y + 151);
+      this.emblemColorSwatchLayer.position.set(0, y + 166);
+      this.emblemColorSwatches.forEach((swatch, index) => {
+        swatch.setBounds(index * 25, 0, 20);
+      });
+      return;
+    }
+
+    this.bannerPreview.position.set(0, y);
+    this.bannerPreview.setSize(60, 70);
+    this.emblemLabel.position.set(72, y);
+    this.emblemOptionLayer.position.set(72, y + 15);
+    this.emblemOptions.forEach((option, index) => {
+      option.setBounds((index % 6) * 24, Math.floor(index / 6) * 24, 20);
+    });
+    this.bannerColorLabel.position.set(0, y + 67);
+    this.bannerColorSwatchLayer.position.set(0, y + 80);
+    this.bannerColorSwatches.forEach((swatch, index) => {
+      swatch.setBounds(index * 25, 0, 20);
+    });
+    this.emblemColorLabel.position.set(0, y + 104);
+    this.emblemColorSwatchLayer.position.set(0, y + 117);
+    this.emblemColorSwatches.forEach((swatch, index) => {
+      swatch.setBounds(index * 25, 0, 20);
+    });
   }
 
   applyTheme(theme) {

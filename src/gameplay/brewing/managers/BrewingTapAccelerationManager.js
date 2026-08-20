@@ -1,5 +1,5 @@
 export const BREWING_CAULDRON_TAP_REDUCTION_SECONDS = 1;
-export const BREWING_CAULDRON_TAP_COOLDOWN_MS = 800;
+export const BREWING_CAULDRON_TAP_COOLDOWN_MS = 720;
 
 export class BrewingTapAccelerationManager {
   constructor({ brewingProcessEntityManager, now = () => Date.now() } = {}) {

@@ -20,6 +20,7 @@ const sourcePaths = Object.freeze({
   hourglass: 'art-source/research-icons/primitives/hourglass.png',
   lens: 'art-source/research-icons/primitives/research-lens.png',
   pack: 'art-source/research-icons/primitives/seed-pack.png',
+  summonPack: 'assets/game/source/items/seeds/seed-pack.png',
   plot: 'art-source/research-icons/primitives/plot.png',
   plus: createPlusPrimitive,
   stall: 'art-source/research-icons/primitives/market-stall.png',
@@ -41,9 +42,9 @@ const recipes = Object.freeze([
   [
     'icon-research-summon-multiplier.png',
     [
-      layer('pack', 84, 22, 104, 122, { shadow: true }),
-      layer('pack', 30, 92, 112, 132, { shadow: true }),
-      layer('pack', 114, 92, 112, 132, { shadow: true }),
+      layer('summonPack', 84, 22, 104, 122, { shadow: true }),
+      layer('summonPack', 30, 92, 112, 132, { shadow: true }),
+      layer('summonPack', 114, 92, 112, 132, { shadow: true }),
     ],
   ],
   [

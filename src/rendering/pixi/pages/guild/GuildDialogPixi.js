@@ -377,6 +377,7 @@ export class GuildDialogPixi extends BasePixiRetainedView {
     this.swatches = TRADE_ALLIANCE_TAG_COLORS.map(
       (color) =>
         new GuildColorSwatch({
+          assetManager: this.assetManager,
           inputRouter: this.inputRouter,
           semanticRegistry: this.semanticRegistry,
           semanticId: `${this.dialogId}.color.${color.id}`,
@@ -1426,6 +1427,7 @@ export class GuildProfileField {
 
 export class GuildColorSwatch {
   constructor({
+    assetManager,
     inputRouter,
     semanticRegistry,
     semanticId,
@@ -1439,7 +1441,18 @@ export class GuildColorSwatch {
     this.root.eventMode = 'static';
     this.root.cursor = 'pointer';
     this.graphic = new Graphics();
-    this.root.addChild(this.graphic);
+    this.checkmark = new Sprite({
+      texture:
+        assetManager?.getTexture?.(PIXI_ROOT_RUN_ASSETS.checkmark) ??
+        Texture.EMPTY,
+      anchor: 0.5,
+      label: `${label}:checkmark`,
+      roundPixels: true,
+    });
+    this.checkmark.eventMode = 'none';
+    this.checkmark.visible = false;
+    this.checkmark.renderable = false;
+    this.root.addChild(this.graphic, this.checkmark);
     this.colorId = colorId;
     this.colorValue = colorValue;
     this.action = action;
@@ -1475,6 +1488,10 @@ export class GuildColorSwatch {
     this.root.position.set(x, y);
     this.size = size;
     this.root.hitArea = new Rectangle(0, 0, size, size);
+    this.checkmark.position.set(size / 2, size / 2);
+    const checkmarkWidth = size * 0.72;
+    this.checkmark.width = checkmarkWidth;
+    this.checkmark.height = checkmarkWidth * (57 / 61);
     this.redraw();
   }
 
@@ -1495,6 +1512,10 @@ export class GuildColorSwatch {
         width: this.selected ? 2 : 1,
         alignment: 1,
       });
+    const showCheckmark =
+      this.selected && this.checkmark.texture !== Texture.EMPTY;
+    this.checkmark.visible = showCheckmark;
+    this.checkmark.renderable = showCheckmark;
   }
 
   destroy() {

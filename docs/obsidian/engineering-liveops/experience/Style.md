@@ -132,7 +132,7 @@ experience_type: style
 - Brewing recipe cards use the green positive-action skin for `Select`; locked `Research` remains yellow, and focus or selection must not change font weight.
 - Brewing recipe page-turn ghosts must stretch recipe rows like live pages; otherwise bottom select buttons jump upward during the animation.
 - Brewing active brew timer text belongs next to the active brew label, not inside the progress rail.
-- Brewing completion flows brew timer -> manual start bottling action -> bottling timer -> collect-ready state; potion inventory is granted only by the collect action.
+- Brewing completion flows brew timer -> manual start bottling action -> bottling timer -> automatic inventory grant; never expose a separate Collect action.
 - Reward flyouts that should show item icons need exact item labels/counts; generic text like `3 seeds found` cannot render item icons.
 - Purchase spending uses the shared retained spend burst: the exact Root Run seven-icon ballistic profile, the spent currency icon, and the semantic purchase anchor. Trigger it only after a successful positive purchase, never for planting, brewing, summoning, or task turn-ins, and suppress it for reduced motion.
 - Brewing cauldron count lives as a normal-weight border-corner label like `0/5`; empty cauldron status stays blank and `empty` is centered in the box.
@@ -149,7 +149,7 @@ experience_type: style
 - Brewing primary-action projection must distinguish Auto enabled from Auto armed: enabled-but-unarmed keeps `Brew` available while Auto waits for its first affordable batch, armed idle Auto shows `Stop Auto`, and only active unfinished output uses `Cancel`.
 - Brewing locked/research cauldron placeholders are only the dotted locked frame; hide the normal cauldron title/count and style-box frame/background.
 - Brewing cauldron staged ingredients and selected-recipe requirements use one herb per ordered slot; do not collapse adjacent duplicates into quantity groups or show visible action words.
-- A retained Brewing recipe must allocate inventory across repeated ordered slots and show `owned/required` on every slot; after Collect, one-tap `Brew` restages and starts an affordable recipe, while shortages replace the idle rail with `Missing ingredients` plus grouped herb art and `xN`, or `Not enough mana` recovery copy.
+- A retained Brewing recipe must allocate inventory across repeated ordered slots and show `owned/required` on every slot; after automatic collection, one-tap `Brew` restages and starts an affordable recipe, while shortages replace the idle rail with `Missing ingredients` plus grouped herb art and `xN`, or `Not enough mana` recovery copy.
 - Brewing flow boxes can be broken by the late shared absolute-position style block; remove flow-managed Brewing boxes from that block when converting them to scroll layout.
 - Brewing workbench must reserve bottom clearance for fixed `recipes`/`potions` buttons so scroll content cannot render underneath them.
 - Seed summon feedback is a transient flyout, not a persistent row in the `seeds` block.
@@ -216,6 +216,7 @@ experience_type: style
 - Pixi nine-slice wrappers are `Container` masks, so assigning one through `.mask` selects a rectangular stencil and ignores transparent cap pixels. Use an explicit `AlphaMask` with the `alpha` channel when nine-slice transparency owns rounded fill caps.
 - The Brewing cauldron liquid silhouette stores its usable shape in PNG alpha while transparent pixels retain white RGB. Render that silhouette directly as a tinted sprite above the opaque cauldron opening; a default Pixi sprite mask reads the retained RGB as a full rectangular canvas.
 - The Brewing cauldron and liquid textures share the same `600x486` source registration. Ambient and impact motion must apply identical offsets and normalized scales to both sprites, then derive highlight/ripple positions from the transformed liquid, or the liquid appears to cross the rim.
+- Brewing liquid stays hidden while a recipe or ingredients are only staged; render it from the active brew state so the cauldron remains visibly empty until brewing starts.
 - Android-style `.9.png` files include a one-pixel metadata border; strip that border before loading them as Pixi textures and reduce the slice margins to the cleaned interior, or marker pixels render as rail artifacts.
 - Name button chrome that the runtime consumes as a nine-slice with the `.9.png` suffix, including button-like tabs and HUD controls. Idle Wizard source textures stay border-free; Android marker-border cleanup applies only when importing an actual Android nine-patch.
 - Keep regular button colors together under `assets/game/source/ui/regular-button` with complete `50`, `30`, and `15` radius tiers. Preserve a flat `3x3` scalable center plus one matching flat gutter pixel on every side; without those gutters, canvas smoothing stretches decoration tails or curved-cap pixels into visible seams. Minimum source heights remain `171px`, `104px`, and `53px` including the bottom shadow. Cost buttons and popup tabs compose these shared skins; do not create role-specific duplicate button PNGs.

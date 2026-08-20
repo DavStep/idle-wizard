@@ -80,11 +80,11 @@ export const BREWING_HUD_GEOMETRY = Object.freeze({
   navigationSlotGap: 4,
   navigationPotionNameOpticalNudge: 2,
   navigationIconOpticalNudge: 0.7,
-  ingredientSlotWidth: 72,
+  ingredientSlotWidth: 56,
   ingredientSlotHeight: 54,
-  ingredientIconSize: 20,
-  ingredientContentInset: 5,
-  ingredientContentGap: 4,
+  ingredientIconSize: 38,
+  ingredientIconCenterY: 21,
+  ingredientNameY: 41,
   ingredientColumns: 3,
   ingredientRows: 2,
   ingredientSlots: 6,
@@ -140,9 +140,11 @@ const BREWING_CAULDRON_REWARD_ANCHOR_ID =
   'brewing.cauldron.liquid';
 const BREWING_STATUS_TEXTURE_PADDING = 1;
 const RETAINED_INGREDIENT_NAME_STYLE = Object.freeze({
-  fontSize: 9,
-  lineHeight: 10,
-  align: 'left',
+  fontSize: 10,
+  lineHeight: 11,
+  align: 'center',
+  wordWrap: true,
+  wordWrapWidth: 54,
 });
 const RETAINED_INGREDIENT_COUNT_STYLE = Object.freeze({
   fontSize: 8,
@@ -782,7 +784,7 @@ export class BrewingHudPixi {
       0x8740df,
     );
     this.cauldronLiquid.visible =
-      cauldron.unlocked !== false && Boolean(active || recipe);
+      cauldron.unlocked !== false && Boolean(active);
     this.cauldronLiquid.renderable = this.cauldronLiquid.visible;
     this.cauldronLiquid.tint = this.cauldronLiquidColor;
     this.cauldronLiquidHighlight.visible = this.cauldronLiquid.visible;
@@ -836,7 +838,7 @@ export class BrewingHudPixi {
       this.phaseLabel,
       active
         ? active.phase === 'ready'
-          ? 'Ready to Collect'
+          ? 'Bottled'
           : toTitleCase(active.phase)
         : recipe
           ? hasMissingIngredients
@@ -976,10 +978,6 @@ export class BrewingHudPixi {
         }
         result =
           this.actions.toggleAutoBrew?.(this.selectedIndex) ?? false;
-        break;
-      case 'collect':
-        result =
-          this.actions.collectBrew?.(this.selectedIndex) ?? false;
         break;
       case 'bottle':
         result =
@@ -2499,20 +2497,21 @@ export class BrewingIngredientPickerSlot {
     });
     this.icon = new Sprite(Texture.EMPTY);
     this.icon.anchor.set(0.5);
-    this.name = createText('', RETAINED_INGREDIENT_NAME_STYLE);
-    this.name.anchor.set(0, 0.5);
-    this.requiredQuantity = createText('', RETAINED_INGREDIENT_COUNT_STYLE);
-    this.requiredQuantity.anchor.set(0, 0.5);
-    this.labelGroup = new Container({
-      label: `brewing-ingredient-picker-slot-${index}-label`,
-    });
-    this.labelGroup.addChild(this.name, this.requiredQuantity);
+    this.name = centeredText('', RETAINED_INGREDIENT_NAME_STYLE);
+    this.name.anchor.set(0.5, 0);
     this.contentMotion = new Container({
       label: `brewing-ingredient-picker-slot-${index}-content-motion`,
     });
+    this.countGroup = new Container();
+    this.missingCount = centeredText('', RETAINED_INGREDIENT_COUNT_STYLE);
+    this.requiredCount = centeredText('', RETAINED_INGREDIENT_COUNT_STYLE);
+    this.missingCount.anchor.set(0, 0);
+    this.requiredCount.anchor.set(0, 0);
+    this.countGroup.addChild(this.missingCount, this.requiredCount);
     this.contentMotion.addChild(
       this.icon,
-      this.labelGroup,
+      this.name,
+      this.countGroup,
     );
     this.control.visual.addChild(this.frame, this.contentMotion);
     this.model = null;
@@ -2572,15 +2571,24 @@ export class BrewingIngredientPickerSlot {
     const required = Math.max(1, Math.floor(Number(model?.quantity) || 1));
     const owned = Math.max(0, Math.floor(Number(model?.owned) || 0));
     const missing = Boolean(model) && showMissing && owned < required;
+    const showCount = Boolean(model) && showMissing;
     this.countMissing = missing;
-    setText(this.requiredQuantity, model ? `x${required}` : '');
-    this.labelGroup.visible = Boolean(model);
-    this.labelGroup.renderable = Boolean(model);
+    setText(
+      this.missingCount,
+      showCount ? String(Math.min(owned, required)) : '',
+    );
+    setText(this.requiredCount, showCount ? `/${required}` : '');
+    this.countGroup.visible = showCount;
+    this.countGroup.renderable = showCount;
+    this.missingCount.visible = showCount;
+    this.missingCount.renderable = showCount;
+    this.requiredCount.visible = showCount;
+    this.requiredCount.renderable = showCount;
     this.decorative = decorative && !model;
     this.hasBoundModel = true;
     this.stagedSignature = nextStagedSignature;
     this.applyCountTheme();
-    this.layoutContent();
+    this.layoutCount();
     this.redraw();
     if (shouldAnimateArrival) {
       this.startArrivalMotion(now, { reducedMotion });
@@ -2596,41 +2604,28 @@ export class BrewingIngredientPickerSlot {
     this.frame.setSize(width, height, this.frameInsets);
     this.contentMotion.pivot.set(width / 2, height / 2);
     this.contentMotion.position.set(width / 2, height / 2);
-    const contentCenterY = height / 2;
     this.icon.position.set(
-      BREWING_HUD_GEOMETRY.ingredientContentInset +
-        BREWING_HUD_GEOMETRY.ingredientIconSize / 2,
-      contentCenterY,
+      width / 2,
+      BREWING_HUD_GEOMETRY.ingredientIconCenterY,
     );
     this.icon.width = BREWING_HUD_GEOMETRY.ingredientIconSize;
     this.icon.height = BREWING_HUD_GEOMETRY.ingredientIconSize;
-    this.layoutContent();
+    this.name.position.set(
+      width / 2,
+      BREWING_HUD_GEOMETRY.ingredientNameY,
+    );
+    this.name.style.wordWrapWidth = width - 8;
+    this.layoutCount();
     this.redraw();
   }
 
-  layoutContent() {
-    const labelX =
-      BREWING_HUD_GEOMETRY.ingredientContentInset +
-      BREWING_HUD_GEOMETRY.ingredientIconSize +
-      BREWING_HUD_GEOMETRY.ingredientContentGap;
-    const availableWidth = Math.max(
-      0,
-      (this.width ?? 0) -
-        labelX -
-        BREWING_HUD_GEOMETRY.ingredientContentInset,
+  layoutCount() {
+    this.missingCount.position.set(0, 0);
+    this.requiredCount.position.set(this.missingCount.width, 0);
+    this.countGroup.position.set(
+      Math.max(3, (this.width ?? 0) - this.countGroup.width - 4),
+      2,
     );
-    this.name.position.set(0, 0);
-    this.requiredQuantity.position.set(
-      this.name.width + BREWING_HUD_GEOMETRY.ingredientContentGap,
-      0,
-    );
-    this.labelGroup.scale.set(1);
-    if (availableWidth > 0 && this.labelGroup.width > availableWidth) {
-      this.labelGroup.scale.set(
-        Math.max(0.78, availableWidth / this.labelGroup.width),
-      );
-    }
-    this.labelGroup.position.set(labelX, (this.height ?? 0) / 2);
   }
 
   redraw() {
@@ -2703,11 +2698,15 @@ export class BrewingIngredientPickerSlot {
       fill: theme?.text ?? '#d4d4d4',
     });
     this.applyCountTheme();
-    this.layoutContent();
+    applyTextTheme(this.requiredCount, theme, {
+      ...RETAINED_INGREDIENT_COUNT_STYLE,
+      fill: theme?.text ?? '#d4d4d4',
+    });
+    this.layoutCount();
   }
 
   applyCountTheme() {
-    applyTextTheme(this.requiredQuantity, this.theme, {
+    applyTextTheme(this.missingCount, this.theme, {
       ...RETAINED_INGREDIENT_COUNT_STYLE,
       fill: this.countMissing
         ? this.theme?.notificationRed ?? '#c1121f'
@@ -3114,15 +3113,16 @@ export function resolveBrewingPrimaryState(cauldron = {}) {
     cauldron.autoBrewEnabled === true &&
     cauldron.autoBrewArmed === true;
 
+  if (active?.canCollect === true) {
+    return {
+      id: 'complete',
+      label: 'Bottled',
+      enabled: false,
+      variant: 'green',
+    };
+  }
+
   if (auto) {
-    if (active?.canCollect === true) {
-      return {
-        id: 'collect',
-        label: 'Collect',
-        enabled: true,
-        variant: 'green',
-      };
-    }
     if (!active) {
       return {
         id: 'cancel',
@@ -3139,14 +3139,6 @@ export function resolveBrewingPrimaryState(cauldron = {}) {
     };
   }
 
-  if (active?.canCollect === true) {
-    return {
-      id: 'collect',
-      label: 'Collect',
-      enabled: true,
-      variant: 'green',
-    };
-  }
   if (
     active?.canStartBottling === true ||
     active?.phase === 'brewed'

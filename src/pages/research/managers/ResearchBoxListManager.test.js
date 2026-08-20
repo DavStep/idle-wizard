@@ -328,6 +328,53 @@ describe('ResearchBoxListManager', () => {
     expect(stage.querySelector('.research-page__completed-toggle')).toBeNull();
   });
 
+  it('hides unrevealed rows and sections until their progression gate is reached', () => {
+    const snapshot = {
+      playerLevel: { currentLevel: 5 },
+      prestige: { completedLevels: [] },
+      research: {
+        boxes: [
+          {
+            id: 'utilityUnlocks',
+            label: 'utility unlocks',
+            researches: [
+              {
+                id: 'summonSeedsX2',
+                label: 'summon seed lvl 1',
+                requiredPlayerLevel: 6,
+                value: 'locked',
+                locked: true,
+                canResearch: false,
+              },
+            ],
+          },
+        ],
+        completedResearchIds: [],
+      },
+    };
+    const manager = new ResearchBoxListManager({
+      gameplayFacade: createGameplayFacade(snapshot),
+    });
+    const stage = document.createElement('section');
+
+    manager.mount(stage);
+
+    expect(stage.querySelector('.research-page__box')).toBeNull();
+
+    snapshot.playerLevel.currentLevel = 6;
+    snapshot.research.boxes[0].researches[0] = {
+      ...snapshot.research.boxes[0].researches[0],
+      value: '1k coin',
+      locked: false,
+      canResearch: true,
+    };
+    manager.render(snapshot);
+
+    expect(stage.querySelector('.research-page__box')?.textContent).toContain(
+      'summon seed lvl 1',
+    );
+  });
+
   it('notifies the Pixi skin owner after replacing research rows', () => {
     const snapshot = {
       playerLevel: { currentLevel: 1 },
@@ -815,8 +862,8 @@ describe('ResearchBoxListManager', () => {
                 completed: false,
                 canResearch: false,
                 locked: true,
-                requiredPlayerLevel: 6,
-                requiredResearchIds: [],
+                requiredPlayerLevel: 5,
+                requiredResearchIds: ['unlockSeed:mintSeed'],
               },
             ],
           },
@@ -850,11 +897,11 @@ describe('ResearchBoxListManager', () => {
     ).toBe('Locked');
     expect(
       lockedButton?.querySelector('.research-page__research-lock-reason')?.textContent,
-    ).toBe('Reach level 6');
+    ).toBe('Requires Mint Seed research');
     expect(lockedButton?.querySelector('.style-resource-label')).toBeNull();
-    expect(lockedButton?.title).toBe('requires level 6.');
+    expect(lockedButton?.title).toBe('requires Mint Seed research.');
     expect(lockedButton?.getAttribute('aria-label')).toContain(
-      'is locked, Reach level 6',
+      'is locked, Requires Mint Seed research',
     );
 
     const css = readFileSync(`${cwd()}/src/styles/base.css`, 'utf8');
@@ -1171,7 +1218,7 @@ describe('ResearchBoxListManager', () => {
   it('keeps locked research rows passive in the DOM fallback', () => {
     const snapshot = {
       playerLevel: {
-        currentLevel: 4,
+        currentLevel: 6,
       },
       research: {
         boxes: [
@@ -1372,10 +1419,7 @@ describe('ResearchBoxListManager', () => {
 
     const boxes = [...stage.querySelectorAll('.research-page__box')];
     expect(stage.querySelector('.research-page__run-focus')).toBeNull();
-    expect(boxes.map((box) => box.getAttribute('aria-label'))).toEqual([
-      'research time research',
-      'plot capacity research',
-    ]);
+    expect(boxes).toHaveLength(0);
     expect(setPrestigeRunFocus).not.toHaveBeenCalled();
 
     manager.unmount();

@@ -2313,14 +2313,32 @@ describe("GameplayFacade", () => {
     second.ecsFacade.update({ deltaSeconds: 2 });
     expect(
       second.gameplayFacade.getSnapshot().brewing.activeBrew,
-    ).toMatchObject({
-      phase: "ready",
-      canCollect: true,
-    });
-    expect(second.gameplayFacade.collectBrewing()).toMatchObject({
-      ok: true,
+    ).toBeNull();
+    expect(second.gameplayFacade.getSnapshot().inventory).toContainEqual({
+      itemTypeId: 2001,
+      key: "manaTonic",
+      label: "mana tonic",
+      kind: "potion",
       quantity: 1,
     });
+  });
+
+  it("auto collects a legacy ready brew when its save loads", () => {
+    const persistenceStorage = createMemoryStorage();
+    const first = createGameplay({ persistenceStorage });
+
+    first.gameplayFacade.brewingFacade.brewingProcessEntityManager.restoreActiveBrew({
+      resultItemTypeId: 2001,
+      resultQuantity: 2,
+      phase: "ready",
+      totalSeconds: 0,
+      remainingSeconds: 0,
+      bottlingTotalSeconds: 2,
+    });
+    first.gameplayFacade.shutdown();
+    first.ecsFacade.destroyWorld();
+
+    const second = createGameplay({ persistenceStorage });
 
     expect(second.gameplayFacade.getSnapshot().brewing.activeBrew).toBeNull();
     expect(second.gameplayFacade.getSnapshot().inventory).toContainEqual({
@@ -2328,7 +2346,7 @@ describe("GameplayFacade", () => {
       key: "manaTonic",
       label: "mana tonic",
       kind: "potion",
-      quantity: 1,
+      quantity: 2,
     });
   });
 
@@ -2548,6 +2566,7 @@ describe("GameplayFacade", () => {
   it("uses completed summon research as the active seed summon multiplier", () => {
     const { gameplayFacade } = createGameplay();
 
+    advanceToLevel(gameplayFacade, 6);
     gameplayFacade.coinFacade.add(1_000);
     expect(gameplayFacade.buyResearch("summonSeedsX2")).toEqual({
       ok: true,
@@ -2880,11 +2899,12 @@ describe("GameplayFacade", () => {
         id: "summonSeedsX2",
         label: "summon seed lvl 1",
         displayName: "summon seed",
-        value: "1k coin",
+        value: "locked",
         effect: "x2 seeds",
         starLevel: 1,
         starMaxLevel: 4,
         seriesId: "summonSeeds",
+        requiredPlayerLevel: 6,
       }),
       expect.objectContaining({
         id: gardenBulkResearchIds.plantAll,
@@ -4073,6 +4093,15 @@ describe("GameplayFacade", () => {
     });
 
     expect(gameplayFacade.buyResearch("summonSeedsX2")).toEqual({
+      ok: false,
+      reason: "missing_required_level",
+      researchId: "summonSeedsX2",
+      requiredPlayerLevel: 6,
+      cost: 1_000,
+    });
+
+    advanceToLevel(gameplayFacade, 6);
+    expect(gameplayFacade.buyResearch("summonSeedsX2")).toEqual({
       ok: true,
       researchId: "summonSeedsX2",
       cost: 1_000,
@@ -4088,8 +4117,6 @@ describe("GameplayFacade", () => {
       requiredResearchId: "summonSeedsX3",
       cost: 100_000,
     });
-
-    advanceToLevel(gameplayFacade, 5);
 
     expect(getResearch("unlockRecipe:minorHealingPotion")).toMatchObject({
       value: "locked",
@@ -4112,7 +4139,6 @@ describe("GameplayFacade", () => {
       researchId: "unlockRecipe:manaTonic",
       cost: 0,
     });
-    advanceToLevel(gameplayFacade, 6);
     expect(getResearch("unlockRecipe:minorHealingPotion")).toMatchObject({
       value: "400 coin",
       canResearch: true,
@@ -4330,11 +4356,7 @@ describe("GameplayFacade", () => {
     });
 
     ecsFacade.update({ deltaSeconds: 2 });
-    expect(gameplayFacade.getSnapshot().brewing.activeBrew).toMatchObject({
-      phase: "ready",
-      canCollect: true,
-    });
-    gameplayFacade.collectBrewing();
+    expect(gameplayFacade.getSnapshot().brewing.activeBrew).toBeNull();
 
     expect(gameplayFacade.getSnapshot().inventory).toContainEqual({
       itemTypeId: 2001,
@@ -4781,7 +4803,7 @@ describe("GameplayFacade", () => {
     ).toContain("brewed mana tonic");
   });
 
-  it("waits for manual collection and cancels unfinished output without refund", () => {
+  it("auto collects bottled output and cancels unfinished output without refund", () => {
     const { ecsFacade, gameplayFacade } = createGameplay();
 
     gameplayFacade.itemsFacade.addItem(1001, 3);
@@ -4806,16 +4828,13 @@ describe("GameplayFacade", () => {
     gameplayFacade.startBrewingBottling();
     ecsFacade.update({ deltaSeconds: 2 });
 
-    expect(gameplayFacade.getSnapshot().brewing.activeBrew).toMatchObject({
-      phase: "ready",
-      canCollect: true,
-    });
-    expect(gameplayFacade.getSnapshot().inventory).not.toContainEqual(
-      expect.objectContaining({ itemTypeId: 2001 }),
+    expect(gameplayFacade.getSnapshot().brewing.activeBrew).toBeNull();
+    expect(gameplayFacade.getSnapshot().inventory).toContainEqual(
+      expect.objectContaining({ itemTypeId: 2001, quantity: 1 }),
     );
     expect(gameplayFacade.collectBrewing()).toMatchObject({
-      ok: true,
-      quantity: 1,
+      ok: false,
+      reason: "no_brew",
     });
   });
 
@@ -4893,12 +4912,6 @@ describe("GameplayFacade", () => {
     });
 
     ecsFacade.update({ deltaSeconds: 2 });
-    expect(gameplayFacade.getSnapshot().brewing.activeBrew).toMatchObject({
-      phase: "ready",
-      canCollect: true,
-    });
-    gameplayFacade.collectBrewing();
-
     expect(gameplayFacade.getSnapshot().brewing.activeBrew).toBeNull();
     expect(gameplayFacade.getSnapshot().inventory).toEqual([
       {
@@ -5497,7 +5510,7 @@ describe("GameplayFacade", () => {
       phase: "growing",
       reducedSeconds: 1,
       remainingMs: 11_000,
-      cooldownMs: 800,
+      cooldownMs: 720,
     });
     expect(gameplayFacade.getSnapshot().garden.plot.tiles[0]).toMatchObject({
       phase: "growing",
@@ -5532,7 +5545,7 @@ describe("GameplayFacade", () => {
       phase: "brewing",
       reducedSeconds: 1,
       remainingMs: 11_000,
-      cooldownMs: 800,
+      cooldownMs: 720,
     });
     expect(gameplayFacade.getSnapshot().brewing.activeBrew).toMatchObject({
       phase: "brewing",
@@ -5864,6 +5877,30 @@ describe("GameplayFacade", () => {
       unlocked: false,
     });
     secondGameplayFacade.coinFacade.add(102_400);
+    expect(
+      secondGameplayFacade.buyResearch("unlockRecipe:ashenMemory"),
+    ).toMatchObject({
+      ok: false,
+      reason: "missing_required_research",
+      requiredResearchId: "unlockRecipe:frostmossCleanse",
+      cost: 102_400,
+    });
+    secondGameplayFacade.researchFacade.researchStateEntityManager.setCompletedResearchIds(
+      [
+        ...secondGameplayFacade.getSnapshot().research.completedResearchIds,
+        "unlockRecipe:frostmossCleanse",
+      ],
+    );
+    expect(
+      secondGameplayFacade.buyResearch("unlockRecipe:ashenMemory"),
+    ).toMatchObject({
+      ok: false,
+      reason: "missing_required_level",
+      requiredPlayerLevel: 26,
+      cost: 102_400,
+    });
+
+    advanceToLevel(secondGameplayFacade, 26);
     expect(
       secondGameplayFacade.buyResearch("unlockRecipe:ashenMemory"),
     ).toMatchObject({

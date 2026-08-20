@@ -138,7 +138,9 @@ function cauldronFixture(state) {
     primaryAction: state === 'purchasable'
       ? { id: 'buy', label: 'Unlock', costText: '250', costResource: 'coin', enabled: true }
       : activeBrew
-        ? { id: state === 'ready' ? 'collect' : 'cancel', label: state === 'ready' ? 'Collect' : 'Cancel', enabled: true }
+        ? state === 'ready'
+          ? { id: 'complete', label: 'Bottled', enabled: false }
+          : { id: 'cancel', label: 'Cancel', enabled: true }
         : { id: 'brew', label: 'Brew', enabled: true },
     selectedRecipe: { key: 'minorManaPotion', label: 'Minor Mana Potion' },
     unlocked: !['locked', 'purchasable'].includes(state),
@@ -240,14 +242,14 @@ function createHudModel(state) {
         };
   const primaryId = active
     ? active.canCollect
-      ? 'collect'
+      ? 'complete'
       : 'cancel'
     : selectedRecipe
       ? 'brew'
       : 'recipes';
   const primaryLabel = active
     ? active.canCollect
-      ? 'Collect'
+      ? 'Bottled'
       : 'Cancel'
     : selectedRecipe
       ? 'Brew'
@@ -268,7 +270,7 @@ function createHudModel(state) {
         level: 2,
         maxBrewQuantity: 3,
         primaryAction: {
-          enabled: state !== 'missing',
+          enabled: state !== 'missing' && active?.canCollect !== true,
           id: primaryId,
           label: primaryLabel,
         },

@@ -556,14 +556,16 @@ export class PixiViewModelFactory {
     const tabs = sourceTabs.map((tab) => {
       const requiredLevel = RESEARCH_TAB_UNLOCK_LEVELS[tab.id] ?? 1;
       const unlocked = highestReachedLevel >= requiredLevel;
-      const boxes = (tab.boxes ?? []).map((box) =>
-        createResearchBoxModel(box, {
-          completedResearchIds,
-          playerLevel,
-          prestigeCount,
-          researchById,
-        }),
-      );
+      const boxes = (tab.boxes ?? [])
+        .map((box) =>
+          createResearchBoxModel(box, {
+            completedResearchIds,
+            playerLevel,
+            prestigeCount,
+            researchById,
+          }),
+        )
+        .filter((box) => box.allResearches.length > 0);
 
       return {
         ...tab,
@@ -919,6 +921,9 @@ export class PixiViewModelFactory {
               name: '',
               tag: '',
               tagColor: 'ink',
+              bannerColor: DEFAULT_TRADE_ALLIANCE_BANNER_COLOR,
+              emblemColor: DEFAULT_TRADE_ALLIANCE_EMBLEM_COLOR,
+              emblemId: DEFAULT_TRADE_ALLIANCE_EMBLEM,
               description: '',
               notice: '',
               joinMode: 'apply',
@@ -2552,20 +2557,24 @@ function createResearchBoxModel(
   const artAssetId =
     RESEARCH_ART_ASSET_BY_BOX_ID[box.id] ??
     RESEARCH_FALLBACK_ART_ASSET;
-  const allResearches = (box.researches ?? []).map((item) =>
-    createResearchItemModel(item, {
-      artAssetId: getResearchItemArtAssetId(item, artAssetId),
-      artExtraAssetId: String(item.id ?? '').startsWith('manaSphereCap:')
-        ? RESEARCH_MANA_CAPACITY_MODIFIER_ASSET
-        : String(item.id ?? '').startsWith('manaProductionRate:')
-          ? RESEARCH_MANA_GENERATION_MODIFIER_ASSET
-          : null,
-      completedResearchIds,
-      playerLevel,
-      prestigeCount,
-      researchById,
-    }),
-  );
+  const allResearches = (box.researches ?? [])
+    .filter((item) =>
+      hasReachedResearchReveal(item, { playerLevel, prestigeCount }),
+    )
+    .map((item) =>
+      createResearchItemModel(item, {
+        artAssetId: getResearchItemArtAssetId(item, artAssetId),
+        artExtraAssetId: String(item.id ?? '').startsWith('manaSphereCap:')
+          ? RESEARCH_MANA_CAPACITY_MODIFIER_ASSET
+          : String(item.id ?? '').startsWith('manaProductionRate:')
+            ? RESEARCH_MANA_GENERATION_MODIFIER_ASSET
+            : null,
+        completedResearchIds,
+        playerLevel,
+        prestigeCount,
+        researchById,
+      }),
+    );
   const researches = orderResearchesNewestFirst(
     getDisplayedResearches(allResearches),
   );
@@ -2578,6 +2587,28 @@ function createResearchBoxModel(
     researches,
     hiddenLockedCount: allResearches.length - researches.length,
   };
+}
+
+function hasReachedResearchReveal(item = {}, { playerLevel, prestigeCount }) {
+  if (item.completed === true || item.inProgress === true) {
+    return true;
+  }
+
+  if (
+    Number.isInteger(item.requiredPlayerLevel) &&
+    playerLevel < item.requiredPlayerLevel
+  ) {
+    return false;
+  }
+
+  if (
+    Number.isInteger(item.requiredPrestigeCount) &&
+    prestigeCount < item.requiredPrestigeCount
+  ) {
+    return false;
+  }
+
+  return true;
 }
 
 function createResearchItemModel(

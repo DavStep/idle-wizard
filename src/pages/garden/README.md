@@ -13,6 +13,6 @@ planting cue. A successful tap on a ready plot starts its harvest timer and
 plays the same short pop used by manual seed summoning. Both use the device-local
 `sfx` preference and replace the generic click sound for those plot actions.
 Tapping a growing or harvesting plot reduces its active timer by one second,
-then locks that plot for the complete 800ms feedback sequence. A selected seed
+then locks that plot for the complete 720ms feedback sequence. A selected seed
 that differs from the growing crop still opens the intentional swap
 confirmation. Rejected taps stay silent and do not restart feedback.

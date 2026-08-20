@@ -279,7 +279,10 @@
                   bindDialog();
                   return true;
                 },
-                createAlliance: async () => ({ ok: true }),
+                createAlliance: async (profile) => {
+                  recordAction({ type: 'create', ...profile });
+                  return { ok: true };
+                },
                 openPlayer: (player) => {
                   dialog.deactivate();
                   runtime.openDialog(GLOBAL_DIALOG_IDS.PLAYER, {

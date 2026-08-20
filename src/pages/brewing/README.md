@@ -11,6 +11,6 @@ It renders a pannable brewing world, cauldron nodes, bottom icon buttons that ex
 The Recipes dialog uses sentence-case player copy: its title, potion and ingredient names, descriptions, navigation, status, and action labels start with uppercase letters.
 Tapping the active cauldron during brewing or bottling removes up to one second
 from its timer, with the same per-target cooldown used by Garden plots.
-A successfully collected potion plays the same short pop used by manual seed
-summoning; rejected collection attempts stay silent.
+A potion automatically granted after bottling plays the same short pop used by
+manual seed summoning.
 It does not own potion recipes, brewing costs, brew timers, inventory changes, effects, or progression rules; those stay in `src/gameplay/brewing/`.

@@ -325,23 +325,55 @@ export class ResearchBoxListManager {
     researchById,
     completedResearchIds,
   }) {
-    const decoratedBoxes = boxes.map((box) => ({
-      ...box,
-      researches: this.orderResearchesNewestFirst(
-        (box.researches ?? []).map((research) => ({
-          ...research,
-          lockReason: this.getResearchLockReason({
-            research,
-            playerLevel,
-            prestigeCount,
-            researchById,
-            completedResearchIds,
-          }),
-        })),
-      ),
-    }));
+    const decoratedBoxes = boxes
+      .map((box) => ({
+        ...box,
+        researches: this.orderResearchesNewestFirst(
+          (box.researches ?? [])
+            .filter((research) =>
+              this.hasReachedResearchReveal({
+                research,
+                playerLevel,
+                prestigeCount,
+              }),
+            )
+            .map((research) => ({
+              ...research,
+              lockReason: this.getResearchLockReason({
+                research,
+                playerLevel,
+                prestigeCount,
+                researchById,
+                completedResearchIds,
+              }),
+            })),
+        ),
+      }))
+      .filter((box) => box.researches.length > 0);
 
     return decoratedBoxes;
+  }
+
+  hasReachedResearchReveal({ research, playerLevel, prestigeCount }) {
+    if (research?.completed || research?.inProgress) {
+      return true;
+    }
+
+    if (
+      Number.isInteger(research?.requiredPlayerLevel) &&
+      playerLevel < research.requiredPlayerLevel
+    ) {
+      return false;
+    }
+
+    if (
+      Number.isInteger(research?.requiredPrestigeCount) &&
+      prestigeCount < research.requiredPrestigeCount
+    ) {
+      return false;
+    }
+
+    return true;
   }
 
   orderResearchesNewestFirst(researches = []) {

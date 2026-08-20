@@ -141,7 +141,7 @@ function createPlotControl({ assets, fixture = plotFixture('growing'), input, co
   plot.setBounds(0, 0, 104);
   if (fixture.tapFeedback === true) {
     const now = page.timeSource();
-    plot.startTapAcceleration({ ok: true, reducedSeconds: 1, cooldownMs: 800 }, now - 336);
+    plot.startTapAcceleration({ ok: true, reducedSeconds: 1, cooldownMs: 720 }, now - 336);
     plot.updateTime(now);
   }
   return { destroy: () => plot.destroy(), height: GARDEN_PIXI_GEOMETRY.rowHeight, root: plot.root, width: 104 };

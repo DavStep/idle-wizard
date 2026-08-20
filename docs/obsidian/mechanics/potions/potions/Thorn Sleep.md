@@ -12,7 +12,10 @@ implementation: shipped
 catalog_order: 22
 entity_id: thornSleep
 item_type_id: 2022
-recipe_access: "global discovery"
+recipe_access: "global discovery + recipe research"
+unlock_research_id: "unlockRecipe:thornSleep"
+required_player_level: 29
+previous_recipe_research: "[[mechanics/potions/potions/Sleep Draught|Sleep Draught]]"
 base_sell_coin: 155.2
 value_scope: effective-maincloud-items
 mana_cost: 44
@@ -26,7 +29,7 @@ discovery: "[[mechanics/potions/Potion Discovery|Potion Discovery]]"
 sold_through:
   - "[[mechanics/market/NPC Market|NPC Market]]"
   - "[[mechanics/market/Player Market|Player Market]]"
-verified_on: 2026-07-19
+verified_on: 2026-08-21
 source_files:
   - src/gameplay/items/managers/ItemDefinitionManager.js
   - src/gameplay/items/managers/PotionRecipeManager.js
@@ -37,6 +40,7 @@ source_files:
 
 > [!summary] At a glance
 > Its exact ordered recipe is hidden from players until [[mechanics/potions/Potion Discovery|global discovery]]. Its effective item base sell value is **155.2 coin**.
+> After discovery, other players unlock it through recipe research at level 29 after [[mechanics/potions/potions/Sleep Draught|Sleep Draught]].
 
 ## Ordered recipe
 
@@ -52,7 +56,9 @@ Brewing costs **44 mana** and takes **1m 30s** before bottling. Ingredient order
 
 | Property | Value |
 | --- | --- |
-| Access | [[mechanics/potions/Potion Discovery|Global discovery]] |
+| Access | Discovery owner, or recipe research after global discovery |
+| Required player level | 29 |
+| Previous recipe research | [[mechanics/potions/potions/Sleep Draught|Sleep Draught]] |
 | Player visibility | hidden until discovered |
 
 ## Connections
@@ -64,4 +70,3 @@ Brewing costs **44 mana** and takes **1m 30s** before bottling. Ingredient order
 
 > [!note] Price meaning
 > `base_sell_coin` is the item value. Actual market quotes can vary with demand and market licence.
-
