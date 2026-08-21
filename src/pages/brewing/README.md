@@ -8,8 +8,9 @@ a dim static constellation for reduced-motion players and lower intensity in
 Day.
 
 It renders a pannable brewing world, cauldron nodes, bottom icon buttons that expand inline herb and potion boxes, a recipe-only selection dialog opened from the current cauldron, the next buyable cauldron, brew and bottle actions, navigation, and the bottom page name.
-The compact recipe selector beside `Empty` shows the selected potion art and
-name. It remains available while a batch is brewing or bottling so the player
+The compact recipe selector beside `Empty` shows enlarged selected-potion art
+that may rise above the button face and a name that wraps to two lines when
+needed. It remains available while a batch is brewing or bottling so the player
 can choose that cauldron's next recipe without changing the active batch. The
 new recipe takes over after the active batch is granted; researched Auto Brew
 then continues with that saved recipe when enabled.
@@ -27,7 +28,7 @@ Research. Tapping a missing recipe ingredient opens the herb picker, centers
 that exact herb row, and gives it one short attention boink. A brew request
 opens the Recipes book directly to its required potion card and boinks the
 card's existing action control.
-Tapping the active cauldron during brewing or bottling removes 30% of the remaining time
+Tapping the active cauldron during brewing or bottling removes at most one second from the remaining time
 from its timer, with the same per-target cooldown used by Garden plots.
 A potion automatically granted after bottling plays the same short pop used by
 manual seed summoning.

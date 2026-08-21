@@ -33,12 +33,12 @@ export default [
   widget('compound.workshop-summon-control', 'Workshop Summon Control', ['cost-button', 'info-button', 'primitive.notification-badge'], summonControl, variants(['available', 'unaffordable', 'notified'])),
   widget('compound.root-run-side-action', 'Root Run Side Action', ['primitive.notification-badge', 'compound.trade-alliance-banner'], sideActionControl, variants(['left', 'right', 'disabled', 'notified', 'timed', 'alliance-member'])),
   widget('compound.world-event-donation-option-row', 'World Event Donation Option Row', ['text-button', 'primitive.notification-badge'], donationOptionControl, variants(['available', 'notified', 'unavailable', 'seed-pack'])),
-  widget('compound.trade-alliance-banner', 'Alliance Flag', [], allianceBannerControl, variants(['unity', 'crown', 'crescent', 'crossed-wands', 'owl', 'flame', 'oak-leaf', 'key', 'tower', 'sunburst', 'hourglass', 'dragon'])),
-  widget('primitive.alliance-emblem-option', 'Alliance Emblem Option', [], allianceEmblemOptionControl, variants(['unity', 'crown', 'crescent', 'crossed-wands', 'owl', 'flame', 'oak-leaf', 'key', 'tower', 'sunburst', 'hourglass', 'dragon'])),
+  widget('compound.trade-alliance-banner', 'Alliance Flag', [], allianceBannerControl, variants(['unity', 'crown', 'crescent', 'crossed-wands', 'owl', 'flame', 'oak-leaf', 'key', 'tower', 'sunburst', 'hourglass', 'dragon', 'cauldron', 'sword', 'shield', 'book'])),
+  widget('primitive.alliance-emblem-option', 'Alliance Emblem Option', [], allianceEmblemOptionControl, variants(['unity', 'crown', 'crescent', 'crossed-wands', 'owl', 'flame', 'oak-leaf', 'key', 'tower', 'sunburst', 'hourglass', 'dragon', 'cauldron', 'sword', 'shield', 'book'])),
   widget('compound.alliance-directory-row', 'Alliance Directory Row', ['compound.trade-alliance-banner', 'compound.player-profile', 'primitive.resource-label', 'text-button'], allianceDirectoryControl, variants(['join', 'apply', 'cancel', 'closed', 'overflow'])),
-  widget('compound.alliance-member-row', 'Alliance Member Row', ['compound.player-profile', 'primitive.star-level-label', 'primitive.resource-label', 'text-button'], allianceMemberControl, variants(['leader', 'member', 'same-rank', 'passive'])),
-  widget('compound.alliance-quest-row', 'Alliance Quest Row', ['primitive.progress-bar', 'primitive.resource-label', 'text-button'], allianceQuestControl, variants(['fill', 'route', 'claim', 'claimed', 'overflow'])),
-  widget('compound.leaderboard-row', 'Leaderboard Row', ['compound.player-profile', 'compound.trade-alliance-banner', 'primitive.star-level-label', 'primitive.resource-label'], leaderboardRowControl, variants(['player', 'current-player', 'alliance', 'world-event-points'])),
+  widget('compound.alliance-member-row', 'Alliance Member Row', ['compound.player-profile', 'primitive.star-level-label', 'primitive.resource-label', 'text-button'], allianceMemberControl, variants(['leader', 'member', 'same-rank', 'empty-section', 'passive'])),
+  widget('compound.alliance-quest-row', 'Alliance Quest Row', ['primitive.progress-bar', 'primitive.resource-label', 'text-button'], allianceQuestControl, variants(['fill', 'route', 'claim', 'claimed', 'locked', 'overflow'])),
+  widget('compound.leaderboard-row', 'Leaderboard Row', ['compound.player-profile', 'compound.trade-alliance-banner', 'primitive.star-level-label', 'primitive.resource-label'], leaderboardRowControl, variants(['player', 'current-player', 'alliance', 'current-alliance', 'alliance-overflow', 'world-event-points'])),
   widget('compound.world-event-reward-row', 'World Event Reward Row', [], worldEventRewardRowControl, variants(['two-rewards', 'current-rank', 'one-reward', 'long-rank'])),
   widget('compound.potion-discovery-page', 'Potion Discovery Page', [], potionDiscoveryControl, variants(['discovered', 'undiscovered', 'long-recipe'])),
   widget('compound.workshop-dialog-row', 'Workshop Dialog Row', ['text-button', 'primitive.inline-text'], dialogRowControl, variants(['value', 'resource', 'action', 'locked'])),
@@ -186,15 +186,19 @@ function donationOptionControl({ assets, input, fixture = { state: 'available' }
 
 function allianceMemberControl({ assets, input, fixture = { state: 'leader' }, context }) {
   const control = new AllianceMemberRow({ dialog: dialogStub(assets, input) });
+  const emptySection = fixture.state === 'empty-section';
   control.bind({
-    username: 'Elara',
+    username: emptySection ? '' : 'Elara',
     character: 'elara',
-    roleLabel: fixture.state === 'leader' ? 'Trade Master' : 'Trader',
+    role: fixture.state === 'leader' ? 'tradeMaster' : emptySection ? 'factor' : 'trader',
+    roleLabel: fixture.state === 'leader' ? 'Trade Master' : emptySection ? 'Factor' : 'Trader',
+    roleCountLabel: fixture.state === 'leader' ? '1/1' : emptySection ? '0/5' : '3/50',
     levelLabel: 'Lv 12',
     prestigeCount: 2,
     totalContributionLabel: '12.5k',
     showRankHeader: fixture.state !== 'same-rank',
-    onActivate: fixture.state === 'passive' ? null : () => context?.emit('memberOpened') ?? true,
+    sectionOnly: emptySection,
+    onActivate: fixture.state === 'passive' || emptySection ? null : () => context?.emit('memberOpened') ?? true,
   });
   const height = control.getPreferredHeight();
   control.setBounds(0, 0, 282, height);
@@ -204,6 +208,7 @@ function allianceMemberControl({ assets, input, fixture = { state: 'leader' }, c
 function allianceQuestControl({ assets, input, fixture = { state: 'fill' }, context }) {
   const control = new AllianceQuestRow({ dialog: dialogStub(assets, input) });
   const claimed = fixture.state === 'claimed';
+  const locked = fixture.state === 'locked';
   const route = fixture.state === 'route';
   control.bind({
     id: route ? 'grand-route' : 'fill-mana-tonic',
@@ -214,6 +219,11 @@ function allianceQuestControl({ assets, input, fixture = { state: 'fill' }, cont
         : 'Fill 500 Mana Tonic',
     itemKind: route ? 'resource' : fixture.state === 'overflow' ? 'seed' : 'potion',
     itemKey: route ? 'coin' : fixture.state === 'overflow' ? 'moonflowerSeed' : 'manaTonic',
+    objectiveLabel: route
+      ? 'Collect 250,000 Gold Coins'
+      : fixture.state === 'overflow'
+        ? 'Donate 5,000 Moonflower Seeds'
+        : 'Donate 500 Mana Tonics',
     contributionLabel: route
       ? 'Your contribution 12,500/12,500'
       : 'Your contribution 8/10',
@@ -221,12 +231,24 @@ function allianceQuestControl({ assets, input, fixture = { state: 'fill' }, cont
     progress: route ? 86_027 / 250_000 : fixture.state === 'fill' ? 0.45 : 1,
     rewardAmountLabel: route ? '12' : '3',
     rewardResource: 'crystal',
-    actionLabel: claimed ? 'Claimed' : route || fixture.state === 'claim' ? 'Claim' : 'Fill',
-    actionVariant: claimed || route ? 'gray' : 'green',
-    enabled: !claimed && !route,
+    actionLabel: claimed
+      ? 'Claimed'
+      : locked
+        ? 'Locked'
+        : route || fixture.state === 'claim'
+          ? 'Claim'
+          : 'Fill',
+    actionVariant: claimed || locked || route ? 'gray' : 'green',
+    claimed,
+    enabled: !claimed && !locked && !route,
+    lockReason: locked
+      ? 'Quest progress this week belongs to Moss Hall. Rejoin that alliance to continue, or wait for the weekly reset.'
+      : '',
     actionWidth: 72,
     actionHeight: 42,
-    onActivate: claimed || route ? null : () => context?.emit('allianceQuestActivated') ?? true,
+    onActivate: claimed || route
+      ? null
+      : () => context?.emit(locked ? 'allianceQuestLocked' : 'allianceQuestActivated') ?? true,
   });
   const height = control.getPreferredHeight(252);
   control.setBounds(0, 0, 252, height);
@@ -235,7 +257,9 @@ function allianceQuestControl({ assets, input, fixture = { state: 'fill' }, cont
 
 function leaderboardRowControl({ assets, input, fixture = { state: 'player' }, context }) {
   const control = new LeaderboardRowPixi({ dialog: dialogStub(assets, input) });
-  const alliance = fixture.state === 'alliance';
+  const alliance = ['alliance', 'current-alliance', 'alliance-overflow'].includes(fixture.state);
+  const currentAlliance = fixture.state === 'current-alliance';
+  const allianceOverflow = fixture.state === 'alliance-overflow';
   const worldEvent = fixture.state === 'world-event-points';
   control.bind(
     alliance
@@ -243,14 +267,22 @@ function leaderboardRowControl({ assets, input, fixture = { state: 'player' }, c
           id: 'night-owls',
           type: 'leaderboardAlliance',
           rank: 2,
-          name: 'Night Owls',
-          allianceTag: 'OWL',
+          name: allianceOverflow
+            ? 'The Fellowship of Patient Night Traders Beyond The Moon'
+            : 'Night Owls',
+          allianceTag: allianceOverflow ? 'ROOT' : 'OWL',
           allianceTagColor: 'violet',
           bannerColor: 'violet',
           emblemColor: 'white',
           emblemId: 'sunburst',
+          leaderName: allianceOverflow ? 'ArchwizardLongname' : 'Elara',
+          leaderCharacter: 'elara',
+          leaderFrame: 'violet',
           memberCount: 34,
-          totalCoinLabel: '707k',
+          memberCapacity: 50,
+          current: currentAlliance,
+          totalCoinLabel: allianceOverflow ? '987.6m' : '707k',
+          totalSuffix: 'total',
           onActivate: () => context?.emit('allianceOpened') ?? true,
         }
       : {
@@ -274,8 +306,9 @@ function leaderboardRowControl({ assets, input, fixture = { state: 'player' }, c
           onActivate: () => context?.emit('playerOpened') ?? true,
         },
   );
-  control.setBounds(0, 0, 258, 50);
-  return wrap(control, 258, 50);
+  const height = control.getPreferredHeight();
+  control.setBounds(0, 0, 258, height);
+  return wrap(control, 258, height);
 }
 
 function worldEventRewardRowControl({ assets, input, fixture = { state: 'two-rewards' } }) {

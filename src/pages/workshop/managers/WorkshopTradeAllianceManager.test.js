@@ -481,7 +481,7 @@ describe('WorkshopTradeAllianceManager styles', () => {
     const emblemOptions = popup.querySelectorAll(
       '.workshop-page__trade-alliance-emblem-option',
     );
-    expect(emblemOptions).toHaveLength(12);
+    expect(emblemOptions).toHaveLength(16);
     const owlOption = popup.querySelector('[data-emblem-id="owl"]');
     const flameOption = popup.querySelector('[data-emblem-id="flame"]');
     expect(

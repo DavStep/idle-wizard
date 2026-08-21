@@ -281,6 +281,45 @@ describe('retained global Pixi dialogs', () => {
     harness.dispose();
   });
 
+  it('shows permitted alliance member actions in Player Info', () => {
+    const harness = createHarness();
+    const promoteAllianceMember = vi.fn(() => true);
+    const demoteAllianceMember = vi.fn(() => true);
+    const kickAllianceMember = vi.fn(() => true);
+    const player = harness.registry.open(GLOBAL_DIALOG_IDS.PLAYER, {
+      player: createPlayer(),
+      ownPlayer: false,
+      relationship: 'stranger',
+      allianceMemberActions: {
+        role: 'broker',
+        promoteLabel: 'Promote',
+        demoteLabel: 'Demote',
+        kickLabel: 'Kick',
+      },
+      actions: {
+        addFriend: () => true,
+        promoteAllianceMember,
+        demoteAllianceMember,
+        kickAllianceMember,
+      },
+    });
+
+    expect(player.alliancePromoteButton.visible).toBe(true);
+    expect(player.alliancePromoteButton.textLabel.text).toBe('Promote');
+    expect(player.allianceDemoteButton.visible).toBe(true);
+    expect(player.allianceDemoteButton.textLabel.text).toBe('Demote');
+    expect(player.allianceKickButton.visible).toBe(true);
+    expect(player.allianceKickButton.textLabel.text).toBe('Kick');
+    expect(player.alliancePromoteButton.activate()).toBe(true);
+    expect(player.allianceDemoteButton.activate()).toBe(true);
+    expect(player.allianceKickButton.activate()).toBe(true);
+    expect(promoteAllianceMember).toHaveBeenCalledOnce();
+    expect(demoteAllianceMember).toHaveBeenCalledOnce();
+    expect(kickAllianceMember).toHaveBeenCalledOnce();
+
+    harness.dispose();
+  });
+
   it('routes settings, feedback, player, alliance and confirmation actions', async () => {
     const harness = createHarness();
     const saveUsername = vi.fn(() => ({ ok: true }));
@@ -1363,12 +1402,19 @@ describe('retained global Pixi dialogs', () => {
     harness.dispose();
   });
 
-  it('renders the normalized avatar cut 15% larger, bottom-aligned, without distortion', () => {
+  it('contain-fits the complete avatar asset without masking or distortion', () => {
     const characterTexture = new Texture({
       source: new TextureSource({
         resource: { width: 87, height: 108 },
         width: 87,
         height: 108,
+      }),
+    });
+    const replacementTexture = new Texture({
+      source: new TextureSource({
+        resource: { width: 108, height: 87 },
+        width: 108,
+        height: 87,
       }),
     });
     const harness = createHarness({ characterTexture });
@@ -1385,14 +1431,25 @@ describe('retained global Pixi dialogs', () => {
     const avatar = settings.avatars.getWidgets()[0];
 
     const portrait = avatar.profileWidget.avatarWidget.portrait;
-    expect(portrait.width / portrait.height).toBe(1);
-    expect(portrait.width).toBeCloseTo(148 * 1.15);
-    expect(portrait.x).toBeCloseTo((186 - portrait.width) / 2);
+    expect(portrait.width / portrait.height).toBeCloseTo(87 / 108);
+    expect(portrait.width).toBeCloseTo(148 * (87 / 108));
+    expect(portrait.height).toBeCloseTo(148);
+    expect(portrait.x).toBeCloseTo(19 + (148 - portrait.width) / 2);
     expect(portrait.y + portrait.height).toBeCloseTo(19 + 148);
-    expect(avatar.profileWidget.avatarWidget.maskShape.getBounds().y).toBe(0);
+    expect(portrait.mask ?? null).toBeNull();
+    expect(avatar.profileWidget.avatarWidget).not.toHaveProperty('maskShape');
+
+    avatar.profileWidget.setTexture(replacementTexture);
+
+    expect(portrait.width / portrait.height).toBeCloseTo(108 / 87);
+    expect(portrait.width).toBeCloseTo(148);
+    expect(portrait.height).toBeCloseTo(148 * (87 / 108));
+    expect(portrait.x).toBeCloseTo(19);
+    expect(portrait.y + portrait.height).toBeCloseTo(19 + 148);
 
     harness.dispose();
     characterTexture.destroy();
+    replacementTexture.destroy();
   });
 
   it('reuses warmed mail and member widgets without new allocations', () => {

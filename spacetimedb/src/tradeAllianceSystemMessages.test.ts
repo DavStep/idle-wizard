@@ -110,7 +110,7 @@ describe('trade alliance system messages', () => {
     ).toContain('formatTradeAllianceKickedMessage');
   });
 
-  it('stores the announced player identity for system-message avatars', () => {
+  it('stores the announced player identity for system-message player links', () => {
     const reducerSource = readFileSync(
       new URL('./index.ts', import.meta.url),
       'utf8',

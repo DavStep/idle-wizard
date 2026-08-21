@@ -73,6 +73,30 @@ export const TRADE_ALLIANCE_EMBLEMS = Object.freeze([
     assetId: 'source:assets/icons/icon-alliance-emblem-dragon.png',
     url: new URL('../../assets/game/source/icons/icon-alliance-emblem-dragon.png', import.meta.url).href,
   }),
+  Object.freeze({
+    id: 'cauldron',
+    label: 'Cauldron',
+    assetId: 'source:assets/icons/icon-alliance-emblem-cauldron.png',
+    url: new URL('../../assets/game/source/icons/icon-alliance-emblem-cauldron.png', import.meta.url).href,
+  }),
+  Object.freeze({
+    id: 'sword',
+    label: 'Sword',
+    assetId: 'source:assets/icons/icon-alliance-emblem-sword.png',
+    url: new URL('../../assets/game/source/icons/icon-alliance-emblem-sword.png', import.meta.url).href,
+  }),
+  Object.freeze({
+    id: 'shield',
+    label: 'Shield',
+    assetId: 'source:assets/icons/icon-alliance-emblem-shield.png',
+    url: new URL('../../assets/game/source/icons/icon-alliance-emblem-shield.png', import.meta.url).href,
+  }),
+  Object.freeze({
+    id: 'book',
+    label: 'Book',
+    assetId: 'source:assets/icons/icon-alliance-emblem-book.png',
+    url: new URL('../../assets/game/source/icons/icon-alliance-emblem-book.png', import.meta.url).href,
+  }),
 ]);
 
 const EMBLEMS_BY_ID = new Map(

@@ -5,6 +5,14 @@ upload script posts the section whose heading matches `package.json` `version`.
 Write these developer-to-player notes only in Idle Wizard terms. Do not mention
 other game names, source projects, ports, or implementation provenance.
 
+## 0.3.87
+
+- Refined Trade Alliance rosters with rank-by-rank capacity headers, manager actions directly in Player Info, four new banner emblems, and richer alliance leaderboard rows with leader and membership details.
+- Improved Alliance Quests with clearer objectives, centered progress, personal contribution and reward details, a dedicated claimed state, and useful feedback when weekly participation belongs to a previous alliance.
+- Improved World and Alliance Chat announcements with compact player portraits, every mentioned wizard highlighted in the message, and direct access to the primary player's profile.
+- Refined Research visibility and progression, including independent Harvest All research and cleaner handling for completed unlocks and maxed timer upgrades.
+- Polished Brewing and Garden controls, short-screen spacing, tap targets, and planting impact feedback for clearer, more responsive room interactions.
+
 ## 0.3.86
 
 - Refined Trade Alliances with illustrated destination tabs, role-grouped member lists, clearer prestige and lifetime contribution details, and roomier quest rows with visible progress, personal contribution, and rewards.

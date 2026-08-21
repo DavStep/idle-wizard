@@ -48,7 +48,7 @@ experience_type: gameplay-economy
 - Workshop discoveries potion rows mirror the Brewing recipe row structure, with inline ingredients and cost/time metadata instead of click-open recipe details; undiscovered row titles say `unknown potion`, and discovered row titles say `<potion>: discovered by <username>`.
 - Wasted potion is not researchable. Its source fallback base sell value is 1 coin; the verified Maincloud item value is 0.8 coin.
 - Research prices come from SpacetimeDB `research_config`/`game_config.research`; seed unlock research gates summon drops, and recipe unlock research gates known potion brewing.
-- Garden bulk controls are regular coin studies: `garden:plantAll` at level 5 for 1,000 coin, followed by `garden:harvestAll` at level 10 for 10,000 coin.
+- Garden bulk controls are independent regular coin studies: `garden:plantAll` at level 5 for 1,000 coin and `garden:harvestAll` at level 10 for 10,000 coin; neither requires the other.
 - Live regular-coin research prices are overridden by `research_config`; prod price changes must update both `game_config.research` and matching `research_config` rows.
 - Regular research completion time comes from `research_config.durationSeconds`; client `game_config.research.researchDurationsSeconds` is the bootstrap fallback.
 - Research timers are capped at `4 hours`; crystal, ruby automation, and emerald advanced research are always instant in both client balance rules and server `game_config.research` normalization.
@@ -60,7 +60,7 @@ experience_type: gameplay-economy
 - Summon multiplier research is ordered `x2 -> x3 -> x4 -> x5`; each later multiplier requires the previous one.
 - `summonSeedsX2` through `summonSeedsX5` use the highest completed multiplier; summon cost and rolled seed count both scale from 10 mana.
 - Initial local gameplay defaults: mana cap `50`, mana generation `1/second`, seed summon cost `10`, and configured herb growth ranges from `12s` to `962s` across the 24-herb catalog.
-- Every herb and potion timer-mastery series has 19 ranks. The reduction model therefore uses `185%` as its starting scale and reaches `90 / 185` of the configured production timer at full mastery.
+- Every herb and potion timer-mastery series has 19 ranks. A completed seed/recipe unlock row converts into its speed series and stays hidden from the completed-row eye; at full mastery the terminal speed rank remains eye-visible. The reduction model uses `185%` as its starting scale and reaches `90 / 185` of the configured production timer at full mastery.
 - Amber is the player-facing hard currency; retain internal/save key `crystal` with no balance migration. It is the contextual fourth top-HUD currency, player levels grant `playerLevel.crystal.perLevel` starting at level 1, and plot/cauldron multiplier research spends it.
 - Amethyst is a separate persistent currency starting at 0 and is always one of the three primary top-HUD currencies. Research skips cost `ceil(remainingSeconds / 60)` Amethyst and complete through the normal research-completion path.
 - Ruby is the prestige currency; it appears in the top panel only where usable, and automation research spends it.

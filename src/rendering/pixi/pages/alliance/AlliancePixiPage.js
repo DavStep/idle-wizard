@@ -24,6 +24,7 @@ import {
 } from '../../theme/PixiPageBackground.js';
 import { PlayerRelationshipRowPixi } from '../../global/dialogs/PlayerRelationshipRowPixi.js';
 import { RootRunHudCurrencyCapsule } from '../../global/chrome/RootRunTopHudWidgets.js';
+import { TRADE_ALLIANCE_ROLES } from '../../../../shared/tradeAllianceRoles.js';
 import {
   ALLIANCE_DIALOG_CONTENT_WIDTH,
   AllianceDirectoryRow,
@@ -331,7 +332,9 @@ export class AlliancePixiPage extends BasePixiRetainedView {
       .setSize(leaveWidth, 26)
       .setAction(membership?.onActivate)
       .setEnabled(membership?.enabled !== false && Boolean(membership?.onActivate));
-    this.homeMemberRows.rows.reconcile(this.model.members);
+    this.homeMemberRows.rows.reconcile(
+      createAllianceHomeRosterRows(this.model.members),
+    );
 
     this.directory.rows.reconcile(this.model.directoryRows);
     this.quests.rows.reconcile(this.model.questRows);
@@ -786,6 +789,35 @@ function normalizeAllianceModel(viewModel = {}) {
     requestsSettings: model.requestsSettings ?? null,
     settings: model.settings ?? null,
   };
+}
+
+function createAllianceHomeRosterRows(members = []) {
+  const safeMembers = Array.isArray(members) ? members : [];
+  return TRADE_ALLIANCE_ROLES.flatMap((role) => {
+    const roleMembers = safeMembers.filter(
+      (member) => String(member?.role ?? 'trader') === role.id,
+    );
+    const roleCountLabel = `${roleMembers.length}/${role.maxMembers}`;
+
+    if (roleMembers.length === 0) {
+      return [
+        {
+          id: `alliance-role-section:${role.id}`,
+          role: role.id,
+          roleLabel: role.label,
+          roleCountLabel,
+          sectionOnly: true,
+          showRankHeader: true,
+        },
+      ];
+    }
+
+    return roleMembers.map((member, index) => ({
+      ...member,
+      showRankHeader: index === 0,
+      roleCountLabel: index === 0 ? roleCountLabel : '',
+    }));
+  });
 }
 
 class AllianceJoinModePane {

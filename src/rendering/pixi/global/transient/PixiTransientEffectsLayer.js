@@ -83,12 +83,12 @@ const ITEM_DROP_SIZES = Object.freeze({
   potion: 36,
 });
 const GARDEN_HARVEST_ANCHOR_SLOTS = 5;
-const GARDEN_SEED_DROP_SIZE = ITEM_DROP_SIZES.seed * 0.75;
-const GARDEN_PLANT_DROP_DURATION_MS = 500;
-const GARDEN_PLANT_DROP_OFFSET_Y = 60;
-const GARDEN_PLANT_DROP_IMPACT_PROGRESS = 0.52;
-const GARDEN_PLANT_DROP_STRETCH_PROGRESS = 0.42;
-const GARDEN_PLANT_DROP_DISAPPEAR_PROGRESS = 0.64;
+const GARDEN_SEED_DROP_SIZE = ITEM_DROP_SIZES.seed * 0.85;
+const GARDEN_PLANT_DROP_DURATION_MS = 460;
+const GARDEN_PLANT_DROP_OFFSET_Y = 48;
+const GARDEN_PLANT_DROP_IMPACT_PROGRESS = 0.46;
+const GARDEN_PLANT_DROP_SQUASH_END_PROGRESS = 0.55;
+const GARDEN_PLANT_DROP_DISAPPEAR_PROGRESS = 0.66;
 const REWARD_FLYOUT_VISUALS = Object.freeze({
   backgroundColor: 0x000000,
   backgroundAlpha: 0.62,
@@ -2457,44 +2457,37 @@ function interpolateGardenPlantDropFrame(progress) {
   let scaleY;
   let alpha = 1;
 
-  if (safeProgress < GARDEN_PLANT_DROP_STRETCH_PROGRESS) {
-    const stretchProgress = cubicBezier(
-      safeProgress / GARDEN_PLANT_DROP_STRETCH_PROGRESS,
-      0.22,
-      1,
-      0.36,
-      1,
-    );
-    scaleX = lerp(0.96, 0.88, stretchProgress);
-    scaleY = lerp(0.96, 1.15, stretchProgress);
-  } else if (safeProgress < GARDEN_PLANT_DROP_IMPACT_PROGRESS) {
+  if (safeProgress < GARDEN_PLANT_DROP_IMPACT_PROGRESS) {
+    scaleX = lerp(0.98, 0.84, acceleratedDrop);
+    scaleY = lerp(0.96, 1.22, acceleratedDrop);
+  } else if (safeProgress < GARDEN_PLANT_DROP_SQUASH_END_PROGRESS) {
     const squashProgress = cubicBezier(
-      (safeProgress - GARDEN_PLANT_DROP_STRETCH_PROGRESS) /
-        (GARDEN_PLANT_DROP_IMPACT_PROGRESS -
-          GARDEN_PLANT_DROP_STRETCH_PROGRESS),
-      0.22,
+      (safeProgress - GARDEN_PLANT_DROP_IMPACT_PROGRESS) /
+        (GARDEN_PLANT_DROP_SQUASH_END_PROGRESS -
+          GARDEN_PLANT_DROP_IMPACT_PROGRESS),
+      0.25,
       1,
-      0.36,
+      0.5,
       1,
     );
-    scaleX = lerp(0.88, 1.18, squashProgress);
-    scaleY = lerp(1.15, 0.7, squashProgress);
+    scaleX = lerp(0.84, 1.24, squashProgress);
+    scaleY = lerp(1.22, 0.64, squashProgress);
   } else {
     const disappearProgress = Math.min(
       1,
-      (safeProgress - GARDEN_PLANT_DROP_IMPACT_PROGRESS) /
+      (safeProgress - GARDEN_PLANT_DROP_SQUASH_END_PROGRESS) /
         (GARDEN_PLANT_DROP_DISAPPEAR_PROGRESS -
-          GARDEN_PLANT_DROP_IMPACT_PROGRESS),
+          GARDEN_PLANT_DROP_SQUASH_END_PROGRESS),
     );
     const easedDisappear = cubicBezier(
       disappearProgress,
-      0.22,
+      0.25,
       1,
-      0.36,
+      0.5,
       1,
     );
-    scaleX = lerp(1.18, 1.28, easedDisappear);
-    scaleY = lerp(0.7, 0.48, easedDisappear);
+    scaleX = lerp(1.24, 1.08, easedDisappear);
+    scaleY = lerp(0.64, 0.32, easedDisappear);
     alpha = 1 - easedDisappear;
   }
   return {

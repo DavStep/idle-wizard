@@ -45,34 +45,36 @@ export const BREWING_HUD_GEOMETRY = Object.freeze({
   edge: 16,
   top: PIXI_UI_GEOMETRY.roomContentTop,
   carouselHeight: 583,
-  detailTop: 567,
+  detailTop: 534,
   detailHeight: 120,
   detailChatGap: 3,
   detailInset: 0,
   detailContentInset: 10,
-  recipeButtonWidth: 120,
-  recipeIconSize: 25,
-  recipeIconY: 14,
-  recipeLabelY: 27,
+  recipeButtonWidth: 78,
+  recipeIconSize: 34,
+  recipeIconY: 5,
+  recipeLabelY: 25,
   recipeLabelFontSize: 9,
+  recipeLabelLineHeight: 9,
+  recipeLabelInset: 4,
   autoButtonWidth: 32,
   configurationButtonHeight: PIXI_UI_GEOMETRY.roomControlHeight,
   quantityButtonWidth: 32,
   configurationGap: 6,
-  autoIconHeight: 21,
-  autoLabelY: 21,
+  autoIconHeight: 27,
+  autoLabelY: 23,
   autoHitSize: 44,
   autoHitTop: -4,
   emptyButtonWidth: 40,
   emptyButtonHeight: PIXI_UI_GEOMETRY.roomControlHeight,
   emptyButtonGapAboveDetail: 8,
-  emptyIconWidth: 24,
-  emptyIconHeight: 19,
-  emptyLabelY: 23,
+  emptyIconWidth: 32,
+  emptyIconHeight: 25,
+  emptyLabelY: 24,
   emptyHitSize: 44,
   quantityHitSize: 44,
   potionIconSize: 50,
-  carouselContentOffset: 32,
+  carouselContentOffset: 0,
   titleHeight: PIXI_ROOT_RUN_GEOMETRY.marketTitleRibbon.height,
   previewTopGap: 62,
   ingredientRowGap: 60,
@@ -277,6 +279,7 @@ export class BrewingHudPixi {
       this.inputRouter?.registerPressTarget?.({
         id: 'brewing.cauldron.tap',
         displayObject: this.cauldronArt,
+        fallbackHitTest: true,
         enabled: () =>
           this.canAccelerateSelectedCauldron() ||
           this.isSelectedCauldronResearchLocked(),
@@ -361,6 +364,7 @@ export class BrewingHudPixi {
       'yellow',
       () => this.actions.openRecipes?.(this.selectedIndex),
       'brewing:recipes',
+      { fallbackHitTest: true },
     );
     this.recipePotionIcon = new Sprite(Texture.EMPTY);
     this.recipePotionIcon.anchor.set(0.5);
@@ -372,6 +376,13 @@ export class BrewingHudPixi {
         this.recipes.control.textLabel,
       ),
     );
+    // The shared skin refresh recenters labels, so restore this compound layout.
+    const syncRecipeAppearance =
+      this.recipes.control.syncContentAppearance.bind(this.recipes.control);
+    this.recipes.control.syncContentAppearance = (visualGeometry) => {
+      syncRecipeAppearance(visualGeometry);
+      this.layoutRecipeButtonContent();
+    };
     this.autoBrew = this.createButton('autobrew', 'Auto', 'yellow', () =>
       this.actions.toggleAutoBrew?.(this.selectedIndex),
     );
@@ -588,13 +599,21 @@ export class BrewingHudPixi {
     this.applyTheme(theme);
   }
 
-  createButton(name, label, variant, action, tutorialId = null) {
+  createButton(
+    name,
+    label,
+    variant,
+    action,
+    tutorialId = null,
+    { fallbackHitTest = false } = {},
+  ) {
     return new RetainedButton({
       assetManager: this.assetManager,
       inputRouter: this.inputRouter,
       semanticRegistry: this.semanticTargets,
       semanticId: `brewing.${name}`,
       tutorialId,
+      fallbackHitTest,
       buttonLabel: `brewing-${name}`,
       label,
       variant,
@@ -1601,12 +1620,10 @@ export class BrewingHudPixi {
     );
     this.recipes.control.textLabel
       .setFontSize(BREWING_HUD_GEOMETRY.recipeLabelFontSize)
-      .setLineHeight(BREWING_HUD_GEOMETRY.recipeLabelFontSize + 2);
-    fitTextLabelToWidth(
-      this.recipes.control.textLabel,
-      this.recipes.width - 8,
-      BREWING_HUD_GEOMETRY.recipeLabelFontSize,
-    );
+      .setLineHeight(BREWING_HUD_GEOMETRY.recipeLabelLineHeight)
+      .setWrapWidth(
+        this.recipes.width - BREWING_HUD_GEOMETRY.recipeLabelInset * 2,
+      );
     this.recipes.control.textLabel.position.set(
       this.recipes.width / 2,
       this.recipePotionIcon.visible
@@ -3087,18 +3104,6 @@ function toTitleCase(value) {
   return String(value ?? '').replace(/\b[a-z]/g, (character) =>
     character.toUpperCase(),
   );
-}
-
-function fitTextLabelToWidth(
-  label,
-  maximumWidth,
-  preferredFontSize,
-) {
-  label.scale.set(1);
-  label.setFontSize(preferredFontSize);
-  if (label.measuredWidth > maximumWidth && label.measuredWidth > 0) {
-    label.scale.x = maximumWidth / label.measuredWidth;
-  }
 }
 
 function centeredText(text, style) {

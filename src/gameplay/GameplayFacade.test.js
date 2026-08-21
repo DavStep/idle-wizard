@@ -2931,6 +2931,13 @@ describe("GameplayFacade", () => {
         effect: "bulk action",
         seriesId: "gardenBulkActions",
       }),
+      expect.objectContaining({
+        id: gardenBulkResearchIds.harvestAll,
+        value: "locked",
+        effect: "bulk action",
+        seriesId: "gardenBulkActions",
+        requiredResearchIds: [],
+      }),
     ]);
     expect(research.boxes[1].researches).toHaveLength(24);
     expect(research.boxes[1].researches[0]).toMatchObject({

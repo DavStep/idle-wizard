@@ -74,13 +74,9 @@ export default defineUiEditorIntegration({
       mount: mountWorldChatMessageRow,
     },
     {
-      fixture: createSystemFixture({
-        character: 'mira',
-        frame: 'violet',
-        showSystemAvatar: true,
-      }),
+      fixture: createSystemFixture(),
       id: 'alliance-system',
-      label: 'Alliance system avatar',
+      label: 'Alliance system usernames',
       mount: mountWorldChatMessageRow,
     },
     {
@@ -251,12 +247,19 @@ function createPlayerFixture(overrides = {}) {
 function createSystemFixture(overrides = {}) {
   return {
     ageLabel: '1m',
-    body: 'discovered a rare potion.',
+    body: 'Mira was approved by Luna and joined the alliance.',
+    bodyRuns: [
+      { kind: 'text', text: 'Mira', tone: 'systemPlayer' },
+      { kind: 'text', text: ' was approved by ' },
+      { kind: 'text', text: 'Luna', tone: 'systemPlayer' },
+      { kind: 'text', text: ' and joined the alliance.' },
+    ],
     character: 'mira',
     frame: 'violet',
     id: 'world-chat-system',
-    systemPlayerDetail: 'discovered a rare potion.',
+    systemPlayerDetail: 'was approved by Luna and joined the alliance.',
     systemPlayerUsername: 'Mira',
+    showSystemAvatar: true,
     type: 'system',
     username: 'System',
     ...overrides,

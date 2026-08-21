@@ -1017,7 +1017,12 @@ describe("GardenPixiPage", () => {
       width: GARDEN_PIXI_GEOMETRY.automatedControlHitSize,
       height: GARDEN_PIXI_GEOMETRY.automatedControlHitSize,
     });
-    expect(plot.autoGear.height).toBe(21);
+    expect(plot.autoGear.height).toBe(
+      GARDEN_PIXI_GEOMETRY.automatedAutoIconHeight,
+    );
+    expect(plot.autoButton.textLabel.y).toBe(
+      GARDEN_PIXI_GEOMETRY.automatedAutoLabelY,
+    );
     expect(plot.autoButton.textLabel.fontSize).toBe(10);
     expect(plot.autoButton.visual.getChildIndex(plot.autoGear)).toBeLessThan(
       plot.autoButton.visual.getChildIndex(plot.autoButton.textLabel),
@@ -1318,7 +1323,7 @@ describe("GardenPixiPage", () => {
     expect(plot.plant.visible).toBe(true);
     expect(plot.plant.alpha).toBe(0);
 
-    now = 300 + 500 * 0.5;
+    now = 300 + 460 * 0.44;
     harness.page.tick(now);
     expect(harness.page.actionBar.seedsButton.seedPack.y).toBe(
       restingSeedPackY,
@@ -1335,12 +1340,12 @@ describe("GardenPixiPage", () => {
     expect(plot.receiveScaleY).toBe(1);
     expect(plot.plant.alpha).toBe(0);
 
-    now = 300 + 500 * 0.64;
+    now = 300 + 460 * 0.58;
     harness.page.tick(now);
     expect(plot.frame.pivot).toMatchObject({ x: 44, y: 42 });
-    expect(plot.receiveOffsetY).toBeGreaterThan(1);
-    expect(plot.receiveScaleX).toBeGreaterThan(1.04);
-    expect(plot.receiveScaleY).toBeLessThan(0.95);
+    expect(plot.receiveOffsetY).toBeGreaterThan(1.5);
+    expect(plot.receiveScaleX).toBeGreaterThan(1.06);
+    expect(plot.receiveScaleY).toBeLessThan(0.92);
     expect(plot.plant.alpha).toBeGreaterThan(0);
     expect(plot.plant.alpha).toBeLessThan(1);
     expect(plot.plantSlots[0].revealMotion.position).toMatchObject({
@@ -1353,7 +1358,7 @@ describe("GardenPixiPage", () => {
     expect(plot.plantSlots[0].revealMotion.scale.y).toBeLessThan(1);
     expect(plot.plant.anchor).toMatchObject({ x: 0.5, y: 1 });
 
-    now = 800;
+    now = 760;
     harness.page.tick(now);
     expect(plot.receiveStartedAt).toBeNull();
     expect(plot.frame.scale).toMatchObject({ x: 1, y: 1 });

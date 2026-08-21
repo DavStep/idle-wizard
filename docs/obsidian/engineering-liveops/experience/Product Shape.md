@@ -75,6 +75,7 @@ experience_type: product-shape
 - Dialog open paths must reset pending enter/exit animation state before showing; stale animation classes can block reopen attempts.
 - Fresh retained-dialog opens must discard the previous entry point's tab while same-open refreshes preserve it; otherwise Settings can inherit the Wizard pane.
 - Trade Alliance retained dialogs must preserve both membership branches: owned Home/Quests/Settings and unaffiliated Browse/Create. Leaving resets the selected tab to Browse, and Create routes through `TradeAllianceBackendFacade`.
+- Trade Alliance member actions must compare the actor and target through the shared role hierarchy, not a coarse `canManageRoles` flag; Factors can manage Brokers and Traders even though only Quartermasters can manage every lower rank.
 - Retained rows with a whole-row opener and nested action must layer passive visuals below the row hit target and the nested action above it; this preserves body taps while preventing action fall-through.
 - Retained-dialog snapshot refreshes must bind in place without raising the dialog; only explicit open actions may reorder the modal stack, so a nested Alliance Info dialog stays above Player Info until it closes.
 - Cauldron tap opens should fire from no-drag world pointerup when the press started on a cauldron; Android/WebView can retarget the native click to the world shell, especially from empty overlays.
@@ -370,6 +371,7 @@ experience_type: product-shape
 - Workshop side-control hit areas must partition on the `52.25px` row pitch; using the taller visual widget bounds lets the next control steal taps from labels such as `Leaderboard`.
 - Retained dialog presenters must preserve the full feature record instead of flattening rich data into generic label/value rows; potion discovery projection includes art key, discoverer, timestamp, ingredients, mana, duration, and royalty.
 - Retained Pixi tutorial overlays can report the stage root for a guided room press even when the pointer is inside the control bounds; opt only the affected registration into geometric fallback hit-testing and gate that fallback on the control's normal visibility and interactivity.
+- Retained Brewing cauldron acceleration needs geometric fallback hit-testing because the visible liquid is a sibling layered above the registered cauldron art; path-only routing drops presses that land on the liquid.
 - Retained Pixi info buttons need geometric fallback hit-testing within their existing hit area; an adjacent disabled control can retarget the event path to an overlay/root while the info action must remain available.
 - Workshop summon reward feedback should pulse the matching requirement row only; connector lines across the room read as confusing.
 - Workshop summon requirement pulse should use the existing progress fill only; outlining or filling the row reads as a stray nested box over the item.

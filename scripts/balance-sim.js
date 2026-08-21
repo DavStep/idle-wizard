@@ -1408,7 +1408,7 @@ function createResearchCatalog({ herbDefinitions, recipes, seedDefinitions }) {
     {
       id: gardenBulkResearchIds.harvestAll,
       label: 'harvest all',
-      requiredResearchIds: [gardenBulkResearchIds.plantAll],
+      requiredResearchIds: [],
     },
   );
 

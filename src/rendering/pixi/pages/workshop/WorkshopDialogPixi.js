@@ -24,6 +24,7 @@ import {
   normalizeTradeAllianceEmblem,
 } from '../../../../shared/tradeAllianceEmblems.js';
 import { PixiTextButton } from '../../primitives/PixiTextButton.js';
+import { getPixiButtonSkin } from '../../primitives/PixiButtonStyle.js';
 import { ClickableWidget } from '../../primitives/ClickableWidget.js';
 import {
   PIXI_DIALOG_BASE_GEOMETRY,
@@ -134,6 +135,9 @@ const FRIENDS_DIALOG_HEIGHT = 594;
 const WORLD_CHAT_ROW_SCROLLBAR_GUTTER = 3;
 const WORLD_CHAT_AVATAR_SIZE = 22 * WORLD_CHAT_ROW_HEIGHT_SCALE * WORLD_CHAT_AVATAR_SCALE;
 const WORLD_CHAT_TEXT_X = 25 * WORLD_CHAT_ROW_HEIGHT_SCALE * WORLD_CHAT_AVATAR_SCALE;
+const WORLD_CHAT_SYSTEM_AVATAR_SIZE = 20;
+const WORLD_CHAT_SYSTEM_AVATAR_LEFT = 6;
+const WORLD_CHAT_SYSTEM_AVATAR_GAP = 4;
 const WORLD_CHAT_HEADER_FONT_SIZE = 11 * WORLD_CHAT_TEXT_SCALE;
 const WORLD_CHAT_HEADER_HEIGHT = 12 * WORLD_CHAT_ROW_HEIGHT_SCALE * WORLD_CHAT_TEXT_SCALE;
 const WORLD_CHAT_HEADER_TOP = -1;
@@ -221,6 +225,13 @@ const ALLIANCE_DIRECTORY_INFO_LINE_GAP = 30;
 const ALLIANCE_DIRECTORY_LEADER_ROLE_GAP = 14;
 const ALLIANCE_DIRECTORY_BANNER_TOP = 7;
 const ALLIANCE_DIRECTORY_SECTION_INSET = 8;
+const LEADERBOARD_ALLIANCE_ROW_HEIGHT = ALLIANCE_DIRECTORY_ROW_HEIGHT;
+const LEADERBOARD_ALLIANCE_FLAG_SIZE = ALLIANCE_DIRECTORY_BANNER_SIZE;
+const LEADERBOARD_ALLIANCE_LEADER_PROFILE_SIZE = ALLIANCE_DIRECTORY_LEADER_PROFILE_SIZE;
+const LEADERBOARD_ALLIANCE_INFO_TOP = ALLIANCE_DIRECTORY_INFO_TOP;
+const LEADERBOARD_ALLIANCE_LEADER_ROLE_GAP = ALLIANCE_DIRECTORY_LEADER_ROLE_GAP;
+const LEADERBOARD_ALLIANCE_FLAG_TOP = ALLIANCE_DIRECTORY_BANNER_TOP;
+const LEADERBOARD_ALLIANCE_RANK_CONTENT_GAP = 3;
 const ALLIANCE_DIRECTORY_PAPER_WIDTH = PIXI_ROOT_RUN_GEOMETRY.dialog.innerBoardWidth + 16;
 const ALLIANCE_DIRECTORY_SECTION_GAP = 5;
 const ALLIANCE_MEMBER_ROW_HEIGHT = PIXI_ROOT_RUN_GEOMETRY.settings.rowPitch;
@@ -232,14 +243,19 @@ const ALLIANCE_QUEST_CARD_OFFSET_X = -2;
 const ALLIANCE_QUEST_ART_X = 13;
 const ALLIANCE_QUEST_ART_SIZE = 52;
 const ALLIANCE_QUEST_ITEM_ICON_SIZE = 57;
+const ALLIANCE_QUEST_RESOURCE_ICON_SIZE = 32;
 const ALLIANCE_QUEST_SEED_ICON_SIZE = 46;
 const ALLIANCE_QUEST_INFO_X = ALLIANCE_QUEST_ART_X + ALLIANCE_QUEST_ART_SIZE + 7;
 const ALLIANCE_QUEST_ACTION_RIGHT = 10;
 const ALLIANCE_QUEST_ACTION_WIDTH = 72;
 const ALLIANCE_QUEST_ACTION_HEIGHT = 42;
-const ALLIANCE_QUEST_PROGRESS_HEIGHT = PIXI_UI_GEOMETRY.progressTotalHeight;
+const ALLIANCE_QUEST_PROGRESS_HEIGHT = PIXI_UI_GEOMETRY.progressTopPanelTotalHeight;
+const ALLIANCE_QUEST_STATUS_HEIGHT = 32;
+const ALLIANCE_QUEST_REWARD_FONT_SIZE = PIXI_UI_GEOMETRY.bodyFontSize;
 const ALLIANCE_QUEST_PAPER_INK = '#634934';
 const ALLIANCE_QUEST_MUTED_INK = '#8b6b4e';
+const ALLIANCE_QUEST_PROGRESS_TEXT = '#ffffff';
+const ALLIANCE_QUEST_STATUS_TEXT = '#f7efe4';
 const ALLIANCE_QUEST_ART_SOURCE_INSETS = Object.freeze({
   top: 41,
   right: 41,
@@ -3287,8 +3303,8 @@ export class WorldEventQuestRow {
  *
  * Player avatars/usernames and announced player names expose the existing
  * Player Info action. Alliance rows may replace the global alliance tag with a
- * role label and may show the announced player's avatar on system rows, while
- * message detail, timestamps, and the system title/surface remain passive.
+ * role label. System rows keep every mentioned username highlighted inside one
+ * continuous message flow and may show a compact primary-player profile.
  */
 export class WorldChatMessageRowPixi {
   constructor({ dialog }) {
@@ -3400,13 +3416,7 @@ export class WorldChatMessageRowPixi {
       this.systemPlayerUsername,
       this.isSystem ? (this.model.systemPlayerUsername ?? '') : '',
     );
-    this.bindBody(
-      this.isSystem && this.model.systemPlayerUsername
-        ? (this.model.systemPlayerDetail ?? this.model.body ?? '')
-        : (this.model.body ?? ''),
-      this.model.bodyRuns,
-      this.model.bodyIcon,
-    );
+    this.bindBody(this.model.body ?? '', this.model.bodyRuns, this.model.bodyIcon);
     setText(this.timestamp, this.model.ageLabel ?? '');
     this.showSystemAvatar = Boolean(
       this.isSystem && this.model.showSystemAvatar === true && this.model.systemPlayerUsername,
@@ -3428,7 +3438,7 @@ export class WorldChatMessageRowPixi {
     this.tag.visible = Boolean(rankLabel || tag);
     this.tag.renderable = this.tag.visible;
     this.systemPlayerUsername.visible = Boolean(this.isSystem && this.model.systemPlayerUsername);
-    this.systemPlayerUsername.renderable = this.systemPlayerUsername.visible;
+    this.systemPlayerUsername.renderable = false;
     this.syncInteraction();
     this.applyTheme(this.dialog.contentTheme ?? this.dialog.theme);
     this.targetId = this.model.semanticId ?? null;
@@ -3468,18 +3478,26 @@ export class WorldChatMessageRowPixi {
     this.root.position.set(x, y);
     this.width = width;
     this.height = height;
-    const contentX = this.isSystem && !this.showSystemAvatar ? 6 : WORLD_CHAT_TEXT_X;
+    const contentX = this.getContentX();
     const bodyTop = this.isOwn ? WORLD_CHAT_OWN_BODY_TOP : WORLD_CHAT_BODY_TOP;
     const timestampInset = this.isSystem ? 6 : 0;
     this.systemBackground
       .clear()
       .roundRect(0, 0, width, height, 5)
       .fill(WORLD_CHAT_SYSTEM_BACKGROUND);
-    this.avatar.position.set(
-      this.isOwn ? width - WORLD_CHAT_AVATAR_SIZE / 2 : WORLD_CHAT_AVATAR_SIZE / 2,
-      WORLD_CHAT_AVATAR_SIZE / 2 + WORLD_CHAT_ROW_HEIGHT_SCALE,
-    );
-    this.avatar.scale.set(WORLD_CHAT_AVATAR_SIZE / PLAYER_PROFILE_SIZE);
+    if (this.showSystemAvatar) {
+      this.avatar.position.set(
+        WORLD_CHAT_SYSTEM_AVATAR_LEFT + WORLD_CHAT_SYSTEM_AVATAR_SIZE / 2,
+        height / 2,
+      );
+      this.avatar.scale.set(WORLD_CHAT_SYSTEM_AVATAR_SIZE / PLAYER_PROFILE_SIZE);
+    } else {
+      this.avatar.position.set(
+        this.isOwn ? width - WORLD_CHAT_AVATAR_SIZE / 2 : WORLD_CHAT_AVATAR_SIZE / 2,
+        WORLD_CHAT_AVATAR_SIZE / 2 + WORLD_CHAT_ROW_HEIGHT_SCALE,
+      );
+      this.avatar.scale.set(WORLD_CHAT_AVATAR_SIZE / PLAYER_PROFILE_SIZE);
+    }
     const presenceWidth = this.presenceDot.visible
       ? WORLD_CHAT_PRESENCE_GAP + WORLD_CHAT_PRESENCE_DIAMETER
       : 0;
@@ -3504,9 +3522,7 @@ export class WorldChatMessageRowPixi {
       WORLD_CHAT_ROW_HEIGHT_SCALE,
     );
     this.systemPlayerUsername.position.set(contentX, WORLD_CHAT_BODY_TOP);
-    const bodyX = this.systemPlayerUsername.visible
-      ? contentX + this.systemPlayerUsername.width + 2
-      : contentX;
+    const bodyX = contentX;
     const bodyWrapWidth = Math.max(0, this.isOwn ? width - WORLD_CHAT_TEXT_X : width - bodyX);
     this.body.setWrapWidth(bodyWrapWidth);
     this.body.position.set(
@@ -3537,12 +3553,7 @@ export class WorldChatMessageRowPixi {
     const bodyHeight = Math.max(bodyLineHeight, Math.ceil(this.body.layoutHeight));
     const messageHeight = Math.max(
       this.isSystem
-        ? this.showSystemAvatar
-          ? Math.max(
-              WORLD_CHAT_SYSTEM_MIN_HEIGHT,
-              WORLD_CHAT_AVATAR_SIZE + 2 * WORLD_CHAT_ROW_HEIGHT_SCALE,
-            )
-          : WORLD_CHAT_SYSTEM_MIN_HEIGHT
+        ? WORLD_CHAT_SYSTEM_MIN_HEIGHT
         : WORLD_CHAT_PLAYER_MIN_HEIGHT,
       bodyTop +
         bodyHeight +
@@ -3581,11 +3592,7 @@ export class WorldChatMessageRowPixi {
       fill: resolvedTheme.text,
       wordWrapWidth:
         (this.width || WORKSHOP_DIALOG_CONTENT_WIDTH) -
-        (this.systemPlayerUsername.visible
-          ? this.systemPlayerUsername.x + this.systemPlayerUsername.width + 2
-          : this.isSystem
-            ? 6
-            : WORLD_CHAT_TEXT_X),
+        this.getContentX(),
     });
     applyTextTheme(this.timestamp, resolvedTheme, {
       fontSize: WORLD_CHAT_TIMESTAMP_FONT_SIZE,
@@ -3687,10 +3694,6 @@ export class WorldChatMessageRowPixi {
     );
   }
 
-  isSystemAvatarInteractive() {
-    return Boolean(this.showSystemAvatar && this.isSystemPlayerInteractive());
-  }
-
   isSystemPlayerInteractive() {
     return Boolean(
       this.isSystem &&
@@ -3701,11 +3704,15 @@ export class WorldChatMessageRowPixi {
     );
   }
 
+  isSystemAvatarInteractive() {
+    return Boolean(this.showSystemAvatar && this.isSystemPlayerInteractive());
+  }
+
   syncInteraction() {
-    this.avatar.eventMode =
-      this.isPlayerInteractive() || this.isSystemAvatarInteractive() ? 'static' : 'none';
-    this.avatar.cursor =
-      this.isPlayerInteractive() || this.isSystemAvatarInteractive() ? 'pointer' : 'default';
+    const avatarInteractive =
+      this.isPlayerInteractive() || this.isSystemAvatarInteractive();
+    this.avatar.eventMode = avatarInteractive ? 'static' : 'none';
+    this.avatar.cursor = avatarInteractive ? 'pointer' : 'default';
     this.username.eventMode = this.isPlayerInteractive() ? 'static' : 'none';
     this.username.cursor = this.isPlayerInteractive() ? 'pointer' : 'default';
     this.systemPlayerUsername.eventMode = this.isSystemPlayerInteractive() ? 'static' : 'none';
@@ -3724,6 +3731,17 @@ export class WorldChatMessageRowPixi {
     this.body.setRuns(
       resolveWorldChatBodyRuns(this.dialog.assetManager, rawBody, bodyRuns, bodyIcon),
     );
+  }
+
+  getContentX() {
+    if (!this.isSystem) {
+      return WORLD_CHAT_TEXT_X;
+    }
+    return this.showSystemAvatar
+      ? WORLD_CHAT_SYSTEM_AVATAR_LEFT +
+          WORLD_CHAT_SYSTEM_AVATAR_SIZE +
+          WORLD_CHAT_SYSTEM_AVATAR_GAP
+      : 6;
   }
 
   reset() {
@@ -4462,9 +4480,14 @@ export class AllianceSettingsPane {
       this.emblemLabel.position.set(gridX, emblemLabelY);
       this.emblemOptionLayer.position.set(gridX, emblemGridY);
       this.emblemOptions.forEach((option, index) => {
+        const rowIndex = Math.floor(index / columns);
+        const rowStart = rowIndex * columns;
+        const itemsInRow = Math.min(columns, this.emblemOptions.length - rowStart);
+        const rowWidth = itemsInRow * tileSize + Math.max(0, itemsInRow - 1) * tileGap;
+        const rowOffsetX = (gridWidth - rowWidth) / 2;
         option.setBounds(
-          (index % columns) * (tileSize + tileGap),
-          Math.floor(index / columns) * (tileSize + tileGap),
+          rowOffsetX + (index % columns) * (tileSize + tileGap),
+          rowIndex * (tileSize + tileGap),
           tileSize,
         );
       });
@@ -4711,6 +4734,7 @@ export class AllianceMemberRow {
     this.avatar = this.avatarWidget.portrait;
     this.username = createText('', RETAINED_TEXT_STYLES.body);
     this.role = createText('', RETAINED_TEXT_STYLES.border);
+    this.roleCount = createText('', RETAINED_TEXT_STYLES.border);
     this.rankDivider = new Graphics({
       label: `${dialog.dialogId}-alliance-member-rank-divider`,
     });
@@ -4739,7 +4763,14 @@ export class AllianceMemberRow {
     );
     this.rankDivider.eventMode = 'none';
     this.role.eventMode = 'none';
-    this.root.addChild(this.hitTarget.root, this.rankDivider, this.role, this.visual);
+    this.roleCount.eventMode = 'none';
+    this.root.addChild(
+      this.hitTarget.root,
+      this.rankDivider,
+      this.role,
+      this.roleCount,
+      this.visual,
+    );
   }
 
   bind(model) {
@@ -4748,6 +4779,7 @@ export class AllianceMemberRow {
     this.root.visible = true;
     setText(this.username, this.model.username ?? 'Wizard');
     setText(this.role, this.model.roleLabel ?? 'Trader');
+    setText(this.roleCount, this.model.roleCountLabel ?? '');
     setText(this.level, this.model.levelLabel ?? 'Lv 1');
     this.prestigeStars.setLevel(this.model.prestigeCount ?? 0);
     this.prestigeStars.visible = true;
@@ -4758,14 +4790,22 @@ export class AllianceMemberRow {
       resource: 'coin',
     });
     const showRankHeader = this.model.showRankHeader === true;
+    const sectionOnly = this.model.sectionOnly === true;
     this.role.visible = showRankHeader;
     this.role.renderable = showRankHeader;
+    this.roleCount.visible = showRankHeader && Boolean(this.roleCount.text);
+    this.roleCount.renderable = this.roleCount.visible;
     this.rankDivider.visible = showRankHeader;
     this.rankDivider.renderable = showRankHeader;
+    this.visual.visible = !sectionOnly;
+    this.visual.renderable = !sectionOnly;
+    this.hitTarget.root.visible = !sectionOnly;
+    this.hitTarget.root.renderable = !sectionOnly;
     this.avatarWidget
       .setTexture(resolveCharacterTexture(this.dialog.assetManager, this.model.character))
       .setBackgroundTint(getPlayerFrameTint(this.model.frame));
-    const interactive = typeof this.model.onActivate === 'function';
+    const interactive =
+      !sectionOnly && typeof this.model.onActivate === 'function';
     this.hitTarget.setModel({
       label: '',
       enabled: interactive,
@@ -4788,6 +4828,9 @@ export class AllianceMemberRow {
   }
 
   getPreferredHeight() {
+    if (this.model?.sectionOnly === true) {
+      return ALLIANCE_MEMBER_RANK_HEADER_HEIGHT;
+    }
     return (
       ALLIANCE_MEMBER_ROW_HEIGHT +
       (this.model?.showRankHeader === true ? ALLIANCE_MEMBER_RANK_HEADER_HEIGHT : 0)
@@ -4798,6 +4841,24 @@ export class AllianceMemberRow {
     this.root.position.set(x, y);
     const rankHeaderHeight =
       this.model?.showRankHeader === true ? ALLIANCE_MEMBER_RANK_HEADER_HEIGHT : 0;
+    this.role.position.set(4, 2);
+    this.roleCount.position.set(
+      Math.max(4, width - 4 - Math.ceil(this.roleCount.width)),
+      2,
+    );
+    this.redrawRankDivider(width);
+    if (this.model?.sectionOnly === true) {
+      this.hitTarget.root.visible = false;
+      this.hitTarget.root.renderable = false;
+      this.visual.visible = false;
+      this.visual.renderable = false;
+      this.root.hitArea = null;
+      return;
+    }
+    this.hitTarget.root.visible = true;
+    this.hitTarget.root.renderable = true;
+    this.visual.visible = true;
+    this.visual.renderable = true;
     const cardHeight = Math.max(ALLIANCE_MEMBER_ROW_HEIGHT, height - rankHeaderHeight);
     this.hitTarget.setBounds(0, rankHeaderHeight, width, cardHeight);
     const rowGap = PIXI_ROOT_RUN_GEOMETRY.settings.rowGap;
@@ -4819,8 +4880,6 @@ export class AllianceMemberRow {
     this.level.position.set(textX, 27);
     this.prestigeStars.position.set(textX + Math.ceil(this.level.width) + 5, 29);
     this.contribution.position.set(backgroundWidth - 8 - this.contribution.measuredWidth, 26);
-    this.role.position.set(4, 2);
-    this.redrawRankDivider(width);
     this.root.hitArea = new Rectangle(0, rankHeaderHeight, backgroundWidth, cardHeight);
   }
 
@@ -4832,6 +4891,11 @@ export class AllianceMemberRow {
       fill: resolvedTheme.text,
     });
     applyTextTheme(this.role, resolvedTheme, {
+      ...RETAINED_TEXT_STYLES.body,
+      fontWeight: '700',
+      fill: resolvedTheme.text,
+    });
+    applyTextTheme(this.roleCount, resolvedTheme, {
       ...RETAINED_TEXT_STYLES.body,
       fontWeight: '700',
       fill: resolvedTheme.text,
@@ -4856,12 +4920,15 @@ export class AllianceMemberRow {
     }
     const dividerY = Math.floor(ALLIANCE_MEMBER_RANK_HEADER_HEIGHT / 2) + 0.5;
     const dividerStart = Math.min(width - 4, this.role.x + Math.ceil(this.role.width) + 8);
-    if (dividerStart >= width - 4) {
+    const dividerEnd = this.roleCount.visible
+      ? Math.max(dividerStart, this.roleCount.x - 8)
+      : width - 4;
+    if (dividerStart >= dividerEnd) {
       return;
     }
     this.rankDivider
       .moveTo(dividerStart, dividerY)
-      .lineTo(width - 4, dividerY)
+      .lineTo(dividerEnd, dividerY)
       .stroke({
         color: theme?.muted ?? DEFAULT_PIXI_THEME_SNAPSHOT.muted,
         width: 1,
@@ -4877,6 +4944,7 @@ export class AllianceMemberRow {
     this.prestigeStars.setLevel(0);
     this.contribution.setAmount('0');
     this.role.visible = false;
+    this.roleCount.visible = false;
     this.rankDivider.clear();
     this.hitTarget.setModel({ label: '', enabled: false });
   }
@@ -5704,6 +5772,16 @@ export class LeaderboardRowPixi extends ClickableWidget {
       label: `${this.root.label}:prestige-stars`,
     });
     this.detail = createText('', RETAINED_TEXT_STYLES.border);
+    this.leaderAvatarWidget = new PlayerProfileWidget({
+      assets: dialog.assetManager,
+      texture: Texture.EMPTY,
+      label: `${this.root.label}:alliance-leader-profile`,
+    });
+    this.leaderName = createText('', RETAINED_TEXT_STYLES.border);
+    this.leaderRole = createText('Leader', RETAINED_TEXT_STYLES.border);
+    this.memberCount = createText('', RETAINED_TEXT_STYLES.border);
+    this.memberCount.anchor.set(1, 0);
+    this.totalSuffix = createText('total', RETAINED_TEXT_STYLES.border);
     this.total = new PixiResourceLabel({
       assetManager: dialog.assetManager,
       resource: 'coin',
@@ -5724,7 +5802,12 @@ export class LeaderboardRowPixi extends ClickableWidget {
       this.level,
       this.prestigeStars,
       this.detail,
+      this.leaderAvatarWidget,
+      this.leaderName,
+      this.leaderRole,
+      this.memberCount,
       this.total,
+      this.totalSuffix,
       this.pointsTotal,
     );
     this.root.addChild(this.visual);
@@ -5734,6 +5817,8 @@ export class LeaderboardRowPixi extends ClickableWidget {
     this.unregisterTarget();
     this.model = model ?? {};
     const player = this.model.type !== 'leaderboardAlliance';
+    const memberCount = Math.max(0, Math.floor(Number(this.model.memberCount) || 0));
+    const memberCapacity = Math.max(1, Math.floor(Number(this.model.memberCapacity) || 50));
     this.root.visible = true;
     this.root.renderable = true;
     setText(this.rank, `${Math.max(1, Math.floor(Number(this.model.rank) || 1))}.`);
@@ -5752,14 +5837,12 @@ export class LeaderboardRowPixi extends ClickableWidget {
     this.prestigeStars.setLevel(prestigeCount);
     setText(
       this.detail,
-      player
-        ? this.model.current === true
-          ? 'Your Rank'
-          : ''
-        : this.model.memberCount > 0
-          ? `${this.model.memberCount} Members`
-          : 'Trade Alliance',
+      player && this.model.current === true ? 'Your Rank' : '',
     );
+    setText(this.leaderName, this.model.leaderName ?? 'Unknown');
+    setText(this.leaderRole, 'Leader');
+    setText(this.memberCount, `${memberCount}/${memberCapacity}`);
+    setText(this.totalSuffix, this.model.totalSuffix ?? 'total');
     this.avatarWidget.visible = player;
     this.avatarWidget.renderable = player;
     if (player) {
@@ -5775,7 +5858,24 @@ export class LeaderboardRowPixi extends ClickableWidget {
         emblemColor: this.model.emblemColor,
         emblemId: this.model.emblemId,
       });
+      this.leaderAvatarWidget
+        .setTexture(resolveCharacterTexture(this.dialog.assetManager, this.model.leaderCharacter))
+        .setBackgroundTint(getPlayerFrameTint(this.model.leaderFrame));
     }
+    for (const displayObject of [
+      this.leaderAvatarWidget,
+      this.leaderName,
+      this.leaderRole,
+      this.memberCount,
+      this.totalSuffix,
+    ]) {
+      displayObject.visible = !player;
+      displayObject.renderable = !player;
+    }
+    this.level.visible = player;
+    this.level.renderable = player;
+    this.detail.visible = player;
+    this.detail.renderable = player;
     this.prestigeStars.visible = player;
     this.prestigeStars.renderable = this.prestigeStars.visible;
     const usesPointsTotal = this.model.totalMetric === 'points';
@@ -5833,13 +5933,69 @@ export class LeaderboardRowPixi extends ClickableWidget {
         width: 1.5,
         alpha: this.model.current ? 0.9 : 0,
       });
+    const player = this.model.type !== 'leaderboardAlliance';
     const identityX = LEADERBOARD_IDENTITY_X + LEADERBOARD_LIST_LEFT_EXPANSION;
+    if (!player) {
+      const flagX = identityX - 7;
+      const textX = flagX + LEADERBOARD_ALLIANCE_FLAG_SIZE + 7;
+      this.rank.position.set(
+        flagX - LEADERBOARD_ALLIANCE_RANK_CONTENT_GAP - this.rank.width / 2,
+        30,
+      );
+      this.allianceFlag.setSize(
+        LEADERBOARD_ALLIANCE_FLAG_SIZE,
+        LEADERBOARD_ALLIANCE_FLAG_SIZE,
+      );
+      this.allianceFlag.position.set(
+        flagX + (LEADERBOARD_ALLIANCE_FLAG_SIZE - this.allianceFlag.flagWidth) / 2,
+        LEADERBOARD_ALLIANCE_FLAG_TOP,
+      );
+      this.tag.position.set(textX, 8);
+      this.name.position.set(textX + (this.tag.text ? this.tag.width + 3 : 0), 7);
+      this.memberCount.position.set(backgroundWidth - 8, 8);
+      fitLeaderboardText(
+        this.name,
+        Math.max(1, this.memberCount.x - this.memberCount.width - 6 - this.name.x),
+        {
+          ellipsis: true,
+          sourceText: playerName(this.model),
+        },
+      );
+
+      const leaderY = LEADERBOARD_ALLIANCE_INFO_TOP;
+      const totalY = leaderY + Math.floor(LEADERBOARD_ALLIANCE_LEADER_ROLE_GAP / 2);
+      const leaderAvatarScale = LEADERBOARD_ALLIANCE_LEADER_PROFILE_SIZE / PLAYER_PROFILE_SIZE;
+      this.leaderAvatarWidget.scale.set(leaderAvatarScale);
+      this.leaderAvatarWidget.position.set(textX, leaderY - 1);
+      this.leaderName.position.set(
+        textX + LEADERBOARD_ALLIANCE_LEADER_PROFILE_SIZE + 4,
+        leaderY,
+      );
+      this.leaderRole.position.set(
+        this.leaderName.x,
+        leaderY + LEADERBOARD_ALLIANCE_LEADER_ROLE_GAP,
+      );
+      const totalWidth = this.total.measuredWidth + 3 + this.totalSuffix.width;
+      const totalX = backgroundWidth - 8 - totalWidth;
+      fitLeaderboardText(
+        this.leaderName,
+        Math.max(1, totalX - 6 - this.leaderName.x),
+        {
+          ellipsis: true,
+          sourceText: this.model.leaderName ?? 'Unknown',
+        },
+      );
+      this.total.position.set(totalX, totalY);
+      this.totalSuffix.position.set(totalX + this.total.measuredWidth + 3, totalY);
+      this.root.hitArea = new Rectangle(0, 0, backgroundWidth, height);
+      return;
+    }
+
     this.rank.position.set(identityX / 2, 17);
     const avatarScale = LEADERBOARD_AVATAR_SIZE / 186;
     this.avatarWidget.scale.set(avatarScale);
     this.avatarWidget.position.set(identityX, (height - LEADERBOARD_AVATAR_SIZE) / 2);
-    const flagSize = LEADERBOARD_AVATAR_SIZE - 2;
-    this.allianceFlag.setSize(flagSize, flagSize);
+    this.allianceFlag.setSize(LEADERBOARD_AVATAR_SIZE - 2, LEADERBOARD_AVATAR_SIZE - 2);
     this.allianceFlag.position.set(
       identityX + (LEADERBOARD_AVATAR_SIZE - this.allianceFlag.flagWidth) / 2,
       (height - this.allianceFlag.flagHeight) / 2,
@@ -5853,7 +6009,10 @@ export class LeaderboardRowPixi extends ClickableWidget {
     this.total.position.set(totalX, 17);
     this.pointsTotal.position.set(totalX, 17);
     const maxNameRight = Math.max(textX + 24, totalX - 7);
-    fitLeaderboardText(this.name, maxNameRight - this.name.x);
+    fitLeaderboardText(this.name, maxNameRight - this.name.x, {
+      ellipsis: true,
+      sourceText: playerName(this.model),
+    });
     this.level.position.set(textX, 27);
     const prestigeX = textX + this.level.width + 6;
     this.prestigeStars.position.set(prestigeX, 30);
@@ -5867,17 +6026,20 @@ export class LeaderboardRowPixi extends ClickableWidget {
   }
 
   getPreferredHeight() {
-    return LEADERBOARD_ROW_HEIGHT;
+    return this.model.type === 'leaderboardAlliance'
+      ? LEADERBOARD_ALLIANCE_ROW_HEIGHT
+      : LEADERBOARD_ROW_HEIGHT;
   }
 
   applyTheme(theme) {
     const resolvedTheme = theme ?? DEFAULT_PIXI_THEME_SNAPSHOT;
+    const player = this.model.type !== 'leaderboardAlliance';
     applyTextTheme(this.rank, resolvedTheme, {
       ...RETAINED_TEXT_STYLES.bold,
       fill: resolvedTheme.text,
     });
     applyTextTheme(this.tag, resolvedTheme, {
-      ...RETAINED_TEXT_STYLES.border,
+      ...(player ? RETAINED_TEXT_STYLES.border : RETAINED_TEXT_STYLES.bold),
       fontWeight: '700',
       fill:
         WORLD_CHAT_TAG_COLORS[normalizeWorldChatTagColor(this.model.allianceTagColor)] ??
@@ -5895,6 +6057,22 @@ export class LeaderboardRowPixi extends ClickableWidget {
       ...RETAINED_TEXT_STYLES.border,
       fill: this.model.current ? resolvedTheme.accent : resolvedTheme.muted,
     });
+    applyTextTheme(this.leaderName, resolvedTheme, {
+      ...RETAINED_TEXT_STYLES.border,
+      fill: resolvedTheme.text,
+    });
+    applyTextTheme(this.leaderRole, resolvedTheme, {
+      ...RETAINED_TEXT_STYLES.border,
+      fill: resolvedTheme.muted,
+    });
+    applyTextTheme(this.memberCount, resolvedTheme, {
+      ...RETAINED_TEXT_STYLES.border,
+      fill: resolvedTheme.muted,
+    });
+    applyTextTheme(this.totalSuffix, resolvedTheme, {
+      ...RETAINED_TEXT_STYLES.border,
+      fill: resolvedTheme.muted,
+    });
     applyTextTheme(this.pointsTotal, resolvedTheme, {
       ...RETAINED_TEXT_STYLES.bold,
       fill: resolvedTheme.text,
@@ -5908,6 +6086,7 @@ export class LeaderboardRowPixi extends ClickableWidget {
     this.root.visible = false;
     this.root.renderable = false;
     this.avatarWidget.setTexture(Texture.EMPTY);
+    this.leaderAvatarWidget.setTexture(Texture.EMPTY).setBackgroundTint(0xffffff);
     setText(this.pointsTotal, '');
     this.prestigeStars.reset();
     this.resetClickableState();
@@ -6072,8 +6251,8 @@ export class WorldEventRewardRow {
 
 /**
  * Research-card-backed Trade Alliance quest row. It preserves the Research
- * row's art, copy, progress, and fixed-action rhythm while adding personal
- * contribution and reward details in the taller card.
+ * row's art, copy, progress, and fixed-action rhythm while adding an explicit
+ * objective, personal contribution, reward details, and passive claimed state.
  */
 export class AllianceQuestRow {
   constructor({ dialog }) {
@@ -6108,24 +6287,31 @@ export class AllianceQuestRow {
     this.itemIconOverlay.anchor.set(0.5);
     this.itemIconOverlay.visible = false;
     this.title = createText('', RETAINED_TEXT_STYLES.body);
+    this.description = createText('', RETAINED_TEXT_STYLES.border);
     this.contribution = createText('', RETAINED_TEXT_STYLES.border);
     this.progress = createText('', {
       ...RETAINED_TEXT_STYLES.border,
-      align: 'right',
+      align: 'center',
+      fill: ALLIANCE_QUEST_PROGRESS_TEXT,
+      stroke: { color: '#0a0a0a', width: 1.5 },
     });
-    this.progress.anchor.set(1, 0);
+    this.progress.anchor.set(0.5);
     this.progressBar = new RetainedProgressBar({
       assetManager: dialog.assetManager,
       label: `${this.root.label}:progress-bar`,
       tone: 'blue',
       usePlayerStyle: false,
     });
-    this.rewardCaption = createText('Reward', RETAINED_TEXT_STYLES.border);
+    this.rewardCaption = createText('Reward', {
+      ...RETAINED_TEXT_STYLES.body,
+      fontSize: ALLIANCE_QUEST_REWARD_FONT_SIZE,
+      fontWeight: '700',
+    });
     this.reward = new PixiResourceLabel({
       assetManager: dialog.assetManager,
       resource: 'crystal',
       includeResourceName: false,
-      fontSize: PIXI_UI_GEOMETRY.borderLabelFontSize,
+      fontSize: ALLIANCE_QUEST_REWARD_FONT_SIZE,
       fontWeight: 'bold',
       label: `${this.root.label}:reward`,
     });
@@ -6135,18 +6321,58 @@ export class AllianceQuestRow {
       inputRouter: dialog.inputRouter,
       sizeTier: 30,
     });
+    const claimedSkin = getPixiButtonSkin({
+      color: 'gray',
+      height: ALLIANCE_QUEST_STATUS_HEIGHT,
+      sizeTier: 30,
+      width: ALLIANCE_QUEST_ACTION_WIDTH,
+    });
+    this.claimedStatus = new Container({
+      label: `${this.root.label}:claimed-status`,
+    });
+    this.claimedStatus.eventMode = 'none';
+    this.claimedStatusFrame = new PixiNineSliceFrame({
+      texture: dialog.assetManager?.getTexture?.(claimedSkin.assetId) ?? Texture.EMPTY,
+      sourceInsets: claimedSkin.sourceInsets,
+      borderInsets: claimedSkin.borderInsets,
+      width: ALLIANCE_QUEST_ACTION_WIDTH,
+      height: ALLIANCE_QUEST_STATUS_HEIGHT,
+      label: `${this.root.label}:claimed-status-frame`,
+    });
+    this.claimedCheckmark = new Sprite({
+      texture:
+        dialog.assetManager?.getTexture?.(PIXI_ROOT_RUN_ASSETS.checkmark) ??
+        Texture.EMPTY,
+      label: `${this.root.label}:claimed-checkmark`,
+    });
+    this.claimedCheckmark.anchor.set(0.5);
+    this.claimedCheckmark.eventMode = 'none';
+    this.claimedLabel = createText('Claimed', {
+      ...RETAINED_TEXT_STYLES.border,
+      fontWeight: '700',
+      fill: ALLIANCE_QUEST_STATUS_TEXT,
+      stroke: { color: '#0a0a0a', width: 1.5 },
+    });
+    this.claimedLabel.anchor.set(0.5);
+    this.claimedStatus.addChild(
+      this.claimedStatusFrame,
+      this.claimedCheckmark,
+      this.claimedLabel,
+    );
     this.root.addChild(
       this.background,
       this.artWell,
       this.itemIcon,
       this.itemIconOverlay,
       this.title,
+      this.description,
       this.contribution,
-      this.progress,
       this.progressBar.root,
+      this.progress,
       this.rewardCaption,
       this.reward,
       this.action.root,
+      this.claimedStatus,
     );
   }
 
@@ -6156,6 +6382,7 @@ export class AllianceQuestRow {
     this.root.visible = true;
     this.root.renderable = true;
     setText(this.title, this.model.title ?? this.model.label ?? 'Alliance Quest');
+    setText(this.description, this.model.objectiveLabel ?? 'Complete this alliance quest');
     setText(this.contribution, this.model.contributionLabel ?? '');
     setText(this.progress, this.model.progressLabel ?? this.model.value ?? '');
     this.progressBar.setProgress(resolveAllianceQuestProgress(this.model));
@@ -6175,14 +6402,22 @@ export class AllianceQuestRow {
       includeResourceName: false,
       resource: this.model.rewardResource ?? 'crystal',
     });
-    const hasAction = Boolean(this.model.actionLabel || this.model.onActivate);
+    const claimed =
+      this.model.claimed === true ||
+      String(this.model.actionLabel ?? '').trim().toLowerCase() === 'claimed';
+    const hasAction = !claimed && Boolean(this.model.actionLabel || this.model.onActivate);
+    const pressEnabled =
+      hasAction &&
+      (this.model.enabled !== false || Boolean(this.model.lockReason));
     this.action.root.visible = hasAction;
     this.action.root.renderable = hasAction;
+    this.claimedStatus.visible = claimed;
+    this.claimedStatus.renderable = claimed;
     this.action.variant = this.model.actionVariant ?? 'button';
     this.action.control.setVariant(this.model.actionVariant ?? 'regular');
     this.action.setModel({
       label: this.model.actionLabel ?? 'Open',
-      enabled: this.model.enabled !== false,
+      enabled: pressEnabled,
       notification: this.model.notification === true,
       action: () => this.model.onActivate?.(this.model),
     });
@@ -6190,9 +6425,9 @@ export class AllianceQuestRow {
     if (this.targetId) {
       this.dialog.registerTarget({
         semanticId: this.targetId,
-        displayObject: hasAction ? this.action.root : this.root,
+        displayObject: hasAction ? this.action.root : this.claimedStatus,
         state: () => ({
-          enabled: this.model.enabled !== false,
+          enabled: pressEnabled,
           interactive: hasAction,
         }),
         activate: () => this.model.onActivate?.(this.model) ?? false,
@@ -6211,6 +6446,7 @@ export class AllianceQuestRow {
     this.background.setSize(frameWidth, height, PIXI_ROOT_RUN_GEOMETRY.researchCard.borderInsets);
 
     this.applyTitleWrap(titleWidth);
+    this.applyDescriptionWrap(infoWidth);
     this.title.position.set(titleX, titleY);
     const titleBottom = titleY + Math.ceil(this.title.height);
     const contentTop = Math.max(22, titleBottom + 4);
@@ -6234,30 +6470,46 @@ export class AllianceQuestRow {
       });
     } else if (this.itemIcon.visible) {
       this.itemIcon.position.set(iconCenterX, iconCenterY);
-      this.itemIcon.width = ALLIANCE_QUEST_ITEM_ICON_SIZE;
-      this.itemIcon.height = ALLIANCE_QUEST_ITEM_ICON_SIZE;
+      const iconSize =
+        this.model.itemKind === 'resource'
+          ? ALLIANCE_QUEST_RESOURCE_ICON_SIZE
+          : ALLIANCE_QUEST_ITEM_ICON_SIZE;
+      this.itemIcon.width = iconSize;
+      this.itemIcon.height = iconSize;
       this.itemIconOverlay.rotation = 0;
     }
-    const progressLabelY = contentTop + 5;
-    this.progress.position.set(ALLIANCE_QUEST_INFO_X + infoWidth, progressLabelY);
+    const descriptionY = contentTop + 1;
+    this.description.position.set(ALLIANCE_QUEST_INFO_X, descriptionY);
+    const progressY = Math.max(
+      contentTop + 20,
+      descriptionY + Math.ceil(this.description.height) + 2,
+    );
     this.progressBar.setBounds(
       ALLIANCE_QUEST_INFO_X,
-      contentTop + 22,
+      progressY,
       infoWidth,
       ALLIANCE_QUEST_PROGRESS_HEIGHT,
     );
-    this.contribution.position.set(ALLIANCE_QUEST_INFO_X, contentTop + 41);
+    this.progress.position.set(
+      ALLIANCE_QUEST_INFO_X + infoWidth / 2,
+      progressY + ALLIANCE_QUEST_PROGRESS_HEIGHT / 2,
+    );
+    this.contribution.position.set(
+      ALLIANCE_QUEST_INFO_X,
+      progressY + ALLIANCE_QUEST_PROGRESS_HEIGHT + 3,
+    );
     this.action.setBounds(
       actionX,
       Math.max(8, (height - actionHeight) / 2 - 8),
       actionWidth,
       actionHeight,
     );
+    this.layoutClaimedStatus({ actionWidth, actionX, height });
     const rewardGap = 3;
     const rewardGroupWidth =
       Math.ceil(this.rewardCaption.width) + rewardGap + Math.ceil(this.reward.measuredWidth);
     const rewardX = actionX + Math.max(0, (actionWidth - rewardGroupWidth) / 2);
-    const rewardY = height - 22;
+    const rewardY = height - 25;
     this.rewardCaption.position.set(rewardX, rewardY);
     this.reward.position.set(rewardX + Math.ceil(this.rewardCaption.width) + rewardGap, rewardY);
     this.root.hitArea = new Rectangle(ALLIANCE_QUEST_CARD_OFFSET_X, 0, frameWidth, height);
@@ -6291,16 +6543,70 @@ export class AllianceQuestRow {
     });
   }
 
+  applyDescriptionWrap(width) {
+    applyTextTheme(this.description, this.dialog.contentTheme ?? this.dialog.theme, {
+      ...RETAINED_TEXT_STYLES.border,
+      wordWrapWidth: width,
+      fill: ALLIANCE_QUEST_PAPER_INK,
+    });
+  }
+
+  layoutClaimedStatus({ actionWidth, actionX, height }) {
+    const statusY = Math.max(8, (height - ALLIANCE_QUEST_STATUS_HEIGHT) / 2 - 8);
+    const claimedSkin = getPixiButtonSkin({
+      color: 'gray',
+      height: ALLIANCE_QUEST_STATUS_HEIGHT,
+      sizeTier: 30,
+      width: actionWidth,
+    });
+    this.claimedStatus.position.set(actionX, statusY);
+    this.claimedStatusFrame.setSkin({
+      assetId: claimedSkin.assetId,
+      borderInsets: claimedSkin.borderInsets,
+      height: ALLIANCE_QUEST_STATUS_HEIGHT,
+      minimumCenter: claimedSkin.minimumCenter,
+      sourceInsets: claimedSkin.sourceInsets,
+      texture:
+        this.dialog.assetManager?.getTexture?.(claimedSkin.assetId) ?? Texture.EMPTY,
+      width: actionWidth,
+    });
+    const groupGap = 4;
+    const checkmarkSize = 14;
+    const groupWidth = checkmarkSize + groupGap + Math.ceil(this.claimedLabel.width);
+    const groupX = Math.max(4, (actionWidth - groupWidth) / 2);
+    const centerY = ALLIANCE_QUEST_STATUS_HEIGHT / 2 - 1;
+    this.claimedCheckmark.position.set(groupX + checkmarkSize / 2, centerY);
+    this.claimedCheckmark.width = checkmarkSize;
+    this.claimedCheckmark.height = checkmarkSize * (57 / 61);
+    this.claimedLabel.position.set(
+      groupX + checkmarkSize + groupGap + this.claimedLabel.width / 2,
+      centerY,
+    );
+  }
+
   getPreferredHeight(width = this.dialog.allianceQuestRowWidth || WORKSHOP_DIALOG_CONTENT_WIDTH) {
     const { actionHeight, titleWidth } = this.resolveLayout(width);
     this.applyTitleWrap(titleWidth);
     const titleBottom = 6 + Math.ceil(this.title.height);
     const contentTop = Math.max(22, titleBottom + 4);
+    const { infoWidth } = this.resolveLayout(width);
+    this.applyDescriptionWrap(infoWidth);
+    const progressY = Math.max(
+      contentTop + 20,
+      contentTop + 1 + Math.ceil(this.description.height) + 2,
+    );
+    const contributionBottom =
+      progressY +
+      ALLIANCE_QUEST_PROGRESS_HEIGHT +
+      3 +
+      Math.ceil(this.contribution.height) +
+      8;
 
     return Math.max(
       ALLIANCE_QUEST_ROW_HEIGHT,
       actionHeight + 34,
       contentTop + ALLIANCE_QUEST_ART_SIZE + 8,
+      contributionBottom,
     );
   }
 
@@ -6324,14 +6630,24 @@ export class AllianceQuestRow {
       ...RETAINED_TEXT_STYLES.border,
       fill: ALLIANCE_QUEST_PAPER_INK,
     });
+    this.applyDescriptionWrap(this.description.style.wordWrapWidth ?? 100);
     applyTextTheme(this.progress, resolvedTheme, {
       ...RETAINED_TEXT_STYLES.border,
-      align: 'right',
-      fill: ALLIANCE_QUEST_PAPER_INK,
+      align: 'center',
+      fill: ALLIANCE_QUEST_PROGRESS_TEXT,
+      stroke: { color: '#0a0a0a', width: 1.5 },
     });
     applyTextTheme(this.rewardCaption, resolvedTheme, {
-      ...RETAINED_TEXT_STYLES.border,
+      ...RETAINED_TEXT_STYLES.body,
+      fontSize: ALLIANCE_QUEST_REWARD_FONT_SIZE,
+      fontWeight: '700',
       fill: ALLIANCE_QUEST_MUTED_INK,
+    });
+    applyTextTheme(this.claimedLabel, resolvedTheme, {
+      ...RETAINED_TEXT_STYLES.border,
+      fontWeight: '700',
+      fill: ALLIANCE_QUEST_STATUS_TEXT,
+      stroke: { color: '#0a0a0a', width: 1.5 },
     });
     this.progressBar.applyTheme(resolvedTheme);
     this.reward.applyTheme(resolvedTheme);
@@ -6351,6 +6667,8 @@ export class AllianceQuestRow {
     this.itemIconOverlay.rotation = 0;
     this.reward.bind('', { amount: '', hidden: true, resource: 'crystal' });
     this.progressBar.setProgress(0);
+    this.claimedStatus.visible = false;
+    this.claimedStatus.renderable = false;
     this.root.visible = false;
     this.root.renderable = false;
   }
@@ -6751,8 +7069,16 @@ function resolveWorldChatBodyRuns(assetManager, body, bodyRuns, legacyBodyIcon) 
   return runs.map((run) => {
     if (run?.kind !== 'icon') {
       return {
+        ...run,
         kind: 'text',
         text: typeof run === 'string' ? run : String(run?.text ?? ''),
+        style:
+          run?.tone === 'systemPlayer'
+            ? {
+                fill: WORLD_CHAT_SYSTEM_PLAYER_COLOR,
+                fontWeight: '700',
+              }
+            : run?.style,
       };
     }
     return {
@@ -6805,12 +7131,30 @@ function stripDiscoverySuffix(value, suffixPattern) {
     .trim();
 }
 
-function fitLeaderboardText(text, maxWidth) {
+function fitLeaderboardText(text, maxWidth, { ellipsis = false, sourceText = null } = {}) {
+  if (sourceText !== null) {
+    setText(text, sourceText);
+  }
   text.scale.set(1);
   const width = Math.max(0, Number(maxWidth) || 0);
   if (width > 0 && text.width > width) {
     text.scale.set(Math.max(0.72, width / text.width));
   }
+  if (!ellipsis || sourceText === null || width <= 0 || text.width <= width) {
+    return;
+  }
+
+  const characters = Array.from(String(sourceText));
+  while (characters.length > 1 && text.width > width) {
+    characters.pop();
+    setText(text, `${characters.join('')}…`);
+  }
+}
+
+function playerName(model = {}) {
+  return model.type === 'leaderboardAlliance'
+    ? (model.name ?? 'Alliance')
+    : (model.username ?? 'Wizard');
 }
 
 function disposeInputRegistration(registration) {

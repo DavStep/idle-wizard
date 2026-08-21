@@ -183,7 +183,7 @@ const recipeUnlockOrder = [
 const maxAutomationGardenTiles = plotCapacityEndPlotNumber;
 const maxAutomationCauldrons = cauldronCapacityEndCauldronNumber;
 const researchRoomHiddenResearchIds = new Set(['unlockSeed:sageSeed']);
-const researchRoomHideWhenCompletedPrefixes = ['unlockRecipe:'];
+const researchRoomHideWhenCompletedPrefixes = ['unlockSeed:', 'unlockRecipe:'];
 
 export class ResearchDefinitionManager {
   constructor({ itemsFacade, playerLevelFacade, prestigeFacade, researchBalanceManager }) {
@@ -313,7 +313,7 @@ export class ResearchDefinitionManager {
         label: 'harvest all',
         value: 'bulk action',
         requiredPlayerLevel: gardenBulkResearchLevels.harvestAll,
-        requiredResearchIds: [gardenBulkResearchIds.plantAll],
+        requiredResearchIds: [],
         seriesId: 'gardenBulkActions',
         description: 'starts harvesting every ready garden plot.',
       },
@@ -1356,7 +1356,10 @@ export class ResearchDefinitionManager {
     }
 
     if (completedIds.has(research.id)) {
-      return false;
+      return (
+        research.id.startsWith('timer:') &&
+        research.starLevel === research.starMaxLevel
+      );
     }
 
     return research.requiredResearchIds.every((requiredResearchId) =>

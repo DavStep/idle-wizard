@@ -378,6 +378,133 @@ describe('PixiGlobalDialogPresenter', () => {
     });
   });
 
+  it('projects alliance member actions from the complete role hierarchy', () => {
+    const harness = createHarness();
+    harness.tradeAllianceFacade.getSnapshot.mockReturnValue({
+      connected: true,
+      ownAlliance: { allianceId: 'alliance-one' },
+      ownMember: {
+        allianceId: 'alliance-one',
+        memberIdentity: 'factor-id',
+        role: 'factor',
+      },
+      ownRole: 'factor',
+      members: [
+        {
+          allianceId: 'alliance-one',
+          memberIdentity: 'factor-id',
+          role: 'factor',
+          username: 'Mira',
+        },
+        {
+          allianceId: 'alliance-one',
+          memberIdentity: 'trader-id',
+          role: 'trader',
+          username: 'Juniper',
+        },
+      ],
+    });
+
+    const model = harness.presenter.createPlayerModel({
+      allianceId: 'alliance-one',
+      allianceMemberContext: true,
+      memberIdentity: 'trader-id',
+      role: 'trader',
+      username: 'Juniper',
+    });
+
+    expect(model.allianceMemberActions).toMatchObject({
+      role: 'trader',
+      promoteLabel: 'Promote',
+      kickLabel: 'Kick',
+    });
+    expect(model.allianceMemberActions).not.toHaveProperty('demoteLabel');
+    model.actions.promoteAllianceMember();
+    model.actions.kickAllianceMember();
+    expect(harness.tradeAllianceFacade.setMemberRole).toHaveBeenCalledWith(
+      'trader-id',
+      'broker',
+    );
+    expect(harness.tradeAllianceFacade.kickMember).toHaveBeenCalledWith(
+      'trader-id',
+    );
+  });
+
+  it('uses leadership transfer for the final promotion and hides actions from lower roles', () => {
+    const harness = createHarness();
+    harness.tradeAllianceFacade.getSnapshot.mockReturnValue({
+      connected: true,
+      ownAlliance: { allianceId: 'alliance-one' },
+      ownMember: {
+        allianceId: 'alliance-one',
+        memberIdentity: 'leader-id',
+        role: 'tradeMaster',
+      },
+      ownRole: 'tradeMaster',
+      members: [
+        {
+          allianceId: 'alliance-one',
+          memberIdentity: 'leader-id',
+          role: 'tradeMaster',
+        },
+        {
+          allianceId: 'alliance-one',
+          memberIdentity: 'quartermaster-id',
+          role: 'quartermaster',
+        },
+      ],
+    });
+
+    const managed = harness.presenter.createPlayerModel({
+      allianceId: 'alliance-one',
+      allianceMemberContext: true,
+      memberIdentity: 'quartermaster-id',
+      role: 'quartermaster',
+      username: 'Juniper',
+    });
+    expect(managed.allianceMemberActions).toMatchObject({
+      promoteLabel: 'Promote',
+      demoteLabel: 'Demote',
+      kickLabel: 'Kick',
+    });
+    managed.actions.promoteAllianceMember();
+    expect(harness.tradeAllianceFacade.transferLeadership).toHaveBeenCalledWith(
+      'quartermaster-id',
+    );
+
+    harness.tradeAllianceFacade.getSnapshot.mockReturnValue({
+      connected: true,
+      ownAlliance: { allianceId: 'alliance-one' },
+      ownMember: {
+        allianceId: 'alliance-one',
+        memberIdentity: 'broker-id',
+        role: 'broker',
+      },
+      ownRole: 'broker',
+      members: [
+        {
+          allianceId: 'alliance-one',
+          memberIdentity: 'broker-id',
+          role: 'broker',
+        },
+        {
+          allianceId: 'alliance-one',
+          memberIdentity: 'trader-id',
+          role: 'trader',
+        },
+      ],
+    });
+    const unmanaged = harness.presenter.createPlayerModel({
+      allianceId: 'alliance-one',
+      allianceMemberContext: true,
+      memberIdentity: 'trader-id',
+      role: 'trader',
+      username: 'Rowan',
+    });
+    expect(unmanaged.allianceMemberActions).toBeNull();
+    expect(unmanaged.actions).not.toHaveProperty('kickAllianceMember');
+  });
+
   it('keeps an explicitly unnamed alliance request pending after a failed save', () => {
     const harness = createHarness({
       playerSnapshot: { hasExplicitUsername: false },
@@ -1106,6 +1233,9 @@ function createHarness({
     {
       joinAlliance: vi.fn(() => Promise.resolve({ ok: true })),
       applyAlliance: vi.fn(() => Promise.resolve({ ok: true })),
+      transferLeadership: vi.fn(() => Promise.resolve({ ok: true })),
+      setMemberRole: vi.fn(() => Promise.resolve({ ok: true })),
+      kickMember: vi.fn(() => Promise.resolve({ ok: true })),
     },
   );
   const hapticsFacade = createSnapshotFacade(

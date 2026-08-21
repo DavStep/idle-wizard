@@ -13,7 +13,7 @@ Cauldron slots are bought with coin up to the current progression cap. Level mil
 An active brew runs through brewing, waits for a bottling action, then bottling. Finishing the bottling timer automatically grants the whole produced batch and clears the cauldron; `ready` remains only as a transient compatibility phase for older saves. Cancelling during brewing or bottling destroys the unfinished output, does not refund herbs or mana, and disables autobrew for that cauldron.
 Every potion recipe owns its configured brew duration. Regular per-potion mastery reduces that duration independently in five-percentage-point ranks, then advanced per-cauldron research applies to the result. Mana Tonic starts at the previous `30s`; early potion uplifts ramp by tier before later recipes use the full `85%` uplift.
 `BrewingTapAccelerationManager` owns manual cauldron acceleration. Each accepted
-tap removes 30% of that cauldron's remaining brewing or bottling timer,
+tap removes at most one second from that cauldron's remaining brewing or bottling timer,
 then locks that cauldron for the same 504ms gameplay cooldown used by Garden plots.
 Each cauldron stores its selected unlocked recipe independently, including while
 a different batch is active. The active batch keeps its committed potion; the

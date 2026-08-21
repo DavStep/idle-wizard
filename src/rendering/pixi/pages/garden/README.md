@@ -76,7 +76,8 @@ and a half plots, and renders the committed crop as one through five plant
 instances. A right-side `70x78px` control block ends at the third normal plot's
 visible right edge: the seed selector spans its top, with Brewing-sized
 `32x36px` Auto and `xN` controls below it and `6px` gaps. Their invisible tap
-targets remain `44px`. The progress rail stays directly beneath the soil. The
+targets remain `44px`, and Auto shares Brewing's enlarged `27px` gear. The
+progress rail stays directly beneath the soil. The
 fill is green while growing and yellow while harvesting. The
 seed icon sets that plot's future crop, Auto toggles the
 existing combined plant/harvest loop, and `xN` cycles through the researched
@@ -131,10 +132,11 @@ standalone editor entry is `Inventory Choice Row` under
 `UI Widgets / Composite widgets / Brewing`, with unselected, selected,
 pressed, and unavailable scenarios.
 Successful single-plot planting, `Plant All`, automated planting, and seed
-swaps run one `500ms` tile-owned sequence. One seed pack starts `60px` above
-the plot center, stretches as it falls straight down, then squashes and fades
-at center impact. The soil boinks from its center pivot while the committed
-herb scales upward from the bottom of its artwork into normal growth motion.
+swaps run one `460ms` tile-owned sequence. One seed pack starts `48px` above
+the plot center, stretches as it accelerates straight down, then snaps from
+vertical stretch into a squash at center impact. The pack collapse, stronger
+center-pivoted soil boink, and bottom-anchored herb reveal overlap around that
+same contact frame so the planted herb reads as the result of the impact.
 The persistent Seeds
 picker stays still. Failed actions do not animate, hidden-room changes do not
 replay on return, and reduced motion reveals the growing state immediately.

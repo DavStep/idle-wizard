@@ -248,6 +248,31 @@
           );
           return true;
         },
+        accelerateCauldron: (cauldronIndex) => {
+          const cauldron = hudModel.cauldrons[cauldronIndex];
+          const brew = cauldron?.activeBrew;
+          if (
+            !brew ||
+            (brew.phase !== 'brewing' && brew.phase !== 'bottling') ||
+            brew.remainingMs <= 0
+          ) {
+            return { ok: false, reason: 'not_processing' };
+          }
+          const reducedMs = Math.min(1_000, brew.remainingMs);
+          brew.remainingMs -= reducedMs;
+          recipeState.dataset.accelerations = String(
+            Number(recipeState.dataset.accelerations ?? 0) + 1,
+          );
+          recipeState.dataset.remainingMs = String(brew.remainingMs);
+          hud.bind(hudModel, hudActions);
+          return {
+            ok: true,
+            cauldronIndex,
+            reducedSeconds: reducedMs / 1_000,
+            remainingMs: brew.remainingMs,
+            cooldownMs: 504,
+          };
+        },
         emptyCauldron: () => {
           const cauldron = hudModel.cauldrons[selectedCauldronIndex];
           cauldron.selectedRecipe = null;

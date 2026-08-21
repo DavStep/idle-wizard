@@ -2159,6 +2159,21 @@ const GLOBAL_DIALOG_SCENARIOS = Object.freeze({
     scenario('outgoing', 'Request Pending', () =>
       createPlayerInfoDialogFixture('outgoing'),
     ),
+    scenario('alliance-manager', 'Alliance Member Actions', () => ({
+      ...createPlayerInfoDialogFixture('stranger'),
+      allianceMemberActions: {
+        role: 'broker',
+        promoteLabel: 'Promote',
+        demoteLabel: 'Demote',
+        kickLabel: 'Kick',
+      },
+      actions: {
+        addFriend: () => true,
+        promoteAllianceMember: () => true,
+        demoteAllianceMember: () => true,
+        kickAllianceMember: () => true,
+      },
+    })),
     scenario('self', 'Own profile', () =>
       createPlayerInfoDialogFixture('self'),
     ),

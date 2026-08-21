@@ -55,6 +55,20 @@ describe('PixiProductionAssetManifest', () => {
       ),
     ).toBe(false);
     expect(
+      PIXI_PRODUCTION_ASSET_MANIFEST.some(
+        ({ id }) => id === 'public:ui/xp-stars.png',
+      ),
+    ).toBe(false);
+    expect(
+      sourceAssets.find(
+        ({ id }) => id === 'source:assets/ui/xp-stars.png',
+      ),
+    ).toMatchObject({
+      atlasId: expect.stringMatching(/^atlas:shared-/),
+      kind: 'atlas-frame',
+      frameName: 'source:assets/ui/xp-stars.png',
+    });
+    expect(
       sourceAssets.find(
         ({ id }) =>
           id === 'source:assets/ui/idle-witch-craft-splash/splash-screen.png',

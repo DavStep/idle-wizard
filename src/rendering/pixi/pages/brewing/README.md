@@ -14,16 +14,18 @@ semantic skin, `Cauldron N` copy, and the existing three rank-star slots. The
 yellow recipe selector sits immediately left of the red `Empty` button in the
 lower-right control row and owns the `brewing:recipes` tutorial target. It
 mirrors the Automated Garden Plot seed selector: a selected potion uses compact
-art above its fitted potion name, while the empty state reads `Recipes`. The
+`34px` art rising above a compact `78x36px` face and a potion name that wraps to
+two lines when needed, while the empty state reads `Recipes`. The
 selector remains enabled during an active brew so a different saved recipe can
 be queued without replacing the active potion. An empty cauldron can also open
 Recipes through the primary `Choose Recipe` action. Batch quantity and Auto
 stay together on the lower left.
 
-Short portrait viewports keep the complete cauldron HUD anchored below the
-player banner and expose the shared retained vertical scroll pane for overflow.
-The HUD never compresses upward into the banner; scrolling reveals its lower
-batch controls before World Chat.
+The cauldron title ribbon starts at the shared room-content top used by Garden,
+so both room banners keep the same gap below the player HUD. The complete
+cauldron HUD fits between that banner and World Chat at the retained 802px short
+portrait surface. Smaller viewports still expose the shared retained vertical
+scroll pane for overflow without compressing the HUD into the player banner.
 
 The preferred renderer-neutral view model is:
 
@@ -186,7 +188,8 @@ The empty-state `Choose Recipe` primary action opens Recipes. Compact Auto and
 `xN` controls sit outside the panel in the lower control row, packed from the
 left opposite the right-aligned `Recipes` and `Empty` pair. Auto and `xN` use
 the earlier compact `32x36px` Brewing configuration-control geometry; Empty is
-slightly wider at `40x36px` so its label fits cleanly. All three keep larger
+slightly wider at `40x36px` so its label fits cleanly. Auto uses a `27px` gear
+and Empty uses `32x25px` cauldron art. All three keep larger
 invisible tap targets.
 
 Boundary chevrons are removed instead of showing a disabled arrow. Carousel

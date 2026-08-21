@@ -62,11 +62,15 @@ describe('Workshop widget UI editor integrations', () => {
       'sunburst',
       'hourglass',
       'dragon',
+      'cauldron',
+      'sword',
+      'shield',
+      'book',
     ]);
     expect(
       integrations.find(({ id }) => id === 'primitive.alliance-emblem-option')
         ?.scenarios,
-    ).toHaveLength(12);
+    ).toHaveLength(16);
     expect(
       integrations.find(({ id }) => id === 'compound.root-run-side-action')
         ?.childWidgetIds,
@@ -97,6 +101,17 @@ describe('Workshop widget UI editor integrations', () => {
       'primitive.resource-label',
     ]);
     expect(
+      integrations.find(({ id }) => id === 'compound.leaderboard-row')
+        ?.scenarios.map(({ id }) => id),
+    ).toEqual([
+      'player',
+      'current-player',
+      'alliance',
+      'current-alliance',
+      'alliance-overflow',
+      'world-event-points',
+    ]);
+    expect(
       integrations.find(({ id }) => id === 'compound.alliance-quest-row')
         ?.childWidgetIds,
     ).toEqual([
@@ -107,7 +122,7 @@ describe('Workshop widget UI editor integrations', () => {
     expect(
       integrations.find(({ id }) => id === 'compound.alliance-quest-row')
         ?.scenarios.map(({ id }) => id),
-    ).toEqual(['fill', 'route', 'claim', 'claimed', 'overflow']);
+    ).toEqual(['fill', 'route', 'claim', 'claimed', 'locked', 'overflow']);
     expect(
       integrations.find(
         ({ id }) => id === 'compound.world-event-reward-row',

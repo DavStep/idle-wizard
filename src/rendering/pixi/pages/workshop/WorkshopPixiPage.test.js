@@ -25,7 +25,7 @@ import {
   resolvePixiTextStrokeWidth,
 } from '../../theme/PixiThemeTokens.js';
 import { RootRunInventoryChoiceRowPixi, ShopDialogPixi } from '../shop/ShopDialogPixi.js';
-import { WorldChatMessageRowPixi } from './WorkshopDialogPixi.js';
+import { LeaderboardRowPixi, WorldChatMessageRowPixi } from './WorkshopDialogPixi.js';
 import {
   RETAINED_DIALOG_LIST_GEOMETRY,
   RETAINED_DIALOG_SCROLL_GEOMETRY,
@@ -134,6 +134,89 @@ describe('WorkshopPixiPage', () => {
     row.bind({ type: 'system', username: 'System', body: 'News' });
     row.setBounds(0, 0, 288, row.getPreferredHeight());
     expect(row.presenceDot.visible).toBe(false);
+
+    row.destroy();
+  });
+
+  it('uses the full Browse Alliance content hierarchy in leaderboard alliance rows', () => {
+    const dialog = {
+      assetManager: createPixiAssetManagerFake(Texture),
+      contentTheme: createPixiThemeSnapshot({ theme: 'night' }),
+      theme: createPixiThemeSnapshot({ theme: 'night' }),
+      dialogId: 'workshop.leaderboard',
+      inputRouter: null,
+      registerTarget: vi.fn(),
+      unregisterTarget: vi.fn(),
+    };
+    const row = new LeaderboardRowPixi({ dialog });
+
+    row.bind({
+      id: 'night-owls',
+      type: 'leaderboardAlliance',
+      rank: 2,
+      name: 'Night Owls',
+      allianceTag: 'OWL',
+      allianceTagColor: 'violet',
+      bannerColor: 'violet',
+      emblemColor: 'white',
+      emblemId: 'sunburst',
+      leaderName: 'Elara',
+      leaderCharacter: 'elara',
+      leaderFrame: 'violet',
+      memberCount: 34,
+      memberCapacity: 50,
+      current: true,
+      totalCoinLabel: '707k',
+      totalSuffix: 'weekly',
+    });
+    row.setBounds(0, 0, 258, row.getPreferredHeight());
+
+    expect(row.getPreferredHeight()).toBe(78);
+    expect(row.allianceFlag.flagWidth).toBe(56);
+    expect(
+      row.allianceFlag.x - (row.rank.x + row.rank.width / 2),
+    ).toBe(3);
+    expect(row.tag.style.fontSize).toBe(row.name.style.fontSize);
+    expect(row.memberCount.text).toBe('34/50');
+    expect(row.leaderName.text).toBe('Elara');
+    expect(row.leaderRole.text).toBe('Leader');
+    expect(row.leaderAvatarWidget.visible).toBe(true);
+    expect(row.totalSuffix.text).toBe('weekly');
+    expect(row.total.x).toBeGreaterThan(row.leaderName.x + row.leaderName.width);
+    expect(row.total.y).toBeGreaterThan(row.leaderName.y);
+    expect(row.total.y).toBeLessThan(row.leaderRole.y);
+    expect(row.totalSuffix.x + row.totalSuffix.width).toBeLessThanOrEqual(
+      row.background.frameWidth - 8,
+    );
+    expect(row.detail.visible).toBe(false);
+    expect(row.currentOutline.context.instructions.at(-1)?.data?.style).toMatchObject({
+      alpha: 0.9,
+      width: 1.5,
+    });
+
+    row.bind({
+      id: 'patient-night-traders',
+      type: 'leaderboardAlliance',
+      rank: 18,
+      name: 'The Fellowship of Patient Night Traders Beyond The Moon',
+      allianceTag: 'ROOT',
+      leaderName: 'ArchwizardLongnameBeyondTheMoon',
+      memberCount: 18,
+      totalCoinLabel: '987.6m',
+    });
+    row.setBounds(0, 0, 258, row.getPreferredHeight());
+
+    expect(row.memberCount.text).toBe('18/50');
+    expect(
+      row.allianceFlag.x - (row.rank.x + row.rank.width / 2),
+    ).toBe(3);
+    expect(row.name.text.endsWith('…')).toBe(true);
+    expect(row.name.scale.x).toBeGreaterThanOrEqual(0.72);
+    expect(row.name.x + row.name.width).toBeLessThan(row.memberCount.x - row.memberCount.width);
+    expect(row.leaderName.text.endsWith('…')).toBe(true);
+    expect(row.leaderName.x + row.leaderName.width).toBeLessThanOrEqual(
+      row.total.x - 6,
+    );
 
     row.destroy();
   });
@@ -2965,7 +3048,7 @@ describe('WorkshopPixiPage', () => {
     miraTexture.destroy();
   });
 
-  it('renders owned alliance quests with large item or coin icons and icon-backed rewards', () => {
+  it('renders owned alliance quests with large item art, contained coin art, and icon-backed rewards', () => {
     const crystalTexture = new Texture();
     const coinTexture = new Texture();
     const potionTexture = new Texture();
@@ -3001,6 +3084,7 @@ describe('WorkshopPixiPage', () => {
           title: 'Fill Mana Tonic',
           itemKind: 'potion',
           itemKey: 'manaTonic',
+          objectiveLabel: 'Donate 40 Mana Tonics',
           contributionLabel: 'Your contribution 8/10',
           progressLabel: '18/40',
           progress: 0.45,
@@ -3018,6 +3102,7 @@ describe('WorkshopPixiPage', () => {
           title: 'Grand Route',
           itemKind: 'resource',
           itemKey: 'coin',
+          objectiveLabel: 'Collect 250,000 Gold Coins',
           contributionLabel: 'Your contribution 12,500/12,500',
           progressLabel: '86,027/250,000',
           progress: 86_027 / 250_000,
@@ -3027,6 +3112,24 @@ describe('WorkshopPixiPage', () => {
           actionVariant: 'gray',
           actionWidth: 72,
           actionHeight: 42,
+          enabled: false,
+        },
+        {
+          id: 'claimed-route',
+          title: 'Hard Route',
+          objectiveLabel: 'Collect 10,000 Gold Coins',
+          itemKind: 'resource',
+          itemKey: 'coin',
+          contributionLabel: 'Your contribution 500/500',
+          progressLabel: '10,000/10,000',
+          progress: 1,
+          rewardAmountLabel: '2',
+          rewardResource: 'crystal',
+          actionLabel: 'Claimed',
+          actionVariant: 'gray',
+          actionWidth: 72,
+          actionHeight: 42,
+          claimed: true,
           enabled: false,
         },
       ],
@@ -3039,6 +3142,7 @@ describe('WorkshopPixiPage', () => {
     const dialog = harness.dialogs.get('workshop.alliance');
     const quest = dialog.allianceQuestRows.get('fill-mana-tonic');
     const routeQuest = dialog.allianceQuestRows.get('grand-route');
+    const claimedQuest = dialog.allianceQuestRows.get('claimed-route');
     const tabs = dialog.tabs.getWidgets();
     expect(dialog.rows).toBe(dialog.allianceQuestRows);
     expect(quest.background.frameHeight).toBeCloseTo(quest.getPreferredHeight());
@@ -3051,19 +3155,32 @@ describe('WorkshopPixiPage', () => {
       tint: 0xdbc19f,
     });
     expect(quest.title.text).toBe('Fill Mana Tonic');
+    expect(quest.description.text).toBe('Donate 40 Mana Tonics');
     expect(quest.itemIcon.texture).toBe(potionTexture);
     expect(quest.itemIcon.width).toBe(57);
     expect(quest.itemIcon.height).toBe(57);
     expect(quest.progress.text).toBe('18/40');
+    expect(quest.progress.position.x).toBeCloseTo(
+      quest.progressBar.root.x + quest.progressBar.width / 2,
+    );
+    expect(quest.progress.position.y).toBeCloseTo(
+      quest.progressBar.root.y + quest.progressBar.height / 2,
+    );
     expect(quest.progressBar.progress).toBeCloseTo(0.45);
     expect(quest.contribution.text).toBe('Your contribution 8/10');
     expect(quest.reward.icon.texture).toBe(crystalTexture);
     expect(quest.reward.amountLabel.textObject.text).toBe('3');
+    expect(quest.reward.fontSize).toBe(13);
     expect(quest.action.text.text).toBe('Fill');
     expect(routeQuest.itemIcon.texture).toBe(coinTexture);
-    expect(routeQuest.itemIcon.width).toBe(57);
-    expect(routeQuest.itemIcon.height).toBe(57);
+    expect(routeQuest.itemIcon.width).toBe(32);
+    expect(routeQuest.itemIcon.height).toBe(32);
     expect(routeQuest.progressBar.progress).toBeCloseTo(86_027 / 250_000);
+    expect(claimedQuest.action.root.visible).toBe(false);
+    expect(claimedQuest.claimedStatus.visible).toBe(true);
+    expect(claimedQuest.claimedLabel.text).toBe('Claimed');
+    expect(claimedQuest.claimedCheckmark.visible).toBe(true);
+    expect(claimedQuest.claimedStatus.eventMode).toBe('none');
     expect(quest.root.y).toBe(dialog.scrollContentPaddingTop);
     expect(
       dialog.panel.paperFrame.y +
@@ -3095,6 +3212,7 @@ describe('WorkshopPixiPage', () => {
         {
           id: 'fill-moonflower',
           title: 'Fill 5000 Moonflower Seeds Before The Eclipse Ends',
+          objectiveLabel: 'Donate 5,000 Moonflower Seeds',
           contributionLabel: 'Your contribution 0/250',
           progressLabel: '1,358/5,000',
           progress: 1_358 / 5_000,
@@ -3105,6 +3223,8 @@ describe('WorkshopPixiPage', () => {
           actionWidth: 72,
           actionHeight: 42,
           enabled: false,
+          lockReason: 'Quest progress belongs to another alliance.',
+          onActivate: vi.fn(),
         },
       ],
       members: [],
@@ -3125,6 +3245,8 @@ describe('WorkshopPixiPage', () => {
     expect(quest.background.frameHeight).toBeCloseTo(preferredHeight);
     expect(quest.action.width).toBe(72);
     expect(quest.action.height).toBe(42);
+    expect(quest.action.control.enabled).toBe(true);
+    expect(quest.action.handleTap()).toBe(true);
 
     harness.page.destroy();
     harness.dispose();
@@ -3272,6 +3394,8 @@ describe('WorkshopPixiPage', () => {
     expect(pane.bannerPreview.flagWidth).toBe(160);
     expect(pane.bannerPreview.x).toBe((pane.lastBounds.width - 160) / 2);
     expect(pane.emblemOptions[0].size).toBe(40);
+    expect(pane.emblemOptions).toHaveLength(16);
+    expect(pane.emblemOptions[12].root.x).toBe(46);
     expect(pane.emblemOptionLayer.y).toBeGreaterThan(
       pane.bannerPreview.y + pane.bannerPreview.flagHeight,
     );
@@ -3381,7 +3505,7 @@ describe('WorkshopPixiPage', () => {
     expect(pane.bannerPreview.bannerColor).toBe('blue');
     expect(pane.bannerPreview.emblemColor).toBe('gold');
     expect(pane.bannerPreview.emblemId).toBe('owl');
-    expect(pane.emblemOptions).toHaveLength(12);
+    expect(pane.emblemOptions).toHaveLength(16);
     expect(pane.emblemOptions.find((option) => option.emblemId === 'owl').checkmark.visible).toBe(
       true,
     );
@@ -4473,7 +4597,7 @@ describe('WorkshopPixiPage', () => {
     harness.dispose();
   });
 
-  it('renders Alliance ranks and player-linked system announcements', () => {
+  it('renders Alliance ranks and inline-highlighted system announcements with compact avatars', () => {
     const openPlayer = vi.fn();
     const pressRegistrations = [];
     const inputRouter = {
@@ -4510,7 +4634,13 @@ describe('WorkshopPixiPage', () => {
           username: 'System',
           systemPlayerUsername: 'Ada',
           systemPlayerDetail: 'reached level 14',
-          body: 'Ada reached level 14',
+          body: 'Ada was approved by Luna and joined the alliance.',
+          bodyRuns: [
+            { kind: 'text', text: 'Ada', tone: 'systemPlayer' },
+            { kind: 'text', text: ' was approved by ' },
+            { kind: 'text', text: 'Luna', tone: 'systemPlayer' },
+            { kind: 'text', text: ' and joined the alliance.' },
+          ],
           character: 'rowan',
           frame: 'emerald',
           showSystemAvatar: true,
@@ -4543,9 +4673,21 @@ describe('WorkshopPixiPage', () => {
     expect(row.systemPlayerUsername.text).toBe('Ada');
     expect(row.systemPlayerUsername.style.fill).toBe('#72533a');
     expect(row.systemPlayerUsername.eventMode).toBe('static');
-    expect(row.body.text).toBe('reached level 14');
-    expect(row.body.x).toBeGreaterThan(row.systemPlayerUsername.x);
+    expect(row.systemPlayerUsername.renderable).toBe(false);
+    expect(row.body.text).toBe(
+      'Ada was approved by Luna and joined the alliance.',
+    );
+    expect(
+      row.body.textObjects
+        .filter(
+          (textObject) =>
+            textObject.visible && textObject.style.fill === '#72533a',
+        )
+        .map((textObject) => textObject.text),
+    ).toEqual(['Ada', 'Luna']);
+    expect(row.body.x).toBe(row.systemPlayerUsername.x);
     expect(row.avatar.visible).toBe(true);
+    expect(row.avatar.scale.x * 186).toBeCloseTo(20);
     expect(row.avatar.eventMode).toBe('static');
     expect(avatarPress?.descriptor.enabled()).toBe(true);
     expect(avatarPress?.descriptor.onActivate()).toBe(true);
@@ -4584,7 +4726,12 @@ describe('WorkshopPixiPage', () => {
           bodyRuns: [
             {
               kind: 'text',
-              text: 'reached ',
+              text: 'Ada',
+              tone: 'systemPlayer',
+            },
+            {
+              kind: 'text',
+              text: ' reached ',
             },
             {
               kind: 'icon',
@@ -4614,7 +4761,7 @@ describe('WorkshopPixiPage', () => {
     const followingText = systemRow.body.textObjects.find(
       (textObject) => textObject.visible && textObject.text.startsWith('4,'),
     );
-    expect(systemRow.body.text).toBe('reached ⭐ 4, completing prestige level 40');
+    expect(systemRow.body.text).toBe('Ada reached ⭐ 4, completing prestige level 40');
     expect(bodyIcon.texture).toBe(Texture.WHITE);
     expect(bodyIcon.visible).toBe(true);
     expect(bodyIcon.renderable).toBe(true);

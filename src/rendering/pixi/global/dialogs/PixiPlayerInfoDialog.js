@@ -66,6 +66,12 @@ const OWN_PLAYER_CONTENT_HEIGHT =
   COSMETICS_ACTION_Y +
   COSMETICS_ACTION_HEIGHT -
   (PIXI_UI_GEOMETRY.dialogPadding - COSMETICS_ACTION_BOTTOM_INSET);
+const ALLIANCE_ACTION_Y =
+  COSMETICS_ACTION_Y + COSMETICS_ACTION_HEIGHT + PLAYER_ACTION_GAP;
+const ALLIANCE_MEMBER_CONTENT_HEIGHT =
+  ALLIANCE_ACTION_Y +
+  COSMETICS_ACTION_HEIGHT -
+  (PIXI_UI_GEOMETRY.dialogPadding - COSMETICS_ACTION_BOTTOM_INSET);
 const PLAYER_INFO_TAG_COLORS = Object.freeze({
   ink: '#634934',
   red: '#9b3439',
@@ -248,6 +254,45 @@ export class PixiPlayerInfoDialog extends RetainedGlobalDialog {
       action: () => this.activateRelationshipSecondary(),
       label: `${dialogId}:relationship:secondary`,
     });
+    this.alliancePromoteButton = new PixiTextButton({
+      assetManager: this.context.assets,
+      inputRouter: this.context.inputRouter,
+      semanticRegistry: this.context.semanticRegistry,
+      semanticId: `${dialogId}.alliance.promote`,
+      text: 'Promote',
+      width: PLAYER_ACTION_HALF_WIDTH,
+      height: COSMETICS_ACTION_HEIGHT,
+      sizeTier: 50,
+      variant: 'green',
+      action: () => this.actions.promoteAllianceMember?.() ?? false,
+      label: `${dialogId}:alliance:promote`,
+    });
+    this.allianceDemoteButton = new PixiTextButton({
+      assetManager: this.context.assets,
+      inputRouter: this.context.inputRouter,
+      semanticRegistry: this.context.semanticRegistry,
+      semanticId: `${dialogId}.alliance.demote`,
+      text: 'Demote',
+      width: PLAYER_ACTION_HALF_WIDTH,
+      height: COSMETICS_ACTION_HEIGHT,
+      sizeTier: 50,
+      variant: 'yellow',
+      action: () => this.actions.demoteAllianceMember?.() ?? false,
+      label: `${dialogId}:alliance:demote`,
+    });
+    this.allianceKickButton = new PixiTextButton({
+      assetManager: this.context.assets,
+      inputRouter: this.context.inputRouter,
+      semanticRegistry: this.context.semanticRegistry,
+      semanticId: `${dialogId}.alliance.kick`,
+      text: 'Kick',
+      width: PLAYER_ACTION_HALF_WIDTH,
+      height: COSMETICS_ACTION_HEIGHT,
+      sizeTier: 50,
+      variant: 'red',
+      action: () => this.actions.kickAllianceMember?.() ?? false,
+      label: `${dialogId}:alliance:kick`,
+    });
     this.panel.content.addChild(
       this.summaryFrame,
       this.statsFrame,
@@ -273,6 +318,9 @@ export class PixiPlayerInfoDialog extends RetainedGlobalDialog {
       this.friendsButton,
       this.relationshipPrimaryButton,
       this.relationshipSecondaryButton,
+      this.alliancePromoteButton,
+      this.allianceDemoteButton,
+      this.allianceKickButton,
     );
     this.applyTheme(this.context.theme);
     this.bind({});
@@ -320,6 +368,10 @@ export class PixiPlayerInfoDialog extends RetainedGlobalDialog {
       showCosmetics && this.playerModel.friendsNotification,
     );
     this.configureRelationshipButtons(showRelationship);
+    const showAllianceActions =
+      !loading && !this.playerModel.ownPlayer &&
+      Boolean(this.playerModel.allianceMemberActions);
+    this.configureAllianceMemberButtons(showAllianceActions);
     this.panel.setPaperVisible(false);
 
     if (loading) {
@@ -365,9 +417,11 @@ export class PixiPlayerInfoDialog extends RetainedGlobalDialog {
     this.applyAllianceTagColor();
     this.setPanelContentSize(
       PLAYER_CONTENT_WIDTH,
-      showCosmetics || showRelationship
-        ? OWN_PLAYER_CONTENT_HEIGHT
-        : PLAYER_CONTENT_HEIGHT,
+      showAllianceActions
+        ? ALLIANCE_MEMBER_CONTENT_HEIGHT
+        : showCosmetics || showRelationship
+          ? OWN_PLAYER_CONTENT_HEIGHT
+          : PLAYER_CONTENT_HEIGHT,
     );
     this.layoutDialog();
   }
@@ -429,6 +483,32 @@ export class PixiPlayerInfoDialog extends RetainedGlobalDialog {
 
   activateRelationshipSecondary() {
     return this.actions.rejectFriend?.() ?? false;
+  }
+
+  configureAllianceMemberButtons(visible) {
+    const configurations = [
+      [
+        this.alliancePromoteButton,
+        this.playerModel?.allianceMemberActions?.promoteLabel,
+        this.actions.promoteAllianceMember,
+      ],
+      [
+        this.allianceDemoteButton,
+        this.playerModel?.allianceMemberActions?.demoteLabel,
+        this.actions.demoteAllianceMember,
+      ],
+      [
+        this.allianceKickButton,
+        this.playerModel?.allianceMemberActions?.kickLabel,
+        this.actions.kickAllianceMember,
+      ],
+    ];
+    for (const [button, label, action] of configurations) {
+      const buttonVisible = visible && Boolean(label) && typeof action === 'function';
+      button.visible = buttonVisible;
+      button.renderable = buttonVisible;
+      button.setText(label ?? '').setEnabled(buttonVisible);
+    }
   }
 
   layoutCloseControl() {
@@ -497,6 +577,24 @@ export class PixiPlayerInfoDialog extends RetainedGlobalDialog {
       PLAYER_ACTION_HALF_WIDTH,
       COSMETICS_ACTION_HEIGHT,
     );
+    const allianceButtons = [
+      this.alliancePromoteButton,
+      this.allianceDemoteButton,
+      this.allianceKickButton,
+    ].filter((button) => button.visible);
+    if (allianceButtons.length > 0) {
+      const buttonWidth =
+        (COSMETICS_ACTION_WIDTH -
+          PLAYER_ACTION_GAP * (allianceButtons.length - 1)) /
+        allianceButtons.length;
+      allianceButtons.forEach((button, index) => {
+        button.position.set(
+          COSMETICS_ACTION_X + index * (buttonWidth + PLAYER_ACTION_GAP),
+          ALLIANCE_ACTION_Y,
+        );
+        button.setSize(buttonWidth, COSMETICS_ACTION_HEIGHT);
+      });
+    }
 
     if (this.playerModel.loading) {
       this.loadingLabel.position.set(
@@ -607,6 +705,9 @@ export class PixiPlayerInfoDialog extends RetainedGlobalDialog {
     this.friendsButton?.applyTheme(theme);
     this.relationshipPrimaryButton?.applyTheme(theme);
     this.relationshipSecondaryButton?.applyTheme(theme);
+    this.alliancePromoteButton?.applyTheme(theme);
+    this.allianceDemoteButton?.applyTheme(theme);
+    this.allianceKickButton?.applyTheme(theme);
     this.applyAllianceTagColor();
     this.layoutDialog();
   }
@@ -643,6 +744,7 @@ function normalizePlayerModel(model = {}) {
       model.friendsNotification ?? source.friendsNotification,
     ),
     relationship: String(model.relationship ?? source.relationship ?? 'stranger'),
+    allianceMemberActions: model.allianceMemberActions ?? null,
     identity: String(source.identity ?? ''),
     username: String(source.username ?? source.name ?? '').trim(),
     allianceId: String(source.allianceId ?? source.alliance_id ?? ''),

@@ -16,11 +16,6 @@ import {
 export const PLAYER_PROFILE_SIZE = 186;
 const PLAYER_PROFILE_INSET = 19;
 const PLAYER_AVATAR_SIZE = 148;
-const PLAYER_AVATAR_ART_SCALE = 1.15;
-const PLAYER_AVATAR_ART_SIZE = PLAYER_AVATAR_SIZE * PLAYER_AVATAR_ART_SCALE;
-const PLAYER_AVATAR_ART_X = (PLAYER_PROFILE_SIZE - PLAYER_AVATAR_ART_SIZE) / 2;
-const PLAYER_AVATAR_ART_Y =
-  PLAYER_PROFILE_INSET + PLAYER_AVATAR_SIZE - PLAYER_AVATAR_ART_SIZE;
 
 /** Owns the tintable frame and inner profile decoration. */
 export class PlayerBackgroundWidget extends Container {
@@ -56,26 +51,16 @@ export class PlayerBackgroundWidget extends Container {
   }
 }
 
-/** Owns the masked player portrait without background or interaction state. */
+/** Owns the fully contained player portrait without background or interaction state. */
 export class PlayerAvatarWidget extends Container {
   constructor({ texture = Texture.EMPTY, label = 'playerAvatar' } = {}) {
     super({ label });
-    this.maskShape = new Graphics()
-      .rect(
-        PLAYER_PROFILE_INSET,
-        0,
-        PLAYER_AVATAR_SIZE,
-        PLAYER_PROFILE_INSET + PLAYER_AVATAR_SIZE,
-      )
-      .fill('#ffffff');
-    this.maskShape.label = `${label}:mask`;
     this.portrait = new Sprite({
       texture,
       label: `${label}:portrait`,
       roundPixels: true,
     });
-    this.portrait.mask = this.maskShape;
-    this.addChild(this.portrait, this.maskShape);
+    this.addChild(this.portrait);
     this.setTexture(texture);
   }
 
@@ -83,9 +68,20 @@ export class PlayerAvatarWidget extends Container {
     if (texture) {
       this.portrait.texture = texture;
     }
-    this.portrait.position.set(PLAYER_AVATAR_ART_X, PLAYER_AVATAR_ART_Y);
-    this.portrait.width = PLAYER_AVATAR_ART_SIZE;
-    this.portrait.height = PLAYER_AVATAR_ART_SIZE;
+    const textureWidth = Math.max(1, Number(this.portrait.texture.width) || 1);
+    const textureHeight = Math.max(1, Number(this.portrait.texture.height) || 1);
+    const scale = Math.min(
+      PLAYER_AVATAR_SIZE / textureWidth,
+      PLAYER_AVATAR_SIZE / textureHeight,
+    );
+    const width = textureWidth * scale;
+    const height = textureHeight * scale;
+    this.portrait.position.set(
+      PLAYER_PROFILE_INSET + (PLAYER_AVATAR_SIZE - width) / 2,
+      PLAYER_PROFILE_INSET + PLAYER_AVATAR_SIZE - height,
+    );
+    this.portrait.width = width;
+    this.portrait.height = height;
     return this;
   }
 }
@@ -112,7 +108,6 @@ export class PlayerProfileWidget extends Container {
     // its production parts to UI Lab and focused geometry tests.
     this.avatarFrame = this.backgroundWidget.frame;
     this.headBackground = this.backgroundWidget.decoration;
-    this.portraitMask = this.avatarWidget.maskShape;
     this.portrait = this.avatarWidget.portrait;
   }
 

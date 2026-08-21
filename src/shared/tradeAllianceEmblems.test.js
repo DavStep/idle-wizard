@@ -8,10 +8,16 @@ import {
 } from './tradeAllianceEmblems.js';
 
 describe('tradeAllianceEmblems', () => {
-  it('offers the original emblem plus eleven new simple silhouettes', () => {
+  it('offers sixteen unique simple silhouettes', () => {
     expect(DEFAULT_TRADE_ALLIANCE_EMBLEM).toBe('unity');
-    expect(TRADE_ALLIANCE_EMBLEMS).toHaveLength(12);
-    expect(new Set(TRADE_ALLIANCE_EMBLEMS.map(({ id }) => id)).size).toBe(12);
+    expect(TRADE_ALLIANCE_EMBLEMS).toHaveLength(16);
+    expect(new Set(TRADE_ALLIANCE_EMBLEMS.map(({ id }) => id)).size).toBe(16);
+    expect(TRADE_ALLIANCE_EMBLEMS.slice(-4).map(({ id }) => id)).toEqual([
+      'cauldron',
+      'sword',
+      'shield',
+      'book',
+    ]);
     expect(TRADE_ALLIANCE_EMBLEMS.every(({ assetId }) => assetId.endsWith('.png'))).toBe(true);
   });
 

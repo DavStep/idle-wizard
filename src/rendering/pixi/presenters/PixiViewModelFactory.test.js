@@ -1564,6 +1564,82 @@ describe('PixiViewModelFactory', () => {
     expect(dialog.emptyLabel).toBe('No alliances yet');
   });
 
+  it('marks the owned leaderboard alliance and projects member capacity', () => {
+    const factory = new PixiViewModelFactory();
+    const dialog = factory.createLeaderboardDialog(
+      {},
+      {
+        ownAlliance: {
+          allianceId: 'night-owls',
+          tag: 'OWL',
+        },
+        members: [
+          {
+            allianceId: 'sun-circle',
+            memberIdentity: 'sol',
+            username: 'Sol',
+            character: 'elara',
+            frame: 'sun',
+            role: 'tradeMaster',
+          },
+          {
+            allianceId: 'night-owls',
+            memberIdentity: 'mira',
+            username: 'Mira',
+            character: 'mira',
+            frame: 'violet',
+            role: 'tradeMaster',
+          },
+        ],
+        topWeeklyAlliances: [
+          {
+            allianceId: 'sun-circle',
+            name: 'Sun Circle',
+            tag: 'SUN',
+            leaderIdentity: 'sol',
+            memberCount: 42,
+            weeklyIncome: 707_000,
+          },
+          {
+            allianceId: 'night-owls',
+            name: 'Night Owls',
+            tag: 'OWL',
+            leaderIdentity: 'mira',
+            memberCount: 34,
+            memberCapacity: 50,
+            weeklyIncome: 57_800,
+          },
+        ],
+      },
+      'alliance',
+      {},
+      'weekly',
+    );
+
+    expect(dialog.rows).toEqual([
+      expect.objectContaining({
+        id: 'sun-circle',
+        current: false,
+        leaderName: 'Sol',
+        leaderCharacter: 'elara',
+        leaderFrame: 'sun',
+        memberCount: 42,
+        memberCapacity: 50,
+        totalSuffix: 'weekly',
+      }),
+      expect.objectContaining({
+        id: 'night-owls',
+        current: true,
+        leaderName: 'Mira',
+        leaderCharacter: 'mira',
+        leaderFrame: 'violet',
+        memberCount: 34,
+        memberCapacity: 50,
+        totalSuffix: 'weekly',
+      }),
+    ]);
+  });
+
   it('projects an owned trade alliance into separate trade info and member rows', () => {
     const openPlayer = vi.fn();
     const selectAllianceTab = vi.fn();
@@ -1680,6 +1756,7 @@ describe('PixiViewModelFactory', () => {
     expect(openPlayer).toHaveBeenCalledWith(
       expect.objectContaining({
         ...member,
+        allianceMemberContext: true,
         identity: 'member-a',
         frame: 'classic',
       }),
@@ -1858,6 +1935,12 @@ describe('PixiViewModelFactory', () => {
       body: 'Mira was approved by Luna and joined the alliance.',
       systemPlayerUsername: 'Mira',
       systemPlayerDetail: 'was approved by Luna and joined the alliance.',
+      bodyRuns: [
+        { kind: 'text', text: 'Mira', tone: 'systemPlayer' },
+        { kind: 'text', text: ' was approved by ' },
+        { kind: 'text', text: 'Luna', tone: 'systemPlayer' },
+        { kind: 'text', text: ' and joined the alliance.' },
+      ],
       allianceTag: '',
       character: 'rowan',
       frame: 'violet',
@@ -1936,6 +2019,7 @@ describe('PixiViewModelFactory', () => {
     ]);
     expect(dialog.rows[0]).toMatchObject({
       title: 'Fill 500 mana tonic',
+      objectiveLabel: 'Donate 10 Mana Tonics',
       contributionLabel: 'Your contribution 0/3',
       progressLabel: '2/10',
       progress: 0.2,
@@ -1948,6 +2032,7 @@ describe('PixiViewModelFactory', () => {
     });
     expect(dialog.rows[1]).toMatchObject({
       title: 'Earn Coin',
+      objectiveLabel: 'Collect 100 Gold Coins',
       contributionLabel: 'Your contribution 10/10',
       progressLabel: '100/100',
       progress: 1,
@@ -1964,6 +2049,66 @@ describe('PixiViewModelFactory', () => {
     dialog.rows[1].onActivate();
     expect(fillAllianceQuest).toHaveBeenCalledWith(snapshot.quests[0]);
     expect(claimAllianceQuest).toHaveBeenCalledWith('earn-coin');
+  });
+
+  it('keeps participation-locked alliance quests pressable for an explanation', () => {
+    const showAllianceQuestLockReason = vi.fn();
+    const snapshot = {
+      ownAlliance: {
+        allianceId: 'alliance-new',
+        name: 'New Lanterns',
+        memberCount: 1,
+      },
+      ownMember: {
+        memberIdentity: 'member-1',
+        allianceId: 'alliance-new',
+        role: 'trader',
+        dayKey: '2026-W24',
+      },
+      alliances: [
+        { allianceId: 'alliance-old', name: 'Old Lanterns' },
+      ],
+      quests: [
+        {
+          allianceId: 'alliance-new',
+          questId: 'fill-tonics',
+          dayKey: '2026-W24',
+          label: 'fill 500 mana tonic',
+          questType: 'itemFill',
+          itemKey: 'manaTonic',
+          progress: 100,
+          target: 500,
+          minContribution: 25,
+          crystalReward: 5,
+        },
+      ],
+      contributions: [
+        {
+          allianceId: 'alliance-old',
+          contributorIdentity: 'member-1',
+          questId: 'old-route',
+          dayKey: '2026-W24',
+          contribution: 1,
+        },
+      ],
+    };
+    const dialog = new PixiViewModelFactory().createAllianceDialog(
+      snapshot,
+      null,
+      { showAllianceQuestLockReason },
+      'quests',
+    );
+    const quest = dialog.rows[0];
+
+    expect(quest).toMatchObject({
+      actionLabel: 'Locked',
+      actionVariant: 'gray',
+      enabled: false,
+      lockReason:
+        'Quest progress this week belongs to Old Lanterns. Rejoin that alliance to continue, or wait for the weekly reset.',
+    });
+    expect(quest.onActivate()).toBeUndefined();
+    expect(showAllianceQuestLockReason).toHaveBeenCalledWith(quest.lockReason);
   });
 
   it('projects leaderboard-style alliance directory rows with leaders, totals, and state actions', () => {
@@ -2238,7 +2383,12 @@ describe('PixiViewModelFactory', () => {
         bodyRuns: [
           {
             kind: 'text',
-            text: 'reached ',
+            text: 'Ada',
+            tone: 'systemPlayer',
+          },
+          {
+            kind: 'text',
+            text: ' reached ',
           },
           {
             kind: 'icon',
@@ -2290,6 +2440,10 @@ describe('PixiViewModelFactory', () => {
       body: 'Ada reached level 14',
       systemPlayerUsername: 'Ada',
       systemPlayerDetail: 'reached level 14',
+      bodyRuns: [
+        { kind: 'text', text: 'Ada', tone: 'systemPlayer' },
+        { kind: 'text', text: ' reached level 14' },
+      ],
       semanticId: 'world-chat-system-player:system-level-1',
     });
     expect(dialog.rows[0].onActivate).toEqual(expect.any(Function));

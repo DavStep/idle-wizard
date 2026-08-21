@@ -76,6 +76,8 @@ export const GARDEN_PIXI_GEOMETRY = Object.freeze({
   automatedSeedIconY: 14,
   automatedSeedLabelY: 27,
   automatedSeedLabelFontSize: 9,
+  automatedAutoIconHeight: 27,
+  automatedAutoLabelY: 23,
   automatedPlantSlots: 5,
   automatedPlantLift: 2,
   automatedPlantJitterY: 1,
@@ -98,10 +100,10 @@ const GARDEN_FIREFLY_FIELD = Object.freeze({
 const GARDEN_GROWING_WIND_MS = 2_400;
 const GARDEN_READY_LIFT_MS = 1_080;
 const GARDEN_SCISSORS_SNIP_MS = 420;
-const GARDEN_PLOT_RECEIVE_MS = 500;
-const GARDEN_PLOT_RECEIVE_IMPACT_PROGRESS = 0.52;
-const GARDEN_PLOT_HERB_REVEAL_START_PROGRESS = 0.58;
-const GARDEN_PLOT_HERB_REVEAL_END_PROGRESS = 0.9;
+const GARDEN_PLOT_RECEIVE_MS = 460;
+const GARDEN_PLOT_RECEIVE_IMPACT_PROGRESS = 0.46;
+const GARDEN_PLOT_HERB_REVEAL_START_PROGRESS = 0.51;
+const GARDEN_PLOT_HERB_REVEAL_END_PROGRESS = 0.86;
 const GARDEN_PLOT_TAP_FEEDBACK_MS = 560;
 const GARDEN_PLOT_TAP_REDUCED_MOTION_LABEL_MS = 220;
 const GARDEN_DIALOG_IDS = Object.freeze({
@@ -1549,10 +1551,15 @@ export class GardenPlotWidget {
         : buttonHeight / 2 + (this.seedButton.activeSkin?.contentOffsetY ?? 0),
     );
     this.autoGear.position.set(controlWidth / 2, buttonHeight / 2);
-    this.autoGear.height = 21;
-    this.autoGear.width = 21 * PIXI_ROOT_RUN_GEOMETRY.settings.gearAspectRatio;
+    this.autoGear.height = GARDEN_PIXI_GEOMETRY.automatedAutoIconHeight;
+    this.autoGear.width =
+      GARDEN_PIXI_GEOMETRY.automatedAutoIconHeight *
+      PIXI_ROOT_RUN_GEOMETRY.settings.gearAspectRatio;
     this.autoButton.textLabel.setFontSize(10).setLineHeight(12);
-    this.autoButton.textLabel.position.set(controlWidth / 2, 21);
+    this.autoButton.textLabel.position.set(
+      controlWidth / 2,
+      GARDEN_PIXI_GEOMETRY.automatedAutoLabelY,
+    );
     this.quantityButton.textLabel.setFontSize(13).setLineHeight(15);
     this.quantityButton.textLabel.position.set(
       controlWidth / 2,
@@ -1888,9 +1895,14 @@ export class GardenPlotWidget {
   }
 
   setPlantingRevealProgress(progress) {
-    const eased = softEase(clamp(Number(progress) || 0, 0, 1));
+    const normalized = clamp(Number(progress) || 0, 0, 1);
+    const eased = softEase(normalized);
+    const verticalScale =
+      normalized < 0.78
+        ? lerp(0.05, 1.045, softEase(normalized / 0.78))
+        : lerp(1.045, 1, softEase((normalized - 0.78) / 0.22));
     this.plantSlots.forEach(({ revealMotion, plant }) => {
-      revealMotion.scale.set(lerp(0.65, 1, eased), lerp(0.08, 1, eased));
+      revealMotion.scale.set(lerp(0.7, 1, eased), verticalScale);
       plant.alpha = eased;
     });
   }
@@ -2191,26 +2203,26 @@ function applyReceiveMotion(plot, progress) {
   if (impactProgress < 0.24) {
     segment = impactProgress / 0.24;
     fromY = 0;
-    toY = 1.5;
+    toY = 2.2;
     fromScaleX = 1;
-    toScaleX = 1.055;
+    toScaleX = 1.075;
     fromScaleY = 1;
-    toScaleY = 0.93;
+    toScaleY = 0.9;
   } else if (impactProgress < 0.54) {
     segment = (impactProgress - 0.24) / 0.3;
-    fromY = 1.5;
-    toY = -1;
-    fromScaleX = 1.055;
+    fromY = 2.2;
+    toY = -1.2;
+    fromScaleX = 1.075;
     toScaleX = 0.985;
-    fromScaleY = 0.93;
-    toScaleY = 1.025;
+    fromScaleY = 0.9;
+    toScaleY = 1.035;
   } else {
     segment = (impactProgress - 0.54) / 0.46;
-    fromY = -1;
+    fromY = -1.2;
     toY = 0;
     fromScaleX = 0.985;
     toScaleX = 1;
-    fromScaleY = 1.025;
+    fromScaleY = 1.035;
     toScaleY = 1;
   }
   const eased = softEase(segment);

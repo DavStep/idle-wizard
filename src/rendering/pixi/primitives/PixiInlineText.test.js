@@ -169,4 +169,40 @@ describe('PixiInlineText', () => {
 
     inline.destroy({ children: true });
   });
+
+  it('keeps differently styled text runs in one measured wrapping flow', () => {
+    const inline = new PixiInlineText({
+      runs: [
+        {
+          kind: 'text',
+          text: 'Mira',
+          style: { fill: '#72533a', fontWeight: '700' },
+        },
+        { kind: 'text', text: ' was approved by ' },
+        {
+          kind: 'text',
+          text: 'Luna',
+          style: { fill: '#72533a', fontWeight: '700' },
+        },
+        { kind: 'text', text: ' and joined the alliance.' },
+      ],
+      style: TEST_STYLE,
+      wrapWidth: 180,
+    });
+
+    const highlighted = inline.textObjects.filter(
+      (textObject) => textObject.visible && textObject.style.fill === '#72533a',
+    );
+
+    expect(inline.text).toBe(
+      'Mira was approved by Luna and joined the alliance.',
+    );
+    expect(highlighted.map((textObject) => textObject.text)).toEqual([
+      'Mira',
+      'Luna',
+    ]);
+    expect(inline.layoutHeight).toBeGreaterThan(TEST_STYLE.lineHeight);
+
+    inline.destroy({ children: true });
+  });
 });

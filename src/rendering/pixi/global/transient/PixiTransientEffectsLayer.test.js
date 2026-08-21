@@ -263,9 +263,9 @@ describe('PixiTransientEffectsLayer', () => {
     expect(entry).toMatchObject({
       kind: 'item',
       delayMs: 0,
-      durationMs: 500,
+      durationMs: 460,
     });
-    expect(entry.widget.root.position).toMatchObject({ x: 104, y: 82 });
+    expect(entry.widget.root.position).toMatchObject({ x: 104, y: 94 });
     expect(entry.widget.root.alpha).toBe(1);
 
     entry.widget.update(0.4, { delayed: false });
@@ -276,20 +276,24 @@ describe('PixiTransientEffectsLayer', () => {
     expect(entry.widget.root.scale.x).toBeLessThan(1);
     expect(entry.widget.root.scale.y).toBeGreaterThan(1);
 
+    entry.widget.update(0.46, { delayed: false });
+    expect(entry.widget.root.position).toMatchObject({ x: 104, y: 142 });
+    expect(entry.widget.root.scale.x).toBeLessThan(0.9);
+    expect(entry.widget.root.scale.y).toBeGreaterThan(1.15);
+    expect(entry.widget.root.alpha).toBe(1);
+
     entry.widget.update(0.52, { delayed: false });
     expect(entry.widget.root.position).toMatchObject({ x: 104, y: 142 });
     expect(entry.widget.root.scale.x).toBeGreaterThan(1.15);
     expect(entry.widget.root.scale.y).toBeLessThan(0.75);
     expect(entry.widget.root.alpha).toBe(1);
 
-    entry.widget.update(0.58, { delayed: false });
+    entry.widget.update(0.6, { delayed: false });
     expect(entry.widget.root.position).toMatchObject({ x: 104, y: 142 });
-    expect(entry.widget.root.scale.x).toBeGreaterThan(1.18);
-    expect(entry.widget.root.scale.y).toBeLessThan(0.7);
     expect(entry.widget.root.alpha).toBeGreaterThan(0);
     expect(entry.widget.root.alpha).toBeLessThan(1);
 
-    entry.widget.update(0.64, { delayed: false });
+    entry.widget.update(0.66, { delayed: false });
     expect(entry.widget.root.alpha).toBe(0);
   });
 
@@ -841,10 +845,10 @@ describe('reward flyout presenter', () => {
         itemFrameName: 'herb:mintHerb',
         anchorId: 'garden.plot.2',
         anchorYRatio: 0.5,
-        size: 25.5,
+        size: 28.9,
         motion: 'garden-plant-drop',
         delayMs: 0,
-        durationMs: 500,
+        durationMs: 460,
       }),
     ]);
 

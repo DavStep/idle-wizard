@@ -20,6 +20,10 @@ experience_type: development-operations
   atlas source files again beside their packed frames. Shared atlas pages own
   non-nine-slice textures up to `256x256`; startup art, nine-slices, and larger
   illustrations stay standalone.
+- Use `source:assets/...` atlas-frame IDs for packed textures; a legacy
+  `public:ui/...` texture alias that points at an atlas URL resolves the whole
+  sheet. Keep the named primary atlas within its declared `2048x2048` page and
+  fail generation on overflow instead of silently growing the texture.
 - When promoting an authored source texture from `.png` to `.9.png`, update
   asset-generator inputs as well as runtime references, then run
   `npm run assets:atlas`; stale generator paths otherwise block `predev`.

@@ -72,8 +72,8 @@ flyouts without creating item, coin, spend-burst, or target-pulse motion.
 Summoned seeds originate at the ritual circle's center through
 `workshop.summonArea`; the separate `workshop.summon` target remains attached
 to the actionable button. Garden planting is the exception to the summon toss:
-one seed pack falls from `60px` above the affected plot center, stretches in
-flight, then squashes and fades at center impact during its `500ms` sequence.
+one seed pack falls from `48px` above the affected plot center, stretches in
+flight, then squashes and fades at center impact during its `460ms` sequence.
 That impact stays synchronized with the plot-owned soil boink and the herb's
 bottom-origin scale reveal.
 

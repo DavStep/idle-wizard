@@ -230,6 +230,51 @@ describe('BrewingPixiPage', () => {
     harness.dispose();
   });
 
+  it('routes a press landing on the visible cauldron liquid to timer acceleration', () => {
+    const accelerateCauldron = vi.fn(() => ({
+      ok: true,
+      cauldronIndex: 0,
+      reducedSeconds: 1,
+      remainingMs: 4_000,
+      cooldownMs: 504,
+    }));
+    const harness = createHarness({ timeSource: () => 100 });
+    const model = createBrewingViewModel();
+    model.brewing.cauldrons[0].activeBrew = {
+      key: 'sage-tonic',
+      label: 'sage tonic',
+      phase: 'brewing',
+      totalMs: 10_000,
+      remainingMs: 5_000,
+    };
+    model.actions.accelerateCauldron = accelerateCauldron;
+    harness.page.bind(model);
+    harness.page.activate();
+
+    const registration = harness.inputRouter.store
+      .getRegistrations('press')
+      .find((candidate) => candidate.id === 'brewing.cauldron.tap');
+    const liquid = harness.page.hud.cauldronLiquid;
+    const bounds = liquid.getBounds();
+    const point = {
+      x: bounds.x + bounds.width / 2,
+      y: bounds.y + bounds.height / 2,
+    };
+
+    expect(registration?.fallbackHitTest).toBe(true);
+    harness.inputRouter.onPointerDown(
+      createPointerEvent(liquid, 'pointerdown', point),
+    );
+    harness.inputRouter.onPointerUp(
+      createPointerEvent(liquid, 'pointerup', point),
+    );
+
+    expect(accelerateCauldron).toHaveBeenCalledWith(0);
+
+    harness.page.destroy();
+    harness.dispose();
+  });
+
   it('keeps the compact Empty action pressable for every unlocked cauldron state', () => {
     const emptyCauldron = vi.fn(() => ({ ok: true }));
     const harness = createHarness();
@@ -2198,7 +2243,7 @@ describe('BrewingPixiPage', () => {
     harness.dispose();
   });
 
-  it('keeps the short portrait HUD below the player banner and scrolls to World Chat', () => {
+  it('fits the short portrait HUD between the player banner and World Chat', () => {
     const harness = createHarness();
     const model = createBrewingViewModel();
     model.brewing.cauldrons[0].selectedRecipe = {
@@ -2222,13 +2267,14 @@ describe('BrewingPixiPage', () => {
       harness.page.hudScroll.contentHeight -
       harness.page.hudScroll.height;
 
+    expect(hud.cauldronTitlePlaque.root.y).toBe(0);
     expect(hud.detailPanel.root.y).toBe(BREWING_HUD_GEOMETRY.detailTop);
     expect(harness.page.hudScroll.root.y).toBe(
       BREWING_HUD_GEOMETRY.top,
     );
     expect(hud.root.y).toBe(-BREWING_HUD_GEOMETRY.top);
-    expect(maximumScroll).toBeGreaterThan(0);
-    expect(harness.page.hudScroll.scrollbarTrack.visible).toBe(true);
+    expect(maximumScroll).toBe(0);
+    expect(harness.page.hudScroll.scrollbarTrack.visible).toBe(false);
     expect(hud.ingredientSlots[0].root.y).toBeGreaterThanOrEqual(
       BREWING_HUD_GEOMETRY.top,
     );
@@ -2548,7 +2594,15 @@ describe('BrewingPixiPage', () => {
 
     expect(harness.page.hud.recipes.enabled).toBe(true);
     expect(harness.page.hud.recipes.text.text).toBe('Minor Healing Potion');
-    expect(harness.page.hud.recipes.control.textLabel.scale.x).toBeLessThan(1);
+    expect(harness.page.hud.recipes.control.textLabel.scale.x).toBe(1);
+    expect(harness.page.hud.recipes.control.textLabel.wordWrap).toBe(true);
+    expect(harness.page.hud.recipes.control.textLabel.wrapWidth).toBe(
+      BREWING_HUD_GEOMETRY.recipeButtonWidth -
+        BREWING_HUD_GEOMETRY.recipeLabelInset * 2,
+    );
+    expect(
+      harness.page.hud.recipes.control.textLabel.measuredHeight,
+    ).toBeGreaterThan(BREWING_HUD_GEOMETRY.recipeLabelLineHeight);
     expect(harness.page.hud.recipePotionIcon.visible).toBe(true);
     expect(harness.page.hud.recipePotionIcon.width).toBe(
       BREWING_HUD_GEOMETRY.recipeIconSize,
@@ -2557,11 +2611,70 @@ describe('BrewingPixiPage', () => {
       x: BREWING_HUD_GEOMETRY.recipeButtonWidth / 2,
       y: BREWING_HUD_GEOMETRY.recipeIconY,
     });
+    expect(
+      harness.page.hud.recipePotionIcon.y -
+        harness.page.hud.recipePotionIcon.height / 2,
+    ).toBeLessThan(0);
     expect(harness.page.hud.recipes.control.textLabel.y).toBe(
       BREWING_HUD_GEOMETRY.recipeLabelY,
     );
+    const restingLabelPosition = {
+      x: harness.page.hud.recipes.control.textLabel.x,
+      y: harness.page.hud.recipes.control.textLabel.y,
+    };
+    harness.page.hud.recipes.control.setPressed(true);
+    expect(harness.page.hud.recipes.control.textLabel.x).toBe(
+      restingLabelPosition.x,
+    );
+    expect(harness.page.hud.recipes.control.textLabel.y).toBe(
+      restingLabelPosition.y,
+    );
+    harness.page.hud.recipes.control.setPressed(false, { confirmed: false });
+    expect(harness.page.hud.recipes.control.textLabel.x).toBe(
+      restingLabelPosition.x,
+    );
+    expect(harness.page.hud.recipes.control.textLabel.y).toBe(
+      restingLabelPosition.y,
+    );
     expect(harness.page.hud.potionName.text).toBe('Sage Tonic');
     expect(harness.page.hud.recipes.handleTap()).toBe(true);
+    expect(openRecipes).toHaveBeenCalledWith(0);
+
+    harness.page.destroy();
+    harness.dispose();
+  });
+
+  it('routes presses on the selected potion art through the recipe selector', () => {
+    const harness = createHarness();
+    const model = createBrewingViewModel();
+    const openRecipes = vi.fn(() => true);
+    model.brewing.cauldrons[0].selectedRecipe = {
+      key: 'minorHealingPotion',
+      label: 'minor healing potion',
+    };
+    model.actions.openRecipes = openRecipes;
+    harness.page.bind(model);
+    harness.page.activate();
+
+    const button = harness.page.hud.recipes;
+    const icon = harness.page.hud.recipePotionIcon;
+    const registration = harness.inputRouter.store
+      .getRegistrations('press')
+      .find((candidate) => candidate.displayObject === button.root);
+    const bounds = icon.getBounds();
+    const point = {
+      x: bounds.x + bounds.width / 2,
+      y: bounds.y + bounds.height / 2,
+    };
+
+    expect(registration?.fallbackHitTest).toBe(true);
+    harness.inputRouter.onPointerDown(
+      createPointerEvent(icon, 'pointerdown', point),
+    );
+    harness.inputRouter.onPointerUp(
+      createPointerEvent(icon, 'pointerup', point),
+    );
+
     expect(openRecipes).toHaveBeenCalledWith(0);
 
     harness.page.destroy();
@@ -3047,6 +3160,27 @@ function createAmbientMotionHarness() {
       expect(callback).toEqual(expect.any(Function));
       callback(timestamp);
     },
+  };
+}
+
+function createPointerEvent(
+  target,
+  type,
+  point = { x: 0, y: 0 },
+  pointerType = 'mouse',
+) {
+  return {
+    type,
+    target,
+    pointerId: 1,
+    pointerType,
+    button: 0,
+    global: point,
+    clientX: point.x,
+    clientY: point.y,
+    preventDefault: vi.fn(),
+    stopPropagation: vi.fn(),
+    stopImmediatePropagation: vi.fn(),
   };
 }
 

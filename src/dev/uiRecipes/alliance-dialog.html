@@ -117,6 +117,40 @@
         actionEvents.push(event);
         canvas.dataset.lastAction = JSON.stringify(event);
       }
+      function openMemberPlayerInfo(member) {
+        const manageable =
+          settingsAccessible && member.role !== 'tradeMaster';
+        dialog.deactivate();
+        runtime.openDialog(GLOBAL_DIALOG_IDS.PLAYER, {
+          ownPlayer: false,
+          player: {
+            ...member,
+            allianceId: settings.allianceId,
+            allianceMemberContext: true,
+            identity: member.memberIdentity,
+            playerLevel: Number(member.levelLabel?.replace(/\D/g, '')) || 1,
+          },
+          allianceMemberActions: manageable
+            ? {
+                role: member.role,
+                promoteLabel: 'Promote',
+                demoteLabel: 'Demote',
+                kickLabel: 'Kick',
+              }
+            : null,
+          actions: manageable
+            ? {
+                promoteAllianceMember: () =>
+                  recordAction({ type: 'promote', memberIdentity: member.memberIdentity }),
+                demoteAllianceMember: () =>
+                  recordAction({ type: 'demote', memberIdentity: member.memberIdentity }),
+                kickAllianceMember: () =>
+                  recordAction({ type: 'kick', memberIdentity: member.memberIdentity }),
+              }
+            : {},
+        });
+        return true;
+      }
       const directorySnapshot = {
         connected: true,
         ownAlliance: null,
@@ -210,6 +244,7 @@
           title: 'Fill 500 mana tonic',
           itemKind: 'potion',
           itemKey: 'manaTonic',
+          objectiveLabel: 'Donate 500 Mana Tonics',
           contributionLabel: 'Your contribution 0/25',
           progressLabel: '138/500',
           progress: 138 / 500,
@@ -220,13 +255,19 @@
           actionWidth: 72,
           actionHeight: 42,
           enabled: false,
-          onActivate: null,
+          lockReason:
+            'Quest progress this week belongs to Moss Hall. Rejoin that alliance to continue, or wait for the weekly reset.',
+          onActivate: () => {
+            window.__allianceQuestLastAction = 'locked-mana-tonic';
+            return true;
+          },
         },
         {
           id: 'quest-market',
           title: 'Supply The Market',
           itemKind: 'resource',
           itemKey: 'coin',
+          objectiveLabel: 'Collect 50 Gold Coins',
           contributionLabel: 'Your contribution 12/12',
           progressLabel: '50/50',
           progress: 1,
@@ -241,6 +282,25 @@
             window.__allianceQuestLastAction = 'claim-market';
             return true;
           },
+        },
+        {
+          id: 'quest-claimed-route',
+          title: 'Hard Route',
+          itemKind: 'resource',
+          itemKey: 'coin',
+          objectiveLabel: 'Collect 10,000 Gold Coins',
+          contributionLabel: 'Your contribution 500/500',
+          progressLabel: '10,000/10,000',
+          progress: 1,
+          rewardAmountLabel: '2',
+          rewardResource: 'crystal',
+          actionLabel: 'Claimed',
+          actionVariant: 'gray',
+          actionWidth: 72,
+          actionHeight: 42,
+          claimed: true,
+          enabled: false,
+          onActivate: null,
         },
       ];
       const applicationRows = [
@@ -346,8 +406,8 @@
               character: 'rowan',
               frame: 'emerald',
               id: 'alliance-chat-system-1',
-              sentAtMs: Date.now(),
               showSystemAvatar: true,
+              sentAtMs: Date.now(),
               username: 'system',
             },
           ],
@@ -500,6 +560,10 @@
               return true;
             },
           }));
+        const memberRows = homeModel.members.map((member) => ({
+          ...member,
+          onActivate: () => openMemberPlayerInfo(member),
+        }));
         dialog.bind({
           ...homeModel,
           chat: allianceChat,
@@ -510,6 +574,7 @@
             emblemId: settings.emblemId,
           },
           selectedTabId,
+          members: memberRows,
           tabs,
           ownedAllianceHome: selectedTabId === 'home',
           rowWidget:
@@ -523,7 +588,7 @@
               ? questRows
               : selectedTabId === 'requests'
                 ? applicationRows
-                : homeModel.members,
+                : memberRows,
           emptyLabel:
             selectedTabId === 'requests' && applicationRows.length === 0
               ? 'No Pending Requests'

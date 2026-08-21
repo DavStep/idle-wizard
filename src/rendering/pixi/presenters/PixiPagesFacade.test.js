@@ -228,6 +228,76 @@ describe("PixiPagesFacade", () => {
     expect(sendChatMessage).toHaveBeenCalledWith("Alliance only");
   });
 
+  it("shows why a participation-locked Alliance quest cannot be used", () => {
+    const harness = createHarness();
+    harness.dependencies.tradeAllianceFacade.getSnapshot.mockReturnValue({
+      alliances: [
+        { allianceId: "old-lanterns", name: "Old Lanterns" },
+      ],
+      connected: true,
+      members: [],
+      ownAlliance: {
+        allianceId: "new-lanterns",
+        memberCount: 1,
+        name: "New Lanterns",
+      },
+      ownMember: {
+        allianceId: "new-lanterns",
+        dayKey: "2026-W24",
+        memberIdentity: "self",
+        role: "trader",
+      },
+      quests: [
+        {
+          allianceId: "new-lanterns",
+          crystalReward: 5,
+          dayKey: "2026-W24",
+          itemKey: "manaTonic",
+          label: "fill 500 mana tonic",
+          minContribution: 25,
+          progress: 100,
+          questId: "fill-tonics",
+          questType: "itemFill",
+          target: 500,
+        },
+      ],
+      contributions: [
+        {
+          allianceId: "old-lanterns",
+          contribution: 1,
+          contributorIdentity: "self",
+          dayKey: "2026-W24",
+          questId: "old-route",
+        },
+      ],
+    });
+    const pages = new PixiPagesFacade(harness.dependencies);
+
+    pages.mount();
+    const allianceAction = harness
+      .getBoundPage("workshop")
+      .workshop.features.find((feature) => feature.id === "alliance");
+    expect(allianceAction.onActivate()).toBe(true);
+    expect(
+      harness
+        .getBoundGlobal("chrome.bottom")
+        .actions.selectAllianceTab("quests"),
+    ).toBe(true);
+    const quest = harness.getBoundPage("alliance").rows[0];
+
+    expect(quest).toMatchObject({
+      actionLabel: "Locked",
+      enabled: false,
+      lockReason:
+        "Quest progress this week belongs to Old Lanterns. Rejoin that alliance to continue, or wait for the weekly reset.",
+    });
+    expect(quest.onActivate()).toBe(true);
+    expect(harness.transientEffects.emitReward).toHaveBeenCalledWith({
+      message: quest.lockReason,
+      flyoutKey: "alliance-quest-participation-lock",
+    });
+  });
+
   it("keeps unaffiliated Alliance Browse and Create inside the Workshop dialog", () => {
     const harness = createHarness();
     const pages = new PixiPagesFacade(harness.dependencies);

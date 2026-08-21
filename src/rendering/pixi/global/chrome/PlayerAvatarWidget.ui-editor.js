@@ -21,7 +21,7 @@ export default defineUiEditorIntegration({
     { label: 'Production class', value: 'PlayerAvatarWidget' },
     {
       label: 'Contract',
-      value: 'Masked player portrait without profile background',
+      value: 'Fully contained player portrait without profile background',
     },
   ],
   scenarios: [

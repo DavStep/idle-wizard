@@ -102,13 +102,26 @@
         bannerColor: entry[3],
         emblemColor: entry[4],
         emblemId: ['owl', 'sunburst', 'oak-leaf', 'flame', 'crescent', 'key'][index],
+        leaderName: ['Mira', 'Sol', 'Rowan', 'Thorne', 'Elara', 'Corvin'][index],
+        leaderCharacter: ['mira', 'elara', 'rowan', 'thorne', 'elara', 'corvin'][index],
+        leaderFrame: ['violet', 'sun', 'classic', 'bronze', 'emerald', 'classic'][index],
         memberCount: entry[5],
+        memberCapacity: 50,
+        current: index === 0,
         totalCoinLabel: entry[6],
+        totalSuffix: 'total',
         semanticId: `leaderboard:alliance:${index}`,
         onActivate: () => true,
       }));
-      let selectedScopeId = 'singlePlayer';
-      let selectedPeriodId = 'allTime';
+      const recipeParams = new URLSearchParams(window.location.search);
+      let selectedScopeId = recipeParams.get('scope') === 'alliance'
+        ? 'alliance'
+        : 'singlePlayer';
+      let selectedPeriodId = ['daily', 'weekly', 'monthly', 'allTime'].includes(
+        recipeParams.get('period'),
+      )
+        ? recipeParams.get('period')
+        : 'allTime';
 
       function bindDialog() {
         const alliance = selectedScopeId === 'alliance';
@@ -128,7 +141,14 @@
               : label.toLowerCase();
             return { id, label, selected: id === selectedPeriodId };
           }),
-          rows: alliance ? alliances : players,
+          rows: alliance
+            ? alliances.map((row) => ({
+                ...row,
+                totalSuffix: selectedPeriodId === 'allTime'
+                  ? 'total'
+                  : selectedPeriodId,
+              }))
+            : players,
           onSelectTab: (id) => {
             selectedScopeId = id;
             bindDialog();

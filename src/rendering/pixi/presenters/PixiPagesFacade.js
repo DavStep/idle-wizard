@@ -1523,6 +1523,17 @@ export class PixiPagesFacade {
           this.tradeAllianceFacade?.setJoinMode?.(joinMode),
         claimAllianceQuest: (questId) =>
           this.tradeAllianceFacade?.claimQuestReward?.(questId),
+        showAllianceQuestLockReason: (message) => {
+          const lockReason = String(message ?? "").trim();
+          if (!lockReason) {
+            return false;
+          }
+          this.experienceFacade?.transientEffects?.emitReward?.({
+            message: lockReason,
+            flyoutKey: "alliance-quest-participation-lock",
+          });
+          return true;
+        },
         canFillAllianceQuest: (quest) => {
           if (!quest?.itemKey) {
             return false;

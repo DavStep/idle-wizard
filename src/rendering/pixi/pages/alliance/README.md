@@ -25,9 +25,11 @@ Alliance workspace page with the label `Alliance Chat`. Pressing it opens the ex
 `WorkshopDialogPixi` chat sheet and composer with the Alliance-only model.
 Player-authored rows replace the redundant alliance tag with the sender's
 current alliance role, while former members are labeled `Former Member`.
-Alliance system rows split the announced player's name from the event copy,
-highlight that name, and show the same player avatar widget used by normal chat
-rows; both the name and avatar open Player Info.
+Alliance system rows keep the event copy in one inline flow and show the primary
+player through a compact `20px` profile sized to the message typography. Every
+mentioned username is highlighted, including both the joining player and the
+approving player; the compact profile and primary announced name open Player
+Info.
 
 Home reuses the Alliance dialog's split parchment and `AllianceMemberRow`
 roster. Its identity section centers the shared alliance flag between
@@ -51,9 +53,13 @@ Profile, and guarded Disband. Banner owns the large live flag, enlarged emblem
 choices in a centered grid below the flag, distinctly spaced color rows, and
 Save Banner. Quests use a taller extension of the exact Research row family:
 the same card, 52px art well, item scale, compact title, fixed right action,
-and blue passive progress rail, with `Your contribution` and the icon-backed
-Amber reward added below the primary progress scan line. Requests and Settings
-keep the established player-relationship and settings widgets.
+and blue passive progress rail. Each row states the required donation or coin
+collection, centers alliance progress inside the rail, keeps `Your contribution`
+below it, and gives the icon-backed Amber reward body-size emphasis. Claimed
+quests replace the action with a passive gray checkmarked `Claimed` plaque.
+Participation-locked actions remain pressable only to show which prior alliance
+owns the current weekly progress and when the player can continue. Requests and
+Settings keep the established player-relationship and settings widgets.
 Member-workspace UI Lab coverage lives in `AlliancePixiPage.ui-editor.js`; the
 compact/full chat surfaces retain their existing global and Workshop dialog
 entries.

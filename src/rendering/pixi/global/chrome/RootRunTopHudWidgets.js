@@ -80,7 +80,6 @@ export class RootRunHudAvatarButton extends PixiBaseButton {
     this.backgroundWidget = this.profileWidget.backgroundWidget;
     this.avatarFrame = this.profileWidget.avatarFrame;
     this.headBackground = this.profileWidget.headBackground;
-    this.portraitMask = this.profileWidget.portraitMask;
     this.portrait = this.profileWidget.portrait;
   }
 

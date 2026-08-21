@@ -2,6 +2,7 @@
 
 import fs from 'node:fs';
 import path from 'node:path';
+import process from 'node:process';
 import { fileURLToPath } from 'node:url';
 
 import pngjs from 'pngjs';
@@ -367,7 +368,7 @@ function sampleBilinear(source, x, y) {
   };
 }
 
-function packAssets(assets) {
+export function packAssets(assets) {
   const packed = [];
   const sorted = [...assets].sort(
     (first, second) =>
@@ -381,6 +382,16 @@ function packAssets(assets) {
   let atlasWidth = 0;
 
   for (const asset of sorted) {
+    if (
+      asset.width + PADDING * 2 > MAX_ATLAS_WIDTH ||
+      asset.height + PADDING * 2 > MAX_ATLAS_HEIGHT
+    ) {
+      throw new Error(
+        `${asset.relativePath} does not fit inside the ` +
+          `${MAX_ATLAS_WIDTH}x${MAX_ATLAS_HEIGHT} primary atlas page`,
+      );
+    }
+
     const nextX = cursorX + asset.width + PADDING;
 
     if (nextX > MAX_ATLAS_WIDTH && cursorX > PADDING) {
@@ -401,6 +412,12 @@ function packAssets(assets) {
   }
 
   const atlasHeight = cursorY + rowHeight + PADDING;
+  if (atlasHeight > MAX_ATLAS_HEIGHT) {
+    throw new Error(
+      `Named game assets require ${atlasHeight}px and exceed the ` +
+        `${MAX_ATLAS_HEIGHT}px primary atlas page height`,
+    );
+  }
 
   return {
     width: nextPowerOfTwo(atlasWidth),
@@ -892,59 +909,69 @@ function clampByte(value) {
   return clamp(Math.round(value), 0, 255);
 }
 
-const sourcePngPaths = collectSourcePngPaths();
-const primarySourcePaths = new Set(ASSETS.map(([, sourcePath]) => sourcePath));
-const sharedSourcePaths = sourcePngPaths.filter((sourcePath) =>
-  isSharedAtlasCandidate(sourcePath, primarySourcePaths),
-);
-const sharedAssets = sharedSourcePaths.map((sourcePath) =>
-  readAsset([sourceAssetIdFromPath(sourcePath), sourcePath, null]),
-);
-const primaryAssets = ASSETS.map(readAsset);
-const primaryPage = {
-  atlasId: 'atlas:game',
-  imageName: path.basename(OUTPUT_IMAGE),
-  imagePath: OUTPUT_IMAGE,
-  jsonName: path.basename(OUTPUT_JSON),
-  jsonPath: OUTPUT_JSON,
-  packed: packAssets(primaryAssets),
-};
-const sharedPages = packAssetPages(sharedAssets).map((packed, index) => {
-  const pageName = `${SHARED_ATLAS_BASENAME}-${index}`;
-  return {
-    atlasId: `atlas:shared-${index}`,
-    imageName: `${pageName}.png`,
-    imagePath: path.join(ATLAS_OUTPUT_DIR, `${pageName}.png`),
-    jsonName: `${pageName}.json`,
-    jsonPath: path.join(ATLAS_OUTPUT_DIR, `${pageName}.json`),
-    packed,
+export function buildAssetAtlases() {
+  const sourcePngPaths = collectSourcePngPaths();
+  const primarySourcePaths = new Set(
+    ASSETS.map(([, sourcePath]) => sourcePath),
+  );
+  const sharedSourcePaths = sourcePngPaths.filter((sourcePath) =>
+    isSharedAtlasCandidate(sourcePath, primarySourcePaths),
+  );
+  const sharedAssets = sharedSourcePaths.map((sourcePath) =>
+    readAsset([sourceAssetIdFromPath(sourcePath), sourcePath, null]),
+  );
+  const primaryAssets = ASSETS.map(readAsset);
+  const primaryPage = {
+    atlasId: 'atlas:game',
+    imageName: path.basename(OUTPUT_IMAGE),
+    imagePath: OUTPUT_IMAGE,
+    jsonName: path.basename(OUTPUT_JSON),
+    jsonPath: OUTPUT_JSON,
+    packed: packAssets(primaryAssets),
   };
-});
-const atlasPages = [primaryPage, ...sharedPages];
-const atlasBackedSourcePaths = new Set([
-  ...sharedSourcePaths,
-  ...[...primarySourcePaths].filter(
-    (sourcePath) => !FULL_RESOLUTION_ATLAS_SOURCE_PATHS.has(sourcePath),
-  ),
-]);
-const standaloneSourcePaths = sourcePngPaths.filter(
-  (sourcePath) => !atlasBackedSourcePaths.has(sourcePath),
-);
+  const sharedPages = packAssetPages(sharedAssets).map((packed, index) => {
+    const pageName = `${SHARED_ATLAS_BASENAME}-${index}`;
+    return {
+      atlasId: `atlas:shared-${index}`,
+      imageName: `${pageName}.png`,
+      imagePath: path.join(ATLAS_OUTPUT_DIR, `${pageName}.png`),
+      jsonName: `${pageName}.json`,
+      jsonPath: path.join(ATLAS_OUTPUT_DIR, `${pageName}.json`),
+      packed,
+    };
+  });
+  const atlasPages = [primaryPage, ...sharedPages];
+  const atlasBackedSourcePaths = new Set([
+    ...sharedSourcePaths,
+    ...[...primarySourcePaths].filter(
+      (sourcePath) => !FULL_RESOLUTION_ATLAS_SOURCE_PATHS.has(sourcePath),
+    ),
+  ]);
+  const standaloneSourcePaths = sourcePngPaths.filter(
+    (sourcePath) => !atlasBackedSourcePaths.has(sourcePath),
+  );
 
-clearGeneratedSharedAtlasPages();
-for (const page of atlasPages) {
-  writeAtlas(page.packed, page);
+  clearGeneratedSharedAtlasPages();
+  for (const page of atlasPages) {
+    writeAtlas(page.packed, page);
+  }
+  fs.writeFileSync(
+    OUTPUT_MODULE,
+    createModule(
+      atlasPages,
+      [...atlasBackedSourcePaths].sort(),
+      standaloneSourcePaths,
+    ),
+  );
+  console.log(
+    `built ${atlasPages.length} game atlas pages with ${
+      primaryAssets.length + sharedAssets.length
+    } frames; ${standaloneSourcePaths.length} source PNGs remain standalone`,
+  );
 }
-fs.writeFileSync(
-  OUTPUT_MODULE,
-  createModule(
-    atlasPages,
-    [...atlasBackedSourcePaths].sort(),
-    standaloneSourcePaths,
-  ),
-);
-console.log(
-  `built ${atlasPages.length} game atlas pages with ${
-    primaryAssets.length + sharedAssets.length
-  } frames; ${standaloneSourcePaths.length} source PNGs remain standalone`,
-);
+
+const invokedPath = process.argv[1] ? path.resolve(process.argv[1]) : '';
+
+if (invokedPath === fileURLToPath(import.meta.url)) {
+  buildAssetAtlases();
+}

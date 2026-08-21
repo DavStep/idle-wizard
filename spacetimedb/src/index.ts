@@ -332,6 +332,11 @@ const TRADE_ALLIANCE_EMBLEMS = new Set([
   'tower',
   'sunburst',
   'hourglass',
+  'dragon',
+  'cauldron',
+  'sword',
+  'shield',
+  'book',
 ]);
 const PLAYER_THEME_ALIASES = new Map([
   ['midnight', 'night'],
@@ -12389,10 +12394,6 @@ function normalizeSaveInProgressResearches(
 }
 
 function getSaveRequiredResearchIds(researchId: string): string[] {
-  if (researchId === "garden:harvestAll") {
-    return ["garden:plantAll"];
-  }
-
   const manaResearchMatch = /^(manaSphereCap|manaProductionRate):(\d+)$/.exec(
     researchId,
   );

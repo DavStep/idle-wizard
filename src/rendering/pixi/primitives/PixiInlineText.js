@@ -110,17 +110,21 @@ export class PixiInlineText extends Container {
       pendingWhitespace = '';
     };
 
-    for (const run of this.runs) {
+    for (const [runIndex, run] of this.runs.entries()) {
+      const runStyle = run.style
+        ? createRenderableTextStyle({ ...this._style, ...run.style })
+        : renderStyle;
       if (run.kind === 'icon') {
         const icon = this.acquireIcon(run);
         if (!icon) {
           this.appendTextTokens(
             String(run.fallbackText ?? ''),
-            renderStyle,
+            runStyle,
             baseLineHeight,
             {
               getLine: () => line,
               getPendingWhitespace: () => pendingWhitespace,
+              runIndex,
               pushLine,
               setPendingWhitespace: (value) => {
                 pendingWhitespace = value;
@@ -164,11 +168,12 @@ export class PixiInlineText extends Container {
 
       this.appendTextTokens(
         run.text,
-        renderStyle,
+        runStyle,
         baseLineHeight,
         {
           getLine: () => line,
           getPendingWhitespace: () => pendingWhitespace,
+          runIndex,
           pushLine,
           setPendingWhitespace: (value) => {
             pendingWhitespace = value;
@@ -189,7 +194,7 @@ export class PixiInlineText extends Container {
         if (item.kind !== 'text') {
           continue;
         }
-        item.displayObject = this.acquireText(item.text, renderStyle);
+        item.displayObject = this.acquireText(item.text, item.style);
         item.height = Math.max(baseLineHeight, item.displayObject.height);
         currentLine.height = Math.max(currentLine.height, item.height);
       }
@@ -227,6 +232,7 @@ export class PixiInlineText extends Container {
     {
       getLine,
       getPendingWhitespace,
+      runIndex,
       pushLine,
       setPendingWhitespace,
     },
@@ -249,7 +255,7 @@ export class PixiInlineText extends Container {
       const pending =
         line.items.length > 0 ? getPendingWhitespace() : '';
       const previousItem = line.items.at(-1);
-      if (previousItem?.kind === 'text') {
+      if (previousItem?.kind === 'text' && previousItem.runIndex === runIndex) {
         const nextText = `${previousItem.text}${pending}${token}`;
         const nextWidth = measureInlineText(nextText, renderStyle);
         if (
@@ -284,6 +290,8 @@ export class PixiInlineText extends Container {
         (line.items.length > 0 ? gap : 0);
       line.items.push({
         kind: 'text',
+        runIndex,
+        style: renderStyle,
         text: token,
         width,
         x,
@@ -395,8 +403,13 @@ function normalizeInlineRuns(runs) {
         };
       }
       return {
+        ...run,
         kind: 'text',
         text: String(run?.text ?? ''),
+        style:
+          run?.style && typeof run.style === 'object'
+            ? { ...run.style }
+            : null,
       };
     })
     .filter((run) => run.kind === 'icon' || run.text.length > 0);

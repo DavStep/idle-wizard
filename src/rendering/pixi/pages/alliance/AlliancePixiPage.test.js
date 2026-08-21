@@ -60,6 +60,29 @@ describe('AlliancePixiPage', () => {
     page.destroy();
   });
 
+  it('keeps the coin route icon contained inside the Alliance quest art well', () => {
+    const page = new AlliancePixiPage({
+      assetManager: createPixiAssetManagerFake(Texture),
+      semanticRegistry: new SemanticTargetRegistry(),
+    });
+    const model = createModel('quests');
+    model.rows[0].itemKind = 'resource';
+    model.rows[0].itemKey = 'coin';
+
+    page.layout({ sourceWidth: 390, sourceHeight: 844 });
+    page.bind(model);
+
+    const row = page.quests.rows.getWidgets()[0];
+    row.itemIcon.texture = Texture.WHITE;
+    row.itemIcon.visible = true;
+    row.setBounds(0, 0, 360, row.getPreferredHeight(360));
+    expect(row.itemIcon.width).toBe(32);
+    expect(row.itemIcon.height).toBe(32);
+    expect(row.itemIcon.width).toBeLessThan(row.artWell.frameWidth);
+
+    page.destroy();
+  });
+
   it('composes the Alliance identity, stats, announcement, and roster in order', () => {
     const semanticRegistry = new SemanticTargetRegistry();
     const page = new AlliancePixiPage({
@@ -121,6 +144,32 @@ describe('AlliancePixiPage', () => {
     expect(memberRow.prestigeStars.visible).toBe(true);
     expect(memberRow.contribution.amount).toBe('12.5k');
     expect(memberRow.getPreferredHeight()).toBe(74);
+    const roleSections = page.homeMemberRows.rows.getWidgets();
+    expect(roleSections).toHaveLength(5);
+    expect(roleSections.map((row) => row.role.text)).toEqual([
+      'Trade Master',
+      'Quartermaster',
+      'Factor',
+      'Broker',
+      'Trader',
+    ]);
+    expect(roleSections.map((row) => row.roleCount.text)).toEqual([
+      '1/1',
+      '0/2',
+      '0/5',
+      '0/10',
+      '0/50',
+    ]);
+    expect(roleSections.map((row) => row.getPreferredHeight())).toEqual([
+      74,
+      24,
+      24,
+      24,
+      24,
+    ]);
+    expect(roleSections.slice(1).every((row) => !row.visual.visible)).toBe(
+      true,
+    );
 
     page.bind(createModel('requests'));
     expect(page.scrolls.get('requests').root.visible).toBe(true);
@@ -197,7 +246,9 @@ describe('AlliancePixiPage', () => {
     expect(pane.bannerPreview.flagWidth).toBe(160);
     expect(pane.bannerPreview.x).toBe((pane.lastBounds.width - 160) / 2);
     expect(pane.emblemOptions[0].size).toBe(40);
+    expect(pane.emblemOptions).toHaveLength(16);
     expect(pane.emblemOptions[6].root.y).toBe(46);
+    expect(pane.emblemOptions[12].root.x).toBe(46);
     expect(pane.emblemOptionLayer.y).toBeGreaterThan(
       pane.bannerPreview.y + pane.bannerPreview.flagHeight,
     );
@@ -284,6 +335,7 @@ function createModel(selectedTabId) {
       {
         id: 'luna',
         username: 'Luna',
+        role: 'tradeMaster',
         roleLabel: 'Trade Master',
         levelLabel: 'Lv 14',
         prestigeCount: 2,

@@ -4,6 +4,11 @@ import { getPlayerIconModeOptions } from '../../../player/playerIconModes.js';
 import { getPlayerVisualSettingCategories } from '../../../player/playerVisualSettings.js';
 import { getClientReleaseVersion } from '../../../shared/clientReleaseVersion.js';
 import {
+  TRADE_ALLIANCE_ROLES,
+  canAssignTradeAllianceRole,
+  canManageTradeAllianceMember,
+} from '../../../shared/tradeAllianceRoles.js';
+import {
   GLOBAL_DIALOG_IDS,
   registerGlobalDialogFactories,
 } from '../global/dialogs/index.js';
@@ -547,12 +552,28 @@ export class PixiGlobalDialogPresenter {
     const friendsSnapshot = ownPlayer
       ? this.friendsFacade?.getSnapshot?.() ?? {}
       : {};
+    const allianceManagement = createAllianceMemberManagement(
+      this.tradeAllianceFacade?.getSnapshot?.() ?? {},
+      normalizedRequest,
+    );
     return {
       connected: snapshot.connected !== false,
       ownPlayer,
       friendsNotification:
         (friendsSnapshot.incomingRequests?.length ?? 0) > 0,
       relationship,
+      allianceMemberActions: allianceManagement
+        ? {
+            role: allianceManagement.targetRole,
+            ...(allianceManagement.promoteRole
+              ? { promoteLabel: 'Promote' }
+              : {}),
+            ...(allianceManagement.demoteRole
+              ? { demoteLabel: 'Demote' }
+              : {}),
+            kickLabel: 'Kick',
+          }
+        : null,
       loading: Boolean(
         this.playerInfoFacade &&
           normalizedRequest.username &&
@@ -561,7 +582,7 @@ export class PixiGlobalDialogPresenter {
       player,
       actions: {
         activate: () =>
-          this.startPlayerSubscriptions(),
+          this.startPlayerSubscriptions(Boolean(allianceManagement)),
         deactivate: () =>
           this.stopDialogSubscriptions(GLOBAL_DIALOG_IDS.PLAYER),
         openAlliance: (alliance) =>
@@ -576,6 +597,36 @@ export class PixiGlobalDialogPresenter {
               player.identity,
               this.friendsFacade,
             )),
+        ...(allianceManagement?.promoteRole
+          ? {
+              promoteAllianceMember: () =>
+                allianceManagement.promoteRole === 'tradeMaster'
+                  ? this.tradeAllianceFacade?.transferLeadership?.(
+                      allianceManagement.targetIdentity,
+                    )
+                  : this.tradeAllianceFacade?.setMemberRole?.(
+                      allianceManagement.targetIdentity,
+                      allianceManagement.promoteRole,
+                    ),
+            }
+          : {}),
+        ...(allianceManagement?.demoteRole
+          ? {
+              demoteAllianceMember: () =>
+                this.tradeAllianceFacade?.setMemberRole?.(
+                  allianceManagement.targetIdentity,
+                  allianceManagement.demoteRole,
+                ),
+            }
+          : {}),
+        ...(allianceManagement
+          ? {
+              kickAllianceMember: () =>
+                this.tradeAllianceFacade?.kickMember?.(
+                  allianceManagement.targetIdentity,
+                ),
+            }
+          : {}),
       },
     };
   }
@@ -819,7 +870,7 @@ export class PixiGlobalDialogPresenter {
     ]);
   }
 
-  startPlayerSubscriptions() {
+  startPlayerSubscriptions(includeTradeAlliance = false) {
     if (this.dialogCleanups.has(GLOBAL_DIALOG_IDS.PLAYER)) {
       return false;
     }
@@ -830,7 +881,11 @@ export class PixiGlobalDialogPresenter {
     }
     const started = this.startDialogSubscriptions(
       GLOBAL_DIALOG_IDS.PLAYER,
-      [this.playerInfoFacade, this.friendsFacade],
+      [
+        this.playerInfoFacade,
+        this.friendsFacade,
+        ...(includeTradeAlliance ? [this.tradeAllianceFacade] : []),
+      ],
       releases,
     );
     if (started) {
@@ -1384,6 +1439,97 @@ function normalizePlayerRequest(player = {}) {
       player.totalProducedCoin ?? player.totalProducedGold ?? 0,
     ),
   };
+}
+
+function createAllianceMemberManagement(snapshot = {}, request = {}) {
+  if (request.allianceMemberContext !== true) {
+    return null;
+  }
+
+  const targetIdentity = normalizeId(
+    request.identity ?? request.memberIdentity,
+  );
+  const members = Array.isArray(snapshot.members) ? snapshot.members : [];
+  const target = members.find(
+    (member) =>
+      normalizeId(member.memberIdentity ?? member.identity) === targetIdentity,
+  );
+  const actor = snapshot.ownMember ?? null;
+  const actorIdentity = normalizeId(
+    actor?.memberIdentity ?? actor?.identity,
+  );
+  const actorRole = String(snapshot.ownRole ?? actor?.role ?? '');
+  const targetRole = String(target?.role ?? request.role ?? '');
+  const actorAllianceId = normalizeId(actor?.allianceId);
+  const targetAllianceId = normalizeId(target?.allianceId ?? request.allianceId);
+
+  if (
+    !target ||
+    !actor ||
+    !targetIdentity ||
+    targetIdentity === actorIdentity ||
+    !actorAllianceId ||
+    actorAllianceId !== targetAllianceId ||
+    !canManageTradeAllianceMember(actorRole, targetRole)
+  ) {
+    return null;
+  }
+
+  const targetRoleIndex = TRADE_ALLIANCE_ROLES.findIndex(
+    (role) => role.id === targetRole,
+  );
+  if (targetRoleIndex < 0) {
+    return null;
+  }
+
+  const promoteRole = TRADE_ALLIANCE_ROLES[targetRoleIndex - 1]?.id ?? null;
+  const demoteRole = TRADE_ALLIANCE_ROLES[targetRoleIndex + 1]?.id ?? null;
+  return {
+    targetIdentity,
+    targetRole,
+    promoteRole:
+      promoteRole &&
+      canAssignTradeAllianceRole(actorRole, promoteRole) &&
+      (promoteRole === 'tradeMaster' ||
+        hasTradeAllianceRoleCapacity(
+          members,
+          targetAllianceId,
+          promoteRole,
+          targetIdentity,
+        ))
+        ? promoteRole
+        : null,
+    demoteRole:
+      demoteRole &&
+      canAssignTradeAllianceRole(actorRole, demoteRole) &&
+      hasTradeAllianceRoleCapacity(
+        members,
+        targetAllianceId,
+        demoteRole,
+        targetIdentity,
+      )
+        ? demoteRole
+        : null,
+  };
+}
+
+function hasTradeAllianceRoleCapacity(
+  members,
+  allianceId,
+  roleId,
+  targetIdentity,
+) {
+  const role = TRADE_ALLIANCE_ROLES.find((candidate) => candidate.id === roleId);
+  if (!role) {
+    return false;
+  }
+  const roleCount = members.filter(
+    (member) =>
+      normalizeId(member.allianceId) === allianceId &&
+      String(member.role ?? '') === roleId &&
+      normalizeId(member.memberIdentity ?? member.identity) !== targetIdentity,
+  ).length;
+  return roleCount < role.maxMembers;
 }
 
 function findPlayer(players = [], request = {}) {

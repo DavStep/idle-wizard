@@ -270,6 +270,36 @@ describe('ResearchDefinitionManager', () => {
     });
   });
 
+  it('replaces a completed seed unlock and keeps the max herb-growth rank available to the eye toggle', () => {
+    const { manager } = createManager();
+    const getMintResearchIds = (completedResearchIds = []) =>
+      manager
+        .getVisibleResearchTabs(completedResearchIds)
+        .find((tab) => tab.id === 'regular')
+        ?.boxes.find((box) => box.id === 'seedUnlocks')
+        ?.researches.filter((research) =>
+          research.id === 'unlockSeed:mintSeed' || research.itemKey === 'mintHerb'
+        )
+        .map((research) => research.id) ?? [];
+    const completedUnlockIds = ['unlockSeed:sageSeed', 'unlockSeed:mintSeed'];
+
+    expect(getMintResearchIds(completedUnlockIds)).toEqual([
+      itemTimerResearchIds.herbGrowth('mintHerb', 1),
+    ]);
+
+    const completedMintMasteryIds = [
+      ...completedUnlockIds,
+      ...Array.from(
+        { length: 19 },
+        (_value, index) => itemTimerResearchIds.herbGrowth('mintHerb', index + 1),
+      ),
+    ];
+
+    expect(getMintResearchIds(completedMintMasteryIds)).toEqual([
+      itemTimerResearchIds.herbGrowth('mintHerb', 19),
+    ]);
+  });
+
   it('reuses research definitions for the same visible state', () => {
     const { manager } = createManager();
     const firstTabs = manager.getResearchTabs();
@@ -421,7 +451,7 @@ describe('ResearchDefinitionManager', () => {
     });
   });
 
-  it('unlocks Garden bulk-action research at levels 5 and 10', () => {
+  it('unlocks independent Garden bulk-action research at levels 5 and 10', () => {
     const { manager, setCurrentLevel } = createManager();
 
     setCurrentLevel(gardenBulkResearchLevels.plantAll - 1);
@@ -437,7 +467,7 @@ describe('ResearchDefinitionManager', () => {
       manager.getResearch(gardenBulkResearchIds.harvestAll),
     ).toMatchObject({
       requiredPlayerLevel: gardenBulkResearchLevels.harvestAll,
-      requiredResearchIds: [gardenBulkResearchIds.plantAll],
+      requiredResearchIds: [],
     });
   });
 

@@ -1035,7 +1035,11 @@ export class PixiViewModelFactory {
             row.totalContribution ?? 0,
           ),
           semanticId: `workshop.alliance.member.${player.identity || index}`,
-          onActivate: () => actions.openPlayer?.(player),
+          onActivate: () =>
+            actions.openPlayer?.({
+              ...player,
+              allianceMemberContext: true,
+            }),
         };
       })
       .sort((left, right) => {
@@ -1290,10 +1294,7 @@ export class PixiViewModelFactory {
           message.senderIdentity ?? message.sender_identity ?? '',
         ).trim();
         const username = String(
-          announcedPlayer?.username ??
-            message.username ??
-            message.author ??
-            '',
+          announcedPlayer?.username ?? message.username ?? message.author ?? '',
         ).trim();
         const member = allianceMembers.find((candidate) => {
           const memberIdentity = String(
@@ -1373,39 +1374,88 @@ export class PixiViewModelFactory {
       currentUser,
     );
     const alliances = getLeaderboardAlliances(tradeAlliance, period);
+    const allianceMembers = Array.isArray(tradeAlliance.members)
+      ? tradeAlliance.members
+      : [];
+    const ownAlliance =
+      tradeAlliance.ownAlliance ??
+      tradeAlliance.currentAlliance ??
+      tradeAlliance.alliance ??
+      null;
+    const ownAllianceId = String(
+      ownAlliance?.allianceId ?? ownAlliance?.id ?? '',
+    ).trim();
+    const ownAllianceTag = String(
+      ownAlliance?.tag ?? ownAlliance?.allianceTag ?? '',
+    )
+      .trim()
+      .toLowerCase();
     const rows =
       safeTabId === 'alliance'
-        ? alliances.slice(0, 10).map((alliance, index) => ({
-            id: alliance.allianceId ?? alliance.id ?? alliance.name ?? index,
-            type: 'leaderboardAlliance',
-            rank: normalizeLeaderboardRank(alliance.rank, index),
-            name: alliance.name ?? alliance.allianceName ?? 'Alliance',
-            allianceTag: String(
-              alliance.tag ?? alliance.allianceTag ?? '',
-            ).trim(),
-            allianceTagColor:
-              alliance.tagColor ?? alliance.allianceTagColor ?? 'ink',
-            bannerColor:
-              alliance.bannerColor ?? DEFAULT_TRADE_ALLIANCE_BANNER_COLOR,
-            emblemColor:
-              alliance.emblemColor ?? DEFAULT_TRADE_ALLIANCE_EMBLEM_COLOR,
-            emblemId: alliance.emblemId ?? DEFAULT_TRADE_ALLIANCE_EMBLEM,
-            memberCount: Math.max(
-              0,
-              Math.floor(Number(alliance.memberCount) || 0),
-            ),
-            totalCoinLabel: formatCoinAmount(
-              alliance[period.valueKey] ??
-                alliance.totalIncome ??
-                alliance.totalGeneratedCoin ??
-                alliance.income ??
-                0,
-            ),
-            onActivate:
-              typeof actions.openAlliance === 'function'
-                ? () => actions.openAlliance(alliance)
-                : null,
-          }))
+        ? alliances.slice(0, 10).map((alliance, index) => {
+            const allianceId = alliance.allianceId ?? alliance.id ?? alliance.name ?? index;
+            const members = allianceMembers.filter(
+              (member) =>
+                String(member.allianceId ?? '').trim() === String(allianceId).trim(),
+            );
+            const leader =
+              members.find(
+                (member) =>
+                  alliance.leaderIdentity &&
+                  String(member.memberIdentity) === String(alliance.leaderIdentity),
+              ) ?? members.find((member) => member.role === 'tradeMaster');
+            return {
+              id: allianceId,
+              type: 'leaderboardAlliance',
+              rank: normalizeLeaderboardRank(alliance.rank, index),
+              name: alliance.name ?? alliance.allianceName ?? 'Alliance',
+              allianceTag: String(
+                alliance.tag ?? alliance.allianceTag ?? '',
+              ).trim(),
+              allianceTagColor:
+                alliance.tagColor ?? alliance.allianceTagColor ?? 'ink',
+              bannerColor:
+                alliance.bannerColor ?? DEFAULT_TRADE_ALLIANCE_BANNER_COLOR,
+              emblemColor:
+                alliance.emblemColor ?? DEFAULT_TRADE_ALLIANCE_EMBLEM_COLOR,
+              emblemId: alliance.emblemId ?? DEFAULT_TRADE_ALLIANCE_EMBLEM,
+              leaderName:
+                alliance.leaderName ??
+                alliance.leaderUsername ??
+                leader?.username ??
+                'Unknown',
+              leaderCharacter:
+                alliance.leaderCharacter ?? leader?.character ?? 'elara',
+              leaderFrame:
+                alliance.leaderFrame ?? leader?.frame ?? 'classic',
+              memberCount: Math.max(
+                members.length,
+                Math.floor(Number(alliance.memberCount) || 0),
+              ),
+              memberCapacity: Math.max(
+                1,
+                Math.floor(Number(alliance.memberCapacity) || 50),
+              ),
+              current:
+                alliance.current === true ||
+                isCurrentLeaderboardAlliance(alliance, {
+                  ownAllianceId,
+                  ownAllianceTag,
+                }),
+              totalCoinLabel: formatCoinAmount(
+                alliance[period.valueKey] ??
+                  alliance.totalIncome ??
+                  alliance.totalGeneratedCoin ??
+                  alliance.income ??
+                  0,
+              ),
+              totalSuffix: period.id === 'allTime' ? 'total' : period.label.toLowerCase(),
+              onActivate:
+                typeof actions.openAlliance === 'function'
+                  ? () => actions.openAlliance(alliance)
+                  : null,
+            };
+          })
         : visibleUsers.map((user, index) => ({
             id:
               String(user.identity ?? '').trim() ||
@@ -2005,8 +2055,8 @@ export class PixiViewModelFactory {
           systemPlayerUsername: systemPlayer?.username ?? '',
           systemPlayerDetail,
           bodyRuns: createWorldChatBodyRuns(
-            systemPlayer ? systemPlayerDetail : body,
-            { isSystem },
+            body,
+            { isSystem, systemPlayer },
           ),
           allianceTag: message.allianceTag ?? message.alliance_tag ?? '',
           allianceTagColor:
@@ -2147,6 +2197,21 @@ function getLeaderboardAlliances(
   return Array.isArray(alliances) ? alliances : [];
 }
 
+function isCurrentLeaderboardAlliance(
+  alliance = {},
+  { ownAllianceId = '', ownAllianceTag = '' } = {},
+) {
+  const allianceId = String(alliance.allianceId ?? alliance.id ?? '').trim();
+  if (ownAllianceId && allianceId) {
+    return allianceId === ownAllianceId;
+  }
+
+  const allianceTag = String(alliance.tag ?? alliance.allianceTag ?? '')
+    .trim()
+    .toLowerCase();
+  return Boolean(ownAllianceTag && allianceTag && allianceTag === ownAllianceTag);
+}
+
 function normalizeLeaderboardRank(rank, index) {
   const safeRank = Math.floor(Number(rank));
   return Number.isFinite(safeRank) && safeRank >= 1 ? safeRank : index + 1;
@@ -2270,10 +2335,19 @@ function createTradeAllianceQuestRows(tradeAlliance, allianceId, actions) {
       const title = toSentenceCase(quest.label ?? 'Alliance Quest');
       const target = Math.max(0, Number(quest.target ?? 0));
       const currentProgress = Math.max(0, Number(quest.progress ?? 0));
+      const objectiveLabel = formatTradeAllianceQuestObjective(quest, {
+        incomeRouteQuest,
+        itemFillQuest,
+        title,
+      });
+      const lockReason = locked
+        ? formatTradeAllianceQuestLockReason(participationLock)
+        : '';
 
       return {
         id: quest.questId ?? `alliance-quest-${index}`,
         title,
+        objectiveLabel,
         contributionLabel: `${routeLabel} ${formatWholeNumber(
           contribution,
         )}/${formatWholeNumber(quest.minContribution)}`,
@@ -2301,16 +2375,58 @@ function createTradeAllianceQuestRows(tradeAlliance, allianceId, actions) {
         actionWidth: 72,
         actionHeight: 42,
         enabled,
+        claimed,
+        lockReason,
         notification: claimable,
         semanticId: `workshop.alliance.quest.${quest.questId ?? index}`,
-        onActivate: enabled
-          ? () =>
-              needsFill
-                ? actions.fillAllianceQuest?.(quest)
-                : actions.claimAllianceQuest?.(quest.questId)
-          : null,
+        onActivate: locked
+          ? () => actions.showAllianceQuestLockReason?.(lockReason)
+          : enabled
+            ? () =>
+                needsFill
+                  ? actions.fillAllianceQuest?.(quest)
+                  : actions.claimAllianceQuest?.(quest.questId)
+            : null,
       };
     });
+}
+
+function formatTradeAllianceQuestObjective(
+  quest = {},
+  { incomeRouteQuest = false, itemFillQuest = false, title = '' } = {},
+) {
+  const target = Math.max(0, Math.floor(Number(quest.target) || 0));
+  const amount = formatWholeNumber(target);
+
+  if (incomeRouteQuest) {
+    return `Collect ${amount} ${pluralize(target, 'Gold Coin')}`;
+  }
+
+  if (itemFillQuest) {
+    const itemLabel = String(quest.label ?? '')
+      .replace(/^fill\s+/i, '')
+      .replace(/^\d[\d,]*\s+/, '')
+      .trim();
+    const readableItem = itemLabel || titleCaseTradeAllianceLabel(quest.itemKey);
+    return `Donate ${amount} ${pluralizeQuestItem(target, readableItem)}`;
+  }
+
+  return `Complete ${title || 'this alliance quest'}`;
+}
+
+function pluralizeQuestItem(count, itemLabel) {
+  const label = toTitleCase(String(itemLabel ?? '').trim());
+  if (Number(count) === 1 || !label || /s$/i.test(label)) {
+    return label;
+  }
+  return `${label}s`;
+}
+
+function formatTradeAllianceQuestLockReason(participationLock = {}) {
+  const allianceName = String(
+    participationLock.allianceName ?? 'another alliance',
+  ).trim();
+  return `Quest progress this week belongs to ${allianceName}. Rejoin that alliance to continue, or wait for the weekly reset.`;
 }
 
 function resolveTradeAllianceQuestItemKind(quest = {}) {
@@ -2671,34 +2787,66 @@ function formatWorldChatMessageAge(sentAtMs, nowMs = Date.now()) {
   return `${Math.floor(totalHours / 24)}d ago`;
 }
 
-function createWorldChatBodyRuns(body, { isSystem = false } = {}) {
+function createWorldChatBodyRuns(
+  body,
+  { isSystem = false, systemPlayer = null } = {},
+) {
   const text = String(body ?? '');
   const marker = '⭐';
-  const markerIndex =
-    isSystem && WORLD_CHAT_PRESTIGE_DETAIL_PATTERN.test(text)
-      ? text.indexOf(marker)
-      : -1;
-  if (markerIndex < 0) {
-    return [{ kind: 'text', text }];
+  const textRuns =
+    isSystem && systemPlayer?.mentions?.length > 0
+      ? createSystemPlayerTextRuns(text, systemPlayer.mentions)
+      : [{ kind: 'text', text }];
+
+  const prestigeDetail = systemPlayer?.detail?.trimStart() ?? text;
+  if (!isSystem || !WORLD_CHAT_PRESTIGE_DETAIL_PATTERN.test(prestigeDetail)) {
+    return textRuns;
   }
 
-  return [
-    {
+  return textRuns.flatMap((run) => {
+    const markerIndex = run.text.indexOf(marker);
+    if (markerIndex < 0) {
+      return [run];
+    }
+    return [
+      { ...run, text: run.text.slice(0, markerIndex) },
+      {
+        kind: 'icon',
+        assetId: WORLD_CHAT_PRESTIGE_ICON_ASSET,
+        fallbackText: marker,
+        label: 'Prestige star',
+        size: 12,
+      },
+      { ...run, text: run.text.slice(markerIndex + marker.length) },
+    ].filter((candidate) => candidate.kind === 'icon' || candidate.text);
+  });
+}
+
+function createSystemPlayerTextRuns(text, mentions) {
+  const runs = [];
+  let cursor = 0;
+
+  for (const mention of mentions) {
+    const start = Math.max(cursor, Number(mention.start) || 0);
+    const end = Math.min(text.length, Number(mention.end) || 0);
+    if (end <= start || text.slice(start, end) !== mention.username) {
+      continue;
+    }
+    if (start > cursor) {
+      runs.push({ kind: 'text', text: text.slice(cursor, start) });
+    }
+    runs.push({
       kind: 'text',
-      text: text.slice(0, markerIndex),
-    },
-    {
-      kind: 'icon',
-      assetId: WORLD_CHAT_PRESTIGE_ICON_ASSET,
-      fallbackText: marker,
-      label: 'Prestige star',
-      size: 12,
-    },
-    {
-      kind: 'text',
-      text: text.slice(markerIndex + marker.length),
-    },
-  ];
+      text: text.slice(start, end),
+      tone: 'systemPlayer',
+    });
+    cursor = end;
+  }
+
+  if (cursor < text.length) {
+    runs.push({ kind: 'text', text: text.slice(cursor) });
+  }
+  return runs.length > 0 ? runs : [{ kind: 'text', text }];
 }
 
 function createResearchBoxModel(
