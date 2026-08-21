@@ -16,6 +16,7 @@ experience_type: architecture
 - Big features need facades with compact non-programmer explanations.
 - Rebase the gameplay timer clock when an external state change wakes the sleeping tick loop; otherwise elapsed idle time advances newly created brewing, gardening, research, or cooldown timers immediately.
 - Full gameplay snapshots can publish during frame timers; cache expensive static catalogs/lookups such as research definitions instead of rebuilding them per snapshot.
+- Retained room tabs that keep every panel mounted should switch visibility locally; presenter tab actions should persist selection and manage subscriptions without forcing a full page rebind on the tap path.
 - No-subscriber gameplay publishes should refresh cheap frame metadata without building full snapshots; no-storage persistence should skip save construction because broad facade tests amplify both costs.
 - Renamed save branches need server normalizer aliases and client load fallbacks; otherwise server-normalized restarts can silently reset cooldowns.
 - SpacetimeDB reducers should use primary keys and existing indexes for identity/alliance lookups; maintenance reducers that touch many players should sweep each table once from an identity set, not call per-player cleanup that rescans tables.

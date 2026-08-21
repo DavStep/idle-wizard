@@ -5,6 +5,13 @@ upload script posts the section whose heading matches `package.json` `version`.
 Write these developer-to-player notes only in Idle Wizard terms. Do not mention
 other game names, source projects, ports, or implementation provenance.
 
+## 0.3.83
+
+- Refined automated Garden plots with a cleaner wide soil bed, larger Seed/Auto/quantity controls, steadier crop placement, and tap feedback that follows the herb you touched.
+- Improved Brewing with a dedicated Recipes control, more compact Auto, quantity, and Empty actions, clearer locked cauldron placeholders, and correctly centered locked titles.
+- Unknown potion recipes now use a clear locked-page treatment without revealing recipe details, while completed recipe unlocks step aside in Research so the next mastery is easier to find.
+- Made Garden and Brewing tap acceleration more responsive, enlarged key Workshop touch targets, and improved request, update-message, Market title, and alliance color presentation.
+
 ## 0.3.82
 
 - Fixed Trader Market stalls accidentally taking 30 minutes to sell; sales are back to a 5-second cycle and the countdown now sits inside the progress bar.

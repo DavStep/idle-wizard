@@ -28,6 +28,8 @@ import {
   GardenPixiPage,
 } from "./GardenPixiPage.js";
 
+const GARDEN_PLOT_TAP_FEEDBACK_TEST_MS = 560;
+
 describe("GardenPixiPage", () => {
   it("keeps passive fireflies behind Garden controls and pauses them off-page", () => {
     const motion = createAmbientMotionHarness();
@@ -803,7 +805,7 @@ describe("GardenPixiPage", () => {
     harness.dispose();
   });
 
-  it("renders researched automation as a wide five-slot bed with one aligned control stack", () => {
+  it("renders researched automation as a grid-aligned five-slot bed with Brewing-sized controls", () => {
     const harness = createHarness();
     harness.assetManager.getTexture = vi.fn(harness.assetManager.getTexture);
     const togglePlotAutomation = vi.fn(() => ({ ok: true }));
@@ -830,25 +832,107 @@ describe("GardenPixiPage", () => {
 
     harness.page.bind(model);
     const plot = harness.page.plots.get("plot-1");
-    const buttonHeight =
-      (GARDEN_PIXI_GEOMETRY.plotHeight -
-        GARDEN_PIXI_GEOMETRY.automatedButtonGap * 2) /
-      3;
-
     expect(plot.isAutomated).toBe(true);
-    expect(plot.soil.width).toBe(GARDEN_PIXI_GEOMETRY.automatedPlotWidth);
+    expect(plot.soil.width).toBeGreaterThanOrEqual(
+      GARDEN_PIXI_GEOMETRY.plotWidth * 2.5,
+    );
     expect(harness.assetManager.getTexture).toHaveBeenCalledWith(
       "source:assets/rooms/garden/plots/outpost-plot-ground-automated.png",
     );
     expect(plot.plantSlots.filter(({ plant }) => plant.visible)).toHaveLength(
       5,
     );
+    const automatedInset = plot.visualPlotWidth / 7;
+    const automatedBaseY =
+      GARDEN_PIXI_GEOMETRY.plotHeight -
+      20 -
+      GARDEN_PIXI_GEOMETRY.automatedPlantLift;
+    const plantedPositions = plot.plantSlots.map(({ motion }, index) => {
+      const baseX =
+        automatedInset +
+        index *
+          ((plot.visualPlotWidth - automatedInset * 2) /
+            (GARDEN_PIXI_GEOMETRY.automatedPlantSlots - 1));
+      expect(Math.abs(motion.x - baseX)).toBeLessThanOrEqual(
+        GARDEN_PIXI_GEOMETRY.automatedPlantJitterX,
+      );
+      expect(Math.abs(motion.y - automatedBaseY)).toBeLessThanOrEqual(
+        GARDEN_PIXI_GEOMETRY.automatedPlantJitterY,
+      );
+      expect(motion.y).toBeLessThan(GARDEN_PIXI_GEOMETRY.plotHeight - 20);
+      return { x: motion.x, y: motion.y };
+    });
+    expect(
+      plantedPositions.some(
+        ({ x }, index) =>
+          Math.abs(
+            x -
+              (automatedInset +
+                index *
+                  ((plot.visualPlotWidth - automatedInset * 2) /
+                    (GARDEN_PIXI_GEOMETRY.automatedPlantSlots - 1))),
+          ) > 0.01,
+      ),
+    ).toBe(true);
+    expect(
+      plantedPositions.some(({ y }) => Math.abs(y - automatedBaseY) > 0.01),
+    ).toBe(true);
+    harness.page.tick(2_000);
+    expect(
+      plot.plantSlots.map(({ motion }) => ({ x: motion.x, y: motion.y })),
+    ).toEqual(plantedPositions);
+    harness.page.bind(model);
+    expect(
+      plot.plantSlots.map(({ motion }) => ({ x: motion.x, y: motion.y })),
+    ).toEqual(plantedPositions);
     expect(plot.autoButton.variant).toBe("green");
     expect(plot.quantityButton.textLabel.text).toBe("x5");
-    expect(plot.seedButton.buttonHeight).toBeCloseTo(buttonHeight);
+    expect(plot.seedButton.buttonWidth).toBe(
+      GARDEN_PIXI_GEOMETRY.automatedControlWidth * 2 +
+        GARDEN_PIXI_GEOMETRY.automatedControlGap,
+    );
+    expect(plot.seedButton.buttonHeight).toBe(
+      GARDEN_PIXI_GEOMETRY.automatedControlHeight,
+    );
+    expect(plot.autoButton.buttonHeight).toBe(
+      GARDEN_PIXI_GEOMETRY.automatedControlHeight,
+    );
+    expect(plot.quantityButton.buttonHeight).toBe(
+      GARDEN_PIXI_GEOMETRY.automatedControlHeight,
+    );
+    expect(plot.seedButton.y).toBe(
+      (GARDEN_PIXI_GEOMETRY.plotHeight -
+        (GARDEN_PIXI_GEOMETRY.automatedControlHeight * 2 +
+          GARDEN_PIXI_GEOMETRY.automatedControlGap)) /
+        2,
+    );
+    expect(plot.autoButton.y).toBe(
+      plot.seedButton.y +
+        GARDEN_PIXI_GEOMETRY.automatedControlHeight +
+        GARDEN_PIXI_GEOMETRY.automatedControlGap,
+    );
+    expect(plot.quantityButton.y).toBe(plot.autoButton.y);
+    expect(plot.progress.root.x).toBeCloseTo(plot.frameX);
+    expect(plot.progress.width).toBeCloseTo(plot.soil.width);
+    expect(plot.seedButton.x).toBeCloseTo(
+      plot.frameX +
+        plot.soil.width +
+        GARDEN_PIXI_GEOMETRY.automatedControlGap,
+    );
     expect(
-      plot.quantityButton.y + plot.quantityButton.buttonHeight,
-    ).toBeCloseTo(GARDEN_PIXI_GEOMETRY.plotHeight);
+      plot.quantityButton.x + plot.quantityButton.buttonWidth,
+    ).toBeCloseTo(plot.frameX + plot.automatedRowWidth);
+    expect(plot.autoButton.hitArea).toMatchObject({
+      width: GARDEN_PIXI_GEOMETRY.automatedControlHitSize,
+      height: GARDEN_PIXI_GEOMETRY.automatedControlHitSize,
+    });
+    expect(plot.quantityButton.hitArea).toMatchObject({
+      width: GARDEN_PIXI_GEOMETRY.automatedControlHitSize,
+      height: GARDEN_PIXI_GEOMETRY.automatedControlHitSize,
+    });
+    expect(plot.autoGear.height).toBe(21);
+    expect(plot.autoButton.textLabel.fontSize).toBe(10);
+    expect(plot.quantityButton.textLabel.fontSize).toBe(13);
     expect(plot.autoButton.activate()).toEqual({ ok: true });
     expect(plot.seedButton.activate()).toBe(true);
     expect(togglePlotAutomation).toHaveBeenCalledWith(model.garden.plots[0]);
@@ -881,6 +965,12 @@ describe("GardenPixiPage", () => {
         tileNumber: 3,
         automationAvailable: false,
       },
+      {
+        ...model.garden.plots[0],
+        id: "plot-4",
+        tileNumber: 4,
+        automationAvailable: false,
+      },
     );
 
     harness.page.bind(model);
@@ -888,18 +978,35 @@ describe("GardenPixiPage", () => {
     expect(harness.page.plots.get("plot-1").root.y).toBe(
       GARDEN_PIXI_GEOMETRY.gridPaddingTop,
     );
+    const automated = harness.page.plots.get("plot-1");
     expect(harness.page.plots.get("plot-2").root.y).toBe(
       GARDEN_PIXI_GEOMETRY.gridPaddingTop +
-        GARDEN_PIXI_GEOMETRY.rowHeight +
+        automated.getLayoutHeight() +
         GARDEN_PIXI_GEOMETRY.rowGap,
     );
     expect(harness.page.plots.get("plot-3").root.y).toBe(
       harness.page.plots.get("plot-2").root.y,
     );
+    expect(harness.page.plots.get("plot-4").root.y).toBe(
+      harness.page.plots.get("plot-2").root.y,
+    );
+    const firstManual = harness.page.plots.get("plot-2");
+    const thirdManual = harness.page.plots.get("plot-4");
+    expect(automated.root.x + automated.frameX).toBeCloseTo(
+      firstManual.root.x + firstManual.frameX,
+    );
+    expect(
+      automated.root.x +
+        automated.quantityButton.x +
+        automated.quantityButton.buttonWidth,
+    ).toBeCloseTo(
+      thirdManual.root.x + thirdManual.frameX + thirdManual.soil.width,
+    );
     expect(harness.page.plotScroll.contentHeight).toBe(
-      GARDEN_PIXI_GEOMETRY.gridPaddingTop +
+        GARDEN_PIXI_GEOMETRY.gridPaddingTop +
         GARDEN_PIXI_GEOMETRY.gridPaddingBottom +
-        GARDEN_PIXI_GEOMETRY.rowHeight * 2 +
+        automated.getLayoutHeight() +
+        GARDEN_PIXI_GEOMETRY.rowHeight +
         GARDEN_PIXI_GEOMETRY.rowGap,
     );
 
@@ -1106,7 +1213,7 @@ describe("GardenPixiPage", () => {
       tileNumber: 1,
       reducedSeconds: 1,
       remainingMs: 4_000,
-      cooldownMs: 800,
+      cooldownMs: 504,
     }));
     const harness = createHarness({ timeSource: () => now });
     harness.page.bind(createGardenViewModel({ activatePlot }));
@@ -1120,11 +1227,11 @@ describe("GardenPixiPage", () => {
     expect(plot.activate()).toMatchObject({
       ok: false,
       reason: "tap_cooldown",
-      retryAfterMs: 800,
+      retryAfterMs: 560,
     });
     expect(activatePlot).toHaveBeenCalledTimes(1);
 
-    now = 100 + 800 * 0.42;
+    now = 100 + 560 * 0.42;
     harness.page.tick(now);
     expect(plot.frame.scale.x).toBeCloseTo(0.985);
     expect(plot.frame.scale.y).toBeCloseTo(1.025);
@@ -1132,7 +1239,7 @@ describe("GardenPixiPage", () => {
     expect(plot.tapFeedback.visible).toBe(true);
     expect(plot.tapFeedback.text).toBe("-1s");
 
-    now = 900;
+    now = 660;
     harness.page.tick(now);
     expect(plot.isActivationLocked(now)).toBe(false);
     expect(plot.tapFeedbackStartedAt).toBeNull();
@@ -1147,12 +1254,123 @@ describe("GardenPixiPage", () => {
     harness.dispose();
   });
 
+  it("animates only the automated herb icon nearest each accepted tap", () => {
+    let now = 0;
+    const activatePlot = vi.fn(() => ({
+      ok: true,
+      tileNumber: 1,
+      reducedSeconds: 1,
+      remainingMs: 4_000,
+      cooldownMs: 504,
+    }));
+    const harness = createHarness({ timeSource: () => now });
+    const model = createGardenViewModel({ activatePlot });
+    model.garden.plots[0] = {
+      ...model.garden.plots[0],
+      automationAvailable: true,
+      autoEnabled: true,
+      herbKey: "sageHerb",
+      plantFrame: "herb:sage",
+      maxPlantQuantity: 5,
+      plantQuantity: 5,
+      harvestQuantity: 5,
+    };
+    harness.page.bind(model);
+    const plot = harness.page.plots.get("plot-1");
+    const press = harness.inputRouter.store.get(plot.pressRegistration.id);
+
+    plot.plantSlots.forEach((targetSlot, targetIndex) => {
+      const point = targetSlot.motion.toGlobal({ x: 0, y: 0 });
+
+      press.onPressChange(true, { point });
+      plot.plantSlots.forEach(({ tapMotion }, index) => {
+        expect(tapMotion.scale).toMatchObject({
+          x: index === targetIndex ? 0.94 : 1,
+          y: index === targetIndex ? 0.94 : 1,
+        });
+      });
+      expectPlotFrameAligned(plot);
+      press.onPressChange(false, { point, confirmed: true });
+
+      expect(press.onActivate({ point })).toMatchObject({
+        ok: true,
+        reducedSeconds: 1,
+      });
+
+      now += GARDEN_PLOT_TAP_FEEDBACK_TEST_MS * 0.42;
+      harness.page.tick(now);
+      plot.plantSlots.forEach((slot, index) => {
+        const tapOffsetY = slot.tapMotion?.y ?? 0;
+        if (index === targetIndex) {
+          expect(Math.abs(tapOffsetY)).toBeGreaterThan(2);
+        } else {
+          expect(tapOffsetY).toBeCloseTo(0, 3);
+        }
+      });
+      expect(plot.tapFeedback.x).toBeCloseTo(targetSlot.motion.x);
+      expectPlotFrameAligned(plot);
+
+      now += GARDEN_PLOT_TAP_FEEDBACK_TEST_MS * 0.58;
+      harness.page.tick(now);
+    });
+
+    expect(activatePlot).toHaveBeenCalledTimes(5);
+    harness.page.destroy();
+    harness.dispose();
+  });
+
+  it("keeps automated herbs still and localizes the label under reduced motion", () => {
+    let now = 0;
+    const activatePlot = vi.fn(() => ({
+      ok: true,
+      reducedSeconds: 1,
+      cooldownMs: 504,
+    }));
+    const harness = createHarness({
+      reducedMotion: true,
+      timeSource: () => now,
+    });
+    const model = createGardenViewModel({ activatePlot });
+    model.garden.plots[0] = {
+      ...model.garden.plots[0],
+      automationAvailable: true,
+      herbKey: "sageHerb",
+      plantFrame: "herb:sage",
+      maxPlantQuantity: 5,
+      plantQuantity: 5,
+      harvestQuantity: 5,
+    };
+    harness.page.bind(model);
+    const plot = harness.page.plots.get("plot-1");
+    const targetSlot = plot.plantSlots[4];
+    const point = targetSlot.motion.toGlobal({ x: 0, y: 0 });
+    const press = harness.inputRouter.store.get(plot.pressRegistration.id);
+
+    expect(press.onActivate({ point })).toMatchObject({ ok: true });
+    expect(plot.tapFeedbackPlantIndex).toBe(4);
+    expect(plot.tapFeedback.x).toBeCloseTo(targetSlot.motion.x);
+    plot.plantSlots.forEach(({ tapMotion }) => {
+      expect(tapMotion.position).toMatchObject({ x: 0, y: 0 });
+      expect(tapMotion.scale).toMatchObject({ x: 1, y: 1 });
+      expect(tapMotion.rotation).toBe(0);
+    });
+    expectPlotFrameAligned(plot);
+
+    now = 300;
+    harness.page.tick(now);
+    expect(plot.tapFeedback.visible).toBe(false);
+    expect(plot.isActivationLocked(now)).toBe(true);
+
+    harness.page.destroy();
+    harness.dispose();
+  });
+
   it("keeps the anti-spam lock but removes plot movement under reduced motion", () => {
     let now = 0;
     const activatePlot = vi.fn(() => ({
       ok: true,
       reducedSeconds: 1,
-      cooldownMs: 800,
+      cooldownMs: 504,
     }));
     const harness = createHarness({
       reducedMotion: true,
@@ -1463,7 +1681,7 @@ function createAmbientMotionHarness() {
 function expectPlotFrameAligned(plot) {
   expect(
     plot.frame.position.x - plot.frame.pivot.x * plot.frame.scale.x,
-  ).toBeCloseTo((plot.width - GARDEN_PIXI_GEOMETRY.plotWidth) / 2);
+  ).toBeCloseTo(plot.frameX);
   expect(
     plot.frame.position.y - plot.frame.pivot.y * plot.frame.scale.y,
   ).toBeCloseTo(0);

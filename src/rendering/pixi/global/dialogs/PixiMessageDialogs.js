@@ -670,8 +670,7 @@ export class PixiAnnouncementSurface extends RetainedGlobalDialog {
       compositionY + headingHeight + headingGap;
     const bodyContentY =
       bodyY + Math.max(0, (bodyHeight - bodyContentHeight) / 2);
-    const centersFramedCopy =
-      model.variant === 'report' && copyHeight > 0;
+    const centersFramedCopy = model.framed && copyHeight > 0;
     this.copy.setAnchor(
       centersFramedCopy ? 0.5 : 0,
       centersFramedCopy ? 0.5 : 0,

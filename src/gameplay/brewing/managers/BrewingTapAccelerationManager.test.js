@@ -7,6 +7,8 @@ import {
 
 describe('BrewingTapAccelerationManager', () => {
   it('removes one second and rejects repeated taps until the feedback window ends', () => {
+    expect(BREWING_CAULDRON_TAP_COOLDOWN_MS).toBe(504);
+
     let now = 1_000;
     const getActiveBrewSnapshot = vi.fn(() => ({
       phase: 'brewing',

@@ -15,7 +15,8 @@ const TITLE_STROKE = '#160e19';
  * Shared static identity ribbon.
  *
  * The ranked Market state measures its title and star slots as one centered
- * group. Title-only consumers center the title without reserving star space.
+ * group. Title-only consumers and hidden ranked states center the title without
+ * reserving star space.
  */
 export class MarketTitleRibbon {
   constructor({
@@ -94,6 +95,7 @@ export class MarketTitleRibbon {
 
   layout() {
     const geometry = this.geometry;
+    const hasVisibleStars = this.showStars && this.stars.visible;
     this.frame.setSize(
       this.width,
       this.height,
@@ -131,7 +133,7 @@ export class MarketTitleRibbon {
       this.contentGroupLeft + this.title.measuredWidth / 2,
       contentCenterY,
     );
-    if (this.showStars) {
+    if (hasVisibleStars) {
       this.stars.position.set(
         this.contentGroupLeft +
           this.title.measuredWidth +
@@ -142,7 +144,7 @@ export class MarketTitleRibbon {
   }
 
   measureContentWidth() {
-    if (!this.showStars) {
+    if (!this.showStars || !this.stars.visible) {
       return this.title.measuredWidth;
     }
     return this.title.measuredWidth +

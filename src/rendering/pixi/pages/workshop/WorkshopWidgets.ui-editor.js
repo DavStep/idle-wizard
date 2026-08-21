@@ -130,7 +130,7 @@ function taskFixture(state) {
   const claimable = state === 'claimable';
   return {
     id: 'brew-potion', label: claimable ? 'Brew a Potion' : 'Collect Mint', current: claimable ? 1 : state === 'complete' ? 5 : 3, required: claimable ? 1 : 5,
-    progress: claimable || state === 'complete' ? 1 : 0.6, actionLabel: claimable ? 'Claim' : '', enabled: true, showProgress: true,
+    progress: claimable || state === 'complete' ? 1 : 0.6, actionLabel: claimable ? 'Turn In' : '', enabled: true, showProgress: true,
   };
 }
 

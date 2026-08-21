@@ -160,6 +160,12 @@ describe('DevUiCatalogManager', () => {
             discoveryType: 'unknown',
             canResearch: true,
           }),
+          expect.objectContaining({
+            key: 'unnamedPotion',
+            discovered: false,
+            unknown: true,
+            canResearch: false,
+          }),
         ]),
       }),
     );

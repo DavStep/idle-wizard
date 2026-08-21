@@ -403,7 +403,7 @@ describe('WorkshopPixiPage', () => {
     expect(row.value.style.fontSize).toBe(16);
     expect(row.progress.root.y).toBe(38);
     expect(row.getPreferredHeight()).toBe(48);
-    expect(harness.page.tasks.height).toBe(80);
+    expect(harness.page.tasks.height).toBe(77);
 
     const ribbon = harness.page.tasks.titleRibbon;
     expect(ribbon.assetId).toBe(
@@ -425,9 +425,9 @@ describe('WorkshopPixiPage', () => {
       bottom: 18,
       left: 34,
     });
-    expect(ribbon.root.scale.x).toBe(0.805);
-    expect(ribbon.root.scale.y).toBe(0.805);
-    expect(ribbon.root.y).toBe(-16);
+    expect(ribbon.root.scale.x).toBe(0.8855);
+    expect(ribbon.root.scale.y).toBe(0.8855);
+    expect(ribbon.root.y).toBe(-17);
     expect(ribbon.geometry.contentOffsetY).toBe(-2);
     expect(ribbon.title.y).toBe(17);
     const renderedRibbonHeight = ribbon.height * ribbon.root.scale.y;
@@ -440,10 +440,13 @@ describe('WorkshopPixiPage', () => {
       ribbon.root.x + ribbon.contentGroupCenterX * ribbon.root.scale.x,
     ).toBeCloseTo(harness.page.tasks.width / 2);
     expect(ribbon.title.fontSize).toBe(20);
-    expect(row.root.y).toBe(19);
+    expect(row.root.y).toBe(16);
     expect(
       row.root.y - (ribbon.root.y + renderedRibbonHeight),
-    ).toBeCloseTo(4.41);
+    ).toBeCloseTo(-0.649);
+    expect(
+      row.root.y + row.label.y - (ribbon.root.y + renderedRibbonHeight),
+    ).toBeCloseTo(4.351);
 
     harness.page.destroy();
     harness.dispose();
@@ -463,7 +466,7 @@ describe('WorkshopPixiPage', () => {
       row.progress.root.y - 6,
     );
     expect(row.getPreferredHeight()).toBeGreaterThan(48);
-    expect(harness.page.tasks.height).toBeGreaterThan(80);
+    expect(harness.page.tasks.height).toBeGreaterThan(77);
 
     harness.page.destroy();
     harness.dispose();
@@ -1132,21 +1135,26 @@ describe('WorkshopPixiPage', () => {
     const harness = createHarness();
     const turnIn = vi.fn(() => ({ ok: true }));
     const model = createWorkshopViewModel();
-    model.workshop.tasks.rows[0].actionLabel = 'turn in';
+    model.workshop.tasks.rows[0].actionLabel = 'Turn In';
     model.workshop.tasks.rows[0].enabled = true;
     model.workshop.tasks.rows[0].onActivate = turnIn;
 
     harness.page.bind(model);
 
-    const action = harness.page.tasks.rows.get('request-1').action;
+    const row = harness.page.tasks.rows.get('request-1');
+    const action = row.action;
     expect(action.variant).toBe('yellow');
     expect(action.control.variant).toBe('yellow');
     expect(action.nineSlice.visible).toBe(true);
     expect(action.root.visible).toBe(true);
     expect(action).toMatchObject({
-      width: 58,
-      height: 20,
+      width: 64,
+      height: 24,
     });
+    expect(action.root.y).toBe(4);
+    expect(action.root.x + action.width).toBe(row.root.hitArea.width);
+    expect(row.progress.root.y).toBe(38);
+    expect(row.getPreferredHeight()).toBe(48);
     expect(action.handleTap()).toEqual({ ok: true });
     expect(turnIn).toHaveBeenCalledWith(model.workshop.tasks.rows[0]);
 
@@ -3236,6 +3244,7 @@ describe('WorkshopPixiPage', () => {
     );
 
     pane.selectTagColor('violet');
+    expect(pane.fields.get('tag').textLabel.colorToken).toBe('#bd9ae1');
     pane.selectJoinMode('open');
     await pane.save();
     expect(onSave).toHaveBeenCalledWith(
@@ -3554,6 +3563,36 @@ describe('WorkshopPixiPage', () => {
       dialog.rows.get('potion:0').potionIcon.width /
         dialog.rows.get('potion:0').potionIcon.height,
     ).toBeCloseTo(53 / 60);
+    const unknownPage = dialog.rows.get('potion:0');
+    expect(unknownPage.potionIcon.x + unknownPage.potionIcon.width / 2).toBeCloseTo(
+      unknownPage.width / 2,
+    );
+    expect(unknownPage.potionIcon.y + unknownPage.potionIcon.height / 2).toBeLessThan(
+      unknownPage.height / 2,
+    );
+    expect(unknownPage.unknownStatus.visible).toBe(true);
+    expect(unknownPage.unknownStatus.eventMode).toBe('none');
+    expect(unknownPage.unknownStatusLabel.text).toBe(
+      'Recipe not yet discovered',
+    );
+    expect(
+      unknownPage.unknownStatus.y +
+        unknownPage.unknownStatusBackground.frameHeight,
+    ).toBe(unknownPage.height - 8);
+    expect(unknownPage.unknownOverlay.visible).toBe(true);
+    expect(unknownPage.unknownOverlay.eventMode).toBe('none');
+    expect(unknownPage.unknownOverlay.tint).toBe(0x000000);
+    expect(unknownPage.unknownOverlay.alpha).toBe(0.18);
+    expect(unknownPage.unknownOverlay.frameWidth).toBe(unknownPage.width);
+    expect(unknownPage.unknownOverlay.frameHeight).toBe(unknownPage.height);
+    expect(unknownPage.root.getChildIndex(unknownPage.unknownStatus)).toBeGreaterThan(
+      unknownPage.root.getChildIndex(unknownPage.unknownOverlay),
+    );
+    expect(unknownPage.name.visible).toBe(false);
+    expect(unknownPage.discovererPrefix.visible).toBe(false);
+    expect(unknownPage.recipeLabel.visible).toBe(false);
+    expect(unknownPage.visibleIngredientCount).toBe(0);
+    expect(unknownPage.activateDiscoverer()).toBe(false);
     expect(dialog.discoveryPageLabel.text).toBe('1-2 / 3');
     expect(dialog.discoveryPrevious.enabled).toBe(false);
     expect(dialog.discoveryNext.enabled).toBe(true);
@@ -5237,12 +5276,27 @@ describe('WorkshopPixiPage', () => {
     });
     expect(harness.page.summon.button.eventMode).toBe('none');
     expect(harness.page.summon.info.eventMode).toBe('static');
+    expect(harness.page.summon.info.icon).toMatchObject({
+      width: 18,
+      height: 18,
+    });
+    expect(harness.page.summon.info.hitArea).toMatchObject({
+      x: -13,
+      y: -13,
+      width: 44,
+      height: 44,
+    });
 
     const infoBounds = harness.page.summon.info.getBounds();
     const infoPoint = {
-      x: infoBounds.x + infoBounds.width / 2,
+      x: infoBounds.x + 2,
       y: infoBounds.y + infoBounds.height / 2,
     };
+    expect(infoBounds.width).toBe(44);
+    expect(infoBounds.height).toBe(44);
+    expect(infoPoint.x).toBeLessThan(infoBounds.x + 13);
+    const summonBounds = harness.page.summon.button.getBounds();
+    expect(infoBounds.y + infoBounds.height).toBeLessThan(summonBounds.y);
     const overlayTarget = new Container({ label: 'retargeted-overlay-hit' });
     inputRouter.onPointerDown(
       createPointerEvent(overlayTarget, 'pointerdown', infoPoint),

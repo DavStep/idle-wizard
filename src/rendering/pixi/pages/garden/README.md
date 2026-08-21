@@ -71,11 +71,21 @@ The next purchasable plot uses the shared green stacked cost button with
 button rather than the surrounding plot frame.
 Completing a plot's combined automation research replaces that plot's compact
 grid cell with the production-backed Automated Garden Plot variant. Its long
-soil asset spans `220x84px`, renders the committed crop as one through five
-plant instances, and owns one `44px` control stack on the right. The seed icon
-sets that plot's future crop, Auto toggles the existing combined plant/harvest
-loop, and `xN` cycles through the researched plot multiplier for the next crop;
-the active crop keeps its committed count.
+soil starts at the first normal plot's visible left edge, covers roughly two
+and a half plots, and renders the committed crop as one through five plant
+instances. A right-side `70x78px` control block ends at the third normal plot's
+visible right edge: the seed selector spans its top, with Brewing-sized
+`32x36px` Auto and `xN` controls below it and `6px` gaps. Their invisible tap
+targets remain `44px`. The progress rail stays directly beneath the soil. The
+seed icon sets that plot's future crop, Auto toggles the
+existing combined plant/harvest loop, and `xN` cycles through the researched
+plot multiplier for the next crop; the active crop keeps its committed count.
+Automated plants sit `2px` higher than the manual baseline and use stable
+per-plot/per-slot variation of up to `1.5px` horizontally and `1px` vertically,
+so the bed looks organic without jittering across ticks or rebinds.
+Accepted timer-reduction taps resolve the nearest visible herb from the release
+point and animate only that herb's snap, spark burst, and removed-time label;
+the other herbs and soil stay still while the plot-wide cooldown remains active.
 Legacy saves keep Auto on and default `xN` to the current multiplier. Mixed
 manual and automated plots lay out in source order; each automated plot takes a
 complete row and the next manual plot resumes the three-column grid below it.
@@ -131,7 +141,9 @@ the valid 12-plot state used to verify vertical drag, wheel scrolling, the
 overflow-only scrollbar, and hard resting bounds. Add
 `?growing=1&progress=gradient` for the four-growing-plot regression
 state that verifies Garden timer rails keep their green role color even when
-the player-wide progress style is gradient. The default recipe shows both
+the player-wide progress style is gradient. Add
+`?automated=1&tapAcceleration=1` to exercise the production per-herb
+timer-reduction feedback with live recipe time. The default recipe shows both
 researched bulk actions with a selected Nettle seed; use `?bulk=plant` for the
 level-5 two-action composition and `?bulk=locked` for the pre-research
 Seeds-only composition. Successful planting uses the shared transient

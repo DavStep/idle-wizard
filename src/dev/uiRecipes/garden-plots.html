@@ -74,6 +74,7 @@
       const overflow = params.get('overflow') === '1';
       const growing = params.get('growing') === '1';
       const automated = params.get('automated') === '1';
+      const tapAcceleration = params.get('tapAcceleration') === '1';
       const planting = params.get('planting') === '1';
       const bulkActions = params.get('bulk') || 'all';
       const progressBar = params.get('progress') || 'regular';
@@ -161,6 +162,7 @@
               ? '1'
               : '0',
           automatedPlots: automated ? '1' : '0',
+          tapAcceleration: tapAcceleration ? 'enabled' : 'disabled',
           progressBar,
           bulkActions,
           motion: 'shared-transient',
@@ -174,7 +176,7 @@
         semanticTargets,
         ticker: applicationManager.app.ticker,
         theme: createPixiThemeSnapshot({ progressBar, theme }),
-        timeSource: () => 0,
+        timeSource: () => (tapAcceleration ? performance.now() : 0),
       });
       page.layout(applicationManager.projection);
       transientEffects.layout(applicationManager.projection);
@@ -212,6 +214,16 @@
                 tileNumber: plot.tileNumber,
                 tooltip:
                   'You need to research first to unlock buying this slot.',
+              };
+            }
+            if (tapAcceleration && plot.phase === 'growing') {
+              document.querySelector('#garden-plots-recipe-state').dataset.feedback =
+                'plot accelerated';
+              return {
+                ok: true,
+                tileNumber: plot.tileNumber,
+                reducedSeconds: 1,
+                cooldownMs: 560,
               };
             }
             if (planting) {

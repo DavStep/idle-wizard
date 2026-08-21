@@ -162,7 +162,28 @@ describe('PixiGlobalDialogPresenter', () => {
     expect(checkForUpdates).toHaveBeenCalledOnce();
     expect(harness.getOpenModel(GLOBAL_DIALOG_IDS.ANNOUNCEMENT)).toMatchObject({
       title: 'Updates',
-      copy: 'Idle Wizard is up to date.',
+      copy: 'Idle Wizard is up to date',
+      dismissible: true,
+      framed: true,
+    });
+  });
+
+  it('notifies when no update is available for the device', async () => {
+    const checkForUpdates = vi.fn(() =>
+      Promise.resolve({ status: 'unsupported_platform' }),
+    );
+    const harness = createHarness({ checkForUpdates });
+    harness.presenter.mount();
+    harness.presenter.open('settings');
+
+    const settings = harness.getOpenModel(GLOBAL_DIALOG_IDS.SETTINGS);
+    await expect(settings.actions.checkForUpdates()).resolves.toEqual({
+      status: 'unsupported_platform',
+    });
+
+    expect(harness.getOpenModel(GLOBAL_DIALOG_IDS.ANNOUNCEMENT)).toMatchObject({
+      title: 'Updates',
+      copy: 'No update is available for this device',
       dismissible: true,
       framed: true,
     });

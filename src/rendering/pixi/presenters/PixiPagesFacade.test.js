@@ -77,6 +77,38 @@ describe("PixiPagesFacade", () => {
     expect(harness.runtime.deactivatePage).toHaveBeenCalledTimes(1);
   });
 
+  it("switches retained Market tabs without rebuilding the page", () => {
+    const harness = createHarness();
+    const releasePlayerMarket = vi.fn();
+    harness.dependencies.playerShopFacade.retainMarketData = vi.fn(
+      () => releasePlayerMarket,
+    );
+    const pages = new PixiPagesFacade(harness.dependencies);
+
+    pages.mount();
+    expect(pages.show("shop")).toBe(true);
+    const shop = harness.getBoundPage("shop");
+    harness.runtime.bindPage.mockClear();
+
+    expect(shop.actions.selectTab("player", "players")).toBe(true);
+
+    expect(harness.runtime.bindPage).not.toHaveBeenCalled();
+    expect(pages.shopTabId).toBe("players");
+    expect(
+      harness.dependencies.playerShopFacade.retainMarketData,
+    ).toHaveBeenCalledTimes(1);
+
+    harness.publishGameplaySnapshot(createGameplaySnapshot());
+    expect(harness.getBoundPage("shop").shop.selectedTabId).toBe("players");
+
+    harness.runtime.bindPage.mockClear();
+    expect(
+      harness.getBoundPage("shop").actions.selectTab("npm", "traders"),
+    ).toBe(true);
+    expect(harness.runtime.bindPage).not.toHaveBeenCalled();
+    expect(releasePlayerMarket).toHaveBeenCalledTimes(1);
+  });
+
   it("releases page chat clearance before world chat unlocks", () => {
     const harness = createHarness({
       gameplaySnapshot: createGameplaySnapshot({ level: 2 }),

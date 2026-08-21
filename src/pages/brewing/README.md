@@ -13,6 +13,10 @@ Known locked recipes show the passive `Not researched` status on the shared
 Bag-row background. While that recipe is being studied, the same status reads
 `Researching: <time left>` and counts down; research remains owned by the
 Research room.
+Unknown recipes have no action. They hide recipe details, tint the paper with
+the shared locked overlay treatment, center the shared lock slightly above the
+page midpoint, and pin a passive `Recipe not yet discovered` status to the
+bottom on the same Bag-row background.
 Tapping a research-locked next cauldron opens its exact capacity study in
 Research. Tapping a missing recipe ingredient opens the herb picker, centers
 that exact herb row, and gives it one short attention boink. A brew request

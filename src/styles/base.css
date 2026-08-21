@@ -820,15 +820,15 @@
   --style-star-orange: oklch(78% 0.15 55);
   --style-star-red: oklch(76% 0.14 25);
   --style-star-purple: oklch(78% 0.13 305);
-  --style-alliance-tag-red: oklch(76% 0.13 25);
-  --style-alliance-tag-amber: oklch(80% 0.13 75);
-  --style-alliance-tag-green: oklch(76% 0.12 145);
-  --style-alliance-tag-teal: oklch(78% 0.1 190);
-  --style-alliance-tag-blue: oklch(78% 0.11 250);
-  --style-alliance-tag-violet: oklch(78% 0.11 295);
-  --style-alliance-tag-magenta: oklch(78% 0.12 335);
-  --style-alliance-tag-brown: oklch(76% 0.09 55);
-  --style-alliance-tag-slate: oklch(78% 0.03 250);
+  --style-alliance-tag-red: oklch(81% 0.12 25);
+  --style-alliance-tag-amber: oklch(84% 0.12 75);
+  --style-alliance-tag-green: oklch(81% 0.11 145);
+  --style-alliance-tag-teal: oklch(82% 0.09 190);
+  --style-alliance-tag-blue: oklch(82% 0.1 250);
+  --style-alliance-tag-violet: oklch(82% 0.1 295);
+  --style-alliance-tag-magenta: oklch(82% 0.11 335);
+  --style-alliance-tag-brown: oklch(81% 0.08 55);
+  --style-alliance-tag-slate: oklch(82% 0.03 250);
 }
 
 :root[data-style-progress="gradient"] {

@@ -853,7 +853,7 @@ describe('retained global Pixi dialogs', () => {
     harness.dispose();
   });
 
-  it('centers framed report copy on both axes inside the taller paper', () => {
+  it('centers framed announcement copy on both axes inside the taller paper', () => {
     const harness = createHarness();
     const announcement = harness.registry.open(
       GLOBAL_DIALOG_IDS.ANNOUNCEMENT,
@@ -864,7 +864,6 @@ describe('retained global Pixi dialogs', () => {
         contentHeight: 104,
         dismissible: true,
         framed: true,
-        variant: 'report',
       },
     );
 

@@ -160,6 +160,7 @@ export default [
     scenarios: [
       { fixture: { placeholder: 'Enter message', value: '' }, id: 'empty', label: 'Empty', mount: mountTextField },
       { fixture: { placeholder: 'Enter message', value: 'Ready to brew' }, id: 'value', label: 'With value', mount: mountTextField },
+      { fixture: { placeholder: 'Tag', value: 'MOON', valueColor: '#bd9ae1' }, id: 'semantic-color', label: 'Semantic value color', mount: mountTextField },
       { fixture: { focused: true, placeholder: 'Enter message', value: 'Ready to brew' }, id: 'focused', label: 'Focused caret', mount: mountTextField },
       { fixture: { height: 64, multiline: true, placeholder: 'Write feedback', value: 'The workshop button disappears after I write a longer report that wraps onto several visible lines.' }, id: 'multiline', label: 'Multiline overflow', mount: mountTextField },
     ],
@@ -551,6 +552,7 @@ async function mountTextField(_context, fixture) {
         inputRouter: input,
         multiline: fixture.multiline,
         placeholder: fixture.placeholder,
+        valueColor: fixture.valueColor,
         variant: fixture.variant,
         width: 240,
       });

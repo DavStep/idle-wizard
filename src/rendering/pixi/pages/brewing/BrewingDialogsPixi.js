@@ -46,6 +46,9 @@ const RECIPE_ICON_SIZE = 46;
 const RECIPE_ICON_LEFT_NUDGE = -4;
 const UNKNOWN_POTION_ICON_FRAME = 'status:lockDefault';
 const UNKNOWN_POTION_ICON_ASPECT_RATIO = 53 / 60;
+const UNKNOWN_RECIPE_STATUS_LABEL = 'Recipe not yet discovered';
+const UNKNOWN_RECIPE_LOCK_CENTER_OFFSET_Y = -22;
+const UNKNOWN_RECIPE_OVERLAY_ALPHA = 0.18;
 const RECIPE_HEADER_GAP = 5;
 const RECIPE_INGREDIENT_ROW_HEIGHT = 20;
 const RECIPE_INGREDIENT_SLOT_COUNT = 6;
@@ -540,6 +543,15 @@ export class BrewingRecipeCard {
         Texture.EMPTY,
       `brewing-recipe-card-${instanceId}-paper`,
     );
+    this.unknownOverlay = createDialogPaperSection(
+      this.assetManager?.getTexture?.(PIXI_ROOT_RUN_ASSETS.dialogPaper) ??
+        Texture.EMPTY,
+      `brewing-recipe-card-${instanceId}-unknown-overlay`,
+    );
+    this.unknownOverlay.tint = 0x000000;
+    this.unknownOverlay.alpha = UNKNOWN_RECIPE_OVERLAY_ALPHA;
+    this.unknownOverlay.visible = false;
+    this.unknownOverlay.renderable = false;
     this.icon = new Sprite(Texture.EMPTY);
     this.icon.label = `brewing-recipe-card-${instanceId}-icon`;
     this.name = createText('', {
@@ -605,6 +617,7 @@ export class BrewingRecipeCard {
     });
     this.root.addChild(
       this.pageFrame,
+      this.unknownOverlay,
       this.icon,
       this.name,
       this.info,
@@ -701,7 +714,7 @@ export class BrewingRecipeCard {
     this.syncIconBounds();
     this.ingredients.reconcile(normalizeRows(this.model.ingredients));
     const selected = this.model.selected === true;
-    const showResearchStatus = locked && !unknown;
+    const showResearchStatus = locked || unknown;
     this.select.setText(unknown ? 'Unknown' : 'Select');
     this.select.setVariant(unknown ? 'yellow' : 'green');
     const actionEnabled =
@@ -713,7 +726,7 @@ export class BrewingRecipeCard {
     this.researchStatus.visible = showResearchStatus;
     this.researchStatus.renderable = showResearchStatus;
     this.researchTimer =
-      showResearchStatus && this.model.researchInProgress === true
+      showResearchStatus && !unknown && this.model.researchInProgress === true
         ? {
             endTimeMs: Number.isFinite(this.model.researchEndTimeMs)
               ? this.model.researchEndTimeMs
@@ -724,6 +737,9 @@ export class BrewingRecipeCard {
                 ),
           }
         : null;
+    this.syncUnknownContentVisibility();
+    this.unknownOverlay.visible = unknown;
+    this.unknownOverlay.renderable = unknown;
     this.updateTime(this.timeSource());
     this.root.visible = true;
     this.root.renderable = true;
@@ -786,7 +802,9 @@ export class BrewingRecipeCard {
       : 0;
     const label = timer
       ? `Researching: ${formatRemainingTime(remainingMs)}`
-      : 'Not researched';
+      : this.unknown
+        ? UNKNOWN_RECIPE_STATUS_LABEL
+        : 'Not researched';
     if (this.researchStatusLabel.text !== label) {
       setText(this.researchStatusLabel, label);
     }
@@ -805,6 +823,8 @@ export class BrewingRecipeCard {
     this.height = height;
     this.pageFrame.position.set(0, 0);
     this.pageFrame.setSize(width, height);
+    this.unknownOverlay.position.set(0, 0);
+    this.unknownOverlay.setSize(width, height);
     const contentWidth = Math.max(0, width - RECIPE_CARD_CONTENT_INSET * 2);
     this.syncIconBounds();
     this.name.position.set(
@@ -874,14 +894,39 @@ export class BrewingRecipeCard {
     const width = this.unknown
       ? RECIPE_ICON_SIZE * UNKNOWN_POTION_ICON_ASPECT_RATIO
       : RECIPE_ICON_SIZE;
+    const cardWidth = this.width ?? RECIPE_CARD_WIDTH;
+    const cardHeight = this.height ?? RECIPE_CARD_HEIGHT;
     this.icon.position.set(
-      RECIPE_CARD_CONTENT_INSET +
-        RECIPE_ICON_LEFT_NUDGE +
-        (RECIPE_ICON_SIZE - width) / 2,
-      RECIPE_CARD_CONTENT_INSET + 3,
+      this.unknown
+        ? (cardWidth - width) / 2
+        : RECIPE_CARD_CONTENT_INSET +
+            RECIPE_ICON_LEFT_NUDGE +
+            (RECIPE_ICON_SIZE - width) / 2,
+      this.unknown
+        ? (cardHeight - RECIPE_ICON_SIZE) / 2 +
+            UNKNOWN_RECIPE_LOCK_CENTER_OFFSET_Y
+        : RECIPE_CARD_CONTENT_INSET + 3,
     );
     this.icon.width = width;
     this.icon.height = RECIPE_ICON_SIZE;
+  }
+
+  syncUnknownContentVisibility() {
+    const visible = !this.unknown;
+    for (const displayObject of [
+      this.name,
+      this.info,
+      this.ingredientsLayer,
+      this.cost,
+      this.costValue,
+      this.duration,
+      this.durationValue,
+    ]) {
+      displayObject.visible = visible;
+      displayObject.renderable = visible;
+    }
+    this.costIcon.visible = visible && this.costIcon.texture !== Texture.EMPTY;
+    this.costIcon.renderable = this.costIcon.visible;
   }
 
   applyTheme(theme) {
@@ -924,7 +969,12 @@ export class BrewingRecipeCard {
     applyTextTheme(
       this.researchStatusLabel,
       this.theme,
-      RETAINED_TEXT_STYLES.body,
+      this.unknown
+        ? {
+            ...RETAINED_TEXT_STYLES.border,
+            fill: this.theme.muted,
+          }
+        : RETAINED_TEXT_STYLES.body,
     );
     this.costIcon.alpha = masked ? 0.45 : 1;
     this.select.applyTheme(this.theme);
@@ -939,6 +989,8 @@ export class BrewingRecipeCard {
     this.model = {};
     this.actions = {};
     this.unknown = false;
+    this.unknownOverlay.visible = false;
+    this.unknownOverlay.renderable = false;
     this.researchTimer = null;
     this.root.visible = false;
     this.root.renderable = false;

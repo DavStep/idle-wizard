@@ -407,7 +407,7 @@ export class PixiGlobalDialogPresenter {
     if (status === 'up_to_date' || status === 'disabled') {
       this.open(GLOBAL_DIALOG_IDS.ANNOUNCEMENT, {
         title: 'Updates',
-        copy: 'Idle Wizard is up to date.',
+        copy: 'Idle Wizard is up to date',
         contentHeight: 104,
         dismissible: true,
         framed: true,
@@ -418,7 +418,7 @@ export class PixiGlobalDialogPresenter {
     if (status === 'unsupported_platform') {
       this.open(GLOBAL_DIALOG_IDS.ANNOUNCEMENT, {
         title: 'Updates',
-        copy: 'No update is available for this device.',
+        copy: 'No update is available for this device',
         contentHeight: 104,
         dismissible: true,
         framed: true,

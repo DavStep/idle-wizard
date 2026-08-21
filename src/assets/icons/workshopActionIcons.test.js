@@ -260,4 +260,19 @@ describe('Workshop action icon assets', () => {
       expect(baseAlpha > 0 && clothAlpha > 0).toBe(false);
     }
   });
+
+  it('keeps the banner rod-cap contours out of the tintable cloth mask', () => {
+    const cloth = PNG.sync.read(
+      fs.readFileSync(path.join(ICON_DIRECTORY, 'icon-alliance-banner-cloth-mask.png')),
+    );
+
+    for (let y = 0; y < cloth.height; y += 1) {
+      for (let x = 0; x < cloth.width; x += 1) {
+        if (x >= 25 && x <= 102) {
+          continue;
+        }
+        expect(cloth.data[(y * cloth.width + x) * 4 + 3]).toBe(0);
+      }
+    }
+  });
 });

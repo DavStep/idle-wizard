@@ -379,6 +379,17 @@ function createPreviewModel(dialogId) {
             createRecipePreviewIngredient('mintHerb', 'Mint', 3),
           ],
         }),
+        createRecipePreviewItem({
+          key: 'unnamedPotion',
+          label: 'Unknown Potion',
+          unlocked: false,
+          discovered: false,
+          discoveryType: 'unknown',
+          unknown: true,
+          known: false,
+          canResearch: false,
+          ingredients: [],
+        }),
       ],
     };
   }

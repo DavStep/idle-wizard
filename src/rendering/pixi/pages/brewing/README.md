@@ -11,10 +11,10 @@ while Brewing is active, dim in Day, and remain still under reduced motion.
 
 The selected cauldron uses the shared full-width identity ribbon with the blue
 semantic skin, `Cauldron N` copy, and the existing three rank-star slots. The
-small Recipes header button is intentionally absent: an empty cauldron opens
-Recipes through the primary `Choose Recipe` action, which also retains the
-`brewing:recipes` tutorial target. Batch quantity and Auto sit together on the
-lower left, aligned opposite the existing Empty control on the lower right.
+yellow `Recipes` button sits immediately left of the red `Empty` button in the
+lower-right control row and owns the `brewing:recipes` tutorial target. An empty
+cauldron can also open Recipes through the primary `Choose Recipe` action. Batch
+quantity and Auto stay together on the lower left.
 
 The preferred renderer-neutral view model is:
 
@@ -95,7 +95,7 @@ perform writes or own game rules.
 During brewing or bottling, the visible cauldron art is a release-only timer
 acceleration target. An accepted tap removes at most one second, emits the
 shared `-1s` transient flyout from the liquid anchor, and locks that cauldron
-for 800ms. Horizontal movement still belongs to the carousel swipe.
+for 504ms. Horizontal movement still belongs to the carousel swipe.
 
 The retained Recipes dialog is a two-page Expedition composition. Each visible
 `BrewingRecipeCard` reuses the shared dialog-paper nine-slice, the two wider page
@@ -112,7 +112,10 @@ values, with the canonical mana icon after its numeric value. Unlocked recipe ac
 passive and read `Not researched` over the same Settings-row nine-slice used by
 Workshop Bag rows. While a recipe is being studied, the same passive row reads
 `Researching: <time left>` and counts down from the Research snapshot; the
-Recipes dialog never starts research. Ingredient owned values are presenter-projected
+Recipes dialog never starts research. Unknown recipes expose no action or
+metadata; they tint the paper with the shared locked overlay treatment, center
+the shared lock slightly above the page midpoint, and pin the passive
+`Recipe not yet discovered` row to the bottom. Ingredient owned values are presenter-projected
 available herb counts for the selected cauldron, after subtracting herbs staged
 in other cauldrons. Open `http://127.0.0.1:55173/?devUi=brewing.recipes` for the
 deterministic real-app visual-QA state.
@@ -120,7 +123,7 @@ deterministic real-app visual-QA state.
 The production composition has two sections. The unframed preview keeps the
 image-backed fantasy chevrons, horizontal swipe, centered cauldron, and six
 compact ingredient requirement tiles in a subtle connected orbit. The preview
-composition sits below the title/configuration row. The chevrons keep their
+composition sits below the title row. The chevrons keep their
 horizontal anchors just outside the two lower ingredient tiles and share the
 potion-name Y axis, so navigation sits beside the selected recipe identity.
 All six cells are real gameplay ingredient slots; recipes
@@ -138,8 +141,10 @@ and top-aligns shorter lists.
 Cauldron liquid reuses the exact source-art mask,
 matches the cauldron sprite transform, and stays behind the rendered rim.
 Potion identity and rarity sit directly below the landmark after a recipe is
-selected. A compact red cauldron-over-`Empty` action sits to the right of that
-identity, immediately above the batch detail panel. It clears the selected
+selected. A compact red cauldron-over-`Empty` button, matching the `xN` and
+Auto control geometry, sits to the right of that identity immediately above
+the batch detail panel, with the yellow `Recipes` button directly to its left.
+Empty clears the selected
 recipe and every staged herb for the selected cauldron, stays visible but
 disabled when there is nothing to clear or a brew is active, and uses the
 shared retained-button release semantics. Activating it opens the shared
@@ -165,7 +170,9 @@ vertically pressed ellipse; extra page height changes its vertical placement,
 not its proportions.
 The empty-state `Choose Recipe` primary action opens Recipes. Compact Auto and
 `xN` controls sit outside the panel in the lower control row, packed from the
-left opposite the right-aligned Empty action.
+left opposite the right-aligned `Recipes` and `Empty` pair. Auto, `xN`, and
+Empty use the earlier compact `32x36px` Brewing configuration-control geometry
+while keeping larger invisible tap targets.
 
 Boundary chevrons are removed instead of showing a disabled arrow. Carousel
 dots contain every unlocked cauldron plus exactly one next purchasable locked
@@ -176,13 +183,15 @@ The selected cauldron title and shared three-slot star rank sit together inside
 the centered blue Brewing title ribbon above the carousel orbit.
 Selecting the next purchasable locked slot keeps the cauldron art visible with
 the Idle Outpost luminance-weighted monochrome filter and overlays the shared
-lock icon. It hides recipes, auto brew, and brew plus the old unlock
+lock icon. Its `Locked Cauldron` ribbon title centers without reserving the
+hidden rank-star width. It hides recipes, auto brew, and brew plus the old unlock
 sentence, then shows only the approved compact stacked cost button: `Unlock`
 above the coin icon and amount. The normal framed batch-detail section and all
-of its recipe/status content stay hidden for locked slots; the purchase button
-is centered in that freed content region with no backing panel. Level- or
-research-gated slots show no purchase button. Carousel chevrons remain
-available so the player can return to another cauldron.
+of its recipe/status content stay hidden for locked slots. The purchase button
+is centered inside the standard dotted locked placeholder, whose bounds match
+the complete batch-detail section that replaces it after purchase. Level- or
+research-gated slots show neither purchase button nor placeholder. Carousel
+chevrons remain available so the player can return to another cauldron.
 
 Recipe and automation settings dialogs remain retained, but the carousel has no
 separate settings or fast-forward button. The compact Auto control uses a
@@ -202,7 +211,7 @@ art uses the larger preview fit inside its existing well.
 The action section keeps existing retained button semantics. The single primary
 button follows the brewing state: a truly empty cauldron is green
 `Choose Recipe` and opens the same retained recipe dialog as the compact
-top-right `Recipes` control; manual idle after a recipe or ingredient is staged
+lower-right `Recipes` control; manual idle after a recipe or ingredient is staged
 is `Brew`, brewing and bottling are yellow `Cancel`, brewed is `Bottle`, and
 bottling completion automatically grants the batch and returns to `Brew`. Newly enabled Auto remains unarmed and keeps the normal
 `Brew` action available; a successful first brew arms the repeating loop.

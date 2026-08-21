@@ -34,15 +34,15 @@ const WORLD_CHAT_PREVIEW_TEXT_GAP = 3;
 const WORLD_CHAT_PREVIEW_OPTICAL_Y = 2;
 const WORLD_CHAT_PREVIEW_TAG_COLORS = Object.freeze({
   ink: '#d4d4d4',
-  red: '#d66f75',
-  amber: '#d2a857',
-  green: '#73ba7d',
-  teal: '#6ab8b3',
-  blue: '#7fa4d6',
-  violet: '#a98ac8',
-  magenta: '#cc82ae',
-  brown: '#bb9070',
-  slate: '#9ca5b4',
+  red: '#df7b80',
+  amber: '#dbb265',
+  green: '#80c488',
+  teal: '#77c2bd',
+  blue: '#8bafdf',
+  violet: '#b497d1',
+  magenta: '#d78fba',
+  brown: '#c69c7b',
+  slate: '#a8b1bf',
 });
 const PRESS_SCALE = 0.94;
 const RELEASE_PEAK_SCALE = 1.055;

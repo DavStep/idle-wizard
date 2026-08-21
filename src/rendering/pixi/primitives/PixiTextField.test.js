@@ -50,6 +50,28 @@ describe('PixiTextField', () => {
     field.destroy({ children: true });
   });
 
+  it('keeps an optional semantic value color through focused redraws', () => {
+    const field = new PixiTextField({
+      placeholder: 'Tag',
+      valueColor: '#bd9ae1',
+    });
+
+    expect(field.textLabel.colorToken).not.toBe('#bd9ae1');
+
+    field.setValue('MOON');
+    expect(field.textLabel.colorToken).toBe('#bd9ae1');
+
+    field.applySessionSnapshot({
+      active: true,
+      selectionEnd: 4,
+      selectionStart: 4,
+      value: 'MOON',
+    });
+    expect(field.textLabel.colorToken).toBe('#bd9ae1');
+
+    field.destroy({ children: true });
+  });
+
   it('closes and deselects its text-entry session when routed focus leaves', async () => {
     let registration = null;
     const close = vi.fn(async () => {});

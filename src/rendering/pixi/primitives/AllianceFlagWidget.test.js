@@ -6,6 +6,10 @@ import {
   ALLIANCE_FLAG_GEOMETRY,
   AllianceFlagWidget,
 } from './AllianceFlagWidget.js';
+import {
+  getTradeAllianceBannerColor,
+  getTradeAllianceEmblemColor,
+} from '../../../shared/tradeAllianceBannerColors.js';
 
 describe('AllianceFlagWidget', () => {
   it('uses the canonical single-tail Root Run Alliance pennant geometry', () => {
@@ -44,5 +48,18 @@ describe('AllianceFlagWidget', () => {
     expect(flag.emblem.width).toBe(61.6);
 
     flag.destroy({ children: true });
+  });
+
+  it('uses softened emblem tints from the banner hue families', () => {
+    expect(getTradeAllianceBannerColor('red').value).toBe('#9f3d36');
+    expect(getTradeAllianceEmblemColor('red')).toMatchObject({
+      label: 'Crimson',
+      value: '#d96961',
+    });
+    expect(getTradeAllianceEmblemColor('green')).toMatchObject({
+      label: 'Forest',
+      value: '#71b268',
+    });
+    expect(getTradeAllianceEmblemColor('white').value).toBe('#fff9ed');
   });
 });

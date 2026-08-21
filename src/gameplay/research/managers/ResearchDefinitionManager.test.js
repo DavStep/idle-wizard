@@ -243,6 +243,33 @@ describe('ResearchDefinitionManager', () => {
     });
   });
 
+  it('replaces a completed potion recipe unlock with its first brewing-time research', () => {
+    const { manager } = createManager();
+    const getPotionResearchIds = (completedResearchIds = []) =>
+      manager
+        .getVisibleResearchTabs(completedResearchIds)
+        .find((tab) => tab.id === 'regular')
+        ?.boxes.find((box) => box.id === 'recipeUnlocks')
+        ?.researches.map((research) => research.id) ?? [];
+
+    expect(getPotionResearchIds()).toContain('unlockRecipe:manaTonic');
+    expect(getPotionResearchIds()).not.toContain(
+      itemTimerResearchIds.potionBrewing('manaTonic', 1),
+    );
+
+    const completedRecipeResearchIds = getPotionResearchIds([
+      'unlockRecipe:manaTonic',
+    ]);
+    expect(completedRecipeResearchIds).not.toContain('unlockRecipe:manaTonic');
+    expect(completedRecipeResearchIds).toContain(
+      itemTimerResearchIds.potionBrewing('manaTonic', 1),
+    );
+    expect(manager.getConfiguredResearch('unlockRecipe:manaTonic')).toMatchObject({
+      id: 'unlockRecipe:manaTonic',
+      value: 'brew',
+    });
+  });
+
   it('reuses research definitions for the same visible state', () => {
     const { manager } = createManager();
     const firstTabs = manager.getResearchTabs();

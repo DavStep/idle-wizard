@@ -168,6 +168,10 @@ const DISCOVERY_PAGE_CONTENT_INSET = 7;
 const DISCOVERY_ICON_SIZE = 46;
 const UNKNOWN_POTION_ICON_FRAME = 'status:lockDefault';
 const UNKNOWN_POTION_ICON_ASPECT_RATIO = 53 / 60;
+const UNKNOWN_RECIPE_STATUS_LABEL = 'Recipe not yet discovered';
+const UNKNOWN_RECIPE_LOCK_CENTER_OFFSET_Y = -22;
+const UNKNOWN_RECIPE_OVERLAY_ALPHA = 0.18;
+const UNKNOWN_RECIPE_STATUS_HEIGHT = 30;
 const DISCOVERY_HEADER_GAP = 5;
 const DISCOVERY_INGREDIENT_ROW_HEIGHT = 20;
 const DISCOVERY_INGREDIENT_ICON_SIZE = 14;
@@ -190,6 +194,17 @@ const WORLD_CHAT_TAG_COLORS = Object.freeze({
   magenta: '#934a78',
   brown: '#704b35',
   slate: '#596271',
+});
+const ALLIANCE_TAG_FIELD_COLORS = Object.freeze({
+  red: '#e88b7e',
+  amber: '#e4c774',
+  green: '#78cf93',
+  teal: '#76c8c8',
+  blue: '#89afe0',
+  violet: '#bd9ae1',
+  magenta: '#db91bf',
+  brown: '#c6a17d',
+  slate: '#b5bac4',
 });
 const ALLIANCE_DIRECTORY_ROW_HEIGHT = 78;
 const ALLIANCE_DIRECTORY_BANNER_SIZE = 56;
@@ -4006,6 +4021,9 @@ class AllianceSettingsPane {
     const selectedTagColor = normalizeTradeAllianceTagColor(
       this.draft?.tagColor,
     );
+    this.fields
+      .get('tag')
+      .setValueColor(ALLIANCE_TAG_FIELD_COLORS[selectedTagColor] ?? null);
     for (const swatch of this.swatches) {
       swatch.root.visible = editable && !editingBanner;
       swatch.root.renderable = editable && !editingBanner;
@@ -5103,6 +5121,15 @@ export class PotionDiscoveryPagePixi {
         Texture.EMPTY,
       `${this.root.label}:paper`,
     );
+    this.unknownOverlay = createDialogPaperSection(
+      dialog.assetManager?.getTexture?.(PIXI_ROOT_RUN_ASSETS.dialogPaper) ??
+        Texture.EMPTY,
+      `${this.root.label}:unknown-overlay`,
+    );
+    this.unknownOverlay.tint = 0x000000;
+    this.unknownOverlay.alpha = UNKNOWN_RECIPE_OVERLAY_ALPHA;
+    this.unknownOverlay.visible = false;
+    this.unknownOverlay.renderable = false;
     this.potionIcon = new Sprite(Texture.EMPTY);
     this.potionIcon.label = `${this.root.label}:potion-icon`;
     this.name = createText('', {
@@ -5124,6 +5151,28 @@ export class PotionDiscoveryPagePixi {
     this.recipeLabel = createText('', {
       ...RETAINED_TEXT_STYLES.bold,
     });
+    this.unknownStatus = new Container({
+      label: `${this.root.label}:unknown-status`,
+    });
+    this.unknownStatus.eventMode = 'none';
+    this.unknownStatusBackground = new PixiNineSliceFrame({
+      texture:
+        dialog.assetManager?.getTexture?.(PIXI_ROOT_RUN_ASSETS.settingsRow) ??
+        Texture.EMPTY,
+      sourceInsets: PIXI_ROOT_RUN_GEOMETRY.settings.rowSourceInsets,
+      borderInsets: PIXI_ROOT_RUN_GEOMETRY.settings.rowBorderInsets,
+      label: `${this.root.label}:unknown-status-background`,
+    });
+    this.unknownStatusBackground.eventMode = 'none';
+    this.unknownStatusLabel = createText(
+      UNKNOWN_RECIPE_STATUS_LABEL,
+      RETAINED_TEXT_STYLES.border,
+    );
+    this.unknownStatusLabel.anchor.set(0.5);
+    this.unknownStatus.addChild(
+      this.unknownStatusBackground,
+      this.unknownStatusLabel,
+    );
     this.manaIcon = new Sprite(Texture.EMPTY);
     this.manaIcon.label = `${this.root.label}:mana-icon`;
     this.manaLabel = createText('Required mana:', {
@@ -5161,12 +5210,14 @@ export class PotionDiscoveryPagePixi {
     );
     this.root.addChild(
       this.background,
+      this.unknownOverlay,
       this.potionIcon,
       this.name,
       this.date,
       this.discovererPrefix,
       this.discovererName,
       this.recipeLabel,
+      this.unknownStatus,
       ...this.ingredientRows.map((row) => row.root),
       this.manaLabel,
       this.manaIcon,
@@ -5280,10 +5331,25 @@ export class PotionDiscoveryPagePixi {
     this.height = height;
     this.background.position.set(0, 0);
     this.background.setSize(width, height);
+    this.unknownOverlay.position.set(0, 0);
+    this.unknownOverlay.setSize(width, height);
     this.root.hitArea = new Rectangle(0, 0, width, height);
 
     const contentWidth = Math.max(0, width - DISCOVERY_PAGE_CONTENT_INSET * 2);
     this.syncPotionIconBounds();
+    this.unknownStatus.position.set(
+      DISCOVERY_PAGE_CONTENT_INSET,
+      height - 38,
+    );
+    this.unknownStatusBackground.setSize(
+      contentWidth,
+      UNKNOWN_RECIPE_STATUS_HEIGHT,
+      PIXI_ROOT_RUN_GEOMETRY.settings.rowBorderInsets,
+    );
+    this.unknownStatusLabel.position.set(
+      contentWidth / 2,
+      UNKNOWN_RECIPE_STATUS_HEIGHT / 2,
+    );
     this.name.position.set(
       DISCOVERY_PAGE_CONTENT_INSET + DISCOVERY_ICON_SIZE + DISCOVERY_HEADER_GAP,
       DISCOVERY_PAGE_CONTENT_INSET + 5,
@@ -5357,9 +5423,18 @@ export class PotionDiscoveryPagePixi {
     const width = this.discovered
       ? DISCOVERY_ICON_SIZE
       : DISCOVERY_ICON_SIZE * UNKNOWN_POTION_ICON_ASPECT_RATIO;
+    const pageWidth = this.width ?? DISCOVERY_PAGE_WIDTH;
+    const pageHeight = this.height ?? DISCOVERY_PAGE_HEIGHT;
     this.potionIcon.position.set(
-      DISCOVERY_PAGE_CONTENT_INSET - 4 + (DISCOVERY_ICON_SIZE - width) / 2,
-      DISCOVERY_PAGE_CONTENT_INSET + 3,
+      this.discovered
+        ? DISCOVERY_PAGE_CONTENT_INSET -
+            4 +
+            (DISCOVERY_ICON_SIZE - width) / 2
+        : (pageWidth - width) / 2,
+      this.discovered
+        ? DISCOVERY_PAGE_CONTENT_INSET + 3
+        : (pageHeight - DISCOVERY_ICON_SIZE) / 2 +
+            UNKNOWN_RECIPE_LOCK_CENTER_OFFSET_Y,
     );
     this.potionIcon.width = width;
     this.potionIcon.height = DISCOVERY_ICON_SIZE;
@@ -5375,8 +5450,11 @@ export class PotionDiscoveryPagePixi {
 
   syncMetadataVisibility() {
     for (const displayObject of [
+      this.name,
       this.date,
+      this.discovererPrefix,
       this.discovererName,
+      this.recipeLabel,
       this.manaLabel,
       this.manaIcon,
       this.mana,
@@ -5389,6 +5467,10 @@ export class PotionDiscoveryPagePixi {
       displayObject.visible = this.discovered;
       displayObject.renderable = this.discovered;
     }
+    this.unknownStatus.visible = !this.discovered;
+    this.unknownStatus.renderable = !this.discovered;
+    this.unknownOverlay.visible = !this.discovered;
+    this.unknownOverlay.renderable = !this.discovered;
   }
 
   applyTheme(theme) {
@@ -5418,6 +5500,10 @@ export class PotionDiscoveryPagePixi {
     applyTextTheme(this.recipeLabel, resolvedTheme, {
       ...RETAINED_TEXT_STYLES.bold,
       fill: this.discovered ? resolvedTheme.text : resolvedTheme.muted,
+    });
+    applyTextTheme(this.unknownStatusLabel, resolvedTheme, {
+      ...RETAINED_TEXT_STYLES.border,
+      fill: resolvedTheme.muted,
     });
     for (const label of [
       this.manaLabel,
@@ -5477,6 +5563,8 @@ export class PotionDiscoveryPagePixi {
     this.targetId = null;
     this.model = null;
     this.discovered = false;
+    this.unknownOverlay.visible = false;
+    this.unknownOverlay.renderable = false;
     this.potionIcon.texture = Texture.EMPTY;
     this.manaIcon.texture = Texture.EMPTY;
     this.royaltyIcon.texture = Texture.EMPTY;

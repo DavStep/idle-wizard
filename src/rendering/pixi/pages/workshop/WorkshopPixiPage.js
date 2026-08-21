@@ -162,6 +162,8 @@ const SUMMON_HOLD_REPEAT_MS = 100;
 const SUMMON_BUTTON_WIDTH = 120;
 const SUMMON_BUTTON_HEIGHT = 52;
 const SUMMON_BUTTON_UP_OFFSET = 4;
+const SUMMON_INFO_VISUAL_SIZE = 18;
+const SUMMON_INFO_HIT_SIZE = 44;
 const SUMMON_CHAT_GAP = 128;
 export const WORKSHOP_WINDOW_ASSET_ID =
   'source:assets/rooms/workshop/workshop-window.png';
@@ -233,14 +235,16 @@ const WORKSHOP_REQUEST_ROW_TEXT_STYLE = Object.freeze({
 const WORKSHOP_TASK_ICON_SIZE = 32;
 const WORKSHOP_TASK_ROW_TEXT_TOP = 5;
 const WORKSHOP_TASK_PROGRESS_GAP = 6;
+const WORKSHOP_TASK_ACTION_WIDTH = 64;
+const WORKSHOP_TASK_ACTION_HEIGHT = 24;
 const WORKSHOP_TASK_DEFAULT_PROGRESS_TOP =
   WORKSHOP_TASK_ICON_SIZE + WORKSHOP_TASK_PROGRESS_GAP;
 const WORKSHOP_TASK_DEFAULT_ROW_HEIGHT =
   WORKSHOP_TASK_DEFAULT_PROGRESS_TOP + PIXI_UI_GEOMETRY.progressTotalHeight;
 const WORKSHOP_REQUEST_TITLE_RIBBON_WIDTH = 300;
-const WORKSHOP_REQUEST_TITLE_RIBBON_SCALE = 0.805;
-const WORKSHOP_REQUEST_TITLE_RIBBON_Y = -16;
-const WORKSHOP_REQUEST_CONTENT_TOP = 19;
+const WORKSHOP_REQUEST_TITLE_RIBBON_SCALE = 0.8855;
+const WORKSHOP_REQUEST_TITLE_RIBBON_Y = -17;
+const WORKSHOP_REQUEST_CONTENT_TOP = 16;
 const WORKSHOP_SIDE_LABEL_FILL = '#ffffff';
 const WORKSHOP_SIDE_LABEL_STROKE = '#0a0a0a';
 const REQUEST_PROGRESS_UPDATE_DURATION_MS = 220;
@@ -1547,15 +1551,20 @@ export class WorkshopTaskRow {
       WORKSHOP_TASK_ROW_TEXT_TOP,
     );
     this.value.position.set(
-      width - (this.action.root.visible ? 64 : 0),
+      width - (this.action.root.visible ? WORKSHOP_TASK_ACTION_WIDTH : 0),
       WORKSHOP_TASK_ROW_TEXT_TOP,
     );
-    this.action.setBounds(width - 58, 4, 58, 20);
+    this.action.setBounds(
+      width - WORKSHOP_TASK_ACTION_WIDTH,
+      4,
+      WORKSHOP_TASK_ACTION_WIDTH,
+      WORKSHOP_TASK_ACTION_HEIGHT,
+    );
     const contentBottom = Math.max(
       iconSize,
       WORKSHOP_TASK_ROW_TEXT_TOP + this.label.height,
       WORKSHOP_TASK_ROW_TEXT_TOP + this.value.height,
-      this.action.root.visible ? 24 : 0,
+      this.action.root.visible ? 4 + WORKSHOP_TASK_ACTION_HEIGHT : 0,
     );
     const progressTop = contentBottom + WORKSHOP_TASK_PROGRESS_GAP;
     this.progress.setBounds(
@@ -2022,7 +2031,22 @@ export class WorkshopSummonControl {
       SUMMON_BUTTON_WIDTH,
       SUMMON_BUTTON_HEIGHT,
     );
-    this.info.setBounds(60, -50, 18, 18);
+    this.info.setBounds(
+      60,
+      -50,
+      SUMMON_INFO_VISUAL_SIZE,
+      SUMMON_INFO_VISUAL_SIZE,
+    );
+    const summonInfoHitInset =
+      (SUMMON_INFO_VISUAL_SIZE - SUMMON_INFO_HIT_SIZE) / 2;
+    const summonInfoHitArea = new Rectangle(
+      summonInfoHitInset,
+      summonInfoHitInset,
+      SUMMON_INFO_HIT_SIZE,
+      SUMMON_INFO_HIT_SIZE,
+    );
+    this.info.hitArea = summonInfoHitArea;
+    this.info.boundsArea = summonInfoHitArea;
     this.page.registerSemanticTarget({
       semanticId: 'workshop.summonArea',
       displayObject: this.circle,

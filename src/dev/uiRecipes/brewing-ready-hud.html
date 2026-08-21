@@ -78,6 +78,8 @@
       const missingIngredients = parameters.get('availability') === 'missing';
       const emptyCauldron = state === 'empty';
       const autoWaiting = parameters.get('auto') === 'waiting';
+      const showConfigurationControls =
+        parameters.get('controls') === 'true';
       const useLongPotionName = parameters.get('longName') === 'true';
       const cauldronCount = Math.min(
         5,
@@ -170,6 +172,14 @@
         activeBrew,
         autoBrewEnabled: autoWaiting,
         autoBrewArmed: autoWaiting,
+        autoBrewAvailable: showConfigurationControls || autoWaiting,
+        brewQuantity: 2,
+        maxBrewQuantity: showConfigurationControls ? 3 : 1,
+        quantityAction: {
+          enabled: true,
+          label: 'x2',
+          nextQuantity: 3,
+        },
         recipeReadiness: emptyCauldron ? null : {
           hasEnoughIngredients: !missingIngredients,
           hasEnoughMana: true,
@@ -230,6 +240,16 @@
           hud.bind(hudModel, hudActions);
           return true;
         },
+        selectBrewQuantity: (quantity) => {
+          recipeState.dataset.quantity = String(quantity);
+          return true;
+        },
+        toggleAutoBrew: () => {
+          recipeState.dataset.autoToggles = String(
+            Number(recipeState.dataset.autoToggles ?? 0) + 1,
+          );
+          return true;
+        },
       };
       hud.bind(hudModel, hudActions);
       const projection = applicationManager.getProjection();
@@ -283,11 +303,6 @@
         worldChat.panel.height;
       recipeState.dataset.chatToTabsGap = String(
         bottomPanel.tabsRoot.y - chatBottom,
-      );
-      recipeState.dataset.previewTopGap = String(
-        hud.carouselPanel.root.y +
-          hud.ingredientSlots[0].root.y -
-          (hud.recipes.root.y + hud.recipes.height),
       );
       if (parameters.get('repeatTheme') === 'true') {
         hud.applyTheme(runtime.themeManager.getSnapshot());

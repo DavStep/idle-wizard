@@ -156,7 +156,7 @@ async function mountBrewing(context, fixture) {
         ok: reducedMs > 0,
         reducedSeconds: reducedMs / 1_000,
         remainingMs: Math.max(0, previousRemainingMs - reducedMs),
-        cooldownMs: 720,
+        cooldownMs: 504,
       };
     },
     openRecipes: () => context.emit('recipesOpened'),

@@ -13,6 +13,8 @@ import { researchTimeResearchIds } from "./research/researchTimeResearch.js";
 import { stallStaffingResearchIds } from "./research/stallStaffingResearch.js";
 import { taskRequirementTypes } from "./tasks/taskRequirementTypes.js";
 import { gardenBulkResearchIds } from "./garden/gardenBulkResearch.js";
+import { GARDEN_PLOT_TAP_COOLDOWN_MS } from "./garden/managers/GardenTapAccelerationManager.js";
+import { BREWING_CAULDRON_TAP_COOLDOWN_MS } from "./brewing/managers/BrewingTapAccelerationManager.js";
 import { manaResearchIds } from "./research/manaResearch.js";
 
 function createMemoryStorage() {
@@ -5540,7 +5542,7 @@ describe("GameplayFacade", () => {
       phase: "growing",
       reducedSeconds: 1,
       remainingMs: 11_000,
-      cooldownMs: 720,
+      cooldownMs: GARDEN_PLOT_TAP_COOLDOWN_MS,
     });
     expect(gameplayFacade.getSnapshot().garden.plot.tiles[0]).toMatchObject({
       phase: "growing",
@@ -5575,7 +5577,7 @@ describe("GameplayFacade", () => {
       phase: "brewing",
       reducedSeconds: 1,
       remainingMs: 11_000,
-      cooldownMs: 720,
+      cooldownMs: BREWING_CAULDRON_TAP_COOLDOWN_MS,
     });
     expect(gameplayFacade.getSnapshot().brewing.activeBrew).toMatchObject({
       phase: "brewing",

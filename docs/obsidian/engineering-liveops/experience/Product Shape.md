@@ -212,6 +212,7 @@ experience_type: product-shape
 - Garden no-drag plot actions must suppress retargeted herb/seed label clicks too; after planting, the new herb label can appear under the release point and reopen choices.
 - Ready Garden plot boxes should harvest from the visible plot frame, not only the plant/action label; the plant icon is too small as the sole tap target.
 - Active Garden plot acceleration is release-only and locks the plot for the complete feedback sequence; reduced motion removes movement but must keep the same gameplay cooldown.
+- Automated Garden acceleration resolves the nearest visible herb from the release point and animates only that per-slot tap container; keep the soil and sibling herbs still while the cooldown remains plot-wide.
 - Ready Garden plot boxes should not show a visible `harvest` label; the ready animation and plot tap affordance are enough.
 - Ready Garden plot taps need a no-drag world pointerup path with click dedupe; WebView can turn small finger drift into pan and drop the native click.
 - Buyable Garden plot slots also need a no-drag world pointerup path with click dedupe; otherwise WebView drift can pan the world and suppress the native buy click.

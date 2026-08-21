@@ -5,7 +5,6 @@ import { createUiEditorPixiSurface } from '../../../../uiEditor/widgets/createUi
 import { createUiEditorPixiThumbnail } from '../../../../uiEditor/widgets/createUiEditorPixiThumbnail.js';
 import { DEFAULT_PIXI_THEME_SNAPSHOT } from '../../theme/PixiThemeTokens.js';
 import {
-  GARDEN_PIXI_GEOMETRY,
   GardenPlotTooltip,
   GardenPlotWidget,
   GardenSeedActionBar,
@@ -113,7 +112,7 @@ const WIDGETS = [
     sectionId: "composite-widgets",
     properties: productionProperties(
       "GardenPlotWidget",
-      "Wide five-slot automated plot with seed, Auto, and xN controls",
+      "Grid-aligned five-slot automated plot with progress and a right-side seed/Auto/xN control block",
     ),
     scenarios: [
       scenario(
@@ -259,12 +258,12 @@ function createPlotControl({
   plot.setBounds(0, 0, width);
   if (fixture.tapFeedback === true) {
     const now = page.timeSource();
-    plot.startTapAcceleration({ ok: true, reducedSeconds: 1, cooldownMs: 720 }, now - 336);
+    plot.startTapAcceleration({ ok: true, reducedSeconds: 1, cooldownMs: 504 }, now - 336);
     plot.updateTime(now);
   }
   return {
     destroy: () => plot.destroy(),
-    height: GARDEN_PIXI_GEOMETRY.rowHeight,
+    height: plot.getLayoutHeight(),
     root: plot.root,
     width,
   };

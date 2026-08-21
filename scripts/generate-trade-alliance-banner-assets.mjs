@@ -9,6 +9,8 @@ const ICON_DIRECTORY = path.join(ROOT_DIRECTORY, 'assets/game/source/icons');
 const SOURCE_PATH = path.join(ICON_DIRECTORY, 'icon-side-alliance-root-run.png');
 const BASE_PATH = path.join(ICON_DIRECTORY, 'icon-alliance-banner-base.png');
 const CLOTH_PATH = path.join(ICON_DIRECTORY, 'icon-alliance-banner-cloth-mask.png');
+const CLOTH_MIN_X = 25;
+const CLOTH_MAX_X = 102;
 
 function getHue(red, green, blue) {
   const maximum = Math.max(red, green, blue);
@@ -29,8 +31,8 @@ function getHue(red, green, blue) {
   return hue < 0 ? hue + 360 : hue;
 }
 
-function isPurpleCloth(red, green, blue, alpha) {
-  if (alpha === 0) {
+function isPurpleCloth(red, green, blue, alpha, x) {
+  if (alpha === 0 || x < CLOTH_MIN_X || x > CLOTH_MAX_X) {
     return false;
   }
   const maximum = Math.max(red, green, blue);
@@ -45,12 +47,13 @@ const base = new PNG({ width: source.width, height: source.height });
 const cloth = new PNG({ width: source.width, height: source.height });
 
 for (let offset = 0; offset < source.data.length; offset += 4) {
+  const x = (offset / 4) % source.width;
   const red = source.data[offset];
   const green = source.data[offset + 1];
   const blue = source.data[offset + 2];
   const alpha = source.data[offset + 3];
 
-  if (isPurpleCloth(red, green, blue, alpha)) {
+  if (isPurpleCloth(red, green, blue, alpha, x)) {
     const luminance = red * 0.2126 + green * 0.7152 + blue * 0.0722;
     const shade = Math.max(48, Math.min(255, Math.round((luminance / 74) * 255)));
     cloth.data[offset] = shade;

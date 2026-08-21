@@ -247,15 +247,15 @@ const CARD_ACTION_GAP = 8;
 
 const SWATCH_COLORS = Object.freeze({
   ink: null,
-  red: '#8a3530',
-  amber: '#815b24',
-  green: '#356a3f',
-  teal: '#276566',
-  blue: '#3a587d',
-  violet: '#65457c',
-  magenta: '#793b68',
-  brown: '#604b37',
-  slate: '#4e5967',
+  red: '#a33f42',
+  amber: '#9d7028',
+  green: '#43804d',
+  teal: '#3d817e',
+  blue: '#4b6d98',
+  violet: '#7c5b94',
+  magenta: '#99527f',
+  brown: '#76543e',
+  slate: '#626b79',
 });
 
 /**

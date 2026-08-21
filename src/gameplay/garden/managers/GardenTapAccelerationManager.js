@@ -1,5 +1,5 @@
 export const GARDEN_PLOT_TAP_REDUCTION_SECONDS = 1;
-export const GARDEN_PLOT_TAP_COOLDOWN_MS = 720;
+export const GARDEN_PLOT_TAP_COOLDOWN_MS = 504;
 
 export class GardenTapAccelerationManager {
   constructor({ gardenTileEntityManager, now = () => Date.now() } = {}) {

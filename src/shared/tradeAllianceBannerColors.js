@@ -16,15 +16,15 @@ export const TRADE_ALLIANCE_BANNER_COLORS = Object.freeze([
 
 export const TRADE_ALLIANCE_EMBLEM_COLORS = Object.freeze([
   Object.freeze({ id: 'white', label: 'White', value: '#fff9ed' }),
-  Object.freeze({ id: 'gold', label: 'Gold', value: '#f7c84b' }),
-  Object.freeze({ id: 'silver', label: 'Silver', value: '#ccd6e2' }),
-  Object.freeze({ id: 'red', label: 'Coral', value: '#ef675a' }),
-  Object.freeze({ id: 'amber', label: 'Orange', value: '#ffa044' }),
-  Object.freeze({ id: 'green', label: 'Leaf', value: '#8bd66a' }),
-  Object.freeze({ id: 'teal', label: 'Aqua', value: '#68d8cf' }),
-  Object.freeze({ id: 'blue', label: 'Sky', value: '#78adff' }),
-  Object.freeze({ id: 'violet', label: 'Lilac', value: '#b997f2' }),
-  Object.freeze({ id: 'magenta', label: 'Rose', value: '#ef8bc8' }),
+  Object.freeze({ id: 'gold', label: 'Gold', value: '#e4b64e' }),
+  Object.freeze({ id: 'silver', label: 'Silver', value: '#b8c2cf' }),
+  Object.freeze({ id: 'red', label: 'Crimson', value: '#d96961' }),
+  Object.freeze({ id: 'amber', label: 'Amber', value: '#e39a4f' }),
+  Object.freeze({ id: 'green', label: 'Forest', value: '#71b268' }),
+  Object.freeze({ id: 'teal', label: 'Teal', value: '#62b7b0' }),
+  Object.freeze({ id: 'blue', label: 'Azure', value: '#6f9ddd' }),
+  Object.freeze({ id: 'violet', label: 'Violet', value: '#a47fd4' }),
+  Object.freeze({ id: 'magenta', label: 'Plum', value: '#d477ac' }),
 ]);
 
 const BANNER_COLORS_BY_ID = new Map(

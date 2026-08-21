@@ -7,6 +7,8 @@ import {
 
 describe('GardenTapAccelerationManager', () => {
   it('removes one second and rejects repeated taps until the feedback window ends', () => {
+    expect(GARDEN_PLOT_TAP_COOLDOWN_MS).toBe(504);
+
     let now = 1_000;
     const reduceTileProcessRemainingSeconds = vi.fn(() => ({
       phase: 'growing',

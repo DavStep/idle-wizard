@@ -1434,7 +1434,6 @@ export class PixiPagesFacade {
       shop: {
         selectTab: (_legacyId, tabId) => {
           this.shopTabId = tabId ?? _legacyId ?? "traders";
-          this.refreshPage("shop");
           this.syncExternalDataRetention();
           return true;
         },

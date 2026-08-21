@@ -42,6 +42,7 @@ export class PixiTextField extends Container {
     inputKind = 'text',
     maxLength = null,
     retainOnSubmit = false,
+    valueColor = null,
     onSubmit = null,
     onCancel = null,
     onChange = null,
@@ -59,6 +60,7 @@ export class PixiTextField extends Container {
     this.inputKind = inputKind;
     this.maxLength = maxLength;
     this.retainOnSubmit = retainOnSubmit === true;
+    this.valueColor = valueColor;
     this.onSubmit = onSubmit;
     this.onCancel = onCancel;
     this.onChange = onChange;
@@ -158,6 +160,12 @@ export class PixiTextField extends Container {
     if (notify) {
       this.onChange?.(this.value);
     }
+    return this;
+  }
+
+  setValueColor(valueColor) {
+    this.valueColor = valueColor;
+    this.redrawTextState();
     return this;
   }
 
@@ -350,7 +358,7 @@ export class PixiTextField extends Container {
           : illustratedInset
           ? showingPlaceholder
             ? INSET_PLACEHOLDER
-            : INSET_TEXT
+            : this.valueColor ?? INSET_TEXT
           : showingPlaceholder
             ? 'muted'
             : 'text',
@@ -408,7 +416,7 @@ export class PixiTextField extends Container {
       accountUsername
         ? '#ffffff'
         : illustratedInset
-          ? INSET_TEXT
+          ? this.valueColor ?? INSET_TEXT
           : this.theme.text,
     );
     this.caretGraphic
@@ -422,7 +430,7 @@ export class PixiTextField extends Container {
         accountUsername
           ? '#ffffff'
           : illustratedInset
-            ? INSET_TEXT
+            ? this.valueColor ?? INSET_TEXT
             : this.theme.text,
       );
     this.caretGraphic.alpha = 1;
