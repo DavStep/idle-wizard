@@ -8,7 +8,7 @@ describe('PixiGlobalDialogPresenter', () => {
     const harness = createHarness({ runtimeInitialized: false });
 
     expect(harness.renderFacade.getUiRuntime).not.toHaveBeenCalled();
-    expect(harness.factories.size).toBe(9);
+    expect(harness.factories.size).toBe(11);
     expect([...harness.factories.keys()]).toEqual([
       GLOBAL_DIALOG_IDS.SETTINGS,
       GLOBAL_DIALOG_IDS.FEEDBACK,
@@ -16,6 +16,8 @@ describe('PixiGlobalDialogPresenter', () => {
       GLOBAL_DIALOG_IDS.LEVEL,
       GLOBAL_DIALOG_IDS.INBOX,
       GLOBAL_DIALOG_IDS.PLAYER,
+      GLOBAL_DIALOG_IDS.FRIENDS,
+      GLOBAL_DIALOG_IDS.DIRECT_MESSAGE,
       GLOBAL_DIALOG_IDS.ALLIANCE,
       GLOBAL_DIALOG_IDS.ANNOUNCEMENT,
       GLOBAL_DIALOG_IDS.CONFIRMATION,
@@ -98,7 +100,7 @@ describe('PixiGlobalDialogPresenter', () => {
 
     expect(harness.presenter.open('settings')).toBe(false);
     expect(harness.runtime.openDialog).not.toHaveBeenCalled();
-    expect(harness.factories.size).toBe(9);
+    expect(harness.factories.size).toBe(11);
 
     harness.presenter.mount();
     const first = harness.presenter.open('settings', {

@@ -92,10 +92,12 @@ complete row and the next manual plot resumes the three-column grid below it.
 Plots and seed-dialog rows are keyed high-water pools. The persistent
 `GardenSeedActionBar` keeps one room-level seed choice and opens the retained
 seed picker. Its researched `Plant All` and `Harvest All` actions reuse the
-green shared button skin; `Seeds` keeps the yellow picker skin. Before bulk
-actions unlock, the lone `Seeds` control stays centered at a long `220px`
-source width instead of spanning the row. With multiple visible actions, the
-controls divide the row evenly. `Plant All` plants the toolbar seed into every
+green shared button skin. The yellow `Seeds` picker combines its action and
+selection in one `36px` control: selected state adds the seed-pack art plus a
+compact `<seed> · <owned>` line, while empty state keeps the centered `Seeds`
+label. Before bulk actions unlock, the lone picker stays centered at a long
+`220px` source width instead of spanning the row. With multiple visible
+actions, the controls divide the row evenly. `Plant All` plants the toolbar seed into every
 eligible empty plot and explains missing selection, empty capacity, or
 insufficient stock through shared flyouts. `Harvest All` remains actionable
 when no plot is ready and reuses the shared reward flyout for `Nothing to
@@ -122,11 +124,13 @@ the entire row shares the standard compact press/release feedback. Its
 standalone editor entry is `Inventory Choice Row` under
 `UI Widgets / Composite widgets / Brewing`, with unselected, selected,
 pressed, and unavailable scenarios.
-Successful single-plot planting, `Plant All`, and seed swaps give the selected
-seed indicator one `220ms` use response: the seed-pack icon drops `6px` while
-the complete row compresses slightly from its center, then both settle through
-one restrained snap. Failed actions do not animate, and reduced motion keeps
-the indicator at rest.
+Successful single-plot planting, `Plant All`, automated planting, and seed
+swaps run one `500ms` tile-owned sequence. One seed pack starts `36px` above
+the plot center and falls straight down. It hides on center impact, the soil
+boinks from its center pivot, and the committed herb remains hidden until the
+soil settles before beginning its normal growth motion. The persistent Seeds
+picker stays still. Failed actions do not animate, hidden-room changes do not
+replay on return, and reduced motion reveals the growing state immediately.
 Successful single-plot planting and harvesting use the dedicated Garden action
 sound banks instead of the generic click. Plot registrations suppress the
 router click; purchases, dialogs, and timer acceleration retain their existing
@@ -136,19 +140,22 @@ non-persistent four-row visual-reference state.
 Open `/src/dev/uiRecipes/garden-plots.html` for the deterministic,
 non-persistent empty-plot state used to verify label removal and the `no seed`
 press flyout. Add `?planting=1` to make empty plots accept the selected seed
-and replay the production planted-tile seed-pack flyout. Add `?overflow=1` for
+and replay the production center-drop, soil-boink, and herb-reveal sequence.
+Add `?overflow=1` for
 the valid 12-plot state used to verify vertical drag, wheel scrolling, the
 overflow-only scrollbar, and hard resting bounds. Add
 `?growing=1&progress=gradient` for the four-growing-plot regression
 state that verifies Garden timer rails keep their green role color even when
 the player-wide progress style is gradient. Add
 `?automated=1&tapAcceleration=1` to exercise the production per-herb
-timer-reduction feedback with live recipe time. The default recipe shows both
-researched bulk actions with a selected Nettle seed; use `?bulk=plant` for the
+timer-reduction feedback with live recipe time. Add `?automated=1&harvest=1`
+to make the long bed ready and emit the production harvest flyout from each
+matching herb slot when pressed. The default recipe shows both researched bulk
+actions with a selected Nettle seed; use `?bulk=plant` for the
 level-5 two-action composition and `?bulk=locked` for the pre-research
-Seeds-only composition. Successful planting uses the shared transient
-summon-seed toss at the affected plot, with one seed pack per consumed seed and
-a six-pack visual cap. The selected seed label stays still and uses Title Case;
+Seeds-only composition. Successful planting uses one centered seed-pack drop
+at each affected plot, independent of the number of seeds consumed. The
+selected seed content inside the picker stays still;
 the selected seed itself is restored from the gameplay save after reopening.
 
 The cancel-progress confirmation uses the approved red danger title plaque,

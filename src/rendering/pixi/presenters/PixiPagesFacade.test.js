@@ -34,6 +34,7 @@ describe("PixiPagesFacade", () => {
       "research",
       "shop",
       "guild",
+      "alliance",
       "prestige",
     ]);
 
@@ -75,6 +76,80 @@ describe("PixiPagesFacade", () => {
 
     pages.unmount();
     expect(harness.runtime.deactivatePage).toHaveBeenCalledTimes(1);
+  });
+
+  it("opens the Alliance workspace and sends chat through the alliance facade", async () => {
+    const harness = createHarness();
+    const sendChatMessage = vi.fn(() => Promise.resolve({ ok: true }));
+    harness.dependencies.tradeAllianceFacade.getSnapshot.mockReturnValue({
+      allianceChatMessages: [
+        {
+          body: "Welcome to the alliance hall.",
+          id: "alliance-message-1",
+          username: "Luna",
+        },
+      ],
+      alliances: [],
+      applications: [],
+      canEditSettings: true,
+      canManageApplications: true,
+      connected: true,
+      members: [
+        {
+          allianceId: "night-owls",
+          memberIdentity: "luna",
+          playerLevel: 14,
+          role: "tradeMaster",
+          username: "Luna",
+        },
+      ],
+      ownAlliance: {
+        allianceId: "night-owls",
+        bannerColor: "violet",
+        description: "Patient traders building together.",
+        emblemColor: "white",
+        emblemId: "owl",
+        joinMode: "apply",
+        name: "Night Owls",
+        notice: "Support every member.",
+        tag: "OWL",
+      },
+      ownMember: { role: "tradeMaster" },
+      quests: [],
+    });
+    harness.dependencies.tradeAllianceFacade.sendChatMessage = sendChatMessage;
+    const pages = new PixiPagesFacade(harness.dependencies);
+
+    pages.mount();
+    const allianceAction = harness
+      .getBoundPage("workshop")
+      .workshop.features.find((feature) => feature.id === "alliance");
+    expect(allianceAction.onActivate()).toBe(true);
+    expect(pages.getCurrentPageId()).toBe("alliance");
+    expect(harness.getBoundPage("alliance")).toMatchObject({
+      ownedAlliance: true,
+      selectedTabId: "home",
+    });
+    expect(harness.getBoundGlobal("chrome.bottom")).toMatchObject({
+      allianceHud: { selectedTabId: "home" },
+      currentPageId: "alliance",
+      hudMode: "alliance",
+    });
+    expect(harness.getBoundGlobal("chrome.chat").visible).toBe(false);
+
+    expect(
+      harness.getBoundGlobal("chrome.bottom").actions.selectAllianceTab("chat"),
+    ).toBe(true);
+    const chat = harness.getBoundPage("alliance");
+    expect(chat.selectedTabId).toBe("chat");
+    expect(chat.chat.rows[0]).toMatchObject({
+      body: "Welcome to the alliance hall.",
+      username: "Luna",
+    });
+    await expect(chat.chat.onSubmit("Alliance only")).resolves.toEqual({
+      ok: true,
+    });
+    expect(sendChatMessage).toHaveBeenCalledWith("Alliance only");
   });
 
   it("switches retained Market tabs without rebuilding the page", () => {
@@ -403,6 +478,19 @@ describe("PixiPagesFacade", () => {
         },
       },
     );
+  });
+
+  it("opens the Workshop Bag from top chrome without leaving Workshop", () => {
+    const harness = createHarness();
+    const pages = new PixiPagesFacade(harness.dependencies);
+    pages.mount();
+
+    const topPanel = harness.getBoundGlobal("chrome.top");
+    expect(topPanel.showBag).toBe(true);
+    expect(topPanel.actions.openBag()).toBe(true);
+
+    expect(pages.getCurrentPageId()).toBe("workshop");
+    expect(harness.pageSurface.openDialog).toHaveBeenCalledWith("bag");
   });
 
   it.each([

@@ -5,6 +5,13 @@ upload script posts the section whose heading matches `package.json` `version`.
 Write these developer-to-player notes only in Idle Wizard terms. Do not mention
 other game names, source projects, ports, or implementation provenance.
 
+## 0.3.84
+
+- Added Friends with requests, pending invitations, private conversations, unread indicators, and relationship actions from player profiles.
+- Turned Trade Alliances into a dedicated workspace with Home, Quests, Requests, Chat, and Settings destinations based on each member's permissions.
+- Refined the Workshop top panel with a clearer Coin/Mana/Bag layout, live mana generation beneath the total, and room-specific currencies outside the Workshop.
+- Improved Garden planting with a combined seed picker and count, clearer automated plots, and new seed-drop, soil, growth, and harvest feedback.
+
 ## 0.3.83
 
 - Refined automated Garden plots with a cleaner wide soil bed, larger Seed/Auto/quantity controls, steadier crop placement, and tap feedback that follows the herb you touched.

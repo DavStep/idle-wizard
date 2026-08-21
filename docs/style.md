@@ -107,6 +107,7 @@ The game should look like a polished fantasy workshop HUD: layered illustrated r
 
 ## Layout
 
+- Shared top chrome keeps three equal slots. Workshop renders Coin, Mana, and Bag: Mana is centered with `current/cap` and the blue regeneration rate beneath it, and Bag occupies the right slot. Other rooms render Coin, Amethyst, and their existing Amber, Ruby, or Emerald context currency, with no Mana or Bag. Keep Settings at its original size. The panel ends at source y `88`, then preserves the existing `16px` gap before room content at y `104`.
 - Use a fixed `390px` authored width and derive portrait height from the available safe viewport.
 - Keep the authored layout mobile-first, using Root Run's `390x844` surface as the reference QA size rather than a fixed runtime height.
 - Scale source UI by portrait width-fit or wide-desktop contain-fit, including desktop upscaling, so both web and mobile views fit without stretching.

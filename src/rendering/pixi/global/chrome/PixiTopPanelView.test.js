@@ -43,12 +43,14 @@ describe('PixiTopPanelView', () => {
       username: 'mira',
       character: 'mira',
       frameTint: 0xb54c40,
-      mana: { current: 41.9, cap: 80, perSecond: 2.25 },
+      showBag: true,
       coin: 1200,
       amethyst: 320,
       contextCurrency: {
-        resource: 'ruby',
-        amount: 9,
+        resource: 'mana',
+        amount: 41.9,
+        cap: 80,
+        perSecond: 2.25,
         visible: true,
       },
       level: 4,
@@ -74,13 +76,20 @@ describe('PixiTopPanelView', () => {
         view.username.fontSize,
       ),
     });
-    expect(view.mana.amount).toBe('41/80');
+    expect(view.contextCurrency.amount).toBe('41/80');
+    expect(view.contextCurrency.position.x).toBe(466);
+    expect(view.amethyst.visible).toBe(false);
+    expect(view.bag.visible).toBe(true);
     expect(view.manaRate.text).toBe('+2.25/s');
+    expect(view.manaRate.visible).toBe(true);
     expect(view.coin.amount).toBe('1.2k');
     expect(view.amethyst.amount).toBe('320');
     expect(semanticRegistry.has('top.amethyst')).toBe(true);
-    expect(view.contextCurrency.resource).toBe('ruby');
+    expect(view.contextCurrency.resource).toBe('mana');
     expect(semanticRegistry.has('top.contextCurrency')).toBe(true);
+    expect(semanticRegistry.get('top.mana')?.displayObject).toBe(
+      view.contextCurrency,
+    );
     expect(view.levelValue.text).toBe('4');
     expect(assets.getTexture).toHaveBeenCalledWith(
       PIXI_ROOT_RUN_ASSETS.topHudLevelStar,
@@ -186,17 +195,19 @@ describe('PixiTopPanelView', () => {
     expect(view.settingsControl.position.x).toBe(984);
     expect(view.levelRail.position.x).toBe(203);
     expect(view.levelRail.hitArea.width).toBe(760);
+    expect(view.levelRail.levelStar.width).toBe(96);
+    expect(view.levelRail.levelStar.height).toBe(96);
     expect(view.levelRail.panel.width).toBe(754);
     expect(view.levelRail.track.width).toBe(729);
     expect(view.coin.position.x).toBe(209);
-    expect(view.mana.position.x).toBe(400);
-    expect(view.amethyst.position.x).toBe(591);
-    expect(view.contextCurrency.position.x).toBe(782);
-    expect(view.coin.background.width).toBe(181);
-    expect(view.mana.background.width).toBe(181);
-    expect(view.amethyst.background.width).toBe(181);
-    expect(view.contextCurrency.background.width).toBe(181);
-    expect(view.manaRate.position.x).toBe(490.5);
+    expect(view.amethyst.position.x).toBe(466);
+    expect(view.contextCurrency.position.x).toBe(466);
+    expect(view.bag.position.x).toBe(723);
+    expect(view.coin.background.width).toBe(240);
+    expect(view.amethyst.background.width).toBe(240);
+    expect(view.contextCurrency.background.width).toBe(240);
+    expect(view.bag.background.width).toBe(240);
+    expect(view.manaRate.position).toMatchObject({ x: 586, y: 174 });
 
     const avatarLeftInset = view.topHudRoot.position.x;
     const settingsRightInset =
@@ -212,7 +223,7 @@ describe('PixiTopPanelView', () => {
       view.levelRail.position.x +
         view.levelRail.hitArea.width,
     ).toBe(
-      view.contextCurrency.position.x + view.contextCurrency.background.width,
+      view.bag.position.x + view.bag.background.width,
     );
     expect(view.levelRail.track).toBeInstanceOf(
       NineSliceSprite,
@@ -236,6 +247,9 @@ describe('PixiTopPanelView', () => {
     expect(
       semanticRegistry.get('top.settings')?.displayObject,
     ).toBe(view.settingsControl);
+    expect(
+      semanticRegistry.get('top.bag')?.displayObject,
+    ).toBe(view.bag);
     expect(
       semanticRegistry.resolve('top.coin'),
     ).toMatchObject({
@@ -272,6 +286,72 @@ describe('PixiTopPanelView', () => {
     expect(
       PIXI_UI_GEOMETRY.roomContentTop - panelHeight,
     ).toBe(16);
+
+    view.destroy();
+  });
+
+  it('shows mana regeneration only when Mana owns the context slot', () => {
+    const view = new PixiTopPanelView({
+      assets: createAssets(),
+    });
+
+    view.bind({
+      showBag: true,
+      contextCurrency: {
+        amount: 40,
+        cap: 50,
+        perSecond: 1,
+        resource: 'mana',
+      },
+    });
+    expect(view.contextCurrency.amount).toBe('40/50');
+    expect(view.contextCurrency.position.x).toBe(466);
+    expect(view.bag.visible).toBe(true);
+    expect(view.manaRate.visible).toBe(true);
+
+    view.bind({
+      contextCurrency: {
+        amount: 9,
+        resource: 'ruby',
+      },
+    });
+    expect(view.contextCurrency.amount).toBe('9');
+    expect(view.contextCurrency.position.x).toBe(723);
+    expect(view.bag.visible).toBe(false);
+    expect(view.manaRate.visible).toBe(false);
+
+    view.destroy();
+  });
+
+  it('opens the Workshop Bag from the third top-HUD slot', () => {
+    const registrations = [];
+    const openBag = vi.fn();
+    const view = new PixiTopPanelView({
+      assets: createAssets(),
+      inputRouter: {
+        registerPressTarget: vi.fn((descriptor) => {
+          registrations.push(descriptor);
+          return { unregister: vi.fn() };
+        }),
+      },
+    });
+    view.activate();
+    view.bind({
+      actions: { openBag },
+      contextCurrency: { resource: 'mana' },
+      showBag: true,
+    });
+
+    const bagPress = registrations.find(({ id }) => id === 'top.bag');
+    expect(bagPress).toMatchObject({
+      displayObject: view.bag,
+      excludePageSwipe: true,
+      fallbackHitTest: true,
+      haptic: 'light',
+    });
+    expect(bagPress.enabled()).toBe(true);
+    bagPress.onActivate();
+    expect(openBag).toHaveBeenCalledTimes(1);
 
     view.destroy();
   });
@@ -410,7 +490,7 @@ describe('PixiTopPanelView', () => {
       quest: { visible: false },
       actions: { openLevel },
     });
-    expect(view.levelRail.hitArea.width).toBe(93);
+    expect(view.levelRail.hitArea.width).toBe(96);
 
     view.destroy();
   });

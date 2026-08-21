@@ -28,7 +28,11 @@ import {
   normalizeGardenSelectedSeedItemKey,
 } from './saveGardenNormalizer';
 import { normalizeResearchForSaveMerge } from './playerGameplayResearchMerge';
-import { assertMarketScope, getMarketScopedKey, normalizeMarketId } from './marketScope';
+import {
+  assertMarketScope,
+  getMarketScopedKey,
+  normalizeMarketId,
+} from './marketScope';
 import {
   appendMissingItemConfigRows as appendMissingItemConfigRowsByKey,
   normalizeLegacySeedSummonCosts,
@@ -113,6 +117,7 @@ const ENABLE_NPC_MARKET_PRESSURE = true;
 const WORLD_CHAT_UNLOCK_LEVEL = 3;
 const MAX_USERNAME_LENGTH = 24;
 const MAX_WORLD_CHAT_MESSAGE_LENGTH = 160;
+const MAX_DIRECT_MESSAGE_LENGTH = MAX_WORLD_CHAT_MESSAGE_LENGTH;
 const MAX_MAINTENANCE_MESSAGE_LENGTH = 160;
 const MAX_FEEDBACK_BODY_LENGTH = 2000;
 const MAX_TRADE_ALLIANCE_MEMBERS = 50;
@@ -146,6 +151,11 @@ const DEFAULT_TRADE_ALLIANCE_EMBLEM = 'unity';
 const WORLD_CHAT_RATE_LIMIT_WINDOW_MICROS = 15n * 1_000_000n;
 const WORLD_CHAT_RATE_LIMIT_MAX_MESSAGES = 3;
 const WORLD_CHAT_GLOBAL_RATE_LIMIT_MAX_MESSAGES = 8;
+const FRIEND_REQUEST_RATE_LIMIT_WINDOW_MICROS = 60n * 1_000_000n;
+const FRIEND_REQUEST_RATE_LIMIT_MAX_REQUESTS = 10;
+const DIRECT_MESSAGE_RATE_LIMIT_WINDOW_MICROS =
+  WORLD_CHAT_RATE_LIMIT_WINDOW_MICROS;
+const DIRECT_MESSAGE_RATE_LIMIT_MAX_MESSAGES = 5;
 const NPC_MARKET_FILLED_ANNOUNCEMENT_BODY =
   'traders filled the market. go see what they need.';
 const TRADE_ALLIANCE_CHAT_RATE_LIMIT_WINDOW_MICROS = WORLD_CHAT_RATE_LIMIT_WINDOW_MICROS;
@@ -235,7 +245,12 @@ const WORLD_EVENT_REWARD_TIERS = [
   { minRank: 3, maxRank: 3, emeraldReward: 2, crystalReward: 5 },
   { minRank: 4, maxRank: 10, emeraldReward: 1, crystalReward: 3 },
   { minRank: 11, maxRank: 25, emeraldReward: 0, crystalReward: 2 },
-  { minRank: 26, maxRank: Number.MAX_SAFE_INTEGER, emeraldReward: 0, crystalReward: 1 },
+  {
+    minRank: 26,
+    maxRank: Number.MAX_SAFE_INTEGER,
+    emeraldReward: 0,
+    crystalReward: 1,
+  },
 ];
 const PERIOD_DAY_MICROS = 86_400_000_000n;
 const PERIOD_HOUR_MICROS = 3_600_000_000n;
@@ -4642,7 +4657,11 @@ const emeraldResearchMultipliers = [2, 3, 4, 5];
 function getAdvancedResearchCostById(): Record<string, number> {
   const costs: Record<string, number> = {};
 
-  for (let stallNumber = 1; stallNumber <= STALL_STAFFING_RESEARCH_COUNT; stallNumber += 1) {
+  for (
+    let stallNumber = 1;
+    stallNumber <= STALL_STAFFING_RESEARCH_COUNT;
+    stallNumber += 1
+  ) {
     costs[`advanced:stallStaffing:${stallNumber}`] = stallNumber;
   }
 
@@ -4654,7 +4673,11 @@ function getAdvancedResearchCostById(): Record<string, number> {
     costs[`emerald:researchCost:${level}`] = level;
   }
 
-  for (let level = 1; level <= AUTOMATION_RESERVE_RESEARCH_MAX_LEVEL; level += 1) {
+  for (
+    let level = 1;
+    level <= AUTOMATION_RESERVE_RESEARCH_MAX_LEVEL;
+    level += 1
+  ) {
     costs[`advanced:automationReserve:${level}`] = level;
   }
 
@@ -5856,17 +5879,26 @@ const DEFAULT_MAINTENANCE_CONFIG_JSON = toGameConfigJson({
 });
 
 const gameConfigCatalog = [
-  { configKey: 'tasks', configJson: DEFAULT_CURRENT_TASKS_CONFIG_JSON },
-  { configKey: 'playerLevel', configJson: DEFAULT_PLAYER_LEVEL_CONFIG_JSON },
-  { configKey: 'garden', configJson: DEFAULT_GARDEN_CONFIG_JSON },
-  { configKey: 'shop', configJson: DEFAULT_SHOP_CONFIG_JSON },
-  { configKey: 'research', configJson: DEFAULT_RESEARCH_CONFIG_JSON },
-  { configKey: 'brewing', configJson: DEFAULT_BREWING_CONFIG_JSON },
-  { configKey: 'tradeAlliance', configJson: DEFAULT_TRADE_ALLIANCE_CONFIG_JSON },
-  { configKey: 'visualSettings', configJson: DEFAULT_VISUAL_SETTINGS_CONFIG_JSON },
-  { configKey: 'items', configJson: DEFAULT_ITEMS_CONFIG_JSON },
-  { configKey: 'potionRecipes', configJson: DEFAULT_POTION_RECIPES_CONFIG_JSON },
-  { configKey: 'maintenance', configJson: DEFAULT_MAINTENANCE_CONFIG_JSON },
+  { configKey: "tasks", configJson: DEFAULT_CURRENT_TASKS_CONFIG_JSON },
+  { configKey: "playerLevel", configJson: DEFAULT_PLAYER_LEVEL_CONFIG_JSON },
+  { configKey: "garden", configJson: DEFAULT_GARDEN_CONFIG_JSON },
+  { configKey: "shop", configJson: DEFAULT_SHOP_CONFIG_JSON },
+  { configKey: "research", configJson: DEFAULT_RESEARCH_CONFIG_JSON },
+  { configKey: "brewing", configJson: DEFAULT_BREWING_CONFIG_JSON },
+  {
+    configKey: "tradeAlliance",
+    configJson: DEFAULT_TRADE_ALLIANCE_CONFIG_JSON,
+  },
+  {
+    configKey: "visualSettings",
+    configJson: DEFAULT_VISUAL_SETTINGS_CONFIG_JSON,
+  },
+  { configKey: "items", configJson: DEFAULT_ITEMS_CONFIG_JSON },
+  {
+    configKey: "potionRecipes",
+    configJson: DEFAULT_POTION_RECIPES_CONFIG_JSON,
+  },
+  { configKey: "maintenance", configJson: DEFAULT_MAINTENANCE_CONFIG_JSON },
 ];
 
 const worldEventRewardSettlementTick = table(
@@ -5902,7 +5934,7 @@ const spacetimedb = schema({
   ),
   playerGameplaySave: table(
     {
-      name: 'player_gameplay_save',
+      name: "player_gameplay_save",
       public: false,
     },
     {
@@ -5913,7 +5945,7 @@ const spacetimedb = schema({
   ),
   playerSession: table(
     {
-      name: 'player_session',
+      name: "player_session",
       public: false,
     },
     {
@@ -5924,7 +5956,7 @@ const spacetimedb = schema({
   ),
   playerMaintenance: table(
     {
-      name: 'player_maintenance',
+      name: "player_maintenance",
       public: false,
     },
     {
@@ -5937,12 +5969,16 @@ const spacetimedb = schema({
   worldEventRewardSettlementTick,
   playerInboxMail: table(
     {
-      name: 'player_inbox_mail',
+      name: "player_inbox_mail",
       public: false,
       indexes: [
-        { accessor: 'byRecipientIdentity', algorithm: 'btree', columns: ['recipientIdentity'] },
-        { accessor: 'byCreatedAt', algorithm: 'btree', columns: ['createdAt'] },
-        { accessor: 'bySourceKey', algorithm: 'btree', columns: ['sourceKey'] },
+        {
+          accessor: "byRecipientIdentity",
+          algorithm: "btree",
+          columns: ["recipientIdentity"],
+        },
+        { accessor: "byCreatedAt", algorithm: "btree", columns: ["createdAt"] },
+        { accessor: "bySourceKey", algorithm: "btree", columns: ["sourceKey"] },
       ],
     },
     {
@@ -5953,12 +5989,12 @@ const spacetimedb = schema({
       senderLabel: t.string(),
       title: t.string(),
       body: t.string(),
-      rewardText: t.string().default(''),
+      rewardText: t.string().default(""),
       coinReward: t.u64().default(0n),
       crystalReward: t.u32().default(0),
       rubyReward: t.u32().default(0),
       emeraldReward: t.u32().default(0),
-      itemRewardsJson: t.string().default('[]'),
+      itemRewardsJson: t.string().default("[]"),
       createdAt: t.timestamp(),
       read: t.bool().default(false),
       rewardCollected: t.bool().default(true),
@@ -5968,10 +6004,26 @@ const spacetimedb = schema({
     {
       public: true,
       indexes: [
-        { accessor: 'byDailyIncome', algorithm: 'btree', columns: ['dailyIncome'] },
-        { accessor: 'byWeeklyIncome', algorithm: 'btree', columns: ['weeklyIncome'] },
-        { accessor: 'byMonthlyIncome', algorithm: 'btree', columns: ['monthlyIncome'] },
-        { accessor: 'byTotalIncome', algorithm: 'btree', columns: ['totalIncome'] },
+        {
+          accessor: "byDailyIncome",
+          algorithm: "btree",
+          columns: ["dailyIncome"],
+        },
+        {
+          accessor: "byWeeklyIncome",
+          algorithm: "btree",
+          columns: ["weeklyIncome"],
+        },
+        {
+          accessor: "byMonthlyIncome",
+          algorithm: "btree",
+          columns: ["monthlyIncome"],
+        },
+        {
+          accessor: "byTotalIncome",
+          algorithm: "btree",
+          columns: ["totalIncome"],
+        },
       ],
     },
     {
@@ -5983,19 +6035,19 @@ const spacetimedb = schema({
       dailyIncome: t.u64().default(0n),
       weeklyIncome: t.u64().default(0n),
       monthlyIncome: t.u64().default(0n),
-      dayKey: t.string().default(''),
-      weekKey: t.string().default(''),
-      monthKey: t.string().default(''),
+      dayKey: t.string().default(""),
+      weekKey: t.string().default(""),
+      monthKey: t.string().default(""),
     },
   ),
   worldEventLeaderboard: table(
     {
-      name: 'world_event_leaderboard',
+      name: "world_event_leaderboard",
       public: true,
       indexes: [
-        { accessor: 'byIdentity', algorithm: 'btree', columns: ['identity'] },
-        { accessor: 'byPeriodKey', algorithm: 'btree', columns: ['periodKey'] },
-        { accessor: 'byPoints', algorithm: 'btree', columns: ['points'] },
+        { accessor: "byIdentity", algorithm: "btree", columns: ["identity"] },
+        { accessor: "byPeriodKey", algorithm: "btree", columns: ["periodKey"] },
+        { accessor: "byPoints", algorithm: "btree", columns: ["points"] },
       ],
     },
     {
@@ -6011,9 +6063,11 @@ const spacetimedb = schema({
   ),
   worldChat: table(
     {
-      name: 'world_chat',
+      name: "world_chat",
       public: true,
-      indexes: [{ accessor: 'bySentAt', algorithm: 'btree', columns: ['sentAt'] }],
+      indexes: [
+        { accessor: "bySentAt", algorithm: "btree", columns: ["sentAt"] },
+      ],
     },
     {
       messageId: t.uuid().primaryKey(),
@@ -6022,19 +6076,113 @@ const spacetimedb = schema({
       body: t.string(),
       sentAt: t.timestamp(),
       playerLevel: t.u32().default(DEFAULT_PLAYER_LEVEL),
-      allianceTag: t.string().default(''),
+      allianceTag: t.string().default(""),
       allianceTagColor: t.string().default(DEFAULT_TRADE_ALLIANCE_TAG_COLOR),
+    },
+  ),
+  friendRequest: table(
+    {
+      name: "friend_request",
+      public: false,
+      indexes: [
+        {
+          accessor: "bySenderIdentity",
+          algorithm: "btree",
+          columns: ["senderIdentity"],
+        },
+        {
+          accessor: "byRecipientIdentity",
+          algorithm: "btree",
+          columns: ["recipientIdentity"],
+        },
+        { accessor: "byCreatedAt", algorithm: "btree", columns: ["createdAt"] },
+      ],
+    },
+    {
+      requestKey: t.string().primaryKey(),
+      senderIdentity: t.identity(),
+      recipientIdentity: t.identity(),
+      createdAt: t.timestamp(),
+    },
+  ),
+  friendship: table(
+    {
+      name: "friendship",
+      public: false,
+      indexes: [
+        {
+          accessor: "byLeftIdentity",
+          algorithm: "btree",
+          columns: ["leftIdentity"],
+        },
+        {
+          accessor: "byRightIdentity",
+          algorithm: "btree",
+          columns: ["rightIdentity"],
+        },
+        { accessor: "byCreatedAt", algorithm: "btree", columns: ["createdAt"] },
+      ],
+    },
+    {
+      friendshipKey: t.string().primaryKey(),
+      leftIdentity: t.identity(),
+      rightIdentity: t.identity(),
+      createdAt: t.timestamp(),
+    },
+  ),
+  directMessage: table(
+    {
+      name: "direct_message",
+      public: false,
+      indexes: [
+        {
+          accessor: "byConversationKey",
+          algorithm: "btree",
+          columns: ["conversationKey"],
+        },
+        {
+          accessor: "bySenderIdentity",
+          algorithm: "btree",
+          columns: ["senderIdentity"],
+        },
+        {
+          accessor: "byRecipientIdentity",
+          algorithm: "btree",
+          columns: ["recipientIdentity"],
+        },
+        { accessor: "bySentAt", algorithm: "btree", columns: ["sentAt"] },
+      ],
+    },
+    {
+      messageId: t.uuid().primaryKey(),
+      conversationKey: t.string(),
+      senderIdentity: t.identity(),
+      recipientIdentity: t.identity(),
+      body: t.string(),
+      sentAt: t.timestamp(),
     },
   ),
   tradeAlliance: table(
     {
-      name: 'trade_alliance',
+      name: "trade_alliance",
       public: true,
       indexes: [
-        { accessor: 'byTag', algorithm: 'btree', columns: ['tag'] },
-        { accessor: 'byTotalIncome', algorithm: 'btree', columns: ['totalIncome'] },
-        { accessor: 'bySeasonIncome', algorithm: 'btree', columns: ['seasonIncome'] },
-        { accessor: 'byMonthlyIncome', algorithm: 'btree', columns: ['monthlyIncome'] },
+        { accessor: "byTag", algorithm: "btree", columns: ["tag"] },
+        {
+          accessor: "byTotalIncome",
+          algorithm: "btree",
+          columns: ["totalIncome"],
+        },
+        {
+          accessor: "bySeasonIncome",
+          algorithm: "btree",
+          columns: ["seasonIncome"],
+        },
+        {
+          accessor: "byMonthlyIncome",
+          algorithm: "btree",
+          columns: ["monthlyIncome"],
+        },
       ],
     },
     {
@@ -6051,11 +6199,11 @@ const spacetimedb = schema({
       seasonIncome: t.u64(),
       createdAt: t.timestamp(),
       updatedAt: t.timestamp(),
-      seasonKey: t.string().default(''),
-      dayKey: t.string().default(''),
+      seasonKey: t.string().default(""),
+      dayKey: t.string().default(""),
       dailyIncome: t.u64().default(0n),
       monthlyIncome: t.u64().default(0n),
-      monthKey: t.string().default(''),
+      monthKey: t.string().default(""),
       tagColor: t.string().default(DEFAULT_TRADE_ALLIANCE_TAG_COLOR),
       bannerColor: t.string().default(DEFAULT_TRADE_ALLIANCE_BANNER_COLOR),
       emblemColor: t.string().default(DEFAULT_TRADE_ALLIANCE_EMBLEM_COLOR),
@@ -6064,11 +6212,15 @@ const spacetimedb = schema({
   ),
   tradeAllianceMember: table(
     {
-      name: 'trade_alliance_member',
+      name: "trade_alliance_member",
       public: true,
       indexes: [
-        { accessor: 'byAllianceId', algorithm: 'btree', columns: ['allianceId'] },
-        { accessor: 'byJoinedAt', algorithm: 'btree', columns: ['joinedAt'] },
+        {
+          accessor: "byAllianceId",
+          algorithm: "btree",
+          columns: ["allianceId"],
+        },
+        { accessor: "byJoinedAt", algorithm: "btree", columns: ["joinedAt"] },
       ],
     },
     {
@@ -6081,17 +6233,25 @@ const spacetimedb = schema({
       updatedAt: t.timestamp(),
       totalContribution: t.u64().default(0n),
       dailyContribution: t.u64().default(0n),
-      dayKey: t.string().default(''),
+      dayKey: t.string().default(""),
     },
   ),
   tradeAllianceApplication: table(
     {
-      name: 'trade_alliance_application',
+      name: "trade_alliance_application",
       public: true,
       indexes: [
-        { accessor: 'byAllianceId', algorithm: 'btree', columns: ['allianceId'] },
-        { accessor: 'byApplicantIdentity', algorithm: 'btree', columns: ['applicantIdentity'] },
-        { accessor: 'byCreatedAt', algorithm: 'btree', columns: ['createdAt'] },
+        {
+          accessor: "byAllianceId",
+          algorithm: "btree",
+          columns: ["allianceId"],
+        },
+        {
+          accessor: "byApplicantIdentity",
+          algorithm: "btree",
+          columns: ["applicantIdentity"],
+        },
+        { accessor: "byCreatedAt", algorithm: "btree", columns: ["createdAt"] },
       ],
     },
     {
@@ -6105,11 +6265,15 @@ const spacetimedb = schema({
   ),
   tradeAllianceChat: table(
     {
-      name: 'trade_alliance_chat',
+      name: "trade_alliance_chat",
       public: false,
       indexes: [
-        { accessor: 'byAllianceId', algorithm: 'btree', columns: ['allianceId'] },
-        { accessor: 'bySentAt', algorithm: 'btree', columns: ['sentAt'] },
+        {
+          accessor: "byAllianceId",
+          algorithm: "btree",
+          columns: ["allianceId"],
+        },
+        { accessor: "bySentAt", algorithm: "btree", columns: ["sentAt"] },
       ],
     },
     {
@@ -6126,11 +6290,15 @@ const spacetimedb = schema({
   ),
   tradeAllianceQuestProgress: table(
     {
-      name: 'trade_alliance_quest_progress',
+      name: "trade_alliance_quest_progress",
       public: true,
       indexes: [
-        { accessor: 'byAllianceId', algorithm: 'btree', columns: ['allianceId'] },
-        { accessor: 'byDayKey', algorithm: 'btree', columns: ['dayKey'] },
+        {
+          accessor: "byAllianceId",
+          algorithm: "btree",
+          columns: ["allianceId"],
+        },
+        { accessor: "byDayKey", algorithm: "btree", columns: ["dayKey"] },
       ],
     },
     {
@@ -6149,11 +6317,19 @@ const spacetimedb = schema({
   ),
   tradeAllianceQuestContribution: table(
     {
-      name: 'trade_alliance_quest_contribution',
+      name: "trade_alliance_quest_contribution",
       public: true,
       indexes: [
-        { accessor: 'byAllianceId', algorithm: 'btree', columns: ['allianceId'] },
-        { accessor: 'byContributorIdentity', algorithm: 'btree', columns: ['contributorIdentity'] },
+        {
+          accessor: "byAllianceId",
+          algorithm: "btree",
+          columns: ["allianceId"],
+        },
+        {
+          accessor: "byContributorIdentity",
+          algorithm: "btree",
+          columns: ["contributorIdentity"],
+        },
       ],
     },
     {
@@ -6169,11 +6345,15 @@ const spacetimedb = schema({
   ),
   tradeAllianceRewardInbox: table(
     {
-      name: 'trade_alliance_reward_inbox',
+      name: "trade_alliance_reward_inbox",
       public: false,
       indexes: [
-        { accessor: 'byRecipientIdentity', algorithm: 'btree', columns: ['recipientIdentity'] },
-        { accessor: 'byClaimedAt', algorithm: 'btree', columns: ['claimedAt'] },
+        {
+          accessor: "byRecipientIdentity",
+          algorithm: "btree",
+          columns: ["recipientIdentity"],
+        },
+        { accessor: "byClaimedAt", algorithm: "btree", columns: ["claimedAt"] },
       ],
     },
     {
@@ -6191,11 +6371,19 @@ const spacetimedb = schema({
   ),
   playerFeedback: table(
     {
-      name: 'player_feedback',
+      name: "player_feedback",
       public: false,
       indexes: [
-        { accessor: 'bySenderIdentity', algorithm: 'btree', columns: ['senderIdentity'] },
-        { accessor: 'bySubmittedAt', algorithm: 'btree', columns: ['submittedAt'] },
+        {
+          accessor: "bySenderIdentity",
+          algorithm: "btree",
+          columns: ["senderIdentity"],
+        },
+        {
+          accessor: "bySubmittedAt",
+          algorithm: "btree",
+          columns: ["submittedAt"],
+        },
       ],
     },
     {
@@ -6209,9 +6397,15 @@ const spacetimedb = schema({
   ),
   potionRecipeDiscovery: table(
     {
-      name: 'potion_recipe_discovery',
+      name: "potion_recipe_discovery",
       public: true,
-      indexes: [{ accessor: 'byDiscoveredAt', algorithm: 'btree', columns: ['discoveredAt'] }],
+      indexes: [
+        {
+          accessor: "byDiscoveredAt",
+          algorithm: "btree",
+          columns: ["discoveredAt"],
+        },
+      ],
     },
     {
       potionKey: t.string().primaryKey(),
@@ -6225,13 +6419,17 @@ const spacetimedb = schema({
   ),
   playerShopListing: table(
     {
-      name: 'player_shop_listing',
+      name: "player_shop_listing",
       public: false,
       indexes: [
-        { accessor: 'bySellerIdentity', algorithm: 'btree', columns: ['sellerIdentity'] },
-        { accessor: 'byMarketId', algorithm: 'btree', columns: ['marketId'] },
-        { accessor: 'byQuantity', algorithm: 'btree', columns: ['quantity'] },
-        { accessor: 'byUpdatedAt', algorithm: 'btree', columns: ['updatedAt'] },
+        {
+          accessor: "bySellerIdentity",
+          algorithm: "btree",
+          columns: ["sellerIdentity"],
+        },
+        { accessor: "byMarketId", algorithm: "btree", columns: ["marketId"] },
+        { accessor: "byQuantity", algorithm: "btree", columns: ["quantity"] },
+        { accessor: "byUpdatedAt", algorithm: "btree", columns: ["updatedAt"] },
       ],
     },
     {
@@ -6251,13 +6449,17 @@ const spacetimedb = schema({
   ),
   playerShopRequest: table(
     {
-      name: 'player_shop_request',
+      name: "player_shop_request",
       public: false,
       indexes: [
-        { accessor: 'byRequesterIdentity', algorithm: 'btree', columns: ['requesterIdentity'] },
-        { accessor: 'byMarketId', algorithm: 'btree', columns: ['marketId'] },
-        { accessor: 'byQuantity', algorithm: 'btree', columns: ['quantity'] },
-        { accessor: 'byUpdatedAt', algorithm: 'btree', columns: ['updatedAt'] },
+        {
+          accessor: "byRequesterIdentity",
+          algorithm: "btree",
+          columns: ["requesterIdentity"],
+        },
+        { accessor: "byMarketId", algorithm: "btree", columns: ["marketId"] },
+        { accessor: "byQuantity", algorithm: "btree", columns: ["quantity"] },
+        { accessor: "byUpdatedAt", algorithm: "btree", columns: ["updatedAt"] },
       ],
     },
     {
@@ -6277,7 +6479,7 @@ const spacetimedb = schema({
   ),
   playerShopProceeds: table(
     {
-      name: 'player_shop_proceeds',
+      name: "player_shop_proceeds",
       public: false,
     },
     {
@@ -6289,11 +6491,15 @@ const spacetimedb = schema({
   ),
   playerShopMarketProceeds: table(
     {
-      name: 'player_shop_market_proceeds',
+      name: "player_shop_market_proceeds",
       public: false,
       indexes: [
-        { accessor: 'bySellerIdentity', algorithm: 'btree', columns: ['sellerIdentity'] },
-        { accessor: 'byMarketId', algorithm: 'btree', columns: ['marketId'] },
+        {
+          accessor: "bySellerIdentity",
+          algorithm: "btree",
+          columns: ["sellerIdentity"],
+        },
+        { accessor: "byMarketId", algorithm: "btree", columns: ["marketId"] },
       ],
     },
     {
@@ -6307,13 +6513,21 @@ const spacetimedb = schema({
   ),
   playerShopTrade: table(
     {
-      name: 'player_shop_trade',
+      name: "player_shop_trade",
       public: false,
       indexes: [
-        { accessor: 'byBuyerIdentity', algorithm: 'btree', columns: ['buyerIdentity'] },
-        { accessor: 'bySellerIdentity', algorithm: 'btree', columns: ['sellerIdentity'] },
-        { accessor: 'byMarketId', algorithm: 'btree', columns: ['marketId'] },
-        { accessor: 'byTradedAt', algorithm: 'btree', columns: ['tradedAt'] },
+        {
+          accessor: "byBuyerIdentity",
+          algorithm: "btree",
+          columns: ["buyerIdentity"],
+        },
+        {
+          accessor: "bySellerIdentity",
+          algorithm: "btree",
+          columns: ["sellerIdentity"],
+        },
+        { accessor: "byMarketId", algorithm: "btree", columns: ["marketId"] },
+        { accessor: "byTradedAt", algorithm: "btree", columns: ["tradedAt"] },
       ],
     },
     {
@@ -6335,12 +6549,16 @@ const spacetimedb = schema({
   ),
   potionRecipeRoyalty: table(
     {
-      name: 'potion_recipe_royalty',
+      name: "potion_recipe_royalty",
       public: false,
       indexes: [
-        { accessor: 'byRecipientIdentity', algorithm: 'btree', columns: ['recipientIdentity'] },
-        { accessor: 'byMarketId', algorithm: 'btree', columns: ['marketId'] },
-        { accessor: 'byAwardedAt', algorithm: 'btree', columns: ['awardedAt'] },
+        {
+          accessor: "byRecipientIdentity",
+          algorithm: "btree",
+          columns: ["recipientIdentity"],
+        },
+        { accessor: "byMarketId", algorithm: "btree", columns: ["marketId"] },
+        { accessor: "byAwardedAt", algorithm: "btree", columns: ["awardedAt"] },
       ],
     },
     {
@@ -6359,12 +6577,12 @@ const spacetimedb = schema({
   ),
   npcMarketPrice: table(
     {
-      name: 'npc_market_price',
+      name: "npc_market_price",
       public: false,
       indexes: [
-        { accessor: 'byItemKind', algorithm: 'btree', columns: ['itemKind'] },
-        { accessor: 'byMarketId', algorithm: 'btree', columns: ['marketId'] },
-        { accessor: 'byUpdatedAt', algorithm: 'btree', columns: ['updatedAt'] },
+        { accessor: "byItemKind", algorithm: "btree", columns: ["itemKind"] },
+        { accessor: "byMarketId", algorithm: "btree", columns: ["marketId"] },
+        { accessor: "byUpdatedAt", algorithm: "btree", columns: ["updatedAt"] },
       ],
     },
     {
@@ -6386,17 +6604,17 @@ const spacetimedb = schema({
       maxNeed: t.u64().default(0n),
       priceScale: t.u32().default(1),
       marketId: t.string().default(defaultMarketId),
-      catalogItemKey: t.string().default(''),
+      catalogItemKey: t.string().default(""),
     },
   ),
   marketDemandDaily: table(
     {
-      name: 'market_demand_daily',
+      name: "market_demand_daily",
       public: false,
       indexes: [
-        { accessor: 'byDayKey', algorithm: 'btree', columns: ['dayKey'] },
-        { accessor: 'byMarketId', algorithm: 'btree', columns: ['marketId'] },
-        { accessor: 'byUpdatedAt', algorithm: 'btree', columns: ['updatedAt'] },
+        { accessor: "byDayKey", algorithm: "btree", columns: ["dayKey"] },
+        { accessor: "byMarketId", algorithm: "btree", columns: ["marketId"] },
+        { accessor: "byUpdatedAt", algorithm: "btree", columns: ["updatedAt"] },
       ],
     },
     {
@@ -6419,13 +6637,13 @@ const spacetimedb = schema({
   ),
   marketPriceHourly: table(
     {
-      name: 'market_price_hourly',
+      name: "market_price_hourly",
       public: false,
       indexes: [
-        { accessor: 'byHourKey', algorithm: 'btree', columns: ['hourKey'] },
-        { accessor: 'byItemKey', algorithm: 'btree', columns: ['itemKey'] },
-        { accessor: 'byMarketId', algorithm: 'btree', columns: ['marketId'] },
-        { accessor: 'byUpdatedAt', algorithm: 'btree', columns: ['updatedAt'] },
+        { accessor: "byHourKey", algorithm: "btree", columns: ["hourKey"] },
+        { accessor: "byItemKey", algorithm: "btree", columns: ["itemKey"] },
+        { accessor: "byMarketId", algorithm: "btree", columns: ["marketId"] },
+        { accessor: "byUpdatedAt", algorithm: "btree", columns: ["updatedAt"] },
       ],
     },
     {
@@ -6446,11 +6664,11 @@ const spacetimedb = schema({
   ),
   npcMarketItemConfig: table(
     {
-      name: 'npc_market_item_config',
+      name: "npc_market_item_config",
       public: false,
       indexes: [
-        { accessor: 'byUpdatedAt', algorithm: 'btree', columns: ['updatedAt'] },
-        { accessor: 'byMarketId', algorithm: 'btree', columns: ['marketId'] },
+        { accessor: "byUpdatedAt", algorithm: "btree", columns: ["updatedAt"] },
+        { accessor: "byMarketId", algorithm: "btree", columns: ["marketId"] },
       ],
     },
     {
@@ -6465,11 +6683,11 @@ const spacetimedb = schema({
       enabled: t.bool().default(true),
       priceScale: t.u32().default(1),
       marketId: t.string().default(defaultMarketId),
-      catalogItemKey: t.string().default(''),
+      catalogItemKey: t.string().default(""),
     },
   ),
   npcMarketAdmin: table(
-    { name: 'npc_market_admin', public: true },
+    { name: "npc_market_admin", public: true },
     {
       identity: t.identity().primaryKey(),
       username: t.string(),
@@ -6478,7 +6696,7 @@ const spacetimedb = schema({
   ),
   maintenanceState: table(
     {
-      name: 'maintenance_state',
+      name: "maintenance_state",
       public: false,
     },
     {
@@ -6488,11 +6706,11 @@ const spacetimedb = schema({
   ),
   researchConfig: table(
     {
-      name: 'research_config',
+      name: "research_config",
       public: true,
       indexes: [
-        { accessor: 'byGroupId', algorithm: 'btree', columns: ['groupId'] },
-        { accessor: 'byUpdatedAt', algorithm: 'btree', columns: ['updatedAt'] },
+        { accessor: "byGroupId", algorithm: "btree", columns: ["groupId"] },
+        { accessor: "byUpdatedAt", algorithm: "btree", columns: ["updatedAt"] },
       ],
     },
     {
@@ -6508,9 +6726,11 @@ const spacetimedb = schema({
   ),
   gameConfig: table(
     {
-      name: 'game_config',
+      name: "game_config",
       public: true,
-      indexes: [{ accessor: 'byUpdatedAt', algorithm: 'btree', columns: ['updatedAt'] }],
+      indexes: [
+        { accessor: "byUpdatedAt", algorithm: "btree", columns: ["updatedAt"] },
+      ],
     },
     {
       configKey: t.string().primaryKey(),
@@ -6702,6 +6922,59 @@ const ownTradeAllianceChatResult = t.array(
     sentAt: t.timestamp(),
   }),
 );
+const ownFriendshipResult = t.array(
+  t.row("OwnFriendshipResult", {
+    friendshipKey: t.string().primaryKey(),
+    friendIdentity: t.identity(),
+    username: t.string(),
+    character: t.string(),
+    frame: t.string(),
+    playerLevel: t.u32(),
+    connected: t.bool(),
+    lastSeenAt: t.timestamp(),
+    createdAt: t.timestamp(),
+  }),
+);
+const ownIncomingFriendRequestResult = t.array(
+  t.row("OwnIncomingFriendRequestResult", {
+    requestKey: t.string().primaryKey(),
+    playerIdentity: t.identity(),
+    username: t.string(),
+    character: t.string(),
+    frame: t.string(),
+    playerLevel: t.u32(),
+    connected: t.bool(),
+    lastSeenAt: t.timestamp(),
+    createdAt: t.timestamp(),
+  }),
+);
+const ownOutgoingFriendRequestResult = t.array(
+  t.row("OwnOutgoingFriendRequestResult", {
+    requestKey: t.string().primaryKey(),
+    playerIdentity: t.identity(),
+    username: t.string(),
+    character: t.string(),
+    frame: t.string(),
+    playerLevel: t.u32(),
+    connected: t.bool(),
+    lastSeenAt: t.timestamp(),
+    createdAt: t.timestamp(),
+  }),
+);
+const ownDirectMessageResult = t.array(
+  t.row("OwnDirectMessageResult", {
+    messageId: t.uuid().primaryKey(),
+    conversationKey: t.string(),
+    senderIdentity: t.identity(),
+    recipientIdentity: t.identity(),
+    username: t.string(),
+    character: t.string(),
+    frame: t.string(),
+    playerLevel: t.u32(),
+    body: t.string(),
+    sentAt: t.timestamp(),
+  }),
+);
 const ownTradeAllianceRewardInboxResult = t.array(
   t.row('OwnTradeAllianceRewardInboxResult', {
     rewardKey: t.string().primaryKey(),
@@ -6861,11 +7134,13 @@ const tradeAllianceMemberSnapshotResult = t.array(
   }),
 );
 const tradeAllianceApplicationSnapshotResult = t.array(
-  t.row('TradeAllianceApplicationSnapshotResult', {
+  t.row("TradeAllianceApplicationSnapshotResult", {
     applicationKey: t.string().primaryKey(),
     allianceId: t.uuid(),
     applicantIdentity: t.identity(),
     username: t.string(),
+    character: t.string(),
+    frame: t.string(),
     playerLevel: t.u32(),
     createdAt: t.timestamp(),
   }),
@@ -7026,17 +7301,20 @@ export const research_config_snapshot = spacetimedb.view(
 );
 
 export const npc_market_price_snapshot = spacetimedb.view(
-  { name: 'npc_market_price_snapshot', public: true },
+  { name: "npc_market_price_snapshot", public: true },
   npcMarketPriceSnapshotResult,
   (ctx) => {
     const marketId = getActiveMarketId(ctx);
 
     return Array.from(ctx.db.npcMarketPrice.byItemKind.filter(new Range()))
       .filter((row) => {
-        const catalogItem = npcMarketCatalogByItemKey.get(getNpcMarketCatalogItemKey(row));
+        const catalogItem = npcMarketCatalogByItemKey.get(
+          getNpcMarketCatalogItemKey(row),
+        );
         return (
           getRowMarketId(row) === marketId &&
-          (!catalogItem || isItemGradeTradedInMarket(catalogItem.marketGrade, marketId))
+          (!catalogItem ||
+            isItemGradeTradedInMarket(catalogItem.marketGrade, marketId))
         );
       })
       .map((row) => ({
@@ -7066,15 +7344,17 @@ export const market_demand_daily_snapshot = spacetimedb.view(
 );
 
 export const market_price_hourly_snapshot = spacetimedb.view(
-  { name: 'market_price_hourly_snapshot', public: true },
+  { name: "market_price_hourly_snapshot", public: true },
   marketPriceHourlySnapshotResult,
   (ctx) => {
     const marketId = getActiveMarketId(ctx);
 
     return Array.from(ctx.db.marketPriceHourly.byUpdatedAt.filter(new Range()))
-      .filter((row) =>
-        getRowMarketId(row) === marketId &&
-        isPlayerShopRowTradedInMarket(row, marketId))
+      .filter(
+        (row) =>
+          getRowMarketId(row) === marketId &&
+          isPlayerShopRowTradedInMarket(row, marketId),
+      )
       .slice(-(npcMarketCatalog.length * MARKET_PRICE_HOURLY_HISTORY_PER_ITEM))
       .map((row) => ({ ...row, marketId }));
   },
@@ -7087,24 +7367,41 @@ export const trade_alliance_snapshot = spacetimedb.view(
 );
 
 export const trade_alliance_member_snapshot = spacetimedb.view(
-  { name: 'trade_alliance_member_snapshot', public: true },
+  { name: "trade_alliance_member_snapshot", public: true },
   tradeAllianceMemberSnapshotResult,
   (ctx) =>
-    Array.from(ctx.db.tradeAllianceMember.byJoinedAt.filter(new Range())).map((member) => ({
-      ...member,
-      character: normalizePlayerCharacter(
-        ctx.db.player.identity.find(member.memberIdentity)?.character ?? DEFAULT_PLAYER_CHARACTER,
-      ),
-      frame: normalizePlayerFrame(
-        ctx.db.player.identity.find(member.memberIdentity)?.frame ?? DEFAULT_PLAYER_FRAME,
-      ),
-    })),
+    Array.from(ctx.db.tradeAllianceMember.byJoinedAt.filter(new Range())).map(
+      (member) => ({
+        ...member,
+        character: normalizePlayerCharacter(
+          ctx.db.player.identity.find(member.memberIdentity)?.character ??
+            DEFAULT_PLAYER_CHARACTER,
+        ),
+        frame: normalizePlayerFrame(
+          ctx.db.player.identity.find(member.memberIdentity)?.frame ??
+            DEFAULT_PLAYER_FRAME,
+        ),
+      }),
+    ),
 );
 
 export const trade_alliance_application_snapshot = spacetimedb.view(
-  { name: 'trade_alliance_application_snapshot', public: true },
+  { name: "trade_alliance_application_snapshot", public: true },
   tradeAllianceApplicationSnapshotResult,
-  (ctx) => Array.from(ctx.db.tradeAllianceApplication.byCreatedAt.filter(new Range())),
+  (ctx) =>
+    Array.from(
+      ctx.db.tradeAllianceApplication.byCreatedAt.filter(new Range()),
+    ).map((application) => ({
+      ...application,
+      character: normalizePlayerCharacter(
+        ctx.db.player.identity.find(application.applicantIdentity)?.character ??
+          DEFAULT_PLAYER_CHARACTER,
+      ),
+      frame: normalizePlayerFrame(
+        ctx.db.player.identity.find(application.applicantIdentity)?.frame ??
+          DEFAULT_PLAYER_FRAME,
+      ),
+    })),
 );
 
 export const trade_alliance_quest_progress_snapshot = spacetimedb.view(
@@ -7114,61 +7411,82 @@ export const trade_alliance_quest_progress_snapshot = spacetimedb.view(
 );
 
 export const trade_alliance_quest_contribution_snapshot = spacetimedb.view(
-  { name: 'trade_alliance_quest_contribution_snapshot', public: true },
+  { name: "trade_alliance_quest_contribution_snapshot", public: true },
   tradeAllianceQuestContributionSnapshotResult,
-  (ctx) => Array.from(ctx.db.tradeAllianceQuestContribution.byAllianceId.filter(new Range())),
+  (ctx) =>
+    Array.from(
+      ctx.db.tradeAllianceQuestContribution.byAllianceId.filter(new Range()),
+    ),
 );
 
 export const public_player_shop_listing = spacetimedb.view(
-  { name: 'public_player_shop_listing', public: true },
+  { name: "public_player_shop_listing", public: true },
   publicPlayerShopListingResult,
   (ctx) => {
     const marketId = getActiveMarketId(ctx);
-    return getRecentPublicPlayerShopListings(ctx).map((row) => ({ ...row, marketId }));
+    return getRecentPublicPlayerShopListings(ctx).map((row) => ({
+      ...row,
+      marketId,
+    }));
   },
 );
 
 export const own_player_shop_listing = spacetimedb.view(
-  { name: 'own_player_shop_listing', public: true },
+  { name: "own_player_shop_listing", public: true },
   publicPlayerShopListingResult,
   (ctx) => {
     const marketId = getActiveMarketId(ctx);
-    return Array.from(ctx.db.playerShopListing.bySellerIdentity.filter(ctx.sender))
-      .filter((row) =>
-        getRowMarketId(row) === marketId && isPlayerShopRowTradedInMarket(row, marketId))
+    return Array.from(
+      ctx.db.playerShopListing.bySellerIdentity.filter(ctx.sender),
+    )
+      .filter(
+        (row) =>
+          getRowMarketId(row) === marketId &&
+          isPlayerShopRowTradedInMarket(row, marketId),
+      )
       .map((row) => ({ ...row, marketId }));
   },
 );
 
 export const public_player_shop_request = spacetimedb.view(
-  { name: 'public_player_shop_request', public: true },
+  { name: "public_player_shop_request", public: true },
   publicPlayerShopRequestResult,
   (ctx) => {
     const marketId = getActiveMarketId(ctx);
-    return getRecentPublicPlayerShopRequests(ctx).map((row) => ({ ...row, marketId }));
+    return getRecentPublicPlayerShopRequests(ctx).map((row) => ({
+      ...row,
+      marketId,
+    }));
   },
 );
 
 export const own_player_shop_request = spacetimedb.view(
-  { name: 'own_player_shop_request', public: true },
+  { name: "own_player_shop_request", public: true },
   publicPlayerShopRequestResult,
   (ctx) => {
     const marketId = getActiveMarketId(ctx);
-    return Array.from(ctx.db.playerShopRequest.byRequesterIdentity.filter(ctx.sender))
-      .filter((row) =>
-        getRowMarketId(row) === marketId && isPlayerShopRowTradedInMarket(row, marketId))
+    return Array.from(
+      ctx.db.playerShopRequest.byRequesterIdentity.filter(ctx.sender),
+    )
+      .filter(
+        (row) =>
+          getRowMarketId(row) === marketId &&
+          isPlayerShopRowTradedInMarket(row, marketId),
+      )
       .map((row) => ({ ...row, marketId }));
   },
 );
 
 export const own_player_shop_proceeds = spacetimedb.view(
-  { name: 'own_player_shop_proceeds', public: true },
+  { name: "own_player_shop_proceeds", public: true },
   ownPlayerShopProceedsResult,
   (ctx) => {
     const marketId = getActiveMarketId(ctx);
 
     if (marketId === defaultMarketId) {
-      const legacyProceeds = ctx.db.playerShopProceeds.sellerIdentity.find(ctx.sender);
+      const legacyProceeds = ctx.db.playerShopProceeds.sellerIdentity.find(
+        ctx.sender,
+      );
       return legacyProceeds ? { ...legacyProceeds, marketId } : undefined;
     }
 
@@ -7206,16 +7524,19 @@ export const own_player_shop_trade_history = spacetimedb.view(
 );
 
 export const own_potion_recipe_royalty_history = spacetimedb.view(
-  { name: 'own_potion_recipe_royalty_history', public: true },
+  { name: "own_potion_recipe_royalty_history", public: true },
   ownPotionRecipeRoyaltyHistoryResult,
   (ctx) => {
     const marketId = getActiveMarketId(ctx);
-    return getOwnPotionRecipeRoyalties(ctx).map((row) => ({ ...row, marketId }));
+    return getOwnPotionRecipeRoyalties(ctx).map((row) => ({
+      ...row,
+      marketId,
+    }));
   },
 );
 
 export const admin_player_gameplay_save = spacetimedb.view(
-  { name: 'admin_player_gameplay_save', public: true },
+  { name: "admin_player_gameplay_save", public: true },
   adminPlayerGameplaySaveResult,
   (ctx) => {
     if (!npcMarketAdminIdentityAllowlist.has(getIdentityHex(ctx.sender))) {
@@ -7225,8 +7546,11 @@ export const admin_player_gameplay_save = spacetimedb.view(
     return Array.from(ctx.db.playerGameplaySave.iter())
       .map((save) => toAdminPlayerGameplaySaveResult(save))
       .filter(
-        (save): save is NonNullable<ReturnType<typeof toAdminPlayerGameplaySaveResult>> =>
-          Boolean(save),
+        (
+          save,
+        ): save is NonNullable<
+          ReturnType<typeof toAdminPlayerGameplaySaveResult>
+        > => Boolean(save),
       )
       .sort((left, right) => {
         const leftUpdatedAt = left.updatedAt.microsSinceUnixEpoch;
@@ -7240,7 +7564,9 @@ export const admin_player_gameplay_save = spacetimedb.view(
           return -1;
         }
 
-        return getIdentityHex(left.identity).localeCompare(getIdentityHex(right.identity));
+        return getIdentityHex(left.identity).localeCompare(
+          getIdentityHex(right.identity),
+        );
       });
   },
 );
@@ -7286,6 +7612,30 @@ export const player_info_summary = spacetimedb.view(
   { name: 'player_info_summary', public: true },
   playerInfoSummaryResult,
   (ctx) => getPlayerInfoSummaryRows(ctx),
+);
+
+export const own_friendship = spacetimedb.view(
+  { name: "own_friendship", public: true },
+  ownFriendshipResult,
+  (ctx) => getOwnFriendshipRows(ctx),
+);
+
+export const own_incoming_friend_request = spacetimedb.view(
+  { name: "own_incoming_friend_request", public: true },
+  ownIncomingFriendRequestResult,
+  (ctx) => getOwnFriendRequestRows(ctx, "incoming"),
+);
+
+export const own_outgoing_friend_request = spacetimedb.view(
+  { name: "own_outgoing_friend_request", public: true },
+  ownOutgoingFriendRequestResult,
+  (ctx) => getOwnFriendRequestRows(ctx, "outgoing"),
+);
+
+export const own_direct_message = spacetimedb.view(
+  { name: "own_direct_message", public: true },
+  ownDirectMessageResult,
+  (ctx) => getOwnDirectMessageRows(ctx),
 );
 
 export const own_trade_alliance_overview = spacetimedb.view(
@@ -7339,7 +7689,7 @@ export const own_trade_alliance_overview = spacetimedb.view(
 );
 
 export const own_trade_alliance_chat = spacetimedb.view(
-  { name: 'own_trade_alliance_chat', public: true },
+  { name: "own_trade_alliance_chat", public: true },
   ownTradeAllianceChatResult,
   (ctx) => {
     const member = ctx.db.tradeAllianceMember.memberIdentity.find(ctx.sender);
@@ -7347,7 +7697,9 @@ export const own_trade_alliance_chat = spacetimedb.view(
       return [];
     }
 
-    return Array.from(ctx.db.tradeAllianceChat.byAllianceId.filter(member.allianceId))
+    return Array.from(
+      ctx.db.tradeAllianceChat.byAllianceId.filter(member.allianceId),
+    )
       .sort((left, right) => {
         const leftSentAt = left.sentAt.microsSinceUnixEpoch;
         const rightSentAt = right.sentAt.microsSinceUnixEpoch;
@@ -7367,7 +7719,9 @@ export const own_trade_alliance_chat = spacetimedb.view(
         messageId: message.messageId,
         allianceId: message.allianceId,
         allianceTag: message.allianceTag,
-        allianceTagColor: normalizeTradeAllianceTagColor(message.allianceTagColor),
+        allianceTagColor: normalizeTradeAllianceTagColor(
+          message.allianceTagColor,
+        ),
         senderIdentity: message.senderIdentity,
         username: message.username,
         character: getPlayerCharacterForIdentity(ctx, message.senderIdentity),
@@ -7379,7 +7733,7 @@ export const own_trade_alliance_chat = spacetimedb.view(
 );
 
 export const world_chat_recent = spacetimedb.view(
-  { name: 'world_chat_recent', public: true },
+  { name: "world_chat_recent", public: true },
   worldChatRecentResult,
   (ctx) =>
     getWorldChatRowsOldestFirst(ctx)
@@ -7394,7 +7748,9 @@ export const world_chat_recent = spacetimedb.view(
         body: message.body,
         sentAt: message.sentAt,
         allianceTag: message.allianceTag,
-        allianceTagColor: normalizeTradeAllianceTagColor(message.allianceTagColor),
+        allianceTagColor: normalizeTradeAllianceTagColor(
+          message.allianceTagColor,
+        ),
       })),
 );
 
@@ -7411,10 +7767,12 @@ export const own_player_inbox_mail = spacetimedb.view(
 );
 
 export const own_trade_alliance_reward_inbox = spacetimedb.view(
-  { name: 'own_trade_alliance_reward_inbox', public: true },
+  { name: "own_trade_alliance_reward_inbox", public: true },
   ownTradeAllianceRewardInboxResult,
   (ctx) =>
-    Array.from(ctx.db.tradeAllianceRewardInbox.byRecipientIdentity.filter(ctx.sender))
+    Array.from(
+      ctx.db.tradeAllianceRewardInbox.byRecipientIdentity.filter(ctx.sender),
+    )
       .sort((left, right) => {
         const leftClaimedAt = left.claimedAt.microsSinceUnixEpoch;
         const rightClaimedAt = right.claimedAt.microsSinceUnixEpoch;
@@ -7463,6 +7821,142 @@ function parseIdentityHex(identityHex: string): Identity | null {
 
 function getIdentityHex(identity: { toHexString: () => string }): string {
   return normalizeIdentityHex(identity.toHexString());
+}
+
+function getFriendRequestKey(
+  senderIdentity: Identity,
+  recipientIdentity: Identity,
+): string {
+  return `${getIdentityHex(senderIdentity)}:${getIdentityHex(recipientIdentity)}`;
+}
+
+function getFriendshipKey(
+  leftIdentity: Identity,
+  rightIdentity: Identity,
+): string {
+  return [getIdentityHex(leftIdentity), getIdentityHex(rightIdentity)]
+    .sort()
+    .join(":");
+}
+
+function getFriendshipForPlayers(
+  ctx: { db: any },
+  leftIdentity: Identity,
+  rightIdentity: Identity,
+) {
+  return ctx.db.friendship.friendshipKey.find(
+    getFriendshipKey(leftIdentity, rightIdentity),
+  );
+}
+
+function getOwnFriendshipRows(ctx: { sender: Identity; db: any }): any[] {
+  const rows = [
+    ...Array.from(ctx.db.friendship.byLeftIdentity.filter(ctx.sender)),
+    ...Array.from(ctx.db.friendship.byRightIdentity.filter(ctx.sender)),
+  ];
+
+  return rows
+    .map((friendship: any) => {
+      const friendIdentity = friendship.leftIdentity.isEqual(ctx.sender)
+        ? friendship.rightIdentity
+        : friendship.leftIdentity;
+      const player = ctx.db.player.identity.find(friendIdentity);
+      if (!player) {
+        return null;
+      }
+      return {
+        friendshipKey: friendship.friendshipKey,
+        friendIdentity,
+        username: player.username,
+        character: normalizePlayerCharacter(player.character),
+        frame: normalizePlayerFrame(player.frame),
+        playerLevel: normalizePlayerLevel(player.playerLevel),
+        connected: Boolean(player.connected),
+        lastSeenAt: player.lastSeenAt,
+        createdAt: friendship.createdAt,
+      };
+    })
+    .filter(Boolean)
+    .sort((left: any, right: any) =>
+      left.username.localeCompare(right.username),
+    );
+}
+
+function getOwnFriendRequestRows(
+  ctx: { sender: Identity; db: any },
+  direction: "incoming" | "outgoing",
+): any[] {
+  const incoming = direction === "incoming";
+  const rows = incoming
+    ? Array.from(ctx.db.friendRequest.byRecipientIdentity.filter(ctx.sender))
+    : Array.from(ctx.db.friendRequest.bySenderIdentity.filter(ctx.sender));
+
+  return rows
+    .map((request: any) => {
+      const playerIdentity = incoming
+        ? request.senderIdentity
+        : request.recipientIdentity;
+      const player = ctx.db.player.identity.find(playerIdentity);
+      if (!player) {
+        return null;
+      }
+      return {
+        requestKey: request.requestKey,
+        playerIdentity,
+        username: player.username,
+        character: normalizePlayerCharacter(player.character),
+        frame: normalizePlayerFrame(player.frame),
+        playerLevel: normalizePlayerLevel(player.playerLevel),
+        connected: Boolean(player.connected),
+        lastSeenAt: player.lastSeenAt,
+        createdAt: request.createdAt,
+      };
+    })
+    .filter(Boolean)
+    .sort((left: any, right: any) => {
+      const leftMicros = left.createdAt.microsSinceUnixEpoch;
+      const rightMicros = right.createdAt.microsSinceUnixEpoch;
+      if (leftMicros < rightMicros) return 1;
+      if (leftMicros > rightMicros) return -1;
+      return left.requestKey.localeCompare(right.requestKey);
+    });
+}
+
+function getOwnDirectMessageRows(ctx: { sender: Identity; db: any }): any[] {
+  const messagesById = new Map<string, any>();
+  for (const message of ctx.db.directMessage.bySenderIdentity.filter(
+    ctx.sender,
+  )) {
+    messagesById.set(String(message.messageId), message);
+  }
+  for (const message of ctx.db.directMessage.byRecipientIdentity.filter(
+    ctx.sender,
+  )) {
+    messagesById.set(String(message.messageId), message);
+  }
+
+  return [...messagesById.values()]
+    .sort((left, right) => {
+      const leftMicros = left.sentAt.microsSinceUnixEpoch;
+      const rightMicros = right.sentAt.microsSinceUnixEpoch;
+      if (leftMicros < rightMicros) return -1;
+      if (leftMicros > rightMicros) return 1;
+      return left.messageId.compareTo(right.messageId);
+    })
+    .map((message) => {
+      const player = ctx.db.player.identity.find(message.senderIdentity);
+      return {
+        ...message,
+        username: player?.username ?? "Wizard",
+        character: normalizePlayerCharacter(
+          player?.character ?? DEFAULT_PLAYER_CHARACTER,
+        ),
+        frame: normalizePlayerFrame(player?.frame ?? DEFAULT_PLAYER_FRAME),
+        playerLevel: normalizePlayerLevel(
+          player?.playerLevel ?? DEFAULT_PLAYER_LEVEL,
+        ),
+      };
+    });
 }
 
 function isReservedUsername(username: string): boolean {
@@ -7516,19 +8010,29 @@ function normalizePlayerFrame(frame: unknown): string {
   return PLAYER_FRAMES.has(value) ? value : DEFAULT_PLAYER_FRAME;
 }
 
-function getPlayerCharacterForIdentity(ctx: { db: any }, identity: Identity): string {
+function getPlayerCharacterForIdentity(
+  ctx: { db: any },
+  identity: Identity,
+): string {
   return normalizePlayerCharacter(
-    ctx.db.player.identity.find(identity)?.character ?? DEFAULT_PLAYER_CHARACTER,
+    ctx.db.player.identity.find(identity)?.character ??
+      DEFAULT_PLAYER_CHARACTER,
   );
 }
 
-function getPlayerFrameForIdentity(ctx: { db: any }, identity: Identity): string {
+function getPlayerFrameForIdentity(
+  ctx: { db: any },
+  identity: Identity,
+): string {
   return normalizePlayerFrame(
     ctx.db.player.identity.find(identity)?.frame ?? DEFAULT_PLAYER_FRAME,
   );
 }
 
-function hasAcceptedPlayerGameplaySave(ctx: { db: any }, identity: Identity): boolean {
+function hasAcceptedPlayerGameplaySave(
+  ctx: { db: any },
+  identity: Identity,
+): boolean {
   return Boolean(ctx.db.playerGameplaySave.identity.find(identity));
 }
 
@@ -7585,11 +8089,14 @@ function validateAdminPlayerLevel(playerLevel: unknown): number {
   return value;
 }
 
-function findPlayerByIdentityHex(ctx: IdleWizardReducerCtx, identityHex: string) {
+function findPlayerByIdentityHex(
+  ctx: IdleWizardReducerCtx,
+  identityHex: string,
+) {
   const safeIdentityHex = normalizeIdentityHex(identityHex);
 
   if (!safeIdentityHex) {
-    throw new Error('Player identity is required.');
+    throw new Error("Player identity is required.");
   }
 
   const identity = parseIdentityHex(safeIdentityHex);
@@ -7599,7 +8106,7 @@ function findPlayerByIdentityHex(ctx: IdleWizardReducerCtx, identityHex: string)
     return player;
   }
 
-  throw new Error('Player not found.');
+  throw new Error("Player not found.");
 }
 
 function normalizeWorldChatMessage(body: string): string {
@@ -7609,11 +8116,18 @@ function normalizeWorldChatMessage(body: string): string {
     .slice(0, MAX_WORLD_CHAT_MESSAGE_LENGTH);
 }
 
+function normalizeDirectMessage(body: string): string {
+  return stripUnsafeTextControls(String(body ?? ""))
+    .trim()
+    .replace(/\s+/g, " ")
+    .slice(0, MAX_DIRECT_MESSAGE_LENGTH);
+}
+
 function formatPotionDiscoveryRecipeText(potionKey: string): string {
   const recipe = potionRecipeCatalogByPotionKey.get(potionKey);
 
   if (!recipe) {
-    return '';
+    return "";
   }
 
   const ingredientGroups: Array<{ itemKey: string; quantity: number }> = [];
@@ -7635,7 +8149,7 @@ function formatPotionDiscoveryRecipeText(potionKey: string): string {
       const label = catalogItem?.itemLabel ?? ingredient.itemKey;
       return `${ingredient.quantity} ${label}`;
     })
-    .join(', ');
+    .join(", ");
 }
 
 function formatPotionDiscoveryAnnouncementBody(
@@ -7652,9 +8166,12 @@ function formatPotionDiscoveryAnnouncementBody(
 }
 
 function normalizeFeedbackBody(body: string): string {
-  return String(body ?? '')
-    .replace(/\r\n?/g, '\n')
-    .replace(/[\u0000-\u0009\u000b-\u001f\u007f\u200e\u200f\u202a-\u202e\u2066-\u2069]/g, '')
+  return String(body ?? "")
+    .replace(/\r\n?/g, "\n")
+    .replace(
+      /[\u0000-\u0009\u000b-\u001f\u007f\u200e\u200f\u202a-\u202e\u2066-\u2069]/g,
+      "",
+    )
     .trim()
     .slice(0, MAX_FEEDBACK_BODY_LENGTH);
 }
@@ -7817,10 +8334,15 @@ function floorDivBigInt(value: bigint, divisor: bigint): bigint {
 }
 
 function getContextTimestampMicros(ctx: { timestamp?: Timestamp }): bigint {
-  return ctx.timestamp?.microsSinceUnixEpoch ?? Timestamp.now().microsSinceUnixEpoch;
+  return (
+    ctx.timestamp?.microsSinceUnixEpoch ?? Timestamp.now().microsSinceUnixEpoch
+  );
 }
 
-function getAnchoredPeriodKey(ctx: IdleWizardReducerCtx, daySpan: bigint): string {
+function getAnchoredPeriodKey(
+  ctx: IdleWizardReducerCtx,
+  daySpan: bigint,
+): string {
   return String(
     floorDivBigInt(
       getContextTimestampMicros(ctx) - PERIOD_LOOP_ANCHOR_MICROS,
@@ -7829,7 +8351,10 @@ function getAnchoredPeriodKey(ctx: IdleWizardReducerCtx, daySpan: bigint): strin
   );
 }
 
-function getAnchoredPeriodStartMicros(timestampMicros: bigint, daySpan: bigint): bigint {
+function getAnchoredPeriodStartMicros(
+  timestampMicros: bigint,
+  daySpan: bigint,
+): bigint {
   const periodMicros = daySpan * PERIOD_DAY_MICROS;
   return (
     PERIOD_LOOP_ANCHOR_MICROS +
@@ -7870,9 +8395,14 @@ function getWorldEventPeriodIndex(periodKey: string): number | null {
   return Number.isSafeInteger(periodIndex) && periodIndex >= 0 ? periodIndex : null;
 }
 
-function isEndedWorldEventPeriod(ctx: IdleWizardReducerCtx, periodKey: string): boolean {
+function isEndedWorldEventPeriod(
+  ctx: IdleWizardReducerCtx,
+  periodKey: string,
+): boolean {
   const periodIndex = getWorldEventPeriodIndex(periodKey);
-  const currentPeriodIndex = getWorldEventPeriodIndex(getWorldEventPeriodKey(ctx));
+  const currentPeriodIndex = getWorldEventPeriodIndex(
+    getWorldEventPeriodKey(ctx),
+  );
 
   return (
     periodIndex !== null &&
@@ -7897,11 +8427,18 @@ function getTradeAllianceQuestPeriodKey(ctx: IdleWizardReducerCtx): string {
   return getWeeklyPeriodKey(ctx);
 }
 
-function getTradeAllianceApplicationKey(allianceId: unknown, identity: Identity): string {
+function getTradeAllianceApplicationKey(
+  allianceId: unknown,
+  identity: Identity,
+): string {
   return `${getTradeAllianceIdKey(allianceId)}:${getIdentityHex(identity)}`;
 }
 
-function getTradeAllianceQuestKey(allianceId: unknown, dayKey: string, questId: string): string {
+function getTradeAllianceQuestKey(
+  allianceId: unknown,
+  dayKey: string,
+  questId: string,
+): string {
   return `${dayKey}:${getTradeAllianceIdKey(allianceId)}:${questId}`;
 }
 
@@ -7914,7 +8451,11 @@ function getTradeAllianceContributionKey(
   return `${getTradeAllianceQuestKey(allianceId, dayKey, questId)}:${getIdentityHex(identity)}`;
 }
 
-function getTradeAllianceRewardKey(dayKey: string, questId: string, identity: Identity): string {
+function getTradeAllianceRewardKey(
+  dayKey: string,
+  questId: string,
+  identity: Identity,
+): string {
   return `${dayKey}:${questId}:${getIdentityHex(identity)}`;
 }
 
@@ -7994,13 +8535,17 @@ function getActiveMarketId(
   return resolveMarketLicence(completedStars).id;
 }
 
-function assertActiveMarket(ctx: IdleWizardReducerCtx, marketId: string): string {
-  const completedStars = readSavedPrestigeCompletedLevels(
-    ctx.db.playerGameplaySave.identity.find(ctx.sender)?.saveJson,
-  )?.length ?? 0;
+function assertActiveMarket(
+  ctx: IdleWizardReducerCtx,
+  marketId: string,
+): string {
+  const completedStars =
+    readSavedPrestigeCompletedLevels(
+      ctx.db.playerGameplaySave.identity.find(ctx.sender)?.saveJson,
+    )?.length ?? 0;
 
   try {
-    return assertMarketScope(completedStars, String(marketId ?? ''));
+    return assertMarketScope(completedStars, String(marketId ?? ""));
   } catch (error) {
     if (error instanceof Error) {
       throw new SenderError(error.message);
@@ -8016,18 +8561,19 @@ function getMarketScopedItemKey(marketId: string, itemKey: string): string {
 }
 
 function getNpcMarketCatalogItemKey(row: any): string {
-  const catalogItemKey = normalizeNpcMarketItemKey(String(row?.catalogItemKey ?? ''));
-  return catalogItemKey || normalizeNpcMarketItemKey(String(row?.itemKey ?? ''));
+  const catalogItemKey = normalizeNpcMarketItemKey(
+    String(row?.catalogItemKey ?? ""),
+  );
+  return (
+    catalogItemKey || normalizeNpcMarketItemKey(String(row?.itemKey ?? ""))
+  );
 }
 
 function assertMarketCatalogItemAccess<
   T extends { marketGrade?: number; itemKey?: string },
->(
-  catalogItem: T,
-  marketId: string,
-): T {
+>(catalogItem: T, marketId: string): T {
   if (!isItemGradeTradedInMarket(catalogItem.marketGrade ?? 1, marketId)) {
-    throw new SenderError('Item is not traded in this market.');
+    throw new SenderError("Item is not traded in this market.");
   }
 
   return catalogItem;
@@ -8125,7 +8671,10 @@ function getPlayerShopRequestKeyForIdentity(
   return getMarketScopedKey(marketId, baseKey);
 }
 
-function getPlayerShopMarketProceedsKey(identity: Identity, marketId: string): string {
+function getPlayerShopMarketProceedsKey(
+  identity: Identity,
+  marketId: string,
+): string {
   return `${normalizeMarketId(marketId)}:${identity.toHexString()}`;
 }
 
@@ -8155,13 +8704,16 @@ function addClaimablePlayerShopGold(
         );
   const existingProceeds = legacyProceeds ?? marketProceeds;
   const currentProceedsGold = existingProceeds
-    ? decodeStoredGoldPrice(existingProceeds.gold, existingProceeds.goldScale) ?? 0
+    ? (decodeStoredGoldPrice(
+        existingProceeds.gold,
+        existingProceeds.goldScale,
+      ) ?? 0)
     : 0;
   let nextProceedsGold = roundGoldPrice(currentProceedsGold + safeGold);
 
   if (nextProceedsGold > MAX_PLAYER_SHOP_PROCEEDS_GOLD) {
     if (!clampToCap) {
-      throw new SenderError('Player shop proceeds are too high.');
+      throw new SenderError("Player shop proceeds are too high.");
     }
 
     nextProceedsGold = MAX_PLAYER_SHOP_PROCEEDS_GOLD;
@@ -8194,7 +8746,10 @@ function addClaimablePlayerShopGold(
     });
   } else {
     ctx.db.playerShopMarketProceeds.insert({
-      proceedsKey: getPlayerShopMarketProceedsKey(recipientIdentity, safeMarketId),
+      proceedsKey: getPlayerShopMarketProceedsKey(
+        recipientIdentity,
+        safeMarketId,
+      ),
       sellerIdentity: recipientIdentity,
       marketId: safeMarketId,
       gold: toStoredGoldPrice(nextProceedsGold),
@@ -8213,7 +8768,9 @@ function grantPotionDiscoveryPassiveGold(
   sellerIdentity: Identity,
   marketId = defaultMarketId,
 ): number {
-  const discovery = ctx.db.potionRecipeDiscovery.potionKey.find(normalizePotionKey(potionKey));
+  const discovery = ctx.db.potionRecipeDiscovery.potionKey.find(
+    normalizePotionKey(potionKey),
+  );
 
   if (!discovery || discovery.discoveredByIdentity.isEqual(sellerIdentity)) {
     return 0;
@@ -8236,7 +8793,8 @@ function grantPotionDiscoveryPassiveGold(
   }
 
   const currentRoyaltyGold =
-    decodeStoredGoldPrice(discovery.royaltyGold, discovery.royaltyGoldScale) ?? 0;
+    decodeStoredGoldPrice(discovery.royaltyGold, discovery.royaltyGoldScale) ??
+    0;
   const nextRoyaltyGold = roundGoldPrice(currentRoyaltyGold + grantedGold);
 
   ctx.db.potionRecipeDiscovery.potionKey.update({
@@ -8358,7 +8916,10 @@ function assertTradeAllianceTagAvailable(
   }
 }
 
-function getTradeAllianceMember(ctx: IdleWizardReducerCtx, identity = ctx.sender) {
+function getTradeAllianceMember(
+  ctx: IdleWizardReducerCtx,
+  identity = ctx.sender,
+) {
   return ctx.db.tradeAllianceMember.memberIdentity.find(identity) ?? null;
 }
 
@@ -8366,11 +8927,17 @@ function assertTradeAllianceUnlocked(ctx: IdleWizardReducerCtx) {
   let player = ensurePlayer(ctx);
   const gameplaySave = ctx.db.playerGameplaySave.identity.find(ctx.sender);
   if (gameplaySave) {
-    player = syncPlayerLevelFromGameplaySave(ctx, player, gameplaySave.saveJson);
+    player = syncPlayerLevelFromGameplaySave(
+      ctx,
+      player,
+      gameplaySave.saveJson,
+    );
   }
 
   if (!isTradeAllianceUnlocked(normalizePlayerLevel(player.playerLevel))) {
-    throw new Error(`Trade alliances unlock at level ${TRADE_ALLIANCE_UNLOCK_LEVEL}.`);
+    throw new Error(
+      `Trade alliances unlock at level ${TRADE_ALLIANCE_UNLOCK_LEVEL}.`,
+    );
   }
 
   return player;
@@ -8389,10 +8956,13 @@ function findTradeAllianceMemberByIdentityHex(
   return ctx.db.tradeAllianceMember.memberIdentity.find(identity) ?? null;
 }
 
-function getTradeAllianceMembers(ctx: IdleWizardReducerCtx, allianceId: unknown) {
+function getTradeAllianceMembers(
+  ctx: IdleWizardReducerCtx,
+  allianceId: unknown,
+) {
   const allianceKey = getTradeAllianceIdKey(allianceId);
   const indexedMembers =
-    allianceId && typeof allianceId === 'object' && 'compareTo' in allianceId
+    allianceId && typeof allianceId === "object" && "compareTo" in allianceId
       ? ctx.db.tradeAllianceMember.byAllianceId.filter(allianceId as Uuid)
       : ctx.db.tradeAllianceMember.iter();
 
@@ -8401,7 +8971,10 @@ function getTradeAllianceMembers(ctx: IdleWizardReducerCtx, allianceId: unknown)
   );
 }
 
-function getTradeAllianceMemberCount(ctx: IdleWizardReducerCtx, allianceId: unknown): number {
+function getTradeAllianceMemberCount(
+  ctx: IdleWizardReducerCtx,
+  allianceId: unknown,
+): number {
   return getTradeAllianceMembers(ctx, allianceId).length;
 }
 
@@ -8410,7 +8983,9 @@ function getTradeAllianceRoleCount(
   allianceId: unknown,
   role: string,
 ): number {
-  return getTradeAllianceMembers(ctx, allianceId).filter((member) => member.role === role).length;
+  return getTradeAllianceMembers(ctx, allianceId).filter(
+    (member) => member.role === role,
+  ).length;
 }
 
 function assertTradeAllianceRoleCap(
@@ -8429,15 +9004,20 @@ function assertTradeAllianceRoleCap(
   }
 }
 
-function assertTradeAllianceCanManageApplications(ctx: IdleWizardReducerCtx, allianceId: unknown) {
+function assertTradeAllianceCanManageApplications(
+  ctx: IdleWizardReducerCtx,
+  allianceId: unknown,
+) {
   const member = getTradeAllianceMember(ctx);
 
   if (
     !member ||
-    getTradeAllianceIdKey(member.allianceId) !== getTradeAllianceIdKey(allianceId) ||
-    getTradeAllianceRolePower(member.role) < getTradeAllianceRolePower(TRADE_ALLIANCE_ROLE_FACTOR)
+    getTradeAllianceIdKey(member.allianceId) !==
+      getTradeAllianceIdKey(allianceId) ||
+    getTradeAllianceRolePower(member.role) <
+      getTradeAllianceRolePower(TRADE_ALLIANCE_ROLE_FACTOR)
   ) {
-    throw new Error('Alliance applications require factor role.');
+    throw new Error("Alliance applications require factor role.");
   }
 
   return member;
@@ -8522,7 +9102,9 @@ function updateTradeAllianceMemberProfile(
     });
   }
 
-  for (const application of ctx.db.tradeAllianceApplication.byApplicantIdentity.filter(identity)) {
+  for (const application of ctx.db.tradeAllianceApplication.byApplicantIdentity.filter(
+    identity,
+  )) {
     ctx.db.tradeAllianceApplication.applicationKey.update({
       ...application,
       username,
@@ -8541,11 +9123,14 @@ function validatePlayerShopSlotNumber(slotNumber: number): number {
   return safeSlotNumber;
 }
 
-function validatePlayerShopSlotNumberForMarket(slotNumber: number, marketId: string): number {
+function validatePlayerShopSlotNumberForMarket(
+  slotNumber: number,
+  marketId: string,
+): number {
   const safeSlotNumber = validatePlayerShopSlotNumber(slotNumber);
 
   if (safeSlotNumber > getMarketRank(marketId)) {
-    throw new SenderError('Player shop slot requires a higher market rank.');
+    throw new SenderError("Player shop slot requires a higher market rank.");
   }
 
   return safeSlotNumber;
@@ -8675,7 +9260,9 @@ function normalizeNpcMarketBasePriceGold(
   return safeValue;
 }
 
-function validateNpcMarketBasePriceGold(basePriceGold: bigint | number): number {
+function validateNpcMarketBasePriceGold(
+  basePriceGold: bigint | number,
+): number {
   const safeBasePriceGold = normalizeGoldPrice(basePriceGold);
 
   if (
@@ -8683,13 +9270,16 @@ function validateNpcMarketBasePriceGold(basePriceGold: bigint | number): number 
     safeBasePriceGold < 1 ||
     safeBasePriceGold > NPC_MARKET_MAX_BASE_PRICE_GOLD
   ) {
-    throw new Error('Invalid NPC market base price.');
+    throw new Error("Invalid NPC market base price.");
   }
 
   return safeBasePriceGold;
 }
 
-function normalizeNpcMarketTargetStock(value: bigint | number, fallback: bigint): bigint {
+function normalizeNpcMarketTargetStock(
+  value: bigint | number,
+  fallback: bigint,
+): bigint {
   const safeValue = toBigInt(value);
 
   if (safeValue < 1n || safeValue > NPC_MARKET_MAX_TARGET_STOCK) {
@@ -8709,7 +9299,10 @@ function validateNpcMarketTargetStock(targetStock: bigint | number): bigint {
   return safeTargetStock;
 }
 
-function normalizeNpcMarketVolatilityBps(value: bigint | number, fallback: bigint): bigint {
+function normalizeNpcMarketVolatilityBps(
+  value: bigint | number,
+  fallback: bigint,
+): bigint {
   const safeValue = toBigInt(value);
 
   if (safeValue > NPC_MARKET_MAX_VOLATILITY_BPS) {
@@ -8719,17 +9312,22 @@ function normalizeNpcMarketVolatilityBps(value: bigint | number, fallback: bigin
   return safeValue;
 }
 
-function validateNpcMarketVolatilityBps(volatilityBps: bigint | number): bigint {
+function validateNpcMarketVolatilityBps(
+  volatilityBps: bigint | number,
+): bigint {
   const safeVolatilityBps = toBigInt(volatilityBps);
 
   if (safeVolatilityBps > NPC_MARKET_MAX_VOLATILITY_BPS) {
-    throw new Error('Invalid NPC market volatility.');
+    throw new Error("Invalid NPC market volatility.");
   }
 
   return safeVolatilityBps;
 }
 
-function normalizeResearchCostGold(value: bigint | number, fallback: bigint): bigint {
+function normalizeResearchCostGold(
+  value: bigint | number,
+  fallback: bigint,
+): bigint {
   const safeValue = toBigInt(value);
 
   if (safeValue > MAX_RESEARCH_COST_GOLD) {
@@ -8792,7 +9390,11 @@ function normalizeStoredResearchDurationSeconds(
   value: bigint | number,
   fallback: bigint,
 ): bigint {
-  const durationSeconds = normalizeResearchDurationSeconds(researchId, value, fallback);
+  const durationSeconds = normalizeResearchDurationSeconds(
+    researchId,
+    value,
+    fallback,
+  );
 
   if (isLegacyItemTimerResearchDuration(researchId, durationSeconds)) {
     return fallback;
@@ -8802,7 +9404,8 @@ function normalizeStoredResearchDurationSeconds(
     return fallback;
   }
 
-  const legacyDefaultDurationSeconds = researchLegacyDefaultDurationSecondsById[researchId];
+  const legacyDefaultDurationSeconds =
+    researchLegacyDefaultDurationSecondsById[researchId];
 
   if (
     legacyDefaultDurationSeconds !== undefined &&
@@ -8813,7 +9416,10 @@ function normalizeStoredResearchDurationSeconds(
 
   const legacyDurationSeconds = researchLegacyDurationSecondsById[researchId];
 
-  if (legacyDurationSeconds !== undefined && durationSeconds === legacyDurationSeconds) {
+  if (
+    legacyDurationSeconds !== undefined &&
+    durationSeconds === legacyDurationSeconds
+  ) {
     return fallback;
   }
 
@@ -8880,10 +9486,10 @@ function normalizeMaintenanceKey(value: unknown): string {
 }
 
 function validateGameConfigJson(configKey: string, configJson: string): string {
-  const value = String(configJson ?? '').trim();
+  const value = String(configJson ?? "").trim();
 
   if (!value || value.length > MAX_GAME_CONFIG_JSON_LENGTH) {
-    throw new Error('Invalid game config JSON length.');
+    throw new Error("Invalid game config JSON length.");
   }
 
   let parsedConfig: unknown;
@@ -8891,14 +9497,18 @@ function validateGameConfigJson(configKey: string, configJson: string): string {
   try {
     parsedConfig = JSON.parse(value);
   } catch {
-    throw new Error('Invalid game config JSON.');
+    throw new Error("Invalid game config JSON.");
   }
 
   validateGameConfigValue(configKey, parsedConfig);
-  const normalizedValue = normalizeGameConfigJson(configKey, parsedConfig, value);
+  const normalizedValue = normalizeGameConfigJson(
+    configKey,
+    parsedConfig,
+    value,
+  );
 
   if (normalizedValue.length > MAX_GAME_CONFIG_JSON_LENGTH) {
-    throw new Error('Invalid game config JSON length.');
+    throw new Error("Invalid game config JSON length.");
   }
 
   return normalizedValue;
@@ -8910,29 +9520,31 @@ function normalizeGameConfigJson(
   originalJson: string,
 ): string {
   if (
-    configKey === 'tradeAlliance' &&
+    configKey === "tradeAlliance" &&
     (isLegacyTradeAllianceGameConfig(parsedConfig) ||
       isIncomeOnlyTradeAllianceGameConfig(parsedConfig))
   ) {
     return DEFAULT_TRADE_ALLIANCE_CONFIG_JSON;
   }
 
-  if (configKey === 'potionRecipes' && isRecord(parsedConfig)) {
+  if (configKey === "potionRecipes" && isRecord(parsedConfig)) {
     return normalizePotionRecipesGameConfigJson(parsedConfig, originalJson);
   }
 
-  if (configKey === 'items' && isRecord(parsedConfig)) {
+  if (configKey === "items" && isRecord(parsedConfig)) {
     return normalizeItemsGameConfigJson(parsedConfig, originalJson);
   }
 
-  if (configKey === 'tasks' && isRecord(parsedConfig)) {
+  if (configKey === "tasks" && isRecord(parsedConfig)) {
     return normalizeTasksGameConfigJson(parsedConfig, originalJson);
   }
 
-  if (configKey === 'research' && isRecord(parsedConfig)) {
+  if (configKey === "research" && isRecord(parsedConfig)) {
     const normalizedResearchConfig = { ...parsedConfig };
     let changed = false;
-    const defaultResearchCostsGold = toNumberRecord(researchDefaultCostGoldById);
+    const defaultResearchCostsGold = toNumberRecord(
+      researchDefaultCostGoldById,
+    );
 
     if (isRecord(parsedConfig.researchCostsGold)) {
       const existingCostsGold = parsedConfig.researchCostsGold;
@@ -8943,21 +9555,21 @@ function normalizeGameConfigJson(
         ...defaultResearchCostsGold,
         ...removeLegacySplitAutomationEntries(existingCostsGold),
       };
-      const replacedLegacyGoldCost = Object.entries(researchLegacyCostGoldById).some(
-        ([researchId, legacyCostGoldValues]) => {
-          const currentCostGold = Number(nextCostsGold[researchId]);
-          if (
-            !legacyCostGoldValues.some(
-              (legacyCostGold) => currentCostGold === Number(legacyCostGold),
-            )
-          ) {
-            return false;
-          }
+      const replacedLegacyGoldCost = Object.entries(
+        researchLegacyCostGoldById,
+      ).some(([researchId, legacyCostGoldValues]) => {
+        const currentCostGold = Number(nextCostsGold[researchId]);
+        if (
+          !legacyCostGoldValues.some(
+            (legacyCostGold) => currentCostGold === Number(legacyCostGold),
+          )
+        ) {
+          return false;
+        }
 
-          nextCostsGold[researchId] = defaultResearchCostsGold[researchId];
-          return true;
-        },
-      );
+        nextCostsGold[researchId] = defaultResearchCostsGold[researchId];
+        return true;
+      });
 
       if (
         missingGoldCost ||
@@ -8991,9 +9603,9 @@ function normalizeGameConfigJson(
       existingCostsRuby,
       existingCostsCrystal,
     );
-    if (Number(nextCostsRuby['automation:autoSeedSpawn']) === 10) {
-      nextCostsRuby['automation:autoSeedSpawn'] =
-        researchDefaultCostRubyById['automation:autoSeedSpawn'];
+    if (Number(nextCostsRuby["automation:autoSeedSpawn"]) === 10) {
+      nextCostsRuby["automation:autoSeedSpawn"] =
+        researchDefaultCostRubyById["automation:autoSeedSpawn"];
     }
     const nextCostsEmerald = normalizeResearchCurrencyCostRecord(
       researchDefaultCostEmeraldById,
@@ -9006,11 +9618,14 @@ function normalizeGameConfigJson(
       researchLegacyCostEmeraldById,
     )) {
       const currentCostCrystal = Number(nextCostsCrystal[researchId]);
-      const defaultCostCrystal = Number(researchDefaultCostCrystalById[researchId]);
+      const defaultCostCrystal = Number(
+        researchDefaultCostCrystalById[researchId],
+      );
       if (
         currentCostCrystal === defaultCostCrystal ||
         !legacyCostEmeraldValues.some(
-          (legacyCostEmerald) => currentCostCrystal === Number(legacyCostEmerald),
+          (legacyCostEmerald) =>
+            currentCostCrystal === Number(legacyCostEmerald),
         )
       ) {
         continue;
@@ -9021,7 +9636,8 @@ function normalizeGameConfigJson(
     }
 
     if (
-      JSON.stringify(existingCostsCrystal) !== JSON.stringify(nextCostsCrystal) ||
+      JSON.stringify(existingCostsCrystal) !==
+        JSON.stringify(nextCostsCrystal) ||
       replacedLegacyCrystalCost
     ) {
       normalizedResearchConfig.researchCostsCrystal = nextCostsCrystal;
@@ -9033,7 +9649,9 @@ function normalizeGameConfigJson(
       changed = true;
     }
 
-    if (JSON.stringify(existingCostsEmerald) !== JSON.stringify(nextCostsEmerald)) {
+    if (
+      JSON.stringify(existingCostsEmerald) !== JSON.stringify(nextCostsEmerald)
+    ) {
       normalizedResearchConfig.researchCostsEmerald = nextCostsEmerald;
       changed = true;
     }
@@ -9063,8 +9681,15 @@ function normalizeGameConfigJson(
         replacedPremiumDuration = true;
       }
 
-      for (const [researchId, currentDurationSeconds] of Object.entries(nextDurations)) {
-        if (!isLegacyManaResearchDuration(researchId, Number(currentDurationSeconds))) {
+      for (const [researchId, currentDurationSeconds] of Object.entries(
+        nextDurations,
+      )) {
+        if (
+          !isLegacyManaResearchDuration(
+            researchId,
+            Number(currentDurationSeconds),
+          )
+        ) {
           continue;
         }
 
@@ -9075,7 +9700,8 @@ function normalizeGameConfigJson(
       for (const [researchId, legacyDurationSeconds] of Object.entries(
         researchLegacyDefaultDurationSecondsById,
       )) {
-        const defaultDurationSeconds = defaultResearchDurationsSeconds[researchId];
+        const defaultDurationSeconds =
+          defaultResearchDurationsSeconds[researchId];
 
         if (defaultDurationSeconds === undefined) {
           continue;
@@ -9094,7 +9720,8 @@ function normalizeGameConfigJson(
       for (const [researchId, legacyDurationSeconds] of Object.entries(
         researchLegacyDurationSecondsById,
       )) {
-        const defaultDurationSeconds = defaultResearchDurationsSeconds[researchId];
+        const defaultDurationSeconds =
+          defaultResearchDurationsSeconds[researchId];
 
         if (defaultDurationSeconds === undefined) {
           continue;
@@ -9113,7 +9740,8 @@ function normalizeGameConfigJson(
       for (const [researchId, legacyDurationSecondsValues] of Object.entries(
         researchAdditionalLegacyDurationSecondsById,
       )) {
-        const defaultDurationSeconds = defaultResearchDurationsSeconds[researchId];
+        const defaultDurationSeconds =
+          defaultResearchDurationsSeconds[researchId];
 
         if (defaultDurationSeconds === undefined) {
           continue;
@@ -9152,19 +9780,19 @@ function normalizeGameConfigJson(
     return changed ? JSON.stringify(normalizedResearchConfig) : originalJson;
   }
 
-  if (configKey === 'garden' && isRecord(parsedConfig)) {
+  if (configKey === "garden" && isRecord(parsedConfig)) {
     return normalizeGardenGameConfigJson(parsedConfig, originalJson);
   }
 
-  if (configKey === 'brewing' && isRecord(parsedConfig)) {
+  if (configKey === "brewing" && isRecord(parsedConfig)) {
     return normalizeBrewingGameConfigJson(parsedConfig, originalJson);
   }
 
-  if (configKey === 'playerLevel' && isRecord(parsedConfig)) {
+  if (configKey === "playerLevel" && isRecord(parsedConfig)) {
     return normalizePlayerLevelGameConfigJson(parsedConfig, originalJson);
   }
 
-  if (configKey !== 'playerLevel' || !isRecord(parsedConfig)) {
+  if (configKey !== "playerLevel" || !isRecord(parsedConfig)) {
     return originalJson;
   }
 
@@ -9239,7 +9867,9 @@ function normalizeLegacyPlayerLevelMilestones(
 
   const defaultByLevel = new Map(
     defaultMilestones
-      .filter((milestone): milestone is Record<string, unknown> => isRecord(milestone))
+      .filter((milestone): milestone is Record<string, unknown> =>
+        isRecord(milestone),
+      )
       .map((milestone) => [Number(milestone.level), milestone]),
   );
   let changed = false;
@@ -9286,7 +9916,10 @@ function normalizeGardenGameConfigJson(
     !garden ||
     !Array.isArray(garden.tileCostsGold) ||
     !Array.isArray(defaultTileCosts) ||
-    (!matchesNumberList(garden.tileCostsGold, LEGACY_GARDEN_TILE_COSTS_GOLD_20) &&
+    (!matchesNumberList(
+      garden.tileCostsGold,
+      LEGACY_GARDEN_TILE_COSTS_GOLD_20,
+    ) &&
       !shouldExtendDefaultNumberList(garden.tileCostsGold, defaultTileCosts))
   ) {
     return originalJson;
@@ -9342,7 +9975,10 @@ function normalizeBrewingGameConfigJson(
   return changed ? JSON.stringify(normalizedConfig) : originalJson;
 }
 
-function shouldExtendDefaultNumberList(existing: unknown[], defaults: number[]): boolean {
+function shouldExtendDefaultNumberList(
+  existing: unknown[],
+  defaults: number[],
+): boolean {
   return (
     existing.length > 0 &&
     existing.length < defaults.length &&
@@ -9532,12 +10168,14 @@ function normalizeLegacyTaskCoinBudgets(levels: unknown[]): unknown[] {
 }
 
 function shouldResetTasksGameConfigToDefault(levels: unknown[]): boolean {
-  return hasNonDefaultLevelOneTasks(levels) ||
+  return (
+    hasNonDefaultLevelOneTasks(levels) ||
     hasLegacyLevelTwoSageTasks(levels) ||
     hasLegacyShortTaskCatalog(levels) ||
     hasSameFamilySeedItemRequirementsAfterTutorial(levels) ||
     hasLegacyEarlyRepeatedTaskItems(levels) ||
-    hasLegacyRepetitiveTaskMaterialBands(levels);
+    hasLegacyRepetitiveTaskMaterialBands(levels)
+  );
 }
 
 function hasNonDefaultLevelOneTasks(levels: unknown[]): boolean {
@@ -9554,24 +10192,31 @@ function hasLegacyShortTaskCatalog(levels: unknown[]): boolean {
     return false;
   }
 
-  return hasTaskConfigId(levels, 'level6-mandrake-herb') ||
-    hasTaskConfigId(levels, 'level8-glowcap-herb') ||
-    hasTaskConfigId(levels, 'level20-sage-seeds');
+  return (
+    hasTaskConfigId(levels, "level6-mandrake-herb") ||
+    hasTaskConfigId(levels, "level8-glowcap-herb") ||
+    hasTaskConfigId(levels, "level20-sage-seeds")
+  );
 }
 
 function hasLegacyLevelTwoSageTasks(levels: unknown[]): boolean {
   const levelTwoTasks = getTaskConfigsForLevel(levels, 2);
 
-  return taskConfigListsMatch(levelTwoTasks, [
-    { id: 'level2-sage-seeds', itemKey: 'sageSeed', quantity: 20 },
-    { id: 'level2-sage-herb', itemKey: 'sageHerb', quantity: 6 },
-  ]) || taskConfigListsMatch(levelTwoTasks, [
-    { id: 'level2-sage-seeds', itemKey: 'sageSeed', quantity: 10 },
-    { id: 'level2-sage-herb', itemKey: 'sageHerb', quantity: 3 },
-  ]);
+  return (
+    taskConfigListsMatch(levelTwoTasks, [
+      { id: "level2-sage-seeds", itemKey: "sageSeed", quantity: 20 },
+      { id: "level2-sage-herb", itemKey: "sageHerb", quantity: 6 },
+    ]) ||
+    taskConfigListsMatch(levelTwoTasks, [
+      { id: "level2-sage-seeds", itemKey: "sageSeed", quantity: 10 },
+      { id: "level2-sage-herb", itemKey: "sageHerb", quantity: 3 },
+    ])
+  );
 }
 
-function hasSameFamilySeedItemRequirementsAfterTutorial(levels: unknown[]): boolean {
+function hasSameFamilySeedItemRequirementsAfterTutorial(
+  levels: unknown[],
+): boolean {
   for (const levelConfig of levels) {
     if (!isRecord(levelConfig) || Number(levelConfig.level) < 4) {
       continue;
@@ -9580,13 +10225,13 @@ function hasSameFamilySeedItemRequirementsAfterTutorial(levels: unknown[]): bool
     const tasks = Array.isArray(levelConfig.tasks) ? levelConfig.tasks : [];
     const seedFamilies = tasks
       .filter((task) => isRecord(task))
-      .map((task) => String(task.itemKey ?? ''))
-      .filter((itemKey) => itemKey.endsWith('Seed'))
-      .map((itemKey) => itemKey.slice(0, -'Seed'.length).toLowerCase());
+      .map((task) => String(task.itemKey ?? ""))
+      .filter((itemKey) => itemKey.endsWith("Seed"))
+      .map((itemKey) => itemKey.slice(0, -"Seed".length).toLowerCase());
     const itemKeys = tasks
       .filter((task) => isRecord(task))
-      .map((task) => String(task.itemKey ?? ''))
-      .filter((itemKey) => !itemKey.endsWith('Seed'))
+      .map((task) => String(task.itemKey ?? ""))
+      .filter((itemKey) => !itemKey.endsWith("Seed"))
       .map((itemKey) => itemKey.toLowerCase());
 
     if (
@@ -9602,46 +10247,36 @@ function hasSameFamilySeedItemRequirementsAfterTutorial(levels: unknown[]): bool
 }
 
 function hasLegacyRepetitiveTaskMaterialBands(levels: unknown[]): boolean {
-  return hasTaskConfigValue(
-    levels,
-    14,
-    'level14-simple-antidote',
-    'glowcapSeed',
-    180,
-  ) || hasTaskConfigValue(
-    levels,
-    45,
-    'level45-star-anise--seeds-1',
-    'starAniseSeed',
-    690,
+  return (
+    hasTaskConfigValue(
+      levels,
+      14,
+      "level14-simple-antidote",
+      "glowcapSeed",
+      180,
+    ) ||
+    hasTaskConfigValue(
+      levels,
+      45,
+      "level45-star-anise--seeds-1",
+      "starAniseSeed",
+      690,
+    )
   );
 }
 
 function hasLegacyEarlyRepeatedTaskItems(levels: unknown[]): boolean {
-  return hasTaskConfigValue(
-    levels,
-    5,
-    'level5-nettle-seeds',
-    'mintSeed',
-    45,
-  ) && hasTaskConfigValue(
-    levels,
-    6,
-    'level6-lavender-seeds',
-    'lavenderHerb',
-    42,
-  ) && hasTaskConfigValue(
-    levels,
-    7,
-    'level7-nettle-vigor',
-    'nettleVigor',
-    6,
-  ) && hasTaskConfigValue(
-    levels,
-    8,
-    'level8-briar-seeds',
-    'briarHerb',
-    56,
+  return (
+    hasTaskConfigValue(levels, 5, "level5-nettle-seeds", "mintSeed", 45) &&
+    hasTaskConfigValue(
+      levels,
+      6,
+      "level6-lavender-seeds",
+      "lavenderHerb",
+      42,
+    ) &&
+    hasTaskConfigValue(levels, 7, "level7-nettle-vigor", "nettleVigor", 6) &&
+    hasTaskConfigValue(levels, 8, "level8-briar-seeds", "briarHerb", 56)
   );
 }
 
@@ -9681,12 +10316,18 @@ function normalizeLegacyLevel5Tasks(levels: unknown[]): unknown[] {
   );
 }
 
-function getTaskConfigsForLevel(levels: unknown[], levelNumber: number): unknown[] {
+function getTaskConfigsForLevel(
+  levels: unknown[],
+  levelNumber: number,
+): unknown[] {
   const levelConfig = levels.find(
-    (candidate) => isRecord(candidate) && Number(candidate.level) === levelNumber,
+    (candidate) =>
+      isRecord(candidate) && Number(candidate.level) === levelNumber,
   );
 
-  return isRecord(levelConfig) && Array.isArray(levelConfig.tasks) ? levelConfig.tasks : [];
+  return isRecord(levelConfig) && Array.isArray(levelConfig.tasks)
+    ? levelConfig.tasks
+    : [];
 }
 
 function taskConfigListsMatch(
@@ -9705,21 +10346,26 @@ function taskConfigListsMatch(
 
   return expectedTasks.every((expectedTask, index) => {
     const task = tasks[index];
-    const expectedType = normalizeTasksConfigTaskType(expectedTask.type) ?? 'turnIn';
+    const expectedType =
+      normalizeTasksConfigTaskType(expectedTask.type) ?? "turnIn";
 
-    return isRecord(task) &&
-      String(task.id ?? '') === expectedTask.id &&
-      String(task.itemKey ?? '') === String(expectedTask.itemKey ?? '') &&
-      String(task.researchId ?? '') === String(expectedTask.researchId ?? '') &&
-      (normalizeTasksConfigTaskType(task.type) ?? 'turnIn') === expectedType &&
-      Number(task.quantity) === expectedTask.quantity;
+    return (
+      isRecord(task) &&
+      String(task.id ?? "") === expectedTask.id &&
+      String(task.itemKey ?? "") === String(expectedTask.itemKey ?? "") &&
+      String(task.researchId ?? "") === String(expectedTask.researchId ?? "") &&
+      (normalizeTasksConfigTaskType(task.type) ?? "turnIn") === expectedType &&
+      Number(task.quantity) === expectedTask.quantity
+    );
   });
 }
 
 function hasTaskConfigId(levels: unknown[], taskId: string): boolean {
   return levels.some((levelConfig) =>
     isRecord(levelConfig) && Array.isArray(levelConfig.tasks)
-      ? levelConfig.tasks.some((task) => isRecord(task) && String(task.id ?? '') === taskId)
+      ? levelConfig.tasks.some(
+          (task) => isRecord(task) && String(task.id ?? "") === taskId,
+        )
       : false,
   );
 }
@@ -9782,15 +10428,18 @@ function normalizePotionRecipesGameConfigJson(
       if (!isRecord(ingredient)) {
         return [ingredient];
       }
-      const quantity = Math.max(1, Math.floor(Number(ingredient.quantity) || 1));
+      const quantity = Math.max(
+        1,
+        Math.floor(Number(ingredient.quantity) || 1),
+      );
       if (quantity !== 1) {
         recipeChanged = true;
         changed = true;
       }
-      return Array.from(
-        { length: quantity },
-        () => ({ ...ingredient, quantity: 1 }),
-      );
+      return Array.from({ length: quantity }, () => ({
+        ...ingredient,
+        quantity: 1,
+      }));
     });
     return recipeChanged
       ? { ...recipe, ingredients: normalizedIngredients }
@@ -9798,7 +10447,9 @@ function normalizePotionRecipesGameConfigJson(
   });
   const seenPotionKeys = new Set(
     normalizedRecipes.map((recipe) =>
-      normalizeNpcMarketItemKey(String((recipe as Record<string, unknown>)?.potionKey ?? '')),
+      normalizeNpcMarketItemKey(
+        String((recipe as Record<string, unknown>)?.potionKey ?? ""),
+      ),
     ),
   );
   const missingCatalogRecipes = potionRecipeCatalog.filter(
@@ -9819,8 +10470,11 @@ function normalizePotionRecipesGameConfigJson(
         return recipe;
       }
 
-      const potionKey = normalizeNpcMarketItemKey(String(recipe.potionKey ?? ''));
-      const defaultDurationMs = defaultRecipesByKey.get(potionKey)?.brewDurationMs;
+      const potionKey = normalizeNpcMarketItemKey(
+        String(recipe.potionKey ?? ""),
+      );
+      const defaultDurationMs =
+        defaultRecipesByKey.get(potionKey)?.brewDurationMs;
       return Number.isFinite(defaultDurationMs) &&
         Number(recipe.brewDurationMs) !== defaultDurationMs
         ? { ...recipe, brewDurationMs: defaultDurationMs }
@@ -9844,27 +10498,28 @@ function normalizeItemsGameConfigJson(
   parsedConfig: Record<string, unknown>,
   originalJson: string,
 ): string {
-  const defaultConfig = JSON.parse(DEFAULT_ITEMS_CONFIG_JSON) as Record<string, unknown>;
+  const defaultConfig = JSON.parse(DEFAULT_ITEMS_CONFIG_JSON) as Record<
+    string,
+    unknown
+  >;
   let normalizedConfig = { ...parsedConfig };
   let changed = false;
 
-  for (const key of ['seeds', 'herbs', 'potions', 'ingredients']) {
-    const existingRows = key === 'ingredients'
-      ? removeRetiredItemConfigRows(parsedConfig[key], retiredIngredientKeys)
-      : parsedConfig[key];
+  for (const key of ["seeds", "herbs", "potions", "ingredients"]) {
+    const existingRows =
+      key === "ingredients"
+        ? removeRetiredItemConfigRows(parsedConfig[key], retiredIngredientKeys)
+        : parsedConfig[key];
     let normalizedList = normalizeLegacyItemConfigRows(
-      appendMissingItemConfigRows(
-        existingRows,
-        defaultConfig[key],
-      ),
+      appendMissingItemConfigRows(existingRows, defaultConfig[key]),
       defaultConfig[key],
     );
 
-    if (key === 'seeds') {
+    if (key === "seeds") {
       normalizedList = normalizeLegacySeedSummonCosts(
         normalizedList,
         defaultConfig[key],
-        (row) => normalizeNpcMarketItemKey(String(row.key ?? '')),
+        (row) => normalizeNpcMarketItemKey(String(row.key ?? "")),
       );
     }
 
@@ -9878,7 +10533,7 @@ function normalizeItemsGameConfigJson(
     normalizedConfig,
     defaultConfig,
     ITEM_SELL_PRICE_BALANCE_VERSION,
-    (row) => normalizeNpcMarketItemKey(String(row.key ?? '')),
+    (row) => normalizeNpcMarketItemKey(String(row.key ?? "")),
   );
 
   if (priceRebasedConfig !== normalizedConfig) {
@@ -9890,7 +10545,7 @@ function normalizeItemsGameConfigJson(
     normalizedConfig,
     defaultConfig,
     HERB_GROWTH_TIMER_BALANCE_VERSION,
-    (row) => normalizeNpcMarketItemKey(String(row.key ?? '')),
+    (row) => normalizeNpcMarketItemKey(String(row.key ?? "")),
   );
 
   if (growthTimerRebasedConfig !== normalizedConfig) {
@@ -9901,21 +10556,27 @@ function normalizeItemsGameConfigJson(
   return changed ? JSON.stringify(normalizedConfig) : originalJson;
 }
 
-function removeRetiredItemConfigRows(existingRows: unknown, retiredKeys: Set<string>) {
+function removeRetiredItemConfigRows(
+  existingRows: unknown,
+  retiredKeys: Set<string>,
+) {
   if (!Array.isArray(existingRows)) {
     return existingRows;
   }
 
   const activeRows = existingRows.filter((row) =>
     isRecord(row)
-      ? !retiredKeys.has(normalizeNpcMarketItemKey(String(row.key ?? '')))
+      ? !retiredKeys.has(normalizeNpcMarketItemKey(String(row.key ?? "")))
       : true,
   );
 
   return activeRows.length === existingRows.length ? existingRows : activeRows;
 }
 
-function normalizeLegacyItemConfigRows(existingRows: unknown, defaultRows: unknown) {
+function normalizeLegacyItemConfigRows(
+  existingRows: unknown,
+  defaultRows: unknown,
+) {
   if (!Array.isArray(existingRows) || !Array.isArray(defaultRows)) {
     return existingRows;
   }
@@ -9923,7 +10584,7 @@ function normalizeLegacyItemConfigRows(existingRows: unknown, defaultRows: unkno
   const defaultRowsByKey = new Map(
     defaultRows
       .filter((row): row is Record<string, unknown> => isRecord(row))
-      .map((row) => [normalizeNpcMarketItemKey(String(row.key ?? '')), row]),
+      .map((row) => [normalizeNpcMarketItemKey(String(row.key ?? "")), row]),
   );
   let changed = false;
   const normalizedRows = existingRows.map((row) => {
@@ -9931,11 +10592,11 @@ function normalizeLegacyItemConfigRows(existingRows: unknown, defaultRows: unkno
       return row;
     }
 
-    const itemKey = normalizeNpcMarketItemKey(String(row.key ?? ''));
+    const itemKey = normalizeNpcMarketItemKey(String(row.key ?? ""));
     const defaultRow = defaultRowsByKey.get(itemKey);
 
     if (
-      itemKey === 'sageHerb' &&
+      itemKey === "sageHerb" &&
       Number(row.growthDurationMs) === 20_000 &&
       Number(defaultRow?.growthDurationMs) === 12_000
     ) {
@@ -9949,11 +10610,12 @@ function normalizeLegacyItemConfigRows(existingRows: unknown, defaultRows: unkno
   return changed ? normalizedRows : existingRows;
 }
 
-function appendMissingItemConfigRows(existingRows: unknown, defaultRows: unknown) {
-  return appendMissingItemConfigRowsByKey(
-    existingRows,
-    defaultRows,
-    (row) => normalizeNpcMarketItemKey(String(row.key ?? '')),
+function appendMissingItemConfigRows(
+  existingRows: unknown,
+  defaultRows: unknown,
+) {
+  return appendMissingItemConfigRowsByKey(existingRows, defaultRows, (row) =>
+    normalizeNpcMarketItemKey(String(row.key ?? "")),
   );
 }
 
@@ -9994,7 +10656,7 @@ function normalizePlayerGameplaySave(
   { preserveSavedAt = false } = {},
 ) {
   if (!isRecord(save)) {
-    throw new Error('Invalid player save value.');
+    throw new Error("Invalid player save value.");
   }
 
   const itemCatalog = getSaveItemCatalog(ctx);
@@ -10033,7 +10695,9 @@ function normalizePlayerGameplaySave(
     savedAt: preserveSavedAt
       ? normalizeSaveExistingTimestamp(save.savedAt, ctx)
       : normalizeSaveTimestamp(ctx),
-    clientSavedAt: normalizeSaveClientTimestamp(save.clientSavedAt ?? save.savedAt),
+    clientSavedAt: normalizeSaveClientTimestamp(
+      save.clientSavedAt ?? save.savedAt,
+    ),
     clientSaveSessionId: normalizeSaveClientSessionId(save.clientSaveSessionId),
     clientSaveSequence: normalizeSaveClientSequence(save.clientSaveSequence),
     mana: normalizeSaveResource(save.mana),
@@ -10041,7 +10705,7 @@ function normalizePlayerGameplaySave(
     gold: normalizedCoin,
     crystal: normalizeSaveCrystal(save.crystal, minimumCurrentCrystal),
     amethyst: normalizeSaveAmethyst(
-      Object.hasOwn(save, 'amethyst') ? save.amethyst : previousSave.amethyst,
+      Object.hasOwn(save, "amethyst") ? save.amethyst : previousSave.amethyst,
     ),
     emerald: normalizeSaveEmerald(save.emerald),
     ruby: normalizeSaveRuby(save.ruby),
@@ -10049,37 +10713,53 @@ function normalizePlayerGameplaySave(
     inventory: normalizeSaveInventory(save.inventory, itemCatalog),
     research,
     automation: normalizeSaveAutomation(
-      Object.hasOwn(save, 'automation') ? save.automation : previousSave.automation,
+      Object.hasOwn(save, "automation")
+        ? save.automation
+        : previousSave.automation,
     ),
     seedSummoning: normalizeSaveSeedSummoning(
-      Object.hasOwn(save, 'seedSummoning')
+      Object.hasOwn(save, "seedSummoning")
         ? save.seedSummoning
         : previousSave.seedSummoning,
       itemCatalog,
     ),
     prestige,
-    visualSettings: normalizeSaveVisualSettings(ctx, save.visualSettings, identity),
+    visualSettings: normalizeSaveVisualSettings(
+      ctx,
+      save.visualSettings,
+      identity,
+    ),
     shop: normalizeSaveShop(save.shop, itemCatalog, levelLimits),
-    brewing: normalizeSaveBrewing(save.brewing, itemCatalog, levelLimits.maxCauldrons),
+    brewing: normalizeSaveBrewing(
+      save.brewing,
+      itemCatalog,
+      levelLimits.maxCauldrons,
+    ),
     garden: normalizeSaveGarden(save.garden, itemCatalog, levelLimits),
     tasks,
     personalTasks: normalizeSaveClientStateBranch(
-      Object.hasOwn(save, 'personalTasks') ? save.personalTasks : previousSave.personalTasks,
+      Object.hasOwn(save, "personalTasks")
+        ? save.personalTasks
+        : previousSave.personalTasks,
       { version: 1, periods: {} },
     ),
     worldNotice: normalizeSaveClientStateBranch(
-      Object.hasOwn(save, 'worldNotice') ? save.worldNotice : previousSave.worldNotice,
+      Object.hasOwn(save, "worldNotice")
+        ? save.worldNotice
+        : previousSave.worldNotice,
       { version: 1, current: null, archive: [] },
     ),
     guild: normalizeSaveClientStateBranch(
-      Object.hasOwn(save, 'guild') ? save.guild : previousSave.guild,
+      Object.hasOwn(save, "guild") ? save.guild : previousSave.guild,
       { version: 1, profile: null },
     ),
     inboxRewards: normalizeSaveInboxRewards(
-      Object.hasOwn(save, 'inboxRewards') ? save.inboxRewards : previousSave.inboxRewards,
+      Object.hasOwn(save, "inboxRewards")
+        ? save.inboxRewards
+        : previousSave.inboxRewards,
     ),
     stats: normalizeSaveClientStateBranch(
-      Object.hasOwn(save, 'stats') ? save.stats : previousSave.stats,
+      Object.hasOwn(save, "stats") ? save.stats : previousSave.stats,
       {
         version: 1,
         seeds: { total: 0, byKey: {} },
@@ -10097,7 +10777,10 @@ function normalizePlayerGameplaySave(
   };
 }
 
-function normalizeSaveClientStateBranch(value: unknown, fallback: Record<string, unknown>) {
+function normalizeSaveClientStateBranch(
+  value: unknown,
+  fallback: Record<string, unknown>,
+) {
   return isRecord(value) ? value : fallback;
 }
 
@@ -10125,7 +10808,9 @@ function isRecord(value: unknown): value is Record<string, unknown> {
   return Boolean(value) && typeof value === 'object' && !Array.isArray(value);
 }
 
-function parsePlayerGameplaySaveJson(saveJson?: string): Record<string, unknown> | null {
+function parsePlayerGameplaySaveJson(
+  saveJson?: string,
+): Record<string, unknown> | null {
   if (!saveJson) {
     return null;
   }
@@ -10138,7 +10823,9 @@ function parsePlayerGameplaySaveJson(saveJson?: string): Record<string, unknown>
   }
 }
 
-function readSaveCoinBranch(save: Record<string, unknown>): Record<string, unknown> {
+function readSaveCoinBranch(
+  save: Record<string, unknown>,
+): Record<string, unknown> {
   if (isRecord(save.coin)) {
     return save.coin;
   }
@@ -10153,17 +10840,13 @@ function migratePlayerGameplaySaveJson(
   const parsedSave = parsePlayerGameplaySaveJson(save.saveJson);
 
   if (!parsedSave) {
-    throw new Error('Cannot migrate invalid player save JSON.');
+    throw new Error("Cannot migrate invalid player save JSON.");
   }
 
   return JSON.stringify(
-    normalizePlayerGameplaySave(
-      ctx,
-      parsedSave,
-      save.saveJson,
-      save.identity,
-      { preserveSavedAt: true },
-    ),
+    normalizePlayerGameplaySave(ctx, parsedSave, save.saveJson, save.identity, {
+      preserveSavedAt: true,
+    }),
   );
 }
 
@@ -10191,12 +10874,22 @@ function getSaveCurrentGold(save: Record<string, unknown>): number {
 
 function getSaveCurrentCrystal(save: Record<string, unknown>): number {
   const crystal = isRecord(save.crystal) ? save.crystal : {};
-  return clampSaveInteger(crystal.current, 0, MAX_PLAYER_SAVE_CURRENT_CRYSTAL, 0);
+  return clampSaveInteger(
+    crystal.current,
+    0,
+    MAX_PLAYER_SAVE_CURRENT_CRYSTAL,
+    0,
+  );
 }
 
 function getSaveCurrentEmerald(save: Record<string, unknown>): number {
   const emerald = isRecord(save.emerald) ? save.emerald : {};
-  return clampSaveInteger(emerald.current, 0, MAX_PLAYER_SAVE_CURRENT_EMERALD, 0);
+  return clampSaveInteger(
+    emerald.current,
+    0,
+    MAX_PLAYER_SAVE_CURRENT_EMERALD,
+    0,
+  );
 }
 
 function getSaveCurrentRuby(save: Record<string, unknown>): number {
@@ -10208,7 +10901,9 @@ function validateAdminCurrentGold(currentGold: unknown): number {
   const safeGold = normalizeGoldPrice(Number(currentGold));
 
   if (safeGold === null || safeGold > MAX_PLAYER_SAVE_CURRENT_GOLD) {
-    throw new Error(`Invalid player gold. Max ${MAX_PLAYER_SAVE_CURRENT_GOLD}.`);
+    throw new Error(
+      `Invalid player gold. Max ${MAX_PLAYER_SAVE_CURRENT_GOLD}.`,
+    );
   }
 
   return safeGold;
@@ -10222,7 +10917,9 @@ function validateAdminCurrentCrystal(currentCrystal: unknown): number {
     value < 0 ||
     value > MAX_PLAYER_SAVE_CURRENT_CRYSTAL
   ) {
-    throw new Error(`Invalid player crystal. Max ${MAX_PLAYER_SAVE_CURRENT_CRYSTAL}.`);
+    throw new Error(
+      `Invalid player crystal. Max ${MAX_PLAYER_SAVE_CURRENT_CRYSTAL}.`,
+    );
   }
 
   return value;
@@ -10291,12 +10988,12 @@ function createAdminPlayerLevelSaveJson(
   playerLevel: number,
 ): string {
   if (!existingSave) {
-    throw new Error('Cannot set level for missing player save.');
+    throw new Error("Cannot set level for missing player save.");
   }
 
   const previousSave = parsePlayerGameplaySaveJson(existingSave.saveJson);
   if (!previousSave) {
-    throw new Error('Cannot set level for invalid player save.');
+    throw new Error("Cannot set level for invalid player save.");
   }
 
   const normalizedSave = normalizePlayerGameplaySave(
@@ -10314,28 +11011,36 @@ function createAdminPlayerLevelSaveJson(
       ? research.completedIds.map((researchId: unknown) => String(researchId))
       : [],
     inProgress: Array.isArray(research.inProgress)
-      ? research.inProgress.filter((progress: unknown): progress is Record<string, unknown> =>
-          isRecord(progress),
+      ? research.inProgress.filter(
+          (progress: unknown): progress is Record<string, unknown> =>
+            isRecord(progress),
         )
       : [],
   };
-  const minimumCurrentCrystal = getMinimumCurrentCrystalForSave(ctx, playerLevel, {
-    ...researchForCrystal,
-    crystalCostById: normalizeSaveResearchCrystalCosts(
-      ctx,
-      research,
-      researchForCrystal,
-    ),
-  });
+  const minimumCurrentCrystal = getMinimumCurrentCrystalForSave(
+    ctx,
+    playerLevel,
+    {
+      ...researchForCrystal,
+      crystalCostById: normalizeSaveResearchCrystalCosts(
+        ctx,
+        research,
+        researchForCrystal,
+      ),
+    },
+  );
   const nextSaveJson = JSON.stringify({
     ...normalizedSave,
     savedAt: normalizeSaveTimestamp(ctx),
-    crystal: normalizeSaveCrystal(normalizedSave.crystal, minimumCurrentCrystal),
+    crystal: normalizeSaveCrystal(
+      normalizedSave.crystal,
+      minimumCurrentCrystal,
+    ),
     tasks: createAdminPlayerLevelTasks(taskCatalog, playerLevel),
   });
 
   if (nextSaveJson.length > MAX_PLAYER_GAMEPLAY_SAVE_JSON_LENGTH) {
-    throw new Error('Invalid player save JSON length.');
+    throw new Error("Invalid player save JSON length.");
   }
 
   return nextSaveJson;
@@ -10355,9 +11060,14 @@ function createAdminPlayerCurrencyBonusSaveJson(
     crystalDelta: number;
   },
 ): string {
-  const previousSave = parsePlayerGameplaySaveJson(existingSave?.saveJson) ?? {};
-  const previousCrystal = isRecord(previousSave.crystal) ? previousSave.crystal : {};
-  const previousEmerald = isRecord(previousSave.emerald) ? previousSave.emerald : {};
+  const previousSave =
+    parsePlayerGameplaySaveJson(existingSave?.saveJson) ?? {};
+  const previousCrystal = isRecord(previousSave.crystal)
+    ? previousSave.crystal
+    : {};
+  const previousEmerald = isRecord(previousSave.emerald)
+    ? previousSave.emerald
+    : {};
   const previousRuby = isRecord(previousSave.ruby) ? previousSave.ruby : {};
   const currentCrystal = clampSaveInteger(
     previousCrystal.current,
@@ -10387,22 +11097,26 @@ function createAdminPlayerCurrencyBonusSaveJson(
           ...previousCrystal,
           current: clampNumber(
             currentCrystal + crystalDelta,
-          0,
-          MAX_PLAYER_SAVE_CURRENT_CRYSTAL,
-        ),
-      },
-      emerald: {
-        ...previousEmerald,
-        current: clampNumber(
-          currentEmerald + emeraldDelta,
-          0,
-          MAX_PLAYER_SAVE_CURRENT_EMERALD,
-        ),
-      },
-      ruby: {
-        ...previousRuby,
-        current: clampNumber(currentRuby + rubyDelta, 0, MAX_PLAYER_SAVE_CURRENT_RUBY),
-      },
+            0,
+            MAX_PLAYER_SAVE_CURRENT_CRYSTAL,
+          ),
+        },
+        emerald: {
+          ...previousEmerald,
+          current: clampNumber(
+            currentEmerald + emeraldDelta,
+            0,
+            MAX_PLAYER_SAVE_CURRENT_EMERALD,
+          ),
+        },
+        ruby: {
+          ...previousRuby,
+          current: clampNumber(
+            currentRuby + rubyDelta,
+            0,
+            MAX_PLAYER_SAVE_CURRENT_RUBY,
+          ),
+        },
       },
       existingSave?.saveJson,
       identity,
@@ -10438,12 +11152,12 @@ function createAdminPlotCapacityCorrectionSaveJson(
   plotNumber: number,
 ): string {
   if (!existingSave) {
-    throw new Error('Cannot correct missing player save.');
+    throw new Error("Cannot correct missing player save.");
   }
 
   const previousSave = parsePlayerGameplaySaveJson(existingSave.saveJson);
   if (!previousSave) {
-    throw new Error('Cannot correct invalid player save JSON.');
+    throw new Error("Cannot correct invalid player save JSON.");
   }
 
   const safePlotNumber = validateAdminPlotCapacityTarget(plotNumber);
@@ -10460,13 +11174,16 @@ function createAdminPlotCapacityCorrectionSaveJson(
   );
 
   if (prestigeCount < requiredPrestigeCount) {
-    throw new Error('Player has not completed enough prestige levels.');
+    throw new Error("Player has not completed enough prestige levels.");
   }
 
   const research = normalizedSave.research;
-  const completedIds = normalizeSaveCompletedResearchIds(research.completedIds) ?? [];
+  const completedIds =
+    normalizeSaveCompletedResearchIds(research.completedIds) ?? [];
   const nextCompletedIdSet = new Set([
-    ...completedIds.filter((researchId) => !isPlotCapacityResearchId(researchId)),
+    ...completedIds.filter(
+      (researchId) => !isPlotCapacityResearchId(researchId),
+    ),
     ...getSequentialPlotCapacityResearchIds(safePlotNumber),
   ]);
   const nextCompletedIds = researchCatalog
@@ -10499,7 +11216,7 @@ function createAdminPlotCapacityCorrectionSaveJson(
   );
 
   if (nextSaveJson.length > MAX_PLAYER_GAMEPLAY_SAVE_JSON_LENGTH) {
-    throw new Error('Invalid player save JSON length.');
+    throw new Error("Invalid player save JSON length.");
   }
 
   return nextSaveJson;
@@ -10662,7 +11379,9 @@ function copyAdminWorldEventLeaderboardEntries(
 ) {
   deleteWorldEventLeaderboardForIdentity(ctx, targetIdentity);
 
-  for (const entry of Array.from(ctx.db.worldEventLeaderboard.byIdentity.filter(sourceIdentity))) {
+  for (const entry of Array.from(
+    ctx.db.worldEventLeaderboard.byIdentity.filter(sourceIdentity),
+  )) {
     ctx.db.worldEventLeaderboard.insert({
       ...entry,
       contributionKey: getWorldEventLeaderboardKey(
@@ -10686,7 +11405,9 @@ function upsertAdminLeaderboardEntry(
   const username = normalizeUsername(player.username);
   const playerLevel = normalizePlayerLevel(player.playerLevel);
   const rawExistingEntry = ctx.db.leaderboard.identity.find(player.identity);
-  const totalIncome = normalizeLeaderboardIncome(rawExistingEntry?.totalIncome ?? 0n);
+  const totalIncome = normalizeLeaderboardIncome(
+    rawExistingEntry?.totalIncome ?? 0n,
+  );
   const periods = rawExistingEntry
     ? getLeaderboardPeriodValues(ctx, rawExistingEntry, totalIncome)
     : getLeaderboardPeriodDefaults(ctx, totalIncome);
@@ -10722,7 +11443,9 @@ function updateAdminWorldEventLeaderboardProfile(
   const safeUsername = normalizeUsername(username);
   const safePlayerLevel = normalizePlayerLevel(playerLevel);
 
-  for (const entry of Array.from(ctx.db.worldEventLeaderboard.byIdentity.filter(identity))) {
+  for (const entry of Array.from(
+    ctx.db.worldEventLeaderboard.byIdentity.filter(identity),
+  )) {
     ctx.db.worldEventLeaderboard.contributionKey.update({
       ...entry,
       username: safeUsername,
@@ -10772,7 +11495,10 @@ function normalizeSaveTimestamp(ctx: IdleWizardReducerCtx): number {
   return nowMs;
 }
 
-function normalizeSaveExistingTimestamp(value: unknown, ctx: IdleWizardReducerCtx): number {
+function normalizeSaveExistingTimestamp(
+  value: unknown,
+  ctx: IdleWizardReducerCtx,
+): number {
   const timestamp = Math.floor(Number(value));
 
   if (Number.isFinite(timestamp) && timestamp >= 0) {
@@ -10789,7 +11515,12 @@ function normalizeSaveResource(value: unknown) {
   return {
     current: clampSaveNumber(resource.current, 0, cap, 0),
     cap,
-    perSecond: clampSaveNumber(resource.perSecond, 0, MAX_PLAYER_SAVE_MANA_PER_SECOND, 0),
+    perSecond: clampSaveNumber(
+      resource.perSecond,
+      0,
+      MAX_PLAYER_SAVE_MANA_PER_SECOND,
+      0,
+    ),
   };
 }
 
@@ -10828,7 +11559,12 @@ function normalizeSaveEmerald(value: unknown) {
   const emerald = isRecord(value) ? value : {};
 
   return {
-    current: clampSaveInteger(emerald.current, 0, MAX_PLAYER_SAVE_CURRENT_EMERALD, 0),
+    current: clampSaveInteger(
+      emerald.current,
+      0,
+      MAX_PLAYER_SAVE_CURRENT_EMERALD,
+      0,
+    ),
   };
 }
 
@@ -10844,7 +11580,9 @@ function normalizeSaveAutomation(value: unknown) {
   const automation = isRecord(value) ? value : {};
 
   return {
-    seedSummoning: normalizeSaveSeedSummoningAutomation(automation.seedSummoning),
+    seedSummoning: normalizeSaveSeedSummoningAutomation(
+      automation.seedSummoning,
+    ),
   };
 }
 
@@ -11032,12 +11770,15 @@ function getMinimumCurrentCrystalForSave(
   },
 ) {
   const earnedLevelCrystal =
-    Math.max(0, currentLevel - DEFAULT_PLAYER_LEVEL) * getPlayerLevelCrystalPerLevel(ctx);
+    Math.max(0, currentLevel - DEFAULT_PLAYER_LEVEL) *
+    getPlayerLevelCrystalPerLevel(ctx);
   const committedResearchIds = new Set([
     ...research.completedIds,
     ...(Array.isArray(research.inProgress)
       ? research.inProgress
-          .map((progress) => normalizeResearchId(String(progress?.researchId ?? '')))
+          .map((progress) =>
+            normalizeResearchId(String(progress?.researchId ?? "")),
+          )
           .filter((researchId) => researchCatalogById.has(researchId))
       : []),
   ]);
@@ -11057,9 +11798,13 @@ function getMinimumCurrentCrystalForSave(
 function getPlayerLevelCrystalPerLevel(ctx: IdleWizardReducerCtx) {
   const config = getParsedGameConfig(
     ctx,
-    'playerLevel',
+    "playerLevel",
     DEFAULT_PLAYER_LEVEL_CONFIG_JSON,
-  ) as { crystal?: unknown; crystalPerLevel?: unknown; crystalPerLevelUp?: unknown };
+  ) as {
+    crystal?: unknown;
+    crystalPerLevel?: unknown;
+    crystalPerLevelUp?: unknown;
+  };
   const perLevel = readPlayerLevelCrystalPerLevel(config);
   const amount = Number(perLevel ?? DEFAULT_PLAYER_LEVEL_CRYSTAL_PER_LEVEL);
 
@@ -11184,7 +11929,10 @@ function normalizeSaveLogs(value: unknown) {
         .filter((entry): entry is NonNullable<typeof entry> => Boolean(entry))
         .slice(-MAX_PLAYER_SAVE_LOG_ENTRIES)
     : [];
-  const highestId = entries.reduce((maxId, entry) => Math.max(maxId, entry.id), 0);
+  const highestId = entries.reduce(
+    (maxId, entry) => Math.max(maxId, entry.id),
+    0,
+  );
 
   return {
     nextId: Math.max(
@@ -11217,7 +11965,10 @@ function normalizeSaveLogEntry(value: unknown) {
   };
 }
 
-function normalizeSaveInventory(value: unknown, itemCatalog: Map<string, string>) {
+function normalizeSaveInventory(
+  value: unknown,
+  itemCatalog: Map<string, string>,
+) {
   if (!Array.isArray(value)) {
     return [];
   }
@@ -11242,7 +11993,9 @@ function normalizeSaveInventory(value: unknown, itemCatalog: Map<string, string>
 
     quantityByItemKey.set(
       itemKey,
-      normalizeSaveItemQuantity((quantityByItemKey.get(itemKey) ?? 0) + quantity),
+      normalizeSaveItemQuantity(
+        (quantityByItemKey.get(itemKey) ?? 0) + quantity,
+      ),
     );
   }
 
@@ -11282,7 +12035,9 @@ function getSaveInferredPlotCapacityResearchIds(save: Record<string, unknown>) {
   return researchIds;
 }
 
-function getSaveInferredCauldronCapacityResearchIds(save: Record<string, unknown>) {
+function getSaveInferredCauldronCapacityResearchIds(
+  save: Record<string, unknown>,
+) {
   const legacyCaps = getLegacySaveLevelLimits(save);
   const unlockedCauldrons = Math.min(
     getSaveInferredUnlockedCauldronCount(save.brewing),
@@ -11334,7 +12089,9 @@ function getSaveInferredUnlockedTileCount(value: unknown) {
         ...garden.tiles
           .filter((tile): tile is Record<string, unknown> => isRecord(tile))
           .map((tile) => Math.floor(Number(tile.tileNumber)))
-          .filter((tileNumber) => Number.isInteger(tileNumber) && tileNumber > 0),
+          .filter(
+            (tileNumber) => Number.isInteger(tileNumber) && tileNumber > 0,
+          ),
       )
     : 0;
 
@@ -11356,11 +12113,15 @@ function getSaveInferredUnlockedCauldronCount(value: unknown) {
   return Math.max(
     0,
     ...brewing.cauldrons
-      .filter((cauldron): cauldron is Record<string, unknown> =>
-        isRecord(cauldron) && hasSavePersistedCauldronWork(cauldron),
+      .filter(
+        (cauldron): cauldron is Record<string, unknown> =>
+          isRecord(cauldron) && hasSavePersistedCauldronWork(cauldron),
       )
       .map((cauldron) => Math.floor(Number(cauldron.cauldronNumber)))
-      .filter((cauldronNumber) => Number.isInteger(cauldronNumber) && cauldronNumber > 0),
+      .filter(
+        (cauldronNumber) =>
+          Number.isInteger(cauldronNumber) && cauldronNumber > 0,
+      ),
   );
 }
 
@@ -11402,16 +12163,19 @@ function normalizeSaveResearch(
   prestigeCount = 0,
   inferredCompletedIds: string[] = [],
 ) {
-  const completedIds = isRecord(value) && Array.isArray(value.completedIds)
-    ? value.completedIds
-        .map((researchId) =>
-          migrateLegacyResearchId(normalizeResearchId(String(researchId ?? ''))),
-        )
-        .filter((researchId) => researchCatalogById.has(researchId))
-    : [];
+  const completedIds =
+    isRecord(value) && Array.isArray(value.completedIds)
+      ? value.completedIds
+          .map((researchId) =>
+            migrateLegacyResearchId(
+              normalizeResearchId(String(researchId ?? "")),
+            ),
+          )
+          .filter((researchId) => researchCatalogById.has(researchId))
+      : [];
   const inferredIds = new Set(
     inferredCompletedIds
-      .map((researchId) => normalizeResearchId(String(researchId ?? '')))
+      .map((researchId) => normalizeResearchId(String(researchId ?? "")))
       .filter((researchId) => researchCatalogById.has(researchId)),
   );
   const requested = new Set([...completedIds, ...inferredIds]);
@@ -11437,7 +12201,11 @@ function normalizeSaveResearch(
 
   return {
     completedIds: [...accepted],
-    inProgress: normalizeSaveInProgressResearches(value, accepted, prestigeCount),
+    inProgress: normalizeSaveInProgressResearches(
+      value,
+      accepted,
+      prestigeCount,
+    ),
   };
 }
 
@@ -11450,13 +12218,20 @@ function normalizeSaveResearchCrystalCosts(
   },
 ) {
   const storedCosts =
-    isRecord(value) && isRecord(value.crystalCostById) ? value.crystalCostById : {};
+    isRecord(value) && isRecord(value.crystalCostById)
+      ? value.crystalCostById
+      : {};
   const committedResearchIds = new Set([
     ...research.completedIds,
     ...(Array.isArray(research.inProgress)
       ? research.inProgress
-          .map((progress) => normalizeResearchId(String(progress?.researchId ?? '')))
-          .filter((researchId) => researchDefaultCostCrystalById[researchId] !== undefined)
+          .map((progress) =>
+            normalizeResearchId(String(progress?.researchId ?? "")),
+          )
+          .filter(
+            (researchId) =>
+              researchDefaultCostCrystalById[researchId] !== undefined,
+          )
       : []),
   ]);
   const normalizedCosts: Record<string, number> = {};
@@ -11481,8 +12256,12 @@ function normalizeSaveResearchCrystalCosts(
   return normalizedCosts;
 }
 
-function getLegacyMultiplierResearchCrystalCost(researchId: string): number | null {
-  const match = /^emerald:(?:plotPlanting|cauldronBrewing):(\d+):(\d+)$/.exec(researchId);
+function getLegacyMultiplierResearchCrystalCost(
+  researchId: string,
+): number | null {
+  const match = /^emerald:(?:plotPlanting|cauldronBrewing):(\d+):(\d+)$/.exec(
+    researchId,
+  );
   const multiplier = Number(match?.[2]);
   const firstMultiplier = emeraldResearchMultipliers[0] ?? 2;
   const lastMultiplier = emeraldResearchMultipliers.at(-1) ?? firstMultiplier;
@@ -11515,9 +12294,11 @@ function normalizeSaveInProgressResearches(
     }
 
     const researchId = migrateLegacyResearchId(
-      normalizeResearchId(String(progress.researchId ?? '')),
+      normalizeResearchId(String(progress.researchId ?? "")),
     );
-    const maxResearchSeconds = Number(getMaximumResearchDurationSeconds(researchId));
+    const maxResearchSeconds = Number(
+      getMaximumResearchDurationSeconds(researchId),
+    );
     if (
       !researchCatalogById.has(researchId) ||
       completedIds.has(researchId) ||
@@ -11560,8 +12341,8 @@ function normalizeSaveInProgressResearches(
 }
 
 function getSaveRequiredResearchIds(researchId: string): string[] {
-  if (researchId === 'garden:harvestAll') {
-    return ['garden:plantAll'];
+  if (researchId === "garden:harvestAll") {
+    return ["garden:plantAll"];
   }
 
   const manaResearchMatch = /^(manaSphereCap|manaProductionRate):(\d+)$/.exec(
@@ -11572,20 +12353,26 @@ function getSaveRequiredResearchIds(researchId: string): string[] {
     return rank > 1 ? [`${manaResearchMatch[1]}:${rank - 1}`] : [];
   }
 
-  if (researchId.startsWith('unlockSeed:')) {
+  if (researchId.startsWith("unlockSeed:")) {
     const seedKeys = herbCatalog.map((herb) => `${herb.key}Seed`);
-    const seedKey = researchId.slice('unlockSeed:'.length);
+    const seedKey = researchId.slice("unlockSeed:".length);
     const index = seedKeys.indexOf(seedKey);
     return index > 0 ? [`unlockSeed:${seedKeys[index - 1]}`] : [];
   }
 
-  if (researchId.startsWith('unlockRecipe:')) {
-    const potionKey = researchId.slice('unlockRecipe:'.length);
-    const index = knownPotionResearchCatalog.findIndex((potion) => potion.key === potionKey);
-    return index > 0 ? [`unlockRecipe:${knownPotionResearchCatalog[index - 1].key}`] : [];
+  if (researchId.startsWith("unlockRecipe:")) {
+    const potionKey = researchId.slice("unlockRecipe:".length);
+    const index = knownPotionResearchCatalog.findIndex(
+      (potion) => potion.key === potionKey,
+    );
+    return index > 0
+      ? [`unlockRecipe:${knownPotionResearchCatalog[index - 1].key}`]
+      : [];
   }
 
-  const herbTimerMatch = /^timer:herbGrowth:([^:]+Herb):(\d+)$/.exec(researchId);
+  const herbTimerMatch = /^timer:herbGrowth:([^:]+Herb):(\d+)$/.exec(
+    researchId,
+  );
   if (herbTimerMatch) {
     const herbKey = herbTimerMatch[1];
     const level = Number(herbTimerMatch[2]);
@@ -11594,7 +12381,9 @@ function getSaveRequiredResearchIds(researchId: string): string[] {
       : [`unlockSeed:${herbKey.replace(/Herb$/, 'Seed')}`];
   }
 
-  const potionTimerMatch = /^timer:potionBrewing:([^:]+):(\d+)$/.exec(researchId);
+  const potionTimerMatch = /^timer:potionBrewing:([^:]+):(\d+)$/.exec(
+    researchId,
+  );
   if (potionTimerMatch) {
     const potionKey = potionTimerMatch[1];
     const level = Number(potionTimerMatch[2]);
@@ -11617,7 +12406,9 @@ function getSaveRequiredResearchIds(researchId: string): string[] {
   const automationMatch = /^automation:([^:]+):(\d+)$/.exec(researchId);
   if (automationMatch) {
     const targetNumber = Number(automationMatch[2]);
-    return targetNumber > 1 ? [`automation:${automationMatch[1]}:${targetNumber - 1}`] : [];
+    return targetNumber > 1
+      ? [`automation:${automationMatch[1]}:${targetNumber - 1}`]
+      : [];
   }
 
   const stallStaffingMatch = /^advanced:stallStaffing:(\d+)$/.exec(researchId);
@@ -11672,7 +12463,9 @@ function getSaveRequiredResearchIds(researchId: string): string[] {
       : [];
   }
 
-  const cauldronCapacityMatch = /^advanced:cauldronCapacity:(\d+)$/.exec(researchId);
+  const cauldronCapacityMatch = /^advanced:cauldronCapacity:(\d+)$/.exec(
+    researchId,
+  );
   if (cauldronCapacityMatch) {
     const cauldronNumber = Number(cauldronCapacityMatch[1]);
     return cauldronNumber > cauldronCapacityResearchNumbers[0]
@@ -11688,9 +12481,8 @@ function getSaveRequiredPrestigeCount(researchId: string): number {
     return AUTOMATION_RESERVE_REQUIRED_PRESTIGE_COUNT;
   }
 
-  const advancedRoomStudyMatch = /^advanced:(cauldronBrewing|plotGrowth):(\d+):(\d+)$/.exec(
-    researchId,
-  );
+  const advancedRoomStudyMatch =
+    /^advanced:(cauldronBrewing|plotGrowth):(\d+):(\d+)$/.exec(researchId);
   if (advancedRoomStudyMatch) {
     const level = Number(advancedRoomStudyMatch[3]);
     return level >= 6 ? STRONGER_ROOM_STUDY_REQUIRED_PRESTIGE_COUNT : 0;
@@ -11699,10 +12491,14 @@ function getSaveRequiredPrestigeCount(researchId: string): number {
   const plotCapacityMatch = /^advanced:plotCapacity:(\d+)$/.exec(researchId);
   if (plotCapacityMatch) {
     const plotNumber = Number(plotCapacityMatch[1]);
-    return plotCapacityResearchNumbers.includes(plotNumber) ? plotNumber - 5 : 0;
+    return plotCapacityResearchNumbers.includes(plotNumber)
+      ? plotNumber - 5
+      : 0;
   }
 
-  const cauldronCapacityMatch = /^advanced:cauldronCapacity:(\d+)$/.exec(researchId);
+  const cauldronCapacityMatch = /^advanced:cauldronCapacity:(\d+)$/.exec(
+    researchId,
+  );
   if (cauldronCapacityMatch) {
     const cauldronNumber = Number(cauldronCapacityMatch[1]);
     return cauldronCapacityResearchNumbers.includes(cauldronNumber)
@@ -11735,7 +12531,9 @@ function normalizeSaveShop(
     playerShelf.unlockedSlots,
   );
 
-  const coinOffer = normalizeSaveShopCoinOffer(shop.coinOffer ?? shop.goldOffer);
+  const coinOffer = normalizeSaveShopCoinOffer(
+    shop.coinOffer ?? shop.goldOffer,
+  );
   const dailyCrystalOffer = normalizeSaveShopDailyCrystalOffer(
     shop.dailyCrystalOffer,
   );
@@ -11782,19 +12580,35 @@ function normalizeSaveShopShelf(
   maxUnlockedSlots: number,
 ) {
   const shelf = isRecord(value) ? value : {};
-  const unlockedSlots = clampSaveInteger(shelf.unlockedSlots, 0, maxUnlockedSlots, 0);
+  const unlockedSlots = clampSaveInteger(
+    shelf.unlockedSlots,
+    0,
+    maxUnlockedSlots,
+    0,
+  );
   const slots = normalizeSaveSlotRows(shelf.slots, unlockedSlots, (slot) => {
     const itemKey = normalizeSaveItemKey(slot.sellItemKey);
     const itemKind = itemCatalog.get(itemKey);
     const futureItemKey = normalizeSaveItemKey(slot.futureItemKey);
     const futureItemKind = itemCatalog.get(futureItemKey);
     const safeFutureItemKey =
-      futureItemKind && (!itemKind || itemKey === futureItemKey) ? futureItemKey : null;
-    const hasLoadedQuantity = Object.prototype.hasOwnProperty.call(slot, 'loadedQuantity');
-    const legacySellLimitMode = slot.sellLimitMode === 'amount' ? 'amount' : 'all';
+      futureItemKind && (!itemKind || itemKey === futureItemKey)
+        ? futureItemKey
+        : null;
+    const hasLoadedQuantity = Object.prototype.hasOwnProperty.call(
+      slot,
+      "loadedQuantity",
+    );
+    const legacySellLimitMode =
+      slot.sellLimitMode === "amount" ? "amount" : "all";
 
     return {
-      slotNumber: clampSaveInteger(slot.slotNumber, 1, MAX_PLAYER_SHOP_SLOTS, 1),
+      slotNumber: clampSaveInteger(
+        slot.slotNumber,
+        1,
+        MAX_PLAYER_SHOP_SLOTS,
+        1,
+      ),
       sellItemKey: itemKind ? itemKey : null,
       ...(hasLoadedQuantity
         ? {
@@ -11810,7 +12624,7 @@ function normalizeSaveShopShelf(
         : {
             sellLimitMode: legacySellLimitMode,
             sellQuantityLimit:
-              legacySellLimitMode === 'amount'
+              legacySellLimitMode === "amount"
                 ? clampSaveInteger(
                     slot.sellQuantityLimit,
                     0,
@@ -11843,7 +12657,10 @@ function normalizeSaveShopShelf(
 
   return {
     unlockedSlots,
-    selectedSlotNumber: normalizeSaveSelectedNumber(shelf.selectedSlotNumber, unlockedSlots),
+    selectedSlotNumber: normalizeSaveSelectedNumber(
+      shelf.selectedSlotNumber,
+      unlockedSlots,
+    ),
     sellProgressSeconds: clampSaveNumber(
       shelf.sellProgressSeconds,
       0,
@@ -11860,22 +12677,40 @@ function normalizeSavePlayerShopShelf(
   maxUnlockedSlots: number,
 ) {
   const shelf = isRecord(value) ? value : {};
-  const unlockedSlots = clampSaveInteger(shelf.unlockedSlots, 0, maxUnlockedSlots, 0);
+  const unlockedSlots = clampSaveInteger(
+    shelf.unlockedSlots,
+    0,
+    maxUnlockedSlots,
+    0,
+  );
 
   return {
     unlockedSlots,
-    selectedSlotNumber: normalizeSaveSelectedNumber(shelf.selectedSlotNumber, unlockedSlots),
+    selectedSlotNumber: normalizeSaveSelectedNumber(
+      shelf.selectedSlotNumber,
+      unlockedSlots,
+    ),
     slots: normalizeSaveSlotRows(shelf.slots, unlockedSlots, (slot) => {
       const itemKey = normalizeSaveItemKey(slot.itemKey);
       const itemKind = itemCatalog.get(itemKey);
-      const quantity = clampSaveInteger(slot.quantity, 0, MAX_PLAYER_SHOP_LISTING_QUANTITY, 0);
+      const quantity = clampSaveInteger(
+        slot.quantity,
+        0,
+        MAX_PLAYER_SHOP_LISTING_QUANTITY,
+        0,
+      );
       const priceGold = clampSaveGoldPrice(
         slot.priceGold,
         BigInt(MAX_PLAYER_SHOP_PRICE_GOLD),
       );
 
       return {
-        slotNumber: clampSaveInteger(slot.slotNumber, 1, MAX_PLAYER_SHOP_SLOTS, 1),
+        slotNumber: clampSaveInteger(
+          slot.slotNumber,
+          1,
+          MAX_PLAYER_SHOP_SLOTS,
+          1,
+        ),
         itemKey: itemKind && quantity > 0 && priceGold > 0 ? itemKey : null,
         quantity,
         priceGold,
@@ -11895,14 +12730,24 @@ function normalizeSavePlayerShopRequests(
     slots: normalizeSaveSlotRows(requests.slots, unlockedSlots, (slot) => {
       const itemKey = normalizeSaveItemKey(slot.itemKey);
       const itemKind = itemCatalog.get(itemKey);
-      const quantity = clampSaveInteger(slot.quantity, 0, MAX_PLAYER_SHOP_LISTING_QUANTITY, 0);
+      const quantity = clampSaveInteger(
+        slot.quantity,
+        0,
+        MAX_PLAYER_SHOP_LISTING_QUANTITY,
+        0,
+      );
       const priceGold = clampSaveGoldPrice(
         slot.priceGold,
         BigInt(MAX_PLAYER_SHOP_PRICE_GOLD),
       );
 
       return {
-        slotNumber: clampSaveInteger(slot.slotNumber, 1, MAX_PLAYER_SHOP_SLOTS, 1),
+        slotNumber: clampSaveInteger(
+          slot.slotNumber,
+          1,
+          MAX_PLAYER_SHOP_SLOTS,
+          1,
+        ),
         itemKey: itemKind && quantity > 0 && priceGold > 0 ? itemKey : null,
         quantity,
         priceGold,
@@ -11927,7 +12772,12 @@ function normalizeSaveSlotRows<T>(
       continue;
     }
 
-    const slotNumber = clampSaveInteger(slot.slotNumber, 1, MAX_PLAYER_SHOP_SLOTS, 1);
+    const slotNumber = clampSaveInteger(
+      slot.slotNumber,
+      1,
+      MAX_PLAYER_SHOP_SLOTS,
+      1,
+    );
     if (slotNumber > unlockedSlots) {
       continue;
     }
@@ -11986,7 +12836,9 @@ function normalizeSaveBrewing(
     }
 
     const fallbackCauldronNumber = index + 1;
-    const savedCauldronNumber = Math.floor(Number(sourceCauldron.cauldronNumber));
+    const savedCauldronNumber = Math.floor(
+      Number(sourceCauldron.cauldronNumber),
+    );
     const cauldronNumber = Number.isInteger(savedCauldronNumber)
       ? savedCauldronNumber
       : fallbackCauldronNumber;
@@ -12000,7 +12852,9 @@ function normalizeSaveBrewing(
         (cauldronNumber === 1 ? brewing.autoBrewRecipeKey : null),
     );
     const safeAutoBrewRecipeKey =
-      itemCatalog.get(autoBrewRecipeKey) === 'potion' ? autoBrewRecipeKey : null;
+      itemCatalog.get(autoBrewRecipeKey) === "potion"
+        ? autoBrewRecipeKey
+        : null;
     const autoBrewEnabled =
       sourceCauldron.autoBrewEnabled ??
       (cauldronNumber === 1 ? brewing.autoBrewEnabled : false);
@@ -12016,7 +12870,8 @@ function normalizeSaveBrewing(
         (cauldronNumber === 1 ? brewing.autoCollectEnabled : false),
     });
     const brewQuantity = normalizeSaveSelectedNumber(
-      sourceCauldron.brewQuantity ?? (cauldronNumber === 1 ? brewing.brewQuantity : null),
+      sourceCauldron.brewQuantity ??
+        (cauldronNumber === 1 ? brewing.brewQuantity : null),
       MAX_PLAYER_SAVE_BATCH_MULTIPLIER,
     );
 
@@ -12026,13 +12881,17 @@ function normalizeSaveBrewing(
         sourceCauldron.cauldronItemKeys,
         itemCatalog,
       ),
-      activeBrew: normalizeSaveActiveBrew(sourceCauldron.activeBrew, itemCatalog),
+      activeBrew: normalizeSaveActiveBrew(
+        sourceCauldron.activeBrew,
+        itemCatalog,
+      ),
       ...automationState,
       brewQuantity,
     });
   }
 
-  const fallbackUnlockedCauldrons = getLegacyUnlockedCauldronCount(cauldronsByNumber);
+  const fallbackUnlockedCauldrons =
+    getLegacyUnlockedCauldronCount(cauldronsByNumber);
   const unlockedCauldrons = clampSaveInteger(
     brewing.unlockedCauldrons,
     1,
@@ -12042,17 +12901,18 @@ function normalizeSaveBrewing(
   const cauldrons = [...cauldronsByNumber.values()]
     .filter((cauldron) => cauldron.cauldronNumber <= unlockedCauldrons)
     .sort((left, right) => left.cauldronNumber - right.cauldronNumber);
-  const primaryCauldron =
-    cauldrons.find((cauldron) => cauldron.cauldronNumber === 1) ?? {
-      cauldronNumber: 1,
-      cauldronItemKeys: [],
-      activeBrew: null,
-      autoBrewEnabled: false,
-      autoBrewArmed: false,
-      autoBrewRecipeKey: null,
-      autoCollectEnabled: false,
-      brewQuantity: null,
-    };
+  const primaryCauldron = cauldrons.find(
+    (cauldron) => cauldron.cauldronNumber === 1,
+  ) ?? {
+    cauldronNumber: 1,
+    cauldronItemKeys: [],
+    activeBrew: null,
+    autoBrewEnabled: false,
+    autoBrewArmed: false,
+    autoBrewRecipeKey: null,
+    autoCollectEnabled: false,
+    brewQuantity: null,
+  };
 
   return {
     autoBrewEnabled: primaryCauldron.autoBrewEnabled,
@@ -12116,17 +12976,25 @@ function normalizeSaveCauldronItemKeys(
     : [];
 }
 
-function normalizeSaveActiveBrew(value: unknown, itemCatalog: Map<string, string>) {
+function normalizeSaveActiveBrew(
+  value: unknown,
+  itemCatalog: Map<string, string>,
+) {
   if (!isRecord(value)) {
     return null;
   }
 
   const resultItemKey = normalizeSaveItemKey(value.resultItemKey);
-  if (itemCatalog.get(resultItemKey) !== 'potion') {
+  if (itemCatalog.get(resultItemKey) !== "potion") {
     return null;
   }
 
-  const totalMs = clampSaveInteger(value.totalMs, 0, MAX_PLAYER_SAVE_TIMER_MS, 0);
+  const totalMs = clampSaveInteger(
+    value.totalMs,
+    0,
+    MAX_PLAYER_SAVE_TIMER_MS,
+    0,
+  );
   const remainingMs = clampSaveInteger(value.remainingMs, 0, totalMs, 0);
   const bottlingTotalMs = clampSaveInteger(
     value.bottlingTotalMs,
@@ -12134,9 +13002,11 @@ function normalizeSaveActiveBrew(value: unknown, itemCatalog: Map<string, string
     MAX_PLAYER_SAVE_TIMER_MS,
     getDefaultBottlingDurationMs(),
   );
-  const phase = ['brewing', 'brewed', 'bottling', 'ready'].includes(String(value.phase))
+  const phase = ["brewing", "brewed", "bottling", "ready"].includes(
+    String(value.phase),
+  )
     ? String(value.phase)
-    : 'brewing';
+    : "brewing";
 
   return {
     resultItemKey,
@@ -12167,12 +13037,12 @@ function normalizeSaveGarden(
   );
   const tiles = Array.isArray(garden.tiles)
     ? garden.tiles
-        .map((tile) => normalizeSaveGardenTile(tile, itemCatalog, unlockedTiles))
+        .map((tile) =>
+          normalizeSaveGardenTile(tile, itemCatalog, unlockedTiles),
+        )
         .filter((tile): tile is NonNullable<typeof tile> => Boolean(tile))
     : [];
-  const selectedSeedItemKey = normalizeSaveItemKey(
-    garden.selectedSeedItemKey,
-  );
+  const selectedSeedItemKey = normalizeSaveItemKey(garden.selectedSeedItemKey);
 
   return {
     selectedSeedItemKey: normalizeGardenSelectedSeedItemKey(
@@ -12193,29 +13063,40 @@ function normalizeSaveGardenTile(
     return null;
   }
 
-  const tileNumber = clampSaveInteger(value.tileNumber, 1, MAX_GAME_CONFIG_RESOURCE_LIMIT, 0);
+  const tileNumber = clampSaveInteger(
+    value.tileNumber,
+    1,
+    MAX_GAME_CONFIG_RESOURCE_LIMIT,
+    0,
+  );
   if (tileNumber < 1 || tileNumber > unlockedTiles) {
     return null;
   }
 
-  const phase = ['empty', 'growing', 'ready', 'harvesting'].includes(String(value.phase))
+  const phase = ["empty", "growing", "ready", "harvesting"].includes(
+    String(value.phase),
+  )
     ? String(value.phase)
-    : 'empty';
+    : "empty";
   const selectedSeedItemKey = normalizeSaveItemKey(value.selectedSeedItemKey);
   const seedItemKey = normalizeSaveItemKey(value.seedItemKey);
   const herbItemKey = normalizeSaveItemKey(value.herbItemKey);
-  const totalMs = clampSaveInteger(value.totalMs, 0, MAX_PLAYER_SAVE_TIMER_MS, 0);
-  const remainingMs = phase === 'ready'
-    ? 0
-    : clampSaveInteger(value.remainingMs, 0, totalMs, 0);
+  const totalMs = clampSaveInteger(
+    value.totalMs,
+    0,
+    MAX_PLAYER_SAVE_TIMER_MS,
+    0,
+  );
+  const remainingMs =
+    phase === "ready" ? 0 : clampSaveInteger(value.remainingMs, 0, totalMs, 0);
   const harvestQuantity = clampSaveInteger(
     value.harvestQuantity,
     1,
     MAX_PLAYER_SAVE_BATCH_MULTIPLIER,
     1,
   );
-  const hasSeed = itemCatalog.get(seedItemKey) === 'seed';
-  const hasHerb = itemCatalog.get(herbItemKey) === 'herb';
+  const hasSeed = itemCatalog.get(seedItemKey) === "seed";
+  const hasHerb = itemCatalog.get(herbItemKey) === "herb";
   const automationSettings = normalizeGardenPlotAutomationSettings(
     value,
     MAX_PLAYER_SAVE_BATCH_MULTIPLIER,
@@ -12224,20 +13105,25 @@ function normalizeSaveGardenTile(
   return {
     tileNumber,
     ...automationSettings,
-    selectedSeedItemKey: itemCatalog.get(selectedSeedItemKey) === 'seed'
-      ? selectedSeedItemKey
-      : null,
-    seedItemKey: hasSeed && phase !== 'empty' ? seedItemKey : null,
-    herbItemKey: hasHerb && phase !== 'empty' ? herbItemKey : null,
+    selectedSeedItemKey:
+      itemCatalog.get(selectedSeedItemKey) === "seed"
+        ? selectedSeedItemKey
+        : null,
+    seedItemKey: hasSeed && phase !== "empty" ? seedItemKey : null,
+    herbItemKey: hasHerb && phase !== "empty" ? herbItemKey : null,
     harvestQuantity,
-    phase: hasSeed && hasHerb ? phase : 'empty',
-    totalMs: phase === 'ready' ? 0 : totalMs,
+    phase: hasSeed && hasHerb ? phase : "empty",
+    totalMs: phase === "ready" ? 0 : totalMs,
     remainingMs,
   };
 }
 
 function getSaveItemCatalog(ctx: IdleWizardReducerCtx): Map<string, string> {
-  const config = getParsedGameConfig(ctx, 'items', DEFAULT_ITEMS_CONFIG_JSON) as {
+  const config = getParsedGameConfig(
+    ctx,
+    "items",
+    DEFAULT_ITEMS_CONFIG_JSON,
+  ) as {
     seeds?: unknown;
     herbs?: unknown;
     potions?: unknown;
@@ -12245,10 +13131,10 @@ function getSaveItemCatalog(ctx: IdleWizardReducerCtx): Map<string, string> {
   };
   const itemCatalog = new Map<string, string>();
 
-  addSaveItemCatalogRows(itemCatalog, config.seeds, 'seed');
-  addSaveItemCatalogRows(itemCatalog, config.herbs, 'herb');
-  addSaveItemCatalogRows(itemCatalog, config.potions, 'potion');
-  addSaveItemCatalogRows(itemCatalog, config.ingredients, 'ingredient');
+  addSaveItemCatalogRows(itemCatalog, config.seeds, "seed");
+  addSaveItemCatalogRows(itemCatalog, config.herbs, "herb");
+  addSaveItemCatalogRows(itemCatalog, config.potions, "potion");
+  addSaveItemCatalogRows(itemCatalog, config.ingredients, "ingredient");
   return itemCatalog;
 }
 
@@ -12274,8 +13160,15 @@ function addSaveItemCatalogRows(
 }
 
 function getSaveTaskCatalog(ctx: IdleWizardReducerCtx) {
-  const config = getParsedGameConfig(ctx, 'tasks', DEFAULT_CURRENT_TASKS_CONFIG_JSON) as {
-    levels?: Array<{ level?: number; tasks?: Array<{ id?: string; quantity?: number }> }>;
+  const config = getParsedGameConfig(
+    ctx,
+    "tasks",
+    DEFAULT_CURRENT_TASKS_CONFIG_JSON,
+  ) as {
+    levels?: Array<{
+      level?: number;
+      tasks?: Array<{ id?: string; quantity?: number }>;
+    }>;
   };
   const levels = Array.isArray(config.levels)
     ? config.levels.map((level) => Number(level.level)).filter(Number.isInteger)
@@ -12284,7 +13177,7 @@ function getSaveTaskCatalog(ctx: IdleWizardReducerCtx) {
     ? config.levels.flatMap((level) =>
         Array.isArray(level.tasks)
           ? level.tasks.map((task) => ({
-              id: String(task.id ?? ''),
+              id: String(task.id ?? ""),
               level: Number(level.level),
               quantity: clampSaveInteger(
                 task.quantity,
@@ -12452,7 +13345,10 @@ function getMaintenanceConfig(ctx: IdleWizardReducerCtx) {
   };
 }
 
-function getPlayerMaintenanceConfig(ctx: IdleWizardReducerCtx, identity: Identity) {
+function getPlayerMaintenanceConfig(
+  ctx: IdleWizardReducerCtx,
+  identity: Identity,
+) {
   const row = ctx.db.playerMaintenance.identity.find(identity);
 
   return row
@@ -12462,7 +13358,7 @@ function getPlayerMaintenanceConfig(ctx: IdleWizardReducerCtx, identity: Identit
       }
     : {
         mode: MAINTENANCE_MODE_OFF,
-        message: 'maintenance in progress',
+        message: "maintenance in progress",
       };
 }
 
@@ -12510,7 +13406,9 @@ function getTradeAllianceRuntimeConfig(ctx: IdleWizardReducerCtx) {
   };
 }
 
-function normalizeTradeAllianceWeeklyQuestConfigs(value: unknown): TradeAllianceWeeklyQuestConfig[] {
+function normalizeTradeAllianceWeeklyQuestConfigs(
+  value: unknown,
+): TradeAllianceWeeklyQuestConfig[] {
   if (!Array.isArray(value)) {
     return [];
   }
@@ -12523,16 +13421,18 @@ function normalizeTradeAllianceWeeklyQuestConfigs(value: unknown): TradeAlliance
       continue;
     }
 
-    const id = normalizeResearchId(String(questConfig.id ?? ''));
+    const id = normalizeResearchId(String(questConfig.id ?? ""));
     const label = normalizePlayerShopText(
       String(questConfig.label ?? id),
       MAX_RESEARCH_LABEL_LENGTH,
     );
-    const type = String(questConfig.type ?? '').trim();
-    const itemKey = normalizeNpcMarketItemKey(String(questConfig.itemKey ?? ''));
+    const type = String(questConfig.type ?? "").trim();
+    const itemKey = normalizeNpcMarketItemKey(
+      String(questConfig.itemKey ?? ""),
+    );
     const item = itemKey ? npcMarketCatalogByItemKey.get(itemKey) : null;
-    const itemLabel = item?.itemLabel ?? '';
-    const itemKind = item?.itemKind ?? '';
+    const itemLabel = item?.itemLabel ?? "";
+    const itemKind = item?.itemKind ?? "";
     const target = toBigInt(Number(questConfig.target ?? 0));
     const minContribution = toBigInt(Number(questConfig.minContribution ?? 0));
     const crystalReward = Math.floor(Number(questConfig.crystalReward ?? 0));
@@ -12540,7 +13440,7 @@ function normalizeTradeAllianceWeeklyQuestConfigs(value: unknown): TradeAlliance
     const isItemFillQuest =
       type === TRADE_ALLIANCE_QUEST_TYPE_ITEM_FILL &&
       item &&
-      (item.itemKind === 'seed' || item.itemKind === 'potion') &&
+      (item.itemKind === "seed" || item.itemKind === "potion") &&
       id === `${TRADE_ALLIANCE_ITEM_FILL_PREFIX}${itemKey}`;
 
     if (
@@ -12563,9 +13463,9 @@ function normalizeTradeAllianceWeeklyQuestConfigs(value: unknown): TradeAlliance
       id,
       label,
       type,
-      itemKey: isItemFillQuest ? itemKey : '',
-      itemLabel: isItemFillQuest ? itemLabel : '',
-      itemKind: isItemFillQuest ? itemKind : '',
+      itemKey: isItemFillQuest ? itemKey : "",
+      itemLabel: isItemFillQuest ? itemLabel : "",
+      itemKind: isItemFillQuest ? itemKind : "",
       target,
       minContribution,
       crystalReward,
@@ -12602,7 +13502,10 @@ function refreshTradeAllianceDay(ctx: IdleWizardReducerCtx, alliance: any) {
   return nextAlliance;
 }
 
-function refreshTradeAllianceMemberQuestPeriod(ctx: IdleWizardReducerCtx, member: any) {
+function refreshTradeAllianceMemberQuestPeriod(
+  ctx: IdleWizardReducerCtx,
+  member: any,
+) {
   const dayKey = getTradeAllianceQuestPeriodKey(ctx);
 
   if (member.dayKey === dayKey) {
@@ -12617,17 +13520,27 @@ function refreshTradeAllianceMemberQuestPeriod(ctx: IdleWizardReducerCtx, member
   });
 }
 
-function ensureTradeAllianceWeeklyQuests(ctx: IdleWizardReducerCtx, alliance: any) {
+function ensureTradeAllianceWeeklyQuests(
+  ctx: IdleWizardReducerCtx,
+  alliance: any,
+) {
   const config = getTradeAllianceRuntimeConfig(ctx);
   const questPeriodKey = getTradeAllianceQuestPeriodKey(ctx);
 
   pruneTradeAllianceQuestRows(ctx, alliance.allianceId, questPeriodKey);
 
   for (const quest of config.weeklyQuests) {
-    const questKey = getTradeAllianceQuestKey(alliance.allianceId, questPeriodKey, quest.id);
-    const existingQuest = ctx.db.tradeAllianceQuestProgress.questKey.find(questKey);
+    const questKey = getTradeAllianceQuestKey(
+      alliance.allianceId,
+      questPeriodKey,
+      quest.id,
+    );
+    const existingQuest =
+      ctx.db.tradeAllianceQuestProgress.questKey.find(questKey);
     const baseProgress =
-      quest.type === TRADE_ALLIANCE_QUEST_TYPE_INCOME ? toBigInt(alliance.seasonIncome) : 0n;
+      quest.type === TRADE_ALLIANCE_QUEST_TYPE_INCOME
+        ? toBigInt(alliance.seasonIncome)
+        : 0n;
     const nextProgress = clampBigInt(
       existingQuest && existingQuest.progress > baseProgress
         ? existingQuest.progress
@@ -12689,7 +13602,9 @@ function pruneTradeAllianceQuestRows(
     }
   }
 
-  for (const contribution of Array.from(ctx.db.tradeAllianceQuestContribution.iter())) {
+  for (const contribution of Array.from(
+    ctx.db.tradeAllianceQuestContribution.iter(),
+  )) {
     if (
       getTradeAllianceIdKey(contribution.allianceId) === allianceKey &&
       contribution.dayKey !== questPeriodKey
@@ -12732,9 +13647,8 @@ function applyTradeAllianceQuestContributionDelta({
     quest.id,
     member.memberIdentity,
   );
-  const contribution = ctx.db.tradeAllianceQuestContribution.contributionKey.find(
-    contributionKey,
-  );
+  const contribution =
+    ctx.db.tradeAllianceQuestContribution.contributionKey.find(contributionKey);
   const nextContribution = {
     contributionKey,
     allianceId: alliance.allianceId,
@@ -12795,8 +13709,12 @@ function assertTradeAllianceQuestParticipationAvailable(
   allianceId: unknown,
   dayKey: string,
 ) {
-  if (hasOtherTradeAllianceQuestParticipation(ctx, identity, allianceId, dayKey)) {
-    throw new Error('Alliance quest progress belongs to another alliance this week.');
+  if (
+    hasOtherTradeAllianceQuestParticipation(ctx, identity, allianceId, dayKey)
+  ) {
+    throw new Error(
+      "Alliance quest progress belongs to another alliance this week.",
+    );
   }
 }
 
@@ -12810,7 +13728,7 @@ function applyTradeAllianceItemFillDelta(
   const existingMember = getTradeAllianceMember(ctx);
 
   if (!existingMember) {
-    throw new Error('Alliance quest requires membership.');
+    throw new Error("Alliance quest requires membership.");
   }
 
   const safeQuestId = normalizeResearchId(questId);
@@ -12823,7 +13741,7 @@ function applyTradeAllianceItemFillDelta(
     quest.type !== TRADE_ALLIANCE_QUEST_TYPE_ITEM_FILL ||
     quest.itemKey !== safeItemKey
   ) {
-    throw new Error('Alliance item quest not found.');
+    throw new Error("Alliance item quest not found.");
   }
 
   if (
@@ -12831,7 +13749,7 @@ function applyTradeAllianceItemFillDelta(
     safeQuantity < 1 ||
     safeQuantity > MAX_TRADE_ALLIANCE_ITEM_FILL_QUANTITY
   ) {
-    throw new Error('Invalid alliance quest quantity.');
+    throw new Error("Invalid alliance quest quantity.");
   }
 
   const delta = BigInt(safeQuantity);
@@ -12851,7 +13769,7 @@ function applyTradeAllianceItemFillDelta(
   );
 
   if (!progress) {
-    throw new Error('Alliance quest not found.');
+    throw new Error("Alliance quest not found.");
   }
 
   const contributionKey = getTradeAllianceContributionKey(
@@ -12860,24 +13778,30 @@ function applyTradeAllianceItemFillDelta(
     quest.id,
     member.memberIdentity,
   );
-  const contribution = ctx.db.tradeAllianceQuestContribution.contributionKey.find(
-    contributionKey,
-  );
+  const contribution =
+    ctx.db.tradeAllianceQuestContribution.contributionKey.find(contributionKey);
   const currentContribution = toBigInt(contribution?.contribution ?? 0n);
   const remainingProgress =
-    progress.progress < progress.target ? progress.target - progress.progress : 0n;
+    progress.progress < progress.target
+      ? progress.target - progress.progress
+      : 0n;
   const missingContribution =
     currentContribution < progress.minContribution
       ? progress.minContribution - currentContribution
       : 0n;
-  const maxFill = remainingProgress > missingContribution ? remainingProgress : missingContribution;
+  const maxFill =
+    remainingProgress > missingContribution
+      ? remainingProgress
+      : missingContribution;
 
   if (delta > maxFill) {
-    throw new Error('Alliance quest fill exceeds needed amount.');
+    throw new Error("Alliance quest fill exceeds needed amount.");
   }
 
   const nextProgress =
-    progress.progress + delta > progress.target ? progress.target : progress.progress + delta;
+    progress.progress + delta > progress.target
+      ? progress.target
+      : progress.progress + delta;
   if (nextProgress !== progress.progress) {
     ctx.db.tradeAllianceQuestProgress.questKey.update({
       ...progress,
@@ -12956,7 +13880,11 @@ function applyTradeAllianceIncomeDelta(
       continue;
     }
 
-    const questKey = getTradeAllianceQuestKey(alliance.allianceId, alliance.seasonKey, quest.id);
+    const questKey = getTradeAllianceQuestKey(
+      alliance.allianceId,
+      alliance.seasonKey,
+      quest.id,
+    );
     const progress = ctx.db.tradeAllianceQuestProgress.questKey.find(questKey);
     if (!progress) {
       continue;
@@ -13004,7 +13932,12 @@ function readSavedTotalGeneratedGold(saveJson?: string): bigint | null {
       return null;
     }
 
-    return toBigInt(Math.min(Math.floor(totalGenerated), MAX_PLAYER_SAVE_TOTAL_GENERATED_GOLD));
+    return toBigInt(
+      Math.min(
+        Math.floor(totalGenerated),
+        MAX_PLAYER_SAVE_TOTAL_GENERATED_GOLD,
+      ),
+    );
   } catch {
     return null;
   }
@@ -13052,7 +13985,9 @@ function readSavedCompletedResearchIds(saveJson?: string): string[] | null {
   }
 }
 
-function normalizeSaveCompletedResearchIds(completedIds: unknown): string[] | null {
+function normalizeSaveCompletedResearchIds(
+  completedIds: unknown,
+): string[] | null {
   if (!Array.isArray(completedIds)) {
     return null;
   }
@@ -13060,7 +13995,7 @@ function normalizeSaveCompletedResearchIds(completedIds: unknown): string[] | nu
   const requested = new Set(
     completedIds
       .map((researchId: unknown) =>
-        migrateLegacyResearchId(normalizeResearchId(String(researchId ?? ''))),
+        migrateLegacyResearchId(normalizeResearchId(String(researchId ?? ""))),
       )
       .filter((researchId: string) => researchCatalogById.has(researchId)),
   );
@@ -13085,7 +14020,9 @@ function readSavedNonDefaultResearchCount(saveJson?: string): number | null {
     return new Set(
       research.completedIds
         .map((researchId: unknown) =>
-          migrateLegacyResearchId(normalizeResearchId(String(researchId ?? ''))),
+          migrateLegacyResearchId(
+            normalizeResearchId(String(researchId ?? "")),
+          ),
         )
         .filter(
           (researchId: string) =>
@@ -13362,14 +14299,16 @@ function assertClientSaveDoesNotDowngradeProgress(
     return false;
   }
 
-  const previousPrestigeLevels = readSavedPrestigeCompletedLevels(existingSave.saveJson);
+  const previousPrestigeLevels = readSavedPrestigeCompletedLevels(
+    existingSave.saveJson,
+  );
   const nextPrestigeLevels = readSavedPrestigeCompletedLevels(safeSaveJson);
   if (
     previousPrestigeLevels !== null &&
     nextPrestigeLevels !== null &&
     previousPrestigeLevels.some((level) => !nextPrestigeLevels.includes(level))
   ) {
-    throw new Error('Refusing older player save: prestige would decrease.');
+    throw new Error("Refusing older player save: prestige would decrease.");
   }
 
   const allowsRunProgressReset = hasSavedPrestigeProgression(
@@ -13383,18 +14322,27 @@ function assertClientSaveDoesNotDowngradeProgress(
   const previousLevel = readSavedCurrentLevel(existingSave.saveJson);
   const nextLevel = readSavedCurrentLevel(safeSaveJson);
 
-  if (previousLevel !== null && nextLevel !== null && nextLevel < previousLevel) {
-    throw new Error('Refusing older player save: level would decrease.');
+  if (
+    previousLevel !== null &&
+    nextLevel !== null &&
+    nextLevel < previousLevel
+  ) {
+    throw new Error("Refusing older player save: level would decrease.");
   }
 
-  const previousTotalGeneratedGold = readSavedTotalGeneratedGold(existingSave.saveJson);
+  const previousTotalGeneratedGold = readSavedTotalGeneratedGold(
+    existingSave.saveJson,
+  );
   const nextTotalGeneratedGold = readSavedTotalGeneratedGold(safeSaveJson);
 
   if (
     previousTotalGeneratedGold !== null &&
-    (nextTotalGeneratedGold === null || nextTotalGeneratedGold < previousTotalGeneratedGold)
+    (nextTotalGeneratedGold === null ||
+      nextTotalGeneratedGold < previousTotalGeneratedGold)
   ) {
-    throw new Error('Refusing older player save: lifetime gold would decrease.');
+    throw new Error(
+      "Refusing older player save: lifetime gold would decrease.",
+    );
   }
 
   const previousResearchCount = readSavedResearchCount(existingSave.saveJson);
@@ -13405,7 +14353,7 @@ function assertClientSaveDoesNotDowngradeProgress(
     nextResearchCount !== null &&
     nextResearchCount < previousResearchCount
   ) {
-    throw new Error('Refusing older player save: research would decrease.');
+    throw new Error("Refusing older player save: research would decrease.");
   }
 
   return false;
@@ -13416,7 +14364,10 @@ function mergePreviousResearchProgressIntoSaveJson(
   safeSaveJson: string,
   previousSaveJson?: string,
 ): string {
-  if (!previousSaveJson || hasSavedPrestigeProgression(previousSaveJson, safeSaveJson)) {
+  if (
+    !previousSaveJson ||
+    hasSavedPrestigeProgression(previousSaveJson, safeSaveJson)
+  ) {
     return safeSaveJson;
   }
 
@@ -13442,9 +14393,8 @@ function mergePreviousResearchProgressIntoSaveJson(
   const previousRawResearch = isRecord(previousSave.research)
     ? previousSave.research
     : {};
-  const previousCompletedIds = normalizeSaveCompletedResearchIds(
-    previousRawResearch.completedIds,
-  ) ?? [];
+  const previousCompletedIds =
+    normalizeSaveCompletedResearchIds(previousRawResearch.completedIds) ?? [];
   const mergedCompletedIdSet = new Set([
     ...safeResearch.completedIds,
     ...previousCompletedIds,
@@ -13455,10 +14405,7 @@ function mergePreviousResearchProgressIntoSaveJson(
   const mergedCompletedSet = new Set(mergedCompletedIds);
   const mergedInProgress = normalizeSaveInProgressResearches(
     {
-      inProgress: [
-        ...safeResearch.inProgress,
-        ...previousResearch.inProgress,
-      ],
+      inProgress: [...safeResearch.inProgress, ...previousResearch.inProgress],
     },
     mergedCompletedSet,
     safeResearchState.prestigeCount,
@@ -13470,10 +14417,12 @@ function mergePreviousResearchProgressIntoSaveJson(
       ctx,
       {
         crystalCostById: {
-          ...(isRecord(previousSave.research) && isRecord(previousSave.research.crystalCostById)
+          ...(isRecord(previousSave.research) &&
+          isRecord(previousSave.research.crystalCostById)
             ? previousSave.research.crystalCostById
             : {}),
-          ...(isRecord(safeSave.research) && isRecord(safeSave.research.crystalCostById)
+          ...(isRecord(safeSave.research) &&
+          isRecord(safeSave.research.crystalCostById)
             ? safeSave.research.crystalCostById
             : {}),
         },
@@ -13508,13 +14457,16 @@ function mergePreviousResearchProgressIntoSaveJson(
   });
 
   if (mergedSaveJson.length > MAX_PLAYER_GAMEPLAY_SAVE_JSON_LENGTH) {
-    throw new Error('Invalid player save JSON length.');
+    throw new Error("Invalid player save JSON length.");
   }
 
   return mergedSaveJson;
 }
 
-function getPendingAdminCurrencyGrants(ctx: IdleWizardReducerCtx, identity: Identity) {
+function getPendingAdminCurrencyGrants(
+  ctx: IdleWizardReducerCtx,
+  identity: Identity,
+) {
   const identityKey = getIdentityHex(identity);
   const pendingPrefix = `player-currency-grant-pending:${identityKey}:`;
   const appliedPrefix = `player-currency-grant-applied:${identityKey}:`;
@@ -13526,12 +14478,12 @@ function getPendingAdminCurrencyGrants(ctx: IdleWizardReducerCtx, identity: Iden
   }[] = [];
 
   for (const state of Array.from(ctx.db.maintenanceState.iter())) {
-    const stateKey = String(state.stateKey ?? '');
+    const stateKey = String(state.stateKey ?? "");
     if (!stateKey.startsWith(pendingPrefix)) {
       continue;
     }
 
-    const parts = stateKey.slice(pendingPrefix.length).split(':');
+    const parts = stateKey.slice(pendingPrefix.length).split(":");
     if (parts.length < 4) {
       continue;
     }
@@ -13539,21 +14491,24 @@ function getPendingAdminCurrencyGrants(ctx: IdleWizardReducerCtx, identity: Iden
     const emeraldAmount = assertAdminCurrencyGrantAmount(
       Number(parts[0]),
       MAX_PLAYER_SAVE_CURRENT_EMERALD,
-      'emerald',
+      "emerald",
     );
     const rubyAmount = assertAdminCurrencyGrantAmount(
       Number(parts[1]),
       MAX_PLAYER_SAVE_CURRENT_RUBY,
-      'ruby',
+      "ruby",
     );
     const crystalAmount = assertAdminCurrencyGrantAmount(
       Number(parts[2]),
       MAX_PLAYER_SAVE_CURRENT_CRYSTAL,
-      'crystal',
+      "crystal",
     );
-    const grantKey = parts.slice(3).join(':');
+    const grantKey = parts.slice(3).join(":");
 
-    if (!grantKey || ctx.db.maintenanceState.stateKey.find(`${appliedPrefix}${grantKey}`)) {
+    if (
+      !grantKey ||
+      ctx.db.maintenanceState.stateKey.find(`${appliedPrefix}${grantKey}`)
+    ) {
       continue;
     }
 
@@ -13596,7 +14551,11 @@ function mergeAdminGrantedSaveBranchCurrent(
   maxAmount: number,
 ): boolean {
   const safeCurrent = getSaveBranchCurrent(safeSave, branchKey, maxAmount);
-  const previousCurrent = getSaveBranchCurrent(previousSave, branchKey, maxAmount);
+  const previousCurrent = getSaveBranchCurrent(
+    previousSave,
+    branchKey,
+    maxAmount,
+  );
 
   if (safeCurrent >= previousCurrent) {
     return false;
@@ -13613,14 +14572,34 @@ function hasAcknowledgedAdminCurrencyGrant(
 ): boolean {
   return (
     (grant.emeraldAmount <= 0 ||
-      getSaveBranchCurrent(safeSave, 'emerald', MAX_PLAYER_SAVE_CURRENT_EMERALD) >=
-        getSaveBranchCurrent(previousSave, 'emerald', MAX_PLAYER_SAVE_CURRENT_EMERALD)) &&
+      getSaveBranchCurrent(
+        safeSave,
+        "emerald",
+        MAX_PLAYER_SAVE_CURRENT_EMERALD,
+      ) >=
+        getSaveBranchCurrent(
+          previousSave,
+          "emerald",
+          MAX_PLAYER_SAVE_CURRENT_EMERALD,
+        )) &&
     (grant.rubyAmount <= 0 ||
-      getSaveBranchCurrent(safeSave, 'ruby', MAX_PLAYER_SAVE_CURRENT_RUBY) >=
-        getSaveBranchCurrent(previousSave, 'ruby', MAX_PLAYER_SAVE_CURRENT_RUBY)) &&
+      getSaveBranchCurrent(safeSave, "ruby", MAX_PLAYER_SAVE_CURRENT_RUBY) >=
+        getSaveBranchCurrent(
+          previousSave,
+          "ruby",
+          MAX_PLAYER_SAVE_CURRENT_RUBY,
+        )) &&
     (grant.crystalAmount <= 0 ||
-      getSaveBranchCurrent(safeSave, 'crystal', MAX_PLAYER_SAVE_CURRENT_CRYSTAL) >=
-        getSaveBranchCurrent(previousSave, 'crystal', MAX_PLAYER_SAVE_CURRENT_CRYSTAL))
+      getSaveBranchCurrent(
+        safeSave,
+        "crystal",
+        MAX_PLAYER_SAVE_CURRENT_CRYSTAL,
+      ) >=
+        getSaveBranchCurrent(
+          previousSave,
+          "crystal",
+          MAX_PLAYER_SAVE_CURRENT_CRYSTAL,
+        ))
   );
 }
 
@@ -13710,7 +14689,9 @@ function mergePendingAdminCurrencyGrantsIntoSaveJson(
 
 function getDefaultBrewingMaxIngredients(): number {
   try {
-    const config = JSON.parse(DEFAULT_BREWING_CONFIG_JSON) as { maxCauldronIngredients?: unknown };
+    const config = JSON.parse(DEFAULT_BREWING_CONFIG_JSON) as {
+      maxCauldronIngredients?: unknown;
+    };
     return clampSaveInteger(config.maxCauldronIngredients, 1, 10, 6);
   } catch {
     return 6;
@@ -13719,8 +14700,15 @@ function getDefaultBrewingMaxIngredients(): number {
 
 function getDefaultBottlingDurationMs(): number {
   try {
-    const config = JSON.parse(DEFAULT_BREWING_CONFIG_JSON) as { bottlingDurationMs?: unknown };
-    return clampSaveInteger(config.bottlingDurationMs, 0, MAX_PLAYER_SAVE_TIMER_MS, 2_000);
+    const config = JSON.parse(DEFAULT_BREWING_CONFIG_JSON) as {
+      bottlingDurationMs?: unknown;
+    };
+    return clampSaveInteger(
+      config.bottlingDurationMs,
+      0,
+      MAX_PLAYER_SAVE_TIMER_MS,
+      2_000,
+    );
   } catch {
     return 2_000;
   }
@@ -13937,13 +14925,15 @@ function validateTasksGameConfig(value: unknown) {
 }
 
 function normalizeTasksConfigTaskType(type: unknown): string | null {
-  if (type === undefined || type === null || type === '' || type === 'drop') {
-    return 'turnIn';
+  if (type === undefined || type === null || type === "" || type === "drop") {
+    return "turnIn";
   }
 
   const value = String(type).trim();
 
-  return ['turnIn', 'research', 'summon', 'grow', 'brew', 'sell'].includes(value)
+  return ["turnIn", "research", "summon", "grow", "brew", "sell"].includes(
+    value,
+  )
     ? value
     : null;
 }
@@ -13988,7 +14978,7 @@ function validatePlayerLevelGameConfig(value: unknown) {
     milestones.length < 1 ||
     milestones.length > MAX_GAME_CONFIG_LEVELS
   ) {
-    throw new Error('Invalid player level config.');
+    throw new Error("Invalid player level config.");
   }
 
   validatePlayerLevelCrystalConfig(config);
@@ -14002,13 +14992,19 @@ function validatePlayerLevelGameConfig(value: unknown) {
   for (const milestoneConfig of milestones) {
     const milestone = milestoneConfig as Record<string, unknown>;
     const level = Number(milestone.level);
-    const maxGardenTiles = Number(milestone.maxGardenTiles ?? previousGardenTiles);
+    const maxGardenTiles = Number(
+      milestone.maxGardenTiles ?? previousGardenTiles,
+    );
     const maxCauldrons = Number(milestone.maxCauldrons ?? previousCauldrons);
     const maxNpcMarketStands = Number(
-      milestone.maxNpcMarketStands ?? milestone.maxShopSlots ?? previousNpcMarketStands,
+      milestone.maxNpcMarketStands ??
+        milestone.maxShopSlots ??
+        previousNpcMarketStands,
     );
     const maxPlayerMarketStands = Number(
-      milestone.maxPlayerMarketStands ?? milestone.maxShopSlots ?? previousPlayerMarketStands,
+      milestone.maxPlayerMarketStands ??
+        milestone.maxShopSlots ??
+        previousPlayerMarketStands,
     );
 
     if (
@@ -14017,10 +15013,16 @@ function validatePlayerLevelGameConfig(value: unknown) {
       level > maxLevel ||
       !isNonDecreasingBoundedInteger(maxGardenTiles, previousGardenTiles) ||
       !isNonDecreasingBoundedInteger(maxCauldrons, previousCauldrons) ||
-      !isNonDecreasingBoundedInteger(maxNpcMarketStands, previousNpcMarketStands) ||
-      !isNonDecreasingBoundedInteger(maxPlayerMarketStands, previousPlayerMarketStands)
+      !isNonDecreasingBoundedInteger(
+        maxNpcMarketStands,
+        previousNpcMarketStands,
+      ) ||
+      !isNonDecreasingBoundedInteger(
+        maxPlayerMarketStands,
+        previousPlayerMarketStands,
+      )
     ) {
-      throw new Error('Invalid player level milestone.');
+      throw new Error("Invalid player level milestone.");
     }
 
     validateStringList(milestone.unlocks);
@@ -14074,7 +15076,9 @@ function readPlayerLevelCrystalPerLevel(config: {
   crystalPerLevelUp?: unknown;
 }) {
   const crystal = isRecord(config.crystal) ? config.crystal : null;
-  const nestedPerLevel = crystal ? crystal.perLevel ?? crystal.perLevelUp : undefined;
+  const nestedPerLevel = crystal
+    ? (crystal.perLevel ?? crystal.perLevelUp)
+    : undefined;
 
   return nestedPerLevel ?? config.crystalPerLevel ?? config.crystalPerLevelUp;
 }
@@ -14143,12 +15147,24 @@ function validateResearchGameConfig(value: unknown) {
   };
 
   validateCostRecord(config.researchCostsGold, MAX_RESEARCH_COST_GOLD);
-  validateCostRecord(config.researchCostsCrystal, BigInt(MAX_GAME_CONFIG_RESOURCE_LIMIT));
-  validateCostRecord(config.researchCostsRuby, BigInt(MAX_GAME_CONFIG_RESOURCE_LIMIT));
-  validateCostRecord(config.researchCostsEmerald, BigInt(MAX_GAME_CONFIG_RESOURCE_LIMIT));
+  validateCostRecord(
+    config.researchCostsCrystal,
+    BigInt(MAX_GAME_CONFIG_RESOURCE_LIMIT),
+  );
+  validateCostRecord(
+    config.researchCostsRuby,
+    BigInt(MAX_GAME_CONFIG_RESOURCE_LIMIT),
+  );
+  validateCostRecord(
+    config.researchCostsEmerald,
+    BigInt(MAX_GAME_CONFIG_RESOURCE_LIMIT),
+  );
 
   if (config.researchDurationsSeconds !== undefined) {
-    validateCostRecord(config.researchDurationsSeconds, MAX_RESEARCH_DURATION_SECONDS);
+    validateCostRecord(
+      config.researchDurationsSeconds,
+      MAX_RESEARCH_DURATION_SECONDS,
+    );
   }
 }
 
@@ -14159,14 +15175,17 @@ function validateVisualSettingsGameConfig(value: unknown) {
   const costsCrystal = config.costsCrystal as Record<string, unknown>;
 
   if (!hasCurrentVisualSettingsConfigShape(value)) {
-    throw new Error('Invalid visual settings config.');
+    throw new Error("Invalid visual settings config.");
   }
 
   for (const category of VISUAL_SETTINGS_COST_CATEGORIES) {
     try {
-      validateCostRecord(costsCrystal[category], BigInt(MAX_GAME_CONFIG_RESOURCE_LIMIT));
+      validateCostRecord(
+        costsCrystal[category],
+        BigInt(MAX_GAME_CONFIG_RESOURCE_LIMIT),
+      );
     } catch {
-      throw new Error('Invalid visual settings config.');
+      throw new Error("Invalid visual settings config.");
     }
   }
 }
@@ -14179,7 +15198,9 @@ function validateBrewingGameConfig(value: unknown) {
   const maxCauldronIngredients = Number(config.maxCauldronIngredients);
   const initialUnlockedCauldrons = Number(config.initialUnlockedCauldrons ?? 1);
   const cauldronCostsGold = config.cauldronCostsGold;
-  const wastedPotionKey = normalizeNpcMarketItemKey(String(config.wastedPotionKey ?? ''));
+  const wastedPotionKey = normalizeNpcMarketItemKey(
+    String(config.wastedPotionKey ?? ""),
+  );
 
   if (
     !Number.isFinite(wastedBrewManaCost) ||
@@ -14198,14 +15219,14 @@ function validateBrewingGameConfig(value: unknown) {
     initialUnlockedCauldrons < 1 ||
     !npcMarketCatalogByItemKey.has(wastedPotionKey)
   ) {
-    throw new Error('Invalid brewing config.');
+    throw new Error("Invalid brewing config.");
   }
 
   if (cauldronCostsGold !== undefined) {
     validateCostList(cauldronCostsGold, 1, MAX_PLAYER_SAVE_CAULDRONS);
 
     if (initialUnlockedCauldrons > (cauldronCostsGold as unknown[]).length) {
-      throw new Error('Invalid brewing config.');
+      throw new Error("Invalid brewing config.");
     }
   }
 }
@@ -14281,22 +15302,29 @@ function validateItemDefinitionList(
     seenIds,
     seenKeys,
   }: {
-    expectedKind: 'seed' | 'herb' | 'potion' | 'ingredient';
+    expectedKind: "seed" | "herb" | "potion" | "ingredient";
     minCount: number;
     maxCount: number;
     seenIds: Set<number>;
     seenKeys: Set<string>;
   },
 ) {
-  if (!Array.isArray(value) || value.length < minCount || value.length > maxCount) {
-    throw new Error('Invalid item config list.');
+  if (
+    !Array.isArray(value) ||
+    value.length < minCount ||
+    value.length > maxCount
+  ) {
+    throw new Error("Invalid item config list.");
   }
 
   for (const itemConfig of value) {
     const item = itemConfig as Record<string, unknown>;
     const id = Number(item.id);
-    const key = normalizeNpcMarketItemKey(String(item.key ?? ''));
-    const label = normalizePlayerShopText(String(item.label ?? ''), MAX_ITEM_LABEL_LENGTH);
+    const key = normalizeNpcMarketItemKey(String(item.key ?? ""));
+    const label = normalizePlayerShopText(
+      String(item.label ?? ""),
+      MAX_ITEM_LABEL_LENGTH,
+    );
 
     if (
       !Number.isInteger(id) ||
@@ -14307,37 +15335,57 @@ function validateItemDefinitionList(
       seenKeys.has(key) ||
       !label
     ) {
-      throw new Error('Invalid item config identity.');
+      throw new Error("Invalid item config identity.");
     }
 
     seenIds.add(id);
     seenKeys.add(key);
 
-    if (expectedKind === 'seed') {
-      validatePositiveInteger(item.producesHerbTypeId, 'Invalid seed item config.');
-      validatePositiveNumber(item.dropWeight, 'Invalid seed item config.');
-      validateNonNegativeNumber(item.summonManaCost, 'Invalid seed item config.');
-      validateNonNegativeNumber(item.baseSellPrice, 'Invalid seed item config.');
+    if (expectedKind === "seed") {
+      validatePositiveInteger(
+        item.producesHerbTypeId,
+        "Invalid seed item config.",
+      );
+      validatePositiveNumber(item.dropWeight, "Invalid seed item config.");
+      validateNonNegativeNumber(
+        item.summonManaCost,
+        "Invalid seed item config.",
+      );
+      validateNonNegativeNumber(
+        item.baseSellPrice,
+        "Invalid seed item config.",
+      );
       continue;
     }
 
-    if (expectedKind === 'herb') {
-      validatePositiveNumber(item.growthDurationMs, 'Invalid herb item config.');
-      validateNonNegativeNumber(item.baseSellPrice, 'Invalid herb item config.');
+    if (expectedKind === "herb") {
+      validatePositiveNumber(
+        item.growthDurationMs,
+        "Invalid herb item config.",
+      );
+      validateNonNegativeNumber(
+        item.baseSellPrice,
+        "Invalid herb item config.",
+      );
       continue;
     }
 
-    if (expectedKind === 'ingredient') {
-      const rarity = String(item.rarity ?? '').trim().toLowerCase();
+    if (expectedKind === "ingredient") {
+      const rarity = String(item.rarity ?? "")
+        .trim()
+        .toLowerCase();
 
       if (!ingredientRarities.has(rarity)) {
-        throw new Error('Invalid ingredient item config.');
+        throw new Error("Invalid ingredient item config.");
       }
 
       continue;
     }
 
-    validateNonNegativeNumber(item.baseSellPrice, 'Invalid potion item config.');
+    validateNonNegativeNumber(
+      item.baseSellPrice,
+      "Invalid potion item config.",
+    );
   }
 }
 
@@ -14345,14 +15393,14 @@ function validatePotionRecipesGameConfig(value: unknown) {
   const recipes = (value as { recipes?: unknown }).recipes;
 
   if (!Array.isArray(recipes) || recipes.length < 1 || recipes.length > 150) {
-    throw new Error('Invalid potion recipe config.');
+    throw new Error("Invalid potion recipe config.");
   }
 
   const seenPotionKeys = new Set<string>();
 
   for (const recipeConfig of recipes) {
     const recipe = recipeConfig as Record<string, unknown>;
-    const potionKey = normalizeNpcMarketItemKey(String(recipe.potionKey ?? ''));
+    const potionKey = normalizeNpcMarketItemKey(String(recipe.potionKey ?? ""));
     const manaCost = Number(recipe.manaCost);
     const brewDurationMs = Number(recipe.brewDurationMs);
     const ingredients = recipe.ingredients;
@@ -14371,14 +15419,16 @@ function validatePotionRecipesGameConfig(value: unknown) {
       ingredients.length < 1 ||
       ingredients.length > 6
     ) {
-      throw new Error('Invalid potion recipe config.');
+      throw new Error("Invalid potion recipe config.");
     }
 
     seenPotionKeys.add(potionKey);
 
     for (const ingredientConfig of ingredients) {
       const ingredient = ingredientConfig as Record<string, unknown>;
-      const itemKey = normalizeNpcMarketItemKey(String(ingredient.itemKey ?? ''));
+      const itemKey = normalizeNpcMarketItemKey(
+        String(ingredient.itemKey ?? ""),
+      );
       const quantity = Number(ingredient.quantity);
 
       if (
@@ -14388,7 +15438,7 @@ function validatePotionRecipesGameConfig(value: unknown) {
         quantity < 1 ||
         quantity > MAX_GAME_CONFIG_TASK_QUANTITY
       ) {
-        throw new Error('Invalid potion recipe ingredient config.');
+        throw new Error("Invalid potion recipe ingredient config.");
       }
     }
   }
@@ -14403,13 +15453,21 @@ function validateMaintenanceGameConfig(value: unknown) {
   normalizeMaintenanceMessage(value.message);
 }
 
-function validateCostList(value: unknown, minLength: number, maxLength: number) {
-  if (!Array.isArray(value) || value.length < minLength || value.length > maxLength) {
-    throw new Error('Invalid cost list.');
+function validateCostList(
+  value: unknown,
+  minLength: number,
+  maxLength: number,
+) {
+  if (
+    !Array.isArray(value) ||
+    value.length < minLength ||
+    value.length > maxLength
+  ) {
+    throw new Error("Invalid cost list.");
   }
 
   for (const cost of value) {
-    validateNonNegativeNumber(cost, 'Invalid cost list value.');
+    validateNonNegativeNumber(cost, "Invalid cost list value.");
   }
 }
 
@@ -14477,7 +15535,10 @@ function validateStringList(value: unknown) {
   }
 }
 
-function isNonDecreasingBoundedInteger(value: number, previousValue: number): boolean {
+function isNonDecreasingBoundedInteger(
+  value: number,
+  previousValue: number,
+): boolean {
   return (
     Number.isInteger(value) &&
     value >= previousValue &&
@@ -14567,15 +15628,18 @@ function normalizePlayerInboxSourceKey(value: unknown): string {
   return sourceKey;
 }
 
-function normalizePlayerInboxMailKeyPart(value: unknown, maxLength: number): string {
-  const part = stripUnsafeTextControls(String(value ?? ''))
+function normalizePlayerInboxMailKeyPart(
+  value: unknown,
+  maxLength: number,
+): string {
+  const part = stripUnsafeTextControls(String(value ?? ""))
     .trim()
-    .replace(/\s+/g, '-')
-    .replace(/[^a-zA-Z0-9:_-]/g, '')
+    .replace(/\s+/g, "-")
+    .replace(/[^a-zA-Z0-9:_-]/g, "")
     .slice(0, maxLength);
 
   if (!part) {
-    throw new Error('Inbox mail key part is required.');
+    throw new Error("Inbox mail key part is required.");
   }
 
   return part;
@@ -14587,11 +15651,17 @@ function getPlayerInboxMailKey(
   recipientIdentity: Identity,
 ): string {
   return [
-    normalizePlayerInboxMailKeyPart(sourceType, MAX_PLAYER_INBOX_SOURCE_TYPE_LENGTH),
-    normalizePlayerInboxMailKeyPart(sourceKey, MAX_PLAYER_INBOX_SOURCE_KEY_LENGTH),
+    normalizePlayerInboxMailKeyPart(
+      sourceType,
+      MAX_PLAYER_INBOX_SOURCE_TYPE_LENGTH,
+    ),
+    normalizePlayerInboxMailKeyPart(
+      sourceKey,
+      MAX_PLAYER_INBOX_SOURCE_KEY_LENGTH,
+    ),
     getIdentityHex(recipientIdentity),
   ]
-    .join(':')
+    .join(":")
     .slice(0, MAX_PLAYER_INBOX_MAIL_KEY_LENGTH);
 }
 
@@ -14688,7 +15758,10 @@ function createPlayerInboxRewardText({
   rubyReward,
   emeraldReward,
   itemRewards,
-}: Omit<PlayerInboxRewardPayload, 'itemRewardsJson' | 'rewardText' | 'hasReward'>): string {
+}: Omit<
+  PlayerInboxRewardPayload,
+  "itemRewardsJson" | "rewardText" | "hasReward"
+>): string {
   const parts: string[] = [];
 
   if (coinReward > 0n) {
@@ -14711,7 +15784,7 @@ function createPlayerInboxRewardText({
     parts.push(`${itemReward.quantity} ${itemReward.itemKey}`);
   }
 
-  return parts.join(', ').slice(0, MAX_PLAYER_INBOX_REWARD_TEXT_LENGTH);
+  return parts.join(", ").slice(0, MAX_PLAYER_INBOX_REWARD_TEXT_LENGTH);
 }
 
 function normalizePlayerInboxRewards(
@@ -14787,7 +15860,11 @@ function insertPlayerInboxMail(
 ): boolean {
   const safeSourceType = normalizePlayerInboxSourceType(sourceType);
   const safeSourceKey = normalizePlayerInboxSourceKey(sourceKey);
-  const mailKey = getPlayerInboxMailKey(safeSourceType, safeSourceKey, recipientIdentity);
+  const mailKey = getPlayerInboxMailKey(
+    safeSourceType,
+    safeSourceKey,
+    recipientIdentity,
+  );
 
   if (ctx.db.playerInboxMail.mailKey.find(mailKey)) {
     return false;
@@ -14801,9 +15878,13 @@ function insertPlayerInboxMail(
     senderLabel: normalizePlayerInboxText(
       senderLabel,
       MAX_PLAYER_INBOX_SENDER_LABEL_LENGTH,
-      'system',
+      "system",
     ),
-    title: normalizePlayerInboxText(title, MAX_PLAYER_INBOX_TITLE_LENGTH, 'message'),
+    title: normalizePlayerInboxText(
+      title,
+      MAX_PLAYER_INBOX_TITLE_LENGTH,
+      "message",
+    ),
     body: normalizePlayerInboxText(body, MAX_PLAYER_INBOX_BODY_LENGTH),
     rewardText: rewards.rewardText,
     coinReward: rewards.coinReward,
@@ -14820,22 +15901,22 @@ function insertPlayerInboxMail(
 }
 
 function prunePlayerInboxMail(ctx: IdleWizardReducerCtx, identity: Identity) {
-  const rows = Array.from(ctx.db.playerInboxMail.byRecipientIdentity.filter(identity)).sort(
-    (left, right) => {
-      const leftCreatedAt = left.createdAt.microsSinceUnixEpoch;
-      const rightCreatedAt = right.createdAt.microsSinceUnixEpoch;
+  const rows = Array.from(
+    ctx.db.playerInboxMail.byRecipientIdentity.filter(identity),
+  ).sort((left, right) => {
+    const leftCreatedAt = left.createdAt.microsSinceUnixEpoch;
+    const rightCreatedAt = right.createdAt.microsSinceUnixEpoch;
 
-      if (leftCreatedAt < rightCreatedAt) {
-        return -1;
-      }
+    if (leftCreatedAt < rightCreatedAt) {
+      return -1;
+    }
 
-      if (leftCreatedAt > rightCreatedAt) {
-        return 1;
-      }
+    if (leftCreatedAt > rightCreatedAt) {
+      return 1;
+    }
 
-      return left.mailKey.localeCompare(right.mailKey);
-    },
-  );
+    return left.mailKey.localeCompare(right.mailKey);
+  });
   let excess = rows.length - PLAYER_INBOX_HISTORY_LIMIT;
 
   if (excess <= 0) {
@@ -14857,7 +15938,9 @@ function prunePlayerInboxMail(ctx: IdleWizardReducerCtx, identity: Identity) {
 }
 
 function getOwnPlayerInboxMailRows(ctx: { sender: Identity; db: any }): any[] {
-  return Array.from<any>(ctx.db.playerInboxMail.byRecipientIdentity.filter(ctx.sender))
+  return Array.from<any>(
+    ctx.db.playerInboxMail.byRecipientIdentity.filter(ctx.sender),
+  )
     .sort((left, right) => {
       const leftCreatedAt = left.createdAt.microsSinceUnixEpoch;
       const rightCreatedAt = right.createdAt.microsSinceUnixEpoch;
@@ -14894,7 +15977,10 @@ function getWorldEventRewardTier(rank: number) {
   );
 }
 
-function getWorldEventSettlementStateKey(periodKey: string, eventId: string): string {
+function getWorldEventSettlementStateKey(
+  periodKey: string,
+  eventId: string,
+): string {
   return `${WORLD_EVENT_REWARD_SETTLEMENT_STATE_PREFIX}:${periodKey}:${eventId}`;
 }
 
@@ -14913,7 +15999,9 @@ function ensureWorldEventRewardSettlementTick(ctx: IdleWizardReducerCtx) {
 
   ctx.db.worldEventRewardSettlementTick.insert({
     tickId: 1n,
-    scheduledAt: ScheduleAt.interval(WORLD_EVENT_REWARD_SETTLEMENT_INTERVAL_MICROS),
+    scheduledAt: ScheduleAt.interval(
+      WORLD_EVENT_REWARD_SETTLEMENT_INTERVAL_MICROS,
+    ),
   });
 }
 
@@ -14934,7 +16022,7 @@ function settleWorldEventInboxRewards(
   const safePeriodKey = normalizeWorldEventPeriodKey(periodKey);
   const safeEventId = normalizeWorldEventId(eventId);
   if (!safePeriodKey || !safeEventId) {
-    throw new Error('Invalid world event reward settlement key.');
+    throw new Error("Invalid world event reward settlement key.");
   }
 
   const stateKey = getWorldEventSettlementStateKey(safePeriodKey, safeEventId);
@@ -14942,11 +16030,13 @@ function settleWorldEventInboxRewards(
     return 0;
   }
 
-  const eventEntries = Array.from(ctx.db.worldEventLeaderboard.byPeriodKey.filter(safePeriodKey))
-    .filter((entry) => normalizeWorldEventId(entry.eventId) === safeEventId);
+  const eventEntries = Array.from(
+    ctx.db.worldEventLeaderboard.byPeriodKey.filter(safePeriodKey),
+  ).filter((entry) => normalizeWorldEventId(entry.eventId) === safeEventId);
   const rankedEntries = getRankedWorldEventLeaderboardEntries(eventEntries);
   const eventHeadline =
-    normalizePlayerInboxText(headline, MAX_PLAYER_INBOX_TITLE_LENGTH) || safeEventId;
+    normalizePlayerInboxText(headline, MAX_PLAYER_INBOX_TITLE_LENGTH) ||
+    safeEventId;
   const sourceKey = `${safePeriodKey}:${safeEventId}`;
   let insertedMailCount = 0;
 
@@ -14972,15 +16062,15 @@ function settleWorldEventInboxRewards(
       crystalReward: tier.crystalReward,
       rubyReward: 0,
       emeraldReward: tier.emeraldReward,
-      itemRewardsJson: '[]',
+      itemRewardsJson: "[]",
     });
 
     if (
       insertPlayerInboxMail(ctx, {
         recipientIdentity: player.identity,
-        sourceType: 'worldEvent',
+        sourceType: "worldEvent",
         sourceKey,
-        senderLabel: 'World Event',
+        senderLabel: "World Event",
         title: eventHeadline,
         body: `You placed #${rank} in ${eventHeadline} with ${points.toString()} points. Here are your rewards.`,
         rewards,
@@ -15015,7 +16105,7 @@ function settleEndedWorldEventInboxRewards(ctx: IdleWizardReducerCtx) {
   }
 
   for (const eventKey of eventKeys) {
-    const [periodKey, eventId] = eventKey.split(':');
+    const [periodKey, eventId] = eventKey.split(":");
     settleWorldEventInboxRewards(ctx, {
       periodKey,
       eventId,
@@ -15065,36 +16155,52 @@ function getLeaderboardPeriodValues(
     dayKey,
     weekKey,
     monthKey,
-    dailyIncome: entry.dayKey === dayKey ? toBigInt(entry.dailyIncome) : seedIncome ?? 0n,
-    weeklyIncome: entry.weekKey === weekKey ? toBigInt(entry.weeklyIncome) : seedIncome ?? 0n,
-    monthlyIncome: entry.monthKey === monthKey
-      ? toBigInt(entry.monthlyIncome)
-      : seedIncome ?? 0n,
+    dailyIncome:
+      entry.dayKey === dayKey
+        ? toBigInt(entry.dailyIncome)
+        : (seedIncome ?? 0n),
+    weeklyIncome:
+      entry.weekKey === weekKey
+        ? toBigInt(entry.weeklyIncome)
+        : (seedIncome ?? 0n),
+    monthlyIncome:
+      entry.monthKey === monthKey
+        ? toBigInt(entry.monthlyIncome)
+        : (seedIncome ?? 0n),
   };
 }
 
 function getLeaderboardSummaryRows(ctx: any) {
-  const entries = getLeaderboardEntriesFromIndex(ctx, ctx.db.leaderboard.byTotalIncome);
-  const allTimeRanked = getRankedLeaderboardEntries(entries, 'totalIncome');
-  const dailyRanked = getRankedLeaderboardEntries(entries, 'dailyIncome');
-  const weeklyRanked = getRankedLeaderboardEntries(entries, 'weeklyIncome');
-  const monthlyRanked = getRankedLeaderboardEntries(entries, 'monthlyIncome');
-  const ranksByIdentity = new Map<string, {
-    dailyRank: number;
-    weeklyRank: number;
-    monthlyRank: number;
-    allTimeRank: number;
-  }>();
+  const entries = getLeaderboardEntriesFromIndex(
+    ctx,
+    ctx.db.leaderboard.byTotalIncome,
+  );
+  const allTimeRanked = getRankedLeaderboardEntries(entries, "totalIncome");
+  const dailyRanked = getRankedLeaderboardEntries(entries, "dailyIncome");
+  const weeklyRanked = getRankedLeaderboardEntries(entries, "weeklyIncome");
+  const monthlyRanked = getRankedLeaderboardEntries(entries, "monthlyIncome");
+  const ranksByIdentity = new Map<
+    string,
+    {
+      dailyRank: number;
+      weeklyRank: number;
+      monthlyRank: number;
+      allTimeRank: number;
+    }
+  >();
   const visibleByIdentity = new Map<string, (typeof entries)[number]>();
   const addVisible = (entry: (typeof entries)[number]) => {
     visibleByIdentity.set(getIdentityHex(entry.identity), entry);
   };
-  const addRanks = (ranked: typeof allTimeRanked, rankKey: keyof {
-    dailyRank: number;
-    weeklyRank: number;
-    monthlyRank: number;
-    allTimeRank: number;
-  }) => {
+  const addRanks = (
+    ranked: typeof allTimeRanked,
+    rankKey: keyof {
+      dailyRank: number;
+      weeklyRank: number;
+      monthlyRank: number;
+      allTimeRank: number;
+    },
+  ) => {
     ranked.forEach((entry, index) => {
       const identityKey = getIdentityHex(entry.identity);
       const ranks = ranksByIdentity.get(identityKey) ?? {
@@ -15108,12 +16214,17 @@ function getLeaderboardSummaryRows(ctx: any) {
     });
   };
 
-  addRanks(dailyRanked, 'dailyRank');
-  addRanks(weeklyRanked, 'weeklyRank');
-  addRanks(monthlyRanked, 'monthlyRank');
-  addRanks(allTimeRanked, 'allTimeRank');
+  addRanks(dailyRanked, "dailyRank");
+  addRanks(weeklyRanked, "weeklyRank");
+  addRanks(monthlyRanked, "monthlyRank");
+  addRanks(allTimeRanked, "allTimeRank");
 
-  for (const ranked of [dailyRanked, weeklyRanked, monthlyRanked, allTimeRanked]) {
+  for (const ranked of [
+    dailyRanked,
+    weeklyRanked,
+    monthlyRanked,
+    allTimeRanked,
+  ]) {
     ranked.slice(0, LEADERBOARD_SUMMARY_LIMIT).forEach(addVisible);
   }
 
@@ -15204,14 +16315,16 @@ function getWorldEventLeaderboardSummaryRows(ctx: any) {
       allianceTag: getSenderTradeAllianceTag(ctx, entry.identity),
       allianceTagColor: getSenderTradeAllianceTagColor(ctx, entry.identity),
       character: normalizePlayerCharacter(
-        ctx.db.player.identity.find(entry.identity)?.character ?? DEFAULT_PLAYER_CHARACTER,
+        ctx.db.player.identity.find(entry.identity)?.character ??
+          DEFAULT_PLAYER_CHARACTER,
       ),
       points: toBigInt(entry.points),
       updatedAt: new Timestamp(entry.updatedAt.microsSinceUnixEpoch),
       playerLevel: normalizePlayerLevel(entry.playerLevel),
       rank: ranksByContributionKey.get(String(entry.contributionKey)) ?? 0,
       frame: normalizePlayerFrame(
-        ctx.db.player.identity.find(entry.identity)?.frame ?? DEFAULT_PLAYER_FRAME,
+        ctx.db.player.identity.find(entry.identity)?.frame ??
+          DEFAULT_PLAYER_FRAME,
       ),
     }))
     .sort((left, right) => {
@@ -15225,7 +16338,9 @@ function getWorldEventLeaderboardSummaryRows(ctx: any) {
         return leftRank - rightRank;
       }
 
-      return getIdentityHex(left.identity).localeCompare(getIdentityHex(right.identity));
+      return getIdentityHex(left.identity).localeCompare(
+        getIdentityHex(right.identity),
+      );
     });
 }
 
@@ -15241,10 +16356,16 @@ function getPlayerInfoSummaryRows(ctx: any) {
   };
 
   addIdentity(ctx.sender);
-  getLeaderboardSummaryRows(ctx).forEach((entry) => addIdentity(entry.identity));
-  getWorldEventLeaderboardSummaryRows(ctx).forEach((entry) => addIdentity(entry.identity));
+  getLeaderboardSummaryRows(ctx).forEach((entry) =>
+    addIdentity(entry.identity),
+  );
+  getWorldEventLeaderboardSummaryRows(ctx).forEach((entry) =>
+    addIdentity(entry.identity),
+  );
 
-  for (const message of Array.from<any>(ctx.db.worldChat.bySentAt.filter(new Range()))
+  for (const message of Array.from<any>(
+    ctx.db.worldChat.bySentAt.filter(new Range()),
+  )
     .sort((left, right) => {
       const leftSentAt = left.sentAt.microsSinceUnixEpoch;
       const rightSentAt = right.sentAt.microsSinceUnixEpoch;
@@ -15260,7 +16381,7 @@ function getPlayerInfoSummaryRows(ctx: any) {
       return right.messageId.compareTo(left.messageId);
     })
     .slice(0, 40)) {
-    if (message.username !== 'system') {
+    if (message.username !== "system") {
       addIdentity(message.senderIdentity);
     }
   }
@@ -15269,7 +16390,9 @@ function getPlayerInfoSummaryRows(ctx: any) {
   if (ownMember) {
     const ownAllianceKey = getTradeAllianceIdKey(ownMember.allianceId);
 
-    for (const member of ctx.db.tradeAllianceMember.byAllianceId.filter(ownMember.allianceId)) {
+    for (const member of ctx.db.tradeAllianceMember.byAllianceId.filter(
+      ownMember.allianceId,
+    )) {
       addIdentity(member.memberIdentity);
     }
 
@@ -15279,7 +16402,9 @@ function getPlayerInfoSummaryRows(ctx: any) {
       addIdentity(application.applicantIdentity);
     }
 
-    for (const message of ctx.db.tradeAllianceChat.byAllianceId.filter(ownMember.allianceId)) {
+    for (const message of ctx.db.tradeAllianceChat.byAllianceId.filter(
+      ownMember.allianceId,
+    )) {
       addIdentity(message.senderIdentity);
     }
 
@@ -15294,14 +16419,24 @@ function getPlayerInfoSummaryRows(ctx: any) {
     }
   }
 
-  for (const listing of ctx.db.playerShopListing.byQuantity.filter(new Range())) {
-    if (getRowMarketId(listing) === activeMarketId && Number(listing.quantity) > 0) {
+  for (const listing of ctx.db.playerShopListing.byQuantity.filter(
+    new Range(),
+  )) {
+    if (
+      getRowMarketId(listing) === activeMarketId &&
+      Number(listing.quantity) > 0
+    ) {
       addIdentity(listing.sellerIdentity);
     }
   }
 
-  for (const request of ctx.db.playerShopRequest.byQuantity.filter(new Range())) {
-    if (getRowMarketId(request) === activeMarketId && Number(request.quantity) > 0) {
+  for (const request of ctx.db.playerShopRequest.byQuantity.filter(
+    new Range(),
+  )) {
+    if (
+      getRowMarketId(request) === activeMarketId &&
+      Number(request.quantity) > 0
+    ) {
       addIdentity(request.requesterIdentity);
     }
   }
@@ -15316,7 +16451,9 @@ function getPlayerInfoSummaryRows(ctx: any) {
     addIdentity(trade.sellerIdentity);
   }
 
-  for (const discovery of ctx.db.potionRecipeDiscovery.byDiscoveredAt.filter(new Range())) {
+  for (const discovery of ctx.db.potionRecipeDiscovery.byDiscoveredAt.filter(
+    new Range(),
+  )) {
     addIdentity(discovery.discoveredByIdentity);
   }
 
@@ -15332,9 +16469,13 @@ function createPlayerInfoSummaryRow(ctx: any, identity: Identity) {
   const save = ctx.db.playerGameplaySave.identity.find(identity);
   const savedLevel = readSavedCurrentLevel(save?.saveJson);
   const savedTotalProducedGold = readSavedTotalGeneratedGold(save?.saveJson);
-  const savedTotalBrewedPotions = readSavedStatsTotal(save?.saveJson, 'potions');
-  const savedTotalHarvestedHerbs = readSavedStatsTotal(save?.saveJson, 'herbs');
-  const prestigeCount = readSavedPrestigeCompletedLevels(save?.saveJson)?.length ?? 0;
+  const savedTotalBrewedPotions = readSavedStatsTotal(
+    save?.saveJson,
+    "potions",
+  );
+  const savedTotalHarvestedHerbs = readSavedStatsTotal(save?.saveJson, "herbs");
+  const prestigeCount =
+    readSavedPrestigeCompletedLevels(save?.saveJson)?.length ?? 0;
   const connected = Boolean(player?.connected);
   const totalPlayTimeMicros =
     connected && session
@@ -15343,7 +16484,7 @@ function createPlayerInfoSummaryRow(ctx: any, identity: Identity) {
           session.updatedAt,
           ctx.timestamp,
         )
-      : player?.totalPlayTimeMicros ?? 0n;
+      : (player?.totalPlayTimeMicros ?? 0n);
   const lastSeenAt =
     player?.lastSeenAt ??
     leaderboard?.updatedAt ??
@@ -15352,21 +16493,30 @@ function createPlayerInfoSummaryRow(ctx: any, identity: Identity) {
 
   return {
     identity,
-    username: String(player?.username ?? leaderboard?.username ?? DEFAULT_USERNAME),
+    username: String(
+      player?.username ?? leaderboard?.username ?? DEFAULT_USERNAME,
+    ),
     allianceTag: getSenderTradeAllianceTag(ctx, identity),
     allianceTagColor: getSenderTradeAllianceTagColor(ctx, identity),
-    totalProducedGold: toBigInt(leaderboard?.totalIncome ?? savedTotalProducedGold ?? 0n),
+    totalProducedGold: toBigInt(
+      leaderboard?.totalIncome ?? savedTotalProducedGold ?? 0n,
+    ),
     totalBrewedPotions: savedTotalBrewedPotions ?? 0n,
     totalHarvestedHerbs: savedTotalHarvestedHerbs ?? 0n,
     playerLevel: normalizePlayerLevel(
-      player?.playerLevel ?? leaderboard?.playerLevel ?? savedLevel ?? DEFAULT_PLAYER_LEVEL,
+      player?.playerLevel ??
+        leaderboard?.playerLevel ??
+        savedLevel ??
+        DEFAULT_PLAYER_LEVEL,
     ),
     prestigeCount: Math.max(0, Math.floor(Number(prestigeCount) || 0)),
     connected,
     lastSeenAt,
     totalPlayTimeSeconds: playtimeMicrosToWholeSeconds(totalPlayTimeMicros),
     updatedAt: leaderboard?.updatedAt ?? lastSeenAt,
-    character: normalizePlayerCharacter(player?.character ?? DEFAULT_PLAYER_CHARACTER),
+    character: normalizePlayerCharacter(
+      player?.character ?? DEFAULT_PLAYER_CHARACTER,
+    ),
     frame: normalizePlayerFrame(player?.frame ?? DEFAULT_PLAYER_FRAME),
   };
 }
@@ -15409,13 +16559,15 @@ function getRankedLeaderboardEntries<T extends { identity: Identity }>(
       return -1;
     }
 
-    return getIdentityHex(left.identity).localeCompare(getIdentityHex(right.identity));
+    return getIdentityHex(left.identity).localeCompare(
+      getIdentityHex(right.identity),
+    );
   });
 }
 
-function getRankedWorldEventLeaderboardEntries<T extends { identity: Identity; points: bigint }>(
-  entries: T[],
-) {
+function getRankedWorldEventLeaderboardEntries<
+  T extends { identity: Identity; points: bigint },
+>(entries: T[]) {
   return [...entries].sort((left, right) => {
     const leftPoints = toBigInt(left.points);
     const rightPoints = toBigInt(right.points);
@@ -15428,7 +16580,9 @@ function getRankedWorldEventLeaderboardEntries<T extends { identity: Identity; p
       return -1;
     }
 
-    return getIdentityHex(left.identity).localeCompare(getIdentityHex(right.identity));
+    return getIdentityHex(left.identity).localeCompare(
+      getIdentityHex(right.identity),
+    );
   });
 }
 
@@ -15503,11 +16657,18 @@ function getNpcMarketNeedState(row: any, targetNeed: bigint) {
 }
 
 function getNpcMarketStock(row: any): bigint {
-  return clampBigInt(toBigInt(row.npcStock ?? 0n), 0n, NPC_MARKET_MAX_TARGET_STOCK);
+  return clampBigInt(
+    toBigInt(row.npcStock ?? 0n),
+    0n,
+    NPC_MARKET_MAX_TARGET_STOCK,
+  );
 }
 
 function getNpcMarketPriceFromNeed(
-  marketConfig: Pick<(typeof npcMarketCatalog)[number], 'basePriceGold' | 'volatilityBps'> & {
+  marketConfig: Pick<
+    (typeof npcMarketCatalog)[number],
+    "basePriceGold" | "volatilityBps"
+  > & {
     marketId?: string;
   },
   npcNeed: bigint,
@@ -15520,18 +16681,27 @@ function getNpcMarketPriceFromNeed(
 
   const safeNeed = Number(npcNeed > 0n ? npcNeed : 0n);
   const safeTargetNeed = Number(targetNeed > 0n ? targetNeed : 1n);
-  const softness = Math.max(1, (safeTargetNeed * NPC_MARKET_SOFTNESS_BPS) / 10_000);
+  const softness = Math.max(
+    1,
+    (safeTargetNeed * NPC_MARKET_SOFTNESS_BPS) / 10_000,
+  );
   const pressure = (safeNeed + softness) / (safeTargetNeed + softness);
   const elasticity = getNpcMarketPriceElasticity(marketConfig);
 
-  return roundGoldPrice(marketConfig.basePriceGold * Math.pow(pressure, elasticity));
+  return roundGoldPrice(
+    marketConfig.basePriceGold * Math.pow(pressure, elasticity),
+  );
 }
 
 function getNpcMarketPriceElasticity(
-  marketConfig: Pick<(typeof npcMarketCatalog)[number], 'volatilityBps'>,
+  marketConfig: Pick<(typeof npcMarketCatalog)[number], "volatilityBps">,
 ): number {
   const volatilityBps = Number(
-    clampBigInt(toBigInt(marketConfig.volatilityBps), 0n, NPC_MARKET_MAX_VOLATILITY_BPS),
+    clampBigInt(
+      toBigInt(marketConfig.volatilityBps),
+      0n,
+      NPC_MARKET_MAX_VOLATILITY_BPS,
+    ),
   );
 
   return 1 + volatilityBps / 10_000;
@@ -15581,7 +16751,7 @@ function getNpcMarketRecoveredNeedState(
     lastTickAt:
       processedChange || nextNpcNeed !== needState.npcNeed
         ? ctx.timestamp
-        : row.lastTickAt ?? ctx.timestamp,
+        : (row.lastTickAt ?? ctx.timestamp),
     recovered: processedChange || nextNpcNeed !== needState.npcNeed,
   };
 }
@@ -15639,10 +16809,16 @@ function getNpcMarketDemandWaveRecovery(
   return recovery;
 }
 
-function getNpcMarketDemandWaveAmount(targetNeed: bigint, waveIndex: bigint): bigint {
-  const waveSlot = Number(waveIndex % BigInt(NPC_MARKET_DEMAND_WAVE_BPS_BY_SLOT.length));
+function getNpcMarketDemandWaveAmount(
+  targetNeed: bigint,
+  waveIndex: bigint,
+): bigint {
+  const waveSlot = Number(
+    waveIndex % BigInt(NPC_MARKET_DEMAND_WAVE_BPS_BY_SLOT.length),
+  );
   const waveBps =
-    NPC_MARKET_DEMAND_WAVE_BPS_BY_SLOT[waveSlot] ?? NPC_MARKET_DEMAND_SMALL_WAVE_BPS;
+    NPC_MARKET_DEMAND_WAVE_BPS_BY_SLOT[waveSlot] ??
+    NPC_MARKET_DEMAND_SMALL_WAVE_BPS;
 
   return (
     (targetNeed * NPC_MARKET_DEMAND_DAILY_BUDGET_BPS * waveBps) /
@@ -15713,7 +16889,9 @@ function applyNpcMarketAutoTune(
   );
 
   if (stepBps !== 0 && nextBasePriceGold !== marketConfig.basePriceGold) {
-    const existingConfig = ctx.db.npcMarketItemConfig.itemKey.find(marketConfig.storageKey);
+    const existingConfig = ctx.db.npcMarketItemConfig.itemKey.find(
+      marketConfig.storageKey,
+    );
 
     if (existingConfig) {
       ctx.db.npcMarketItemConfig.itemKey.update({
@@ -15762,8 +16940,10 @@ function ensureNpcMarketItemConfig(
 
   if (existingConfig) {
     const itemLabel =
-      normalizePlayerShopText(existingConfig.itemLabel, MAX_ITEM_LABEL_LENGTH) ||
-      catalogItem.itemLabel;
+      normalizePlayerShopText(
+        existingConfig.itemLabel,
+        MAX_ITEM_LABEL_LENGTH,
+      ) || catalogItem.itemLabel;
     const itemKind =
       normalizePlayerShopText(existingConfig.itemKind, MAX_ITEM_KIND_LENGTH) ||
       catalogItem.itemKind;
@@ -15799,8 +16979,10 @@ function ensureNpcMarketItemConfig(
         existingConfig.defaultBasePriceGold,
         existingConfig.priceScale,
       ) === catalogItem.basePriceGold &&
-      decodeStoredGoldPrice(existingConfig.basePriceGold, existingConfig.priceScale) ===
-        basePriceGold &&
+      decodeStoredGoldPrice(
+        existingConfig.basePriceGold,
+        existingConfig.priceScale,
+      ) === basePriceGold &&
       existingConfig.priceScale === GOLD_PRICE_SCALE &&
       existingConfig.targetStock === targetStock &&
       existingConfig.volatilityBps === volatilityBps &&
@@ -15843,7 +17025,10 @@ function ensureNpcMarketItemConfig(
   });
 }
 
-function normalizeNpcMarketRuntimeConfig(row: any, catalogItem?: (typeof npcMarketCatalog)[number]) {
+function normalizeNpcMarketRuntimeConfig(
+  row: any,
+  catalogItem?: (typeof npcMarketCatalog)[number],
+) {
   const defaultBasePriceGold = normalizeNpcMarketBasePriceGold(
     row.defaultBasePriceGold,
     catalogItem?.basePriceGold ?? 1,
@@ -15861,7 +17046,7 @@ function normalizeNpcMarketRuntimeConfig(row: any, catalogItem?: (typeof npcMark
     itemKind:
       normalizePlayerShopText(row.itemKind, MAX_ITEM_KIND_LENGTH) ||
       catalogItem?.itemKind ||
-      'custom',
+      "custom",
     defaultBasePriceGold,
     basePriceGold: normalizeNpcMarketBasePriceGold(
       row.basePriceGold,
@@ -15895,16 +17080,21 @@ function getNpcMarketRuntimeConfig(
 
   const itemConfig = catalogItem
     ? ensureNpcMarketItemConfig(ctx, catalogItem, safeMarketId)
-    : ctx.db.npcMarketItemConfig.itemKey.find(getMarketScopedItemKey(safeMarketId, safeItemKey));
+    : ctx.db.npcMarketItemConfig.itemKey.find(
+        getMarketScopedItemKey(safeMarketId, safeItemKey),
+      );
 
   if (!itemConfig) {
-    throw new Error('Unknown NPC market item.');
+    throw new Error("Unknown NPC market item.");
   }
 
-  const runtimeConfig = normalizeNpcMarketRuntimeConfig(itemConfig, catalogItem);
+  const runtimeConfig = normalizeNpcMarketRuntimeConfig(
+    itemConfig,
+    catalogItem,
+  );
 
   if (!runtimeConfig.enabled) {
-    throw new Error('NPC market item is disabled.');
+    throw new Error("NPC market item is disabled.");
   }
 
   return runtimeConfig;
@@ -15930,7 +17120,9 @@ function ensureNpcMarketItem(
   marketId = defaultMarketId,
 ) {
   const marketConfig = getNpcMarketRuntimeConfig(ctx, itemKey, marketId);
-  const existingRow = ctx.db.npcMarketPrice.itemKey.find(marketConfig.storageKey);
+  const existingRow = ctx.db.npcMarketPrice.itemKey.find(
+    marketConfig.storageKey,
+  );
 
   if (existingRow) {
     const needState = getNpcMarketRecoveredNeedState(
@@ -15952,10 +17144,14 @@ function ensureNpcMarketItem(
     if (
       normalizedRow.itemLabel === marketConfig.itemLabel &&
       normalizedRow.itemKind === marketConfig.itemKind &&
-      decodeStoredGoldPrice(normalizedRow.basePriceGold, normalizedRow.priceScale) ===
-        marketConfig.basePriceGold &&
-      decodeStoredGoldPrice(normalizedRow.marketPriceGold, normalizedRow.priceScale) ===
-        marketPriceGold &&
+      decodeStoredGoldPrice(
+        normalizedRow.basePriceGold,
+        normalizedRow.priceScale,
+      ) === marketConfig.basePriceGold &&
+      decodeStoredGoldPrice(
+        normalizedRow.marketPriceGold,
+        normalizedRow.priceScale,
+      ) === marketPriceGold &&
       normalizedRow.priceScale === GOLD_PRICE_SCALE &&
       normalizedRow.targetStock === marketConfig.targetStock &&
       normalizedRow.npcStock === getNpcMarketStock(existingRow) &&
@@ -16042,13 +17238,16 @@ function ensureResearchConfig(
   ctx: IdleWizardReducerCtx,
   catalogResearch: (typeof researchCatalog)[number],
 ) {
-  const existingConfig = ctx.db.researchConfig.researchId.find(catalogResearch.researchId);
+  const existingConfig = ctx.db.researchConfig.researchId.find(
+    catalogResearch.researchId,
+  );
 
   if (existingConfig) {
     const label =
       normalizeResearchLabel(existingConfig.label) || catalogResearch.label;
     const groupId =
-      normalizeResearchGroupId(existingConfig.groupId) || catalogResearch.groupId;
+      normalizeResearchGroupId(existingConfig.groupId) ||
+      catalogResearch.groupId;
     const costGold = normalizeStoredResearchCostGold(
       catalogResearch.researchId,
       existingConfig.costGold,
@@ -16126,7 +17325,9 @@ function ensureGameConfig(
   ctx: IdleWizardReducerCtx,
   catalogConfig: (typeof gameConfigCatalog)[number],
 ) {
-  const existingConfig = ctx.db.gameConfig.configKey.find(catalogConfig.configKey);
+  const existingConfig = ctx.db.gameConfig.configKey.find(
+    catalogConfig.configKey,
+  );
 
   if (existingConfig) {
     const configJson = normalizeGameConfigJsonOrDefault(
@@ -16270,7 +17471,9 @@ function sanitizeLeaderboardRows(ctx: IdleWizardReducerCtx) {
   }
 }
 
-function backfillLeaderboardTotalIncomeFromGameplaySaves(ctx: IdleWizardReducerCtx) {
+function backfillLeaderboardTotalIncomeFromGameplaySaves(
+  ctx: IdleWizardReducerCtx,
+) {
   if (!ENABLE_CLIENT_REPORTED_TOTAL_INCOME) {
     return;
   }
@@ -16290,7 +17493,8 @@ function backfillLeaderboardTotalIncomeFromGameplaySaves(ctx: IdleWizardReducerC
     const playerLevel = normalizePlayerLevel(
       player?.playerLevel ?? existingEntry?.playerLevel ?? DEFAULT_PLAYER_LEVEL,
     );
-    const reportedTotalIncome = normalizeReportedLeaderboardTotalIncome(savedTotalIncome);
+    const reportedTotalIncome =
+      normalizeReportedLeaderboardTotalIncome(savedTotalIncome);
 
     if (reportedTotalIncome === null) {
       continue;
@@ -16300,7 +17504,9 @@ function backfillLeaderboardTotalIncomeFromGameplaySaves(ctx: IdleWizardReducerC
       existingEntry?.totalIncome ?? 0n,
     );
     const totalIncome =
-      reportedTotalIncome > currentTotalIncome ? reportedTotalIncome : currentTotalIncome;
+      reportedTotalIncome > currentTotalIncome
+        ? reportedTotalIncome
+        : currentTotalIncome;
     const periods = existingEntry
       ? getLeaderboardPeriodValues(ctx, existingEntry, totalIncome)
       : getLeaderboardPeriodDefaults(ctx, totalIncome);
@@ -16362,7 +17568,11 @@ function runStartupMaintenanceOnce(ctx: IdleWizardReducerCtx) {
 }
 
 function runPlayerLevelCauldronCapBackfillOnce(ctx: IdleWizardReducerCtx) {
-  if (ctx.db.maintenanceState.stateKey.find(PLAYER_LEVEL_CAULDRON_CAP_BACKFILL_STATE_KEY)) {
+  if (
+    ctx.db.maintenanceState.stateKey.find(
+      PLAYER_LEVEL_CAULDRON_CAP_BACKFILL_STATE_KEY,
+    )
+  ) {
     return;
   }
 
@@ -16374,11 +17584,15 @@ function runPlayerLevelCauldronCapBackfillOnce(ctx: IdleWizardReducerCtx) {
 }
 
 function runShopStallPurchaseConfigBackfillOnce(ctx: IdleWizardReducerCtx) {
-  if (ctx.db.maintenanceState.stateKey.find(SHOP_STALL_PURCHASE_CONFIG_BACKFILL_STATE_KEY)) {
+  if (
+    ctx.db.maintenanceState.stateKey.find(
+      SHOP_STALL_PURCHASE_CONFIG_BACKFILL_STATE_KEY,
+    )
+  ) {
     return;
   }
 
-  const row = ctx.db.gameConfig.configKey.find('shop');
+  const row = ctx.db.gameConfig.configKey.find("shop");
   if (row) {
     let config: any;
     try {
@@ -16388,16 +17602,24 @@ function runShopStallPurchaseConfigBackfillOnce(ctx: IdleWizardReducerCtx) {
     }
 
     const shopShelf = config?.shopShelf;
-    if (shopShelf && typeof shopShelf === 'object' && !Array.isArray(shopShelf)) {
-      const { slotCostsGold: _legacySlotCostsGold, ...currentShelf } = shopShelf;
-      const configJson = validateGameConfigJson('shop', JSON.stringify({
-        ...config,
-        shopShelf: {
-          ...currentShelf,
-          initialUnlockedSlots: 0,
-          slotCostsCoin: [50, 150, 400, 1000, 2500],
-        },
-      }));
+    if (
+      shopShelf &&
+      typeof shopShelf === "object" &&
+      !Array.isArray(shopShelf)
+    ) {
+      const { slotCostsGold: _legacySlotCostsGold, ...currentShelf } =
+        shopShelf;
+      const configJson = validateGameConfigJson(
+        "shop",
+        JSON.stringify({
+          ...config,
+          shopShelf: {
+            ...currentShelf,
+            initialUnlockedSlots: 0,
+            slotCostsCoin: [50, 150, 400, 1000, 2500],
+          },
+        }),
+      );
       ctx.db.gameConfig.configKey.update({
         ...row,
         configJson,
@@ -16413,11 +17635,15 @@ function runShopStallPurchaseConfigBackfillOnce(ctx: IdleWizardReducerCtx) {
 }
 
 function runShopAutoSellTimerBackfillOnce(ctx: IdleWizardReducerCtx) {
-  if (ctx.db.maintenanceState.stateKey.find(SHOP_AUTO_SELL_TIMER_BACKFILL_STATE_KEY)) {
+  if (
+    ctx.db.maintenanceState.stateKey.find(
+      SHOP_AUTO_SELL_TIMER_BACKFILL_STATE_KEY,
+    )
+  ) {
     return;
   }
 
-  const row = ctx.db.gameConfig.configKey.find('shop');
+  const row = ctx.db.gameConfig.configKey.find("shop");
   if (row) {
     let config: unknown;
     try {
@@ -16428,7 +17654,10 @@ function runShopAutoSellTimerBackfillOnce(ctx: IdleWizardReducerCtx) {
 
     const restoredConfig = restoreFiveSecondShopTimer(config);
     if (restoredConfig && restoredConfig !== config) {
-      const configJson = validateGameConfigJson('shop', JSON.stringify(restoredConfig));
+      const configJson = validateGameConfigJson(
+        "shop",
+        JSON.stringify(restoredConfig),
+      );
       ctx.db.gameConfig.configKey.update({
         ...row,
         configJson,
@@ -16444,7 +17673,11 @@ function runShopAutoSellTimerBackfillOnce(ctx: IdleWizardReducerCtx) {
 }
 
 function runSmallTownFixedPriceBackfillOnce(ctx: IdleWizardReducerCtx) {
-  if (ctx.db.maintenanceState.stateKey.find(SMALL_TOWN_FIXED_PRICE_BACKFILL_STATE_KEY)) {
+  if (
+    ctx.db.maintenanceState.stateKey.find(
+      SMALL_TOWN_FIXED_PRICE_BACKFILL_STATE_KEY,
+    )
+  ) {
     return;
   }
 
@@ -16453,7 +17686,10 @@ function runSmallTownFixedPriceBackfillOnce(ctx: IdleWizardReducerCtx) {
       continue;
     }
 
-    const storageKey = getMarketScopedItemKey(defaultMarketId, catalogItem.itemKey);
+    const storageKey = getMarketScopedItemKey(
+      defaultMarketId,
+      catalogItem.itemKey,
+    );
     const existingConfig = ctx.db.npcMarketItemConfig.itemKey.find(storageKey);
 
     if (!existingConfig) {
@@ -16467,8 +17703,10 @@ function runSmallTownFixedPriceBackfillOnce(ctx: IdleWizardReducerCtx) {
     );
 
     if (
-      decodeStoredGoldPrice(existingConfig.basePriceGold, existingConfig.priceScale) !==
-      defaultBasePriceGold
+      decodeStoredGoldPrice(
+        existingConfig.basePriceGold,
+        existingConfig.priceScale,
+      ) !== defaultBasePriceGold
     ) {
       ctx.db.npcMarketItemConfig.itemKey.update({
         ...existingConfig,
@@ -16482,7 +17720,11 @@ function runSmallTownFixedPriceBackfillOnce(ctx: IdleWizardReducerCtx) {
       continue;
     }
 
-    const marketRow = ensureNpcMarketItem(ctx, catalogItem.itemKey, defaultMarketId);
+    const marketRow = ensureNpcMarketItem(
+      ctx,
+      catalogItem.itemKey,
+      defaultMarketId,
+    );
     if (marketRow.demandScore !== 0n || marketRow.supplyScore !== 0n) {
       ctx.db.npcMarketPrice.itemKey.update({
         ...marketRow,
@@ -16500,7 +17742,11 @@ function runSmallTownFixedPriceBackfillOnce(ctx: IdleWizardReducerCtx) {
 }
 
 function runNpcMarketCatalogPriceRebaseOnce(ctx: IdleWizardReducerCtx) {
-  if (ctx.db.maintenanceState.stateKey.find(NPC_MARKET_CATALOG_PRICE_REBASE_STATE_KEY)) {
+  if (
+    ctx.db.maintenanceState.stateKey.find(
+      NPC_MARKET_CATALOG_PRICE_REBASE_STATE_KEY,
+    )
+  ) {
     return;
   }
 
@@ -16511,14 +17757,17 @@ function runNpcMarketCatalogPriceRebaseOnce(ctx: IdleWizardReducerCtx) {
       }
 
       const storageKey = getMarketScopedItemKey(market.id, catalogItem.itemKey);
-      const existingConfig = ctx.db.npcMarketItemConfig.itemKey.find(storageKey);
+      const existingConfig =
+        ctx.db.npcMarketItemConfig.itemKey.find(storageKey);
 
       if (!existingConfig) {
         continue;
       }
 
       const rebasedConfig = rebaseNpcMarketCatalogConfig(existingConfig, {
-        storedCatalogBasePriceGold: toStoredGoldPrice(catalogItem.basePriceGold),
+        storedCatalogBasePriceGold: toStoredGoldPrice(
+          catalogItem.basePriceGold,
+        ),
         priceScale: GOLD_PRICE_SCALE,
         updatedAt: ctx.timestamp,
       });
@@ -16528,7 +17777,11 @@ function runNpcMarketCatalogPriceRebaseOnce(ctx: IdleWizardReducerCtx) {
         continue;
       }
 
-      const marketRow = ensureNpcMarketItem(ctx, catalogItem.itemKey, market.id);
+      const marketRow = ensureNpcMarketItem(
+        ctx,
+        catalogItem.itemKey,
+        market.id,
+      );
 
       if (marketRow.demandScore !== 0n || marketRow.supplyScore !== 0n) {
         ctx.db.npcMarketPrice.itemKey.update(
@@ -16545,7 +17798,7 @@ function runNpcMarketCatalogPriceRebaseOnce(ctx: IdleWizardReducerCtx) {
 }
 
 function backfillPlayerLevelCauldronCaps(ctx: IdleWizardReducerCtx) {
-  const row = ctx.db.gameConfig.configKey.find('playerLevel');
+  const row = ctx.db.gameConfig.configKey.find("playerLevel");
   if (!row) {
     return;
   }
@@ -16568,10 +17821,13 @@ function backfillPlayerLevelCauldronCaps(ctx: IdleWizardReducerCtx) {
     return;
   }
 
-  const configJson = validateGameConfigJson('playerLevel', JSON.stringify({
-    ...config,
-    milestones: nextMilestones,
-  }));
+  const configJson = validateGameConfigJson(
+    "playerLevel",
+    JSON.stringify({
+      ...config,
+      milestones: nextMilestones,
+    }),
+  );
 
   ctx.db.gameConfig.configKey.update({
     ...row,
@@ -16581,7 +17837,7 @@ function backfillPlayerLevelCauldronCaps(ctx: IdleWizardReducerCtx) {
 }
 
 function backfillShopConfigForIndependentStalls(ctx: IdleWizardReducerCtx) {
-  const row = ctx.db.gameConfig.configKey.find('shop');
+  const row = ctx.db.gameConfig.configKey.find("shop");
   if (!row) {
     return;
   }
@@ -16594,7 +17850,7 @@ function backfillShopConfigForIndependentStalls(ctx: IdleWizardReducerCtx) {
   }
 
   const shopShelf = config?.shopShelf;
-  if (!shopShelf || typeof shopShelf !== 'object' || Array.isArray(shopShelf)) {
+  if (!shopShelf || typeof shopShelf !== "object" || Array.isArray(shopShelf)) {
     return;
   }
 
@@ -16605,14 +17861,17 @@ function backfillShopConfigForIndependentStalls(ctx: IdleWizardReducerCtx) {
     return;
   }
 
-  const configJson = validateGameConfigJson('shop', JSON.stringify({
-    ...config,
-    shopShelf: {
-      ...shopShelf,
-      initialUnlockedSlots: 0,
-      autoSellSeconds: DEFAULT_SHOP_AUTO_SELL_SECONDS,
-    },
-  }));
+  const configJson = validateGameConfigJson(
+    "shop",
+    JSON.stringify({
+      ...config,
+      shopShelf: {
+        ...shopShelf,
+        initialUnlockedSlots: 0,
+        autoSellSeconds: DEFAULT_SHOP_AUTO_SELL_SECONDS,
+      },
+    }),
+  );
 
   ctx.db.gameConfig.configKey.update({
     ...row,
@@ -16622,7 +17881,7 @@ function backfillShopConfigForIndependentStalls(ctx: IdleWizardReducerCtx) {
 }
 
 function backfillPlayerLevelMarketStandMilestones(ctx: IdleWizardReducerCtx) {
-  const row = ctx.db.gameConfig.configKey.find('playerLevel');
+  const row = ctx.db.gameConfig.configKey.find("playerLevel");
   if (!row) {
     return;
   }
@@ -16641,7 +17900,9 @@ function backfillPlayerLevelMarketStandMilestones(ctx: IdleWizardReducerCtx) {
 
   const milestones = insertLevelFourMarketStandMilestone(rawMilestones);
   const nextMilestones = milestones.map((milestone: any) => {
-    const maxMarketStands = getDefaultMarketStandsForLevel(Number(milestone?.level));
+    const maxMarketStands = getDefaultMarketStandsForLevel(
+      Number(milestone?.level),
+    );
 
     return {
       ...milestone,
@@ -16654,10 +17915,13 @@ function backfillPlayerLevelMarketStandMilestones(ctx: IdleWizardReducerCtx) {
     return;
   }
 
-  const configJson = validateGameConfigJson('playerLevel', JSON.stringify({
-    ...config,
-    milestones: nextMilestones,
-  }));
+  const configJson = validateGameConfigJson(
+    "playerLevel",
+    JSON.stringify({
+      ...config,
+      milestones: nextMilestones,
+    }),
+  );
 
   ctx.db.gameConfig.configKey.update({
     ...row,
@@ -16797,8 +18061,12 @@ function ensurePlayer(
   { touchLastSeen = true }: { touchLastSeen?: boolean } = {},
 ) {
   const existingPlayer = ctx.db.player.identity.find(ctx.sender);
-  const username = normalizeUsername(existingPlayer?.username ?? DEFAULT_USERNAME);
-  const theme = normalizePlayerTheme(existingPlayer?.theme ?? DEFAULT_PLAYER_THEME);
+  const username = normalizeUsername(
+    existingPlayer?.username ?? DEFAULT_USERNAME,
+  );
+  const theme = normalizePlayerTheme(
+    existingPlayer?.theme ?? DEFAULT_PLAYER_THEME,
+  );
   const font = normalizePlayerFont(existingPlayer?.font ?? DEFAULT_PLAYER_FONT);
   const colorMode = normalizePlayerColorMode(
     existingPlayer?.colorMode ?? DEFAULT_PLAYER_COLOR_MODE,
@@ -16813,7 +18081,9 @@ function ensurePlayer(
 
   if (existingPlayer) {
     const playerLevel = normalizePlayerLevel(existingPlayer.playerLevel);
-    const lastSeenAt = touchLastSeen ? ctx.timestamp : existingPlayer.lastSeenAt;
+    const lastSeenAt = touchLastSeen
+      ? ctx.timestamp
+      : existingPlayer.lastSeenAt;
     const shouldUpdate =
       existingPlayer.username !== username ||
       existingPlayer.playerLevel !== playerLevel ||
@@ -16824,7 +18094,8 @@ function ensurePlayer(
       existingPlayer.frame !== frame ||
       Boolean(existingPlayer.usernamePromptSeen) !== usernamePromptSeen ||
       existingPlayer.connected !== true ||
-      lastSeenAt.microsSinceUnixEpoch !== existingPlayer.lastSeenAt.microsSinceUnixEpoch;
+      lastSeenAt.microsSinceUnixEpoch !==
+        existingPlayer.lastSeenAt.microsSinceUnixEpoch;
 
     if (!shouldUpdate) {
       return existingPlayer;
@@ -16922,7 +18193,11 @@ function applyLeaderboardIncomeDelta(
     return;
   }
 
-  const entry = ensureLeaderboardEntry(ctx, player.username, player.playerLevel);
+  const entry = ensureLeaderboardEntry(
+    ctx,
+    player.username,
+    player.playerLevel,
+  );
   const currentTotalIncome = normalizeLeaderboardIncome(entry.totalIncome);
 
   ctx.db.leaderboard.identity.update({
@@ -16963,6 +18238,40 @@ function assertWorldChatRateLimit(ctx: IdleWizardReducerCtx) {
 
   if (globalSentInWindow >= WORLD_CHAT_GLOBAL_RATE_LIMIT_MAX_MESSAGES) {
     throw new Error('World chat is globally rate limited.');
+  }
+}
+
+function assertFriendRequestRateLimit(ctx: IdleWizardReducerCtx) {
+  const windowStartMicros =
+    ctx.timestamp.microsSinceUnixEpoch -
+    FRIEND_REQUEST_RATE_LIMIT_WINDOW_MICROS;
+  let requestsInWindow = 0;
+
+  for (const row of ctx.db.friendRequest.bySenderIdentity.filter(ctx.sender)) {
+    if (row.createdAt.microsSinceUnixEpoch >= windowStartMicros) {
+      requestsInWindow += 1;
+    }
+  }
+
+  if (requestsInWindow >= FRIEND_REQUEST_RATE_LIMIT_MAX_REQUESTS) {
+    throw new Error("Friend requests are rate limited.");
+  }
+}
+
+function assertDirectMessageRateLimit(ctx: IdleWizardReducerCtx) {
+  const windowStartMicros =
+    ctx.timestamp.microsSinceUnixEpoch -
+    DIRECT_MESSAGE_RATE_LIMIT_WINDOW_MICROS;
+  let messagesInWindow = 0;
+
+  for (const row of ctx.db.directMessage.bySenderIdentity.filter(ctx.sender)) {
+    if (row.sentAt.microsSinceUnixEpoch >= windowStartMicros) {
+      messagesInWindow += 1;
+    }
+  }
+
+  if (messagesInWindow >= DIRECT_MESSAGE_RATE_LIMIT_MAX_MESSAGES) {
+    throw new Error("Direct messages are rate limited.");
   }
 }
 
@@ -17046,11 +18355,15 @@ function deletePlayerShopProgressionForIdentity(
   ctx: IdleWizardReducerCtx,
   identity: Identity,
 ) {
-  for (const listing of Array.from(ctx.db.playerShopListing.bySellerIdentity.filter(identity))) {
+  for (const listing of Array.from(
+    ctx.db.playerShopListing.bySellerIdentity.filter(identity),
+  )) {
     ctx.db.playerShopListing.delete(listing);
   }
 
-  for (const request of Array.from(ctx.db.playerShopRequest.byRequesterIdentity.filter(identity))) {
+  for (const request of Array.from(
+    ctx.db.playerShopRequest.byRequesterIdentity.filter(identity),
+  )) {
     ctx.db.playerShopRequest.delete(request);
   }
 
@@ -17101,7 +18414,11 @@ function invalidateAllPlayerSessions(ctx: IdleWizardReducerCtx) {
 
   for (const session of Array.from(ctx.db.playerSession.iter())) {
     ctx.db.playerSession.identity.update(
-      createInvalidatedPlayerSession(session, maintenanceConnectionId, ctx.timestamp),
+      createInvalidatedPlayerSession(
+        session,
+        maintenanceConnectionId,
+        ctx.timestamp,
+      ),
     );
   }
 }
@@ -17128,26 +18445,42 @@ function deletePlayerGameplaySaveForIdentity(
   }
 }
 
-function deletePlayerInboxForIdentity(ctx: IdleWizardReducerCtx, identity: Identity) {
-  for (const mail of Array.from(ctx.db.playerInboxMail.byRecipientIdentity.filter(identity))) {
+function deletePlayerInboxForIdentity(
+  ctx: IdleWizardReducerCtx,
+  identity: Identity,
+) {
+  for (const mail of Array.from(
+    ctx.db.playerInboxMail.byRecipientIdentity.filter(identity),
+  )) {
     ctx.db.playerInboxMail.delete(mail);
   }
 }
 
-function deleteLeaderboardForIdentity(ctx: IdleWizardReducerCtx, identity: Identity) {
+function deleteLeaderboardForIdentity(
+  ctx: IdleWizardReducerCtx,
+  identity: Identity,
+) {
   const entry = ctx.db.leaderboard.identity.find(identity);
   if (entry) {
     ctx.db.leaderboard.delete(entry);
   }
 }
 
-function deleteWorldEventLeaderboardForIdentity(ctx: IdleWizardReducerCtx, identity: Identity) {
-  for (const entry of Array.from(ctx.db.worldEventLeaderboard.byIdentity.filter(identity))) {
+function deleteWorldEventLeaderboardForIdentity(
+  ctx: IdleWizardReducerCtx,
+  identity: Identity,
+) {
+  for (const entry of Array.from(
+    ctx.db.worldEventLeaderboard.byIdentity.filter(identity),
+  )) {
     ctx.db.worldEventLeaderboard.delete(entry);
   }
 }
 
-function deleteMessageRowsForIdentity(ctx: IdleWizardReducerCtx, identity: Identity) {
+function deleteMessageRowsForIdentity(
+  ctx: IdleWizardReducerCtx,
+  identity: Identity,
+) {
   for (const row of Array.from(ctx.db.worldChat.iter())) {
     if (row.senderIdentity.isEqual(identity)) {
       ctx.db.worldChat.delete(row);
@@ -17161,13 +18494,51 @@ function deleteMessageRowsForIdentity(ctx: IdleWizardReducerCtx, identity: Ident
   }
 }
 
-function deletePlayerFeedbackForIdentity(ctx: IdleWizardReducerCtx, identity: Identity) {
-  for (const row of Array.from(ctx.db.playerFeedback.bySenderIdentity.filter(identity))) {
+function deleteFriendStateForIdentity(
+  ctx: IdleWizardReducerCtx,
+  identity: Identity,
+) {
+  for (const request of Array.from(ctx.db.friendRequest.iter())) {
+    if (
+      request.senderIdentity.isEqual(identity) ||
+      request.recipientIdentity.isEqual(identity)
+    ) {
+      ctx.db.friendRequest.delete(request);
+    }
+  }
+  for (const friendship of Array.from(ctx.db.friendship.iter())) {
+    if (
+      friendship.leftIdentity.isEqual(identity) ||
+      friendship.rightIdentity.isEqual(identity)
+    ) {
+      ctx.db.friendship.delete(friendship);
+    }
+  }
+  for (const message of Array.from(ctx.db.directMessage.iter())) {
+    if (
+      message.senderIdentity.isEqual(identity) ||
+      message.recipientIdentity.isEqual(identity)
+    ) {
+      ctx.db.directMessage.delete(message);
+    }
+  }
+}
+
+function deletePlayerFeedbackForIdentity(
+  ctx: IdleWizardReducerCtx,
+  identity: Identity,
+) {
+  for (const row of Array.from(
+    ctx.db.playerFeedback.bySenderIdentity.filter(identity),
+  )) {
     ctx.db.playerFeedback.delete(row);
   }
 }
 
-function deletePotionDiscoveriesForIdentity(ctx: IdleWizardReducerCtx, identity: Identity) {
+function deletePotionDiscoveriesForIdentity(
+  ctx: IdleWizardReducerCtx,
+  identity: Identity,
+) {
   for (const discovery of Array.from(ctx.db.potionRecipeDiscovery.iter())) {
     if (discovery.discoveredByIdentity.isEqual(identity)) {
       ctx.db.potionRecipeDiscovery.delete(discovery);
@@ -17191,7 +18562,10 @@ function deletePotionRecipeRoyaltiesForIdentity(
   }
 }
 
-function deletePlayerShopDataForIdentity(ctx: IdleWizardReducerCtx, identity: Identity) {
+function deletePlayerShopDataForIdentity(
+  ctx: IdleWizardReducerCtx,
+  identity: Identity,
+) {
   deletePlayerShopProgressionForIdentity(ctx, identity);
 
   const deletedTradeIds = new Set<string>();
@@ -17205,16 +18579,23 @@ function deletePlayerShopDataForIdentity(ctx: IdleWizardReducerCtx, identity: Id
     ctx.db.playerShopTrade.delete(trade);
   };
 
-  for (const trade of Array.from(ctx.db.playerShopTrade.byBuyerIdentity.filter(identity))) {
+  for (const trade of Array.from(
+    ctx.db.playerShopTrade.byBuyerIdentity.filter(identity),
+  )) {
     deleteTrade(trade);
   }
 
-  for (const trade of Array.from(ctx.db.playerShopTrade.bySellerIdentity.filter(identity))) {
+  for (const trade of Array.from(
+    ctx.db.playerShopTrade.bySellerIdentity.filter(identity),
+  )) {
     deleteTrade(trade);
   }
 }
 
-function deleteTradeAllianceDataForIdentity(ctx: IdleWizardReducerCtx, identity: Identity) {
+function deleteTradeAllianceDataForIdentity(
+  ctx: IdleWizardReducerCtx,
+  identity: Identity,
+) {
   const affectedAllianceIds: any[] = [];
 
   for (const alliance of Array.from(ctx.db.tradeAlliance.iter())) {
@@ -17226,12 +18607,16 @@ function deleteTradeAllianceDataForIdentity(ctx: IdleWizardReducerCtx, identity:
   deleteTradeAllianceApplicationsForIdentity(ctx, identity);
 
   for (const contribution of Array.from(
-    ctx.db.tradeAllianceQuestContribution.byContributorIdentity.filter(identity),
+    ctx.db.tradeAllianceQuestContribution.byContributorIdentity.filter(
+      identity,
+    ),
   )) {
     ctx.db.tradeAllianceQuestContribution.delete(contribution);
   }
 
-  for (const reward of Array.from(ctx.db.tradeAllianceRewardInbox.byRecipientIdentity.filter(identity))) {
+  for (const reward of Array.from(
+    ctx.db.tradeAllianceRewardInbox.byRecipientIdentity.filter(identity),
+  )) {
     ctx.db.tradeAllianceRewardInbox.delete(reward);
   }
 
@@ -17246,12 +18631,16 @@ function deleteTradeAllianceDataForIdentity(ctx: IdleWizardReducerCtx, identity:
   }
 }
 
-function deletePlayerDataForIdentity(ctx: IdleWizardReducerCtx, identity: Identity) {
+function deletePlayerDataForIdentity(
+  ctx: IdleWizardReducerCtx,
+  identity: Identity,
+) {
   deletePlayerGameplaySaveForIdentity(ctx, identity);
   deletePlayerInboxForIdentity(ctx, identity);
   deleteLeaderboardForIdentity(ctx, identity);
   deleteWorldEventLeaderboardForIdentity(ctx, identity);
   deleteMessageRowsForIdentity(ctx, identity);
+  deleteFriendStateForIdentity(ctx, identity);
   deleteTradeAllianceDataForIdentity(ctx, identity);
   deletePlayerShopDataForIdentity(ctx, identity);
   deletePotionDiscoveriesForIdentity(ctx, identity);
@@ -17265,7 +18654,10 @@ function deletePlayerDataForIdentity(ctx: IdleWizardReducerCtx, identity: Identi
   }
 }
 
-function deletePlayerDataForIdentities(ctx: IdleWizardReducerCtx, identities: Identity[]) {
+function deletePlayerDataForIdentities(
+  ctx: IdleWizardReducerCtx,
+  identities: Identity[],
+) {
   const identityByHex = new Map<string, Identity>();
 
   for (const identity of identities) {
@@ -17276,7 +18668,8 @@ function deletePlayerDataForIdentities(ctx: IdleWizardReducerCtx, identities: Id
     return;
   }
 
-  const isTargetIdentity = (identity: Identity) => identityByHex.has(getIdentityHex(identity));
+  const isTargetIdentity = (identity: Identity) =>
+    identityByHex.has(getIdentityHex(identity));
 
   for (const identity of identityByHex.values()) {
     deletePlayerGameplaySaveForIdentity(ctx, identity);
@@ -17299,6 +18692,33 @@ function deletePlayerDataForIdentities(ctx: IdleWizardReducerCtx, identities: Id
     }
   }
 
+  for (const request of Array.from(ctx.db.friendRequest.iter())) {
+    if (
+      isTargetIdentity(request.senderIdentity) ||
+      isTargetIdentity(request.recipientIdentity)
+    ) {
+      ctx.db.friendRequest.delete(request);
+    }
+  }
+
+  for (const friendship of Array.from(ctx.db.friendship.iter())) {
+    if (
+      isTargetIdentity(friendship.leftIdentity) ||
+      isTargetIdentity(friendship.rightIdentity)
+    ) {
+      ctx.db.friendship.delete(friendship);
+    }
+  }
+
+  for (const message of Array.from(ctx.db.directMessage.iter())) {
+    if (
+      isTargetIdentity(message.senderIdentity) ||
+      isTargetIdentity(message.recipientIdentity)
+    ) {
+      ctx.db.directMessage.delete(message);
+    }
+  }
+
   const affectedAllianceIds: any[] = [];
 
   for (const alliance of Array.from(ctx.db.tradeAlliance.iter())) {
@@ -17307,13 +18727,17 @@ function deletePlayerDataForIdentities(ctx: IdleWizardReducerCtx, identities: Id
     }
   }
 
-  for (const application of Array.from(ctx.db.tradeAllianceApplication.iter())) {
+  for (const application of Array.from(
+    ctx.db.tradeAllianceApplication.iter(),
+  )) {
     if (isTargetIdentity(application.applicantIdentity)) {
       ctx.db.tradeAllianceApplication.delete(application);
     }
   }
 
-  for (const contribution of Array.from(ctx.db.tradeAllianceQuestContribution.iter())) {
+  for (const contribution of Array.from(
+    ctx.db.tradeAllianceQuestContribution.iter(),
+  )) {
     if (isTargetIdentity(contribution.contributorIdentity)) {
       ctx.db.tradeAllianceQuestContribution.delete(contribution);
     }
@@ -17352,7 +18776,10 @@ function deletePlayerDataForIdentities(ctx: IdleWizardReducerCtx, identities: Id
   }
 
   for (const trade of Array.from(ctx.db.playerShopTrade.iter())) {
-    if (isTargetIdentity(trade.buyerIdentity) || isTargetIdentity(trade.sellerIdentity)) {
+    if (
+      isTargetIdentity(trade.buyerIdentity) ||
+      isTargetIdentity(trade.sellerIdentity)
+    ) {
       ctx.db.playerShopTrade.delete(trade);
     }
   }
@@ -17404,7 +18831,9 @@ function getZeroIncomePlayerIdentities(ctx: IdleWizardReducerCtx): Identity[] {
   return Array.from(identities.values());
 }
 
-function getZeroTotalCoinPlayerIdentities(ctx: IdleWizardReducerCtx): Identity[] {
+function getZeroTotalCoinPlayerIdentities(
+  ctx: IdleWizardReducerCtx,
+): Identity[] {
   const identities = new Map<string, Identity>();
   const positiveTotalCoinIdentityKeys = new Set<string>();
 
@@ -17465,21 +18894,22 @@ function grantAdminCurrencyBonusToRemainingPlayers(
   const safeEmeraldAmount = assertAdminCurrencyGrantAmount(
     emeraldAmount,
     MAX_PLAYER_SAVE_CURRENT_EMERALD,
-    'emerald',
+    "emerald",
   );
   const safeRubyAmount = assertAdminCurrencyGrantAmount(
     rubyAmount,
     MAX_PLAYER_SAVE_CURRENT_RUBY,
-    'ruby',
+    "ruby",
   );
   const safeCrystalAmount = assertAdminCurrencyGrantAmount(
     crystalAmount,
     MAX_PLAYER_SAVE_CURRENT_CRYSTAL,
-    'crystal',
+    "crystal",
   );
 
   for (const player of Array.from(ctx.db.player.iter())) {
-    const existingSave = ctx.db.playerGameplaySave.identity.find(player.identity) ?? undefined;
+    const existingSave =
+      ctx.db.playerGameplaySave.identity.find(player.identity) ?? undefined;
     const safeSaveJson = createAdminPlayerCurrencyBonusSaveJson(
       ctx,
       existingSave,
@@ -17491,7 +18921,12 @@ function grantAdminCurrencyBonusToRemainingPlayers(
       },
     );
 
-    upsertAdminPlayerGameplaySave(ctx, player.identity, safeSaveJson, existingSave);
+    upsertAdminPlayerGameplaySave(
+      ctx,
+      player.identity,
+      safeSaveJson,
+      existingSave,
+    );
   }
 }
 
@@ -17539,12 +18974,26 @@ function deleteAllWorldChatMessages(ctx: IdleWizardReducerCtx) {
   }
 }
 
+function deleteAllFriendState(ctx: IdleWizardReducerCtx) {
+  for (const message of Array.from(ctx.db.directMessage.iter())) {
+    ctx.db.directMessage.delete(message);
+  }
+  for (const friendship of Array.from(ctx.db.friendship.iter())) {
+    ctx.db.friendship.delete(friendship);
+  }
+  for (const request of Array.from(ctx.db.friendRequest.iter())) {
+    ctx.db.friendRequest.delete(request);
+  }
+}
+
 function deleteAllTradeAllianceState(ctx: IdleWizardReducerCtx) {
   for (const reward of Array.from(ctx.db.tradeAllianceRewardInbox.iter())) {
     ctx.db.tradeAllianceRewardInbox.delete(reward);
   }
 
-  for (const contribution of Array.from(ctx.db.tradeAllianceQuestContribution.iter())) {
+  for (const contribution of Array.from(
+    ctx.db.tradeAllianceQuestContribution.iter(),
+  )) {
     ctx.db.tradeAllianceQuestContribution.delete(contribution);
   }
 
@@ -17556,7 +19005,9 @@ function deleteAllTradeAllianceState(ctx: IdleWizardReducerCtx) {
     ctx.db.tradeAllianceChat.delete(chat);
   }
 
-  for (const application of Array.from(ctx.db.tradeAllianceApplication.iter())) {
+  for (const application of Array.from(
+    ctx.db.tradeAllianceApplication.iter(),
+  )) {
     ctx.db.tradeAllianceApplication.delete(application);
   }
 
@@ -17573,12 +19024,16 @@ function deleteTradeAllianceProgressionForIdentity(
   ctx: IdleWizardReducerCtx,
   identity: Identity,
 ) {
-  for (const reward of Array.from(ctx.db.tradeAllianceRewardInbox.byRecipientIdentity.filter(identity))) {
+  for (const reward of Array.from(
+    ctx.db.tradeAllianceRewardInbox.byRecipientIdentity.filter(identity),
+  )) {
     ctx.db.tradeAllianceRewardInbox.delete(reward);
   }
 
   for (const contribution of Array.from(
-    ctx.db.tradeAllianceQuestContribution.byContributorIdentity.filter(identity),
+    ctx.db.tradeAllianceQuestContribution.byContributorIdentity.filter(
+      identity,
+    ),
   )) {
     ctx.db.tradeAllianceQuestContribution.delete(contribution);
   }
@@ -17597,7 +19052,9 @@ function deleteTradeAllianceProgressionForIdentity(
 
 function resetAllPlayersToFreshProfiles(ctx: IdleWizardReducerCtx) {
   for (const player of Array.from(ctx.db.player.iter())) {
-    ctx.db.player.identity.update(createIdentityOnlyPlayerReset(player, ctx.timestamp));
+    ctx.db.player.identity.update(
+      createIdentityOnlyPlayerReset(player, ctx.timestamp),
+    );
   }
 }
 
@@ -17626,13 +19083,19 @@ function moveAdminTradeAllianceApplications(
   targetUsername: string,
   targetPlayerLevel: number,
 ) {
-  for (const application of Array.from(ctx.db.tradeAllianceApplication.iter())) {
+  for (const application of Array.from(
+    ctx.db.tradeAllianceApplication.iter(),
+  )) {
     if (!application.applicantIdentity.isEqual(sourceIdentity)) {
       continue;
     }
 
-    const targetKey = getTradeAllianceApplicationKey(application.allianceId, targetIdentity);
-    const existingTarget = ctx.db.tradeAllianceApplication.applicationKey.find(targetKey);
+    const targetKey = getTradeAllianceApplicationKey(
+      application.allianceId,
+      targetIdentity,
+    );
+    const existingTarget =
+      ctx.db.tradeAllianceApplication.applicationKey.find(targetKey);
     if (existingTarget) {
       ctx.db.tradeAllianceApplication.delete(existingTarget);
     }
@@ -17654,7 +19117,9 @@ function moveAdminTradeAllianceContributions(
   targetIdentity: Identity,
   targetUsername: string,
 ) {
-  for (const contribution of Array.from(ctx.db.tradeAllianceQuestContribution.iter())) {
+  for (const contribution of Array.from(
+    ctx.db.tradeAllianceQuestContribution.iter(),
+  )) {
     if (!contribution.contributorIdentity.isEqual(sourceIdentity)) {
       continue;
     }
@@ -17665,11 +19130,11 @@ function moveAdminTradeAllianceContributions(
       contribution.questId,
       targetIdentity,
     );
-    const existingTarget = ctx.db.tradeAllianceQuestContribution.contributionKey.find(
-      targetKey,
-    );
+    const existingTarget =
+      ctx.db.tradeAllianceQuestContribution.contributionKey.find(targetKey);
     const targetContribution = existingTarget
-      ? toBigInt(existingTarget.contribution) + toBigInt(contribution.contribution)
+      ? toBigInt(existingTarget.contribution) +
+        toBigInt(contribution.contribution)
       : toBigInt(contribution.contribution);
 
     if (existingTarget) {
@@ -17725,7 +19190,9 @@ function moveAdminPlayerInboxMail(
   sourceIdentity: Identity,
   targetIdentity: Identity,
 ) {
-  for (const mail of Array.from(ctx.db.playerInboxMail.byRecipientIdentity.filter(sourceIdentity))) {
+  for (const mail of Array.from(
+    ctx.db.playerInboxMail.byRecipientIdentity.filter(sourceIdentity),
+  )) {
     const targetKey = getPlayerInboxMailKey(
       mail.sourceType,
       mail.sourceKey,
@@ -17753,7 +19220,10 @@ function moveAdminPlayerInboxMail(
   prunePlayerInboxMail(ctx, targetIdentity);
 }
 
-function refreshAdminMergedAlliance(ctx: IdleWizardReducerCtx, allianceId: any) {
+function refreshAdminMergedAlliance(
+  ctx: IdleWizardReducerCtx,
+  allianceId: any,
+) {
   const alliance = ctx.db.tradeAlliance.allianceId.find(allianceId);
   if (!alliance) {
     return;
@@ -17770,7 +19240,9 @@ function refreshAdminMergedAlliance(ctx: IdleWizardReducerCtx, allianceId: any) 
   );
   const nextLeader =
     currentLeader ??
-    members.find((member) => member.role === TRADE_ALLIANCE_ROLE_TRADE_MASTER) ??
+    members.find(
+      (member) => member.role === TRADE_ALLIANCE_ROLE_TRADE_MASTER,
+    ) ??
     members[0];
 
   if (nextLeader.role !== TRADE_ALLIANCE_ROLE_TRADE_MASTER) {
@@ -17804,7 +19276,12 @@ function refreshAdminMergedAlliance(ctx: IdleWizardReducerCtx, allianceId: any) 
 
 function addAdminAffectedAllianceId(allianceIds: any[], allianceId: any) {
   const allianceKey = getTradeAllianceIdKey(allianceId);
-  if (allianceIds.some((existingAllianceId) => getTradeAllianceIdKey(existingAllianceId) === allianceKey)) {
+  if (
+    allianceIds.some(
+      (existingAllianceId) =>
+        getTradeAllianceIdKey(existingAllianceId) === allianceKey,
+    )
+  ) {
     return;
   }
 
@@ -18035,10 +19512,16 @@ function moveAdminMessageRows(
       continue;
     }
 
-    const isSystemMessage = row.username === 'system';
+    const isSystemMessage = row.username === "system";
     const systemBody = row.body
-      .replace(`${sourceUsername} reached level `, `${targetUsername} reached level `)
-      .replace(`${sourceUsername} reached ⭐ `, `${targetUsername} reached ⭐ `);
+      .replace(
+        `${sourceUsername} reached level `,
+        `${targetUsername} reached level `,
+      )
+      .replace(
+        `${sourceUsername} reached ⭐ `,
+        `${targetUsername} reached ⭐ `,
+      );
     ctx.db.worldChat.messageId.update({
       ...row,
       senderIdentity: targetIdentity,
@@ -18094,7 +19577,10 @@ function moveAdminPotionDiscoveries(
   }
 }
 
-function deleteAdminPlayerSession(ctx: IdleWizardReducerCtx, identity: Identity) {
+function deleteAdminPlayerSession(
+  ctx: IdleWizardReducerCtx,
+  identity: Identity,
+) {
   const session = ctx.db.playerSession.identity.find(identity);
   if (session) {
     ctx.db.playerSession.delete(session);
@@ -18226,7 +19712,10 @@ function compareWorldChatRowsOldestFirst(left: any, right: any): number {
   return left.messageId.compareTo(right.messageId);
 }
 
-function pruneTradeAllianceChat(ctx: IdleWizardReducerCtx, allianceId: unknown) {
+function pruneTradeAllianceChat(
+  ctx: IdleWizardReducerCtx,
+  allianceId: unknown,
+) {
   const allianceKey = getTradeAllianceIdKey(allianceId);
   const allianceUuid = parseTradeAllianceUuid(allianceId);
   const rows = Array.from(
@@ -18259,7 +19748,10 @@ function pruneTradeAllianceChat(ctx: IdleWizardReducerCtx, allianceId: unknown) 
   }
 }
 
-function deleteTradeAllianceApplications(ctx: IdleWizardReducerCtx, allianceId: unknown) {
+function deleteTradeAllianceApplications(
+  ctx: IdleWizardReducerCtx,
+  allianceId: unknown,
+) {
   const allianceUuid = parseTradeAllianceUuid(allianceId);
 
   if (!allianceUuid) {
@@ -18291,7 +19783,9 @@ function deleteTradeAllianceState(ctx: IdleWizardReducerCtx, alliance: any) {
 
   deleteTradeAllianceApplications(ctx, alliance.allianceId);
 
-  for (const chat of Array.from(ctx.db.tradeAllianceChat.byAllianceId.filter(alliance.allianceId))) {
+  for (const chat of Array.from(
+    ctx.db.tradeAllianceChat.byAllianceId.filter(alliance.allianceId),
+  )) {
     ctx.db.tradeAllianceChat.delete(chat);
   }
 
@@ -18302,7 +19796,9 @@ function deleteTradeAllianceState(ctx: IdleWizardReducerCtx, alliance: any) {
   }
 
   for (const contribution of Array.from(
-    ctx.db.tradeAllianceQuestContribution.byAllianceId.filter(alliance.allianceId),
+    ctx.db.tradeAllianceQuestContribution.byAllianceId.filter(
+      alliance.allianceId,
+    ),
   )) {
     ctx.db.tradeAllianceQuestContribution.delete(contribution);
   }
@@ -18310,9 +19806,16 @@ function deleteTradeAllianceState(ctx: IdleWizardReducerCtx, alliance: any) {
   ctx.db.tradeAlliance.delete(alliance);
 }
 
-function hasWorldChatBodyForSender(ctx: IdleWizardReducerCtx, body: string): boolean {
+function hasWorldChatBodyForSender(
+  ctx: IdleWizardReducerCtx,
+  body: string,
+): boolean {
   for (const row of ctx.db.worldChat.bySentAt.filter(new Range())) {
-    if (row.username === 'system' && row.senderIdentity.isEqual(ctx.sender) && row.body === body) {
+    if (
+      row.username === "system" &&
+      row.senderIdentity.isEqual(ctx.sender) &&
+      row.body === body
+    ) {
       return true;
     }
   }
@@ -18328,7 +19831,7 @@ function hasLevelUpAnnouncementForSender(
 
   for (const row of ctx.db.worldChat.bySentAt.filter(new Range())) {
     if (
-      row.username === 'system' &&
+      row.username === "system" &&
       row.senderIdentity.isEqual(ctx.sender) &&
       row.body.endsWith(levelSuffix)
     ) {
@@ -18348,7 +19851,7 @@ function hasPrestigeAnnouncementForSender(
 
   for (const row of ctx.db.worldChat.iter()) {
     if (
-      row.username === 'system' &&
+      row.username === "system" &&
       row.senderIdentity.isEqual(ctx.sender) &&
       row.body.endsWith(prestigeSuffix)
     ) {
@@ -18359,14 +19862,17 @@ function hasPrestigeAnnouncementForSender(
   return false;
 }
 
-function getSenderTradeAllianceTag(ctx: IdleWizardReducerCtx, identity = ctx.sender): string {
+function getSenderTradeAllianceTag(
+  ctx: IdleWizardReducerCtx,
+  identity = ctx.sender,
+): string {
   const member = ctx.db.tradeAllianceMember.memberIdentity.find(identity);
   if (!member) {
-    return '';
+    return "";
   }
 
   const alliance = ctx.db.tradeAlliance.allianceId.find(member.allianceId);
-  return alliance?.tag ?? '';
+  return alliance?.tag ?? "";
 }
 
 function getSenderTradeAllianceTagColor(
@@ -18383,7 +19889,9 @@ function getSenderTradeAllianceTagColor(
 }
 
 function prunePlayerShopTradeHistory(ctx: IdleWizardReducerCtx) {
-  const rows = Array.from(ctx.db.playerShopTrade.byTradedAt.filter(new Range()));
+  const rows = Array.from(
+    ctx.db.playerShopTrade.byTradedAt.filter(new Range()),
+  );
 
   while (rows.length > PLAYER_SHOP_TRADE_HISTORY_LIMIT) {
     const row = rows.shift();
@@ -18395,7 +19903,9 @@ function prunePlayerShopTradeHistory(ctx: IdleWizardReducerCtx) {
 }
 
 function prunePotionRecipeRoyaltyHistory(ctx: IdleWizardReducerCtx) {
-  const rows = Array.from(ctx.db.potionRecipeRoyalty.byAwardedAt.filter(new Range()));
+  const rows = Array.from(
+    ctx.db.potionRecipeRoyalty.byAwardedAt.filter(new Range()),
+  );
 
   while (rows.length > POTION_RECIPE_ROYALTY_HISTORY_LIMIT) {
     const row = rows.shift();
@@ -18406,7 +19916,11 @@ function prunePotionRecipeRoyaltyHistory(ctx: IdleWizardReducerCtx) {
   }
 }
 
-function getMarketDemandDailyKey(dayKey: string, marketId: string, itemKey: string): string {
+function getMarketDemandDailyKey(
+  dayKey: string,
+  marketId: string,
+  itemKey: string,
+): string {
   return getMarketScopedKey(marketId, `${dayKey}:${itemKey}`);
 }
 
@@ -18464,7 +19978,9 @@ function recordMarketDemandDaily(
 }
 
 function pruneMarketDemandDailyHistory(ctx: IdleWizardReducerCtx) {
-  const rows = Array.from(ctx.db.marketDemandDaily.byUpdatedAt.filter(new Range()));
+  const rows = Array.from(
+    ctx.db.marketDemandDaily.byUpdatedAt.filter(new Range()),
+  );
 
   while (rows.length > MARKET_DEMAND_DAILY_HISTORY_LIMIT) {
     const row = rows.shift();
@@ -18498,7 +20014,7 @@ function recordMarketPriceHourly(
     hourKey,
     itemKey,
     itemLabel: String(row.itemLabel ?? itemKey),
-    itemKind: String(row.itemKind ?? ''),
+    itemKind: String(row.itemKind ?? ""),
     marketPriceGold: toStoredGoldPrice(marketPriceGold),
     npcBuyPriceGold: toStoredGoldPrice(getNpcBuyPriceGold(marketPriceGold)),
     npcSellPriceGold: toStoredGoldPrice(getNpcSellPriceGold(marketPriceGold)),
@@ -18526,7 +20042,11 @@ function pruneMarketPriceHourlyHistory(
   const rows = Array.from(ctx.db.marketPriceHourly.byItemKey.filter(itemKey))
     .filter((row) => getRowMarketId(row) === marketId)
     .sort((left, right) =>
-      Number(left.updatedAt.microsSinceUnixEpoch - right.updatedAt.microsSinceUnixEpoch));
+      Number(
+        left.updatedAt.microsSinceUnixEpoch -
+          right.updatedAt.microsSinceUnixEpoch,
+      ),
+    );
 
   while (rows.length > MARKET_PRICE_HOURLY_HISTORY_PER_ITEM) {
     const row = rows.shift();
@@ -18622,7 +20142,9 @@ function getOwnPlayerShopTrades(ctx: { sender: Identity; db: any }) {
 
 function getOwnPotionRecipeRoyalties(ctx: { sender: Identity; db: any }) {
   const marketId = getActiveMarketId(ctx as IdleWizardReducerCtx);
-  return Array.from<any>(ctx.db.potionRecipeRoyalty.byRecipientIdentity.filter(ctx.sender))
+  return Array.from<any>(
+    ctx.db.potionRecipeRoyalty.byRecipientIdentity.filter(ctx.sender),
+  )
     .filter((royalty) => getRowMarketId(royalty) === marketId)
     .sort(comparePotionRecipeRoyaltiesNewestFirst)
     .slice(0, POTION_RECIPE_ROYALTY_HISTORY_LIMIT);
@@ -18743,7 +20265,10 @@ export const onConnect = spacetimedb.clientConnected((ctx) => {
       refreshTradeAllianceMemberQuestPeriod(ctx, tradeAllianceMember);
       refreshTradeAllianceDay(
         ctx,
-        findTradeAllianceById(ctx, getTradeAllianceIdKey(tradeAllianceMember.allianceId)),
+        findTradeAllianceById(
+          ctx,
+          getTradeAllianceIdKey(tradeAllianceMember.allianceId),
+        ),
       );
     } catch {
       ctx.db.tradeAllianceMember.delete(tradeAllianceMember);
@@ -18803,51 +20328,59 @@ export const onDisconnect = spacetimedb.clientDisconnected((ctx) => {
   });
 });
 
-export const set_username = spacetimedb.reducer({ username: t.string() }, (ctx, { username }) => {
-  assertActivePlayerSession(ctx);
+export const set_username = spacetimedb.reducer(
+  { username: t.string() },
+  (ctx, { username }) => {
+    assertActivePlayerSession(ctx);
 
-  const normalizedUsername = normalizeUsername(username);
-  assertUsernameAvailable(ctx, normalizedUsername);
+    const normalizedUsername = normalizeUsername(username);
+    assertUsernameAvailable(ctx, normalizedUsername);
 
-  const existingPlayer = ctx.db.player.identity.find(ctx.sender);
-  let player;
+    const existingPlayer = ctx.db.player.identity.find(ctx.sender);
+    let player;
 
-  if (existingPlayer) {
-    player = ctx.db.player.identity.update({
-      ...existingPlayer,
-      username: normalizedUsername,
-      playerLevel: normalizePlayerLevel(existingPlayer.playerLevel),
-      theme: normalizePlayerTheme(existingPlayer.theme),
-      font: normalizePlayerFont(existingPlayer.font),
-      colorMode: normalizePlayerColorMode(existingPlayer.colorMode),
-      character: normalizePlayerCharacter(existingPlayer.character),
-      frame: normalizePlayerFrame(existingPlayer.frame),
-      usernamePromptSeen:
-        Boolean(existingPlayer.usernamePromptSeen) ||
-        normalizedUsername !== DEFAULT_USERNAME,
-      lastSeenAt: ctx.timestamp,
-    });
-  } else {
-    player = ctx.db.player.insert({
-      identity: ctx.sender,
-      username: normalizedUsername,
-      playerLevel: DEFAULT_PLAYER_LEVEL,
-      theme: DEFAULT_PLAYER_THEME,
-      font: DEFAULT_PLAYER_FONT,
-      colorMode: DEFAULT_PLAYER_COLOR_MODE,
-      character: DEFAULT_PLAYER_CHARACTER,
-      frame: DEFAULT_PLAYER_FRAME,
-      usernamePromptSeen: normalizedUsername !== DEFAULT_USERNAME,
-      connected: true,
-      createdAt: ctx.timestamp,
-      lastSeenAt: ctx.timestamp,
-      totalPlayTimeMicros: 0n,
-    });
-  }
+    if (existingPlayer) {
+      player = ctx.db.player.identity.update({
+        ...existingPlayer,
+        username: normalizedUsername,
+        playerLevel: normalizePlayerLevel(existingPlayer.playerLevel),
+        theme: normalizePlayerTheme(existingPlayer.theme),
+        font: normalizePlayerFont(existingPlayer.font),
+        colorMode: normalizePlayerColorMode(existingPlayer.colorMode),
+        character: normalizePlayerCharacter(existingPlayer.character),
+        frame: normalizePlayerFrame(existingPlayer.frame),
+        usernamePromptSeen:
+          Boolean(existingPlayer.usernamePromptSeen) ||
+          normalizedUsername !== DEFAULT_USERNAME,
+        lastSeenAt: ctx.timestamp,
+      });
+    } else {
+      player = ctx.db.player.insert({
+        identity: ctx.sender,
+        username: normalizedUsername,
+        playerLevel: DEFAULT_PLAYER_LEVEL,
+        theme: DEFAULT_PLAYER_THEME,
+        font: DEFAULT_PLAYER_FONT,
+        colorMode: DEFAULT_PLAYER_COLOR_MODE,
+        character: DEFAULT_PLAYER_CHARACTER,
+        frame: DEFAULT_PLAYER_FRAME,
+        usernamePromptSeen: normalizedUsername !== DEFAULT_USERNAME,
+        connected: true,
+        createdAt: ctx.timestamp,
+        lastSeenAt: ctx.timestamp,
+        totalPlayTimeMicros: 0n,
+      });
+    }
 
-  ensureLeaderboardEntry(ctx, normalizedUsername, player.playerLevel);
-  updateTradeAllianceMemberProfile(ctx, player.identity, player.username, player.playerLevel);
-});
+    ensureLeaderboardEntry(ctx, normalizedUsername, player.playerLevel);
+    updateTradeAllianceMemberProfile(
+      ctx,
+      player.identity,
+      player.username,
+      player.playerLevel,
+    );
+  },
+);
 
 export const set_player_profile = spacetimedb.reducer(
   {
@@ -18859,7 +20392,10 @@ export const set_player_profile = spacetimedb.reducer(
     character: t.string(),
     frame: t.string(),
   },
-  (ctx, { username, theme, colorMode, usernamePromptSeen, font, character, frame }) => {
+  (
+    ctx,
+    { username, theme, colorMode, usernamePromptSeen, font, character, frame },
+  ) => {
     assertActivePlayerSession(ctx);
 
     const normalizedUsername = normalizeUsername(username);
@@ -18923,7 +20459,12 @@ export const set_player_profile = spacetimedb.reducer(
     }
 
     ensureLeaderboardEntry(ctx, normalizedUsername, player.playerLevel);
-    updateTradeAllianceMemberProfile(ctx, player.identity, player.username, player.playerLevel);
+    updateTradeAllianceMemberProfile(
+      ctx,
+      player.identity,
+      player.username,
+      player.playerLevel,
+    );
   },
 );
 
@@ -18969,7 +20510,8 @@ export const set_admin_player_data = spacetimedb.reducer(
     const safeFont = normalizePlayerFont(font);
     const safeUsernamePromptSeen =
       Boolean(usernamePromptSeen) || normalizedUsername !== DEFAULT_USERNAME;
-    const existingSave = ctx.db.playerGameplaySave.identity.find(player.identity) ?? undefined;
+    const existingSave =
+      ctx.db.playerGameplaySave.identity.find(player.identity) ?? undefined;
     const safeSaveJson = createAdminPlayerGameplaySaveJson(
       ctx,
       existingSave,
@@ -18978,7 +20520,11 @@ export const set_admin_player_data = spacetimedb.reducer(
       safeCurrentCrystal,
     );
 
-    assertUsernameAvailableForIdentity(ctx, normalizedUsername, player.identity);
+    assertUsernameAvailableForIdentity(
+      ctx,
+      normalizedUsername,
+      player.identity,
+    );
 
     const nextPlayer = ctx.db.player.identity.update({
       ...player,
@@ -19002,7 +20548,12 @@ export const set_admin_player_data = spacetimedb.reducer(
     const existingEntry = rawExistingEntry
       ? refreshLeaderboardPeriods(ctx, rawExistingEntry, safeTotalIncome)
       : undefined;
-    upsertAdminPlayerGameplaySave(ctx, nextPlayer.identity, safeSaveJson, existingSave);
+    upsertAdminPlayerGameplaySave(
+      ctx,
+      nextPlayer.identity,
+      safeSaveJson,
+      existingSave,
+    );
 
     if (existingEntry) {
       ctx.db.leaderboard.identity.update({
@@ -19037,7 +20588,8 @@ export const admin_set_player_level_by_identity = spacetimedb.reducer(
     const player = findPlayerByIdentityHex(ctx, identityHex);
     assertPlayerMaintenanceLocked(ctx, [player.identity]);
     const safePlayerLevel = validateAdminPlayerLevel(playerLevel);
-    const existingSave = ctx.db.playerGameplaySave.identity.find(player.identity) ?? undefined;
+    const existingSave =
+      ctx.db.playerGameplaySave.identity.find(player.identity) ?? undefined;
     const safeSaveJson = createAdminPlayerLevelSaveJson(
       ctx,
       existingSave,
@@ -19059,7 +20611,12 @@ export const admin_set_player_level_by_identity = spacetimedb.reducer(
       lastSeenAt: ctx.timestamp,
     });
 
-    upsertAdminPlayerGameplaySave(ctx, nextPlayer.identity, safeSaveJson, existingSave);
+    upsertAdminPlayerGameplaySave(
+      ctx,
+      nextPlayer.identity,
+      safeSaveJson,
+      existingSave,
+    );
     upsertAdminLeaderboardEntry(ctx, nextPlayer);
     updateAdminWorldEventLeaderboardProfile(
       ctx,
@@ -19105,11 +20662,18 @@ export const admin_merge_player_accounts = spacetimedb.reducer(
     const sourcePlayer = findPlayerByIdentityHex(ctx, sourceIdentityHex);
     const targetPlayer = findPlayerByIdentityHex(ctx, targetIdentityHex);
     if (sourcePlayer.identity.isEqual(targetPlayer.identity)) {
-      throw new Error('Source and target players must differ.');
+      throw new Error("Source and target players must differ.");
     }
 
-    assertPlayerMaintenanceLocked(ctx, [sourcePlayer.identity, targetPlayer.identity]);
-    assertAdminMergeAccountsInactive(ctx, sourcePlayer.identity, targetPlayer.identity);
+    assertPlayerMaintenanceLocked(ctx, [
+      sourcePlayer.identity,
+      targetPlayer.identity,
+    ]);
+    assertAdminMergeAccountsInactive(
+      ctx,
+      sourcePlayer.identity,
+      targetPlayer.identity,
+    );
 
     const targetUsername = normalizeUsername(targetPlayer.username);
     const sourceUsername = normalizeUsername(sourcePlayer.username);
@@ -19133,7 +20697,11 @@ export const admin_merge_player_accounts = spacetimedb.reducer(
       ),
     });
 
-    moveAdminPlayerGameplaySave(ctx, sourcePlayer.identity, nextTargetPlayer.identity);
+    moveAdminPlayerGameplaySave(
+      ctx,
+      sourcePlayer.identity,
+      nextTargetPlayer.identity,
+    );
     moveAdminLeaderboardEntry(
       ctx,
       sourcePlayer.identity,
@@ -19154,7 +20722,11 @@ export const admin_merge_player_accounts = spacetimedb.reducer(
       nextTargetPlayer.identity,
       targetUsername,
     );
-    moveAdminTradeAllianceRewards(ctx, sourcePlayer.identity, nextTargetPlayer.identity);
+    moveAdminTradeAllianceRewards(
+      ctx,
+      sourcePlayer.identity,
+      nextTargetPlayer.identity,
+    );
     moveAdminTradeAllianceMember(
       ctx,
       sourcePlayer.identity,
@@ -19168,7 +20740,11 @@ export const admin_merge_player_accounts = spacetimedb.reducer(
       nextTargetPlayer.identity,
       targetUsername,
     );
-    moveAdminPlayerInboxMail(ctx, sourcePlayer.identity, nextTargetPlayer.identity);
+    moveAdminPlayerInboxMail(
+      ctx,
+      sourcePlayer.identity,
+      nextTargetPlayer.identity,
+    );
     moveAdminMessageRows(
       ctx,
       sourcePlayer.identity,
@@ -19201,22 +20777,29 @@ export const admin_copy_player_progression = spacetimedb.reducer(
     const sourcePlayer = findPlayerByIdentityHex(ctx, sourceIdentityHex);
     const targetPlayer = findPlayerByIdentityHex(ctx, targetIdentityHex);
     if (sourcePlayer.identity.isEqual(targetPlayer.identity)) {
-      throw new Error('Source and target players must differ.');
+      throw new Error("Source and target players must differ.");
     }
 
     assertPlayerMaintenanceLocked(ctx, [targetPlayer.identity]);
-    const sourceSave = ctx.db.playerGameplaySave.identity.find(sourcePlayer.identity);
+    const sourceSave = ctx.db.playerGameplaySave.identity.find(
+      sourcePlayer.identity,
+    );
     if (!sourceSave) {
-      throw new Error('Cannot copy missing source player save.');
+      throw new Error("Cannot copy missing source player save.");
     }
 
     const targetUsername = normalizeUsername(targetPlayer.username);
-    const sourceSaveLevel = readSavedCurrentLevel(sourceSave.saveJson) ?? DEFAULT_PLAYER_LEVEL;
+    const sourceSaveLevel =
+      readSavedCurrentLevel(sourceSave.saveJson) ?? DEFAULT_PLAYER_LEVEL;
     const targetPlayerLevel = normalizePlayerLevel(
       Math.max(normalizePlayerLevel(sourcePlayer.playerLevel), sourceSaveLevel),
     );
 
-    copyAdminPlayerGameplaySave(ctx, sourcePlayer.identity, targetPlayer.identity);
+    copyAdminPlayerGameplaySave(
+      ctx,
+      sourcePlayer.identity,
+      targetPlayer.identity,
+    );
 
     const nextTargetPlayer = ctx.db.player.identity.update({
       ...targetPlayer,
@@ -19227,7 +20810,8 @@ export const admin_copy_player_progression = spacetimedb.reducer(
       font: normalizePlayerFont(targetPlayer.font),
       character: normalizePlayerCharacter(targetPlayer.character),
       usernamePromptSeen:
-        Boolean(targetPlayer.usernamePromptSeen) || targetUsername !== DEFAULT_USERNAME,
+        Boolean(targetPlayer.usernamePromptSeen) ||
+        targetUsername !== DEFAULT_USERNAME,
       connected: false,
       lastSeenAt: ctx.timestamp,
     });
@@ -19256,46 +20840,53 @@ export const admin_copy_player_progression = spacetimedb.reducer(
   },
 );
 
-export const admin_set_player_plot_capacity_research_by_identity = spacetimedb.reducer(
-  {
-    identityHex: t.string(),
-    plotNumber: t.u32(),
-    correctionKey: t.string(),
-  },
-  (ctx, { identityHex, plotNumber, correctionKey }) => {
-    assertGameConfigAdmin(ctx);
+export const admin_set_player_plot_capacity_research_by_identity =
+  spacetimedb.reducer(
+    {
+      identityHex: t.string(),
+      plotNumber: t.u32(),
+      correctionKey: t.string(),
+    },
+    (ctx, { identityHex, plotNumber, correctionKey }) => {
+      assertGameConfigAdmin(ctx);
 
-    const player = findPlayerByIdentityHex(ctx, identityHex);
-    assertPlayerMaintenanceLocked(ctx, [player.identity]);
-    const identityKey = getIdentityHex(player.identity);
-    const stateKey =
-      `player-plot-capacity-correction:${identityKey}:` +
-      normalizeMaintenanceKey(correctionKey);
-    if (ctx.db.maintenanceState.stateKey.find(stateKey)) {
-      return;
-    }
+      const player = findPlayerByIdentityHex(ctx, identityHex);
+      assertPlayerMaintenanceLocked(ctx, [player.identity]);
+      const identityKey = getIdentityHex(player.identity);
+      const stateKey =
+        `player-plot-capacity-correction:${identityKey}:` +
+        normalizeMaintenanceKey(correctionKey);
+      if (ctx.db.maintenanceState.stateKey.find(stateKey)) {
+        return;
+      }
 
-    const existingSave = ctx.db.playerGameplaySave.identity.find(player.identity) ?? undefined;
-    const safeSaveJson = createAdminPlotCapacityCorrectionSaveJson(
-      ctx,
-      existingSave,
-      player.identity,
-      plotNumber,
-    );
+      const existingSave =
+        ctx.db.playerGameplaySave.identity.find(player.identity) ?? undefined;
+      const safeSaveJson = createAdminPlotCapacityCorrectionSaveJson(
+        ctx,
+        existingSave,
+        player.identity,
+        plotNumber,
+      );
 
-    upsertAdminPlayerGameplaySave(ctx, player.identity, safeSaveJson, existingSave);
-    kickAdminPlayerSession(ctx, player.identity);
-    ctx.db.player.identity.update({
-      ...player,
-      connected: false,
-      lastSeenAt: ctx.timestamp,
-    });
-    ctx.db.maintenanceState.insert({
-      stateKey,
-      appliedAt: ctx.timestamp,
-    });
-  },
-);
+      upsertAdminPlayerGameplaySave(
+        ctx,
+        player.identity,
+        safeSaveJson,
+        existingSave,
+      );
+      kickAdminPlayerSession(ctx, player.identity);
+      ctx.db.player.identity.update({
+        ...player,
+        connected: false,
+        lastSeenAt: ctx.timestamp,
+      });
+      ctx.db.maintenanceState.insert({
+        stateKey,
+        appliedAt: ctx.timestamp,
+      });
+    },
+  );
 
 export const set_player_gameplay_save = spacetimedb.reducer(
   { saveJson: t.string() },
@@ -19304,18 +20895,17 @@ export const set_player_gameplay_save = spacetimedb.reducer(
 
     const player = ensurePlayer(ctx);
 
-    const existingSave = ctx.db.playerGameplaySave.identity.find(ctx.sender) ?? undefined;
+    const existingSave =
+      ctx.db.playerGameplaySave.identity.find(ctx.sender) ?? undefined;
     if (shouldRejectPostResetFirstSave(ctx, player, existingSave, saveJson)) {
-      throw new Error('Progressed first gameplay save requires an accepted fresh save.');
+      throw new Error(
+        "Progressed first gameplay save requires an accepted fresh save.",
+      );
     }
 
     let safeSaveJson = mergePreviousResearchProgressIntoSaveJson(
       ctx,
-      validatePlayerGameplaySaveJson(
-        ctx,
-        saveJson,
-        existingSave?.saveJson,
-      ),
+      validatePlayerGameplaySaveJson(ctx, saveJson, existingSave?.saveJson),
       existingSave?.saveJson,
     );
     safeSaveJson = mergePendingAdminCurrencyGrantsIntoSaveJson(
@@ -19337,9 +20927,14 @@ export const set_player_gameplay_save = spacetimedb.reducer(
 
     if (existingSave) {
       ctx.db.playerGameplaySave.identity.update(nextSave);
-      const nextPlayer = syncPlayerLevelFromGameplaySave(ctx, player, safeSaveJson, {
-        allowDecrease: allowsRunProgressReset,
-      });
+      const nextPlayer = syncPlayerLevelFromGameplaySave(
+        ctx,
+        player,
+        safeSaveJson,
+        {
+          allowDecrease: allowsRunProgressReset,
+        },
+      );
       syncLeaderboardIncomeFromGameplaySave(
         ctx,
         nextPlayer,
@@ -19350,8 +20945,17 @@ export const set_player_gameplay_save = spacetimedb.reducer(
     }
 
     ctx.db.playerGameplaySave.insert(nextSave);
-    const nextPlayer = syncPlayerLevelFromGameplaySave(ctx, player, safeSaveJson);
-    syncLeaderboardIncomeFromGameplaySave(ctx, nextPlayer, undefined, safeSaveJson);
+    const nextPlayer = syncPlayerLevelFromGameplaySave(
+      ctx,
+      player,
+      safeSaveJson,
+    );
+    syncLeaderboardIncomeFromGameplaySave(
+      ctx,
+      nextPlayer,
+      undefined,
+      safeSaveJson,
+    );
   },
 );
 
@@ -19403,18 +21007,17 @@ export const announce_level_up = spacetimedb.reducer(
     const player = ensurePlayer(ctx);
 
     if (shouldRejectPostResetReportedLevel(ctx, player, safePlayerLevel)) {
-      throw new Error('Player level requires an accepted gameplay save.');
+      throw new Error("Player level requires an accepted gameplay save.");
     }
 
     const alreadyAtLevel = safePlayerLevel <= player.playerLevel;
-    const nextPlayer =
-      alreadyAtLevel
-        ? player
-        : ctx.db.player.identity.update({
-            ...player,
-            playerLevel: safePlayerLevel,
-            lastSeenAt: ctx.timestamp,
-          });
+    const nextPlayer = alreadyAtLevel
+      ? player
+      : ctx.db.player.identity.update({
+          ...player,
+          playerLevel: safePlayerLevel,
+          lastSeenAt: ctx.timestamp,
+        });
     ensureLeaderboardEntry(ctx, nextPlayer.username, nextPlayer.playerLevel);
     updateTradeAllianceMemberProfile(
       ctx,
@@ -19425,7 +21028,8 @@ export const announce_level_up = spacetimedb.reducer(
 
     const body = `${nextPlayer.username} reached level ${safePlayerLevel}`;
     if (
-      (alreadyAtLevel && hasLevelUpAnnouncementForSender(ctx, safePlayerLevel)) ||
+      (alreadyAtLevel &&
+        hasLevelUpAnnouncementForSender(ctx, safePlayerLevel)) ||
       hasWorldChatBodyForSender(ctx, body)
     ) {
       return;
@@ -19434,11 +21038,11 @@ export const announce_level_up = spacetimedb.reducer(
     ctx.db.worldChat.insert({
       messageId: ctx.newUuidV7(),
       senderIdentity: ctx.sender,
-      username: 'system',
+      username: "system",
       playerLevel: 0,
       body,
       sentAt: ctx.timestamp,
-      allianceTag: '',
+      allianceTag: "",
       allianceTagColor: DEFAULT_TRADE_ALLIANCE_TAG_COLOR,
     });
     pruneWorldChat(ctx);
@@ -19450,7 +21054,10 @@ export const announce_prestige = spacetimedb.reducer(
   (ctx, { prestigeCount, playerLevel }) => {
     assertActivePlayerSession(ctx);
 
-    const safePrestigeCount = Math.max(0, Math.floor(Number(prestigeCount) || 0));
+    const safePrestigeCount = Math.max(
+      0,
+      Math.floor(Number(prestigeCount) || 0),
+    );
     const safePlayerLevel = normalizePlayerLevel(playerLevel);
 
     if (safePrestigeCount <= 0 || safePlayerLevel <= DEFAULT_PLAYER_LEVEL) {
@@ -19460,7 +21067,7 @@ export const announce_prestige = spacetimedb.reducer(
     const player = ensurePlayer(ctx);
 
     if (shouldRejectPostResetReportedLevel(ctx, player, safePlayerLevel)) {
-      throw new Error('Player level requires an accepted gameplay save.');
+      throw new Error("Player level requires an accepted gameplay save.");
     }
 
     const nextPlayer =
@@ -19483,7 +21090,11 @@ export const announce_prestige = spacetimedb.reducer(
       `${nextPlayer.username} reached ⭐ ${safePrestigeCount}, ` +
       `completing prestige level ${safePlayerLevel}`;
     if (
-      hasPrestigeAnnouncementForSender(ctx, safePrestigeCount, safePlayerLevel) ||
+      hasPrestigeAnnouncementForSender(
+        ctx,
+        safePrestigeCount,
+        safePlayerLevel,
+      ) ||
       hasWorldChatBodyForSender(ctx, body)
     ) {
       return;
@@ -19492,11 +21103,11 @@ export const announce_prestige = spacetimedb.reducer(
     ctx.db.worldChat.insert({
       messageId: ctx.newUuidV7(),
       senderIdentity: ctx.sender,
-      username: 'system',
+      username: "system",
       playerLevel: 0,
       body,
       sentAt: ctx.timestamp,
-      allianceTag: '',
+      allianceTag: "",
       allianceTagColor: DEFAULT_TRADE_ALLIANCE_TAG_COLOR,
     });
     pruneWorldChat(ctx);
@@ -19509,16 +21120,20 @@ export const set_total_generated_gold = spacetimedb.reducer(
     assertActivePlayerSession(ctx);
 
     const player = ensurePlayer(ctx, { touchLastSeen: false });
-    const reportedTotalIncome = normalizeReportedLeaderboardTotalIncome(totalGeneratedGold);
-    const hasAcceptedGameplaySave = hasAcceptedPlayerGameplaySave(ctx, player.identity);
+    const reportedTotalIncome =
+      normalizeReportedLeaderboardTotalIncome(totalGeneratedGold);
+    const hasAcceptedGameplaySave = hasAcceptedPlayerGameplaySave(
+      ctx,
+      player.identity,
+    );
 
     if (!hasAcceptedGameplaySave) {
       if (reportedTotalIncome === null) {
-        throw new Error('Invalid generated coin total.');
+        throw new Error("Invalid generated coin total.");
       }
 
       if (reportedTotalIncome > 0n) {
-        throw new Error('Generated coin requires an accepted gameplay save.');
+        throw new Error("Generated coin requires an accepted gameplay save.");
       }
     }
 
@@ -19532,7 +21147,11 @@ export const set_total_generated_gold = spacetimedb.reducer(
       return;
     }
 
-    const entry = ensureLeaderboardEntry(ctx, player.username, player.playerLevel);
+    const entry = ensureLeaderboardEntry(
+      ctx,
+      player.username,
+      player.playerLevel,
+    );
     const currentTotalIncome = normalizeLeaderboardIncome(entry.totalIncome);
 
     if (reportedTotalIncome === null) {
@@ -19835,11 +21454,17 @@ export const send_world_chat_message = spacetimedb.reducer(
     let player = ensurePlayer(ctx);
     const gameplaySave = ctx.db.playerGameplaySave.identity.find(ctx.sender);
     if (gameplaySave) {
-      player = syncPlayerLevelFromGameplaySave(ctx, player, gameplaySave.saveJson);
+      player = syncPlayerLevelFromGameplaySave(
+        ctx,
+        player,
+        gameplaySave.saveJson,
+      );
     }
 
     if (normalizePlayerLevel(player.playerLevel) < WORLD_CHAT_UNLOCK_LEVEL) {
-      throw new Error(`World chat unlocks at level ${WORLD_CHAT_UNLOCK_LEVEL}.`);
+      throw new Error(
+        `World chat unlocks at level ${WORLD_CHAT_UNLOCK_LEVEL}.`,
+      );
     }
 
     assertWorldChatRateLimit(ctx);
@@ -19859,6 +21484,146 @@ export const send_world_chat_message = spacetimedb.reducer(
   },
 );
 
+export const send_friend_request = spacetimedb.reducer(
+  { recipientIdentityHex: t.string() },
+  (ctx, { recipientIdentityHex }) => {
+    assertActivePlayerSession(ctx);
+    const recipient = findPlayerByIdentityHex(ctx, recipientIdentityHex);
+
+    if (recipient.identity.isEqual(ctx.sender)) {
+      throw new Error("You cannot add yourself as a friend.");
+    }
+    if (getFriendshipForPlayers(ctx, ctx.sender, recipient.identity)) {
+      throw new Error("Already friends.");
+    }
+
+    const requestKey = getFriendRequestKey(ctx.sender, recipient.identity);
+    if (ctx.db.friendRequest.requestKey.find(requestKey)) {
+      return;
+    }
+    const reverseRequestKey = getFriendRequestKey(
+      recipient.identity,
+      ctx.sender,
+    );
+    if (ctx.db.friendRequest.requestKey.find(reverseRequestKey)) {
+      throw new Error("This player already sent you a friend request.");
+    }
+
+    assertFriendRequestRateLimit(ctx);
+    ctx.db.friendRequest.insert({
+      requestKey,
+      senderIdentity: ctx.sender,
+      recipientIdentity: recipient.identity,
+      createdAt: ctx.timestamp,
+    });
+  },
+);
+
+export const accept_friend_request = spacetimedb.reducer(
+  { senderIdentityHex: t.string() },
+  (ctx, { senderIdentityHex }) => {
+    assertActivePlayerSession(ctx);
+    const sender = findPlayerByIdentityHex(ctx, senderIdentityHex);
+    if (sender.identity.isEqual(ctx.sender)) {
+      throw new Error("Invalid friend request.");
+    }
+
+    const requestKey = getFriendRequestKey(sender.identity, ctx.sender);
+    const request = ctx.db.friendRequest.requestKey.find(requestKey);
+    const friendshipKey = getFriendshipKey(ctx.sender, sender.identity);
+    if (!request) {
+      if (ctx.db.friendship.friendshipKey.find(friendshipKey)) {
+        return;
+      }
+      throw new Error("Friend request not found.");
+    }
+
+    const [leftIdentity, rightIdentity] =
+      getIdentityHex(ctx.sender) < getIdentityHex(sender.identity)
+        ? [ctx.sender, sender.identity]
+        : [sender.identity, ctx.sender];
+    if (!ctx.db.friendship.friendshipKey.find(friendshipKey)) {
+      ctx.db.friendship.insert({
+        friendshipKey,
+        leftIdentity,
+        rightIdentity,
+        createdAt: ctx.timestamp,
+      });
+    }
+
+    ctx.db.friendRequest.delete(request);
+    const reverseRequest = ctx.db.friendRequest.requestKey.find(
+      getFriendRequestKey(ctx.sender, sender.identity),
+    );
+    if (reverseRequest) {
+      ctx.db.friendRequest.delete(reverseRequest);
+    }
+  },
+);
+
+export const reject_friend_request = spacetimedb.reducer(
+  { senderIdentityHex: t.string() },
+  (ctx, { senderIdentityHex }) => {
+    assertActivePlayerSession(ctx);
+    const sender = findPlayerByIdentityHex(ctx, senderIdentityHex);
+    const request = ctx.db.friendRequest.requestKey.find(
+      getFriendRequestKey(sender.identity, ctx.sender),
+    );
+    if (request) {
+      ctx.db.friendRequest.delete(request);
+    }
+  },
+);
+
+export const unfriend_player = spacetimedb.reducer(
+  { friendIdentityHex: t.string() },
+  (ctx, { friendIdentityHex }) => {
+    assertActivePlayerSession(ctx);
+    const friend = findPlayerByIdentityHex(ctx, friendIdentityHex);
+    const friendship = getFriendshipForPlayers(
+      ctx,
+      ctx.sender,
+      friend.identity,
+    );
+    if (friendship) {
+      ctx.db.friendship.delete(friendship);
+    }
+  },
+);
+
+export const send_direct_message = spacetimedb.reducer(
+  { recipientIdentityHex: t.string(), body: t.string() },
+  (ctx, { recipientIdentityHex, body }) => {
+    assertActivePlayerSession(ctx);
+    const recipient = findPlayerByIdentityHex(ctx, recipientIdentityHex);
+    if (recipient.identity.isEqual(ctx.sender)) {
+      throw new Error("You cannot message yourself.");
+    }
+    const friendship = getFriendshipForPlayers(
+      ctx,
+      ctx.sender,
+      recipient.identity,
+    );
+    if (!friendship) {
+      throw new Error("Direct messages are for friends only.");
+    }
+
+    const message = normalizeDirectMessage(body);
+    if (!message) {
+      return;
+    }
+    assertDirectMessageRateLimit(ctx);
+    ctx.db.directMessage.insert({
+      messageId: ctx.newUuidV7(),
+      conversationKey: friendship.friendshipKey,
+      senderIdentity: ctx.sender,
+      recipientIdentity: recipient.identity,
+      body: message,
+      sentAt: ctx.timestamp,
+    });
+  },
+);
+
 export const create_trade_alliance = spacetimedb.reducer(
   {
     name: t.string(),
@@ -19870,12 +21635,24 @@ export const create_trade_alliance = spacetimedb.reducer(
     description: t.string(),
     joinMode: t.string(),
   },
-  (ctx, { name, tag, tagColor, bannerColor, emblemColor, emblemId, description, joinMode }) => {
+  (
+    ctx,
+    {
+      name,
+      tag,
+      tagColor,
+      bannerColor,
+      emblemColor,
+      emblemId,
+      description,
+      joinMode,
+    },
+  ) => {
     assertActivePlayerSession(ctx);
     const player = assertTradeAllianceUnlocked(ctx);
 
     if (getTradeAllianceMember(ctx)) {
-      throw new Error('Already in an alliance.');
+      throw new Error("Already in an alliance.");
     }
 
     ensureLeaderboardEntry(ctx, player.username, player.playerLevel);
@@ -19900,7 +21677,7 @@ export const create_trade_alliance = spacetimedb.reducer(
       tag: safeTag,
       tagColor: safeTagColor,
       description: safeDescription,
-      notice: '',
+      notice: "",
       joinMode: safeJoinMode,
       leaderIdentity: ctx.sender,
       memberCount: 1,
@@ -19946,16 +21723,32 @@ export const update_trade_alliance_profile = spacetimedb.reducer(
     notice: t.string(),
     joinMode: t.string(),
   },
-  (ctx, { name, tag, tagColor, bannerColor, emblemColor, emblemId, description, notice, joinMode }) => {
+  (
+    ctx,
+    {
+      name,
+      tag,
+      tagColor,
+      bannerColor,
+      emblemColor,
+      emblemId,
+      description,
+      notice,
+      joinMode,
+    },
+  ) => {
     assertActivePlayerSession(ctx);
 
     const member = getTradeAllianceMember(ctx);
 
     if (!member || member.role !== TRADE_ALLIANCE_ROLE_TRADE_MASTER) {
-      throw new Error('Alliance settings require trade master.');
+      throw new Error("Alliance settings require trade master.");
     }
 
-    const alliance = findTradeAllianceById(ctx, getTradeAllianceIdKey(member.allianceId));
+    const alliance = findTradeAllianceById(
+      ctx,
+      getTradeAllianceIdKey(member.allianceId),
+    );
     const allianceKey = getTradeAllianceIdKey(alliance.allianceId);
     const safeName = validateTradeAllianceName(name);
     const normalizedName = getTradeAllianceNormalizedName(safeName);
@@ -19992,18 +21785,21 @@ export const join_trade_alliance = spacetimedb.reducer(
     const player = assertTradeAllianceUnlocked(ctx);
 
     if (getTradeAllianceMember(ctx)) {
-      throw new Error('Already in an alliance.');
+      throw new Error("Already in an alliance.");
     }
 
-    const alliance = refreshTradeAllianceDay(ctx, findTradeAllianceById(ctx, allianceId));
+    const alliance = refreshTradeAllianceDay(
+      ctx,
+      findTradeAllianceById(ctx, allianceId),
+    );
 
-    if (alliance.joinMode !== 'open') {
-      throw new Error('Alliance requires application.');
+    if (alliance.joinMode !== "open") {
+      throw new Error("Alliance requires application.");
     }
 
     const memberCount = getTradeAllianceMemberCount(ctx, alliance.allianceId);
     if (memberCount >= MAX_TRADE_ALLIANCE_MEMBERS) {
-      throw new Error('Alliance is full.');
+      throw new Error("Alliance is full.");
     }
 
     ensureLeaderboardEntry(ctx, player.username, player.playerLevel);
@@ -20037,34 +21833,44 @@ export const apply_trade_alliance = spacetimedb.reducer(
     const player = assertTradeAllianceUnlocked(ctx);
 
     if (getTradeAllianceMember(ctx)) {
-      throw new Error('Already in an alliance.');
+      throw new Error("Already in an alliance.");
     }
 
-    const alliance = refreshTradeAllianceDay(ctx, findTradeAllianceById(ctx, allianceId));
+    const alliance = refreshTradeAllianceDay(
+      ctx,
+      findTradeAllianceById(ctx, allianceId),
+    );
 
-    if (alliance.joinMode === 'closed') {
-      throw new Error('Alliance is closed.');
+    if (alliance.joinMode === "closed") {
+      throw new Error("Alliance is closed.");
     }
 
-    if (alliance.joinMode === 'open') {
-      throw new Error('Alliance is open. Join directly.');
+    if (alliance.joinMode === "open") {
+      throw new Error("Alliance is open. Join directly.");
     }
 
     const allianceApplications = Array.from(
       ctx.db.tradeAllianceApplication.byAllianceId.filter(alliance.allianceId),
     );
-    if (allianceApplications.length >= MAX_TRADE_ALLIANCE_PENDING_APPLICATIONS) {
-      throw new Error('Alliance applications are full.');
+    if (
+      allianceApplications.length >= MAX_TRADE_ALLIANCE_PENDING_APPLICATIONS
+    ) {
+      throw new Error("Alliance applications are full.");
     }
 
     const ownApplicationCount = Array.from(
       ctx.db.tradeAllianceApplication.byApplicantIdentity.filter(ctx.sender),
     ).length;
-    if (ownApplicationCount >= MAX_TRADE_ALLIANCE_PENDING_APPLICATIONS_PER_PLAYER) {
-      throw new Error('Too many pending alliance applications.');
+    if (
+      ownApplicationCount >= MAX_TRADE_ALLIANCE_PENDING_APPLICATIONS_PER_PLAYER
+    ) {
+      throw new Error("Too many pending alliance applications.");
     }
 
-    const applicationKey = getTradeAllianceApplicationKey(alliance.allianceId, ctx.sender);
+    const applicationKey = getTradeAllianceApplicationKey(
+      alliance.allianceId,
+      ctx.sender,
+    );
     if (ctx.db.tradeAllianceApplication.applicationKey.find(applicationKey)) {
       return;
     }
@@ -20103,7 +21909,7 @@ export const accept_trade_alliance_application = spacetimedb.reducer(
     assertActivePlayerSession(ctx);
 
     const application = ctx.db.tradeAllianceApplication.applicationKey.find(
-      String(applicationKey ?? '').trim(),
+      String(applicationKey ?? "").trim(),
     );
 
     if (!application) {
@@ -20123,7 +21929,7 @@ export const accept_trade_alliance_application = spacetimedb.reducer(
 
     const memberCount = getTradeAllianceMemberCount(ctx, alliance.allianceId);
     if (memberCount >= MAX_TRADE_ALLIANCE_MEMBERS) {
-      throw new Error('Alliance is full.');
+      throw new Error("Alliance is full.");
     }
 
     ctx.db.tradeAllianceMember.insert({
@@ -20144,7 +21950,10 @@ export const accept_trade_alliance_application = spacetimedb.reducer(
       updatedAt: ctx.timestamp,
     });
 
-    deleteTradeAllianceApplicationsForIdentity(ctx, application.applicantIdentity);
+    deleteTradeAllianceApplicationsForIdentity(
+      ctx,
+      application.applicantIdentity,
+    );
   },
 );
 
@@ -20175,11 +21984,14 @@ export const leave_trade_alliance = spacetimedb.reducer({}, (ctx) => {
     return;
   }
 
-  const alliance = findTradeAllianceById(ctx, getTradeAllianceIdKey(member.allianceId));
+  const alliance = findTradeAllianceById(
+    ctx,
+    getTradeAllianceIdKey(member.allianceId),
+  );
   const memberCount = getTradeAllianceMemberCount(ctx, alliance.allianceId);
 
   if (member.role === TRADE_ALLIANCE_ROLE_TRADE_MASTER && memberCount > 1) {
-    throw new Error('Trade master must transfer leadership before leaving.');
+    throw new Error("Trade master must transfer leadership before leaving.");
   }
 
   if (memberCount <= 1) {
@@ -20203,20 +22015,24 @@ export const transfer_trade_alliance_leadership = spacetimedb.reducer(
     const leader = getTradeAllianceMember(ctx);
 
     if (!leader || leader.role !== TRADE_ALLIANCE_ROLE_TRADE_MASTER) {
-      throw new Error('Leadership transfer requires trade master.');
+      throw new Error("Leadership transfer requires trade master.");
     }
 
     const target = findTradeAllianceMemberByIdentityHex(ctx, memberIdentityHex);
 
     if (
       !target ||
-      getTradeAllianceIdKey(target.allianceId) !== getTradeAllianceIdKey(leader.allianceId) ||
+      getTradeAllianceIdKey(target.allianceId) !==
+        getTradeAllianceIdKey(leader.allianceId) ||
       target.memberIdentity.isEqual(ctx.sender)
     ) {
-      throw new Error('Leadership target not found.');
+      throw new Error("Leadership target not found.");
     }
 
-    const alliance = findTradeAllianceById(ctx, getTradeAllianceIdKey(leader.allianceId));
+    const alliance = findTradeAllianceById(
+      ctx,
+      getTradeAllianceIdKey(leader.allianceId),
+    );
     const oldLeaderNextRole =
       getTradeAllianceRoleCount(
         ctx,
@@ -20254,26 +22070,37 @@ export const set_trade_alliance_member_role = spacetimedb.reducer(
 
     const targetRole = validateTradeAllianceRole(role);
     if (targetRole === TRADE_ALLIANCE_ROLE_TRADE_MASTER) {
-      throw new Error('Use leadership transfer.');
+      throw new Error("Use leadership transfer.");
     }
 
     const actor = getTradeAllianceMember(ctx);
     if (!actor) {
-      throw new Error('Alliance role required.');
+      throw new Error("Alliance role required.");
     }
 
     const target = findTradeAllianceMemberByIdentityHex(ctx, memberIdentityHex);
 
     if (
       !target ||
-      getTradeAllianceIdKey(target.allianceId) !== getTradeAllianceIdKey(actor.allianceId)
+      getTradeAllianceIdKey(target.allianceId) !==
+        getTradeAllianceIdKey(actor.allianceId)
     ) {
-      throw new Error('Alliance member not found.');
+      throw new Error("Alliance member not found.");
     }
 
-    const manager = assertTradeAllianceCanManageMember(ctx, actor.allianceId, target, actor);
+    const manager = assertTradeAllianceCanManageMember(
+      ctx,
+      actor.allianceId,
+      target,
+      actor,
+    );
     assertTradeAllianceCanAssignRole(manager, targetRole);
-    assertTradeAllianceRoleCap(ctx, actor.allianceId, targetRole, target.memberIdentity);
+    assertTradeAllianceRoleCap(
+      ctx,
+      actor.allianceId,
+      targetRole,
+      target.memberIdentity,
+    );
 
     ctx.db.tradeAllianceMember.memberIdentity.update({
       ...target,
@@ -20290,24 +22117,28 @@ export const kick_trade_alliance_member = spacetimedb.reducer(
 
     const actor = getTradeAllianceMember(ctx);
     if (!actor) {
-      throw new Error('Alliance role required.');
+      throw new Error("Alliance role required.");
     }
 
     const target = findTradeAllianceMemberByIdentityHex(ctx, memberIdentityHex);
 
     if (
       !target ||
-      getTradeAllianceIdKey(target.allianceId) !== getTradeAllianceIdKey(actor.allianceId)
+      getTradeAllianceIdKey(target.allianceId) !==
+        getTradeAllianceIdKey(actor.allianceId)
     ) {
       return;
     }
 
     if (target.role === TRADE_ALLIANCE_ROLE_TRADE_MASTER) {
-      throw new Error('Cannot kick trade master.');
+      throw new Error("Cannot kick trade master.");
     }
 
     assertTradeAllianceCanManageMember(ctx, actor.allianceId, target);
-    const alliance = findTradeAllianceById(ctx, getTradeAllianceIdKey(actor.allianceId));
+    const alliance = findTradeAllianceById(
+      ctx,
+      getTradeAllianceIdKey(actor.allianceId),
+    );
     const memberCount = getTradeAllianceMemberCount(ctx, alliance.allianceId);
 
     ctx.db.tradeAllianceMember.delete(target);
@@ -20332,10 +22163,13 @@ export const send_trade_alliance_chat_message = spacetimedb.reducer(
 
     const member = getTradeAllianceMember(ctx);
     if (!member) {
-      throw new Error('Alliance chat requires membership.');
+      throw new Error("Alliance chat requires membership.");
     }
 
-    const alliance = findTradeAllianceById(ctx, getTradeAllianceIdKey(member.allianceId));
+    const alliance = findTradeAllianceById(
+      ctx,
+      getTradeAllianceIdKey(member.allianceId),
+    );
     assertTradeAllianceChatRateLimit(ctx, alliance.allianceId);
 
     const player = ensurePlayer(ctx);
@@ -20374,7 +22208,7 @@ export const claim_trade_alliance_quest_reward = spacetimedb.reducer(
 
     const member = getTradeAllianceMember(ctx);
     if (!member) {
-      throw new Error('Alliance quest requires membership.');
+      throw new Error("Alliance quest requires membership.");
     }
 
     const alliance = refreshTradeAllianceDay(
@@ -20389,15 +22223,19 @@ export const claim_trade_alliance_quest_reward = spacetimedb.reducer(
       alliance.allianceId,
       dayKey,
     );
-    const questKey = getTradeAllianceQuestKey(alliance.allianceId, dayKey, safeQuestId);
+    const questKey = getTradeAllianceQuestKey(
+      alliance.allianceId,
+      dayKey,
+      safeQuestId,
+    );
     const quest = ctx.db.tradeAllianceQuestProgress.questKey.find(questKey);
 
     if (!quest) {
-      throw new Error('Alliance quest not found.');
+      throw new Error("Alliance quest not found.");
     }
 
     if (quest.progress < quest.target) {
-      throw new Error('Alliance quest is not complete.');
+      throw new Error("Alliance quest is not complete.");
     }
 
     const contributionKey = getTradeAllianceContributionKey(
@@ -20406,14 +22244,19 @@ export const claim_trade_alliance_quest_reward = spacetimedb.reducer(
       safeQuestId,
       ctx.sender,
     );
-    const contribution = ctx.db.tradeAllianceQuestContribution.contributionKey.find(
-      contributionKey,
-    );
+    const contribution =
+      ctx.db.tradeAllianceQuestContribution.contributionKey.find(
+        contributionKey,
+      );
     if ((contribution?.contribution ?? 0n) < quest.minContribution) {
-      throw new Error('Alliance quest needs more contribution.');
+      throw new Error("Alliance quest needs more contribution.");
     }
 
-    const rewardKey = getTradeAllianceRewardKey(dayKey, safeQuestId, ctx.sender);
+    const rewardKey = getTradeAllianceRewardKey(
+      dayKey,
+      safeQuestId,
+      ctx.sender,
+    );
     if (
       ctx.db.tradeAllianceRewardInbox.rewardKey.find(rewardKey) ||
       hasTradeAllianceRewardClaimForPeriod(ctx, ctx.sender, dayKey, safeQuestId)
@@ -20441,9 +22284,15 @@ export const collect_trade_alliance_reward = spacetimedb.reducer(
   (ctx, { rewardKey }) => {
     assertActivePlayerSession(ctx);
 
-    const reward = ctx.db.tradeAllianceRewardInbox.rewardKey.find(String(rewardKey ?? '').trim());
+    const reward = ctx.db.tradeAllianceRewardInbox.rewardKey.find(
+      String(rewardKey ?? "").trim(),
+    );
 
-    if (!reward || !reward.recipientIdentity.isEqual(ctx.sender) || reward.collected) {
+    if (
+      !reward ||
+      !reward.recipientIdentity.isEqual(ctx.sender) ||
+      reward.collected
+    ) {
       return;
     }
 
@@ -20473,13 +22322,21 @@ export const admin_set_trade_alliance_member_role = spacetimedb.reducer(
     const target = findTradeAllianceMemberByIdentityHex(ctx, memberIdentityHex);
 
     if (!target) {
-      throw new Error('Alliance member not found.');
+      throw new Error("Alliance member not found.");
     }
 
     if (safeRole === TRADE_ALLIANCE_ROLE_TRADE_MASTER) {
-      const alliance = findTradeAllianceById(ctx, getTradeAllianceIdKey(target.allianceId));
-      const oldLeader = ctx.db.tradeAllianceMember.memberIdentity.find(alliance.leaderIdentity);
-      if (oldLeader && !oldLeader.memberIdentity.isEqual(target.memberIdentity)) {
+      const alliance = findTradeAllianceById(
+        ctx,
+        getTradeAllianceIdKey(target.allianceId),
+      );
+      const oldLeader = ctx.db.tradeAllianceMember.memberIdentity.find(
+        alliance.leaderIdentity,
+      );
+      if (
+        oldLeader &&
+        !oldLeader.memberIdentity.isEqual(target.memberIdentity)
+      ) {
         ctx.db.tradeAllianceMember.memberIdentity.update({
           ...oldLeader,
           role: TRADE_ALLIANCE_ROLE_TRADER,
@@ -20492,7 +22349,12 @@ export const admin_set_trade_alliance_member_role = spacetimedb.reducer(
         updatedAt: ctx.timestamp,
       });
     } else {
-      assertTradeAllianceRoleCap(ctx, target.allianceId, safeRole, target.memberIdentity);
+      assertTradeAllianceRoleCap(
+        ctx,
+        target.allianceId,
+        safeRole,
+        target.memberIdentity,
+      );
     }
 
     ctx.db.tradeAllianceMember.memberIdentity.update({
@@ -20514,7 +22376,9 @@ export const admin_move_trade_alliance_member = spacetimedb.reducer(
     const player = findPlayerByIdentityHex(ctx, memberIdentityHex);
     const alliance = findTradeAllianceById(ctx, allianceId);
     const safeRole = validateTradeAllianceRole(role);
-    const existingMember = ctx.db.tradeAllianceMember.memberIdentity.find(player.identity);
+    const existingMember = ctx.db.tradeAllianceMember.memberIdentity.find(
+      player.identity,
+    );
     const memberCount = getTradeAllianceMemberCount(ctx, alliance.allianceId);
 
     if (
@@ -20523,14 +22387,24 @@ export const admin_move_trade_alliance_member = spacetimedb.reducer(
           getTradeAllianceIdKey(alliance.allianceId)) &&
       memberCount >= MAX_TRADE_ALLIANCE_MEMBERS
     ) {
-      throw new Error('Alliance is full.');
+      throw new Error("Alliance is full.");
     }
 
     if (safeRole !== TRADE_ALLIANCE_ROLE_TRADE_MASTER) {
-      assertTradeAllianceRoleCap(ctx, alliance.allianceId, safeRole, player.identity);
+      assertTradeAllianceRoleCap(
+        ctx,
+        alliance.allianceId,
+        safeRole,
+        player.identity,
+      );
     } else {
-      const currentLeader = ctx.db.tradeAllianceMember.memberIdentity.find(alliance.leaderIdentity);
-      if (currentLeader && !currentLeader.memberIdentity.isEqual(player.identity)) {
+      const currentLeader = ctx.db.tradeAllianceMember.memberIdentity.find(
+        alliance.leaderIdentity,
+      );
+      if (
+        currentLeader &&
+        !currentLeader.memberIdentity.isEqual(player.identity)
+      ) {
         ctx.db.tradeAllianceMember.memberIdentity.update({
           ...currentLeader,
           role: TRADE_ALLIANCE_ROLE_TRADER,
@@ -20541,8 +22415,14 @@ export const admin_move_trade_alliance_member = spacetimedb.reducer(
 
     if (existingMember) {
       const questPeriodKey = getTradeAllianceQuestPeriodKey(ctx);
-      const oldAlliance = findTradeAllianceById(ctx, getTradeAllianceIdKey(existingMember.allianceId));
-      const oldMemberCount = getTradeAllianceMemberCount(ctx, oldAlliance.allianceId);
+      const oldAlliance = findTradeAllianceById(
+        ctx,
+        getTradeAllianceIdKey(existingMember.allianceId),
+      );
+      const oldMemberCount = getTradeAllianceMemberCount(
+        ctx,
+        oldAlliance.allianceId,
+      );
       const keepsWeeklyContribution =
         getTradeAllianceIdKey(existingMember.allianceId) ===
           getTradeAllianceIdKey(alliance.allianceId) &&
@@ -20556,16 +22436,22 @@ export const admin_move_trade_alliance_member = spacetimedb.reducer(
         role: safeRole,
         updatedAt: ctx.timestamp,
         dayKey: questPeriodKey,
-        dailyContribution: keepsWeeklyContribution ? existingMember.dailyContribution : 0n,
+        dailyContribution: keepsWeeklyContribution
+          ? existingMember.dailyContribution
+          : 0n,
       });
       if (
         getTradeAllianceIdKey(oldAlliance.allianceId) !==
         getTradeAllianceIdKey(alliance.allianceId)
       ) {
-        if (existingMember.role === TRADE_ALLIANCE_ROLE_TRADE_MASTER && oldMemberCount > 1) {
-          const nextLeader = getTradeAllianceMembers(ctx, oldAlliance.allianceId).find(
-            (member) => !member.memberIdentity.isEqual(player.identity),
-          );
+        if (
+          existingMember.role === TRADE_ALLIANCE_ROLE_TRADE_MASTER &&
+          oldMemberCount > 1
+        ) {
+          const nextLeader = getTradeAllianceMembers(
+            ctx,
+            oldAlliance.allianceId,
+          ).find((member) => !member.memberIdentity.isEqual(player.identity));
 
           if (nextLeader) {
             ctx.db.tradeAllianceMember.memberIdentity.update({
@@ -20580,10 +22466,11 @@ export const admin_move_trade_alliance_member = spacetimedb.reducer(
           ...oldAlliance,
           memberCount: Math.max(0, oldMemberCount - 1),
           leaderIdentity:
-            existingMember.role === TRADE_ALLIANCE_ROLE_TRADE_MASTER && oldMemberCount > 1
-              ? getTradeAllianceMembers(ctx, oldAlliance.allianceId).find(
+            existingMember.role === TRADE_ALLIANCE_ROLE_TRADE_MASTER &&
+            oldMemberCount > 1
+              ? (getTradeAllianceMembers(ctx, oldAlliance.allianceId).find(
                   (member) => !member.memberIdentity.isEqual(player.identity),
-                )?.memberIdentity ?? oldAlliance.leaderIdentity
+                )?.memberIdentity ?? oldAlliance.leaderIdentity)
               : oldAlliance.leaderIdentity,
           updatedAt: ctx.timestamp,
         });
@@ -20603,39 +22490,47 @@ export const admin_move_trade_alliance_member = spacetimedb.reducer(
       });
     }
 
-    const nextMemberCount = getTradeAllianceMemberCount(ctx, alliance.allianceId);
+    const nextMemberCount = getTradeAllianceMemberCount(
+      ctx,
+      alliance.allianceId,
+    );
     ctx.db.tradeAlliance.allianceId.update({
       ...alliance,
       memberCount: nextMemberCount,
       leaderIdentity:
-        safeRole === TRADE_ALLIANCE_ROLE_TRADE_MASTER ? player.identity : alliance.leaderIdentity,
+        safeRole === TRADE_ALLIANCE_ROLE_TRADE_MASTER
+          ? player.identity
+          : alliance.leaderIdentity,
       updatedAt: ctx.timestamp,
     });
   },
 );
 
-export const submit_feedback = spacetimedb.reducer({ body: t.string() }, (ctx, { body }) => {
-  assertActivePlayerSession(ctx);
+export const submit_feedback = spacetimedb.reducer(
+  { body: t.string() },
+  (ctx, { body }) => {
+    assertActivePlayerSession(ctx);
 
-  const safeBody = normalizeFeedbackBody(body);
+    const safeBody = normalizeFeedbackBody(body);
 
-  if (!safeBody) {
-    return;
-  }
+    if (!safeBody) {
+      return;
+    }
 
-  assertFeedbackRateLimit(ctx);
+    assertFeedbackRateLimit(ctx);
 
-  const player = ensurePlayer(ctx);
+    const player = ensurePlayer(ctx);
 
-  ctx.db.playerFeedback.insert({
-    feedbackId: ctx.newUuidV7(),
-    senderIdentity: ctx.sender,
-    username: player.username,
-    playerLevel: player.playerLevel,
-    body: safeBody,
-    submittedAt: ctx.timestamp,
-  });
-});
+    ctx.db.playerFeedback.insert({
+      feedbackId: ctx.newUuidV7(),
+      senderIdentity: ctx.sender,
+      username: player.username,
+      playerLevel: player.playerLevel,
+      body: safeBody,
+      submittedAt: ctx.timestamp,
+    });
+  },
+);
 
 export const announce_research = spacetimedb.reducer(
   { researchName: t.string() },
@@ -20660,11 +22555,11 @@ export const announce_research = spacetimedb.reducer(
     ctx.db.worldChat.insert({
       messageId: ctx.newUuidV7(),
       senderIdentity: ctx.sender,
-      username: 'system',
+      username: "system",
       playerLevel: 0,
       body: `${player.username} researched ${safeResearchName}`,
       sentAt: ctx.timestamp,
-      allianceTag: '',
+      allianceTag: "",
       allianceTagColor: DEFAULT_TRADE_ALLIANCE_TAG_COLOR,
     });
     pruneWorldChat(ctx);
@@ -20731,15 +22626,21 @@ export const set_player_shop_slot = spacetimedb.reducer(
     quantity: t.u32(),
     priceGold: t.f64(),
   },
-  (ctx, { marketId, slotNumber, itemKey, itemLabel, itemKind, quantity, priceGold }) => {
+  (
+    ctx,
+    { marketId, slotNumber, itemKey, itemLabel, itemKind, quantity, priceGold },
+  ) => {
     assertActivePlayerSession(ctx);
 
     if (!ENABLE_PLAYER_SHOP_EXCHANGE) {
-      throw new SenderError('Player shop exchange requires server inventory.');
+      throw new SenderError("Player shop exchange requires server inventory.");
     }
 
     const activeMarketId = assertActiveMarket(ctx, marketId);
-    const safeSlotNumber = validatePlayerShopSlotNumberForMarket(slotNumber, activeMarketId);
+    const safeSlotNumber = validatePlayerShopSlotNumberForMarket(
+      slotNumber,
+      activeMarketId,
+    );
     const catalogItem = getPlayerShopCatalogItem(itemKey, activeMarketId);
     const safeItemKey = catalogItem.itemKey;
     const safeItemLabel = catalogItem.itemLabel;
@@ -20748,15 +22649,21 @@ export const set_player_shop_slot = spacetimedb.reducer(
     const safePriceGold = validatePlayerShopPriceGold(priceGold);
 
     if (
-      normalizePlayerShopText(itemLabel, MAX_ITEM_LABEL_LENGTH) !== safeItemLabel ||
+      normalizePlayerShopText(itemLabel, MAX_ITEM_LABEL_LENGTH) !==
+        safeItemLabel ||
       normalizePlayerShopText(itemKind, MAX_ITEM_KIND_LENGTH) !== safeItemKind
     ) {
-      throw new SenderError('Player shop item is required.');
+      throw new SenderError("Player shop item is required.");
     }
 
     const player = ensurePlayer(ctx);
-    const listingKey = getPlayerShopListingKey(ctx, safeSlotNumber, activeMarketId);
-    const existingListing = ctx.db.playerShopListing.listingKey.find(listingKey);
+    const listingKey = getPlayerShopListingKey(
+      ctx,
+      safeSlotNumber,
+      activeMarketId,
+    );
+    const existingListing =
+      ctx.db.playerShopListing.listingKey.find(listingKey);
     const nextListing = {
       listingKey,
       sellerIdentity: ctx.sender,
@@ -20788,10 +22695,18 @@ export const clear_player_shop_slot = spacetimedb.reducer(
 
     const safeSlotNumber = validatePlayerShopSlotNumber(slotNumber);
     const activeMarketId = assertActiveMarket(ctx, marketId);
-    const listingKey = getPlayerShopListingKey(ctx, safeSlotNumber, activeMarketId);
-    const existingListing = ctx.db.playerShopListing.listingKey.find(listingKey);
+    const listingKey = getPlayerShopListingKey(
+      ctx,
+      safeSlotNumber,
+      activeMarketId,
+    );
+    const existingListing =
+      ctx.db.playerShopListing.listingKey.find(listingKey);
 
-    if (!existingListing || !existingListing.sellerIdentity.isEqual(ctx.sender)) {
+    if (
+      !existingListing ||
+      !existingListing.sellerIdentity.isEqual(ctx.sender)
+    ) {
       return;
     }
 
@@ -20809,15 +22724,21 @@ export const set_player_shop_request = spacetimedb.reducer(
     quantity: t.u32(),
     priceGold: t.f64(),
   },
-  (ctx, { marketId, slotNumber, itemKey, itemLabel, itemKind, quantity, priceGold }) => {
+  (
+    ctx,
+    { marketId, slotNumber, itemKey, itemLabel, itemKind, quantity, priceGold },
+  ) => {
     assertActivePlayerSession(ctx);
 
     if (!ENABLE_PLAYER_SHOP_EXCHANGE) {
-      throw new SenderError('Player shop exchange requires server inventory.');
+      throw new SenderError("Player shop exchange requires server inventory.");
     }
 
     const activeMarketId = assertActiveMarket(ctx, marketId);
-    const safeSlotNumber = validatePlayerShopSlotNumberForMarket(slotNumber, activeMarketId);
+    const safeSlotNumber = validatePlayerShopSlotNumberForMarket(
+      slotNumber,
+      activeMarketId,
+    );
     const catalogItem = getPlayerShopCatalogItem(itemKey, activeMarketId);
     const safeItemKey = catalogItem.itemKey;
     const safeItemLabel = catalogItem.itemLabel;
@@ -20826,15 +22747,21 @@ export const set_player_shop_request = spacetimedb.reducer(
     const safePriceGold = validatePlayerShopPriceGold(priceGold);
 
     if (
-      normalizePlayerShopText(itemLabel, MAX_ITEM_LABEL_LENGTH) !== safeItemLabel ||
+      normalizePlayerShopText(itemLabel, MAX_ITEM_LABEL_LENGTH) !==
+        safeItemLabel ||
       normalizePlayerShopText(itemKind, MAX_ITEM_KIND_LENGTH) !== safeItemKind
     ) {
-      throw new SenderError('Player shop item is required.');
+      throw new SenderError("Player shop item is required.");
     }
 
     const player = ensurePlayer(ctx);
-    const requestKey = getPlayerShopRequestKey(ctx, safeSlotNumber, activeMarketId);
-    const existingRequest = ctx.db.playerShopRequest.requestKey.find(requestKey);
+    const requestKey = getPlayerShopRequestKey(
+      ctx,
+      safeSlotNumber,
+      activeMarketId,
+    );
+    const existingRequest =
+      ctx.db.playerShopRequest.requestKey.find(requestKey);
     const nextRequest = {
       requestKey,
       requesterIdentity: ctx.sender,
@@ -20866,10 +22793,18 @@ export const clear_player_shop_request = spacetimedb.reducer(
 
     const safeSlotNumber = validatePlayerShopSlotNumber(slotNumber);
     const activeMarketId = assertActiveMarket(ctx, marketId);
-    const requestKey = getPlayerShopRequestKey(ctx, safeSlotNumber, activeMarketId);
-    const existingRequest = ctx.db.playerShopRequest.requestKey.find(requestKey);
+    const requestKey = getPlayerShopRequestKey(
+      ctx,
+      safeSlotNumber,
+      activeMarketId,
+    );
+    const existingRequest =
+      ctx.db.playerShopRequest.requestKey.find(requestKey);
 
-    if (!existingRequest || !existingRequest.requesterIdentity.isEqual(ctx.sender)) {
+    if (
+      !existingRequest ||
+      !existingRequest.requesterIdentity.isEqual(ctx.sender)
+    ) {
       return;
     }
 
@@ -20883,7 +22818,7 @@ export const buy_player_shop_listing = spacetimedb.reducer(
     assertActivePlayerSession(ctx);
 
     if (!ENABLE_PLAYER_SHOP_EXCHANGE) {
-      throw new SenderError('Player shop exchange requires server inventory.');
+      throw new SenderError("Player shop exchange requires server inventory.");
     }
 
     const safeListingKey = normalizePlayerShopText(listingKey, 120);
@@ -20891,21 +22826,23 @@ export const buy_player_shop_listing = spacetimedb.reducer(
     const listing = ctx.db.playerShopListing.listingKey.find(safeListingKey);
 
     if (!listing) {
-      throw new SenderError('Player shop listing no longer exists.');
+      throw new SenderError("Player shop listing no longer exists.");
     }
 
     if (getRowMarketId(listing) !== activeMarketId) {
-      throw new SenderError('Player shop listing belongs to another market.');
+      throw new SenderError("Player shop listing belongs to another market.");
     }
 
     getPlayerShopCatalogItem(listing.itemKey, activeMarketId);
 
     if (listing.sellerIdentity.isEqual(ctx.sender)) {
-      throw new SenderError('Cannot buy your own player shop listing.');
+      throw new SenderError("Cannot buy your own player shop listing.");
     }
 
     if (quantity < 1 || quantity > listing.quantity) {
-      throw new SenderError('Player shop listing does not have enough quantity.');
+      throw new SenderError(
+        "Player shop listing does not have enough quantity.",
+      );
     }
 
     const buyer = ensurePlayer(ctx);
@@ -20916,13 +22853,13 @@ export const buy_player_shop_listing = spacetimedb.reducer(
     );
 
     if (listingPriceGold === null || listingPriceGold <= 0) {
-      throw new SenderError('Player shop listing price is invalid.');
+      throw new SenderError("Player shop listing price is invalid.");
     }
 
     const proceedsGold = roundGoldPrice(listingPriceGold * quantity);
 
     if (proceedsGold > MAX_PLAYER_SHOP_TRADE_TOTAL_GOLD) {
-      throw new SenderError('Player shop trade total is too high.');
+      throw new SenderError("Player shop trade total is too high.");
     }
 
     ctx.db.playerShopListing.listingKey.update({
@@ -20931,7 +22868,12 @@ export const buy_player_shop_listing = spacetimedb.reducer(
       updatedAt: ctx.timestamp,
     });
 
-    addClaimablePlayerShopGold(ctx, listing.sellerIdentity, proceedsGold, activeMarketId);
+    addClaimablePlayerShopGold(
+      ctx,
+      listing.sellerIdentity,
+      proceedsGold,
+      activeMarketId,
+    );
     grantPotionDiscoveryPassiveGold(
       ctx,
       listing.itemKey,
@@ -20966,12 +22908,14 @@ export const claim_player_shop_proceeds = spacetimedb.reducer(
     assertActivePlayerSession(ctx);
 
     if (!ENABLE_PLAYER_SHOP_EXCHANGE) {
-      throw new SenderError('Player shop exchange requires server inventory.');
+      throw new SenderError("Player shop exchange requires server inventory.");
     }
 
     const activeMarketId = assertActiveMarket(ctx, marketId);
     if (activeMarketId === defaultMarketId) {
-      const proceeds = ctx.db.playerShopProceeds.sellerIdentity.find(ctx.sender);
+      const proceeds = ctx.db.playerShopProceeds.sellerIdentity.find(
+        ctx.sender,
+      );
       if (proceeds) {
         ctx.db.playerShopProceeds.delete(proceeds);
       }
@@ -21000,14 +22944,18 @@ export const sell_to_npc = spacetimedb.reducer(
     const activeMarketId = assertActiveMarket(ctx, marketId);
     const row = ensureNpcMarketItem(ctx, itemKey, activeMarketId);
     const tradeQuantity = BigInt(safeQuantity);
-    const marketConfig = getNpcMarketRuntimeConfig(ctx, itemKey, activeMarketId);
+    const marketConfig = getNpcMarketRuntimeConfig(
+      ctx,
+      itemKey,
+      activeMarketId,
+    );
     const needState = getNpcMarketNeedState(row, marketConfig.targetStock);
     const npcStock = getNpcMarketStock(row);
     const demandScore = toBigInt(row.demandScore);
     const supplyScore = toBigInt(row.supplyScore);
 
     if (needState.npcNeed < tradeQuantity) {
-      throw new Error('NPC market demand too low.');
+      throw new Error("NPC market demand too low.");
     }
 
     const nextNpcStock = npcStock + tradeQuantity;
@@ -21080,13 +23028,17 @@ export const buy_from_npc = spacetimedb.reducer(
     const row = ensureNpcMarketItem(ctx, itemKey, activeMarketId);
 
     const tradeQuantity = BigInt(safeQuantity);
-    const marketConfig = getNpcMarketRuntimeConfig(ctx, itemKey, activeMarketId);
+    const marketConfig = getNpcMarketRuntimeConfig(
+      ctx,
+      itemKey,
+      activeMarketId,
+    );
     const needState = getNpcMarketNeedState(row, marketConfig.targetStock);
     const npcStock = getNpcMarketStock(row);
     const demandScore = toBigInt(row.demandScore);
 
     if (npcStock < tradeQuantity) {
-      throw new Error('NPC market item has no stock.');
+      throw new Error("NPC market item has no stock.");
     }
 
     const nextNpcStock = npcStock - tradeQuantity;
@@ -21191,11 +23143,17 @@ export const upsert_npc_market_item_config = spacetimedb.reducer(
 
     const safeItemKey = normalizeNpcMarketItemKey(itemKey);
     const safeMarketId = normalizeMarketId(marketId);
-    const safeItemLabel = normalizePlayerShopText(itemLabel, MAX_ITEM_LABEL_LENGTH);
-    const safeItemKind = normalizePlayerShopText(itemKind, MAX_ITEM_KIND_LENGTH);
+    const safeItemLabel = normalizePlayerShopText(
+      itemLabel,
+      MAX_ITEM_LABEL_LENGTH,
+    );
+    const safeItemKind = normalizePlayerShopText(
+      itemKind,
+      MAX_ITEM_KIND_LENGTH,
+    );
 
     if (!safeItemKey || !safeItemLabel || !safeItemKind) {
-      throw new Error('NPC market item config requires key, label, and kind.');
+      throw new Error("NPC market item config requires key, label, and kind.");
     }
 
     const safeBasePriceGold = validateNpcMarketBasePriceGold(basePriceGold);
@@ -21243,7 +23201,10 @@ export const upsert_npc_market_item_config = spacetimedb.reducer(
     const existingRow = ctx.db.npcMarketPrice.itemKey.find(storageKey);
 
     if (existingRow) {
-      const marketConfig = normalizeNpcMarketRuntimeConfig(nextConfig, catalogItem);
+      const marketConfig = normalizeNpcMarketRuntimeConfig(
+        nextConfig,
+        catalogItem,
+      );
       const needState = getNpcMarketNeedState(existingRow, safeTargetStock);
       const marketPriceGold = getNpcMarketPriceFromNeed(
         marketConfig,
@@ -21308,7 +23269,7 @@ export const set_npc_market_item_base_price = spacetimedb.reducer(
     );
 
     if (!existingConfig) {
-      throw new Error('Missing NPC market item config.');
+      throw new Error("Missing NPC market item config.");
     }
 
     ctx.db.npcMarketItemConfig.itemKey.update({
@@ -21318,7 +23279,9 @@ export const set_npc_market_item_base_price = spacetimedb.reducer(
       updatedAt: ctx.timestamp,
     });
 
-    const existingRow = ctx.db.npcMarketPrice.itemKey.find(marketConfig.storageKey);
+    const existingRow = ctx.db.npcMarketPrice.itemKey.find(
+      marketConfig.storageKey,
+    );
 
     if (!existingRow) {
       ensureNpcMarketItem(ctx, marketConfig.itemKey, safeMarketId);
@@ -21329,7 +23292,10 @@ export const set_npc_market_item_base_price = spacetimedb.reducer(
       ...marketConfig,
       basePriceGold: safeBasePriceGold,
     };
-    const needState = getNpcMarketNeedState(existingRow, marketConfig.targetStock);
+    const needState = getNpcMarketNeedState(
+      existingRow,
+      marketConfig.targetStock,
+    );
     const marketPriceGold = getNpcMarketPriceFromNeed(
       nextMarketConfig,
       needState.npcNeed,
@@ -21506,7 +23472,9 @@ export const admin_set_player_maintenance = spacetimedb.reducer(
 
     const player = findPlayerByIdentityHex(ctx, identityHex);
     const safeMode = normalizeMaintenanceMode(mode);
-    const existingMaintenance = ctx.db.playerMaintenance.identity.find(player.identity);
+    const existingMaintenance = ctx.db.playerMaintenance.identity.find(
+      player.identity,
+    );
 
     if (safeMode === MAINTENANCE_MODE_OFF) {
       if (existingMaintenance) {
@@ -21581,6 +23549,7 @@ export const admin_reset_player_progression_data = spacetimedb.reducer(
     deleteAllPlayerInboxMail(ctx);
     deleteAllLeaderboardState(ctx);
     deleteAllWorldChatMessages(ctx);
+    deleteAllFriendState(ctx);
     deleteAllTradeAllianceState(ctx);
     deleteAllPlayerShopState(ctx);
     deleteAllPotionDiscoveries(ctx);
@@ -21612,6 +23581,7 @@ export const admin_wipe_all_player_data = spacetimedb.reducer(
     deleteAllPlayerInboxMail(ctx);
     deleteAllLeaderboardState(ctx);
     deleteAllWorldChatMessages(ctx);
+    deleteAllFriendState(ctx);
     deleteAllTradeAllianceState(ctx);
     deleteAllPlayerShopState(ctx);
     deleteAllPotionDiscoveries(ctx);
@@ -21648,35 +23618,36 @@ export const admin_wipe_zero_income_player_data = spacetimedb.reducer(
   },
 );
 
-export const admin_cleanup_zero_total_coin_players_and_grant_currency = spacetimedb.reducer(
-  {
-    resetKey: t.string(),
-    emeraldAmount: t.u32(),
-    rubyAmount: t.u32(),
-    crystalAmount: t.u32(),
-  },
-  (ctx, { resetKey, emeraldAmount, rubyAmount, crystalAmount }) => {
-    assertGameConfigAdmin(ctx);
-    assertMaintenanceLocked(ctx);
+export const admin_cleanup_zero_total_coin_players_and_grant_currency =
+  spacetimedb.reducer(
+    {
+      resetKey: t.string(),
+      emeraldAmount: t.u32(),
+      rubyAmount: t.u32(),
+      crystalAmount: t.u32(),
+    },
+    (ctx, { resetKey, emeraldAmount, rubyAmount, crystalAmount }) => {
+      assertGameConfigAdmin(ctx);
+      assertMaintenanceLocked(ctx);
 
-    const stateKey = `zero-total-coin-cleanup-currency-grant:${normalizeMaintenanceKey(resetKey)}`;
-    if (ctx.db.maintenanceState.stateKey.find(stateKey)) {
-      return;
-    }
+      const stateKey = `zero-total-coin-cleanup-currency-grant:${normalizeMaintenanceKey(resetKey)}`;
+      if (ctx.db.maintenanceState.stateKey.find(stateKey)) {
+        return;
+      }
 
-    deletePlayerDataForIdentities(ctx, getZeroTotalCoinPlayerIdentities(ctx));
-    grantAdminCurrencyBonusToRemainingPlayers(ctx, {
-      emeraldAmount,
-      rubyAmount,
-      crystalAmount,
-    });
+      deletePlayerDataForIdentities(ctx, getZeroTotalCoinPlayerIdentities(ctx));
+      grantAdminCurrencyBonusToRemainingPlayers(ctx, {
+        emeraldAmount,
+        rubyAmount,
+        crystalAmount,
+      });
 
-    ctx.db.maintenanceState.insert({
-      stateKey,
-      appliedAt: ctx.timestamp,
-    });
-  },
-);
+      ctx.db.maintenanceState.insert({
+        stateKey,
+        appliedAt: ctx.timestamp,
+      });
+    },
+  );
 
 export const admin_grant_player_currency_by_identity = spacetimedb.reducer(
   {
@@ -21686,7 +23657,10 @@ export const admin_grant_player_currency_by_identity = spacetimedb.reducer(
     rubyAmount: t.u32(),
     crystalAmount: t.u32(),
   },
-  (ctx, { identityHex, resetKey, emeraldAmount, rubyAmount, crystalAmount }) => {
+  (
+    ctx,
+    { identityHex, resetKey, emeraldAmount, rubyAmount, crystalAmount },
+  ) => {
     assertGameConfigAdmin(ctx);
 
     const player = findPlayerByIdentityHex(ctx, identityHex);
@@ -21700,17 +23674,17 @@ export const admin_grant_player_currency_by_identity = spacetimedb.reducer(
     const safeEmeraldAmount = assertAdminCurrencyGrantAmount(
       emeraldAmount,
       MAX_PLAYER_SAVE_CURRENT_EMERALD,
-      'emerald',
+      "emerald",
     );
     const safeRubyAmount = assertAdminCurrencyGrantAmount(
       rubyAmount,
       MAX_PLAYER_SAVE_CURRENT_RUBY,
-      'ruby',
+      "ruby",
     );
     const safeCrystalAmount = assertAdminCurrencyGrantAmount(
       crystalAmount,
       MAX_PLAYER_SAVE_CURRENT_CRYSTAL,
-      'crystal',
+      "crystal",
     );
     const pendingStateKey = [
       `player-currency-grant-pending:${identityKey}`,
@@ -21718,7 +23692,7 @@ export const admin_grant_player_currency_by_identity = spacetimedb.reducer(
       safeRubyAmount,
       safeCrystalAmount,
       grantKey,
-    ].join(':');
+    ].join(":");
 
     const safeSaveJson = createAdminPlayerCurrencyBonusSaveJson(
       ctx,
@@ -21730,9 +23704,15 @@ export const admin_grant_player_currency_by_identity = spacetimedb.reducer(
         crystalDelta: safeCrystalAmount,
       },
     );
-    const existingSave = ctx.db.playerGameplaySave.identity.find(player.identity) ?? undefined;
+    const existingSave =
+      ctx.db.playerGameplaySave.identity.find(player.identity) ?? undefined;
 
-    upsertAdminPlayerGameplaySave(ctx, player.identity, safeSaveJson, existingSave);
+    upsertAdminPlayerGameplaySave(
+      ctx,
+      player.identity,
+      safeSaveJson,
+      existingSave,
+    );
     kickAdminPlayerSession(ctx, player.identity);
     ctx.db.player.identity.update({
       ...player,
@@ -21769,7 +23749,11 @@ export const admin_reset_player_progression_by_identity = spacetimedb.reducer(
     const nextPlayer = resetPlayerSharedProgress(ctx, player);
     deletePlayerGameplaySaveForIdentity(ctx, nextPlayer.identity);
     deletePlayerInboxForIdentity(ctx, nextPlayer.identity);
-    resetLeaderboardProgressForIdentity(ctx, nextPlayer.identity, nextPlayer.username);
+    resetLeaderboardProgressForIdentity(
+      ctx,
+      nextPlayer.identity,
+      nextPlayer.username,
+    );
     deleteTradeAllianceProgressionForIdentity(ctx, nextPlayer.identity);
     deletePlayerShopProgressionForIdentity(ctx, nextPlayer.identity);
     deletePlayerFeedbackForIdentity(ctx, nextPlayer.identity);

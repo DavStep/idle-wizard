@@ -7,6 +7,7 @@ import {
   GLOBAL_DIALOG_IDS,
   registerGlobalDialogFactories,
 } from '../global/dialogs/index.js';
+import { PixiViewModelFactory } from './PixiViewModelFactory.js';
 
 const SETTINGS_TABS = new Set([
   'account',
@@ -44,6 +45,7 @@ export class PixiGlobalDialogPresenter {
     feedbackFacade = null,
     playerInboxFacade = null,
     playerInfoFacade = null,
+    friendsFacade = null,
     tradeAllianceFacade = null,
     hapticsFacade = null,
     soundSettingsFacade = null,
@@ -64,6 +66,7 @@ export class PixiGlobalDialogPresenter {
     this.feedbackFacade = feedbackFacade;
     this.playerInboxFacade = playerInboxFacade;
     this.playerInfoFacade = playerInfoFacade;
+    this.friendsFacade = friendsFacade;
     this.tradeAllianceFacade = tradeAllianceFacade;
     this.hapticsFacade = hapticsFacade;
     this.soundSettingsFacade = soundSettingsFacade;
@@ -80,6 +83,8 @@ export class PixiGlobalDialogPresenter {
     this.authBusy = false;
     this.authStatusOverride = '';
     this.pendingPlayerSurfaceOpen = null;
+    this.friendsTabId = 'friends';
+    this.chatViewModelFactory = new PixiViewModelFactory();
     registerGlobalDialogFactories(this.renderFacade);
   }
 
@@ -191,6 +196,10 @@ export class PixiGlobalDialogPresenter {
         return this.createInboxModel();
       case GLOBAL_DIALOG_IDS.PLAYER:
         return this.createPlayerModel(request.player ?? request);
+      case GLOBAL_DIALOG_IDS.FRIENDS:
+        return this.createFriendsModel(request);
+      case GLOBAL_DIALOG_IDS.DIRECT_MESSAGE:
+        return this.createDirectMessageModel(request);
       case GLOBAL_DIALOG_IDS.ALLIANCE:
         return this.createAllianceModel(request.alliance ?? request);
       case GLOBAL_DIALOG_IDS.CONFIRMATION:
@@ -532,9 +541,13 @@ export class PixiGlobalDialogPresenter {
     const ownPlayer =
       this.isOwnPlayerRequest(normalizedRequest) ||
       this.isOwnPlayerRequest(player);
+    const relationship = ownPlayer
+      ? 'self'
+      : this.friendsFacade?.getRelationship?.(player.identity) ?? 'stranger';
     return {
       connected: snapshot.connected !== false,
       ownPlayer,
+      relationship,
       loading: Boolean(
         this.playerInfoFacade &&
           normalizedRequest.username &&
@@ -551,8 +564,13 @@ export class PixiGlobalDialogPresenter {
         ...(ownPlayer
           ? {
               openCosmetics: () => this.openOwnPlayerCosmetics(),
+              openFriends: () => this.openOwnPlayerFriends(),
             }
-          : {}),
+          : createPlayerRelationshipActions(
+              relationship,
+              player.identity,
+              this.friendsFacade,
+            )),
       },
     };
   }
@@ -563,6 +581,176 @@ export class PixiGlobalDialogPresenter {
       tab: 'account',
       tabId: 'account',
     });
+  }
+
+  openOwnPlayerFriends() {
+    this.requireRuntime().closeDialog(GLOBAL_DIALOG_IDS.PLAYER);
+    return this.open(GLOBAL_DIALOG_IDS.FRIENDS, { tab: 'friends' });
+  }
+
+  createFriendsModel(request = {}) {
+    const snapshot = request.previewSnapshot ?? this.friendsFacade?.getSnapshot?.() ?? {};
+    const requestedTab = normalizeFriendsTab(request.tab ?? request.tabId ?? this.friendsTabId);
+    this.friendsTabId = requestedTab;
+    const source =
+      requestedTab === 'requests'
+        ? snapshot.incomingRequests
+        : requestedTab === 'pending'
+          ? snapshot.outgoingRequests
+          : snapshot.friends;
+    return {
+      title: 'Friends',
+      selectedTabId: requestedTab,
+      rowWidget: 'playerRelationship',
+      status: snapshot.connected === false ? 'connecting...' : '',
+      emptyLabel:
+        requestedTab === 'requests'
+          ? 'No Friend Requests'
+          : requestedTab === 'pending'
+            ? 'No Pending Requests'
+            : 'No Friends Yet',
+      tabs: [
+        { id: 'friends', label: 'Friends', selected: requestedTab === 'friends' },
+        {
+          id: 'requests',
+          label: 'Asked You',
+          selected: requestedTab === 'requests',
+          notification: (snapshot.incomingRequests?.length ?? 0) > 0,
+        },
+        { id: 'pending', label: 'Pending', selected: requestedTab === 'pending' },
+      ],
+      rows: (source ?? []).map((player) =>
+        this.createRelationshipRow(player, requestedTab),
+      ),
+      onSelectTab: (tabId) => {
+        this.friendsTabId = normalizeFriendsTab(tabId);
+        const openRequest = this.openRequests.get(GLOBAL_DIALOG_IDS.FRIENDS) ?? {};
+        this.openRequests.set(GLOBAL_DIALOG_IDS.FRIENDS, {
+          ...openRequest,
+          tab: this.friendsTabId,
+        });
+        this.refreshDialog(GLOBAL_DIALOG_IDS.FRIENDS);
+        return true;
+      },
+      actions: {
+        activate: () =>
+          this.startDialogSubscriptions(GLOBAL_DIALOG_IDS.FRIENDS, [this.friendsFacade]),
+        deactivate: () => this.stopDialogSubscriptions(GLOBAL_DIALOG_IDS.FRIENDS),
+      },
+    };
+  }
+
+  createRelationshipRow(player, tabId) {
+    const base = {
+      id: player.key ?? player.identity,
+      identity: player.identity,
+      username: player.username,
+      character: player.character,
+      frame: player.frame,
+      playerLevel: player.playerLevel,
+      detail: `Level ${player.playerLevel ?? 1}`,
+      allianceTag: player.allianceTag,
+      allianceTagColor: player.allianceTagColor,
+      notification: Boolean(
+        player.notification ?? player.unread ?? player.hasUnreadMessage,
+      ),
+    };
+    if (tabId === 'requests') {
+      return {
+        ...base,
+        preview: 'Wants to be your friend.',
+        primaryAction: {
+          label: 'Accept',
+          variant: 'green',
+          onActivate: () => this.friendsFacade?.acceptRequest?.(player.identity),
+        },
+        secondaryAction: {
+          label: 'Reject',
+          variant: 'red',
+          onActivate: () => this.friendsFacade?.rejectRequest?.(player.identity),
+        },
+      };
+    }
+    if (tabId === 'pending') {
+      return { ...base, preview: 'Request sent.', status: 'Pending' };
+    }
+    return {
+      ...base,
+      preview:
+        player.preview ??
+        player.statusMessage ??
+        player.lastMessagePreview ??
+        (player.connected ? 'Online' : 'Offline'),
+      onActivate: () =>
+        this.open(GLOBAL_DIALOG_IDS.DIRECT_MESSAGE, { friend: player }),
+    };
+  }
+
+  createDirectMessageModel(request = {}) {
+    const friend = normalizePlayerRequest(request.friend ?? request.player ?? request);
+    const relationship =
+      request.relationship ??
+      this.friendsFacade?.getRelationship?.(friend.identity) ??
+      'stranger';
+    const directMessages = request.previewMessages
+      ? { connected: true, messages: request.previewMessages }
+      : this.friendsFacade?.getDirectMessageSnapshot?.() ?? {};
+    const canMessage = relationship === 'friend' && directMessages.connected !== false;
+    const chat = this.chatViewModelFactory.createWorldChatDialog(
+      directMessages,
+      {
+        sendWorldChat: (body) => this.friendsFacade?.sendDirectMessage?.(friend.identity, body),
+        openPlayer: (player) =>
+          this.open(GLOBAL_DIALOG_IDS.PLAYER, {
+            player: { ...friend, ...player, identity: friend.identity },
+          }),
+      },
+    );
+    return {
+      ...chat,
+      title: friend.username || 'Friend Chat',
+      friend,
+      identityExpanded: request.identityExpanded === true,
+      relationship,
+      composer: {
+        ...chat.composer,
+        placeholder: canMessage ? 'Message' : 'Friends only',
+        enabled: canMessage,
+      },
+      onSubmit: canMessage
+        ? chat.onSubmit
+        : async () => ({ ok: false, reason: 'friends_only' }),
+      actions: {
+        activate: () => this.startDirectMessageSubscriptions(friend),
+        deactivate: () => this.stopDirectMessageSubscriptions(),
+        unfriend:
+          relationship === 'friend'
+            ? () => this.friendsFacade?.unfriend?.(friend.identity)
+            : null,
+      },
+    };
+  }
+
+  startDirectMessageSubscriptions(friend) {
+    if (this.dialogCleanups.has(GLOBAL_DIALOG_IDS.DIRECT_MESSAGE)) {
+      return false;
+    }
+    this.friendsFacade?.openConversation?.(friend.identity);
+    return this.startDialogSubscriptions(
+      GLOBAL_DIALOG_IDS.DIRECT_MESSAGE,
+      [
+        this.friendsFacade,
+        {
+          subscribe: (listener) =>
+            this.friendsFacade?.subscribeDirectMessages?.(listener),
+        },
+      ],
+      [() => this.friendsFacade?.closeConversation?.()],
+    );
+  }
+
+  stopDirectMessageSubscriptions() {
+    return this.stopDialogSubscriptions(GLOBAL_DIALOG_IDS.DIRECT_MESSAGE);
   }
 
   createAllianceModel(request = {}) {
@@ -629,7 +817,7 @@ export class PixiGlobalDialogPresenter {
     }
     const started = this.startDialogSubscriptions(
       GLOBAL_DIALOG_IDS.PLAYER,
-      [this.playerInfoFacade],
+      [this.playerInfoFacade, this.friendsFacade],
       releases,
     );
     if (started) {
@@ -1311,6 +1499,11 @@ function normalizeGlobalDialogId(dialogId) {
     'global.inbox': GLOBAL_DIALOG_IDS.INBOX,
     player: GLOBAL_DIALOG_IDS.PLAYER,
     'global.player': GLOBAL_DIALOG_IDS.PLAYER,
+    friends: GLOBAL_DIALOG_IDS.FRIENDS,
+    'global.friends': GLOBAL_DIALOG_IDS.FRIENDS,
+    directmessage: GLOBAL_DIALOG_IDS.DIRECT_MESSAGE,
+    'direct-message': GLOBAL_DIALOG_IDS.DIRECT_MESSAGE,
+    'global.directmessage': GLOBAL_DIALOG_IDS.DIRECT_MESSAGE,
     alliance: GLOBAL_DIALOG_IDS.ALLIANCE,
     'global.alliance': GLOBAL_DIALOG_IDS.ALLIANCE,
     announcement: GLOBAL_DIALOG_IDS.ANNOUNCEMENT,
@@ -1321,9 +1514,39 @@ function normalizeGlobalDialogId(dialogId) {
   return aliases[value] ?? null;
 }
 
+function normalizeFriendsTab(tabId) {
+  const value = String(tabId ?? '').trim().toLowerCase();
+  return ['friends', 'requests', 'pending'].includes(value) ? value : 'friends';
+}
+
+function createPlayerRelationshipActions(
+  relationship,
+  identity,
+  friendsFacade,
+) {
+  if (!identity || !friendsFacade) {
+    return {};
+  }
+  if (relationship === 'friend') {
+    return { unfriend: () => friendsFacade.unfriend?.(identity) };
+  }
+  if (relationship === 'incoming') {
+    return {
+      acceptFriend: () => friendsFacade.acceptRequest?.(identity),
+      rejectFriend: () => friendsFacade.rejectRequest?.(identity),
+    };
+  }
+  if (relationship === 'outgoing') {
+    return {};
+  }
+  return { addFriend: () => friendsFacade.sendRequest?.(identity) };
+}
+
 function isPlayerSurfaceDialogId(dialogId) {
   return (
     dialogId === GLOBAL_DIALOG_IDS.PLAYER ||
+    dialogId === GLOBAL_DIALOG_IDS.FRIENDS ||
+    dialogId === GLOBAL_DIALOG_IDS.DIRECT_MESSAGE ||
     dialogId === GLOBAL_DIALOG_IDS.ALLIANCE
   );
 }

@@ -580,7 +580,10 @@ describe('ResearchPixiPage', () => {
     const tabClearance =
       RETAINED_PAGE_GEOMETRY.tabHeight +
       RETAINED_PAGE_GEOMETRY.scrollCut * 2;
-    expect(harness.page.scroll.root.position).toMatchObject({ x: 0, y: 104 });
+    expect(harness.page.scroll.root.position).toMatchObject({
+      x: 0,
+      y: RETAINED_PAGE_GEOMETRY.contentTop,
+    });
     expect(harness.page.scroll).toMatchObject({
       width: 374,
       height: contentHeight - tabClearance,

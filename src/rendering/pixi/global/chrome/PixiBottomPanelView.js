@@ -70,9 +70,27 @@ const TAB_DEFINITIONS = Object.freeze({
 
 export const PIXI_BOTTOM_PANEL_TABS = Object.freeze(
   DEFAULT_PAGE_SWIPE_ORDER
-    .filter((pageId) => !['guild', 'prestige'].includes(pageId))
+    .filter((pageId) => !['alliance', 'guild', 'prestige'].includes(pageId))
     .map((pageId) => TAB_DEFINITIONS[pageId]),
 );
+
+export const PIXI_ALLIANCE_HUD_TABS = Object.freeze([
+  Object.freeze({
+    id: 'alliance.workshop',
+    pageId: 'workshop',
+    label: 'Workshop',
+    icon: 'icon-workshop-house-tab.png',
+    artScale: 0.84,
+    semanticId: 'alliance.return.workshop',
+  }),
+  Object.freeze({ id: 'alliance.browse', allianceTabId: 'browse', label: 'Browse' }),
+  Object.freeze({ id: 'alliance.create', allianceTabId: 'create', label: 'Create' }),
+  Object.freeze({ id: 'alliance.home', allianceTabId: 'home', label: 'Home' }),
+  Object.freeze({ id: 'alliance.quests', allianceTabId: 'quests', label: 'Quests' }),
+  Object.freeze({ id: 'alliance.requests', allianceTabId: 'requests', label: 'Requests' }),
+  Object.freeze({ id: 'alliance.chat', allianceTabId: 'chat', label: 'Chat' }),
+  Object.freeze({ id: 'alliance.settings', allianceTabId: 'settings', label: 'Settings' }),
+]);
 
 export const PIXI_GUILD_HUD_TABS = Object.freeze([
   Object.freeze({
@@ -309,7 +327,25 @@ export class PixiBottomPanelView extends BasePixiRetainedView {
         onActivate: (tab) => this.activateTab(tab),
       });
     });
-    this.allTabs = [...this.tabs, ...this.guildTabs, ...this.prestigeTabs];
+    this.allianceTabs = PIXI_ALLIANCE_HUD_TABS.map((definition) => {
+      const TabClass = definition.allianceTabId
+        ? PixiBottomHudTextTab
+        : PixiBottomRoomTab;
+      return new TabClass({
+        definition,
+        assets,
+        inputRouter,
+        semanticRegistry,
+        notificationLayer: this.notificationsRoot,
+        onActivate: (tab) => this.activateTab(tab),
+      });
+    });
+    this.allTabs = [
+      ...this.tabs,
+      ...this.guildTabs,
+      ...this.prestigeTabs,
+      ...this.allianceTabs,
+    ];
     this.tabsRoot.addChild(
       ...this.allTabs.map((tab) => tab.root),
       this.notificationsRoot,
@@ -383,7 +419,7 @@ export class PixiBottomPanelView extends BasePixiRetainedView {
     const notifications = viewModel.notifications ?? {};
     const currentPageId = viewModel.currentPageId ?? 'workshop';
     const revealRooms = viewModel.reveal?.rooms !== false;
-    const hudMode = ['guild', 'prestige'].includes(viewModel.hudMode)
+    const hudMode = ['alliance', 'guild', 'prestige'].includes(viewModel.hudMode)
       ? viewModel.hudMode
       : 'rooms';
     const guildHud = viewModel.guildHud ?? {};
@@ -509,6 +545,41 @@ export class PixiBottomPanelView extends BasePixiRetainedView {
         tab.cancelSelectedMotion();
       }
     }
+    const allianceHud = viewModel.allianceHud ?? {};
+    const selectedAllianceTabId = allianceHud.selectedTabId ?? 'home';
+    const allianceNotifications = allianceHud.notifications ?? {};
+    const allianceTabStates = new Map(
+      (allianceHud.tabs ?? []).map((state) => [state.id, state]),
+    );
+    for (const tab of this.allianceTabs) {
+      const wasVisible = tab.root.visible;
+      const wasSelected = tab.state.selected === true;
+      const allianceTabId = tab.definition.allianceTabId;
+      const state = allianceTabStates.get(allianceTabId) ?? {};
+      const unlocked = state.unlocked !== false;
+      tab.bind({
+        ...state,
+        id: tab.definition.id,
+        selected:
+          unlocked &&
+          Boolean(allianceTabId) &&
+          allianceTabId === selectedAllianceTabId,
+        unlocked,
+        visible:
+          hudMode === 'alliance' &&
+          revealRooms &&
+          (allianceTabId ? state.visible === true : true),
+        lockedMessage: state.lockedMessage,
+        notification: allianceTabId
+          ? allianceNotifications[allianceTabId]
+          : false,
+      });
+      if (tab.state.selected === true && !wasSelected && wasVisible) {
+        this.startSelectedMotion(tab);
+      } else if (tab.state.selected !== true) {
+        tab.cancelSelectedMotion();
+      }
+    }
     this.layoutTabs(this.viewportProjection);
   }
 
@@ -577,6 +648,11 @@ export class PixiBottomPanelView extends BasePixiRetainedView {
         tab.definition.prestigeTabId,
       ) ?? true;
     }
+    if (tab.definition.allianceTabId) {
+      return this.actions.selectAllianceTab?.(
+        tab.definition.allianceTabId,
+      ) ?? true;
+    }
     if (tab.definition.pageId) {
       return this.actions.showPage?.(tab.definition.pageId) ?? true;
     }
@@ -606,6 +682,7 @@ export class PixiBottomPanelView extends BasePixiRetainedView {
               ...PIXI_BOTTOM_PANEL_TABS,
               ...PIXI_GUILD_HUD_TABS,
               ...PIXI_PRESTIGE_HUD_TABS,
+              ...PIXI_ALLIANCE_HUD_TABS,
             ].find((tab) => tab.id === definitionOrId)
         : definitionOrId;
     const state = explicitState ?? this.pageStates.get(definition?.id);

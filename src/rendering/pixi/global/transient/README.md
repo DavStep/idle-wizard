@@ -71,7 +71,10 @@ and task turn-ins do not use this effect. Reduced motion keeps matching text
 flyouts without creating item, coin, spend-burst, or target-pulse motion.
 Summoned seeds originate at the ritual circle's center through
 `workshop.summonArea`; the separate `workshop.summon` target remains attached
-to the actionable button.
+to the actionable button. Garden planting is the exception to the summon toss:
+one seed pack falls from `36px` above the affected plot center and hides on its
+`500ms` sequence's center impact, synchronized with the plot-owned soil boink
+and delayed herb reveal.
 
 `createPooledPixiNotificationBadges()` reconciles `{ key, parent, bounds,
 active, tone, tutorialId }` records. Dots are the existing 6px red/orange

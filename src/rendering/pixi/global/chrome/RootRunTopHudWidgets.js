@@ -34,7 +34,7 @@ const CURRENCY_HEIGHT = 66;
 const SETTINGS_SIZE = 122;
 const LEVEL_WIDTH = 662;
 const LEVEL_HEIGHT = 93;
-const LEVEL_STAR_SIZE = 93;
+const LEVEL_STAR_SIZE = 96;
 const LEVEL_TRACK_X = 20;
 const LEVEL_TRACK_Y = 21;
 const LEVEL_TRACK_HEIGHT = 51;
@@ -187,6 +187,62 @@ export class RootRunHudCurrencyCapsule extends Container {
   }
 }
 
+export class RootRunHudBagCapsule extends PixiBaseButton {
+  constructor({
+    action = null,
+    assets,
+    inputRouter = null,
+    width = CURRENCY_WIDTH,
+  } = {}) {
+    const capsuleWidth = Math.max(
+      CURRENCY_MIN_WIDTH,
+      Number(width) || CURRENCY_WIDTH,
+    );
+    super({
+      action,
+      assetManager: assets,
+      fallbackHitTest: true,
+      height: CURRENCY_HEIGHT,
+      inputRouter,
+      label: 'topPanel:bag',
+      variant: 'inline',
+      width: capsuleWidth,
+    });
+    this.background = createHudBacking({
+      assets,
+      height: CURRENCY_HEIGHT,
+      label: 'topPanel:bag:background',
+      width: capsuleWidth,
+    });
+    this.icon = new Sprite({
+      texture: assets.getTexture(PIXI_ROOT_RUN_ASSETS.workshopBag),
+      label: 'topPanel:bag:icon',
+      roundPixels: true,
+    });
+    this.icon.anchor.set(0, 0.5);
+    this.icon.position.set(13, CURRENCY_HEIGHT / 2);
+    this.icon.width = 50;
+    this.icon.height = 50;
+    this.text = new PixiTextLabel({
+      text: 'Bag',
+      fontSize: 40,
+      fontWeight: 'normal',
+      anchor: { x: 1, y: 0.5 },
+      color: '#ffffff',
+      stroke: LEVEL_TEXT_STROKE,
+      label: 'topPanel:bag:text',
+    });
+    this.text.position.set(capsuleWidth - 15, CURRENCY_HEIGHT / 2);
+    this.visual.addChild(this.background, this.icon, this.text);
+  }
+
+  applyTheme(theme) {
+    this.text.applyTheme(theme);
+    this.text.setColor('#ffffff').setStroke(LEVEL_TEXT_STROKE);
+    return this;
+  }
+}
+
 export class RootRunHudSquareIconButton extends PixiBaseButton {
   constructor({
     action = null,
@@ -301,7 +357,7 @@ export class RootRunHudLevelRail extends Container {
       roundPixels: true,
     });
     this.levelStar.width = LEVEL_STAR_SIZE;
-    this.levelStar.height = LEVEL_STAR_SIZE + 1;
+    this.levelStar.height = LEVEL_STAR_SIZE;
     this.levelValue = new PixiTextLabel({
       text: '',
       fontSize: 40,
@@ -438,6 +494,19 @@ export const ROOT_RUN_TOP_HUD_GEOMETRY = Object.freeze({
   levelWidth: LEVEL_WIDTH,
   levelHeight: LEVEL_HEIGHT,
 });
+
+function createHudBacking({ assets, height, label, width }) {
+  const backing = createNineSlice({
+    texture: assets.getTexture(HUD_ASSETS.currency),
+    insets: { left: 21, top: 21, right: 21, bottom: 21 },
+    width,
+    height,
+    label,
+  });
+  backing.tint = HUD_BACKING_TINT;
+  backing.alpha = HUD_BACKING_ALPHA;
+  return backing;
+}
 
 function createNineSlice({ texture, insets, width, height, label }) {
   const sprite = new NineSliceSprite({

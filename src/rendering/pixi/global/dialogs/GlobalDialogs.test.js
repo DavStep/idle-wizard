@@ -51,11 +51,12 @@ import {
   AllianceMemberRow,
   WorkshopDialogRow,
 } from '../../pages/workshop/WorkshopDialogPixi.js';
+import { PixiNotificationBadge } from '../transient/PixiNotificationBadges.js';
 
 installPixiPageTestCanvas();
 
 describe('retained global Pixi dialogs', () => {
-  it('exports canonical aliases and registers nine lazy runtime factories', () => {
+  it('exports canonical aliases and registers eleven lazy runtime factories', () => {
     const registerDialog = vi.fn();
     const registrar = { registerDialog };
     const factories = createGlobalDialogFactories();
@@ -63,11 +64,11 @@ describe('retained global Pixi dialogs', () => {
     expect(GLOBAL_DIALOG_IDS.BUG).toBe(GLOBAL_DIALOG_IDS.FEEDBACK);
     expect(GLOBAL_DIALOG_IDS.FEATURE).toBe(GLOBAL_DIALOG_IDS.FEEDBACK);
     expect(GLOBAL_DIALOG_IDS.MAIL).toBe(GLOBAL_DIALOG_IDS.INBOX);
-    expect(new Set(factories.map(([id]) => id)).size).toBe(9);
+    expect(new Set(factories.map(([id]) => id)).size).toBe(11);
     expect(Object.isFrozen(factories)).toBe(true);
 
     expect(registerGlobalDialogFactories(registrar)).toBe(registrar);
-    expect(registerDialog).toHaveBeenCalledTimes(9);
+    expect(registerDialog).toHaveBeenCalledTimes(11);
     expect(registerDialog.mock.calls.map(([id]) => id)).toEqual(
       factories.map(([id]) => id),
     );
@@ -99,10 +100,177 @@ describe('retained global Pixi dialogs', () => {
     }
 
     expect(harness.registry.getStats()).toMatchObject({
-      registered: 9,
-      constructed: 9,
+      registered: 11,
+      constructed: 11,
       open: 0,
     });
+    harness.dispose();
+  });
+
+  it('lays out Friends as tall paper-backed identity cards above Asked You tabs', () => {
+    const harness = createHarness();
+    const openChat = vi.fn(() => true);
+    const selectTab = vi.fn(() => true);
+    const friends = harness.registry.open(GLOBAL_DIALOG_IDS.FRIENDS, {
+      title: 'Friends',
+      selectedTabId: 'friends',
+      rowWidget: 'playerRelationship',
+      rows: [
+        {
+          id: 'mira',
+          identity: 'mira',
+          username: 'Mira',
+          character: 'mira',
+          frame: 'violet',
+          playerLevel: 12,
+          detail: 'Level 12',
+          allianceTag: 'MOSS',
+          allianceTagColor: 'green',
+          preview: 'The moon garden is glowing...',
+          notification: true,
+          onActivate: openChat,
+        },
+      ],
+      tabs: [
+        { id: 'friends', label: 'Friends', selected: true },
+        { id: 'requests', label: 'Asked You', selected: false },
+        { id: 'pending', label: 'Pending', selected: false },
+      ],
+      onSelectTab: selectTab,
+    });
+    const [row] = friends.rows.getWidgets();
+
+    expect(friends.panel.coreHeight).toBe(594);
+    expect(friends.panel.paperFrame.visible).toBe(false);
+    expect(friends.scroll.root.x).toBe(0);
+    expect(friends.scroll.width).toBe(304);
+    expect(row.getPreferredHeight()).toBe(96);
+    expect(row.paper.visible).toBe(true);
+    expect(row.paper.frameWidth).toBe(304);
+    expect(row.profile.width).toBeCloseTo(64);
+    expect(row.allianceTag.text).toBe('[MOSS]');
+    expect(row.name.text).toBe('Mira');
+    expect(row.detail.text).toBe('Level 12');
+    expect(row.preview.text).toBe('The moon garden is glowing...');
+    expect(row.notificationBadge).toBeInstanceOf(PixiNotificationBadge);
+    expect(row.notificationDot).toBe(row.notificationBadge.root);
+    expect(row.notificationBadge.sprite.width).toBe(
+      PIXI_UI_GEOMETRY.notificationSize,
+    );
+    expect(row.notificationDot.visible).toBe(true);
+    expect(friends.tabs.getWidgets().map((tab) => tab.text.text)).toEqual([
+      'Friends',
+      'Asked You',
+      'Pending',
+    ]);
+    const rowPress = harness.inputRouter.store.get(row.registration.id);
+    expect(rowPress.onActivate()).toBe(true);
+    expect(openChat).toHaveBeenCalledOnce();
+    expect(friends.tabs.getWidgets()[1].control.activate()).toBe(true);
+    expect(selectTab).toHaveBeenCalledWith('requests');
+
+    harness.dispose();
+  });
+
+  it('expands an inline Unfriend action inside a separate direct-message identity section', () => {
+    const harness = createHarness();
+    const unfriend = vi.fn(() => true);
+    const directMessage = harness.registry.open(
+      GLOBAL_DIALOG_IDS.DIRECT_MESSAGE,
+      {
+        title: 'Juniper',
+        friend: {
+          allianceTag: 'MOSS',
+          allianceTagColor: 'green',
+          identity: 'juniper',
+          username: 'Juniper',
+          character: 'juniper',
+          frame: 'emerald',
+          playerLevel: 10,
+        },
+        rows: [],
+        composer: { enabled: true, placeholder: 'Message' },
+        actions: { unfriend },
+      },
+    );
+    const identityPress = harness.inputRouter.store.get(
+      directMessage.directMessageProfileRegistration.id,
+    );
+
+    expect(identityPress.fallbackHitTest).toBe(true);
+    expect(identityPress.enabled()).toBe(true);
+    expect(directMessage.panel.paperFrame.visible).toBe(false);
+    expect(directMessage.directMessageIdentityPaper.visible).toBe(true);
+    expect(directMessage.directMessageMessagePaper.visible).toBe(true);
+    expect(directMessage.directMessageUnfriend.visible).toBe(false);
+    expect(directMessage.directMessageTag.text).toBe('[MOSS]');
+    expect(
+      directMessage.directMessageMessagePaper.y -
+        (directMessage.directMessageIdentitySection.y +
+          directMessage.directMessageIdentityPaper.y +
+          directMessage.directMessageIdentityPaper.frameHeight),
+    ).toBe(8);
+
+    expect(identityPress.onActivate()).toBe(true);
+    expect(directMessage.directMessageUnfriend.visible).toBe(true);
+    expect(directMessage.directMessageLevel.text).toBe('Level 10');
+    expect(directMessage.directMessageIdentityHitTarget.hitArea.height).toBeLessThan(
+      directMessage.directMessageUnfriend.y,
+    );
+    expect(
+      directMessage.directMessageMessagePaper.y -
+        (directMessage.directMessageIdentitySection.y +
+          directMessage.directMessageIdentityPaper.y +
+          directMessage.directMessageIdentityPaper.frameHeight),
+    ).toBe(8);
+
+    expect(directMessage.directMessageUnfriend.activate()).toBe(true);
+    expect(unfriend).toHaveBeenCalledOnce();
+    expect(directMessage.directMessageUnfriend.visible).toBe(false);
+
+    harness.dispose();
+  });
+
+  it('projects every Player Info friendship action state', () => {
+    const harness = createHarness();
+    const playerModel = { player: createPlayer(), ownPlayer: false };
+    const player = harness.registry.open(GLOBAL_DIALOG_IDS.PLAYER, {
+      ...playerModel,
+      relationship: 'stranger',
+      actions: { addFriend: () => true },
+    });
+
+    expect(player.relationshipPrimaryButton.textLabel.text).toBe('Add Friend');
+    expect(player.relationshipPrimaryButton.variant).toBe('green');
+    expect(player.relationshipSecondaryButton.visible).toBe(false);
+
+    player.bind({
+      ...playerModel,
+      relationship: 'friend',
+      actions: { unfriend: () => true },
+    });
+    expect(player.relationshipPrimaryButton.textLabel.text).toBe('Unfriend');
+    expect(player.relationshipPrimaryButton.variant).toBe('red');
+
+    player.bind({
+      ...playerModel,
+      relationship: 'incoming',
+      actions: { acceptFriend: () => true, rejectFriend: () => true },
+    });
+    expect(player.relationshipPrimaryButton.textLabel.text).toBe('Accept');
+    expect(player.relationshipSecondaryButton.textLabel.text).toBe('Reject');
+    expect(player.relationshipSecondaryButton.visible).toBe(true);
+
+    player.bind({
+      ...playerModel,
+      relationship: 'outgoing',
+      actions: {},
+    });
+    expect(player.relationshipPrimaryButton.textLabel.text).toBe(
+      'Request Pending',
+    );
+    expect(player.relationshipPrimaryButton.enabled).toBe(false);
+
     harness.dispose();
   });
 
@@ -470,8 +638,15 @@ describe('retained global Pixi dialogs', () => {
     expect(player.cosmeticsButton.textLabel.text).toBe('Cosmetics');
     expect(player.cosmeticsButton.variant).toBe('yellow');
     expect(player.cosmeticsButton.x - player.summaryFrame.x).toBe(2);
-    expect(player.cosmeticsButton.buttonWidth).toBe(
-      player.summaryFrame.frameWidth - 4,
+    expect(player.cosmeticsButton.buttonWidth).toBeCloseTo(
+      (player.summaryFrame.frameWidth - 4 - 6) / 2,
+    );
+    expect(player.friendsButton.textLabel.text).toBe('Friends');
+    expect(player.friendsButton.buttonWidth).toBeCloseTo(
+      player.cosmeticsButton.buttonWidth,
+    );
+    expect(player.friendsButton.x).toBeCloseTo(
+      player.cosmeticsButton.x + player.cosmeticsButton.buttonWidth + 6,
     );
     expect(player.cosmeticsButton.buttonHeight).toBe(30);
     expect(
@@ -1062,7 +1237,9 @@ describe('retained global Pixi dialogs', () => {
     for (const [dialogId] of createGlobalDialogFactories()) {
       const dialog = harness.registry.open(dialogId, payloads[dialogId]);
       expect(dialog.panel.outerFrame.frameWidth).toBeLessThanOrEqual(
-        GLOBAL_DIALOG_GEOMETRY.maxShellWidth,
+        dialogId === GLOBAL_DIALOG_IDS.DIRECT_MESSAGE
+          ? PIXI_UI_GEOMETRY.sourceWidth
+          : GLOBAL_DIALOG_GEOMETRY.maxShellWidth,
       );
       harness.registry.close(dialogId);
     }

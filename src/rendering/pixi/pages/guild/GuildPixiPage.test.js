@@ -14,7 +14,10 @@ import {
   PixiDialogFrame,
 } from '../../primitives/PixiDialogFrame.js';
 import { getPixiButtonSkin } from '../../primitives/PixiButtonStyle.js';
-import { PIXI_ROOT_RUN_GEOMETRY } from '../../theme/PixiThemeTokens.js';
+import {
+  PIXI_ROOT_RUN_GEOMETRY,
+  PIXI_UI_GEOMETRY,
+} from '../../theme/PixiThemeTokens.js';
 import { RETAINED_SCROLLBAR_GEOMETRY } from '../workshop/RetainedPageKit.js';
 import { GUILD_DIALOG_IDS } from './GuildDialogPixi.js';
 import { GuildChronicleEntryRow, GuildPersonRow } from './GuildPageWidgets.js';
@@ -205,7 +208,7 @@ describe('GuildPixiPage', () => {
     expect(harness.page.tabScrolls.get('board').root.visible).toBe(true);
     expect(harness.page.tabScrolls.get('hall').root.visible).toBe(false);
     expect(harness.page.tabScrolls.get('board').height).toBe(
-      844 - 92 - 104 - 6 - 28 - 6,
+      844 - 92 - PIXI_UI_GEOMETRY.roomContentTop - 6 - 28 - 6,
     );
 
     harness.page.destroy();
@@ -506,7 +509,7 @@ describe('GuildPixiPage', () => {
 
     expect(harness.page.tabScrolls.get('hall').root.position).toMatchObject({
       x: 0,
-      y: 104,
+      y: PIXI_UI_GEOMETRY.roomContentTop,
     });
     expect(harness.page.tabScrolls.get('hall').width).toBe(374);
     expect(harness.page.tabLayer.position).toMatchObject({

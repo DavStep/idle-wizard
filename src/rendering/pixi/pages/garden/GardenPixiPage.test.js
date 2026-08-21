@@ -90,7 +90,7 @@ describe("GardenPixiPage", () => {
       highWaterMark: 1,
     });
     expect(plot.action.text).toContain("harvest");
-    expect(actionBar.selectionLabel.text).toBe("sage selected · 8");
+    expect(actionBar.seedsButton.selectionLabel.text).toBe("sage · 8");
 
     pages.destroy();
     harness.dispose();
@@ -228,10 +228,11 @@ describe("GardenPixiPage", () => {
     model.garden.actionBar.readyHarvestCount = 0;
     harness.page.bind(model);
 
-    expect(harness.page.actionBar.selectionPanel.root.visible).toBe(true);
-    expect(harness.page.actionBar.selectionLabel.text).toBe(
-      "sage selected · 8",
+    expect(harness.page.actionBar.seedsButton.seedPack.visible).toBe(true);
+    expect(harness.page.actionBar.seedsButton.selectionLabel.text).toBe(
+      "sage · 8",
     );
+    expect(harness.page.actionBar.seedsButton.textLabel.text).toBe("Seeds");
     expect(harness.page.actionBar.harvestButton.enabled).toBe(true);
     expect(harness.page.actionBar.harvestButton.notification).toBe(false);
     expect(harness.page.actionBar.harvestButton.activate()).toEqual({
@@ -244,7 +245,11 @@ describe("GardenPixiPage", () => {
     model.garden.actionBar.selectedSeed = null;
     model.garden.actionBar.readyHarvestCount = 2;
     harness.page.bind(model);
-    expect(harness.page.actionBar.selectionPanel.root.visible).toBe(false);
+    expect(harness.page.actionBar.seedsButton.seedPack.visible).toBe(false);
+    expect(harness.page.actionBar.seedsButton.selectionLabel.visible).toBe(
+      false,
+    );
+    expect(harness.page.actionBar.seedsButton.textLabel.text).toBe("Seeds");
     expect(harness.page.actionBar.harvestButton.enabled).toBe(true);
     expect(harness.page.actionBar.harvestButton.notification).toBe(true);
 
@@ -286,6 +291,47 @@ describe("GardenPixiPage", () => {
     );
     expect(harness.page.actionBar.harvestButton.hitArea.width).toBeCloseTo(
       harness.page.actionBar.seedsButton.hitArea.width,
+    );
+
+    harness.page.destroy();
+    harness.dispose();
+  });
+
+  it("keeps the combined seed summary fitted and aligned through press feedback", () => {
+    const harness = createHarness();
+    const model = createGardenViewModel({ seedQuantity: 140 });
+    model.garden.actionBar.selectedSeed.label = "Moonflower";
+    harness.page.bind(model);
+
+    const button = harness.page.actionBar.seedsButton;
+    const availableTextWidth =
+      button.buttonWidth -
+      GARDEN_PIXI_GEOMETRY.seedButtonContentPadding * 2 -
+      GARDEN_PIXI_GEOMETRY.seedButtonIconSize -
+      GARDEN_PIXI_GEOMETRY.seedButtonContentGap;
+    const restingLabelPosition = {
+      x: button.textLabel.x,
+      y: button.textLabel.y,
+    };
+    const restingSummaryPosition = {
+      x: button.selectionLabel.x,
+      y: button.selectionLabel.y,
+    };
+
+    expect(button.textLabel.text).toBe("Seeds");
+    expect(button.selectionLabel.text).toContain("· 140");
+    expect(button.selectionLabel.measuredWidth).toBeLessThanOrEqual(
+      availableTextWidth,
+    );
+    expect(button.seedPack.visible).toBe(true);
+
+    button.setPressed(true);
+    expect(button.visual.scale).toMatchObject({ x: 0.94, y: 0.94 });
+    expect({ x: button.textLabel.x, y: button.textLabel.y }).toEqual(
+      restingLabelPosition,
+    );
+    expect({ x: button.selectionLabel.x, y: button.selectionLabel.y }).toEqual(
+      restingSummaryPosition,
     );
 
     harness.page.destroy();
@@ -842,6 +888,28 @@ describe("GardenPixiPage", () => {
     expect(plot.plantSlots.filter(({ plant }) => plant.visible)).toHaveLength(
       5,
     );
+    const harvestAnchorCenters = plot.plantSlots.map(({ motion, plant }, index) => {
+      const anchor = harness.semanticTargets.resolve(
+        `garden.plot.1.plant.${index + 1}`,
+      );
+      const plantBounds = plant.getBounds();
+      expect(anchor.displayObject).toBe(plant);
+      expect(anchor.state).toMatchObject({
+        active: true,
+        visible: true,
+        interactive: false,
+      });
+      expect(anchor.bounds.x + anchor.bounds.width / 2).toBeCloseTo(
+        plantBounds.x + plantBounds.width / 2,
+      );
+      expect(anchor.bounds.y + anchor.bounds.height / 2).toBeCloseTo(
+        plantBounds.y + plantBounds.height / 2,
+      );
+      return motion.x;
+    });
+    expect(harvestAnchorCenters).toEqual(
+      [...harvestAnchorCenters].sort((left, right) => left - right),
+    );
     const automatedInset = plot.visualPlotWidth / 7;
     const automatedBaseY =
       GARDEN_PIXI_GEOMETRY.plotHeight -
@@ -932,6 +1000,11 @@ describe("GardenPixiPage", () => {
     });
     expect(plot.autoGear.height).toBe(21);
     expect(plot.autoButton.textLabel.fontSize).toBe(10);
+    expect(
+      plot.autoButton.visual.getChildIndex(plot.autoGear),
+    ).toBeLessThan(
+      plot.autoButton.visual.getChildIndex(plot.autoButton.textLabel),
+    );
     expect(plot.quantityButton.textLabel.fontSize).toBe(13);
     expect(plot.autoButton.activate()).toEqual({ ok: true });
     expect(plot.seedButton.activate()).toBe(true);
@@ -1153,45 +1226,62 @@ describe("GardenPixiPage", () => {
     harness.dispose();
   });
 
-  it("reuses retained plot receive motion when the selected seed is planted", () => {
+  it("drops into a center-pivoted soil boink before revealing the growing herb", () => {
     let now = 0;
     const harness = createHarness({
       timeSource: () => now,
     });
-    const model = createGardenViewModel({
-      activatePlot: vi.fn(() => true),
-    });
-    model.garden.plots[0].phase = "empty";
-    model.garden.plots[0].process = null;
-    model.garden.plots[0].toolbarSeedItemTypeId = 1;
-    harness.page.bind(model);
+    const empty = createGardenViewModel();
+    empty.garden.plots[0].phase = "empty";
+    empty.garden.plots[0].herbKey = null;
+    empty.garden.plots[0].process = null;
+    empty.garden.plots[0].toolbarSeedItemTypeId = 1;
+    harness.page.bind(empty);
+    harness.page.activate();
     const plot = harness.page.plots.get("plot-1");
     const plotChildren = plot.frame.children.length;
-    const restingSeedPackY = harness.page.actionBar.seedPack.y;
-    const restingSeedItemY = harness.page.actionBar.seedItem.y;
-    now = 300;
-    expect(plot.activate()).toBe(true);
-    expect(plot.receiveStartedAt).toBe(300);
+    const restingSeedPackY = harness.page.actionBar.seedsButton.seedPack.y;
+    const restingSeedItemY = harness.page.actionBar.seedsButton.seedItem.y;
 
-    now = 300 + 220 * 0.5;
+    now = 300;
+    const growing = createGardenViewModel();
+    growing.garden.now = now;
+    growing.garden.plots[0].herbKey = "sageHerb";
+    growing.garden.plots[0].seedItemTypeId = 1;
+    growing.garden.plots[0].seedKey = "sageSeed";
+    harness.page.bind(growing);
+    expect(plot.receiveStartedAt).toBe(300);
+    expect(plot.plant.visible).toBe(true);
+    expect(plot.plant.alpha).toBe(0);
+
+    now = 300 + 500 * 0.5;
     harness.page.tick(now);
-    expect(harness.page.actionBar.seedPack.y).toBe(restingSeedPackY);
-    expect(harness.page.actionBar.seedItem.y).toBe(restingSeedItemY);
-    expect(harness.page.actionBar.selectionPanel.root.scale).toMatchObject({
+    expect(harness.page.actionBar.seedsButton.seedPack.y).toBe(restingSeedPackY);
+    expect(harness.page.actionBar.seedsButton.seedItem.y).toBe(restingSeedItemY);
+    expect(harness.page.actionBar.seedsButton.visual.scale).toMatchObject({
       x: 1,
       y: 1,
     });
+    expect(plot.receiveOffsetY).toBe(0);
+    expect(plot.receiveScaleX).toBe(1);
+    expect(plot.receiveScaleY).toBe(1);
+    expect(plot.plant.alpha).toBe(0);
 
-    now = 300 + 240 * 0.52;
+    now = 300 + 500 * 0.64;
     harness.page.tick(now);
-    expect(plot.receiveOffsetY).toBeCloseTo(2);
-    expect(plot.receiveScaleX).toBeCloseTo(1.02);
-    expect(plot.receiveScaleY).toBeCloseTo(0.98);
-    now = 540;
+    expect(plot.frame.pivot).toMatchObject({ x: 44, y: 42 });
+    expect(plot.receiveOffsetY).toBeGreaterThan(1);
+    expect(plot.receiveScaleX).toBeGreaterThan(1.04);
+    expect(plot.receiveScaleY).toBeLessThan(0.95);
+    expect(plot.plant.alpha).toBe(0);
+
+    now = 800;
     harness.page.tick(now);
     expect(plot.receiveStartedAt).toBeNull();
     expect(plot.frame.scale).toMatchObject({ x: 1, y: 1 });
-    expect(harness.page.actionBar.selectionPanel.root.scale).toMatchObject({
+    expect(plot.plant.alpha).toBe(1);
+    expect(plot.plantMotion.scale.x).toBeGreaterThan(0.42);
+    expect(harness.page.actionBar.seedsButton.visual.scale).toMatchObject({
       x: 1,
       y: 1,
     });
@@ -1202,6 +1292,7 @@ describe("GardenPixiPage", () => {
       highWaterMark: 1,
     });
 
+    harness.page.deactivate();
     harness.page.destroy();
     harness.dispose();
   });
@@ -1413,7 +1504,7 @@ describe("GardenPixiPage", () => {
     expect(harness.page.actionBar.plantButton.activate()).toMatchObject({
       ok: true,
     });
-    expect(harness.page.actionBar.selectionPanel.root.scale).toMatchObject({
+    expect(harness.page.actionBar.seedsButton.visual.scale).toMatchObject({
       x: 1,
       y: 1,
     });
@@ -1424,22 +1515,30 @@ describe("GardenPixiPage", () => {
 
   it("keeps selected seed use feedback still when reduced motion is requested", () => {
     const harness = createHarness({ reducedMotion: true });
-    const model = createGardenViewModel({
-      activatePlot: vi.fn(() => ({ ok: true })),
-    });
-    model.garden.plots[0].phase = "empty";
-    model.garden.plots[0].process = null;
-    model.garden.plots[0].toolbarSeedItemTypeId = 1;
-    harness.page.bind(model);
+    const empty = createGardenViewModel();
+    empty.garden.plots[0].phase = "empty";
+    empty.garden.plots[0].herbKey = null;
+    empty.garden.plots[0].process = null;
+    harness.page.bind(empty);
+    harness.page.activate();
 
-    expect(harness.page.plots.get("plot-1").activate()).toMatchObject({
-      ok: true,
-    });
-    expect(harness.page.actionBar.selectionPanel.root.scale).toMatchObject({
+    const growing = createGardenViewModel();
+    growing.garden.plots[0].herbKey = "sageHerb";
+    growing.garden.plots[0].seedItemTypeId = 1;
+    growing.garden.plots[0].seedKey = "sageSeed";
+    harness.page.bind(growing);
+    const plot = harness.page.plots.get("plot-1");
+
+    expect(plot.receiveStartedAt).toBeNull();
+    expect(plot.plant.visible).toBe(true);
+    expect(plot.plant.alpha).toBe(1);
+    expectPlotFrameAligned(plot);
+    expect(harness.page.actionBar.seedsButton.visual.scale).toMatchObject({
       x: 1,
       y: 1,
     });
 
+    harness.page.deactivate();
     harness.page.destroy();
     harness.dispose();
   });
@@ -1462,7 +1561,7 @@ describe("GardenPixiPage", () => {
       tileNumber: 1,
       seedTypeId: 2,
     });
-    expect(harness.page.actionBar.selectionPanel.root.scale).toMatchObject({
+    expect(harness.page.actionBar.seedsButton.visual.scale).toMatchObject({
       x: 1,
       y: 1,
     });
@@ -1491,7 +1590,7 @@ describe("GardenPixiPage", () => {
 
     expect(ticker.remove).toHaveBeenCalledWith(harness.page.tickHandler);
     expect(plot.receiveStartedAt).toBeNull();
-    expect(harness.page.actionBar.selectionPanel.root.scale).toMatchObject({
+    expect(harness.page.actionBar.seedsButton.visual.scale).toMatchObject({
       x: 1,
       y: 1,
     });

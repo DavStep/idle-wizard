@@ -8,7 +8,7 @@
   <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Idle Wizard Trade Alliance recipe</title>
+    <title>Idle Wizard Alliance Workspace recipe</title>
     <style>
       html,
       body {
@@ -27,7 +27,7 @@
     </style>
   </head>
   <body>
-    <canvas aria-label="Trade Alliance visual recipe"></canvas>
+    <canvas aria-label="Alliance Workspace visual recipe"></canvas>
 
     <script type="module">
       import '@fontsource/lilita-one/400.css';
@@ -38,7 +38,8 @@
         registerGlobalDialogFactories,
       } from '/src/rendering/pixi/global/dialogs/index.js';
       import { PixiInputRouter } from '/src/rendering/pixi/input/PixiInputRouter.js';
-      import { WorkshopDialogPixi } from '/src/rendering/pixi/pages/workshop/WorkshopDialogPixi.js';
+      import { PixiBottomPanelView } from '/src/rendering/pixi/global/chrome/PixiBottomPanelView.js';
+      import { AlliancePixiPage } from '/src/rendering/pixi/pages/alliance/AlliancePixiPage.js';
       import { PixiViewModelFactory } from '/src/rendering/pixi/presenters/PixiViewModelFactory.js';
       import { SemanticTargetRegistry } from '/src/rendering/pixi/retained/SemanticTargetRegistry.js';
       import { PixiApplicationManager } from '/src/rendering/pixi/runtime/PixiApplicationManager.js';
@@ -61,15 +62,19 @@
       await runtime.initialize();
 
       const semanticTargets = new SemanticTargetRegistry();
-      const dialog = new WorkshopDialogPixi({
-        dialogId: 'workshop.alliance',
+      const dialog = new AlliancePixiPage({
         assetManager,
         inputRouter,
-        onClose: () => false,
-        parent: applicationManager.layers.dialogsSource,
-        semanticTargets,
+        semanticRegistry: semanticTargets,
         textEntryService,
       });
+      applicationManager.getLayers().pageUi.addChild(dialog.root);
+      const bottomPanel = new PixiBottomPanelView({
+        assets: assetManager,
+        inputRouter,
+        semanticRegistry: semanticTargets,
+      });
+      applicationManager.getLayers().globalChrome.addChild(bottomPanel.root);
       const recipeParams = new URLSearchParams(window.location.search);
       const recipeMode = recipeParams.get('mode');
       const recipeTab = recipeParams.get('tab');
@@ -82,7 +87,8 @@
           ? 'create'
           : 'browse'
         : recipeTab === 'quests' ||
-            ((recipeTab === 'banner' || recipeTab === 'settings') &&
+            recipeTab === 'chat' ||
+            ((recipeTab === 'requests' || recipeTab === 'settings') &&
               settingsAccessible)
           ? recipeTab
           : 'home';
@@ -211,6 +217,54 @@
           onActivate: () => true,
         },
       ];
+      const applicationRows = [
+        {
+          id: 'application-luna',
+          identity: 'luna',
+          username: 'Luna',
+          character: 'mira',
+          frame: 'violet',
+          detail: 'Level 14',
+          onActivate: () => {
+            recordAction({ type: 'open-player', identity: 'luna' });
+            return true;
+          },
+        },
+        {
+          id: 'application-thorne',
+          identity: 'thorne',
+          username: 'Thorne',
+          character: 'rowan',
+          frame: 'classic',
+          detail: 'Level 9',
+          onActivate: () => {
+            recordAction({ type: 'open-player', identity: 'thorne' });
+            return true;
+          },
+        },
+      ];
+      applicationRows.forEach((application) => {
+        application.primaryAction = {
+          label: 'Accept',
+          variant: 'green',
+          onActivate: () => {
+            recordAction({ type: 'accept', applicationKey: application.id });
+            applicationRows.splice(applicationRows.indexOf(application), 1);
+            bindDialog();
+            return true;
+          },
+        };
+        application.secondaryAction = {
+          label: 'Deny',
+          variant: 'red',
+          onActivate: () => {
+            recordAction({ type: 'deny', applicationKey: application.id });
+            applicationRows.splice(applicationRows.indexOf(application), 1);
+            bindDialog();
+            return true;
+          },
+        };
+      });
       const settings = {
         allianceId: 'night-owls',
         name: 'Night Owls',
@@ -227,7 +281,7 @@
         onSave: async (profile) => {
           Object.assign(settings, profile);
           recordAction({
-            type: selectedTabId === 'banner' ? 'save-banner' : 'save-settings',
+            type: 'save-settings',
             bannerColor: profile.bannerColor,
             emblemColor: profile.emblemColor,
           });
@@ -235,13 +289,87 @@
           return { ok: true };
         },
       };
+      const allianceChat = viewModelFactory.createWorldChatDialog(
+        {
+          connected: true,
+          messages: [
+            {
+              body: 'Welcome to the alliance hall.',
+              character: 'mira',
+              frame: 'violet',
+              id: 'alliance-chat-1',
+              sentAtMs: Date.now(),
+              username: 'Luna',
+            },
+            {
+              body: 'I can fill the herb quest this evening.',
+              character: 'juniper',
+              frame: 'emerald',
+              id: 'alliance-chat-2',
+              sentAtMs: Date.now(),
+              username: 'Juniper',
+            },
+          ],
+        },
+        {
+          sendWorldChat: async (body) => {
+            recordAction({ type: 'alliance-chat', body });
+            return { ok: true };
+          },
+        },
+      );
+
+      function bindBottom() {
+        const visibleTabIds = directoryMode
+          ? ['browse', 'create']
+          : [
+              'home',
+              'quests',
+              ...(settingsAccessible ? ['requests'] : []),
+              'chat',
+              ...(settingsAccessible ? ['settings'] : []),
+            ];
+        bottomPanel.bind({
+          allianceHud: {
+            selectedTabId,
+            tabs: [
+              'browse',
+              'create',
+              'home',
+              'quests',
+              'requests',
+              'chat',
+              'settings',
+            ].map((id) => ({
+              id,
+              unlocked: true,
+              visible: visibleTabIds.includes(id),
+            })),
+          },
+          currentPageId: 'alliance',
+          hudMode: 'alliance',
+          pages: [{ id: 'workshop', unlocked: true, visible: true }],
+          actions: {
+            selectAllianceTab: (tabId) => {
+              selectedTabId = tabId;
+              bindDialog();
+              return true;
+            },
+            showPage: (pageId) => {
+              recordAction({ type: 'show-page', pageId });
+              return true;
+            },
+          },
+        });
+        bottomPanel.layout(applicationManager.projection);
+      }
 
       function bindDialog() {
         if (directoryMode) {
           dialog.bind(
-            viewModelFactory.createAllianceDialog(
+            viewModelFactory.createAllianceWorkspace(
               directorySnapshot,
-              null,
+              selectedTabId,
               {
                 openAlliance: (alliance) => {
                   recordAction({
@@ -292,23 +420,18 @@
                   return true;
                 },
               },
-              selectedTabId,
             ),
           );
           dialog.layout(applicationManager.projection);
+          bindBottom();
           return;
         }
 
         const tabs = homeModel.tabs
-          .flatMap((tab) =>
-            tab.id === 'settings'
-              ? [{ id: 'banner', label: 'Banner' }, tab]
-              : [tab],
-          )
           .filter(
             (tab) =>
               settingsAccessible ||
-              (tab.id !== 'banner' && tab.id !== 'settings'),
+              (tab.id !== 'requests' && tab.id !== 'settings'),
           )
           .map((tab) => ({
             ...tab,
@@ -321,29 +444,54 @@
           }));
         dialog.bind({
           ...homeModel,
+          chat: allianceChat,
           copy: selectedTabId === 'quests' ? '' : homeModel.copy,
+          flag: {
+            bannerColor: settings.bannerColor,
+            emblemColor: settings.emblemColor,
+            emblemId: settings.emblemId,
+          },
           selectedTabId,
           tabs,
           ownedAllianceHome: selectedTabId === 'home',
-          rowWidget: selectedTabId === 'quests' ? 'allianceQuest' : null,
-          rows: selectedTabId === 'quests' ? questRows : homeModel.members,
+          rowWidget:
+            selectedTabId === 'quests'
+              ? 'allianceQuest'
+              : selectedTabId === 'requests'
+                ? 'playerRelationship'
+                : null,
+          rows:
+            selectedTabId === 'quests'
+              ? questRows
+              : selectedTabId === 'requests'
+                ? applicationRows
+                : selectedTabId === 'chat'
+                  ? allianceChat.rows
+                : homeModel.members,
+          emptyLabel:
+            selectedTabId === 'requests' && applicationRows.length === 0
+              ? 'No Pending Requests'
+              : '',
           settings:
-            selectedTabId === 'settings' || selectedTabId === 'banner'
+            selectedTabId === 'settings'
               ? {
                   ...settings,
-                  mode: selectedTabId,
+                  mode: 'settings',
                 }
               : null,
         });
         dialog.layout(applicationManager.projection);
+        bindBottom();
       }
 
       bindDialog();
       dialog.activate();
+      bottomPanel.activate();
 
       window.__allianceRecipe = {
         applicationManager,
         actionEvents,
+        bottomPanel,
         dialog,
         directorySnapshot,
         runtime,

@@ -25,6 +25,55 @@ function inspectSoil(filename) {
   let nearBlackPixelCount = 0;
   let visiblePixelCount = 0;
 
+  const luminanceAt = (x, y) => {
+    const offset = (y * png.width + x) * 4;
+    return (
+      png.data[offset] * 0.2126 +
+      png.data[offset + 1] * 0.7152 +
+      png.data[offset + 2] * 0.0722
+    );
+  };
+  const meanRegionLuminance = ({ height, width, x, y }) => {
+    let count = 0;
+    let total = 0;
+    for (let regionY = y; regionY < y + height; regionY += 1) {
+      for (let regionX = x; regionX < x + width; regionX += 1) {
+        const alpha = png.data[(regionY * png.width + regionX) * 4 + 3];
+        if (alpha <= 128) {
+          continue;
+        }
+        total += luminanceAt(regionX, regionY);
+        count += 1;
+      }
+    }
+    return total / count;
+  };
+  const meanRimDepth = (side) => {
+    let totalDepth = 0;
+    let sampleCount = 0;
+    const startX = Math.floor(png.width * 0.1);
+    const endX = Math.ceil(png.width * 0.9);
+    for (let x = startX; x < endX; x += 1) {
+      const step = side === 'top' ? 1 : -1;
+      let y = side === 'top' ? 0 : png.height - 1;
+      while (
+        y >= 0 &&
+        y < png.height &&
+        png.data[(y * png.width + x) * 4 + 3] <= 128
+      ) {
+        y += step;
+      }
+      let depth = 0;
+      while (y >= 0 && y < png.height && luminanceAt(x, y) < 45) {
+        depth += 1;
+        y += step;
+      }
+      totalDepth += depth;
+      sampleCount += 1;
+    }
+    return totalDepth / sampleCount / png.height;
+  };
+
   for (let offset = 0; offset < png.data.length; offset += 4) {
     const pixel = offset / 4;
     const x = pixel % png.width;
@@ -42,7 +91,7 @@ function inspectSoil(filename) {
     visibleBounds.minY = Math.min(visibleBounds.minY, y);
     visibleBounds.maxY = Math.max(visibleBounds.maxY, y);
     visiblePixelCount += 1;
-    const luminance = red * 0.2126 + green * 0.7152 + blue * 0.0722;
+    const luminance = luminanceAt(x, y);
     if (luminance < 45) {
       nearBlackPixelCount += 1;
     }
@@ -54,10 +103,34 @@ function inspectSoil(filename) {
     }
   }
 
+  const slotPatchContrasts = Array.from({ length: 5 }, (_, slotIndex) => {
+    const centerX = Math.round((png.width * (slotIndex + 0.5)) / 5);
+    const sampleWidth = Math.round(png.width * 0.09);
+    const x = centerX - Math.round(sampleWidth / 2);
+    const patch = meanRegionLuminance({
+      height: Math.round(png.height * 0.35),
+      width: sampleWidth,
+      x,
+      y: Math.round(png.height * 0.25),
+    });
+    const cleanSoil = meanRegionLuminance({
+      height: Math.round(png.height * 0.12),
+      width: sampleWidth,
+      x,
+      y: Math.round(png.height * 0.12),
+    });
+    return Math.abs(cleanSoil - patch);
+  });
+
   return {
+    bottomRimRatio: meanRimDepth('bottom'),
     height: png.height,
     mainColor: mainColor.map((channel) => channel / mainPixelCount),
     nearBlackRatio: nearBlackPixelCount / visiblePixelCount,
+    slotPatchContrast:
+      slotPatchContrasts.reduce((total, contrast) => total + contrast, 0) /
+      slotPatchContrasts.length,
+    topRimRatio: meanRimDepth('top'),
     visibleAspect:
       (visibleBounds.maxX - visibleBounds.minX + 1) /
       (visibleBounds.maxY - visibleBounds.minY + 1),
@@ -75,6 +148,13 @@ describe('Garden soil assets', () => {
     automated.mainColor.forEach((channel, index) => {
       expect(channel).toBeCloseTo(single.mainColor[index], 0);
     });
-    expect(automated.nearBlackRatio).toBeCloseTo(single.nearBlackRatio, 2);
+    expect(Math.abs(automated.topRimRatio - single.topRimRatio)).toBeLessThan(
+      0.01,
+    );
+    expect(
+      Math.abs(automated.bottomRimRatio - single.bottomRimRatio),
+    ).toBeLessThan(0.01);
+    expect(automated.nearBlackRatio).toBeGreaterThan(0.06);
+    expect(automated.slotPatchContrast).toBeLessThan(1);
   });
 });

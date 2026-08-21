@@ -250,6 +250,13 @@ const WORKSHOP_SIDE_LABEL_STROKE = '#0a0a0a';
 const REQUEST_PROGRESS_UPDATE_DURATION_MS = 220;
 const REQUEST_PROGRESS_SHINE_ALPHA = 0.5;
 const REQUEST_PROGRESS_SHINE_HEIGHT_SCALE = 2.4;
+const REQUEST_COMPLETION_SNAP_ANCHOR_RIGHT = 10;
+const REQUEST_COMPLETION_SNAP_FRAMES = Object.freeze([
+  Object.freeze({ progress: 0, scale: 1, y: 0 }),
+  Object.freeze({ progress: 0.45, scale: 1.018, y: -2 }),
+  Object.freeze({ progress: 0.74, scale: 0.996, y: 1 }),
+  Object.freeze({ progress: 1, scale: 1, y: 0 }),
+]);
 const SUMMON_EFFECT_FRAMES = Object.freeze([
   Object.freeze({ progress: 0, alpha: 0.84, scale: 1 }),
   Object.freeze({ progress: 0.32, alpha: 1, scale: 1.045 }),
@@ -1172,6 +1179,7 @@ export class WorkshopTaskPanel {
         const nextTaskId = getRequestTaskId(pendingModel);
         this.pendingModel = null;
         this.applyModel(pendingModel);
+        this.page.layoutWorkshop({ animateSideControls: false });
         if (nextTaskId && nextTaskId !== previousTaskId) {
           this.startCompletionBoink();
         }
@@ -1185,7 +1193,7 @@ export class WorkshopTaskPanel {
 
   pauseMotion() {
     this.stopMotionFrame();
-    this.applyCompletionBoinkScale(1);
+    this.applyCompletionBoinkFrame(1, 0);
     for (const row of this.rows.getWidgets()) {
       row.pauseMotion();
     }
@@ -1204,7 +1212,7 @@ export class WorkshopTaskPanel {
       !this.page.root.visible
     ) {
       this.completionBoink = null;
-      this.applyCompletionBoinkScale(1);
+      this.applyCompletionBoinkFrame(1, 0);
       return;
     }
     this.completionBoink = { startedAtMs };
@@ -1215,21 +1223,22 @@ export class WorkshopTaskPanel {
     if (!this.page.root.visible || this.page.reducedMotion?.() === true) {
       this.stopMotionFrame();
       this.completionBoink = null;
-      this.applyCompletionBoinkScale(1);
+      this.applyCompletionBoinkFrame(1, 0);
       return false;
     }
     if (!this.completionBoink) {
-      this.applyCompletionBoinkScale(1);
+      this.applyCompletionBoinkFrame(1, 0);
       return false;
     }
     const progress = clampUnit(
       (now - this.completionBoink.startedAtMs) /
         QUEST_REQUEST_BOX_BOINK_DURATION_MS,
     );
-    this.applyCompletionBoinkScale(getRequestBoinkScale(progress));
+    const frame = getRequestCompletionSnapFrame(progress);
+    this.applyCompletionBoinkFrame(frame.scale, frame.y);
     if (progress >= 1) {
       this.completionBoink = null;
-      this.applyCompletionBoinkScale(1);
+      this.applyCompletionBoinkFrame(1, 0);
       return false;
     }
     this.scheduleMotionFrame();
@@ -1251,14 +1260,17 @@ export class WorkshopTaskPanel {
     this.motionFrame = null;
   }
 
-  applyCompletionBoinkScale(scale) {
+  applyCompletionBoinkFrame(scale, translateY = 0) {
     const safeScale = Number.isFinite(scale) ? scale : 1;
+    const safeTranslateY = Number.isFinite(translateY) ? translateY : 0;
     const width = this.width ?? this.panel.width;
     const height = this.height ?? this.panel.height;
     const x = this.x ?? this.root.x;
     const y = this.y ?? this.root.y;
-    this.root.pivot.set(width / 2, height / 2);
-    this.root.position.set(x + width / 2, y + height / 2);
+    const anchorX = width - REQUEST_COMPLETION_SNAP_ANCHOR_RIGHT;
+    const anchorY = height / 2;
+    this.root.pivot.set(anchorX, anchorY);
+    this.root.position.set(x + anchorX, y + anchorY + safeTranslateY);
     this.root.scale.set(safeScale);
   }
 
@@ -1321,7 +1333,15 @@ export class WorkshopTaskPanel {
     );
     this.panel.frame.visible = false;
     this.panel.fallback.visible = false;
-    this.applyCompletionBoinkScale(this.root.scale.x);
+    const frame = this.completionBoink
+      ? getRequestCompletionSnapFrame(
+          clampUnit(
+            (this.page.timeSource() - this.completionBoink.startedAtMs) /
+              QUEST_REQUEST_BOX_BOINK_DURATION_MS,
+          ),
+        )
+      : { scale: 1, y: 0 };
+    this.applyCompletionBoinkFrame(frame.scale, frame.y);
     applyWorkshopRequestTitleTheme(this.panel.title, this.page.theme);
     this.pinButton.setBounds(8, this.height - 7, 42, 14);
     this.expandButton.setBounds(width / 2 - 30, this.height - 7, 60, 14);
@@ -1440,6 +1460,7 @@ export class WorkshopTaskRow {
     this.preferredHeight = WORKSHOP_TASK_DEFAULT_ROW_HEIGHT;
     this.displayedProgress = 0;
     this.targetProgress = 0;
+    this.queuedProgress = null;
     this.progressMotion = null;
     this.progressFeedback = null;
     this.motionFrame = null;
@@ -1502,6 +1523,9 @@ export class WorkshopTaskRow {
     const nextProgress = resolveRequestProgress(model);
     const isNewTask = previousTaskId === null || previousTaskId !== model.id;
     if (isNewTask) {
+      this.progressMotion = null;
+      this.progressFeedback = null;
+      this.queuedProgress = null;
       this.setProgressImmediate(nextProgress);
     } else {
       this.animateProgressTo(nextProgress);
@@ -1627,6 +1651,7 @@ export class WorkshopTaskRow {
     this.pauseMotion();
     this.progressMotion = null;
     this.progressFeedback = null;
+    this.queuedProgress = null;
     this.setProgressImmediate(0);
     this.model = null;
     this.icon.texture = Texture.EMPTY;
@@ -1649,6 +1674,7 @@ export class WorkshopTaskRow {
   }
 
   startCompletionFill(durationMs) {
+    this.queuedProgress = null;
     this.animateProgressTo(1, {
       durationMs,
       completion: true,
@@ -1657,6 +1683,7 @@ export class WorkshopTaskRow {
 
   holdCompletedProgress() {
     this.progressMotion = null;
+    this.queuedProgress = null;
     this.setProgressImmediate(1);
     if (this.progressFeedback) {
       this.scheduleMotionFrame();
@@ -1671,14 +1698,25 @@ export class WorkshopTaskRow {
     } = {},
   ) {
     const nextProgress = clampUnit(progress);
-    this.targetProgress = nextProgress;
     if (
       this.page.reducedMotion?.() === true ||
-      !this.page.root.visible ||
-      nextProgress <= this.displayedProgress
+      !this.page.root.visible
     ) {
       this.progressMotion = null;
       this.progressFeedback = null;
+      this.queuedProgress = null;
+      this.setProgressImmediate(nextProgress);
+      return;
+    }
+    if (nextProgress <= this.displayedProgress) {
+      if (
+        nextProgress < this.displayedProgress ||
+        this.progressMotion ||
+        this.progressFeedback ||
+        this.queuedProgress
+      ) {
+        return;
+      }
       this.setProgressImmediate(nextProgress);
       return;
     }
@@ -1689,16 +1727,72 @@ export class WorkshopTaskRow {
     ) {
       return;
     }
-    const now = this.page.timeSource();
+    if (
+      !completion &&
+      (this.progressMotion || this.progressFeedback)
+    ) {
+      const furthestScheduledProgress = Math.max(
+        this.progressMotion?.end ?? this.targetProgress,
+        this.queuedProgress?.progress ?? 0,
+      );
+      if (nextProgress > furthestScheduledProgress) {
+        this.queuedProgress = {
+          progress: nextProgress,
+          durationMs,
+          completion: false,
+        };
+      }
+      return;
+    }
+    if (completion) {
+      this.queuedProgress = null;
+    }
+    this.startProgressMotion(nextProgress, {
+      durationMs,
+      completion,
+    });
+  }
+
+  startProgressMotion(
+    progress,
+    {
+      durationMs = REQUEST_PROGRESS_UPDATE_DURATION_MS,
+      completion = false,
+      startedAtMs = this.page.timeSource(),
+    } = {},
+  ) {
+    const nextProgress = clampUnit(progress);
+    this.targetProgress = nextProgress;
     this.progressMotion = {
       start: this.displayedProgress,
       end: nextProgress,
-      startedAtMs: now + QUEST_REQUEST_SHINE_DURATION_MS,
+      startedAtMs: startedAtMs + QUEST_REQUEST_SHINE_DURATION_MS,
       durationMs: Math.max(1, Number(durationMs) || REQUEST_PROGRESS_UPDATE_DURATION_MS),
       completion,
     };
-    this.startProgressFeedback(now, nextProgress);
+    this.startProgressFeedback(startedAtMs, nextProgress);
     this.scheduleMotionFrame();
+  }
+
+  startQueuedProgress(startedAtMs = this.page.timeSource()) {
+    if (
+      this.progressMotion ||
+      this.progressFeedback ||
+      !this.queuedProgress
+    ) {
+      return false;
+    }
+    const queuedProgress = this.queuedProgress;
+    this.queuedProgress = null;
+    if (queuedProgress.progress <= this.displayedProgress) {
+      return false;
+    }
+    this.startProgressMotion(queuedProgress.progress, {
+      durationMs: queuedProgress.durationMs,
+      completion: queuedProgress.completion,
+      startedAtMs,
+    });
+    return true;
   }
 
   setProgressImmediate(progress) {
@@ -1713,6 +1807,7 @@ export class WorkshopTaskRow {
     if (!this.page.root.visible || this.page.reducedMotion?.() === true) {
       this.pauseMotion();
       this.progressFeedback = null;
+      this.queuedProgress = null;
       if (this.progressMotion) {
         this.setProgressImmediate(this.progressMotion.end);
         this.progressMotion = null;
@@ -1734,14 +1829,17 @@ export class WorkshopTaskRow {
       this.progress.setProgress(this.displayedProgress);
       this.layoutProgressShine();
       if (progress >= 1) {
+        const settledProgress = this.progressMotion.end;
         this.progressMotion = null;
-        this.displayedProgress = this.targetProgress;
+        this.displayedProgress = settledProgress;
+        this.targetProgress = settledProgress;
         this.progress.setProgress(this.displayedProgress);
         this.layoutProgressShine();
       }
     }
 
     this.updateProgressFeedback(now);
+    this.startQueuedProgress(now);
     const keepAnimating = Boolean(
       this.progressMotion || this.progressFeedback,
     );
@@ -1868,7 +1966,7 @@ export class WorkshopTaskRow {
 
   resumeMotion() {
     this.updateMotion(this.page.timeSource());
-    if (this.progressMotion || this.progressFeedback) {
+    if (this.progressMotion || this.progressFeedback || this.queuedProgress) {
       this.scheduleMotionFrame();
     }
   }
@@ -2780,22 +2878,56 @@ function interpolate(from, to, progress) {
   return from + (to - from) * progress;
 }
 
-function getRequestBoinkScale(progress) {
+function getRequestCompletionSnapFrame(progress) {
   const value = clampUnit(progress);
-  if (value <= 0.35) {
-    return interpolate(1, 1.04, easeOutQuart(value / 0.35));
+  for (let index = 1; index < REQUEST_COMPLETION_SNAP_FRAMES.length; index += 1) {
+    const next = REQUEST_COMPLETION_SNAP_FRAMES[index];
+    if (value > next.progress) {
+      continue;
+    }
+    const previous = REQUEST_COMPLETION_SNAP_FRAMES[index - 1];
+    const segmentProgress =
+      (value - previous.progress) /
+      Math.max(0.0001, next.progress - previous.progress);
+    const eased = easeSoft(segmentProgress);
+    return {
+      scale: interpolate(previous.scale, next.scale, eased),
+      y: interpolate(previous.y, next.y, eased),
+    };
   }
-  if (value <= 0.7) {
-    return interpolate(
-      1.04,
-      0.992,
-      easeOutQuart((value - 0.35) / 0.35),
-    );
+  return { scale: 1, y: 0 };
+}
+
+function easeSoft(progress) {
+  return cubicBezier(progress, 0.39, 0.575, 0.565, 1);
+}
+
+function cubicBezier(progress, x1, y1, x2, y2) {
+  const target = clampUnit(progress);
+  let low = 0;
+  let high = 1;
+  let time = target;
+  for (let index = 0; index < 10; index += 1) {
+    const x = cubicPoint(time, x1, x2);
+    if (Math.abs(x - target) < 0.00001) {
+      break;
+    }
+    if (x < target) {
+      low = time;
+    } else {
+      high = time;
+    }
+    time = (low + high) / 2;
   }
-  return interpolate(
-    0.992,
-    1,
-    easeOutQuart((value - 0.7) / 0.3),
+  return cubicPoint(time, y1, y2);
+}
+
+function cubicPoint(time, first, second) {
+  const inverse = 1 - time;
+  return (
+    3 * inverse * inverse * time * first +
+    3 * inverse * time * time * second +
+    time * time * time
   );
 }
 

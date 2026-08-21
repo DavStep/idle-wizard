@@ -82,8 +82,11 @@ const ITEM_DROP_SIZES = Object.freeze({
   herb: 38,
   potion: 36,
 });
-const GARDEN_MAX_VISUAL_SEED_DROPS = 6;
+const GARDEN_HARVEST_ANCHOR_SLOTS = 5;
 const GARDEN_SEED_DROP_SIZE = ITEM_DROP_SIZES.seed * 0.75;
+const GARDEN_PLANT_DROP_DURATION_MS = 500;
+const GARDEN_PLANT_DROP_OFFSET_Y = 36;
+const GARDEN_PLANT_DROP_IMPACT_PROGRESS = 0.52;
 const REWARD_FLYOUT_VISUALS = Object.freeze({
   backgroundColor: 0x000000,
   backgroundAlpha: 0.62,
@@ -372,10 +375,17 @@ export class PixiTransientEffectsLayer extends BasePixiRetainedView {
         pool: this.itemPool,
         delayMs: Math.max(
           0,
-          Number(drop.delayMs) ||
-            (drop.kind === 'seed' ? this.random() * 140 : index * 60),
+          Number.isFinite(Number(drop.delayMs))
+            ? Number(drop.delayMs)
+            : drop.kind === 'seed'
+              ? this.random() * 140
+              : index * 60,
         ),
-        durationMs: PIXI_TRANSIENT_TIMING.itemDropLifetimeMs,
+        durationMs: Math.max(
+          1,
+          Number(drop.durationMs) ||
+            PIXI_TRANSIENT_TIMING.itemDropLifetimeMs,
+        ),
       });
       count += 1;
     }
@@ -934,20 +944,19 @@ export function createRewardVisualPresentation(event) {
     event.type === 'garden_seed_planted' &&
     Number.isInteger(event.tileNumber)
   ) {
-    const quantity = Math.min(
-      GARDEN_MAX_VISUAL_SEED_DROPS,
-      normalizeItemQuantity(event.quantity),
-    );
     return {
-      itemDrops: Array.from({ length: quantity }, (_, index) =>
+      itemDrops: [
         createSeedDrop({
           event,
           seed: event.seed,
-          index,
+          index: 0,
           anchorId: `garden.plot.${event.tileNumber}`,
           size: GARDEN_SEED_DROP_SIZE,
+          motion: 'garden-plant-drop',
+          delayMs: 0,
+          durationMs: GARDEN_PLANT_DROP_DURATION_MS,
         }),
-      ),
+      ],
     };
   }
   if (
@@ -965,8 +974,14 @@ export function createRewardVisualPresentation(event) {
             event,
             kind: 'herb',
             frameName,
-            anchorId: `garden.plot.${event.tileNumber}`,
+            anchorId: (index) => [
+              `garden.plot.${event.tileNumber}.plant.${
+                (index % GARDEN_HARVEST_ANCHOR_SLOTS) + 1
+              }`,
+              `garden.plot.${event.tileNumber}`,
+            ],
             anchorYRatio: 0.5,
+            spread: 0,
           }),
         }
       : {};
@@ -1359,7 +1374,11 @@ class ItemDropWidget {
     const count = Math.max(1, Number(model.count) || 1);
     const t = count === 1 ? 0.5 : index / (count - 1);
     const spread =
-      kind === 'seed' ? 0 : Math.min(56, 18 + count * 8);
+      Number.isFinite(model.spread)
+        ? Number(model.spread)
+        : kind === 'seed'
+          ? 0
+          : Math.min(56, 18 + count * 8);
     this.baseX = model.anchor.x + (t - 0.5) * spread;
     this.root.position.set(this.baseX, model.anchor.y);
     this.root.visible = true;
@@ -1390,7 +1409,8 @@ class ItemDropWidget {
       this.primary.height = size * ratio;
       this.secondary.visible = false;
     }
-    this.seedBurst = kind === 'seed';
+    this.motion = model.motion ?? null;
+    this.seedBurst = kind === 'seed' && this.motion !== 'garden-plant-drop';
     this.angleSign =
       model.angleSign ??
       (model.random() < 0.5 ? -1 : 1);
@@ -1410,6 +1430,17 @@ class ItemDropWidget {
   update(progress, { delayed }) {
     if (delayed) {
       this.root.alpha = 0;
+      return;
+    }
+    if (this.motion === 'garden-plant-drop') {
+      const frame = interpolateGardenPlantDropFrame(progress);
+      this.root.position.set(
+        this.baseX,
+        this.model.anchor.y + frame.y,
+      );
+      this.root.rotation = 0;
+      this.root.alpha = frame.alpha;
+      this.root.scale.set(frame.scaleX, frame.scaleY);
       return;
     }
     if (this.seedBurst) {
@@ -1447,6 +1478,7 @@ class ItemDropWidget {
     this.primary.texture = Texture.EMPTY;
     this.secondary.texture = Texture.EMPTY;
     this.model = {};
+    this.motion = null;
   }
 
   destroy() {
@@ -2051,6 +2083,9 @@ function createSeedDrop({
   index,
   anchorId = 'workshop.summonArea',
   size,
+  motion,
+  delayMs,
+  durationMs,
 }) {
   const itemFrameName = getSeedPackItemFrameName(seed);
   const textureModel = itemFrameName
@@ -2068,6 +2103,9 @@ function createSeedDrop({
     anchorId,
     anchorYRatio: 0.5,
     ...(Number.isFinite(size) ? { size } : {}),
+    ...(motion ? { motion } : {}),
+    ...(Number.isFinite(delayMs) ? { delayMs } : {}),
+    ...(Number.isFinite(durationMs) ? { durationMs } : {}),
   };
 }
 
@@ -2077,6 +2115,7 @@ function createRepeatedItemDrops({
   frameName,
   anchorId,
   anchorYRatio,
+  spread,
 }) {
   return Array.from(
     { length: getVisualDropQuantity(event.quantity) },
@@ -2084,8 +2123,10 @@ function createRepeatedItemDrops({
       id: createRewardVisualId(event, kind, index),
       kind,
       frameName,
-      anchorId,
+      anchorId:
+        typeof anchorId === 'function' ? anchorId(index) : anchorId,
       anchorYRatio,
+      ...(Number.isFinite(spread) ? { spread } : {}),
     }),
   );
 }
@@ -2401,6 +2442,21 @@ function interpolateSeedBurstFrame(
     local,
   );
   return target;
+}
+
+function interpolateGardenPlantDropFrame(progress) {
+  const safeProgress = Math.max(0, Math.min(1, progress));
+  const dropProgress = Math.min(
+    1,
+    safeProgress / GARDEN_PLANT_DROP_IMPACT_PROGRESS,
+  );
+  const acceleratedDrop = dropProgress * dropProgress;
+  return {
+    y: lerp(-GARDEN_PLANT_DROP_OFFSET_Y, 0, acceleratedDrop),
+    scaleX: lerp(0.96, 1, acceleratedDrop),
+    scaleY: lerp(0.96, 1, acceleratedDrop),
+    alpha: safeProgress < GARDEN_PLANT_DROP_IMPACT_PROGRESS ? 1 : 0,
+  };
 }
 
 function interpolateItemDropFrame(progress, sign) {

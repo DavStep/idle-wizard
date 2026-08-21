@@ -74,6 +74,7 @@ import {
 } from './RetainedPageKit.js';
 import { GuildColorSwatch } from '../guild/GuildDialogPixi.js';
 import { RootRunInventoryChoiceRowPixi } from '../shop/ShopDialogPixi.js';
+import { PlayerRelationshipRowPixi } from '../../global/dialogs/PlayerRelationshipRowPixi.js';
 
 const WORKSHOP_DIALOG_CONTENT_WIDTH = 264;
 const DIALOG_SCROLL_VIEWPORT_TOP = 18;
@@ -117,6 +118,15 @@ const WORLD_CHAT_COMPOSER_HEIGHT = 34;
 const WORLD_CHAT_COMPOSER_FIELD_HEIGHT = 29;
 const WORLD_CHAT_COMPOSER_SEND_WIDTH = 74;
 const WORLD_CHAT_COMPOSER_SEND_HEIGHT = 29;
+const DIRECT_MESSAGE_IDENTITY_COLLAPSED_HEIGHT = 64;
+const DIRECT_MESSAGE_IDENTITY_EXPANDED_HEIGHT = 98;
+const DIRECT_MESSAGE_IDENTITY_SECTION_GAP =
+  PIXI_DIALOG_SPLIT_PAPER_GEOMETRY.sectionGap;
+const DIRECT_MESSAGE_IDENTITY_AVATAR_SIZE = 48;
+const DIRECT_MESSAGE_IDENTITY_TOGGLE_HEIGHT = 58;
+const DIRECT_MESSAGE_UNFRIEND_WIDTH = 100;
+const DIRECT_MESSAGE_UNFRIEND_HEIGHT = 29;
+const FRIENDS_DIALOG_HEIGHT = 594;
 const WORLD_CHAT_ROW_SCROLLBAR_GUTTER = 3;
 const WORLD_CHAT_AVATAR_SIZE =
   22 * WORLD_CHAT_ROW_HEIGHT_SCALE * WORLD_CHAT_AVATAR_SCALE;
@@ -449,6 +459,9 @@ export class WorkshopDialogPixi {
     this.isStatsDialog = this.dialogId === 'workshop.stats';
     this.isLeaderboardDialog = this.dialogId === 'workshop.leaderboard';
     this.isWorldChatDialog = this.dialogId === 'workshop.worldChat';
+    this.isDirectMessageDialog = this.dialogId === 'global.directMessage';
+    this.isChatDialog = this.isWorldChatDialog || this.isDirectMessageDialog;
+    this.isFriendsDialog = this.dialogId === 'global.friends';
     this.viewModelRevision = null;
     this.isDiscoveriesDialog = this.dialogId === 'workshop.discoveries';
     this.isAllianceDialog = this.dialogId === 'workshop.alliance';
@@ -458,17 +471,19 @@ export class WorkshopDialogPixi {
     this.scrollContentPaddingTop = this.isBagDialog
       ? 0
       : RETAINED_DIALOG_SCROLL_GEOMETRY.contentPaddingTop;
-    this.scrollViewportTopInset = this.isWorldChatDialog
+    this.scrollViewportTopInset = this.isChatDialog
       ? WORLD_CHAT_SCROLL_PADDING_TOP
       : this.isBagDialog
         ? BAG_SCROLL_VIEWPORT_TOP_INSET
         : this.isStatsDialog
           ? STATS_SCROLL_VIEWPORT_TOP_INSET
           : 0;
-    this.scrollViewportWidth = this.isWorldChatDialog
+    this.scrollViewportWidth = this.isChatDialog
       ? this.sourceWidth -
         PIXI_ROOT_RUN_GEOMETRY.dialog.frameOutset * 2 -
         WORLD_CHAT_CONTENT_INSET_X * 2
+      : this.isFriendsDialog
+        ? PIXI_DIALOG_BASE_GEOMETRY.contentWidth
       : WORKSHOP_DIALOG_CONTENT_WIDTH +
         (this.isBagDialog
           ? RETAINED_DIALOG_SCROLL_GEOMETRY.scrollbarShiftRight
@@ -486,14 +501,17 @@ export class WorkshopDialogPixi {
       title: dialogId.split('.').at(-1),
       onClose: () => this.onClose?.(),
       theme,
-      openMotion: this.isWorldChatDialog ? false : 'center',
+      openMotion: this.isChatDialog ? false : 'center',
       label: `${dialogId}-dialog`,
     });
     this.root = this.modal.root;
     this.backdrop = this.modal.backdrop;
     this.panel = this.modal.panel;
-    if (this.isWorldChatDialog) {
+    if (this.isChatDialog) {
       this.panel.setHeaderLayout('edge');
+    }
+    if (this.isFriendsDialog) {
+      this.panel.setPaperVisible(false);
     }
     this.copy = createText('', {
       ...RETAINED_TEXT_STYLES.body,
@@ -516,6 +534,85 @@ export class WorkshopDialogPixi {
       ...RETAINED_TEXT_STYLES.border,
       wordWrapWidth: 264,
     });
+    this.directMessageProfile = this.isDirectMessageDialog
+      ? new PlayerProfileWidget({
+          assets: this.assetManager,
+          texture: Texture.EMPTY,
+          label: `${dialogId}:friend-profile`,
+        })
+      : null;
+    this.directMessageTag = this.isDirectMessageDialog
+      ? createText('', RETAINED_TEXT_STYLES.bold)
+      : null;
+    this.directMessageName = this.isDirectMessageDialog
+      ? createText('', RETAINED_TEXT_STYLES.bold)
+      : null;
+    this.directMessageLevel = this.isDirectMessageDialog
+      ? createText('', RETAINED_TEXT_STYLES.border)
+      : null;
+    this.directMessageExpandGlyph = this.isDirectMessageDialog
+      ? createText('▼', RETAINED_TEXT_STYLES.bold)
+      : null;
+    this.directMessageIdentitySection = this.isDirectMessageDialog
+      ? new Container({ label: `${dialogId}:friend-identity-section` })
+      : null;
+    this.directMessageIdentityPaper = this.isDirectMessageDialog
+      ? createDialogPaperSection(
+          this.panel.paperFrame.texture,
+          `${dialogId}:friend-identity-paper`,
+        )
+      : null;
+    this.directMessageMessagePaper = this.isDirectMessageDialog
+      ? createDialogPaperSection(
+          this.panel.paperFrame.texture,
+          `${dialogId}:message-paper`,
+        )
+      : null;
+    this.directMessageIdentityHitTarget = this.isDirectMessageDialog
+      ? new Container({ label: `${dialogId}:friend-identity-toggle` })
+      : null;
+    this.directMessageUnfriend = this.isDirectMessageDialog
+      ? new PixiTextButton({
+          assetManager,
+          inputRouter,
+          semanticRegistry: semanticTargets,
+          semanticId: `${dialogId}.unfriend`,
+          text: 'Unfriend',
+          width: DIRECT_MESSAGE_UNFRIEND_WIDTH,
+          height: DIRECT_MESSAGE_UNFRIEND_HEIGHT,
+          sizeTier: 50,
+          variant: 'red',
+          action: () => this.activateDirectMessageUnfriend(),
+          label: `${dialogId}:unfriend`,
+        })
+      : null;
+    this.directMessageIdentityExpanded = false;
+    this.directMessageTagColor = WORLD_CHAT_TAG_COLORS.green;
+    if (this.directMessageIdentitySection) {
+      this.panel.setPaperVisible(false);
+      this.directMessageExpandGlyph.anchor.set(0.5);
+      this.directMessageIdentitySection.addChild(
+        this.directMessageIdentityPaper,
+        this.directMessageProfile,
+        this.directMessageTag,
+        this.directMessageName,
+        this.directMessageLevel,
+        this.directMessageExpandGlyph,
+        this.directMessageIdentityHitTarget,
+        this.directMessageUnfriend,
+      );
+    }
+    this.directMessageProfileRegistration = this.directMessageIdentityHitTarget
+      ? (this.inputRouter?.registerPressTarget?.(this.directMessageIdentityHitTarget, {
+          fallbackHitTest: true,
+          enabled: () =>
+            this.modal.shown === true &&
+            typeof this.viewModel.actions?.unfriend === 'function',
+          onActivate: () => this.toggleDirectMessageIdentityActions(),
+          haptic: 'selection',
+          excludePageSwipe: true,
+        }) ?? null)
+      : null;
     this.scrollableRowLayouts = new Map();
     this.scroll = new RetainedScrollArea({
       assetManager: this.assetManager,
@@ -651,6 +748,9 @@ export class WorkshopDialogPixi {
       ? new Container({ label: `${dialogId}-period-tabs` })
       : null;
     this.panel.content.addChild(
+      ...(this.directMessageMessagePaper
+        ? [this.directMessageMessagePaper, this.directMessageIdentitySection]
+        : []),
       ...(this.isAllianceDialog
         ? [
             this.allianceTradeSection.root,
@@ -676,7 +776,7 @@ export class WorkshopDialogPixi {
     this.composerStatus = '';
     this.boundStatus = '';
 
-    if (this.isWorldChatDialog) {
+    if (this.isChatDialog) {
       this.composerField = new PixiTextField({
         assetManager: this.assetManager,
         inputRouter: this.inputRouter,
@@ -709,15 +809,17 @@ export class WorkshopDialogPixi {
       name: `${dialogId} row pool`,
       counters,
       create: () =>
-        this.isWorldChatDialog
+        this.isChatDialog
           ? new WorldChatMessageRowPixi({ dialog: this })
-          : this.isDiscoveriesDialog
-            ? new PotionDiscoveryPagePixi({ dialog: this })
-            : this.isLeaderboardDialog
-              ? new LeaderboardRowPixi({ dialog: this })
-              : this.isBagDialog
-                ? new WorkshopBagInventoryRow({ dialog: this })
-                : new WorkshopDialogRow({ dialog: this }),
+          : this.isFriendsDialog
+            ? new PlayerRelationshipRowPixi({ dialog: this })
+            : this.isDiscoveriesDialog
+              ? new PotionDiscoveryPagePixi({ dialog: this })
+              : this.isLeaderboardDialog
+                ? new LeaderboardRowPixi({ dialog: this })
+                : this.isBagDialog
+                  ? new WorkshopBagInventoryRow({ dialog: this })
+                  : new WorkshopDialogRow({ dialog: this }),
       reset: (row) => row.reset(),
       dispose: (row) => row.destroy(),
       maxSize: 30,
@@ -727,7 +829,7 @@ export class WorkshopDialogPixi {
       pool: this.rowPool,
       counters,
       keyOf: (row, index) => row.id ?? row.key ?? index,
-      revisionOf: this.isWorldChatDialog
+      revisionOf: this.isChatDialog
         ? (row) => createRetainedModelRevision(row)
         : null,
       bind: (widget, row) => widget.bind(row),
@@ -785,6 +887,26 @@ export class WorkshopDialogPixi {
           bind: (widget, row) => widget.bind(row),
           afterReconcile: (widgets) =>
             this.orderOwnedAllianceMemberRows(widgets),
+        })
+      : null;
+    this.allianceRequestRowPool = this.isAllianceDialog
+      ? new WidgetPool({
+          name: `${dialogId} alliance request row pool`,
+          counters,
+          create: () => new PlayerRelationshipRowPixi({ dialog: this }),
+          reset: (row) => row.reset(),
+          dispose: (row) => row.destroy(),
+          maxSize: 30,
+        })
+      : null;
+    this.allianceRequestRows = this.allianceRequestRowPool
+      ? new PooledCollection({
+          name: `${dialogId} alliance request rows`,
+          pool: this.allianceRequestRowPool,
+          counters,
+          keyOf: (row, index) => row.id ?? row.identity ?? index,
+          bind: (widget, row) => widget.bind(row),
+          afterReconcile: (widgets) => this.orderRows(widgets),
         })
       : null;
     this.allianceQuestRowPool = this.isAllianceDialog
@@ -926,11 +1048,11 @@ export class WorkshopDialogPixi {
 
   bind(viewModel) {
     const nextViewModel = viewModel ?? {};
-    const nextViewModelRevision = this.isWorldChatDialog
+    const nextViewModelRevision = this.isChatDialog
       ? createRetainedModelRevision(nextViewModel)
       : null;
     if (
-      this.isWorldChatDialog &&
+      this.isChatDialog &&
       this.viewModelRevision !== null &&
       nextViewModelRevision === this.viewModelRevision
     ) {
@@ -939,7 +1061,7 @@ export class WorkshopDialogPixi {
     }
 
     const keepWorldChatPinnedToNewest =
-      this.isWorldChatDialog &&
+      this.isChatDialog &&
       this.modal.shown === true &&
       this.scroll.offsetY >=
         Math.max(0, this.scroll.contentHeight - this.scroll.height) - 0.5;
@@ -959,6 +1081,30 @@ export class WorkshopDialogPixi {
     setText(this.headerHeadline, this.viewModel.header?.headline ?? '');
     setText(this.headerBody, this.viewModel.header?.body ?? '');
     setText(this.headerMeta, this.viewModel.header?.meta ?? '');
+    if (this.directMessageProfile) {
+      const friend = this.viewModel.friend ?? {};
+      this.directMessageProfile
+        .setTexture(
+          resolveCharacterTexture(this.assetManager, friend.character),
+        )
+        .setBackgroundTint(getPlayerFrameTint(friend.frame));
+      const allianceTag = normalizeWorldChatTag(friend.allianceTag);
+      const allianceTagColor = normalizeWorldChatTagColor(friend.allianceTagColor);
+      setText(this.directMessageTag, allianceTag ? `[${allianceTag}]` : '');
+      this.directMessageTagColor = WORLD_CHAT_TAG_COLORS[allianceTagColor];
+      this.directMessageTag.style.fill = this.directMessageTagColor;
+      setText(this.directMessageName, friend.username ?? 'Wizard');
+      setText(
+        this.directMessageLevel,
+        `Level ${Math.max(1, Math.floor(Number(friend.playerLevel) || 1))}`,
+      );
+      if (this.viewModel.identityExpanded === true) {
+        this.directMessageIdentityExpanded = true;
+      } else if (typeof this.viewModel.actions?.unfriend !== 'function') {
+        this.directMessageIdentityExpanded = false;
+      }
+      this.syncDirectMessageIdentityState();
+    }
     if (this.isWorldEventDialog) {
       const headerArtAssetId = String(
         this.viewModel.header?.artAssetId ?? '',
@@ -1023,22 +1169,26 @@ export class WorkshopDialogPixi {
       this.allianceQuestRows
         ? this.allianceQuestRows
         : this.isAllianceDialog &&
-            this.viewModel.directory === true &&
-            this.allianceRows
-          ? this.allianceRows
-          : this.isWorldEventDialog &&
-              this.viewModel.rowWidget === 'worldEventQuest' &&
-              this.worldEventRows
-            ? this.worldEventRows
+            this.viewModel.rowWidget === 'playerRelationship' &&
+            this.allianceRequestRows
+          ? this.allianceRequestRows
+          : this.isAllianceDialog &&
+              this.viewModel.directory === true &&
+              this.allianceRows
+            ? this.allianceRows
             : this.isWorldEventDialog &&
-                this.viewModel.rowWidget === 'leaderboard' &&
-                this.worldEventLeaderboardRows
-              ? this.worldEventLeaderboardRows
+                this.viewModel.rowWidget === 'worldEventQuest' &&
+                this.worldEventRows
+              ? this.worldEventRows
               : this.isWorldEventDialog &&
-                  this.viewModel.rowWidget === 'worldEventReward' &&
-                  this.worldEventRewardRows
-                ? this.worldEventRewardRows
-                : this.defaultRows;
+                  this.viewModel.rowWidget === 'leaderboard' &&
+                  this.worldEventLeaderboardRows
+                ? this.worldEventLeaderboardRows
+                : this.isWorldEventDialog &&
+                    this.viewModel.rowWidget === 'worldEventReward' &&
+                    this.worldEventRewardRows
+                  ? this.worldEventRewardRows
+                  : this.defaultRows;
     if (this.rows !== nextRows) {
       this.rows.reconcile([]);
       this.rows = nextRows;
@@ -1106,8 +1256,8 @@ export class WorkshopDialogPixi {
     button.control.textLabel.setFontSize(PIXI_UI_GEOMETRY.borderLabelFontSize);
   }
 
-  navigateToTarget({ targetId, indication = "boink" } = {}) {
-    const target = String(targetId ?? "").trim();
+  navigateToTarget({ targetId, indication = 'boink' } = {}) {
+    const target = String(targetId ?? '').trim();
     const row = this.rows
       ?.getWidgets?.()
       ?.find((candidate) => candidate.semanticId === target);
@@ -1119,7 +1269,7 @@ export class WorkshopDialogPixi {
       layout.top - Math.max(0, (this.scroll.height - layout.height) / 2),
     );
     this.updateScrollableRowVisibility();
-    if (indication === "boink") {
+    if (indication === 'boink') {
       row.startAttentionEffect?.();
     }
     return true;
@@ -1145,7 +1295,7 @@ export class WorkshopDialogPixi {
       this.isWorldEventDialog && this.viewModel.rowWidget === 'worldEventQuest'
         ? 0
         : this.scrollContentPaddingTop;
-    const rowGap = this.isWorldChatDialog
+    const rowGap = this.isChatDialog
       ? WORLD_CHAT_ROW_GAP
       : this.isBagDialog
         ? 0
@@ -1162,8 +1312,10 @@ export class WorkshopDialogPixi {
                   this.viewModel.rowWidget === 'allianceQuest')
               ? 0
               : 4;
-    const rowWidth = this.isWorldChatDialog
+    const rowWidth = this.isChatDialog
       ? this.scroll.width - WORLD_CHAT_ROW_SCROLLBAR_GUTTER
+      : this.isFriendsDialog
+        ? PIXI_DIALOG_BASE_GEOMETRY.contentWidth
       : this.isBagDialog
         ? (this.bagRowWidth ?? WORKSHOP_DIALOG_CONTENT_WIDTH)
         : this.isAllianceDialog && this.viewModel.directory
@@ -1187,7 +1339,7 @@ export class WorkshopDialogPixi {
     const rowsHeight =
       preferredHeights.reduce((height, rowHeight) => height + rowHeight, 0) +
       rowsGapHeight;
-    let y = this.isWorldChatDialog
+    let y = this.isChatDialog
       ? Math.max(WORLD_CHAT_SCROLL_PADDING_TOP, this.scroll.height - rowsHeight)
       : contentPaddingTop;
 
@@ -1203,9 +1355,7 @@ export class WorkshopDialogPixi {
     });
 
     const contentHeight = Math.max(
-      this.isWorldChatDialog
-        ? WORLD_CHAT_SCROLL_PADDING_TOP
-        : contentPaddingTop,
+      this.isChatDialog ? WORLD_CHAT_SCROLL_PADDING_TOP : contentPaddingTop,
       y - (widgets.length > 0 ? rowGap : 0),
     );
     const locksWorldEventQuestScroll =
@@ -1219,7 +1369,7 @@ export class WorkshopDialogPixi {
     );
     if (locksWorldEventQuestScroll) {
       this.scroll.scrollTo(0);
-    } else if (this.isWorldChatDialog) {
+    } else if (this.isChatDialog) {
       const selectedRow = widgets.find(
         (widget) => widget.selectedForReport === true,
       );
@@ -1621,6 +1771,30 @@ export class WorkshopDialogPixi {
 
     this.composerField?.applyTheme(contentTheme);
     this.composerSubmit?.applyTheme(contentTheme);
+    if (this.directMessageName) {
+      applyTextTheme(
+        this.directMessageTag,
+        contentTheme,
+        RETAINED_TEXT_STYLES.bold,
+      );
+      this.directMessageTag.style.fill = this.directMessageTagColor;
+      applyTextTheme(
+        this.directMessageName,
+        contentTheme,
+        RETAINED_TEXT_STYLES.bold,
+      );
+      applyTextTheme(
+        this.directMessageLevel,
+        contentTheme,
+        RETAINED_TEXT_STYLES.border,
+      );
+      applyTextTheme(
+        this.directMessageExpandGlyph,
+        contentTheme,
+        RETAINED_TEXT_STYLES.bold,
+      );
+    }
+    this.directMessageUnfriend?.applyTheme(contentTheme);
   }
 
   layout(viewportProjection) {
@@ -1628,7 +1802,7 @@ export class WorkshopDialogPixi {
       viewportProjection ?? this.viewportProjection ?? {};
     viewportProjection = this.viewportProjection;
     const keepWorldChatPinnedToNewest =
-      this.isWorldChatDialog &&
+      this.isChatDialog &&
       this.scroll.offsetY >=
         Math.max(0, this.scroll.contentHeight - this.scroll.height) - 0.5;
     this.sourceWidth =
@@ -1640,18 +1814,18 @@ export class WorkshopDialogPixi {
       return;
     }
     const frameOutset = PIXI_ROOT_RUN_GEOMETRY.dialog.frameOutset;
-    const width = this.isWorldChatDialog
-      ? this.sourceWidth - frameOutset * 2
-      : 304;
-    if (this.isWorldChatDialog) {
+    const width = this.isChatDialog ? this.sourceWidth - frameOutset * 2 : 304;
+    if (this.isChatDialog) {
       this.scrollViewportWidth = width - WORLD_CHAT_CONTENT_INSET_X * 2;
     }
     const tabs = this.tabs.getWidgets();
     const tabsInShellFooter = tabs.length > 0;
     const composerHeight =
       this.composerField?.visible === true ? WORLD_CHAT_COMPOSER_HEIGHT : 0;
-    const baseHeight = this.isWorldChatDialog
+    const baseHeight = this.isChatDialog
       ? WORLD_CHAT_DIALOG_HEIGHT
+      : this.isFriendsDialog
+        ? FRIENDS_DIALOG_HEIGHT
       : this.isWorldEventDialog
         ? this.worldEventHeaderArt?.visible === true
           ? 590
@@ -1661,7 +1835,7 @@ export class WorkshopDialogPixi {
           : this.isAllianceDialog
             ? TRADE_ALLIANCE_DIALOG_HEIGHT
             : 382;
-    const viewportReserve = this.isWorldChatDialog ? 80 : 118;
+    const viewportReserve = this.isChatDialog ? 80 : 118;
     const hasPrimaryVerticalScroll =
       this.isAllianceDialog ||
       (!this.isWorldEventDialog && !this.ownedAllianceLayout);
@@ -1669,25 +1843,25 @@ export class WorkshopDialogPixi {
       ? resolveAdaptiveDialogHeight({
           viewportHeight: this.sourceHeight,
           baseHeight,
-          minimumHeight: this.isWorldChatDialog ? 360 : 260,
+          minimumHeight: this.isChatDialog ? 360 : 260,
           maximumHeight: this.sourceHeight - viewportReserve,
           hasPrimaryVerticalScroll: true,
         })
       : Math.min(baseHeight, this.sourceHeight - viewportReserve);
-    const panelX = this.isWorldChatDialog
+    const panelX = this.isChatDialog
       ? frameOutset
       : (this.sourceWidth - width) / 2;
     const centeredPanelY = (this.sourceHeight - height) / 2;
-    const keyboardShift = this.isWorldChatDialog
+    const keyboardShift = this.isChatDialog
       ? Math.min(0, Number(viewportProjection?.worldChatShift) || 0)
       : 0;
-    let panelY = this.isWorldChatDialog
+    let panelY = this.isChatDialog
       ? Math.max(
           WORLD_CHAT_DIALOG_MIN_TOP,
           this.sourceHeight - height - frameOutset,
         ) + keyboardShift
       : centeredPanelY;
-    if (this.isWorldChatDialog && keyboardShift < 0) {
+    if (this.isChatDialog && keyboardShift < 0) {
       const keyboardPanelY =
         WORLD_CHAT_DIALOG_MIN_TOP +
         frameOutset +
@@ -1704,7 +1878,7 @@ export class WorkshopDialogPixi {
       );
       panelY = Math.min(keyboardPanelY, keyboardCoreBottom - height);
     }
-    if (this.isWorldChatDialog) {
+    if (this.isChatDialog) {
       const animatedBounds = this.resolveWorldChatMotionBounds({
         y: panelY,
         height,
@@ -1784,7 +1958,7 @@ export class WorkshopDialogPixi {
       this.isAllianceDialog && this.viewModel.rowWidget === 'allianceQuest';
     const usesAllianceDirectoryRows =
       this.isAllianceDialog && this.viewModel.directory === true;
-    if (!tabsInShellFooter && this.isWorldChatDialog && composerHeight > 0) {
+    if (!tabsInShellFooter && this.isChatDialog && composerHeight > 0) {
       const paperBottom = height - 52;
       this.panel.paperFrame.setSize(
         this.panel.paperFrame.frameWidth,
@@ -1792,6 +1966,9 @@ export class WorkshopDialogPixi {
         PIXI_ROOT_RUN_GEOMETRY.dialog.paperBorderInsets,
       );
     }
+    const directMessageMessageTop = this.isDirectMessageDialog
+      ? this.layoutDirectMessageSections()
+      : null;
     this.copy.position.set(20, 18);
     const copyHeight = this.copy.text ? Math.ceil(this.copy.height) + 8 : 0;
     this.headerHeadline.position.set(20, DIALOG_SCROLL_VIEWPORT_TOP);
@@ -1807,12 +1984,15 @@ export class WorkshopDialogPixi {
       this.headerBody.y +
         (this.headerBody.text ? Math.ceil(this.headerBody.height) + 4 : 0),
     );
-    const headerHeight = this.headerHeadline.visible
-      ? this.headerMeta.y -
-        DIALOG_SCROLL_VIEWPORT_TOP +
-        Math.ceil(this.headerMeta.height) +
-        8
-      : 0;
+    const headerHeight =
+      directMessageMessageTop === null
+        ? this.headerHeadline.visible
+          ? this.headerMeta.y -
+            DIALOG_SCROLL_VIEWPORT_TOP +
+            Math.ceil(this.headerMeta.height) +
+            8
+          : 0
+        : Math.max(0, directMessageMessageTop - DIALOG_SCROLL_VIEWPORT_TOP);
     const statusHeight = this.status.text ? 18 : 0;
     const bagListLayout = this.isBagDialog
       ? resolveRetainedDialogListLayout({
@@ -1861,8 +2041,10 @@ export class WorkshopDialogPixi {
       this.allianceQuestRowWidth = allianceQuestListLayout.rowWidth;
     }
     this.scroll.setBounds(
-      this.isWorldChatDialog
+      this.isChatDialog
         ? WORLD_CHAT_CONTENT_INSET_X
+        : this.isFriendsDialog
+          ? 0
         : bagListLayout
           ? 20 + bagListLayout.x
           : allianceDirectoryListLayout
@@ -1876,6 +2058,8 @@ export class WorkshopDialogPixi {
         this.scrollViewportTopInset,
       usesAllianceQuestRows
         ? allianceQuestListLayout.viewportWidth
+        : this.isFriendsDialog
+          ? PIXI_DIALOG_BASE_GEOMETRY.contentWidth
         : allianceDirectoryListLayout
           ? allianceDirectoryListLayout.viewportWidth
           : bagListLayout
@@ -1894,7 +2078,7 @@ export class WorkshopDialogPixi {
         this.scrollViewportTopInset,
     );
     if (
-      this.isWorldChatDialog ||
+      this.isChatDialog ||
       bagListLayout ||
       allianceDirectoryListLayout ||
       usesAllianceQuestRows
@@ -1932,9 +2116,22 @@ export class WorkshopDialogPixi {
       );
     }
 
+    const centersAllianceRequestEmpty =
+      this.isAllianceDialog &&
+      this.viewModel.rowWidget === 'playerRelationship' &&
+      this.rows.getWidgets().length === 0 &&
+      Boolean(this.status.text);
+    this.status.style.align = centersAllianceRequestEmpty ? 'center' : 'left';
     this.status.position.set(
       20,
-      height - 24 - statusHeight - composerHeight - shellFooterPaperReduction,
+      centersAllianceRequestEmpty
+        ? this.scroll.root.y +
+            Math.max(0, (this.scroll.height - statusHeight) / 2)
+        : height -
+            24 -
+            statusHeight -
+            composerHeight -
+            shellFooterPaperReduction,
     );
 
     if (this.composerField) {
@@ -1963,6 +2160,66 @@ export class WorkshopDialogPixi {
         Math.max(0, this.scroll.contentHeight - this.scroll.height),
       );
     }
+  }
+
+  layoutDirectMessageSections() {
+    const identityHeight = this.directMessageIdentityExpanded
+      ? DIRECT_MESSAGE_IDENTITY_EXPANDED_HEIGHT
+      : DIRECT_MESSAGE_IDENTITY_COLLAPSED_HEIGHT;
+    const paperLeft = this.panel.paperFrame.x;
+    const paperTop = this.panel.paperFrame.y;
+    const paperWidth = this.panel.paperFrame.frameWidth;
+    const paperBottom = paperTop + this.panel.paperFrame.frameHeight;
+    const messageTop =
+      paperTop + identityHeight + DIRECT_MESSAGE_IDENTITY_SECTION_GAP;
+
+    this.panel.setPaperVisible(false);
+    this.directMessageIdentitySection.position.set(paperLeft, paperTop);
+    this.directMessageIdentityPaper.position.set(0, 0);
+    this.directMessageIdentityPaper.setSize(
+      paperWidth,
+      identityHeight,
+      PIXI_ROOT_RUN_GEOMETRY.dialog.paperBorderInsets,
+    );
+    this.directMessageMessagePaper.position.set(paperLeft, messageTop);
+    const minimumMessagePaperHeight =
+      PIXI_ROOT_RUN_GEOMETRY.dialog.paperBorderInsets.top +
+      PIXI_ROOT_RUN_GEOMETRY.dialog.paperBorderInsets.bottom;
+    this.directMessageMessagePaper.setSize(
+      paperWidth,
+      Math.max(minimumMessagePaperHeight, paperBottom - messageTop),
+      PIXI_ROOT_RUN_GEOMETRY.dialog.paperBorderInsets,
+    );
+
+    const identityX = 10;
+    const textX = identityX + DIRECT_MESSAGE_IDENTITY_AVATAR_SIZE + 10;
+    this.directMessageProfile.position.set(identityX, 8);
+    this.directMessageProfile.scale.set(
+      DIRECT_MESSAGE_IDENTITY_AVATAR_SIZE / PLAYER_PROFILE_SIZE,
+    );
+    this.directMessageTag.position.set(textX, 13);
+    this.directMessageName.position.set(
+      textX +
+        (this.directMessageTag.text
+          ? Math.ceil(this.directMessageTag.width) + 4
+          : 0),
+      13,
+    );
+    this.directMessageLevel.position.set(textX, 33);
+    this.directMessageExpandGlyph.position.set(paperWidth - 19, 23);
+    this.directMessageIdentityHitTarget.position.set(0, 0);
+    this.directMessageIdentityHitTarget.hitArea = new Rectangle(
+      0,
+      0,
+      paperWidth,
+      DIRECT_MESSAGE_IDENTITY_TOGGLE_HEIGHT,
+    );
+    this.directMessageUnfriend.position.set(textX, 61);
+    this.directMessageUnfriend.setSize(
+      DIRECT_MESSAGE_UNFRIEND_WIDTH,
+      DIRECT_MESSAGE_UNFRIEND_HEIGHT,
+    );
+    return messageTop;
   }
 
   layoutDiscoveriesDialog(viewportProjection) {
@@ -2639,11 +2896,14 @@ export class WorkshopDialogPixi {
   }
 
   activate() {
-    if (this.isWorldChatDialog) {
+    if (this.isFriendsDialog || this.isDirectMessageDialog) {
+      this.viewModel.actions?.activate?.();
+    }
+    if (this.isChatDialog) {
       this.startWorldChatOpenMotion();
     }
     this.modal.activate();
-    if (this.isWorldChatDialog) {
+    if (this.isChatDialog) {
       this.layout(this.viewportProjection);
       this.scroll.scrollTo(
         Math.max(0, this.scroll.contentHeight - this.scroll.height),
@@ -2652,6 +2912,9 @@ export class WorkshopDialogPixi {
   }
 
   deactivate() {
+    if (this.isFriendsDialog || this.isDirectMessageDialog) {
+      this.viewModel.actions?.deactivate?.();
+    }
     this.stopWorldChatMotion();
     this.composerSubmissionToken += 1;
     this.composerSubmitting = false;
@@ -2659,7 +2922,46 @@ export class WorkshopDialogPixi {
     this.composerField?.blur();
     this.updateStatus();
     this.updateComposerControl();
+    this.directMessageIdentityExpanded = false;
+    this.syncDirectMessageIdentityState();
     this.modal.deactivate();
+  }
+
+  toggleDirectMessageIdentityActions() {
+    if (
+      !this.directMessageIdentitySection ||
+      typeof this.viewModel.actions?.unfriend !== 'function'
+    ) {
+      return false;
+    }
+    this.directMessageIdentityExpanded = !this.directMessageIdentityExpanded;
+    this.syncDirectMessageIdentityState();
+    this.layout(this.viewportProjection);
+    return true;
+  }
+
+  syncDirectMessageIdentityState() {
+    if (!this.directMessageUnfriend) {
+      return;
+    }
+    const canUnfriend = typeof this.viewModel.actions?.unfriend === 'function';
+    const showAction = canUnfriend && this.directMessageIdentityExpanded;
+    this.directMessageUnfriend.visible = showAction;
+    this.directMessageUnfriend.renderable = showAction;
+    this.directMessageUnfriend.setEnabled(showAction);
+    this.directMessageExpandGlyph.visible = canUnfriend;
+    this.directMessageExpandGlyph.renderable = canUnfriend;
+  }
+
+  activateDirectMessageUnfriend() {
+    if (typeof this.viewModel.actions?.unfriend !== 'function') {
+      return false;
+    }
+    const result = this.viewModel.actions.unfriend();
+    this.directMessageIdentityExpanded = false;
+    this.syncDirectMessageIdentityState();
+    this.layout(this.viewportProjection);
+    return result ?? true;
   }
 
   destroy() {
@@ -2672,10 +2974,15 @@ export class WorkshopDialogPixi {
     this.composerField = null;
     this.composerSubmit?.destroy();
     this.composerSubmit = null;
+    disposeInputRegistration(this.directMessageProfileRegistration);
+    this.directMessageProfileRegistration = null;
+    this.directMessageUnfriend?.destroy();
+    this.directMessageUnfriend = null;
 
     this.defaultRows?.destroy();
     this.allianceRows?.destroy();
     this.allianceMemberRows?.destroy();
+    this.allianceRequestRows?.destroy();
     this.allianceQuestRows?.destroy();
     this.worldEventRows?.destroy();
     this.worldEventLeaderboardRows?.destroy();
@@ -2684,6 +2991,7 @@ export class WorkshopDialogPixi {
     this.defaultRows = null;
     this.allianceRows = null;
     this.allianceMemberRows = null;
+    this.allianceRequestRows = null;
     this.allianceQuestRows = null;
     this.worldEventRows = null;
     this.worldEventLeaderboardRows = null;
@@ -2699,6 +3007,8 @@ export class WorkshopDialogPixi {
     this.allianceRowPool = null;
     this.allianceMemberRowPool?.destroy();
     this.allianceMemberRowPool = null;
+    this.allianceRequestRowPool?.destroy();
+    this.allianceRequestRowPool = null;
     this.allianceQuestRowPool?.destroy();
     this.allianceQuestRowPool = null;
     this.worldEventRowPool?.destroy();
@@ -2756,7 +3066,9 @@ export class WorkshopDialogPixi {
 
     this.composerSubmit.setModel({
       label: 'Send',
-      enabled: Boolean(this.composerModel),
+      enabled: Boolean(
+        this.composerModel && this.composerModel.enabled !== false,
+      ),
       action: () => this.submitComposer(),
     });
   }
@@ -2801,9 +3113,7 @@ export class WorkshopDialogPixi {
   updateStatus() {
     setText(
       this.status,
-      this.isWorldChatDialog
-        ? ''
-        : this.composerStatus || this.boundStatus || '',
+      this.isChatDialog ? '' : this.composerStatus || this.boundStatus || '',
     );
   }
 
@@ -3770,7 +4080,7 @@ export class WorldChatMessageRowPixi {
   }
 }
 
-class AllianceSettingsPane {
+export class AllianceSettingsPane {
   constructor({ dialog }) {
     this.dialog = dialog;
     this.model = null;
@@ -3779,9 +4089,19 @@ class AllianceSettingsPane {
     this.dirty = false;
     this.saving = false;
     this.statusText = '';
+    this.mode = null;
     this.root = new Container({ label: `${dialog.dialogId}-settings` });
     this.root.visible = false;
     this.root.renderable = false;
+    this.scroll = new RetainedScrollArea({
+      inputRouter: dialog.inputRouter,
+      label: `${dialog.dialogId}-settings-scroll`,
+    });
+    this.content = new Container({
+      label: `${dialog.dialogId}-settings-content`,
+    });
+    this.scroll.content.addChild(this.content);
+    this.root.addChild(this.scroll.root);
     this.createIdentitySection = createDialogPaperSection(
       dialog.panel.paperFrame.texture,
       `${dialog.dialogId}-create-identity-section`,
@@ -3798,7 +4118,7 @@ class AllianceSettingsPane {
       section.visible = false;
       section.renderable = false;
     });
-    this.root.addChild(...this.createSections);
+    this.content.addChild(...this.createSections);
     this.fieldSpecs = [
       ['name', 'Name', 24],
       ['tag', 'Tag', 5],
@@ -3826,7 +4146,7 @@ class AllianceSettingsPane {
       });
       this.labels.set(key, labelText);
       this.fields.set(key, field);
-      this.root.addChild(labelText, field);
+      this.content.addChild(labelText, field);
     }
     this.tagColorLabel = createText('Tag Color', RETAINED_TEXT_STYLES.border);
     this.tagColorSwatchLayer = new Container({
@@ -3851,6 +4171,7 @@ class AllianceSettingsPane {
       assetManager: dialog.assetManager,
       label: `${dialog.dialogId}-settings-banner-preview`,
     });
+    this.bannerSectionLabel = createText('Banner', RETAINED_TEXT_STYLES.bold);
     this.emblemLabel = createText('Emblem', RETAINED_TEXT_STYLES.border);
     this.emblemOptionLayer = new Container({
       label: `${dialog.dialogId}-settings-emblem-options`,
@@ -3944,9 +4265,10 @@ class AllianceSettingsPane {
       ...RETAINED_TEXT_STYLES.border,
       align: 'center',
     });
-    this.root.addChild(
+    this.content.addChild(
       this.tagColorLabel,
       this.tagColorSwatchLayer,
+      this.bannerSectionLabel,
       this.bannerPreview,
       this.emblemLabel,
       this.emblemOptionLayer,
@@ -3976,6 +4298,11 @@ class AllianceSettingsPane {
     }
     const allianceId = String(this.model.allianceId ?? '');
     const allianceChanged = this.draftAllianceId !== allianceId;
+    const modeChanged = this.mode !== this.model.mode;
+    this.mode = this.model.mode;
+    if (allianceChanged || modeChanged) {
+      this.scroll.scrollTo(0);
+    }
     if (allianceChanged || !this.dirty) {
       this.draftAllianceId = allianceId;
       if (allianceChanged) {
@@ -4029,7 +4356,10 @@ class AllianceSettingsPane {
       swatch.root.renderable = editable && !editingBanner;
       swatch.setSelected(swatch.colorId === selectedTagColor);
     }
-    const editingAllianceBanner = editable && (creating || editingBanner);
+    const editingAllianceBanner =
+      editable && (creating || editingBanner || this.model.mode === 'settings');
+    this.bannerSectionLabel.visible = editingAllianceBanner && !creating;
+    this.bannerSectionLabel.renderable = editingAllianceBanner && !creating;
     this.bannerPreview.visible = editingAllianceBanner;
     this.bannerPreview.renderable = editingAllianceBanner;
     this.emblemLabel.visible = editingAllianceBanner;
@@ -4194,22 +4524,35 @@ class AllianceSettingsPane {
     return result?.ok === true;
   }
 
-  setBounds(x, y, width) {
+  setBounds(x, y, width, height = 0) {
     this.root.position.set(x, y);
+    const creating = this.model?.mode === 'create';
+    this.scroll.setBounds(
+      0,
+      0,
+      creating ? width + PIXI_UI_GEOMETRY.dialogPadding * 2 : width,
+      height,
+    );
     if (this.model?.editable !== true) {
       this.status.position.set(0, 8);
+      this.scroll.setContentHeight(26);
       return;
     }
     if (this.model?.mode === 'banner') {
       this.layoutBannerEditor(0);
       this.saveButton.setBounds(0, 203, width, 28);
       this.status.position.set(0, 235);
+      this.scroll.setContentHeight(253);
       return;
     }
-    if (this.model?.mode === 'create') {
-      this.layoutCreateSections(width);
+    if (creating) {
+      this.scroll.setContentHeight(this.layoutCreateSections(width));
       return;
     }
+    this.scroll.setContentHeight(this.layoutMergedSettings(width));
+  }
+
+  layoutMergedSettings(width) {
     const fieldHeight = 40;
     let fieldY = 0;
     this.fieldSpecs.forEach(([key]) => {
@@ -4227,7 +4570,10 @@ class AllianceSettingsPane {
         fieldY += fieldHeight;
       }
     });
-    const joinY = fieldY;
+    const bannerY = fieldY + 2;
+    this.bannerSectionLabel.position.set(0, bannerY);
+    this.layoutBannerEditor(bannerY + 17);
+    const joinY = bannerY + 220;
     this.joinModeLabel.position.set(0, joinY);
     const joinButtonY = joinY + 13;
     const joinGap = 6;
@@ -4251,6 +4597,7 @@ class AllianceSettingsPane {
       28,
     );
     this.status.position.set(0, actionY + 32);
+    return actionY + 50;
   }
 
   layoutCreateSections(width) {
@@ -4372,6 +4719,7 @@ class AllianceSettingsPane {
     const actionY = joinButtonY + 34;
     this.saveButton.setBounds(contentX, actionY, width, 28);
     this.status.position.set(contentX, actionY + 30);
+    return this.status.y + 18;
   }
 
   layoutBannerEditor(y, { x = 0 } = {}) {
@@ -4414,6 +4762,11 @@ class AllianceSettingsPane {
       this.emblemLabel,
       resolvedTheme,
       RETAINED_TEXT_STYLES.border,
+    );
+    applyTextTheme(
+      this.bannerSectionLabel,
+      resolvedTheme,
+      RETAINED_TEXT_STYLES.bold,
     );
     for (const option of this.emblemOptions) {
       option.applyTheme(resolvedTheme);
@@ -4468,6 +4821,7 @@ class AllianceSettingsPane {
     this.joinModeButtons.forEach((button) => button.destroy());
     this.saveButton.destroy();
     this.disbandButton.destroy();
+    this.scroll.destroy();
     this.root.destroy({ children: true });
   }
 }
@@ -5337,10 +5691,7 @@ export class PotionDiscoveryPagePixi {
 
     const contentWidth = Math.max(0, width - DISCOVERY_PAGE_CONTENT_INSET * 2);
     this.syncPotionIconBounds();
-    this.unknownStatus.position.set(
-      DISCOVERY_PAGE_CONTENT_INSET,
-      height - 38,
-    );
+    this.unknownStatus.position.set(DISCOVERY_PAGE_CONTENT_INSET, height - 38);
     this.unknownStatusBackground.setSize(
       contentWidth,
       UNKNOWN_RECIPE_STATUS_HEIGHT,
@@ -5427,9 +5778,7 @@ export class PotionDiscoveryPagePixi {
     const pageHeight = this.height ?? DISCOVERY_PAGE_HEIGHT;
     this.potionIcon.position.set(
       this.discovered
-        ? DISCOVERY_PAGE_CONTENT_INSET -
-            4 +
-            (DISCOVERY_ICON_SIZE - width) / 2
+        ? DISCOVERY_PAGE_CONTENT_INSET - 4 + (DISCOVERY_ICON_SIZE - width) / 2
         : (pageWidth - width) / 2,
       this.discovered
         ? DISCOVERY_PAGE_CONTENT_INSET + 3

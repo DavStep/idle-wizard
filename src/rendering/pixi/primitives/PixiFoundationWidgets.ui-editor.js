@@ -7,6 +7,7 @@ import {
 } from '../../../uiEditor/widgets/createUiEditorPixiSurface.js';
 import { createUiEditorPixiThumbnail } from '../../../uiEditor/widgets/createUiEditorPixiThumbnail.js';
 import {
+  RootRunHudBagCapsule,
   RootRunHudCurrencyCapsule,
   RootRunHudLevelRail,
 } from '../global/chrome/RootRunTopHudWidgets.js';
@@ -353,6 +354,29 @@ export default [
       { fixture: { amount: '320', resource: 'mana' }, id: 'mana', label: 'Mana', mount: mountHudCurrency },
       { fixture: { amount: '18', resource: 'crystal' }, id: 'amber', label: 'Amber', mount: mountHudCurrency },
       { fixture: { amount: '240', resource: 'amethyst' }, id: 'amethyst', label: 'Amethyst', mount: mountHudCurrency },
+    ],
+  }),
+  defineUiEditorIntegration({
+    apiVersion: 1,
+    createThumbnail: createHudBagThumbnail,
+    folderPath: ['HUD'],
+    id: 'compound.hud-bag-capsule',
+    kind: 'widget',
+    label: 'HUD Bag Capsule',
+    sectionId: FOUNDATION_SECTION,
+    properties: [
+      { label: 'Production class', value: 'RootRunHudBagCapsule' },
+      { label: 'Contract', value: 'Workshop inventory opener in top-HUD capsule geometry' },
+    ],
+    usages: [
+      {
+        label: 'Workshop top-HUD Bag opener',
+        source: 'src/rendering/pixi/global/chrome/PixiTopPanelView.js',
+      },
+    ],
+    scenarios: [
+      { fixture: { pressed: false }, id: 'default', label: 'Default', mount: mountHudBag },
+      { fixture: { pressed: true }, id: 'pressed', label: 'Pressed', mount: mountHudBag },
     ],
   }),
   defineUiEditorIntegration({
@@ -814,6 +838,19 @@ async function mountHudCurrency(_context, fixture) {
       }),
     ],
   };
+}
+
+async function mountHudBag(context, fixture) {
+  return createUiEditorPixiSurface({
+    assetFilter: hudAssetFilter,
+    component: 'RootRunHudBagCapsule',
+    createControl: ({ assets }) =>
+      createHudBagControl({
+        assets,
+        onActivate: () => context?.emit('bagOpened'),
+        pressed: fixture.pressed === true,
+      }),
+  });
 }
 
 async function mountBottomRoomTabs(context, fixture) {
@@ -1301,6 +1338,15 @@ function createHudCurrencyThumbnail() {
   });
 }
 
+function createHudBagThumbnail() {
+  return createUiEditorPixiThumbnail({
+    assetFilter: hudAssetFilter,
+    component: 'RootRunHudBagCapsule',
+    createControl: ({ assets }) => createHudBagControl({ assets }),
+    id: 'compound.hud-bag-capsule',
+  });
+}
+
 function createBottomRoomTabsThumbnail() {
   return createUiEditorPixiThumbnail({
     assetFilter: bottomPanelAssetFilter,
@@ -1602,6 +1648,21 @@ function createHudCurrencyControl({ assets, state }) {
   };
 }
 
+function createHudBagControl({ assets, onActivate = null, pressed = false }) {
+  const wrapper = new Container({ label: 'uiLabHudBagCapsule' });
+  const bag = new RootRunHudBagCapsule({ action: onActivate, assets });
+  bag.setPressed(pressed, { confirmed: pressed });
+  bag.scale.set(1 / HUD_SOURCE_SCALE);
+  wrapper.addChild(bag);
+  return {
+    bag,
+    destroy: () => wrapper.destroy({ children: true }),
+    height: 66 / HUD_SOURCE_SCALE,
+    root: wrapper,
+    width: 208 / HUD_SOURCE_SCALE,
+  };
+}
+
 function createInlineRuns(assets, text, existingTexture = null) {
   const texture = existingTexture ?? assets?.getAtlasTexture?.('resource:coin');
   return [
@@ -1644,6 +1705,7 @@ function starAssetFilter({ id }) {
 function hudAssetFilter({ id }) {
   return id.includes('/ui/root-run-top-hud/')
     || id.includes('/ui/white-squircle/')
+    || id === PIXI_ROOT_RUN_ASSETS.workshopBag
     || id.endsWith('ui/root-run-level-star.png');
 }
 

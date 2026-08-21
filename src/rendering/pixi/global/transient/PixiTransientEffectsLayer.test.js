@@ -228,6 +228,57 @@ describe('PixiTransientEffectsLayer', () => {
     expect(entry.widget.root.scale.y).toBeCloseTo(0.9);
   });
 
+  it('drops a planted seed pack from above the tile center and hides it on impact', () => {
+    const layer = new PixiTransientEffectsLayer({
+      assets: createAssets(),
+      semanticRegistry: createSemanticRegistry({
+        'garden.plot.2': {
+          bounds: { x: 60, y: 100, width: 88, height: 84 },
+        },
+      }),
+      random: () => 0.5,
+    });
+    layer.layout({
+      sourceScale: 1,
+      authoredOffsetX: 0,
+      sourceWidth: 390,
+      sourceHeight: 844,
+    });
+    layer.applyTheme(
+      createPixiThemeSnapshot({ iconMode: 'icons' }),
+    );
+    layer.activate();
+
+    layer.emitReward(
+      createRewardFlyoutPresentation({
+        type: 'garden_seed_planted',
+        eventId: 'plant-2',
+        seed: { key: 'mintSeed', label: 'mint seed' },
+        quantity: 5,
+        tileNumber: 2,
+      }),
+    );
+
+    const [entry] = layer.entries;
+    expect(entry).toMatchObject({
+      kind: 'item',
+      delayMs: 0,
+      durationMs: 500,
+    });
+    expect(entry.widget.root.position).toMatchObject({ x: 104, y: 106 });
+    expect(entry.widget.root.alpha).toBe(1);
+
+    entry.widget.update(0.4, { delayed: false });
+    expect(entry.widget.root.x).toBe(104);
+    expect(entry.widget.root.y).toBeGreaterThan(106);
+    expect(entry.widget.root.y).toBeLessThan(142);
+    expect(entry.widget.root.alpha).toBe(1);
+
+    entry.widget.update(0.52, { delayed: false });
+    expect(entry.widget.root.position).toMatchObject({ x: 104, y: 142 });
+    expect(entry.widget.root.alpha).toBe(0);
+  });
+
   it('honors the platform reduced-motion preference without presenter wiring', () => {
     const matchMedia = globalThis.matchMedia;
     globalThis.matchMedia = vi.fn(() => ({ matches: true }));
@@ -768,20 +819,20 @@ describe('reward flyout presenter', () => {
       quantity: 9,
       tileNumber: 2,
     });
-    expect(plantedSeedReward.itemDrops).toHaveLength(6);
-    expect(plantedSeedReward.itemDrops).toEqual(
-      expect.arrayContaining([
-        expect.objectContaining({
-          id: 'plant-2:seed:0',
-          kind: 'seed',
-          baseFrameName: 'seed:pack',
-          itemFrameName: 'herb:mintHerb',
-          anchorId: 'garden.plot.2',
-          anchorYRatio: 0.5,
-          size: 25.5,
-        }),
-      ]),
-    );
+    expect(plantedSeedReward.itemDrops).toEqual([
+      expect.objectContaining({
+        id: 'plant-2:seed:0',
+        kind: 'seed',
+        baseFrameName: 'seed:pack',
+        itemFrameName: 'herb:mintHerb',
+        anchorId: 'garden.plot.2',
+        anchorYRatio: 0.5,
+        size: 25.5,
+        motion: 'garden-plant-drop',
+        delayMs: 0,
+        durationMs: 500,
+      }),
+    ]);
 
     expect(
       createRewardVisualPresentation({
@@ -795,7 +846,11 @@ describe('reward flyout presenter', () => {
         expect.objectContaining({
           kind: 'herb',
           frameName: 'herb:sageHerb',
-          anchorId: 'garden.plot.2',
+          anchorId: [
+            'garden.plot.2.plant.1',
+            'garden.plot.2',
+          ],
+          spread: 0,
         }),
       ]),
     );
@@ -829,6 +884,57 @@ describe('reward flyout presenter', () => {
         anchorYRatio: 91.5 / 486,
       }),
     ]);
+  });
+
+  it('starts automated Garden harvest drops at the matching herb slots', () => {
+    const records = {
+      'garden.plot.2': {
+        bounds: { x: 0, y: 100, width: 300, height: 80 },
+      },
+      'garden.plot.2.plant.1': {
+        bounds: { x: 20, y: 110, width: 20, height: 40 },
+      },
+      'garden.plot.2.plant.2': {
+        bounds: { x: 80, y: 110, width: 20, height: 40 },
+      },
+      'garden.plot.2.plant.3': {
+        bounds: { x: 140, y: 110, width: 20, height: 40 },
+      },
+    };
+    const layer = new PixiTransientEffectsLayer({
+      assets: createAssets(),
+      semanticRegistry: createSemanticRegistry(records),
+      random: () => 0.5,
+    });
+    layer.layout({
+      sourceScale: 1,
+      authoredOffsetX: 0,
+      sourceWidth: 390,
+      sourceHeight: 844,
+    });
+
+    layer.emitReward(
+      createRewardFlyoutPresentation({
+        type: 'herb_harvested',
+        eventId: 'harvest-2',
+        herb: { key: 'sageHerb', label: 'sage' },
+        quantity: 3,
+        tileNumber: 2,
+      }),
+    );
+
+    const drops = layer.entries.filter((entry) => entry.kind === 'item');
+    expect(drops.map(({ widget }) => widget.model.anchorId)).toEqual([
+      ['garden.plot.2.plant.1', 'garden.plot.2'],
+      ['garden.plot.2.plant.2', 'garden.plot.2'],
+      ['garden.plot.2.plant.3', 'garden.plot.2'],
+    ]);
+    expect(drops.map(({ widget }) => widget.model.anchor)).toEqual([
+      { x: 30, y: 130 },
+      { x: 90, y: 130 },
+      { x: 150, y: 130 },
+    ]);
+    expect(drops.map(({ widget }) => widget.root.x)).toEqual([30, 90, 150]);
   });
 
   it('maps shop and task rewards to stable retained visual origins', () => {

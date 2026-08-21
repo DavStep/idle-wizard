@@ -1112,6 +1112,44 @@
       ]
     },
     {
+      "id": "dialog.friends",
+      "label": "Friends",
+      "kind": "dialog",
+      "production": true,
+      "coverage": {
+        "devUi": ["friends"]
+      },
+      "recipe": {
+        "kind": "devUi",
+        "surfaceId": "friends"
+      },
+      "states": [
+        { "id": "friends" },
+        { "id": "requests" },
+        { "id": "pending" },
+        { "id": "empty" }
+      ]
+    },
+    {
+      "id": "dialog.direct-message",
+      "label": "Friend chat",
+      "kind": "dialog",
+      "production": true,
+      "coverage": {
+        "devUi": ["friendChat"]
+      },
+      "recipe": {
+        "kind": "devUi",
+        "surfaceId": "friendChat"
+      },
+      "states": [
+        { "id": "identity-expanded" },
+        { "id": "identity-collapsed" },
+        { "id": "history-after-unfriend" },
+        { "id": "empty" }
+      ]
+    },
+    {
       "id": "dialog.workshop-auxiliary",
       "label": "Workshop stats",
       "kind": "dialog",
@@ -1495,7 +1533,7 @@
       "kind": "dialog",
       "production": true,
       "coverage": {
-        "devUi": ["playerInfo"],
+        "devUi": ["playerInfo", "playerInfoFriend", "playerInfoOwn"],
         "globalOwners": ["playerInfoDialogFacade"],
         "domSelectors": [".room-player-info-dialog"]
       },
@@ -1511,7 +1549,9 @@
         }
       ],
       "states": [
-        { "id": "loaded" },
+        { "id": "loaded", "recipe": { "kind": "devUi", "surfaceId": "playerInfo" } },
+        { "id": "friend", "recipe": { "kind": "devUi", "surfaceId": "playerInfoFriend" } },
+        { "id": "own-player", "recipe": { "kind": "devUi", "surfaceId": "playerInfoOwn" } },
         { "id": "loading" },
         { "id": "offline" },
         { "id": "error" }

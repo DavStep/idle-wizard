@@ -231,6 +231,20 @@ const UI_SURFACE_DEFINITIONS = Object.freeze([
   },
   { id: 'worldChat', kind: 'dialog', dialogId: 'worldChat', aliases: ['chat'] },
   {
+    id: 'friends',
+    kind: 'dialog',
+    dialogId: 'friends',
+    options: { previewSnapshot: createDevFriendsSnapshot(), tab: 'friends' },
+    aliases: ['globalFriends'],
+  },
+  {
+    id: 'friendChat',
+    kind: 'dialog',
+    dialogId: 'global.directMessage',
+    options: createDevDirectMessageOptions(),
+    aliases: ['directMessage', 'globalDirectMessage'],
+  },
+  {
     id: 'worldChatReportHighlight',
     kind: 'preview',
     setup: 'worldChatReportHighlight',
@@ -320,23 +334,161 @@ const UI_SURFACE_DEFINITIONS = Object.freeze([
     id: 'playerInfo',
     kind: 'dialog',
     dialogId: 'global.player',
-    options: {
-      player: {
-        allianceId: 'moss-hall',
-        allianceName: 'Moss Hall',
-        allianceTag: 'MOSS',
-        character: 'mira',
-        playerLevel: 12,
-        prestigeCount: 2,
-        totalProducedCoin: 128450,
-        totalBrewedPotions: 86,
-        totalHarvestedHerbs: 240,
-        username: 'Mira',
-      },
-    },
+    options: createDevPlayerInfoOptions('stranger'),
     aliases: ['playerProfile'],
   },
+  {
+    id: 'playerInfoFriend',
+    kind: 'dialog',
+    dialogId: 'global.player',
+    options: createDevPlayerInfoOptions('friend'),
+  },
+  {
+    id: 'playerInfoOwn',
+    kind: 'dialog',
+    dialogId: 'global.player',
+    options: createDevPlayerInfoOptions('self'),
+  },
 ]);
+
+function createDevPlayerInfoOptions(relationship) {
+  const ownPlayer = relationship === 'self';
+  return {
+    actions: ownPlayer
+      ? { openCosmetics: () => true, openFriends: () => true }
+      : relationship === 'friend'
+        ? { unfriend: () => true }
+        : { addFriend: () => true },
+    ownPlayer,
+    relationship,
+    player: {
+      allianceId: 'moss-hall',
+      allianceName: 'Moss Hall',
+      allianceTag: 'MOSS',
+      character: 'mira',
+      connected: true,
+      identity: ownPlayer ? 'dev-self' : 'dev-mira',
+      playerLevel: 12,
+      prestigeCount: 2,
+      totalProducedCoin: 128450,
+      totalBrewedPotions: 86,
+      totalHarvestedHerbs: 240,
+      totalPlayTimeSeconds: 45_000,
+      username: ownPlayer ? 'Mira' : 'Juniper',
+    },
+  };
+}
+
+function createDevFriendsSnapshot() {
+  const player = (
+    identity,
+    username,
+    character,
+    frame,
+    playerLevel,
+    overrides = {},
+  ) => ({
+    connected: true,
+    createdAtMs: 1,
+    frame,
+    identity,
+    key: `dev:${identity}`,
+    lastSeenAtMs: 1,
+    playerLevel,
+    character,
+    username,
+    ...overrides,
+  });
+  return {
+    connected: true,
+    friends: [
+      player('dev-mira', 'Mira', 'mira', 'violet', 12, {
+        allianceTag: 'MOSS',
+        allianceTagColor: 'green',
+        statusMessage: 'The moon garden is glowing...',
+        unread: true,
+      }),
+      player('dev-rowan', 'Rowan', 'rowan', 'classic', 10, {
+        allianceTag: 'ARC',
+        allianceTagColor: 'violet',
+        statusMessage: 'Anyone found the crystal...',
+        unread: true,
+      }),
+      player('dev-juniper', 'Juniper', 'juniper', 'emerald', 14, {
+        allianceTag: 'DUNE',
+        allianceTagColor: 'green',
+        statusMessage: 'Meet by the old cauldron...',
+        unread: true,
+      }),
+      player(
+        'dev-lyra',
+        'Lyra',
+        'adventurer_redscarf_sword',
+        'gnome',
+        9,
+        {
+          allianceTag: 'STAR',
+          allianceTagColor: 'violet',
+          statusMessage: 'Thanks for the herbs!',
+          unread: true,
+        },
+      ),
+      player(
+        'dev-kael',
+        'Kael',
+        'adventurer_blondsword',
+        'sun',
+        11,
+        {
+          allianceTag: 'MIST',
+          allianceTagColor: 'green',
+          statusMessage: "Let's raid the grotto later.",
+        },
+      ),
+    ],
+    incomingRequests: [
+      player('dev-luna', 'Luna', 'luna', 'gold', 9),
+    ],
+    outgoingRequests: [
+      player('dev-sage', 'Sage', 'sage', 'emerald', 8),
+    ],
+  };
+}
+
+function createDevDirectMessageOptions() {
+  return {
+    friend: {
+      allianceTag: 'DUSK',
+      allianceTagColor: 'green',
+      character: 'juniper',
+      frame: 'emerald',
+      identity: 'dev-juniper',
+      playerLevel: 10,
+      username: 'Juniper',
+    },
+    identityExpanded: true,
+    previewMessages: [
+      {
+        ageLabel: '2m',
+        body: 'The harvest was amazing this week.',
+        character: 'juniper',
+        frame: 'emerald',
+        id: 'dev-dm-juniper',
+        username: 'Juniper',
+      },
+      {
+        ageLabel: 'now',
+        body: 'I saved you a bundle of herbs.',
+        character: 'mira',
+        frame: 'violet',
+        id: 'dev-dm-mira',
+        isOwn: true,
+        username: 'Mira',
+      },
+    ],
+    relationship: 'friend',
+  };
+}
 
 const UI_SURFACE_LOOKUP = new Map(
   UI_SURFACE_DEFINITIONS.flatMap((surface) => [

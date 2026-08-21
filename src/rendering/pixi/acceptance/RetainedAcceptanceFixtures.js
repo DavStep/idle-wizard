@@ -297,7 +297,7 @@ function createTradeAllianceDialogModel(key) {
     ownedAlliance: true,
     ownedAllianceHome: true,
     selectedTabId: 'home',
-    tabs: ['home', 'quests', 'settings'].map((id) => ({
+    tabs: ['home', 'quests', 'requests', 'settings'].map((id) => ({
       id,
       label: id[0].toUpperCase() + id.slice(1),
       selected: id === 'home',
@@ -778,10 +778,10 @@ function createShopDialogModel(dialogId, key, subscribe) {
       listTitle: 'Offers',
       status: key === 'a' ? '3 Matching Offers' : '',
       fields: [
-              { id: 'item', label: 'Item', value: 'Sage Seed' },
-              { id: 'minPrice', label: 'Min Price', value: '5' },
-              { id: 'username', label: 'Username', value: 'Mira' },
-            ],
+        { id: 'item', label: 'Item', value: 'Sage Seed' },
+        { id: 'minPrice', label: 'Min Price', value: '5' },
+        { id: 'username', label: 'Username', value: 'Mira' },
+      ],
       items: [
         ['Mira', 'Sage Seed', 12],
         ['Rowan', 'Mint Seed', 18],
@@ -804,9 +804,9 @@ function createShopDialogModel(dialogId, key, subscribe) {
         action: accept,
       })),
       actions: [
-              { id: 'clear', label: 'Clear', action: accept },
-              { id: 'apply', label: 'Apply Filter', action: accept },
-            ],
+        { id: 'clear', label: 'Clear', action: accept },
+        { id: 'apply', label: 'Apply Filter', action: accept },
+      ],
       tabs: [
         { id: 'selling', label: 'Selling', selected: true, action: accept },
         { id: 'buying', label: 'Buying', action: accept },

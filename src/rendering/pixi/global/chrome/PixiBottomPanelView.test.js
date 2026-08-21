@@ -7,6 +7,7 @@ import { describe, expect, it, vi } from 'vitest';
 import { DEFAULT_PAGE_SWIPE_ORDER } from '../../../../pages/managers/pageOrder.js';
 import { SemanticTargetRegistry } from '../../retained/index.js';
 import {
+  PIXI_ALLIANCE_HUD_TABS,
   PIXI_BOTTOM_PANEL_TABS,
   PIXI_GUILD_HUD_TABS,
   PIXI_PRESTIGE_HUD_TABS,
@@ -26,7 +27,7 @@ describe('PixiBottomPanelView', () => {
   it('keeps alternate HUD destinations out of normal room navigation', () => {
     expect(PIXI_BOTTOM_PANEL_TABS.map(({ id }) => id)).toEqual(
       DEFAULT_PAGE_SWIPE_ORDER.filter(
-        (id) => !['guild', 'prestige'].includes(id),
+        (id) => !['alliance', 'guild', 'prestige'].includes(id),
       ),
     );
     expect(PIXI_BOTTOM_PANEL_TABS.slice(0, 5).map(({ id }) => id)).toEqual([
@@ -53,6 +54,16 @@ describe('PixiBottomPanelView', () => {
       'icon-workshop-house-tab.png',
       'icon-prestige-main-tab.png',
       'icon-prestige-points-tab.png',
+    ]);
+    expect(PIXI_ALLIANCE_HUD_TABS.map(({ id }) => id)).toEqual([
+      'alliance.workshop',
+      'alliance.browse',
+      'alliance.create',
+      'alliance.home',
+      'alliance.quests',
+      'alliance.requests',
+      'alliance.chat',
+      'alliance.settings',
     ]);
   });
 
@@ -188,6 +199,52 @@ describe('PixiBottomPanelView', () => {
     expect(selectPrestigeTab).toHaveBeenCalledWith('points');
     semanticRegistry.activate('prestige.return.workshop');
     expect(showPage).toHaveBeenCalledWith('workshop');
+
+    view.destroy();
+  });
+
+  it('switches Alliance to its permitted text tabs and routes Chat', () => {
+    const selectAllianceTab = vi.fn();
+    const semanticRegistry = new SemanticTargetRegistry();
+    const view = new PixiBottomPanelView({
+      assets: createAssets(),
+      semanticRegistry,
+    });
+
+    view.bind({
+      allianceHud: {
+        notifications: { requests: true },
+        selectedTabId: 'home',
+        tabs: [
+          { id: 'home', visible: true, unlocked: true },
+          { id: 'quests', visible: true, unlocked: true },
+          { id: 'requests', visible: true, unlocked: true },
+          { id: 'chat', visible: true, unlocked: true },
+          { id: 'settings', visible: false, unlocked: true },
+        ],
+      },
+      currentPageId: 'alliance',
+      hudMode: 'alliance',
+      pages: [{ id: 'workshop', visible: true, unlocked: true }],
+      actions: { selectAllianceTab },
+    });
+
+    expect(
+      view.allianceTabs
+        .filter((tab) => tab.root.visible)
+        .map((tab) => tab.definition.id),
+    ).toEqual([
+      'alliance.workshop',
+      'alliance.home',
+      'alliance.quests',
+      'alliance.requests',
+      'alliance.chat',
+    ]);
+    expect(view.allianceTabs[3].state.selected).toBe(true);
+    expect(view.allianceTabs[5].notification.root.visible).toBe(true);
+
+    semanticRegistry.activate('page.alliance.chat');
+    expect(selectAllianceTab).toHaveBeenCalledWith('chat');
 
     view.destroy();
   });

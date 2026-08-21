@@ -55,6 +55,9 @@ const COSMETICS_ACTION_WIDTH =
   PLAYER_PAPER_OUTSETS.left +
   PLAYER_PAPER_OUTSETS.right -
   COSMETICS_ACTION_SIDE_INSET * 2;
+const PLAYER_ACTION_GAP = 6;
+const PLAYER_ACTION_HALF_WIDTH =
+  (COSMETICS_ACTION_WIDTH - PLAYER_ACTION_GAP) / 2;
 const COSMETICS_ACTION_Y =
   PLAYER_CONTENT_HEIGHT +
   PLAYER_PAPER_OUTSETS.bottom +
@@ -206,6 +209,45 @@ export class PixiPlayerInfoDialog extends RetainedGlobalDialog {
       action: () => this.openCosmetics(),
       label: `${dialogId}:cosmetics`,
     });
+    this.friendsButton = new PixiTextButton({
+      assetManager: this.context.assets,
+      inputRouter: this.context.inputRouter,
+      semanticRegistry: this.context.semanticRegistry,
+      semanticId: `${dialogId}.friends`,
+      text: 'Friends',
+      width: PLAYER_ACTION_HALF_WIDTH,
+      height: COSMETICS_ACTION_HEIGHT,
+      sizeTier: 50,
+      variant: 'yellow',
+      action: () => this.openFriends(),
+      label: `${dialogId}:friends`,
+    });
+    this.relationshipPrimaryButton = new PixiTextButton({
+      assetManager: this.context.assets,
+      inputRouter: this.context.inputRouter,
+      semanticRegistry: this.context.semanticRegistry,
+      semanticId: `${dialogId}.relationship.primary`,
+      text: 'Add Friend',
+      width: COSMETICS_ACTION_WIDTH,
+      height: COSMETICS_ACTION_HEIGHT,
+      sizeTier: 50,
+      variant: 'green',
+      action: () => this.activateRelationshipPrimary(),
+      label: `${dialogId}:relationship:primary`,
+    });
+    this.relationshipSecondaryButton = new PixiTextButton({
+      assetManager: this.context.assets,
+      inputRouter: this.context.inputRouter,
+      semanticRegistry: this.context.semanticRegistry,
+      semanticId: `${dialogId}.relationship.secondary`,
+      text: 'Reject',
+      width: PLAYER_ACTION_HALF_WIDTH,
+      height: COSMETICS_ACTION_HEIGHT,
+      sizeTier: 50,
+      variant: 'red',
+      action: () => this.activateRelationshipSecondary(),
+      label: `${dialogId}:relationship:secondary`,
+    });
     this.panel.content.addChild(
       this.summaryFrame,
       this.statsFrame,
@@ -228,6 +270,9 @@ export class PixiPlayerInfoDialog extends RetainedGlobalDialog {
       this.timePlayedValue,
       this.loadingLabel,
       this.cosmeticsButton,
+      this.friendsButton,
+      this.relationshipPrimaryButton,
+      this.relationshipSecondaryButton,
     );
     this.applyTheme(this.context.theme);
     this.bind({});
@@ -238,6 +283,7 @@ export class PixiPlayerInfoDialog extends RetainedGlobalDialog {
     this.playerModel = normalizePlayerModel(viewModel);
     const loading = this.playerModel.loading;
     const showCosmetics = this.playerModel.ownPlayer;
+    const showRelationship = !loading && !this.playerModel.ownPlayer;
     for (const object of [
       this.profileWidget,
       this.allianceButton,
@@ -267,12 +313,16 @@ export class PixiPlayerInfoDialog extends RetainedGlobalDialog {
     this.cosmeticsButton.setEnabled(
       showCosmetics && Boolean(this.actions.openCosmetics),
     );
+    this.friendsButton.visible = showCosmetics;
+    this.friendsButton.renderable = showCosmetics;
+    this.friendsButton.setEnabled(showCosmetics && Boolean(this.actions.openFriends));
+    this.configureRelationshipButtons(showRelationship);
     this.panel.setPaperVisible(false);
 
     if (loading) {
       this.setPanelContentSize(
         PLAYER_CONTENT_WIDTH,
-        this.playerModel.ownPlayer
+        this.playerModel.ownPlayer || showRelationship
           ? OWN_PLAYER_CONTENT_HEIGHT
           : PLAYER_CONTENT_HEIGHT,
       );
@@ -309,7 +359,9 @@ export class PixiPlayerInfoDialog extends RetainedGlobalDialog {
     this.applyAllianceTagColor();
     this.setPanelContentSize(
       PLAYER_CONTENT_WIDTH,
-      showCosmetics ? OWN_PLAYER_CONTENT_HEIGHT : PLAYER_CONTENT_HEIGHT,
+      showCosmetics || showRelationship
+        ? OWN_PLAYER_CONTENT_HEIGHT
+        : PLAYER_CONTENT_HEIGHT,
     );
     this.layoutDialog();
   }
@@ -330,6 +382,47 @@ export class PixiPlayerInfoDialog extends RetainedGlobalDialog {
 
   openCosmetics() {
     return this.actions.openCosmetics?.() ?? false;
+  }
+
+  openFriends() {
+    return this.actions.openFriends?.() ?? false;
+  }
+
+  configureRelationshipButtons(visible) {
+    const relationship = this.playerModel?.relationship ?? 'stranger';
+    const primary = this.relationshipPrimaryButton;
+    const secondary = this.relationshipSecondaryButton;
+    primary.visible = visible;
+    primary.renderable = visible;
+    secondary.visible = visible && relationship === 'incoming';
+    secondary.renderable = secondary.visible;
+    if (!visible) {
+      return;
+    }
+    const configurations = {
+      friend: ['Unfriend', 'red', Boolean(this.actions.unfriend)],
+      incoming: ['Accept', 'green', Boolean(this.actions.acceptFriend)],
+      outgoing: ['Request Pending', 'gray', false],
+      stranger: ['Add Friend', 'green', Boolean(this.actions.addFriend)],
+    };
+    const [label, variant, enabled] =
+      configurations[relationship] ?? configurations.stranger;
+    primary.setText(label).setVariant(variant).setEnabled(enabled);
+    secondary.setText('Reject').setVariant('red').setEnabled(
+      Boolean(this.actions.rejectFriend),
+    );
+  }
+
+  activateRelationshipPrimary() {
+    const relationship = this.playerModel?.relationship ?? 'stranger';
+    if (relationship === 'friend') return this.actions.unfriend?.() ?? false;
+    if (relationship === 'incoming') return this.actions.acceptFriend?.() ?? false;
+    if (relationship === 'stranger') return this.actions.addFriend?.() ?? false;
+    return false;
+  }
+
+  activateRelationshipSecondary() {
+    return this.actions.rejectFriend?.() ?? false;
   }
 
   layoutCloseControl() {
@@ -374,9 +467,28 @@ export class PixiPlayerInfoDialog extends RetainedGlobalDialog {
       },
       paperOutsets,
     );
+    const showOwnActions = this.playerModel.ownPlayer;
+    const showTwoRelationshipActions =
+      !showOwnActions && this.playerModel.relationship === 'incoming';
+    const firstWidth =
+      showOwnActions || showTwoRelationshipActions
+        ? PLAYER_ACTION_HALF_WIDTH
+        : COSMETICS_ACTION_WIDTH;
     this.cosmeticsButton.position.set(COSMETICS_ACTION_X, COSMETICS_ACTION_Y);
-    this.cosmeticsButton.setSize(
-      COSMETICS_ACTION_WIDTH,
+    this.cosmeticsButton.setSize(PLAYER_ACTION_HALF_WIDTH, COSMETICS_ACTION_HEIGHT);
+    this.friendsButton.position.set(
+      COSMETICS_ACTION_X + PLAYER_ACTION_HALF_WIDTH + PLAYER_ACTION_GAP,
+      COSMETICS_ACTION_Y,
+    );
+    this.friendsButton.setSize(PLAYER_ACTION_HALF_WIDTH, COSMETICS_ACTION_HEIGHT);
+    this.relationshipPrimaryButton.position.set(COSMETICS_ACTION_X, COSMETICS_ACTION_Y);
+    this.relationshipPrimaryButton.setSize(firstWidth, COSMETICS_ACTION_HEIGHT);
+    this.relationshipSecondaryButton.position.set(
+      COSMETICS_ACTION_X + PLAYER_ACTION_HALF_WIDTH + PLAYER_ACTION_GAP,
+      COSMETICS_ACTION_Y,
+    );
+    this.relationshipSecondaryButton.setSize(
+      PLAYER_ACTION_HALF_WIDTH,
       COSMETICS_ACTION_HEIGHT,
     );
 
@@ -486,6 +598,9 @@ export class PixiPlayerInfoDialog extends RetainedGlobalDialog {
     });
     this.allianceButton?.applyTheme(theme);
     this.cosmeticsButton?.applyTheme(theme);
+    this.friendsButton?.applyTheme(theme);
+    this.relationshipPrimaryButton?.applyTheme(theme);
+    this.relationshipSecondaryButton?.applyTheme(theme);
     this.applyAllianceTagColor();
     this.layoutDialog();
   }
@@ -518,6 +633,7 @@ function normalizePlayerModel(model = {}) {
   return {
     loading,
     ownPlayer: Boolean(model.ownPlayer ?? source.ownPlayer),
+    relationship: String(model.relationship ?? source.relationship ?? 'stranger'),
     identity: String(source.identity ?? ''),
     username: String(source.username ?? source.name ?? '').trim(),
     allianceId: String(source.allianceId ?? source.alliance_id ?? ''),

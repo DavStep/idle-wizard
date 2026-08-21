@@ -433,17 +433,17 @@ describe('WorkshopPixiPage', () => {
     const renderedRibbonHeight = ribbon.height * ribbon.root.scale.y;
     const renderedTitleLineHeight =
       ribbon.geometry.titleLineHeight * ribbon.root.scale.y;
-    expect(renderedRibbonHeight - renderedTitleLineHeight).toBeGreaterThanOrEqual(
-      11,
-    );
+    expect(
+      renderedRibbonHeight - renderedTitleLineHeight,
+    ).toBeGreaterThanOrEqual(11);
     expect(
       ribbon.root.x + ribbon.contentGroupCenterX * ribbon.root.scale.x,
     ).toBeCloseTo(harness.page.tasks.width / 2);
     expect(ribbon.title.fontSize).toBe(20);
     expect(row.root.y).toBe(16);
-    expect(
-      row.root.y - (ribbon.root.y + renderedRibbonHeight),
-    ).toBeCloseTo(-0.649);
+    expect(row.root.y - (ribbon.root.y + renderedRibbonHeight)).toBeCloseTo(
+      -0.649,
+    );
     expect(
       row.root.y + row.label.y - (ribbon.root.y + renderedRibbonHeight),
     ).toBeCloseTo(4.351);
@@ -557,7 +557,107 @@ describe('WorkshopPixiPage', () => {
     expect(outgoingRow.progress.root.scale.x).toBe(1);
   });
 
-  it('holds the completed request until the star flight completes', () => {
+  it('queues newer request progress without restarting the in-flight shine', () => {
+    const motion = createWorkshopMotionHarness();
+    const harness = createHarness({
+      requestFrame: motion.requestFrame,
+      cancelFrame: motion.cancelFrame,
+      timeSource: motion.timeSource,
+      reducedMotion: () => false,
+    });
+    harness.page.activate();
+    harness.page.bind(createWorkshopViewModel());
+
+    const row = harness.page.tasks.rows.get('request-1');
+    const firstProgressModel = createWorkshopViewModel();
+    firstProgressModel.workshop.tasks.rows[0].current = 2;
+    firstProgressModel.workshop.tasks.rows[0].required = 3;
+    harness.page.bind(firstProgressModel);
+
+    motion.runAt(150);
+    const secondProgressModel = createWorkshopViewModel();
+    secondProgressModel.workshop.tasks.rows[0].current = 5;
+    secondProgressModel.workshop.tasks.rows[0].required = 6;
+    harness.page.bind(secondProgressModel);
+
+    expect(row.progressFeedback.startedAtMs).toBe(0);
+    expect(row.progressMotion.end).toBeCloseTo(2 / 3);
+    expect(row.queuedProgress.progress).toBeCloseTo(5 / 6);
+
+    motion.runAt(300);
+    expect(row.displayedProgress).toBe(0.5);
+    expect(row.progressShineRoot.visible).toBe(false);
+
+    motion.runAt(520);
+    expect(row.displayedProgress).toBeCloseTo(2 / 3);
+    expect(row.progressFeedback.startedAtMs).toBe(520);
+    expect(row.progressShineRoot.visible).toBe(true);
+
+    motion.runAt(820);
+    expect(row.displayedProgress).toBeCloseTo(2 / 3);
+    expect(row.progressShineRoot.visible).toBe(false);
+
+    motion.runAt(1040);
+    expect(row.displayedProgress).toBeCloseTo(5 / 6);
+    expect(row.progressMotion).toBeNull();
+    expect(row.queuedProgress).toBeNull();
+
+    harness.page.destroy();
+    harness.dispose();
+  });
+
+  it('lets request completion supersede queued progress motion', () => {
+    const motion = createWorkshopMotionHarness();
+    const questCompletionMotionCoordinator =
+      new QuestCompletionMotionCoordinator();
+    const harness = createHarness({
+      questCompletionMotionCoordinator,
+      requestFrame: motion.requestFrame,
+      cancelFrame: motion.cancelFrame,
+      timeSource: motion.timeSource,
+      reducedMotion: () => false,
+    });
+    harness.page.activate();
+    harness.page.bind(createWorkshopViewModel());
+
+    const row = harness.page.tasks.rows.get('request-1');
+    const firstProgressModel = createWorkshopViewModel();
+    firstProgressModel.workshop.tasks.rows[0].current = 2;
+    firstProgressModel.workshop.tasks.rows[0].required = 3;
+    harness.page.bind(firstProgressModel);
+
+    motion.runAt(150);
+    const secondProgressModel = createWorkshopViewModel();
+    secondProgressModel.workshop.tasks.rows[0].current = 5;
+    secondProgressModel.workshop.tasks.rows[0].required = 6;
+    harness.page.bind(secondProgressModel);
+    expect(row.queuedProgress.progress).toBeCloseTo(5 / 6);
+
+    questCompletionMotionCoordinator.begin({
+      previousTaskId: 'request-1',
+      nextTaskId: 'request-2',
+      fillDurationMs: 260,
+    });
+
+    expect(row.queuedProgress).toBeNull();
+    expect(row.progressFeedback.startedAtMs).toBe(150);
+    expect(row.progressMotion).toMatchObject({
+      end: 1,
+      completion: true,
+      startedAtMs: 450,
+    });
+
+    motion.runAt(450);
+    expect(row.displayedProgress).toBe(0.5);
+    motion.runAt(710);
+    expect(row.displayedProgress).toBe(1);
+
+    harness.page.destroy();
+    questCompletionMotionCoordinator.destroy();
+    harness.dispose();
+  });
+
+  it('reveals the next request with the restrained request-card completion snap', () => {
     const motion = createWorkshopMotionHarness();
     const questCompletionMotionCoordinator =
       new QuestCompletionMotionCoordinator();
@@ -610,20 +710,41 @@ describe('WorkshopPixiPage', () => {
 
     questCompletionMotionCoordinator.complete(transitionId);
     expect(harness.page.tasks.rows.get('request-1')).toBeNull();
-    expect(harness.page.tasks.rows.get('request-2')).toBeDefined();
+    const incomingRow = harness.page.tasks.rows.get('request-2');
+    expect(incomingRow).toBeDefined();
+    expect(incomingRow.root.hitArea?.width).toBe(harness.page.tasks.width - 20);
+    expect(incomingRow.icon.width).toBe(32);
+    expect(incomingRow.label.y).toBe(5);
     expect(harness.page.tasks.root.scale.x).toBe(1);
-    expect(harness.page.tasks.rows.get('request-2').progress.root.scale.x).toBe(
-      1,
+    expect(incomingRow.progress.root.scale.x).toBe(1);
+
+    const requestCard = harness.page.tasks;
+    const anchorX = requestCard.width - 10;
+    const anchorY = requestCard.height / 2;
+    expect(requestCard.root.pivot.x).toBeCloseTo(anchorX);
+    expect(requestCard.root.pivot.y).toBeCloseTo(anchorY);
+
+    motion.runAt(663.5);
+    expect(requestCard.root.scale.x).toBeCloseTo(1.018, 3);
+    expect(requestCard.root.position.x).toBeCloseTo(requestCard.x + anchorX);
+    expect(requestCard.root.position.y).toBeCloseTo(
+      requestCard.y + anchorY - 2,
+      3,
+    );
+    expect(incomingRow.progress.root.scale.x).toBe(1);
+
+    motion.runAt(730.2);
+    expect(requestCard.root.scale.x).toBeCloseTo(0.996, 3);
+    expect(requestCard.root.position.y).toBeCloseTo(
+      requestCard.y + anchorY + 1,
+      3,
     );
 
-    motion.runAt(609);
-    expect(harness.page.tasks.root.scale.x).toBeGreaterThan(1);
-    expect(harness.page.tasks.rows.get('request-2').progress.root.scale.x).toBe(
-      1,
-    );
-
-    motion.runAt(700);
-    expect(harness.page.tasks.root.scale.x).toBe(1);
+    motion.runAt(790);
+    expect(requestCard.root.scale.x).toBe(1);
+    expect(requestCard.root.position.x).toBeCloseTo(requestCard.x + anchorX);
+    expect(requestCard.root.position.y).toBeCloseTo(requestCard.y + anchorY);
+    expect(requestCard.completionBoink).toBeNull();
 
     harness.page.destroy();
     questCompletionMotionCoordinator.destroy();
@@ -2878,7 +2999,7 @@ describe('WorkshopPixiPage', () => {
       ownedAlliance: true,
       ownedAllianceHome: true,
       selectedTabId: 'home',
-      tabs: ['home', 'quests', 'banner', 'settings'].map((id) => ({
+      tabs: ['home', 'quests', 'requests', 'settings'].map((id) => ({
         id,
         label: id[0].toUpperCase() + id.slice(1),
         selected: id === 'home',
@@ -2983,7 +3104,7 @@ describe('WorkshopPixiPage', () => {
       ownedAlliance: true,
       rowWidget: 'allianceQuest',
       selectedTabId: 'quests',
-      tabs: ['home', 'quests', 'banner', 'settings'].map((id) => ({
+      tabs: ['home', 'quests', 'requests', 'settings'].map((id) => ({
         id,
         label: id[0].toUpperCase() + id.slice(1),
         selected: id === 'quests',
@@ -3125,7 +3246,7 @@ describe('WorkshopPixiPage', () => {
   it('keeps the larger adaptive Trade Alliance height stable across tabs', () => {
     const harness = createHarness();
     const model = createWorkshopViewModel();
-    const tabIds = ['home', 'quests', 'banner', 'settings'];
+    const tabIds = ['home', 'quests', 'requests', 'settings'];
     const createAllianceModel = (selectedTabId) => ({
       title: 'Trade Alliance',
       ownedAlliance: true,
@@ -3158,10 +3279,10 @@ describe('WorkshopPixiPage', () => {
           ? [{ id: 'quest', label: 'Supply The Market', value: '4/10' }]
           : [],
       settings:
-        selectedTabId === 'settings' || selectedTabId === 'banner'
+        selectedTabId === 'settings'
           ? {
               allianceId: 'moss',
-              mode: selectedTabId,
+              mode: 'settings',
               name: 'Moss Hall',
               tag: 'MOSS',
               bannerColor: 'blue',
@@ -3201,7 +3322,7 @@ describe('WorkshopPixiPage', () => {
       title: 'Trade Alliance',
       ownedAlliance: true,
       selectedTabId: 'settings',
-      tabs: ['home', 'quests', 'banner', 'settings'].map((id) => ({
+      tabs: ['home', 'quests', 'requests', 'settings'].map((id) => ({
         id,
         label: id[0].toUpperCase() + id.slice(1),
         selected: id === 'settings',
@@ -3209,6 +3330,7 @@ describe('WorkshopPixiPage', () => {
       })),
       settings: {
         allianceId: 'moss',
+        mode: 'settings',
         name: 'Moss Hall',
         tag: 'MOSS',
         tagColor: 'green',
@@ -3236,6 +3358,9 @@ describe('WorkshopPixiPage', () => {
     expect(pane.swatches.find((swatch) => swatch.selected)?.colorId).toBe(
       'green',
     );
+    expect(pane.bannerPreview.visible).toBe(true);
+    expect(pane.scroll.contentHeight).toBeGreaterThan(pane.scroll.height);
+    expect(pane.scroll.scrollbarThumb.visible).toBe(true);
     expect(dialog.tabs.getWidgets()).toHaveLength(4);
     expect(dialog.panel.paperFrame.visible).toBe(true);
     expect(pane.root.y).toBe(
@@ -3260,7 +3385,63 @@ describe('WorkshopPixiPage', () => {
     harness.dispose();
   });
 
-  it('configures alliance banner and emblem colors from ten-option palettes', async () => {
+  it('renders alliance requests as player rows with accept and deny actions', () => {
+    const accept = vi.fn();
+    const deny = vi.fn();
+    const assetManager = createPixiAssetManagerFake(Texture);
+    assetManager.getTexture = vi.fn(() => new Texture());
+    const harness = createHarness({ assetManager });
+    const model = createWorkshopViewModel();
+    model.workshop.dialogs.alliance = {
+      title: 'Trade Alliance',
+      ownedAlliance: true,
+      selectedTabId: 'requests',
+      rowWidget: 'playerRelationship',
+      tabs: ['home', 'quests', 'requests', 'settings'].map((id) => ({
+        id,
+        label: id[0].toUpperCase() + id.slice(1),
+        selected: id === 'requests',
+        onSelect: vi.fn(),
+      })),
+      rows: [
+        {
+          id: 'request-luna',
+          identity: 'luna',
+          username: 'Luna',
+          character: 'mira',
+          frame: 'violet',
+          detail: 'Level 14',
+          primaryAction: { label: 'Accept', onActivate: accept },
+          secondaryAction: { label: 'Deny', onActivate: deny },
+        },
+      ],
+      members: [],
+    };
+
+    harness.page.bind(model);
+    harness.page.openDialog('alliance');
+
+    const dialog = harness.dialogs.get('workshop.alliance');
+    const request = dialog.allianceRequestRows.get('request-luna');
+    expect(dialog.rows).toBe(dialog.allianceRequestRows);
+    expect(request.name.text).toBe('Luna');
+    expect(request.detail.text).toBe('Level 14');
+    expect(request.primary.textLabel.textObject.text).toBe('Accept');
+    expect(request.secondary.textLabel.textObject.text).toBe('Deny');
+    expect(request.primary.visible).toBe(true);
+    expect(request.secondary.visible).toBe(true);
+    expect(request.root.parent).toBe(dialog.scroll.content);
+
+    request.activateAction('primary');
+    request.activateAction('secondary');
+    expect(accept).toHaveBeenCalledOnce();
+    expect(deny).toHaveBeenCalledOnce();
+
+    harness.page.destroy();
+    harness.dispose();
+  });
+
+  it('configures alliance banner and emblem colors inside merged settings', async () => {
     const onSave = vi.fn(async () => ({ ok: true }));
     const assetManager = createPixiAssetManagerFake(Texture);
     assetManager.getTexture = vi.fn(() => new Texture());
@@ -3269,16 +3450,16 @@ describe('WorkshopPixiPage', () => {
     model.workshop.dialogs.alliance = {
       title: 'Trade Alliance',
       ownedAlliance: true,
-      selectedTabId: 'banner',
-      tabs: ['home', 'quests', 'banner', 'settings'].map((id) => ({
+      selectedTabId: 'settings',
+      tabs: ['home', 'quests', 'requests', 'settings'].map((id) => ({
         id,
         label: id[0].toUpperCase() + id.slice(1),
-        selected: id === 'banner',
+        selected: id === 'settings',
         onSelect: vi.fn(),
       })),
       settings: {
         allianceId: 'moss',
-        mode: 'banner',
+        mode: 'settings',
         name: 'Moss Hall',
         tag: 'MOSS',
         tagColor: 'green',
@@ -3316,8 +3497,8 @@ describe('WorkshopPixiPage', () => {
     expect(pane.emblemColorSwatches).toHaveLength(10);
     expect(pane.bannerColorSwatches[0].root.eventMode).toBe('static');
     expect(pane.emblemColorSwatches[0].root.eventMode).toBe('static');
-    expect(pane.fields.get('name').visible).toBe(false);
-    expect(pane.saveButton.text.text).toBe('Save Banner');
+    expect(pane.fields.get('name').visible).toBe(true);
+    expect(pane.saveButton.text.text).toBe('Save');
 
     pane.selectBannerColor('red');
     pane.selectEmblemColor('white');
@@ -3564,12 +3745,12 @@ describe('WorkshopPixiPage', () => {
         dialog.rows.get('potion:0').potionIcon.height,
     ).toBeCloseTo(53 / 60);
     const unknownPage = dialog.rows.get('potion:0');
-    expect(unknownPage.potionIcon.x + unknownPage.potionIcon.width / 2).toBeCloseTo(
-      unknownPage.width / 2,
-    );
-    expect(unknownPage.potionIcon.y + unknownPage.potionIcon.height / 2).toBeLessThan(
-      unknownPage.height / 2,
-    );
+    expect(
+      unknownPage.potionIcon.x + unknownPage.potionIcon.width / 2,
+    ).toBeCloseTo(unknownPage.width / 2);
+    expect(
+      unknownPage.potionIcon.y + unknownPage.potionIcon.height / 2,
+    ).toBeLessThan(unknownPage.height / 2);
     expect(unknownPage.unknownStatus.visible).toBe(true);
     expect(unknownPage.unknownStatus.eventMode).toBe('none');
     expect(unknownPage.unknownStatusLabel.text).toBe(
@@ -3585,7 +3766,9 @@ describe('WorkshopPixiPage', () => {
     expect(unknownPage.unknownOverlay.alpha).toBe(0.18);
     expect(unknownPage.unknownOverlay.frameWidth).toBe(unknownPage.width);
     expect(unknownPage.unknownOverlay.frameHeight).toBe(unknownPage.height);
-    expect(unknownPage.root.getChildIndex(unknownPage.unknownStatus)).toBeGreaterThan(
+    expect(
+      unknownPage.root.getChildIndex(unknownPage.unknownStatus),
+    ).toBeGreaterThan(
       unknownPage.root.getChildIndex(unknownPage.unknownOverlay),
     );
     expect(unknownPage.name.visible).toBe(false);

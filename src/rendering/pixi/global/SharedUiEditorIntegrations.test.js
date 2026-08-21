@@ -42,6 +42,7 @@ describe('shared Pixi UI editor integrations', () => {
       'compound.player-profile',
       'compound.hud-level-rail',
       'compound.hud-currency-capsule',
+      'compound.hud-bag-capsule',
       'hud-avatar-button',
       'hud-settings-button',
     ]);

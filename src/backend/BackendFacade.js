@@ -1,6 +1,7 @@
 import { AuthFacade } from './auth/AuthFacade.js';
 import { AccountSessionBackendFacade } from './accountSession/AccountSessionBackendFacade.js';
 import { FeedbackBackendFacade } from './feedback/FeedbackBackendFacade.js';
+import { FriendsBackendFacade } from './friends/FriendsBackendFacade.js';
 import { GameConfigBackendFacade } from './gameConfig/GameConfigBackendFacade.js';
 import { GameplaySaveBackendFacade } from './gameplaySave/GameplaySaveBackendFacade.js';
 import { LeaderboardBackendFacade } from './leaderboard/LeaderboardBackendFacade.js';
@@ -35,6 +36,7 @@ export class BackendFacade {
     this.worldEventLeaderboardFacade = new WorldEventLeaderboardBackendFacade();
     this.worldChatFacade = new WorldChatBackendFacade();
     this.feedbackFacade = new FeedbackBackendFacade();
+    this.friendsFacade = new FriendsBackendFacade();
     this.npcMarketFacade = new NpcMarketBackendFacade();
     this.playerInboxFacade = new PlayerInboxBackendFacade();
     this.playerInfoFacade = new PlayerInfoBackendFacade();
@@ -206,6 +208,7 @@ export class BackendFacade {
         this.worldEventLeaderboardFacade.connect(connection, identity);
         this.worldChatFacade.connect(connection, identity);
         this.feedbackFacade.connect(connection);
+        this.friendsFacade.connect(connection, identity);
         this.npcMarketFacade.connect(connection);
         this.playerInfoFacade.connect(connection);
         this.playerInboxFacade.connect(connection, identity);
@@ -306,6 +309,7 @@ export class BackendFacade {
     this.worldEventLeaderboardFacade.disconnect();
     this.worldChatFacade.disconnect();
     this.feedbackFacade.disconnect();
+    this.friendsFacade.disconnect();
     this.npcMarketFacade.disconnect();
     this.playerInboxFacade.disconnect();
     this.playerInfoFacade.disconnect();
@@ -349,6 +353,10 @@ export class BackendFacade {
 
   getFeedbackFacade() {
     return this.feedbackFacade;
+  }
+
+  getFriendsFacade() {
+    return this.friendsFacade;
   }
 
   getNpcMarketFacade() {

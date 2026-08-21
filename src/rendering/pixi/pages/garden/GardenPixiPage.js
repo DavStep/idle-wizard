@@ -15,7 +15,10 @@ import {
   layoutPixiSeedPackIcon,
 } from "../../primitives/PixiSeedPackIcon.js";
 import { PixiStarLevelLabel } from "../../primitives/PixiStarLevelLabel.js";
-import { normalizePixiTextStroke } from "../../primitives/PixiTextLabel.js";
+import {
+  PixiTextLabel,
+  normalizePixiTextStroke,
+} from "../../primitives/PixiTextLabel.js";
 import { PooledCollection } from "../../retained/PooledCollection.js";
 import { WidgetPool } from "../../retained/WidgetPool.js";
 import {
@@ -28,7 +31,6 @@ import {
   BaseRetainedPixiPage,
   RETAINED_PAGE_GEOMETRY,
   RETAINED_TEXT_STYLES,
-  RetainedPanel,
   RetainedScrollArea,
   RetainedTimedProgressBar,
   applyTextTheme,
@@ -78,8 +80,9 @@ export const GARDEN_PIXI_GEOMETRY = Object.freeze({
   actionButtonHeight: PIXI_UI_GEOMETRY.roomControlHeight,
   actionButtonGap: 8,
   soloSeedsButtonWidth: 220,
-  selectedSeedHeight: 24,
-  selectedSeedGap: 5,
+  seedButtonIconSize: 19,
+  seedButtonContentGap: 4,
+  seedButtonContentPadding: 10,
 });
 export const GARDEN_FIREFLY_COUNT = AMBIENT_FIREFLY_COUNT;
 
@@ -92,7 +95,8 @@ const GARDEN_FIREFLY_FIELD = Object.freeze({
 const GARDEN_GROWING_WIND_MS = 2_400;
 const GARDEN_READY_LIFT_MS = 1_080;
 const GARDEN_SCISSORS_SNIP_MS = 420;
-const GARDEN_PLOT_RECEIVE_MS = 240;
+const GARDEN_PLOT_RECEIVE_MS = 500;
+const GARDEN_PLOT_RECEIVE_IMPACT_PROGRESS = 0.52;
 const GARDEN_PLOT_TAP_FEEDBACK_MS = 560;
 const GARDEN_PLOT_TAP_REDUCED_MOTION_LABEL_MS = 220;
 const GARDEN_DIALOG_IDS = Object.freeze({
@@ -346,11 +350,43 @@ export class GardenPixiPage extends BaseRetainedPixiPage {
     const plots = normalizeRows(garden.plots ?? garden.plot?.tiles).filter(
       (plot) => plot?.hidden !== true && plot?.visible !== false,
     );
+    const plantingPlotKeys = this.getPlantingTransitionKeys(plots);
     this.plots.reconcile(plots);
     this.actionBar.bind(garden.actionBar ?? {}, this.currentActions);
     this.syncDialogs(garden.dialogs ?? {});
     this.layoutPage(this.sourceWidth, this.sourceHeight);
-    this.tick(finiteOr(garden.now, this.timeSource()));
+    const now = finiteOr(garden.now, this.timeSource());
+    for (const plotKey of plantingPlotKeys) {
+      this.plots.get(plotKey)?.startSeedReceive(now);
+    }
+    this.captureBoundPlotState(plots);
+    this.tick(now);
+  }
+
+  getPlantingTransitionKeys(plots) {
+    if (!this.active || !this.hasBoundPlotState) {
+      return [];
+    }
+    return plots.flatMap((plot, index) => {
+      const key = getGardenPlotKey(plot, index);
+      return isGardenPlantingTransition(this.boundPlotState.get(key), plot)
+        ? [key]
+        : [];
+    });
+  }
+
+  captureBoundPlotState(plots) {
+    this.boundPlotState = new Map(
+      plots.map((plot, index) => [
+        getGardenPlotKey(plot, index),
+        {
+          phase: plot?.phase ?? null,
+          seedItemTypeId: plot?.seedItemTypeId ?? null,
+          seedKey: plot?.seedKey ?? null,
+        },
+      ]),
+    );
+    this.hasBoundPlotState = true;
   }
 
   syncDialogs(dialogs) {
@@ -457,6 +493,8 @@ export class GardenPixiPage extends BaseRetainedPixiPage {
     this.fireflies?.setActive(false);
     this.hidePlotTooltip();
     this.settleTransientMotion();
+    this.boundPlotState.clear();
+    this.hasBoundPlotState = false;
     super.deactivate();
   }
 
@@ -611,8 +649,154 @@ export class GardenPixiPage extends BaseRetainedPixiPage {
 }
 
 /**
+ * Garden-local seed picker that combines its action and current selection.
+ * It keeps the shared button input/skin contract while adding seed-pack art and
+ * one compact stock line below the stable Seeds label.
+ */
+export class GardenSeedPickerButton extends PixiTextButton {
+  constructor(options = {}) {
+    super({
+      ...options,
+      text: "Seeds",
+      variant: options.variant ?? "yellow",
+      label: options.label ?? "garden-open-seeds",
+    });
+    this.selectedSeed = null;
+    this.seedPack = new Sprite(Texture.EMPTY);
+    this.seedPack.anchor.set(0.5);
+    this.seedPack.label = `${this.label}:seed-pack`;
+    this.seedItem = new Sprite(Texture.EMPTY);
+    this.seedItem.anchor.set(0.5);
+    this.seedItem.label = `${this.label}:seed-item`;
+    this.selectionLabel = new PixiTextLabel({
+      text: "",
+      fontSize: 11,
+      anchor: { x: 0.5, y: 0.5 },
+      color: "#ffffff",
+      stroke: "outline",
+      label: `${this.label}:selection`,
+    });
+    this.visual.addChild(this.seedPack, this.seedItem, this.selectionLabel);
+    this.applyTheme(this.theme);
+    this.syncSeedContent();
+  }
+
+  setSeed(seed) {
+    this.selectedSeed = seed ?? null;
+    if (this.selectedSeed) {
+      bindPixiSeedPackIcon({
+        assetManager: this.assetManager,
+        base: this.seedPack,
+        item: this.seedItem,
+        seed: this.selectedSeed,
+      });
+    } else {
+      this.seedPack.texture = Texture.EMPTY;
+      this.seedItem.texture = Texture.EMPTY;
+    }
+    this.syncSeedContent();
+    return this;
+  }
+
+  syncContentAppearance(visualGeometry) {
+    super.syncContentAppearance(visualGeometry);
+    if (!this.selectionLabel) {
+      return;
+    }
+    this.selectionLabel
+      .setFontFamily('"Lilita One", "Arial Black", Arial, sans-serif')
+      .setFontSize(11)
+      .setStroke("outline")
+      .setColor(visualGeometry?.textColor ?? "#ffffff");
+    this.syncSeedContent(visualGeometry);
+  }
+
+  layoutContent() {
+    if (!this.selectionLabel) {
+      super.layoutContent();
+      return;
+    }
+    this.syncSeedContent(this.activeSkin);
+  }
+
+  applyTheme(theme) {
+    super.applyTheme(theme);
+    this.selectionLabel?.applyTheme(this.theme);
+    this.syncSeedContent(this.activeSkin);
+  }
+
+  syncSeedContent(visualGeometry = this.activeSkin) {
+    if (!this.textLabel || !this.selectionLabel) {
+      return;
+    }
+    const selectedSeed = this.selectedSeed;
+    const contentOffsetY = visualGeometry?.contentOffsetY ?? 0;
+    this.setText("Seeds");
+    this.seedPack.visible = Boolean(selectedSeed);
+    this.seedItem.visible = Boolean(selectedSeed);
+    this.selectionLabel.visible = Boolean(selectedSeed);
+    if (!selectedSeed) {
+      this.textLabel.position.set(
+        this.buttonWidth / 2,
+        this.buttonHeight / 2 + contentOffsetY,
+      );
+      return;
+    }
+
+    const iconSize = GARDEN_PIXI_GEOMETRY.seedButtonIconSize;
+    const contentGap = GARDEN_PIXI_GEOMETRY.seedButtonContentGap;
+    const contentPadding = GARDEN_PIXI_GEOMETRY.seedButtonContentPadding;
+    const maxTextWidth = Math.max(
+      0,
+      this.buttonWidth - contentPadding * 2 - iconSize - contentGap,
+    );
+    const seedLabel = String(selectedSeed.label ?? "Seed").trim() || "Seed";
+    const quantity = Math.max(0, Number(selectedSeed.quantity) || 0);
+    setFittedSeedSummary(
+      this.selectionLabel,
+      seedLabel,
+      quantity,
+      maxTextWidth,
+    );
+
+    const textWidth = Math.max(
+      this.textLabel.measuredWidth,
+      this.selectionLabel.measuredWidth,
+    );
+    const groupWidth = iconSize + contentGap + textWidth;
+    const groupLeft = (this.buttonWidth - groupWidth) / 2;
+    const textCenterX = groupLeft + iconSize + contentGap + textWidth / 2;
+    const centerY = this.buttonHeight / 2 + contentOffsetY;
+    layoutPixiSeedPackIcon({
+      base: this.seedPack,
+      item: this.seedItem,
+      x: groupLeft + iconSize / 2,
+      y: centerY,
+      width: iconSize,
+      height: iconSize,
+    });
+    this.textLabel.position.set(textCenterX, centerY - 6);
+    this.selectionLabel.position.set(textCenterX, centerY + 7);
+  }
+}
+
+function setFittedSeedSummary(label, seedName, quantity, maxWidth) {
+  const suffix = ` · ${quantity}`;
+  const fullName = String(seedName ?? "Seed");
+  label.setText(`${fullName}${suffix}`);
+  if (label.measuredWidth <= maxWidth) {
+    return;
+  }
+  const characters = Array.from(fullName);
+  while (characters.length > 1 && label.measuredWidth > maxWidth) {
+    characters.pop();
+    label.setText(`${characters.join("")}…${suffix}`);
+  }
+}
+
+/**
  * Garden-local action composition that keeps seed choice separate from plots.
- * It reuses shared Root Run buttons, panel chrome, and seed-pack iconography.
+ * It reuses shared Root Run buttons and the combined seed-picker control.
  */
 export class GardenSeedActionBar {
   constructor({
@@ -641,37 +825,15 @@ export class GardenSeedActionBar {
       variant: "green",
       label: "garden-harvest-all",
     });
-    this.seedsButton = new PixiTextButton({
+    this.seedsButton = new GardenSeedPickerButton({
       assetManager,
       inputRouter,
       semanticRegistry: semanticTargets,
       semanticId: "garden.openSeeds",
       fallbackHitTest: true,
-      text: "Seeds",
-      variant: "yellow",
       label: "garden-open-seeds",
     });
-    this.selectionPanel = new RetainedPanel({
-      assetManager,
-      panelLabel: "garden-selected-seed",
-    });
-    this.selectionPanel.setTitle("");
-    this.selectionLabel = createText("", {
-      ...RETAINED_TEXT_STYLES.border,
-      align: "center",
-    });
-    this.selectionLabel.anchor.set(0.5);
-    this.seedPack = new Sprite(Texture.EMPTY);
-    this.seedPack.anchor.set(0.5);
-    this.seedItem = new Sprite(Texture.EMPTY);
-    this.seedItem.anchor.set(0.5);
-    this.selectionPanel.body.addChild(
-      this.seedPack,
-      this.seedItem,
-      this.selectionLabel,
-    );
     this.root.addChild(
-      this.selectionPanel.root,
       this.plantButton,
       this.harvestButton,
       this.seedsButton,
@@ -698,27 +860,9 @@ export class GardenSeedActionBar {
       .setNotification(Number(model.readyHarvestCount) > 0)
       .setAction(() => actions.harvestAll?.() ?? false);
     this.seedsButton
-      .setText("Seeds")
+      .setSeed(selectedSeed)
       .setEnabled(model.hasSeedChoices !== false)
       .setAction(() => actions.openSeedPicker?.() ?? false);
-
-    this.selectionPanel.root.visible = Boolean(selectedSeed);
-    this.selectionPanel.root.renderable = Boolean(selectedSeed);
-    if (selectedSeed) {
-      bindPixiSeedPackIcon({
-        assetManager: this.assetManager,
-        base: this.seedPack,
-        item: this.seedItem,
-        seed: selectedSeed,
-      });
-      setText(
-        this.selectionLabel,
-        `${selectedSeed.label ?? "Seed"} selected · ${selectedSeed.quantity ?? 0}`,
-      );
-    } else {
-      this.seedPack.texture = Texture.EMPTY;
-      this.seedItem.texture = Texture.EMPTY;
-    }
     this.layout();
   }
 
@@ -755,32 +899,6 @@ export class GardenSeedActionBar {
       button.setSize(buttonWidth, GARDEN_PIXI_GEOMETRY.actionButtonHeight);
     });
 
-    const indicatorWidth = Math.min(176, width);
-    const indicatorX = (width - indicatorWidth) / 2;
-    const indicatorY =
-      buttonY -
-      GARDEN_PIXI_GEOMETRY.selectedSeedGap -
-      GARDEN_PIXI_GEOMETRY.selectedSeedHeight;
-    this.selectionPanel.setBounds(
-      indicatorX,
-      indicatorY,
-      indicatorWidth,
-      GARDEN_PIXI_GEOMETRY.selectedSeedHeight,
-    );
-    layoutPixiSeedPackIcon({
-      base: this.seedPack,
-      item: this.seedItem,
-      x: 14,
-      y: GARDEN_PIXI_GEOMETRY.selectedSeedHeight / 2,
-      width: 18,
-      height: 18,
-    });
-    this.selectionLabel.position.set(
-      indicatorWidth / 2 + 5,
-      GARDEN_PIXI_GEOMETRY.selectedSeedHeight / 2,
-    );
-    this.selectionPanel.root.pivot.set(0, 0);
-    this.selectionPanel.root.scale.set(1);
   }
 
   applyTheme(theme) {
@@ -788,19 +906,12 @@ export class GardenSeedActionBar {
     this.plantButton.applyTheme(this.theme);
     this.harvestButton.applyTheme(this.theme);
     this.seedsButton.applyTheme(this.theme);
-    this.selectionPanel.applyTheme(this.theme);
-    applyTextTheme(this.selectionLabel, this.theme, {
-      ...RETAINED_TEXT_STYLES.border,
-      fill: this.theme.resourceColors.seed,
-      align: "center",
-    });
   }
 
   destroy() {
     this.plantButton.destroy({ children: true });
     this.harvestButton.destroy({ children: true });
     this.seedsButton.destroy({ children: true });
-    this.selectionPanel.destroy();
     this.root.destroy({ children: true });
   }
 }
@@ -967,7 +1078,10 @@ export class GardenPlotWidget {
       getTexture(assetManager, PIXI_ROOT_RUN_ASSETS.settingsGear),
     );
     this.autoGear.anchor.set(0.5);
-    this.autoButton.visual.addChild(this.autoGear);
+    this.autoButton.visual.addChildAt(
+      this.autoGear,
+      this.autoButton.visual.getChildIndex(this.autoButton.textLabel),
+    );
     this.quantityButton = new PixiTextButton({
       assetManager,
       inputRouter,
@@ -1086,6 +1200,7 @@ export class GardenPlotWidget {
         : Texture.EMPTY;
       plant.visible = Boolean(herbFrame) && index < visiblePlantCount;
       plant.renderable = plant.visible;
+      plant.alpha = this.receiveStartedAt === null ? 1 : 0;
     });
     this.scissorsMotion.visible = this.model.phase === "harvesting";
     this.scissors.visible = this.scissorsMotion.visible;
@@ -1185,6 +1300,45 @@ export class GardenPlotWidget {
         this.activate(),
     });
     this.semanticIds.push(labelSemanticId);
+    this.plantSlots.forEach(({ plant }, index) => {
+      const plantSemanticId = `${semanticId}.plant.${index + 1}`;
+      this.semanticTargets?.register?.({
+        semanticId: plantSemanticId,
+        displayObject: plant,
+        bounds: () => this.resolvePlantSlotBounds(index),
+        state: () => ({
+          visible: this.root.visible && this.root.renderable,
+          interactive: false,
+          enabled: false,
+          active: !this.root.destroyed,
+        }),
+      });
+      this.semanticIds.push(plantSemanticId);
+    });
+  }
+
+  resolvePlantSlotBounds(index) {
+    const plant = this.plantSlots[index]?.plant ?? this.plant;
+    const localBounds = plant.getLocalBounds();
+    const corners = [
+      { x: localBounds.x, y: localBounds.y },
+      { x: localBounds.x + localBounds.width, y: localBounds.y },
+      { x: localBounds.x, y: localBounds.y + localBounds.height },
+      {
+        x: localBounds.x + localBounds.width,
+        y: localBounds.y + localBounds.height,
+      },
+    ].map((point) => plant.toGlobal(point));
+    const xs = corners.map(({ x }) => x);
+    const ys = corners.map(({ y }) => y);
+    const x = Math.min(...xs);
+    const y = Math.min(...ys);
+    return {
+      x,
+      y,
+      width: Math.max(...xs) - x,
+      height: Math.max(...ys) - y,
+    };
   }
 
   activate(context = null) {
@@ -1642,11 +1796,17 @@ export class GardenPlotWidget {
   }
 
   startSeedReceive(now) {
+    if (this.page.reducedMotion?.() === true) {
+      this.settleSeedReceive();
+      return false;
+    }
     this.receiveStartedAt = finiteOr(now, 0);
     this.receiveOffsetY = 0;
     this.receiveScaleX = 1;
     this.receiveScaleY = 1;
+    this.setPlantingRevealAlpha(0);
     this.applyFrameTransform();
+    return true;
   }
 
   updateSeedReceive(now) {
@@ -1678,7 +1838,15 @@ export class GardenPlotWidget {
     this.receiveOffsetY = 0;
     this.receiveScaleX = 1;
     this.receiveScaleY = 1;
+    this.setPlantingRevealAlpha(1);
     this.applyFrameTransform();
+  }
+
+  setPlantingRevealAlpha(alpha) {
+    const normalizedAlpha = clamp(Number(alpha) || 0, 0, 1);
+    this.plantSlots.forEach(({ plant }) => {
+      plant.alpha = normalizedAlpha;
+    });
   }
 
   resetScissorsMotion() {
@@ -1850,6 +2018,7 @@ export class GardenPlotWidget {
       tapMotion.rotation = 0;
       plant.visible = false;
       plant.renderable = false;
+      plant.alpha = 1;
     });
     this.tapPlantMotion.position.set(0, 0);
     this.tapPlantMotion.scale.set(1);
@@ -1952,6 +2121,18 @@ function applyReadyPlantMotion(motion, progress, growthScale) {
 }
 
 function applyReceiveMotion(plot, progress) {
+  if (progress <= GARDEN_PLOT_RECEIVE_IMPACT_PROGRESS) {
+    plot.receiveOffsetY = 0;
+    plot.receiveScaleX = 1;
+    plot.receiveScaleY = 1;
+    return;
+  }
+  const impactProgress = clamp(
+    (progress - GARDEN_PLOT_RECEIVE_IMPACT_PROGRESS) /
+      (1 - GARDEN_PLOT_RECEIVE_IMPACT_PROGRESS),
+    0,
+    1,
+  );
   let segment;
   let fromY;
   let toY;
@@ -1959,35 +2140,50 @@ function applyReceiveMotion(plot, progress) {
   let toScaleX;
   let fromScaleY;
   let toScaleY;
-  if (progress < 0.52) {
-    segment = progress / 0.52;
+  if (impactProgress < 0.24) {
+    segment = impactProgress / 0.24;
     fromY = 0;
-    toY = 2;
+    toY = 1.5;
     fromScaleX = 1;
-    toScaleX = 1.02;
+    toScaleX = 1.055;
     fromScaleY = 1;
-    toScaleY = 0.98;
-  } else if (progress < 0.76) {
-    segment = (progress - 0.52) / 0.24;
-    fromY = 2;
+    toScaleY = 0.93;
+  } else if (impactProgress < 0.54) {
+    segment = (impactProgress - 0.24) / 0.3;
+    fromY = 1.5;
     toY = -1;
-    fromScaleX = 1.02;
-    toScaleX = 0.99;
-    fromScaleY = 0.98;
-    toScaleY = 1.01;
+    fromScaleX = 1.055;
+    toScaleX = 0.985;
+    fromScaleY = 0.93;
+    toScaleY = 1.025;
   } else {
-    segment = (progress - 0.76) / 0.24;
+    segment = (impactProgress - 0.54) / 0.46;
     fromY = -1;
     toY = 0;
-    fromScaleX = 0.99;
+    fromScaleX = 0.985;
     toScaleX = 1;
-    fromScaleY = 1.01;
+    fromScaleY = 1.025;
     toScaleY = 1;
   }
   const eased = softEase(segment);
   plot.receiveOffsetY = lerp(fromY, toY, eased);
   plot.receiveScaleX = lerp(fromScaleX, toScaleX, eased);
   plot.receiveScaleY = lerp(fromScaleY, toScaleY, eased);
+}
+
+function getGardenPlotKey(plot, index) {
+  return plot?.id ?? plot?.tileNumber ?? `plot-${index + 1}`;
+}
+
+function isGardenPlantingTransition(previous, next) {
+  if (!previous || next?.phase !== "growing") {
+    return false;
+  }
+  return (
+    previous.phase !== "growing" ||
+    previous.seedItemTypeId !== (next?.seedItemTypeId ?? null) ||
+    previous.seedKey !== (next?.seedKey ?? null)
+  );
 }
 
 function applyTapAccelerationMotion(plot, progress) {

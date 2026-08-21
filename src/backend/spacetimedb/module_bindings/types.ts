@@ -36,6 +36,32 @@ export const AdminPlayerGameplaySaveResult = __t.object("AdminPlayerGameplaySave
 });
 export type AdminPlayerGameplaySaveResult = __Infer<typeof AdminPlayerGameplaySaveResult>;
 
+export const DirectMessage = __t.object("DirectMessage", {
+  messageId: __t.uuid(),
+  conversationKey: __t.string(),
+  senderIdentity: __t.identity(),
+  recipientIdentity: __t.identity(),
+  body: __t.string(),
+  sentAt: __t.timestamp(),
+});
+export type DirectMessage = __Infer<typeof DirectMessage>;
+
+export const FriendRequest = __t.object("FriendRequest", {
+  requestKey: __t.string(),
+  senderIdentity: __t.identity(),
+  recipientIdentity: __t.identity(),
+  createdAt: __t.timestamp(),
+});
+export type FriendRequest = __Infer<typeof FriendRequest>;
+
+export const Friendship = __t.object("Friendship", {
+  friendshipKey: __t.string(),
+  leftIdentity: __t.identity(),
+  rightIdentity: __t.identity(),
+  createdAt: __t.timestamp(),
+});
+export type Friendship = __Infer<typeof Friendship>;
+
 export const GameConfig = __t.object("GameConfig", {
   configKey: __t.string(),
   configJson: __t.string(),
@@ -247,6 +273,71 @@ export const NpcMarketPriceSnapshotResult = __t.object("NpcMarketPriceSnapshotRe
   marketId: __t.string(),
 });
 export type NpcMarketPriceSnapshotResult = __Infer<typeof NpcMarketPriceSnapshotResult>;
+
+export const OwnDirectMessage = __t.object("OwnDirectMessage", {});
+export type OwnDirectMessage = __Infer<typeof OwnDirectMessage>;
+
+export const OwnDirectMessageResult = __t.object("OwnDirectMessageResult", {
+  messageId: __t.uuid(),
+  conversationKey: __t.string(),
+  senderIdentity: __t.identity(),
+  recipientIdentity: __t.identity(),
+  username: __t.string(),
+  character: __t.string(),
+  frame: __t.string(),
+  playerLevel: __t.u32(),
+  body: __t.string(),
+  sentAt: __t.timestamp(),
+});
+export type OwnDirectMessageResult = __Infer<typeof OwnDirectMessageResult>;
+
+export const OwnFriendship = __t.object("OwnFriendship", {});
+export type OwnFriendship = __Infer<typeof OwnFriendship>;
+
+export const OwnFriendshipResult = __t.object("OwnFriendshipResult", {
+  friendshipKey: __t.string(),
+  friendIdentity: __t.identity(),
+  username: __t.string(),
+  character: __t.string(),
+  frame: __t.string(),
+  playerLevel: __t.u32(),
+  connected: __t.bool(),
+  lastSeenAt: __t.timestamp(),
+  createdAt: __t.timestamp(),
+});
+export type OwnFriendshipResult = __Infer<typeof OwnFriendshipResult>;
+
+export const OwnIncomingFriendRequest = __t.object("OwnIncomingFriendRequest", {});
+export type OwnIncomingFriendRequest = __Infer<typeof OwnIncomingFriendRequest>;
+
+export const OwnIncomingFriendRequestResult = __t.object("OwnIncomingFriendRequestResult", {
+  requestKey: __t.string(),
+  playerIdentity: __t.identity(),
+  username: __t.string(),
+  character: __t.string(),
+  frame: __t.string(),
+  playerLevel: __t.u32(),
+  connected: __t.bool(),
+  lastSeenAt: __t.timestamp(),
+  createdAt: __t.timestamp(),
+});
+export type OwnIncomingFriendRequestResult = __Infer<typeof OwnIncomingFriendRequestResult>;
+
+export const OwnOutgoingFriendRequest = __t.object("OwnOutgoingFriendRequest", {});
+export type OwnOutgoingFriendRequest = __Infer<typeof OwnOutgoingFriendRequest>;
+
+export const OwnOutgoingFriendRequestResult = __t.object("OwnOutgoingFriendRequestResult", {
+  requestKey: __t.string(),
+  playerIdentity: __t.identity(),
+  username: __t.string(),
+  character: __t.string(),
+  frame: __t.string(),
+  playerLevel: __t.u32(),
+  connected: __t.bool(),
+  lastSeenAt: __t.timestamp(),
+  createdAt: __t.timestamp(),
+});
+export type OwnOutgoingFriendRequestResult = __Infer<typeof OwnOutgoingFriendRequestResult>;
 
 export const OwnPlayerGameplaySave = __t.object("OwnPlayerGameplaySave", {});
 export type OwnPlayerGameplaySave = __Infer<typeof OwnPlayerGameplaySave>;
@@ -758,6 +849,8 @@ export const TradeAllianceApplicationSnapshotResult = __t.object("TradeAllianceA
   allianceId: __t.uuid(),
   applicantIdentity: __t.identity(),
   username: __t.string(),
+  character: __t.string(),
+  frame: __t.string(),
   playerLevel: __t.u32(),
   createdAt: __t.timestamp(),
 });

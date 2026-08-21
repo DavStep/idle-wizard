@@ -89,6 +89,7 @@ export class AppFacade {
       feedbackFacade: this.backendFacade.getFeedbackFacade(),
       playerInboxFacade: this.backendFacade.getPlayerInboxFacade(),
       playerInfoFacade: this.backendFacade.getPlayerInfoFacade(),
+      friendsFacade: this.backendFacade.getFriendsFacade(),
       tradeAllianceFacade:
         this.backendFacade.getTradeAllianceFacade(),
       hapticsFacade: this.hapticsFacade,

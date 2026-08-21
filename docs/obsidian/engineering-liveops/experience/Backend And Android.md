@@ -29,6 +29,7 @@ experience_type: backend-android
 - When adding new fields to SpacetimeDB `game_config` JSON, server normalization and client readers must default legacy rows; otherwise old hosted config can silently disable the new behavior.
 - Catalog-backed `game_config` arrays need merge-by-key normalization for new catalog entries; valid old rows will not self-heal from defaults unless the normalizer appends missing entries.
 - World chat is server-backed through the `world_chat` table and `send_world_chat_message` reducer; Workshop UI must stay offline-safe when bindings/backend are absent.
+- Friend relationships, requests, and direct messages stay in private tables exposed through sender-scoped `own_*` views; subscribe to one conversation only while its direct chat is open, and preserve message rows when friendship removal disables future sends.
 - World chat rows store `allianceTag` at send time; chat display should format tagged senders as `[TAG] username(lvl)`.
 - Trade alliance weekly quests are configured by `game_config.tradeAlliance.weeklyQuests`; legacy `dailyQuests` config is still accepted, and current server-verified source is capped `allianceIncome`.
 - Trade alliance member `dailyContribution` is a legacy column name; it now stores current weekly contribution and resets with weekly quest progress.

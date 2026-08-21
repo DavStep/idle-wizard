@@ -15,6 +15,8 @@ export default __t.row({
   allianceId: __t.uuid().name("alliance_id"),
   applicantIdentity: __t.identity().name("applicant_identity"),
   username: __t.string(),
+  character: __t.string(),
+  frame: __t.string(),
   playerLevel: __t.u32().name("player_level"),
   createdAt: __t.timestamp().name("created_at"),
 });

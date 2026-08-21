@@ -47,21 +47,44 @@ describe('PixiViewModelFactory', () => {
     });
   });
 
-  it('keeps crystal visible as the default top-HUD context currency', () => {
+  it('uses Mana as the Workshop-only top-HUD context currency', () => {
     const factory = new PixiViewModelFactory();
     const model = factory.createTopPanel({
       gameplay: {
-        crystal: { current: 7 },
+        mana: { current: 40, cap: 50, perSecond: 1 },
       },
       player: { username: 'Mira', character: 'elara' },
       pageId: 'workshop',
     });
 
     expect(model.contextCurrency).toEqual({
-      resource: 'crystal',
-      amount: 7,
+      resource: 'mana',
+      amount: 40,
+      cap: 50,
+      perSecond: 1,
       visible: true,
     });
+    expect(model.showBag).toBe(true);
+  });
+
+  it('keeps Mana out of the context slot in other rooms', () => {
+    const factory = new PixiViewModelFactory();
+    const model = factory.createTopPanel({
+      gameplay: {
+        crystal: { current: 7 },
+        mana: { current: 40, cap: 50, perSecond: 1 },
+      },
+      pageId: 'brewing',
+    });
+
+    expect(model.contextCurrency).toEqual({
+      resource: 'crystal',
+      amount: 7,
+      cap: 0,
+      perSecond: 0,
+      visible: true,
+    });
+    expect(model.showBag).toBe(false);
   });
 
   it('uses the requested level in the non-persistent top-HUD progress preview', () => {
@@ -310,10 +333,7 @@ describe('PixiViewModelFactory', () => {
     expect(dialog.actions).toEqual([]);
 
     dialog.items[1].dropSlider.onChange('medium');
-    expect(setSummonDropPreference).toHaveBeenCalledWith(
-      'mintSeed',
-      'medium',
-    );
+    expect(setSummonDropPreference).toHaveBeenCalledWith('mintSeed', 'medium');
     dialog.settingsToggle.onChange(true);
     expect(toggleSummonAutomation).toHaveBeenCalledTimes(1);
     dialog.manaSlider.onChange(2_500);
@@ -410,9 +430,7 @@ describe('PixiViewModelFactory', () => {
           personalTasks: true,
         },
       },
-      pageStates: [
-        { id: 'prestige', visible: true, unlocked: true },
-      ],
+      pageStates: [{ id: 'prestige', visible: true, unlocked: true }],
     });
 
     expect(
@@ -454,6 +472,8 @@ describe('PixiViewModelFactory', () => {
     });
     expect(model.workshop.bag).toMatchObject({
       side: 'left',
+      enabled: true,
+      visible: false,
       weight: 40,
     });
   });
@@ -645,11 +665,9 @@ describe('PixiViewModelFactory', () => {
       selectedTabId: 'tasks',
       rowWidget: 'worldEventQuest',
       header: {
-        artAssetId:
-          'source:assets/world-events/political-change.png',
+        artAssetId: 'source:assets/world-events/political-change.png',
         headline: 'New Crown Tours Town',
-        body:
-          'The bells have not stopped.\nEvery guild is waiting to be counted.',
+        body: 'The bells have not stopped.\nEvery guild is waiting to be counted.',
         meta: '125 points · 5d',
       },
       tabs: [
@@ -663,7 +681,9 @@ describe('PixiViewModelFactory', () => {
       'quest:weekly-1:new-crown:crowd',
       'quest:weekly-1:new-crown:seal',
     ]);
-    expect(tasks.rows.every((row) => !Object.hasOwn(row, 'completed'))).toBe(true);
+    expect(tasks.rows.every((row) => !Object.hasOwn(row, 'completed'))).toBe(
+      true,
+    );
     expect(
       tasks.rows.every((row) =>
         row.donationOptions.every((option) => option.notification === false),
@@ -735,9 +755,7 @@ describe('PixiViewModelFactory', () => {
     );
     expect(rewards.rowWidget).toBe('worldEventReward');
     expect(rewards.header.meta).toBe('125 points · 5d');
-    expect(rewards.status).toBe(
-      'Leaderboard Rewards: 2k points to qualify',
-    );
+    expect(rewards.status).toBe('Leaderboard Rewards: 2k points to qualify');
     expect(rewards.rows).toEqual([
       {
         id: 'reward:1',
@@ -867,13 +885,9 @@ describe('PixiViewModelFactory', () => {
       },
     };
 
-    const dialog = factory.createWorldEventDialog(
-      gameplay,
-      {},
-      {},
-      'tasks',
-      { openWorldEventDonation },
-    );
+    const dialog = factory.createWorldEventDialog(gameplay, {}, {}, 'tasks', {
+      openWorldEventDonation,
+    });
     const [option] = dialog.rows[0].donationOptions;
 
     expect(option).toMatchObject({
@@ -1281,8 +1295,12 @@ describe('PixiViewModelFactory', () => {
       ],
     };
 
-    expect(factory.createWorldChatDialog(worldChat).rows[0].frame).toBe('violet');
-    expect(factory.createWorldChatPreview(worldChat).messages[0].frame).toBe('violet');
+    expect(factory.createWorldChatDialog(worldChat).rows[0].frame).toBe(
+      'violet',
+    );
+    expect(factory.createWorldChatPreview(worldChat).messages[0].frame).toBe(
+      'violet',
+    );
   });
 
   it('exposes report selection only for other-player World Chat messages', () => {
@@ -1387,10 +1405,7 @@ describe('PixiViewModelFactory', () => {
       },
     });
 
-    expect(dialog.rows.map((row) => row.id)).toEqual([
-      'wizard-a',
-      'wizard-b',
-    ]);
+    expect(dialog.rows.map((row) => row.id)).toEqual(['wizard-a', 'wizard-b']);
     expect(dialog.rows[0]).toMatchObject({
       username: 'Wizard',
       current: true,
@@ -1520,6 +1535,7 @@ describe('PixiViewModelFactory', () => {
           description: 'Patient traders sharing one hall.',
         },
         canEditSettings: true,
+        canManageApplications: true,
         members: [member, outsider],
       },
       null,
@@ -1544,7 +1560,7 @@ describe('PixiViewModelFactory', () => {
     expect(alliance.tabs.map((tab) => tab.label)).toEqual([
       'Home',
       'Quests',
-      'Banner',
+      'Requests',
       'Settings',
     ]);
     expect(alliance.members[0]).toMatchObject({
@@ -1567,6 +1583,133 @@ describe('PixiViewModelFactory', () => {
     );
     alliance.tabs[1].onSelect();
     expect(selectAllianceTab).toHaveBeenCalledWith('quests');
+  });
+
+  it('projects alliance applications as player rows with accept and deny actions', () => {
+    const acceptAllianceApplication = vi.fn();
+    const rejectAllianceApplication = vi.fn();
+    const openPlayer = vi.fn();
+    const dialog = new PixiViewModelFactory().createAllianceDialog(
+      {
+        connected: true,
+        ownAlliance: {
+          allianceId: 'shared-alliance',
+          name: 'Shared Alliance',
+          tag: 'SHARE',
+          memberCount: 1,
+        },
+        canEditSettings: true,
+        canManageApplications: true,
+        applications: [
+          {
+            applicationKey: 'shared-alliance:luna',
+            allianceId: 'shared-alliance',
+            applicantIdentity: 'luna',
+            username: 'Luna',
+            character: 'mira',
+            frame: 'violet',
+            playerLevel: 14,
+          },
+          {
+            applicationKey: 'other:nox',
+            allianceId: 'other-alliance',
+            applicantIdentity: 'nox',
+            username: 'Nox',
+            playerLevel: 9,
+          },
+        ],
+      },
+      null,
+      {
+        acceptAllianceApplication,
+        rejectAllianceApplication,
+        openPlayer,
+      },
+      'requests',
+    );
+
+    expect(dialog).toMatchObject({
+      selectedTabId: 'requests',
+      rowWidget: 'playerRelationship',
+      emptyLabel: '',
+    });
+    expect(dialog.rows).toHaveLength(1);
+    expect(dialog.rows[0]).toMatchObject({
+      id: 'shared-alliance:luna',
+      username: 'Luna',
+      character: 'mira',
+      frame: 'violet',
+      detail: 'Level 14',
+      primaryAction: { label: 'Accept', variant: 'green' },
+      secondaryAction: { label: 'Deny', variant: 'red' },
+    });
+    expect(dialog.tabs.find((tab) => tab.id === 'requests')?.notification).toBe(
+      true,
+    );
+
+    dialog.rows[0].onActivate();
+    dialog.rows[0].primaryAction.onActivate();
+    dialog.rows[0].secondaryAction.onActivate();
+    expect(openPlayer).toHaveBeenCalledWith(
+      expect.objectContaining({ identity: 'luna', username: 'Luna' }),
+    );
+    expect(acceptAllianceApplication).toHaveBeenCalledWith(
+      'shared-alliance:luna',
+    );
+    expect(rejectAllianceApplication).toHaveBeenCalledWith(
+      'shared-alliance:luna',
+    );
+  });
+
+  it('projects a member-only alliance workspace with dedicated chat', () => {
+    const sendAllianceChat = vi.fn(() => ({ ok: true }));
+    const workspace = new PixiViewModelFactory().createAllianceWorkspace(
+      {
+        connected: true,
+        ownAlliance: {
+          allianceId: 'shared-alliance',
+          name: 'Shared Alliance',
+          tag: 'SHARE',
+          bannerColor: 'blue',
+          emblemColor: 'gold',
+          emblemId: 'owl',
+        },
+        canEditSettings: true,
+        canManageApplications: true,
+        allianceChatMessages: [
+          {
+            id: 'message-1',
+            username: 'Luna',
+            character: 'mira',
+            body: 'Welcome to the hall.',
+            sentAtMs: Date.now(),
+          },
+        ],
+      },
+      'chat',
+      { sendAllianceChat },
+    );
+
+    expect(workspace.workspace).toBe(true);
+    expect(workspace.selectedTabId).toBe('chat');
+    expect(workspace.tabs.map((tab) => tab.id)).toEqual([
+      'home',
+      'quests',
+      'requests',
+      'chat',
+      'settings',
+    ]);
+    expect(workspace.flag).toEqual({
+      bannerColor: 'blue',
+      emblemColor: 'gold',
+      emblemId: 'owl',
+    });
+    expect(workspace.chat.rows[0]).toMatchObject({
+      username: 'Luna',
+      body: 'Welcome to the hall.',
+    });
+    workspace.chat.onSubmit('alliance only');
+    expect(sendAllianceChat).toHaveBeenCalledWith('alliance only');
   });
 
   it('projects owned alliance quests with retained fill and claim actions', () => {
@@ -1632,7 +1775,10 @@ describe('PixiViewModelFactory', () => {
     expect(dialog.rowWidget).toBe('allianceQuest');
     expect(dialog.selectedTabId).toBe('quests');
     expect(dialog.copy).toBe('');
-    expect(dialog.rows.map((row) => row.actionLabel)).toEqual(['Fill', 'Claim']);
+    expect(dialog.rows.map((row) => row.actionLabel)).toEqual([
+      'Fill',
+      'Claim',
+    ]);
     expect(dialog.rows[0]).toMatchObject({
       title: 'Fill 500 mana tonic',
       contributionLabel: 'Your Fill 0/3',
@@ -1651,7 +1797,9 @@ describe('PixiViewModelFactory', () => {
       rewardAmountLabel: '4',
       rewardResource: 'crystal',
     });
-    expect(dialog.tabs.find((tab) => tab.id === 'quests')?.notification).toBe(true);
+    expect(dialog.tabs.find((tab) => tab.id === 'quests')?.notification).toBe(
+      true,
+    );
 
     dialog.rows[0].onActivate();
     dialog.rows[1].onActivate();
@@ -1927,8 +2075,7 @@ describe('PixiViewModelFactory', () => {
         username: 'System',
         body: 'Ada reached ⭐ 4, completing prestige level 40',
         systemPlayerUsername: 'Ada',
-        systemPlayerDetail:
-          'reached ⭐ 4, completing prestige level 40',
+        systemPlayerDetail: 'reached ⭐ 4, completing prestige level 40',
         bodyRuns: [
           {
             kind: 'text',
@@ -2041,9 +2188,7 @@ describe('PixiViewModelFactory', () => {
     const gameplay = {
       mana: { current: 4, cap: 10 },
       coin: { current: 3 },
-      seedInventory: [
-        { key: 'sageSeed', label: 'sage', quantity: 2 },
-      ],
+      seedInventory: [{ key: 'sageSeed', label: 'sage', quantity: 2 }],
       inventory: [
         { key: 'sageHerb', label: 'sage', kind: 'herb', quantity: 1 },
         {
@@ -2317,9 +2462,7 @@ describe('PixiViewModelFactory', () => {
     const [capacity, generation] =
       model.research.tabs[0].boxes[0].allResearches;
 
-    expect(capacity.artAssetId).toBe(
-      'source:assets/icons/icon-mana-drop.png',
-    );
+    expect(capacity.artAssetId).toBe('source:assets/icons/icon-mana-drop.png');
     expect(generation.artAssetId).toBe(
       'source:assets/icons/icon-mana-drop.png',
     );
@@ -2420,11 +2563,13 @@ describe('PixiViewModelFactory', () => {
     }).research;
 
     expect(levelThree.selectedTabId).toBe('regular');
-    expect(levelThree.tabs.map((tab) => ({
-      id: tab.id,
-      locked: tab.locked,
-      requiredLevel: tab.requiredLevel,
-    }))).toEqual([
+    expect(
+      levelThree.tabs.map((tab) => ({
+        id: tab.id,
+        locked: tab.locked,
+        requiredLevel: tab.requiredLevel,
+      })),
+    ).toEqual([
       { id: 'regular', locked: false, requiredLevel: 1 },
       { id: 'emerald', locked: true, requiredLevel: 4 },
       { id: 'automation', locked: true, requiredLevel: 7 },
@@ -2437,17 +2582,27 @@ describe('PixiViewModelFactory', () => {
       selectedTabId: 'emerald',
     }).research;
     expect(levelFive.selectedTabId).toBe('emerald');
-    expect(levelFive.tabs.find((tab) => tab.id === 'emerald')?.locked).toBe(false);
-    expect(levelFive.tabs.find((tab) => tab.id === 'automation')?.locked).toBe(true);
-    expect(levelFive.tabs.find((tab) => tab.id === 'advanced')?.locked).toBe(true);
+    expect(levelFive.tabs.find((tab) => tab.id === 'emerald')?.locked).toBe(
+      false,
+    );
+    expect(levelFive.tabs.find((tab) => tab.id === 'automation')?.locked).toBe(
+      true,
+    );
+    expect(levelFive.tabs.find((tab) => tab.id === 'advanced')?.locked).toBe(
+      true,
+    );
 
     const levelSeven = factory.createResearch({
       gameplay: { playerLevel: { currentLevel: 7 }, research },
       selectedTabId: 'automation',
     }).research;
     expect(levelSeven.selectedTabId).toBe('automation');
-    expect(levelSeven.tabs.find((tab) => tab.id === 'automation')?.locked).toBe(false);
-    expect(levelSeven.tabs.find((tab) => tab.id === 'advanced')?.locked).toBe(true);
+    expect(levelSeven.tabs.find((tab) => tab.id === 'automation')?.locked).toBe(
+      false,
+    );
+    expect(levelSeven.tabs.find((tab) => tab.id === 'advanced')?.locked).toBe(
+      true,
+    );
 
     const postPrestige = factory.createResearch({
       gameplay: {
@@ -2458,7 +2613,9 @@ describe('PixiViewModelFactory', () => {
       selectedTabId: 'advanced',
     }).research;
     expect(postPrestige.selectedTabId).toBe('advanced');
-    expect(postPrestige.tabs.find((tab) => tab.id === 'advanced')?.locked).toBe(false);
+    expect(postPrestige.tabs.find((tab) => tab.id === 'advanced')?.locked).toBe(
+      false,
+    );
     expect(postPrestige.tabs.every((tab) => tab.locked === false)).toBe(true);
   });
 
@@ -2523,10 +2680,9 @@ describe('PixiViewModelFactory', () => {
       selectedTabId: 'emerald',
     });
 
-    const item =
-      model.research.selectedTab.boxes[0].researches.find(
-        (research) => research.id === 'locked-study',
-      );
+    const item = model.research.selectedTab.boxes[0].researches.find(
+      (research) => research.id === 'locked-study',
+    );
 
     expect(model.research.selectedTabId).toBe('emerald');
     expect(item.lockReason).toBe(
@@ -2536,8 +2692,7 @@ describe('PixiViewModelFactory', () => {
       amountLabel: 'Locked',
       enabled: false,
       state: 'locked',
-      lockPrompt:
-        'Requires mint research and plot 1 lvl 2 level up',
+      lockPrompt: 'Requires mint research and plot 1 lvl 2 level up',
     });
     expect(item.info.copy).toContain(item.lockReason);
   });
@@ -2610,8 +2765,7 @@ describe('PixiViewModelFactory', () => {
       description: 'cauldron 1 records this study as complete.',
       actionNoun: 'level up',
       starLevel: 1,
-      accessibleTitle:
-        'cauldron 1 yellow star 1 level up information',
+      accessibleTitle: 'cauldron 1 yellow star 1 level up information',
     });
   });
 
@@ -2684,8 +2838,7 @@ describe('PixiViewModelFactory', () => {
     });
 
     expect(model.research.tabs[0].boxes[0].researches[0]).toMatchObject({
-      artExtraAssetId:
-        'source:assets/icons/research/icon-research-time.png',
+      artExtraAssetId: 'source:assets/icons/research/icon-research-time.png',
     });
   });
 

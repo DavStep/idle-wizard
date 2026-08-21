@@ -34,7 +34,9 @@ identified from the router.
 | Settings fields, toggles, sliders, and device panels | `Root Run Settings Controls` |
 | Inventory selection and allocation | `Stall Allocation Lists` |
 | Progress and timer rails | `Progress Rails` |
+| Top player chrome, currencies, Workshop-only mana regen, and Bag | named `Root Run Player HUD`, `Root Run Player HUD Context-Currency Extension`, and `HUD Bag Capsule` entries in `Current Library` |
 | Bottom room navigation and alternate HUD category tabs | named `Bottom room tab` / `Bottom HUD Text Tab` entries in `Current Library` |
+| Alliance workspace, member tabs, requests, and alliance chat | named `Trade Alliance Workspace Extension` entry in `Current Library` |
 | Expand/collapse behavior | `Expandable Boxes` |
 | Dialog shells, tabs, scrolling, and close controls | `Popup Structure` |
 | Alliance flag preview and identity art | named `Alliance Flag Widget` entry in `Current Library` |

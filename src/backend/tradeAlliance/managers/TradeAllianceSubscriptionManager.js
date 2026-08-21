@@ -116,14 +116,20 @@ export class TradeAllianceSubscriptionManager {
       legacyQuery: LEGACY_CONTRIBUTIONS_QUERY,
     });
     this.tables = {
-      overview: this.findTable('ownTradeAllianceOverview', 'own_trade_alliance_overview'),
+      overview: this.findTable(
+        'ownTradeAllianceOverview',
+        'own_trade_alliance_overview',
+      ),
       alliances: alliances.table,
       members: members.table,
       applications: applications.table,
       quests: quests.table,
       contributions: contributions.table,
       chat: this.findTable('ownTradeAllianceChat', 'own_trade_alliance_chat'),
-      rewards: this.findTable('ownTradeAllianceRewardInbox', 'own_trade_alliance_reward_inbox'),
+      rewards: this.findTable(
+        'ownTradeAllianceRewardInbox',
+        'own_trade_alliance_reward_inbox',
+      ),
     };
     this.queries = {
       overview: OVERVIEW_QUERY,
@@ -196,7 +202,11 @@ export class TradeAllianceSubscriptionManager {
   }
 
   findTable(camelName, snakeName) {
-    return this.connection?.db?.[camelName] ?? this.connection?.db?.[snakeName] ?? null;
+    return (
+      this.connection?.db?.[camelName] ??
+      this.connection?.db?.[snakeName] ??
+      null
+    );
   }
 
   findTableSource({
@@ -261,9 +271,13 @@ export class TradeAllianceSubscriptionManager {
     this.bindTable(this.tables.applications);
 
     this.publicSubscriptions = [
-      this.tables.alliances ? this.subscribeQuery(this.queries.alliances) : null,
+      this.tables.alliances
+        ? this.subscribeQuery(this.queries.alliances)
+        : null,
       this.tables.members ? this.subscribeQuery(this.queries.members) : null,
-      this.tables.applications ? this.subscribeQuery(this.queries.applications) : null,
+      this.tables.applications
+        ? this.subscribeQuery(this.queries.applications)
+        : null,
     ].filter(Boolean);
   }
 
@@ -286,7 +300,9 @@ export class TradeAllianceSubscriptionManager {
 
     this.questSubscriptions = [
       this.tables.quests ? this.subscribeQuery(this.queries.quests) : null,
-      this.tables.contributions ? this.subscribeQuery(this.queries.contributions) : null,
+      this.tables.contributions
+        ? this.subscribeQuery(this.queries.contributions)
+        : null,
     ].filter(Boolean);
   }
 
@@ -322,7 +338,9 @@ export class TradeAllianceSubscriptionManager {
   }
 
   publishFromTables() {
-    const overview = this.readFirstRow(this.tables.overview, (row) => this.mapOverview(row));
+    const overview = this.readFirstRow(this.tables.overview, (row) =>
+      this.mapOverview(row),
+    );
     const alliances = this.publicDataActive
       ? this.readRows(this.tables.alliances, (row) => this.mapAlliance(row))
           .filter((alliance) => alliance.allianceId)
@@ -340,28 +358,32 @@ export class TradeAllianceSubscriptionManager {
           })
       : [];
     const applications = this.publicDataActive
-      ? this.readRows(this.tables.applications, (row) => this.mapApplication(row)).sort(
-          (left, right) => left.createdAtMs - right.createdAtMs,
-        )
+      ? this.readRows(this.tables.applications, (row) =>
+          this.mapApplication(row),
+        ).sort((left, right) => left.createdAtMs - right.createdAtMs)
       : [];
-    const rewardInbox = this.readRows(this.tables.rewards, (row) => this.mapReward(row)).sort(
-      (left, right) => {
-        if (left.claimedAtMs !== right.claimedAtMs) {
-          return left.claimedAtMs - right.claimedAtMs;
-        }
+    const rewardInbox = this.readRows(this.tables.rewards, (row) =>
+      this.mapReward(row),
+    ).sort((left, right) => {
+      if (left.claimedAtMs !== right.claimedAtMs) {
+        return left.claimedAtMs - right.claimedAtMs;
+      }
 
-        return left.rewardKey.localeCompare(right.rewardKey);
-      },
-    );
+      return left.rewardKey.localeCompare(right.rewardKey);
+    });
     const claimedQuestKeys = new Set(
-      rewardInbox.map((reward) => this.getQuestClaimKey(reward.questId, reward.dayKey)),
+      rewardInbox.map((reward) =>
+        this.getQuestClaimKey(reward.questId, reward.dayKey),
+      ),
     );
     const quests = this.shouldReadQuestData()
       ? this.readRows(this.tables.quests, (row) => {
           const quest = this.mapQuest(row);
           return {
             ...quest,
-            claimed: claimedQuestKeys.has(this.getQuestClaimKey(quest.questId, quest.dayKey)),
+            claimed: claimedQuestKeys.has(
+              this.getQuestClaimKey(quest.questId, quest.dayKey),
+            ),
           };
         }).sort((left, right) => {
           if (left.dayKey !== right.dayKey) {
@@ -369,12 +391,16 @@ export class TradeAllianceSubscriptionManager {
           }
 
           return left.questId.localeCompare(right.questId);
-      })
+        })
       : [];
     const contributions = this.shouldReadQuestData()
-      ? this.readRows(this.tables.contributions, (row) => this.mapContribution(row))
+      ? this.readRows(this.tables.contributions, (row) =>
+          this.mapContribution(row),
+        )
       : [];
-    const allianceChatMessages = this.readRows(this.tables.chat, (row) => this.mapChat(row))
+    const allianceChatMessages = this.readRows(this.tables.chat, (row) =>
+      this.mapChat(row),
+    )
       .filter((message) => message.body)
       .sort((left, right) => {
         if (left.sentAtMs !== right.sentAtMs) {
@@ -437,17 +463,27 @@ export class TradeAllianceSubscriptionManager {
 
   mapOverview(row) {
     const ownMember = {
-      memberIdentity: this.toIdentityKey(row.memberIdentity ?? row.member_identity),
+      memberIdentity: this.toIdentityKey(
+        row.memberIdentity ?? row.member_identity,
+      ),
       allianceId: this.toId(row.allianceId ?? row.alliance_id),
       username: String(row.username ?? 'Wizard'),
       playerLevel: this.toPlayerLevel(row.playerLevel ?? row.player_level),
       role: String(row.role ?? 'trader'),
       roleRank: this.getRoleRank(String(row.role ?? 'trader')),
       joinedAtMs: this.toTimestampMs(row.joinedAt ?? row.joined_at),
-      updatedAtMs: this.toTimestampMs(row.memberUpdatedAt ?? row.member_updated_at),
-      totalContribution: this.toNumber(row.totalContribution ?? row.total_contribution),
-      dailyContribution: this.toNumber(row.dailyContribution ?? row.daily_contribution),
-      weeklyContribution: this.toNumber(row.dailyContribution ?? row.daily_contribution),
+      updatedAtMs: this.toTimestampMs(
+        row.memberUpdatedAt ?? row.member_updated_at,
+      ),
+      totalContribution: this.toNumber(
+        row.totalContribution ?? row.total_contribution,
+      ),
+      dailyContribution: this.toNumber(
+        row.dailyContribution ?? row.daily_contribution,
+      ),
+      weeklyContribution: this.toNumber(
+        row.dailyContribution ?? row.daily_contribution,
+      ),
       dayKey: String(row.memberDayKey ?? row.member_day_key ?? ''),
     };
 
@@ -459,13 +495,19 @@ export class TradeAllianceSubscriptionManager {
         normalizedName: String(row.normalizedName ?? row.normalized_name ?? ''),
         tag: String(row.tag ?? ''),
         tagColor: normalizeTradeAllianceTagColor(row.tagColor ?? row.tag_color),
-        bannerColor: normalizeTradeAllianceBannerColor(row.bannerColor ?? row.banner_color),
-        emblemColor: normalizeTradeAllianceEmblemColor(row.emblemColor ?? row.emblem_color),
+        bannerColor: normalizeTradeAllianceBannerColor(
+          row.bannerColor ?? row.banner_color,
+        ),
+        emblemColor: normalizeTradeAllianceEmblemColor(
+          row.emblemColor ?? row.emblem_color,
+        ),
         emblemId: normalizeTradeAllianceEmblem(row.emblemId ?? row.emblem_id),
         description: String(row.description ?? ''),
         notice: String(row.notice ?? ''),
         joinMode: String(row.joinMode ?? row.join_mode ?? 'apply'),
-        leaderIdentity: this.toIdentityKey(row.leaderIdentity ?? row.leader_identity),
+        leaderIdentity: this.toIdentityKey(
+          row.leaderIdentity ?? row.leader_identity,
+        ),
         memberCount: this.toNumber(row.memberCount ?? row.member_count),
         totalIncome: this.toNumber(row.totalIncome ?? row.total_income),
         seasonIncome: this.toNumber(row.seasonIncome ?? row.season_income),
@@ -476,7 +518,9 @@ export class TradeAllianceSubscriptionManager {
         monthKey: String(row.monthKey ?? row.month_key ?? ''),
         dayKey: String(row.dayKey ?? row.day_key ?? ''),
         createdAtMs: this.toTimestampMs(row.createdAt ?? row.created_at),
-        updatedAtMs: this.toTimestampMs(row.allianceUpdatedAt ?? row.alliance_updated_at),
+        updatedAtMs: this.toTimestampMs(
+          row.allianceUpdatedAt ?? row.alliance_updated_at,
+        ),
       },
     };
   }
@@ -488,18 +532,27 @@ export class TradeAllianceSubscriptionManager {
       normalizedName: String(row.normalizedName ?? row.normalized_name ?? ''),
       tag: String(row.tag ?? ''),
       tagColor: normalizeTradeAllianceTagColor(row.tagColor ?? row.tag_color),
-      bannerColor: normalizeTradeAllianceBannerColor(row.bannerColor ?? row.banner_color),
-      emblemColor: normalizeTradeAllianceEmblemColor(row.emblemColor ?? row.emblem_color),
+      bannerColor: normalizeTradeAllianceBannerColor(
+        row.bannerColor ?? row.banner_color,
+      ),
+      emblemColor: normalizeTradeAllianceEmblemColor(
+        row.emblemColor ?? row.emblem_color,
+      ),
       emblemId: normalizeTradeAllianceEmblem(row.emblemId ?? row.emblem_id),
       description: String(row.description ?? ''),
       notice: String(row.notice ?? ''),
       joinMode: String(row.joinMode ?? row.join_mode ?? 'apply'),
-      leaderIdentity: this.toIdentityKey(row.leaderIdentity ?? row.leader_identity),
+      leaderIdentity: this.toIdentityKey(
+        row.leaderIdentity ?? row.leader_identity,
+      ),
       memberCount: this.toNumber(row.memberCount ?? row.member_count),
       totalIncome: this.toNumber(row.totalIncome ?? row.total_income),
       seasonIncome: this.toNumber(row.seasonIncome ?? row.season_income),
       weeklyIncome: this.toNumber(
-        row.weeklyIncome ?? row.weekly_income ?? row.seasonIncome ?? row.season_income,
+        row.weeklyIncome ??
+          row.weekly_income ??
+          row.seasonIncome ??
+          row.season_income,
       ),
       monthlyIncome: this.toNumber(row.monthlyIncome ?? row.monthly_income),
       dailyIncome: this.toNumber(row.dailyIncome ?? row.daily_income),
@@ -521,7 +574,9 @@ export class TradeAllianceSubscriptionManager {
     );
 
     return {
-      memberIdentity: this.toIdentityKey(row.memberIdentity ?? row.member_identity),
+      memberIdentity: this.toIdentityKey(
+        row.memberIdentity ?? row.member_identity,
+      ),
       allianceId: this.toId(row.allianceId ?? row.alliance_id),
       username: String(row.username ?? 'Wizard'),
       character: normalizePlayerCharacter(
@@ -535,7 +590,9 @@ export class TradeAllianceSubscriptionManager {
       roleRank: this.getRoleRank(role),
       joinedAtMs: this.toTimestampMs(row.joinedAt ?? row.joined_at),
       updatedAtMs: this.toTimestampMs(row.updatedAt ?? row.updated_at),
-      totalContribution: this.toNumber(row.totalContribution ?? row.total_contribution),
+      totalContribution: this.toNumber(
+        row.totalContribution ?? row.total_contribution,
+      ),
       dailyContribution: weeklyContribution,
       weeklyContribution,
       dayKey: String(row.dayKey ?? row.day_key ?? ''),
@@ -550,6 +607,12 @@ export class TradeAllianceSubscriptionManager {
         row.applicantIdentity ?? row.applicant_identity,
       ),
       username: String(row.username ?? 'Wizard'),
+      character: normalizePlayerCharacter(
+        row.character ?? row.playerCharacter ?? row.player_character,
+      ),
+      frame: normalizePlayerFrame(
+        row.frame ?? row.playerFrame ?? row.player_frame,
+      ),
       playerLevel: this.toPlayerLevel(row.playerLevel ?? row.player_level),
       createdAtMs: this.toTimestampMs(row.createdAt ?? row.created_at),
     };
@@ -572,14 +635,19 @@ export class TradeAllianceSubscriptionManager {
       target,
       progress,
       progressRatio: target > 0 ? Math.min(progress / target, 1) : 0,
-      minContribution: this.toNumber(row.minContribution ?? row.min_contribution),
+      minContribution: this.toNumber(
+        row.minContribution ?? row.min_contribution,
+      ),
       crystalReward: this.toNumber(row.crystalReward ?? row.crystal_reward),
       updatedAtMs: this.toTimestampMs(row.updatedAt ?? row.updated_at),
     };
   }
 
   getQuestItemKey(questId, questType) {
-    if (questType !== ITEM_FILL_QUEST_TYPE || !questId.startsWith(ITEM_FILL_QUEST_PREFIX)) {
+    if (
+      questType !== ITEM_FILL_QUEST_TYPE ||
+      !questId.startsWith(ITEM_FILL_QUEST_PREFIX)
+    ) {
       return '';
     }
 
@@ -588,7 +656,9 @@ export class TradeAllianceSubscriptionManager {
 
   mapContribution(row) {
     return {
-      contributionKey: String(row.contributionKey ?? row.contribution_key ?? ''),
+      contributionKey: String(
+        row.contributionKey ?? row.contribution_key ?? '',
+      ),
       allianceId: this.toId(row.allianceId ?? row.alliance_id),
       dayKey: String(row.dayKey ?? row.day_key ?? ''),
       questId: String(row.questId ?? row.quest_id ?? ''),
@@ -609,7 +679,9 @@ export class TradeAllianceSubscriptionManager {
       allianceTagColor: normalizeTradeAllianceTagColor(
         row.allianceTagColor ?? row.alliance_tag_color,
       ),
-      senderIdentity: this.toIdentityKey(row.senderIdentity ?? row.sender_identity),
+      senderIdentity: this.toIdentityKey(
+        row.senderIdentity ?? row.sender_identity,
+      ),
       username: String(row.username ?? 'Wizard'),
       character: normalizePlayerCharacter(
         row.character ?? row.playerCharacter ?? row.player_character,

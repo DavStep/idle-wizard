@@ -18,6 +18,7 @@ import {
 import { PIXI_ROOM_TAB_FRAME_SCALE } from './PixiBottomPanelView.js';
 import {
   RootRunHudAvatarButton,
+  RootRunHudBagCapsule,
   RootRunHudCurrencyCapsule,
   RootRunHudLevelRail,
   RootRunHudSquareIconButton,
@@ -46,11 +47,11 @@ const LEVEL_X = 203;
 const LEVEL_SETTINGS_GAP = 21;
 const LEVEL_WIDTH = SETTINGS_X - LEVEL_SETTINGS_GAP - LEVEL_X;
 const CURRENCY_X = 209;
-const CURRENCY_GAP = 10;
+const CURRENCY_GAP = 17;
 const CURRENCY_SETTINGS_GAP = 21;
 const CURRENCY_WIDTH =
-  (SETTINGS_X - CURRENCY_SETTINGS_GAP - CURRENCY_X - CURRENCY_GAP * 3) /
-  4;
+  (SETTINGS_X - CURRENCY_SETTINGS_GAP - CURRENCY_X - CURRENCY_GAP * 2) /
+  3;
 const TOP_PANEL_BACKGROUND_HEIGHT =
   PIXI_UI_GEOMETRY.roomContentTop -
   PIXI_UI_GEOMETRY.topPanelContentGap;
@@ -188,19 +189,16 @@ export class PixiTopPanelView extends BasePixiRetainedView {
       width: CURRENCY_WIDTH,
       label: 'topPanel:contextCurrency',
     });
-    this.mana = new RootRunHudCurrencyCapsule({
-      assets,
-      resource: 'mana',
-      amount: '0/0',
-      width: CURRENCY_WIDTH,
-      label: 'topPanel:mana',
-    });
     this.amethyst = new RootRunHudCurrencyCapsule({
       assets,
       resource: 'amethyst',
       amount: '0',
       width: CURRENCY_WIDTH,
       label: 'topPanel:amethyst',
+    });
+    this.bag = new RootRunHudBagCapsule({
+      assets,
+      width: CURRENCY_WIDTH,
     });
     this.manaRate = new PixiTextLabel({
       text: '+0/s',
@@ -229,29 +227,26 @@ export class PixiTopPanelView extends BasePixiRetainedView {
 
     this.levelRail.position.set(LEVEL_X, 4);
     this.coin.position.set(CURRENCY_X, 108);
-    this.mana.position.set(
+    this.amethyst.position.set(
       CURRENCY_X + CURRENCY_WIDTH + CURRENCY_GAP,
       108,
     );
-    this.amethyst.position.set(
+    this.contextCurrency.position.set(
       CURRENCY_X + (CURRENCY_WIDTH + CURRENCY_GAP) * 2,
       108,
     );
-    this.contextCurrency.position.set(
-      CURRENCY_X + (CURRENCY_WIDTH + CURRENCY_GAP) * 3,
-      108,
-    );
+    this.bag.position.copyFrom(this.contextCurrency.position);
     this.manaRate.position.set(
-      this.mana.position.x + CURRENCY_WIDTH / 2,
+      this.contextCurrency.position.x + CURRENCY_WIDTH / 2,
       174,
     );
     this.settingsControl.position.set(SETTINGS_X, 32);
     this.topHudRoot.addChild(
       this.levelRail,
       this.coin,
-      this.mana,
       this.amethyst,
       this.contextCurrency,
+      this.bag,
       this.manaRate,
       this.avatarViewport,
       this.usernameControl,
@@ -337,6 +332,17 @@ export class PixiTopPanelView extends BasePixiRetainedView {
         haptic: 'light',
       }),
       inputRouter?.registerPressTarget?.({
+        id: 'top.bag',
+        displayObject: this.bag,
+        fallbackHitTest: true,
+        enabled: () => this.isControlAvailable(this.bag),
+        excludePageSwipe: true,
+        onPressChange: (pressed, context) =>
+          this.bag.setPressed(pressed, context),
+        onActivate: () => this.actions.openBag?.(),
+        haptic: 'light',
+      }),
+      inputRouter?.registerPressTarget?.({
         id: 'top.settings',
         displayObject: this.settingsControl,
         fallbackHitTest: true,
@@ -371,6 +377,11 @@ export class PixiTopPanelView extends BasePixiRetainedView {
         (this.actions.openAccount ?? this.actions.openSettings)?.(),
     });
     this.registerSemanticTarget({
+      semanticId: 'top.bag',
+      displayObject: this.bag,
+      activate: () => this.actions.openBag?.(),
+    });
+    this.registerSemanticTarget({
       semanticId: 'top.settings',
       displayObject: this.settingsControl,
       activate: () => this.actions.openSettings?.(),
@@ -378,12 +389,12 @@ export class PixiTopPanelView extends BasePixiRetainedView {
     this.registerSemanticTarget({
       semanticId: 'top.mana',
       tutorialId: 'top:mana',
-      displayObject: this.mana,
+      displayObject: this.contextCurrency,
     });
     this.registerSemanticTarget({
       semanticId: 'top.mana.value',
       tutorialId: 'top:mana:value',
-      displayObject: this.mana,
+      displayObject: this.contextCurrency,
     });
     this.registerSemanticTarget({
       semanticId: 'top.mana.regen',
@@ -460,7 +471,6 @@ export class PixiTopPanelView extends BasePixiRetainedView {
   }
 
   renderModel(model) {
-    const mana = model.mana ?? {};
     const quest = model.quest ?? {};
     const reveal = model.reveal ?? {};
     const context = normalizeContextCurrency(model.contextCurrency);
@@ -468,6 +478,7 @@ export class PixiTopPanelView extends BasePixiRetainedView {
     const avatarVisible =
       model.showAvatar !== false && reveal.avatar !== false;
     const topVisible = reveal.top !== false;
+    const workshopResources = model.showBag === true && context.resource === 'mana';
 
     this.panelBackground.visible = topVisible;
     this.panelBackground.renderable = topVisible;
@@ -479,29 +490,44 @@ export class PixiTopPanelView extends BasePixiRetainedView {
     this.usernameControl.renderable = this.usernameControl.visible;
     this.settingsControl.visible = topVisible;
     this.settingsControl.renderable = topVisible;
-    this.mana.visible = topVisible && reveal.mana !== false;
-    this.mana.renderable = this.mana.visible;
-    this.manaRate.visible = this.mana.visible && reveal.manaRegen !== false;
-    this.manaRate.renderable = this.manaRate.visible;
+    this.bag.visible =
+      topVisible && workshopResources && reveal.resources !== false;
+    this.bag.renderable = this.bag.visible;
 
     this.username.setText(model.username ?? 'Wizard');
     this.setCharacter(model.character ?? model.characterKey ?? 'elara');
     this.avatarViewport.setFrameTint?.(model.frameTint);
-    this.mana.setAmount(
-      `${Math.floor(Number(mana.current) || 0)}/${Math.floor(Number(mana.cap) || 0)}`,
-    );
-    this.manaRate.setText(formatManaRate(mana.perSecond));
     this.coin.setAmount(formatCompactNumber(model.coin ?? 0));
     this.amethyst.setAmount(formatCompactNumber(model.amethyst ?? 0));
     this.contextCurrency
       .setResource(context.resource)
-      .setAmount(formatCompactNumber(context.amount));
+      .setAmount(
+        context.resource === 'mana'
+          ? `${Math.floor(Number(context.amount) || 0)}/${Math.floor(Number(context.cap) || 0)}`
+          : formatCompactNumber(context.amount),
+      );
+    this.contextCurrency.position.x =
+      CURRENCY_X +
+      (CURRENCY_WIDTH + CURRENCY_GAP) * (workshopResources ? 1 : 2);
+    this.manaRate.position.x =
+      this.contextCurrency.position.x + CURRENCY_WIDTH / 2;
     this.contextCurrency.visible =
-      topVisible && context.visible && reveal.resources !== false;
+      topVisible &&
+      context.visible &&
+      reveal.resources !== false &&
+      (context.resource !== 'mana' || reveal.mana !== false);
     this.contextCurrency.renderable = this.contextCurrency.visible;
+    this.manaRate.setText(formatManaRate(context.perSecond));
+    this.manaRate.visible =
+      this.contextCurrency.visible &&
+      context.resource === 'mana' &&
+      reveal.mana !== false &&
+      reveal.manaRegen !== false;
+    this.manaRate.renderable = this.manaRate.visible;
     this.coin.visible = topVisible && reveal.resources !== false;
     this.coin.renderable = this.coin.visible;
     this.amethyst.visible = topVisible && reveal.resources !== false;
+    this.amethyst.visible = this.amethyst.visible && !workshopResources;
     this.amethyst.renderable = this.amethyst.visible;
 
     this.levelRail.visible = topVisible && level !== null;
@@ -532,7 +558,7 @@ export class PixiTopPanelView extends BasePixiRetainedView {
     this.coin.applyTheme(theme);
     this.amethyst.applyTheme(theme);
     this.contextCurrency.applyTheme(theme);
-    this.mana.applyTheme(theme);
+    this.bag.applyTheme(theme);
     this.manaRate.applyTheme(theme);
     this.levelRail.applyTheme(theme);
     this.username
@@ -1135,14 +1161,16 @@ function normalizeContextCurrency(context) {
   if (typeof context === 'string') {
     return { resource: context, amount: 0, visible: true };
   }
-  const resource = ['crystal', 'ruby', 'emerald'].includes(context?.resource)
+  const resource = ['crystal', 'ruby', 'emerald', 'mana'].includes(context?.resource)
     ? context.resource
-    : ['crystal', 'ruby', 'emerald'].includes(context?.currency)
+    : ['crystal', 'ruby', 'emerald', 'mana'].includes(context?.currency)
       ? context.currency
       : 'crystal';
   return {
     resource,
     amount: context?.amount ?? context?.value ?? 0,
+    cap: context?.cap ?? 0,
+    perSecond: context?.perSecond ?? 0,
     visible: context?.visible !== false,
   };
 }

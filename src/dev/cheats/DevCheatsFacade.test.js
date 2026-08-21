@@ -285,7 +285,17 @@ describe('DevCheatsFacade', () => {
     );
   });
 
-  it.each(['brewing.recipes', 'chatReport', 'global.confirmation'])(
+  it.each([
+    'brewing.recipes',
+    'chatReport',
+    'global.confirmation',
+    'friends',
+    'friendChat',
+    'directMessage',
+    'playerInfo',
+    'playerInfoFriend',
+    'playerInfoOwn',
+  ])(
     'waits for mounted online game surfaces before opening the %s QA state',
     (surfaceId) => {
       const lifecycleManager = {
@@ -922,6 +932,14 @@ describe('DevCheatsFacade', () => {
           id: 'stats',
           command: 'cheats.openUi("stats")',
         }),
+        expect.objectContaining({
+          id: 'friends',
+          command: 'cheats.openUi("friends")',
+        }),
+        expect.objectContaining({
+          id: 'friendChat',
+          command: 'cheats.openUi("friendChat")',
+        }),
       ]),
     });
     const publishAndSaveSpy = vi.spyOn(app.gameplayFacade, 'publishAndSaveSnapshot');
@@ -934,6 +952,38 @@ describe('DevCheatsFacade', () => {
     expect(pagesFacade.openDialog).toHaveBeenLastCalledWith('settings', {
       tab: 'account',
     });
+    expect(target.cheats.openUi('friendChat')).toMatchObject({
+      ok: true,
+      surfaceId: 'friendChat',
+      surfaceKind: 'dialog',
+    });
+    expect(pagesFacade.openDialog).toHaveBeenLastCalledWith(
+      'global.directMessage',
+      expect.objectContaining({
+        identityExpanded: true,
+        relationship: 'friend',
+        friend: expect.objectContaining({ username: 'Juniper' }),
+      }),
+    );
+    expect(target.cheats.openUi('friends')).toMatchObject({
+      ok: true,
+      surfaceId: 'friends',
+      surfaceKind: 'dialog',
+    });
+    expect(pagesFacade.openDialog).toHaveBeenLastCalledWith(
+      'friends',
+      expect.objectContaining({
+        tab: 'friends',
+        previewSnapshot: expect.objectContaining({
+          friends: expect.arrayContaining([
+            expect.objectContaining({
+              allianceTag: 'MOSS',
+              statusMessage: 'The moon garden is glowing...',
+            }),
+          ]),
+        }),
+      }),
+    );
     publishAndSaveSpy.mockClear();
     expect(target.cheats.openUi('featureUnlockAnnouncement')).toMatchObject({
       ok: true,

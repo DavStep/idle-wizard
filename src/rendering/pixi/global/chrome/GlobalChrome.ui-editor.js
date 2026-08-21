@@ -15,6 +15,7 @@ export default [
       'compound.player-profile',
       'compound.hud-level-rail',
       'compound.hud-currency-capsule',
+      'compound.hud-bag-capsule',
       'hud-avatar-button',
       'hud-settings-button',
     ],
@@ -51,8 +52,15 @@ export default [
       {
         fixture: createHudFixture({
           character: 'mira',
+          showBag: true,
           username: 'Mira',
-          mana: { cap: 240, current: 240, perSecond: 8 },
+          contextCurrency: {
+            amount: 240,
+            cap: 240,
+            perSecond: 8,
+            resource: 'mana',
+            visible: true,
+          },
         }),
         id: 'full-mana',
         label: 'Full mana',
@@ -198,6 +206,7 @@ function createHudControl({
     actions: {
       openAccount: () => context?.emit('accountOpened'),
       openAvatar: () => context?.emit('avatarOpened'),
+      openBag: () => context?.emit('bagOpened'),
       openLevel: () => context?.emit('levelOpened'),
       openSettings: () => context?.emit('settingsOpened'),
     },
@@ -245,7 +254,7 @@ function createHudFixture(overrides = {}) {
     coin: 12450,
     contextCurrency: { amount: 7, resource: 'ruby', visible: true },
     level: 7,
-    mana: { cap: 180, current: 126, perSecond: 4.5 },
+    showBag: false,
     quest: {
       activeFraction: 0.42,
       completed: 1,

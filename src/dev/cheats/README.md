@@ -166,6 +166,13 @@ Useful view setup commands:
 - `/?devUi=discoveries` opens the real Workshop Discoveries dialog with one
   non-persistent shared discovery snapshot, including discoverer, date, recipe,
   mana, brew duration, and royalty metadata.
+- `/?devUi=friends` opens the production Friends dialog with populated Friends,
+  Requests, and Pending tabs; `/?devUi=friendchat` opens the production direct
+  chat with deterministic messages and its expandable identity/Unfriend section.
+- `/?devUi=playerInfo`, `/?devUi=playerInfoFriend`, and
+  `/?devUi=playerInfoOwn` expose the production Player Info Add Friend,
+  Unfriend, and own-profile Friends-button states without mutating backend
+  relationships.
 - `setTimers(preset)` supports allReady, half, almostDone, and longRunning for
   garden, brewing, and market timers.
 - `setStressText()` loads long names, overflowing inventory, full market/event

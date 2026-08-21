@@ -105,9 +105,7 @@ describe('TradeAllianceSubscriptionManager', () => {
     manager.identityKey = 'self';
     manager.publicDataActive = true;
     manager.tables = {
-      overview: createTable([
-        createOverviewRow(),
-      ]),
+      overview: createTable([createOverviewRow()]),
       alliances: createTable([
         {
           allianceId: 'alliance-1',
@@ -304,6 +302,41 @@ describe('TradeAllianceSubscriptionManager', () => {
     });
   });
 
+  it('keeps applicant profile visuals on alliance request rows', () => {
+    const manager = new TradeAllianceSubscriptionManager();
+
+    manager.publicDataActive = true;
+    manager.tables = {
+      overview: createTable(),
+      alliances: createTable(),
+      members: createTable(),
+      applications: createTable([
+        {
+          applicationKey: 'alliance-1:applicant-1',
+          allianceId: 'alliance-1',
+          applicantIdentity: 'applicant-1',
+          username: 'Luna',
+          character: 'mira',
+          frame: 'violet',
+          playerLevel: 14,
+        },
+      ]),
+      quests: createTable(),
+      contributions: createTable(),
+      chat: createTable(),
+      rewards: createTable(),
+    };
+
+    manager.publishFromTables();
+
+    expect(manager.getSnapshot().applications[0]).toMatchObject({
+      applicantIdentity: 'applicant-1',
+      character: 'mira',
+      frame: 'violet',
+      playerLevel: 14,
+    });
+  });
+
   it('keeps a known own alliance after a subscription error', () => {
     let onError = null;
     const manager = new TradeAllianceSubscriptionManager();
@@ -367,17 +400,23 @@ describe('TradeAllianceSubscriptionManager', () => {
     manager.setQuestDataActive(true);
 
     expect(tables.tradeAllianceQuestProgressSnapshot.handlerCount()).toBe(3);
-    expect(tables.tradeAllianceQuestContributionSnapshot.handlerCount()).toBe(3);
+    expect(tables.tradeAllianceQuestContributionSnapshot.handlerCount()).toBe(
+      3,
+    );
 
     manager.setPublicDataActive(true);
     manager.setPublicDataActive(false);
 
     expect(tables.tradeAllianceQuestProgressSnapshot.handlerCount()).toBe(3);
-    expect(tables.tradeAllianceQuestContributionSnapshot.handlerCount()).toBe(3);
+    expect(tables.tradeAllianceQuestContributionSnapshot.handlerCount()).toBe(
+      3,
+    );
 
     manager.setQuestDataActive(false);
 
     expect(tables.tradeAllianceQuestProgressSnapshot.handlerCount()).toBe(0);
-    expect(tables.tradeAllianceQuestContributionSnapshot.handlerCount()).toBe(0);
+    expect(tables.tradeAllianceQuestContributionSnapshot.handlerCount()).toBe(
+      0,
+    );
   });
 });

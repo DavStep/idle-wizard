@@ -166,6 +166,7 @@ describe('loadUiEditorIntegrations', () => {
     );
 
     expect(scenes.map(({ id }) => id).sort()).toEqual([
+      'feature.alliance-workspace',
       'feature.brewing-room',
       'feature.garden-room',
       'feature.guild-room',

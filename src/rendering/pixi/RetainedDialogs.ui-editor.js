@@ -65,6 +65,8 @@ const GLOBAL_DIALOG_IDS_IN_ORDER = Object.freeze([
   GLOBAL_DIALOG_IDS.LEVEL,
   GLOBAL_DIALOG_IDS.INBOX,
   GLOBAL_DIALOG_IDS.PLAYER,
+  GLOBAL_DIALOG_IDS.FRIENDS,
+  GLOBAL_DIALOG_IDS.DIRECT_MESSAGE,
   GLOBAL_DIALOG_IDS.ALLIANCE,
   GLOBAL_DIALOG_IDS.ANNOUNCEMENT,
   GLOBAL_DIALOG_IDS.CONFIRMATION,
@@ -93,6 +95,7 @@ const INVENTORY_CHOICE_DIALOG_HIERARCHY = Object.freeze({
 });
 
 const WORLD_CHAT_ROW_WIDGET_ID = 'compound.world-chat-message-row';
+const PLAYER_RELATIONSHIP_ROW_WIDGET_ID = 'compound.player-relationship-row';
 const INBOX_MAIL_WIDGET_ID = 'compound.inbox-mail-widget';
 const PLAYER_PROFILE_WIDGET_ID = 'compound.player-profile';
 const RESOURCE_LABEL_WIDGET_ID = 'primitive.resource-label';
@@ -125,6 +128,16 @@ const DIALOG_CHILD_WIDGET_IDS = Object.freeze({
     'text-button',
   ]),
   [GLOBAL_DIALOG_IDS.LEVEL]: Object.freeze(['text-button']),
+  [GLOBAL_DIALOG_IDS.FRIENDS]: Object.freeze([
+    'tab-button',
+    PLAYER_RELATIONSHIP_ROW_WIDGET_ID,
+  ]),
+  [GLOBAL_DIALOG_IDS.DIRECT_MESSAGE]: Object.freeze([
+    WORLD_CHAT_ROW_WIDGET_ID,
+    PLAYER_PROFILE_WIDGET_ID,
+    'primitive.text-field',
+    'text-button',
+  ]),
   [GLOBAL_DIALOG_IDS.ALLIANCE]: Object.freeze([
     ALLIANCE_FLAG_WIDGET_ID,
     'compound.workshop-dialog-row',
@@ -146,6 +159,7 @@ const DIALOG_CHILD_WIDGET_IDS = Object.freeze({
     ALLIANCE_FLAG_WIDGET_ID,
     'compound.alliance-directory-row',
     'compound.alliance-member-row',
+    PLAYER_RELATIONSHIP_ROW_WIDGET_ID,
     ALLIANCE_QUEST_ROW_WIDGET_ID,
     'primitive.guild-color-swatch',
     ALLIANCE_EMBLEM_OPTION_WIDGET_ID,
@@ -258,6 +272,8 @@ const DIALOG_LABELS = Object.freeze({
   'global.level': 'Level Rewards',
   'global.inbox': 'Inbox',
   'global.player': 'Player Info',
+  'global.friends': 'Friends',
+  'global.directMessage': 'Friend Chat',
   'global.alliance': 'Alliance Info',
   'global.announcement': 'Announcement',
   'global.confirmation': 'Confirmation',
@@ -313,21 +329,13 @@ function createDialogScenarios(dialogId) {
   if (dialogId === 'workshop.worldEvent') {
     return [
       scenario('quests', 'Quests', () => createWorldEventDialogFixture(0)),
-      scenario(
-        'unavailable',
-        'Unavailable donations',
-        () => createWorldEventDialogFixture(1),
+      scenario('unavailable', 'Unavailable donations', () =>
+        createWorldEventDialogFixture(1),
       ),
-      scenario(
-        'leaderboard',
-        'Leaderboard',
-        () => createWorldEventDialogFixture(2),
+      scenario('leaderboard', 'Leaderboard', () =>
+        createWorldEventDialogFixture(2),
       ),
-      scenario(
-        'rewards',
-        'Rewards',
-        () => createWorldEventDialogFixture(3),
-      ),
+      scenario('rewards', 'Rewards', () => createWorldEventDialogFixture(3)),
     ].map((entry) => ({
       ...entry,
       mount: (context, fixture) =>
@@ -336,10 +344,21 @@ function createDialogScenarios(dialogId) {
   }
   if (dialogId === 'workshop.alliance') {
     return [
-      scenario('owned', 'Owned alliance', () => createUiEditorDialogFixture(dialogId, 0)),
-      scenario('browse', 'Browse alliances', () => createUiEditorDialogFixture(dialogId, 1)),
-      scenario('create', 'Create alliance', () => createUiEditorDialogFixture(dialogId, 2)),
-      scenario('banner', 'Banner editor', () => createUiEditorDialogFixture(dialogId, 3)),
+      scenario('owned', 'Owned alliance', () =>
+        createUiEditorDialogFixture(dialogId, 0),
+      ),
+      scenario('browse', 'Browse alliances', () =>
+        createUiEditorDialogFixture(dialogId, 1),
+      ),
+      scenario('create', 'Create alliance', () =>
+        createUiEditorDialogFixture(dialogId, 2),
+      ),
+      scenario('settings', 'Settings', () =>
+        createUiEditorDialogFixture(dialogId, 3),
+      ),
+      scenario('requests', 'Requests', () =>
+        createUiEditorDialogFixture(dialogId, 4),
+      ),
     ].map((entry) => ({
       ...entry,
       mount: (context, fixture) =>
@@ -439,6 +458,7 @@ export function createUiEditorDialog({
       dialogId,
       input,
       model,
+      parent,
       projection,
       semanticRegistry,
     });
@@ -464,6 +484,7 @@ function createGlobalDialog({
   dialogId,
   input,
   model,
+  parent,
   projection,
   semanticRegistry,
 }) {
@@ -472,6 +493,7 @@ function createGlobalDialog({
     assets,
     counters,
     dialogRegistry: null,
+    layers: { dialogs: parent },
     inputRouter: input,
     projection,
     semanticRegistry,
@@ -513,10 +535,7 @@ export function createUiEditorDialogFixture(dialogId, variantIndex = 0) {
     return createDiscoveriesDialogFixture(variantIndex);
   }
   if (dialogId === WORKSHOP_WORLD_EVENT_DONATE_DIALOG_ID) {
-    return createDialogViewModel(
-      dialogId,
-      variantIndex === 0 ? 'a' : 'b',
-    );
+    return createDialogViewModel(dialogId, variantIndex === 0 ? 'a' : 'b');
   }
   if (dialogId === 'workshop.alliance') {
     if (variantIndex === 0) {
@@ -525,9 +544,12 @@ export function createUiEditorDialogFixture(dialogId, variantIndex = 0) {
     if (variantIndex === 1) {
       return createTradeAllianceDirectoryFixture();
     }
-    return variantIndex === 2
-      ? createTradeAllianceCreateFixture()
-      : createTradeAllianceBannerFixture();
+    if (variantIndex === 2) {
+      return createTradeAllianceCreateFixture();
+    }
+    return variantIndex === 3
+      ? createTradeAllianceSettingsFixture()
+      : createTradeAllianceRequestsFixture();
   }
   if (dialogId === 'workshop.leaderboard') {
     return createLeaderboardDialogFixture(variantIndex);
@@ -562,7 +584,14 @@ function createSummonInfoDialogFixture(variantIndex = 0) {
         ['sageSeed', 'Sage Seed', 'Medium', 'medium', 'yellow', '46% Chance'],
         ['mintSeed', 'Mint Seed', 'Low', 'low', 'red', '23% Chance'],
         ['briarSeed', 'Briar Seed', 'None', 'none', 'text', '0% Chance'],
-        ['lavenderSeed', 'Lavender Seed', 'High', 'high', 'green', '31% Chance'],
+        [
+          'lavenderSeed',
+          'Lavender Seed',
+          'High',
+          'high',
+          'green',
+          '31% Chance',
+        ],
       ];
 
   return {
@@ -700,24 +729,47 @@ function createLeaderboardDialogFixture(variantIndex = 0) {
       : [
           ['Elara', 'mira', 'sun', 'OWL', 'violet', 48, 3, '13.9m'],
           ['Trix', 'juniper', 'emerald', 'SUN', 'amber', 32, 1, '707k'],
-          ['Gandalf The Green', 'elara', 'classic', 'DBP', 'green', 17, 0, '613k'],
+          [
+            'Gandalf The Green',
+            'elara',
+            'classic',
+            'DBP',
+            'green',
+            17,
+            0,
+            '613k',
+          ],
           ['StepWizzard', 'rowan', 'violet', 'OWL', 'violet', 14, 2, '93.3k'],
           ['Squeak69', 'mira', 'bronze', 'SUN', 'amber', 12, 0, '57.8k'],
-        ].map(([username, character, frame, allianceTag, allianceTagColor, playerLevel, prestigeCount, totalCoinLabel], index) => ({
-          id: `leaderboard-player-${index}`,
-          type: 'leaderboardPlayer',
-          rank: index + 1,
-          username,
-          character,
-          frame,
-          allianceTag,
-          allianceTagColor,
-          playerLevel,
-          prestigeCount,
-          current: index === 3,
-          totalCoinLabel,
-          onActivate: () => true,
-        })),
+        ].map(
+          (
+            [
+              username,
+              character,
+              frame,
+              allianceTag,
+              allianceTagColor,
+              playerLevel,
+              prestigeCount,
+              totalCoinLabel,
+            ],
+            index,
+          ) => ({
+            id: `leaderboard-player-${index}`,
+            type: 'leaderboardPlayer',
+            rank: index + 1,
+            username,
+            character,
+            frame,
+            allianceTag,
+            allianceTagColor,
+            playerLevel,
+            prestigeCount,
+            current: index === 3,
+            totalCoinLabel,
+            onActivate: () => true,
+          }),
+        ),
   };
 }
 
@@ -796,21 +848,21 @@ function createTradeAllianceCreateFixture() {
   };
 }
 
-function createTradeAllianceBannerFixture() {
+function createTradeAllianceSettingsFixture() {
   const fixture = createDialogViewModel('workshop.alliance', 'a');
   return {
     ...fixture,
     ownedAllianceHome: false,
-    selectedTabId: 'banner',
-    tabs: ['home', 'quests', 'banner', 'settings'].map((id) => ({
+    selectedTabId: 'settings',
+    tabs: ['home', 'quests', 'requests', 'settings'].map((id) => ({
       id,
       label: id[0].toUpperCase() + id.slice(1),
-      selected: id === 'banner',
+      selected: id === 'settings',
       onSelect: () => true,
     })),
     settings: {
       allianceId: 'night-owls',
-      mode: 'banner',
+      mode: 'settings',
       name: 'Night Owls',
       tag: 'OWL',
       tagColor: 'violet',
@@ -825,6 +877,257 @@ function createTradeAllianceBannerFixture() {
       onSave: async () => ({ ok: true }),
     },
     rows: [],
+  };
+}
+
+function createTradeAllianceRequestsFixture() {
+  const fixture = createDialogViewModel('workshop.alliance', 'a');
+  return {
+    ...fixture,
+    ownedAllianceHome: false,
+    rowWidget: 'playerRelationship',
+    selectedTabId: 'requests',
+    tabs: ['home', 'quests', 'requests', 'settings'].map((id) => ({
+      id,
+      label: id[0].toUpperCase() + id.slice(1),
+      notification: id === 'requests',
+      selected: id === 'requests',
+      onSelect: () => true,
+    })),
+    rows: [
+      {
+        id: 'application-luna',
+        identity: 'luna',
+        username: 'Luna',
+        character: 'mira',
+        frame: 'violet',
+        detail: 'Level 14',
+        onActivate: () => true,
+        primaryAction: {
+          label: 'Accept',
+          variant: 'green',
+          onActivate: () => true,
+        },
+        secondaryAction: {
+          label: 'Deny',
+          variant: 'red',
+          onActivate: () => true,
+        },
+      },
+      {
+        id: 'application-thorne',
+        identity: 'thorne',
+        username: 'Thorne',
+        character: 'rowan',
+        frame: 'classic',
+        detail: 'Level 9',
+        onActivate: () => true,
+        primaryAction: {
+          label: 'Accept',
+          variant: 'green',
+          onActivate: () => true,
+        },
+        secondaryAction: {
+          label: 'Deny',
+          variant: 'red',
+          onActivate: () => true,
+        },
+      },
+    ],
+    settings: null,
+  };
+}
+
+function createFriendsDialogFixture(selectedTabId) {
+  const players = [
+    {
+      identity: 'mira',
+      username: 'Mira',
+      character: 'mira',
+      frame: 'violet',
+      playerLevel: 12,
+      allianceTag: 'MOSS',
+      allianceTagColor: 'green',
+      preview: 'The moon garden is glowing...',
+      notification: true,
+    },
+    {
+      identity: 'rowan',
+      username: 'Rowan',
+      character: 'rowan',
+      frame: 'classic',
+      playerLevel: 10,
+      allianceTag: 'ARC',
+      allianceTagColor: 'violet',
+      preview: 'Anyone found the crystal...',
+      notification: true,
+    },
+    {
+      identity: 'juniper',
+      username: 'Juniper',
+      character: 'juniper',
+      frame: 'emerald',
+      playerLevel: 14,
+      allianceTag: 'DUNE',
+      allianceTagColor: 'green',
+      preview: 'Meet by the old cauldron...',
+      notification: true,
+    },
+    {
+      identity: 'lyra',
+      username: 'Lyra',
+      character: 'adventurer_redscarf_sword',
+      frame: 'gnome',
+      playerLevel: 9,
+      allianceTag: 'STAR',
+      allianceTagColor: 'violet',
+      preview: 'Thanks for the herbs!',
+      notification: true,
+    },
+    {
+      identity: 'kael',
+      username: 'Kael',
+      character: 'adventurer_blondsword',
+      frame: 'sun',
+      playerLevel: 11,
+      allianceTag: 'MIST',
+      allianceTagColor: 'green',
+      preview: "Let's raid the grotto later.",
+      notification: false,
+    },
+  ].map((player) => ({
+    ...player,
+    id: player.identity,
+    detail: `Level ${player.playerLevel}`,
+  }));
+  const rows =
+    selectedTabId === 'requests'
+      ? players.slice(0, 2).map((player) => ({
+          ...player,
+          preview: 'Wants to be your friend.',
+          notification: false,
+          primaryAction: {
+            label: 'Accept',
+            variant: 'green',
+            onActivate: () => true,
+          },
+          secondaryAction: {
+            label: 'Reject',
+            variant: 'red',
+            onActivate: () => true,
+          },
+        }))
+      : selectedTabId === 'pending'
+        ? players.slice(1).map((player) => ({
+            ...player,
+            notification: false,
+            preview: 'Request sent.',
+            status: 'Pending',
+          }))
+        : players.map((player) => ({
+            ...player,
+            onActivate: () => true,
+          }));
+  return {
+    emptyLabel: 'No Friends Yet',
+    rowWidget: 'playerRelationship',
+    rows,
+    selectedTabId,
+    tabs: [
+      {
+        id: 'friends',
+        label: 'Friends',
+        selected: selectedTabId === 'friends',
+      },
+      {
+        id: 'requests',
+        label: 'Asked You',
+        selected: selectedTabId === 'requests',
+      },
+      {
+        id: 'pending',
+        label: 'Pending',
+        selected: selectedTabId === 'pending',
+      },
+    ],
+    title: 'Friends',
+  };
+}
+
+function createDirectMessageDialogFixture(isFriend) {
+  return {
+    actions: { unfriend: isFriend ? () => true : null },
+    composer: {
+      enabled: isFriend,
+      maxLength: 160,
+      placeholder: isFriend ? 'Message' : 'Friends only',
+    },
+    friend: {
+      allianceTag: 'DUSK',
+      allianceTagColor: 'green',
+      identity: 'juniper',
+      username: 'Juniper',
+      character: 'juniper',
+      frame: 'emerald',
+      playerLevel: 10,
+    },
+    identityExpanded: isFriend,
+    onSubmit: async () => ({ ok: isFriend }),
+    relationship: isFriend ? 'friend' : 'stranger',
+    rows: [
+      {
+        ageLabel: '2m',
+        body: 'The harvest was amazing this week.',
+        character: 'juniper',
+        frame: 'emerald',
+        id: 'dm-juniper',
+        username: 'Juniper',
+      },
+      {
+        ageLabel: 'now',
+        body: 'I saved you a bundle of herbs.',
+        character: 'mira',
+        frame: 'violet',
+        id: 'dm-mira',
+        isOwn: true,
+        username: 'Mira',
+      },
+    ],
+    title: 'Juniper',
+  };
+}
+
+function createPlayerInfoDialogFixture(relationship) {
+  const ownPlayer = relationship === 'self';
+  const actions = ownPlayer
+    ? { openCosmetics: () => true, openFriends: () => true }
+    : relationship === 'friend'
+      ? { unfriend: () => true }
+      : relationship === 'incoming'
+        ? { acceptFriend: () => true, rejectFriend: () => true }
+        : relationship === 'stranger'
+          ? { addFriend: () => true }
+          : {};
+  return {
+    actions,
+    ownPlayer,
+    relationship,
+    player: {
+      allianceId: 'moss-hall',
+      allianceName: 'Moss Hall',
+      allianceTag: 'MOSS',
+      allianceTagColor: 'green',
+      character: 'mira',
+      connected: true,
+      identity: ownPlayer ? 'mira' : 'juniper',
+      playerLevel: 12,
+      prestigeCount: 2,
+      totalBrewedPotions: 86,
+      totalHarvestedHerbs: 240,
+      totalPlayTimeSeconds: 45_000,
+      totalProducedCoin: 128450,
+      username: ownPlayer ? 'Mira' : 'Juniper',
+    },
   };
 }
 
@@ -1261,15 +1564,16 @@ function createDialogContentHierarchy(dialogId, dialog, content) {
 function createReusableDialogContentHierarchy(dialogId, dialog) {
   if (dialogId === GLOBAL_DIALOG_IDS.ANNOUNCEMENT) {
     return [
-      ...(dialog.unlockItems?.collection?.getWidgets?.() ?? []).map((item, index) =>
-        createUiEditorPixiHierarchyComponent({
-          displayObjects: [item.root],
-          id: `${dialogId}:unlock:${item.data?.id ?? index}`,
-          label: 'FeatureUnlock:FeatureUnlockAnnouncementItem',
-          libraryEntryId: 'compound.feature-unlock-announcement-item',
-          primary: item.root,
-          type: 'widget',
-        }),
+      ...(dialog.unlockItems?.collection?.getWidgets?.() ?? []).map(
+        (item, index) =>
+          createUiEditorPixiHierarchyComponent({
+            displayObjects: [item.root],
+            id: `${dialogId}:unlock:${item.data?.id ?? index}`,
+            label: 'FeatureUnlock:FeatureUnlockAnnouncementItem',
+            libraryEntryId: 'compound.feature-unlock-announcement-item',
+            primary: item.root,
+            type: 'widget',
+          }),
       ),
       ...(dialog.researchStars?.visible
         ? [
@@ -1365,7 +1669,10 @@ function createReusableDialogContentHierarchy(dialogId, dialog) {
     );
   }
 
-  if (dialogId === 'workshop.worldChat') {
+  if (
+    dialogId === 'workshop.worldChat' ||
+    dialogId === GLOBAL_DIALOG_IDS.DIRECT_MESSAGE
+  ) {
     return [
       ...(dialog.rows?.getWidgets?.() ?? []).map((row, index) =>
         createUiEditorPixiHierarchyComponent({
@@ -1393,7 +1700,40 @@ function createReusableDialogContentHierarchy(dialogId, dialog) {
         primary: dialog.composerSubmit?.root,
         type: 'widget',
       }),
+      ...(dialogId === GLOBAL_DIALOG_IDS.DIRECT_MESSAGE
+        ? [
+            createUiEditorPixiHierarchyComponent({
+              displayObjects: [dialog.directMessageProfile],
+              id: `${dialogId}:friend-profile`,
+              label: 'FriendProfile:PlayerProfileWidget',
+              libraryEntryId: PLAYER_PROFILE_WIDGET_ID,
+              primary: dialog.directMessageProfile,
+              type: 'widget',
+            }),
+            createUiEditorPixiHierarchyComponent({
+              displayObjects: [dialog.directMessageUnfriend],
+              id: `${dialogId}:unfriend`,
+              label: 'Unfriend:PixiTextButton',
+              libraryEntryId: 'text-button',
+              primary: dialog.directMessageUnfriend,
+              type: 'widget',
+            }),
+          ]
+        : []),
     ];
+  }
+
+  if (dialogId === GLOBAL_DIALOG_IDS.FRIENDS) {
+    return (dialog.rows?.getWidgets?.() ?? []).map((row, index) =>
+      createUiEditorPixiHierarchyComponent({
+        displayObjects: [row.root],
+        id: `${dialogId}:relationship:${row.model?.identity ?? index}`,
+        label: 'PlayerRelationship:PlayerRelationshipRow',
+        libraryEntryId: PLAYER_RELATIONSHIP_ROW_WIDGET_ID,
+        primary: row.root,
+        type: 'widget',
+      }),
+    );
   }
 
   if (dialogId === 'workshop.worldEvent') {
@@ -1401,10 +1741,10 @@ function createReusableDialogContentHierarchy(dialogId, dialog) {
     const leaderboard = rowWidget === 'leaderboard';
     const rewards = rowWidget === 'worldEventReward';
     const rows = leaderboard
-      ? dialog.worldEventLeaderboardRows?.getWidgets?.() ?? []
+      ? (dialog.worldEventLeaderboardRows?.getWidgets?.() ?? [])
       : rewards
-        ? dialog.worldEventRewardRows?.getWidgets?.() ?? []
-        : dialog.worldEventRows?.getWidgets?.() ?? [];
+        ? (dialog.worldEventRewardRows?.getWidgets?.() ?? [])
+        : (dialog.worldEventRows?.getWidgets?.() ?? []);
     return rows.map((row, index) =>
       createUiEditorPixiHierarchyComponent({
         displayObjects: [row.root],
@@ -1430,6 +1770,7 @@ function createReusableDialogContentHierarchy(dialogId, dialog) {
   if (dialogId === 'workshop.alliance') {
     const directoryRows = dialog.allianceRows?.getWidgets?.() ?? [];
     const ownedMemberRows = dialog.allianceMemberRows?.getWidgets?.() ?? [];
+    const requestRows = dialog.allianceRequestRows?.getWidgets?.() ?? [];
     const directoryMemberRows = directoryRows.flatMap((row) =>
       Array.from(row.memberWidgets?.values?.() ?? []),
     );
@@ -1522,6 +1863,16 @@ function createReusableDialogContentHierarchy(dialogId, dialog) {
           type: 'widget',
         }),
       ),
+      ...requestRows.map((row, index) =>
+        createUiEditorPixiHierarchyComponent({
+          displayObjects: [row.root],
+          id: `${dialogId}:request:${row.model?.id ?? index}`,
+          label: 'AllianceRequest:PlayerRelationshipRowPixi',
+          libraryEntryId: PLAYER_RELATIONSHIP_ROW_WIDGET_ID,
+          primary: row.root,
+          type: 'widget',
+        }),
+      ),
       ...settingsFields,
       ...settingsSwatches,
       ...emblemOptions,
@@ -1531,9 +1882,24 @@ function createReusableDialogContentHierarchy(dialogId, dialog) {
 
   if (dialogId === WORKSHOP_SUMMON_INFO_DIALOG_ID) {
     const controls = [
-      ['auto-toggle', 'AutoSummon:RootRunSettingsTogglePixi', 'primitive.settings-toggle', dialog.settingsToggle],
-      ['mana-reserve', 'ManaReserve:RootRunSettingsSliderPixi', 'primitive.settings-slider', dialog.manaSettingsSlider],
-      ['drop-rate', 'DropRate:RootRunSettingsSliderPixi', 'primitive.settings-slider', dialog.dropSettingsSlider],
+      [
+        'auto-toggle',
+        'AutoSummon:RootRunSettingsTogglePixi',
+        'primitive.settings-toggle',
+        dialog.settingsToggle,
+      ],
+      [
+        'mana-reserve',
+        'ManaReserve:RootRunSettingsSliderPixi',
+        'primitive.settings-slider',
+        dialog.manaSettingsSlider,
+      ],
+      [
+        'drop-rate',
+        'DropRate:RootRunSettingsSliderPixi',
+        'primitive.settings-slider',
+        dialog.dropSettingsSlider,
+      ],
     ];
     return [
       ...(dialog.list?.rows?.getWidgets?.() ?? []).map((row, index) =>
@@ -1567,8 +1933,8 @@ function createReusableDialogContentHierarchy(dialogId, dialog) {
   }
 
   const rows = inventoryChoiceConfig.rowsProperty
-    ? dialog[inventoryChoiceConfig.rowsProperty]?.getWidgets?.() ?? []
-    : dialog.list?.rows?.getWidgets?.() ?? [];
+    ? (dialog[inventoryChoiceConfig.rowsProperty]?.getWidgets?.() ?? [])
+    : (dialog.list?.rows?.getWidgets?.() ?? []);
 
   return rows.map((row, index) =>
     createUiEditorPixiHierarchyComponent({
@@ -1778,25 +2144,37 @@ const GLOBAL_DIALOG_SCENARIOS = Object.freeze({
     scenario('empty', 'Empty', () => ({ mail: [] })),
   ]),
   [GLOBAL_DIALOG_IDS.PLAYER]: Object.freeze([
-    scenario('player', 'Player profile', () => ({
-      player: {
-        allianceId: 'moss-hall',
-        allianceName: 'Moss Hall',
-        allianceTag: 'MOSS',
-        allianceTagColor: 'green',
-        character: 'mira',
-        playerLevel: 12,
-        prestigeCount: 2,
-        totalProducedCoin: 128450,
-        totalBrewedPotions: 86,
-        totalHarvestedHerbs: 240,
-        connected: true,
-        lastSeenAtMs: 1_690_000_000_000,
-        totalPlayTimeSeconds: 45_000,
-        username: 'Mira',
-      },
-    })),
+    scenario('stranger', 'Add Friend', () =>
+      createPlayerInfoDialogFixture('stranger'),
+    ),
+    scenario('friend', 'Unfriend', () =>
+      createPlayerInfoDialogFixture('friend'),
+    ),
+    scenario('incoming', 'Accept or Reject', () =>
+      createPlayerInfoDialogFixture('incoming'),
+    ),
+    scenario('outgoing', 'Request Pending', () =>
+      createPlayerInfoDialogFixture('outgoing'),
+    ),
+    scenario('self', 'Own profile', () =>
+      createPlayerInfoDialogFixture('self'),
+    ),
     scenario('loading', 'Loading', () => ({ loading: true })),
+  ]),
+  [GLOBAL_DIALOG_IDS.FRIENDS]: Object.freeze([
+    scenario('friends', 'Friends', () => createFriendsDialogFixture('friends')),
+    scenario('requests', 'Requests', () =>
+      createFriendsDialogFixture('requests'),
+    ),
+    scenario('pending', 'Pending', () => createFriendsDialogFixture('pending')),
+  ]),
+  [GLOBAL_DIALOG_IDS.DIRECT_MESSAGE]: Object.freeze([
+    scenario('friend', 'Friend chat', () =>
+      createDirectMessageDialogFixture(true),
+    ),
+    scenario('unfriended', 'History only', () =>
+      createDirectMessageDialogFixture(false),
+    ),
   ]),
   [GLOBAL_DIALOG_IDS.ALLIANCE]: Object.freeze([
     scenario('alliance', 'Alliance roster', () => ({
@@ -2002,12 +2380,25 @@ function resolveDialogChildWidgetIds(dialogId) {
   if (dialogId === GLOBAL_DIALOG_IDS.INBOX) {
     return ['compound.dialog-frame', INBOX_MAIL_WIDGET_ID];
   }
-  if (dialogId === 'workshop.worldChat') {
+  if (
+    dialogId === 'workshop.worldChat' ||
+    dialogId === GLOBAL_DIALOG_IDS.DIRECT_MESSAGE
+  ) {
     return [
       'compound.dialog-frame',
       WORLD_CHAT_ROW_WIDGET_ID,
+      ...(dialogId === GLOBAL_DIALOG_IDS.DIRECT_MESSAGE
+        ? [PLAYER_PROFILE_WIDGET_ID]
+        : []),
       'primitive.text-field',
       'text-button',
+    ];
+  }
+  if (dialogId === GLOBAL_DIALOG_IDS.FRIENDS) {
+    return [
+      'compound.dialog-frame',
+      PLAYER_RELATIONSHIP_ROW_WIDGET_ID,
+      'tab-button',
     ];
   }
   if (dialogId === 'workshop.worldEvent') {

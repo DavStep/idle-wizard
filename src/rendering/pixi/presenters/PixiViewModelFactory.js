@@ -120,15 +120,10 @@ const TRADE_ALLIANCE_SOLO_TABS = Object.freeze([
 const TRADE_ALLIANCE_MEMBER_TABS = Object.freeze([
   Object.freeze({ id: 'home', label: 'Home' }),
   Object.freeze({ id: 'quests', label: 'Quests' }),
-  Object.freeze({ id: 'banner', label: 'Banner' }),
+  Object.freeze({ id: 'requests', label: 'Requests' }),
   Object.freeze({ id: 'settings', label: 'Settings' }),
 ]);
-const SEED_DROP_PREFERENCES = Object.freeze([
-  'none',
-  'low',
-  'medium',
-  'high',
-]);
+const SEED_DROP_PREFERENCES = Object.freeze(['none', 'low', 'medium', 'high']);
 const SEED_DROP_SLIDER_OPTIONS = Object.freeze([
   Object.freeze({ value: 'none', tone: 'root' }),
   Object.freeze({ value: 'low', tone: 'red' }),
@@ -252,13 +247,14 @@ export class PixiViewModelFactory {
       character: player.character || 'elara',
       frameTint: getPlayerFrameTint(player.frame),
       showAvatar: true,
-      mana: gameplay.mana ?? {},
+      showBag: pageId === 'workshop',
       coin: gameplay.coin?.current ?? 0,
       amethyst: gameplay.amethyst?.current ?? 0,
       contextCurrency: {
         resource: contextResource ?? 'crystal',
-        amount:
-          gameplay[contextResource ?? 'crystal']?.current ?? 0,
+        amount: gameplay[contextResource ?? 'crystal']?.current ?? 0,
+        cap: gameplay[contextResource ?? 'crystal']?.cap ?? 0,
+        perSecond: gameplay[contextResource ?? 'crystal']?.perSecond ?? 0,
         visible: true,
       },
       level: visibleLevel,
@@ -275,8 +271,7 @@ export class PixiViewModelFactory {
             activeTaskId: progress.activeQuest?.taskId ?? null,
             remaining: Math.max(
               0,
-              (progress.totalQuests ?? 0) -
-                (progress.completedQuests ?? 0),
+              (progress.totalQuests ?? 0) - (progress.completedQuests ?? 0),
             ),
           }
         : { visible: false },
@@ -297,6 +292,7 @@ export class PixiViewModelFactory {
   createBottomPanel({
     currentPageId,
     hudMode = 'rooms',
+    allianceHud = null,
     guildHud = null,
     prestigeHud = null,
     pages,
@@ -307,6 +303,7 @@ export class PixiViewModelFactory {
     return {
       currentPageId,
       hudMode,
+      allianceHud,
       guildHud,
       prestigeHud,
       pages,
@@ -339,8 +336,7 @@ export class PixiViewModelFactory {
       0,
       Math.floor(
         Number(
-          taskSnapshot.currentLevel ??
-            gameplay.playerLevel?.currentLevel,
+          taskSnapshot.currentLevel ?? gameplay.playerLevel?.currentLevel,
         ) || 0,
       ),
     );
@@ -349,7 +345,9 @@ export class PixiViewModelFactory {
       allTasks.find((task) => task.isActiveQuest) ??
       allTasks.find((task) => !task.completed) ??
       null;
-    const taskRows = activeTask ? [this.createTaskRow(activeTask, actions)] : [];
+    const taskRows = activeTask
+      ? [this.createTaskRow(activeTask, actions)]
+      : [];
 
     return {
       workshop: {
@@ -373,6 +371,7 @@ export class PixiViewModelFactory {
           side: 'left',
           weight: 40,
           enabled: true,
+          visible: false,
         },
         inbox: {
           side: 'right',
@@ -403,10 +402,7 @@ export class PixiViewModelFactory {
         worldChat: this.createWorldChatPreview(worldChat),
         flyouts: [],
         dialogs: {
-          summonInfo: this.createSummonInfoDialog(
-            gameplay,
-            actions,
-          ),
+          summonInfo: this.createSummonInfoDialog(gameplay, actions),
           bag: this.createBagDialog(
             gameplay,
             dialogState.bagTabId,
@@ -469,9 +465,7 @@ export class PixiViewModelFactory {
       current,
       required,
       progress:
-        required > 0
-          ? clampUnit(current / required)
-          : clampUnit(task.progress),
+        required > 0 ? clampUnit(current / required) : clampUnit(task.progress),
       itemKind: task.itemKind ?? null,
       itemKey: task.itemKey ?? null,
       itemLabel: task.itemLabel ?? null,
@@ -520,8 +514,7 @@ export class PixiViewModelFactory {
       1,
       Math.floor(
         Number(
-          gameplay.playerLevel?.currentLevel ??
-            gameplay.tasks?.currentLevel,
+          gameplay.playerLevel?.currentLevel ?? gameplay.tasks?.currentLevel,
         ) || 1,
       ),
     );
@@ -537,12 +530,10 @@ export class PixiViewModelFactory {
     const isTabUnlocked = (tab) =>
       highestReachedLevel >= (RESEARCH_TAB_UNLOCK_LEVELS[tab.id] ?? 1);
     const resolvedSelectedTabId =
-      sourceTabs.find(
-        (tab) => tab.id === selectedTabId && isTabUnlocked(tab),
-      )?.id ??
-      sourceTabs.find(
-        (tab) => tab.selected === true && isTabUnlocked(tab),
-      )?.id ??
+      sourceTabs.find((tab) => tab.id === selectedTabId && isTabUnlocked(tab))
+        ?.id ??
+      sourceTabs.find((tab) => tab.selected === true && isTabUnlocked(tab))
+        ?.id ??
       sourceTabs.find((tab) => tab.id === 'regular')?.id ??
       sourceTabs.find(isTabUnlocked)?.id ??
       sourceTabs[0]?.id ??
@@ -590,9 +581,7 @@ export class PixiViewModelFactory {
       };
     });
     const selectedTab =
-      tabs.find((tab) => tab.id === resolvedSelectedTabId) ??
-      tabs[0] ??
-      null;
+      tabs.find((tab) => tab.id === resolvedSelectedTabId) ?? tabs[0] ?? null;
 
     return {
       research: {
@@ -620,10 +609,11 @@ export class PixiViewModelFactory {
     const completedPointCount = Array.isArray(prestige.completedLevels)
       ? prestige.completedLevels.length
       : 0;
-    const nextPointCount = (prestige.unlocks ?? [])
-      .map((unlock) => Math.floor(Number(unlock.count)))
-      .filter((count) => count > completedPointCount)
-      .sort((left, right) => left - right)[0] ?? null;
+    const nextPointCount =
+      (prestige.unlocks ?? [])
+        .map((unlock) => Math.floor(Number(unlock.count)))
+        .filter((count) => count > completedPointCount)
+        .sort((left, right) => left - right)[0] ?? null;
     const summaryResources = createPrestigeResourceTotals(
       summaryMilestone?.nextRun,
     );
@@ -633,7 +623,11 @@ export class PixiViewModelFactory {
         selectedTabId,
         tabs: [
           { id: 'main', label: 'Main', selected: selectedTabId === 'main' },
-          { id: 'points', label: 'Points', selected: selectedTabId === 'points' },
+          {
+            id: 'points',
+            label: 'Points',
+            selected: selectedTabId === 'points',
+          },
         ],
         starLevel: completedPointCount,
         summary:
@@ -674,15 +668,15 @@ export class PixiViewModelFactory {
                   )}`,
                 ],
               },
-        milestones: (prestige.milestones ?? []).map((milestone, index, milestones) =>
-          createPrestigeMilestone(milestone, {
-            upcoming:
-              index ===
-              milestones.findIndex(
-                (candidate) =>
-                  !candidate.completed && !candidate.canComplete,
-              ),
-              }),
+        milestones: (prestige.milestones ?? []).map(
+          (milestone, index, milestones) =>
+            createPrestigeMilestone(milestone, {
+              upcoming:
+                index ===
+                milestones.findIndex(
+                  (candidate) => !candidate.completed && !candidate.canComplete,
+                ),
+            }),
         ),
         pointRewards: createPrestigePointRewards({
           unlocks: prestige.unlocks,
@@ -749,10 +743,7 @@ export class PixiViewModelFactory {
     };
   }
 
-  createSummonInfoDialog(
-    gameplay = {},
-    actions = {},
-  ) {
+  createSummonInfoDialog(gameplay = {}, actions = {}) {
     const auto = gameplay.seedSummoning?.autoSummoning ?? {};
     const autoSummonUnlocked = auto.unlocked === true;
     const seeds = gameplay.seedSummoning?.dropChances ?? [];
@@ -797,9 +788,7 @@ export class PixiViewModelFactory {
         : null,
       actions: [],
       items: seeds.map((seed) => {
-        const preference = normalizeSeedDropPreference(
-          seed.dropPreference,
-        );
+        const preference = normalizeSeedDropPreference(seed.dropPreference);
         return {
           id: seed.key ?? seed.itemTypeId,
           label: toTitleCase(splitCamelCase(seed.label ?? seed.key)),
@@ -819,10 +808,7 @@ export class PixiViewModelFactory {
               enabled: true,
             })),
             onChange: (preference) =>
-              actions.setSummonDropPreference?.(
-                seed.key,
-                preference,
-              ),
+              actions.setSummonDropPreference?.(seed.key, preference),
           },
         };
       }),
@@ -852,19 +838,14 @@ export class PixiViewModelFactory {
             : '',
       rows: mail.map((message, index) => {
         const claimable =
-          message.hasReward === true &&
-          message.rewardCollected !== true;
+          message.hasReward === true && message.rewardCollected !== true;
         return {
           id: message.mailKey ?? message.id ?? index,
           label:
             message.subject ??
             message.title ??
             (message.read ? 'message' : 'new message'),
-          value:
-            message.body ??
-            message.message ??
-            message.rewardLabel ??
-            '',
+          value: message.body ?? message.message ?? message.rewardLabel ?? '',
           notification: !message.read || claimable,
           actionLabel: claimable ? 'claim' : '',
           enabled: claimable,
@@ -888,14 +869,9 @@ export class PixiViewModelFactory {
       tradeAlliance.currentAlliance ??
       tradeAlliance.ownAlliance ??
       null;
-    const members =
-      tradeAlliance.members ??
-      alliance?.members ??
-      [];
+    const members = tradeAlliance.members ?? alliance?.members ?? [];
     const browse =
-      tradeAlliance.alliances ??
-      tradeAlliance.publicAlliances ??
-      [];
+      tradeAlliance.alliances ?? tradeAlliance.publicAlliances ?? [];
     if (!alliance) {
       const ownApplications = tradeAlliance.ownApplications ?? [];
       const safeTabId = TRADE_ALLIANCE_SOLO_TABS.some(
@@ -914,10 +890,7 @@ export class PixiViewModelFactory {
         directory: !creating,
         selectedTabId: safeTabId,
         tabs,
-        status:
-          tradeAlliance.connected === false
-            ? 'Connecting...'
-            : '',
+        status: tradeAlliance.connected === false ? 'Connecting...' : '',
         settings: creating
           ? {
               allianceId: 'new-alliance',
@@ -935,89 +908,92 @@ export class PixiViewModelFactory {
               onSave: (profile) => actions.createAlliance?.(profile),
             }
           : null,
-        rows: creating ? [] : browse.map((candidate, index) => {
-          const allianceId = candidate.allianceId ?? candidate.id ?? index;
-          const application = ownApplications.find(
-            (entry) => entry.allianceId === allianceId,
-          );
-          const joinMode = candidate.joinMode ?? 'apply';
-          const candidateMembers = members.filter(
-            (member) => member.allianceId === allianceId,
-          );
-          const leader =
-            candidateMembers.find(
-              (member) =>
-                candidate.leaderIdentity &&
-                String(member.memberIdentity) ===
-                  String(candidate.leaderIdentity),
-            ) ??
-            candidateMembers.find((member) => member.role === 'tradeMaster');
-          const action =
-            application
-              ? {
-                  label: 'Cancel',
-                  variant: 'brown-dark',
-                  enabled: true,
-                  onActivate: () =>
-                    actions.cancelAllianceApplication?.(
-                      application.applicationKey,
-                    ),
-                }
-              : joinMode === 'open'
+        rows: creating
+          ? []
+          : browse.map((candidate, index) => {
+              const allianceId = candidate.allianceId ?? candidate.id ?? index;
+              const application = ownApplications.find(
+                (entry) => entry.allianceId === allianceId,
+              );
+              const joinMode = candidate.joinMode ?? 'apply';
+              const candidateMembers = members.filter(
+                (member) => member.allianceId === allianceId,
+              );
+              const leader =
+                candidateMembers.find(
+                  (member) =>
+                    candidate.leaderIdentity &&
+                    String(member.memberIdentity) ===
+                      String(candidate.leaderIdentity),
+                ) ??
+                candidateMembers.find(
+                  (member) => member.role === 'tradeMaster',
+                );
+              const action = application
                 ? {
-                    label: 'Join',
-                    variant: 'green',
+                    label: 'Cancel',
+                    variant: 'brown-dark',
                     enabled: true,
-                    onActivate: () => actions.joinAlliance?.(allianceId),
+                    onActivate: () =>
+                      actions.cancelAllianceApplication?.(
+                        application.applicationKey,
+                      ),
                   }
-                : joinMode === 'closed'
+                : joinMode === 'open'
                   ? {
-                      label: 'Closed',
-                      variant: 'gray',
-                      enabled: false,
-                    }
-                  : {
-                      label: 'Apply',
+                      label: 'Join',
                       variant: 'green',
                       enabled: true,
-                      onActivate: () => actions.applyAlliance?.(allianceId),
-                    };
+                      onActivate: () => actions.joinAlliance?.(allianceId),
+                    }
+                  : joinMode === 'closed'
+                    ? {
+                        label: 'Closed',
+                        variant: 'gray',
+                        enabled: false,
+                      }
+                    : {
+                        label: 'Apply',
+                        variant: 'green',
+                        enabled: true,
+                        onActivate: () => actions.applyAlliance?.(allianceId),
+                      };
 
-          return {
-            id: allianceId,
-            type: 'allianceDirectory',
-            allianceId,
-            name: candidate.name ?? candidate.allianceName ?? 'Alliance',
-            tag: candidate.tag ?? '',
-            tagColor: candidate.tagColor ?? 'ink',
-            bannerColor:
-              candidate.bannerColor ?? DEFAULT_TRADE_ALLIANCE_BANNER_COLOR,
-            emblemColor:
-              candidate.emblemColor ?? DEFAULT_TRADE_ALLIANCE_EMBLEM_COLOR,
-            emblemId:
-              candidate.emblemId ?? DEFAULT_TRADE_ALLIANCE_EMBLEM,
-            leaderName:
-              candidate.leaderName ??
-              candidate.leaderUsername ??
-              leader?.username ??
-              'Unknown',
-            leaderCharacter:
-              candidate.leaderCharacter ?? leader?.character ?? 'elara',
-            leaderFrame: candidate.leaderFrame ?? leader?.frame ?? 'classic',
-            totalIncomeLabel: formatCoinAmount(candidate.totalIncome ?? 0),
-            memberCount: Math.max(
-              candidateMembers.length,
-              Math.floor(Number(candidate.memberCount) || 0),
-            ),
-            memberCapacity: 50,
-            action,
-            semanticId: `workshop.alliance.directory.${allianceId}`,
-            onActivate:
-              typeof actions.openAlliance === 'function'
-                ? () => actions.openAlliance(candidate)
-                : () => actions.selectAlliance?.(allianceId),
-          };
-        }),
+              return {
+                id: allianceId,
+                type: 'allianceDirectory',
+                allianceId,
+                name: candidate.name ?? candidate.allianceName ?? 'Alliance',
+                tag: candidate.tag ?? '',
+                tagColor: candidate.tagColor ?? 'ink',
+                bannerColor:
+                  candidate.bannerColor ?? DEFAULT_TRADE_ALLIANCE_BANNER_COLOR,
+                emblemColor:
+                  candidate.emblemColor ?? DEFAULT_TRADE_ALLIANCE_EMBLEM_COLOR,
+                emblemId: candidate.emblemId ?? DEFAULT_TRADE_ALLIANCE_EMBLEM,
+                leaderName:
+                  candidate.leaderName ??
+                  candidate.leaderUsername ??
+                  leader?.username ??
+                  'Unknown',
+                leaderCharacter:
+                  candidate.leaderCharacter ?? leader?.character ?? 'elara',
+                leaderFrame:
+                  candidate.leaderFrame ?? leader?.frame ?? 'classic',
+                totalIncomeLabel: formatCoinAmount(candidate.totalIncome ?? 0),
+                memberCount: Math.max(
+                  candidateMembers.length,
+                  Math.floor(Number(candidate.memberCount) || 0),
+                ),
+                memberCapacity: 50,
+                action,
+                semanticId: `workshop.alliance.directory.${allianceId}`,
+                onActivate:
+                  typeof actions.openAlliance === 'function'
+                    ? () => actions.openAlliance(candidate)
+                    : () => actions.selectAlliance?.(allianceId),
+              };
+            }),
       };
     }
 
@@ -1025,7 +1001,8 @@ export class PixiViewModelFactory {
     const ownedMembers = tradeAlliance.members
       ? members.filter(
           (member) =>
-            String(member.allianceId ?? '').trim() === String(allianceId).trim(),
+            String(member.allianceId ?? '').trim() ===
+            String(allianceId).trim(),
         )
       : members;
     const memberRows = ownedMembers.map((row, index) => {
@@ -1044,9 +1021,7 @@ export class PixiViewModelFactory {
           TRADE_ALLIANCE_ROLE_LABELS[row.role] ??
           titleCaseTradeAllianceLabel(row.role ?? 'trader'),
         levelLabel: `Lv ${normalizeVisibleLevel(row.playerLevel) ?? 1}`,
-        semanticId: `workshop.alliance.member.${
-          player.identity || index
-        }`,
+        semanticId: `workshop.alliance.member.${player.identity || index}`,
         onActivate: () => actions.openPlayer?.(player),
       };
     });
@@ -1054,33 +1029,80 @@ export class PixiViewModelFactory {
       memberRows.length,
       Math.floor(Number(alliance.memberCount) || 0),
     );
-    const tag = String(alliance.tag ?? '').trim().toUpperCase();
-    const name = String(alliance.name ?? alliance.allianceName ?? 'Alliance').trim();
+    const tag = String(alliance.tag ?? '')
+      .trim()
+      .toUpperCase();
+    const name = String(
+      alliance.name ?? alliance.allianceName ?? 'Alliance',
+    ).trim();
     const joinMode = String(alliance.joinMode ?? 'closed');
     const seasonIncome = alliance.seasonIncome ?? alliance.weeklyIncome ?? 0;
     const memberCountLabel = `${memberCount}/50`;
     const canEditSettings = tradeAlliance.canEditSettings === true;
-    const memberTabs = canEditSettings
-      ? TRADE_ALLIANCE_MEMBER_TABS
-      : TRADE_ALLIANCE_MEMBER_TABS.filter(
-          (tab) => tab.id !== 'settings' && tab.id !== 'banner',
-        );
-    const safeTabId = memberTabs.some(
-      (tab) => tab.id === selectedTabId,
-    )
+    const canManageApplications = tradeAlliance.canManageApplications === true;
+    const applicationRows = (tradeAlliance.applications ?? [])
+      .filter(
+        (application) =>
+          String(application?.allianceId ?? '').trim() ===
+          String(allianceId).trim(),
+      )
+      .map((application, index) => {
+        const player = createTradeAlliancePlayerRequest({
+          ...application,
+          identity: application.applicantIdentity ?? application.playerIdentity,
+        });
+        const applicationKey =
+          String(application.applicationKey ?? '').trim() ||
+          `${allianceId || 'alliance'}:application:${index}`;
+        return {
+          id: applicationKey,
+          identity: player.identity,
+          username: player.username,
+          character: player.character,
+          frame: player.frame,
+          playerLevel: normalizeVisibleLevel(application.playerLevel) ?? 1,
+          detail: `Level ${normalizeVisibleLevel(application.playerLevel) ?? 1}`,
+          semanticId: `workshop.alliance.request.${applicationKey}`,
+          onActivate: () => actions.openPlayer?.(player),
+          primaryAction: {
+            label: 'Accept',
+            variant: 'green',
+            enabled: canManageApplications,
+            onActivate: () =>
+              actions.acceptAllianceApplication?.(applicationKey),
+          },
+          secondaryAction: {
+            label: 'Deny',
+            variant: 'red',
+            enabled: canManageApplications,
+            onActivate: () =>
+              actions.rejectAllianceApplication?.(applicationKey),
+          },
+        };
+      });
+    const memberTabs = TRADE_ALLIANCE_MEMBER_TABS.filter((tab) => {
+      if (tab.id === 'settings') {
+        return canEditSettings;
+      }
+      if (tab.id === 'requests') {
+        return canManageApplications;
+      }
+      return true;
+    });
+    const safeTabId = memberTabs.some((tab) => tab.id === selectedTabId)
       ? selectedTabId
       : 'home';
     const ownMember = tradeAlliance.ownMember ?? null;
-    const canLeave =
-      ownMember?.role !== 'tradeMaster' || memberCount <= 1;
+    const canLeave = ownMember?.role !== 'tradeMaster' || memberCount <= 1;
     const tabs = memberTabs.map((tab) => ({
       ...tab,
       selected: tab.id === safeTabId,
       notification:
-        tab.id === 'quests' &&
-        (tradeAlliance.quests ?? []).some((quest) =>
-          isTradeAllianceQuestClaimable(tradeAlliance, quest),
-        ),
+        (tab.id === 'quests' &&
+          (tradeAlliance.quests ?? []).some((quest) =>
+            isTradeAllianceQuestClaimable(tradeAlliance, quest),
+          )) ||
+        (tab.id === 'requests' && applicationRows.length > 0),
       onSelect: () => actions.selectAllianceTab?.(tab.id),
     }));
     const tradeInfoRows = [
@@ -1127,13 +1149,15 @@ export class PixiViewModelFactory {
       title: 'Trade Alliance',
       ownedAlliance: true,
       ownedAllianceHome: safeTabId === 'home',
-      rowWidget: safeTabId === 'quests' ? 'allianceQuest' : null,
+      rowWidget:
+        safeTabId === 'quests'
+          ? 'allianceQuest'
+          : safeTabId === 'requests'
+            ? 'playerRelationship'
+            : null,
       selectedTabId: safeTabId,
       tabs,
-      status:
-        tradeAlliance.connected === false
-          ? 'connecting...'
-          : '',
+      status: tradeAlliance.connected === false ? 'connecting...' : '',
       copy: '',
       tradeInfo: {
         identityLabel: `${tag ? `[${tag}] ` : ''}${name}`,
@@ -1143,16 +1167,23 @@ export class PixiViewModelFactory {
       },
       tradeInfoRows,
       members: memberRows,
-      rows: safeTabId === 'quests' ? questRows : memberRows,
+      rows:
+        safeTabId === 'quests'
+          ? questRows
+          : safeTabId === 'requests'
+            ? applicationRows
+            : memberRows,
       emptyLabel:
         safeTabId === 'quests' && questRows.length === 0
           ? 'No Alliance Quests'
-          : '',
+          : safeTabId === 'requests' && applicationRows.length === 0
+            ? 'No Pending Requests'
+            : '',
       settings:
-        safeTabId === 'settings' || safeTabId === 'banner'
+        safeTabId === 'settings'
           ? {
               allianceId,
-              mode: safeTabId === 'banner' ? 'banner' : 'settings',
+              mode: 'settings',
               name,
               tag,
               tagColor: alliance.tagColor ?? 'ink',
@@ -1160,8 +1191,7 @@ export class PixiViewModelFactory {
                 alliance.bannerColor ?? DEFAULT_TRADE_ALLIANCE_BANNER_COLOR,
               emblemColor:
                 alliance.emblemColor ?? DEFAULT_TRADE_ALLIANCE_EMBLEM_COLOR,
-              emblemId:
-                alliance.emblemId ?? DEFAULT_TRADE_ALLIANCE_EMBLEM,
+              emblemId: alliance.emblemId ?? DEFAULT_TRADE_ALLIANCE_EMBLEM,
               description: String(alliance.description ?? ''),
               notice: String(alliance.notice ?? ''),
               joinMode,
@@ -1175,6 +1205,81 @@ export class PixiViewModelFactory {
     };
   }
 
+  createAllianceWorkspace(
+    tradeAlliance = {},
+    selectedTabId = 'home',
+    actions = {},
+  ) {
+    const alliance =
+      tradeAlliance.alliance ??
+      tradeAlliance.currentAlliance ??
+      tradeAlliance.ownAlliance ??
+      null;
+    const baseTabId = selectedTabId === 'chat' ? 'home' : selectedTabId;
+    const workspace = this.createAllianceDialog(
+      tradeAlliance,
+      null,
+      actions,
+      baseTabId,
+    );
+
+    if (!alliance) {
+      return {
+        ...workspace,
+        workspace: true,
+        flag: null,
+        chat: { rows: [], onSubmit: null },
+      };
+    }
+
+    const tabIds = new Set(workspace.tabs.map((tab) => tab.id));
+    tabIds.add('chat');
+    const orderedTabIds = ['home', 'quests', 'requests', 'chat', 'settings'];
+    const safeTabId = tabIds.has(selectedTabId) ? selectedTabId : 'home';
+    const chat = this.createWorldChatDialog(
+      {
+        connected: tradeAlliance.connected,
+        messages: tradeAlliance.allianceChatMessages ?? [],
+      },
+      {
+        openPlayer: actions.openPlayer,
+        sendWorldChat: actions.sendAllianceChat,
+      },
+    );
+
+    return {
+      ...workspace,
+      workspace: true,
+      selectedTabId: safeTabId,
+      ownedAllianceHome: safeTabId === 'home',
+      tabs: orderedTabIds
+        .filter((tabId) => tabIds.has(tabId))
+        .map((tabId) => {
+          const existing = workspace.tabs.find((tab) => tab.id === tabId);
+          return {
+            ...(existing ?? { id: tabId, label: 'Chat' }),
+            selected: tabId === safeTabId,
+            onSelect: () => actions.selectAllianceTab?.(tabId),
+          };
+        }),
+      flag: {
+        bannerColor:
+          alliance.bannerColor ?? DEFAULT_TRADE_ALLIANCE_BANNER_COLOR,
+        emblemColor:
+          alliance.emblemColor ?? DEFAULT_TRADE_ALLIANCE_EMBLEM_COLOR,
+        emblemId: alliance.emblemId ?? DEFAULT_TRADE_ALLIANCE_EMBLEM,
+      },
+      rows:
+        safeTabId === 'chat'
+          ? chat.rows
+          : safeTabId === workspace.selectedTabId
+            ? workspace.rows
+            : [],
+      settings: safeTabId === 'settings' ? workspace.settings : null,
+      chat,
+    };
+  }
+
   createLeaderboardDialog(
     leaderboard = {},
     tradeAlliance = {},
@@ -1182,39 +1287,41 @@ export class PixiViewModelFactory {
     actions = {},
     selectedPeriodId = 'allTime',
   ) {
-    const safeTabId = LEADERBOARD_TABS.some(
-      (tab) => tab.id === selectedTabId,
-    )
+    const safeTabId = LEADERBOARD_TABS.some((tab) => tab.id === selectedTabId)
       ? selectedTabId
       : 'singlePlayer';
     const period =
-      LEADERBOARD_PERIODS.find((candidate) => candidate.id === selectedPeriodId) ??
-      LEADERBOARD_PERIODS.at(-1);
+      LEADERBOARD_PERIODS.find(
+        (candidate) => candidate.id === selectedPeriodId,
+      ) ?? LEADERBOARD_PERIODS.at(-1);
     const users = getLeaderboardUsers(leaderboard, period);
     const currentUser = getLeaderboardCurrentUser(leaderboard, period);
-    const visibleUsers = appendCurrentLeaderboardUser(users.slice(0, 100), currentUser);
+    const visibleUsers = appendCurrentLeaderboardUser(
+      users.slice(0, 100),
+      currentUser,
+    );
     const alliances = getLeaderboardAlliances(tradeAlliance, period);
     const rows =
       safeTabId === 'alliance'
         ? alliances.slice(0, 10).map((alliance, index) => ({
-            id:
-              alliance.allianceId ??
-              alliance.id ??
-              alliance.name ??
-              index,
+            id: alliance.allianceId ?? alliance.id ?? alliance.name ?? index,
             type: 'leaderboardAlliance',
             rank: normalizeLeaderboardRank(alliance.rank, index),
             name: alliance.name ?? alliance.allianceName ?? 'Alliance',
-            allianceTag: String(alliance.tag ?? alliance.allianceTag ?? '').trim(),
+            allianceTag: String(
+              alliance.tag ?? alliance.allianceTag ?? '',
+            ).trim(),
             allianceTagColor:
               alliance.tagColor ?? alliance.allianceTagColor ?? 'ink',
             bannerColor:
               alliance.bannerColor ?? DEFAULT_TRADE_ALLIANCE_BANNER_COLOR,
             emblemColor:
               alliance.emblemColor ?? DEFAULT_TRADE_ALLIANCE_EMBLEM_COLOR,
-            emblemId:
-              alliance.emblemId ?? DEFAULT_TRADE_ALLIANCE_EMBLEM,
-            memberCount: Math.max(0, Math.floor(Number(alliance.memberCount) || 0)),
+            emblemId: alliance.emblemId ?? DEFAULT_TRADE_ALLIANCE_EMBLEM,
+            memberCount: Math.max(
+              0,
+              Math.floor(Number(alliance.memberCount) || 0),
+            ),
             totalCoinLabel: formatCoinAmount(
               alliance[period.valueKey] ??
                 alliance.totalIncome ??
@@ -1234,7 +1341,9 @@ export class PixiViewModelFactory {
             type: 'leaderboardPlayer',
             rank: normalizeLeaderboardRank(user.rank, index),
             username: user.name ?? user.username ?? 'Wizard',
-            allianceTag: String(user.allianceTag ?? user.alliance_tag ?? '').trim(),
+            allianceTag: String(
+              user.allianceTag ?? user.alliance_tag ?? '',
+            ).trim(),
             allianceTagColor:
               user.allianceTagColor ?? user.alliance_tag_color ?? 'ink',
             character: user.character ?? 'elara',
@@ -1245,7 +1354,9 @@ export class PixiViewModelFactory {
             ),
             prestigeCount: Math.max(
               0,
-              Math.floor(Number(user.prestigeCount ?? user.prestige_count) || 0),
+              Math.floor(
+                Number(user.prestigeCount ?? user.prestige_count) || 0,
+              ),
             ),
             current: user === currentUser || user.current === true,
             totalCoinLabel: formatCoinAmount(
@@ -1269,8 +1380,7 @@ export class PixiViewModelFactory {
       selectedTabId: safeTabId,
       selectedPeriodId: period.id,
       onSelectTab: (tabId) => actions.selectLeaderboardTab?.(tabId),
-      onSelectPeriod: (periodId) =>
-        actions.selectLeaderboardPeriod?.(periodId),
+      onSelectPeriod: (periodId) => actions.selectLeaderboardPeriod?.(periodId),
       tabs: LEADERBOARD_TABS.map((tab) => ({
         ...tab,
         selected: tab.id === safeTabId,
@@ -1284,7 +1394,11 @@ export class PixiViewModelFactory {
     };
   }
 
-  createPersonalTasksDialog(gameplay = {}, selectedTabId = 'tasks', actions = {}) {
+  createPersonalTasksDialog(
+    gameplay = {},
+    selectedTabId = 'tasks',
+    actions = {},
+  ) {
     const tasks = gameplay.personalTasks ?? {};
     const safeTabId = selectedTabId === 'rewards' ? 'rewards' : 'tasks';
     const rows = [];
@@ -1336,10 +1450,7 @@ export class PixiViewModelFactory {
               notification: true,
               semanticId: `workshop.personalTasks.${periodId}.reward.${threshold}`,
               onActivate: () =>
-                actions.claimPersonalTaskMilestoneReward(
-                  periodId,
-                  threshold,
-                ),
+                actions.claimPersonalTaskMilestoneReward(periodId, threshold),
             });
           } else if (!reward.claimed) {
             Object.assign(row, {
@@ -1356,7 +1467,9 @@ export class PixiViewModelFactory {
       }
     } else {
       if (daily) {
-        const dailySection = periodSections.find((section) => section.id === 'daily');
+        const dailySection = periodSections.find(
+          (section) => section.id === 'daily',
+        );
         if (dailySection) {
           dailySection.detail = `${daily.completedTasks ?? 0}/${
             daily.totalTasks ?? 0
@@ -1409,7 +1522,9 @@ export class PixiViewModelFactory {
         onSelect: (tabId) => actions.selectPersonalTasksTab?.(tabId),
       })),
       periodSections,
-      status: tasks.unlocked ? '' : `unlocks at level ${tasks.unlockLevel ?? 4}`,
+      status: tasks.unlocked
+        ? ''
+        : `unlocks at level ${tasks.unlockLevel ?? 4}`,
       rows,
     };
   }
@@ -1423,9 +1538,7 @@ export class PixiViewModelFactory {
   ) {
     const notice = gameplay.worldNotice ?? {};
     const current = notice.current;
-    const safeTabId = WORLD_EVENT_TABS.some(
-      (tab) => tab.id === selectedTabId,
-    )
+    const safeTabId = WORLD_EVENT_TABS.some((tab) => tab.id === selectedTabId)
       ? selectedTabId
       : 'tasks';
     const localLeaderboard = current?.leaderboard ?? {};
@@ -1469,8 +1582,7 @@ export class PixiViewModelFactory {
         Number(
           localLeaderboard.qualificationPoints ??
             sharedLeaderboard.qualificationPoints,
-        ) ||
-          currentEventPoints + remainingQualificationPoints,
+        ) || currentEventPoints + remainingQualificationPoints,
       ),
     );
     const qualifiedForLeaderboardRewards =
@@ -1512,8 +1624,7 @@ export class PixiViewModelFactory {
           }`,
           type: 'leaderboardPlayer',
           rank: normalizeLeaderboardRank(user.rank, index),
-          username:
-            user.name ?? user.username ?? player.username ?? 'Wizard',
+          username: user.name ?? user.username ?? player.username ?? 'Wizard',
           allianceTag: String(
             user.allianceTag ?? user.alliance_tag ?? '',
           ).trim(),
@@ -1527,14 +1638,14 @@ export class PixiViewModelFactory {
           ),
           prestigeCount: Math.max(
             0,
-            Math.floor(
-              Number(user.prestigeCount ?? user.prestige_count) || 0,
-            ),
+            Math.floor(Number(user.prestigeCount ?? user.prestige_count) || 0),
           ),
           current:
             user.current === true ||
             user === currentLeaderboardUser ||
-            Boolean(identity && currentIdentity && identity === currentIdentity),
+            Boolean(
+              identity && currentIdentity && identity === currentIdentity,
+            ),
           totalMetric: 'points',
           totalLabel: formatWorldEventNumber(user.points),
           onActivate:
@@ -1589,14 +1700,11 @@ export class PixiViewModelFactory {
                 )} points each`,
                 totalLabel: `${
                   option.collectedPointText ??
-                  `${formatWorldEventNumber(
-                    option.contributionPoints,
-                  )} points`
+                  `${formatWorldEventNumber(option.contributionPoints)} points`
                 } total`,
                 itemKind,
                 itemKey: option.itemKey,
-                resourceKey:
-                  option.resourceType === 'coin' ? 'coin' : itemKind,
+                resourceKey: option.resourceType === 'coin' ? 'coin' : itemKind,
                 actionLabel: enabled ? 'Donate' : 'Unavailable',
                 enabled,
                 notification: false,
@@ -1604,10 +1712,7 @@ export class PixiViewModelFactory {
                 ...(enabled
                   ? {
                       onActivate: () =>
-                        actions.openWorldEventDonation(
-                          requestId,
-                          optionKey,
-                        ),
+                        actions.openWorldEventDonation(requestId, optionKey),
                     }
                   : {}),
               };
@@ -1623,15 +1728,15 @@ export class PixiViewModelFactory {
               `${formatWorldEventNumber(request.contributionPoints)} points`,
             description: toSentenceCase(
               [request.situation, request.description]
-              .filter(Boolean)
-              .join(' '),
+                .filter(Boolean)
+                .join(' '),
             ),
             progressLabel:
               donationOptions.length === 0
-                ? request.collectedPointText ??
+                ? (request.collectedPointText ??
                   `${formatWorldEventNumber(
                     request.contributionPoints,
-                  )} points total`
+                  )} points total`)
                 : '',
             statusLabel:
               donationOptions.length === 0
@@ -1663,13 +1768,12 @@ export class PixiViewModelFactory {
             : 'worldEventReward',
       header: current
         ? {
-            artAssetId:
-              WORLD_EVENT_ART_ASSET_BY_FAMILY[current.family] ?? '',
+            artAssetId: WORLD_EVENT_ART_ASSET_BY_FAMILY[current.family] ?? '',
             headline: toTitleCase(current.headline ?? 'World Event'),
             body: toSentenceCase(
               Array.isArray(current.body)
                 ? current.body.join('\n')
-                : current.body ?? '',
+                : (current.body ?? ''),
             ),
             meta: `${formatWorldEventNumber(
               currentEventPoints,
@@ -1686,11 +1790,7 @@ export class PixiViewModelFactory {
     };
   }
 
-  createWorldEventDonationDialog(
-    gameplay = {},
-    draft = null,
-    actions = {},
-  ) {
+  createWorldEventDonationDialog(gameplay = {}, draft = null, actions = {}) {
     const requests = gameplay.worldNotice?.current?.requests ?? [];
     const request = requests.find(
       (candidate) => candidate?.requestId === draft?.requestId,
@@ -1710,30 +1810,20 @@ export class PixiViewModelFactory {
     const maximum = Math.max(
       0,
       Math.floor(
-        Number(
-          option.maxDonateQuantity ?? option.availableQuantity,
-        ) || 0,
+        Number(option.maxDonateQuantity ?? option.availableQuantity) || 0,
       ),
     );
     const amount =
       maximum > 0
-        ? Math.min(
-            maximum,
-            Math.max(1, Math.floor(Number(draft?.amount) || 1)),
-          )
+        ? Math.min(maximum, Math.max(1, Math.floor(Number(draft?.amount) || 1)))
         : 0;
-    const points = amount * Math.max(
-      0,
-      Math.floor(Number(option.pointsPerUnit) || 0),
-    );
+    const points =
+      amount * Math.max(0, Math.floor(Number(option.pointsPerUnit) || 0));
     const canDonate =
-      maximum > 0 &&
-      typeof actions.confirmWorldEventDonation === 'function';
+      maximum > 0 && typeof actions.confirmWorldEventDonation === 'function';
     const itemKind = getWorldEventDonationItemKind(option);
     const isCoinDonation = option.resourceType === 'coin';
-    const questTitle = toTitleCase(
-      request.title ?? request.label ?? 'Donate',
-    );
+    const questTitle = toTitleCase(request.title ?? request.label ?? 'Donate');
 
     return {
       title: questTitle,
@@ -1784,9 +1874,7 @@ export class PixiViewModelFactory {
         {
           id: 'confirm',
           label:
-            amount > 0
-              ? `Donate x${formatWorldEventNumber(amount)}`
-              : 'Donate',
+            amount > 0 ? `Donate x${formatWorldEventNumber(amount)}` : 'Donate',
           variant: 'green',
           enabled: canDonate,
           semanticId: `workshop.worldEvent.donate.${request.requestId}.${option.optionKey}`,
@@ -1824,8 +1912,7 @@ export class PixiViewModelFactory {
         const systemPlayer = isSystem
           ? parseWorldChatSystemPlayerAnnouncement(body)
           : null;
-        const systemPlayerDetail =
-          systemPlayer?.detail.trimStart() ?? '';
+        const systemPlayerDetail = systemPlayer?.detail.trimStart() ?? '';
         const id = message.id ?? message.messageId ?? index;
         const canReport =
           !isSystem &&
@@ -1833,9 +1920,7 @@ export class PixiViewModelFactory {
           typeof actions.selectWorldChatMessageForReport === 'function';
         const selectedForReport =
           canReport && String(id) === String(selectedReportMessageId ?? '');
-        const reportHighlightId = canReport
-          ? `world-chat-report:${id}`
-          : null;
+        const reportHighlightId = canReport ? `world-chat-report:${id}` : null;
         const canOpenPlayer =
           typeof actions.openPlayer === 'function' &&
           (!isSystem || Boolean(systemPlayer));
@@ -1863,18 +1948,17 @@ export class PixiViewModelFactory {
           semanticId: canOpenPlayer
             ? `${isSystem ? 'world-chat-system-player' : 'world-chat-player'}:${id}`
             : null,
-          onActivate:
-            !canOpenPlayer
-              ? null
-              : () =>
-                  actions.openPlayer(
-                    systemPlayer
-                      ? {
-                          ...message,
-                          username: systemPlayer.username,
-                        }
-                      : message,
-                  ),
+          onActivate: !canOpenPlayer
+            ? null
+            : () =>
+                actions.openPlayer(
+                  systemPlayer
+                    ? {
+                        ...message,
+                        username: systemPlayer.username,
+                      }
+                    : message,
+                ),
           onLongPress: canReport
             ? () =>
                 actions.selectWorldChatMessageForReport(message, {
@@ -1883,9 +1967,7 @@ export class PixiViewModelFactory {
             : null,
         };
       }),
-      onSubmit: canSend
-        ? (body) => actions.sendWorldChat(body)
-        : null,
+      onSubmit: canSend ? (body) => actions.sendWorldChat(body) : null,
     };
   }
 
@@ -1901,7 +1983,10 @@ export class PixiViewModelFactory {
   }
 }
 
-function getLeaderboardUsers(leaderboard = {}, period = LEADERBOARD_PERIODS.at(-1)) {
+function getLeaderboardUsers(
+  leaderboard = {},
+  period = LEADERBOARD_PERIODS.at(-1),
+) {
   const source = leaderboard.leaderboard ?? leaderboard;
   const users =
     source[period.userListKey] ??
@@ -1921,7 +2006,7 @@ function getLeaderboardCurrentUser(
   return (
     source[period.currentUserKey] ??
     (period.id === 'allTime'
-      ? source.currentGeneratedCoinUser ?? source.currentUser
+      ? (source.currentGeneratedCoinUser ?? source.currentUser)
       : null) ??
     null
   );
@@ -2177,10 +2262,7 @@ function createPersonalTaskPeriodSection(id, title, period) {
     0,
     Math.floor(Number(period.currentPoints) || 0),
   );
-  const maxPoints = Math.max(
-    1,
-    Math.floor(Number(period.maxPoints) || 1),
-  );
+  const maxPoints = Math.max(1, Math.floor(Number(period.maxPoints) || 1));
 
   return {
     id,
@@ -2197,10 +2279,7 @@ function createPersonalTaskRewardValues(reward = {}) {
   const values = [];
 
   for (const resourceKey of ['coin', 'crystal']) {
-    const amount = Math.max(
-      0,
-      Math.floor(Number(reward?.[resourceKey]) || 0),
-    );
+    const amount = Math.max(0, Math.floor(Number(reward?.[resourceKey]) || 0));
     if (amount > 0) {
       values.push({
         resourceKey,
@@ -2231,6 +2310,7 @@ function formatPersonalTaskNumber(value) {
 }
 
 function getPageContextResource(pageId, researchTabId) {
+  if (pageId === 'workshop') return 'mana';
   if (pageId === 'prestige') return 'ruby';
   if (pageId !== 'research') return null;
   if (researchTabId === 'automation') return 'ruby';
@@ -2279,6 +2359,7 @@ function createWorkshopFeatures({
       weight: 10,
       visible: level >= 4,
       notification: Boolean(notifications.alliance),
+      onActivate: () => actions.openAllianceWorkspace?.(),
       allianceTagColor:
         alliance?.tagColor ?? alliance?.allianceTagColor ?? 'red',
       allianceFlag: alliance
@@ -2399,14 +2480,10 @@ function createPotionDiscoveryRowModel(potion = {}, index = 0, actions = {}) {
           id: key || ingredientIndex,
           key,
           label: toTitleCase(
-            String(
-              ingredient?.label ?? splitCamelCase(key),
-            ).trim() || 'Unknown',
+            String(ingredient?.label ?? splitCamelCase(key)).trim() ||
+              'Unknown',
           ),
-          quantity: Math.max(
-            1,
-            Math.floor(Number(ingredient?.quantity) || 1),
-          ),
+          quantity: Math.max(1, Math.floor(Number(ingredient?.quantity) || 1)),
         };
       })
     : [];
@@ -2423,9 +2500,7 @@ function createPotionDiscoveryRowModel(potion = {}, index = 0, actions = {}) {
     potionKey: discovered ? potionKey || 'generic' : 'unknownPotion',
     label: discovered
       ? toTitleCase(
-          String(
-            potion.label ?? splitCamelCase(potionKey),
-          ).trim() || 'Potion',
+          String(potion.label ?? splitCamelCase(potionKey)).trim() || 'Potion',
         )
       : 'Undiscovered Potion',
     discovererUsername,
@@ -2551,16 +2626,10 @@ function createWorldChatBodyRuns(body, { isSystem = false } = {}) {
 
 function createResearchBoxModel(
   box = {},
-  {
-    completedResearchIds,
-    playerLevel,
-    prestigeCount,
-    researchById,
-  },
+  { completedResearchIds, playerLevel, prestigeCount, researchById },
 ) {
   const artAssetId =
-    RESEARCH_ART_ASSET_BY_BOX_ID[box.id] ??
-    RESEARCH_FALLBACK_ART_ASSET;
+    RESEARCH_ART_ASSET_BY_BOX_ID[box.id] ?? RESEARCH_FALLBACK_ART_ASSET;
   const allResearches = (box.researches ?? [])
     .filter((item) =>
       hasReachedResearchReveal(item, { playerLevel, prestigeCount }),
@@ -2709,12 +2778,7 @@ function createResearchItemModel(
       actionNoun,
       star,
       starLevel: star?.level ?? 0,
-      accessibleTitle: [
-        displayName,
-        star?.ariaLabel,
-        actionNoun,
-        'information',
-      ]
+      accessibleTitle: [displayName, star?.ariaLabel, actionNoun, 'information']
         .filter(Boolean)
         .join(' '),
     },
@@ -2937,17 +3001,13 @@ function parseResearchCost(item = {}) {
   };
 }
 
-function createResearchTimerModel(
-  item = {},
-  { actionNoun, displayName },
-) {
+function createResearchTimerModel(item = {}, { actionNoun, displayName }) {
   const totalMs = normalizeMilliseconds(item.totalMs, item.totalSeconds);
   const remainingMs = normalizeMilliseconds(
     item.remainingMs,
     item.remainingSeconds,
   );
-  const derivedProgress =
-    totalMs > 0 ? 1 - remainingMs / totalMs : 0;
+  const derivedProgress = totalMs > 0 ? 1 - remainingMs / totalMs : 0;
   const progress = clampUnit(
     Number.isFinite(Number(item.progress))
       ? Number(item.progress)
@@ -2963,9 +3023,7 @@ function createResearchTimerModel(
     progress,
     remainingLabel,
     statusLabel: item.value ?? '',
-    displayValue: [item.value ?? '', remainingLabel]
-      .filter(Boolean)
-      .join(' '),
+    displayValue: [item.value ?? '', remainingLabel].filter(Boolean).join(' '),
     ariaLabel: `${displayName} ${actionNoun} progress`,
   };
 }
@@ -3026,16 +3084,15 @@ function getResearchValueResourceKey(item = {}) {
     return item.costCurrency;
   }
 
-  return String(item.value ?? '')
-    .match(/\b(coin|crystal|ruby|emerald)\b/i)?.[1]
-    ?.toLowerCase() ?? null;
+  return (
+    String(item.value ?? '')
+      .match(/\b(coin|crystal|ruby|emerald)\b/i)?.[1]
+      ?.toLowerCase() ?? null
+  );
 }
 
 function formatResearchName(item = {}, displayTitle = '') {
-  return [
-    displayTitle,
-    item.showEffect === true ? item.effect : '',
-  ]
+  return [displayTitle, item.showEffect === true ? item.effect : '']
     .filter(Boolean)
     .join(' ');
 }
@@ -3118,9 +3175,7 @@ function createPrestigeMilestone(milestone = {}, { upcoming = false } = {}) {
       Math.floor(Number(milestone.nextRun?.crystal) || 0),
     )} amber ${Math.max(
       0,
-      Math.floor(
-        Number(milestone.creditedRuby ?? milestone.rewardRuby) || 0,
-      ),
+      Math.floor(Number(milestone.creditedRuby ?? milestone.rewardRuby) || 0),
     )} ruby`,
     rewardResources: [
       {
@@ -3205,8 +3260,7 @@ function createPrestigePointRewards({
   const resolvedNextCount =
     [...rewardsByCount.keys()]
       .sort((left, right) => left - right)
-      .find((count) => count > completedPointCount) ??
-    nextPointCount;
+      .find((count) => count > completedPointCount) ?? nextPointCount;
 
   return [...rewardsByCount.values()]
     .sort((left, right) => left.count - right.count)
@@ -3228,10 +3282,7 @@ function createPrestigePointRewards({
         completed,
         locked: !completed && !next,
         rewardText:
-          reward.marketLicence?.name ??
-          reward.label ??
-          reward.rewards[0] ??
-          '',
+          reward.marketLicence?.name ?? reward.label ?? reward.rewards[0] ?? '',
         rewardLines: [...new Set(rewardLines)],
         tooltip: reward.marketLicence
           ? {
@@ -3286,9 +3337,7 @@ function createCurrencyRows(gameplay) {
       .map((resource) => ({
         id: resource,
         label: resource === 'crystal' ? 'Amber' : toTitleCase(resource),
-        value: String(
-          Math.floor(Number(gameplay[resource]?.current) || 0),
-        ),
+        value: String(Math.floor(Number(gameplay[resource]?.current) || 0)),
         resourceKey: resource,
         itemKind: 'resource',
         itemKey: resource,
@@ -3303,9 +3352,7 @@ function createBagItemRows(gameplay, tabId, actions = {}) {
       ? gameplay.seedInventory
       : tabId === 'ingredients'
         ? gameplay.ingredientInventory
-        : (gameplay.inventory ?? []).filter(
-            (item) => item.kind === singular,
-          );
+        : (gameplay.inventory ?? []).filter((item) => item.kind === singular);
   return (items ?? [])
     .map((item) => {
       const normalizedItem = {
@@ -3324,14 +3371,17 @@ function createBagItemRows(gameplay, tabId, actions = {}) {
     .filter((item) =>
       tabId === 'ingredients'
         ? Number(item.quantity) > 0
-        : item.display.unlocked || (!item.display.unknown && item.display.locked),
+        : item.display.unlocked ||
+          (!item.display.unknown && item.display.locked),
     )
     .map((item) => {
       const researchId = getItemResearchId(item);
       const locked = item.display.locked === true && Boolean(researchId);
       return {
         id: item.key ?? item.itemTypeId,
-        label: toTitleCase(item.display.label ?? item.label ?? splitCamelCase(item.key)),
+        label: toTitleCase(
+          item.display.label ?? item.label ?? splitCamelCase(item.key),
+        ),
         value: item.display.quantity,
         resourceKey: singular,
         itemKind: singular,
@@ -3389,13 +3439,9 @@ function createStatsRows(stats = {}, tabId) {
     },
     ...itemRows.map((item, index) => ({
       id: item.key ?? item.itemTypeId ?? index,
-      label: toTitleCase(
-        item.label ?? splitCamelCase(item.key) ?? 'unknown',
-      ),
+      label: toTitleCase(item.label ?? splitCamelCase(item.key) ?? 'unknown'),
       value: String(
-        Math.floor(
-          Number(item.total ?? item.quantity ?? item.value) || 0,
-        ),
+        Math.floor(Number(item.total ?? item.quantity ?? item.value) || 0),
       ),
       itemKind: tabId.slice(0, -1),
       itemKey: item.key ?? null,
@@ -3412,9 +3458,10 @@ function splitCamelCase(value) {
 
 function toTitleCase(value) {
   return String(value ?? '')
-    .replace(/(^|[\s-])([a-z])/g, (_, prefix, letter) => (
-      `${prefix}${letter.toUpperCase()}`
-    ))
+    .replace(
+      /(^|[\s-])([a-z])/g,
+      (_, prefix, letter) => `${prefix}${letter.toUpperCase()}`,
+    )
     .replace(/\bNpc\b/g, 'NPC');
 }
 
@@ -3435,9 +3482,11 @@ function formatWorldEventNumber(value) {
 }
 
 function formatWorldEventTimer(value) {
-  return String(value ?? '')
-    .trim()
-    .replace(/^resolves\s+/i, '') || 'soon';
+  return (
+    String(value ?? '')
+      .trim()
+      .replace(/^resolves\s+/i, '') || 'soon'
+  );
 }
 
 function getWorldEventDonationItemKind(option = {}) {

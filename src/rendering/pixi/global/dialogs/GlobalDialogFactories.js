@@ -1,3 +1,5 @@
+import { Container } from 'pixi.js';
+
 import { PixiAllianceInfoDialog } from './PixiAllianceInfoDialog.js';
 import { PixiChatReportDialog } from './PixiChatReportDialog.js';
 import { PixiInboxDialog } from './PixiInboxDialog.js';
@@ -8,6 +10,7 @@ import {
 } from './PixiMessageDialogs.js';
 import { PixiPlayerInfoDialog } from './PixiPlayerInfoDialog.js';
 import { PixiSettingsDialog } from './PixiSettingsDialog.js';
+import { WorkshopDialogPixi } from '../../pages/workshop/WorkshopDialogPixi.js';
 
 export const GLOBAL_DIALOG_IDS = Object.freeze({
   SETTINGS: 'global.settings',
@@ -19,6 +22,8 @@ export const GLOBAL_DIALOG_IDS = Object.freeze({
   INBOX: 'global.inbox',
   MAIL: 'global.inbox',
   PLAYER: 'global.player',
+  FRIENDS: 'global.friends',
+  DIRECT_MESSAGE: 'global.directMessage',
   ALLIANCE: 'global.alliance',
   ANNOUNCEMENT: 'global.announcement',
   CONFIRMATION: 'global.confirmation',
@@ -77,6 +82,14 @@ const GLOBAL_DIALOG_DEFINITIONS = Object.freeze([
       }),
   ]),
   Object.freeze([
+    GLOBAL_DIALOG_IDS.FRIENDS,
+    (context) => createWorkshopStyleGlobalDialog(context, GLOBAL_DIALOG_IDS.FRIENDS),
+  ]),
+  Object.freeze([
+    GLOBAL_DIALOG_IDS.DIRECT_MESSAGE,
+    (context) => createWorkshopStyleGlobalDialog(context, GLOBAL_DIALOG_IDS.DIRECT_MESSAGE),
+  ]),
+  Object.freeze([
     GLOBAL_DIALOG_IDS.ALLIANCE,
     (context) =>
       new PixiAllianceInfoDialog({
@@ -101,6 +114,24 @@ const GLOBAL_DIALOG_DEFINITIONS = Object.freeze([
       }),
   ]),
 ]);
+
+function createWorkshopStyleGlobalDialog(context, dialogId) {
+  const registry =
+    typeof context.dialogRegistry === 'function'
+      ? context.dialogRegistry()
+      : context.dialogRegistry;
+  return new WorkshopDialogPixi({
+    dialogId,
+    parent: context.layers?.dialogs ?? new Container({ label: `${dialogId}:layer` }),
+    assetManager: context.assets,
+    inputRouter: context.inputRouter,
+    textEntryService: context.textEntryService,
+    semanticTargets: context.semanticRegistry,
+    counters: context.counters,
+    onClose: () => registry?.close?.(dialogId),
+    theme: typeof context.theme === 'function' ? context.theme() : context.theme,
+  });
+}
 
 /**
  * Returns stable dialog ids paired with runtime-context factories. A fresh

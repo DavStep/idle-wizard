@@ -74,6 +74,7 @@
       const overflow = params.get('overflow') === '1';
       const growing = params.get('growing') === '1';
       const automated = params.get('automated') === '1';
+      const harvest = params.get('harvest') === '1';
       const tapAcceleration = params.get('tapAcceleration') === '1';
       const planting = params.get('planting') === '1';
       const bulkActions = params.get('bulk') || 'all';
@@ -89,7 +90,7 @@
               id: `plot-${tileNumber}`,
               tileNumber,
               level: 5,
-              phase: 'growing',
+              phase: harvest ? 'ready' : 'growing',
               herbKey: 'mintHerb',
               actionText: 'growing',
               automationAvailable: true,
@@ -102,10 +103,12 @@
               plantQuantity: 5,
               maxPlantQuantity: 5,
               harvestQuantity: 5,
-              process: {
-                durationMs: 10_000,
-                endTimeMs: 7_500,
-              },
+              process: harvest
+                ? null
+                : {
+                    durationMs: 10_000,
+                    endTimeMs: 7_500,
+                  },
               semanticId: `garden.plot.${tileNumber}`,
             }
           : growing
@@ -162,10 +165,11 @@
               ? '1'
               : '0',
           automatedPlots: automated ? '1' : '0',
+          harvest: harvest ? 'enabled' : 'disabled',
           tapAcceleration: tapAcceleration ? 'enabled' : 'disabled',
           progressBar,
           bulkActions,
-          motion: 'shared-transient',
+          motion: 'center-drop-soil-boink',
           planting: planting ? 'enabled' : 'disabled',
         },
       );
@@ -176,13 +180,14 @@
         semanticTargets,
         ticker: applicationManager.app.ticker,
         theme: createPixiThemeSnapshot({ progressBar, theme }),
-        timeSource: () => (tapAcceleration ? performance.now() : 0),
+        timeSource: () =>
+          tapAcceleration || planting ? performance.now() : 0,
       });
       page.layout(applicationManager.projection);
       transientEffects.layout(applicationManager.projection);
-      page.bind({
+      const createViewModel = () => ({
         garden: {
-          now: 0,
+          now: planting ? performance.now() : 0,
           plots,
           actionBar: {
             canPlantAll:
@@ -226,6 +231,20 @@
                 cooldownMs: 560,
               };
             }
+            if (harvest && plot.phase === 'ready') {
+              transientEffects.emitReward(
+                createRewardFlyoutPresentation({
+                  type: 'herb_harvested',
+                  eventId: `garden-recipe-harvest-${plot.tileNumber}`,
+                  herb: { key: plot.herbKey, label: 'Mint' },
+                  quantity: plot.harvestQuantity,
+                  tileNumber: plot.tileNumber,
+                }),
+              );
+              document.querySelector('#garden-plots-recipe-state').dataset.feedback =
+                'herbs harvested';
+              return { ok: true, tileNumber: plot.tileNumber };
+            }
             if (planting) {
               transientEffects.emitReward(
                 createRewardFlyoutPresentation({
@@ -236,6 +255,16 @@
                   tileNumber: plot.tileNumber,
                 }),
               );
+              plot.phase = 'growing';
+              plot.herbKey = 'nettleHerb';
+              plot.seedItemTypeId = 3;
+              plot.seedKey = 'nettleSeed';
+              plot.actionText = 'growing';
+              plot.process = {
+                durationMs: 10_000,
+                endTimeMs: performance.now() + 10_000,
+              };
+              page.bind(createViewModel());
               document.querySelector('#garden-plots-recipe-state').dataset.feedback =
                 'seed planted';
               return { ok: true, tileNumber: plot.tileNumber };
@@ -285,6 +314,7 @@
           },
         },
       });
+      page.bind(createViewModel());
       page.activate();
       applicationManager.layers.pageUi.addChild(page.root);
       window.__gardenPlotsRecipe = page;

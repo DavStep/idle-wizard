@@ -6,6 +6,7 @@
 import { type Infer as __Infer } from "spacetimedb";
 
 // Import all reducer arg schemas
+import AcceptFriendRequestReducer from "../accept_friend_request_reducer";
 import AcceptTradeAllianceApplicationReducer from "../accept_trade_alliance_application_reducer";
 import AdminCleanupZeroTotalCoinPlayersAndGrantCurrencyReducer from "../admin_cleanup_zero_total_coin_players_and_grant_currency_reducer";
 import AdminCopyPlayerProgressionReducer from "../admin_copy_player_progression_reducer";
@@ -47,11 +48,14 @@ import KickTradeAllianceMemberReducer from "../kick_trade_alliance_member_reduce
 import LeaveTradeAllianceReducer from "../leave_trade_alliance_reducer";
 import MarkPlayerInboxMailReadReducer from "../mark_player_inbox_mail_read_reducer";
 import MigratePlayerGameplaySavesReducer from "../migrate_player_gameplay_saves_reducer";
+import RejectFriendRequestReducer from "../reject_friend_request_reducer";
 import RejectTradeAllianceApplicationReducer from "../reject_trade_alliance_application_reducer";
 import RemoveNpcMarketItemConfigReducer from "../remove_npc_market_item_config_reducer";
 import RemoveResearchConfigReducer from "../remove_research_config_reducer";
 import ResetNpcMarketReducer from "../reset_npc_market_reducer";
 import SellToNpcReducer from "../sell_to_npc_reducer";
+import SendDirectMessageReducer from "../send_direct_message_reducer";
+import SendFriendRequestReducer from "../send_friend_request_reducer";
 import SendTradeAllianceChatMessageReducer from "../send_trade_alliance_chat_message_reducer";
 import SendWorldChatMessageReducer from "../send_world_chat_message_reducer";
 import SetAdminPlayerDataReducer from "../set_admin_player_data_reducer";
@@ -68,11 +72,13 @@ import SetUsernameReducer from "../set_username_reducer";
 import SetWorldEventContributionPointsReducer from "../set_world_event_contribution_points_reducer";
 import SubmitFeedbackReducer from "../submit_feedback_reducer";
 import TransferTradeAllianceLeadershipReducer from "../transfer_trade_alliance_leadership_reducer";
+import UnfriendPlayerReducer from "../unfriend_player_reducer";
 import UpdateTradeAllianceProfileReducer from "../update_trade_alliance_profile_reducer";
 import UpsertGameConfigReducer from "../upsert_game_config_reducer";
 import UpsertNpcMarketItemConfigReducer from "../upsert_npc_market_item_config_reducer";
 import UpsertResearchConfigReducer from "../upsert_research_config_reducer";
 
+export type AcceptFriendRequestParams = __Infer<typeof AcceptFriendRequestReducer>;
 export type AcceptTradeAllianceApplicationParams = __Infer<typeof AcceptTradeAllianceApplicationReducer>;
 export type AdminCleanupZeroTotalCoinPlayersAndGrantCurrencyParams = __Infer<typeof AdminCleanupZeroTotalCoinPlayersAndGrantCurrencyReducer>;
 export type AdminCopyPlayerProgressionParams = __Infer<typeof AdminCopyPlayerProgressionReducer>;
@@ -114,11 +120,14 @@ export type KickTradeAllianceMemberParams = __Infer<typeof KickTradeAllianceMemb
 export type LeaveTradeAllianceParams = __Infer<typeof LeaveTradeAllianceReducer>;
 export type MarkPlayerInboxMailReadParams = __Infer<typeof MarkPlayerInboxMailReadReducer>;
 export type MigratePlayerGameplaySavesParams = __Infer<typeof MigratePlayerGameplaySavesReducer>;
+export type RejectFriendRequestParams = __Infer<typeof RejectFriendRequestReducer>;
 export type RejectTradeAllianceApplicationParams = __Infer<typeof RejectTradeAllianceApplicationReducer>;
 export type RemoveNpcMarketItemConfigParams = __Infer<typeof RemoveNpcMarketItemConfigReducer>;
 export type RemoveResearchConfigParams = __Infer<typeof RemoveResearchConfigReducer>;
 export type ResetNpcMarketParams = __Infer<typeof ResetNpcMarketReducer>;
 export type SellToNpcParams = __Infer<typeof SellToNpcReducer>;
+export type SendDirectMessageParams = __Infer<typeof SendDirectMessageReducer>;
+export type SendFriendRequestParams = __Infer<typeof SendFriendRequestReducer>;
 export type SendTradeAllianceChatMessageParams = __Infer<typeof SendTradeAllianceChatMessageReducer>;
 export type SendWorldChatMessageParams = __Infer<typeof SendWorldChatMessageReducer>;
 export type SetAdminPlayerDataParams = __Infer<typeof SetAdminPlayerDataReducer>;
@@ -135,6 +144,7 @@ export type SetUsernameParams = __Infer<typeof SetUsernameReducer>;
 export type SetWorldEventContributionPointsParams = __Infer<typeof SetWorldEventContributionPointsReducer>;
 export type SubmitFeedbackParams = __Infer<typeof SubmitFeedbackReducer>;
 export type TransferTradeAllianceLeadershipParams = __Infer<typeof TransferTradeAllianceLeadershipReducer>;
+export type UnfriendPlayerParams = __Infer<typeof UnfriendPlayerReducer>;
 export type UpdateTradeAllianceProfileParams = __Infer<typeof UpdateTradeAllianceProfileReducer>;
 export type UpsertGameConfigParams = __Infer<typeof UpsertGameConfigReducer>;
 export type UpsertNpcMarketItemConfigParams = __Infer<typeof UpsertNpcMarketItemConfigReducer>;

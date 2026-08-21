@@ -2,8 +2,14 @@ import { DEFAULT_PAGE_SWIPE_ORDER } from "../../../pages/managers/pageOrder.js";
 import { PageUnlockManager } from "../../../pages/managers/PageUnlockManager.js";
 import { PageTargetNavigationManager } from "../../../pages/managers/PageTargetNavigationManager.js";
 import { automationResearchIds } from "../../../gameplay/automation/automationResearchIds.js";
-import { WORKSHOP_SECONDARY_ACTION_UNLOCK_LEVEL } from "../../../pages/workshop/managers/WorkshopSecondaryActionGateManager.js";
-import { getOwnTradeAllianceQuestContribution } from "../../../pages/workshop/managers/tradeAllianceQuestStatus.js";
+import {
+  WORKSHOP_DISCOVERY_ALLIANCE_UNLOCK_LEVEL,
+  WORKSHOP_SECONDARY_ACTION_UNLOCK_LEVEL,
+} from "../../../pages/workshop/managers/WorkshopSecondaryActionGateManager.js";
+import {
+  getOwnTradeAllianceQuestContribution,
+  isTradeAllianceQuestClaimable,
+} from "../../../pages/workshop/managers/tradeAllianceQuestStatus.js";
 import {
   PageNotificationStateManager,
   getGardenNotificationContext,
@@ -21,6 +27,7 @@ import {
 } from "../../../shared/playerMarketLimits.js";
 import { BrewingPixiPage } from "../pages/brewing/index.js";
 import { GardenPixiPage } from "../pages/garden/index.js";
+import { AlliancePixiPage } from "../pages/alliance/index.js";
 import {
   GUILD_DIALOG_IDS,
   GuildPixiPage,
@@ -49,13 +56,16 @@ const PAGE_IDS = Object.freeze([
   "garden",
   "research",
   "shop",
+  "alliance",
   "guild",
   "prestige",
 ]);
 
 const NAVIGABLE_PAGE_IDS = new Set(PAGE_IDS);
 const SWIPE_PAGE_IDS = new Set(
-  PAGE_IDS.filter((pageId) => !["guild", "prestige"].includes(pageId)),
+  PAGE_IDS.filter(
+    (pageId) => !["alliance", "guild", "prestige"].includes(pageId),
+  ),
 );
 const TASK_DESTINATION_PAGE_BY_TYPE = Object.freeze({
   research: "research",
@@ -82,7 +92,8 @@ const WORKSHOP_ALLIANCE_TAB_IDS = new Set([
   "create",
   "home",
   "quests",
-  "banner",
+  "requests",
+  "chat",
   "settings",
 ]);
 const WORKSHOP_LEADERBOARD_TAB_IDS = new Set(["singlePlayer", "alliance"]);
@@ -98,11 +109,7 @@ const WORKSHOP_WORLD_EVENT_TAB_IDS = new Set([
   "leaderboard",
   "rewards",
 ]);
-const MARKET_FILTER_FIELDS = new Set([
-  "item",
-  "minPrice",
-  "username",
-]);
+const MARKET_FILTER_FIELDS = new Set(["item", "minPrice", "username"]);
 export const PIXI_WORLD_CHAT_REPORT_HIGHLIGHT_SURFACE_ID =
   "interaction.worldChatReportHighlight";
 const WORLD_CHAT_REPORT_HIGHLIGHT_MODAL_PRIORITY = 70;
@@ -309,6 +316,15 @@ export class PixiPagesFacade {
         "guild",
         (context) =>
           new GuildPixiPage({
+            ...createSharedOptions(context),
+            semanticRegistry: context.semanticRegistry,
+            textEntryService: context.textEntryService,
+          }),
+      )
+      .registerPage(
+        "alliance",
+        (context) =>
+          new AlliancePixiPage({
             ...createSharedOptions(context),
             semanticRegistry: context.semanticRegistry,
             textEntryService: context.textEntryService,
@@ -556,9 +572,19 @@ export class PixiPagesFacade {
             this.gameplayFacade?.getSnapshot?.() ?? this.gameplaySnapshot;
         });
       }
-      this.pageStates = this.pageUnlockManager.getPageStates(
-        this.gameplaySnapshot,
-      );
+      const allianceUnlocked =
+        this.pageUnlockManager.getCurrentLevel(this.gameplaySnapshot) >=
+        WORKSHOP_DISCOVERY_ALLIANCE_UNLOCK_LEVEL;
+      this.pageStates = [
+        ...this.pageUnlockManager.getPageStates(this.gameplaySnapshot),
+        {
+          id: "alliance",
+          lockedMessage: `alliance unlocks at level ${WORKSHOP_DISCOVERY_ALLIANCE_UNLOCK_LEVEL}`,
+          requiredLevel: WORKSHOP_DISCOVERY_ALLIANCE_UNLOCK_LEVEL,
+          unlocked: allianceUnlocked,
+          visible: allianceUnlocked,
+        },
+      ];
       this.notifications =
         this.devNotifications ??
         this.notificationManager.getSnapshot(this.gameplaySnapshot, {
@@ -622,6 +648,13 @@ export class PixiPagesFacade {
           openAccount: () => this.openDialog("settings", { tab: "account" }),
           openSettings: () => this.openDialog("settings"),
           openLevel: () => this.openDialog("level"),
+          openBag: () => {
+            this.refreshPage("workshop", { force: true });
+            return (
+              this.requireRuntime().getPage("workshop")?.openDialog?.("bag") ??
+              false
+            );
+          },
         },
       }),
     );
@@ -629,9 +662,10 @@ export class PixiPagesFacade {
       "chrome.bottom",
       this.viewModelFactory.createBottomPanel({
         currentPageId: this.currentPageId,
-        hudMode: ["guild", "prestige"].includes(this.currentPageId)
+        hudMode: ["alliance", "guild", "prestige"].includes(this.currentPageId)
           ? this.currentPageId
           : "rooms",
+        allianceHud: this.createAllianceHudModel(),
         guildHud: {
           selectedTabId: this.guildBranchId,
           notifications: projectGuildBranchNotifications(
@@ -650,6 +684,8 @@ export class PixiPagesFacade {
           showPage: (pageId) => this.showPageFromChrome(pageId),
           selectGuildTab: (tabId) => this.selectGuildTab(tabId),
           selectPrestigeTab: (tabId) => this.selectPrestigeTab(tabId),
+          selectAllianceTab: (tabId) =>
+            this.createActions().workshop.selectAllianceTab(tabId),
           onLockedPage: () => true,
         },
       }),
@@ -658,10 +694,70 @@ export class PixiPagesFacade {
       "chrome.chat",
       this.viewModelFactory.createWorldChatPreview(this.worldChatSnapshot, {
         visible:
-          this.isWorldChatUnlocked() && this.currentPageId !== "guild",
+          this.isWorldChatUnlocked() &&
+          !["alliance", "guild"].includes(this.currentPageId),
         onActivate: () => this.openWorldChat(),
       }),
     );
+  }
+
+  createAllianceHudModel() {
+    const hasAlliance = Boolean(this.tradeAllianceSnapshot.ownAlliance);
+    const ownAllianceId =
+      this.tradeAllianceSnapshot.ownAlliance?.allianceId ??
+      this.tradeAllianceSnapshot.ownAlliance?.id ??
+      "";
+    const applicationCount = hasAlliance
+      ? (this.tradeAllianceSnapshot.applications ?? []).filter(
+          (application) =>
+            String(application?.allianceId ?? "") ===
+            String(ownAllianceId),
+        ).length
+      : 0;
+    const questNotification = hasAlliance
+      ? (this.tradeAllianceSnapshot.quests ?? []).some((quest) =>
+          isTradeAllianceQuestClaimable(this.tradeAllianceSnapshot, quest),
+        )
+      : false;
+    const visibleTabIds = hasAlliance
+      ? [
+          "home",
+          "quests",
+          ...(this.tradeAllianceSnapshot.canManageApplications === true
+            ? ["requests"]
+            : []),
+          "chat",
+          ...(this.tradeAllianceSnapshot.canEditSettings === true
+            ? ["settings"]
+            : []),
+        ]
+      : ["browse", "create"];
+    const selectedTabId = visibleTabIds.includes(this.workshopAllianceTabId)
+      ? this.workshopAllianceTabId
+      : hasAlliance
+        ? "home"
+        : "browse";
+
+    return {
+      selectedTabId,
+      tabs: [
+        "browse",
+        "create",
+        "home",
+        "quests",
+        "requests",
+        "chat",
+        "settings",
+      ].map((id) => ({
+        id,
+        visible: visibleTabIds.includes(id),
+        unlocked: true,
+      })),
+      notifications: {
+        quests: questNotification,
+        requests: applicationCount > 0,
+      },
+    };
   }
 
   createOwnPlayerInfoRequest() {
@@ -725,8 +821,7 @@ export class PixiPagesFacade {
             this.worldChatSnapshot,
             this.createActions().workshop,
             {
-              selectedReportMessageId:
-                this.worldChatSelectedReportMessageId,
+              selectedReportMessageId: this.worldChatSelectedReportMessageId,
             },
           ),
         ) ?? false
@@ -750,11 +845,7 @@ export class PixiPagesFacade {
   selectWorldChatMessageForReport(message, { targetId = null } = {}) {
     const messageId = message?.id ?? message?.messageId;
     const safeTargetId = String(targetId ?? "").trim();
-    if (
-      messageId === null ||
-      messageId === undefined ||
-      !safeTargetId
-    ) {
+    if (messageId === null || messageId === undefined || !safeTargetId) {
       return false;
     }
     this.worldChatSelectedReportMessageId = String(messageId);
@@ -770,7 +861,7 @@ export class PixiPagesFacade {
   openWorldChatReport(message) {
     this.hideWorldChatReportHighlight();
     return (
-      this.globalDialogPresenter?.open?.('chatReport', {
+      this.globalDialogPresenter?.open?.("chatReport", {
         message,
         focusInput: true,
       }) ?? false
@@ -783,17 +874,14 @@ export class PixiPagesFacade {
     }
     const runtime = this.requireRuntime();
     const selection = this.worldChatReportHighlight;
-    runtime.bindGlobalSurface(
-      PIXI_WORLD_CHAT_REPORT_HIGHLIGHT_SURFACE_ID,
-      {
-        visible: true,
-        targetId: selection.targetId,
-        actionLabel: "Report",
-        actionVariant: "red",
-        onAction: () => this.openWorldChatReport(selection.message),
-        onDismiss: () => this.hideWorldChatReportHighlight(),
-      },
-    );
+    runtime.bindGlobalSurface(PIXI_WORLD_CHAT_REPORT_HIGHLIGHT_SURFACE_ID, {
+      visible: true,
+      targetId: selection.targetId,
+      actionLabel: "Report",
+      actionVariant: "red",
+      onAction: () => this.openWorldChatReport(selection.message),
+      onDismiss: () => this.hideWorldChatReportHighlight(),
+    });
     if (!this.worldChatReportHighlightModal) {
       this.worldChatReportHighlightModal =
         this.renderFacade.getInputRouter?.()?.pushModal?.({
@@ -817,8 +905,7 @@ export class PixiPagesFacade {
     }
     const stillPresent = (this.worldChatSnapshot.messages ?? []).some(
       (message) =>
-        String(message?.id ?? message?.messageId ?? "") ===
-        selection.messageId,
+        String(message?.id ?? message?.messageId ?? "") === selection.messageId,
     );
     if (!stillPresent) {
       return this.hideWorldChatReportHighlight();
@@ -978,6 +1065,13 @@ export class PixiPagesFacade {
           navigationPlacement: "hud",
         });
         break;
+      case "alliance":
+        viewModel = this.viewModelFactory.createAllianceWorkspace(
+          this.tradeAllianceSnapshot,
+          this.workshopAllianceTabId,
+          actions.workshop,
+        );
+        break;
       default:
         return;
     }
@@ -993,7 +1087,8 @@ export class PixiPagesFacade {
       chrome: {
         ...(projectedViewModel.chrome ?? {}),
         worldChatVisible:
-          this.isWorldChatUnlocked() && pageId !== "guild",
+          this.isWorldChatUnlocked() &&
+          !["alliance", "guild"].includes(pageId),
       },
     };
     runtime.bindPage(pageId, chromeAwareViewModel);
@@ -1153,7 +1248,7 @@ export class PixiPagesFacade {
           if (result?.ok === true) {
             const summonedQuantity = Array.isArray(result.seeds)
               ? result.seeds.length
-              : result.quantity ?? 1;
+              : (result.quantity ?? 1);
             this.uiClickSoundFacade?.playSummon?.(summonedQuantity);
           }
           if (result?.reason === "no_active_seed_weights") {
@@ -1185,6 +1280,12 @@ export class PixiPagesFacade {
           this.selectWorldChatMessageForReport(message, options),
         openWorldChatReport: (message) => this.openWorldChatReport(message),
         openInbox: () => this.globalDialogPresenter?.open?.("inbox") ?? false,
+        openAllianceWorkspace: () => {
+          this.workshopAllianceTabId = this.tradeAllianceSnapshot.ownAlliance
+            ? "home"
+            : "browse";
+          return this.show("alliance");
+        },
         claimInboxReward: (mailKey) =>
           this.playerInboxFacade?.claimReward?.(mailKey),
         markInboxRead: (mailKey) => this.playerInboxFacade?.markRead?.(mailKey),
@@ -1194,7 +1295,7 @@ export class PixiPagesFacade {
             WORKSHOP_BAG_TAB_IDS,
             "currencies",
           );
-          this.refreshPage("workshop");
+          this.refreshPage("workshop", { force: true });
           return true;
         },
         selectStatsTab: (tabId) => {
@@ -1219,7 +1320,9 @@ export class PixiPagesFacade {
             WORKSHOP_ALLIANCE_TAB_IDS,
             this.tradeAllianceSnapshot.ownAlliance ? "home" : "browse",
           );
-          this.refreshPage("workshop");
+          this.refreshPage(
+            this.currentPageId === "alliance" ? "alliance" : "workshop",
+          );
           return true;
         },
         createAlliance: (profile) =>
@@ -1230,6 +1333,12 @@ export class PixiPagesFacade {
           this.tradeAllianceFacade?.applyAlliance?.(allianceId),
         cancelAllianceApplication: (applicationKey) =>
           this.tradeAllianceFacade?.cancelApplication?.(applicationKey),
+        acceptAllianceApplication: (applicationKey) =>
+          this.tradeAllianceFacade?.acceptApplication?.(applicationKey),
+        rejectAllianceApplication: (applicationKey) =>
+          this.tradeAllianceFacade?.rejectApplication?.(applicationKey),
+        sendAllianceChat: (body) =>
+          this.tradeAllianceFacade?.sendChatMessage?.(body),
         leaveAlliance: () => this.tradeAllianceFacade?.leaveAlliance?.(),
         updateAllianceProfile: (profile) =>
           this.tradeAllianceFacade?.updateProfile?.(profile),
@@ -1773,9 +1882,9 @@ export class PixiPagesFacade {
           const viewModel = this.refreshPage("shop");
           const buy = viewModel?.shop?.dialogs?.buy;
           return buy
-            ? this.requireRuntime()
+            ? (this.requireRuntime()
                 .getPage("shop")
-                ?.openDialog?.(SHOP_DIALOG_IDS.BUY, buy) ?? false
+                ?.openDialog?.(SHOP_DIALOG_IDS.BUY, buy) ?? false)
             : false;
         },
         setMarketBuyQuantity: (value) => {
@@ -1850,15 +1959,11 @@ export class PixiPagesFacade {
           );
           const shelf = gameplay?.getSnapshot?.()?.shop?.shelf;
           const slot = shelf?.slots?.find(
-            (candidate) =>
-              candidate?.slotNumber === safeSlotNumber,
+            (candidate) => candidate?.slotNumber === safeSlotNumber,
           );
           const loadedQuantity =
             slot?.sellItemTypeId === item?.itemTypeId
-              ? Math.max(
-                  0,
-                  Math.floor(Number(slot?.loadedQuantity) || 0),
-                )
+              ? Math.max(0, Math.floor(Number(slot?.loadedQuantity) || 0))
               : 0;
           this.shopStallTargetQuantityBySlot.set(
             safeSlotNumber,
@@ -1880,17 +1985,11 @@ export class PixiPagesFacade {
             1,
             Math.floor(Number(slotNumber) || 1),
           );
-          const safeQuantity = Math.max(
-            0,
-            Math.floor(Number(quantity) || 0),
-          );
+          const safeQuantity = Math.max(0, Math.floor(Number(quantity) || 0));
           if (item?.itemTypeId !== undefined) {
             this.shopStallItemTypeIdBySlot.set(safeSlotNumber, item.itemTypeId);
           }
-          this.shopStallTargetQuantityBySlot.set(
-            safeSlotNumber,
-            safeQuantity,
-          );
+          this.shopStallTargetQuantityBySlot.set(safeSlotNumber, safeQuantity);
           this.refreshShopStallDialog(safeSlotNumber);
           return {
             ok: true,
@@ -2012,9 +2111,8 @@ export class PixiPagesFacade {
     const plot = garden.plot ?? {};
     const seeds = garden.seeds ?? [];
     const selectedSeed =
-      seeds.find(
-        (seed) => seed.itemTypeId === garden.selectedSeedItemTypeId,
-      ) ?? null;
+      seeds.find((seed) => seed.itemTypeId === garden.selectedSeedItemTypeId) ??
+      null;
     const notificationContext = getGardenNotificationContext(
       this.gameplaySnapshot,
     );
@@ -2076,8 +2174,7 @@ export class PixiPagesFacade {
             ok: false,
             reason: "research_locked",
             tileNumber: plot.tileNumber,
-            tooltip:
-              "You need to research first to unlock buying this slot.",
+            tooltip: "You need to research first to unlock buying this slot.",
           };
         }
         if (plot.disabled === true) {
@@ -2365,8 +2462,8 @@ export class PixiPagesFacade {
             const itemTypeId = ingredient?.itemTypeId;
             const key = ingredient?.itemKey ?? ingredient?.key;
             const remaining = Number.isInteger(itemTypeId)
-              ? remainingByItemTypeId.get(itemTypeId) ?? 0
-              : remainingByKey.get(key) ?? 0;
+              ? (remainingByItemTypeId.get(itemTypeId) ?? 0)
+              : (remainingByKey.get(key) ?? 0);
             const owned = Math.min(quantity, remaining);
             if (Number.isInteger(itemTypeId)) {
               remainingByItemTypeId.set(itemTypeId, remaining - owned);
@@ -2425,11 +2522,11 @@ export class PixiPagesFacade {
               recipeReadiness.hasEnoughMana,
             prepareRecipeKey: selectedRecipe.key ?? selectedRecipe.id,
           }
-      : {
-          id: "brew",
-          label: `brew x${cauldron.brewQuantity ?? 1}`,
-          enabled: cauldron.canBrew === true,
-        };
+        : {
+            id: "brew",
+            label: `brew x${cauldron.brewQuantity ?? 1}`,
+            enabled: cauldron.canBrew === true,
+          };
     return {
       ...cauldron,
       id: index,
@@ -2467,8 +2564,8 @@ export class PixiPagesFacade {
       const ingredients = (recipe?.ingredients ?? []).map((ingredient) => ({
         ...ingredient,
         owned: Number.isInteger(ingredient?.itemTypeId)
-          ? ownedByItemTypeId.get(ingredient.itemTypeId) ?? 0
-          : ownedByKey.get(ingredient?.itemKey ?? ingredient?.key) ?? 0,
+          ? (ownedByItemTypeId.get(ingredient.itemTypeId) ?? 0)
+          : (ownedByKey.get(ingredient?.itemKey ?? ingredient?.key) ?? 0),
       }));
 
       const undiscoveredUnknown =
@@ -2513,10 +2610,8 @@ export class PixiPagesFacade {
     const cauldron =
       (brewing.cauldrons ?? []).find(
         (candidate) =>
-          Math.max(
-            0,
-            Math.floor(Number(candidate?.cauldronIndex) || 0),
-          ) === safeCauldronIndex,
+          Math.max(0, Math.floor(Number(candidate?.cauldronIndex) || 0)) ===
+          safeCauldronIndex,
       ) ?? (safeCauldronIndex === 0 ? brewing : null);
     const brewQuantity = Math.max(
       1,
@@ -2813,8 +2908,7 @@ export class PixiPagesFacade {
       },
       accelerateCauldron: (cauldronIndex = 0) => {
         const index = Math.max(0, Math.floor(Number(cauldronIndex) || 0));
-        const result =
-          gameplay?.accelerateBrewingCauldron?.(index) ?? false;
+        const result = gameplay?.accelerateBrewingCauldron?.(index) ?? false;
         if (result?.ok === true) {
           const reducedSeconds = Math.max(
             0,
@@ -2822,9 +2916,11 @@ export class PixiPagesFacade {
           );
           this.uiClickSoundFacade?.playClick?.();
           this.experienceFacade?.transientEffects?.emitReward?.({
-            message: `-${Number.isInteger(reducedSeconds)
-              ? reducedSeconds
-              : reducedSeconds.toFixed(1)}s`,
+            message: `-${
+              Number.isInteger(reducedSeconds)
+                ? reducedSeconds
+                : reducedSeconds.toFixed(1)
+            }s`,
             flyoutKey: `brewing-cauldron-tap-${index}`,
             anchorId: "brewing.cauldron.liquid",
           });
@@ -2868,7 +2964,9 @@ export class PixiPagesFacade {
       toggleAutoCollect: (cauldronIndex) =>
         gameplay?.toggleBrewingAutoCollectEnabled?.(cauldronIndex),
       cancelBrew: (cauldronIndex) => {
-        const activeBrew = (this.gameplaySnapshot.brewing?.cauldrons ?? []).find(
+        const activeBrew = (
+          this.gameplaySnapshot.brewing?.cauldrons ?? []
+        ).find(
           (cauldron) => Number(cauldron?.cauldronIndex) === cauldronIndex,
         )?.activeBrew;
         if (
@@ -3043,7 +3141,7 @@ export class PixiPagesFacade {
         const listingId =
           listing.listingKey ?? listing.requestKey ?? listing.id;
         if (listingId !== undefined && listingId !== null) {
-    this.shopMarketBrowseTab = "selling";
+          this.shopMarketBrowseTab = "selling";
           return {
             pageId: "shop",
             tabId: "players",
@@ -3177,8 +3275,8 @@ export class PixiPagesFacade {
         });
       }
     }
-          const pageId = TASK_DESTINATION_PAGE_BY_TYPE[taskType];
-          return pageId ? this.show(pageId) : false;
+    const pageId = TASK_DESTINATION_PAGE_BY_TYPE[taskType];
+    return pageId ? this.show(pageId) : false;
   }
 
   findResearchTabId(researchId) {
@@ -3346,7 +3444,9 @@ export class PixiPagesFacade {
       this.releasePlayerInfoMarket = null;
     }
 
-    const shouldRetainTradeAlliance = this.currentPageId === "workshop";
+    const shouldRetainTradeAlliance = ["alliance", "workshop"].includes(
+      this.currentPageId,
+    );
     if (shouldRetainTradeAlliance && !this.releaseTradeAlliancePublic) {
       this.releaseTradeAlliancePublic =
         this.tradeAllianceFacade?.retainPublicData?.() ?? null;
@@ -4083,6 +4183,117 @@ const DEV_DIALOG_TARGETS = Object.freeze({
   inbox: { dialogId: "global.inbox" },
   player: { dialogId: "global.player" },
   playerinfo: { dialogId: "global.player" },
+  friends: {
+    dialogId: "global.friends",
+    options: {
+      tab: "friends",
+      previewSnapshot: {
+        connected: true,
+        friends: [
+          {
+            key: "mira",
+            identity: "mira",
+            username: "Mira",
+            character: "mira",
+            frame: "violet",
+            playerLevel: 12,
+            connected: true,
+          },
+          {
+            key: "juniper",
+            identity: "juniper",
+            username: "Juniper",
+            character: "juniper",
+            frame: "emerald",
+            playerLevel: 10,
+            connected: true,
+          },
+          {
+            key: "rowan",
+            identity: "rowan",
+            username: "Rowan",
+            character: "rowan",
+            frame: "classic",
+            playerLevel: 11,
+            connected: false,
+          },
+        ],
+        incomingRequests: [
+          {
+            key: "luna",
+            identity: "luna",
+            username: "Luna",
+            character: "mira",
+            frame: "violet",
+            playerLevel: 9,
+            connected: true,
+          },
+          {
+            key: "thorne",
+            identity: "thorne",
+            username: "Thorne",
+            character: "rowan",
+            frame: "classic",
+            playerLevel: 7,
+            connected: false,
+          },
+        ],
+        outgoingRequests: [
+          {
+            key: "sage",
+            identity: "sage",
+            username: "Sage",
+            character: "juniper",
+            frame: "emerald",
+            playerLevel: 9,
+            connected: true,
+          },
+          {
+            key: "vex",
+            identity: "vex",
+            username: "Vex",
+            character: "mira",
+            frame: "classic",
+            playerLevel: 8,
+            connected: false,
+          },
+        ],
+      },
+    },
+  },
+  friendchat: {
+    dialogId: "global.directMessage",
+    options: {
+      friend: {
+        identity: "juniper",
+        username: "Juniper",
+        character: "juniper",
+        frame: "emerald",
+        playerLevel: 10,
+      },
+      relationship: "friend",
+      previewMessages: [
+        {
+          id: "juniper-1",
+          username: "Juniper",
+          character: "juniper",
+          frame: "emerald",
+          body: "The harvest was amazing this week.",
+          sentAtMs: Date.now() - 120000,
+        },
+        {
+          id: "mira-1",
+          username: "Mira",
+          character: "mira",
+          frame: "violet",
+          body: "I saved you a bundle of herbs.",
+          sentAtMs: Date.now(),
+          isOwn: true,
+        },
+      ],
+    },
+  },
+  directmessage: { dialogId: "global.directMessage" },
   allianceinfo: { dialogId: "global.alliance" },
 });
 

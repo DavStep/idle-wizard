@@ -4,6 +4,14 @@ These are developer-to-player Discord posts. Describe features only in Idle
 Wizard terms; do not mention other game names, source projects, ports, or
 implementation provenance.
 
+## 0.3.84
+
+Friends have arrived. Open your own profile to see your Friends list, accept or reject incoming requests, review invitations you have sent, and open a private conversation with any accepted friend. Player profiles now show the relationship actions that fit the moment, while unread indicators make new conversations easier to spot. Unfriending keeps the conversation history visible but safely closes the composer until the friendship is restored.
+
+Trade Alliances now open as a dedicated workspace. Members can move between Home, Quests, Chat, and the destinations their permissions allow, including Requests and Settings. Alliance managers can review applicants and manage the alliance from the same focused space without losing the familiar Workshop return path.
+
+This release also reorganizes the Workshop top panel around Coin, Mana, and Bag, improves room-specific currency context elsewhere, and gives Garden planting a clearer combined seed picker plus more expressive planting and harvest feedback.
+
 ## 0.3.80
 
 Trade Alliances can now create their own banner. Editors can choose from eleven emblems, ten cloth colors, and ten emblem colors, with a live preview before saving. The finished banner follows the alliance into Browse, Alliance Info, and alliance leaderboard rows so every group has a clearer identity.

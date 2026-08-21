@@ -34,6 +34,7 @@ import {
 } from "spacetimedb";
 
 // Import all reducer arg schemas
+import AcceptFriendRequestReducer from "./accept_friend_request_reducer";
 import AcceptTradeAllianceApplicationReducer from "./accept_trade_alliance_application_reducer";
 import AdminCleanupZeroTotalCoinPlayersAndGrantCurrencyReducer from "./admin_cleanup_zero_total_coin_players_and_grant_currency_reducer";
 import AdminCopyPlayerProgressionReducer from "./admin_copy_player_progression_reducer";
@@ -75,11 +76,14 @@ import KickTradeAllianceMemberReducer from "./kick_trade_alliance_member_reducer
 import LeaveTradeAllianceReducer from "./leave_trade_alliance_reducer";
 import MarkPlayerInboxMailReadReducer from "./mark_player_inbox_mail_read_reducer";
 import MigratePlayerGameplaySavesReducer from "./migrate_player_gameplay_saves_reducer";
+import RejectFriendRequestReducer from "./reject_friend_request_reducer";
 import RejectTradeAllianceApplicationReducer from "./reject_trade_alliance_application_reducer";
 import RemoveNpcMarketItemConfigReducer from "./remove_npc_market_item_config_reducer";
 import RemoveResearchConfigReducer from "./remove_research_config_reducer";
 import ResetNpcMarketReducer from "./reset_npc_market_reducer";
 import SellToNpcReducer from "./sell_to_npc_reducer";
+import SendDirectMessageReducer from "./send_direct_message_reducer";
+import SendFriendRequestReducer from "./send_friend_request_reducer";
 import SendTradeAllianceChatMessageReducer from "./send_trade_alliance_chat_message_reducer";
 import SendWorldChatMessageReducer from "./send_world_chat_message_reducer";
 import SetAdminPlayerDataReducer from "./set_admin_player_data_reducer";
@@ -96,6 +100,7 @@ import SetUsernameReducer from "./set_username_reducer";
 import SetWorldEventContributionPointsReducer from "./set_world_event_contribution_points_reducer";
 import SubmitFeedbackReducer from "./submit_feedback_reducer";
 import TransferTradeAllianceLeadershipReducer from "./transfer_trade_alliance_leadership_reducer";
+import UnfriendPlayerReducer from "./unfriend_player_reducer";
 import UpdateTradeAllianceProfileReducer from "./update_trade_alliance_profile_reducer";
 import UpsertGameConfigReducer from "./upsert_game_config_reducer";
 import UpsertNpcMarketItemConfigReducer from "./upsert_npc_market_item_config_reducer";
@@ -114,6 +119,10 @@ import MarketDemandDailySnapshotRow from "./market_demand_daily_snapshot_table";
 import MarketPriceHourlySnapshotRow from "./market_price_hourly_snapshot_table";
 import NpcMarketAdminRow from "./npc_market_admin_table";
 import NpcMarketPriceSnapshotRow from "./npc_market_price_snapshot_table";
+import OwnDirectMessageRow from "./own_direct_message_table";
+import OwnFriendshipRow from "./own_friendship_table";
+import OwnIncomingFriendRequestRow from "./own_incoming_friend_request_table";
+import OwnOutgoingFriendRequestRow from "./own_outgoing_friend_request_table";
 import OwnPlayerGameplaySaveRow from "./own_player_gameplay_save_table";
 import OwnPlayerInboxMailRow from "./own_player_inbox_mail_table";
 import OwnPlayerMaintenanceRow from "./own_player_maintenance_table";
@@ -422,6 +431,34 @@ const tablesSchema = __schema({
     constraints: [
     ],
   }, NpcMarketPriceSnapshotRow),
+  own_direct_message: __table({
+    name: 'own_direct_message',
+    indexes: [
+    ],
+    constraints: [
+    ],
+  }, OwnDirectMessageRow),
+  own_friendship: __table({
+    name: 'own_friendship',
+    indexes: [
+    ],
+    constraints: [
+    ],
+  }, OwnFriendshipRow),
+  own_incoming_friend_request: __table({
+    name: 'own_incoming_friend_request',
+    indexes: [
+    ],
+    constraints: [
+    ],
+  }, OwnIncomingFriendRequestRow),
+  own_outgoing_friend_request: __table({
+    name: 'own_outgoing_friend_request',
+    indexes: [
+    ],
+    constraints: [
+    ],
+  }, OwnOutgoingFriendRequestRow),
   own_player_gameplay_save: __table({
     name: 'own_player_gameplay_save',
     indexes: [
@@ -608,6 +645,7 @@ const tablesSchema = __schema({
 
 /** The schema information for all reducers in this module. This is defined the same way as the reducers would have been defined in the server, except the body of the reducer is omitted in code generation. */
 const reducersSchema = __reducers(
+  __reducerSchema("accept_friend_request", AcceptFriendRequestReducer),
   __reducerSchema("accept_trade_alliance_application", AcceptTradeAllianceApplicationReducer),
   __reducerSchema("admin_cleanup_zero_total_coin_players_and_grant_currency", AdminCleanupZeroTotalCoinPlayersAndGrantCurrencyReducer),
   __reducerSchema("admin_copy_player_progression", AdminCopyPlayerProgressionReducer),
@@ -649,11 +687,14 @@ const reducersSchema = __reducers(
   __reducerSchema("leave_trade_alliance", LeaveTradeAllianceReducer),
   __reducerSchema("mark_player_inbox_mail_read", MarkPlayerInboxMailReadReducer),
   __reducerSchema("migrate_player_gameplay_saves", MigratePlayerGameplaySavesReducer),
+  __reducerSchema("reject_friend_request", RejectFriendRequestReducer),
   __reducerSchema("reject_trade_alliance_application", RejectTradeAllianceApplicationReducer),
   __reducerSchema("remove_npc_market_item_config", RemoveNpcMarketItemConfigReducer),
   __reducerSchema("remove_research_config", RemoveResearchConfigReducer),
   __reducerSchema("reset_npc_market", ResetNpcMarketReducer),
   __reducerSchema("sell_to_npc", SellToNpcReducer),
+  __reducerSchema("send_direct_message", SendDirectMessageReducer),
+  __reducerSchema("send_friend_request", SendFriendRequestReducer),
   __reducerSchema("send_trade_alliance_chat_message", SendTradeAllianceChatMessageReducer),
   __reducerSchema("send_world_chat_message", SendWorldChatMessageReducer),
   __reducerSchema("set_admin_player_data", SetAdminPlayerDataReducer),
@@ -670,6 +711,7 @@ const reducersSchema = __reducers(
   __reducerSchema("set_world_event_contribution_points", SetWorldEventContributionPointsReducer),
   __reducerSchema("submit_feedback", SubmitFeedbackReducer),
   __reducerSchema("transfer_trade_alliance_leadership", TransferTradeAllianceLeadershipReducer),
+  __reducerSchema("unfriend_player", UnfriendPlayerReducer),
   __reducerSchema("update_trade_alliance_profile", UpdateTradeAllianceProfileReducer),
   __reducerSchema("upsert_game_config", UpsertGameConfigReducer),
   __reducerSchema("upsert_npc_market_item_config", UpsertNpcMarketItemConfigReducer),

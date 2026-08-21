@@ -8,12 +8,13 @@ import {
   GardenPlotTooltip,
   GardenPlotWidget,
   GardenSeedActionBar,
+  GardenSeedPickerButton,
 } from './GardenPixiPage.js';
 
 const WIDGETS = [
   defineUiEditorIntegration({
     apiVersion: 1,
-    childWidgetIds: ["text-button"],
+    childWidgetIds: ["text-button", "compound.garden-seed-picker-button"],
     createThumbnail: () =>
       createGardenThumbnail(
         "compound.garden-seed-action-bar",
@@ -54,6 +55,32 @@ const WIDGETS = [
       ),
     ],
     usages: productionUsage("Garden room footer actions"),
+  }),
+  defineUiEditorIntegration({
+    apiVersion: 1,
+    childWidgetIds: ["text-button"],
+    createThumbnail: () =>
+      createGardenThumbnail(
+        "compound.garden-seed-picker-button",
+        createSeedPickerControl,
+      ),
+    folderPath: ["Garden"],
+    id: "compound.garden-seed-picker-button",
+    kind: "widget",
+    label: "Garden Seed Picker Button",
+    sectionId: "composite-widgets",
+    properties: productionProperties(
+      "GardenSeedPickerButton",
+      "Seeds action with an optional selected seed-pack and stock line",
+    ),
+    scenarios: [
+      scenario("selected", "Mint selected", { state: "selected" }, mountSeedPicker),
+      scenario("empty", "No selection", { state: "empty" }, mountSeedPicker),
+      scenario("disabled", "Unavailable", { state: "disabled" }, mountSeedPicker),
+      scenario("pressed", "Pressed", { state: "pressed" }, mountSeedPicker),
+      scenario("overflow", "Long seed name", { state: "overflow" }, mountSeedPicker),
+    ],
+    usages: productionUsage("Garden room seed inventory action"),
   }),
   defineUiEditorIntegration({
     apiVersion: 1,
@@ -218,9 +245,56 @@ function createActionBarControl({
     plantAll: () => context?.emit('plantAll') ?? true,
   });
   bar.applyTheme(DEFAULT_PIXI_THEME_SNAPSHOT);
-  bar.setBounds(0, 68, 358);
+  bar.setBounds(0, 36, 358);
   root.addChild(bar.root);
-  return { destroy: () => bar.destroy(), height: 72, root, width: 358 };
+  return { destroy: () => bar.destroy(), height: 40, root, width: 358 };
+}
+
+async function mountSeedPicker(context, fixture) {
+  return createUiEditorPixiSurface({
+    assetFilter: gardenAssetFilter,
+    component: 'GardenSeedPickerButton',
+    createControl: ({ assets, input }) =>
+      createSeedPickerControl({ assets, fixture, input, context }),
+  });
+}
+
+function createSeedPickerControl({
+  assets,
+  fixture = { state: 'selected' },
+  input,
+  context = null,
+}) {
+  const button = new GardenSeedPickerButton({
+    assetManager: assets,
+    inputRouter: input,
+    action: () => context?.emit('seedPickerOpened') ?? true,
+    label: 'garden-seed-picker-preview',
+  });
+  const state = fixture.state ?? 'selected';
+  const selected = state !== 'empty';
+  button
+    .setSeed(
+      selected
+        ? {
+            key: 'mintSeed',
+            label:
+              state === 'overflow'
+                ? 'Twilight Moonflower'
+                : 'Mint',
+            quantity: 140,
+          }
+        : null,
+    )
+    .setEnabled(state !== 'disabled')
+    .setSize(220, 36);
+  button.applyTheme(DEFAULT_PIXI_THEME_SNAPSHOT);
+  if (state === 'pressed') {
+    button.setPressed(true);
+  }
+  const root = new Container({ label: 'garden-seed-picker-button-preview' });
+  root.addChild(button);
+  return { destroy: () => button.destroy(), height: 36, root, width: 220 };
 }
 
 async function mountPlot(context, fixture) {

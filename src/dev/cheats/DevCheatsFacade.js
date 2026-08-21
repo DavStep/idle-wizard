@@ -334,6 +334,14 @@ export class DevCheatsFacade {
     const requiresMountedGameSurfaces =
       surfaceId === 'brewingrecipes' ||
       surfaceId === 'chatreport' ||
+      surfaceId === 'friends' ||
+      surfaceId === 'globalfriends' ||
+      surfaceId === 'friendchat' ||
+      surfaceId === 'directmessage' ||
+      surfaceId === 'globaldirectmessage' ||
+      surfaceId === 'playerinfo' ||
+      surfaceId === 'playerinfofriend' ||
+      surfaceId === 'playerinfoown' ||
       surfaceId === 'worldchatreporthighlight' ||
       surfaceId === 'globalconfirmation' ||
       surfaceId === 'dialogglobalconfirmation';
