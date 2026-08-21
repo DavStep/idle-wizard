@@ -32,6 +32,11 @@ const FRIEND_ROW_ACTION_WIDTH = 68;
 const FRIEND_ROW_ACTION_INSET = 8;
 const ACTION_HEIGHT = 24;
 const ACTION_GAP = 4;
+export const PLAYER_PRESENCE_DIAMETER = 7;
+export const PLAYER_PRESENCE_GAP = 4;
+const PLAYER_PRESENCE_ONLINE_COLOR = '#5f9f3f';
+const PLAYER_PRESENCE_OFFLINE_COLOR = '#8d8172';
+const PLAYER_PRESENCE_STROKE_COLOR = '#634934';
 const FRIEND_TAG_COLORS = Object.freeze({
   ink: '#634934',
   red: '#9b3439',
@@ -44,6 +49,20 @@ const FRIEND_TAG_COLORS = Object.freeze({
   brown: '#704b35',
   slate: '#596271',
 });
+
+export function drawPlayerPresenceDot(graphics, connected) {
+  const radius = PLAYER_PRESENCE_DIAMETER / 2;
+  graphics
+    .clear()
+    .circle(radius, radius, radius)
+    .fill(
+      connected
+        ? PLAYER_PRESENCE_ONLINE_COLOR
+        : PLAYER_PRESENCE_OFFLINE_COLOR,
+    )
+    .stroke({ color: PLAYER_PRESENCE_STROKE_COLOR, width: 1 });
+  return graphics;
+}
 
 /**
  * Reusable friend/request row with one player identity and up to two compact
@@ -88,6 +107,10 @@ export class PlayerRelationshipRowPixi {
     this.profile.pivot.set(PLAYER_PROFILE_SIZE / 2);
     this.allianceTag = createText('', RETAINED_TEXT_STYLES.bold);
     this.name = createText('', RETAINED_TEXT_STYLES.bold);
+    this.presenceDot = new Graphics({
+      label: `${this.root.label}:presence`,
+    });
+    this.presenceDot.eventMode = 'none';
     this.detail = createText('', RETAINED_TEXT_STYLES.border);
     this.prestigeStars = new PixiStarLevelLabel({
       assetManager: dialog.assetManager,
@@ -117,6 +140,7 @@ export class PlayerRelationshipRowPixi {
       this.profile,
       this.allianceTag,
       this.name,
+      this.presenceDot,
       this.detail,
       this.prestigeStars,
       this.production,
@@ -167,6 +191,11 @@ export class PlayerRelationshipRowPixi {
       model.allianceTagColor,
     );
     setText(this.name, model.username ?? model.label ?? 'Wizard');
+    const presenceVisible =
+      this.usesFriendCard && model.showPresence === true;
+    this.presenceDot.visible = presenceVisible;
+    this.presenceDot.renderable = presenceVisible;
+    drawPlayerPresenceDot(this.presenceDot, model.connected === true);
     setText(this.detail, model.detail ?? `Level ${model.playerLevel ?? 1}`);
     this.prestigeStars.setLevel(model.prestigeCount ?? 0);
     this.prestigeStars.visible = this.usesResearchCard || this.usesFriendCard;
@@ -356,6 +385,10 @@ export class PlayerRelationshipRowPixi {
     );
     this.name.style.wordWrap = false;
     this.name.style.wordWrapWidth = copyWidth;
+    this.presenceDot.position.set(
+      this.name.x + this.name.width + PLAYER_PRESENCE_GAP,
+      this.name.y + (this.name.height - PLAYER_PRESENCE_DIAMETER) / 2,
+    );
     this.detail.position.set(copyX, 35);
     this.detail.style.wordWrap = false;
     this.detail.style.wordWrapWidth = copyWidth;
@@ -426,6 +459,8 @@ export class PlayerRelationshipRowPixi {
     this.root.cursor = 'default';
     this.prestigeStars.reset();
     this.notificationBadge.setActive(false);
+    this.presenceDot.visible = false;
+    this.presenceDot.renderable = false;
   }
 
   destroy() {

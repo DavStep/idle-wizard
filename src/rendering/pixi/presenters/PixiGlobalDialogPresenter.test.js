@@ -100,6 +100,8 @@ describe('PixiGlobalDialogPresenter', () => {
       allianceTagColor: 'green',
       prestigeCount: 2,
       totalProducedCoin: 123_456,
+      connected: true,
+      showPresence: true,
       preview: 'Meet by the cauldron.',
     });
 
@@ -133,6 +135,39 @@ describe('PixiGlobalDialogPresenter', () => {
         .getOpenModel(GLOBAL_DIALOG_IDS.DIRECT_MESSAGE)
         .rows.map((row) => row.connected),
     ).toEqual([true, true]);
+  });
+
+  it('refreshes direct-message header presence from the live friends snapshot', () => {
+    const liveFriend = {
+      identity: 'identity-juniper',
+      username: 'Juniper',
+      connected: false,
+    };
+    const harness = createHarness({
+      friendsSnapshot: { friends: [liveFriend] },
+      simulateDialogLifecycle: true,
+    });
+    harness.friendsFacade.getRelationship.mockReturnValue('friend');
+    harness.presenter.mount();
+
+    harness.presenter.open(GLOBAL_DIALOG_IDS.DIRECT_MESSAGE, {
+      friend: {
+        identity: liveFriend.identity,
+        username: liveFriend.username,
+        connected: true,
+      },
+    });
+
+    expect(
+      harness.getOpenModel(GLOBAL_DIALOG_IDS.DIRECT_MESSAGE).friend,
+    ).toMatchObject({ connected: false, showPresence: true });
+
+    liveFriend.connected = true;
+    harness.friendsFacade.emit();
+
+    expect(
+      harness.getOpenModel(GLOBAL_DIALOG_IDS.DIRECT_MESSAGE).friend,
+    ).toMatchObject({ connected: true, showPresence: true });
   });
 
   it('opens Player Info from the direct-message header profile action', () => {
@@ -385,6 +420,47 @@ describe('PixiGlobalDialogPresenter', () => {
     ).toMatchObject({
       identity: 'identity-mira',
       username: 'Wizard',
+    });
+  });
+
+  it('opens a developer preview without writing an unnamed player profile', () => {
+    const harness = createHarness({
+      playerSnapshot: { hasExplicitUsername: false },
+    });
+    harness.presenter.mount();
+
+    expect(
+      harness.presenter.open(GLOBAL_DIALOG_IDS.FRIENDS, {
+        devPreview: true,
+        previewSnapshot: {
+          connected: true,
+          friends: [
+            {
+              identity: 'preview-friend',
+              username: 'Preview Friend',
+              connected: true,
+            },
+          ],
+        },
+      }),
+    ).toEqual({ dialogId: GLOBAL_DIALOG_IDS.FRIENDS });
+    expect(harness.runtime.getOpenDialogIds()).toEqual([
+      GLOBAL_DIALOG_IDS.FRIENDS,
+    ]);
+    expect(harness.playerFacade.setUsername).not.toHaveBeenCalled();
+
+    expect(
+      harness.getOpenModel(GLOBAL_DIALOG_IDS.FRIENDS).rows[0].onActivate(),
+    ).toEqual({ dialogId: GLOBAL_DIALOG_IDS.DIRECT_MESSAGE });
+    expect(harness.runtime.getOpenDialogIds()).toContain(
+      GLOBAL_DIALOG_IDS.DIRECT_MESSAGE,
+    );
+    expect(
+      harness.getOpenModel(GLOBAL_DIALOG_IDS.DIRECT_MESSAGE),
+    ).toMatchObject({
+      composer: { enabled: true },
+      friend: { connected: true, showPresence: true },
+      relationship: 'friend',
     });
   });
 

@@ -679,7 +679,11 @@ export class PixiGlobalDialogPresenter {
         { id: 'pending', label: 'Pending', selected: requestedTab === 'pending' },
       ],
       rows: (source ?? []).map((player) =>
-        this.createRelationshipRow(player, requestedTab),
+        this.createRelationshipRow(
+          player,
+          requestedTab,
+          request.devPreview === true,
+        ),
       ),
       onSelectTab: (tabId) => {
         this.friendsTabId = normalizeFriendsTab(tabId);
@@ -699,7 +703,7 @@ export class PixiGlobalDialogPresenter {
     };
   }
 
-  createRelationshipRow(player, tabId) {
+  createRelationshipRow(player, tabId, devPreview = false) {
     const base = {
       id: player.key ?? player.identity,
       identity: player.identity,
@@ -712,6 +716,8 @@ export class PixiGlobalDialogPresenter {
       detail: `Level ${player.playerLevel ?? 1}`,
       allianceTag: player.allianceTag,
       allianceTagColor: player.allianceTagColor,
+      connected: player.connected === true,
+      showPresence: tabId === 'friends',
       notification: Boolean(
         player.notification ?? player.unread ?? player.hasUnreadMessage,
       ),
@@ -743,16 +749,32 @@ export class PixiGlobalDialogPresenter {
         player.statusMessage ??
         (player.connected ? 'Online' : 'Offline'),
       onActivate: () =>
-        this.open(GLOBAL_DIALOG_IDS.DIRECT_MESSAGE, { friend: player }),
+        this.open(GLOBAL_DIALOG_IDS.DIRECT_MESSAGE, {
+          friend: player,
+          ...(devPreview
+            ? { devPreview: true, relationship: 'friend' }
+            : {}),
+        }),
     };
   }
 
   createDirectMessageModel(request = {}) {
-    const friend = normalizePlayerRequest(request.friend ?? request.player ?? request);
+    const requestedFriend = normalizePlayerRequest(
+      request.friend ?? request.player ?? request,
+    );
+    const liveFriend = (this.friendsFacade?.getSnapshot?.()?.friends ?? []).find(
+      (candidate) =>
+        normalizeId(candidate.identity) === normalizeId(requestedFriend.identity),
+    );
+    const friend = normalizePlayerRequest({
+      ...requestedFriend,
+      ...(liveFriend ?? {}),
+    });
     const relationship =
       request.relationship ??
       this.friendsFacade?.getRelationship?.(friend.identity) ??
       'stranger';
+    friend.showPresence = relationship === 'friend';
     const directMessages = request.previewMessages
       ? { connected: true, messages: request.previewMessages }
       : this.friendsFacade?.getDirectMessageSnapshot?.() ?? {};
@@ -1004,6 +1026,9 @@ export class PixiGlobalDialogPresenter {
   }
 
   requiresPlayerSurfaceUsername(dialogId, request = {}) {
+    if (request.devPreview === true) {
+      return false;
+    }
     if (
       dialogId === GLOBAL_DIALOG_IDS.PLAYER &&
       this.isOwnPlayerRequest(request.player ?? request)

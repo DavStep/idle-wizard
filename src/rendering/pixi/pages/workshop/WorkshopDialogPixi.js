@@ -76,7 +76,12 @@ import {
 } from './RetainedPageKit.js';
 import { GuildColorSwatch } from '../guild/GuildDialogPixi.js';
 import { RootRunInventoryChoiceRowPixi } from '../shop/ShopDialogPixi.js';
-import { PlayerRelationshipRowPixi } from '../../global/dialogs/PlayerRelationshipRowPixi.js';
+import {
+  PLAYER_PRESENCE_DIAMETER,
+  PLAYER_PRESENCE_GAP,
+  PlayerRelationshipRowPixi,
+  drawPlayerPresenceDot,
+} from '../../global/dialogs/PlayerRelationshipRowPixi.js';
 
 const WORKSHOP_DIALOG_CONTENT_WIDTH = 264;
 export const ALLIANCE_DIALOG_CONTENT_WIDTH = WORKSHOP_DIALOG_CONTENT_WIDTH;
@@ -160,11 +165,6 @@ const WORLD_CHAT_TIMESTAMP_COLOR = '#946a2e';
 const WORLD_CHAT_SYSTEM_BACKGROUND = '#efd0a2';
 const WORLD_CHAT_SYSTEM_TITLE_COLOR = '#432d20';
 const WORLD_CHAT_SYSTEM_PLAYER_COLOR = '#72533a';
-const WORLD_CHAT_PRESENCE_DIAMETER = 7;
-const WORLD_CHAT_PRESENCE_GAP = 4;
-const WORLD_CHAT_PRESENCE_ONLINE_COLOR = '#5f9f3f';
-const WORLD_CHAT_PRESENCE_OFFLINE_COLOR = '#8d8172';
-const WORLD_CHAT_PRESENCE_STROKE_COLOR = '#634934';
 const WORLD_CHAT_REPORT_HOLD_MS = 530;
 const WORLD_CHAT_REPORT_ACTION_HEIGHT = 29;
 const WORLD_CHAT_REPORT_ACTION_GAP = 4;
@@ -593,6 +593,12 @@ export class WorkshopDialogPixi {
     this.directMessageName = this.isDirectMessageDialog
       ? createText('', RETAINED_TEXT_STYLES.bold)
       : null;
+    this.directMessagePresenceDot = this.isDirectMessageDialog
+      ? new Graphics({ label: `${dialogId}:friend-presence` })
+      : null;
+    if (this.directMessagePresenceDot) {
+      this.directMessagePresenceDot.eventMode = 'none';
+    }
     this.directMessageLevel = this.isDirectMessageDialog
       ? createText('', RETAINED_TEXT_STYLES.border)
       : null;
@@ -636,6 +642,7 @@ export class WorkshopDialogPixi {
         this.directMessageProfile,
         this.directMessageTag,
         this.directMessageName,
+        this.directMessagePresenceDot,
         this.directMessageLevel,
         this.directMessageExpandGlyph,
         this.directMessageIdentityHitTarget,
@@ -1122,6 +1129,13 @@ export class WorkshopDialogPixi {
       this.directMessageTagColor = WORLD_CHAT_TAG_COLORS[allianceTagColor];
       this.directMessageTag.style.fill = this.directMessageTagColor;
       setText(this.directMessageName, friend.username ?? 'Wizard');
+      const presenceVisible = friend.showPresence === true;
+      this.directMessagePresenceDot.visible = presenceVisible;
+      this.directMessagePresenceDot.renderable = presenceVisible;
+      drawPlayerPresenceDot(
+        this.directMessagePresenceDot,
+        friend.connected === true,
+      );
       setText(
         this.directMessageLevel,
         `Level ${Math.max(1, Math.floor(Number(friend.playerLevel) || 1))}`,
@@ -2144,6 +2158,13 @@ export class WorkshopDialogPixi {
     this.directMessageName.position.set(
       textX + (this.directMessageTag.text ? Math.ceil(this.directMessageTag.width) + 4 : 0),
       13,
+    );
+    this.directMessagePresenceDot.position.set(
+      this.directMessageName.x +
+        this.directMessageName.width +
+        PLAYER_PRESENCE_GAP,
+      this.directMessageName.y +
+        (this.directMessageName.height - PLAYER_PRESENCE_DIAMETER) / 2,
     );
     this.directMessageLevel.position.set(textX, 33);
     this.directMessageExpandGlyph.position.set(paperWidth - 19, 23);
@@ -3595,7 +3616,7 @@ export class WorldChatMessageRowPixi {
       this.avatar.scale.set(WORLD_CHAT_AVATAR_SIZE / PLAYER_PROFILE_SIZE);
     }
     const presenceWidth = this.presenceDot.visible
-      ? WORLD_CHAT_PRESENCE_GAP + WORLD_CHAT_PRESENCE_DIAMETER
+      ? PLAYER_PRESENCE_GAP + PLAYER_PRESENCE_DIAMETER
       : 0;
     const headerWidth =
       (this.tag.visible ? this.tag.width + 2 : 0) +
@@ -3608,9 +3629,9 @@ export class WorldChatMessageRowPixi {
       WORLD_CHAT_HEADER_TOP,
     );
     this.presenceDot.position.set(
-      this.username.x + this.username.width + WORLD_CHAT_PRESENCE_GAP,
+      this.username.x + this.username.width + PLAYER_PRESENCE_GAP,
       WORLD_CHAT_HEADER_TOP +
-        (WORLD_CHAT_HEADER_HEIGHT - WORLD_CHAT_PRESENCE_DIAMETER) / 2,
+        (WORLD_CHAT_HEADER_HEIGHT - PLAYER_PRESENCE_DIAMETER) / 2,
     );
     this.timestamp.anchor.set(this.isOwn ? 0 : 1, 0);
     this.timestamp.position.set(
@@ -3700,16 +3721,10 @@ export class WorldChatMessageRowPixi {
   }
 
   drawPresenceDot() {
-    const radius = WORLD_CHAT_PRESENCE_DIAMETER / 2;
-    this.presenceDot
-      .clear()
-      .circle(radius, radius, radius)
-      .fill(
-        this.model?.connected === true
-          ? WORLD_CHAT_PRESENCE_ONLINE_COLOR
-          : WORLD_CHAT_PRESENCE_OFFLINE_COLOR,
-      )
-      .stroke({ color: WORLD_CHAT_PRESENCE_STROKE_COLOR, width: 1 });
+    drawPlayerPresenceDot(
+      this.presenceDot,
+      this.model?.connected === true,
+    );
   }
 
   canReport() {

@@ -45,6 +45,8 @@ experience_type: development-operations
   backend events cannot overwrite during screenshot QA.
 - Raw retained-dialog and widget previews must bypass gameplay setup and save
   publication; visual inspection should not mutate or persist player state.
+- Player-surface `devUi` recipes must carry `devPreview` through nested opens;
+  otherwise the username gate replaces Friends or chat during deterministic QA.
 - UI editor thumbnail galleries must capture static canvases through one
   serialized shared Pixi renderer; one live application per tile exhausts
   WebGL contexts as resizable panels reveal more entries.

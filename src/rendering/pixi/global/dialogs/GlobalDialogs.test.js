@@ -132,6 +132,8 @@ describe('retained global Pixi dialogs', () => {
           detail: 'Level 12',
           allianceTag: 'MOSS',
           allianceTagColor: 'green',
+          connected: true,
+          showPresence: true,
           preview: 'The moon garden is glowing...',
           notification: true,
           onActivate: openChat,
@@ -168,6 +170,11 @@ describe('retained global Pixi dialogs', () => {
     expect(row.profile.y).toBe(44);
     expect(row.allianceTag.text).toBe('[MOSS]');
     expect(row.name.text).toBe('Mira');
+    expect(row.presenceDot.visible).toBe(true);
+    expect(row.presenceDot.x).toBeGreaterThan(row.name.x + row.name.width);
+    expect(row.presenceDot.context.instructions[0].data.style.color).toBe(
+      Number.parseInt('5f9f3f', 16),
+    );
     expect(row.detail.text).toBe('Level 12');
     expect([row.name.y, row.detail.y, row.preview.y]).toEqual([12, 35, 57]);
     expect(row.prestigeStars.visible).toBe(true);
@@ -280,6 +287,8 @@ describe('retained global Pixi dialogs', () => {
           character: 'juniper',
           frame: 'emerald',
           playerLevel: 10,
+          connected: true,
+          showPresence: true,
         },
         rows: [],
         composer: { enabled: true, placeholder: 'Message' },
@@ -302,6 +311,14 @@ describe('retained global Pixi dialogs', () => {
     expect(directMessage.directMessageMessagePaper.visible).toBe(true);
     expect(directMessage.directMessageUnfriend.visible).toBe(false);
     expect(directMessage.directMessageTag.text).toBe('[MOSS]');
+    expect(directMessage.directMessagePresenceDot.visible).toBe(true);
+    expect(directMessage.directMessagePresenceDot.x).toBeGreaterThan(
+      directMessage.directMessageName.x + directMessage.directMessageName.width,
+    );
+    expect(
+      directMessage.directMessagePresenceDot.context.instructions[0].data.style
+        .color,
+    ).toBe(Number.parseInt('5f9f3f', 16));
     expect(
       directMessage.directMessageMessagePaper.y -
         (directMessage.directMessageIdentitySection.y +
@@ -1221,6 +1238,21 @@ describe('retained global Pixi dialogs', () => {
       RETAINED_SCROLLBAR_GEOMETRY.gap +
       RETAINED_SCROLLBAR_GEOMETRY.width;
     expect(paperRight - scrollbarRight).toBeGreaterThanOrEqual(
+      RETAINED_DIALOG_LIST_GEOMETRY.scrollbarRightInset,
+    );
+
+    settings.layoutDialog();
+    expect(settings.scroll.root.x).toBeLessThan(0);
+    expect(settings.scroll.width).toBe(
+      RETAINED_DIALOG_LIST_GEOMETRY.rowFrameWidth +
+        RETAINED_DIALOG_LIST_GEOMETRY.scrollbarViewportOutset,
+    );
+    const relayoutScrollbarRight =
+      settings.scroll.root.x +
+      settings.scroll.width +
+      RETAINED_SCROLLBAR_GEOMETRY.gap +
+      RETAINED_SCROLLBAR_GEOMETRY.width;
+    expect(paperRight - relayoutScrollbarRight).toBeGreaterThanOrEqual(
       RETAINED_DIALOG_LIST_GEOMETRY.scrollbarRightInset,
     );
     expect(

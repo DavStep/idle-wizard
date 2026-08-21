@@ -37,6 +37,8 @@ const LEVEL_FOUR_TURN_IN_SAGE_HERB_TASK_ID = 'level4-turn-in-sage-herb';
 const LEVEL_FIVE_RESEARCH_MANA_TONIC_TASK_ID = 'level5-research-mana-tonic';
 const LEVEL_FIVE_BREW_MANA_TONIC_TASK_ID = 'level5-brew-mana-tonic';
 const NON_PERSISTENT_DEV_DIALOGS = new Set([
+  'friends',
+  'friendchat',
   'featureunlockannouncement',
   'featureunlocks',
   'levelupannouncement',
@@ -241,13 +243,17 @@ const UI_SURFACE_DEFINITIONS = Object.freeze([
     id: 'friends',
     kind: 'dialog',
     dialogId: 'friends',
-    options: { previewSnapshot: createDevFriendsSnapshot(), tab: 'friends' },
+    options: {
+      devPreview: true,
+      previewSnapshot: createDevFriendsSnapshot(),
+      tab: 'friends',
+    },
     aliases: ['globalFriends'],
   },
   {
     id: 'friendChat',
     kind: 'dialog',
-    dialogId: 'global.directMessage',
+    dialogId: 'friendChat',
     options: createDevDirectMessageOptions(),
     aliases: ['directMessage', 'globalDirectMessage'],
   },
@@ -449,6 +455,7 @@ function createDevFriendsSnapshot() {
         {
           allianceTag: 'MIST',
           allianceTagColor: 'green',
+          connected: false,
           statusMessage: "Let's raid the grotto later.",
         },
       ),
@@ -464,6 +471,7 @@ function createDevFriendsSnapshot() {
 
 function createDevDirectMessageOptions() {
   return {
+    devPreview: true,
     friend: {
       allianceTag: 'DUSK',
       allianceTagColor: 'green',
@@ -471,6 +479,7 @@ function createDevDirectMessageOptions() {
       frame: 'emerald',
       identity: 'dev-juniper',
       playerLevel: 10,
+      connected: true,
       username: 'Juniper',
     },
     identityExpanded: true,

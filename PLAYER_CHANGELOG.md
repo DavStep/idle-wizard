@@ -5,6 +5,11 @@ upload script posts the section whose heading matches `package.json` `version`.
 Write these developer-to-player notes only in Idle Wizard terms. Do not mention
 other game names, source projects, ports, or implementation provenance.
 
+## 0.3.89
+
+- Added live online and offline circles beside wizard names in Friends and direct conversations.
+- Refined the social preference icons in Settings and kept the configuration scrollbar aligned after layout refreshes.
+
 ## 0.3.88
 
 - Added Weekly Offers to the Gems Market, with seven-day extra automated Garden plot and Brewing cauldron slots whose contents pause safely when access expires.

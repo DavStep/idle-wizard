@@ -58,7 +58,8 @@ Root Run Settings-row nine-slice and inset rhythm from `LeaderboardRowPixi`,
 and the existing green, red, and disabled `PixiTextButton` skins. In
 `global.friends`, each `88px` row omits the leaderboard rank and uses a `64px`
 framed avatar beside three compact lines: optional colored alliance tag plus
-player name; level, always-visible three-slot prestige rank, and lifetime
+player name followed by the shared green/gray presence circle; level,
+always-visible three-slot prestige rank, and lifetime
 produced coin; then the latest direct-message preview. An optional unread dot
 stays at the right. Friend rows open the selected direct-message history from
 the full row. Incoming friend rows retain the same identity hierarchy and stack
@@ -182,7 +183,8 @@ projection, detached title plaque, close alignment, scrolling, and sparse-row
 bottom anchoring. Its extension is a split-paper identity section above a
 separately framed message section, reusing the established dialog section gap.
 The identity section shows the framed avatar, optional alliance tag, player
-name, level, and disclosure glyph. Pressing the avatar opens the existing Player
+name with the shared live green/gray presence circle, level, and disclosure
+glyph. Pressing the avatar opens the existing Player
 Info dialog above the retained chat. Pressing the name, level, or disclosure
 area expands the identity section in place to reveal the shared red `Unfriend`
 button; the action never floats over message content or introduces a nested

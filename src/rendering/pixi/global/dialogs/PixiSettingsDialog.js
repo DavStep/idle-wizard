@@ -1385,15 +1385,26 @@ export class PixiSettingsDialog extends RetainedGlobalDialog {
 
   layoutDialog() {
     const account = this.selectedTab === 'account';
+    const devicePreferences = this.selectedTab === 'configurations';
+    const paperOutsets = resolveDialogPaperOutsets(this.panel.contentInsets);
+    const configurationListLayout = devicePreferences
+      ? resolveRetainedDialogListLayout({
+          bodyWidth: SETTINGS_CONTENT_WIDTH,
+          paperRight: SETTINGS_CONTENT_WIDTH + paperOutsets.right,
+          rowFrameWidth: SETTINGS_CONFIGURATION_FRAME_WIDTH,
+        })
+      : null;
     this.accountLayer.position.set(
       ACCOUNT_SCROLL_X,
       PIXI_UI_GEOMETRY.dialogScrollPaddingTop,
     );
     this.scroll.setBounds(
+      configurationListLayout?.x ?? 0,
       0,
-      0,
-      SETTINGS_CONTENT_WIDTH,
-      this.selectedTab === 'configurations'
+      account
+        ? ACCOUNT_HEADER_WIDTH
+        : configurationListLayout?.viewportWidth ?? SETTINGS_CONTENT_WIDTH,
+      devicePreferences
         ? SETTINGS_DEVICE_SCROLL_HEIGHT
         : SETTINGS_STANDARD_SCROLL_HEIGHT,
     );

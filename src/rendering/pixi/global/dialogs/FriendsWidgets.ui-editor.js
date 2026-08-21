@@ -32,6 +32,8 @@ export default [
       relationshipScenario('friend', 'Friend', {
         allianceTag: 'DUSK',
         allianceTagColor: 'green',
+        connected: true,
+        showPresence: true,
         notification: true,
         preview: 'The harvest was amazing this week.',
       }),
@@ -102,6 +104,8 @@ function createWidgetThumbnail() {
         fixture: relationshipScenario('friend', 'Friend', {
           allianceTag: 'DUSK',
           allianceTagColor: 'green',
+          connected: true,
+          showPresence: true,
           notification: true,
           preview: 'The harvest was amazing this week.',
         }).fixture,

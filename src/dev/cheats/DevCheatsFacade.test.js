@@ -952,13 +952,14 @@ describe('DevCheatsFacade', () => {
     expect(pagesFacade.openDialog).toHaveBeenLastCalledWith('settings', {
       tab: 'account',
     });
+    publishAndSaveSpy.mockClear();
     expect(target.cheats.openUi('friendChat')).toMatchObject({
       ok: true,
       surfaceId: 'friendChat',
       surfaceKind: 'dialog',
     });
     expect(pagesFacade.openDialog).toHaveBeenLastCalledWith(
-      'global.directMessage',
+      'friendChat',
       expect.objectContaining({
         identityExpanded: true,
         relationship: 'friend',
@@ -984,6 +985,7 @@ describe('DevCheatsFacade', () => {
         }),
       }),
     );
+    expect(publishAndSaveSpy).not.toHaveBeenCalled();
     publishAndSaveSpy.mockClear();
     expect(target.cheats.openUi('featureUnlockAnnouncement')).toMatchObject({
       ok: true,
