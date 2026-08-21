@@ -93,7 +93,6 @@ const WORKSHOP_ALLIANCE_TAB_IDS = new Set([
   "home",
   "quests",
   "requests",
-  "chat",
   "settings",
 ]);
 const WORKSHOP_LEADERBOARD_TAB_IDS = new Set(["singlePlayer", "alliance"]);
@@ -143,6 +142,7 @@ export class PixiPagesFacade {
     gardenSoundFacade = null,
     playerInboxFacade = null,
     playerInfoFacade = null,
+    friendsFacade = null,
     playerShopFacade = null,
     tradeAllianceFacade = null,
     npcMarketFacade = null,
@@ -175,6 +175,7 @@ export class PixiPagesFacade {
     this.gardenSoundFacade = gardenSoundFacade;
     this.playerInboxFacade = playerInboxFacade;
     this.playerInfoFacade = playerInfoFacade;
+    this.friendsFacade = friendsFacade;
     this.playerShopFacade = playerShopFacade;
     this.tradeAllianceFacade = tradeAllianceFacade;
     this.npcMarketFacade = npcMarketFacade;
@@ -217,11 +218,15 @@ export class PixiPagesFacade {
     this.playerInboxSnapshot = {};
     this.playerShopSnapshot = {};
     this.playerInfoSnapshot = {};
+    this.friendsSnapshot = {};
     this.tradeAllianceSnapshot = {};
+    this.pendingAllianceWorkspaceEntry = null;
+    this.openChatChannel = "world";
     this.pageStates = [];
     this.notifications = { pages: {}, active: false };
     this.tutorialNotificationPolicy = null;
     this.devNotifications = null;
+    this.devFriendNotification = null;
     this.questProgressPreview = null;
     this.workshopBagTabId = "currencies";
     this.workshopStatsTabId = "seeds";
@@ -406,6 +411,7 @@ export class PixiPagesFacade {
     this.playerInboxSnapshot = this.playerInboxFacade?.getSnapshot?.() ?? {};
     this.playerShopSnapshot = this.playerShopFacade?.getSnapshot?.() ?? {};
     this.playerInfoSnapshot = this.playerInfoFacade?.getSnapshot?.() ?? {};
+    this.friendsSnapshot = this.friendsFacade?.getSnapshot?.() ?? {};
     this.tradeAllianceSnapshot =
       this.tradeAllianceFacade?.getSnapshot?.() ?? {};
   }
@@ -478,10 +484,26 @@ export class PixiPagesFacade {
       }),
     );
     this.trackSubscription(
+      this.friendsFacade?.subscribe?.((snapshot) => {
+        this.friendsSnapshot = snapshot ?? {};
+        this.refreshChrome();
+      }),
+    );
+    this.trackSubscription(
       this.tradeAllianceFacade?.subscribe?.((snapshot) => {
         const hadAlliance = Boolean(this.tradeAllianceSnapshot.ownAlliance);
         this.tradeAllianceSnapshot = snapshot ?? {};
         const hasAlliance = Boolean(this.tradeAllianceSnapshot.ownAlliance);
+        const shouldEnterAllianceWorkspace =
+          !hadAlliance &&
+          hasAlliance &&
+          this.matchesPendingAllianceWorkspaceEntry(
+            this.tradeAllianceSnapshot.ownAlliance,
+          );
+        const shouldExitAllianceWorkspace =
+          hadAlliance &&
+          !hasAlliance &&
+          this.currentPageId === "alliance";
         if (hadAlliance !== hasAlliance) {
           this.workshopAllianceTabId = hasAlliance ? "home" : "browse";
         }
@@ -497,7 +519,18 @@ export class PixiPagesFacade {
         ) {
           this.workshopAllianceExpandedId = null;
         }
-        this.refresh();
+        if (shouldEnterAllianceWorkspace) {
+          this.pendingAllianceWorkspaceEntry = null;
+          this.requireRuntime().closeDialog?.("workshop.alliance");
+          this.show("alliance");
+        } else if (shouldExitAllianceWorkspace) {
+          this.pendingAllianceWorkspaceEntry = null;
+          this.show("workshop");
+          this.openAllianceDirectoryDialog();
+        } else {
+          this.refresh();
+        }
+        this.refreshOpenWorldChatDialog();
       }),
     );
   }
@@ -637,6 +670,9 @@ export class PixiPagesFacade {
       this.viewModelFactory.createTopPanel({
         gameplay: this.gameplaySnapshot,
         player: this.playerSnapshot,
+        friendNotification:
+          this.devFriendNotification ??
+          (this.friendsSnapshot.incomingRequests?.length ?? 0) > 0,
         pageId: this.currentPageId,
         researchTabId: this.researchTabId,
         questPreview: this.questProgressPreview,
@@ -690,15 +726,30 @@ export class PixiPagesFacade {
         },
       }),
     );
-    runtime.bindGlobalSurface(
-      "chrome.chat",
-      this.viewModelFactory.createWorldChatPreview(this.worldChatSnapshot, {
-        visible:
-          this.isWorldChatUnlocked() &&
-          !["alliance", "guild"].includes(this.currentPageId),
-        onActivate: () => this.openWorldChat(),
-      }),
-    );
+    const allianceChatActive =
+      this.currentPageId === "alliance" &&
+      Boolean(this.tradeAllianceSnapshot.ownAlliance);
+    const chatPreview = allianceChatActive
+      ? {
+          ...this.viewModelFactory.createWorldChatPreview(
+            {
+              connected: this.tradeAllianceSnapshot.connected,
+              messages: this.tradeAllianceSnapshot.allianceChatMessages ?? [],
+            },
+            {
+              visible: true,
+              onActivate: () => this.openAllianceChat(),
+            },
+          ),
+          label: "Alliance Chat",
+        }
+      : this.viewModelFactory.createWorldChatPreview(this.worldChatSnapshot, {
+          visible:
+            this.isWorldChatUnlocked() &&
+            !["alliance", "guild"].includes(this.currentPageId),
+          onActivate: () => this.openWorldChat(),
+        });
+    runtime.bindGlobalSurface("chrome.chat", chatPreview);
   }
 
   createAllianceHudModel() {
@@ -710,8 +761,7 @@ export class PixiPagesFacade {
     const applicationCount = hasAlliance
       ? (this.tradeAllianceSnapshot.applications ?? []).filter(
           (application) =>
-            String(application?.allianceId ?? "") ===
-            String(ownAllianceId),
+            String(application?.allianceId ?? "") === String(ownAllianceId),
         ).length
       : 0;
     const questNotification = hasAlliance
@@ -726,12 +776,11 @@ export class PixiPagesFacade {
           ...(this.tradeAllianceSnapshot.canManageApplications === true
             ? ["requests"]
             : []),
-          "chat",
           ...(this.tradeAllianceSnapshot.canEditSettings === true
             ? ["settings"]
             : []),
         ]
-      : ["browse", "create"];
+      : [];
     const selectedTabId = visibleTabIds.includes(this.workshopAllianceTabId)
       ? this.workshopAllianceTabId
       : hasAlliance
@@ -746,7 +795,6 @@ export class PixiPagesFacade {
         "home",
         "quests",
         "requests",
-        "chat",
         "settings",
       ].map((id) => ({
         id,
@@ -811,6 +859,7 @@ export class PixiPagesFacade {
     if (!preserveReportSelection) {
       this.worldChatSelectedReportMessageId = null;
     }
+    this.openChatChannel = "world";
 
     return (
       this.requireRuntime()
@@ -828,6 +877,88 @@ export class PixiPagesFacade {
     );
   }
 
+  openAllianceChat() {
+    if (!this.mounted || !this.tradeAllianceSnapshot.ownAlliance) {
+      return false;
+    }
+    this.openChatChannel = "alliance";
+    const model = this.viewModelFactory.createAllianceWorkspace(
+      this.tradeAllianceSnapshot,
+      this.workshopAllianceTabId,
+      this.createActions().workshop,
+    ).chat;
+    return (
+      this.requireRuntime()
+        .getPage("workshop")
+        ?.openDialog?.("worldChat", model) ?? false
+    );
+  }
+
+  openAllianceDirectoryDialog(tabId = "browse") {
+    if (!this.mounted || this.tradeAllianceSnapshot.ownAlliance) {
+      return false;
+    }
+    if (this.currentPageId !== "workshop" && !this.show("workshop")) {
+      return false;
+    }
+    this.workshopAllianceTabId = normalizeWorkshopTabId(
+      tabId,
+      WORKSHOP_ALLIANCE_TAB_IDS,
+      "browse",
+    );
+    this.refreshPage("workshop", { force: true });
+    return (
+      this.requireRuntime().getPage("workshop")?.openDialog?.("alliance") ??
+      false
+    );
+  }
+
+  runAllianceMembershipAction(type, allianceId, action) {
+    this.pendingAllianceWorkspaceEntry = {
+      type,
+      allianceId: String(allianceId ?? "").trim(),
+    };
+    let result;
+    try {
+      result = action?.();
+    } catch (error) {
+      this.pendingAllianceWorkspaceEntry = null;
+      throw error;
+    }
+    if (!result || typeof result.then !== "function") {
+      if (result == null || result === false || result?.ok === false) {
+        this.pendingAllianceWorkspaceEntry = null;
+      }
+      return result;
+    }
+    return result.then(
+      (resolved) => {
+        if (resolved == null || resolved === false || resolved?.ok === false) {
+          this.pendingAllianceWorkspaceEntry = null;
+        }
+        return resolved;
+      },
+      (error) => {
+        this.pendingAllianceWorkspaceEntry = null;
+        throw error;
+      },
+    );
+  }
+
+  matchesPendingAllianceWorkspaceEntry(alliance) {
+    const pending = this.pendingAllianceWorkspaceEntry;
+    if (!pending || !alliance) {
+      return false;
+    }
+    if (pending.type === "create") {
+      return true;
+    }
+    const allianceId = String(
+      alliance.allianceId ?? alliance.id ?? "",
+    ).trim();
+    return Boolean(allianceId) && allianceId === pending.allianceId;
+  }
+
   refreshOpenWorldChatDialog() {
     if (
       !this.mounted ||
@@ -835,6 +966,15 @@ export class PixiPagesFacade {
         .getOpenDialogIds?.()
         ?.includes("workshop.worldChat")
     ) {
+      return;
+    }
+
+    if (this.openChatChannel === "alliance") {
+      if (!this.tradeAllianceSnapshot.ownAlliance) {
+        this.requireRuntime().closeDialog?.("workshop.worldChat");
+        return;
+      }
+      this.openAllianceChat();
       return;
     }
 
@@ -1087,8 +1227,9 @@ export class PixiPagesFacade {
       chrome: {
         ...(projectedViewModel.chrome ?? {}),
         worldChatVisible:
-          this.isWorldChatUnlocked() &&
-          !["alliance", "guild"].includes(pageId),
+          pageId === "alliance"
+            ? Boolean(this.tradeAllianceSnapshot.ownAlliance)
+            : this.isWorldChatUnlocked() && pageId !== "guild",
       },
     };
     runtime.bindPage(pageId, chromeAwareViewModel);
@@ -1281,10 +1422,11 @@ export class PixiPagesFacade {
         openWorldChatReport: (message) => this.openWorldChatReport(message),
         openInbox: () => this.globalDialogPresenter?.open?.("inbox") ?? false,
         openAllianceWorkspace: () => {
-          this.workshopAllianceTabId = this.tradeAllianceSnapshot.ownAlliance
-            ? "home"
-            : "browse";
-          return this.show("alliance");
+          if (this.tradeAllianceSnapshot.ownAlliance) {
+            this.workshopAllianceTabId = "home";
+            return this.show("alliance");
+          }
+          return this.openAllianceDirectoryDialog();
         },
         claimInboxReward: (mailKey) =>
           this.playerInboxFacade?.claimReward?.(mailKey),
@@ -1323,14 +1465,21 @@ export class PixiPagesFacade {
           this.refreshPage(
             this.currentPageId === "alliance" ? "alliance" : "workshop",
           );
+          this.refreshChrome();
           return true;
         },
         createAlliance: (profile) =>
-          this.tradeAllianceFacade?.createAlliance?.(profile),
+          this.runAllianceMembershipAction("create", "", () =>
+            this.tradeAllianceFacade?.createAlliance?.(profile),
+          ),
         joinAlliance: (allianceId) =>
-          this.tradeAllianceFacade?.joinAlliance?.(allianceId),
-        applyAlliance: (allianceId) =>
-          this.tradeAllianceFacade?.applyAlliance?.(allianceId),
+          this.runAllianceMembershipAction("join", allianceId, () =>
+            this.tradeAllianceFacade?.joinAlliance?.(allianceId),
+          ),
+        applyAlliance: (allianceId) => {
+          this.pendingAllianceWorkspaceEntry = null;
+          return this.tradeAllianceFacade?.applyAlliance?.(allianceId);
+        },
         cancelAllianceApplication: (applicationKey) =>
           this.tradeAllianceFacade?.cancelApplication?.(applicationKey),
         acceptAllianceApplication: (applicationKey) =>
@@ -1342,6 +1491,8 @@ export class PixiPagesFacade {
         leaveAlliance: () => this.tradeAllianceFacade?.leaveAlliance?.(),
         updateAllianceProfile: (profile) =>
           this.tradeAllianceFacade?.updateProfile?.(profile),
+        setAllianceJoinMode: (joinMode) =>
+          this.tradeAllianceFacade?.setJoinMode?.(joinMode),
         claimAllianceQuest: (questId) =>
           this.tradeAllianceFacade?.claimQuestReward?.(questId),
         canFillAllianceQuest: (quest) => {
@@ -3073,6 +3224,9 @@ export class PixiPagesFacade {
         .showLockedPage?.(pageId, state);
       return false;
     }
+    if (pageId === "alliance" && !this.tradeAllianceSnapshot.ownAlliance) {
+      return this.openAllianceDirectoryDialog();
+    }
     if (this.currentPageId === pageId) {
       if (this.dirtyPageIds.has(pageId)) {
         this.refreshPage(pageId, { force: true });
@@ -3492,6 +3646,10 @@ export class PixiPagesFacade {
       return { ok: false, reason: "pages_not_mounted" };
     }
     this.questProgressPreview = progress;
+    this.devFriendNotification =
+      typeof progress?.friendNotification === "boolean"
+        ? progress.friendNotification
+        : null;
     this.refreshChrome();
     return { ok: true, progress };
   }
@@ -3903,8 +4061,7 @@ function createBrewingHerbDialogRows(snapshot = {}) {
     );
   const orderedHerbs = [
     ...herbs.filter(
-      (herb) =>
-        Number(herb.availableQuantity ?? herb.quantity) > 0,
+      (herb) => Number(herb.availableQuantity ?? herb.quantity) > 0,
     ),
     ...herbs.filter(
       (herb) =>
@@ -4340,9 +4497,7 @@ function normalizeGuildBranchId(branchId) {
 
 function normalizeGuildAdventurerTabId(tabId) {
   const normalized = tabId === "adventurers" ? "roster" : String(tabId ?? "");
-  return ["board", "roster", "log"].includes(normalized)
-    ? normalized
-    : "board";
+  return ["board", "roster", "log"].includes(normalized) ? normalized : "board";
 }
 
 function projectGuildBranchNotifications(children = {}) {

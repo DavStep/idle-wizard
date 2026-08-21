@@ -70,6 +70,9 @@ export const PIXI_TEXT_STROKE_WIDTH =
 export const PIXI_TEXT_STROKE_RATIO =
   PIXI_TEXT_STROKE_WIDTH / PIXI_UI_GEOMETRY.bodyFontSize;
 export const PIXI_TEXT_STROKE_COLOR = '#0a0a0a';
+export const PIXI_STATUS_COLORS = Object.freeze({
+  insufficient: '#ff8790',
+});
 
 export function resolvePixiTextStrokeWidth(
   fontSize = PIXI_UI_GEOMETRY.bodyFontSize,
@@ -488,6 +491,7 @@ const THEME_TOKENS = Object.freeze({
     tooltipShadow: '#0f1118',
     tooltipPointerTint: '#485270',
     backdrop: '#1c1e26',
+    insufficient: PIXI_STATUS_COLORS.insufficient,
     notificationRed: '#c1121f',
     notificationOrange: '#d66a00',
     pageBackgrounds: PIXI_PAGE_BACKGROUND_COLORS.night,
@@ -538,6 +542,7 @@ const THEME_TOKENS = Object.freeze({
     tooltipShadow: '#2d1f17',
     tooltipPointerTint: '#eca470',
     backdrop: '#543a28',
+    insufficient: PIXI_STATUS_COLORS.insufficient,
     notificationRed: '#c1121f',
     notificationOrange: '#d66a00',
     pageBackgrounds: PIXI_PAGE_BACKGROUND_COLORS.day,

@@ -35,6 +35,7 @@ import {
   hasClaimableTradeAllianceQuest,
   isTradeAllianceQuestClaimable,
 } from './tradeAllianceQuestStatus.js';
+import { hasTradeAllianceNotification } from './tradeAllianceNotificationStatus.js';
 
 const ALLIANCE_ICON_URL = new URL(
   '../../../../assets/game/source/icons/icon-side-alliance-root-run.png',
@@ -1676,7 +1677,7 @@ export class WorkshopTradeAllianceManager {
   }
 
   syncNotifications() {
-    setNotificationBadge(this.refs.button, hasClaimableTradeAllianceQuest(this.lastSnapshot));
+    setNotificationBadge(this.refs.button, hasTradeAllianceNotification(this.lastSnapshot));
   }
 
   getQuestResetAtMs() {

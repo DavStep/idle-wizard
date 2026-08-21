@@ -27,10 +27,11 @@ system rows omit the avatar and use the active theme's system sender color.
 The retained top-panel background uses the less-rounded sibling of the inactive
 room-tab nine-slice, flips it vertically, and spans source x `0…390` from
 y `0…88`. Room content begins at y `104`, preserving a `16px` separation below
-the panel. Workshop's three slots are Coin, centered Mana, and Bag. Mana shows
-`current/cap` with the live blue regeneration rate directly beneath it. Other
-rooms replace the center and right slots with Amethyst and the active Amber,
-Ruby, or Emerald context currency. Settings retains its original geometry. The
+the panel. Every room's three slots are Coin, centered context currency, and
+Bag. Workshop and Brewing use Mana as `current/cap` with the live blue
+regeneration rate directly beneath it; other rooms use the active Amber, Ruby,
+or Emerald context currency without a rate. Amethyst remains available inside Bag. Settings
+retains its original geometry. The
 retained HUD root starts at
 source `10.67/10.67`; the reference
 export's extra `36px` source notch offset is omitted because the canvas already

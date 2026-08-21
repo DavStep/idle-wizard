@@ -4,6 +4,7 @@ import { getPlayerFrameTint } from '../../../../player/playerFrames.js';
 import { PixiNotificationBadge } from '../transient/PixiNotificationBadges.js';
 import { PixiTextButton } from '../../primitives/PixiTextButton.js';
 import { createDialogPaperSection } from '../../primitives/PixiDialogFrame.js';
+import { PixiNineSliceFrame } from '../../primitives/PixiNineSliceFrame.js';
 import {
   PIXI_ROOT_RUN_ASSETS,
   PIXI_ROOT_RUN_GEOMETRY,
@@ -20,7 +21,8 @@ import {
 } from '../../pages/workshop/RetainedPageKit.js';
 
 const COMPACT_ROW_HEIGHT = 62;
-const FRIEND_ROW_HEIGHT = 96;
+const ALLIANCE_APPLICATION_ROW_HEIGHT = 80;
+const FRIEND_ROW_HEIGHT = 88;
 const COMPACT_AVATAR_SIZE = 46;
 const FRIEND_AVATAR_SIZE = 64;
 const FRIEND_ROW_INSET_X = 12;
@@ -52,12 +54,25 @@ export class PlayerRelationshipRowPixi {
     this.dialog = dialog;
     this.usesFriendCard =
       dialog.isFriendsDialog === true || dialog.dialogId === 'global.friends';
+    this.usesResearchCard = dialog.dialogId === 'alliance.workspace';
     this.root = new Container({ label: `${dialog.dialogId}-relationship-row` });
     this.paper = this.usesFriendCard
       ? createDialogPaperSection(
           resolvePaperTexture(dialog),
           `${this.root.label}:paper`,
         )
+      : null;
+    this.researchCard = this.usesResearchCard
+      ? new PixiNineSliceFrame({
+          texture:
+            dialog.assetManager?.getTexture?.(PIXI_ROOT_RUN_ASSETS.researchCard) ??
+            Texture.EMPTY,
+          sourceInsets: PIXI_ROOT_RUN_GEOMETRY.researchCard.sourceInsets,
+          borderInsets: PIXI_ROOT_RUN_GEOMETRY.researchCard.borderInsets,
+          width: 304,
+          height: ALLIANCE_APPLICATION_ROW_HEIGHT,
+          label: `${this.root.label}:research-card`,
+        })
       : null;
     this.divider = new Graphics({ label: `${this.root.label}:divider` });
     this.profile = new PlayerProfileWidget({
@@ -85,6 +100,7 @@ export class PlayerRelationshipRowPixi {
     this.secondary = this.createAction('secondary');
     this.root.addChild(
       ...(this.paper ? [this.paper] : []),
+      ...(this.researchCard ? [this.researchCard] : []),
       this.divider,
       this.profile,
       this.allianceTag,
@@ -171,6 +187,10 @@ export class PlayerRelationshipRowPixi {
       this.layoutFriendCard(width, height);
       return;
     }
+    if (this.usesResearchCard) {
+      this.layoutAllianceApplicationCard(width, height);
+      return;
+    }
     this.divider.clear().moveTo(0, height - 1).lineTo(width, height - 1).stroke({
       color: this.dialog.contentTheme?.stroke ?? this.dialog.theme?.stroke ?? '#5e321b',
       alpha: 0.22,
@@ -195,6 +215,58 @@ export class PlayerRelationshipRowPixi {
     this.detail.style.wordWrap = true;
     this.detail.style.wordWrapWidth = Math.max(40, copyRight - copyX);
     this.status.position.set(width, height / 2);
+    this.status.visible = actions.length === 0 && Boolean(this.status.text);
+    this.status.renderable = this.status.visible;
+  }
+
+  layoutAllianceApplicationCard(width, height) {
+    this.researchCard.position.set(0, 0);
+    this.researchCard.setSize(
+      width,
+      height,
+      PIXI_ROOT_RUN_GEOMETRY.researchCard.borderInsets,
+    );
+    this.divider.clear();
+    this.divider.visible = false;
+    this.divider.renderable = false;
+
+    const avatarSize = 52;
+    const contentInset = 8;
+    this.profile.position.set(
+      contentInset + avatarSize / 2,
+      height / 2,
+    );
+    this.profile.scale.set(avatarSize / PLAYER_PROFILE_SIZE);
+
+    const actions = [this.primary, this.secondary].filter(
+      (button) => button.visible,
+    );
+    const actionWidth = actions.length > 1 ? 58 : 66;
+    const actionsWidth =
+      actions.length * actionWidth +
+      Math.max(0, actions.length - 1) * ACTION_GAP;
+    const actionStartX = width - contentInset - actionsWidth;
+    actions.forEach((button, index) => {
+      button.position.set(
+        actionStartX + index * (actionWidth + ACTION_GAP),
+        (height - ACTION_HEIGHT) / 2,
+      );
+      button.setSize(actionWidth, ACTION_HEIGHT);
+    });
+
+    const copyX = contentInset + avatarSize + 7;
+    const copyRight = actions.length > 0 ? actionStartX - 6 : width - contentInset;
+    const copyWidth = Math.max(40, copyRight - copyX);
+    this.name.position.set(copyX, 10);
+    this.name.style.wordWrap = false;
+    this.name.style.wordWrapWidth = copyWidth;
+    this.detail.position.set(copyX, 30);
+    this.detail.style.wordWrap = false;
+    this.detail.style.wordWrapWidth = copyWidth;
+    this.preview.position.set(copyX, 49);
+    this.preview.style.wordWrap = false;
+    this.preview.style.wordWrapWidth = copyWidth;
+    this.status.position.set(width - contentInset, height / 2);
     this.status.visible = actions.length === 0 && Boolean(this.status.text);
     this.status.renderable = this.status.visible;
   }
@@ -233,20 +305,20 @@ export class PlayerRelationshipRowPixi {
     const copyRight = actions.length > 0 ? actionX - 6 : width - 16;
     const copyWidth = Math.max(40, copyRight - copyX);
 
-    this.allianceTag.position.set(copyX, 14);
+    this.allianceTag.position.set(copyX, 12);
     this.name.position.set(
       copyX +
         (this.allianceTag.text
           ? Math.ceil(this.allianceTag.width) + 4
           : 0),
-      14,
+      12,
     );
     this.name.style.wordWrap = false;
     this.name.style.wordWrapWidth = copyWidth;
-    this.detail.position.set(copyX, 38);
+    this.detail.position.set(copyX, 35);
     this.detail.style.wordWrap = false;
     this.detail.style.wordWrapWidth = copyWidth;
-    this.preview.position.set(copyX, 61);
+    this.preview.position.set(copyX, 57);
     this.preview.style.wordWrap = false;
     this.preview.style.wordWrapWidth = copyWidth;
     this.status.position.set(width - 16, height / 2);
@@ -255,11 +327,14 @@ export class PlayerRelationshipRowPixi {
       this.status.text.length > 0 &&
       this.preview.text.length === 0;
     this.status.renderable = this.status.visible;
-    this.notificationDot.position.set(width - 18, 28);
+    this.notificationDot.position.set(width - 18, 26);
   }
 
   getPreferredHeight() {
-    return this.usesFriendCard ? FRIEND_ROW_HEIGHT : COMPACT_ROW_HEIGHT;
+    if (this.usesFriendCard) return FRIEND_ROW_HEIGHT;
+    return this.usesResearchCard
+      ? ALLIANCE_APPLICATION_ROW_HEIGHT
+      : COMPACT_ROW_HEIGHT;
   }
 
   applyTheme(theme) {

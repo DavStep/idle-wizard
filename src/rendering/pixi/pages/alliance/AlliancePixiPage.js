@@ -1,15 +1,21 @@
 import { Container, Graphics, Texture } from 'pixi.js';
 
 import { BasePixiRetainedView } from '../../primitives/BasePixiRetainedView.js';
-import { PixiTextButton } from '../../primitives/PixiTextButton.js';
-import { PixiTextField } from '../../primitives/PixiTextField.js';
-import { createDialogContentTheme } from '../../primitives/PixiDialogFrame.js';
 import { AllianceFlagWidget } from '../../primitives/AllianceFlagWidget.js';
+import {
+  PIXI_DIALOG_SPLIT_PAPER_GEOMETRY,
+  createDialogContentTheme,
+  createDialogPaperSection,
+  resolveDialogPaperOutsets,
+  setDialogPaperSectionBounds,
+} from '../../primitives/PixiDialogFrame.js';
+import { PixiTextButton } from '../../primitives/PixiTextButton.js';
 import { PooledCollection } from '../../retained/PooledCollection.js';
 import { WidgetPool } from '../../retained/WidgetPool.js';
 import {
   DEFAULT_PIXI_THEME_SNAPSHOT,
   PIXI_ROOT_RUN_ASSETS,
+  PIXI_ROOT_RUN_GEOMETRY,
   PIXI_UI_GEOMETRY,
 } from '../../theme/PixiThemeTokens.js';
 import {
@@ -17,18 +23,24 @@ import {
   drawPixiPageBackground,
 } from '../../theme/PixiPageBackground.js';
 import { PlayerRelationshipRowPixi } from '../../global/dialogs/PlayerRelationshipRowPixi.js';
-import { GuildRowsSection } from '../guild/GuildPageWidgets.js';
+import { RootRunHudCurrencyCapsule } from '../../global/chrome/RootRunTopHudWidgets.js';
 import {
+  ALLIANCE_DIALOG_CONTENT_WIDTH,
   AllianceDirectoryRow,
+  AllianceMemberRow,
   AllianceQuestRow,
   AllianceSettingsPane,
-  WorldChatMessageRowPixi,
+  createAllianceMembersSection,
 } from '../workshop/WorkshopDialogPixi.js';
 import {
+  RETAINED_DIALOG_LIST_GEOMETRY,
+  RETAINED_PAGE_GEOMETRY,
   RETAINED_TEXT_STYLES,
+  RetainedButton,
   RetainedScrollArea,
   applyTextTheme,
   createText,
+  resolveRetainedDialogListLayout,
   setText,
 } from '../workshop/RetainedPageKit.js';
 
@@ -38,16 +50,29 @@ const PAGE_TABS = Object.freeze([
   'home',
   'quests',
   'requests',
-  'chat',
   'settings',
 ]);
 const PAGE_EDGE = PIXI_UI_GEOMETRY.roomContentEdge;
 const PAGE_TOP = PIXI_UI_GEOMETRY.roomContentTop;
-const PAGE_BOTTOM_CLEARANCE = PIXI_UI_GEOMETRY.roomChatBottom;
-const CONTENT_GAP = 12;
+const PAGE_BOTTOM_CLEARANCE = RETAINED_PAGE_GEOMETRY.chatClearance;
 const ROW_GAP = 4;
-const CHAT_COMPOSER_HEIGHT = 36;
-const CHAT_ACTION_WIDTH = 72;
+const REQUESTS_JOIN_MODE_GAP = 6;
+const REQUESTS_JOIN_MODE_HEIGHT = 102;
+const SECTION_FRAME_TOP = PIXI_UI_GEOMETRY.dialogPadding;
+const SECTION_CONTENT_TOP =
+  SECTION_FRAME_TOP + PIXI_DIALOG_SPLIT_PAPER_GEOMETRY.contentInsetTop;
+const SECTION_CONTENT_BOTTOM =
+  PIXI_DIALOG_SPLIT_PAPER_GEOMETRY.contentInsetBottom;
+const SECTION_GAP = PIXI_DIALOG_SPLIT_PAPER_GEOMETRY.sectionGap;
+const MEMBER_ROW_HEIGHT = PIXI_ROOT_RUN_GEOMETRY.settings.rowPitch;
+const HOME_CONTENT_WIDTH = 350;
+const HOME_CONTENT_INSET = 14;
+const HOME_IDENTITY_CONTENT_HEIGHT = 120;
+const HOME_ANNOUNCEMENT_CONTENT_HEIGHT = 62;
+const HOME_FLAG_SIZE = 92;
+const HOME_STAT_SOURCE_WIDTH = 270;
+const HOME_STAT_SCALE = 1 / PIXI_UI_GEOMETRY.sourceScale;
+const ALLIANCE_MEMBERS_ICON_FRAME = 'alliance:members';
 
 /**
  * Full retained Trade Alliance workspace.
@@ -81,57 +106,91 @@ export class AlliancePixiPage extends BasePixiRetainedView {
     this.background = new Graphics({ label: 'alliance:background' });
     this.contentLayer = new Container({ label: 'alliance:content' });
     this.scrolls = new Map(
-      PAGE_TABS.filter((tabId) => !['create', 'settings'].includes(tabId)).map(
-        (tabId) => [
-          tabId,
-          new RetainedScrollArea({
-            inputRouter,
-            label: `alliance:${tabId}:scroll`,
-          }),
-        ],
-      ),
+      ['browse', 'quests', 'requests'].map((tabId) => [
+        tabId,
+        new RetainedScrollArea({
+          assetManager,
+          inputRouter,
+          label: `alliance:${tabId}:scroll`,
+        }),
+      ]),
     );
-    this.contentLayer.addChild(...[...this.scrolls.values()].map((scroll) => scroll.root));
+    this.contentLayer.addChild(
+      ...[...this.scrolls.values()].map((scroll) => scroll.root),
+    );
 
     this.paperHost = this.createRowHost({ paper: true });
-    this.chatHost = this.createRowHost({ paper: false });
-
-    this.homeHeader = new Container({ label: 'alliance:home:identity' });
+    this.homeIdentitySection = createHomePaperSection(
+      this.paperHost,
+      'identity',
+    );
     this.homeFlag = new AllianceFlagWidget({
       assetManager,
       label: 'alliance:home:flag',
     });
-    this.homeIdentity = createText('', RETAINED_TEXT_STYLES.bold);
-    this.homeDescription = createText('', RETAINED_TEXT_STYLES.body);
-    this.homeNotice = createText('', RETAINED_TEXT_STYLES.border);
-    this.homeHeader.addChild(
+    this.homeName = createText('', {
+      ...RETAINED_TEXT_STYLES.bold,
+      fontSize: 19,
+      lineHeight: 22,
+    });
+    this.homeTag = createText('', {
+      ...RETAINED_TEXT_STYLES.bold,
+      fontSize: 13,
+      lineHeight: 16,
+    });
+    this.homeMemberStat = new RootRunHudCurrencyCapsule({
+      amount: '0/50',
+      assets: assetManager,
+      iconFrame: ALLIANCE_MEMBERS_ICON_FRAME,
+      label: 'alliance:home:member-count',
+      resource: 'coin',
+      width: HOME_STAT_SOURCE_WIDTH,
+    });
+    this.homeIncomeStat = new RootRunHudCurrencyCapsule({
+      amount: '0',
+      assets: assetManager,
+      label: 'alliance:home:season-income',
+      resource: 'coin',
+      width: HOME_STAT_SOURCE_WIDTH,
+    });
+    this.homeMemberStat.scale.set(HOME_STAT_SCALE);
+    this.homeIncomeStat.scale.set(HOME_STAT_SCALE);
+    this.homeIdentitySection.root.addChild(
       this.homeFlag,
-      this.homeIdentity,
-      this.homeDescription,
-      this.homeNotice,
+      this.homeName,
+      this.homeTag,
+      this.homeMemberStat,
+      this.homeIncomeStat,
     );
-    this.homeSummary = new GuildRowsSection({
-      title: 'Trade Summary',
+
+    this.homeAnnouncement = createHomeAnnouncementSection(this.paperHost);
+    this.homeLeaveButton = new PixiTextButton({
       assetManager,
+      fallbackHitTest: true,
+      height: 26,
       inputRouter,
+      label: 'alliance:home:leave',
+      semanticId: 'workshop.alliance.leave',
       semanticRegistry,
-      counters,
-      label: 'alliance:home:summary',
-      joined: true,
+      sizeTier: 30,
+      text: 'Leave',
+      variant: 'red',
+      width: 64,
     });
-    this.homeMembers = new GuildRowsSection({
-      title: 'Members',
-      assetManager,
-      inputRouter,
-      semanticRegistry,
-      counters,
-      label: 'alliance:home:members',
-    });
-    this.scrolls.get('home').content.addChild(
-      this.homeHeader,
-      this.homeSummary.root,
-      this.homeMembers.root,
+    this.homeAnnouncement.root.addChild(this.homeLeaveButton);
+    this.homeMembersSection = createAllianceMembersSection(this.paperHost);
+    this.contentLayer.addChild(
+      this.homeIdentitySection.root,
+      this.homeAnnouncement.root,
+      this.homeMembersSection.root,
     );
+    this.homeMemberRows = this.createCollection({
+      counters,
+      id: 'home-members',
+      host: this.paperHost,
+      RowClass: AllianceMemberRow,
+      layer: this.homeMembersSection.scroll.content,
+    });
 
     this.directory = this.createCollection({
       counters,
@@ -150,20 +209,17 @@ export class AlliancePixiPage extends BasePixiRetainedView {
     this.requests = this.createCollection({
       counters,
       id: 'requests',
-      host: this.chatHost,
+      host: this.paperHost,
       RowClass: PlayerRelationshipRowPixi,
       scrollId: 'requests',
     });
-    this.chatRows = this.createCollection({
-      counters,
-      id: 'chat',
-      host: this.chatHost,
-      RowClass: WorldChatMessageRowPixi,
-      scrollId: 'chat',
+    this.requestJoinModePane = new AllianceJoinModePane({
+      host: this.paperHost,
     });
+    this.contentLayer.addChild(this.requestJoinModePane.root);
 
     this.emptyLabels = new Map(
-      ['browse', 'quests', 'requests', 'chat'].map((tabId) => {
+      ['browse', 'quests', 'requests'].map((tabId) => {
         const label = createText('', {
           ...RETAINED_TEXT_STYLES.body,
           align: 'center',
@@ -176,31 +232,6 @@ export class AlliancePixiPage extends BasePixiRetainedView {
 
     this.settingsPane = new AllianceSettingsPane({ dialog: this.paperHost });
     this.contentLayer.addChild(this.settingsPane.root);
-
-    this.chatComposer = new Container({ label: 'alliance:chat:composer' });
-    this.chatField = new PixiTextField({
-      assetManager,
-      inputRouter,
-      textEntryService,
-      maxLength: 160,
-      label: 'alliance:chat:field',
-      onChange: () => this.syncChatAction(),
-      onSubmit: () => void this.submitChat(),
-    });
-    this.chatSend = new PixiTextButton({
-      assetManager,
-      inputRouter,
-      semanticRegistry,
-      semanticId: 'alliance.chat.send',
-      text: 'Send',
-      width: CHAT_ACTION_WIDTH,
-      height: 29,
-      variant: 'yellow',
-      action: () => this.submitChat(),
-      label: 'alliance:chat:send',
-    });
-    this.chatComposer.addChild(this.chatField, this.chatSend);
-    this.contentLayer.addChild(this.chatComposer);
 
     this.root.addChild(this.background, this.contentLayer);
     this.rebuildBackgroundGradient();
@@ -232,9 +263,16 @@ export class AlliancePixiPage extends BasePixiRetainedView {
     return host;
   }
 
-  createCollection({ counters, id, host, RowClass, scrollId }) {
-    const layer = new Container({ label: `alliance:${id}:rows` });
-    this.scrolls.get(scrollId).content.addChild(layer);
+  createCollection({
+    counters,
+    id,
+    host,
+    RowClass,
+    scrollId = null,
+    layer = null,
+  }) {
+    const rowLayer = layer ?? new Container({ label: `alliance:${id}:rows` });
+    if (scrollId) this.scrolls.get(scrollId).content.addChild(rowLayer);
     const pool = new WidgetPool({
       name: `Alliance ${id} row pool`,
       counters,
@@ -250,10 +288,10 @@ export class AlliancePixiPage extends BasePixiRetainedView {
       keyOf: (row, index) => row.id ?? row.key ?? index,
       bind: (widget, row) => widget.bind(row),
       afterReconcile: (widgets) => {
-        for (const widget of widgets) layer.addChild(widget.root);
+        for (const widget of widgets) rowLayer.addChild(widget.root);
       },
     });
-    return { layer, pool, rows };
+    return { layer: rowLayer, pool, rows };
   }
 
   onBind(viewModel = {}) {
@@ -261,52 +299,45 @@ export class AlliancePixiPage extends BasePixiRetainedView {
     this.selectedTabId = this.model.selectedTabId;
     this.paperHost.theme = this.theme;
     this.paperHost.contentTheme = createDialogContentTheme(this.theme);
-    this.chatHost.theme = this.theme;
-    this.chatHost.contentTheme = this.theme;
 
     const info = this.model.tradeInfo ?? {};
-    setText(this.homeIdentity, info.identityLabel ?? 'Trade Alliance');
-    setText(this.homeDescription, info.description ?? '');
-    setText(this.homeNotice, info.notice ?? '');
+    const identity = resolveAllianceIdentity(info);
+    const seasonIncome = findTradeInfoRow(
+      this.model.tradeInfoRows,
+      'season-income',
+      'income',
+    );
+    const membership = findTradeInfoRow(
+      this.model.tradeInfoRows,
+      'membership',
+      'leave',
+    );
+    setText(this.homeName, identity.name);
+    setText(this.homeTag, identity.tag ? `[${identity.tag}]` : '');
+    setText(
+      this.homeAnnouncement.detail,
+      info.notice || info.description || 'No Alliance Announcement',
+    );
     this.homeFlag.setColors(this.model.flag ?? {});
-    this.homeSummary.bind({
-      rows: this.model.tradeInfoRows.map((row) =>
-        row.actionLabel
-          ? {
-              id: row.id,
-              kind: 'button',
-              label: row.actionLabel,
-              value: row.value,
-              enabled: row.enabled,
-              semanticId: row.semanticId,
-              action: row.onActivate,
-            }
-          : {
-              id: row.id,
-              label: row.label,
-              value: row.value,
-            },
-      ),
-    });
-    this.homeMembers.bind({
-      countLabel: info.memberCountLabel,
-      emptyLabel: 'No Alliance Members',
-      rows: this.model.members.map((member) => ({
-        id: member.id,
-        label: member.username,
-        value: `${member.roleLabel} · ${member.levelLabel}`,
-        semanticId: member.semanticId,
-        action: member.onActivate,
-      })),
-    });
+    this.homeMemberStat.setAmount(info.memberCountLabel ?? '0/50');
+    this.homeIncomeStat.setAmount(seasonIncome?.value ?? '0');
+    const leaveLabel = membership?.value || membership?.actionLabel || 'Leave';
+    const leaveWidth = leaveLabel.length > 10 ? 112 : 64;
+    const leaveVisible = Boolean(membership);
+    this.homeLeaveButton.visible = leaveVisible;
+    this.homeLeaveButton.renderable = leaveVisible;
+    this.homeLeaveButton
+      .setText(leaveLabel)
+      .setSize(leaveWidth, 26)
+      .setAction(membership?.onActivate)
+      .setEnabled(membership?.enabled !== false && Boolean(membership?.onActivate));
+    this.homeMemberRows.rows.reconcile(this.model.members);
 
     this.directory.rows.reconcile(this.model.directoryRows);
     this.quests.rows.reconcile(this.model.questRows);
     this.requests.rows.reconcile(this.model.requestRows);
-    this.chatRows.rows.reconcile(this.model.chat.rows);
+    this.requestJoinModePane.bind(this.model.requestsSettings);
     this.settingsPane.bind(this.model.settings);
-    this.chatField.setValue('');
-    this.syncChatAction();
     this.relayout();
   }
 
@@ -326,68 +357,101 @@ export class AlliancePixiPage extends BasePixiRetainedView {
     this.theme = theme ?? DEFAULT_PIXI_THEME_SNAPSHOT;
     this.paperHost.theme = this.theme;
     this.paperHost.contentTheme = createDialogContentTheme(this.theme);
-    this.chatHost.theme = this.theme;
-    this.chatHost.contentTheme = this.theme;
-    this.homeSummary.applyTheme(this.theme);
-    this.homeMembers.applyTheme(this.theme);
-    applyTextTheme(this.homeIdentity, this.theme, RETAINED_TEXT_STYLES.bold);
-    applyTextTheme(this.homeDescription, this.theme, RETAINED_TEXT_STYLES.body);
-    applyTextTheme(this.homeNotice, this.theme, {
+    applyTextTheme(
+      this.homeName,
+      this.paperHost.contentTheme,
+      {
+        ...RETAINED_TEXT_STYLES.bold,
+        fontSize: 19,
+        lineHeight: 22,
+      },
+    );
+    applyTextTheme(
+      this.homeTag,
+      this.paperHost.contentTheme,
+      {
+        ...RETAINED_TEXT_STYLES.bold,
+        fontSize: 13,
+        lineHeight: 16,
+        fill: this.paperHost.contentTheme.muted,
+      },
+    );
+    applyTextTheme(
+      this.homeAnnouncement.title,
+      this.paperHost.contentTheme,
+      RETAINED_TEXT_STYLES.bold,
+    );
+    applyTextTheme(this.homeAnnouncement.detail, this.paperHost.contentTheme, {
       ...RETAINED_TEXT_STYLES.border,
-      fill: this.theme.muted,
+      fill: this.paperHost.contentTheme.muted,
     });
+    this.homeMemberStat.applyTheme(this.theme);
+    this.homeIncomeStat.applyTheme(this.theme);
+    this.homeLeaveButton.applyTheme(this.theme);
     for (const collection of [
+      this.homeMemberRows,
       this.directory,
       this.quests,
       this.requests,
-      this.chatRows,
     ]) {
-      for (const row of collection.rows.getWidgets()) row.applyTheme?.(
-        collection === this.chatRows || collection === this.requests
-          ? this.theme
-          : this.paperHost.contentTheme,
-      );
+      for (const row of collection.rows.getWidgets()) {
+        row.applyTheme?.(this.paperHost.contentTheme);
+      }
     }
     for (const label of this.emptyLabels.values()) {
       applyTextTheme(label, this.theme, RETAINED_TEXT_STYLES.body);
     }
     this.settingsPane.applyTheme(this.theme);
-    this.chatField.applyTheme(this.theme);
-    this.chatSend.applyTheme(this.theme);
+    this.requestJoinModePane.applyTheme(this.theme);
     this.rebuildBackgroundGradient();
     this.redrawBackground();
   }
 
   relayout() {
     if (!this.background) return;
-    const width = this.sourceWidth - PAGE_EDGE;
     const viewportHeight = Math.max(
       0,
       this.sourceHeight - PAGE_BOTTOM_CLEARANCE - PAGE_TOP,
     );
-    const rowWidth = Math.max(0, width - PAGE_EDGE);
     for (const [tabId, scroll] of this.scrolls) {
-      const chat = tabId === 'chat';
       scroll.root.visible = tabId === this.selectedTabId;
       scroll.root.renderable = scroll.root.visible;
-      scroll.setBounds(
-        0,
-        PAGE_TOP,
-        width,
-        Math.max(0, viewportHeight - (chat ? CHAT_COMPOSER_HEIGHT : 0)),
-      );
     }
 
-    this.layoutHome(rowWidth, viewportHeight);
-    this.layoutCollection(this.directory, 'browse', rowWidth, viewportHeight);
-    this.layoutCollection(this.quests, 'quests', rowWidth, viewportHeight);
-    this.layoutCollection(this.requests, 'requests', rowWidth, viewportHeight);
+    this.layoutHome(viewportHeight);
+    this.layoutCollection(this.directory, 'browse', 318, viewportHeight);
+    const listLayout = resolveRetainedDialogListLayout({
+      bodyWidth: ALLIANCE_DIALOG_CONTENT_WIDTH,
+      paperRight:
+        ALLIANCE_DIALOG_CONTENT_WIDTH + PIXI_UI_GEOMETRY.dialogPadding + 14 / 3,
+      rowFrameWidth: RETAINED_DIALOG_LIST_GEOMETRY.rowFrameWidth,
+    });
     this.layoutCollection(
-      this.chatRows,
-      'chat',
-      rowWidth,
-      Math.max(0, viewportHeight - CHAT_COMPOSER_HEIGHT),
+      this.quests,
+      'quests',
+      listLayout.rowWidth,
+      viewportHeight,
     );
+    const requestsViewportHeight = Math.max(
+      0,
+      viewportHeight -
+        (this.requestJoinModePane.visible
+          ? REQUESTS_JOIN_MODE_HEIGHT + REQUESTS_JOIN_MODE_GAP
+          : 0),
+    );
+    this.layoutCollection(
+      this.requests,
+      'requests',
+      listLayout.rowWidth,
+      requestsViewportHeight,
+    );
+    if (this.requestJoinModePane.visible) {
+      this.requestJoinModePane.setBounds(
+        (this.sourceWidth - listLayout.rowWidth) / 2,
+        PAGE_TOP + requestsViewportHeight + REQUESTS_JOIN_MODE_GAP,
+        listLayout.rowWidth,
+      );
+    }
 
     const settingsVisible = ['create', 'settings'].includes(this.selectedTabId);
     this.settingsPane.root.visible = settingsVisible;
@@ -402,51 +466,148 @@ export class AlliancePixiPage extends BasePixiRetainedView {
       );
     }
 
-    const chatVisible = this.selectedTabId === 'chat';
-    this.chatComposer.visible = chatVisible;
-    this.chatComposer.renderable = chatVisible;
-    this.chatComposer.position.set(
-      PAGE_EDGE,
-      PAGE_TOP + viewportHeight - CHAT_COMPOSER_HEIGHT + 3,
-    );
-    const composerWidth = this.sourceWidth - PAGE_EDGE * 2;
-    const fieldWidth = composerWidth - CHAT_ACTION_WIDTH - 6;
-    this.chatField.position.set(0, 0);
-    this.chatField.setSize(fieldWidth, 29);
-    this.chatSend.position.set(fieldWidth + 6, 0);
-    this.chatSend.setSize(CHAT_ACTION_WIDTH, 29);
     this.redrawBackground();
   }
 
-  layoutHome(width, viewportHeight) {
-    const scroll = this.scrolls.get('home');
-    const headerHeight = 112;
-    this.homeHeader.position.set(PAGE_EDGE, 6);
-    this.homeFlag.position.set(0, 3);
-    this.homeFlag.setSize(86, 100);
-    const copyX = 100;
-    this.homeIdentity.position.set(copyX, 8);
-    this.homeDescription.position.set(copyX, 31);
-    this.homeDescription.style.wordWrap = true;
-    this.homeDescription.style.wordWrapWidth = Math.max(80, width - copyX);
-    this.homeNotice.position.set(copyX, 72);
-    this.homeNotice.style.wordWrap = true;
-    this.homeNotice.style.wordWrapWidth = Math.max(80, width - copyX);
-    const summaryY = headerHeight + CONTENT_GAP;
-    const summaryHeight = this.homeSummary.getPreferredHeight(width);
-    this.homeSummary.setBounds(0, summaryY, width, summaryHeight);
-    const membersY = summaryY + summaryHeight + CONTENT_GAP;
-    const membersHeight = this.homeMembers.getPreferredHeight(width);
-    this.homeMembers.setBounds(0, membersY, width, membersHeight);
-    scroll.setContentHeight(
-      Math.max(viewportHeight, membersY + membersHeight + CONTENT_GAP),
+  layoutHome(viewportHeight) {
+    const visible = this.selectedTabId === 'home';
+    const identity = this.homeIdentitySection;
+    const announcement = this.homeAnnouncement;
+    const members = this.homeMembersSection;
+    identity.root.visible = visible;
+    identity.root.renderable = visible;
+    announcement.root.visible = visible;
+    announcement.root.renderable = visible;
+    members.root.visible = visible;
+    members.root.renderable = visible;
+    if (!visible) return;
+
+    const paperOutsets = resolveDialogPaperOutsets({
+      top: PIXI_UI_GEOMETRY.dialogPadding,
+      right: PIXI_UI_GEOMETRY.dialogPadding,
+      bottom: PIXI_UI_GEOMETRY.dialogPadding,
+      left: PIXI_UI_GEOMETRY.dialogPadding,
+    });
+    const rootX = (this.sourceWidth - HOME_CONTENT_WIDTH) / 2;
+    const paperTop = SECTION_FRAME_TOP - paperOutsets.top;
+    identity.root.position.set(rootX, PAGE_TOP);
+    setDialogPaperSectionBounds(
+      identity.paper,
+      {
+        x: 0,
+        y: SECTION_FRAME_TOP,
+        width: HOME_CONTENT_WIDTH,
+        height: HOME_IDENTITY_CONTENT_HEIGHT,
+      },
+      paperOutsets,
+    );
+    this.homeFlag.setSize(HOME_FLAG_SIZE, HOME_FLAG_SIZE);
+    this.homeFlag.position.set(
+      (HOME_CONTENT_WIDTH - HOME_FLAG_SIZE) / 2,
+      SECTION_CONTENT_TOP + 1,
+    );
+    this.homeName.position.set(HOME_CONTENT_INSET, SECTION_CONTENT_TOP + 24);
+    fitTextToWidth(this.homeName, 108);
+    this.homeTag.position.set(HOME_CONTENT_INSET, SECTION_CONTENT_TOP + 51);
+    const statWidth = HOME_STAT_SOURCE_WIDTH * HOME_STAT_SCALE;
+    const statX = HOME_CONTENT_WIDTH - HOME_CONTENT_INSET - statWidth;
+    this.homeMemberStat.position.set(statX, SECTION_CONTENT_TOP + 20);
+    this.homeIncomeStat.position.set(statX, SECTION_CONTENT_TOP + 51);
+
+    const identityBottom = identity.paper.y + identity.paper.frameHeight;
+    const announcementY = identityBottom + SECTION_GAP - paperTop;
+    announcement.root.position.set(rootX, PAGE_TOP + announcementY);
+    announcement.title.position.set(
+      HOME_CONTENT_INSET,
+      SECTION_CONTENT_TOP,
+    );
+    announcement.detail.position.set(
+      HOME_CONTENT_INSET,
+      SECTION_CONTENT_TOP + 19,
+    );
+    announcement.detail.style.wordWrap = true;
+    announcement.detail.style.wordWrapWidth =
+      HOME_CONTENT_WIDTH - HOME_CONTENT_INSET * 2;
+    this.homeLeaveButton.position.set(
+      HOME_CONTENT_WIDTH - HOME_CONTENT_INSET - this.homeLeaveButton.buttonWidth,
+      SECTION_CONTENT_TOP - 5,
+    );
+    setDialogPaperSectionBounds(
+      announcement.paper,
+      {
+        x: 0,
+        y: SECTION_FRAME_TOP,
+        width: HOME_CONTENT_WIDTH,
+        height: HOME_ANNOUNCEMENT_CONTENT_HEIGHT,
+      },
+      paperOutsets,
+    );
+
+    const announcementBottom =
+      announcement.paper.y + announcement.paper.frameHeight;
+    const membersY =
+      announcementY + announcementBottom + SECTION_GAP - paperTop;
+    members.root.position.set(rootX, PAGE_TOP + membersY);
+    members.title.visible = false;
+    members.title.renderable = false;
+    members.count.visible = false;
+    members.count.renderable = false;
+    const remainingHeight = Math.max(90, viewportHeight - membersY);
+    const membersContentHeight = Math.max(
+      70,
+      remainingHeight - SECTION_FRAME_TOP - paperOutsets.bottom,
+    );
+    const listLayout = resolveRetainedDialogListLayout({
+      bodyWidth: HOME_CONTENT_WIDTH,
+      paperRight: HOME_CONTENT_WIDTH + 14 / 3,
+      rowFrameWidth: RETAINED_DIALOG_LIST_GEOMETRY.rowFrameWidth,
+    });
+    members.scroll.setBounds(
+      listLayout.x,
+      SECTION_CONTENT_TOP,
+      listLayout.viewportWidth,
+      Math.max(
+        MEMBER_ROW_HEIGHT,
+        membersContentHeight -
+          (SECTION_CONTENT_TOP - SECTION_FRAME_TOP) -
+          SECTION_CONTENT_BOTTOM,
+      ),
+    );
+    let memberY = 0;
+    for (const row of this.homeMemberRows.rows.getWidgets()) {
+      row.setBounds(0, memberY, listLayout.rowWidth, MEMBER_ROW_HEIGHT);
+      memberY += MEMBER_ROW_HEIGHT;
+    }
+    members.scroll.setContentHeight(memberY);
+    setDialogPaperSectionBounds(
+      members.paper,
+      {
+        x: 0,
+        y: SECTION_FRAME_TOP,
+        width: HOME_CONTENT_WIDTH,
+        height: membersContentHeight,
+      },
+      paperOutsets,
     );
   }
 
-  layoutCollection(collection, tabId, width, viewportHeight) {
+  layoutCollection(
+    collection,
+    tabId,
+    width,
+    viewportHeight,
+    { topInset = 6 } = {},
+  ) {
     const scroll = this.scrolls.get(tabId);
+    const viewportWidth = Math.min(this.sourceWidth - PAGE_EDGE * 2, width + 2);
+    scroll.setBounds(
+      (this.sourceWidth - viewportWidth) / 2,
+      PAGE_TOP,
+      viewportWidth,
+      viewportHeight,
+    );
     const widgets = collection.rows.getWidgets();
-    let y = 6;
+    let y = topInset;
     for (const widget of widgets) {
       const height = widget.getPreferredHeight?.(width) ?? 62;
       widget.setBounds(0, y, width, height);
@@ -457,24 +618,11 @@ export class AlliancePixiPage extends BasePixiRetainedView {
     setText(label, widgets.length === 0 ? emptyText : '');
     label.visible = widgets.length === 0;
     label.renderable = label.visible;
-    label.position.set(width / 2, viewportHeight / 2);
+    label.position.set(
+      width / 2,
+      topInset + Math.max(0, viewportHeight - topInset) / 2,
+    );
     scroll.setContentHeight(Math.max(viewportHeight, y + 6));
-  }
-
-  syncChatAction() {
-    const enabled =
-      typeof this.model.chat.onSubmit === 'function' &&
-      this.chatField.value.trim().length > 0;
-    this.chatSend.setEnabled(enabled);
-  }
-
-  async submitChat() {
-    const body = this.chatField.value.trim();
-    if (!body || typeof this.model.chat.onSubmit !== 'function') return false;
-    const result = await this.model.chat.onSubmit(body);
-    if (result?.ok === true) this.chatField.setValue('');
-    this.syncChatAction();
-    return result?.ok === true;
   }
 
   registerTarget(descriptor) {
@@ -511,19 +659,18 @@ export class AlliancePixiPage extends BasePixiRetainedView {
 
   onDestroy() {
     for (const collection of [
+      this.homeMemberRows,
       this.directory,
       this.quests,
       this.requests,
-      this.chatRows,
     ]) {
       collection.rows.destroy();
       collection.pool.destroy();
     }
-    this.homeSummary.destroy();
-    this.homeMembers.destroy();
+    this.homeLeaveButton.destroy();
+    this.homeMembersSection.scroll.destroy();
+    this.requestJoinModePane.destroy();
     this.settingsPane.destroy();
-    this.chatField.destroy({ children: true });
-    this.chatSend.destroy();
     for (const scroll of this.scrolls.values()) scroll.destroy();
     for (const semanticId of this.registeredTargetIds) {
       this.semanticRegistry?.unregister?.(semanticId);
@@ -532,6 +679,66 @@ export class AlliancePixiPage extends BasePixiRetainedView {
     this.backgroundGradient?.destroy?.();
     this.backgroundGradient = null;
   }
+}
+
+function createHomePaperSection(host, sectionId) {
+  const root = new Container({
+    label: `alliance:home:${sectionId}-section`,
+  });
+  const paper = createDialogPaperSection(
+    host.panel.paperFrame.texture,
+    `${root.label}:paper`,
+  );
+  root.addChild(paper);
+  root.visible = false;
+  root.renderable = false;
+  return { root, paper };
+}
+
+function createHomeAnnouncementSection(host) {
+  const section = createHomePaperSection(host, 'announcement');
+  const title = createText('Announcement', RETAINED_TEXT_STYLES.bold);
+  const detail = createText('', {
+    ...RETAINED_TEXT_STYLES.border,
+    lineHeight: 14,
+  });
+  section.root.addChild(title, detail);
+  return { ...section, title, detail };
+}
+
+function resolveAllianceIdentity(info = {}) {
+  const name = String(info.name ?? '').trim();
+  const tag = String(info.tag ?? '').trim().toUpperCase();
+  if (name || tag) {
+    return { name: name || 'Trade Alliance', tag };
+  }
+  const identityLabel = String(info.identityLabel ?? '').trim();
+  const match = identityLabel.match(/^\[([^\]]+)]\s*(.*)$/);
+  return match
+    ? {
+        name: match[2].trim() || 'Trade Alliance',
+        tag: match[1].trim().toUpperCase(),
+      }
+    : { name: identityLabel || 'Trade Alliance', tag: '' };
+}
+
+function fitTextToWidth(text, maximumWidth) {
+  text.scale.set(1);
+  const width = Math.max(0, Number(text.width) || 0);
+  if (width > maximumWidth) {
+    const scale = maximumWidth / width;
+    text.scale.set(scale);
+  }
+}
+
+function findTradeInfoRow(rows, ...needles) {
+  const normalizedNeedles = needles.map((needle) =>
+    String(needle).toLowerCase(),
+  );
+  return rows.find((row) => {
+    const haystack = `${row?.id ?? ''} ${row?.label ?? ''}`.toLowerCase();
+    return normalizedNeedles.some((needle) => haystack.includes(needle));
+  });
 }
 
 function normalizeAllianceModel(viewModel = {}) {
@@ -545,25 +752,179 @@ function normalizeAllianceModel(viewModel = {}) {
     ...model,
     selectedTabId,
     tradeInfo: model.tradeInfo ?? {},
-    tradeInfoRows: Array.isArray(model.tradeInfoRows) ? model.tradeInfoRows : [],
+    tradeInfoRows: Array.isArray(model.tradeInfoRows)
+      ? model.tradeInfoRows
+      : [],
     members: Array.isArray(model.members) ? model.members : [],
-    directoryRows: model.directory === true && Array.isArray(model.rows) ? model.rows : [],
-    questRows: selectedTabId === 'quests' && Array.isArray(model.rows) ? model.rows : [],
-    requestRows: selectedTabId === 'requests' && Array.isArray(model.rows) ? model.rows : [],
-    flag: model.flag ?? {},
+    directoryRows:
+      model.directory === true && Array.isArray(model.rows) ? model.rows : [],
+    questRows:
+      selectedTabId === 'quests' && Array.isArray(model.rows) ? model.rows : [],
+    requestRows:
+      selectedTabId === 'requests' && Array.isArray(model.rows)
+        ? model.rows
+        : [],
+    requestsSettings: model.requestsSettings ?? null,
     settings: model.settings ?? null,
-    chat: {
-      rows: Array.isArray(model.chat?.rows) ? model.chat.rows : [],
-      onSubmit: model.chat?.onSubmit ?? null,
-    },
   };
+}
+
+class AllianceJoinModePane {
+  constructor({ host }) {
+    this.model = null;
+    this.allianceId = '';
+    this.projectedJoinMode = null;
+    this.draftJoinMode = 'apply';
+    this.dirty = false;
+    this.saving = false;
+    this.statusText = '';
+    this.visible = false;
+    this.root = new Container({ label: 'alliance:requests:join-mode' });
+    this.label = createText('Join Mode', RETAINED_TEXT_STYLES.bold);
+    this.buttons = ['open', 'apply', 'closed'].map(
+      (joinMode) =>
+        new RetainedButton({
+          assetManager: host.assetManager,
+          buttonLabel: `alliance-requests-join-mode-${joinMode}`,
+          inputRouter: host.inputRouter,
+          variant: 'tab',
+        }),
+    );
+    this.saveButton = new RetainedButton({
+      assetManager: host.assetManager,
+      buttonLabel: 'alliance-requests-save-join-mode',
+      inputRouter: host.inputRouter,
+      sizeTier: 30,
+      variant: 'green',
+    });
+    this.status = createText('', {
+      ...RETAINED_TEXT_STYLES.border,
+      align: 'right',
+    });
+    this.status.anchor.set(1, 0);
+    this.root.addChild(
+      this.label,
+      ...this.buttons.map((button) => button.root),
+      this.saveButton.root,
+      this.status,
+    );
+  }
+
+  bind(model) {
+    this.model = model ?? null;
+    this.visible = Boolean(this.model?.editable);
+    this.root.visible = this.visible;
+    this.root.renderable = this.visible;
+    if (!this.visible) {
+      return;
+    }
+
+    const allianceId = String(this.model.allianceId ?? '');
+    const projectedJoinMode = normalizeJoinMode(this.model.joinMode);
+    const allianceChanged = allianceId !== this.allianceId;
+    const projectionChanged = projectedJoinMode !== this.projectedJoinMode;
+    if (allianceChanged || (!this.dirty && projectionChanged)) {
+      this.allianceId = allianceId;
+      this.draftJoinMode = projectedJoinMode;
+      this.dirty = false;
+      if (allianceChanged) {
+        this.statusText = '';
+      }
+    }
+    this.projectedJoinMode = projectedJoinMode;
+
+    this.buttons.forEach((button, index) => {
+      const joinMode = ['open', 'apply', 'closed'][index];
+      button.setModel({
+        label: joinMode[0].toUpperCase() + joinMode.slice(1),
+        selected: this.draftJoinMode === joinMode,
+        enabled: !this.saving,
+        action: () => this.select(joinMode),
+      });
+    });
+    this.saveButton.setModel({
+      label: this.saving ? 'Saving' : 'Save Changes',
+      enabled: this.dirty && !this.saving,
+      action: () => this.save(),
+    });
+    setText(this.status, this.statusText);
+  }
+
+  select(joinMode) {
+    if (!this.visible || this.saving) {
+      return false;
+    }
+    const nextJoinMode = normalizeJoinMode(joinMode);
+    this.draftJoinMode = nextJoinMode;
+    this.dirty = nextJoinMode !== this.projectedJoinMode;
+    this.statusText = this.dirty ? 'Change Pending' : '';
+    this.bind(this.model);
+    return true;
+  }
+
+  async save() {
+    if (!this.visible || !this.dirty || this.saving) {
+      return false;
+    }
+    this.saving = true;
+    this.statusText = 'Saving';
+    this.bind(this.model);
+    let result;
+    try {
+      result = await this.model.onSave?.(this.draftJoinMode);
+    } catch {
+      result = { ok: false };
+    }
+    this.saving = false;
+    if (result?.ok === true) {
+      this.dirty = false;
+      this.statusText = 'Saved';
+    } else {
+      this.statusText = 'Not Saved';
+    }
+    this.bind(this.model);
+    return result?.ok === true;
+  }
+
+  setBounds(x, y, width) {
+    this.root.position.set(x, y);
+    this.label.position.set(0, 0);
+    const gap = 6;
+    const buttonWidth = (width - gap * 2) / 3;
+    this.buttons.forEach((button, index) => {
+      button.setBounds(index * (buttonWidth + gap), 18, buttonWidth, 28);
+    });
+    this.saveButton.setBounds(0, 54, width, 28);
+    this.status.position.set(width, 84);
+  }
+
+  applyTheme(theme) {
+    const resolvedTheme = theme ?? DEFAULT_PIXI_THEME_SNAPSHOT;
+    applyTextTheme(this.label, resolvedTheme, RETAINED_TEXT_STYLES.bold);
+    applyTextTheme(this.status, resolvedTheme, {
+      ...RETAINED_TEXT_STYLES.border,
+      align: 'right',
+      fill: resolvedTheme.muted,
+    });
+    this.buttons.forEach((button) => button.applyTheme(resolvedTheme));
+    this.saveButton.applyTheme(resolvedTheme);
+  }
+
+  destroy() {
+    this.buttons.forEach((button) => button.destroy());
+    this.saveButton.destroy();
+    this.root.destroy({ children: true });
+  }
+}
+
+function normalizeJoinMode(joinMode) {
+  return ['open', 'apply', 'closed'].includes(joinMode) ? joinMode : 'apply';
 }
 
 function resolveEmptyLabel(tabId, model) {
   if (tabId === 'browse') return model.status || 'No Alliances Yet';
   if (tabId === 'quests') return 'No Alliance Quests';
   if (tabId === 'requests') return 'No Pending Requests';
-  if (tabId === 'chat') return 'Start The Alliance Conversation';
   return '';
 }
 

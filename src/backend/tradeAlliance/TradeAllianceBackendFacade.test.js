@@ -33,6 +33,7 @@ describe('TradeAllianceBackendFacade', () => {
       getSnapshot: vi.fn(() => ({})),
       setPublicDataActive: vi.fn(),
       setQuestDataActive: vi.fn(),
+      setNotificationDataActive: vi.fn(),
     };
     facade.subscriptionManager = subscriptionManager;
     facade.actionManager = {
@@ -58,5 +59,40 @@ describe('TradeAllianceBackendFacade', () => {
     release();
 
     expect(subscriptionManager.setQuestDataActive).toHaveBeenLastCalledWith(false);
+  });
+
+  it('reapplies retained notification data after connect', () => {
+    const facade = new TradeAllianceBackendFacade();
+    const subscriptionManager = {
+      connect: vi.fn(),
+      disconnect: vi.fn(),
+      getSnapshot: vi.fn(() => ({})),
+      setPublicDataActive: vi.fn(),
+      setQuestDataActive: vi.fn(),
+      setNotificationDataActive: vi.fn(),
+    };
+    facade.subscriptionManager = subscriptionManager;
+    facade.actionManager = {
+      connect: vi.fn(),
+      disconnect: vi.fn(),
+    };
+    facade.rewardManager = {
+      disconnect: vi.fn(),
+      processSnapshot: vi.fn(),
+    };
+
+    const release = facade.retainNotificationData();
+
+    expect(subscriptionManager.setNotificationDataActive).toHaveBeenLastCalledWith(true);
+
+    subscriptionManager.setNotificationDataActive.mockClear();
+    facade.connect({}, 'self');
+
+    expect(subscriptionManager.connect).toHaveBeenCalledWith({}, 'self');
+    expect(subscriptionManager.setNotificationDataActive).toHaveBeenLastCalledWith(true);
+
+    release();
+
+    expect(subscriptionManager.setNotificationDataActive).toHaveBeenLastCalledWith(false);
   });
 });

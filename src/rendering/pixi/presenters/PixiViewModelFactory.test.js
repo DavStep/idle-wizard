@@ -9,7 +9,6 @@ describe('PixiViewModelFactory', () => {
       gameplay: {
         mana: { current: 40, cap: 50, perSecond: 1 },
         coin: { current: 12 },
-        amethyst: { current: 320 },
         ruby: { current: 3 },
         persistence: { loadRevision: 7 },
         tasks: {
@@ -23,6 +22,7 @@ describe('PixiViewModelFactory', () => {
           },
         },
       },
+      friendNotification: true,
       player: { username: 'Mira', character: 'elara' },
       pageId: 'research',
       researchTabId: 'automation',
@@ -30,9 +30,9 @@ describe('PixiViewModelFactory', () => {
 
     expect(model).toMatchObject({
       username: 'Mira',
+      avatarNotification: true,
       level: 4,
       loadRevision: 7,
-      amethyst: 320,
       contextCurrency: {
         resource: 'ruby',
         amount: 3,
@@ -47,34 +47,36 @@ describe('PixiViewModelFactory', () => {
     });
   });
 
-  it('uses Mana as the Workshop-only top-HUD context currency', () => {
-    const factory = new PixiViewModelFactory();
-    const model = factory.createTopPanel({
-      gameplay: {
-        mana: { current: 40, cap: 50, perSecond: 1 },
-      },
-      player: { username: 'Mira', character: 'elara' },
-      pageId: 'workshop',
-    });
+  it.each(['workshop', 'brewing'])(
+    'uses Mana as the %s top-HUD context currency',
+    (pageId) => {
+      const factory = new PixiViewModelFactory();
+      const model = factory.createTopPanel({
+        gameplay: {
+          mana: { current: 40, cap: 50, perSecond: 1 },
+        },
+        player: { username: 'Mira', character: 'elara' },
+        pageId,
+      });
 
-    expect(model.contextCurrency).toEqual({
-      resource: 'mana',
-      amount: 40,
-      cap: 50,
-      perSecond: 1,
-      visible: true,
-    });
-    expect(model.showBag).toBe(true);
-  });
+      expect(model.contextCurrency).toEqual({
+        resource: 'mana',
+        amount: 40,
+        cap: 50,
+        perSecond: 1,
+        visible: true,
+      });
+    },
+  );
 
-  it('keeps Mana out of the context slot in other rooms', () => {
+  it('keeps Mana out of the context slot in rooms that use another currency', () => {
     const factory = new PixiViewModelFactory();
     const model = factory.createTopPanel({
       gameplay: {
         crystal: { current: 7 },
         mana: { current: 40, cap: 50, perSecond: 1 },
       },
-      pageId: 'brewing',
+      pageId: 'garden',
     });
 
     expect(model.contextCurrency).toEqual({
@@ -84,7 +86,6 @@ describe('PixiViewModelFactory', () => {
       perSecond: 0,
       visible: true,
     });
-    expect(model.showBag).toBe(false);
   });
 
   it('uses the requested level in the non-persistent top-HUD progress preview', () => {
@@ -1547,12 +1548,13 @@ describe('PixiViewModelFactory', () => {
       ownedAlliance: true,
       tradeInfo: {
         identityLabel: '[SHARE] Shared Alliance',
+        name: 'Shared Alliance',
+        tag: 'SHARE',
         description: 'Patient traders sharing one hall.',
       },
     });
     expect(alliance.tradeInfoRows).toEqual([
       expect.objectContaining({ label: 'Members', value: '1/50' }),
-      expect.objectContaining({ label: 'Join Mode', value: 'Apply' }),
       expect.objectContaining({ label: 'Season Income', resourceKey: 'coin' }),
       expect.objectContaining({ label: 'Membership', actionLabel: 'Leave' }),
     ]);
@@ -1589,6 +1591,7 @@ describe('PixiViewModelFactory', () => {
     const acceptAllianceApplication = vi.fn();
     const rejectAllianceApplication = vi.fn();
     const openPlayer = vi.fn();
+    const setAllianceJoinMode = vi.fn(async () => ({ ok: true }));
     const dialog = new PixiViewModelFactory().createAllianceDialog(
       {
         connected: true,
@@ -1597,6 +1600,7 @@ describe('PixiViewModelFactory', () => {
           name: 'Shared Alliance',
           tag: 'SHARE',
           memberCount: 1,
+          joinMode: 'apply',
         },
         canEditSettings: true,
         canManageApplications: true,
@@ -1609,6 +1613,8 @@ describe('PixiViewModelFactory', () => {
             character: 'mira',
             frame: 'violet',
             playerLevel: 14,
+            totalProducedCoin: 12_500,
+            prestigeCount: 2,
           },
           {
             applicationKey: 'other:nox',
@@ -1624,6 +1630,7 @@ describe('PixiViewModelFactory', () => {
         acceptAllianceApplication,
         rejectAllianceApplication,
         openPlayer,
+        setAllianceJoinMode,
       },
       'requests',
     );
@@ -1634,12 +1641,18 @@ describe('PixiViewModelFactory', () => {
       emptyLabel: '',
     });
     expect(dialog.rows).toHaveLength(1);
+    expect(dialog.requestsSettings).toMatchObject({
+      allianceId: 'shared-alliance',
+      joinMode: 'apply',
+      editable: true,
+    });
     expect(dialog.rows[0]).toMatchObject({
       id: 'shared-alliance:luna',
       username: 'Luna',
       character: 'mira',
       frame: 'violet',
-      detail: 'Level 14',
+      detail: 'Lv 14 · Prestige 2',
+      preview: '12.5k Produced',
       primaryAction: { label: 'Accept', variant: 'green' },
       secondaryAction: { label: 'Deny', variant: 'red' },
     });
@@ -1649,6 +1662,8 @@ describe('PixiViewModelFactory', () => {
 
     dialog.rows[0].onActivate();
     dialog.rows[0].primaryAction.onActivate();
+    dialog.requestsSettings.onSave('closed');
+    expect(setAllianceJoinMode).toHaveBeenCalledWith('closed');
     dialog.rows[0].secondaryAction.onActivate();
     expect(openPlayer).toHaveBeenCalledWith(
       expect.objectContaining({ identity: 'luna', username: 'Luna' }),
@@ -1661,7 +1676,7 @@ describe('PixiViewModelFactory', () => {
     );
   });
 
-  it('projects a member-only alliance workspace with dedicated chat', () => {
+  it('projects Alliance chat without turning it into a workspace tab', () => {
     const sendAllianceChat = vi.fn(() => ({ ok: true }));
     const workspace = new PixiViewModelFactory().createAllianceWorkspace(
       {
@@ -1684,6 +1699,12 @@ describe('PixiViewModelFactory', () => {
             body: 'Welcome to the hall.',
             sentAtMs: Date.now(),
           },
+          {
+            id: 'message-2',
+            username: 'system',
+            body: 'Mira was approved by Luna and joined the alliance.',
+            sentAtMs: Date.now(),
+          },
         ],
       },
       'chat',
@@ -1691,12 +1712,11 @@ describe('PixiViewModelFactory', () => {
     );
 
     expect(workspace.workspace).toBe(true);
-    expect(workspace.selectedTabId).toBe('chat');
+    expect(workspace.selectedTabId).toBe('home');
     expect(workspace.tabs.map((tab) => tab.id)).toEqual([
       'home',
       'quests',
       'requests',
-      'chat',
       'settings',
     ]);
     expect(workspace.flag).toEqual({
@@ -1707,6 +1727,11 @@ describe('PixiViewModelFactory', () => {
     expect(workspace.chat.rows[0]).toMatchObject({
       username: 'Luna',
       body: 'Welcome to the hall.',
+    });
+    expect(workspace.chat.rows[1]).toMatchObject({
+      type: 'system',
+      username: 'System',
+      body: 'Mira was approved by Luna and joined the alliance.',
     });
     workspace.chat.onSubmit('alliance only');
     expect(sendAllianceChat).toHaveBeenCalledWith('alliance only');

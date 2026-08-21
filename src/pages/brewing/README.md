@@ -22,7 +22,7 @@ Research. Tapping a missing recipe ingredient opens the herb picker, centers
 that exact herb row, and gives it one short attention boink. A brew request
 opens the Recipes book directly to its required potion card and boinks the
 card's existing action control.
-Tapping the active cauldron during brewing or bottling removes up to one second
+Tapping the active cauldron during brewing or bottling removes 30% of the remaining time
 from its timer, with the same per-target cooldown used by Garden plots.
 A potion automatically granted after bottling plays the same short pop used by
 manual seed summoning.

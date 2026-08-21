@@ -160,6 +160,13 @@ const UI_SURFACE_DEFINITIONS = Object.freeze([
     aliases: ['questProgress', 'topPanelProgress'],
   },
   {
+    id: 'topPanelFriendRequest',
+    kind: 'preview',
+    setup: 'topPanelQuestProgress',
+    options: { friendNotification: true },
+    aliases: ['friendRequestNotification', 'friendsNotification'],
+  },
+  {
     id: 'bottomRoomTabs',
     kind: 'preview',
     setup: 'bottomRoomTabs',
@@ -2311,17 +2318,27 @@ export class DevCheatCommandManager {
       );
     }
 
-    const totalQuests = Math.max(1, Math.floor(Number(options.totalQuests) || 4));
+    const resolvedOptions = { ...(surface.options ?? {}), ...(options ?? {}) };
+    const totalQuests = Math.max(
+      1,
+      Math.floor(Number(resolvedOptions.totalQuests) || 4),
+    );
     const completedQuests = Math.min(
       totalQuests,
-      Math.max(0, Math.floor(Number(options.completedQuests) || 1)),
+      Math.max(0, Math.floor(Number(resolvedOptions.completedQuests) || 1)),
     );
     const progress = {
       completedQuests,
       totalQuests,
-      targetLevel: Math.max(1, Math.floor(Number(options.targetLevel) || 2)),
+      targetLevel: Math.max(
+        1,
+        Math.floor(Number(resolvedOptions.targetLevel) || 2),
+      ),
       activeQuest: { kind: 'task', taskId: 'dev-top-panel-preview' },
     };
+    if (typeof resolvedOptions.friendNotification === 'boolean') {
+      progress.friendNotification = resolvedOptions.friendNotification;
+    }
     const result = this.pagesFacade.setTopPanelQuestProgressPreview(progress);
 
     return {

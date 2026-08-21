@@ -52,9 +52,11 @@
       );
       const applicationManager = new PixiApplicationManager({ canvas });
       const assetManager = new PixiAssetManager();
-      const completionFrame = new URLSearchParams(location.search).get(
+      const searchParams = new URLSearchParams(location.search);
+      const completionFrame = searchParams.get(
         'completionFrame',
       );
+      const longLabel = searchParams.has('longLabel');
       let now = 0;
       let nextFrameId = 1;
       const pendingFrames = new Map();
@@ -84,7 +86,9 @@
               tasks: [
                 {
                   taskId: 'level5-brew-mana-tonic',
-                  requirementLabel: 'Brew Mana Tonic',
+                  requirementLabel: longLabel
+                    ? 'Research Mana Tonic Brewing Speed I'
+                    : 'Brew Mana Tonic',
                   itemKind: 'potion',
                   itemKey: 'manaTonic',
                   progressQuantity: 1,
@@ -119,6 +123,7 @@
 
       const row = model.workshop.tasks.rows[0];
       recipeState.dataset.progress = String(row.progress);
+      recipeState.dataset.longLabel = String(longLabel);
       if (completionFrame) {
         const transitionId = questCompletionMotionCoordinator.begin({
           previousTaskId: row.id,

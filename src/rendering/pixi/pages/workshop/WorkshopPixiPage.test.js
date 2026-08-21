@@ -452,21 +452,22 @@ describe('WorkshopPixiPage', () => {
     harness.dispose();
   });
 
-  it('grows the priority card again when a larger request label wraps', () => {
+  it('keeps the priority card height fixed and fits long request labels', () => {
     const harness = createHarness();
     const model = createWorkshopViewModel();
-    model.workshop.tasks.rows[0].label = 'Research Mana Tonic Brewing Speed I';
+    model.workshop.tasks.rows[0].label =
+      'Research Mana Tonic Brewing Speed Improvement Upgrade II';
 
     harness.page.bind(model);
 
     const row = harness.page.tasks.rows.get('request-1');
-    expect(row.label.height).toBeGreaterThan(19);
-    expect(row.progress.root.y).toBeGreaterThan(38);
-    expect(row.label.y + row.label.height).toBeLessThanOrEqual(
-      row.progress.root.y - 6,
-    );
-    expect(row.getPreferredHeight()).toBeGreaterThan(48);
-    expect(harness.page.tasks.height).toBeGreaterThan(77);
+    expect(row.label.style.wordWrap).toBe(false);
+    expect(row.label.style.fontSize).toBeLessThan(16);
+    expect(row.label.style.fontSize).toBeGreaterThanOrEqual(13);
+    expect(row.label.y + row.label.height / 2).toBeCloseTo(14.5);
+    expect(row.progress.root.y).toBe(38);
+    expect(row.getPreferredHeight()).toBe(48);
+    expect(harness.page.tasks.height).toBe(77);
 
     harness.page.destroy();
     harness.dispose();
@@ -1274,6 +1275,7 @@ describe('WorkshopPixiPage', () => {
     });
     expect(action.root.y).toBe(4);
     expect(action.root.x + action.width).toBe(row.root.hitArea.width);
+    expect(action.root.x - row.value.x).toBe(4);
     expect(row.progress.root.y).toBe(38);
     expect(row.getPreferredHeight()).toBe(48);
     expect(action.handleTap()).toEqual({ ok: true });
@@ -3358,9 +3360,11 @@ describe('WorkshopPixiPage', () => {
     expect(pane.swatches.find((swatch) => swatch.selected)?.colorId).toBe(
       'green',
     );
-    expect(pane.bannerPreview.visible).toBe(true);
-    expect(pane.scroll.contentHeight).toBeGreaterThan(pane.scroll.height);
-    expect(pane.scroll.scrollbarThumb.visible).toBe(true);
+    expect(pane.sectionTabs).toHaveLength(2);
+    expect(pane.bannerPreview.visible).toBe(false);
+    expect(pane.scroll.scrollbarThumb.visible).toBe(false);
+    expect(pane.joinModeLabel.visible).toBe(false);
+    expect(pane.saveButton.text.text).toBe('Save Profile');
     expect(dialog.tabs.getWidgets()).toHaveLength(4);
     expect(dialog.panel.paperFrame.visible).toBe(true);
     expect(pane.root.y).toBe(
@@ -3370,16 +3374,26 @@ describe('WorkshopPixiPage', () => {
 
     pane.selectTagColor('violet');
     expect(pane.fields.get('tag').textLabel.colorToken).toBe('#bd9ae1');
-    pane.selectJoinMode('open');
     await pane.save();
     expect(onSave).toHaveBeenCalledWith(
       expect.objectContaining({
         name: 'Moss Hall',
         tag: 'MOSS',
         tagColor: 'violet',
-        joinMode: 'open',
+        joinMode: 'apply',
       }),
     );
+
+    pane.selectSection('banner');
+    expect(pane.fields.get('name').visible).toBe(false);
+    expect(pane.bannerPreview.visible).toBe(true);
+    expect(pane.bannerPreview.flagWidth).toBe(160);
+    expect(pane.bannerPreview.x).toBe((pane.lastBounds.width - 160) / 2);
+    expect(pane.emblemOptions[0].size).toBe(40);
+    expect(pane.emblemOptionLayer.y).toBeGreaterThan(
+      pane.bannerPreview.y + pane.bannerPreview.flagHeight,
+    );
+    expect(pane.saveButton.text.text).toBe('Save Banner');
 
     harness.page.destroy();
     harness.dispose();
@@ -3441,7 +3455,7 @@ describe('WorkshopPixiPage', () => {
     harness.dispose();
   });
 
-  it('configures alliance banner and emblem colors inside merged settings', async () => {
+  it('configures alliance banner and emblem colors inside the Banner tab', async () => {
     const onSave = vi.fn(async () => ({ ok: true }));
     const assetManager = createPixiAssetManagerFake(Texture);
     assetManager.getTexture = vi.fn(() => new Texture());
@@ -3480,6 +3494,7 @@ describe('WorkshopPixiPage', () => {
     harness.page.openDialog('alliance');
 
     const pane = harness.dialogs.get('workshop.alliance').allianceSettingsPane;
+    pane.selectSection('banner');
     expect(pane.bannerPreview.visible).toBe(true);
     expect(pane.bannerPreview.bannerColor).toBe('blue');
     expect(pane.bannerPreview.emblemColor).toBe('gold');
@@ -3497,8 +3512,8 @@ describe('WorkshopPixiPage', () => {
     expect(pane.emblemColorSwatches).toHaveLength(10);
     expect(pane.bannerColorSwatches[0].root.eventMode).toBe('static');
     expect(pane.emblemColorSwatches[0].root.eventMode).toBe('static');
-    expect(pane.fields.get('name').visible).toBe(true);
-    expect(pane.saveButton.text.text).toBe('Save');
+    expect(pane.fields.get('name').visible).toBe(false);
+    expect(pane.saveButton.text.text).toBe('Save Banner');
 
     pane.selectBannerColor('red');
     pane.selectEmblemColor('white');

@@ -43,9 +43,7 @@ describe('PixiTopPanelView', () => {
       username: 'mira',
       character: 'mira',
       frameTint: 0xb54c40,
-      showBag: true,
       coin: 1200,
-      amethyst: 320,
       contextCurrency: {
         resource: 'mana',
         amount: 41.9,
@@ -54,6 +52,7 @@ describe('PixiTopPanelView', () => {
         visible: true,
       },
       level: 4,
+      avatarNotification: true,
       quest: {
         visible: true,
         completed: 1,
@@ -78,13 +77,11 @@ describe('PixiTopPanelView', () => {
     });
     expect(view.contextCurrency.amount).toBe('41/80');
     expect(view.contextCurrency.position.x).toBe(466);
-    expect(view.amethyst.visible).toBe(false);
     expect(view.bag.visible).toBe(true);
     expect(view.manaRate.text).toBe('+2.25/s');
     expect(view.manaRate.visible).toBe(true);
     expect(view.coin.amount).toBe('1.2k');
-    expect(view.amethyst.amount).toBe('320');
-    expect(semanticRegistry.has('top.amethyst')).toBe(true);
+    expect(semanticRegistry.has('top.amethyst')).toBe(false);
     expect(view.contextCurrency.resource).toBe('mana');
     expect(semanticRegistry.has('top.contextCurrency')).toBe(true);
     expect(semanticRegistry.get('top.mana')?.displayObject).toBe(
@@ -152,6 +149,18 @@ describe('PixiTopPanelView', () => {
     expect(view.avatarViewport.avatarFrame).toBeInstanceOf(
       NineSliceSprite,
     );
+    expect(view.avatarNotification.visible).toBe(true);
+    expect(view.avatarNotification.position).toMatchObject({
+      x: 32 / 3 + 62 - PIXI_UI_GEOMETRY.notificationSize / 2,
+      y: 32 / 3 + PIXI_UI_GEOMETRY.notificationSize / 2,
+    });
+    expect(view.avatarNotificationBadge.sprite.width).toBe(
+      PIXI_UI_GEOMETRY.notificationSize,
+    );
+    expect(view.avatarNotificationBadge.tone).toBe('red');
+    expect(assets.getTexture).toHaveBeenCalledWith(
+      PIXI_ROOT_RUN_ASSETS.notificationRed,
+    );
     expect(
       view.avatarViewport.profileWidget,
     ).toBeInstanceOf(PlayerProfileWidget);
@@ -200,11 +209,9 @@ describe('PixiTopPanelView', () => {
     expect(view.levelRail.panel.width).toBe(754);
     expect(view.levelRail.track.width).toBe(729);
     expect(view.coin.position.x).toBe(209);
-    expect(view.amethyst.position.x).toBe(466);
     expect(view.contextCurrency.position.x).toBe(466);
     expect(view.bag.position.x).toBe(723);
     expect(view.coin.background.width).toBe(240);
-    expect(view.amethyst.background.width).toBe(240);
     expect(view.contextCurrency.background.width).toBe(240);
     expect(view.bag.background.width).toBe(240);
     expect(view.manaRate.position).toMatchObject({ x: 586, y: 174 });
@@ -290,13 +297,12 @@ describe('PixiTopPanelView', () => {
     view.destroy();
   });
 
-  it('shows mana regeneration only when Mana owns the context slot', () => {
+  it('keeps Bag visible while Mana regeneration follows the context slot', () => {
     const view = new PixiTopPanelView({
       assets: createAssets(),
     });
 
     view.bind({
-      showBag: true,
       contextCurrency: {
         amount: 40,
         cap: 50,
@@ -316,14 +322,14 @@ describe('PixiTopPanelView', () => {
       },
     });
     expect(view.contextCurrency.amount).toBe('9');
-    expect(view.contextCurrency.position.x).toBe(723);
-    expect(view.bag.visible).toBe(false);
+    expect(view.contextCurrency.position.x).toBe(466);
+    expect(view.bag.visible).toBe(true);
     expect(view.manaRate.visible).toBe(false);
 
     view.destroy();
   });
 
-  it('opens the Workshop Bag from the third top-HUD slot', () => {
+  it('opens Bag from the third top-HUD slot', () => {
     const registrations = [];
     const openBag = vi.fn();
     const view = new PixiTopPanelView({
@@ -339,7 +345,6 @@ describe('PixiTopPanelView', () => {
     view.bind({
       actions: { openBag },
       contextCurrency: { resource: 'mana' },
-      showBag: true,
     });
 
     const bagPress = registrations.find(({ id }) => id === 'top.bag');

@@ -68,6 +68,41 @@ describe('PixiGlobalDialogPresenter', () => {
     expect(harness.presenter.open('unknown')).toBe(false);
   });
 
+  it('projects friend tags and opens direct chat from the accepted-friend row', () => {
+    const friend = {
+      identity: 'identity-juniper',
+      username: 'Juniper',
+      character: 'juniper',
+      frame: 'emerald',
+      playerLevel: 10,
+      allianceTag: 'MOSS',
+      allianceTagColor: 'green',
+      connected: true,
+    };
+    const harness = createHarness({
+      friendsSnapshot: { friends: [friend] },
+    });
+    harness.friendsFacade.getRelationship.mockReturnValue('friend');
+    harness.presenter.mount();
+
+    expect(harness.presenter.open(GLOBAL_DIALOG_IDS.FRIENDS)).toEqual({
+      dialogId: GLOBAL_DIALOG_IDS.FRIENDS,
+    });
+    const [row] = harness.getOpenModel(GLOBAL_DIALOG_IDS.FRIENDS).rows;
+    expect(row).toMatchObject({
+      identity: friend.identity,
+      allianceTag: 'MOSS',
+      allianceTagColor: 'green',
+    });
+
+    expect(row.onActivate()).toEqual({
+      dialogId: GLOBAL_DIALOG_IDS.DIRECT_MESSAGE,
+    });
+    expect(
+      harness.getOpenModel(GLOBAL_DIALOG_IDS.DIRECT_MESSAGE).friend,
+    ).toMatchObject(friend);
+  });
+
   it('replaces a submitted chat report with the requested reminder dialog', () => {
     const harness = createHarness();
     harness.presenter.mount();
@@ -574,7 +609,14 @@ describe('PixiGlobalDialogPresenter', () => {
   });
 
   it('routes only the current player from Player Info to Wizard cosmetics', () => {
-    const harness = createHarness();
+    const harness = createHarness({
+      friendsSnapshot: {
+        connected: true,
+        friends: [],
+        incomingRequests: [{ identity: 'identity-rowan' }],
+        outgoingRequests: [],
+      },
+    });
     harness.presenter.mount();
 
     harness.presenter.open(GLOBAL_DIALOG_IDS.PLAYER, {
@@ -586,6 +628,7 @@ describe('PixiGlobalDialogPresenter', () => {
     const ownPlayer = harness.getOpenModel(GLOBAL_DIALOG_IDS.PLAYER);
 
     expect(ownPlayer.ownPlayer).toBe(true);
+    expect(ownPlayer.friendsNotification).toBe(true);
     expect(ownPlayer.actions.openCosmetics()).toEqual({
       dialogId: GLOBAL_DIALOG_IDS.SETTINGS,
     });
@@ -606,6 +649,7 @@ describe('PixiGlobalDialogPresenter', () => {
     });
     const otherPlayer = harness.getOpenModel(GLOBAL_DIALOG_IDS.PLAYER);
     expect(otherPlayer.ownPlayer).toBe(false);
+    expect(otherPlayer.friendsNotification).toBe(false);
     expect(otherPlayer.actions.openCosmetics).toBeUndefined();
   });
 
@@ -894,6 +938,7 @@ describe('PixiGlobalDialogPresenter', () => {
 function createHarness({
   runtimeInitialized = true,
   playerSnapshot = {},
+  friendsSnapshot = {},
   simulateDialogLifecycle = false,
   checkForUpdates = null,
   installUpdate = null,
@@ -997,6 +1042,18 @@ function createHarness({
       },
     ],
   });
+  const friendsFacade = createSnapshotFacade(
+    {
+      connected: true,
+      friends: [],
+      incomingRequests: [],
+      outgoingRequests: [],
+      ...friendsSnapshot,
+    },
+    {
+      getRelationship: vi.fn(() => 'stranger'),
+    },
+  );
   const tradeAllianceFacade = createPublicSnapshotFacade(
     {
       connected: true,
@@ -1048,6 +1105,7 @@ function createHarness({
     feedbackFacade,
     playerInboxFacade,
     playerInfoFacade,
+    friendsFacade,
     tradeAllianceFacade,
     hapticsFacade,
     soundSettingsFacade,
@@ -1067,6 +1125,7 @@ function createHarness({
     feedbackFacade,
     playerInboxFacade,
     playerInfoFacade,
+    friendsFacade,
     tradeAllianceFacade,
     hapticsFacade,
     soundSettingsFacade,

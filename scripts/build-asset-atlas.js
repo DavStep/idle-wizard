@@ -175,6 +175,11 @@ const RESEARCH_ASSETS = [
 ];
 
 const ASSETS = [
+  [
+    'alliance:members',
+    'assets/game/source/icons/icon-alliance-members.png',
+    96,
+  ],
   ['resource:coin', 'assets/game/source/icons/icon-coin.png', 96],
   ['resource:crystal', 'assets/game/source/icons/icon-amber.png', 96],
   ['resource:amethyst', 'assets/game/source/icons/icon-amethyst.png', 96],
@@ -221,6 +226,7 @@ const ASSETS = [
   ['ui:summonCircle', 'assets/game/source/ui/summon-circle.png', 768],
 ];
 const FULL_RESOLUTION_ATLAS_SOURCE_PATHS = new Set([
+  'assets/game/source/icons/icon-alliance-members.png',
   'assets/game/source/icons/icon-coin.png',
   'assets/game/source/icons/icon-amber.png',
   'assets/game/source/icons/icon-amethyst.png',

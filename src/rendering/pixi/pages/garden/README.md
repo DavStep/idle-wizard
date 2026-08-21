@@ -77,12 +77,18 @@ instances. A right-side `70x78px` control block ends at the third normal plot's
 visible right edge: the seed selector spans its top, with Brewing-sized
 `32x36px` Auto and `xN` controls below it and `6px` gaps. Their invisible tap
 targets remain `44px`. The progress rail stays directly beneath the soil. The
+fill is green while growing and yellow while harvesting. The
 seed icon sets that plot's future crop, Auto toggles the
 existing combined plant/harvest loop, and `xN` cycles through the researched
 plot multiplier for the next crop; the active crop keeps its committed count.
-Automated plants sit `2px` higher than the manual baseline and use stable
-per-plot/per-slot variation of up to `1.5px` horizontally and `1px` vertically,
-so the bed looks organic without jittering across ticks or rebinds.
+The seed selector raises the seed pack above its compact selected-seed name;
+the lower `xN` label uses the same optical face center as the shared button
+skin rather than the raw image bounds.
+Automated plants sit `2px` higher than the manual baseline. The committed crop
+forms one evenly spaced group centered on the long soil for every count from one
+through five, with stable per-plot/per-slot vertical variation of up to `1px` so
+the bed looks organic without breaking horizontal symmetry or jittering across
+ticks and rebinds.
 Accepted timer-reduction taps resolve the nearest visible herb from the release
 point and animate only that herb's snap, spark burst, and removed-time label;
 the other herbs and soil stay still while the plot-wide cooldown remains active.
@@ -126,9 +132,10 @@ standalone editor entry is `Inventory Choice Row` under
 pressed, and unavailable scenarios.
 Successful single-plot planting, `Plant All`, automated planting, and seed
 swaps run one `500ms` tile-owned sequence. One seed pack starts `36px` above
-the plot center and falls straight down. It hides on center impact, the soil
-boinks from its center pivot, and the committed herb remains hidden until the
-soil settles before beginning its normal growth motion. The persistent Seeds
+the plot center, stretches as it falls straight down, then squashes and fades
+at center impact. The soil boinks from its center pivot while the committed
+herb scales upward from the bottom of its artwork into normal growth motion.
+The persistent Seeds
 picker stays still. Failed actions do not animate, hidden-room changes do not
 replay on return, and reduced motion reveals the growing state immediately.
 Successful single-plot planting and harvesting use the dedicated Garden action
@@ -147,7 +154,11 @@ overflow-only scrollbar, and hard resting bounds. Add
 `?growing=1&progress=gradient` for the four-growing-plot regression
 state that verifies Garden timer rails keep their green role color even when
 the player-wide progress style is gradient. Add
-`?automated=1&tapAcceleration=1` to exercise the production per-herb
+`?automated=1&harvesting=1` for the yellow harvesting rail. Add
+`?automated=1&quantity=2` to
+render any committed count from one through five and verify that the herb group
+stays evenly spaced and centered. Add `?automated=1&tapAcceleration=1` to
+exercise the production per-herb
 timer-reduction feedback with live recipe time. Add `?automated=1&harvest=1`
 to make the long bed ready and emit the production harvest flyout from each
 matching herb slot when pressed. The default recipe shows both researched bulk

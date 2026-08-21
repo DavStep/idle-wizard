@@ -100,6 +100,7 @@ export class RootRunHudCurrencyCapsule extends Container {
     assets,
     resource = 'coin',
     amount = '0',
+    iconFrame = null,
     width = CURRENCY_WIDTH,
     label = 'topPanel:currency',
   } = {}) {
@@ -128,11 +129,23 @@ export class RootRunHudCurrencyCapsule extends Container {
       .setStroke(LEVEL_TEXT_STROKE)
       .setAnchor(1, 0.5);
     this.addChild(this.background, this.resourceLabel);
+    this.iconFrame = null;
+    this.setIconFrame(iconFrame);
     this.layoutContent();
   }
 
   setResource(resource) {
+    this.iconFrame = null;
     this.resourceLabel.setResource(resource);
+    this.layoutContent();
+    return this;
+  }
+
+  setIconFrame(iconFrame) {
+    this.iconFrame = String(iconFrame ?? '').trim() || null;
+    this.resourceLabel.icon.texture = this.iconFrame
+      ? this.resourceLabel.assetManager.getAtlasTexture(this.iconFrame)
+      : this.resourceLabel.getTexture(this.resourceLabel.resource);
     this.layoutContent();
     return this;
   }

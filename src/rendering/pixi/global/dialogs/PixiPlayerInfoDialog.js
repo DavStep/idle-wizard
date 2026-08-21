@@ -316,6 +316,9 @@ export class PixiPlayerInfoDialog extends RetainedGlobalDialog {
     this.friendsButton.visible = showCosmetics;
     this.friendsButton.renderable = showCosmetics;
     this.friendsButton.setEnabled(showCosmetics && Boolean(this.actions.openFriends));
+    this.friendsButton.setNotification(
+      showCosmetics && this.playerModel.friendsNotification,
+    );
     this.configureRelationshipButtons(showRelationship);
     this.panel.setPaperVisible(false);
 
@@ -633,6 +636,9 @@ function normalizePlayerModel(model = {}) {
   return {
     loading,
     ownPlayer: Boolean(model.ownPlayer ?? source.ownPlayer),
+    friendsNotification: Boolean(
+      model.friendsNotification ?? source.friendsNotification,
+    ),
     relationship: String(model.relationship ?? source.relationship ?? 'stranger'),
     identity: String(source.identity ?? ''),
     username: String(source.username ?? source.name ?? '').trim(),

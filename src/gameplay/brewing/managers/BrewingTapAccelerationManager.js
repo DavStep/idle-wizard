@@ -1,4 +1,4 @@
-export const BREWING_CAULDRON_TAP_REDUCTION_SECONDS = 1;
+export const BREWING_CAULDRON_TAP_REDUCTION_RATIO = 0.3;
 export const BREWING_CAULDRON_TAP_COOLDOWN_MS = 504;
 
 export class BrewingTapAccelerationManager {
@@ -56,9 +56,13 @@ export class BrewingTapAccelerationManager {
       };
     }
 
+    const requestedReductionSeconds =
+      Math.round(
+        previousRemainingMs * BREWING_CAULDRON_TAP_REDUCTION_RATIO,
+      ) / 1_000;
     const activeBrew =
       this.brewingProcessEntityManager.reduceRemainingSeconds(
-        BREWING_CAULDRON_TAP_REDUCTION_SECONDS,
+        requestedReductionSeconds,
         safeCauldronIndex,
       );
     const reducedSeconds = Math.max(

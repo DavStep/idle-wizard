@@ -305,6 +305,8 @@ function createTradeAllianceDialogModel(key) {
     })),
     tradeInfo: {
       identityLabel: '[OWL] Night Owls',
+      name: 'Night Owls',
+      tag: 'OWL',
       description: 'Patient traders building a stronger market together.',
       notice: 'Weekly goal: support every active member.',
       memberCountLabel: `${members.length}/50`,

@@ -69,6 +69,14 @@ export class TradeAllianceActionManager {
     });
   }
 
+  setJoinMode(joinMode) {
+    return this.callReducer(
+      'setTradeAllianceJoinMode',
+      'set_trade_alliance_join_mode',
+      { joinMode: this.normalizeJoinMode(joinMode) },
+    );
+  }
+
   joinAlliance(allianceId) {
     return this.callReducer('joinTradeAlliance', 'join_trade_alliance', {
       allianceId: this.normalizeId(allianceId),

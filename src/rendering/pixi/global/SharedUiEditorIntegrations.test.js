@@ -45,6 +45,7 @@ describe('shared Pixi UI editor integrations', () => {
       'compound.hud-bag-capsule',
       'hud-avatar-button',
       'hud-settings-button',
+      'primitive.notification-badge',
     ]);
     expect(chromeIntegrations[1].childWidgetIds).toEqual([
       'primitive.retained-panel',

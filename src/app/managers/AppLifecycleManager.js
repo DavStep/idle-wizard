@@ -11,6 +11,13 @@ import {
 import { AppGameplayTickManager } from './AppGameplayTickManager.js';
 import { AppVisibilityManager } from './AppVisibilityManager.js';
 
+const GAMEPLAY_SAVE_LINEAGE_KEYS = new Set([
+  'savedAt',
+  'clientSavedAt',
+  'clientSaveSessionId',
+  'clientSaveSequence',
+]);
+
 export class AppLifecycleManager {
   constructor({
     shellManager,
@@ -299,6 +306,15 @@ export class AppLifecycleManager {
 
       if (!save) {
         await this.persistFreshGameplayBaseline({ enableSaveSending });
+        await this.loadGameplaySave(accountLinkSave, {
+          persistLoaded: true,
+          enableSaveSending,
+        });
+        this.clearPendingAccountLinkSave();
+        return;
+      }
+
+      if (this.areGameplaySavesEquivalent(accountLinkSave, save)) {
         await this.loadGameplaySave(accountLinkSave, {
           persistLoaded: true,
           enableSaveSending,
@@ -712,6 +728,22 @@ export class AppLifecycleManager {
 
     this.reauthorizationFlowActive = true;
     try {
+      const authSnapshot = this.getAuthSnapshot();
+      const canRefreshRememberedAccount = Boolean(
+        authSnapshot?.oidc?.remembered && !authSnapshot?.oidc?.authenticated,
+      );
+      const restoredAccount = canRefreshRememberedAccount
+        ? await this.tryRestoreConnectedAccount()
+        : { ok: false, reason: 'not_remembered' };
+      if (
+        restoredAccount?.ok &&
+        this.getAuthSnapshot()?.oidc?.authenticated
+      ) {
+        this.onlineGateManager.showConnecting();
+        void this.connectBackend();
+        return;
+      }
+
       this.onlineGateManager.hide();
       const choice = await this.chooseFreshStart({
         authSnapshot: this.getAuthSnapshot(),
@@ -733,6 +765,57 @@ export class AppLifecycleManager {
     } finally {
       this.reauthorizationFlowActive = false;
     }
+  }
+
+  async tryRestoreConnectedAccount() {
+    const authFacade = this.backendFacade.getAuthFacade?.();
+
+    if (typeof authFacade?.tryRestoreConnectedAccount !== 'function') {
+      return { ok: false, reason: 'disabled' };
+    }
+
+    return Promise.resolve(authFacade.tryRestoreConnectedAccount()).catch((error) => ({
+      ok: false,
+      reason: 'exception',
+      message: this.getErrorText(error),
+    }));
+  }
+
+  areGameplaySavesEquivalent(leftSave, rightSave) {
+    if (
+      !leftSave ||
+      typeof leftSave !== 'object' ||
+      Array.isArray(leftSave) ||
+      !rightSave ||
+      typeof rightSave !== 'object' ||
+      Array.isArray(rightSave)
+    ) {
+      return false;
+    }
+
+    return (
+      JSON.stringify(this.normalizeComparableSaveValue(leftSave, { root: true })) ===
+      JSON.stringify(this.normalizeComparableSaveValue(rightSave, { root: true }))
+    );
+  }
+
+  normalizeComparableSaveValue(value, { root = false } = {}) {
+    if (Array.isArray(value)) {
+      return value.map((entry) => this.normalizeComparableSaveValue(entry));
+    }
+
+    if (!value || typeof value !== 'object') {
+      return value;
+    }
+
+    const normalized = {};
+    for (const key of Object.keys(value).sort()) {
+      if (root && GAMEPLAY_SAVE_LINEAGE_KEYS.has(key)) {
+        continue;
+      }
+      normalized[key] = this.normalizeComparableSaveValue(value[key]);
+    }
+    return normalized;
   }
 
   scheduleBackendReconnect() {

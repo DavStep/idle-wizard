@@ -163,6 +163,8 @@ Useful view setup commands:
 - `/?devUi=bottomRoomTabs` reveals the real five-tab bottom room chrome for
   screenshot and interaction QA without changing tutorial progress or gameplay
   state.
+- `/?devUi=topPanelFriendRequest` projects the real incoming-friend-request
+  badge on the retained player avatar without mutating backend relationships.
 - `/?devUi=discoveries` opens the real Workshop Discoveries dialog with one
   non-persistent shared discovery snapshot, including discoverer, date, recipe,
   mana, brew duration, and royalty metadata.

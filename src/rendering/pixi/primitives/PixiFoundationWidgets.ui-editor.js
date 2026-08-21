@@ -348,9 +348,14 @@ export default [
         label: 'Top HUD resource capsules',
         source: 'src/rendering/pixi/global/chrome/PixiTopPanelView.js',
       },
+      {
+        label: 'Alliance Home member count and season income',
+        source: 'src/rendering/pixi/pages/alliance/AlliancePixiPage.js',
+      },
     ],
     scenarios: [
       { fixture: { amount: '12.4K', resource: 'coin' }, id: 'coin', label: 'Coin', mount: mountHudCurrency },
+      { fixture: { amount: '3/50', iconFrame: 'alliance:members', resource: 'coin' }, id: 'alliance-members', label: 'Alliance Members', mount: mountHudCurrency },
       { fixture: { amount: '320', resource: 'mana' }, id: 'mana', label: 'Mana', mount: mountHudCurrency },
       { fixture: { amount: '18', resource: 'crystal' }, id: 'amber', label: 'Amber', mount: mountHudCurrency },
       { fixture: { amount: '240', resource: 'amethyst' }, id: 'amethyst', label: 'Amethyst', mount: mountHudCurrency },
@@ -1635,6 +1640,7 @@ function createHudCurrencyControl({ assets, state }) {
   const capsule = new RootRunHudCurrencyCapsule({
     amount: state.amount,
     assets,
+    iconFrame: state.iconFrame,
     resource: state.resource,
   });
   capsule.scale.set(1 / HUD_SOURCE_SCALE);

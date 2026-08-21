@@ -319,6 +319,8 @@ describe('TradeAllianceSubscriptionManager', () => {
           character: 'mira',
           frame: 'violet',
           playerLevel: 14,
+          totalProducedGold: 12_500n,
+          prestigeCount: 2,
         },
       ]),
       quests: createTable(),
@@ -334,6 +336,50 @@ describe('TradeAllianceSubscriptionManager', () => {
       character: 'mira',
       frame: 'violet',
       playerLevel: 14,
+      totalProducedCoin: 12_500,
+      prestigeCount: 2,
+    });
+  });
+
+  it('reads alliance applications for notifications without full public data', () => {
+    const manager = new TradeAllianceSubscriptionManager();
+
+    manager.identityKey = 'self';
+    manager.notificationDataActive = true;
+    manager.tables = {
+      overview: createTable([createOverviewRow()]),
+      alliances: createTable([{ allianceId: 'alliance-1', name: 'All Seeing Void' }]),
+      members: createTable([{ allianceId: 'alliance-1', memberIdentity: 'self' }]),
+      applications: createTable([
+        {
+          applicationKey: 'alliance-1:applicant-1',
+          allianceId: 'alliance-1',
+          applicantIdentity: 'applicant-1',
+          username: 'Luna',
+        },
+      ]),
+      quests: createTable(),
+      contributions: createTable(),
+      chat: createTable(),
+      rewards: createTable(),
+    };
+
+    manager.publishFromTables();
+
+    expect(manager.getSnapshot()).toMatchObject({
+      alliances: [],
+      members: [],
+      applications: [
+        {
+          applicationKey: 'alliance-1:applicant-1',
+          allianceId: 'alliance-1',
+          applicantIdentity: 'applicant-1',
+        },
+      ],
+      ownAlliance: {
+        allianceId: 'alliance-1',
+      },
+      canManageApplications: true,
     });
   });
 
@@ -418,5 +464,33 @@ describe('TradeAllianceSubscriptionManager', () => {
     expect(tables.tradeAllianceQuestContributionSnapshot.handlerCount()).toBe(
       0,
     );
+  });
+
+  it('keeps application listeners while public alliance data is released', () => {
+    const tables = {
+      ownTradeAllianceOverview: createObservableTable([createOverviewRow()]),
+      ownTradeAllianceChat: createObservableTable(),
+      ownTradeAllianceRewardInbox: createObservableTable(),
+      tradeAllianceSnapshot: createObservableTable(),
+      tradeAllianceMemberSnapshot: createObservableTable(),
+      tradeAllianceApplicationSnapshot: createObservableTable(),
+      tradeAllianceQuestProgressSnapshot: createObservableTable(),
+      tradeAllianceQuestContributionSnapshot: createObservableTable(),
+    };
+    const manager = new TradeAllianceSubscriptionManager();
+
+    manager.connect(createConnection(tables), 'self');
+    manager.setNotificationDataActive(true);
+
+    expect(tables.tradeAllianceApplicationSnapshot.handlerCount()).toBe(3);
+
+    manager.setPublicDataActive(true);
+    manager.setPublicDataActive(false);
+
+    expect(tables.tradeAllianceApplicationSnapshot.handlerCount()).toBe(3);
+
+    manager.setNotificationDataActive(false);
+
+    expect(tables.tradeAllianceApplicationSnapshot.handlerCount()).toBe(0);
   });
 });

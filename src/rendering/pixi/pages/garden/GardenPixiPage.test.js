@@ -16,6 +16,7 @@ import { SemanticTargetRegistry } from "../../retained/SemanticTargetRegistry.js
 import {
   PIXI_PROGRESS_VISUALS,
   PIXI_ROOT_RUN_ASSETS,
+  PIXI_STATUS_COLORS,
   PIXI_UI_GEOMETRY,
   createPixiThemeSnapshot,
   resolvePixiTextStrokeWidth,
@@ -324,6 +325,10 @@ describe("GardenPixiPage", () => {
       availableTextWidth,
     );
     expect(button.seedPack.visible).toBe(true);
+    expect(GARDEN_PIXI_GEOMETRY.seedButtonIconSize).toBeCloseTo(19 * 1.35);
+    expect(button.seedPack.height).toBeCloseTo(
+      GARDEN_PIXI_GEOMETRY.seedButtonIconSize,
+    );
 
     button.setPressed(true);
     expect(button.visual.scale).toMatchObject({ x: 0.94, y: 0.94 });
@@ -643,7 +648,7 @@ describe("GardenPixiPage", () => {
     harness.dispose();
   });
 
-  it("keeps Garden timer rails green when the player selects another progress style", () => {
+  it("keeps growing rails green and turns harvesting rails yellow", () => {
     const harness = createHarness();
 
     harness.page.bind(createGardenViewModel());
@@ -656,6 +661,17 @@ describe("GardenPixiPage", () => {
       tone: "green",
       fillColor: PIXI_PROGRESS_VISUALS.tones.green.fill,
       fillEdgeColor: PIXI_PROGRESS_VISUALS.tones.green.edge,
+      gradient: null,
+    });
+
+    const harvesting = createGardenViewModel();
+    harvesting.garden.plots[0].phase = "harvesting";
+    harness.page.bind(harvesting);
+
+    expect(progress.control).toMatchObject({
+      tone: "yellow",
+      fillColor: PIXI_PROGRESS_VISUALS.tones.yellow.fill,
+      fillEdgeColor: PIXI_PROGRESS_VISUALS.tones.yellow.edge,
       gradient: null,
     });
 
@@ -765,7 +781,9 @@ describe("GardenPixiPage", () => {
     });
     expect(plot.buyCostButton.actionTextLabel.text).toBe("Unlock");
     expect(plot.buyCostButton.amountLabel.text).toBe("25");
-    expect(plot.buyCostButton.amountLabel.colorToken).toBe("#c1121f");
+    expect(plot.buyCostButton.amountLabel.colorToken).toBe(
+      PIXI_STATUS_COLORS.insufficient,
+    );
     expect(plot.buyCostButton.notification).toBe(true);
     expect(plot.buyCostButton.notificationBadge.root.visible).toBe(false);
     expect(plot.notificationBadge.root.visible).toBe(false);
@@ -888,7 +906,8 @@ describe("GardenPixiPage", () => {
     expect(plot.plantSlots.filter(({ plant }) => plant.visible)).toHaveLength(
       5,
     );
-    const harvestAnchorCenters = plot.plantSlots.map(({ motion, plant }, index) => {
+    const harvestAnchorCenters = plot.plantSlots.map(
+      ({ motion, plant }, index) => {
       const anchor = harness.semanticTargets.resolve(
         `garden.plot.1.plant.${index + 1}`,
       );
@@ -906,42 +925,28 @@ describe("GardenPixiPage", () => {
         plantBounds.y + plantBounds.height / 2,
       );
       return motion.x;
-    });
+      },
+    );
     expect(harvestAnchorCenters).toEqual(
       [...harvestAnchorCenters].sort((left, right) => left - right),
     );
     const automatedInset = plot.visualPlotWidth / 7;
+    const automatedSlotGap =
+      (plot.visualPlotWidth - automatedInset * 2) /
+      (GARDEN_PIXI_GEOMETRY.automatedPlantSlots - 1);
     const automatedBaseY =
       GARDEN_PIXI_GEOMETRY.plotHeight -
       20 -
       GARDEN_PIXI_GEOMETRY.automatedPlantLift;
     const plantedPositions = plot.plantSlots.map(({ motion }, index) => {
-      const baseX =
-        automatedInset +
-        index *
-          ((plot.visualPlotWidth - automatedInset * 2) /
-            (GARDEN_PIXI_GEOMETRY.automatedPlantSlots - 1));
-      expect(Math.abs(motion.x - baseX)).toBeLessThanOrEqual(
-        GARDEN_PIXI_GEOMETRY.automatedPlantJitterX,
-      );
+      const baseX = automatedInset + index * automatedSlotGap;
+      expect(motion.x).toBeCloseTo(baseX);
       expect(Math.abs(motion.y - automatedBaseY)).toBeLessThanOrEqual(
         GARDEN_PIXI_GEOMETRY.automatedPlantJitterY,
       );
       expect(motion.y).toBeLessThan(GARDEN_PIXI_GEOMETRY.plotHeight - 20);
       return { x: motion.x, y: motion.y };
     });
-    expect(
-      plantedPositions.some(
-        ({ x }, index) =>
-          Math.abs(
-            x -
-              (automatedInset +
-                index *
-                  ((plot.visualPlotWidth - automatedInset * 2) /
-                    (GARDEN_PIXI_GEOMETRY.automatedPlantSlots - 1))),
-          ) > 0.01,
-      ),
-    ).toBe(true);
     expect(
       plantedPositions.some(({ y }) => Math.abs(y - automatedBaseY) > 0.01),
     ).toBe(true);
@@ -955,6 +960,22 @@ describe("GardenPixiPage", () => {
     ).toEqual(plantedPositions);
     expect(plot.autoButton.variant).toBe("green");
     expect(plot.quantityButton.textLabel.text).toBe("x5");
+    expect(plot.quantityButton.textLabel.position).toMatchObject({
+      x: GARDEN_PIXI_GEOMETRY.automatedControlWidth / 2,
+      y:
+        GARDEN_PIXI_GEOMETRY.automatedControlHeight / 2 +
+        plot.quantityButton.activeSkin.contentOffsetY,
+    });
+    expect(plot.seedButton.textLabel.text).toBe("Sage");
+    expect(plot.seedButton.textLabel.position.y).toBe(
+      GARDEN_PIXI_GEOMETRY.automatedSeedLabelY,
+    );
+    expect(plot.seedPack.position.y).toBe(
+      GARDEN_PIXI_GEOMETRY.automatedSeedIconY,
+    );
+    expect(plot.seedPack.height).toBe(
+      GARDEN_PIXI_GEOMETRY.automatedSeedIconSize,
+    );
     expect(plot.seedButton.buttonWidth).toBe(
       GARDEN_PIXI_GEOMETRY.automatedControlWidth * 2 +
         GARDEN_PIXI_GEOMETRY.automatedControlGap,
@@ -983,13 +1004,11 @@ describe("GardenPixiPage", () => {
     expect(plot.progress.root.x).toBeCloseTo(plot.frameX);
     expect(plot.progress.width).toBeCloseTo(plot.soil.width);
     expect(plot.seedButton.x).toBeCloseTo(
-      plot.frameX +
-        plot.soil.width +
-        GARDEN_PIXI_GEOMETRY.automatedControlGap,
+      plot.frameX + plot.soil.width + GARDEN_PIXI_GEOMETRY.automatedControlGap,
     );
-    expect(
-      plot.quantityButton.x + plot.quantityButton.buttonWidth,
-    ).toBeCloseTo(plot.frameX + plot.automatedRowWidth);
+    expect(plot.quantityButton.x + plot.quantityButton.buttonWidth).toBeCloseTo(
+      plot.frameX + plot.automatedRowWidth,
+    );
     expect(plot.autoButton.hitArea).toMatchObject({
       width: GARDEN_PIXI_GEOMETRY.automatedControlHitSize,
       height: GARDEN_PIXI_GEOMETRY.automatedControlHitSize,
@@ -1000,9 +1019,7 @@ describe("GardenPixiPage", () => {
     });
     expect(plot.autoGear.height).toBe(21);
     expect(plot.autoButton.textLabel.fontSize).toBe(10);
-    expect(
-      plot.autoButton.visual.getChildIndex(plot.autoGear),
-    ).toBeLessThan(
+    expect(plot.autoButton.visual.getChildIndex(plot.autoGear)).toBeLessThan(
       plot.autoButton.visual.getChildIndex(plot.autoButton.textLabel),
     );
     expect(plot.quantityButton.textLabel.fontSize).toBe(13);
@@ -1016,6 +1033,53 @@ describe("GardenPixiPage", () => {
     expect(plot.plantSlots.filter(({ plant }) => plant.visible)).toHaveLength(
       5,
     );
+
+    model.garden.plots[0].automationSeed.label = "Dragonpepper";
+    harness.page.bind(model);
+    expect(plot.seedButton.textLabel.text).toMatch(/^Dragon.*…$/);
+    expect(plot.seedButton.textLabel.measuredWidth).toBeLessThanOrEqual(
+      plot.seedButton.buttonWidth - 8,
+    );
+
+    harness.page.destroy();
+    harness.dispose();
+  });
+
+  it("centers every automated herb count as an evenly spaced group", () => {
+    const harness = createHarness();
+    const model = createGardenViewModel();
+    model.garden.plots[0] = {
+      ...model.garden.plots[0],
+      automationAvailable: true,
+      plantFrame: "herb:sage",
+      maxPlantQuantity: GARDEN_PIXI_GEOMETRY.automatedPlantSlots,
+    };
+
+    for (
+      let count = 1;
+      count <= GARDEN_PIXI_GEOMETRY.automatedPlantSlots;
+      count += 1
+    ) {
+      model.garden.plots[0].plantQuantity = count;
+      model.garden.plots[0].harvestQuantity = count;
+      harness.page.bind(model);
+
+      const plot = harness.page.plots.get("plot-1");
+      const visibleXs = plot.plantSlots
+        .filter(({ plant }) => plant.visible)
+        .map(({ motion }) => motion.x);
+      const plotCenterX = plot.visualPlotWidth / 2;
+
+      expect(visibleXs).toHaveLength(count);
+      expect((visibleXs[0] + visibleXs.at(-1)) / 2).toBeCloseTo(plotCenterX);
+      for (let index = 0; index < visibleXs.length; index += 1) {
+        expect(visibleXs[index] + visibleXs.at(-index - 1)).toBeCloseTo(
+          plotCenterX * 2,
+        );
+      }
+      const gaps = visibleXs.slice(1).map((x, index) => x - visibleXs[index]);
+      gaps.forEach((gap) => expect(gap).toBeCloseTo(gaps[0]));
+    }
 
     harness.page.destroy();
     harness.dispose();
@@ -1256,8 +1320,12 @@ describe("GardenPixiPage", () => {
 
     now = 300 + 500 * 0.5;
     harness.page.tick(now);
-    expect(harness.page.actionBar.seedsButton.seedPack.y).toBe(restingSeedPackY);
-    expect(harness.page.actionBar.seedsButton.seedItem.y).toBe(restingSeedItemY);
+    expect(harness.page.actionBar.seedsButton.seedPack.y).toBe(
+      restingSeedPackY,
+    );
+    expect(harness.page.actionBar.seedsButton.seedItem.y).toBe(
+      restingSeedItemY,
+    );
     expect(harness.page.actionBar.seedsButton.visual.scale).toMatchObject({
       x: 1,
       y: 1,
@@ -1273,13 +1341,27 @@ describe("GardenPixiPage", () => {
     expect(plot.receiveOffsetY).toBeGreaterThan(1);
     expect(plot.receiveScaleX).toBeGreaterThan(1.04);
     expect(plot.receiveScaleY).toBeLessThan(0.95);
-    expect(plot.plant.alpha).toBe(0);
+    expect(plot.plant.alpha).toBeGreaterThan(0);
+    expect(plot.plant.alpha).toBeLessThan(1);
+    expect(plot.plantSlots[0].revealMotion.position).toMatchObject({
+      x: 0,
+      y: 0,
+    });
+    expect(plot.plantSlots[0].revealMotion.scale.x).toBeGreaterThan(0.65);
+    expect(plot.plantSlots[0].revealMotion.scale.x).toBeLessThan(1);
+    expect(plot.plantSlots[0].revealMotion.scale.y).toBeGreaterThan(0.08);
+    expect(plot.plantSlots[0].revealMotion.scale.y).toBeLessThan(1);
+    expect(plot.plant.anchor).toMatchObject({ x: 0.5, y: 1 });
 
     now = 800;
     harness.page.tick(now);
     expect(plot.receiveStartedAt).toBeNull();
     expect(plot.frame.scale).toMatchObject({ x: 1, y: 1 });
     expect(plot.plant.alpha).toBe(1);
+    expect(plot.plantSlots[0].revealMotion.scale).toMatchObject({
+      x: 1,
+      y: 1,
+    });
     expect(plot.plantMotion.scale.x).toBeGreaterThan(0.42);
     expect(harness.page.actionBar.seedsButton.visual.scale).toMatchObject({
       x: 1,

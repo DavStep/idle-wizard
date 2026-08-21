@@ -75,8 +75,13 @@
       const growing = params.get('growing') === '1';
       const automated = params.get('automated') === '1';
       const harvest = params.get('harvest') === '1';
+      const harvesting = params.get('harvesting') === '1';
       const tapAcceleration = params.get('tapAcceleration') === '1';
       const planting = params.get('planting') === '1';
+      const automatedQuantity = Math.min(
+        5,
+        Math.max(1, Math.floor(Number(params.get('quantity')) || 5)),
+      );
       const bulkActions = params.get('bulk') || 'all';
       const progressBar = params.get('progress') || 'regular';
       const theme = params.get('theme') || undefined;
@@ -90,9 +95,13 @@
               id: `plot-${tileNumber}`,
               tileNumber,
               level: 5,
-              phase: harvest ? 'ready' : 'growing',
+              phase: harvesting
+                ? 'harvesting'
+                : harvest
+                  ? 'ready'
+                  : 'growing',
               herbKey: 'mintHerb',
-              actionText: 'growing',
+              actionText: harvesting ? 'harvesting' : 'growing',
               automationAvailable: true,
               autoEnabled: true,
               automationSeed: {
@@ -100,9 +109,9 @@
                 label: 'Mint',
                 quantity: 75,
               },
-              plantQuantity: 5,
+              plantQuantity: automatedQuantity,
               maxPlantQuantity: 5,
-              harvestQuantity: 5,
+              harvestQuantity: automatedQuantity,
               process: harvest
                 ? null
                 : {
@@ -165,7 +174,9 @@
               ? '1'
               : '0',
           automatedPlots: automated ? '1' : '0',
+          automatedQuantity: automated ? String(automatedQuantity) : '0',
           harvest: harvest ? 'enabled' : 'disabled',
+          harvesting: harvesting ? 'enabled' : 'disabled',
           tapAcceleration: tapAcceleration ? 'enabled' : 'disabled',
           progressBar,
           bulkActions,

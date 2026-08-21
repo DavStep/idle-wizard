@@ -8,45 +8,179 @@ import {
   createPixiAssetManagerFake,
   installPixiPageTestCanvas,
 } from '../workshop/PixiPageTestHarness.js';
+import { RETAINED_PAGE_GEOMETRY } from '../workshop/RetainedPageKit.js';
+import {
+  AllianceMemberRow,
+} from '../workshop/WorkshopDialogPixi.js';
 import { AlliancePixiPage } from './AlliancePixiPage.js';
 
 installPixiPageTestCanvas();
 
 describe('AlliancePixiPage', () => {
-  it('retains member workspace tabs and submits alliance-only chat', async () => {
-    const send = vi.fn(() => ({ ok: true }));
+  it('composes the Alliance identity, stats, announcement, and roster in order', () => {
+    const semanticRegistry = new SemanticTargetRegistry();
+    const page = new AlliancePixiPage({
+      assetManager: createPixiAssetManagerFake(Texture),
+      semanticRegistry,
+    });
+
+    page.layout({ sourceWidth: 390, sourceHeight: 844 });
+    page.bind(createModel('home'));
+    page.activate();
+
+    expect(page.homeIdentitySection.root.visible).toBe(true);
+    expect(page.homeName.text).toBe('Night Owls');
+    expect(page.homeTag.text).toBe('[OWL]');
+    expect(page.homeMemberStat.amount).toBe('1/50');
+    expect(page.homeMemberStat.iconFrame).toBe('alliance:members');
+    expect(page.homeIncomeStat.amount).toBe('12.5K');
+    expect(page.homeAnnouncement.detail.text).toContain(
+      'Weekly goal: support every active member.',
+    );
+    expect(
+      page.homeIdentitySection.root.x +
+        page.homeFlag.x +
+        page.homeFlag.flagWidth / 2,
+    ).toBeCloseTo(195);
+    const identityBottom =
+      page.homeIdentitySection.root.y +
+      page.homeIdentitySection.paper.y +
+      page.homeIdentitySection.paper.frameHeight;
+    const announcementTop =
+      page.homeAnnouncement.root.y + page.homeAnnouncement.paper.y;
+    const announcementBottom =
+      page.homeAnnouncement.root.y +
+      page.homeAnnouncement.paper.y +
+      page.homeAnnouncement.paper.frameHeight;
+    const rosterTop =
+      page.homeMembersSection.root.y + page.homeMembersSection.paper.y;
+    expect(announcementTop - identityBottom).toBe(8);
+    expect(rosterTop - announcementBottom).toBe(8);
+    expect(semanticRegistry.isAvailable('workshop.alliance.leave')).toBe(true);
+    expect(semanticRegistry.activate('workshop.alliance.leave')).toBe(true);
+    expect(page.homeMemberRows.rows.getWidgets()[0]).toBeInstanceOf(
+      AllianceMemberRow,
+    );
+    expect(page.homeMemberRows.rows.getWidgets()[0].username.text).toBe('Luna');
+
+    page.bind(createModel('requests'));
+    expect(page.scrolls.get('requests').root.visible).toBe(true);
+    expect(page.requests.rows.getWidgets()).toHaveLength(1);
+    expect(page.requests.rows.getWidgets()[0].primary.textLabel.text).toBe(
+      'Accept',
+    );
+    expect(page.requests.rows.getWidgets()[0].researchCard.visible).toBe(true);
+    expect(page.requests.rows.getWidgets()[0].getPreferredHeight()).toBe(80);
+
+    page.bind(createModel('chat'));
+    expect(page.selectedTabId).toBe('home');
+    expect(page.homeIdentitySection.root.visible).toBe(true);
+    expect(page.homeAnnouncement.root.visible).toBe(true);
+    expect(page.scrolls.has('chat')).toBe(false);
+
+    page.destroy();
+  });
+
+  it('anchors focused Profile and Banner tabs below the settings content', () => {
     const page = new AlliancePixiPage({
       assetManager: createPixiAssetManagerFake(Texture),
       semanticRegistry: new SemanticTargetRegistry(),
     });
+    const model = createModel('settings');
+    model.settings = {
+      allianceId: 'night-owls',
+      mode: 'settings',
+      name: 'Night Owls',
+      tag: 'OWL',
+      tagColor: 'ink',
+      bannerColor: 'blue',
+      emblemColor: 'gold',
+      emblemId: 'owl',
+      description: 'Patient traders building a stronger market together.',
+      notice: 'Weekly goal: support every active member.',
+      joinMode: 'apply',
+      editable: true,
+      canDisband: false,
+      onSave: vi.fn(),
+    };
 
     page.layout({ sourceWidth: 390, sourceHeight: 844 });
-    page.bind(createModel('home', send));
-    page.activate();
+    page.bind(model);
 
-    expect(page.scrolls.get('home').root.visible).toBe(true);
-    expect(page.homeIdentity.text).toBe('[OWL] Night Owls');
-    expect(page.homeSummary.rows.getWidgets()).toHaveLength(4);
-    expect(page.homeMembers.rows.getWidgets()[0].keyLabel.text).toBe('Luna');
+    const pane = page.settingsPane;
+    expect(pane.activeSection).toBe('profile');
+    expect(pane.fields.get('name').visible).toBe(true);
+    expect(pane.fields.get('name').textLabel.colorToken).toBe(page.theme.text);
+    expect(pane.bannerPreview.visible).toBe(false);
+    expect(pane.joinModeLabel.visible).toBe(false);
+    expect(pane.scroll.scrollbarThumb.visible).toBe(false);
+    expect(pane.saveButton.text.text).toBe('Save Profile');
+    expect(pane.fields.get('name').y).toBe(13);
+    expect(pane.sectionTabLayer.y).toBe(pane.scroll.height + 6);
+    expect(pane.sectionTabLayer.y + 28).toBe(pane.lastBounds.height);
+    expect(pane.sectionTabs[0].root.y).toBe(0);
 
-    page.bind(createModel('requests', send));
-    expect(page.scrolls.get('requests').root.visible).toBe(true);
-    expect(page.requests.rows.getWidgets()).toHaveLength(1);
-    expect(page.requests.rows.getWidgets()[0].primary.textLabel.text).toBe('Accept');
+    pane.selectSection('banner');
+    page.relayout();
+    expect(pane.fields.get('name').visible).toBe(false);
+    expect(pane.bannerPreview.visible).toBe(true);
+    expect(pane.bannerPreview.flagWidth).toBe(160);
+    expect(pane.bannerPreview.x).toBe((pane.lastBounds.width - 160) / 2);
+    expect(pane.emblemOptions[0].size).toBe(40);
+    expect(pane.emblemOptions[6].root.y).toBe(46);
+    expect(pane.emblemOptionLayer.y).toBeGreaterThan(
+      pane.bannerPreview.y + pane.bannerPreview.flagHeight,
+    );
+    expect(pane.emblemColorLabel.y).toBeGreaterThan(
+      pane.bannerColorSwatchLayer.y + 24,
+    );
+    expect(pane.saveButton.text.text).toBe('Save Banner');
+    expect(pane.scroll.scrollbarThumb.visible).toBe(false);
+    expect(pane.bannerPreview.y).toBe(0);
+    expect(pane.sectionTabLayer.y + 28).toBe(pane.lastBounds.height);
 
-    page.bind(createModel('chat', send));
-    expect(page.chatComposer.visible).toBe(true);
-    expect(page.chatRows.rows.getWidgets()).toHaveLength(1);
-    page.chatField.setValue('Alliance only');
-    await expect(page.submitChat()).resolves.toBe(true);
-    expect(send).toHaveBeenCalledWith('Alliance only');
-    expect(page.chatField.value).toBe('');
+    page.destroy();
+  });
+
+  it('treats a direct Join Mode selection on Requests as a pending change', async () => {
+    const onSave = vi.fn(async () => ({ ok: true }));
+    const page = new AlliancePixiPage({
+      assetManager: createPixiAssetManagerFake(Texture),
+      semanticRegistry: new SemanticTargetRegistry(),
+    });
+    const model = createModel('requests');
+    model.requestsSettings = {
+      allianceId: 'night-owls',
+      joinMode: 'apply',
+      editable: true,
+      onSave,
+    };
+
+    page.layout({ sourceWidth: 390, sourceHeight: 844 });
+    page.bind(model);
+
+    const pane = page.requestJoinModePane;
+    expect(pane.root.visible).toBe(true);
+    expect(pane.buttons[1].selected).toBe(true);
+    expect(pane.saveButton.enabled).toBe(false);
+    expect(pane.root.y + 102).toBe(
+      844 - RETAINED_PAGE_GEOMETRY.chatClearance,
+    );
+
+    pane.select('closed');
+    expect(pane.buttons[2].selected).toBe(true);
+    expect(pane.status.text).toBe('Change Pending');
+    expect(pane.saveButton.enabled).toBe(true);
+
+    await pane.save();
+    expect(onSave).toHaveBeenCalledWith('closed');
+    expect(pane.status.text).toBe('Saved');
 
     page.destroy();
   });
 });
 
-function createModel(selectedTabId, send) {
+function createModel(selectedTabId) {
   return {
     ownedAlliance: true,
     selectedTabId,
@@ -57,6 +191,8 @@ function createModel(selectedTabId, send) {
     },
     tradeInfo: {
       identityLabel: '[OWL] Night Owls',
+      name: 'Night Owls',
+      tag: 'OWL',
       description: 'Patient traders building a stronger market together.',
       notice: 'Weekly goal: support every active member.',
       memberCountLabel: '1/50',
@@ -90,7 +226,8 @@ function createModel(selectedTabId, send) {
             {
               id: 'thorne',
               username: 'Thorne',
-              detail: 'Level 9',
+              detail: 'Lv 9 · Prestige 1',
+              preview: '8.4K Produced',
               primaryAction: {
                 label: 'Accept',
                 enabled: true,
@@ -114,7 +251,7 @@ function createModel(selectedTabId, send) {
           ageLabel: 'now',
         },
       ],
-      onSubmit: send,
+      onSubmit: vi.fn(),
     },
   };
 }

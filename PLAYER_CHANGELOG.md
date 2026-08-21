@@ -5,6 +5,13 @@ upload script posts the section whose heading matches `package.json` `version`.
 Write these developer-to-player notes only in Idle Wizard terms. Do not mention
 other game names, source projects, ports, or implementation provenance.
 
+## 0.3.85
+
+- Refined Trade Alliances with a persistent chat preview, clearer Home and Settings layouts, direct join-mode controls, richer applicant details, system history for membership changes, and actionable request notifications for managers.
+- Made Garden and Brewing taps remove 30% of the remaining timer, while improving crop spacing, planting motion, missing-ingredient details, and distinct yellow harvesting and bottling progress.
+- Improved account recovery so remembered wizards can refresh an expired connection before being asked to start over, and matching device/account saves no longer trigger an unnecessary choice.
+- Refined room currency context, long Workshop request labels, cost readability, alliance member presentation, and several compact controls across the game.
+
 ## 0.3.84
 
 - Added Friends with requests, pending invitations, private conversations, unread indicators, and relationship actions from player profiles.

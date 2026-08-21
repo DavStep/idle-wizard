@@ -130,6 +130,41 @@ describe('WorkshopTradeAllianceManager styles', () => {
     manager.unmount();
   });
 
+  it('marks the Workshop alliance button when a manageable join request is pending', () => {
+    const tradeAllianceFacade = createTradeAllianceFacadeFake({
+      ownAlliance: {
+        allianceId: 'alliance-1',
+        name: 'All Seeing Void',
+        tag: 'VOID',
+      },
+      ownMember: {
+        memberIdentity: 'self',
+        role: 'factor',
+      },
+      canManageApplications: true,
+      applications: [
+        {
+          applicationKey: 'alliance-1:applicant-1',
+          allianceId: 'alliance-1',
+          applicantIdentity: 'applicant-1',
+        },
+      ],
+      quests: [],
+    });
+    const manager = new WorkshopTradeAllianceManager({ tradeAllianceFacade });
+    const parent = document.createElement('div');
+    const popupParent = document.createElement('div');
+
+    document.body.append(parent, popupParent);
+    manager.mount(parent, popupParent);
+
+    expect(
+      parent.querySelector('.workshop-page__trade-alliance-button')?.dataset.notification,
+    ).toBe('true');
+
+    manager.unmount();
+  });
+
   it('renders the colored alliance flag for members and the discovery icon for solo players', () => {
     const tradeAllianceFacade = createTradeAllianceFacadeFake({
       connected: true,

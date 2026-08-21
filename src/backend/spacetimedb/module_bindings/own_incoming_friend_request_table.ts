@@ -20,4 +20,6 @@ export default __t.row({
   connected: __t.bool(),
   lastSeenAt: __t.timestamp().name("last_seen_at"),
   createdAt: __t.timestamp().name("created_at"),
+  allianceTag: __t.string().name("alliance_tag"),
+  allianceTagColor: __t.string().name("alliance_tag_color"),
 });

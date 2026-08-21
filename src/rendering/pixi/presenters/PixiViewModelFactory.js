@@ -89,16 +89,12 @@ const WORLD_EVENT_TABS = Object.freeze([
   Object.freeze({ id: 'rewards', label: 'Rewards' }),
 ]);
 const WORLD_EVENT_ART_ASSET_BY_FAMILY = Object.freeze({
-  'village crisis':
-    'source:assets/world-events/village-crisis.png',
-  'military danger':
-    'source:assets/world-events/military-danger.png',
-  'political change':
-    'source:assets/world-events/political-change.png',
+  'village crisis': 'source:assets/world-events/village-crisis.png',
+  'military danger': 'source:assets/world-events/military-danger.png',
+  'political change': 'source:assets/world-events/political-change.png',
   'exploration discovery':
     'source:assets/world-events/exploration-discovery.png',
-  'trade disruption':
-    'source:assets/world-events/trade-disruption.png',
+  'trade disruption': 'source:assets/world-events/trade-disruption.png',
 });
 const WORLD_EVENT_MAX_QUEST_ROWS = 2;
 const TRADE_ALLIANCE_ROLE_LABELS = Object.freeze({
@@ -107,11 +103,6 @@ const TRADE_ALLIANCE_ROLE_LABELS = Object.freeze({
   factor: 'Factor',
   broker: 'Broker',
   trader: 'Trader',
-});
-const TRADE_ALLIANCE_JOIN_MODE_LABELS = Object.freeze({
-  open: 'Open',
-  apply: 'Apply',
-  closed: 'Closed',
 });
 const TRADE_ALLIANCE_SOLO_TABS = Object.freeze([
   Object.freeze({ id: 'browse', label: 'Browse' }),
@@ -139,10 +130,8 @@ const SEED_DROP_VALUE_TONES = Object.freeze({
 
 const MAX_LOCKED_RESEARCHES_PER_BOX = 3;
 const RESEARCH_ART_ASSET_BY_BOX_ID = Object.freeze({
-  autoBrewCauldrons:
-    'source:assets/icons/research/icon-research-auto-brew.png',
-  autoPlantTiles:
-    'source:assets/icons/research/icon-research-auto-plant.png',
+  autoBrewCauldrons: 'source:assets/icons/research/icon-research-auto-brew.png',
+  autoPlantTiles: 'source:assets/icons/research/icon-research-auto-plant.png',
   autoSeedSpawn:
     'source:assets/icons/research/icon-research-auto-seed-spawn.png',
   automationReserve:
@@ -153,36 +142,27 @@ const RESEARCH_ART_ASSET_BY_BOX_ID = Object.freeze({
     'source:assets/icons/research/icon-research-cauldron-capacity.png',
   gardenBulkActions:
     'source:assets/icons/research/icon-research-auto-plant.png',
-  plotCapacity:
-    'source:assets/icons/research/icon-research-plot-capacity.png',
-  plotGrowth:
-    'source:assets/icons/research/icon-research-plot-growth.png',
-  plotPlanting:
-    'source:assets/icons/research/icon-research-plot-level.png',
+  plotCapacity: 'source:assets/icons/research/icon-research-plot-capacity.png',
+  plotGrowth: 'source:assets/icons/research/icon-research-plot-growth.png',
+  plotPlanting: 'source:assets/icons/research/icon-research-plot-level.png',
   recipeUnlocks:
     'source:assets/icons/research/icon-research-cauldron-brewing.png',
-  researchCost:
-    'source:assets/icons/research/icon-research-cost.png',
-  researchTime:
-    'source:assets/icons/research/icon-research-time.png',
-  seedUnlocks:
-    'source:assets/icons/research/icon-research-auto-seed-spawn.png',
-  stallStaffing:
-    'source:assets/icons/research/icon-research-fast-sell.png',
+  researchCost: 'source:assets/icons/research/icon-research-cost.png',
+  researchTime: 'source:assets/icons/research/icon-research-time.png',
+  seedUnlocks: 'source:assets/icons/research/icon-research-auto-seed-spawn.png',
+  stallStaffing: 'source:assets/icons/research/icon-research-fast-sell.png',
   summonSeeds:
     'source:assets/icons/research/icon-research-summon-multiplier.png',
 });
 const RESEARCH_CAULDRON_LEVEL_ART_ASSET =
   'source:assets/icons/research/icon-research-cauldron-level.png';
-const RESEARCH_MANA_ART_ASSET =
-  'source:assets/icons/icon-mana-drop.png';
+const RESEARCH_MANA_ART_ASSET = 'source:assets/icons/icon-mana-drop.png';
 const RESEARCH_MANA_CAPACITY_MODIFIER_ASSET =
   'source:assets/icons/research/icon-research-mana-capacity-up.png';
 const RESEARCH_MANA_GENERATION_MODIFIER_ASSET =
   'source:assets/icons/research/icon-research-mana-generation-plus.png';
 const RESEARCH_ART_EXTRA_ASSET_BY_KEY = Object.freeze({
-  timerReduction:
-    'source:assets/icons/research/icon-research-time.png',
+  timerReduction: 'source:assets/icons/research/icon-research-time.png',
 });
 const RESEARCH_FALLBACK_ART_ASSET =
   'source:assets/icons/research/icon-research-generic.png';
@@ -227,6 +207,7 @@ export class PixiViewModelFactory {
   createTopPanel({
     gameplay = {},
     player = {},
+    friendNotification = false,
     pageId = 'workshop',
     researchTabId = 'regular',
     questPreview = null,
@@ -247,9 +228,8 @@ export class PixiViewModelFactory {
       character: player.character || 'elara',
       frameTint: getPlayerFrameTint(player.frame),
       showAvatar: true,
-      showBag: pageId === 'workshop',
+      avatarNotification: friendNotification === true,
       coin: gameplay.coin?.current ?? 0,
-      amethyst: gameplay.amethyst?.current ?? 0,
       contextCurrency: {
         resource: contextResource ?? 'crystal',
         amount: gameplay[contextResource ?? 'crystal']?.current ?? 0,
@@ -1054,14 +1034,22 @@ export class PixiViewModelFactory {
         const applicationKey =
           String(application.applicationKey ?? '').trim() ||
           `${allianceId || 'alliance'}:application:${index}`;
+        const playerLevel = normalizeVisibleLevel(application.playerLevel) ?? 1;
+        const prestigeCount = Math.max(
+          0,
+          Math.floor(Number(application.prestigeCount) || 0),
+        );
         return {
           id: applicationKey,
           identity: player.identity,
           username: player.username,
           character: player.character,
           frame: player.frame,
-          playerLevel: normalizeVisibleLevel(application.playerLevel) ?? 1,
-          detail: `Level ${normalizeVisibleLevel(application.playerLevel) ?? 1}`,
+          playerLevel,
+          prestigeCount,
+          totalProducedCoin: Number(application.totalProducedCoin ?? 0),
+          detail: `Lv ${playerLevel} · Prestige ${prestigeCount}`,
+          preview: `${formatCoinAmount(application.totalProducedCoin ?? 0)} Produced`,
           semanticId: `workshop.alliance.request.${applicationKey}`,
           onActivate: () => actions.openPlayer?.(player),
           primaryAction: {
@@ -1112,13 +1100,6 @@ export class PixiViewModelFactory {
         value: memberCountLabel,
       },
       {
-        id: 'trade-info:join-mode',
-        label: 'Join Mode',
-        value:
-          TRADE_ALLIANCE_JOIN_MODE_LABELS[joinMode] ??
-          titleCaseTradeAllianceLabel(joinMode),
-      },
-      {
         id: 'trade-info:season-income',
         label: 'Season Income',
         value: formatCoinAmount(seasonIncome),
@@ -1161,6 +1142,8 @@ export class PixiViewModelFactory {
       copy: '',
       tradeInfo: {
         identityLabel: `${tag ? `[${tag}] ` : ''}${name}`,
+        name,
+        tag,
         description: String(alliance.description ?? '').trim(),
         notice: String(alliance.notice ?? '').trim(),
         memberCountLabel,
@@ -1179,6 +1162,16 @@ export class PixiViewModelFactory {
           : safeTabId === 'requests' && applicationRows.length === 0
             ? 'No Pending Requests'
             : '',
+      requestsSettings:
+        safeTabId === 'requests' && canManageApplications
+          ? {
+              allianceId,
+              joinMode,
+              editable: true,
+              onSave: (nextJoinMode) =>
+                actions.setAllianceJoinMode?.(nextJoinMode),
+            }
+          : null,
       settings:
         safeTabId === 'settings'
           ? {
@@ -1215,12 +1208,11 @@ export class PixiViewModelFactory {
       tradeAlliance.currentAlliance ??
       tradeAlliance.ownAlliance ??
       null;
-    const baseTabId = selectedTabId === 'chat' ? 'home' : selectedTabId;
     const workspace = this.createAllianceDialog(
       tradeAlliance,
       null,
       actions,
-      baseTabId,
+      selectedTabId,
     );
 
     if (!alliance) {
@@ -1232,10 +1224,6 @@ export class PixiViewModelFactory {
       };
     }
 
-    const tabIds = new Set(workspace.tabs.map((tab) => tab.id));
-    tabIds.add('chat');
-    const orderedTabIds = ['home', 'quests', 'requests', 'chat', 'settings'];
-    const safeTabId = tabIds.has(selectedTabId) ? selectedTabId : 'home';
     const chat = this.createWorldChatDialog(
       {
         connected: tradeAlliance.connected,
@@ -1250,18 +1238,6 @@ export class PixiViewModelFactory {
     return {
       ...workspace,
       workspace: true,
-      selectedTabId: safeTabId,
-      ownedAllianceHome: safeTabId === 'home',
-      tabs: orderedTabIds
-        .filter((tabId) => tabIds.has(tabId))
-        .map((tabId) => {
-          const existing = workspace.tabs.find((tab) => tab.id === tabId);
-          return {
-            ...(existing ?? { id: tabId, label: 'Chat' }),
-            selected: tabId === safeTabId,
-            onSelect: () => actions.selectAllianceTab?.(tabId),
-          };
-        }),
       flag: {
         bannerColor:
           alliance.bannerColor ?? DEFAULT_TRADE_ALLIANCE_BANNER_COLOR,
@@ -1269,14 +1245,10 @@ export class PixiViewModelFactory {
           alliance.emblemColor ?? DEFAULT_TRADE_ALLIANCE_EMBLEM_COLOR,
         emblemId: alliance.emblemId ?? DEFAULT_TRADE_ALLIANCE_EMBLEM,
       },
-      rows:
-        safeTabId === 'chat'
-          ? chat.rows
-          : safeTabId === workspace.selectedTabId
-            ? workspace.rows
-            : [],
-      settings: safeTabId === 'settings' ? workspace.settings : null,
-      chat,
+      chat: {
+        ...chat,
+        title: 'Alliance Chat',
+      },
     };
   }
 
@@ -2015,7 +1987,9 @@ function getLeaderboardCurrentUser(
 function appendCurrentLeaderboardUser(users, currentUser) {
   const seenIdentities = new Set();
   const uniqueUsers = users.filter((user) => {
-    const identity = String(user.identity ?? '').trim().toLowerCase();
+    const identity = String(user.identity ?? '')
+      .trim()
+      .toLowerCase();
     if (!identity) {
       return true;
     }
@@ -2029,16 +2003,22 @@ function appendCurrentLeaderboardUser(users, currentUser) {
   if (!currentUser) {
     return uniqueUsers;
   }
-  const currentIdentity = String(currentUser.identity ?? '').trim().toLowerCase();
+  const currentIdentity = String(currentUser.identity ?? '')
+    .trim()
+    .toLowerCase();
   const currentAlreadyVisible = uniqueUsers.some((user) =>
     currentIdentity
-      ? String(user.identity ?? '').trim().toLowerCase() === currentIdentity
+      ? String(user.identity ?? '')
+          .trim()
+          .toLowerCase() === currentIdentity
       : user === currentUser,
   );
   if (currentAlreadyVisible) {
     return uniqueUsers.map((user) =>
       (currentIdentity &&
-        String(user.identity ?? '').trim().toLowerCase() === currentIdentity) ||
+        String(user.identity ?? '')
+          .trim()
+          .toLowerCase() === currentIdentity) ||
       user === currentUser
         ? { ...user, current: true }
         : user,
@@ -2062,9 +2042,7 @@ function getLeaderboardAlliances(
 
 function normalizeLeaderboardRank(rank, index) {
   const safeRank = Math.floor(Number(rank));
-  return Number.isFinite(safeRank) && safeRank >= 1
-    ? safeRank
-    : index + 1;
+  return Number.isFinite(safeRank) && safeRank >= 1 ? safeRank : index + 1;
 }
 
 function normalizeWorldEventLeaderboardRank(rank) {
@@ -2119,27 +2097,22 @@ function createTradeAlliancePlayerRequest(member = {}) {
   return {
     ...member,
     identity: String(
-      member.identity ??
-        member.playerIdentity ??
-        member.memberIdentity ??
-        '',
+      member.identity ?? member.playerIdentity ?? member.memberIdentity ?? '',
     ).trim(),
-    username:
-      member.username ??
-      member.name ??
-      member.allianceName ??
-      'Wizard',
+    username: member.username ?? member.name ?? member.allianceName ?? 'Wizard',
     character: member.character ?? 'elara',
     frame: member.frame ?? 'classic',
   };
 }
 
 function createTradeAllianceQuestRows(tradeAlliance, allianceId, actions) {
-  const participationLock = getTradeAllianceQuestParticipationLock(tradeAlliance);
+  const participationLock =
+    getTradeAllianceQuestParticipationLock(tradeAlliance);
   return (tradeAlliance.quests ?? [])
     .filter(
       (quest) =>
-        String(quest.allianceId ?? '').trim() === String(allianceId ?? '').trim(),
+        String(quest.allianceId ?? '').trim() ===
+        String(allianceId ?? '').trim(),
     )
     .map((quest, index) => ({ quest, index }))
     .sort((left, right) => {
@@ -2310,7 +2283,7 @@ function formatPersonalTaskNumber(value) {
 }
 
 function getPageContextResource(pageId, researchTabId) {
-  if (pageId === 'workshop') return 'mana';
+  if (pageId === 'workshop' || pageId === 'brewing') return 'mana';
   if (pageId === 'prestige') return 'ruby';
   if (pageId !== 'research') return null;
   if (researchTabId === 'automation') return 'ruby';
@@ -2368,8 +2341,7 @@ function createWorkshopFeatures({
               alliance.bannerColor ?? DEFAULT_TRADE_ALLIANCE_BANNER_COLOR,
             emblemColor:
               alliance.emblemColor ?? DEFAULT_TRADE_ALLIANCE_EMBLEM_COLOR,
-            emblemId:
-              alliance.emblemId ?? DEFAULT_TRADE_ALLIANCE_EMBLEM,
+            emblemId: alliance.emblemId ?? DEFAULT_TRADE_ALLIANCE_EMBLEM,
           }
         : null,
     },
@@ -2421,16 +2393,14 @@ function createWorkshopFeatures({
       timer: String(notice?.resetLabel ?? '')
         .trim()
         .replace(/^resolves\s+/i, ''),
-      notification:
-        false,
+      notification: false,
     },
     {
       id: 'guild',
       label: 'guild',
       side: 'right',
       weight: 40,
-      visible:
-        guildPage?.visible === true && guildPage?.unlocked !== false,
+      visible: guildPage?.visible === true && guildPage?.unlocked !== false,
       notification: guildNotification,
       onActivate: () => actions.openGuild?.(),
     },
@@ -2446,12 +2416,9 @@ function createWorldChatPreview(worldChat = {}) {
     preview: messages
       .slice(-2)
       .map((message) => {
-        const sourceName =
-          message.username ?? message.author ?? 'Wizard';
+        const sourceName = message.username ?? message.author ?? 'Wizard';
         const name =
-          String(sourceName).toLowerCase() === 'system'
-            ? 'System'
-            : sourceName;
+          String(sourceName).toLowerCase() === 'system' ? 'System' : sourceName;
         const body = message.body ?? message.message ?? '';
         return `${name}: ${body}`;
       })
@@ -2905,8 +2872,7 @@ function orderResearchesNewestFirst(researches = []) {
     .sort(
       (left, right) =>
         Number(left.research.completed === true) -
-          Number(right.research.completed === true) ||
-        left.index - right.index,
+          Number(right.research.completed === true) || left.index - right.index,
     )
     .map(({ research }) => research);
 }
@@ -2937,8 +2903,7 @@ function createResearchCostModel(
   { displayName, lockReason, state },
 ) {
   const parsed = parseResearchCost(item);
-  const buttonState =
-    state === 'unavailable' ? 'unaffordable' : state;
+  const buttonState = state === 'unavailable' ? 'unaffordable' : state;
   const amountLabel =
     state === 'locked'
       ? 'Locked'
@@ -2949,8 +2914,7 @@ function createResearchCostModel(
     amountLabel,
     enabled: item.canResearch === true,
     state: buttonState,
-    lockPrompt:
-      state === 'locked' ? formatResearchLockPrompt(lockReason) : '',
+    lockPrompt: state === 'locked' ? formatResearchLockPrompt(lockReason) : '',
     title: item.canResearch === true ? '' : lockReason,
     ariaLabel:
       state === 'locked'
@@ -2980,11 +2944,13 @@ function parseResearchCost(item = {}) {
   };
   const currency =
     explicitCurrency ??
-    ['crystal', 'ruby', 'emerald'].find((key) =>
-      Number.isFinite(Number(amountByCurrency[key])) &&
-      Number(amountByCurrency[key]) > 0,
+    ['crystal', 'ruby', 'emerald'].find(
+      (key) =>
+        Number.isFinite(Number(amountByCurrency[key])) &&
+        Number(amountByCurrency[key]) > 0,
     ) ??
-    (match?.[2]?.toLowerCase() || (label.toLowerCase() === 'free' ? 'coin' : null));
+    (match?.[2]?.toLowerCase() ||
+      (label.toLowerCase() === 'free' ? 'coin' : null));
   const explicitAmount =
     currency && Number.isFinite(Number(amountByCurrency[currency]))
       ? Number(amountByCurrency[currency])
@@ -3125,8 +3091,7 @@ function clampUnit(value) {
 function getSummaryMilestone(prestige = {}) {
   const milestones = prestige.milestones ?? [];
   const highest = milestones.find(
-    (milestone) =>
-      milestone.level === prestige.highestAvailableLevel,
+    (milestone) => milestone.level === prestige.highestAvailableLevel,
   );
   return (
     highest ??
@@ -3404,14 +3369,11 @@ function getVisibleBagTabs(pageStates) {
   }
 
   const unlockedPageIds = new Set(
-    pageStates
-      .filter((page) => page?.unlocked === true)
-      .map((page) => page.id),
+    pageStates.filter((page) => page?.unlocked === true).map((page) => page.id),
   );
 
   return BAG_TABS.filter(
-    (tab) =>
-      !tab.requiredPageId || unlockedPageIds.has(tab.requiredPageId),
+    (tab) => !tab.requiredPageId || unlockedPageIds.has(tab.requiredPageId),
   );
 }
 
@@ -3514,9 +3476,7 @@ function getWorldEventDonationItemKind(option = {}) {
 }
 
 function normalizeSeedDropPreference(preference) {
-  return SEED_DROP_PREFERENCES.includes(preference)
-    ? preference
-    : 'medium';
+  return SEED_DROP_PREFERENCES.includes(preference) ? preference : 'medium';
 }
 
 function pluralize(count, word) {

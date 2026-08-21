@@ -221,6 +221,42 @@ describe('PageNotificationStateManager', () => {
     });
   });
 
+  it('rolls manageable alliance join requests up to the workshop page', () => {
+    const manager = new PageNotificationStateManager();
+    const snapshot = createSnapshot();
+    snapshot.tasks.currentLevel = 4;
+    const tradeAlliance = {
+      ownAlliance: {
+        allianceId: 'alliance-1',
+      },
+      canManageApplications: true,
+      applications: [
+        {
+          applicationKey: 'alliance-1:applicant-1',
+          allianceId: 'alliance-1',
+          applicantIdentity: 'applicant-1',
+        },
+      ],
+    };
+
+    expect(manager.getSnapshot(snapshot, { tradeAlliance }).pages.workshop).toMatchObject({
+      active: true,
+      tone: 'red',
+      children: {
+        alliance: true,
+      },
+    });
+
+    tradeAlliance.canManageApplications = false;
+
+    expect(manager.getSnapshot(snapshot, { tradeAlliance }).pages.workshop).toMatchObject({
+      active: false,
+      children: {
+        alliance: false,
+      },
+    });
+  });
+
   it('rolls an affordable guild charter up to the guild page', () => {
     const manager = new PageNotificationStateManager();
     const snapshot = createSnapshot();

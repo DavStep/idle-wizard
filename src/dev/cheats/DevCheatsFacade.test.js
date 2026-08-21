@@ -1047,6 +1047,18 @@ describe('DevCheatsFacade', () => {
     );
     expect(publishAndSaveSpy).not.toHaveBeenCalled();
 
+    expect(target.cheats.openUi('topPanelFriendRequest')).toMatchObject({
+      ok: true,
+      surfaceId: 'topPanelFriendRequest',
+      surfaceKind: 'preview',
+      progress: {
+        friendNotification: true,
+      },
+    });
+    expect(pagesFacade.setTopPanelQuestProgressPreview).toHaveBeenLastCalledWith(
+      expect.objectContaining({ friendNotification: true }),
+    );
+
     expect(target.cheats.openUi('bottomRoomTabs')).toMatchObject({
       ok: true,
       surfaceId: 'bottomRoomTabs',

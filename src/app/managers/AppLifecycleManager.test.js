@@ -623,6 +623,82 @@ describe('AppLifecycleManager', () => {
     expect(lifecycle.backendFacade.start).toHaveBeenCalledTimes(2);
   });
 
+  it('refreshes an authorized mobile account before asking the player to connect again', async () => {
+    let authenticated = false;
+    const freshStartChoiceManager = {
+      mount: vi.fn(),
+      choose: vi.fn(() => Promise.resolve(FRESH_START_CHOICE_START_FRESH)),
+      render: vi.fn(),
+      hide: vi.fn(),
+      isChoosing: vi.fn(() => false),
+      unmount: vi.fn(),
+    };
+    const tryRestoreConnectedAccount = vi.fn(() => {
+      authenticated = true;
+      return Promise.resolve({ ok: true, restored: true });
+    });
+    const { lifecycle, getBackendCallbacks } = createLifecycle({
+      freshStartChoiceManager,
+      authFacade: {
+        getPendingAccountLinkSave: vi.fn(() => null),
+        clearPendingAccountLinkSave: vi.fn(),
+        getSnapshot: vi.fn(() => ({
+          hasToken: true,
+          oidc: {
+            enabled: true,
+            authenticated,
+            remembered: true,
+          },
+        })),
+        tryRestoreConnectedAccount,
+        signInWithGoogle: vi.fn(),
+        signOut: vi.fn(),
+      },
+    });
+
+    lifecycle.start();
+    await flushPromises();
+    getBackendCallbacks().onOffline({ reason: 'auth_required' });
+    await flushPromises();
+    await flushPromises();
+
+    expect(tryRestoreConnectedAccount).toHaveBeenCalledTimes(1);
+    expect(freshStartChoiceManager.choose).not.toHaveBeenCalled();
+    expect(lifecycle.backendFacade.start).toHaveBeenCalledTimes(2);
+  });
+
+  it('does not silently restore a Google account for a rejected guest identity', async () => {
+    const tryRestoreConnectedAccount = vi.fn(() =>
+      Promise.resolve({ ok: true, restored: true }),
+    );
+    const { lifecycle, getBackendCallbacks } = createLifecycle({
+      authFacade: {
+        getPendingAccountLinkSave: vi.fn(() => null),
+        clearPendingAccountLinkSave: vi.fn(),
+        getSnapshot: vi.fn(() => ({
+          hasToken: true,
+          oidc: {
+            enabled: true,
+            authenticated: false,
+            remembered: false,
+          },
+        })),
+        tryRestoreConnectedAccount,
+        signInWithGoogle: vi.fn(),
+        signOut: vi.fn(() => Promise.resolve({ ok: true })),
+      },
+    });
+
+    lifecycle.start();
+    await flushPromises();
+    getBackendCallbacks().onOffline({ reason: 'auth_required' });
+    await flushPromises();
+    await flushPromises();
+
+    expect(tryRestoreConnectedAccount).not.toHaveBeenCalled();
+    expect(lifecycle.freshStartChoiceManager.choose).toHaveBeenCalledTimes(1);
+  });
+
   it('unmounts gates and the persistent renderer before gameplay surfaces mount', async () => {
     const { lifecycle } = createLifecycle();
 
@@ -1559,6 +1635,48 @@ describe('AppLifecycleManager', () => {
     });
     expect(lifecycle.gameplayFacade.loadPersistenceSave).toHaveBeenCalledWith(
       accountSave,
+      lifecycle.ecsFacade,
+    );
+  });
+
+  it('does not show two account choices when device and server progress are identical', async () => {
+    const deviceSave = {
+      version: 3,
+      savedAt: 100,
+      clientSaveSessionId: 'device-session',
+      clientSaveSequence: 7,
+      tasks: { currentLevel: 4 },
+      coin: { current: 25 },
+      crystal: { current: 1 },
+    };
+    const accountSave = {
+      crystal: { current: 1 },
+      coin: { current: 25 },
+      tasks: { currentLevel: 4 },
+      clientSavedAt: 100,
+      clientSaveSequence: 6,
+      clientSaveSessionId: 'server-session',
+      savedAt: 200,
+      version: 3,
+    };
+    const accountLinkChoiceManager = {
+      mount: vi.fn(),
+      choose: vi.fn(() => Promise.resolve('forget_device')),
+      unmount: vi.fn(),
+    };
+    const authFacade = {
+      getPendingAccountLinkSave: vi.fn(() => deviceSave),
+      clearPendingAccountLinkSave: vi.fn(),
+      getSnapshot: vi.fn(() => ({ oidc: { authenticated: true } })),
+    };
+    const { lifecycle } = createLifecycle({ accountLinkChoiceManager, authFacade });
+
+    await lifecycle.handleGameplaySaveReady({ save: accountSave });
+
+    expect(accountLinkChoiceManager.choose).not.toHaveBeenCalled();
+    expect(authFacade.clearPendingAccountLinkSave).toHaveBeenCalledTimes(1);
+    expect(lifecycle.gameplayFacade.loadPersistenceSave).toHaveBeenCalledWith(
+      deviceSave,
       lifecycle.ecsFacade,
     );
   });

@@ -544,9 +544,14 @@ export class PixiGlobalDialogPresenter {
     const relationship = ownPlayer
       ? 'self'
       : this.friendsFacade?.getRelationship?.(player.identity) ?? 'stranger';
+    const friendsSnapshot = ownPlayer
+      ? this.friendsFacade?.getSnapshot?.() ?? {}
+      : {};
     return {
       connected: snapshot.connected !== false,
       ownPlayer,
+      friendsNotification:
+        (friendsSnapshot.incomingRequests?.length ?? 0) > 0,
       relationship,
       loading: Boolean(
         this.playerInfoFacade &&

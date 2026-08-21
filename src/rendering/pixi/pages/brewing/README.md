@@ -93,8 +93,8 @@ The small raw-snapshot fallbacks exist only to ease atomic cutover and do not
 perform writes or own game rules.
 
 During brewing or bottling, the visible cauldron art is a release-only timer
-acceleration target. An accepted tap removes at most one second, emits the
-shared `-1s` transient flyout from the liquid anchor, and locks that cauldron
+acceleration target. An accepted tap removes 30% of the remaining time, emits a
+matching transient reduction flyout from the liquid anchor, and locks that cauldron
 for 504ms. Horizontal movement still belongs to the carousel swipe.
 
 The retained Recipes dialog is a two-page Expedition composition. Each visible
@@ -157,10 +157,14 @@ The framed action section begins with the predicted potion inside the shared
 Research-row art well. With no selected ingredients or recipe, the well stays
 present as an empty solid squircle and the status reads `No potion selected`.
 The timer rail appears beside the well only while brewing or bottling. A
-selected recipe blocked by stock replaces the rail with `Missing ingredients`
-and grouped herb art, names, and red `xN` shortages; mana-blocked idle uses
-compact recovery copy instead of an empty rail.
-That batch-detail rail uses the shared default purple fill.
+brewing fill uses the shared default purple, while bottling switches it to
+yellow. A
+selected recipe blocked by stock replaces the rail with one horizontal shortage
+row: source-12px left-aligned `Missing`, followed by each herb's art, source-11px
+name, and source-11px `xN` in the same shared bright insufficient red used by
+unaffordable cost buttons.
+The cauldron orbit keeps its existing vertical ingredient slots. Mana-blocked
+idle uses compact recovery copy instead of an empty rail.
 The shortened panel is bottom-anchored `3px` above the World Chat title
 overhang and ends with one wide primary button. The expanded preview uses the
 freed height for the cauldron orbit and recipe identity; its first ingredient
@@ -170,9 +174,10 @@ vertically pressed ellipse; extra page height changes its vertical placement,
 not its proportions.
 The empty-state `Choose Recipe` primary action opens Recipes. Compact Auto and
 `xN` controls sit outside the panel in the lower control row, packed from the
-left opposite the right-aligned `Recipes` and `Empty` pair. Auto, `xN`, and
-Empty use the earlier compact `32x36px` Brewing configuration-control geometry
-while keeping larger invisible tap targets.
+left opposite the right-aligned `Recipes` and `Empty` pair. Auto and `xN` use
+the earlier compact `32x36px` Brewing configuration-control geometry; Empty is
+slightly wider at `40x36px` so its label fits cleanly. All three keep larger
+invisible tap targets.
 
 Boundary chevrons are removed instead of showing a disabled arrow. Carousel
 dots contain every unlocked cauldron plus exactly one next purchasable locked
@@ -219,9 +224,9 @@ Armed Auto shows `Cancel` while an unfinished batch is active and `Stop Auto`
 while waiting for resources.
 After automatic collection, a retained selected recipe keeps `Brew` as the one-tap repeat
 action: when enough herbs and mana remain, it restages the recipe and starts the
-next batch. Otherwise the action is disabled and the phase reads
-`Missing ingredients` or `Not enough mana` while the slot counts explain the
-shortage.
+next batch. Otherwise the action is disabled and the batch detail shows the
+horizontal missing-herb row or `Not enough mana`; the orbit slot counts remain
+unchanged.
 Armed idle Auto `Stop Auto` disables Auto, while active `Cancel` destroys the
 unfinished batch only after the shared confirmation dialog warns that the unfinished
 potion, herbs, and mana will be lost. Enabling Auto first copies the
@@ -273,6 +278,8 @@ changing gameplay or save data. Add `?longName=true` to reopen the wrapped
 `Minor Healing Potion` identity used for short-portrait spacing QA.
 Add `?cauldrons=3&selectedCauldron=2` to show both carousel chevrons around the
 middle cauldron for navigation alignment QA.
+Add `?availability=missing` to show the reusable horizontal shortage row with
+Sage and Mint while leaving the cauldron-orbit slots unchanged.
 Add `?state=collect&frame=mid` to freeze the production shared potion reward
 drop at mid-flight from the visible cauldron liquid. The hidden recipe output
 reports `data-reward-drops="1"` and `data-active-reward-drops="1"` when exactly
@@ -283,5 +290,6 @@ Add
 to reopen the active-brew regression state. It reapplies the selected theme,
 keeps reduced motion enabled, and exposes the live rail value through
 `#brewing-ready-hud-recipe-state[data-progress]`.
+Use `?state=bottling` to reopen the yellow bottling timer state.
 Use `?state=active&motionMs=225` to freeze the active cauldron at the liquid
 cycle's highest point for reproducible containment screenshots.

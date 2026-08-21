@@ -1,9 +1,25 @@
+import { readFileSync } from 'node:fs';
+
 import { describe, expect, it, vi } from 'vitest';
 
 import { FriendsBackendFacade } from './FriendsBackendFacade.js';
 import { DirectMessageSubscriptionManager } from './managers/DirectMessageSubscriptionManager.js';
 
 describe('FriendsBackendFacade', () => {
+  it.each([
+    'own_friendship_table.ts',
+    'own_incoming_friend_request_table.ts',
+    'own_outgoing_friend_request_table.ts',
+  ])('keeps alliance identity in the generated %s contract', (bindingFile) => {
+    const source = readFileSync(
+      new URL(`../spacetimedb/module_bindings/${bindingFile}`, import.meta.url),
+      'utf8',
+    );
+
+    expect(source).toContain('allianceTag: __t.string()');
+    expect(source).toContain('allianceTagColor: __t.string()');
+  });
+
   it('maps relationship rows and routes every server-authoritative action', async () => {
     const reducers = {
       sendFriendRequest: vi.fn().mockResolvedValue(undefined),
@@ -27,6 +43,11 @@ describe('FriendsBackendFacade', () => {
     );
     connection.db.ownFriendship.emitInsert();
 
+    expect(facade.getSnapshot().friends[0]).toMatchObject({
+      identity: 'friend',
+      allianceTag: 'MOSS',
+      allianceTagColor: 'green',
+    });
     expect(facade.getRelationship('friend')).toBe('friend');
     expect(facade.getRelationship('incoming')).toBe('incoming');
     expect(facade.getRelationship('outgoing')).toBe('outgoing');
@@ -133,6 +154,8 @@ function createTable(rows = []) {
 function playerRow(overrides = {}) {
   return {
     username: 'Wizard',
+    allianceTag: 'MOSS',
+    allianceTagColor: 'green',
     character: 'elara',
     frame: 'classic',
     playerLevel: 7,

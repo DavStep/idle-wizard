@@ -1,5 +1,30 @@
 {
   "frames": {
+    "alliance:members": {
+      "frame": {
+        "x": 32,
+        "y": 1784,
+        "w": 96,
+        "h": 96
+      },
+      "rotated": false,
+      "trimmed": false,
+      "spriteSourceSize": {
+        "x": 0,
+        "y": 0,
+        "w": 96,
+        "h": 96
+      },
+      "sourceSize": {
+        "w": 96,
+        "h": 96
+      },
+      "originalSourceSize": {
+        "w": 96,
+        "h": 96
+      },
+      "source": "assets/game/source/icons/icon-alliance-members.png"
+    },
     "herb:belladonnaHerb": {
       "frame": {
         "x": 32,
@@ -652,7 +677,7 @@
     },
     "ingredient:bansheeVeil": {
       "frame": {
-        "x": 493,
+        "x": 621,
         "y": 1784,
         "w": 88,
         "h": 95
@@ -1027,7 +1052,7 @@
     },
     "ingredient:featherOfEternity": {
       "frame": {
-        "x": 32,
+        "x": 145,
         "y": 1912,
         "w": 127,
         "h": 73
@@ -1177,7 +1202,7 @@
     },
     "ingredient:golemPebble": {
       "frame": {
-        "x": 865,
+        "x": 993,
         "y": 1784,
         "w": 100,
         "h": 92
@@ -1277,7 +1302,7 @@
     },
     "ingredient:impHorn": {
       "frame": {
-        "x": 264,
+        "x": 392,
         "y": 1784,
         "w": 70,
         "h": 96
@@ -1402,7 +1427,7 @@
     },
     "ingredient:mimicTongue": {
       "frame": {
-        "x": 160,
+        "x": 288,
         "y": 1784,
         "w": 72,
         "h": 96
@@ -1577,8 +1602,8 @@
     },
     "ingredient:ratTail": {
       "frame": {
-        "x": 1868,
-        "y": 1784,
+        "x": 32,
+        "y": 1912,
         "w": 81,
         "h": 90
       },
@@ -1602,7 +1627,7 @@
     },
     "ingredient:slimeCore": {
       "frame": {
-        "x": 366,
+        "x": 494,
         "y": 1784,
         "w": 95,
         "h": 95
@@ -1652,7 +1677,7 @@
     },
     "ingredient:sphinxWhisker": {
       "frame": {
-        "x": 613,
+        "x": 741,
         "y": 1784,
         "w": 100,
         "h": 94
@@ -1852,7 +1877,7 @@
     },
     "ingredient:toadEye": {
       "frame": {
-        "x": 745,
+        "x": 873,
         "y": 1784,
         "w": 88,
         "h": 94
@@ -2052,7 +2077,7 @@
     },
     "ingredient:wyvernStinger": {
       "frame": {
-        "x": 1741,
+        "x": 1869,
         "y": 1784,
         "w": 95,
         "h": 91
@@ -3502,7 +3527,7 @@
     },
     "resource:amethyst": {
       "frame": {
-        "x": 997,
+        "x": 1125,
         "y": 1784,
         "w": 92,
         "h": 92
@@ -3527,7 +3552,7 @@
     },
     "resource:coin": {
       "frame": {
-        "x": 1121,
+        "x": 1249,
         "y": 1784,
         "w": 92,
         "h": 92
@@ -3552,7 +3577,7 @@
     },
     "resource:crystal": {
       "frame": {
-        "x": 1245,
+        "x": 1373,
         "y": 1784,
         "w": 92,
         "h": 92
@@ -3577,7 +3602,7 @@
     },
     "resource:emerald": {
       "frame": {
-        "x": 1369,
+        "x": 1497,
         "y": 1784,
         "w": 92,
         "h": 92
@@ -3602,7 +3627,7 @@
     },
     "resource:mana": {
       "frame": {
-        "x": 1493,
+        "x": 1621,
         "y": 1784,
         "w": 92,
         "h": 92
@@ -3627,7 +3652,7 @@
     },
     "resource:research": {
       "frame": {
-        "x": 32,
+        "x": 160,
         "y": 1784,
         "w": 96,
         "h": 96
@@ -3652,7 +3677,7 @@
     },
     "resource:ruby": {
       "frame": {
-        "x": 1617,
+        "x": 1745,
         "y": 1784,
         "w": 92,
         "h": 92
@@ -3702,7 +3727,7 @@
     },
     "status:checkDefault": {
       "frame": {
-        "x": 276,
+        "x": 389,
         "y": 1912,
         "w": 61,
         "h": 57
@@ -3727,7 +3752,7 @@
     },
     "status:lockDefault": {
       "frame": {
-        "x": 191,
+        "x": 304,
         "y": 1912,
         "w": 53,
         "h": 60

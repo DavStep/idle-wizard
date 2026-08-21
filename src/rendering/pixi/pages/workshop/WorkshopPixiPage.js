@@ -237,6 +237,11 @@ const WORKSHOP_TASK_ROW_TEXT_TOP = 5;
 const WORKSHOP_TASK_PROGRESS_GAP = 6;
 const WORKSHOP_TASK_ACTION_WIDTH = 64;
 const WORKSHOP_TASK_ACTION_HEIGHT = 24;
+const WORKSHOP_TASK_ACTION_GAP = 4;
+const WORKSHOP_TASK_LABEL_MIN_FONT_SIZE = 13;
+const WORKSHOP_TASK_LABEL_GAP = 4;
+const WORKSHOP_TASK_LABEL_OPTICAL_CENTER_Y =
+  WORKSHOP_TASK_ROW_TEXT_TOP + WORKSHOP_REQUEST_ROW_TEXT_STYLE.lineHeight / 2;
 const WORKSHOP_TASK_DEFAULT_PROGRESS_TOP =
   WORKSHOP_TASK_ICON_SIZE + WORKSHOP_TASK_PROGRESS_GAP;
 const WORKSHOP_TASK_DEFAULT_ROW_HEIGHT =
@@ -1553,6 +1558,7 @@ export class WorkshopTaskRow {
 
   setBounds(x, y, width) {
     this.root.position.set(x, y);
+    this.width = width;
     const iconSize = WORKSHOP_TASK_ICON_SIZE;
     if (this.iconOverlay.visible) {
       layoutPixiSeedPackIcon({
@@ -1570,12 +1576,12 @@ export class WorkshopTaskRow {
       this.icon.height = iconSize;
       this.iconOverlay.rotation = 0;
     }
-    this.label.position.set(
-      this.icon.visible ? iconSize + 4 : 0,
-      WORKSHOP_TASK_ROW_TEXT_TOP,
-    );
+    this.label.x = this.icon.visible ? iconSize + 4 : 0;
     this.value.position.set(
-      width - (this.action.root.visible ? WORKSHOP_TASK_ACTION_WIDTH : 0),
+      width -
+        (this.action.root.visible
+          ? WORKSHOP_TASK_ACTION_WIDTH + WORKSHOP_TASK_ACTION_GAP
+          : 0),
       WORKSHOP_TASK_ROW_TEXT_TOP,
     );
     this.action.setBounds(
@@ -1584,13 +1590,14 @@ export class WorkshopTaskRow {
       WORKSHOP_TASK_ACTION_WIDTH,
       WORKSHOP_TASK_ACTION_HEIGHT,
     );
-    const contentBottom = Math.max(
-      iconSize,
-      WORKSHOP_TASK_ROW_TEXT_TOP + this.label.height,
-      WORKSHOP_TASK_ROW_TEXT_TOP + this.value.height,
-      this.action.root.visible ? 4 + WORKSHOP_TASK_ACTION_HEIGHT : 0,
+    const valueLeft = this.value.x - this.value.width;
+    const actionLeft = this.action.root.visible ? this.action.root.x : width;
+    this.labelMaxWidth = Math.max(
+      0,
+      Math.min(valueLeft, actionLeft) - WORKSHOP_TASK_LABEL_GAP - this.label.x,
     );
-    const progressTop = contentBottom + WORKSHOP_TASK_PROGRESS_GAP;
+    this.fitLabel(this.labelMaxWidth);
+    const progressTop = WORKSHOP_TASK_DEFAULT_PROGRESS_TOP;
     this.progress.setBounds(
       0,
       progressTop,
@@ -1598,8 +1605,8 @@ export class WorkshopTaskRow {
       PIXI_UI_GEOMETRY.progressTotalHeight,
     );
     this.preferredHeight = this.progress.root.visible
-      ? progressTop + PIXI_UI_GEOMETRY.progressTotalHeight
-      : Math.max(28, contentBottom);
+      ? WORKSHOP_TASK_DEFAULT_ROW_HEIGHT
+      : WORKSHOP_TASK_ICON_SIZE;
     const height = this.getPreferredHeight();
     this.root.hitArea = new Rectangle(0, 0, width, height);
     this.visual.pivot.set(width / 2, height / 2);
@@ -1609,6 +1616,33 @@ export class WorkshopTaskRow {
     if (this.progressFeedback) {
       this.updateProgressFeedback(this.page.timeSource());
     }
+  }
+
+  fitLabel(maxWidth) {
+    const preferredFontSize = WORKSHOP_REQUEST_ROW_TEXT_STYLE.fontSize;
+    const preferredLineHeight = WORKSHOP_REQUEST_ROW_TEXT_STYLE.lineHeight;
+    this.label.style.wordWrap = false;
+    this.label.style.wordWrapWidth = 0;
+    this.label.style.whiteSpace = 'pre';
+    this.label.style.fontSize = preferredFontSize;
+    this.label.style.lineHeight = preferredLineHeight;
+    const measuredWidth = this.label.width;
+    const fittedFontSize =
+      measuredWidth > maxWidth && maxWidth > 0
+        ? Math.max(
+            WORKSHOP_TASK_LABEL_MIN_FONT_SIZE,
+            Math.floor(
+              preferredFontSize * (maxWidth / measuredWidth) * 4,
+            ) / 4,
+          )
+        : preferredFontSize;
+    this.label.style.fontSize = fittedFontSize;
+    this.label.style.lineHeight =
+      Math.round(
+        preferredLineHeight * (fittedFontSize / preferredFontSize) * 4,
+      ) / 4;
+    this.label.y =
+      WORKSHOP_TASK_LABEL_OPTICAL_CENTER_Y - this.label.height / 2;
   }
 
   getPreferredHeight() {
@@ -1637,6 +1671,9 @@ export class WorkshopTaskRow {
       ...WORKSHOP_REQUEST_ROW_TEXT_STYLE,
       fill: this.model?.disabled ? color : WORKSHOP_REQUEST_TEXT_FILL,
     });
+    if (Number.isFinite(this.labelMaxWidth)) {
+      this.fitLabel(this.labelMaxWidth);
+    }
     this.action.applyTheme(theme);
     this.progress.applyTheme(theme);
   }

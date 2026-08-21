@@ -18,6 +18,7 @@ export default [
       'compound.hud-bag-capsule',
       'hud-avatar-button',
       'hud-settings-button',
+      'primitive.notification-badge',
     ],
     createThumbnail: createHudThumbnail,
     folderPath: ['HUD'],
@@ -29,7 +30,7 @@ export default [
       {
         label: 'Contract',
         value:
-          'Shared avatar, level, mana, currencies, username, and settings chrome',
+          'Shared avatar, level, Coin, context currency, Bag, username, and Settings chrome',
       },
     ],
     scenarios: [
@@ -52,7 +53,6 @@ export default [
       {
         fixture: createHudFixture({
           character: 'mira',
-          showBag: true,
           username: 'Mira',
           contextCurrency: {
             amount: 240,
@@ -64,6 +64,12 @@ export default [
         }),
         id: 'full-mana',
         label: 'Full mana',
+        mount: mountHud,
+      },
+      {
+        fixture: createHudFixture({ avatarNotification: true }),
+        id: 'friend-request',
+        label: 'Friend request',
         mount: mountHud,
       },
     ],
@@ -254,7 +260,6 @@ function createHudFixture(overrides = {}) {
     coin: 12450,
     contextCurrency: { amount: 7, resource: 'ruby', visible: true },
     level: 7,
-    showBag: false,
     quest: {
       activeFraction: 0.42,
       completed: 1,

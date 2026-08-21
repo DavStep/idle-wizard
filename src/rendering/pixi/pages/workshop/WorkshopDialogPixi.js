@@ -77,6 +77,7 @@ import { RootRunInventoryChoiceRowPixi } from '../shop/ShopDialogPixi.js';
 import { PlayerRelationshipRowPixi } from '../../global/dialogs/PlayerRelationshipRowPixi.js';
 
 const WORKSHOP_DIALOG_CONTENT_WIDTH = 264;
+export const ALLIANCE_DIALOG_CONTENT_WIDTH = WORKSHOP_DIALOG_CONTENT_WIDTH;
 const DIALOG_SCROLL_VIEWPORT_TOP = 18;
 const DIALOG_SCROLL_VIEWPORT_BOTTOM_INSET = 30;
 const DIALOG_PAPER_TOP =
@@ -357,7 +358,7 @@ function createPersonalTaskSectionChrome(dialog, sectionId) {
   };
 }
 
-function createAllianceTradeSection(dialog) {
+export function createAllianceTradeSection(dialog) {
   const root = new Container({
     label: `${dialog.dialogId}-trade-info-section`,
   });
@@ -380,7 +381,7 @@ function createAllianceTradeSection(dialog) {
   return { root, paper, title, identity, detail, rowsLayer };
 }
 
-function createAllianceMembersSection(dialog) {
+export function createAllianceMembersSection(dialog) {
   const root = new Container({
     label: `${dialog.dialogId}-members-section`,
   });
@@ -484,12 +485,12 @@ export class WorkshopDialogPixi {
         WORLD_CHAT_CONTENT_INSET_X * 2
       : this.isFriendsDialog
         ? PIXI_DIALOG_BASE_GEOMETRY.contentWidth
-      : WORKSHOP_DIALOG_CONTENT_WIDTH +
-        (this.isBagDialog
-          ? RETAINED_DIALOG_SCROLL_GEOMETRY.scrollbarShiftRight
-          : this.isStatsDialog
-            ? STATS_SCROLLBAR_SHIFT_RIGHT
-            : 0);
+        : WORKSHOP_DIALOG_CONTENT_WIDTH +
+          (this.isBagDialog
+            ? RETAINED_DIALOG_SCROLL_GEOMETRY.scrollbarShiftRight
+            : this.isStatsDialog
+              ? STATS_SCROLLBAR_SHIFT_RIGHT
+              : 0);
 
     this.modalId = `dialog:${this.dialogId}`;
     this.modal = new PixiOwnedDialogSurface({
@@ -603,15 +604,18 @@ export class WorkshopDialogPixi {
       );
     }
     this.directMessageProfileRegistration = this.directMessageIdentityHitTarget
-      ? (this.inputRouter?.registerPressTarget?.(this.directMessageIdentityHitTarget, {
-          fallbackHitTest: true,
-          enabled: () =>
-            this.modal.shown === true &&
-            typeof this.viewModel.actions?.unfriend === 'function',
-          onActivate: () => this.toggleDirectMessageIdentityActions(),
-          haptic: 'selection',
-          excludePageSwipe: true,
-        }) ?? null)
+      ? (this.inputRouter?.registerPressTarget?.(
+          this.directMessageIdentityHitTarget,
+          {
+            fallbackHitTest: true,
+            enabled: () =>
+              this.modal.shown === true &&
+              typeof this.viewModel.actions?.unfriend === 'function',
+            onActivate: () => this.toggleDirectMessageIdentityActions(),
+            haptic: 'selection',
+            excludePageSwipe: true,
+          },
+        ) ?? null)
       : null;
     this.scrollableRowLayouts = new Map();
     this.scroll = new RetainedScrollArea({
@@ -1089,7 +1093,9 @@ export class WorkshopDialogPixi {
         )
         .setBackgroundTint(getPlayerFrameTint(friend.frame));
       const allianceTag = normalizeWorldChatTag(friend.allianceTag);
-      const allianceTagColor = normalizeWorldChatTagColor(friend.allianceTagColor);
+      const allianceTagColor = normalizeWorldChatTagColor(
+        friend.allianceTagColor,
+      );
       setText(this.directMessageTag, allianceTag ? `[${allianceTag}]` : '');
       this.directMessageTagColor = WORLD_CHAT_TAG_COLORS[allianceTagColor];
       this.directMessageTag.style.fill = this.directMessageTagColor;
@@ -1316,22 +1322,22 @@ export class WorkshopDialogPixi {
       ? this.scroll.width - WORLD_CHAT_ROW_SCROLLBAR_GUTTER
       : this.isFriendsDialog
         ? PIXI_DIALOG_BASE_GEOMETRY.contentWidth
-      : this.isBagDialog
-        ? (this.bagRowWidth ?? WORKSHOP_DIALOG_CONTENT_WIDTH)
-        : this.isAllianceDialog && this.viewModel.directory
-          ? (this.allianceDirectoryRowWidth ?? WORKSHOP_DIALOG_CONTENT_WIDTH)
-          : this.isWorldEventDialog &&
-              this.viewModel.rowWidget === 'worldEventQuest'
-            ? this.scroll.width
-            : this.isLeaderboardDialog ||
-                (this.isWorldEventDialog &&
-                  (this.viewModel.rowWidget === 'leaderboard' ||
-                    this.viewModel.rowWidget === 'worldEventReward'))
-              ? (this.leaderboardRowWidth ?? WORKSHOP_DIALOG_CONTENT_WIDTH)
-              : this.isAllianceDialog &&
-                  this.viewModel.rowWidget === 'allianceQuest'
-                ? this.allianceQuestRowWidth || WORKSHOP_DIALOG_CONTENT_WIDTH
-                : WORKSHOP_DIALOG_CONTENT_WIDTH;
+        : this.isBagDialog
+          ? (this.bagRowWidth ?? WORKSHOP_DIALOG_CONTENT_WIDTH)
+          : this.isAllianceDialog && this.viewModel.directory
+            ? (this.allianceDirectoryRowWidth ?? WORKSHOP_DIALOG_CONTENT_WIDTH)
+            : this.isWorldEventDialog &&
+                this.viewModel.rowWidget === 'worldEventQuest'
+              ? this.scroll.width
+              : this.isLeaderboardDialog ||
+                  (this.isWorldEventDialog &&
+                    (this.viewModel.rowWidget === 'leaderboard' ||
+                      this.viewModel.rowWidget === 'worldEventReward'))
+                ? (this.leaderboardRowWidth ?? WORKSHOP_DIALOG_CONTENT_WIDTH)
+                : this.isAllianceDialog &&
+                    this.viewModel.rowWidget === 'allianceQuest'
+                  ? this.allianceQuestRowWidth || WORKSHOP_DIALOG_CONTENT_WIDTH
+                  : WORKSHOP_DIALOG_CONTENT_WIDTH;
     const preferredHeights = widgets.map((widget) =>
       widget.getPreferredHeight(rowWidth),
     );
@@ -1826,15 +1832,15 @@ export class WorkshopDialogPixi {
       ? WORLD_CHAT_DIALOG_HEIGHT
       : this.isFriendsDialog
         ? FRIENDS_DIALOG_HEIGHT
-      : this.isWorldEventDialog
-        ? this.worldEventHeaderArt?.visible === true
-          ? 590
-          : 486
-        : this.isPersonalTasksDialog
-          ? 470
-          : this.isAllianceDialog
-            ? TRADE_ALLIANCE_DIALOG_HEIGHT
-            : 382;
+        : this.isWorldEventDialog
+          ? this.worldEventHeaderArt?.visible === true
+            ? 590
+            : 486
+          : this.isPersonalTasksDialog
+            ? 470
+            : this.isAllianceDialog
+              ? TRADE_ALLIANCE_DIALOG_HEIGHT
+              : 382;
     const viewportReserve = this.isChatDialog ? 80 : 118;
     const hasPrimaryVerticalScroll =
       this.isAllianceDialog ||
@@ -2045,13 +2051,13 @@ export class WorkshopDialogPixi {
         ? WORLD_CHAT_CONTENT_INSET_X
         : this.isFriendsDialog
           ? 0
-        : bagListLayout
-          ? 20 + bagListLayout.x
-          : allianceDirectoryListLayout
-            ? 20 + allianceDirectoryListLayout.x
-            : usesAllianceQuestRows
-              ? 20 + allianceQuestListLayout.x
-              : 20,
+          : bagListLayout
+            ? 20 + bagListLayout.x
+            : allianceDirectoryListLayout
+              ? 20 + allianceDirectoryListLayout.x
+              : usesAllianceQuestRows
+                ? 20 + allianceQuestListLayout.x
+                : 20,
       DIALOG_SCROLL_VIEWPORT_TOP +
         copyHeight +
         headerHeight +
@@ -2060,11 +2066,11 @@ export class WorkshopDialogPixi {
         ? allianceQuestListLayout.viewportWidth
         : this.isFriendsDialog
           ? PIXI_DIALOG_BASE_GEOMETRY.contentWidth
-        : allianceDirectoryListLayout
-          ? allianceDirectoryListLayout.viewportWidth
-          : bagListLayout
-            ? bagListLayout.viewportWidth
-            : this.scrollViewportWidth,
+          : allianceDirectoryListLayout
+            ? allianceDirectoryListLayout.viewportWidth
+            : bagListLayout
+              ? bagListLayout.viewportWidth
+              : this.scrollViewportWidth,
       height -
         DIALOG_SCROLL_VIEWPORT_TOP -
         (usesAllianceQuestRows
@@ -4090,6 +4096,9 @@ export class AllianceSettingsPane {
     this.saving = false;
     this.statusText = '';
     this.mode = null;
+    this.activeSection = 'profile';
+    this.theme = DEFAULT_PIXI_THEME_SNAPSHOT;
+    this.lastBounds = null;
     this.root = new Container({ label: `${dialog.dialogId}-settings` });
     this.root.visible = false;
     this.root.renderable = false;
@@ -4097,11 +4106,14 @@ export class AllianceSettingsPane {
       inputRouter: dialog.inputRouter,
       label: `${dialog.dialogId}-settings-scroll`,
     });
+    this.sectionTabLayer = new Container({
+      label: `${dialog.dialogId}-settings-section-tabs`,
+    });
     this.content = new Container({
       label: `${dialog.dialogId}-settings-content`,
     });
     this.scroll.content.addChild(this.content);
-    this.root.addChild(this.scroll.root);
+    this.root.addChild(this.scroll.root, this.sectionTabLayer);
     this.createIdentitySection = createDialogPaperSection(
       dialog.panel.paperFrame.texture,
       `${dialog.dialogId}-create-identity-section`,
@@ -4119,6 +4131,21 @@ export class AllianceSettingsPane {
       section.renderable = false;
     });
     this.content.addChild(...this.createSections);
+    this.sectionTabs = [
+      ['profile', 'Profile'],
+      ['banner', 'Banner'],
+    ].map(
+      ([sectionId]) =>
+        new RetainedButton({
+          assetManager: dialog.assetManager,
+          buttonLabel: `${dialog.dialogId}-settings-section-${sectionId}`,
+          inputRouter: dialog.inputRouter,
+          variant: 'tab',
+        }),
+    );
+    this.sectionTabLayer.addChild(
+      ...this.sectionTabs.map((button) => button.root),
+    );
     this.fieldSpecs = [
       ['name', 'Name', 24],
       ['tag', 'Tag', 5],
@@ -4302,6 +4329,7 @@ export class AllianceSettingsPane {
     this.mode = this.model.mode;
     if (allianceChanged || modeChanged) {
       this.scroll.scrollTo(0);
+      this.activeSection = 'profile';
     }
     if (allianceChanged || !this.dirty) {
       this.draftAllianceId = allianceId;
@@ -4325,7 +4353,23 @@ export class AllianceSettingsPane {
     }
     const editable = this.model.editable === true;
     const creating = this.model.mode === 'create';
-    const editingBanner = this.model.mode === 'banner';
+    const settings = this.model.mode === 'settings';
+    const editingBanner =
+      this.model.mode === 'banner' ||
+      (settings && this.activeSection === 'banner');
+    this.sectionTabLayer.visible = editable && settings;
+    this.sectionTabLayer.renderable = editable && settings;
+    this.sectionTabs.forEach((button, index) => {
+      const sectionId = ['profile', 'banner'][index];
+      button.root.visible = editable && settings;
+      button.root.renderable = editable && settings;
+      button.setModel({
+        label: sectionId[0].toUpperCase() + sectionId.slice(1),
+        selected: this.activeSection === sectionId,
+        enabled: editable && !this.saving,
+        action: () => this.selectSection(sectionId),
+      });
+    });
     this.setCreateSectionsVisible(creating);
     for (const [key, field] of this.fields) {
       const label = this.labels.get(key);
@@ -4350,16 +4394,18 @@ export class AllianceSettingsPane {
     );
     this.fields
       .get('tag')
-      .setValueColor(ALLIANCE_TAG_FIELD_COLORS[selectedTagColor] ?? null);
+      .setValueColor(
+        ALLIANCE_TAG_FIELD_COLORS[selectedTagColor] ?? this.theme.text,
+      );
     for (const swatch of this.swatches) {
       swatch.root.visible = editable && !editingBanner;
       swatch.root.renderable = editable && !editingBanner;
       swatch.setSelected(swatch.colorId === selectedTagColor);
     }
-    const editingAllianceBanner =
-      editable && (creating || editingBanner || this.model.mode === 'settings');
-    this.bannerSectionLabel.visible = editingAllianceBanner && !creating;
-    this.bannerSectionLabel.renderable = editingAllianceBanner && !creating;
+    const editingAllianceBanner = editable && (creating || editingBanner);
+    this.bannerSectionLabel.visible =
+      editingAllianceBanner && !creating && !settings;
+    this.bannerSectionLabel.renderable = this.bannerSectionLabel.visible;
     this.bannerPreview.visible = editingAllianceBanner;
     this.bannerPreview.renderable = editingAllianceBanner;
     this.emblemLabel.visible = editingAllianceBanner;
@@ -4398,12 +4444,12 @@ export class AllianceSettingsPane {
       swatch.root.renderable = editingAllianceBanner;
       swatch.setSelected(swatch.colorId === this.draft?.emblemColor);
     }
-    this.joinModeLabel.visible = editable && !editingBanner;
-    this.joinModeLabel.renderable = editable && !editingBanner;
+    this.joinModeLabel.visible = editable && creating;
+    this.joinModeLabel.renderable = editable && creating;
     this.joinModeButtons.forEach((button, index) => {
       const joinMode = ['open', 'apply', 'closed'][index];
-      button.root.visible = editable && !editingBanner;
-      button.root.renderable = editable && !editingBanner;
+      button.root.visible = editable && creating;
+      button.root.renderable = editable && creating;
       button.setModel({
         label: joinMode[0].toUpperCase() + joinMode.slice(1),
         selected: this.draft?.joinMode === joinMode,
@@ -4422,13 +4468,13 @@ export class AllianceSettingsPane {
           ? 'Save Banner'
           : creating
             ? 'Create Alliance'
-            : 'Save',
+            : 'Save Profile',
       enabled: editable && !this.saving,
       action: () => this.save(),
     });
-    this.disbandButton.root.visible = editable && !creating && !editingBanner;
+    this.disbandButton.root.visible = editable && settings && !editingBanner;
     this.disbandButton.root.renderable =
-      editable && !creating && !editingBanner;
+      editable && settings && !editingBanner;
     this.disbandButton.setModel({
       label: this.model.canDisband ? 'Disband' : 'Remove Members First',
       enabled: editable && this.model.canDisband === true && !this.saving,
@@ -4445,6 +4491,31 @@ export class AllianceSettingsPane {
       section.visible = visible;
       section.renderable = visible;
     }
+  }
+
+  selectSection(sectionId) {
+    if (
+      !['profile', 'banner'].includes(sectionId) ||
+      this.model?.mode !== 'settings' ||
+      this.saving
+    ) {
+      return false;
+    }
+    if (this.activeSection === sectionId) {
+      return true;
+    }
+    this.activeSection = sectionId;
+    this.scroll.scrollTo(0);
+    this.bind(this.model);
+    if (this.lastBounds) {
+      this.setBounds(
+        this.lastBounds.x,
+        this.lastBounds.y,
+        this.lastBounds.width,
+        this.lastBounds.height,
+      );
+    }
+    return true;
   }
 
   selectJoinMode(joinMode) {
@@ -4525,34 +4596,59 @@ export class AllianceSettingsPane {
   }
 
   setBounds(x, y, width, height = 0) {
+    this.lastBounds = { x, y, width, height };
     this.root.position.set(x, y);
     const creating = this.model?.mode === 'create';
+    const settingsNavigation =
+      this.model?.mode === 'settings' && this.model?.editable === true;
+    const settingsTabHeight = 28;
+    const settingsTabGap = 6;
+    const scrollHeight = settingsNavigation
+      ? Math.max(0, height - settingsTabHeight - settingsTabGap)
+      : height;
     this.scroll.setBounds(
       0,
       0,
       creating ? width + PIXI_UI_GEOMETRY.dialogPadding * 2 : width,
-      height,
+      scrollHeight,
     );
+    if (settingsNavigation) {
+      this.sectionTabLayer.position.set(0, scrollHeight + settingsTabGap);
+      this.layoutSettingsTabs(width);
+    }
     if (this.model?.editable !== true) {
       this.status.position.set(0, 8);
       this.scroll.setContentHeight(26);
       return;
     }
     if (this.model?.mode === 'banner') {
-      this.layoutBannerEditor(0);
-      this.saveButton.setBounds(0, 203, width, 28);
-      this.status.position.set(0, 235);
-      this.scroll.setContentHeight(253);
+      const editorBottom = this.layoutBannerEditor(0, { large: true, width });
+      const actionY = editorBottom + 14;
+      this.saveButton.setBounds(0, actionY, width, 28);
+      this.status.position.set(0, actionY + 32);
+      this.scroll.setContentHeight(actionY + 50);
       return;
     }
     if (creating) {
       this.scroll.setContentHeight(this.layoutCreateSections(width));
       return;
     }
-    this.scroll.setContentHeight(this.layoutMergedSettings(width));
+    this.scroll.setContentHeight(
+      this.activeSection === 'banner'
+        ? this.layoutBannerSettings(width)
+        : this.layoutProfileSettings(width),
+    );
   }
 
-  layoutMergedSettings(width) {
+  layoutSettingsTabs(width) {
+    const gap = 6;
+    const tabWidth = (width - gap) / 2;
+    this.sectionTabs.forEach((button, index) => {
+      button.setBounds(index * (tabWidth + gap), 0, tabWidth, 28);
+    });
+  }
+
+  layoutProfileSettings(width) {
     const fieldHeight = 40;
     let fieldY = 0;
     this.fieldSpecs.forEach(([key]) => {
@@ -4570,23 +4666,7 @@ export class AllianceSettingsPane {
         fieldY += fieldHeight;
       }
     });
-    const bannerY = fieldY + 2;
-    this.bannerSectionLabel.position.set(0, bannerY);
-    this.layoutBannerEditor(bannerY + 17);
-    const joinY = bannerY + 220;
-    this.joinModeLabel.position.set(0, joinY);
-    const joinButtonY = joinY + 13;
-    const joinGap = 6;
-    const joinWidth = (width - joinGap * 2) / 3;
-    this.joinModeButtons.forEach((button, index) => {
-      button.setBounds(
-        index * (joinWidth + joinGap),
-        joinButtonY,
-        joinWidth,
-        28,
-      );
-    });
-    const actionY = joinButtonY + 34;
+    const actionY = fieldY + 6;
     const actionGap = 8;
     const actionWidth = (width - actionGap) / 2;
     this.saveButton.setBounds(0, actionY, actionWidth, 28);
@@ -4596,6 +4676,19 @@ export class AllianceSettingsPane {
       actionWidth,
       28,
     );
+    this.status.position.set(0, actionY + 32);
+    return actionY + 50;
+  }
+
+  layoutBannerSettings(width) {
+    const contentY = 0;
+    this.bannerSectionLabel.position.set(0, contentY);
+    const editorBottom = this.layoutBannerEditor(contentY, {
+      large: true,
+      width,
+    });
+    const actionY = editorBottom + 14;
+    this.saveButton.setBounds(0, actionY, width, 28);
     this.status.position.set(0, actionY + 32);
     return actionY + 50;
   }
@@ -4722,7 +4815,48 @@ export class AllianceSettingsPane {
     return this.status.y + 18;
   }
 
-  layoutBannerEditor(y, { x = 0 } = {}) {
+  layoutBannerEditor(y, { x = 0, large = false, width = 0 } = {}) {
+    if (large) {
+      const previewSize = 160;
+      const tileSize = 40;
+      const tileGap = 6;
+      const columns = 6;
+      const gridWidth = columns * tileSize + (columns - 1) * tileGap;
+      const gridX = x + (width - gridWidth) / 2;
+      const emblemLabelY = y + previewSize + 12;
+      const emblemGridY = emblemLabelY + 16;
+      const emblemRows = Math.ceil(this.emblemOptions.length / columns);
+      const emblemGridHeight =
+        emblemRows * tileSize + Math.max(0, emblemRows - 1) * tileGap;
+      const bannerColorY = emblemGridY + emblemGridHeight + 18;
+      const emblemColorY = bannerColorY + 59;
+      this.bannerPreview.position.set(
+        x + (width - previewSize) / 2,
+        y,
+      );
+      this.bannerPreview.setSize(previewSize, previewSize);
+      this.emblemLabel.position.set(gridX, emblemLabelY);
+      this.emblemOptionLayer.position.set(gridX, emblemGridY);
+      this.emblemOptions.forEach((option, index) => {
+        option.setBounds(
+          (index % columns) * (tileSize + tileGap),
+          Math.floor(index / columns) * (tileSize + tileGap),
+          tileSize,
+        );
+      });
+      this.bannerColorLabel.position.set(x, bannerColorY);
+      this.bannerColorSwatchLayer.position.set(x, bannerColorY + 15);
+      const swatchGap = Math.max(0, (width - 24 * 10) / 9);
+      this.bannerColorSwatches.forEach((swatch, index) => {
+        swatch.setBounds(index * (24 + swatchGap), 0, 24);
+      });
+      this.emblemColorLabel.position.set(x, emblemColorY);
+      this.emblemColorSwatchLayer.position.set(x, emblemColorY + 15);
+      this.emblemColorSwatches.forEach((swatch, index) => {
+        swatch.setBounds(index * (24 + swatchGap), 0, 24);
+      });
+      return emblemColorY + 39;
+    }
     this.bannerPreview.position.set(x, y);
     this.bannerPreview.setSize(86, 100);
     this.emblemLabel.position.set(x + 96, y);
@@ -4740,15 +4874,20 @@ export class AllianceSettingsPane {
     this.emblemColorSwatches.forEach((swatch, index) => {
       swatch.setBounds(index * 25, 0, 20);
     });
+    return y + 186;
   }
 
   applyTheme(theme) {
     const resolvedTheme = theme ?? DEFAULT_PIXI_THEME_SNAPSHOT;
+    this.theme = resolvedTheme;
     for (const label of this.labels.values()) {
       applyTextTheme(label, resolvedTheme, RETAINED_TEXT_STYLES.border);
     }
-    for (const field of this.fields.values()) {
+    for (const [key, field] of this.fields) {
       field.applyTheme(resolvedTheme);
+      if (key !== 'tag') {
+        field.setValueColor(resolvedTheme.text);
+      }
     }
     applyTextTheme(
       this.tagColorLabel,
@@ -4798,6 +4937,7 @@ export class AllianceSettingsPane {
       fill: resolvedTheme.muted,
     });
     this.joinModeButtons.forEach((button) => button.applyTheme(resolvedTheme));
+    this.sectionTabs.forEach((button) => button.applyTheme(resolvedTheme));
     this.saveButton.applyTheme(resolvedTheme);
     this.disbandButton.applyTheme(resolvedTheme);
   }
@@ -4819,6 +4959,7 @@ export class AllianceSettingsPane {
       swatch.destroy();
     }
     this.joinModeButtons.forEach((button) => button.destroy());
+    this.sectionTabs.forEach((button) => button.destroy());
     this.saveButton.destroy();
     this.disbandButton.destroy();
     this.scroll.destroy();

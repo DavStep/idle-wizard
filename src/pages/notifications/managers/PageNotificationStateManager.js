@@ -9,7 +9,7 @@ import {
   NOTIFICATION_TONE_RED,
 } from '../../shared/notificationTone.js';
 import { WORKSHOP_DISCOVERY_ALLIANCE_UNLOCK_LEVEL } from '../../workshop/managers/WorkshopSecondaryActionGateManager.js';
-import { hasClaimableTradeAllianceQuest } from '../../workshop/managers/tradeAllianceQuestStatus.js';
+import { hasTradeAllianceNotification } from '../../workshop/managers/tradeAllianceNotificationStatus.js';
 
 export class PageNotificationStateManager {
   getSnapshot(gameplaySnapshot = {}, { playerShop = {}, tradeAlliance = {} } = {}) {
@@ -36,7 +36,7 @@ export class PageNotificationStateManager {
       seeds: getSeedSummonNotification(snapshot),
       tasks: (snapshot.tasks?.level?.tasks ?? []).some((task) => task.canFill === true),
       personalTasks: hasClaimablePersonalTaskReward(snapshot),
-      alliance: getTradeAllianceQuestNotification(snapshot, tradeAlliance),
+      alliance: getTradeAllianceNotification(snapshot, tradeAlliance),
     });
   }
 
@@ -176,7 +176,7 @@ export function getSeedSummonNotification(snapshot = {}) {
   return isManaCapped(snapshot?.mana) ? NOTIFICATION_TONE_ORANGE : false;
 }
 
-export function getTradeAllianceQuestNotification(
+export function getTradeAllianceNotification(
   gameplaySnapshot = {},
   tradeAllianceSnapshot = {},
 ) {
@@ -184,7 +184,7 @@ export function getTradeAllianceQuestNotification(
     return false;
   }
 
-  return hasClaimableTradeAllianceQuest(tradeAllianceSnapshot);
+  return hasTradeAllianceNotification(tradeAllianceSnapshot);
 }
 
 export function hasClaimablePersonalTaskReward(snapshot = {}) {

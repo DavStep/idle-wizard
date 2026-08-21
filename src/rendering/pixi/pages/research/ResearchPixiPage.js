@@ -1526,7 +1526,7 @@ export class ResearchRowWidget {
     this.progress = new RetainedTimedProgressBar({
       assetManager,
       label: 'research-row-progress',
-      tone: 'yellow',
+      tone: 'blue',
       usePlayerStyle: false,
     });
     this.progress.root.addChild(this.researchingTimerLabel);

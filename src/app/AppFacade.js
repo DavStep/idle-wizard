@@ -132,6 +132,7 @@ export class AppFacade {
       gardenSoundFacade: this.gardenSoundFacade,
       playerInboxFacade: this.backendFacade.getPlayerInboxFacade(),
       playerInfoFacade: this.backendFacade.getPlayerInfoFacade(),
+      friendsFacade: this.backendFacade.getFriendsFacade(),
       playerShopFacade: this.backendFacade.getPlayerShopFacade(),
       npcMarketFacade: this.backendFacade.getNpcMarketFacade(),
       authFacade: this.backendFacade.getAuthFacade(),

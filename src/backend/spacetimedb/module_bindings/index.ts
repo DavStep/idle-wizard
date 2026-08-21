@@ -95,6 +95,7 @@ import SetPlayerProfileReducer from "./set_player_profile_reducer";
 import SetPlayerShopRequestReducer from "./set_player_shop_request_reducer";
 import SetPlayerShopSlotReducer from "./set_player_shop_slot_reducer";
 import SetTotalGeneratedGoldReducer from "./set_total_generated_gold_reducer";
+import SetTradeAllianceJoinModeReducer from "./set_trade_alliance_join_mode_reducer";
 import SetTradeAllianceMemberRoleReducer from "./set_trade_alliance_member_role_reducer";
 import SetUsernameReducer from "./set_username_reducer";
 import SetWorldEventContributionPointsReducer from "./set_world_event_contribution_points_reducer";
@@ -706,6 +707,7 @@ const reducersSchema = __reducers(
   __reducerSchema("set_player_shop_request", SetPlayerShopRequestReducer),
   __reducerSchema("set_player_shop_slot", SetPlayerShopSlotReducer),
   __reducerSchema("set_total_generated_gold", SetTotalGeneratedGoldReducer),
+  __reducerSchema("set_trade_alliance_join_mode", SetTradeAllianceJoinModeReducer),
   __reducerSchema("set_trade_alliance_member_role", SetTradeAllianceMemberRoleReducer),
   __reducerSchema("set_username", SetUsernameReducer),
   __reducerSchema("set_world_event_contribution_points", SetWorldEventContributionPointsReducer),

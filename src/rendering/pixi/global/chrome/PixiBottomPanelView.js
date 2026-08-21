@@ -88,7 +88,6 @@ export const PIXI_ALLIANCE_HUD_TABS = Object.freeze([
   Object.freeze({ id: 'alliance.home', allianceTabId: 'home', label: 'Home' }),
   Object.freeze({ id: 'alliance.quests', allianceTabId: 'quests', label: 'Quests' }),
   Object.freeze({ id: 'alliance.requests', allianceTabId: 'requests', label: 'Requests' }),
-  Object.freeze({ id: 'alliance.chat', allianceTabId: 'chat', label: 'Chat' }),
   Object.freeze({ id: 'alliance.settings', allianceTabId: 'settings', label: 'Settings' }),
 ]);
 

@@ -11,6 +11,7 @@ import {
   BrewingCauldronHearth,
   BrewingHudPixi,
   BrewingIngredientPickerSlot,
+  BrewingMissingIngredientsRow,
 } from './BrewingHudPixi.js';
 import {
   BREWING_PIXI_GEOMETRY,
@@ -33,7 +34,8 @@ export default [
   widget('compound.brewing-inventory-opener', 'Brewing Inventory Opener', [], inventoryButtonControl, variants(['herbs', 'potions', 'selected'])),
   widget('compound.brewing-recipe-card', 'Brewing Recipe Card', ['text-button', 'compound.brewing-recipe-ingredient-row'], recipeCardControl, variants(['available', 'selected', 'not-researched', 'researching', 'unknown'])),
   widget('compound.brewing-recipe-ingredient-row', 'Brewing Recipe Ingredient Row', [], recipeIngredientControl, variants(['available', 'missing', 'unknown'])),
-  widget('compound.brewing-batch-detail', 'Brewing Batch Detail', ['compound.brewing-ingredient-picker-slot', 'primitive.progress-bar'], batchDetailControl, variants(['empty', 'missing', 'ready', 'brewing', 'complete'])),
+  widget('compound.brewing-batch-detail', 'Brewing Batch Detail', ['compound.brewing-missing-ingredients-row', 'primitive.progress-bar'], batchDetailControl, variants(['empty', 'missing', 'ready', 'brewing', 'complete'])),
+  widget('compound.brewing-missing-ingredients-row', 'Brewing Missing Ingredients Row', [], missingIngredientsRowControl, variants(['single', 'multiple', 'overflow', 'empty'])),
   widget('compound.brewing-cauldron-hearth', 'Brewing Cauldron Hearth', [], cauldronHearthControl, variants(['idle', 'lit', 'reduced-motion'])),
   widget('compound.brewing-ingredient-picker-slot', 'Brewing Ingredient Picker Slot', ['text-button'], ingredientSlotControl, variants(['filled', 'used', 'missing', 'empty'])),
   widget('compound.brewing-automation-toggle', 'Brewing Automation Inclusion', ['text-button'], automationToggleControl, variants(['included', 'unavailable'])),
@@ -85,6 +87,7 @@ function resolveProductionClass(id) {
     'compound.brewing-recipe-card': 'BrewingRecipeCard',
     'compound.brewing-recipe-ingredient-row': 'BrewingRecipeIngredientRow',
     'compound.brewing-batch-detail': 'BrewingHudPixi.detailPanel',
+    'compound.brewing-missing-ingredients-row': 'BrewingMissingIngredientsRow',
     'compound.brewing-cauldron-hearth': 'BrewingCauldronHearth',
     'compound.brewing-ingredient-picker-slot': 'BrewingIngredientPickerSlot',
     'compound.brewing-automation-toggle': 'BrewingAutomationSettingsDialogPixi.toggle',
@@ -297,6 +300,35 @@ function batchDetailControl({ assets, input, fixture = { state: 'ready' }, conte
   hud.detailPanel.root.position.set(0, 0);
   root.addChild(hud.detailPanel.root);
   return { control: hud, destroy: () => hud.destroy(), height: BREWING_HUD_GEOMETRY.detailHeight, root, width: 358 };
+}
+
+function missingIngredientsRowControl({ assets, fixture = { state: 'multiple' } }) {
+  const control = new BrewingMissingIngredientsRow({ assetManager: assets });
+  const ingredients = {
+    empty: [],
+    single: [
+      { itemKey: 'sageHerb', label: 'Sage', missingQuantity: 2 },
+    ],
+    multiple: [
+      { itemKey: 'sageHerb', label: 'Sage', missingQuantity: 2 },
+      { itemKey: 'mintHerb', label: 'Mint', missingQuantity: 1 },
+    ],
+    overflow: [
+      { itemKey: 'belladonnaHerb', label: 'Belladonna', missingQuantity: 1 },
+      { itemKey: 'dragonpepperHerb', label: 'Dragonpepper', missingQuantity: 2 },
+      { itemKey: 'moonflowerHerb', label: 'Moonflower', missingQuantity: 1 },
+      { itemKey: 'nightshadeHerb', label: 'Nightshade', missingQuantity: 3 },
+      { itemKey: 'silverleafHerb', label: 'Silverleaf', missingQuantity: 1 },
+      { itemKey: 'starAniseHerb', label: 'Star Anise', missingQuantity: 2 },
+    ],
+  }[fixture.state] ?? [];
+  control.bind(ingredients);
+  control.setBounds(0, 0, 268);
+  return wrap(
+    control,
+    268,
+    BREWING_HUD_GEOMETRY.missingIngredientRowHeight,
+  );
 }
 
 function cauldronHearthControl({ assets, fixture = { state: 'idle' }, context }) {

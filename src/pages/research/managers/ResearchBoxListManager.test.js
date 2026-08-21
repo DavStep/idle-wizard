@@ -958,8 +958,9 @@ describe('ResearchBoxListManager', () => {
       /\.style-button\.style-cost-button\.research-page__research-button\.is-unaffordable:not\(\s*\.research-page__research-button--in-progress\s*\)::after\s*\{[^}]*border-image-source:\s*var\(--style-green-button-frame\);/,
     );
     expect(css).toMatch(
-      /\.style-button\.style-cost-button\.research-page__research-button\.is-unaffordable\s+\.style-resource-label__amount\s*\{[^}]*color:\s*#c1121f;/,
+      /\.style-button\.style-cost-button\.research-page__research-button\.is-unaffordable\s+\.style-resource-label__amount\s*\{[^}]*color:\s*var\(--style-insufficient\);/,
     );
+    expect(css).toMatch(/--style-insufficient:\s*#ff8790;/);
   });
 
   it('uses the standard full-page scroll list structure', () => {
@@ -1204,6 +1205,12 @@ describe('ResearchBoxListManager', () => {
       /\.research-page__research-progress\s*\{(?<body>[^}]*)\}/,
     )?.groups?.body;
     expect(progressRule).toContain('bottom: 10px;');
+    expect(progressRule).toContain(
+      '--style-progress-fill-background: var(--style-progress-blue-fill);',
+    );
+    expect(progressRule).toContain(
+      '--style-progress-fill-edge: var(--style-progress-blue-edge);',
+    );
     expect(fill?.style.width).toBe('37.5%');
 
     for (const callback of frameCallbacks) {

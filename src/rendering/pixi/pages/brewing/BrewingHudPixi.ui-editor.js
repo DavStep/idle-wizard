@@ -13,6 +13,7 @@ export default defineUiEditorIntegration({
     'cost-button',
     'compound.market-title-ribbon',
     'compound.brewing-batch-detail',
+    'compound.brewing-missing-ingredients-row',
     'compound.brewing-cauldron-hearth',
     'compound.brewing-ingredient-picker-slot',
     'primitive.progress-bar',

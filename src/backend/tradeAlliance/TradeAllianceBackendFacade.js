@@ -23,6 +23,7 @@ export class TradeAllianceBackendFacade {
     });
     this.publicDataRetainCount = 0;
     this.questDataRetainCount = 0;
+    this.notificationDataRetainCount = 0;
     this.devSnapshot = null;
   }
 
@@ -39,11 +40,15 @@ export class TradeAllianceBackendFacade {
     this.subscriptionManager.connect(connection, identity);
     this.subscriptionManager.setPublicDataActive(this.publicDataRetainCount > 0);
     this.subscriptionManager.setQuestDataActive(this.questDataRetainCount > 0);
+    this.subscriptionManager.setNotificationDataActive(
+      this.notificationDataRetainCount > 0,
+    );
   }
 
   disconnect() {
     this.publicDataRetainCount = 0;
     this.questDataRetainCount = 0;
+    this.notificationDataRetainCount = 0;
     this.rewardManager.disconnect();
     this.subscriptionManager.disconnect();
     this.actionManager.disconnect();
@@ -102,12 +107,37 @@ export class TradeAllianceBackendFacade {
     };
   }
 
+  retainNotificationData() {
+    this.notificationDataRetainCount += 1;
+    this.subscriptionManager.setNotificationDataActive(true);
+
+    let released = false;
+    return () => {
+      if (released) {
+        return;
+      }
+
+      released = true;
+      this.notificationDataRetainCount = Math.max(
+        0,
+        this.notificationDataRetainCount - 1,
+      );
+      this.subscriptionManager.setNotificationDataActive(
+        this.notificationDataRetainCount > 0,
+      );
+    };
+  }
+
   createAlliance(alliance) {
     return this.actionManager.createAlliance(alliance);
   }
 
   updateProfile(alliance) {
     return this.actionManager.updateProfile(alliance);
+  }
+
+  setJoinMode(joinMode) {
+    return this.actionManager.setJoinMode(joinMode);
   }
 
   joinAlliance(allianceId) {

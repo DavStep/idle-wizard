@@ -332,7 +332,7 @@
       "production": true,
       "coverage": {
         "globalOwners": ["topPanelFacade"],
-        "devUi": ["topPanelQuestProgress"]
+        "devUi": ["topPanelQuestProgress", "topPanelFriendRequest"]
       },
       "recipe": {
         "kind": "devUi",
@@ -369,6 +369,13 @@
           "recipe": {
             "kind": "devUi",
             "surfaceId": "topPanelQuestProgress"
+          }
+        },
+        {
+          "id": "friend-request",
+          "recipe": {
+            "kind": "devUi",
+            "surfaceId": "topPanelFriendRequest"
           }
         },
         { "id": "research-ruby-context" },

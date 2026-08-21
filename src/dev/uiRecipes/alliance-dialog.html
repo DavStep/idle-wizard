@@ -39,7 +39,9 @@
       } from '/src/rendering/pixi/global/dialogs/index.js';
       import { PixiInputRouter } from '/src/rendering/pixi/input/PixiInputRouter.js';
       import { PixiBottomPanelView } from '/src/rendering/pixi/global/chrome/PixiBottomPanelView.js';
+      import { PixiWorldChatView } from '/src/rendering/pixi/global/chrome/PixiWorldChatView.js';
       import { AlliancePixiPage } from '/src/rendering/pixi/pages/alliance/AlliancePixiPage.js';
+      import { WorkshopDialogPixi } from '/src/rendering/pixi/pages/workshop/WorkshopDialogPixi.js';
       import { PixiViewModelFactory } from '/src/rendering/pixi/presenters/PixiViewModelFactory.js';
       import { SemanticTargetRegistry } from '/src/rendering/pixi/retained/SemanticTargetRegistry.js';
       import { PixiApplicationManager } from '/src/rendering/pixi/runtime/PixiApplicationManager.js';
@@ -59,6 +61,20 @@
       });
 
       registerGlobalDialogFactories(runtime);
+      runtime.registerDialog(
+        'workshop.worldChat',
+        ({ assets, counters, inputRouter, layers, semanticRegistry, textEntryService }) =>
+          new WorkshopDialogPixi({
+            dialogId: 'workshop.worldChat',
+            parent: layers.dialogs,
+            assetManager: assets,
+            semanticTargets: semanticRegistry,
+            inputRouter,
+            textEntryService,
+            counters,
+            onClose: () => runtime.closeDialog('workshop.worldChat'),
+          }),
+      );
       await runtime.initialize();
 
       const semanticTargets = new SemanticTargetRegistry();
@@ -69,6 +85,11 @@
         textEntryService,
       });
       applicationManager.getLayers().pageUi.addChild(dialog.root);
+      const chatPreview = new PixiWorldChatView({
+        assets: assetManager,
+        inputRouter,
+      });
+      applicationManager.getLayers().globalChrome.addChild(chatPreview.root);
       const bottomPanel = new PixiBottomPanelView({
         assets: assetManager,
         inputRouter,
@@ -87,7 +108,6 @@
           ? 'create'
           : 'browse'
         : recipeTab === 'quests' ||
-            recipeTab === 'chat' ||
             ((recipeTab === 'requests' || recipeTab === 'settings') &&
               settingsAccessible)
           ? recipeTab
@@ -224,7 +244,8 @@
           username: 'Luna',
           character: 'mira',
           frame: 'violet',
-          detail: 'Level 14',
+          detail: 'Lv 14 · Prestige 3',
+          preview: '175k Produced',
           onActivate: () => {
             recordAction({ type: 'open-player', identity: 'luna' });
             return true;
@@ -236,7 +257,8 @@
           username: 'Thorne',
           character: 'rowan',
           frame: 'classic',
-          detail: 'Level 9',
+          detail: 'Lv 9 · Prestige 1',
+          preview: '68k Produced',
           onActivate: () => {
             recordAction({ type: 'open-player', identity: 'thorne' });
             return true;
@@ -318,6 +340,7 @@
           },
         },
       );
+      allianceChat.title = 'Alliance Chat';
 
       function bindBottom() {
         const visibleTabIds = directoryMode
@@ -331,6 +354,10 @@
             ];
         bottomPanel.bind({
           allianceHud: {
+            notifications: {
+              quests: questRows.some((row) => row.actionLabel === 'Claim'),
+              requests: applicationRows.length > 0,
+            },
             selectedTabId,
             tabs: [
               'browse',
@@ -348,6 +375,9 @@
           },
           currentPageId: 'alliance',
           hudMode: 'alliance',
+          notifications: {
+            workshop: applicationRows.length > 0,
+          },
           pages: [{ id: 'workshop', unlocked: true, visible: true }],
           actions: {
             selectAllianceTab: (tabId) => {
@@ -423,6 +453,8 @@
             ),
           );
           dialog.layout(applicationManager.projection);
+          chatPreview.bind({ visible: false });
+          chatPreview.layout(applicationManager.projection);
           bindBottom();
           return;
         }
@@ -465,13 +497,25 @@
               ? questRows
               : selectedTabId === 'requests'
                 ? applicationRows
-                : selectedTabId === 'chat'
-                  ? allianceChat.rows
                 : homeModel.members,
           emptyLabel:
             selectedTabId === 'requests' && applicationRows.length === 0
               ? 'No Pending Requests'
               : '',
+          requestsSettings:
+            selectedTabId === 'requests' && settingsAccessible
+              ? {
+                  allianceId: settings.allianceId,
+                  editable: true,
+                  joinMode: settings.joinMode,
+                  onSave: async (joinMode) => {
+                    settings.joinMode = joinMode;
+                    recordAction({ type: 'save-join-mode', joinMode });
+                    bindDialog();
+                    return { ok: true };
+                  },
+                }
+              : null,
           settings:
             selectedTabId === 'settings'
               ? {
@@ -481,17 +525,29 @@
               : null,
         });
         dialog.layout(applicationManager.projection);
+        chatPreview.bind({
+          label: 'Alliance Chat',
+          messages: allianceChat.rows,
+          visible: !directoryMode,
+          onActivate: () => {
+            runtime.openDialog('workshop.worldChat', allianceChat);
+            return true;
+          },
+        });
+        chatPreview.layout(applicationManager.projection);
         bindBottom();
       }
 
       bindDialog();
       dialog.activate();
+      chatPreview.activate();
       bottomPanel.activate();
 
       window.__allianceRecipe = {
         applicationManager,
         actionEvents,
         bottomPanel,
+        chatPreview,
         dialog,
         directorySnapshot,
         runtime,

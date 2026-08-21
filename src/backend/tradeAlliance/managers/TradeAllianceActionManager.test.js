@@ -29,6 +29,22 @@ describe('TradeAllianceActionManager', () => {
     );
   });
 
+  it('sends a normalized join-mode change through its focused reducer', async () => {
+    const setTradeAllianceJoinMode = vi.fn().mockResolvedValue(undefined);
+    const manager = new TradeAllianceActionManager();
+    manager.connect({ reducers: { setTradeAllianceJoinMode } });
+
+    await expect(manager.setJoinMode('closed')).resolves.toEqual({ ok: true });
+    expect(setTradeAllianceJoinMode).toHaveBeenCalledWith({
+      joinMode: 'closed',
+    });
+
+    await manager.setJoinMode('unknown');
+    expect(setTradeAllianceJoinMode).toHaveBeenLastCalledWith({
+      joinMode: 'apply',
+    });
+  });
+
   it('normalizes and sends alliance chat messages through the reducer', async () => {
     const sendTradeAllianceChatMessage = vi.fn().mockResolvedValue(undefined);
     const manager = new TradeAllianceActionManager();

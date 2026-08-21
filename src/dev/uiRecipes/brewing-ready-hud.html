@@ -33,7 +33,7 @@
       hidden
       data-phase="Ready to Brew"
       data-potion-background="#0e1016"
-      data-slot-labels="Sage,Sage,Sage"
+      data-slot-labels="Sage,Sage,Sage,Mint"
       data-phase-texture-padding="16"
     ></output>
 
@@ -93,11 +93,11 @@
         ),
       );
       const activeBrew =
-        state === 'active'
+        state === 'active' || state === 'bottling'
           ? {
               key: 'healingPotion',
               label: 'healing potion',
-              phase: 'brewing',
+              phase: state === 'bottling' ? 'bottling' : 'brewing',
               totalMs: 60_000,
               remainingMs: 57_000,
               progress: 0.05,
@@ -165,6 +165,15 @@
               label: 'sage',
               quantity: 1,
               owned: missingIngredients ? 0 : 1,
+            },
+            {
+              slotIndex: 3,
+              itemTypeId: 1002,
+              itemKey: 'mintHerb',
+              key: 'mintHerb',
+              label: 'mint',
+              quantity: 2,
+              owned: missingIngredients ? 0 : 2,
             },
           ],
         },
@@ -355,7 +364,9 @@
         }
       }
       recipeState.dataset.state = state ?? 'ready';
-      recipeState.dataset.phase = hud.phaseLabel.text;
+      recipeState.dataset.phase = hud.missingIngredients.root.visible
+        ? hud.missingIngredients.title.text
+        : hud.phaseLabel.text;
       recipeState.dataset.progressVisible = String(hud.progress.root.visible);
       recipeState.dataset.primaryAction = hud.brew.text.text;
       recipeState.dataset.missingIngredients = hud.missingIngredientViews

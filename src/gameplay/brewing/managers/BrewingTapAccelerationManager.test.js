@@ -2,12 +2,14 @@ import { describe, expect, it, vi } from 'vitest';
 
 import {
   BREWING_CAULDRON_TAP_COOLDOWN_MS,
+  BREWING_CAULDRON_TAP_REDUCTION_RATIO,
   BrewingTapAccelerationManager,
 } from './BrewingTapAccelerationManager.js';
 
 describe('BrewingTapAccelerationManager', () => {
-  it('removes one second and rejects repeated taps until the feedback window ends', () => {
+  it('removes 30% of the remaining timer and rejects repeated taps until the feedback window ends', () => {
     expect(BREWING_CAULDRON_TAP_COOLDOWN_MS).toBe(504);
+    expect(BREWING_CAULDRON_TAP_REDUCTION_RATIO).toBe(0.3);
 
     let now = 1_000;
     const getActiveBrewSnapshot = vi.fn(() => ({
@@ -17,8 +19,8 @@ describe('BrewingTapAccelerationManager', () => {
     }));
     const reduceRemainingSeconds = vi.fn(() => ({
       phase: 'brewing',
-      remainingSeconds: 8,
-      remainingMs: 8_000,
+      remainingSeconds: 6.3,
+      remainingMs: 6_300,
     }));
     const manager = new BrewingTapAccelerationManager({
       brewingProcessEntityManager: {
@@ -33,10 +35,11 @@ describe('BrewingTapAccelerationManager', () => {
       cauldronIndex: 1,
       cauldronNumber: 2,
       phase: 'brewing',
-      reducedSeconds: 1,
-      remainingMs: 8_000,
+      reducedSeconds: 2.7,
+      remainingMs: 6_300,
       cooldownMs: BREWING_CAULDRON_TAP_COOLDOWN_MS,
     });
+    expect(reduceRemainingSeconds).toHaveBeenCalledWith(2.7, 1);
 
     now += BREWING_CAULDRON_TAP_COOLDOWN_MS - 1;
     expect(manager.accelerate(1)).toMatchObject({
@@ -66,8 +69,8 @@ describe('BrewingTapAccelerationManager', () => {
       });
     const reduceRemainingSeconds = vi.fn(() => ({
       phase: 'bottling',
-      remainingSeconds: 0,
-      remainingMs: 0,
+      remainingSeconds: 0.28,
+      remainingMs: 280,
     }));
     const manager = new BrewingTapAccelerationManager({
       brewingProcessEntityManager: {
@@ -86,9 +89,10 @@ describe('BrewingTapAccelerationManager', () => {
       cauldronIndex: 0,
       cauldronNumber: 1,
       phase: 'bottling',
-      reducedSeconds: 0.4,
-      remainingMs: 0,
+      reducedSeconds: 0.12,
+      remainingMs: 280,
       cooldownMs: BREWING_CAULDRON_TAP_COOLDOWN_MS,
     });
+    expect(reduceRemainingSeconds).toHaveBeenCalledWith(0.12, 0);
   });
 });

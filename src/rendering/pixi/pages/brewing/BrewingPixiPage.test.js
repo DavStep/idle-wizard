@@ -14,8 +14,10 @@ import { DialogRegistry } from '../../retained/DialogRegistry.js';
 import { PageRegistry } from '../../retained/PageRegistry.js';
 import { SemanticTargetRegistry } from '../../retained/SemanticTargetRegistry.js';
 import {
+  PIXI_PROGRESS_VISUALS,
   PIXI_ROOT_RUN_ASSETS,
   PIXI_ROOT_RUN_GEOMETRY,
+  PIXI_STATUS_COLORS,
   PIXI_UI_GEOMETRY,
   resolvePixiTextStrokeWidth,
 } from '../../theme/PixiThemeTokens.js';
@@ -27,11 +29,42 @@ import {
 } from './BrewingPixiPage.js';
 import {
   BREWING_HUD_GEOMETRY,
+  BrewingMissingIngredientsRow,
   resolveBrewingPrimaryState,
 } from './BrewingHudPixi.js';
 import { BrewingRecipeCard } from './BrewingDialogsPixi.js';
 
 describe('BrewingPixiPage', () => {
+  it('keeps the reusable missing-ingredient row horizontal and left anchored', () => {
+    const row = new BrewingMissingIngredientsRow({
+      assetManager: createPixiAssetManagerFake(Texture),
+    });
+    row.bind([
+      { itemKey: 'belladonnaHerb', label: 'Belladonna', missingQuantity: 1 },
+      { itemKey: 'dragonpepperHerb', label: 'Dragonpepper', missingQuantity: 2 },
+      { itemKey: 'moonflowerHerb', label: 'Moonflower', missingQuantity: 1 },
+      { itemKey: 'nightshadeHerb', label: 'Nightshade', missingQuantity: 3 },
+      { itemKey: 'silverleafHerb', label: 'Silverleaf', missingQuantity: 1 },
+      { itemKey: 'starAniseHerb', label: 'Star Anise', missingQuantity: 2 },
+    ]);
+    row.setBounds(0, 0, 268);
+
+    const visibleItems = row.itemViews.filter((item) => item.root.visible);
+    const finalItem = visibleItems.at(-1);
+    expect(row.title.text).toBe('Missing');
+    expect(row.title.anchor.x).toBe(0);
+    expect(row.title.x).toBe(0);
+    expect(visibleItems).toHaveLength(6);
+    expect(new Set(visibleItems.map((item) => item.root.y))).toEqual(new Set([0]));
+    expect(visibleItems.map((item) => item.root.x)).toEqual(
+      [...visibleItems.map((item) => item.root.x)].sort((a, b) => a - b),
+    );
+    expect(finalItem.root.x + finalItem.count.x + finalItem.count.width).toBeLessThanOrEqual(268);
+    expect(finalItem.count.style.fill).toBe(PIXI_STATUS_COLORS.insufficient);
+
+    row.destroy();
+  });
+
   it('keeps passive fireflies behind Brewing controls and pauses them off-page', () => {
     const motion = createAmbientMotionHarness();
     const harness = createHarness({
@@ -217,6 +250,10 @@ describe('BrewingPixiPage', () => {
     expect(button.control.inlineBacking.visible).toBe(false);
     expect(button.enabled).toBe(true);
     expect(button.root.visible).toBe(true);
+    expect(button.width).toBeGreaterThan(
+      BREWING_HUD_GEOMETRY.quantityButtonWidth,
+    );
+    expect(button.text.width).toBeLessThan(button.width);
     expect(button.root.position).toMatchObject({
       x:
         PIXI_UI_GEOMETRY.sourceWidth -
@@ -289,7 +326,7 @@ describe('BrewingPixiPage', () => {
     const slot = harness.page.hud.ingredientSlots[0];
     expect(slot.name.text).toBe('Sage');
     expect(slot.missingCount.text).toBe('0');
-    expect(slot.missingCount.style.fill).toBe('#c1121f');
+    expect(slot.missingCount.style.fill).toBe(PIXI_STATUS_COLORS.insufficient);
     expect(slot.requiredCount.text).toBe('/3');
     expect(slot.requiredCount.style.fill).toBe('#d4d4d4');
     expect(slot.countGroup.y).toBe(2);
@@ -316,7 +353,10 @@ describe('BrewingPixiPage', () => {
       hasEnoughMana: true,
     };
     harness.page.bind(model);
-    expect(harness.page.hud.phaseLabel.text).toBe('Missing ingredients');
+    expect(harness.page.hud.phaseLabel.visible).toBe(false);
+    expect(harness.page.hud.missingIngredients.title.text).toBe('Missing');
+    expect(harness.page.hud.missingIngredients.title.anchor.x).toBe(0);
+    expect(harness.page.hud.missingIngredients.title.x).toBe(0);
 
     model.brewing.cauldrons[0].recipeReadiness = {
       hasEnoughIngredients: true,
@@ -1037,6 +1077,18 @@ describe('BrewingPixiPage', () => {
     expect(harness.page.hud.phaseTime.style.padding).toBe(1);
     expect(harness.page.hud.potionPreviewFrame.tint).toBe(0x0e1016);
     expect(harness.page.hud.potionPreviewFrame.filters).toBeUndefined();
+
+    model.brewing.cauldrons[0].activeBrew.phase = 'bottling';
+    harness.page.bind(model);
+    expect(harness.page.hud.progress.control).toMatchObject({
+      tone: 'yellow',
+      fillColor: PIXI_PROGRESS_VISUALS.tones.yellow.fill,
+      fillEdgeColor: PIXI_PROGRESS_VISUALS.tones.yellow.edge,
+    });
+
+    model.brewing.cauldrons[0].activeBrew.phase = 'brewing';
+    harness.page.bind(model);
+    expect(harness.page.hud.progress.tone).toBe('root');
 
     now = 3_500;
     harness.page.hud.updateMotion(now, {
@@ -2461,6 +2513,12 @@ describe('BrewingPixiPage', () => {
           quantity: 3,
           owned: 1,
         },
+        {
+          itemKey: 'mintHerb',
+          label: 'mint',
+          quantity: 2,
+          owned: 1,
+        },
       ],
     };
     cauldron.recipeReadiness = {
@@ -2471,11 +2529,22 @@ describe('BrewingPixiPage', () => {
     harness.page.bind(model);
 
     expect(harness.page.hud.progress.root.visible).toBe(false);
-    expect(harness.page.hud.phaseLabel.text).toBe('Missing ingredients');
+    expect(harness.page.hud.phaseLabel.visible).toBe(false);
+    expect(harness.page.hud.missingIngredients.title.text).toBe('Missing');
+    expect(harness.page.hud.missingIngredients.title.anchor.x).toBe(0);
+    expect(harness.page.hud.missingIngredients.title.x).toBe(0);
     expect(harness.page.hud.missingIngredientViews[0].root.visible).toBe(true);
     expect(harness.page.hud.missingIngredientViews[0].label.text).toBe('Sage');
     expect(harness.page.hud.missingIngredientViews[0].count.text).toBe('x2');
     expect(harness.page.hud.missingIngredientViews[0].icon).toBeDefined();
+    expect(harness.page.hud.missingIngredientViews[1].label.text).toBe('Mint');
+    expect(harness.page.hud.missingIngredientViews[1].count.text).toBe('x1');
+    expect(harness.page.hud.missingIngredientViews[1].root.y).toBe(
+      harness.page.hud.missingIngredientViews[0].root.y,
+    );
+    expect(harness.page.hud.missingIngredientViews[1].root.x).toBeGreaterThan(
+      harness.page.hud.missingIngredientViews[0].root.x,
+    );
 
     cauldron.autoBrewEnabled = true;
     cauldron.autoBrewArmed = true;

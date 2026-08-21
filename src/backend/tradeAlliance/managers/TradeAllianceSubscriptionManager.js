@@ -63,10 +63,12 @@ export class TradeAllianceSubscriptionManager {
     this.identityKey = '';
     this.publicDataActive = false;
     this.questDataActive = false;
+    this.notificationDataActive = false;
     this.tables = {};
     this.coreSubscriptions = [];
     this.publicSubscriptions = [];
     this.questSubscriptions = [];
+    this.notificationSubscriptions = [];
     this.snapshot = { ...EMPTY_SNAPSHOT };
     this.handleTableChange = () => this.publishFromTables();
   }
@@ -156,6 +158,7 @@ export class TradeAllianceSubscriptionManager {
     ].filter(Boolean);
     this.reconcilePublicDataSubscriptions();
     this.reconcileQuestDataSubscriptions();
+    this.reconcileNotificationDataSubscriptions();
     this.publishFromTables();
   }
 
@@ -165,6 +168,7 @@ export class TradeAllianceSubscriptionManager {
     this.unbindTable(this.tables.rewards);
     this.teardownPublicDataSubscriptions();
     this.teardownQuestDataSubscriptions();
+    this.teardownNotificationDataSubscriptions();
 
     for (const subscription of this.coreSubscriptions) {
       if (!subscription.isEnded?.()) {
@@ -176,11 +180,13 @@ export class TradeAllianceSubscriptionManager {
     this.identityKey = '';
     this.publicDataActive = false;
     this.questDataActive = false;
+    this.notificationDataActive = false;
     this.tables = {};
     this.queries = {};
     this.coreSubscriptions = [];
     this.publicSubscriptions = [];
     this.questSubscriptions = [];
+    this.notificationSubscriptions = [];
     this.publish({ ...EMPTY_SNAPSHOT });
   }
 
@@ -192,12 +198,19 @@ export class TradeAllianceSubscriptionManager {
     this.publicDataActive = Boolean(active);
     this.reconcilePublicDataSubscriptions();
     this.reconcileQuestDataSubscriptions();
+    this.reconcileNotificationDataSubscriptions();
     this.publishFromTables();
   }
 
   setQuestDataActive(active = true) {
     this.questDataActive = Boolean(active);
     this.reconcileQuestDataSubscriptions();
+    this.publishFromTables();
+  }
+
+  setNotificationDataActive(active = true) {
+    this.notificationDataActive = Boolean(active);
+    this.reconcileNotificationDataSubscriptions();
     this.publishFromTables();
   }
 
@@ -268,16 +281,11 @@ export class TradeAllianceSubscriptionManager {
 
     this.bindTable(this.tables.alliances);
     this.bindTable(this.tables.members);
-    this.bindTable(this.tables.applications);
-
     this.publicSubscriptions = [
       this.tables.alliances
         ? this.subscribeQuery(this.queries.alliances)
         : null,
       this.tables.members ? this.subscribeQuery(this.queries.members) : null,
-      this.tables.applications
-        ? this.subscribeQuery(this.queries.applications)
-        : null,
     ].filter(Boolean);
   }
 
@@ -309,8 +317,6 @@ export class TradeAllianceSubscriptionManager {
   teardownPublicDataSubscriptions() {
     this.unbindTable(this.tables.alliances);
     this.unbindTable(this.tables.members);
-    this.unbindTable(this.tables.applications);
-
     for (const subscription of this.publicSubscriptions) {
       if (!subscription.isEnded?.()) {
         subscription.unsubscribe();
@@ -318,6 +324,40 @@ export class TradeAllianceSubscriptionManager {
     }
 
     this.publicSubscriptions = [];
+  }
+
+  reconcileNotificationDataSubscriptions() {
+    if (!this.connection) {
+      return;
+    }
+
+    if (!this.shouldReadNotificationData()) {
+      this.teardownNotificationDataSubscriptions();
+      return;
+    }
+
+    if (this.notificationSubscriptions.length > 0) {
+      return;
+    }
+
+    this.bindTable(this.tables.applications);
+    this.notificationSubscriptions = [
+      this.tables.applications
+        ? this.subscribeQuery(this.queries.applications)
+        : null,
+    ].filter(Boolean);
+  }
+
+  teardownNotificationDataSubscriptions() {
+    this.unbindTable(this.tables.applications);
+
+    for (const subscription of this.notificationSubscriptions) {
+      if (!subscription.isEnded?.()) {
+        subscription.unsubscribe();
+      }
+    }
+
+    this.notificationSubscriptions = [];
   }
 
   teardownQuestDataSubscriptions() {
@@ -335,6 +375,10 @@ export class TradeAllianceSubscriptionManager {
 
   shouldReadQuestData() {
     return this.publicDataActive || this.questDataActive;
+  }
+
+  shouldReadNotificationData() {
+    return this.publicDataActive || this.notificationDataActive;
   }
 
   publishFromTables() {
@@ -357,7 +401,7 @@ export class TradeAllianceSubscriptionManager {
             return left.joinedAtMs - right.joinedAtMs;
           })
       : [];
-    const applications = this.publicDataActive
+    const applications = this.shouldReadNotificationData()
       ? this.readRows(this.tables.applications, (row) =>
           this.mapApplication(row),
         ).sort((left, right) => left.createdAtMs - right.createdAtMs)
@@ -615,6 +659,15 @@ export class TradeAllianceSubscriptionManager {
       ),
       playerLevel: this.toPlayerLevel(row.playerLevel ?? row.player_level),
       createdAtMs: this.toTimestampMs(row.createdAt ?? row.created_at),
+      totalProducedCoin: this.toNumber(
+        row.totalProducedCoin ??
+          row.totalProducedGold ??
+          row.total_produced_coin ??
+          row.total_produced_gold,
+      ),
+      prestigeCount: this.toNumber(
+        row.prestigeCount ?? row.prestige_count,
+      ),
     };
   }
 

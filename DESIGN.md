@@ -11,6 +11,7 @@ colors:
   disabled: "#6a6a6a"
   active-surface: "{colors.room-surface}"
   notification-red: "#c1121f"
+  insufficient-red: "#ff8790"
   notification-orange: "#d66a00"
   mana-blue: "#2fa8ff"
   quest-purple: "#8740df"
@@ -222,7 +223,7 @@ Ordinary room UI uses shallow, skin-owned depth. Image-backed frames may carry b
 
 ### Progress
 - **Rail:** Shared passive in-game rails use the compact Root Rush geometry at 10px source height. Interactive sliders and the top-panel quest rail use 14px source height. Both use a black capsule track, 1px outer stroke, dark inset rim, and 1px inner gap.
-- **Fill:** Purple `#8740df` with a lighter `#bd72f3` inset edge is the shared default. Brewing uses blue, Garden uses green, and Market/Research use yellow. The top-panel level-up rail uses Root Run's authored yellow fill texture without a feature-local gradient or inset edge. Keep fully rounded caps and timer text outside the rail, except the documented Research station-upgrade row, which centers its white outlined live timer over the rail.
+- **Fill:** Purple `#8740df` with a lighter `#bd72f3` inset edge is the shared default. Brewing and Research use blue, Garden uses green, and Market uses yellow. The top-panel level-up rail uses Root Run's authored yellow fill texture without a feature-local gradient or inset edge. Keep fully rounded caps and timer text outside the rail, except the documented Research station-upgrade row, which centers its white outlined live timer over the rail.
 - **Allocation Knob:** Use a 14px cream circle with a tan border and dark-brown outer ring, matching the layered round reference without any inner glyph.
 
 ### Signature Component

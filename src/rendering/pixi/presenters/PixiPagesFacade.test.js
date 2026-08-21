@@ -78,6 +78,45 @@ describe("PixiPagesFacade", () => {
     expect(harness.runtime.deactivatePage).toHaveBeenCalledTimes(1);
   });
 
+  it("rolls incoming friend requests up to the retained avatar", () => {
+    const harness = createHarness();
+    const pages = new PixiPagesFacade(harness.dependencies);
+
+    pages.mount();
+    expect(harness.getBoundGlobal("chrome.top").avatarNotification).toBe(false);
+
+    harness.publishFriendsSnapshot({
+      connected: true,
+      friends: [],
+      incomingRequests: [{ identity: "rowan" }],
+      outgoingRequests: [],
+    });
+    expect(harness.getBoundGlobal("chrome.top").avatarNotification).toBe(true);
+
+    harness.publishFriendsSnapshot({
+      connected: true,
+      friends: [],
+      incomingRequests: [],
+      outgoingRequests: [],
+    });
+    expect(harness.getBoundGlobal("chrome.top").avatarNotification).toBe(false);
+  });
+
+  it("exposes a non-persistent top-panel friend notification preview", () => {
+    const harness = createHarness();
+    const pages = new PixiPagesFacade(harness.dependencies);
+
+    pages.mount();
+    expect(
+      pages.setTopPanelQuestProgressPreview({
+        completedQuests: 1,
+        totalQuests: 4,
+        friendNotification: true,
+      }),
+    ).toMatchObject({ ok: true });
+    expect(harness.getBoundGlobal("chrome.top").avatarNotification).toBe(true);
+  });
+
   it("opens the Alliance workspace and sends chat through the alliance facade", async () => {
     const harness = createHarness();
     const sendChatMessage = vi.fn(() => Promise.resolve({ ok: true }));
@@ -135,21 +174,153 @@ describe("PixiPagesFacade", () => {
       currentPageId: "alliance",
       hudMode: "alliance",
     });
-    expect(harness.getBoundGlobal("chrome.chat").visible).toBe(false);
-
+    expect(harness.getBoundGlobal("chrome.chat")).toMatchObject({
+      label: "Alliance Chat",
+      visible: true,
+    });
     expect(
-      harness.getBoundGlobal("chrome.bottom").actions.selectAllianceTab("chat"),
-    ).toBe(true);
-    const chat = harness.getBoundPage("alliance");
-    expect(chat.selectedTabId).toBe("chat");
-    expect(chat.chat.rows[0]).toMatchObject({
-      body: "Welcome to the alliance hall.",
-      username: "Luna",
+      harness
+        .getBoundGlobal("chrome.bottom")
+        .allianceHud.tabs.some((tab) => tab.id === "chat"),
+    ).toBe(false);
+
+    for (const tabId of ["quests", "requests", "settings", "home"]) {
+      expect(
+        harness
+          .getBoundGlobal("chrome.bottom")
+          .actions.selectAllianceTab(tabId),
+      ).toBe(true);
+      expect(harness.getBoundPage("alliance").selectedTabId).toBe(tabId);
+      expect(harness.getBoundGlobal("chrome.chat")).toMatchObject({
+        label: "Alliance Chat",
+        visible: true,
+      });
+    }
+    expect(harness.getBoundGlobal("chrome.chat")).toMatchObject({
+      label: "Alliance Chat",
+      visible: true,
+      messages: [
+        expect.objectContaining({
+          body: "Welcome to the alliance hall.",
+          username: "Luna",
+        }),
+      ],
     });
-    await expect(chat.chat.onSubmit("Alliance only")).resolves.toEqual({
-      ok: true,
-    });
+    expect(harness.getBoundGlobal("chrome.chat").onActivate()).toBe(true);
+    expect(harness.pageSurface.openDialog).toHaveBeenLastCalledWith(
+      "worldChat",
+      expect.objectContaining({
+        title: "Alliance Chat",
+        rows: [
+          expect.objectContaining({
+            body: "Welcome to the alliance hall.",
+            username: "Luna",
+          }),
+        ],
+      }),
+    );
+    const allianceChatDialog = harness.pageSurface.openDialog.mock.lastCall[1];
+    await expect(allianceChatDialog.onSubmit("Alliance only")).resolves.toEqual(
+      {
+        ok: true,
+      },
+    );
     expect(sendChatMessage).toHaveBeenCalledWith("Alliance only");
+  });
+
+  it("keeps unaffiliated Alliance Browse and Create inside the Workshop dialog", () => {
+    const harness = createHarness();
+    const pages = new PixiPagesFacade(harness.dependencies);
+
+    pages.mount();
+    const allianceAction = harness
+      .getBoundPage("workshop")
+      .workshop.features.find((feature) => feature.id === "alliance");
+
+    expect(allianceAction.onActivate()).toBe(true);
+    expect(pages.getCurrentPageId()).toBe("workshop");
+    expect(harness.pageSurface.openDialog).toHaveBeenLastCalledWith("alliance");
+    expect(
+      harness.getBoundPage("workshop").workshop.dialogs.alliance,
+    ).toMatchObject({
+      directory: true,
+      selectedTabId: "browse",
+      tabs: [
+        expect.objectContaining({ id: "browse", selected: true }),
+        expect.objectContaining({ id: "create", selected: false }),
+      ],
+    });
+
+    const createTab = harness
+      .getBoundPage("workshop")
+      .workshop.dialogs.alliance.tabs.find((tab) => tab.id === "create");
+    expect(createTab.onSelect()).toBe(true);
+    expect(pages.getCurrentPageId()).toBe("workshop");
+    expect(
+      harness.getBoundPage("workshop").workshop.dialogs.alliance,
+    ).toMatchObject({
+      directory: false,
+      selectedTabId: "create",
+      settings: expect.objectContaining({ mode: "create" }),
+    });
+  });
+
+  it("opens the Alliance workspace when an open Alliance join becomes membership", () => {
+    const harness = createHarness();
+    const alliance = {
+      allianceId: "night-owls",
+      bannerColor: "violet",
+      emblemColor: "white",
+      emblemId: "owl",
+      joinMode: "open",
+      name: "Night Owls",
+      tag: "OWL",
+    };
+    const initialSnapshot = {
+      connected: true,
+      ownAlliance: null,
+      ownMember: null,
+      ownApplications: [],
+      alliances: [alliance],
+      members: [],
+    };
+    harness.dependencies.tradeAllianceFacade.getSnapshot.mockReturnValue(
+      initialSnapshot,
+    );
+    harness.dependencies.tradeAllianceFacade.joinAlliance = vi.fn(() =>
+      Promise.resolve({ ok: true }),
+    );
+    const pages = new PixiPagesFacade(harness.dependencies);
+
+    pages.mount();
+    const allianceAction = harness
+      .getBoundPage("workshop")
+      .workshop.features.find((feature) => feature.id === "alliance");
+    expect(allianceAction.onActivate()).toBe(true);
+
+    const joinAction = harness.getBoundPage("workshop").workshop.dialogs
+      .alliance.rows[0].action;
+    expect(joinAction.label).toBe("Join");
+    joinAction.onActivate();
+
+    const publishAllianceSnapshot =
+      harness.dependencies.tradeAllianceFacade.subscribe.mock.calls[0][0];
+    publishAllianceSnapshot(initialSnapshot);
+    publishAllianceSnapshot({
+      ...initialSnapshot,
+      ownAlliance: alliance,
+      ownMember: { allianceId: alliance.allianceId, role: "trader" },
+    });
+
+    expect(harness.runtime.closeDialog).toHaveBeenCalledWith(
+      "workshop.alliance",
+    );
+    expect(pages.getCurrentPageId()).toBe("alliance");
+    expect(harness.getBoundPage("alliance")).toMatchObject({
+      ownedAlliance: true,
+      selectedTabId: "home",
+      workspace: true,
+    });
   });
 
   it("switches retained Market tabs without rebuilding the page", () => {
@@ -207,13 +378,9 @@ describe("PixiPagesFacade", () => {
     const harness = createHarness();
     harness.dependencies.worldChatFacade.getSnapshot.mockReturnValue({
       connected: true,
-      messages: [
-        { id: "message-one", username: "Mira", body: "Hello" },
-      ],
+      messages: [{ id: "message-one", username: "Mira", body: "Hello" }],
     });
-    harness.runtime.getOpenDialogIds.mockReturnValue([
-      "workshop.worldChat",
-    ]);
+    harness.runtime.getOpenDialogIds.mockReturnValue(["workshop.worldChat"]);
     const pages = new PixiPagesFacade(harness.dependencies);
     pages.mount();
     const openGlobal = vi.fn(() => true);
@@ -347,13 +514,21 @@ describe("PixiPagesFacade", () => {
       guildHud: { selectedTabId: "hall" },
     });
     expect(harness.getBoundGlobal("chrome.chat").visible).toBe(false);
-    expect(harness.getBoundGlobal("chrome.bottom").actions.selectGuildTab("adventurers")).toBe(true);
+    expect(
+      harness
+        .getBoundGlobal("chrome.bottom")
+        .actions.selectGuildTab("adventurers"),
+    ).toBe(true);
     expect(harness.getBoundPage("guild")).toMatchObject({
       selectedBranchId: "adventurers",
       selectedAdventurerTabId: "board",
     });
-    expect(harness.getBoundPage("guild").actions.selectAdventurerTab("roster")).toBe(true);
-    expect(harness.getBoundPage("guild").selectedAdventurerTabId).toBe("roster");
+    expect(
+      harness.getBoundPage("guild").actions.selectAdventurerTab("roster"),
+    ).toBe(true);
+    expect(harness.getBoundPage("guild").selectedAdventurerTabId).toBe(
+      "roster",
+    );
     expect(
       harness.getBoundGlobal("chrome.bottom").actions.showPage("workshop"),
     ).toBe(true);
@@ -375,12 +550,16 @@ describe("PixiPagesFacade", () => {
       prestigeHud: { selectedTabId: "main" },
     });
     expect(
-      harness.getBoundGlobal("chrome.bottom").actions.selectPrestigeTab("points"),
+      harness
+        .getBoundGlobal("chrome.bottom")
+        .actions.selectPrestigeTab("points"),
     ).toBe(true);
-    expect(harness.getBoundGlobal("chrome.bottom").prestigeHud.selectedTabId).toBe(
+    expect(
+      harness.getBoundGlobal("chrome.bottom").prestigeHud.selectedTabId,
+    ).toBe("points");
+    expect(harness.getBoundPage("prestige").prestige.selectedTabId).toBe(
       "points",
     );
-    expect(harness.getBoundPage("prestige").prestige.selectedTabId).toBe("points");
     expect(
       harness.getBoundGlobal("chrome.bottom").actions.showPage("workshop"),
     ).toBe(true);
@@ -390,7 +569,8 @@ describe("PixiPagesFacade", () => {
       .getBoundPage("workshop")
       .workshop.dialogs.alliance.tabs.find((tab) => tab.id === "create");
     expect(createAllianceTab.onSelect()).toBe(true);
-    const createAllianceForm = harness.getBoundPage("workshop").workshop.dialogs.alliance.settings;
+    const createAllianceForm =
+      harness.getBoundPage("workshop").workshop.dialogs.alliance.settings;
     createAllianceForm.onSave({
       name: "Moon Traders",
       tag: "MOON",
@@ -398,7 +578,9 @@ describe("PixiPagesFacade", () => {
       description: "Patient traders.",
       joinMode: "apply",
     });
-    expect(harness.dependencies.tradeAllianceFacade.createAlliance).toHaveBeenCalledWith({
+    expect(
+      harness.dependencies.tradeAllianceFacade.createAlliance,
+    ).toHaveBeenCalledWith({
       name: "Moon Traders",
       tag: "MOON",
       tagColor: "violet",
@@ -466,30 +648,27 @@ describe("PixiPagesFacade", () => {
       ok: true,
       dialogId: "player",
     });
-    expect(globalDialogPresenter.open).toHaveBeenCalledWith(
-      "global.player",
-      {
-        player: {
-          identity: "own-player",
-          username: "elara",
-          character: "elara",
-          playerLevel: 12,
-          prestigeCount: 1,
-        },
+    expect(globalDialogPresenter.open).toHaveBeenCalledWith("global.player", {
+      player: {
+        identity: "own-player",
+        username: "elara",
+        character: "elara",
+        playerLevel: 12,
+        prestigeCount: 1,
       },
-    );
+    });
   });
 
-  it("opens the Workshop Bag from top chrome without leaving Workshop", () => {
+  it("opens Bag from top chrome without leaving the active room", () => {
     const harness = createHarness();
     const pages = new PixiPagesFacade(harness.dependencies);
     pages.mount();
+    pages.show("brewing");
 
     const topPanel = harness.getBoundGlobal("chrome.top");
-    expect(topPanel.showBag).toBe(true);
     expect(topPanel.actions.openBag()).toBe(true);
 
-    expect(pages.getCurrentPageId()).toBe("workshop");
+    expect(pages.getCurrentPageId()).toBe("brewing");
     expect(harness.pageSurface.openDialog).toHaveBeenCalledWith("bag");
   });
 
@@ -586,39 +765,42 @@ describe("PixiPagesFacade", () => {
         indication: "boink",
       },
     ],
-  ])("navigates an Elara %s request to its exact control", (type, task, target) => {
-    const gameplaySnapshot = createGameplaySnapshot();
-    gameplaySnapshot.tasks.level.tasks = [
-      {
-        taskId: `exact-${type}`,
-        type,
-        ...task,
-        autoProgress: true,
-        isActiveQuest: true,
-        requirementLabel: `${type} exact request`,
-        requiredQuantity: 1,
-      },
-    ];
-    gameplaySnapshot.research.tabs = [
-      {
-        id: "regular",
-        boxes: [
-          { researches: [{ id: "unlockSeed:mintSeed", canResearch: true }] },
-        ],
-      },
-    ];
-    gameplaySnapshot.shop.shelf ??= {};
-    gameplaySnapshot.shop.shelf.slots = [
-      { slotNumber: 1, unlocked: true },
-    ];
-    const harness = createHarness({ gameplaySnapshot });
-    const pages = new PixiPagesFacade(harness.dependencies);
-    pages.mount();
+  ])(
+    "navigates an Elara %s request to its exact control",
+    (type, task, target) => {
+      const gameplaySnapshot = createGameplaySnapshot();
+      gameplaySnapshot.tasks.level.tasks = [
+        {
+          taskId: `exact-${type}`,
+          type,
+          ...task,
+          autoProgress: true,
+          isActiveQuest: true,
+          requirementLabel: `${type} exact request`,
+          requiredQuantity: 1,
+        },
+      ];
+      gameplaySnapshot.research.tabs = [
+        {
+          id: "regular",
+          boxes: [
+            { researches: [{ id: "unlockSeed:mintSeed", canResearch: true }] },
+          ],
+        },
+      ];
+      gameplaySnapshot.shop.shelf ??= {};
+      gameplaySnapshot.shop.shelf.slots = [{ slotNumber: 1, unlocked: true }];
+      const harness = createHarness({ gameplaySnapshot });
+      const pages = new PixiPagesFacade(harness.dependencies);
+      pages.mount();
 
       const request = harness.getBoundPage("workshop").workshop.tasks.rows[0];
-    expect(request.onRowActivate()).toMatchObject({ ok: true });
-    expect(harness.pageSurface.navigateToTarget).toHaveBeenLastCalledWith(target);
-  });
+      expect(request.onRowActivate()).toMatchObject({ ok: true });
+      expect(harness.pageSurface.navigateToTarget).toHaveBeenLastCalledWith(
+        target,
+      );
+    },
+  );
 
   it("keeps known locked Bag items actionable as exact Research links", () => {
     const gameplaySnapshot = createGameplaySnapshot();
@@ -666,9 +848,7 @@ describe("PixiPagesFacade", () => {
         id: "regular",
         boxes: [
           {
-            researches: [
-              { id: "unlockRecipe:manaTonic", canResearch: true },
-            ],
+            researches: [{ id: "unlockRecipe:manaTonic", canResearch: true }],
           },
         ],
       },
@@ -987,8 +1167,9 @@ describe("PixiPagesFacade", () => {
       harness.getBoundPage("workshop").workshop.dialogs.worldEvent.rows[0]
         .donationOptions[0];
     expect(donationOption.onActivate()).toBe(true);
-    const confirm = harness.getBoundPage("workshop").workshop.dialogs
-      .worldEventDonate.actions[0];
+    const confirm =
+      harness.getBoundPage("workshop").workshop.dialogs.worldEventDonate
+        .actions[0];
 
     expect(confirm.action()).toEqual({
       ok: false,
@@ -1129,8 +1310,7 @@ describe("PixiPagesFacade", () => {
     pages.mount();
     pages.show("brewing");
 
-    const lockedId = harness.getBoundPage("brewing")
-      .brewing.cauldrons[1].id;
+    const lockedId = harness.getBoundPage("brewing").brewing.cauldrons[1].id;
 
     gameplaySnapshot.brewing.cauldrons.push({
       cauldronIndex: 1,
@@ -1142,9 +1322,9 @@ describe("PixiPagesFacade", () => {
     gameplaySnapshot.brewing.nextCauldronCost = null;
     pages.refreshPage("brewing");
 
-    expect(
-      harness.getBoundPage("brewing").brewing.cauldrons[1].id,
-    ).toBe(lockedId);
+    expect(harness.getBoundPage("brewing").brewing.cauldrons[1].id).toBe(
+      lockedId,
+    );
   });
 
   it("places the selected herb in the chosen cauldron slot", () => {
@@ -1218,21 +1398,13 @@ describe("PixiPagesFacade", () => {
     );
 
     expect(
-      brewing.actions.selectHerb(
-        { itemTypeId: 1001 },
-        0,
-        2,
-      ),
+      brewing.actions.selectHerb({ itemTypeId: 1001 }, 0, 2),
     ).toMatchObject({ ok: true });
     expect(
       harness.gameplayFacade.setBrewingIngredientSlotQuantity,
     ).toHaveBeenCalledWith(1001, 1, 2, 0);
-    expect(harness.runtime.closeDialog).toHaveBeenCalledWith(
-      "brewing.herbs",
-    );
-    expect(
-      harness.gameplayFacade.addBrewingIngredient,
-    ).not.toHaveBeenCalled();
+    expect(harness.runtime.closeDialog).toHaveBeenCalledWith("brewing.herbs");
+    expect(harness.gameplayFacade.addBrewingIngredient).not.toHaveBeenCalled();
   });
 
   it("confirms before emptying the selected cauldron and clearing its page-local recipe", () => {
@@ -1270,9 +1442,7 @@ describe("PixiPagesFacade", () => {
 
     expect(brewing.actions.selectRecipe(recipe, 0)).toEqual({ ok: true });
     expect(brewing.actions.emptyCauldron(0)).toBe(true);
-    expect(
-      harness.gameplayFacade.clearBrewingCauldron,
-    ).not.toHaveBeenCalled();
+    expect(harness.gameplayFacade.clearBrewingCauldron).not.toHaveBeenCalled();
     expect(globalDialogPresenter.open).toHaveBeenCalledWith(
       "confirmation",
       expect.objectContaining({
@@ -1291,12 +1461,8 @@ describe("PixiPagesFacade", () => {
     expect(confirmation.actions.confirm(confirmation.value)).toEqual({
       ok: true,
     });
-    expect(
-      harness.gameplayFacade.clearBrewingCauldron,
-    ).toHaveBeenCalledWith(0);
-    expect(brewing.actions.clearRecipe).toBe(
-      brewing.actions.emptyCauldron,
-    );
+    expect(harness.gameplayFacade.clearBrewingCauldron).toHaveBeenCalledWith(0);
+    expect(brewing.actions.clearRecipe).toBe(brewing.actions.emptyCauldron);
     expect(
       harness.getBoundPage("brewing").brewing.cauldrons[0].selectedRecipe,
     ).toBeNull();
@@ -1776,11 +1942,15 @@ describe("PixiPagesFacade", () => {
 
     await shop.dialogs.buy.actions[0].action();
 
-    expect(harness.dependencies.playerShopFacade.buyListing).toHaveBeenCalledWith({
+    expect(
+      harness.dependencies.playerShopFacade.buyListing,
+    ).toHaveBeenCalledWith({
       listingKey: "mira-sage",
       quantity: 3,
     });
-    expect(harness.gameplayFacade.buyPlayerShopListingItem).toHaveBeenCalledWith({
+    expect(
+      harness.gameplayFacade.buyPlayerShopListingItem,
+    ).toHaveBeenCalledWith({
       listingKey: "mira-sage",
       itemKey: "sageSeed",
       quantity: 3,
@@ -1813,7 +1983,9 @@ describe("PixiPagesFacade", () => {
 
     await dialog.actions[0].action();
 
-    expect(harness.dependencies.playerShopFacade.setSlotRequest).toHaveBeenCalledWith({
+    expect(
+      harness.dependencies.playerShopFacade.setSlotRequest,
+    ).toHaveBeenCalledWith({
       slotNumber: 1,
       itemKey: "sageSeed",
       itemLabel: "sage seed",
@@ -1843,9 +2015,11 @@ describe("PixiPagesFacade", () => {
     harness.gameplayFacade.selectPlayerShopShelfSlot = vi.fn(() => ({
       ok: true,
     }));
-    harness.gameplayFacade.setSelectedPlayerShopShelfSlotListing = vi.fn(() => ({
-      ok: true,
-    }));
+    harness.gameplayFacade.setSelectedPlayerShopShelfSlotListing = vi.fn(
+      () => ({
+        ok: true,
+      }),
+    );
     const pages = new PixiPagesFacade(harness.dependencies);
     pages.mount();
     pages.show("shop");
@@ -1857,7 +2031,9 @@ describe("PixiPagesFacade", () => {
 
     await dialog.actions.find((action) => action.id === "list").action();
 
-    expect(harness.dependencies.playerShopFacade.setSlotListing).toHaveBeenCalledWith({
+    expect(
+      harness.dependencies.playerShopFacade.setSlotListing,
+    ).toHaveBeenCalledWith({
       slotNumber: 1,
       itemKey: "sageSeed",
       itemLabel: "sage seed",
@@ -1865,7 +2041,9 @@ describe("PixiPagesFacade", () => {
       quantity: 8,
       priceCoin: 1,
     });
-    expect(harness.gameplayFacade.selectPlayerShopShelfSlot).toHaveBeenCalledWith(1);
+    expect(
+      harness.gameplayFacade.selectPlayerShopShelfSlot,
+    ).toHaveBeenCalledWith(1);
     expect(
       harness.gameplayFacade.setSelectedPlayerShopShelfSlotListing,
     ).toHaveBeenCalledWith({
@@ -1900,8 +2078,12 @@ describe("PixiPagesFacade", () => {
     await dialog.actions.find((action) => action.id === "list").action();
 
     dialog = harness.getBoundPage("shop").shop.players.market.slots[0].dialog;
-    expect(dialog.status).toBe("Player shop slot requires a higher market rank.");
-    expect(harness.gameplayFacade.selectPlayerShopShelfSlot).not.toHaveBeenCalled();
+    expect(dialog.status).toBe(
+      "Player shop slot requires a higher market rank.",
+    );
+    expect(
+      harness.gameplayFacade.selectPlayerShopShelfSlot,
+    ).not.toHaveBeenCalled();
     expect(harness.runtime.closeDialog).not.toHaveBeenCalledWith(
       "shop.listing",
     );
@@ -1961,9 +2143,13 @@ describe("PixiPagesFacade", () => {
     await dialog.actions[0].action();
 
     dialog = harness.getBoundPage("shop").shop.players.requests.slots[0].dialog;
-    expect(dialog.status).toBe("Market licence does not match the active market.");
+    expect(dialog.status).toBe(
+      "Market licence does not match the active market.",
+    );
     expect(harness.gameplayFacade.setPlayerShopRequest).not.toHaveBeenCalled();
-    expect(harness.runtime.closeDialog).not.toHaveBeenCalledWith("shop.request");
+    expect(harness.runtime.closeDialog).not.toHaveBeenCalledWith(
+      "shop.request",
+    );
   });
 
   it("keeps unaffordable Brewing recipes unselected and leaves the book open", () => {
@@ -2010,18 +2196,16 @@ describe("PixiPagesFacade", () => {
     pages.show("brewing");
 
     expect(pages.openBrewingRecipesDialog(0)).toBe(true);
-    const dialogModel =
-      harness.pageSurface.openDialog.mock.calls.at(-1)[1];
+    const dialogModel = harness.pageSurface.openDialog.mock.calls.at(-1)[1];
     expect(dialogModel.recipes[0]).toMatchObject({
       key: "manaTonic",
       canSelect: false,
       selected: false,
     });
 
-    const result = harness.getBoundPage("brewing").actions.selectRecipe(
-      recipe,
-      0,
-    );
+    const result = harness
+      .getBoundPage("brewing")
+      .actions.selectRecipe(recipe, 0);
 
     expect(result).toEqual({
       ok: false,
@@ -2101,10 +2285,9 @@ describe("PixiPagesFacade", () => {
     });
 
     expect(
-      harness.getBoundPage("brewing").actions.performCauldronAction(
-        cauldron,
-        cauldron.primaryAction,
-      ),
+      harness
+        .getBoundPage("brewing")
+        .actions.performCauldronAction(cauldron, cauldron.primaryAction),
     ).toEqual({ ok: true });
     expect(
       harness.gameplayFacade.prepareBrewingRecipe,
@@ -2367,7 +2550,9 @@ describe("PixiPagesFacade", () => {
         payload: expect.objectContaining({ seedTypeId: 2 }),
       }),
     );
-    expect(harness.gameplayFacade.accelerateGardenPlot).toHaveBeenCalledTimes(1);
+    expect(harness.gameplayFacade.accelerateGardenPlot).toHaveBeenCalledTimes(
+      1,
+    );
   });
 
   it("projects Garden locked-slot affordability and blocks purchases until affordable", () => {
@@ -2541,7 +2726,9 @@ describe("PixiPagesFacade", () => {
       nextCauldronLockedByResearch: true,
       nextCauldronRequiresResearchId: "advanced:cauldronCapacity:2",
     });
-    expect(brewing.actions.navigateLockedCauldronResearch(locked)).toMatchObject({
+    expect(
+      brewing.actions.navigateLockedCauldronResearch(locked),
+    ).toMatchObject({
       ok: true,
       pageId: "research",
       tabId: "advanced",
@@ -2557,9 +2744,7 @@ describe("PixiPagesFacade", () => {
     pages.show("brewing");
 
     const actions = harness.getBoundPage("brewing").actions;
-    expect(
-      actions.openHerbPicker(0, 2, { itemKey: "sageHerb" }),
-    ).toBe(true);
+    expect(actions.openHerbPicker(0, 2, { itemKey: "sageHerb" })).toBe(true);
     expect(harness.pageSurface.focusDialogTarget).toHaveBeenCalledWith(
       "herbs",
       {
@@ -2690,7 +2875,9 @@ describe("PixiPagesFacade", () => {
       selectedSeedItemTypeId: 1,
     });
     expect(harness.runtime.closeDialog).toHaveBeenCalledWith("garden.seed");
-    expect(harness.gameplayFacade.selectGardenToolbarSeed).toHaveBeenCalledWith(1);
+    expect(harness.gameplayFacade.selectGardenToolbarSeed).toHaveBeenCalledWith(
+      1,
+    );
     const selectedGarden = harness.getBoundPage("garden");
     expect(selectedGarden.garden.actionBar.selectedSeed).toMatchObject({
       itemTypeId: 1,
@@ -3149,7 +3336,7 @@ function createHarness({ gameplaySnapshot = createGameplaySnapshot() } = {}) {
     }),
     registerGlobalSurface: vi.fn(
       function registerGlobalSurface(surfaceId, factory) {
-      globalFactories.set(surfaceId, factory);
+        globalFactories.set(surfaceId, factory);
         return this;
       },
     ),
@@ -3158,6 +3345,7 @@ function createHarness({ gameplaySnapshot = createGameplaySnapshot() } = {}) {
     getPixiLayers: vi.fn(() => ({ pageUi: {} })),
   };
   let gameplaySnapshotListener = null;
+  let friendsSnapshotListener = null;
   const gameplayFacade = {
     getSnapshot: vi.fn(() => gameplaySnapshot),
     withSnapshotCache: vi.fn((callback) => callback()),
@@ -3246,6 +3434,18 @@ function createHarness({ gameplaySnapshot = createGameplaySnapshot() } = {}) {
     gameplayFacade,
     playerFacade,
     worldChatFacade: createSnapshotFacade({ connected: true, messages: [] }),
+    friendsFacade: {
+      getSnapshot: vi.fn(() => ({
+        connected: true,
+        friends: [],
+        incomingRequests: [],
+        outgoingRequests: [],
+      })),
+      subscribe: vi.fn((listener) => {
+        friendsSnapshotListener = listener;
+        return vi.fn();
+      }),
+    },
     playerShopFacade: createSnapshotFacade({ connected: false }),
     tradeAllianceFacade: {
       ...createSnapshotFacade({
@@ -3274,6 +3474,7 @@ function createHarness({ gameplaySnapshot = createGameplaySnapshot() } = {}) {
     bottomSurface,
     pageSurface,
     publishGameplaySnapshot: (snapshot) => gameplaySnapshotListener?.(snapshot),
+    publishFriendsSnapshot: (snapshot) => friendsSnapshotListener?.(snapshot),
     getPageSwipeRegistration: () => pageSwipeRegistration,
     getBoundPage: (pageId) => boundPages.get(pageId),
     getBoundGlobal: (surfaceId) => boundGlobals.get(surfaceId),

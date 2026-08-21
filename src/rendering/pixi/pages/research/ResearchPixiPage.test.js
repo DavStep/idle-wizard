@@ -888,7 +888,7 @@ describe('ResearchPixiPage', () => {
     expect(RESEARCH_PIXI_GEOMETRY.progressBottom).toBe(12);
     expect(row.progress.width).toBe(422 / 3);
     expect(row.progress).toMatchObject({
-      tone: 'yellow',
+      tone: 'blue',
       height: 10,
     });
     expect(row.progress.control.usePlayerStyle).toBe(false);
@@ -896,7 +896,7 @@ describe('ResearchPixiPage', () => {
       createPixiThemeSnapshot({ progressBar: 'gradient' }),
     );
     expect(row.progress.gradient).toBeNull();
-    expect(row.progress.control.fillColor).toBe('#f5c542');
+    expect(row.progress.control.fillColor).toBe('#2d8fe6');
     expect(row.costButton).toMatchObject({
       buttonWidth: 72,
       buttonHeight: 42,

@@ -26,6 +26,7 @@ import {
   DEFAULT_PIXI_THEME_SNAPSHOT,
   PIXI_ROOT_RUN_ASSETS,
   PIXI_ROOT_RUN_GEOMETRY,
+  PIXI_STATUS_COLORS,
   PIXI_UI_GEOMETRY,
 } from '../../theme/PixiThemeTokens.js';
 import {
@@ -58,7 +59,7 @@ export const BREWING_HUD_GEOMETRY = Object.freeze({
   autoLabelY: 21,
   autoHitSize: 44,
   autoHitTop: -4,
-  emptyButtonWidth: 32,
+  emptyButtonWidth: 40,
   emptyButtonHeight: PIXI_UI_GEOMETRY.roomControlHeight,
   emptyButtonGapAboveDetail: 8,
   emptyIconWidth: 24,
@@ -87,7 +88,9 @@ export const BREWING_HUD_GEOMETRY = Object.freeze({
   ingredientColumns: 3,
   ingredientRows: 2,
   ingredientSlots: 6,
-  missingIngredientIconSize: 28,
+  missingIngredientIconSize: 20,
+  missingIngredientCompactIconSize: 14,
+  missingIngredientRowHeight: 24,
   hearthWidth: 66,
   hearthWoodHeight: 33,
   hearthFlameWidth: 54,
@@ -149,10 +152,18 @@ const RETAINED_INGREDIENT_COUNT_STYLE = Object.freeze({
   fontSize: 8,
   lineHeight: 9,
 });
+const BREWING_MISSING_INGREDIENT_TITLE_STYLE = Object.freeze({
+  fontSize: 12,
+  lineHeight: 14,
+  fontWeight: '700',
+});
 const BREWING_MISSING_INGREDIENT_LABEL_STYLE = Object.freeze({
-  fontSize: 8,
-  lineHeight: 9,
-  align: 'center',
+  fontSize: 11,
+  lineHeight: 13,
+});
+const BREWING_MISSING_INGREDIENT_COUNT_STYLE = Object.freeze({
+  fontSize: 11,
+  lineHeight: 13,
 });
 const INGREDIENT_SLOT_BORDER_INSETS = Object.freeze({
   top: 12,
@@ -538,16 +549,13 @@ export class BrewingHudPixi {
       wordWrap: true,
       wordWrapWidth: 250,
     });
-    this.missingIngredientsRoot = new Container({
-      label: 'brewing-missing-ingredients',
+    this.missingIngredients = new BrewingMissingIngredientsRow({
+      assetManager,
+      maxItems: BREWING_HUD_GEOMETRY.ingredientSlots,
+      theme,
     });
-    this.missingIngredientViews = Array.from(
-      { length: BREWING_HUD_GEOMETRY.ingredientSlots },
-      (_unused, index) => createMissingIngredientView(index),
-    );
-    this.missingIngredientsRoot.addChild(
-      ...this.missingIngredientViews.map((view) => view.root),
-    );
+    this.missingIngredientsRoot = this.missingIngredients.root;
+    this.missingIngredientViews = this.missingIngredients.itemViews;
     this.detailPanel.body.addChild(
       this.phaseLabel,
       this.phaseTime,
@@ -854,12 +862,14 @@ export class BrewingHudPixi {
           : toTitleCase(active.phase)
         : recipe
           ? hasMissingIngredients
-            ? 'Missing ingredients'
+            ? ''
             : hasMissingMana
               ? 'Not enough mana'
               : 'Ready to Brew'
           : 'No potion selected',
     );
+    this.phaseLabel.visible = !hasMissingIngredients;
+    this.phaseLabel.renderable = this.phaseLabel.visible;
     setText(
       this.statusMessage,
       !active && !recipe
@@ -877,50 +887,19 @@ export class BrewingHudPixi {
   }
 
   bindMissingIngredients(ingredients = []) {
-    this.missingIngredientViews.forEach((view, index) => {
-      const ingredient = ingredients[index] ?? null;
-      const key = ingredient?.itemKey ?? ingredient?.key ?? null;
-      view.icon.texture = getAtlasTexture(
-        this.assetManager,
-        key ? getHerbIconFrameName(key) : null,
-      );
-      view.icon.visible =
-        Boolean(ingredient) && view.icon.texture !== Texture.EMPTY;
-      view.icon.renderable = view.icon.visible;
-      setText(
-        view.label,
-        ingredient ? toTitleCase(ingredient.label ?? key ?? '') : '',
-      );
-      setText(view.count, ingredient ? `x${ingredient.missingQuantity}` : '');
-      view.root.visible = Boolean(ingredient);
-      view.root.renderable = view.root.visible;
-    });
-    this.missingIngredientsRoot.visible = ingredients.length > 0;
-    this.missingIngredientsRoot.renderable =
-      this.missingIngredientsRoot.visible;
-    this.layoutMissingIngredients();
+    this.missingIngredients.bind(ingredients);
   }
 
   layoutMissingIngredients() {
-    const visibleViews = this.missingIngredientViews.filter(
-      (view) => view.root.visible,
-    );
-    if (visibleViews.length === 0 || !Number.isFinite(this.batchStatusWidth)) {
+    if (!Number.isFinite(this.batchStatusWidth)) {
       return;
     }
-    const cellWidth = Math.min(58, this.batchStatusWidth / visibleViews.length);
-    const usedWidth = cellWidth * visibleViews.length;
-    const startX = (this.batchStatusWidth - usedWidth) / 2;
-    visibleViews.forEach((view, index) => {
-      const centerX = startX + cellWidth * (index + 0.5);
-      view.root.position.set(centerX, 0);
-      view.icon.position.set(0, 15);
-      view.icon.width = BREWING_HUD_GEOMETRY.missingIngredientIconSize;
-      view.icon.height = BREWING_HUD_GEOMETRY.missingIngredientIconSize;
-      view.count.position.set(11, 1);
-      view.label.position.set(0, 31);
-      view.label.style.wordWrapWidth = Math.max(34, cellWidth - 2);
-    });
+    this.missingIngredients.setBounds(
+      78,
+      28,
+      this.batchStatusWidth,
+      BREWING_HUD_GEOMETRY.missingIngredientRowHeight,
+    );
   }
 
   getTimerNow() {
@@ -935,6 +914,9 @@ export class BrewingHudPixi {
   syncActiveTimer(active, now) {
     const timed =
       active?.phase === 'brewing' || active?.phase === 'bottling';
+    this.progress.control.setTone(
+      active?.phase === 'bottling' ? 'yellow' : 'root',
+    );
     this.progress.root.visible = timed;
     this.progress.root.renderable = timed;
     if (!timed) {
@@ -1312,7 +1294,6 @@ export class BrewingHudPixi {
     this.progress.setBounds(78, 34, detailWidth - 90, 11);
     this.batchStatusWidth = detailWidth - 90;
     this.statusMessage.position.set(this.phaseLabel.x, 34);
-    this.missingIngredientsRoot.position.set(78, 24);
     this.layoutMissingIngredients();
     this.emptyCauldron.setBounds(
       sourceWidth -
@@ -1392,16 +1373,7 @@ export class BrewingHudPixi {
       ...BREWING_DETAIL_TEXT_STYLE.body,
       fill: this.theme.muted,
     });
-    for (const view of this.missingIngredientViews) {
-      applyTextTheme(view.label, this.theme, {
-        ...BREWING_MISSING_INGREDIENT_LABEL_STYLE,
-        fill: this.theme.text,
-      });
-      applyTextTheme(view.count, this.theme, {
-        ...RETAINED_INGREDIENT_COUNT_STYLE,
-        fill: this.theme.notificationRed ?? '#c1121f',
-      });
-    }
+    this.missingIngredients.applyTheme(this.theme);
     for (const button of [
       this.previous,
       this.next,
@@ -2228,11 +2200,162 @@ export class BrewingHudPixi {
     this.lockedCauldronFilter = null;
     this.potionPreviewFrame.filters = null;
     this.progress.destroy();
+    this.missingIngredients.destroy();
     for (const slot of this.ingredientSlots) {
       slot.destroy();
     }
     this.carouselPanel.destroy();
     this.detailPanel.destroy();
+  }
+}
+
+/**
+ * Passive horizontal shortage summary for compact action areas.
+ * Consumers provide already-computed missing quantities; this widget only
+ * renders the left-anchored label and icon/name/count sequence.
+ */
+export class BrewingMissingIngredientsRow {
+  constructor({
+    assetManager = null,
+    maxItems = BREWING_HUD_GEOMETRY.ingredientSlots,
+    theme = DEFAULT_PIXI_THEME_SNAPSHOT,
+  } = {}) {
+    this.assetManager = assetManager;
+    this.maxItems = Math.max(1, Math.floor(Number(maxItems) || 1));
+    this.width = 0;
+    this.height = BREWING_HUD_GEOMETRY.missingIngredientRowHeight;
+    this.root = new Container({ label: 'brewing-missing-ingredients-row' });
+    this.root.eventMode = 'none';
+    this.title = createText('Missing', BREWING_MISSING_INGREDIENT_TITLE_STYLE);
+    this.title.anchor.set(0, 0.5);
+    this.itemViews = Array.from(
+      { length: this.maxItems },
+      (_unused, index) => createMissingIngredientRowItem(index),
+    );
+    this.root.addChild(
+      this.title,
+      ...this.itemViews.map((view) => view.root),
+    );
+    this.bind([]);
+    this.applyTheme(theme);
+  }
+
+  bind(ingredients = []) {
+    const visibleIngredients = ingredients.slice(0, this.maxItems);
+    this.itemViews.forEach((view, index) => {
+      const ingredient = visibleIngredients[index] ?? null;
+      const key = ingredient?.itemKey ?? ingredient?.key ?? null;
+      view.fullLabel = ingredient
+        ? toTitleCase(ingredient.label ?? ingredient.name ?? key ?? '')
+        : '';
+      view.icon.texture = getAtlasTexture(
+        this.assetManager,
+        key ? getHerbIconFrameName(key) : null,
+      );
+      view.icon.visible =
+        Boolean(ingredient) && view.icon.texture !== Texture.EMPTY;
+      view.icon.renderable = view.icon.visible;
+      setText(view.label, view.fullLabel);
+      setText(view.count, ingredient ? `x${ingredient.missingQuantity}` : '');
+      view.root.visible = Boolean(ingredient);
+      view.root.renderable = view.root.visible;
+    });
+    const visible = visibleIngredients.length > 0;
+    this.root.visible = visible;
+    this.root.renderable = visible;
+    this.layout();
+  }
+
+  setBounds(x, y, width, height = this.height) {
+    this.root.position.set(x, y);
+    this.width = Math.max(0, Number(width) || 0);
+    this.height = Math.max(0, Number(height) || 0);
+    this.layout();
+  }
+
+  layout() {
+    const views = this.itemViews.filter((view) => view.root.visible);
+    if (views.length === 0 || this.width <= 0) {
+      return;
+    }
+
+    const compact = views.length > 3;
+    const centerY = this.height / 2;
+    const iconSize = compact
+      ? BREWING_HUD_GEOMETRY.missingIngredientCompactIconSize
+      : BREWING_HUD_GEOMETRY.missingIngredientIconSize;
+    const titleGap = compact ? 4 : 8;
+    const contentGap = compact ? 1 : 2;
+    const itemGap = compact ? 2 : 6;
+    const separatorWidth = compact ? 2 : 3;
+    const titleRight = this.title.width + titleGap;
+    const fixedItemWidth = views.reduce(
+      (width, view, index) =>
+        width +
+        iconSize +
+        contentGap * 2 +
+        view.count.width +
+        (index < views.length - 1 ? separatorWidth + itemGap : 0),
+      0,
+    );
+    const availableLabelWidth = Math.max(
+      1,
+      this.width - titleRight - fixedItemWidth,
+    );
+    const maximumLabelWidth = Math.max(1, availableLabelWidth / views.length);
+
+    this.title.position.set(0, centerY);
+    let cursor = titleRight;
+    views.forEach((view, index) => {
+      setFittedMissingIngredientLabel(
+        view.label,
+        view.fullLabel,
+        maximumLabelWidth,
+      );
+      view.root.position.set(cursor, 0);
+      view.icon.width = iconSize;
+      view.icon.height = iconSize;
+      view.icon.position.set(iconSize / 2, centerY);
+      view.label.position.set(iconSize + contentGap, centerY);
+      view.count.position.set(
+        view.label.x + view.label.width + contentGap,
+        centerY,
+      );
+      const itemRight = view.count.x + view.count.width;
+      view.separator.position.set(itemRight, centerY);
+      view.separator.visible = index < views.length - 1;
+      view.separator.renderable = view.separator.visible;
+      cursor +=
+        itemRight +
+        (view.separator.visible ? separatorWidth + itemGap : 0);
+    });
+  }
+
+  applyTheme(theme) {
+    this.theme = theme ?? DEFAULT_PIXI_THEME_SNAPSHOT;
+    applyTextTheme(this.title, this.theme, {
+      ...BREWING_MISSING_INGREDIENT_TITLE_STYLE,
+      fill: this.theme.text,
+    });
+    for (const view of this.itemViews) {
+      applyTextTheme(view.label, this.theme, {
+        ...BREWING_MISSING_INGREDIENT_LABEL_STYLE,
+        fill: this.theme.text,
+      });
+      applyTextTheme(view.count, this.theme, {
+        ...BREWING_MISSING_INGREDIENT_COUNT_STYLE,
+        fill: this.theme.insufficient ?? PIXI_STATUS_COLORS.insufficient,
+      });
+      applyTextTheme(view.separator, this.theme, {
+        ...BREWING_MISSING_INGREDIENT_LABEL_STYLE,
+        fill: this.theme.text,
+      });
+    }
+    this.layout();
+  }
+
+  destroy() {
+    this.root.destroy({ children: true });
   }
 }
 
@@ -2770,7 +2893,7 @@ export class BrewingIngredientPickerSlot {
     applyTextTheme(this.missingCount, this.theme, {
       ...RETAINED_INGREDIENT_COUNT_STYLE,
       fill: this.countMissing
-        ? this.theme?.notificationRed ?? '#c1121f'
+        ? this.theme?.insufficient ?? PIXI_STATUS_COLORS.insufficient
         : this.theme?.text ?? '#d4d4d4',
     });
   }
@@ -2928,24 +3051,39 @@ function centeredText(text, style) {
   return createText(text, { ...style, align: 'center' });
 }
 
-function createMissingIngredientView(index) {
+function createMissingIngredientRowItem(index) {
   const root = new Container({
-    label: `brewing-missing-ingredient-${index}`,
+    label: `brewing-missing-ingredient-row-item-${index}`,
   });
   const icon = new Sprite(Texture.EMPTY);
   icon.anchor.set(0.5);
-  const label = centeredText('', {
-    ...BREWING_MISSING_INGREDIENT_LABEL_STYLE,
-    wordWrap: true,
-    wordWrapWidth: 56,
-  });
-  label.anchor.set(0.5, 0);
-  const count = centeredText('', RETAINED_INGREDIENT_COUNT_STYLE);
-  count.anchor.set(0.5, 0);
-  root.addChild(icon, label, count);
+  const label = createText('', BREWING_MISSING_INGREDIENT_LABEL_STYLE);
+  label.anchor.set(0, 0.5);
+  const count = createText('', BREWING_MISSING_INGREDIENT_COUNT_STYLE);
+  count.anchor.set(0, 0.5);
+  const separator = createText(',', BREWING_MISSING_INGREDIENT_LABEL_STYLE);
+  separator.anchor.set(0, 0.5);
+  root.addChild(icon, label, count, separator);
   root.visible = false;
   root.renderable = false;
-  return { root, icon, label, count };
+  return { root, icon, label, count, separator, fullLabel: '' };
+}
+
+function setFittedMissingIngredientLabel(label, value, maximumWidth) {
+  const fullText = String(value ?? '');
+  setText(label, fullText);
+  label.scale.set(1);
+  if (label.width <= maximumWidth) {
+    return;
+  }
+  const characters = Array.from(fullText);
+  while (characters.length > 1 && label.width > maximumWidth) {
+    characters.pop();
+    setText(label, `${characters.join('')}…`);
+  }
+  if (label.width > maximumWidth && label.width > 0) {
+    label.scale.set(maximumWidth / label.width, 1);
+  }
 }
 
 function getTexture(assetManager, id) {

@@ -3,6 +3,7 @@ import { CanvasTextMetrics, Sprite, Texture } from 'pixi.js';
 import {
   DEFAULT_PIXI_THEME_SNAPSHOT,
   PIXI_ROOT_RUN_ASSETS,
+  PIXI_STATUS_COLORS,
 } from '../theme/PixiThemeTokens.js';
 import { PixiBaseButton } from './PixiBaseButton.js';
 import {
@@ -307,7 +308,11 @@ export class PixiCostButton extends PixiBaseButton {
     this.resourceIcon.texture = this.resolveResourceTexture(this.resource);
     this.amountLabel
       .setText(this.amount)
-      .setColor(unaffordable ? '#c1121f' : '#ffffff');
+      .setColor(
+        unaffordable
+          ? this.theme.insufficient ?? PIXI_STATUS_COLORS.insufficient
+          : '#ffffff',
+      );
     this.actionTextLabel.setText(this.actionLabel);
     this.lockedLabel.setText('Locked');
     this.resourceIcon.visible = !locked && this.resource !== 'none';

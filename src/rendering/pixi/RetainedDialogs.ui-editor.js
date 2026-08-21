@@ -1110,6 +1110,7 @@ function createPlayerInfoDialogFixture(relationship) {
           : {};
   return {
     actions,
+    friendsNotification: ownPlayer,
     ownPlayer,
     relationship,
     player: {

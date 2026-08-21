@@ -62,7 +62,6 @@ describe('PixiBottomPanelView', () => {
       'alliance.home',
       'alliance.quests',
       'alliance.requests',
-      'alliance.chat',
       'alliance.settings',
     ]);
   });
@@ -203,7 +202,7 @@ describe('PixiBottomPanelView', () => {
     view.destroy();
   });
 
-  it('switches Alliance to its permitted text tabs and routes Chat', () => {
+  it('switches Alliance to its permitted text tabs without a Chat destination', () => {
     const selectAllianceTab = vi.fn();
     const semanticRegistry = new SemanticTargetRegistry();
     const view = new PixiBottomPanelView({
@@ -219,7 +218,6 @@ describe('PixiBottomPanelView', () => {
           { id: 'home', visible: true, unlocked: true },
           { id: 'quests', visible: true, unlocked: true },
           { id: 'requests', visible: true, unlocked: true },
-          { id: 'chat', visible: true, unlocked: true },
           { id: 'settings', visible: false, unlocked: true },
         ],
       },
@@ -238,13 +236,12 @@ describe('PixiBottomPanelView', () => {
       'alliance.home',
       'alliance.quests',
       'alliance.requests',
-      'alliance.chat',
     ]);
     expect(view.allianceTabs[3].state.selected).toBe(true);
     expect(view.allianceTabs[5].notification.root.visible).toBe(true);
 
-    semanticRegistry.activate('page.alliance.chat');
-    expect(selectAllianceTab).toHaveBeenCalledWith('chat');
+    expect(semanticRegistry.has('page.alliance.chat')).toBe(false);
+    expect(selectAllianceTab).not.toHaveBeenCalled();
 
     view.destroy();
   });

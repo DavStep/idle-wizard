@@ -5531,7 +5531,7 @@ describe("GameplayFacade", () => {
     ]);
   });
 
-  it("reduces one active Garden plot second per accepted tap", () => {
+  it("reduces 30% of one active Garden plot timer per accepted tap", () => {
     const { ecsFacade, gameplayFacade } = createGameplay();
     gameplayFacade.itemsFacade.addItem(1, 1);
     gameplayFacade.plantGardenSeed(1, 1);
@@ -5540,27 +5540,27 @@ describe("GameplayFacade", () => {
       ok: true,
       tileNumber: 1,
       phase: "growing",
-      reducedSeconds: 1,
-      remainingMs: 11_000,
+      reducedSeconds: 3.6,
+      remainingMs: 8_400,
       cooldownMs: GARDEN_PLOT_TAP_COOLDOWN_MS,
     });
     expect(gameplayFacade.getSnapshot().garden.plot.tiles[0]).toMatchObject({
       phase: "growing",
-      remainingMs: 11_000,
+      remainingMs: 8_400,
     });
     expect(gameplayFacade.accelerateGardenPlot(1)).toMatchObject({
       ok: false,
       reason: "tap_cooldown",
     });
 
-    ecsFacade.update({ deltaSeconds: 11 });
+    ecsFacade.update({ deltaSeconds: 8.4 });
     expect(gameplayFacade.getSnapshot().garden.plot.tiles[0]).toMatchObject({
       phase: "ready",
       remainingMs: 0,
     });
   });
 
-  it("reduces one active Brewing cauldron second per accepted tap", () => {
+  it("reduces 30% of one active Brewing cauldron timer per accepted tap", () => {
     const { gameplayFacade } = createGameplay();
     gameplayFacade.brewingFacade.brewingProcessEntityManager.restoreActiveBrew({
       cauldronIndex: 0,
@@ -5575,13 +5575,13 @@ describe("GameplayFacade", () => {
       ok: true,
       cauldronIndex: 0,
       phase: "brewing",
-      reducedSeconds: 1,
-      remainingMs: 11_000,
+      reducedSeconds: 3.6,
+      remainingMs: 8_400,
       cooldownMs: BREWING_CAULDRON_TAP_COOLDOWN_MS,
     });
     expect(gameplayFacade.getSnapshot().brewing.activeBrew).toMatchObject({
       phase: "brewing",
-      remainingMs: 11_000,
+      remainingMs: 8_400,
     });
     expect(gameplayFacade.accelerateBrewingCauldron(0)).toMatchObject({
       ok: false,

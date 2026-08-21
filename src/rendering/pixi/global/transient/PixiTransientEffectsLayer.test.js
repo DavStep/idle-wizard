@@ -228,7 +228,7 @@ describe('PixiTransientEffectsLayer', () => {
     expect(entry.widget.root.scale.y).toBeCloseTo(0.9);
   });
 
-  it('drops a planted seed pack from above the tile center and hides it on impact', () => {
+  it('stretches a planted seed pack in flight, then squashes and fades it on impact', () => {
     const layer = new PixiTransientEffectsLayer({
       assets: createAssets(),
       semanticRegistry: createSemanticRegistry({
@@ -273,9 +273,23 @@ describe('PixiTransientEffectsLayer', () => {
     expect(entry.widget.root.y).toBeGreaterThan(106);
     expect(entry.widget.root.y).toBeLessThan(142);
     expect(entry.widget.root.alpha).toBe(1);
+    expect(entry.widget.root.scale.x).toBeLessThan(1);
+    expect(entry.widget.root.scale.y).toBeGreaterThan(1);
 
     entry.widget.update(0.52, { delayed: false });
     expect(entry.widget.root.position).toMatchObject({ x: 104, y: 142 });
+    expect(entry.widget.root.scale.x).toBeGreaterThan(1.15);
+    expect(entry.widget.root.scale.y).toBeLessThan(0.75);
+    expect(entry.widget.root.alpha).toBe(1);
+
+    entry.widget.update(0.58, { delayed: false });
+    expect(entry.widget.root.position).toMatchObject({ x: 104, y: 142 });
+    expect(entry.widget.root.scale.x).toBeGreaterThan(1.18);
+    expect(entry.widget.root.scale.y).toBeLessThan(0.7);
+    expect(entry.widget.root.alpha).toBeGreaterThan(0);
+    expect(entry.widget.root.alpha).toBeLessThan(1);
+
+    entry.widget.update(0.64, { delayed: false });
     expect(entry.widget.root.alpha).toBe(0);
   });
 

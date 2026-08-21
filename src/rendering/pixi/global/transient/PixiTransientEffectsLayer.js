@@ -87,6 +87,8 @@ const GARDEN_SEED_DROP_SIZE = ITEM_DROP_SIZES.seed * 0.75;
 const GARDEN_PLANT_DROP_DURATION_MS = 500;
 const GARDEN_PLANT_DROP_OFFSET_Y = 36;
 const GARDEN_PLANT_DROP_IMPACT_PROGRESS = 0.52;
+const GARDEN_PLANT_DROP_STRETCH_PROGRESS = 0.42;
+const GARDEN_PLANT_DROP_DISAPPEAR_PROGRESS = 0.64;
 const REWARD_FLYOUT_VISUALS = Object.freeze({
   backgroundColor: 0x000000,
   backgroundAlpha: 0.62,
@@ -2451,11 +2453,55 @@ function interpolateGardenPlantDropFrame(progress) {
     safeProgress / GARDEN_PLANT_DROP_IMPACT_PROGRESS,
   );
   const acceleratedDrop = dropProgress * dropProgress;
+  let scaleX;
+  let scaleY;
+  let alpha = 1;
+
+  if (safeProgress < GARDEN_PLANT_DROP_STRETCH_PROGRESS) {
+    const stretchProgress = cubicBezier(
+      safeProgress / GARDEN_PLANT_DROP_STRETCH_PROGRESS,
+      0.22,
+      1,
+      0.36,
+      1,
+    );
+    scaleX = lerp(0.96, 0.88, stretchProgress);
+    scaleY = lerp(0.96, 1.15, stretchProgress);
+  } else if (safeProgress < GARDEN_PLANT_DROP_IMPACT_PROGRESS) {
+    const squashProgress = cubicBezier(
+      (safeProgress - GARDEN_PLANT_DROP_STRETCH_PROGRESS) /
+        (GARDEN_PLANT_DROP_IMPACT_PROGRESS -
+          GARDEN_PLANT_DROP_STRETCH_PROGRESS),
+      0.22,
+      1,
+      0.36,
+      1,
+    );
+    scaleX = lerp(0.88, 1.18, squashProgress);
+    scaleY = lerp(1.15, 0.7, squashProgress);
+  } else {
+    const disappearProgress = Math.min(
+      1,
+      (safeProgress - GARDEN_PLANT_DROP_IMPACT_PROGRESS) /
+        (GARDEN_PLANT_DROP_DISAPPEAR_PROGRESS -
+          GARDEN_PLANT_DROP_IMPACT_PROGRESS),
+    );
+    const easedDisappear = cubicBezier(
+      disappearProgress,
+      0.22,
+      1,
+      0.36,
+      1,
+    );
+    scaleX = lerp(1.18, 1.28, easedDisappear);
+    scaleY = lerp(0.7, 0.48, easedDisappear);
+    alpha = 1 - easedDisappear;
+  }
   return {
     y: lerp(-GARDEN_PLANT_DROP_OFFSET_Y, 0, acceleratedDrop),
-    scaleX: lerp(0.96, 1, acceleratedDrop),
-    scaleY: lerp(0.96, 1, acceleratedDrop),
-    alpha: safeProgress < GARDEN_PLANT_DROP_IMPACT_PROGRESS ? 1 : 0,
+    scaleX,
+    scaleY,
+    alpha,
   };
 }
 

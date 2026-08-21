@@ -27,8 +27,10 @@ import {
   QUEST_REQUEST_FEEDBACK_DURATION_MS,
   QUEST_REQUEST_FILL_DURATION_MS,
 } from '../../managers/QuestCompletionMotionCoordinator.js';
+import { PixiNotificationBadge } from '../transient/PixiNotificationBadges.js';
 
 const ROOT_RUN_UI_SCALE = 3;
+const TOP_HUD_AVATAR_SIZE = 186;
 export const PIXI_TOP_PANEL_BACKGROUND_SLICE = Object.freeze({
   leftWidth: 30,
   topHeight: 1,
@@ -153,6 +155,22 @@ export class PixiTopPanelView extends BasePixiRetainedView {
       texture: this.getCharacterTexture('elara'),
     });
     this.avatar = this.avatarViewport.portrait;
+    this.avatarNotificationBadge = new PixiNotificationBadge({
+      assetManager: assets,
+    });
+    this.avatarNotificationBadge.root.label = 'topPanel:avatarNotification';
+    this.avatarNotification = this.avatarNotificationBadge.root;
+    this.avatarNotificationBadge
+      .setTone('red')
+      .placeInsideTopRight(
+        {
+          x: TOP_HUD_X,
+          y: TOP_HUD_Y,
+          width: TOP_HUD_AVATAR_SIZE / ROOT_RUN_UI_SCALE,
+          height: TOP_HUD_AVATAR_SIZE / ROOT_RUN_UI_SCALE,
+        },
+        0,
+      );
 
     this.usernameControl = new Container({
       label: 'topPanel:usernameControl',
@@ -189,13 +207,6 @@ export class PixiTopPanelView extends BasePixiRetainedView {
       width: CURRENCY_WIDTH,
       label: 'topPanel:contextCurrency',
     });
-    this.amethyst = new RootRunHudCurrencyCapsule({
-      assets,
-      resource: 'amethyst',
-      amount: '0',
-      width: CURRENCY_WIDTH,
-      label: 'topPanel:amethyst',
-    });
     this.bag = new RootRunHudBagCapsule({
       assets,
       width: CURRENCY_WIDTH,
@@ -227,15 +238,14 @@ export class PixiTopPanelView extends BasePixiRetainedView {
 
     this.levelRail.position.set(LEVEL_X, 4);
     this.coin.position.set(CURRENCY_X, 108);
-    this.amethyst.position.set(
+    this.contextCurrency.position.set(
       CURRENCY_X + CURRENCY_WIDTH + CURRENCY_GAP,
       108,
     );
-    this.contextCurrency.position.set(
+    this.bag.position.set(
       CURRENCY_X + (CURRENCY_WIDTH + CURRENCY_GAP) * 2,
       108,
     );
-    this.bag.position.copyFrom(this.contextCurrency.position);
     this.manaRate.position.set(
       this.contextCurrency.position.x + CURRENCY_WIDTH / 2,
       174,
@@ -244,7 +254,6 @@ export class PixiTopPanelView extends BasePixiRetainedView {
     this.topHudRoot.addChild(
       this.levelRail,
       this.coin,
-      this.amethyst,
       this.contextCurrency,
       this.bag,
       this.manaRate,
@@ -308,6 +317,7 @@ export class PixiTopPanelView extends BasePixiRetainedView {
     this.root.addChild(
       this.panelBackground,
       this.topHudRoot,
+      this.avatarNotification,
       this.questFlightRoot,
       this.questArrivalRoot,
     );
@@ -406,10 +416,6 @@ export class PixiTopPanelView extends BasePixiRetainedView {
       displayObject: this.coin,
     });
     this.registerSemanticTarget({
-      semanticId: 'top.amethyst',
-      displayObject: this.amethyst,
-    });
-    this.registerSemanticTarget({
       semanticId: 'top.contextCurrency',
       displayObject: this.contextCurrency,
     });
@@ -478,7 +484,6 @@ export class PixiTopPanelView extends BasePixiRetainedView {
     const avatarVisible =
       model.showAvatar !== false && reveal.avatar !== false;
     const topVisible = reveal.top !== false;
-    const workshopResources = model.showBag === true && context.resource === 'mana';
 
     this.panelBackground.visible = topVisible;
     this.panelBackground.renderable = topVisible;
@@ -486,19 +491,21 @@ export class PixiTopPanelView extends BasePixiRetainedView {
     this.topHudRoot.renderable = topVisible;
     this.avatarViewport.visible = topVisible && avatarVisible;
     this.avatarViewport.renderable = this.avatarViewport.visible;
+    this.avatarNotificationBadge.setActive(
+      this.avatarViewport.visible && model.avatarNotification === true,
+    );
     this.usernameControl.visible = topVisible && reveal.username !== false;
     this.usernameControl.renderable = this.usernameControl.visible;
     this.settingsControl.visible = topVisible;
     this.settingsControl.renderable = topVisible;
     this.bag.visible =
-      topVisible && workshopResources && reveal.resources !== false;
+      topVisible && reveal.resources !== false;
     this.bag.renderable = this.bag.visible;
 
     this.username.setText(model.username ?? 'Wizard');
     this.setCharacter(model.character ?? model.characterKey ?? 'elara');
     this.avatarViewport.setFrameTint?.(model.frameTint);
     this.coin.setAmount(formatCompactNumber(model.coin ?? 0));
-    this.amethyst.setAmount(formatCompactNumber(model.amethyst ?? 0));
     this.contextCurrency
       .setResource(context.resource)
       .setAmount(
@@ -506,11 +513,6 @@ export class PixiTopPanelView extends BasePixiRetainedView {
           ? `${Math.floor(Number(context.amount) || 0)}/${Math.floor(Number(context.cap) || 0)}`
           : formatCompactNumber(context.amount),
       );
-    this.contextCurrency.position.x =
-      CURRENCY_X +
-      (CURRENCY_WIDTH + CURRENCY_GAP) * (workshopResources ? 1 : 2);
-    this.manaRate.position.x =
-      this.contextCurrency.position.x + CURRENCY_WIDTH / 2;
     this.contextCurrency.visible =
       topVisible &&
       context.visible &&
@@ -526,9 +528,6 @@ export class PixiTopPanelView extends BasePixiRetainedView {
     this.manaRate.renderable = this.manaRate.visible;
     this.coin.visible = topVisible && reveal.resources !== false;
     this.coin.renderable = this.coin.visible;
-    this.amethyst.visible = topVisible && reveal.resources !== false;
-    this.amethyst.visible = this.amethyst.visible && !workshopResources;
-    this.amethyst.renderable = this.amethyst.visible;
 
     this.levelRail.visible = topVisible && level !== null;
     this.levelRail.renderable = this.levelRail.visible;
@@ -556,7 +555,6 @@ export class PixiTopPanelView extends BasePixiRetainedView {
     );
     this.username.applyTheme(theme);
     this.coin.applyTheme(theme);
-    this.amethyst.applyTheme(theme);
     this.contextCurrency.applyTheme(theme);
     this.bag.applyTheme(theme);
     this.manaRate.applyTheme(theme);

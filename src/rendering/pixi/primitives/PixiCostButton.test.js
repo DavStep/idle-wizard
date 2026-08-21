@@ -10,6 +10,7 @@ import { describe, expect, it, vi } from 'vitest';
 import { installPixiPageTestCanvas } from '../pages/workshop/PixiPageTestHarness.js';
 import {
   PIXI_ROOT_RUN_ASSETS,
+  PIXI_STATUS_COLORS,
   resolvePixiTextStrokeWidth,
 } from '../theme/PixiThemeTokens.js';
 import {
@@ -95,7 +96,7 @@ describe('PixiCostButton', () => {
 
     expect(button.costState).toBe('unaffordable');
     expect(button.enabled).toBe(false);
-    expect(button.amountLabel.colorToken).toBe('#c1121f');
+    expect(button.amountLabel.colorToken).toBe(PIXI_STATUS_COLORS.insufficient);
     expect(button.lockedLabel.visible).toBe(false);
     expect(registrations[0].descriptor.enabled()).toBe(false);
   });
@@ -267,7 +268,7 @@ describe('PixiCostButton', () => {
       enabled: false,
     });
 
-    expect(button.amountLabel.colorToken).toBe('#c1121f');
+    expect(button.amountLabel.colorToken).toBe(PIXI_STATUS_COLORS.insufficient);
     expect(button.enabled).toBe(false);
     expect(assetManager.getTexture).toHaveBeenCalledWith(
       PIXI_ROOT_RUN_ASSETS.buttonGreenStacked,

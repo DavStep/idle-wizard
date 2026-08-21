@@ -33,7 +33,7 @@ Completed rows replace the action button with the shared checkmark centered in
 the same fixed status slot. Active timers reuse the shared blue stacked cost
 control with `Skip` above the Amethyst icon and amount. The displayed cost is
 `ceil(remainingSeconds / 60)` and the white outlined countdown stays centered
-over the yellow progress rail.
+over the blue progress rail.
 
 Item-unlock rows consume `itemKind` and `itemKey`: seeds render the shared
 seed-pack plus matching herb mark, and potion recipes render the exact potion

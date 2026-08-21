@@ -304,6 +304,8 @@ export const OwnFriendshipResult = __t.object("OwnFriendshipResult", {
   connected: __t.bool(),
   lastSeenAt: __t.timestamp(),
   createdAt: __t.timestamp(),
+  allianceTag: __t.string(),
+  allianceTagColor: __t.string(),
 });
 export type OwnFriendshipResult = __Infer<typeof OwnFriendshipResult>;
 
@@ -320,6 +322,8 @@ export const OwnIncomingFriendRequestResult = __t.object("OwnIncomingFriendReque
   connected: __t.bool(),
   lastSeenAt: __t.timestamp(),
   createdAt: __t.timestamp(),
+  allianceTag: __t.string(),
+  allianceTagColor: __t.string(),
 });
 export type OwnIncomingFriendRequestResult = __Infer<typeof OwnIncomingFriendRequestResult>;
 
@@ -336,6 +340,8 @@ export const OwnOutgoingFriendRequestResult = __t.object("OwnOutgoingFriendReque
   connected: __t.bool(),
   lastSeenAt: __t.timestamp(),
   createdAt: __t.timestamp(),
+  allianceTag: __t.string(),
+  allianceTagColor: __t.string(),
 });
 export type OwnOutgoingFriendRequestResult = __Infer<typeof OwnOutgoingFriendRequestResult>;
 
@@ -853,6 +859,8 @@ export const TradeAllianceApplicationSnapshotResult = __t.object("TradeAllianceA
   frame: __t.string(),
   playerLevel: __t.u32(),
   createdAt: __t.timestamp(),
+  totalProducedGold: __t.u64(),
+  prestigeCount: __t.u32(),
 });
 export type TradeAllianceApplicationSnapshotResult = __Infer<typeof TradeAllianceApplicationSnapshotResult>;
 

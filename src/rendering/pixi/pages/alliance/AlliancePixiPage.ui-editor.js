@@ -13,14 +13,14 @@ export default defineUiEditorIntegration({
   apiVersion: 1,
   childWidgetIds: [
     'compound.trade-alliance-banner',
+    'primitive.alliance-emblem-option',
+    'compound.hud-currency-capsule',
     'compound.alliance-directory-row',
+    'compound.alliance-member-row',
     'compound.alliance-quest-row',
-    'compound.guild-rows-section',
-    'compound.guild-section-row',
     'compound.player-relationship-row',
-    'compound.world-chat-message-row',
-    'primitive.text-field',
     'text-button',
+    'tab-button',
   ],
   folderPath: ['Alliance'],
   id: 'feature.alliance-workspace',
@@ -33,10 +33,13 @@ export default defineUiEditorIntegration({
   scenarios: [
     scenario('home', 'Home'),
     scenario('requests', 'Requests'),
-    scenario('chat', 'Alliance Chat'),
     scenario('settings', 'Settings'),
-    scenario('browse', 'Browse'),
-    scenario('create', 'Create'),
+    {
+      fixture: { settingsSection: 'banner', tabId: 'settings' },
+      id: 'settings-banner',
+      label: 'Settings Banner',
+      mount,
+    },
   ],
   sectionId: 'scenes',
 });
@@ -56,6 +59,10 @@ async function mount(_context, fixture) {
       });
       page.layout(projection);
       page.bind(createModel(fixture.tabId));
+      if (fixture.settingsSection) {
+        page.settingsPane.selectSection(fixture.settingsSection);
+        page.layout(projection);
+      }
       page.activate();
       return {
         destroy: () => page.destroy(),
@@ -68,9 +75,6 @@ async function mount(_context, fixture) {
 }
 
 function createModel(tabId) {
-  if (tabId === 'browse') return createBrowseModel();
-  if (tabId === 'create') return createCreateModel();
-
   const home = createDialogViewModel('workshop.alliance', 'a');
   const rows =
     tabId === 'requests'
@@ -78,12 +82,7 @@ function createModel(tabId) {
           application('luna', 'Luna', 'mira', 'violet', 14),
           application('thorne', 'Thorne', 'rowan', 'classic', 9),
         ]
-      : tabId === 'chat'
-        ? [
-            message('message-1', 'Luna', 'Welcome to the alliance hall.'),
-            message('message-2', 'Juniper', 'I can fill the herb quest.'),
-          ]
-        : home.rows;
+      : home.rows;
 
   return {
     ...home,
@@ -93,56 +92,16 @@ function createModel(tabId) {
     rowWidget: tabId === 'requests' ? 'playerRelationship' : null,
     rows,
     selectedTabId: tabId,
+    requestsSettings:
+      tabId === 'requests'
+        ? {
+            allianceId: 'night-owls',
+            editable: true,
+            joinMode: 'apply',
+            onSave: async () => ({ ok: true }),
+          }
+        : null,
     settings: tabId === 'settings' ? createSettingsModel() : null,
-    chat: {
-      onSubmit: async () => ({ ok: true }),
-      rows: tabId === 'chat' ? rows : [],
-    },
-  };
-}
-
-function createBrowseModel() {
-  return {
-    directory: true,
-    ownedAlliance: false,
-    rows: [
-      {
-        action: {
-          enabled: true,
-          label: 'Apply',
-          onActivate: () => true,
-          variant: 'green',
-        },
-        id: 'night-owls',
-        memberCapacity: 50,
-        memberCount: 3,
-        name: 'Night Owls',
-        onActivate: () => true,
-        tag: 'OWL',
-        tagColor: 'violet',
-        totalIncomeLabel: '84.5k',
-        type: 'allianceDirectory',
-      },
-    ],
-    selectedTabId: 'browse',
-    chat: { rows: [], onSubmit: null },
-  };
-}
-
-function createCreateModel() {
-  return {
-    directory: false,
-    ownedAlliance: false,
-    rows: [],
-    selectedTabId: 'create',
-    settings: {
-      ...createSettingsModel(),
-      allianceId: 'new-alliance',
-      mode: 'create',
-      name: '',
-      tag: '',
-    },
-    chat: { rows: [], onSubmit: null },
   };
 }
 
@@ -166,9 +125,11 @@ function createSettingsModel() {
 }
 
 function application(id, username, character, frame, playerLevel) {
+  const prestigeCount = Math.max(0, playerLevel - 8);
+  const totalProducedCoin = playerLevel * 12_500;
   return {
     character,
-    detail: `Level ${playerLevel}`,
+    detail: `Lv ${playerLevel} · Prestige ${prestigeCount}`,
     frame,
     id,
     identity: id,
@@ -182,18 +143,9 @@ function application(id, username, character, frame, playerLevel) {
       onActivate: () => true,
       variant: 'red',
     },
-    username,
-  };
-}
-
-function message(id, username, body) {
-  return {
-    ageLabel: 'now',
-    body,
-    character: 'mira',
-    frame: 'violet',
-    id,
-    identity: username.toLowerCase(),
+    prestigeCount,
+    preview: `${Math.round(totalProducedCoin / 1_000)}k Produced`,
+    totalProducedCoin,
     username,
   };
 }

@@ -19,4 +19,6 @@ export default __t.row({
   frame: __t.string(),
   playerLevel: __t.u32().name("player_level"),
   createdAt: __t.timestamp().name("created_at"),
+  totalProducedGold: __t.u64().name("total_produced_gold"),
+  prestigeCount: __t.u32().name("prestige_count"),
 });

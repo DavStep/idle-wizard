@@ -14,6 +14,7 @@ export class PageNotificationFacade {
     this.unsubscribePlayerShop = null;
     this.unsubscribeTradeAlliance = null;
     this.releaseTradeAllianceQuestData = null;
+    this.releaseTradeAllianceNotificationData = null;
     this.gameplaySnapshot = null;
     this.playerShopSnapshot = null;
     this.tradeAllianceSnapshot = null;
@@ -24,6 +25,8 @@ export class PageNotificationFacade {
   mount() {
     this.releaseTradeAllianceQuestData =
       this.tradeAllianceFacade?.retainQuestData?.() ?? null;
+    this.releaseTradeAllianceNotificationData =
+      this.tradeAllianceFacade?.retainNotificationData?.() ?? null;
     this.unsubscribeGameplay = this.gameplayFacade?.subscribe?.((snapshot) => {
       this.gameplaySnapshot = snapshot;
       this.publish();
@@ -48,10 +51,12 @@ export class PageNotificationFacade {
     this.unsubscribePlayerShop?.();
     this.unsubscribeTradeAlliance?.();
     this.releaseTradeAllianceQuestData?.();
+    this.releaseTradeAllianceNotificationData?.();
     this.unsubscribeGameplay = null;
     this.unsubscribePlayerShop = null;
     this.unsubscribeTradeAlliance = null;
     this.releaseTradeAllianceQuestData = null;
+    this.releaseTradeAllianceNotificationData = null;
   }
 
   getSnapshot() {

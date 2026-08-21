@@ -144,7 +144,7 @@ describe('retained global Pixi dialogs', () => {
     expect(friends.panel.paperFrame.visible).toBe(false);
     expect(friends.scroll.root.x).toBe(0);
     expect(friends.scroll.width).toBe(304);
-    expect(row.getPreferredHeight()).toBe(96);
+    expect(row.getPreferredHeight()).toBe(88);
     expect(row.paper.visible).toBe(true);
     expect(row.paper.frameWidth).toBe(304);
     expect(row.profile.width).toBeCloseTo(64);
@@ -568,8 +568,12 @@ describe('retained global Pixi dialogs', () => {
     const harness = createHarness();
     const player = harness.registry.open(GLOBAL_DIALOG_IDS.PLAYER, {
       ownPlayer: true,
+      friendsNotification: true,
       player: createPlayer(),
-      actions: { openCosmetics: vi.fn(() => true) },
+      actions: {
+        openCosmetics: vi.fn(() => true),
+        openFriends: vi.fn(() => true),
+      },
     });
 
     expect(player.panel.titleLabel.text).toBe('Player Info');
@@ -642,6 +646,7 @@ describe('retained global Pixi dialogs', () => {
       (player.summaryFrame.frameWidth - 4 - 6) / 2,
     );
     expect(player.friendsButton.textLabel.text).toBe('Friends');
+    expect(player.friendsButton.notificationBadge.root.visible).toBe(true);
     expect(player.friendsButton.buttonWidth).toBeCloseTo(
       player.cosmeticsButton.buttonWidth,
     );
@@ -665,6 +670,7 @@ describe('retained global Pixi dialogs', () => {
     });
     expect(player.cosmeticsButton.visible).toBe(false);
     expect(player.cosmeticsButton.enabled).toBe(false);
+    expect(player.friendsButton.notificationBadge.root.visible).toBe(false);
 
     harness.dispose();
   });

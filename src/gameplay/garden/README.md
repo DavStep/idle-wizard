@@ -16,7 +16,7 @@ the prior behavior: Auto is on and planting uses the current maximum.
 Each herb definition owns its configured growth duration. Regular per-herb mastery reduces that duration independently in five-percentage-point ranks, then advanced per-plot research applies to the result. Sage remains at the previous `12s`; early herb uplifts ramp by tier before Glowcap and later herbs use the full `85%` uplift.
 
 `GardenTapAccelerationManager` owns manual active-plot acceleration. Each accepted
-tap removes at most one second from that plot's growth or harvest timer, then
-rejects further taps on the same plot for 720ms. The cooldown is enforced in
+tap removes 30% of that plot's remaining growth or harvest timer, then
+rejects further taps on the same plot for 504ms. The cooldown is enforced in
 gameplay as well as rendering so direct or repeated action calls cannot bypass
 it. Cooldowns are transient and reset when a persistence snapshot is loaded.
