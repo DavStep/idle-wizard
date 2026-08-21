@@ -1190,4 +1190,31 @@ describe('createShop', () => {
     });
     expect(buyShopShelfSlot).toHaveBeenCalledOnce();
   });
+
+  it('projects shared shortage feedback for an unaffordable trader stall', () => {
+    const showCurrencyShortage = vi.fn(() => true);
+    const model = createShop({
+      gameplaySnapshot: {
+        coin: { current: 20 },
+        shop: {
+          shelf: {
+            nextSlotNumber: 1,
+            nextSlotCost: 50,
+            nextSlotLockedByLevel: false,
+            slots: [{ slotNumber: 1, unlocked: false }],
+          },
+        },
+      },
+      gameplayActions: { buyShopShelfSlot: vi.fn() },
+      actions: { ui: { showCurrencyShortage } },
+    });
+
+    const stall = model.shop.traders.stalls[0];
+    expect(stall.affordable).toBe(false);
+    expect(stall.insufficientAction()).toBe(true);
+    expect(showCurrencyShortage).toHaveBeenCalledWith({
+      cost: 50,
+      resource: 'coin',
+    });
+  });
 });

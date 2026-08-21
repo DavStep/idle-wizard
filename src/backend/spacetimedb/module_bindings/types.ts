@@ -301,6 +301,8 @@ export const OwnFriendshipResult = __t.object("OwnFriendshipResult", {
   character: __t.string(),
   frame: __t.string(),
   playerLevel: __t.u32(),
+  prestigeCount: __t.u32(),
+  totalProducedGold: __t.u64(),
   connected: __t.bool(),
   lastSeenAt: __t.timestamp(),
   createdAt: __t.timestamp(),
@@ -319,6 +321,8 @@ export const OwnIncomingFriendRequestResult = __t.object("OwnIncomingFriendReque
   character: __t.string(),
   frame: __t.string(),
   playerLevel: __t.u32(),
+  prestigeCount: __t.u32(),
+  totalProducedGold: __t.u64(),
   connected: __t.bool(),
   lastSeenAt: __t.timestamp(),
   createdAt: __t.timestamp(),
@@ -337,6 +341,8 @@ export const OwnOutgoingFriendRequestResult = __t.object("OwnOutgoingFriendReque
   character: __t.string(),
   frame: __t.string(),
   playerLevel: __t.u32(),
+  prestigeCount: __t.u32(),
+  totalProducedGold: __t.u64(),
   connected: __t.bool(),
   lastSeenAt: __t.timestamp(),
   createdAt: __t.timestamp(),
@@ -433,6 +439,7 @@ export const OwnTradeAllianceChatResult = __t.object("OwnTradeAllianceChatResult
   playerLevel: __t.u32(),
   body: __t.string(),
   sentAt: __t.timestamp(),
+  connected: __t.bool(),
 });
 export type OwnTradeAllianceChatResult = __Infer<typeof OwnTradeAllianceChatResult>;
 
@@ -907,6 +914,7 @@ export const TradeAllianceMemberSnapshotResult = __t.object("TradeAllianceMember
   dailyContribution: __t.u64(),
   dayKey: __t.string(),
   frame: __t.string(),
+  prestigeCount: __t.u32(),
 });
 export type TradeAllianceMemberSnapshotResult = __Infer<typeof TradeAllianceMemberSnapshotResult>;
 
@@ -1039,6 +1047,7 @@ export const WorldChatRecentResult = __t.object("WorldChatRecentResult", {
   sentAt: __t.timestamp(),
   allianceTag: __t.string(),
   allianceTagColor: __t.string(),
+  connected: __t.bool(),
 });
 export type WorldChatRecentResult = __Infer<typeof WorldChatRecentResult>;
 

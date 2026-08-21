@@ -15,5 +15,17 @@ Every potion recipe owns its configured brew duration. Regular per-potion master
 `BrewingTapAccelerationManager` owns manual cauldron acceleration. Each accepted
 tap removes 30% of that cauldron's remaining brewing or bottling timer,
 then locks that cauldron for the same 504ms gameplay cooldown used by Garden plots.
-Auto brewing stores enabled, armed, and the selected unlocked recipe independently for every cauldron. Enabled Auto Brew waits for its selected recipe's herbs and mana and starts as soon as they become available; completed bottling uses the same automatic grant as manual brewing so the automation loop can continue. The armed state records that the loop has completed its first successful start; it does not block an enabled cauldron from waiting for resources. Legacy auto-collect save fields remain compatible but no longer affect collection. The save uses the numbered cauldron array, so additional cauldron slots inherit the same persistence behavior without slot-specific fields. Automation prepares that cauldron's recipe from inventory before starting the brew.
+Each cauldron stores its selected unlocked recipe independently, including while
+a different batch is active. The active batch keeps its committed potion; the
+saved selection becomes the next recipe after collection. Auto brewing also
+stores enabled and armed independently for every cauldron. Enabled Auto Brew
+waits for the saved recipe's herbs and mana and starts as soon as they become
+available; completed bottling uses the same automatic grant as manual brewing
+so the automation loop can continue with the latest selection. The armed state
+records that the loop has completed its first successful start; it does not
+block an enabled cauldron from waiting for resources. Legacy auto-collect save
+fields remain compatible but no longer affect collection. The save uses the
+numbered cauldron array, so additional cauldron slots inherit the same
+persistence behavior without slot-specific fields. Automation prepares that
+cauldron's recipe from inventory before starting the brew.
 The Brewing snapshot exposes all recipes with their unlock state so pages can show a read-only recipe book without duplicating recipe catalog rules.

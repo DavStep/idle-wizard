@@ -637,6 +637,9 @@ export class TradeAllianceSubscriptionManager {
       totalContribution: this.toNumber(
         row.totalContribution ?? row.total_contribution,
       ),
+      prestigeCount: this.toNumber(
+        row.prestigeCount ?? row.prestige_count,
+      ),
       dailyContribution: weeklyContribution,
       weeklyContribution,
       dayKey: String(row.dayKey ?? row.day_key ?? ''),
@@ -741,6 +744,7 @@ export class TradeAllianceSubscriptionManager {
       ),
       playerLevel: this.toPlayerLevel(row.playerLevel ?? row.player_level),
       body: String(row.body ?? ''),
+      connected: Boolean(row.connected),
       sentAtMs: this.toTimestampMs(row.sentAt ?? row.sent_at),
     };
   }

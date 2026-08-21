@@ -81,6 +81,7 @@
       const showConfigurationControls =
         parameters.get('controls') === 'true';
       const useLongPotionName = parameters.get('longName') === 'true';
+      const queuedRecipe = parameters.get('queued') === 'true';
       const cauldronCount = Math.min(
         5,
         Math.max(1, Math.floor(Number(parameters.get('cauldrons')) || 1)),
@@ -127,12 +128,12 @@
         unlocked: true,
         selectedRecipe: emptyCauldron ? null : {
           key:
-            activeBrew?.key ??
+            (queuedRecipe ? null : activeBrew?.key) ??
             (useLongPotionName
               ? 'minorHealingPotion'
               : 'manaTonic'),
           label:
-            activeBrew?.label ??
+            (queuedRecipe ? null : activeBrew?.label) ??
             (useLongPotionName
               ? 'minor healing potion'
               : 'mana tonic'),
@@ -211,6 +212,12 @@
         })),
       };
       const hudActions = {
+        openRecipes: () => {
+          recipeState.dataset.recipeOpens = String(
+            Number(recipeState.dataset.recipeOpens ?? 0) + 1,
+          );
+          return true;
+        },
         collectBrew: () => {
           const result = transientEffects.emitReward(
             createRewardFlyoutPresentation({

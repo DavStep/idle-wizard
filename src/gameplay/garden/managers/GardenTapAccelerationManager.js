@@ -1,4 +1,4 @@
-export const GARDEN_PLOT_TAP_REDUCTION_RATIO = 0.3;
+export const GARDEN_PLOT_TAP_REDUCTION_SECONDS = 1;
 export const GARDEN_PLOT_TAP_COOLDOWN_MS = 504;
 
 export class GardenTapAccelerationManager {
@@ -33,33 +33,10 @@ export class GardenTapAccelerationManager {
       };
     }
 
-    const previous = this.gardenTileEntityManager
-      .getTileSnapshots()
-      .find((tile) => tile.tileNumber === safeTileNumber);
-    const previousRemainingMs = Math.max(
-      0,
-      Number(previous?.remainingMs) || 0,
-    );
-    if (
-      !previous ||
-      (previous.phase !== 'growing' && previous.phase !== 'harvesting') ||
-      previousRemainingMs <= 0
-    ) {
-      return {
-        ok: false,
-        reason: 'not_processing',
-        tileNumber: safeTileNumber,
-      };
-    }
-
-    const requestedReductionSeconds =
-      Math.round(
-        previousRemainingMs * GARDEN_PLOT_TAP_REDUCTION_RATIO,
-      ) / 1_000;
     const reduction =
       this.gardenTileEntityManager.reduceTileProcessRemainingSeconds(
         safeTileNumber,
-        requestedReductionSeconds,
+        GARDEN_PLOT_TAP_REDUCTION_SECONDS,
       );
     if (!reduction || reduction.reducedSeconds <= 0) {
       return {
@@ -76,7 +53,7 @@ export class GardenTapAccelerationManager {
       ok: true,
       tileNumber: safeTileNumber,
       phase: reduction.phase,
-      reducedSeconds: Math.round(reduction.reducedSeconds * 1_000) / 1_000,
+      reducedSeconds: reduction.reducedSeconds,
       remainingMs: Math.ceil(reduction.remainingSeconds * 1_000),
       cooldownMs: GARDEN_PLOT_TAP_COOLDOWN_MS,
     };

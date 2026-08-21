@@ -59,6 +59,13 @@ const ROLE_LABELS = Object.freeze({
   broker: 'Broker',
   trader: 'Trader',
 });
+const ROLE_RANKS = Object.freeze({
+  tradeMaster: 5,
+  quartermaster: 4,
+  factor: 3,
+  broker: 2,
+  trader: 1,
+});
 
 /**
  * Retained public alliance card that reuses the Trade Alliance Home
@@ -352,9 +359,10 @@ export class PixiAllianceInfoDialog extends RetainedGlobalDialog {
     const listLayout = this.memberListLayout ?? resolveAllianceMemberListLayout();
     let y = 0;
     for (const widget of widgets) {
+      const rowHeight = widget.getPreferredHeight();
       this.membersScroll.content.addChild(widget.root);
-      widget.setBounds(0, y, listLayout.rowWidth, ALLIANCE_MEMBER_ROW_HEIGHT);
-      y += ALLIANCE_MEMBER_ROW_HEIGHT;
+      widget.setBounds(0, y, listLayout.rowWidth, rowHeight);
+      y += rowHeight;
     }
     this.membersScroll.setContentHeight(y);
   }
@@ -603,7 +611,19 @@ function normalizeAllianceModel(model = {}) {
     bannerColor: alliance.bannerColor,
     emblemColor: alliance.emblemColor,
     emblemId: alliance.emblemId,
-    members: suppliedMembers.map(normalizeMember),
+    members: suppliedMembers
+      .map(normalizeMember)
+      .sort((left, right) => {
+        if (left.roleRank !== right.roleRank) {
+          return right.roleRank - left.roleRank;
+        }
+        return left.username.localeCompare(right.username);
+      })
+      .map((member, index, members) => ({
+        ...member,
+        showRankHeader:
+          index === 0 || members[index - 1].role !== member.role,
+      })),
     action: pending
       ? { kind: 'pending', label: 'Pending', enabled: false }
       : canAct
@@ -629,7 +649,12 @@ function normalizeMember(member = {}) {
     playerLevel: level,
     levelLabel: `Lv ${level}`,
     role,
+    roleRank: ROLE_RANKS[role] ?? ROLE_RANKS.trader,
     roleLabel: ROLE_LABELS[role] ?? titleCaseLabel(role),
+    prestigeCount: nonNegativeInteger(member.prestigeCount),
+    totalContributionLabel: formatCoinAmount(
+      member.totalContribution ?? 0,
+    ),
   };
 }
 

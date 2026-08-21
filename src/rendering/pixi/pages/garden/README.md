@@ -131,7 +131,7 @@ standalone editor entry is `Inventory Choice Row` under
 `UI Widgets / Composite widgets / Brewing`, with unselected, selected,
 pressed, and unavailable scenarios.
 Successful single-plot planting, `Plant All`, automated planting, and seed
-swaps run one `500ms` tile-owned sequence. One seed pack starts `36px` above
+swaps run one `500ms` tile-owned sequence. One seed pack starts `60px` above
 the plot center, stretches as it falls straight down, then squashes and fades
 at center impact. The soil boinks from its center pivot while the committed
 herb scales upward from the bottom of its artwork into normal growth motion.

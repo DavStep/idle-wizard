@@ -960,7 +960,7 @@ describe('ResearchBoxListManager', () => {
     expect(css).toMatch(
       /\.style-button\.style-cost-button\.research-page__research-button\.is-unaffordable\s+\.style-resource-label__amount\s*\{[^}]*color:\s*var\(--style-insufficient\);/,
     );
-    expect(css).toMatch(/--style-insufficient:\s*#ff8790;/);
+    expect(css).toMatch(/--style-insufficient:\s*#ff5965;/);
   });
 
   it('uses the standard full-page scroll list structure', () => {

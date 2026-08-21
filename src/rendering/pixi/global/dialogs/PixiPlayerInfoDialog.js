@@ -347,6 +347,9 @@ export class PixiPlayerInfoDialog extends RetainedGlobalDialog {
     this.lastSeenValue.setText(
       formatLastSeen(this.playerModel.connected, this.playerModel.lastSeenAtMs),
     );
+    this.lastSeenValue.setColor(
+      this.playerModel.connected ? PLAYER_INFO_TAG_COLORS.green : null,
+    );
     this.timePlayedValue.setText(
       formatPlayedHours(this.playerModel.totalPlayTimeSeconds),
     );

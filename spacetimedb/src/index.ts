@@ -6930,6 +6930,7 @@ const ownTradeAllianceChatResult = t.array(
     playerLevel: t.u32(),
     body: t.string(),
     sentAt: t.timestamp(),
+    connected: t.bool(),
   }),
 );
 const ownFriendshipResult = t.array(
@@ -6940,6 +6941,8 @@ const ownFriendshipResult = t.array(
     character: t.string(),
     frame: t.string(),
     playerLevel: t.u32(),
+    prestigeCount: t.u32(),
+    totalProducedGold: t.u64(),
     connected: t.bool(),
     lastSeenAt: t.timestamp(),
     createdAt: t.timestamp(),
@@ -6955,6 +6958,8 @@ const ownIncomingFriendRequestResult = t.array(
     character: t.string(),
     frame: t.string(),
     playerLevel: t.u32(),
+    prestigeCount: t.u32(),
+    totalProducedGold: t.u64(),
     connected: t.bool(),
     lastSeenAt: t.timestamp(),
     createdAt: t.timestamp(),
@@ -6970,6 +6975,8 @@ const ownOutgoingFriendRequestResult = t.array(
     character: t.string(),
     frame: t.string(),
     playerLevel: t.u32(),
+    prestigeCount: t.u32(),
+    totalProducedGold: t.u64(),
     connected: t.bool(),
     lastSeenAt: t.timestamp(),
     createdAt: t.timestamp(),
@@ -7017,6 +7024,7 @@ const worldChatRecentResult = t.array(
     sentAt: t.timestamp(),
     allianceTag: t.string(),
     allianceTagColor: t.string(),
+    connected: t.bool(),
   }),
 );
 const potionRecipeDiscoverySnapshotResult = t.array(
@@ -7147,6 +7155,7 @@ const tradeAllianceMemberSnapshotResult = t.array(
     dailyContribution: t.u64(),
     dayKey: t.string(),
     frame: t.string(),
+    prestigeCount: t.u32(),
   }),
 );
 const tradeAllianceApplicationSnapshotResult = t.array(
@@ -7389,17 +7398,18 @@ export const trade_alliance_member_snapshot = spacetimedb.view(
   tradeAllianceMemberSnapshotResult,
   (ctx) =>
     Array.from(ctx.db.tradeAllianceMember.byJoinedAt.filter(new Range())).map(
-      (member) => ({
-        ...member,
-        character: normalizePlayerCharacter(
-          ctx.db.player.identity.find(member.memberIdentity)?.character ??
-            DEFAULT_PLAYER_CHARACTER,
-        ),
-        frame: normalizePlayerFrame(
-          ctx.db.player.identity.find(member.memberIdentity)?.frame ??
-            DEFAULT_PLAYER_FRAME,
-        ),
-      }),
+      (member) => {
+        const playerInfo = createPlayerInfoSummaryRow(
+          ctx,
+          member.memberIdentity,
+        );
+        return {
+          ...member,
+          character: playerInfo.character,
+          frame: playerInfo.frame,
+          prestigeCount: playerInfo.prestigeCount,
+        };
+      },
     ),
 );
 
@@ -7748,6 +7758,9 @@ export const own_trade_alliance_chat = spacetimedb.view(
         playerLevel: message.playerLevel,
         body: message.body,
         sentAt: message.sentAt,
+        connected: Boolean(
+          ctx.db.player.identity.find(message.senderIdentity)?.connected,
+        ),
       }));
   },
 );
@@ -7770,6 +7783,9 @@ export const world_chat_recent = spacetimedb.view(
         allianceTag: message.allianceTag,
         allianceTagColor: normalizeTradeAllianceTagColor(
           message.allianceTagColor,
+        ),
+        connected: Boolean(
+          ctx.db.player.identity.find(message.senderIdentity)?.connected,
         ),
       })),
 );
@@ -7886,6 +7902,7 @@ function getOwnFriendshipRows(ctx: IdleWizardViewCtx): any[] {
       if (!player) {
         return null;
       }
+      const playerInfo = createPlayerInfoSummaryRow(ctx, friendIdentity);
       return {
         friendshipKey: friendship.friendshipKey,
         friendIdentity,
@@ -7893,6 +7910,8 @@ function getOwnFriendshipRows(ctx: IdleWizardViewCtx): any[] {
         character: normalizePlayerCharacter(player.character),
         frame: normalizePlayerFrame(player.frame),
         playerLevel: normalizePlayerLevel(player.playerLevel),
+        prestigeCount: playerInfo.prestigeCount,
+        totalProducedGold: playerInfo.totalProducedGold,
         connected: Boolean(player.connected),
         lastSeenAt: player.lastSeenAt,
         createdAt: friendship.createdAt,
@@ -7924,6 +7943,7 @@ function getOwnFriendRequestRows(
       if (!player) {
         return null;
       }
+      const playerInfo = createPlayerInfoSummaryRow(ctx, playerIdentity);
       return {
         requestKey: request.requestKey,
         playerIdentity,
@@ -7931,6 +7951,8 @@ function getOwnFriendRequestRows(
         character: normalizePlayerCharacter(player.character),
         frame: normalizePlayerFrame(player.frame),
         playerLevel: normalizePlayerLevel(player.playerLevel),
+        prestigeCount: playerInfo.prestigeCount,
+        totalProducedGold: playerInfo.totalProducedGold,
         connected: Boolean(player.connected),
         lastSeenAt: player.lastSeenAt,
         createdAt: request.createdAt,
@@ -19782,6 +19804,7 @@ function insertSystemTradeAllianceChatMessage(
     tagColor: string;
   },
   body: string,
+  subjectIdentity: Identity = ctx.sender,
 ) {
   const message = normalizeWorldChatMessage(body);
 
@@ -19794,7 +19817,7 @@ function insertSystemTradeAllianceChatMessage(
     allianceId: alliance.allianceId,
     allianceTag: alliance.tag,
     allianceTagColor: normalizeTradeAllianceTagColor(alliance.tagColor),
-    senderIdentity: ctx.sender,
+    senderIdentity: subjectIdentity,
     username: 'system',
     playerLevel: 0,
     body: message,
@@ -22049,6 +22072,7 @@ export const accept_trade_alliance_application = spacetimedb.reducer(
         application.username,
         actor.username,
       ),
+      application.applicantIdentity,
     );
 
     deleteTradeAllianceApplicationsForIdentity(
@@ -22172,6 +22196,7 @@ export const transfer_trade_alliance_leadership = spacetimedb.reducer(
         previousLeaderUsername: leader.username,
         previousLeaderNextRole: oldLeaderNextRole,
       }),
+      target.memberIdentity,
     );
   },
 );
@@ -22241,6 +22266,7 @@ export const set_trade_alliance_member_role = spacetimedb.reducer(
         nextRolePower: getTradeAllianceRolePower(targetRole),
         actorUsername: actor.username,
       }),
+      target.memberIdentity,
     );
   },
 );
@@ -22280,6 +22306,7 @@ export const kick_trade_alliance_member = spacetimedb.reducer(
       ctx,
       alliance,
       formatTradeAllianceKickedMessage(target.username, actor.username),
+      target.memberIdentity,
     );
 
     ctx.db.tradeAllianceMember.delete(target);

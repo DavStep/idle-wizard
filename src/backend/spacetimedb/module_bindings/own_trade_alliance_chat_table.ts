@@ -21,4 +21,5 @@ export default __t.row({
   playerLevel: __t.u32().name("player_level"),
   body: __t.string(),
   sentAt: __t.timestamp().name("sent_at"),
+  connected: __t.bool(),
 });

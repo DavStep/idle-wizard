@@ -11,10 +11,19 @@ while Brewing is active, dim in Day, and remain still under reduced motion.
 
 The selected cauldron uses the shared full-width identity ribbon with the blue
 semantic skin, `Cauldron N` copy, and the existing three rank-star slots. The
-yellow `Recipes` button sits immediately left of the red `Empty` button in the
-lower-right control row and owns the `brewing:recipes` tutorial target. An empty
-cauldron can also open Recipes through the primary `Choose Recipe` action. Batch
-quantity and Auto stay together on the lower left.
+yellow recipe selector sits immediately left of the red `Empty` button in the
+lower-right control row and owns the `brewing:recipes` tutorial target. It
+mirrors the Automated Garden Plot seed selector: a selected potion uses compact
+art above its fitted potion name, while the empty state reads `Recipes`. The
+selector remains enabled during an active brew so a different saved recipe can
+be queued without replacing the active potion. An empty cauldron can also open
+Recipes through the primary `Choose Recipe` action. Batch quantity and Auto
+stay together on the lower left.
+
+Short portrait viewports keep the complete cauldron HUD anchored below the
+player banner and expose the shared retained vertical scroll pane for overflow.
+The HUD never compresses upward into the banner; scrolling reveals its lower
+batch controls before World Chat.
 
 The preferred renderer-neutral view model is:
 
@@ -145,11 +154,12 @@ selected. A compact red cauldron-over-`Empty` button, matching the `xN` and
 Auto control geometry, sits to the right of that identity immediately above
 the batch detail panel, with the yellow `Recipes` button directly to its left.
 Empty clears the selected
-recipe and every staged herb for the selected cauldron, stays visible but
-disabled when there is nothing to clear or a brew is active, and uses the
-shared retained-button release semantics. Activating it opens the shared
-confirmation dialog; only the `Empty` confirmation clears the contents,
-while `Cancel` leaves the cauldron unchanged. The empty preview does not repeat
+recipe and every staged herb for the selected cauldron, stays visible and
+enabled for every unlocked cauldron state, and uses the shared retained-button
+release semantics. Activating it with nothing staged shows the shared `Nothing
+to empty` text flyout. Otherwise it opens the shared confirmation dialog; only
+the `Empty` confirmation clears the contents, while `Cancel` leaves the
+cauldron unchanged. The empty preview does not repeat
 `Choose Recipe`, and batch quantity
 appears only in the existing `xN` configuration control.
 
@@ -182,8 +192,7 @@ invisible tap targets.
 Boundary chevrons are removed instead of showing a disabled arrow. Carousel
 dots contain every unlocked cauldron plus exactly one next purchasable locked
 slot, stopping at five. A level- or research-gated future slot is omitted until
-it can be purchased. The `N/5` counter stays hidden while only one cauldron is
-owned.
+it can be purchased. The carousel does not show a numeric position counter.
 The selected cauldron title and shared three-slot star rank sit together inside
 the centered blue Brewing title ribbon above the carousel orbit.
 Selecting the next purchasable locked slot keeps the cauldron art visible with
@@ -276,6 +285,10 @@ for the non-persistent selected-potion batch card used to verify the potion
 well, `Ready to Brew` status, progress rail, and primary action without
 changing gameplay or save data. Add `?longName=true` to reopen the wrapped
 `Minor Healing Potion` identity used for short-portrait spacing QA.
+Use `?state=active&queued=true&longName=true` to keep Healing Potion as the
+active batch while the recipe selector shows Minor Healing Potion as the saved
+next recipe. Tapping the selector increments the hidden output's
+`data-recipe-opens` counter.
 Add `?cauldrons=3&selectedCauldron=2` to show both carousel chevrons around the
 middle cauldron for navigation alignment QA.
 Add `?availability=missing` to show the reusable horizontal shortage row with

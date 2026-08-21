@@ -30,9 +30,11 @@ import {
 import {
   BaseRetainedPixiPage,
   RETAINED_PAGE_GEOMETRY,
+  RETAINED_SCROLLBAR_GEOMETRY,
   RETAINED_TEXT_STYLES,
   RetainedButton,
   RetainedPanel,
+  RetainedScrollArea,
   RetainedTimedProgressBar,
   applyTextTheme,
   createText,
@@ -42,8 +44,10 @@ import {
   setText,
 } from '../workshop/RetainedPageKit.js';
 import {
+  BREWING_HUD_GEOMETRY,
   BrewingAutomationSettingsDialogPixi,
   BrewingHudPixi,
+  resolveBrewingHudViewportBottom,
 } from './BrewingHudPixi.js';
 import {
   BrewingRecipeBookDialogPixi,
@@ -284,7 +288,12 @@ export class BrewingPixiPage extends BaseRetainedPixiPage {
       page: this,
       theme,
     });
-    this.content.addChild(this.hud.root);
+    this.hudScroll = new RetainedScrollArea({
+      inputRouter: this.inputRouter,
+      label: 'brewing-hud-scroll',
+    });
+    this.hudScroll.content.addChild(this.hud.root);
+    this.content.addChild(this.hudScroll.root);
     this.motionLayer = new Container({
       label: 'brewing-page-motion-layer',
     });
@@ -1322,10 +1331,45 @@ export class BrewingPixiPage extends BaseRetainedPixiPage {
       buttonY,
     );
     this.layoutBrewing();
+    const worldChatVisible =
+      this.viewModel?.chrome?.worldChatVisible !== false;
     this.hud?.layout(sourceWidth, sourceHeight, {
-      worldChatVisible:
-        this.viewModel?.chrome?.worldChatVisible !== false,
+      worldChatVisible,
     });
+    this.layoutHudScroll(sourceWidth, sourceHeight, worldChatVisible);
+  }
+
+  layoutHudScroll(sourceWidth, sourceHeight, worldChatVisible) {
+    if (!this.hudScroll || !this.hud) {
+      return;
+    }
+
+    const viewportTop = BREWING_HUD_GEOMETRY.top;
+    const viewportBottom = resolveBrewingHudViewportBottom(
+      sourceHeight,
+      worldChatVisible,
+    );
+    const scrollbarAllowance =
+      RETAINED_SCROLLBAR_GEOMETRY.gap +
+      RETAINED_SCROLLBAR_GEOMETRY.width;
+    const viewportWidth = Math.max(
+      0,
+      sourceWidth - scrollbarAllowance - 1,
+    );
+    const viewportHeight = Math.max(0, viewportBottom - viewportTop);
+    const contentBottom =
+      this.hud.detailPanel.root.y + this.hud.detailPanel.height;
+
+    this.hud.root.position.set(0, -viewportTop);
+    this.hudScroll.setBounds(
+      0,
+      viewportTop,
+      viewportWidth,
+      viewportHeight,
+    );
+    this.hudScroll.setContentHeight(
+      Math.max(0, contentBottom - viewportTop),
+    );
   }
 
   layoutBrewing() {
@@ -1372,6 +1416,7 @@ export class BrewingPixiPage extends BaseRetainedPixiPage {
     this.herbsButton?.destroy();
     this.potionsButton?.destroy();
     this.hud?.destroy();
+    this.hudScroll?.destroy();
     this.motionGhostPool?.destroy();
   }
 }

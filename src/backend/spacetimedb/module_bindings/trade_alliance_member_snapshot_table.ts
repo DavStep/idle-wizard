@@ -23,4 +23,5 @@ export default __t.row({
   dailyContribution: __t.u64().name("daily_contribution"),
   dayKey: __t.string().name("day_key"),
   frame: __t.string(),
+  prestigeCount: __t.u32().name("prestige_count"),
 });

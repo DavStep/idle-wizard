@@ -5,6 +5,14 @@ upload script posts the section whose heading matches `package.json` `version`.
 Write these developer-to-player notes only in Idle Wizard terms. Do not mention
 other game names, source projects, ports, or implementation provenance.
 
+## 0.3.86
+
+- Refined Trade Alliances with illustrated destination tabs, role-grouped member lists, clearer prestige and lifetime contribution details, and roomier quest rows with visible progress, personal contribution, and rewards.
+- Improved Alliance Chat with current member roles, former-member labels, interactive membership announcements, and player portraits, while World Chat and private conversations now show whether each wizard is online.
+- Improved Brewing so each cauldron can queue its next recipe during an active batch, shows the selected potion directly on the recipe control, explains missing ingredients more clearly, and keeps short-screen layouts safely scrollable.
+- Made active Research requests show their live countdown and progress, improved leaderboard space on taller screens, and added clearer missing-currency feedback to purchase actions.
+- Rebalanced Garden and Brewing tap acceleration to remove one second per tap, and refined Garden seed-drop feedback and several compact prestige, cost, and shortage displays.
+
 ## 0.3.85
 
 - Refined Trade Alliances with a persistent chat preview, clearer Home and Settings layouts, direct join-mode controls, richer applicant details, system history for membership changes, and actionable request notifications for managers.

@@ -12,11 +12,54 @@ import { RETAINED_PAGE_GEOMETRY } from '../workshop/RetainedPageKit.js';
 import {
   AllianceMemberRow,
 } from '../workshop/WorkshopDialogPixi.js';
+import { PixiStarLevelLabel } from '../../primitives/PixiStarLevelLabel.js';
 import { AlliancePixiPage } from './AlliancePixiPage.js';
 
 installPixiPageTestCanvas();
 
 describe('AlliancePixiPage', () => {
+  it('renders Alliance quests as taller Research-card rows with progress, rewards, and contribution', () => {
+    const semanticRegistry = new SemanticTargetRegistry();
+    const page = new AlliancePixiPage({
+      assetManager: createPixiAssetManagerFake(Texture),
+      semanticRegistry,
+    });
+
+    page.layout({ sourceWidth: 390, sourceHeight: 844 });
+    const model = createModel('quests');
+    const activateQuest = vi.fn(() => true);
+    model.rows[0].semanticId = 'workshop.alliance.quest.fill-mana-tonic';
+    model.rows[0].onActivate = activateQuest;
+    page.bind(model);
+
+    const row = page.quests.rows.getWidgets()[0];
+    expect(row.getPreferredHeight(360)).toBe(96);
+    expect(row.background.frameWidth).toBe(360);
+    expect(row.background.frameHeight).toBe(96);
+    expect(row.artWell).toMatchObject({
+      frameWidth: 52,
+      frameHeight: 52,
+    });
+    expect(row.progress.text).toBe('18/40');
+    expect(row.progressBar.progress).toBeCloseTo(0.45);
+    expect(row.contribution.text).toBe('Your contribution 8/10');
+    expect(row.reward.amountLabel.textObject.text).toBe('3');
+    expect(row.action.text.text).toBe('Fill');
+    expect(row.action.width).toBe(72);
+    expect(row.action.height).toBe(42);
+    expect(
+      semanticRegistry.isAvailable(
+        'workshop.alliance.quest.fill-mana-tonic',
+      ),
+    ).toBe(true);
+    expect(
+      semanticRegistry.activate('workshop.alliance.quest.fill-mana-tonic'),
+    ).toBe(true);
+    expect(activateQuest).toHaveBeenCalledTimes(1);
+
+    page.destroy();
+  });
+
   it('composes the Alliance identity, stats, announcement, and roster in order', () => {
     const semanticRegistry = new SemanticTargetRegistry();
     const page = new AlliancePixiPage({
@@ -56,21 +99,48 @@ describe('AlliancePixiPage', () => {
       page.homeMembersSection.root.y + page.homeMembersSection.paper.y;
     expect(announcementTop - identityBottom).toBe(8);
     expect(rosterTop - announcementBottom).toBe(8);
+    for (const section of [
+      page.homeIdentitySection,
+      page.homeAnnouncement,
+      page.homeMembersSection,
+    ]) {
+      const sectionLeft = section.root.x + section.paper.x;
+      const sectionRight = sectionLeft + section.paper.frameWidth;
+      expect(sectionLeft).toBeGreaterThanOrEqual(0);
+      expect(sectionRight).toBeLessThanOrEqual(390);
+    }
     expect(semanticRegistry.isAvailable('workshop.alliance.leave')).toBe(true);
     expect(semanticRegistry.activate('workshop.alliance.leave')).toBe(true);
-    expect(page.homeMemberRows.rows.getWidgets()[0]).toBeInstanceOf(
-      AllianceMemberRow,
-    );
-    expect(page.homeMemberRows.rows.getWidgets()[0].username.text).toBe('Luna');
+    const memberRow = page.homeMemberRows.rows.getWidgets()[0];
+    expect(memberRow).toBeInstanceOf(AllianceMemberRow);
+    expect(memberRow.username.text).toBe('Luna');
+    expect(memberRow.role.text).toBe('Trade Master');
+    expect(memberRow.role.visible).toBe(true);
+    expect(memberRow.level.text).toBe('Lv 14');
+    expect(memberRow.prestigeStars.level).toBe(2);
+    expect(memberRow.prestigeStars.visible).toBe(true);
+    expect(memberRow.contribution.amount).toBe('12.5k');
+    expect(memberRow.getPreferredHeight()).toBe(74);
 
     page.bind(createModel('requests'));
     expect(page.scrolls.get('requests').root.visible).toBe(true);
     expect(page.requests.rows.getWidgets()).toHaveLength(1);
-    expect(page.requests.rows.getWidgets()[0].primary.textLabel.text).toBe(
-      'Accept',
-    );
-    expect(page.requests.rows.getWidgets()[0].researchCard.visible).toBe(true);
-    expect(page.requests.rows.getWidgets()[0].getPreferredHeight()).toBe(80);
+    const requestRow = page.requests.rows.getWidgets()[0];
+    expect(requestRow.primary.textLabel.text).toBe('Accept');
+    expect(requestRow.researchCard.visible).toBe(true);
+    expect(requestRow.getPreferredHeight()).toBe(80);
+    expect(requestRow.detail.text).toBe('Lv 9');
+    expect(requestRow.prestigeStars).toBeInstanceOf(PixiStarLevelLabel);
+    expect(requestRow.prestigeStars.level).toBe(1);
+    expect(requestRow.prestigeStars.starCount).toBe(1);
+    expect(requestRow.prestigeStars.visible).toBe(true);
+
+    const zeroPrestigeModel = createModel('requests');
+    zeroPrestigeModel.rows[0].prestigeCount = 0;
+    page.bind(zeroPrestigeModel);
+    expect(requestRow.prestigeStars.level).toBe(0);
+    expect(requestRow.prestigeStars.starCount).toBe(0);
+    expect(requestRow.prestigeStars.visible).toBe(true);
 
     page.bind(createModel('chat'));
     expect(page.selectedTabId).toBe('home');
@@ -216,17 +286,41 @@ function createModel(selectedTabId) {
         username: 'Luna',
         roleLabel: 'Trade Master',
         levelLabel: 'Lv 14',
+        prestigeCount: 2,
+        totalContributionLabel: '12.5k',
+        showRankHeader: true,
         onActivate: vi.fn(),
       },
     ],
     directory: false,
     rows:
-      selectedTabId === 'requests'
+      selectedTabId === 'quests'
+        ? [
+            {
+              id: 'fill-mana-tonic',
+              title: 'Fill Mana Tonic',
+              itemKind: 'potion',
+              itemKey: 'manaTonic',
+              contributionLabel: 'Your contribution 8/10',
+              progressLabel: '18/40',
+              progress: 0.45,
+              rewardAmountLabel: '3',
+              rewardResource: 'crystal',
+              actionLabel: 'Fill',
+              actionVariant: 'green',
+              actionWidth: 72,
+              actionHeight: 42,
+              enabled: true,
+              onActivate: vi.fn(),
+            },
+          ]
+        : selectedTabId === 'requests'
         ? [
             {
               id: 'thorne',
               username: 'Thorne',
-              detail: 'Lv 9 · Prestige 1',
+              detail: 'Lv 9',
+              prestigeCount: 1,
               preview: '8.4K Produced',
               primaryAction: {
                 label: 'Accept',

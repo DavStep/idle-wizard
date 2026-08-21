@@ -6,6 +6,10 @@ Alliance chat includes server-authored system history for founding, direct joins
 
 Alliance identity also owns normalized `bannerColor`, `emblemColor`, and `emblemId` fields. The color fields use fixed ten-option catalogues; `emblemId` selects the original Unity mark or one of eleven additional silhouettes. They default to blue cloth, a gold Unity emblem, and travel through the same create/profile reducers and public snapshots as the alliance tag color.
 
+Member snapshots include current character, frame, player level, prestige count,
+role, and lifetime alliance contribution. The retained rosters use that snapshot
+to group members by role and show the compact level, prestige, and coin totals.
+
 Application snapshots include the applicant's current character, frame, total
 produced coin, and prestige count from the same public player summary used by
 Player Info. Authorized managers can review requests with the established

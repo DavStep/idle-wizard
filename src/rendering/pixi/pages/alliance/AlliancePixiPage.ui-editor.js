@@ -32,6 +32,7 @@ export default defineUiEditorIntegration({
   ],
   scenarios: [
     scenario('home', 'Home'),
+    scenario('quests', 'Quests'),
     scenario('requests', 'Requests'),
     scenario('settings', 'Settings'),
     {
@@ -77,7 +78,9 @@ async function mount(_context, fixture) {
 function createModel(tabId) {
   const home = createDialogViewModel('workshop.alliance', 'a');
   const rows =
-    tabId === 'requests'
+    tabId === 'quests'
+      ? questRows()
+      : tabId === 'requests'
       ? [
           application('luna', 'Luna', 'mira', 'violet', 14),
           application('thorne', 'Thorne', 'rowan', 'classic', 9),
@@ -105,6 +108,45 @@ function createModel(tabId) {
   };
 }
 
+function questRows() {
+  return [
+    {
+      actionHeight: 42,
+      actionLabel: 'Fill',
+      actionVariant: 'green',
+      actionWidth: 72,
+      contributionLabel: 'Your contribution 8/10',
+      enabled: true,
+      id: 'fill-mana-tonic',
+      itemKey: 'manaTonic',
+      itemKind: 'potion',
+      onActivate: () => true,
+      progress: 0.45,
+      progressLabel: '18/40',
+      rewardAmountLabel: '3',
+      rewardResource: 'crystal',
+      title: 'Fill Mana Tonic',
+    },
+    {
+      actionHeight: 42,
+      actionLabel: 'Claim',
+      actionVariant: 'green',
+      actionWidth: 72,
+      contributionLabel: 'Your contribution 12,500/12,500',
+      enabled: true,
+      id: 'grand-route',
+      itemKey: 'coin',
+      itemKind: 'resource',
+      onActivate: () => true,
+      progress: 1,
+      progressLabel: '250,000/250,000',
+      rewardAmountLabel: '12',
+      rewardResource: 'crystal',
+      title: 'Grand Route',
+    },
+  ];
+}
+
 function createSettingsModel() {
   return {
     allianceId: 'night-owls',
@@ -129,7 +171,7 @@ function application(id, username, character, frame, playerLevel) {
   const totalProducedCoin = playerLevel * 12_500;
   return {
     character,
-    detail: `Lv ${playerLevel} · Prestige ${prestigeCount}`,
+    detail: `Lv ${playerLevel}`,
     frame,
     id,
     identity: id,

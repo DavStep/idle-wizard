@@ -265,12 +265,12 @@ describe('PixiTransientEffectsLayer', () => {
       delayMs: 0,
       durationMs: 500,
     });
-    expect(entry.widget.root.position).toMatchObject({ x: 104, y: 106 });
+    expect(entry.widget.root.position).toMatchObject({ x: 104, y: 82 });
     expect(entry.widget.root.alpha).toBe(1);
 
     entry.widget.update(0.4, { delayed: false });
     expect(entry.widget.root.x).toBe(104);
-    expect(entry.widget.root.y).toBeGreaterThan(106);
+    expect(entry.widget.root.y).toBeGreaterThan(82);
     expect(entry.widget.root.y).toBeLessThan(142);
     expect(entry.widget.root.alpha).toBe(1);
     expect(entry.widget.root.scale.x).toBeLessThan(1);

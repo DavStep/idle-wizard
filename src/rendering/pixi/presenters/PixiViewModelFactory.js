@@ -104,6 +104,13 @@ const TRADE_ALLIANCE_ROLE_LABELS = Object.freeze({
   broker: 'Broker',
   trader: 'Trader',
 });
+const TRADE_ALLIANCE_ROLE_RANKS = Object.freeze({
+  tradeMaster: 5,
+  quartermaster: 4,
+  factor: 3,
+  broker: 2,
+  trader: 1,
+});
 const TRADE_ALLIANCE_SOLO_TABS = Object.freeze([
   Object.freeze({ id: 'browse', label: 'Browse' }),
   Object.freeze({ id: 'create', label: 'Create' }),
@@ -326,7 +333,7 @@ export class PixiViewModelFactory {
       allTasks.find((task) => !task.completed) ??
       null;
     const taskRows = activeTask
-      ? [this.createTaskRow(activeTask, actions)]
+      ? [this.createTaskRow(activeTask, gameplay.research, actions)]
       : [];
 
     return {
@@ -344,8 +351,10 @@ export class PixiViewModelFactory {
           enabled: gameplay.seedSummoning?.canSummon === true,
           pressEnabled:
             gameplay.seedSummoning?.canSummon === true ||
-            gameplay.seedSummoning?.unavailableReason ===
+            [
               'no_active_seed_weights',
+              'not_enough_mana',
+            ].includes(gameplay.seedSummoning?.unavailableReason),
         },
         bag: {
           side: 'left',
@@ -434,16 +443,26 @@ export class PixiViewModelFactory {
     };
   }
 
-  createTaskRow(task, actions = {}) {
+  createTaskRow(task, research = {}, actions = {}) {
     const automatic = task.autoProgress === true;
     const canNavigate = typeof actions.navigateToTask === 'function';
     const current = Math.max(0, Number(task.progressQuantity) || 0);
     const required = Math.max(0, Number(task.requiredQuantity) || 0);
+    const researchTimer = createTaskResearchTimer(task, research);
+    const label = task.requirementLabel ?? task.itemLabel ?? '';
     return {
       id: task.taskId,
-      label: task.requirementLabel ?? task.itemLabel ?? '',
+      label: researchTimer
+        ? label.replace(/^Research\b/, 'Researching')
+        : label,
       current,
       required,
+      ...(researchTimer
+        ? {
+            value: researchTimer.remainingLabel,
+            researchTimer,
+          }
+        : {}),
       progress:
         required > 0 ? clampUnit(current / required) : clampUnit(task.progress),
       itemKind: task.itemKind ?? null,
@@ -985,26 +1004,50 @@ export class PixiViewModelFactory {
             String(allianceId).trim(),
         )
       : members;
-    const memberRows = ownedMembers.map((row, index) => {
-      const player = createTradeAlliancePlayerRequest(row);
-      return {
-        id:
-          player.identity ||
-          String(row.id ?? '').trim() ||
-          `${allianceId || 'alliance'}:member:${index}`,
-        identity: player.identity,
-        memberIdentity: row.memberIdentity ?? row.identity ?? '',
-        username: player.username,
-        character: player.character,
-        frame: player.frame,
-        roleLabel:
-          TRADE_ALLIANCE_ROLE_LABELS[row.role] ??
-          titleCaseTradeAllianceLabel(row.role ?? 'trader'),
-        levelLabel: `Lv ${normalizeVisibleLevel(row.playerLevel) ?? 1}`,
-        semanticId: `workshop.alliance.member.${player.identity || index}`,
-        onActivate: () => actions.openPlayer?.(player),
-      };
-    });
+    const memberRows = ownedMembers
+      .map((row, index) => {
+        const player = createTradeAlliancePlayerRequest(row);
+        const role = String(row.role ?? 'trader');
+        return {
+          id:
+            player.identity ||
+            String(row.id ?? '').trim() ||
+            `${allianceId || 'alliance'}:member:${index}`,
+          identity: player.identity,
+          memberIdentity: row.memberIdentity ?? row.identity ?? '',
+          username: player.username,
+          character: player.character,
+          frame: player.frame,
+          role,
+          roleRank:
+            Number(row.roleRank) ||
+            TRADE_ALLIANCE_ROLE_RANKS[role] ||
+            TRADE_ALLIANCE_ROLE_RANKS.trader,
+          roleLabel:
+            TRADE_ALLIANCE_ROLE_LABELS[role] ??
+            titleCaseTradeAllianceLabel(role),
+          levelLabel: `Lv ${normalizeVisibleLevel(row.playerLevel) ?? 1}`,
+          prestigeCount: Math.max(
+            0,
+            Math.floor(Number(row.prestigeCount) || 0),
+          ),
+          totalContributionLabel: formatCoinAmount(
+            row.totalContribution ?? 0,
+          ),
+          semanticId: `workshop.alliance.member.${player.identity || index}`,
+          onActivate: () => actions.openPlayer?.(player),
+        };
+      })
+      .sort((left, right) => {
+        if (left.roleRank !== right.roleRank) {
+          return right.roleRank - left.roleRank;
+        }
+        return left.username.localeCompare(right.username);
+      })
+      .map((member, index, rows) => ({
+        ...member,
+        showRankHeader: index === 0 || rows[index - 1].role !== member.role,
+      }));
     const memberCount = Math.max(
       memberRows.length,
       Math.floor(Number(alliance.memberCount) || 0),
@@ -1048,7 +1091,7 @@ export class PixiViewModelFactory {
           playerLevel,
           prestigeCount,
           totalProducedCoin: Number(application.totalProducedCoin ?? 0),
-          detail: `Lv ${playerLevel} · Prestige ${prestigeCount}`,
+          detail: `Lv ${playerLevel}`,
           preview: `${formatCoinAmount(application.totalProducedCoin ?? 0)} Produced`,
           semanticId: `workshop.alliance.request.${applicationKey}`,
           onActivate: () => actions.openPlayer?.(player),
@@ -1224,10 +1267,67 @@ export class PixiViewModelFactory {
       };
     }
 
+    const allianceId = String(alliance.allianceId ?? alliance.id ?? '').trim();
+    const allianceMembers = (
+      tradeAlliance.members ??
+      alliance.members ??
+      []
+    ).filter((member) => {
+      const memberAllianceId = String(member.allianceId ?? '').trim();
+      return !allianceId || !memberAllianceId || memberAllianceId === allianceId;
+    });
+    const chatMessages = (tradeAlliance.allianceChatMessages ?? []).map(
+      (message) => {
+        const isSystem =
+          String(message.username ?? message.author ?? '').toLowerCase() ===
+          'system';
+        const announcedPlayer = isSystem
+          ? parseWorldChatSystemPlayerAnnouncement(
+              message.body ?? message.message ?? '',
+            )
+          : null;
+        const senderIdentity = String(
+          message.senderIdentity ?? message.sender_identity ?? '',
+        ).trim();
+        const username = String(
+          announcedPlayer?.username ??
+            message.username ??
+            message.author ??
+            '',
+        ).trim();
+        const member = allianceMembers.find((candidate) => {
+          const memberIdentity = String(
+            candidate.memberIdentity ?? candidate.identity ?? '',
+          ).trim();
+          const memberUsername = String(candidate.username ?? '').trim();
+          return isSystem
+            ? Boolean(username && memberUsername === username)
+            : Boolean(
+                (senderIdentity && memberIdentity === senderIdentity) ||
+                  (!senderIdentity && username && memberUsername === username),
+              );
+        });
+
+        return {
+          ...message,
+          allianceTag: '',
+          allianceTagColor: 'ink',
+          rankLabel: isSystem
+            ? ''
+            : TRADE_ALLIANCE_ROLE_LABELS[member?.role] ??
+              (member?.role
+                ? titleCaseTradeAllianceLabel(member.role)
+                : 'Former Member'),
+          character: member?.character ?? message.character ?? 'elara',
+          frame: member?.frame ?? message.frame ?? 'classic',
+          showSystemAvatar: isSystem && Boolean(announcedPlayer),
+        };
+      },
+    );
     const chat = this.createWorldChatDialog(
       {
         connected: tradeAlliance.connected,
-        messages: tradeAlliance.allianceChatMessages ?? [],
+        messages: chatMessages,
       },
       {
         openPlayer: actions.openPlayer,
@@ -1911,8 +2011,15 @@ export class PixiViewModelFactory {
           allianceTag: message.allianceTag ?? message.alliance_tag ?? '',
           allianceTagColor:
             message.allianceTagColor ?? message.alliance_tag_color ?? 'ink',
+          rankLabel: String(
+            message.rankLabel ?? message.rank_label ?? '',
+          ).trim(),
           character: message.character ?? 'elara',
           frame: message.frame ?? 'classic',
+          showSystemAvatar: message.showSystemAvatar === true,
+          connected:
+            !isSystem &&
+            (message.connected === true || message.isOwn === true),
           ageLabel: formatWorldChatMessageAge(message.sentAtMs),
           canReport,
           selectedForReport,
@@ -2159,8 +2266,10 @@ function createTradeAllianceQuestRows(tradeAlliance, allianceId, actions) {
       const canFill =
         needsFill && actions.canFillAllianceQuest?.(quest) !== false;
       const enabled = !claimed && !locked && (canFill || claimable);
-      const routeLabel = itemFillQuest ? 'Your Fill' : 'Your Route';
+      const routeLabel = 'Your contribution';
       const title = toSentenceCase(quest.label ?? 'Alliance Quest');
+      const target = Math.max(0, Number(quest.target ?? 0));
+      const currentProgress = Math.max(0, Number(quest.progress ?? 0));
 
       return {
         id: quest.questId ?? `alliance-quest-${index}`,
@@ -2171,6 +2280,7 @@ function createTradeAllianceQuestRows(tradeAlliance, allianceId, actions) {
         progressLabel: `${formatWholeNumber(quest.progress)}/${formatWholeNumber(
           quest.target,
         )}`,
+        progress: target > 0 ? currentProgress / target : 0,
         itemKind,
         itemKey: itemFillQuest
           ? quest.itemKey
@@ -2188,8 +2298,8 @@ function createTradeAllianceQuestRows(tradeAlliance, allianceId, actions) {
         height: 48,
         actionLabel,
         actionVariant: enabled ? 'green' : 'gray',
-        actionWidth: 58,
-        actionHeight: 28,
+        actionWidth: 72,
+        actionHeight: 42,
         enabled,
         notification: claimable,
         semanticId: `workshop.alliance.quest.${quest.questId ?? index}`,
@@ -2844,6 +2954,42 @@ function createResearchById(tabs = []) {
   }
 
   return researchById;
+}
+
+function createTaskResearchTimer(task = {}, research = {}) {
+  if (task.type !== 'research' || !task.researchId) {
+    return null;
+  }
+
+  const activeResearch = (research.inProgressResearches ?? []).find(
+    (entry) => entry?.researchId === task.researchId,
+  );
+  if (!activeResearch) {
+    return null;
+  }
+
+  const totalMs = normalizeMilliseconds(
+    activeResearch.totalMs,
+    activeResearch.totalSeconds,
+  );
+  const remainingMs = Math.min(
+    totalMs,
+    normalizeMilliseconds(
+      activeResearch.remainingMs,
+      activeResearch.remainingSeconds,
+    ),
+  );
+  if (totalMs <= 0) {
+    return null;
+  }
+
+  return {
+    active: true,
+    totalMs,
+    remainingMs,
+    progress: clampUnit(1 - remainingMs / totalMs),
+    remainingLabel: formatRemainingTime(remainingMs),
+  };
 }
 
 function createCompletedResearchIds(research = {}, tabs = []) {

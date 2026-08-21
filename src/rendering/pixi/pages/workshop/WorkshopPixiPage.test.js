@@ -24,10 +24,7 @@ import {
   PIXI_UI_GEOMETRY,
   resolvePixiTextStrokeWidth,
 } from '../../theme/PixiThemeTokens.js';
-import {
-  RootRunInventoryChoiceRowPixi,
-  ShopDialogPixi,
-} from '../shop/ShopDialogPixi.js';
+import { RootRunInventoryChoiceRowPixi, ShopDialogPixi } from '../shop/ShopDialogPixi.js';
 import { WorldChatMessageRowPixi } from './WorkshopDialogPixi.js';
 import {
   RETAINED_DIALOG_LIST_GEOMETRY,
@@ -107,6 +104,40 @@ describe('WorkshopPixiPage', () => {
     vi.useRealTimers();
   });
 
+  it('shows green or gray player presence beside chat usernames and omits it for System', () => {
+    const dialog = {
+      assetManager: createPixiAssetManagerFake(Texture),
+      contentTheme: createPixiThemeSnapshot({ theme: 'night' }),
+      theme: createPixiThemeSnapshot({ theme: 'night' }),
+      dialogId: 'workshop.worldChat',
+      inputRouter: null,
+      registerTarget: vi.fn(),
+      unregisterTarget: vi.fn(),
+    };
+    const row = new WorldChatMessageRowPixi({ dialog });
+
+    row.bind({ username: 'Mira', body: 'Hello', connected: true });
+    row.setBounds(0, 0, 288, row.getPreferredHeight());
+    expect(row.presenceDot.visible).toBe(true);
+    expect(row.presenceDot.x).toBeGreaterThan(row.username.x + row.username.width);
+    expect(row.presenceDot.context.instructions[0].data.style.color).toBe(
+      Number.parseInt('5f9f3f', 16),
+    );
+
+    row.bind({ username: 'Ada', body: 'Away', connected: false });
+    row.setBounds(0, 0, 288, row.getPreferredHeight());
+    expect(row.presenceDot.visible).toBe(true);
+    expect(row.presenceDot.context.instructions[0].data.style.color).toBe(
+      Number.parseInt('8d8172', 16),
+    );
+
+    row.bind({ type: 'system', username: 'System', body: 'News' });
+    row.setBounds(0, 0, 288, row.getPreferredHeight());
+    expect(row.presenceDot.visible).toBe(false);
+
+    row.destroy();
+  });
+
   it('grounds the Workshop with passive window art behind the summon control', () => {
     const windowTexture = new Texture();
     const dayWindowTexture = new Texture();
@@ -124,9 +155,7 @@ describe('WorkshopPixiPage', () => {
 
     harness.page.bind(createWorkshopViewModel());
 
-    expect(assetManager.getTexture).toHaveBeenCalledWith(
-      WORKSHOP_WINDOW_ASSET_ID,
-    );
+    expect(assetManager.getTexture).toHaveBeenCalledWith(WORKSHOP_WINDOW_ASSET_ID);
     expect(harness.page.workshopWindow.texture).toBe(windowTexture);
     expect(harness.page.workshopWindow.eventMode).toBe('none');
     expect(harness.page.workshopWindow.position).toMatchObject({
@@ -138,25 +167,17 @@ describe('WorkshopPixiPage', () => {
       height: WORKSHOP_WINDOW_GEOMETRY.height,
       alpha: WORKSHOP_WINDOW_GEOMETRY.alpha,
     });
-    expect(
-      harness.page.content.getChildIndex(harness.page.workshopWindow),
-    ).toBeLessThan(
+    expect(harness.page.content.getChildIndex(harness.page.workshopWindow)).toBeLessThan(
       harness.page.content.getChildIndex(harness.page.fireflies.root),
     );
-    expect(
-      harness.page.content.getChildIndex(harness.page.fireflies.root),
-    ).toBeLessThan(
+    expect(harness.page.content.getChildIndex(harness.page.fireflies.root)).toBeLessThan(
       harness.page.content.getChildIndex(harness.page.summon.root),
     );
     expect(harness.page.fireflies.root.eventMode).toBe('none');
-    expect(harness.page.fireflies.root.children).toHaveLength(
-      WORKSHOP_FIREFLY_COUNT,
-    );
+    expect(harness.page.fireflies.root.children).toHaveLength(WORKSHOP_FIREFLY_COUNT);
 
     harness.page.applyTheme(createPixiThemeSnapshot({ theme: 'day' }));
-    expect(assetManager.getTexture).toHaveBeenCalledWith(
-      PIXI_ROOT_RUN_ASSETS.workshopWindowDay,
-    );
+    expect(assetManager.getTexture).toHaveBeenCalledWith(PIXI_ROOT_RUN_ASSETS.workshopWindowDay);
     expect(harness.page.workshopWindow.texture).toBe(dayWindowTexture);
 
     harness.page.destroy();
@@ -177,9 +198,7 @@ describe('WorkshopPixiPage', () => {
     expect(motion.requestFrame).toHaveBeenCalledOnce();
 
     motion.runAt(1000);
-    expect({ x: firstFirefly.x, y: firstFirefly.y }).not.toEqual(
-      restingPosition,
-    );
+    expect({ x: firstFirefly.x, y: firstFirefly.y }).not.toEqual(restingPosition);
     expect(motion.requestFrame).toHaveBeenCalledTimes(2);
 
     harness.page.deactivate();
@@ -217,9 +236,7 @@ describe('WorkshopPixiPage', () => {
     const leaderboard = harness.page.features.get('leaderboard');
     const tasks = harness.page.features.get('personalTasks');
     const leaderboardHitBottom =
-      leaderboard.root.y +
-      leaderboard.root.hitArea.y +
-      leaderboard.root.hitArea.height;
+      leaderboard.root.y + leaderboard.root.hitArea.y + leaderboard.root.hitArea.height;
     const tasksHitTop = tasks.root.y + tasks.root.hitArea.y;
 
     expect(leaderboardHitBottom).toBeLessThanOrEqual(tasksHitTop);
@@ -305,27 +322,17 @@ describe('WorkshopPixiPage', () => {
     expect(dialog.featuredItemRow.itemIcon.width).toBe(36);
     expect(dialog.featuredItemRow.root.hitArea.height).toBe(50);
     expect(dialog.summaryRows.get('total').root.x).toBe(0);
-    expect(assetManager.getTexture).toHaveBeenCalledWith(
-      PIXI_ROOT_RUN_ASSETS.settingsRow,
-    );
-    expect(dialog.summaryRows.get('amount').root.y).toBeLessThan(
-      dialog.rangeControl.y,
-    );
-    expect(dialog.rangeControl.y).toBeLessThan(
-      dialog.summaryRows.get('points').root.y,
-    );
+    expect(assetManager.getTexture).toHaveBeenCalledWith(PIXI_ROOT_RUN_ASSETS.settingsRow);
+    expect(dialog.summaryRows.get('amount').root.y).toBeLessThan(dialog.rangeControl.y);
+    expect(dialog.rangeControl.y).toBeLessThan(dialog.summaryRows.get('points').root.y);
     expect(dialog.rangeControl.x).toBe(-12);
-    expect(dialog.rangeControl.controlWidth).toBeGreaterThan(
-      dialog.panel.contentBoxWidth,
-    );
+    expect(dialog.rangeControl.controlWidth).toBeGreaterThan(dialog.panel.contentBoxWidth);
     const confirm = dialog.actions.get('confirm');
     expect(confirm.variant).toBe('green');
     expect(confirm.control.textLabel.y).toBeCloseTo(
       confirm.height / 2 + confirm.control.activeSkin.contentOffsetY + 1,
     );
-    expect(assetManager.getTexture).toHaveBeenCalledWith(
-      getPixiButtonAssetId('green', 30),
-    );
+    expect(assetManager.getTexture).toHaveBeenCalledWith(getPixiButtonAssetId('green', 30));
 
     dialog.rangeControl.commitRange(30);
     confirm.control.activate();
@@ -406,12 +413,8 @@ describe('WorkshopPixiPage', () => {
     expect(harness.page.tasks.height).toBe(77);
 
     const ribbon = harness.page.tasks.titleRibbon;
-    expect(ribbon.assetId).toBe(
-      PIXI_ROOT_RUN_ASSETS.workshopRequestTitleRibbon,
-    );
-    expect(ribbon.geometry).toBe(
-      PIXI_ROOT_RUN_GEOMETRY.workshopRequestTitleRibbon,
-    );
+    expect(ribbon.assetId).toBe(PIXI_ROOT_RUN_ASSETS.workshopRequestTitleRibbon);
+    expect(ribbon.geometry).toBe(PIXI_ROOT_RUN_GEOMETRY.workshopRequestTitleRibbon);
     expect(ribbon.height).toBe(38);
     expect(ribbon.frame.sourceInsets).toEqual({
       top: 14,
@@ -431,22 +434,63 @@ describe('WorkshopPixiPage', () => {
     expect(ribbon.geometry.contentOffsetY).toBe(-2);
     expect(ribbon.title.y).toBe(17);
     const renderedRibbonHeight = ribbon.height * ribbon.root.scale.y;
-    const renderedTitleLineHeight =
-      ribbon.geometry.titleLineHeight * ribbon.root.scale.y;
-    expect(
-      renderedRibbonHeight - renderedTitleLineHeight,
-    ).toBeGreaterThanOrEqual(11);
-    expect(
-      ribbon.root.x + ribbon.contentGroupCenterX * ribbon.root.scale.x,
-    ).toBeCloseTo(harness.page.tasks.width / 2);
+    const renderedTitleLineHeight = ribbon.geometry.titleLineHeight * ribbon.root.scale.y;
+    expect(renderedRibbonHeight - renderedTitleLineHeight).toBeGreaterThanOrEqual(11);
+    expect(ribbon.root.x + ribbon.contentGroupCenterX * ribbon.root.scale.x).toBeCloseTo(
+      harness.page.tasks.width / 2,
+    );
     expect(ribbon.title.fontSize).toBe(20);
     expect(row.root.y).toBe(16);
-    expect(row.root.y - (ribbon.root.y + renderedRibbonHeight)).toBeCloseTo(
-      -0.649,
-    );
-    expect(
-      row.root.y + row.label.y - (ribbon.root.y + renderedRibbonHeight),
-    ).toBeCloseTo(4.351);
+    expect(row.root.y - (ribbon.root.y + renderedRibbonHeight)).toBeCloseTo(-0.649);
+    expect(row.root.y + row.label.y - (ribbon.root.y + renderedRibbonHeight)).toBeCloseTo(4.351);
+
+    harness.page.destroy();
+    harness.dispose();
+  });
+
+  it('shows active research as a live blue request timer even with reduced motion', () => {
+    const motion = createWorkshopMotionHarness();
+    const harness = createHarness({
+      requestFrame: motion.requestFrame,
+      cancelFrame: motion.cancelFrame,
+      timeSource: motion.timeSource,
+      reducedMotion: () => true,
+    });
+    const model = createWorkshopViewModel({
+      taskLabel: 'Researching Mint Seed',
+    });
+    model.workshop.tasks.rows[0] = {
+      ...model.workshop.tasks.rows[0],
+      current: 0,
+      required: 1,
+      value: '8s',
+      researchTimer: {
+        active: true,
+        totalMs: 10_000,
+        remainingMs: 8_000,
+      },
+    };
+
+    harness.page.bind(model);
+
+    const row = harness.page.tasks.rows.get('request-1');
+    expect(row.progress.root.visible).toBe(false);
+    expect(row.researchProgress.root.visible).toBe(true);
+    expect(row.researchProgress.tone).toBe('blue');
+    expect(row.researchProgress.progress).toBeCloseTo(0.2);
+    expect(row.value.text).toBe('8s');
+
+    row.updateMotion(1_000);
+
+    expect(row.researchProgress.progress).toBeCloseTo(0.3);
+    expect(row.value.text).toBe('7s');
+    expect(row.progressShineRoot.visible).toBe(false);
+
+    row.startCompletionFill(260);
+
+    expect(row.researchTimer).toBeNull();
+    expect(row.researchProgress.root.visible).toBe(false);
+    expect(row.progress.root.visible).toBe(true);
 
     harness.page.destroy();
     harness.dispose();
@@ -455,8 +499,7 @@ describe('WorkshopPixiPage', () => {
   it('keeps the priority card height fixed and fits long request labels', () => {
     const harness = createHarness();
     const model = createWorkshopViewModel();
-    model.workshop.tasks.rows[0].label =
-      'Research Mana Tonic Brewing Speed Improvement Upgrade II';
+    model.workshop.tasks.rows[0].label = 'Research Mana Tonic Brewing Speed Improvement Upgrade II';
 
     harness.page.bind(model);
 
@@ -482,24 +525,16 @@ describe('WorkshopPixiPage', () => {
 
     const row = harness.page.tasks.rows.get('request-1');
     expect(harness.page.tasks.background).toBeInstanceOf(PixiNineSliceFrame);
-    expect(assetManager.getTexture).toHaveBeenCalledWith(
-      PIXI_ROOT_RUN_ASSETS.researchCard,
-    );
-    expect(
-      harness.page.tasks.root.getChildIndex(harness.page.tasks.background),
-    ).toBe(0);
+    expect(assetManager.getTexture).toHaveBeenCalledWith(PIXI_ROOT_RUN_ASSETS.researchCard);
+    expect(harness.page.tasks.root.getChildIndex(harness.page.tasks.background)).toBe(0);
     expect(harness.page.tasks.background.sourceInsets).toEqual(
       PIXI_ROOT_RUN_GEOMETRY.researchCard.sourceInsets,
     );
     expect(harness.page.tasks.background.borderInsets).toEqual(
       PIXI_ROOT_RUN_GEOMETRY.researchCard.borderInsets,
     );
-    expect(harness.page.tasks.background.frameWidth).toBe(
-      harness.page.tasks.width,
-    );
-    expect(harness.page.tasks.background.frameHeight).toBe(
-      harness.page.tasks.height,
-    );
+    expect(harness.page.tasks.background.frameWidth).toBe(harness.page.tasks.width);
+    expect(harness.page.tasks.background.frameHeight).toBe(harness.page.tasks.height);
     expect(harness.page.tasks.panel.frame.visible).toBe(false);
     expect(harness.page.tasks.panel.fallback.visible).toBe(false);
     expect(row.background).toBeUndefined();
@@ -510,8 +545,7 @@ describe('WorkshopPixiPage', () => {
 
   it('lands the white shine before filling to the reached point without boinking the rail', () => {
     const motion = createWorkshopMotionHarness();
-    const questCompletionMotionCoordinator =
-      new QuestCompletionMotionCoordinator();
+    const questCompletionMotionCoordinator = new QuestCompletionMotionCoordinator();
     const harness = createHarness({
       questCompletionMotionCoordinator,
       requestFrame: motion.requestFrame,
@@ -609,8 +643,7 @@ describe('WorkshopPixiPage', () => {
 
   it('lets request completion supersede queued progress motion', () => {
     const motion = createWorkshopMotionHarness();
-    const questCompletionMotionCoordinator =
-      new QuestCompletionMotionCoordinator();
+    const questCompletionMotionCoordinator = new QuestCompletionMotionCoordinator();
     const harness = createHarness({
       questCompletionMotionCoordinator,
       requestFrame: motion.requestFrame,
@@ -660,8 +693,7 @@ describe('WorkshopPixiPage', () => {
 
   it('reveals the next request with the restrained request-card completion snap', () => {
     const motion = createWorkshopMotionHarness();
-    const questCompletionMotionCoordinator =
-      new QuestCompletionMotionCoordinator();
+    const questCompletionMotionCoordinator = new QuestCompletionMotionCoordinator();
     const harness = createHarness({
       questCompletionMotionCoordinator,
       requestFrame: motion.requestFrame,
@@ -728,18 +760,12 @@ describe('WorkshopPixiPage', () => {
     motion.runAt(663.5);
     expect(requestCard.root.scale.x).toBeCloseTo(1.018, 3);
     expect(requestCard.root.position.x).toBeCloseTo(requestCard.x + anchorX);
-    expect(requestCard.root.position.y).toBeCloseTo(
-      requestCard.y + anchorY - 2,
-      3,
-    );
+    expect(requestCard.root.position.y).toBeCloseTo(requestCard.y + anchorY - 2, 3);
     expect(incomingRow.progress.root.scale.x).toBe(1);
 
     motion.runAt(730.2);
     expect(requestCard.root.scale.x).toBeCloseTo(0.996, 3);
-    expect(requestCard.root.position.y).toBeCloseTo(
-      requestCard.y + anchorY + 1,
-      3,
-    );
+    expect(requestCard.root.position.y).toBeCloseTo(requestCard.y + anchorY + 1, 3);
 
     motion.runAt(790);
     expect(requestCard.root.scale.x).toBe(1);
@@ -753,8 +779,7 @@ describe('WorkshopPixiPage', () => {
   });
 
   it('reveals the next request without a box boink for reduced motion', () => {
-    const questCompletionMotionCoordinator =
-      new QuestCompletionMotionCoordinator();
+    const questCompletionMotionCoordinator = new QuestCompletionMotionCoordinator();
     const harness = createHarness({
       questCompletionMotionCoordinator,
       reducedMotion: () => true,
@@ -827,31 +852,18 @@ describe('WorkshopPixiPage', () => {
       });
       expect(control.icon.x).toBe(
         ROOT_RUN_SIDE_ACTION_GEOMETRY.width / 2 +
-          (control.side === 'right' ? 1 : -1) *
-            ROOT_RUN_SIDE_ACTION_GEOMETRY.iconEdgeNudge,
+          (control.side === 'right' ? 1 : -1) * ROOT_RUN_SIDE_ACTION_GEOMETRY.iconEdgeNudge,
       );
     }
-    expect(harness.page.statsButton.textureId).toBe(
-      PIXI_ROOT_RUN_ASSETS.workshopStats,
-    );
+    expect(harness.page.statsButton.textureId).toBe(PIXI_ROOT_RUN_ASSETS.workshopStats);
     expect(harness.page.bagButton.iconScale).toBe(0.72);
     expect(harness.page.statsButton.iconScale).toBe(0.72);
     expect(harness.page.inboxButton.iconScale).toBe(0.72);
-    expect(
-      harness.page.features.get('alliance').presentation.scale,
-    ).toBeUndefined();
-    expect(
-      harness.page.features.get('leaderboard').presentation.scale,
-    ).toBeUndefined();
-    expect(
-      harness.page.features.get('discoveries').presentation.scale,
-    ).toBeUndefined();
-    expect(
-      harness.page.features.get('personalTasks').presentation.scale,
-    ).toBeUndefined();
-    expect(
-      harness.page.features.get('worldEvent').presentation.scale,
-    ).toBeUndefined();
+    expect(harness.page.features.get('alliance').presentation.scale).toBeUndefined();
+    expect(harness.page.features.get('leaderboard').presentation.scale).toBeUndefined();
+    expect(harness.page.features.get('discoveries').presentation.scale).toBeUndefined();
+    expect(harness.page.features.get('personalTasks').presentation.scale).toBeUndefined();
+    expect(harness.page.features.get('worldEvent').presentation.scale).toBeUndefined();
     expect(harness.page.features.get('prestige').presentation).toMatchObject({
       assetId: PIXI_ROOT_RUN_ASSETS.workshopPrestige,
     });
@@ -898,9 +910,7 @@ describe('WorkshopPixiPage', () => {
       ROOT_RUN_SIDE_ACTION_GEOMETRY.width +
       PIXI_UI_GEOMETRY.notificationOutset -
       PIXI_UI_GEOMETRY.notificationSize / 2;
-    const badgeY =
-      -PIXI_UI_GEOMETRY.notificationOutset +
-      PIXI_UI_GEOMETRY.notificationSize / 2;
+    const badgeY = -PIXI_UI_GEOMETRY.notificationOutset + PIXI_UI_GEOMETRY.notificationSize / 2;
     expect(harness.page.inboxButton.notification.root.position).toMatchObject({
       x: badgeX,
       y: badgeY,
@@ -964,19 +974,13 @@ describe('WorkshopPixiPage', () => {
       x: ROOT_RUN_SIDE_ACTION_GEOMETRY.stageEdge,
       y: getExpectedSideControlsTop(harness.page),
     });
-    expect(
-      harness.page.features.get('leaderboard').root.position,
-    ).toMatchObject({
+    expect(harness.page.features.get('leaderboard').root.position).toMatchObject({
       x: ROOT_RUN_SIDE_ACTION_GEOMETRY.stageEdge,
-      y:
-        getExpectedSideControlsTop(harness.page) +
-        ROOT_RUN_SIDE_ACTION_GEOMETRY.rowPitch,
+      y: getExpectedSideControlsTop(harness.page) + ROOT_RUN_SIDE_ACTION_GEOMETRY.rowPitch,
     });
     expect(harness.page.features.get('alliance').root.position).toMatchObject({
       x: ROOT_RUN_SIDE_ACTION_GEOMETRY.stageEdge,
-      y:
-        getExpectedSideControlsTop(harness.page) +
-        ROOT_RUN_SIDE_ACTION_GEOMETRY.rowPitch * 2,
+      y: getExpectedSideControlsTop(harness.page) + ROOT_RUN_SIDE_ACTION_GEOMETRY.rowPitch * 2,
     });
     expect(harness.page.statsButton.root.position).toMatchObject({
       x:
@@ -990,20 +994,14 @@ describe('WorkshopPixiPage', () => {
         PIXI_UI_GEOMETRY.sourceWidth -
         ROOT_RUN_SIDE_ACTION_GEOMETRY.stageEdge -
         ROOT_RUN_SIDE_ACTION_GEOMETRY.width,
-      y:
-        getExpectedSideControlsTop(harness.page) +
-        ROOT_RUN_SIDE_ACTION_GEOMETRY.rowPitch,
+      y: getExpectedSideControlsTop(harness.page) + ROOT_RUN_SIDE_ACTION_GEOMETRY.rowPitch,
     });
-    expect(
-      harness.page.features.get('discoveries').root.position,
-    ).toMatchObject({
+    expect(harness.page.features.get('discoveries').root.position).toMatchObject({
       x:
         PIXI_UI_GEOMETRY.sourceWidth -
         ROOT_RUN_SIDE_ACTION_GEOMETRY.stageEdge -
         ROOT_RUN_SIDE_ACTION_GEOMETRY.width,
-      y:
-        getExpectedSideControlsTop(harness.page) +
-        ROOT_RUN_SIDE_ACTION_GEOMETRY.rowPitch * 2,
+      y: getExpectedSideControlsTop(harness.page) + ROOT_RUN_SIDE_ACTION_GEOMETRY.rowPitch * 2,
     });
 
     harness.page.destroy();
@@ -1058,9 +1056,7 @@ describe('WorkshopPixiPage', () => {
     frames.shift()(0);
     frames.shift()(100);
     expect(alliance.root.position.x).toBeGreaterThan(0);
-    expect(alliance.root.position.x).toBeLessThan(
-      ROOT_RUN_SIDE_ACTION_GEOMETRY.stageEdge,
-    );
+    expect(alliance.root.position.x).toBeLessThan(ROOT_RUN_SIDE_ACTION_GEOMETRY.stageEdge);
     expect(alliance.root.alpha).toBeGreaterThan(0);
     expect(alliance.root.alpha).toBeLessThan(1);
 
@@ -1108,8 +1104,7 @@ describe('WorkshopPixiPage', () => {
       reducedMotion: false,
     });
     vi.spyOn(harness.dialogs, 'isOpen').mockImplementation(
-      (dialogId) =>
-        dialogId === 'global.announcement' && unlockAnimationBlocked,
+      (dialogId) => dialogId === 'global.announcement' && unlockAnimationBlocked,
     );
     const model = createWorkshopViewModel();
     model.workshop.stats = { visible: false };
@@ -1341,12 +1336,8 @@ describe('WorkshopPixiPage', () => {
 
     expect(registration?.fallbackHitTest).toBe(true);
 
-    inputRouter.onPointerDown(
-      createPointerEvent(overlayTarget, 'pointerdown', actionPoint),
-    );
-    inputRouter.onPointerUp(
-      createPointerEvent(overlayTarget, 'pointerup', actionPoint),
-    );
+    inputRouter.onPointerDown(createPointerEvent(overlayTarget, 'pointerdown', actionPoint));
+    inputRouter.onPointerUp(createPointerEvent(overlayTarget, 'pointerup', actionPoint));
 
     expect(turnIn).toHaveBeenCalledWith(model.workshop.tasks.rows[0]);
 
@@ -1551,21 +1542,16 @@ describe('WorkshopPixiPage', () => {
     const tabs = dialog.tabs.getWidgets();
     const expectedTabGap = 8;
     const expectedTabWidth = (286 - expectedTabGap * 2) / 3;
-    const shellBottom =
-      dialog.panel.coreHeight + PIXI_ROOT_RUN_GEOMETRY.dialog.frameOutset;
-    const tabsBottom =
-      dialog.tabsLayer.position.y + tabs[3].root.y + tabs[3].height;
-    const paperBottom =
-      dialog.panel.paperFrame.position.y + dialog.panel.paperFrame.frameHeight;
+    const shellBottom = dialog.panel.coreHeight + PIXI_ROOT_RUN_GEOMETRY.dialog.frameOutset;
+    const tabsBottom = dialog.tabsLayer.position.y + tabs[3].root.y + tabs[3].height;
+    const paperBottom = dialog.panel.paperFrame.position.y + dialog.panel.paperFrame.frameHeight;
 
     expect(dialog.panel.titleLabel.textObject.text).toBe('Bag');
     expect(dialog.tabsLayer.position.x).toBe(9);
     expect(shellBottom - tabsBottom).toBeCloseTo(10);
     expect(dialog.tabsLayer.position.y - paperBottom).toBeCloseTo(6);
     expect(tabs).toHaveLength(5);
-    expect(tabs[1].root.x - (tabs[0].root.x + tabs[0].width)).toBeCloseTo(
-      expectedTabGap,
-    );
+    expect(tabs[1].root.x - (tabs[0].root.x + tabs[0].width)).toBeCloseTo(expectedTabGap);
     expect(tabs[3].root.y).toBe(32);
     expect(tabs[3].root.x).toBeCloseTo(49);
     expect(tabs[4].root.x).toBeCloseTo(147);
@@ -1582,51 +1568,44 @@ describe('WorkshopPixiPage', () => {
     ['personalTasks', 2, 10],
     ['worldEvent', 3, 8],
     ['stats', 4, 6],
-  ])(
-    'uses the shared in-shell footer geometry for %s',
-    (dialogId, tabCount, expectedGap) => {
-      const harness = createHarness();
-      const model = createWorkshopViewModel();
-      const tabs = Array.from({ length: tabCount }, (_, index) => ({
-        id: `tab-${index}`,
-        label: `Tab ${index + 1}`,
-        selected: index === 0,
-      }));
-      model.workshop.dialogs[dialogId] = {
-        title: dialogId,
-        selectedTabId: tabs[0].id,
-        tabs,
-        rows: [],
-      };
+  ])('uses the shared in-shell footer geometry for %s', (dialogId, tabCount, expectedGap) => {
+    const harness = createHarness();
+    const model = createWorkshopViewModel();
+    const tabs = Array.from({ length: tabCount }, (_, index) => ({
+      id: `tab-${index}`,
+      label: `Tab ${index + 1}`,
+      selected: index === 0,
+    }));
+    model.workshop.dialogs[dialogId] = {
+      title: dialogId,
+      selectedTabId: tabs[0].id,
+      tabs,
+      rows: [],
+    };
 
-      harness.page.bind(model);
-      harness.page.openDialog(dialogId);
+    harness.page.bind(model);
+    harness.page.openDialog(dialogId);
 
-      const dialog = harness.dialogs.get(`workshop.${dialogId}`);
-      const buttons = dialog.tabs.getWidgets();
-      const shellBottom =
-        dialog.panel.coreHeight + PIXI_ROOT_RUN_GEOMETRY.dialog.frameOutset;
-      const tabsBottom = dialog.tabsLayer.y + buttons[0].height;
-      const paperBottom =
-        dialogId === 'worldEvent'
-          ? dialog.worldEventListPaper.y +
-            dialog.worldEventListPaper.frameHeight
-          : dialogId === 'personalTasks'
-            ? dialog.scroll.root.y + dialog.scroll.height
-            : dialog.panel.paperFrame.y + dialog.panel.paperFrame.frameHeight;
+    const dialog = harness.dialogs.get(`workshop.${dialogId}`);
+    const buttons = dialog.tabs.getWidgets();
+    const shellBottom = dialog.panel.coreHeight + PIXI_ROOT_RUN_GEOMETRY.dialog.frameOutset;
+    const tabsBottom = dialog.tabsLayer.y + buttons[0].height;
+    const paperBottom =
+      dialogId === 'worldEvent'
+        ? dialog.worldEventListPaper.y + dialog.worldEventListPaper.frameHeight
+        : dialogId === 'personalTasks'
+          ? dialog.scroll.root.y + dialog.scroll.height
+          : dialog.panel.paperFrame.y + dialog.panel.paperFrame.frameHeight;
 
-      expect(dialog.tabsLayer.parent).toBe(dialog.panel);
-      expect(dialog.tabsLayer.x).toBe(9);
-      expect(shellBottom - tabsBottom).toBeCloseTo(10);
-      expect(dialog.tabsLayer.y - paperBottom).toBeCloseTo(6);
-      expect(
-        buttons[1].root.x - (buttons[0].root.x + buttons[0].width),
-      ).toBeCloseTo(expectedGap);
+    expect(dialog.tabsLayer.parent).toBe(dialog.panel);
+    expect(dialog.tabsLayer.x).toBe(9);
+    expect(shellBottom - tabsBottom).toBeCloseTo(10);
+    expect(dialog.tabsLayer.y - paperBottom).toBeCloseTo(6);
+    expect(buttons[1].root.x - (buttons[0].root.x + buttons[0].width)).toBeCloseTo(expectedGap);
 
-      harness.page.destroy();
-      harness.dispose();
-    },
-  );
+    harness.page.destroy();
+    harness.dispose();
+  });
 
   it('renders World Event requests directly below the header with backed donation rows and visible actions', () => {
     const donate = vi.fn();
@@ -1690,12 +1669,10 @@ describe('WorkshopPixiPage', () => {
         id: 'quest:seal',
         title: 'Protect The Seal',
         completed: true,
-        donationOptions: firstQuest.donationOptions
-          .slice(0, 1)
-          .map((option) => ({
-            ...option,
-            id: `${option.id}:seal`,
-          })),
+        donationOptions: firstQuest.donationOptions.slice(0, 1).map((option) => ({
+          ...option,
+          id: `${option.id}:seal`,
+        })),
       },
       {
         ...firstQuest,
@@ -1720,21 +1697,13 @@ describe('WorkshopPixiPage', () => {
     expect(dialog.worldEventHeaderArt.visible).toBe(true);
     expect(dialog.worldEventHeaderArt.width).toBe(294);
     expect(dialog.worldEventHeaderArt.height).toBe(98);
-    expect(dialog.worldEventHeaderArt.mask).toBe(
-      dialog.worldEventHeaderArtMask,
-    );
+    expect(dialog.worldEventHeaderArt.mask).toBe(dialog.worldEventHeaderArtMask);
     expect(dialog.headerHeadline.x).toBe(dialog.worldEventHeaderArt.x);
     expect(dialog.headerBody.x).toBe(dialog.worldEventHeaderArt.x);
     expect(dialog.headerMeta.x).toBe(dialog.worldEventHeaderArt.x);
-    expect(dialog.headerHeadline.style.wordWrapWidth).toBe(
-      dialog.worldEventHeaderArt.width,
-    );
-    expect(dialog.headerBody.style.wordWrapWidth).toBe(
-      dialog.worldEventHeaderArt.width,
-    );
-    expect(dialog.headerMeta.style.wordWrapWidth).toBe(
-      dialog.worldEventHeaderArt.width,
-    );
+    expect(dialog.headerHeadline.style.wordWrapWidth).toBe(dialog.worldEventHeaderArt.width);
+    expect(dialog.headerBody.style.wordWrapWidth).toBe(dialog.worldEventHeaderArt.width);
+    expect(dialog.headerMeta.style.wordWrapWidth).toBe(dialog.worldEventHeaderArt.width);
     expect(dialog.rows.getWidgets()).toHaveLength(2);
     expect(row.card.alpha).toBe(1);
     expect(secondRow.card.alpha).toBe(1);
@@ -1744,9 +1713,7 @@ describe('WorkshopPixiPage', () => {
     expect(dialog.scroll.physics.maxOffset).toBe(0);
     expect(dialog.scroll.scrollbarTrack.visible).toBe(false);
     expect(dialog.scroll.root.position.y - headerFrameBottom).toBeCloseTo(4);
-    expect(
-      secondRow.root.position.y - (row.root.position.y + row.height),
-    ).toBeCloseTo(4);
+    expect(secondRow.root.position.y - (row.root.position.y + row.height)).toBeCloseTo(4);
     expect(row.title.text).toBe('Quiet The Crowd');
     expect(row.description.text).toBe(
       'The coronation bells have people cheering, arguing, and fainting in the same street.',
@@ -1765,24 +1732,16 @@ describe('WorkshopPixiPage', () => {
     expect(row.options[1].action.notificationBadge.root.visible).toBe(true);
     expect(row.options[1].action.visible).toBe(true);
     expect(row.options[1].action.renderable).toBe(true);
-    expect(
-      row.options[1].action.x + row.options[1].action.buttonWidth,
-    ).toBeLessThanOrEqual(row.options[1].width);
-    expect(assetManager.getTexture).toHaveBeenCalledWith(
-      PIXI_ROOT_RUN_ASSETS.dialogPaper,
+    expect(row.options[1].action.x + row.options[1].action.buttonWidth).toBeLessThanOrEqual(
+      row.options[1].width,
     );
+    expect(assetManager.getTexture).toHaveBeenCalledWith(PIXI_ROOT_RUN_ASSETS.dialogPaper);
     expect(assetManager.getTexture).toHaveBeenCalledWith(
       'source:assets/world-events/political-change.png',
     );
-    expect(assetManager.getTexture).toHaveBeenCalledWith(
-      PIXI_ROOT_RUN_ASSETS.settingsRow,
-    );
-    expect(assetManager.getTexture).toHaveBeenCalledWith(
-      getPixiButtonAssetId('gray', 30),
-    );
-    expect(assetManager.getTexture).toHaveBeenCalledWith(
-      getPixiButtonAssetId('green', 30),
-    );
+    expect(assetManager.getTexture).toHaveBeenCalledWith(PIXI_ROOT_RUN_ASSETS.settingsRow);
+    expect(assetManager.getTexture).toHaveBeenCalledWith(getPixiButtonAssetId('gray', 30));
+    expect(assetManager.getTexture).toHaveBeenCalledWith(getPixiButtonAssetId('green', 30));
 
     row.options[1].action.activate();
     expect(donate).toHaveBeenCalledOnce();
@@ -1843,30 +1802,22 @@ describe('WorkshopPixiPage', () => {
     const [rewardRow] = dialog.rows.getWidgets();
     expect(dialog.rows).toBe(dialog.worldEventRewardRows);
     expect(dialog.headerMeta.text).toBe('0 points · 4d 2h');
-    expect(dialog.status.text).toBe(
-      'Leaderboard Rewards: 2k points to qualify',
-    );
+    expect(dialog.status.text).toBe('Leaderboard Rewards: 2k points to qualify');
     expect(dialog.status.parent).toBe(dialog.panel.content);
     expect(dialog.status.parent).not.toBe(dialog.scroll.content);
     expect(dialog.status.y).toBe(dialog.scroll.root.y + dialog.scroll.height);
     expect(rewardRow.rank.text).toBe('Rank 1');
     expect(rewardRow.background.visible).toBe(true);
+    expect(rewardRow.currentOutline.context.instructions.at(-1)?.data?.style).toMatchObject({
+      alpha: 0.9,
+      width: 1.5,
+    });
+    expect(rewardRow.rewardBadges.map(({ amount }) => amount.text)).toEqual(['5', '10']);
     expect(
-      rewardRow.currentOutline.context.instructions.at(-1)?.data?.style,
-    ).toMatchObject({ alpha: 0.9, width: 1.5 });
-    expect(rewardRow.rewardBadges.map(({ amount }) => amount.text)).toEqual([
-      '5',
-      '10',
-    ]);
-    expect(
-      rewardRow.rewardBadges.every(
-        ({ icon }) => icon.width === 28 && icon.height === 28,
-      ),
+      rewardRow.rewardBadges.every(({ icon }) => icon.width === 28 && icon.height === 28),
     ).toBe(true);
     expect(
-      rewardRow.rewardBadges.every(
-        ({ amount, icon }) => amount.y === icon.y + icon.height / 2 - 1,
-      ),
+      rewardRow.rewardBadges.every(({ amount, icon }) => amount.y === icon.y + icon.height / 2 - 1),
     ).toBe(true);
     model.workshop.dialogs.worldEvent = questsViewModel;
     harness.page.bind(model);
@@ -1942,9 +1893,7 @@ describe('WorkshopPixiPage', () => {
     harness.page.openDialog('worldEvent');
 
     const dialog = harness.dialogs.get('workshop.worldEvent');
-    const initialHeights = dialog.rows
-      .getWidgets()
-      .map((questRow) => questRow.height);
+    const initialHeights = dialog.rows.getWidgets().map((questRow) => questRow.height);
 
     model.workshop.dialogs.worldEvent = {
       ...questsViewModel,
@@ -1956,9 +1905,7 @@ describe('WorkshopPixiPage', () => {
     model.workshop.dialogs.worldEvent = questsViewModel;
     harness.page.bind(model);
 
-    expect(dialog.rows.getWidgets().map((questRow) => questRow.height)).toEqual(
-      initialHeights,
-    );
+    expect(dialog.rows.getWidgets().map((questRow) => questRow.height)).toEqual(initialHeights);
 
     harness.page.destroy();
     harness.dispose();
@@ -1991,17 +1938,14 @@ describe('WorkshopPixiPage', () => {
     const viewportTop = dialog.scroll.root.position.y;
     const viewportBottom = viewportTop + dialog.scroll.height;
     const firstRow = dialog.rows.getWidgets()[0];
-    const firstRowFrameTop =
-      viewportTop + firstRow.root.y + firstRow.background.y;
+    const firstRowFrameTop = viewportTop + firstRow.root.y + firstRow.background.y;
 
     expect(dialog.scroll.width).toBe(
       RETAINED_DIALOG_LIST_GEOMETRY.rowFrameWidth +
         RETAINED_DIALOG_LIST_GEOMETRY.scrollbarViewportOutset,
     );
     expect(dialog.scroll.scrollbarTrack.visible).toBe(true);
-    expect(dialog.scroll.scrollbarTrack.getLocalBounds().x).toBeGreaterThan(
-      dialog.scroll.width,
-    );
+    expect(dialog.scroll.scrollbarTrack.getLocalBounds().x).toBeGreaterThan(dialog.scroll.width);
     expect(viewportTop - paperTop).toBeGreaterThan(0);
     expect(firstRowFrameTop - paperTop).toBeCloseTo(20 / 3);
     expect(paperBottom - viewportBottom).toBeGreaterThan(0);
@@ -2131,13 +2075,11 @@ describe('WorkshopPixiPage', () => {
       value: 0,
     });
     expect(dialog.dropSettingsSlider.visible).toBe(false);
-    const reserveRow = dialog.summaryRows
-      .getWidgets()
-      .find((row) => row.key === 'reserve');
+    const reserveRow = dialog.summaryRows.getWidgets().find((row) => row.key === 'reserve');
     let seedRows = dialog.list.rows.getWidgets();
-    expect(
-      seedRows.map((row) => Math.max(row.itemIcon.width, row.itemIcon.height)),
-    ).toEqual(seedRows.map(() => 32));
+    expect(seedRows.map((row) => Math.max(row.itemIcon.width, row.itemIcon.height))).toEqual(
+      seedRows.map(() => 32),
+    );
     expect(reserveRow.valueLabel.visible).toBe(false);
     expect(reserveRow.valueResource).toMatchObject({
       visible: true,
@@ -2145,44 +2087,36 @@ describe('WorkshopPixiPage', () => {
       amount: '0',
     });
     expect(reserveRow.valueResource.icon.visible).toBe(true);
-    expect(
-      reserveRow.valueResource.x + reserveRow.valueResource.measuredWidth,
-    ).toBe(dialog.panel.contentBoxWidth);
-    expect(reserveRow.valueResource.amountLabel.x).toBeGreaterThan(
-      reserveRow.valueResource.icon.x,
+    expect(reserveRow.valueResource.x + reserveRow.valueResource.measuredWidth).toBe(
+      dialog.panel.contentBoxWidth,
     );
+    expect(reserveRow.valueResource.amountLabel.x).toBeGreaterThan(reserveRow.valueResource.icon.x);
     expect(seedRows.map((row) => row.preferenceButton.color)).toEqual([
       'yellow',
       'brown',
       'red',
       'green',
     ]);
-    expect(
-      seedRows.map(
-        (row) => row.preferenceButton.textLabel.textObject.style.fill,
-      ),
-    ).toEqual(['#ffffff', '#ffffff', '#ffffff', '#ffffff']);
-    expect(
-      seedRows.map(
-        (row) => row.preferenceButton.textLabel.textObject.style.stroke,
-      ),
-    ).toEqual([
+    expect(seedRows.map((row) => row.preferenceButton.textLabel.textObject.style.fill)).toEqual([
+      '#ffffff',
+      '#ffffff',
+      '#ffffff',
+      '#ffffff',
+    ]);
+    expect(seedRows.map((row) => row.preferenceButton.textLabel.textObject.style.stroke)).toEqual([
       expect.objectContaining({ color: PIXI_TEXT_STROKE_COLOR }),
       expect.objectContaining({ color: PIXI_TEXT_STROKE_COLOR }),
       expect.objectContaining({ color: PIXI_TEXT_STROKE_COLOR }),
       expect.objectContaining({ color: PIXI_TEXT_STROKE_COLOR }),
     ]);
     expect(seedRows.every((row) => row.value.visible === false)).toBe(true);
-    expect(
-      seedRows.every((row) => row.selectedIndicator.visible === false),
-    ).toBe(true);
+    expect(seedRows.every((row) => row.selectedIndicator.visible === false)).toBe(true);
     const expectedListFrameWidth =
       PIXI_ROOT_RUN_GEOMETRY.dialog.innerBoardWidth -
       RETAINED_DIALOG_LIST_GEOMETRY.rowSideInset * 2;
     expect(seedRows[0].background.frameWidth).toBe(expectedListFrameWidth);
     expect(dialog.list.width).toBe(
-      expectedListFrameWidth +
-        RETAINED_DIALOG_LIST_GEOMETRY.scrollbarViewportOutset,
+      expectedListFrameWidth + RETAINED_DIALOG_LIST_GEOMETRY.scrollbarViewportOutset,
     );
     expect(dialog.list.root.position.x).toBe(
       (dialog.panel.contentBoxWidth - expectedListFrameWidth) / 2,
@@ -2206,9 +2140,7 @@ describe('WorkshopPixiPage', () => {
         dialog.dropSettingsSlider.pivot.y -
         seedRows[0].root.position.y,
     ).toBe(dialog.list.rowHeight + 1);
-    expect(
-      seedRows.every((row) => row.selectedIndicator.visible === false),
-    ).toBe(true);
+    expect(seedRows.every((row) => row.selectedIndicator.visible === false)).toBe(true);
     seedRows[0].action();
     seedRows = dialog.list.rows.getWidgets();
     expect(seedRows[0].height).toBe(collapsedHeight);
@@ -2216,9 +2148,7 @@ describe('WorkshopPixiPage', () => {
     expect(dialog.list.expandedKey).toBeNull();
     expect(dialog.actions.getWidgets()).toHaveLength(0);
     expect(dialog.list.items[0]).not.toHaveProperty('selected');
-    expect(dialog.itemSectionBounds.y).toBeGreaterThan(
-      dialog.selectionSectionBounds.height,
-    );
+    expect(dialog.itemSectionBounds.y).toBeGreaterThan(dialog.selectionSectionBounds.height);
 
     harness.page.destroy();
     harness.dispose();
@@ -2239,11 +2169,9 @@ describe('WorkshopPixiPage', () => {
     harness.page.openDialog('summonInfo');
 
     const dialog = harness.dialogs.get('workshop.summonInfo');
-    const seedPaperRight =
-      dialog.itemSection.position.x + dialog.itemSection.frameWidth;
+    const seedPaperRight = dialog.itemSection.position.x + dialog.itemSection.frameWidth;
     const firstRowRight =
-      dialog.list.root.position.x +
-      dialog.list.rows.getWidgets()[0].background.frameWidth;
+      dialog.list.root.position.x + dialog.list.rows.getWidgets()[0].background.frameWidth;
     const scrollbarBounds = dialog.list.scroll.scrollbarTrack.getLocalBounds();
     const scrollbarLeft = dialog.list.root.position.x + scrollbarBounds.x;
     const scrollbarRight = scrollbarLeft + scrollbarBounds.width;
@@ -2275,13 +2203,9 @@ describe('WorkshopPixiPage', () => {
     const targetLayout = dialog.list
       .createLayout()
       .find((entry) => entry.item.__virtualKey === targetKey);
-    dialog.list.scroll.scrollTo(
-      targetLayout.top + targetLayout.height - dialog.list.height - 10,
-    );
+    dialog.list.scroll.scrollTo(targetLayout.top + targetLayout.height - dialog.list.height - 10);
 
-    const targetRow = dialog.list.rows
-      .getWidgets()
-      .find((row) => row.key === targetKey);
+    const targetRow = dialog.list.rows.getWidgets().find((row) => row.key === targetKey);
     expect(targetLayout.top).toBeGreaterThanOrEqual(dialog.list.scroll.offsetY);
     expect(targetLayout.top + targetLayout.height).toBeGreaterThan(
       dialog.list.scroll.offsetY + dialog.list.height,
@@ -2293,9 +2217,7 @@ describe('WorkshopPixiPage', () => {
       .createLayout()
       .find((entry) => entry.item.__virtualKey === targetKey);
     expect(dialog.list.scroll.offsetY).toBeGreaterThan(0);
-    expect(expandedLayout.top).toBeGreaterThanOrEqual(
-      dialog.list.scroll.offsetY,
-    );
+    expect(expandedLayout.top).toBeGreaterThanOrEqual(dialog.list.scroll.offsetY);
     expect(expandedLayout.top + expandedLayout.height).toBeLessThanOrEqual(
       dialog.list.scroll.offsetY + dialog.list.height,
     );
@@ -2321,8 +2243,7 @@ describe('WorkshopPixiPage', () => {
     model.workshop.dialogs.summonInfo = createSummonInfoDialogModel({
       unlocked: true,
     });
-    model.workshop.dialogs.summonInfo.items[0].semanticId =
-      'workshop.summonInfo.seed.sageSeed';
+    model.workshop.dialogs.summonInfo.items[0].semanticId = 'workshop.summonInfo.seed.sageSeed';
 
     harness.page.bind(model);
     harness.page.openDialog('summonInfo');
@@ -2338,10 +2259,9 @@ describe('WorkshopPixiPage', () => {
 
     expect(rowRegistration).toBeUndefined();
     expect(row.root.cursor).toBe('default');
-    expect(
-      harness.semanticTargets.get('workshop.summonInfo.seed.sageSeed')
-        ?.displayObject,
-    ).toBe(row.preferenceButton);
+    expect(harness.semanticTargets.get('workshop.summonInfo.seed.sageSeed')?.displayObject).toBe(
+      row.preferenceButton,
+    );
     expect(row.background.alpha).toBe(1);
     expect(row.visual.scale.x).toBe(1);
 
@@ -2350,12 +2270,8 @@ describe('WorkshopPixiPage', () => {
       x: rowBounds.x + 20,
       y: rowBounds.y + rowBounds.height / 2,
     };
-    inputRouter.onPointerDown(
-      createPointerEvent(row.root, 'pointerdown', rowBodyPoint),
-    );
-    inputRouter.onPointerUp(
-      createPointerEvent(row.root, 'pointerup', rowBodyPoint),
-    );
+    inputRouter.onPointerDown(createPointerEvent(row.root, 'pointerdown', rowBodyPoint));
+    inputRouter.onPointerUp(createPointerEvent(row.root, 'pointerup', rowBodyPoint));
     expect(hapticsFacade.playUiTap).not.toHaveBeenCalled();
     expect(uiClickSoundFacade.playClick).not.toHaveBeenCalled();
     expect(dialog.list.expandedKey).toBeNull();
@@ -2453,12 +2369,8 @@ describe('WorkshopPixiPage', () => {
     frames.shift()(120);
 
     expect(dialog.itemSectionBounds.y).toBeGreaterThan(0);
-    expect(dialog.itemSectionBounds.y).toBeLessThan(
-      dialog.selectionSectionBounds.height + 40,
-    );
-    expect(dialog.itemSectionBounds.height).toBeLessThan(
-      dialog.panel.contentBoxHeight,
-    );
+    expect(dialog.itemSectionBounds.y).toBeLessThan(dialog.selectionSectionBounds.height + 40);
+    expect(dialog.itemSectionBounds.height).toBeLessThan(dialog.panel.contentBoxHeight);
     expect(dialog.selectionSection.scale.x).toBeGreaterThan(0.8);
     expect(dialog.selectionSection.scale.x).toBeLessThanOrEqual(1.02);
     for (const target of [
@@ -2473,9 +2385,7 @@ describe('WorkshopPixiPage', () => {
     frames.shift()(240);
 
     expect(dialog.autoSummonRevealProgress).toBeNull();
-    expect(dialog.itemSectionBounds.y).toBeGreaterThan(
-      dialog.selectionSectionBounds.height,
-    );
+    expect(dialog.itemSectionBounds.y).toBeGreaterThan(dialog.selectionSectionBounds.height);
     expect(dialog.selectionSection.scale.x).toBe(1);
 
     harness.dialogs.close('workshop.summonInfo');
@@ -2511,9 +2421,7 @@ describe('WorkshopPixiPage', () => {
     expect(requestFrame).not.toHaveBeenCalled();
     expect(dialog.autoSummonRevealProgress).toBeNull();
     expect(dialog.selectionSection.scale.x).toBe(1);
-    expect(dialog.itemSectionBounds.y).toBeGreaterThan(
-      dialog.selectionSectionBounds.height,
-    );
+    expect(dialog.itemSectionBounds.y).toBeGreaterThan(dialog.selectionSectionBounds.height);
 
     harness.page.destroy();
     harness.dispose();
@@ -2574,44 +2482,33 @@ describe('WorkshopPixiPage', () => {
     const autoStyle = autoRow.keyLabel.textObject.style;
     const reserveStyle = reserveRow.keyLabel.textObject.style;
 
-    expect(assetManager.getTexture).toHaveBeenCalledWith(
-      PIXI_ROOT_RUN_ASSETS.settingsGear,
-    );
+    expect(assetManager.getTexture).toHaveBeenCalledWith(PIXI_ROOT_RUN_ASSETS.settingsGear);
     expect(autoRow.itemIcon.visible).toBe(true);
     expect(autoRow.itemIcon.x).toBeLessThan(autoRow.keyLabel.x);
-    expect(autoRow.itemIcon.width).toBe(
-      26 * PIXI_ROOT_RUN_GEOMETRY.settings.gearAspectRatio,
-    );
+    expect(autoRow.itemIcon.width).toBe(26 * PIXI_ROOT_RUN_GEOMETRY.settings.gearAspectRatio);
     expect(autoRow.itemIcon.height).toBe(26);
     expect(
-      autoRow.root.position.y +
-        autoRow.itemIcon.position.y -
-        autoRow.itemIcon.height / 2,
+      autoRow.root.position.y + autoRow.itemIcon.position.y - autoRow.itemIcon.height / 2,
     ).toBeGreaterThanOrEqual(7);
     expect(dialog.settingsToggle.controlWidth).toBe(60);
-    expect(reserveRow.root.position.x).toBe(
-      dialog.manaSettingsSlider.position.x,
-    );
+    expect(reserveRow.root.position.x).toBe(dialog.manaSettingsSlider.position.x);
     expect(reserveRow.root.position.x + reserveRow.root.hitArea.width).toBe(
       dialog.panel.contentBoxWidth,
     );
-    expect(
-      dialog.settingsToggle.position.x + dialog.settingsToggle.controlWidth,
-    ).toBe(dialog.panel.contentBoxWidth);
+    expect(dialog.settingsToggle.position.x + dialog.settingsToggle.controlWidth).toBe(
+      dialog.panel.contentBoxWidth,
+    );
     expect(
       dialog.manaSettingsSlider.position.x +
         dialog.manaSettingsSlider.controlWidth -
         PIXI_ROOT_RUN_GEOMETRY.settings.knobSize / 2,
     ).toBe(reserveRow.root.position.x + reserveRow.root.hitArea.width);
     expect(autoRow.root.position.y + autoRow.itemIcon.position.y).toBe(
-      dialog.settingsToggle.position.y +
-        dialog.settingsToggle.controlHeight / 2,
+      dialog.settingsToggle.position.y + dialog.settingsToggle.controlHeight / 2,
     );
     expect(
       dialog.manaSettingsSlider.position.y -
-        (reserveRow.root.position.y +
-          reserveRow.keyLabel.position.y +
-          reserveStyle.fontSize),
+        (reserveRow.root.position.y + reserveRow.keyLabel.position.y + reserveStyle.fontSize),
     ).toBeGreaterThanOrEqual(2);
     expect(reserveRow.root.position.y).toBe(43);
     expect(autoStyle).toMatchObject({
@@ -2754,12 +2651,8 @@ describe('WorkshopPixiPage', () => {
 
     frames.shift()(400);
     expect(dialog.dropSettingsSlider.visible).toBe(false);
-    expect(dialog.list.rows.getWidgets()[0].height).toBeGreaterThan(
-      collapsedHeight,
-    );
-    expect(dialog.list.rows.getWidgets()[0].height).toBeLessThan(
-      collapsedHeight + 31,
-    );
+    expect(dialog.list.rows.getWidgets()[0].height).toBeGreaterThan(collapsedHeight);
+    expect(dialog.list.rows.getWidgets()[0].height).toBeLessThan(collapsedHeight + 31);
 
     frames.shift()(480);
     expect(dialog.dropSettingsSlider.visible).toBe(false);
@@ -2815,9 +2708,7 @@ describe('WorkshopPixiPage', () => {
     );
 
     frames.shift()(240);
-    inputRouter.onPointerUp(
-      createPointerEvent(mintRow.preferenceButton, 'pointerup', mintPoint),
-    );
+    inputRouter.onPointerUp(createPointerEvent(mintRow.preferenceButton, 'pointerup', mintPoint));
 
     expect(dialog.list.expandedKey).toBe('mintSeed');
 
@@ -2852,9 +2743,7 @@ describe('WorkshopPixiPage', () => {
     expect(row.valueIcon.visible).toBe(true);
     expect(row.valueIconOverlay.visible).toBe(true);
     expect(row.valueIcon.x).toBeLessThan(row.value.x);
-    expect(row.valueIcon.x + row.valueIcon.width / 2 + 3).toBe(
-      row.value.x - row.value.width,
-    );
+    expect(row.valueIcon.x + row.valueIcon.width / 2 + 3).toBe(row.value.x - row.value.width);
     expect(row.valueIcon.y).toBe(9);
 
     harness.page.destroy();
@@ -2946,8 +2835,7 @@ describe('WorkshopPixiPage', () => {
     expect(row.banner.emblemColor).toBe('gold');
     expect(row.getPreferredHeight()).toBe(78);
     expect(applyRow.getPreferredHeight()).toBe(78);
-    const expectedDirectoryPaperWidth =
-      PIXI_ROOT_RUN_GEOMETRY.dialog.innerBoardWidth + 16;
+    const expectedDirectoryPaperWidth = PIXI_ROOT_RUN_GEOMETRY.dialog.innerBoardWidth + 16;
     expect(dialog.panel.paperFrame.visible).toBe(false);
     expect(row.background).toBeInstanceOf(PixiNineSliceFrame);
     expect(row.background.texture).toBe(dialog.panel.paperFrame.texture);
@@ -2956,8 +2844,7 @@ describe('WorkshopPixiPage', () => {
     expect(row.sectionRule).toBeUndefined();
     expect(applyRow.root.y - row.root.y).toBe(83);
     expect(dialog.scroll.width).toBe(
-      expectedDirectoryPaperWidth +
-        RETAINED_DIALOG_LIST_GEOMETRY.scrollbarViewportOutset,
+      expectedDirectoryPaperWidth + RETAINED_DIALOG_LIST_GEOMETRY.scrollbarViewportOutset,
     );
     expect(dialog.scroll.root.x).toBeCloseTo(
       (dialog.panel.coreWidth - expectedDirectoryPaperWidth) / 2,
@@ -2990,9 +2877,7 @@ describe('WorkshopPixiPage', () => {
     const miraTexture = new Texture();
     const assetManager = createPixiAssetManagerFake(Texture);
     assetManager.getTexture = vi.fn((assetId) =>
-      assetId === 'source:assets/avatars/mira.png'
-        ? miraTexture
-        : new Texture(),
+      assetId === 'source:assets/avatars/mira.png' ? miraTexture : new Texture(),
     );
     const harness = createHarness({ assetManager });
     const model = createWorkshopViewModel();
@@ -3031,6 +2916,9 @@ describe('WorkshopPixiPage', () => {
           character: 'mira',
           roleLabel: 'Trade Master',
           levelLabel: 'Lv 12',
+          prestigeCount: 2,
+          totalContributionLabel: '12.5k',
+          showRankHeader: true,
           onActivate: vi.fn(),
         },
       ],
@@ -3047,32 +2935,27 @@ describe('WorkshopPixiPage', () => {
     expect(dialog.allianceMembersSection.root.visible).toBe(true);
     expect(dialog.allianceTradeSection.title.visible).toBe(false);
     expect(dialog.allianceTradeSection.paper.y).toBeCloseTo(
-      PIXI_ROOT_RUN_GEOMETRY.dialog.paperInsetTop -
-        PIXI_ROOT_RUN_GEOMETRY.dialog.frameOutset,
+      PIXI_ROOT_RUN_GEOMETRY.dialog.paperInsetTop - PIXI_ROOT_RUN_GEOMETRY.dialog.frameOutset,
     );
-    expect(dialog.allianceTradeSection.identity.y).toBe(
-      PIXI_UI_GEOMETRY.dialogPadding + 5,
-    );
+    expect(dialog.allianceTradeSection.identity.y).toBe(PIXI_UI_GEOMETRY.dialogPadding + 5);
     expect(dialog.allianceTradeSection.identity.text).toBe('[MOSS] Moss Hall');
     expect(dialog.allianceMembersSection.title.visible).toBe(false);
     expect(dialog.allianceMembersSection.count.visible).toBe(false);
-    expect(dialog.allianceMembersSection.scroll.root.y).toBe(
-      PIXI_UI_GEOMETRY.dialogPadding + 5,
-    );
+    expect(dialog.allianceMembersSection.scroll.root.y).toBe(PIXI_UI_GEOMETRY.dialogPadding + 5);
     const tradePaperBottom =
-      dialog.allianceTradeSection.paper.y +
-      dialog.allianceTradeSection.paper.frameHeight;
+      dialog.allianceTradeSection.paper.y + dialog.allianceTradeSection.paper.frameHeight;
     const membersPaperTop =
-      dialog.allianceMembersSection.root.y +
-      dialog.allianceMembersSection.paper.y;
+      dialog.allianceMembersSection.root.y + dialog.allianceMembersSection.paper.y;
     expect(membersPaperTop - tradePaperBottom).toBe(8);
     expect(member.avatar.texture).toBe(miraTexture);
     expect(member.role.text).toBe('Trade Master');
+    expect(member.role.visible).toBe(true);
     expect(member.level.text).toBe('Lv 12');
+    expect(member.prestigeStars.level).toBe(2);
+    expect(member.contribution.amount).toBe('12.5k');
+    expect(member.getPreferredHeight()).toBe(74);
     expect(member.background.frameHeight).toBe(44);
-    expect(member.root.parent).toBe(
-      dialog.allianceMembersSection.scroll.content,
-    );
+    expect(member.root.parent).toBe(dialog.allianceMembersSection.scroll.content);
     expect(dialog.tabs.getWidgets()).toHaveLength(4);
     expect(dialog.tabsLayer.visible).toBe(true);
     expect(dialog.tabsLayer.y).toBeLessThan(dialog.panel.coreHeight);
@@ -3118,14 +3001,15 @@ describe('WorkshopPixiPage', () => {
           title: 'Fill Mana Tonic',
           itemKind: 'potion',
           itemKey: 'manaTonic',
-          contributionLabel: 'Your Fill 8/10',
+          contributionLabel: 'Your contribution 8/10',
           progressLabel: '18/40',
+          progress: 0.45,
           rewardAmountLabel: '3',
           rewardResource: 'crystal',
           actionLabel: 'Fill',
           actionVariant: 'green',
-          actionWidth: 58,
-          actionHeight: 28,
+          actionWidth: 72,
+          actionHeight: 42,
           enabled: true,
           onActivate: vi.fn(),
         },
@@ -3134,14 +3018,15 @@ describe('WorkshopPixiPage', () => {
           title: 'Grand Route',
           itemKind: 'resource',
           itemKey: 'coin',
-          contributionLabel: 'Your Route 12,500/12,500',
+          contributionLabel: 'Your contribution 12,500/12,500',
           progressLabel: '86,027/250,000',
+          progress: 86_027 / 250_000,
           rewardAmountLabel: '12',
           rewardResource: 'crystal',
           actionLabel: 'Claim',
           actionVariant: 'gray',
-          actionWidth: 58,
-          actionHeight: 28,
+          actionWidth: 72,
+          actionHeight: 42,
           enabled: false,
         },
       ],
@@ -3156,26 +3041,29 @@ describe('WorkshopPixiPage', () => {
     const routeQuest = dialog.allianceQuestRows.get('grand-route');
     const tabs = dialog.tabs.getWidgets();
     expect(dialog.rows).toBe(dialog.allianceQuestRows);
-    expect(quest.background.frameHeight).toBeCloseTo(
-      quest.getPreferredHeight() - 6,
+    expect(quest.background.frameHeight).toBeCloseTo(quest.getPreferredHeight());
+    expect(quest.background.texture).toBe(
+      assetManager.getTexture(PIXI_ROOT_RUN_ASSETS.researchCard),
     );
+    expect(quest.artWell).toMatchObject({
+      frameWidth: 52,
+      frameHeight: 52,
+      tint: 0xdbc19f,
+    });
     expect(quest.title.text).toBe('Fill Mana Tonic');
     expect(quest.itemIcon.texture).toBe(potionTexture);
-    expect(quest.itemIcon.width).toBe(36);
-    expect(quest.itemIcon.height).toBe(36);
-    expect(quest.title.x).toBeGreaterThan(
-      quest.itemIcon.x + quest.itemIcon.width / 2,
-    );
+    expect(quest.itemIcon.width).toBe(57);
+    expect(quest.itemIcon.height).toBe(57);
     expect(quest.progress.text).toBe('18/40');
+    expect(quest.progressBar.progress).toBeCloseTo(0.45);
+    expect(quest.contribution.text).toBe('Your contribution 8/10');
     expect(quest.reward.icon.texture).toBe(crystalTexture);
     expect(quest.reward.amountLabel.textObject.text).toBe('3');
     expect(quest.action.text.text).toBe('Fill');
     expect(routeQuest.itemIcon.texture).toBe(coinTexture);
-    expect(routeQuest.itemIcon.width).toBe(36);
-    expect(routeQuest.itemIcon.height).toBe(36);
-    expect(routeQuest.title.x).toBeGreaterThan(
-      routeQuest.itemIcon.x + routeQuest.itemIcon.width / 2,
-    );
+    expect(routeQuest.itemIcon.width).toBe(57);
+    expect(routeQuest.itemIcon.height).toBe(57);
+    expect(routeQuest.progressBar.progress).toBeCloseTo(86_027 / 250_000);
     expect(quest.root.y).toBe(dialog.scrollContentPaddingTop);
     expect(
       dialog.panel.paperFrame.y +
@@ -3184,8 +3072,7 @@ describe('WorkshopPixiPage', () => {
     ).toBe(dialog.scrollContentPaddingTop);
     expect(tabs[1].root.x - (tabs[0].root.x + tabs[0].width)).toBe(6);
     expect(
-      dialog.tabsLayer.y -
-        (dialog.panel.paperFrame.y + dialog.panel.paperFrame.frameHeight),
+      dialog.tabsLayer.y - (dialog.panel.paperFrame.y + dialog.panel.paperFrame.frameHeight),
     ).toBe(6);
 
     harness.page.destroy();
@@ -3207,15 +3094,16 @@ describe('WorkshopPixiPage', () => {
       rows: [
         {
           id: 'fill-moonflower',
-          title: 'Fill 5000 moonflower seed',
-          contributionLabel: 'Your Fill 0/250',
+          title: 'Fill 5000 Moonflower Seeds Before The Eclipse Ends',
+          contributionLabel: 'Your contribution 0/250',
           progressLabel: '1,358/5,000',
+          progress: 1_358 / 5_000,
           rewardAmountLabel: '5',
           rewardResource: 'crystal',
           actionLabel: 'Locked',
           actionVariant: 'gray',
-          actionWidth: 58,
-          actionHeight: 28,
+          actionWidth: 72,
+          actionHeight: 42,
           enabled: false,
         },
       ],
@@ -3230,16 +3118,13 @@ describe('WorkshopPixiPage', () => {
     const preferredHeight = quest.getPreferredHeight();
     expect(quest.title.style.whiteSpace).toBe('normal');
     expect(quest.title.height).toBeGreaterThan(16);
-    expect(preferredHeight).toBeGreaterThan(50);
-    expect(quest.contribution.y).toBeGreaterThan(27);
-    expect(quest.contribution.y).toBeGreaterThanOrEqual(
-      quest.title.y + quest.title.height + 5,
-    );
-    expect(quest.title.x + quest.title.width).toBeLessThan(
-      quest.progress.x - quest.progress.width,
-    );
-    expect(quest.background.frameHeight).toBeCloseTo(preferredHeight - 6);
-    expect(quest.action.root.y).toBeCloseTo((preferredHeight - 28) / 2);
+    expect(preferredHeight).toBeGreaterThanOrEqual(96);
+    expect(quest.contribution.y).toBeGreaterThan(57);
+    expect(quest.contribution.y).toBeGreaterThanOrEqual(quest.title.y + quest.title.height + 5);
+    expect(quest.progressBar.root.x).toBeGreaterThan(quest.artWell.x + quest.artWell.frameWidth);
+    expect(quest.background.frameHeight).toBeCloseTo(preferredHeight);
+    expect(quest.action.width).toBe(72);
+    expect(quest.action.height).toBe(42);
 
     harness.page.destroy();
     harness.dispose();
@@ -3357,9 +3242,7 @@ describe('WorkshopPixiPage', () => {
     expect(pane.fields.get('name').value).toBe('Moss Hall');
     expect(pane.fields.get('notice').value).toBe('Help one another.');
     expect(pane.swatches).toHaveLength(10);
-    expect(pane.swatches.find((swatch) => swatch.selected)?.colorId).toBe(
-      'green',
-    );
+    expect(pane.swatches.find((swatch) => swatch.selected)?.colorId).toBe('green');
     expect(pane.sectionTabs).toHaveLength(2);
     expect(pane.bannerPreview.visible).toBe(false);
     expect(pane.scroll.scrollbarThumb.visible).toBe(false);
@@ -3368,8 +3251,7 @@ describe('WorkshopPixiPage', () => {
     expect(dialog.tabs.getWidgets()).toHaveLength(4);
     expect(dialog.panel.paperFrame.visible).toBe(true);
     expect(pane.root.y).toBe(
-      dialog.panel.paperFrame.y +
-        RETAINED_DIALOG_SCROLL_GEOMETRY.contentPaddingTop,
+      dialog.panel.paperFrame.y + RETAINED_DIALOG_SCROLL_GEOMETRY.contentPaddingTop,
     );
 
     pane.selectTagColor('violet');
@@ -3500,14 +3382,12 @@ describe('WorkshopPixiPage', () => {
     expect(pane.bannerPreview.emblemColor).toBe('gold');
     expect(pane.bannerPreview.emblemId).toBe('owl');
     expect(pane.emblemOptions).toHaveLength(12);
-    expect(
-      pane.emblemOptions.find((option) => option.emblemId === 'owl').checkmark
-        .visible,
-    ).toBe(true);
-    expect(
-      pane.emblemOptions.find((option) => option.emblemId === 'flame').checkmark
-        .visible,
-    ).toBe(false);
+    expect(pane.emblemOptions.find((option) => option.emblemId === 'owl').checkmark.visible).toBe(
+      true,
+    );
+    expect(pane.emblemOptions.find((option) => option.emblemId === 'flame').checkmark.visible).toBe(
+      false,
+    );
     expect(pane.bannerColorSwatches).toHaveLength(10);
     expect(pane.emblemColorSwatches).toHaveLength(10);
     expect(pane.bannerColorSwatches[0].root.eventMode).toBe('static');
@@ -3521,14 +3401,12 @@ describe('WorkshopPixiPage', () => {
     expect(pane.bannerPreview.bannerColor).toBe('red');
     expect(pane.bannerPreview.emblemColor).toBe('white');
     expect(pane.bannerPreview.emblemId).toBe('flame');
-    expect(
-      pane.emblemOptions.find((option) => option.emblemId === 'owl').checkmark
-        .visible,
-    ).toBe(false);
-    expect(
-      pane.emblemOptions.find((option) => option.emblemId === 'flame').checkmark
-        .visible,
-    ).toBe(true);
+    expect(pane.emblemOptions.find((option) => option.emblemId === 'owl').checkmark.visible).toBe(
+      false,
+    );
+    expect(pane.emblemOptions.find((option) => option.emblemId === 'flame').checkmark.visible).toBe(
+      true,
+    );
     await pane.save();
     expect(onSave).toHaveBeenCalledWith(
       expect.objectContaining({
@@ -3592,21 +3470,16 @@ describe('WorkshopPixiPage', () => {
     expect(pane.root.x).toBe(0);
     expect(pane.root.y).toBe(0);
     expect(pane.createIdentitySection.x).toBeCloseTo(dialog.panel.paperFrame.x);
-    expect(pane.createIdentitySection.frameWidth).toBeCloseTo(
-      dialog.panel.paperFrame.frameWidth,
-    );
+    expect(pane.createIdentitySection.frameWidth).toBeCloseTo(dialog.panel.paperFrame.frameWidth);
     expect(pane.bannerPreview.flagWidth).toBe(88);
     expect(pane.bannerPreview.flagHeight).toBe(88);
     expect(pane.bannerPreview.x).toBe(pane.emblemLabel.x - 13);
     expect(pane.labels.get('name').y).toBe(pane.bannerPreview.y);
-    expect(
-      pane.labels.get('name').x -
-        (pane.bannerPreview.x + pane.bannerPreview.flagWidth),
-    ).toBe(8);
-    expect(pane.fields.get('name').fieldWidth).toBe(181);
-    expect(pane.fields.get('tag').fieldWidth).toBe(
-      pane.fields.get('name').fieldWidth,
+    expect(pane.labels.get('name').x - (pane.bannerPreview.x + pane.bannerPreview.flagWidth)).toBe(
+      8,
     );
+    expect(pane.fields.get('name').fieldWidth).toBe(181);
+    expect(pane.fields.get('tag').fieldWidth).toBe(pane.fields.get('name').fieldWidth);
     expect(pane.emblemLabel.y).toBeGreaterThan(
       pane.bannerPreview.y + pane.bannerPreview.flagHeight,
     );
@@ -3629,9 +3502,9 @@ describe('WorkshopPixiPage', () => {
         pane.createAccessSection.frameHeight -
         (pane.saveButton.root.y + pane.saveButton.height),
     ).toBeLessThanOrEqual(16);
-    expect(
-      pane.createAccessSection.y + pane.createAccessSection.frameHeight,
-    ).toBeLessThan(dialog.tabsLayer.y);
+    expect(pane.createAccessSection.y + pane.createAccessSection.frameHeight).toBeLessThan(
+      dialog.tabsLayer.y,
+    );
 
     pane.fields.get('name').setValue('Moon Traders', { notify: true });
     pane.fields.get('tag').setValue('MOON', { notify: true });
@@ -3711,22 +3584,14 @@ describe('WorkshopPixiPage', () => {
     expect(row.ingredientRows[0].quantity.text).toBe('×1');
     expect(row.ingredientRows[1].label.text).toBe('Silverleaf');
     expect(row.ingredientRows[1].quantity.text).toBe('×2');
-    expect(assetManager.getTexture).toHaveBeenCalledWith(
-      PIXI_ROOT_RUN_ASSETS.dialogPaper,
-    );
-    expect(assetManager.getAtlasTexture).toHaveBeenCalledWith(
-      'potion:silverleafQuiet',
-    );
+    expect(assetManager.getTexture).toHaveBeenCalledWith(PIXI_ROOT_RUN_ASSETS.dialogPaper);
+    expect(assetManager.getAtlasTexture).toHaveBeenCalledWith('potion:silverleafQuiet');
     expect(assetManager.getAtlasTexture).toHaveBeenCalledWith('herb:mintHerb');
-    expect(assetManager.getAtlasTexture).toHaveBeenCalledWith(
-      'herb:silverleafHerb',
-    );
+    expect(assetManager.getAtlasTexture).toHaveBeenCalledWith('herb:silverleafHerb');
     expect(assetManager.getAtlasTexture).toHaveBeenCalledWith('resource:mana');
     expect(assetManager.getAtlasTexture).toHaveBeenCalledWith('resource:coin');
     expect(row.activateDiscoverer()).toBe(true);
-    expect(openDiscoverer).toHaveBeenCalledWith(
-      model.workshop.dialogs.discoveries.rows[0],
-    );
+    expect(openDiscoverer).toHaveBeenCalledWith(model.workshop.dialogs.discoveries.rows[0]);
 
     harness.page.destroy();
     harness.dispose();
@@ -3751,39 +3616,31 @@ describe('WorkshopPixiPage', () => {
 
     const dialog = harness.dialogs.get('workshop.discoveries');
     expect(dialog.discoveryBook.children).toHaveLength(2);
-    expect(assetManager.getAtlasTexture).toHaveBeenCalledWith(
-      'status:lockDefault',
-    );
+    expect(assetManager.getAtlasTexture).toHaveBeenCalledWith('status:lockDefault');
     expect(dialog.rows.get('potion:0').potionIcon.alpha).toBe(1);
     expect(
-      dialog.rows.get('potion:0').potionIcon.width /
-        dialog.rows.get('potion:0').potionIcon.height,
+      dialog.rows.get('potion:0').potionIcon.width / dialog.rows.get('potion:0').potionIcon.height,
     ).toBeCloseTo(53 / 60);
     const unknownPage = dialog.rows.get('potion:0');
-    expect(
-      unknownPage.potionIcon.x + unknownPage.potionIcon.width / 2,
-    ).toBeCloseTo(unknownPage.width / 2);
-    expect(
-      unknownPage.potionIcon.y + unknownPage.potionIcon.height / 2,
-    ).toBeLessThan(unknownPage.height / 2);
+    expect(unknownPage.potionIcon.x + unknownPage.potionIcon.width / 2).toBeCloseTo(
+      unknownPage.width / 2,
+    );
+    expect(unknownPage.potionIcon.y + unknownPage.potionIcon.height / 2).toBeLessThan(
+      unknownPage.height / 2,
+    );
     expect(unknownPage.unknownStatus.visible).toBe(true);
     expect(unknownPage.unknownStatus.eventMode).toBe('none');
-    expect(unknownPage.unknownStatusLabel.text).toBe(
-      'Recipe not yet discovered',
+    expect(unknownPage.unknownStatusLabel.text).toBe('Recipe not yet discovered');
+    expect(unknownPage.unknownStatus.y + unknownPage.unknownStatusBackground.frameHeight).toBe(
+      unknownPage.height - 8,
     );
-    expect(
-      unknownPage.unknownStatus.y +
-        unknownPage.unknownStatusBackground.frameHeight,
-    ).toBe(unknownPage.height - 8);
     expect(unknownPage.unknownOverlay.visible).toBe(true);
     expect(unknownPage.unknownOverlay.eventMode).toBe('none');
     expect(unknownPage.unknownOverlay.tint).toBe(0x000000);
     expect(unknownPage.unknownOverlay.alpha).toBe(0.18);
     expect(unknownPage.unknownOverlay.frameWidth).toBe(unknownPage.width);
     expect(unknownPage.unknownOverlay.frameHeight).toBe(unknownPage.height);
-    expect(
-      unknownPage.root.getChildIndex(unknownPage.unknownStatus),
-    ).toBeGreaterThan(
+    expect(unknownPage.root.getChildIndex(unknownPage.unknownStatus)).toBeGreaterThan(
       unknownPage.root.getChildIndex(unknownPage.unknownOverlay),
     );
     expect(unknownPage.name.visible).toBe(false);
@@ -3877,28 +3734,17 @@ describe('WorkshopPixiPage', () => {
     expect(assetManager.getAtlasTexture).toHaveBeenCalledWith('resource:mana');
     expect(assetManager.getAtlasTexture).toHaveBeenCalledWith('seed:pack');
     expect(assetManager.getAtlasTexture).toHaveBeenCalledWith('herb:sageHerb');
-    expect(assetManager.getAtlasTexture).toHaveBeenCalledWith(
-      'potion:manaTonic',
-    );
-    expect(assetManager.getAtlasTexture).toHaveBeenCalledWith(
-      'ingredient:cyclopsEye',
-    );
-    expect(
-      rows.every((row) => row instanceof RootRunInventoryChoiceRowPixi),
-    ).toBe(true);
-    expect(
-      rows.every((row) => row.background instanceof PixiNineSliceFrame),
-    ).toBe(true);
+    expect(assetManager.getAtlasTexture).toHaveBeenCalledWith('potion:manaTonic');
+    expect(assetManager.getAtlasTexture).toHaveBeenCalledWith('ingredient:cyclopsEye');
+    expect(rows.every((row) => row instanceof RootRunInventoryChoiceRowPixi)).toBe(true);
+    expect(rows.every((row) => row.background instanceof PixiNineSliceFrame)).toBe(true);
     expect(
       rows.every(
-        (row) =>
-          row.background.frameWidth ===
-          RETAINED_DIALOG_LIST_GEOMETRY.rowFrameWidth,
+        (row) => row.background.frameWidth === RETAINED_DIALOG_LIST_GEOMETRY.rowFrameWidth,
       ),
     ).toBe(true);
     expect(dialog.scroll.root.x).toBeCloseTo(
-      (dialog.panel.coreWidth - RETAINED_DIALOG_LIST_GEOMETRY.rowFrameWidth) /
-        2,
+      (dialog.panel.coreWidth - RETAINED_DIALOG_LIST_GEOMETRY.rowFrameWidth) / 2,
     );
     expect(dialog.scroll.width).toBe(
       RETAINED_DIALOG_LIST_GEOMETRY.rowFrameWidth +
@@ -3906,21 +3752,17 @@ describe('WorkshopPixiPage', () => {
     );
     expect(rows.every((row) => row.background.frameHeight === 44)).toBe(true);
     expect(rows.every((row) => row.itemIcon.visible)).toBe(true);
+    expect(rows.map((row) => Math.max(row.itemIcon.width, row.itemIcon.height))).toEqual([
+      32, 32, 32, 36, 32,
+    ]);
     expect(
-      rows.map((row) => Math.max(row.itemIcon.width, row.itemIcon.height)),
-    ).toEqual([32, 32, 32, 36, 32]);
-    expect(
-      rows.every(
-        (row) =>
-          row.value.textObject.style.fill === row.label.textObject.style.fill,
-      ),
+      rows.every((row) => row.value.textObject.style.fill === row.label.textObject.style.fill),
     ).toBe(true);
     expect(
       rows.every(
         (row) =>
           row.value.x ===
-          RETAINED_DIALOG_LIST_GEOMETRY.rowFrameWidth -
-            PIXI_ROOT_RUN_GEOMETRY.settings.rowPadding,
+          RETAINED_DIALOG_LIST_GEOMETRY.rowFrameWidth - PIXI_ROOT_RUN_GEOMETRY.settings.rowPadding,
       ),
     ).toBe(true);
 
@@ -3954,19 +3796,15 @@ describe('WorkshopPixiPage', () => {
     const firstRow = dialog.rows.get('row-0');
     const secondRow = dialog.rows.get('row-1');
     const tabs = dialog.tabs.getWidgets();
-    const shellBottom =
-      dialog.panel.coreHeight + PIXI_ROOT_RUN_GEOMETRY.dialog.frameOutset;
+    const shellBottom = dialog.panel.coreHeight + PIXI_ROOT_RUN_GEOMETRY.dialog.frameOutset;
     const tabsBottom = dialog.tabsLayer.position.y + tabs[0].height;
-    const paperBottom =
-      dialog.panel.paperFrame.position.y + dialog.panel.paperFrame.frameHeight;
+    const paperBottom = dialog.panel.paperFrame.position.y + dialog.panel.paperFrame.frameHeight;
     expect(dialog.scroll.root.y).toBe(24);
     expect(firstRow.root.y).toBe(12);
     expect(secondRow.root.y).toBe(12 + firstRow.getPreferredHeight() + 4);
     expect(dialog.scroll.width).toBe(268);
     expect(dialog.scroll.scrollbarTrack.visible).toBe(true);
-    expect(dialog.scroll.scrollbarTrack.getLocalBounds().x).toBeGreaterThan(
-      268,
-    );
+    expect(dialog.scroll.scrollbarTrack.getLocalBounds().x).toBeGreaterThan(268);
     expect(dialog.tabsLayer.position.x).toBe(9);
     expect(tabs).toHaveLength(4);
     expect(shellBottom - tabsBottom).toBeCloseTo(10);
@@ -4113,9 +3951,7 @@ describe('WorkshopPixiPage', () => {
     harness.page.bind(createModel(rows));
 
     expect(firstRowBind).not.toHaveBeenCalled();
-    expect(dialog.rows.get('message-2').body.text).toContain(
-      'The cauldron is bubbling.',
-    );
+    expect(dialog.rows.get('message-2').body.text).toContain('The cauldron is bubbling.');
 
     harness.page.destroy();
     harness.dispose();
@@ -4203,9 +4039,7 @@ describe('WorkshopPixiPage', () => {
     const paperTop = dialog.panel.paperFrame.y;
 
     expect(dialog.scroll.offsetY).toBeGreaterThan(0);
-    expect(dialog.scroll.offsetY).toBeCloseTo(
-      dialog.scroll.contentHeight - dialog.scroll.height,
-    );
+    expect(dialog.scroll.offsetY).toBeCloseTo(dialog.scroll.contentHeight - dialog.scroll.height);
     expect(dialog.scroll.root.y - paperTop).toBeGreaterThanOrEqual(7);
 
     harness.page.destroy();
@@ -4248,12 +4082,8 @@ describe('WorkshopPixiPage', () => {
 
     const wrappedRow = dialog.rows.get('player-wrapped');
     expect(wrappedRow.getPreferredHeight()).toBeGreaterThan(52.65);
-    expect(dialog.scroll.contentHeight - dialog.scroll.height).toBeGreaterThan(
-      previousBottom,
-    );
-    expect(dialog.scroll.offsetY).toBeCloseTo(
-      dialog.scroll.contentHeight - dialog.scroll.height,
-    );
+    expect(dialog.scroll.contentHeight - dialog.scroll.height).toBeGreaterThan(previousBottom);
+    expect(dialog.scroll.offsetY).toBeCloseTo(dialog.scroll.contentHeight - dialog.scroll.height);
 
     dialog.scroll.scrollTo(dialog.scroll.offsetY - 80);
     const readingOffset = dialog.scroll.offsetY;
@@ -4289,17 +4119,13 @@ describe('WorkshopPixiPage', () => {
     const dialog = harness.dialogs.get('workshop.worldChat');
     const geometry = PIXI_ROOT_RUN_GEOMETRY.dialog;
     expect(dialog.modal.fixedBounds.x - geometry.frameOutset).toBe(0);
+    expect(dialog.modal.fixedBounds.x + dialog.modal.fixedBounds.width + geometry.frameOutset).toBe(
+      dialog.sourceWidth,
+    );
     expect(
-      dialog.modal.fixedBounds.x +
-        dialog.modal.fixedBounds.width +
-        geometry.frameOutset,
-    ).toBe(dialog.sourceWidth);
-    expect(
-      dialog.modal.fixedBounds.y +
-        dialog.modal.fixedBounds.height +
-        geometry.frameOutset,
+      dialog.modal.fixedBounds.y + dialog.modal.fixedBounds.height + geometry.frameOutset,
     ).toBeCloseTo(dialog.sourceHeight);
-    expect(dialog.modal.fixedBounds.height).toBe(573);
+    expect(dialog.modal.fixedBounds.height).toBeCloseTo(dialog.sourceHeight * 0.8);
     expect(dialog.panel.headerLayout).toBe('edge');
     expect(dialog.panel.titleFrame.x).toBe(-geometry.frameOutset);
     expect(dialog.panel.closeControl.x + geometry.closeSize / 2).toBe(
@@ -4308,9 +4134,9 @@ describe('WorkshopPixiPage', () => {
     expect(dialog.panel.closeControl.y).toBeCloseTo(
       dialog.panel.titleFrame.y + dialog.panel.titleFrame.frameHeight / 2,
     );
-    expect(
-      dialog.panel.titleFrame.y + dialog.panel.titleFrame.frameHeight,
-    ).toBeCloseTo(-geometry.frameOutset - 4);
+    expect(dialog.panel.titleFrame.y + dialog.panel.titleFrame.frameHeight).toBeCloseTo(
+      -geometry.frameOutset - 4,
+    );
 
     dialog.layout({
       sourceWidth: 360,
@@ -4321,19 +4147,16 @@ describe('WorkshopPixiPage', () => {
     const restingPanelHeight = dialog.modal.fixedBounds.height;
     const restingScrollHeight = dialog.scroll.height;
     const restingComposerWidth = dialog.composerField.fieldWidth;
+    expect(restingPanelHeight).toBeCloseTo((2170 / 3) * 0.8);
     dialog.layout({
       sourceWidth: 360,
       sourceHeight: 2170 / 3,
       worldChatShift: -290,
     });
 
-    expect(dialog.modal.fixedBounds.y + dialog.panel.titleFrame.y).toBeCloseTo(
-      18,
-    );
+    expect(dialog.modal.fixedBounds.y + dialog.panel.titleFrame.y).toBeCloseTo(18);
     expect(
-      dialog.modal.fixedBounds.y +
-        dialog.panel.closeControl.y -
-        geometry.closeSize / 2,
+      dialog.modal.fixedBounds.y + dialog.panel.closeControl.y - geometry.closeSize / 2,
     ).toBeGreaterThanOrEqual(18);
     expect(dialog.modal.fixedBounds.y).toBeGreaterThan(restingPanelY - 290);
     expect(dialog.modal.fixedBounds.height).toBeLessThan(restingPanelHeight);
@@ -4341,26 +4164,18 @@ describe('WorkshopPixiPage', () => {
     expect(dialog.composerField.fieldWidth).toBe(restingComposerWidth);
     expect(dialog.composerField.fieldHeight).toBe(29);
     expect(
-      dialog.modal.fixedBounds.y +
-        dialog.modal.fixedBounds.height +
-        geometry.frameOutset,
+      dialog.modal.fixedBounds.y + dialog.modal.fixedBounds.height + geometry.frameOutset,
     ).toBeCloseTo(dialog.sourceHeight - 290);
     expect(
-      dialog.modal.fixedBounds.y +
-        dialog.composerField.y +
-        dialog.composerField.fieldHeight,
+      dialog.modal.fixedBounds.y + dialog.composerField.y + dialog.composerField.fieldHeight,
     ).toBeLessThan(1300 / 3);
 
     const keyboardPanelHeight = dialog.modal.fixedBounds.height;
     harness.page.bind(model);
-    expect(dialog.modal.fixedBounds.y + dialog.panel.titleFrame.y).toBeCloseTo(
-      18,
-    );
+    expect(dialog.modal.fixedBounds.y + dialog.panel.titleFrame.y).toBeCloseTo(18);
     expect(dialog.modal.fixedBounds.height).toBeCloseTo(keyboardPanelHeight);
     expect(
-      dialog.modal.fixedBounds.y +
-        dialog.modal.fixedBounds.height +
-        geometry.frameOutset,
+      dialog.modal.fixedBounds.y + dialog.modal.fixedBounds.height + geometry.frameOutset,
     ).toBeCloseTo(dialog.sourceHeight - 290);
 
     harness.page.destroy();
@@ -4401,6 +4216,7 @@ describe('WorkshopPixiPage', () => {
     const geometry = PIXI_ROOT_RUN_GEOMETRY.dialog;
     const row = dialog.rows.get('player-1');
     const restingBottom = dialog.sourceHeight - geometry.frameOutset;
+    const restingHeight = dialog.sourceHeight * 0.8;
     const rowHeight = row.getPreferredHeight();
     const composerSize = {
       width: dialog.composerField.fieldWidth,
@@ -4408,21 +4224,17 @@ describe('WorkshopPixiPage', () => {
     };
 
     expect(dialog.modal.fixedBounds.height).toBeCloseTo(190);
-    expect(
-      dialog.modal.fixedBounds.y + dialog.modal.fixedBounds.height,
-    ).toBeCloseTo(restingBottom);
+    expect(dialog.modal.fixedBounds.y + dialog.modal.fixedBounds.height).toBeCloseTo(restingBottom);
 
     motion.runAt(140);
     expect(dialog.modal.fixedBounds.height).toBeGreaterThan(190);
-    expect(dialog.modal.fixedBounds.height).toBeLessThan(573);
+    expect(dialog.modal.fixedBounds.height).toBeLessThan(restingHeight);
     expect(dialog.panel.scale.x).toBe(1);
     expect(row.root.scale.x).toBe(1);
-    expect(
-      dialog.modal.fixedBounds.y + dialog.modal.fixedBounds.height,
-    ).toBeCloseTo(restingBottom);
+    expect(dialog.modal.fixedBounds.y + dialog.modal.fixedBounds.height).toBeCloseTo(restingBottom);
 
     motion.runAt(280);
-    expect(dialog.modal.fixedBounds.height).toBeCloseTo(573);
+    expect(dialog.modal.fixedBounds.height).toBeCloseTo(restingHeight);
     expect(row.getPreferredHeight()).toBeCloseTo(rowHeight);
     expect(dialog.composerField.fieldWidth).toBeCloseTo(composerSize.width);
     expect(dialog.composerField.fieldHeight).toBeCloseTo(composerSize.height);
@@ -4442,9 +4254,7 @@ describe('WorkshopPixiPage', () => {
     motion.runAt(520);
     const keyboardHeight = dialog.modal.fixedBounds.height;
     expect(keyboardHeight).toBeLessThan(contractingHeight);
-    expect(dialog.modal.fixedBounds.y + dialog.panel.titleFrame.y).toBeCloseTo(
-      18,
-    );
+    expect(dialog.modal.fixedBounds.y + dialog.panel.titleFrame.y).toBeCloseTo(18);
 
     dialog.layout({
       ...keyboardProjection,
@@ -4452,9 +4262,9 @@ describe('WorkshopPixiPage', () => {
     });
     motion.runAt(640);
     expect(dialog.modal.fixedBounds.height).toBeGreaterThan(keyboardHeight);
-    expect(dialog.modal.fixedBounds.height).toBeLessThan(573);
+    expect(dialog.modal.fixedBounds.height).toBeLessThan(restingHeight);
     motion.runAt(760);
-    expect(dialog.modal.fixedBounds.height).toBeCloseTo(573);
+    expect(dialog.modal.fixedBounds.height).toBeCloseTo(restingHeight);
     expect(row.getPreferredHeight()).toBeCloseTo(rowHeight);
     expect(dialog.composerField.fieldWidth).toBeCloseTo(composerSize.width);
     expect(dialog.composerField.fieldHeight).toBeCloseTo(composerSize.height);
@@ -4525,7 +4335,7 @@ describe('WorkshopPixiPage', () => {
       ({ displayObject }) => displayObject === dialog.composerSubmit.root,
     );
     expect(composerSubmitRegistration?.descriptor.preserveFocus).toBe(true);
-    expect(dialog.composerField.y).toBe(533);
+    expect(dialog.composerField.y).toBeCloseTo(dialog.modal.fixedBounds.height - 40);
     expect(dialog.composerField.x).toBeCloseTo(dialog.panel.paperFrame.x);
     expect(dialog.composerField.fieldWidth).toBeCloseTo(295 + 1 / 3);
     expect(dialog.composerField.fieldHeight).toBe(29);
@@ -4537,29 +4347,25 @@ describe('WorkshopPixiPage', () => {
       selectionStart: longDraft.length,
       value: longDraft,
     });
-    const composerCaretBounds =
-      dialog.composerField.caretGraphic.getLocalBounds();
+    const composerCaretBounds = dialog.composerField.caretGraphic.getLocalBounds();
     expect(composerCaretBounds.x).toBeGreaterThanOrEqual(0);
-    expect(
-      composerCaretBounds.x + composerCaretBounds.width,
-    ).toBeLessThanOrEqual(dialog.composerField.textAreaWidth);
+    expect(composerCaretBounds.x + composerCaretBounds.width).toBeLessThanOrEqual(
+      dialog.composerField.textAreaWidth,
+    );
     expect(dialog.composerField.textLabel.x).toBeLessThan(0);
     expect(dialog.composerSubmit.root.x).toBeCloseTo(296 + 2 / 3);
     expect(dialog.composerSubmit.width).toBe(74);
     expect(dialog.composerSubmit.height).toBe(29);
     expect(
-      dialog.composerSubmit.root.x -
-        (dialog.composerField.x + dialog.composerField.fieldWidth),
+      dialog.composerSubmit.root.x - (dialog.composerField.x + dialog.composerField.fieldWidth),
     ).toBe(6);
-    expect(
-      dialog.composerSubmit.root.x + dialog.composerSubmit.width,
-    ).toBeCloseTo(
+    expect(dialog.composerSubmit.root.x + dialog.composerSubmit.width).toBeCloseTo(
       dialog.panel.paperFrame.x + dialog.panel.paperFrame.frameWidth - 4,
     );
     expect(dialog.scroll.width - playerRow.width).toBe(3);
-    expect(
-      dialog.panel.paperFrame.y + dialog.panel.paperFrame.frameHeight,
-    ).toBeLessThan(dialog.composerField.y);
+    expect(dialog.panel.paperFrame.y + dialog.panel.paperFrame.frameHeight).toBeLessThan(
+      dialog.composerField.y,
+    );
 
     expect(playerRow.tag.text).toBe('[MOSS]');
     expect(playerRow.tag.style.stroke?.width ?? 0).toBe(0);
@@ -4582,20 +4388,13 @@ describe('WorkshopPixiPage', () => {
     expect(dialog.scroll.root.x).toBe(8);
     expect(dialog.scroll.width).toBe(354);
     expect(playerRow.root.hitArea.width).toBe(351);
-    expect(playerRow.username.x - (playerRow.tag.x + playerRow.tag.width)).toBe(
-      2,
-    );
+    expect(playerRow.username.x - (playerRow.tag.x + playerRow.tag.width)).toBe(2);
     expect(playerRow.avatar.eventMode).toBe('static');
     expect(playerRow.username.eventMode).toBe('static');
     expect(playerRow.action).toBeUndefined();
-    expect(systemRow.root.y + systemRow.getPreferredHeight()).toBeCloseTo(
-      dialog.scroll.height,
-    );
+    expect(systemRow.root.y + systemRow.getPreferredHeight()).toBeCloseTo(dialog.scroll.height);
     expect(playerRow.root.y).toBeCloseTo(
-      dialog.scroll.height -
-        playerRow.getPreferredHeight() -
-        3 -
-        systemRow.getPreferredHeight(),
+      dialog.scroll.height - playerRow.getPreferredHeight() - 3 - systemRow.getPreferredHeight(),
     );
     const avatarPress = pressRegistrations.find(
       ({ displayObject }) => displayObject === playerRow.avatar,
@@ -4608,14 +4407,8 @@ describe('WorkshopPixiPage', () => {
     expect(avatarPress?.descriptor.onActivate()).toBe(true);
     expect(usernamePress?.descriptor.onActivate()).toBe(true);
     expect(openPlayer).toHaveBeenCalledTimes(2);
-    expect(openPlayer).toHaveBeenNthCalledWith(
-      1,
-      expect.objectContaining({ id: 'player-1' }),
-    );
-    expect(openPlayer).toHaveBeenNthCalledWith(
-      2,
-      expect.objectContaining({ id: 'player-1' }),
-    );
+    expect(openPlayer).toHaveBeenNthCalledWith(1, expect.objectContaining({ id: 'player-1' }));
+    expect(openPlayer).toHaveBeenNthCalledWith(2, expect.objectContaining({ id: 'player-1' }));
 
     expect(systemRow.systemBackground.visible).toBe(true);
     expect(systemRow.avatar.visible).toBe(false);
@@ -4623,9 +4416,7 @@ describe('WorkshopPixiPage', () => {
     expect(systemRow.username.eventMode).toBe('none');
     expect(systemRow.action).toBeUndefined();
     expect(systemRow.getPreferredHeight()).toBeCloseTo(43.875);
-    expect(systemRow.root.y - playerRow.root.y).toBeCloseTo(
-      playerRow.getPreferredHeight() + 3,
-    );
+    expect(systemRow.root.y - playerRow.root.y).toBeCloseTo(playerRow.getPreferredHeight() + 3);
 
     harness.page.destroy();
     harness.dispose();
@@ -4646,6 +4437,7 @@ describe('WorkshopPixiPage', () => {
           id: 'own-player-1',
           type: 'player',
           isOwn: true,
+          connected: true,
           username: 'Mira',
           body: 'I will join the next expedition from the moon garden.',
           allianceTag: 'MOSS',
@@ -4666,7 +4458,7 @@ describe('WorkshopPixiPage', () => {
 
     expect(row.isOwn).toBe(true);
     expect(row.avatar.x).toBeCloseTo(row.width - row.avatar.width / 2);
-    expect(row.username.x + row.username.width).toBeCloseTo(textRight);
+    expect(row.presenceDot.x + 7).toBeCloseTo(textRight);
     expect(row.body.x + row.body.layoutWidth).toBeCloseTo(textRight);
     expect(row.username.style.fontSize).toBeCloseTo(14.85);
     expect(row.body.style.fontSize).toBeCloseTo(14.1075);
@@ -4681,7 +4473,7 @@ describe('WorkshopPixiPage', () => {
     harness.dispose();
   });
 
-  it('colors system announcements and opens Player Info from the announced username', () => {
+  it('renders Alliance ranks and player-linked system announcements', () => {
     const openPlayer = vi.fn();
     const pressRegistrations = [];
     const inputRouter = {
@@ -4704,12 +4496,24 @@ describe('WorkshopPixiPage', () => {
       },
       rows: [
         {
+          id: 'alliance-player-1',
+          type: 'player',
+          username: 'Mira',
+          rankLabel: 'Quartermaster',
+          body: 'Welcome to the hall.',
+          character: 'mira',
+          ageLabel: 'now',
+        },
+        {
           id: 'system-level-1',
           type: 'system',
           username: 'System',
           systemPlayerUsername: 'Ada',
           systemPlayerDetail: 'reached level 14',
           body: 'Ada reached level 14',
+          character: 'rowan',
+          frame: 'emerald',
+          showSystemAvatar: true,
           ageLabel: 'now',
           semanticId: 'world-chat-system-player:system-level-1',
           onActivate: openPlayer,
@@ -4722,6 +4526,7 @@ describe('WorkshopPixiPage', () => {
     harness.page.openDialog('worldChat');
 
     const dialog = harness.dialogs.get('workshop.worldChat');
+    const playerRow = dialog.rows.get('alliance-player-1');
     const row = dialog.rows.get('system-level-1');
     const playerPress = pressRegistrations.find(
       ({ displayObject }) => displayObject === row.systemPlayerUsername,
@@ -4730,6 +4535,8 @@ describe('WorkshopPixiPage', () => {
       ({ displayObject }) => displayObject === row.avatar,
     );
 
+    expect(playerRow.tag.text).toBe('Quartermaster');
+    expect(playerRow.tag.text).not.toContain('[');
     expect(row.username.text).toBe('System');
     expect(row.username.style.fill).toBe('#432d20');
     expect(row.username.eventMode).toBe('none');
@@ -4738,12 +4545,13 @@ describe('WorkshopPixiPage', () => {
     expect(row.systemPlayerUsername.eventMode).toBe('static');
     expect(row.body.text).toBe('reached level 14');
     expect(row.body.x).toBeGreaterThan(row.systemPlayerUsername.x);
-    expect(avatarPress?.descriptor.enabled()).toBe(false);
+    expect(row.avatar.visible).toBe(true);
+    expect(row.avatar.eventMode).toBe('static');
+    expect(avatarPress?.descriptor.enabled()).toBe(true);
+    expect(avatarPress?.descriptor.onActivate()).toBe(true);
     expect(playerPress?.descriptor.excludePageSwipe).toBe(true);
     expect(playerPress?.descriptor.onActivate()).toBe(true);
-    expect(openPlayer).toHaveBeenCalledWith(
-      expect.objectContaining({ id: 'system-level-1' }),
-    );
+    expect(openPlayer).toHaveBeenCalledWith(expect.objectContaining({ id: 'system-level-1' }));
 
     harness.page.destroy();
     harness.dispose();
@@ -4806,9 +4614,7 @@ describe('WorkshopPixiPage', () => {
     const followingText = systemRow.body.textObjects.find(
       (textObject) => textObject.visible && textObject.text.startsWith('4,'),
     );
-    expect(systemRow.body.text).toBe(
-      'reached ⭐ 4, completing prestige level 40',
-    );
+    expect(systemRow.body.text).toBe('reached ⭐ 4, completing prestige level 40');
     expect(bodyIcon.texture).toBe(Texture.WHITE);
     expect(bodyIcon.visible).toBe(true);
     expect(bodyIcon.renderable).toBe(true);
@@ -4857,7 +4663,8 @@ describe('WorkshopPixiPage', () => {
         PIXI_UI_GEOMETRY.roomChatHeight -
         harness.page.summon.button.buttonHeight -
         128 +
-        4,
+        4 +
+        16,
     });
     expect(harness.page.summon.button.position).toMatchObject({
       x: -60,
@@ -4872,12 +4679,11 @@ describe('WorkshopPixiPage', () => {
       harness.page.summon.button.y +
       harness.page.summon.button.buttonHeight;
     expect(PIXI_UI_GEOMETRY.roomChatBottom - 82).toBe(10);
-    expect(worldChatTop - summonButtonBottom).toBe(128);
+    expect(worldChatTop - summonButtonBottom).toBe(112);
+    expect(harness.page.tasks.y).toBe(PIXI_UI_GEOMETRY.roomContentTop + 8);
     expect(harness.page.bagButton.root.position).toMatchObject({
       x: ROOT_RUN_SIDE_ACTION_GEOMETRY.stageEdge,
-      y:
-        getExpectedSideControlsTop(harness.page) +
-        ROOT_RUN_SIDE_ACTION_GEOMETRY.rowPitch * 3,
+      y: getExpectedSideControlsTop(harness.page) + ROOT_RUN_SIDE_ACTION_GEOMETRY.rowPitch * 3,
     });
     expect(harness.page.statsButton.root.position).toMatchObject({
       x:
@@ -4897,9 +4703,7 @@ describe('WorkshopPixiPage', () => {
         PIXI_UI_GEOMETRY.sourceWidth -
         ROOT_RUN_SIDE_ACTION_GEOMETRY.stageEdge -
         ROOT_RUN_SIDE_ACTION_GEOMETRY.width,
-      y:
-        getExpectedSideControlsTop(harness.page) +
-        ROOT_RUN_SIDE_ACTION_GEOMETRY.rowPitch,
+      y: getExpectedSideControlsTop(harness.page) + ROOT_RUN_SIDE_ACTION_GEOMETRY.rowPitch,
     });
     expect(alliance.panel).toBeUndefined();
     expect(alliance.root.hitArea).toMatchObject({
@@ -4928,13 +4732,11 @@ describe('WorkshopPixiPage', () => {
       width: 50,
       height: 60,
     });
-    expect(harness.page.summon.info.icon.label).toBe(
-      'workshop-summon-info:icon',
-    );
+    expect(harness.page.summon.info.icon.label).toBe('workshop-summon-info:icon');
     expect(harness.page.summon.info.textLabel).toBeUndefined();
-    expect(
-      harness.semanticTargets.get('workshop.summonArea')?.displayObject,
-    ).toBe(harness.page.summon.circle);
+    expect(harness.semanticTargets.get('workshop.summonArea')?.displayObject).toBe(
+      harness.page.summon.circle,
+    );
 
     harness.page.destroy();
     harness.dispose();
@@ -4955,7 +4757,8 @@ describe('WorkshopPixiPage', () => {
         PIXI_UI_GEOMETRY.roomChatHeight -
         harness.page.summon.button.buttonHeight -
         128 +
-        4,
+        4 +
+        16,
     });
 
     harness.page.destroy();
@@ -4991,21 +4794,13 @@ describe('WorkshopPixiPage', () => {
 
     harness.page.bind(model);
 
-    expect(assetManager.getTexture).toHaveBeenCalledWith(
-      PIXI_ROOT_RUN_ASSETS.workshopAlliance,
-    );
-    expect(assetManager.getTexture).toHaveBeenCalledWith(
-      PIXI_ROOT_RUN_ASSETS.workshopLeaderboard,
-    );
-    expect(assetManager.getTexture).toHaveBeenCalledWith(
-      PIXI_ROOT_RUN_ASSETS.workshopDiscoveries,
-    );
+    expect(assetManager.getTexture).toHaveBeenCalledWith(PIXI_ROOT_RUN_ASSETS.workshopAlliance);
+    expect(assetManager.getTexture).toHaveBeenCalledWith(PIXI_ROOT_RUN_ASSETS.workshopLeaderboard);
+    expect(assetManager.getTexture).toHaveBeenCalledWith(PIXI_ROOT_RUN_ASSETS.workshopDiscoveries);
     expect(assetManager.getTexture).toHaveBeenCalledWith(
       PIXI_ROOT_RUN_ASSETS.workshopPersonalTasks,
     );
-    expect(assetManager.getTexture).toHaveBeenCalledWith(
-      PIXI_ROOT_RUN_ASSETS.workshopWorldEvent,
-    );
+    expect(assetManager.getTexture).toHaveBeenCalledWith(PIXI_ROOT_RUN_ASSETS.workshopWorldEvent);
     const alliance = harness.page.features.get('alliance');
     expect(alliance.allianceFlag.visible).toBe(false);
     model.workshop.features[0].allianceFlag = {
@@ -5038,9 +4833,7 @@ describe('WorkshopPixiPage', () => {
 
     harness.page.bind(model);
 
-    expect(assetManager.getAtlasTexture).toHaveBeenCalledWith(
-      'potion:briarWard',
-    );
+    expect(assetManager.getAtlasTexture).toHaveBeenCalledWith('potion:briarWard');
     const row = harness.page.tasks.rows.get('request-1');
     expect(row.icon.visible).toBe(true);
     expect(row.icon.width).toBe(32);
@@ -5188,37 +4981,25 @@ describe('WorkshopPixiPage', () => {
     });
     const summonBackground = harness.page.summon.button.background;
     const cornerScales = {
-      top:
-        summonBackground.borderInsets.top / summonBackground.sourceInsets.top,
-      right:
-        summonBackground.borderInsets.right /
-        summonBackground.sourceInsets.right,
-      bottom:
-        summonBackground.borderInsets.bottom /
-        summonBackground.sourceInsets.bottom,
-      left:
-        summonBackground.borderInsets.left / summonBackground.sourceInsets.left,
+      top: summonBackground.borderInsets.top / summonBackground.sourceInsets.top,
+      right: summonBackground.borderInsets.right / summonBackground.sourceInsets.right,
+      bottom: summonBackground.borderInsets.bottom / summonBackground.sourceInsets.bottom,
+      left: summonBackground.borderInsets.left / summonBackground.sourceInsets.left,
     };
     expect(cornerScales.left).toBeCloseTo(cornerScales.right);
     expect(cornerScales.left).toBeCloseTo(cornerScales.top);
     expect(cornerScales.left).toBeCloseTo(cornerScales.bottom);
     expect(
-      summonBackground.borderInsets.top +
-        1 +
-        summonBackground.borderInsets.bottom,
+      summonBackground.borderInsets.top + 1 + summonBackground.borderInsets.bottom,
     ).toBeCloseTo(52);
     expect(harness.page.summon.button.actionTextLabel.text).toBe('Summon Seed');
     expect(harness.page.summon.button.actionTextLabel.fontSize).toBe(11);
     expect(harness.page.summon.button.amountLabel.fontSize).toBe(13);
     expect(harness.page.summon.button.actionTextLabel.stroke.width).toBe(
-      resolvePixiTextStrokeWidth(
-        harness.page.summon.button.actionTextLabel.fontSize,
-      ),
+      resolvePixiTextStrokeWidth(harness.page.summon.button.actionTextLabel.fontSize),
     );
     expect(harness.page.summon.button.amountLabel.stroke.width).toBe(
-      resolvePixiTextStrokeWidth(
-        harness.page.summon.button.amountLabel.fontSize,
-      ),
+      resolvePixiTextStrokeWidth(harness.page.summon.button.amountLabel.fontSize),
     );
     expect(harness.page.summon.button.resource).toBe('mana');
     expect(harness.page.summon.button.amountLabel.text).toBe('10');
@@ -5241,17 +5022,14 @@ describe('WorkshopPixiPage', () => {
     const harness = createHarness({ inputRouter });
     harness.page.bind(createWorkshopViewModel());
 
-    expect(inputRouter.store.getRegistrations('press').length).toBeGreaterThan(
-      8,
-    );
+    expect(inputRouter.store.getRegistrations('press').length).toBeGreaterThan(8);
     expect(inputRouter.store.getRegistrations('scroll')).toHaveLength(0);
     expect(harness.page.summon.root.listenerCount('pointertap')).toBe(0);
 
     harness.page.openDialog('bag');
     expect(inputRouter.getTopModal()?.id).toBe('dialog:workshop.bag');
     expect(inputRouter.store.getRegistrations('scroll')).toHaveLength(1);
-    const pressRegistrationsAfterFirstOpen =
-      inputRouter.store.getRegistrations('press').length;
+    const pressRegistrationsAfterFirstOpen = inputRouter.store.getRegistrations('press').length;
     harness.dialogs.close('workshop.bag');
     expect(inputRouter.getTopModal()).toBeNull();
     expect(inputRouter.store.getRegistrations('press')).toHaveLength(
@@ -5279,12 +5057,8 @@ describe('WorkshopPixiPage', () => {
 
     const summonRegistration = inputRouter.store
       .getRegistrations('press')
-      .find((registration) =>
-        registration.id.startsWith('retained:workshop-summon:'),
-      );
-    const tutorialTarget = harness.semanticTargets.getTutorialTarget(
-      'workshop:summonSeed',
-    );
+      .find((registration) => registration.id.startsWith('retained:workshop-summon:'));
+    const tutorialTarget = harness.semanticTargets.getTutorialTarget('workshop:summonSeed');
 
     expect(summonRegistration?.displayObject).toBe(harness.page.summon.button);
     expect(summonRegistration?.fallbackHitTest).toBe(true);
@@ -5309,9 +5083,7 @@ describe('WorkshopPixiPage', () => {
       x: summonBounds.x + summonBounds.width / 2,
       y: summonBounds.y + summonBounds.height / 2,
     };
-    inputRouter.onPointerDown(
-      createPointerEvent(overlayTarget, 'pointerdown', summonPoint),
-    );
+    inputRouter.onPointerDown(createPointerEvent(overlayTarget, 'pointerdown', summonPoint));
     expect(harness.page.summon.button.pressed).toBe(true);
     vi.advanceTimersByTime(99);
     expect(summonSeed).not.toHaveBeenCalled();
@@ -5319,9 +5091,7 @@ describe('WorkshopPixiPage', () => {
     expect(summonSeed).toHaveBeenCalledTimes(1);
     vi.advanceTimersByTime(200);
     expect(summonSeed).toHaveBeenCalledTimes(3);
-    inputRouter.onPointerUp(
-      createPointerEvent(overlayTarget, 'pointerup', summonPoint),
-    );
+    inputRouter.onPointerUp(createPointerEvent(overlayTarget, 'pointerup', summonPoint));
     expect(harness.page.summon.button.pressed).toBe(false);
     expect(summonSeed).toHaveBeenCalledTimes(3);
     vi.advanceTimersByTime(300);
@@ -5350,14 +5120,10 @@ describe('WorkshopPixiPage', () => {
       label: 'tutorial-overlay-quick-tap',
     });
 
-    inputRouter.onPointerDown(
-      createPointerEvent(overlayTarget, 'pointerdown', summonPoint),
-    );
+    inputRouter.onPointerDown(createPointerEvent(overlayTarget, 'pointerdown', summonPoint));
     vi.advanceTimersByTime(50);
     expect(summonSeed).not.toHaveBeenCalled();
-    inputRouter.onPointerUp(
-      createPointerEvent(overlayTarget, 'pointerup', summonPoint),
-    );
+    inputRouter.onPointerUp(createPointerEvent(overlayTarget, 'pointerup', summonPoint));
     expect(summonSeed).toHaveBeenCalledTimes(1);
 
     overlayTarget.destroy();
@@ -5386,14 +5152,10 @@ describe('WorkshopPixiPage', () => {
       label: 'tutorial-overlay-failed-hold',
     });
 
-    inputRouter.onPointerDown(
-      createPointerEvent(overlayTarget, 'pointerdown', summonPoint),
-    );
+    inputRouter.onPointerDown(createPointerEvent(overlayTarget, 'pointerdown', summonPoint));
     vi.advanceTimersByTime(500);
     expect(summonSeed).toHaveBeenCalledTimes(2);
-    inputRouter.onPointerUp(
-      createPointerEvent(overlayTarget, 'pointerup', summonPoint),
-    );
+    inputRouter.onPointerUp(createPointerEvent(overlayTarget, 'pointerup', summonPoint));
     expect(summonSeed).toHaveBeenCalledTimes(2);
 
     overlayTarget.destroy();
@@ -5423,17 +5185,11 @@ describe('WorkshopPixiPage', () => {
       label: 'tutorial-overlay-cancelled-hold',
     });
 
-    inputRouter.onPointerDown(
-      createPointerEvent(overlayTarget, 'pointerdown', summonPoint),
-    );
+    inputRouter.onPointerDown(createPointerEvent(overlayTarget, 'pointerdown', summonPoint));
     vi.advanceTimersByTime(50);
-    inputRouter.onPointerMove(
-      createPointerEvent(overlayTarget, 'pointermove', outsideSlopPoint),
-    );
+    inputRouter.onPointerMove(createPointerEvent(overlayTarget, 'pointermove', outsideSlopPoint));
     vi.advanceTimersByTime(300);
-    inputRouter.onPointerUp(
-      createPointerEvent(overlayTarget, 'pointerup', outsideSlopPoint),
-    );
+    inputRouter.onPointerUp(createPointerEvent(overlayTarget, 'pointerup', outsideSlopPoint));
     expect(summonSeed).not.toHaveBeenCalled();
 
     overlayTarget.destroy();
@@ -5460,9 +5216,7 @@ describe('WorkshopPixiPage', () => {
 
     const summonRegistration = inputRouter.store
       .getRegistrations('press')
-      .find((registration) =>
-        registration.id.startsWith('retained:workshop-summon:'),
-      );
+      .find((registration) => registration.id.startsWith('retained:workshop-summon:'));
 
     expect(summonRegistration?.displayObject).toBe(harness.page.summon.button);
     expect(harness.page.summon.root.hitArea).toBeUndefined();
@@ -5496,12 +5250,8 @@ describe('WorkshopPixiPage', () => {
     const summonBounds = harness.page.summon.button.getBounds();
     expect(infoBounds.y + infoBounds.height).toBeLessThan(summonBounds.y);
     const overlayTarget = new Container({ label: 'retargeted-overlay-hit' });
-    inputRouter.onPointerDown(
-      createPointerEvent(overlayTarget, 'pointerdown', infoPoint),
-    );
-    inputRouter.onPointerUp(
-      createPointerEvent(overlayTarget, 'pointerup', infoPoint),
-    );
+    inputRouter.onPointerDown(createPointerEvent(overlayTarget, 'pointerdown', infoPoint));
+    inputRouter.onPointerUp(createPointerEvent(overlayTarget, 'pointerup', infoPoint));
 
     expect(harness.dialogs.isOpen('workshop.summonInfo')).toBe(true);
     expect(summonSeed).not.toHaveBeenCalled();
@@ -5527,9 +5277,7 @@ describe('WorkshopPixiPage', () => {
 
     const summonRegistration = inputRouter.store
       .getRegistrations('press')
-      .find((registration) =>
-        registration.id.startsWith('retained:workshop-summon:'),
-      );
+      .find((registration) => registration.id.startsWith('retained:workshop-summon:'));
     const summonBounds = harness.page.summon.button.getBounds();
     const summonPoint = {
       x: summonBounds.x + summonBounds.width / 2,
@@ -5540,12 +5288,8 @@ describe('WorkshopPixiPage', () => {
     expect(summonRegistration.enabled()).toBe(true);
     expect(harness.page.summon.button.enabled).toBe(false);
 
-    inputRouter.onPointerDown(
-      createPointerEvent(overlayTarget, 'pointerdown', summonPoint),
-    );
-    inputRouter.onPointerUp(
-      createPointerEvent(overlayTarget, 'pointerup', summonPoint),
-    );
+    inputRouter.onPointerDown(createPointerEvent(overlayTarget, 'pointerdown', summonPoint));
+    inputRouter.onPointerUp(createPointerEvent(overlayTarget, 'pointerup', summonPoint));
 
     expect(summonSeed).toHaveBeenCalledTimes(1);
 
@@ -5557,9 +5301,7 @@ describe('WorkshopPixiPage', () => {
 
 function getExpectedSideControlsTop(page) {
   return (
-    PIXI_UI_GEOMETRY.roomContentTop +
-    page.tasks.height +
-    ROOT_RUN_SIDE_ACTION_GEOMETRY.taskGap
+    PIXI_UI_GEOMETRY.roomContentTop + 8 + page.tasks.height + ROOT_RUN_SIDE_ACTION_GEOMETRY.taskGap
   );
 }
 

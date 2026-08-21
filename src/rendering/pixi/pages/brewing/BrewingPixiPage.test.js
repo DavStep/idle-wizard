@@ -78,7 +78,7 @@ describe('BrewingPixiPage', () => {
     expect(harness.page.fireflies.root.eventMode).toBe('none');
     expect(harness.page.fireflies.root.children).toHaveLength(BREWING_FIREFLY_COUNT);
     expect(harness.page.content.getChildIndex(harness.page.fireflies.root)).toBeLessThan(
-      harness.page.content.getChildIndex(harness.page.hud.root),
+      harness.page.content.getChildIndex(harness.page.hudScroll.root),
     );
 
     harness.page.activate();
@@ -230,7 +230,7 @@ describe('BrewingPixiPage', () => {
     harness.dispose();
   });
 
-  it('empties the selected cauldron from the compact release-only action', () => {
+  it('keeps the compact Empty action pressable for every unlocked cauldron state', () => {
     const emptyCauldron = vi.fn(() => ({ ok: true }));
     const harness = createHarness();
     const model = createBrewingViewModel();
@@ -286,7 +286,7 @@ describe('BrewingPixiPage', () => {
     model.brewing.cauldrons[0].ingredients = [];
     model.brewing.cauldrons[0].selectedRecipe = null;
     harness.page.bind(model);
-    expect(button.enabled).toBe(false);
+    expect(button.enabled).toBe(true);
     expect(button.root.visible).toBe(true);
 
     model.brewing.cauldrons[0].ingredients = [
@@ -298,7 +298,7 @@ describe('BrewingPixiPage', () => {
       phase: 'brewing',
     };
     harness.page.bind(model);
-    expect(button.enabled).toBe(false);
+    expect(button.enabled).toBe(true);
 
     harness.page.destroy();
     harness.dispose();
@@ -1783,6 +1783,7 @@ describe('BrewingPixiPage', () => {
     expect(harness.page.hud.cauldronTitle.parent).toBe(
       harness.page.hud.cauldronTitlePlaque.root,
     );
+    expect(harness.page.hud.counter).toBeUndefined();
     expect(harness.page.hud.cauldronTitle.text).toBe('Cauldron 1');
     expect(
       harness.page.hud.cauldronTitle.textObject.style.stroke,
@@ -2197,7 +2198,7 @@ describe('BrewingPixiPage', () => {
     harness.dispose();
   });
 
-  it('keeps the short portrait HUD above World Chat and separates wrapped potion labels', () => {
+  it('keeps the short portrait HUD below the player banner and scrolls to World Chat', () => {
     const harness = createHarness();
     const model = createBrewingViewModel();
     model.brewing.cauldrons[0].selectedRecipe = {
@@ -2217,9 +2218,19 @@ describe('BrewingPixiPage', () => {
       PIXI_UI_GEOMETRY.roomChatTitleOverhang;
     const detailBottom =
       hud.detailPanel.root.y + hud.detailPanel.height;
+    const maximumScroll =
+      harness.page.hudScroll.contentHeight -
+      harness.page.hudScroll.height;
 
-    expect(chatTitleTop - detailBottom).toBe(
-      BREWING_HUD_GEOMETRY.detailChatGap,
+    expect(hud.detailPanel.root.y).toBe(BREWING_HUD_GEOMETRY.detailTop);
+    expect(harness.page.hudScroll.root.y).toBe(
+      BREWING_HUD_GEOMETRY.top,
+    );
+    expect(hud.root.y).toBe(-BREWING_HUD_GEOMETRY.top);
+    expect(maximumScroll).toBeGreaterThan(0);
+    expect(harness.page.hudScroll.scrollbarTrack.visible).toBe(true);
+    expect(hud.ingredientSlots[0].root.y).toBeGreaterThanOrEqual(
+      BREWING_HUD_GEOMETRY.top,
     );
     expect(hud.ingredientSlots[0].root.y).toBe(
       BREWING_HUD_GEOMETRY.carouselContentOffset +
@@ -2233,6 +2244,45 @@ describe('BrewingPixiPage', () => {
     expect(
       hud.rarity.y + hud.rarity.height,
     ).toBeLessThanOrEqual(hud.batchLabel.y);
+
+    harness.page.hudScroll.scrollTo(maximumScroll);
+    expect(
+      harness.page.hudScroll.root.y +
+        harness.page.hudScroll.content.y +
+        hud.root.y +
+        detailBottom,
+    ).toBe(
+      chatTitleTop - BREWING_HUD_GEOMETRY.detailChatGap,
+    );
+
+    harness.page.destroy();
+    harness.dispose();
+  });
+
+  it('routes an unaffordable cauldron unlock to currency shortage feedback', () => {
+    const harness = createHarness();
+    const model = createBrewingViewModel();
+    const showCurrencyShortage = vi.fn(() => true);
+    model.brewing.cauldrons.push({
+      id: 'buy:2',
+      cauldronIndex: 1,
+      cauldronNumber: 2,
+      unlocked: false,
+      canBuyCauldron: false,
+      nextCauldronCost: 25,
+    });
+    model.actions.showCurrencyShortage = showCurrencyShortage;
+    model.actions.performCauldronAction = vi.fn();
+    harness.page.bind(model);
+
+    expect(harness.page.selectCauldron(1)).toBe(true);
+    expect(harness.page.hud.unlockCostButton.costState).toBe('unaffordable');
+    expect(harness.page.hud.unlockCostButton.activate()).toBe(true);
+    expect(showCurrencyShortage).toHaveBeenCalledWith({
+      cost: 25,
+      resource: 'coin',
+    });
+    expect(model.actions.performCauldronAction).not.toHaveBeenCalled();
 
     harness.page.destroy();
     harness.dispose();
@@ -2478,6 +2528,41 @@ describe('BrewingPixiPage', () => {
     expect(harness.page.hud.recipes.handleTap()).toBe(true);
     expect(openRecipes).toHaveBeenCalledTimes(2);
     expect(performCauldronAction).not.toHaveBeenCalled();
+
+    harness.page.destroy();
+    harness.dispose();
+  });
+
+  it('mirrors the automated plot selector and stays available during an active brew', () => {
+    const harness = createHarness();
+    const model = createBrewingViewModel({ withActiveBrew: true });
+    const openRecipes = vi.fn(() => true);
+    const cauldron = model.brewing.cauldrons[0];
+    cauldron.selectedRecipe = {
+      key: 'minorHealingPotion',
+      label: 'minor healing potion',
+    };
+    model.actions.openRecipes = openRecipes;
+
+    harness.page.bind(model);
+
+    expect(harness.page.hud.recipes.enabled).toBe(true);
+    expect(harness.page.hud.recipes.text.text).toBe('Minor Healing Potion');
+    expect(harness.page.hud.recipes.control.textLabel.scale.x).toBeLessThan(1);
+    expect(harness.page.hud.recipePotionIcon.visible).toBe(true);
+    expect(harness.page.hud.recipePotionIcon.width).toBe(
+      BREWING_HUD_GEOMETRY.recipeIconSize,
+    );
+    expect(harness.page.hud.recipePotionIcon.position).toMatchObject({
+      x: BREWING_HUD_GEOMETRY.recipeButtonWidth / 2,
+      y: BREWING_HUD_GEOMETRY.recipeIconY,
+    });
+    expect(harness.page.hud.recipes.control.textLabel.y).toBe(
+      BREWING_HUD_GEOMETRY.recipeLabelY,
+    );
+    expect(harness.page.hud.potionName.text).toBe('Sage Tonic');
+    expect(harness.page.hud.recipes.handleTap()).toBe(true);
+    expect(openRecipes).toHaveBeenCalledWith(0);
 
     harness.page.destroy();
     harness.dispose();

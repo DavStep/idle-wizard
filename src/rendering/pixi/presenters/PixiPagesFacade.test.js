@@ -628,6 +628,52 @@ describe("PixiPagesFacade", () => {
     expect(harness.uiClickSoundFacade.playSummon).toHaveBeenCalledWith(3);
   });
 
+  it("keeps an unaffordable summon pressable and reports the exact missing mana", () => {
+    const gameplaySnapshot = createGameplaySnapshot();
+    gameplaySnapshot.mana.current = 10;
+    gameplaySnapshot.seedSummoning = {
+      cost: 25,
+      quantity: 1,
+      canSummon: false,
+      unavailableReason: "not_enough_mana",
+    };
+    const harness = createHarness({ gameplaySnapshot });
+    harness.gameplayFacade.summonSeed.mockReturnValue({
+      ok: false,
+      reason: "not_enough_mana",
+      cost: 25,
+    });
+    const pages = new PixiPagesFacade(harness.dependencies);
+    pages.mount();
+
+    const workshop = harness.getBoundPage("workshop");
+    expect(workshop.workshop.summon.pressEnabled).toBe(true);
+    expect(workshop.actions.summonSeed()).toMatchObject({
+      ok: false,
+      reason: "not_enough_mana",
+    });
+    expect(harness.transientEffects.emitReward).toHaveBeenCalledWith({
+      message: "Missing 15 Mana",
+      flyoutKey: "currency-shortage-mana",
+    });
+  });
+
+  it("uses the player-facing Amber name for crystal shortages", () => {
+    const gameplaySnapshot = createGameplaySnapshot();
+    gameplaySnapshot.crystal.current = 3;
+    const harness = createHarness({ gameplaySnapshot });
+    const pages = new PixiPagesFacade(harness.dependencies);
+    pages.mount();
+
+    expect(
+      pages.emitCurrencyShortage({ cost: 10, resource: "crystal" }),
+    ).toBe(true);
+    expect(harness.transientEffects.emitReward).toHaveBeenCalledWith({
+      message: "Missing 7 Amber",
+      flyoutKey: "currency-shortage-crystal",
+    });
+  });
+
   it("opens Player Info for the current player from the top avatar", () => {
     const gameplaySnapshot = createGameplaySnapshot({ level: 12 });
     gameplaySnapshot.prestige.completedLevels = [10];
@@ -1466,6 +1512,41 @@ describe("PixiPagesFacade", () => {
     expect(
       harness.getBoundPage("brewing").brewing.cauldrons[0].selectedRecipe,
     ).toBeNull();
+  });
+
+  it("shows a flyout instead of confirmation when Empty has nothing to clear", () => {
+    const gameplaySnapshot = createGameplaySnapshot();
+    gameplaySnapshot.brewing = {
+      cauldrons: [
+        {
+          cauldronIndex: 0,
+          cauldronNumber: 1,
+          ingredients: [],
+          activeBrew: null,
+        },
+      ],
+      recipes: [],
+      herbs: [],
+    };
+    const harness = createHarness({ gameplaySnapshot });
+    const globalDialogPresenter = {
+      mount: vi.fn(),
+      open: vi.fn(() => true),
+    };
+    harness.dependencies.globalDialogPresenter = globalDialogPresenter;
+    const pages = new PixiPagesFacade(harness.dependencies);
+    pages.mount();
+    pages.show("brewing");
+
+    const result = harness.getBoundPage("brewing").actions.emptyCauldron(0);
+
+    expect(result).toEqual({ ok: false, reason: "nothing_to_empty" });
+    expect(harness.transientEffects.emitReward).toHaveBeenCalledWith({
+      message: "Nothing to empty",
+      flyoutKey: "brewing-nothing-to-empty-0",
+    });
+    expect(globalDialogPresenter.open).not.toHaveBeenCalled();
+    expect(harness.gameplayFacade.clearBrewingCauldron).not.toHaveBeenCalled();
   });
 
   it("confirms before cancelling an active brew", () => {
@@ -2316,6 +2397,90 @@ describe("PixiPagesFacade", () => {
     expect(cauldron.primaryAction.enabled).toBe(false);
   });
 
+  it("queues a different persisted recipe during an active brew and adopts it after collection", () => {
+    const gameplaySnapshot = createGameplaySnapshot();
+    const currentRecipe = {
+      key: "manaTonic",
+      label: "mana tonic",
+      unlocked: true,
+      manaCost: 5,
+      ingredients: [],
+    };
+    const nextRecipe = {
+      key: "minorHealingPotion",
+      label: "minor healing potion",
+      unlocked: true,
+      manaCost: 7,
+      ingredients: [],
+    };
+    gameplaySnapshot.brewing = {
+      cauldrons: [
+        {
+          cauldronIndex: 0,
+          cauldronNumber: 1,
+          brewQuantity: 1,
+          maxBrewQuantity: 1,
+          ingredients: [],
+          activeBrew: {
+            key: "manaTonic",
+            label: "mana tonic",
+            phase: "brewing",
+          },
+          autoBrewEnabled: false,
+          autoBrewRecipeKey: "manaTonic",
+        },
+      ],
+      recipes: [currentRecipe, nextRecipe],
+      herbs: [],
+    };
+    const harness = createHarness({ gameplaySnapshot });
+    harness.gameplayFacade.setBrewingAutoBrewRecipe.mockImplementation(
+      (recipeKey, cauldronIndex) => {
+        gameplaySnapshot.brewing.cauldrons[
+          cauldronIndex
+        ].autoBrewRecipeKey = recipeKey;
+        return { ok: true, recipeKey, cauldronIndex };
+      },
+    );
+    const pages = new PixiPagesFacade(harness.dependencies);
+    pages.mount();
+    pages.show("brewing");
+
+    expect(
+      harness.getBoundPage("brewing").brewing.cauldrons[0].selectedRecipe,
+    ).toMatchObject({ key: "manaTonic" });
+
+    expect(
+      harness
+        .getBoundPage("brewing")
+        .actions.selectRecipe(nextRecipe, 0),
+    ).toMatchObject({ ok: true });
+    expect(
+      harness.gameplayFacade.setBrewingAutoBrewRecipe,
+    ).toHaveBeenCalledWith("minorHealingPotion", 0);
+    expect(
+      harness.gameplayFacade.prepareBrewingRecipe,
+    ).not.toHaveBeenCalled();
+
+    pages.refreshPage("brewing");
+    let cauldron = harness.getBoundPage("brewing").brewing.cauldrons[0];
+    expect(cauldron.activeBrew).toMatchObject({ key: "manaTonic" });
+    expect(cauldron.selectedRecipe).toMatchObject({
+      key: "minorHealingPotion",
+    });
+
+    gameplaySnapshot.brewing.cauldrons[0].activeBrew = null;
+    pages.refreshPage("brewing");
+    cauldron = harness.getBoundPage("brewing").brewing.cauldrons[0];
+    expect(cauldron.selectedRecipe).toMatchObject({
+      key: "minorHealingPotion",
+    });
+    expect(cauldron.primaryAction).toMatchObject({
+      id: "brew",
+      prepareRecipeKey: "minorHealingPotion",
+    });
+  });
+
   it("rejects locked navigation and delegates the lock surface to retained chrome", () => {
     const harness = createHarness({
       gameplaySnapshot: createGameplaySnapshot({ level: 1 }),
@@ -2605,6 +2770,10 @@ describe("PixiPagesFacade", () => {
       cost: 25,
       missingCoin: 15,
       tileNumber: 2,
+    });
+    expect(harness.transientEffects.emitReward).toHaveBeenCalledWith({
+      message: "Missing 15 Coin",
+      flyoutKey: "currency-shortage-coin",
     });
     expect(harness.gameplayFacade.buyGardenTile).not.toHaveBeenCalled();
 

@@ -15,7 +15,7 @@
   --style-disabled: #969696;
   --style-active-surface: var(--style-surface);
   --style-system-text: var(--style-muted);
-  --style-insufficient: #ff8790;
+  --style-insufficient: #ff5965;
   --style-announcement-coin: oklch(44% 0.13 88);
   --style-world-chat-system-title: #432d20;
   --style-world-chat-system-player: #72533a;

@@ -56,7 +56,7 @@ import { PixiNotificationBadge } from '../transient/PixiNotificationBadges.js';
 installPixiPageTestCanvas();
 
 describe('retained global Pixi dialogs', () => {
-  it('exports canonical aliases and registers eleven lazy runtime factories', () => {
+  it('exports canonical aliases and registers twelve lazy runtime factories', () => {
     const registerDialog = vi.fn();
     const registrar = { registerDialog };
     const factories = createGlobalDialogFactories();
@@ -64,11 +64,11 @@ describe('retained global Pixi dialogs', () => {
     expect(GLOBAL_DIALOG_IDS.BUG).toBe(GLOBAL_DIALOG_IDS.FEEDBACK);
     expect(GLOBAL_DIALOG_IDS.FEATURE).toBe(GLOBAL_DIALOG_IDS.FEEDBACK);
     expect(GLOBAL_DIALOG_IDS.MAIL).toBe(GLOBAL_DIALOG_IDS.INBOX);
-    expect(new Set(factories.map(([id]) => id)).size).toBe(11);
+    expect(new Set(factories.map(([id]) => id)).size).toBe(12);
     expect(Object.isFrozen(factories)).toBe(true);
 
     expect(registerGlobalDialogFactories(registrar)).toBe(registrar);
-    expect(registerDialog).toHaveBeenCalledTimes(11);
+    expect(registerDialog).toHaveBeenCalledTimes(12);
     expect(registerDialog.mock.calls.map(([id]) => id)).toEqual(
       factories.map(([id]) => id),
     );
@@ -100,8 +100,8 @@ describe('retained global Pixi dialogs', () => {
     }
 
     expect(harness.registry.getStats()).toMatchObject({
-      registered: 11,
-      constructed: 11,
+      registered: 12,
+      constructed: 12,
       open: 0,
     });
     harness.dispose();
@@ -123,6 +123,8 @@ describe('retained global Pixi dialogs', () => {
           character: 'mira',
           frame: 'violet',
           playerLevel: 12,
+          prestigeCount: 2,
+          totalProducedCoin: 123_456,
           detail: 'Level 12',
           allianceTag: 'MOSS',
           allianceTagColor: 'green',
@@ -151,6 +153,9 @@ describe('retained global Pixi dialogs', () => {
     expect(row.allianceTag.text).toBe('[MOSS]');
     expect(row.name.text).toBe('Mira');
     expect(row.detail.text).toBe('Level 12');
+    expect(row.prestigeStars.visible).toBe(true);
+    expect(row.prestigeStars.level).toBe(2);
+    expect(row.production.text).toBe('123k Produced');
     expect(row.preview.text).toBe('The moon garden is glowing...');
     expect(row.notificationBadge).toBeInstanceOf(PixiNotificationBadge);
     expect(row.notificationDot).toBe(row.notificationBadge.root);
@@ -164,6 +169,8 @@ describe('retained global Pixi dialogs', () => {
       'Pending',
     ]);
     const rowPress = harness.inputRouter.store.get(row.registration.id);
+    expect(rowPress.fallbackHitTest).toBe(true);
+    expect(row.root.eventMode).toBe('static');
     expect(rowPress.onActivate()).toBe(true);
     expect(openChat).toHaveBeenCalledOnce();
     expect(friends.tabs.getWidgets()[1].control.activate()).toBe(true);
@@ -389,6 +396,12 @@ describe('retained global Pixi dialogs', () => {
     ).toEqual(['Members', 'Join Mode', 'Season Income']);
     const memberRow = alliance.memberRows.getWidgets()[0];
     expect(memberRow).toBeInstanceOf(AllianceMemberRow);
+    expect(memberRow.role.text).toBe('Trade Master');
+    expect(memberRow.role.visible).toBe(true);
+    expect(memberRow.level.text).toBe('Lv 4');
+    expect(memberRow.prestigeStars.level).toBe(2);
+    expect(memberRow.contribution.amount).toBe('12.5k');
+    expect(memberRow.getPreferredHeight()).toBe(74);
     const memberPaperLeft = alliance.membersPaper.x;
     const memberPaperRight =
       memberPaperLeft + alliance.membersPaper.frameWidth;
@@ -628,6 +641,7 @@ describe('retained global Pixi dialogs', () => {
     expect(player.totalPotionsValue.text).toBe('86.5k');
     expect(player.totalHerbsValue.text).toBe('2.4m');
     expect(player.lastSeenValue.text).toBe('Online Now');
+    expect(player.lastSeenValue.textObject.style.fill).toBe('#397a42');
     expect(player.timePlayedValue.text).toBe('12.5 Hours');
     expect(player.totalCoinLabel.text).toBe('Total Produced Coin');
     expect(player.totalPotionsLabel.text).toBe('Total Brewed Potions');
@@ -666,8 +680,14 @@ describe('retained global Pixi dialogs', () => {
     ).toBe(10);
 
     player.bind({
-      player: createPlayer(),
+      player: {
+        ...createPlayer(),
+        connected: false,
+        lastSeenAtMs: 0,
+      },
     });
+    expect(player.lastSeenValue.text).toBe('Unknown');
+    expect(player.lastSeenValue.textObject.style.fill).toBe('#634934');
     expect(player.cosmeticsButton.visible).toBe(false);
     expect(player.cosmeticsButton.enabled).toBe(false);
     expect(player.friendsButton.notificationBadge.root.visible).toBe(false);
@@ -2650,6 +2670,24 @@ function createPayloads() {
       alliance: createAlliance(),
       members: [createMember()],
     },
+    [GLOBAL_DIALOG_IDS.ALLIANCE_RANK]: {
+      selectedRole: 'trader',
+      roles: [
+        {
+          id: 'tradeMaster',
+          label: 'Trade Master',
+          maxMembers: 1,
+          permissions: 'Can manage every alliance setting.',
+        },
+        {
+          id: 'trader',
+          label: 'Trader',
+          maxMembers: 30,
+          permissions: 'Can contribute to alliance quests.',
+        },
+      ],
+      actions: { apply: vi.fn(() => ({ ok: true })) },
+    },
     [GLOBAL_DIALOG_IDS.ANNOUNCEMENT]: {
       title: 'rewards',
       rows: [{ label: 'coin', value: '+10' }],
@@ -2715,6 +2753,8 @@ function createMember(id = 'mira') {
     memberIdentity: `${id}-id`,
     username: id,
     playerLevel: 4,
+    prestigeCount: 2,
     role: 'tradeMaster',
+    totalContribution: 12_500,
   };
 }

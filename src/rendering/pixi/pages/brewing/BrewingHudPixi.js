@@ -50,7 +50,11 @@ export const BREWING_HUD_GEOMETRY = Object.freeze({
   detailChatGap: 3,
   detailInset: 0,
   detailContentInset: 10,
-  recipeButtonWidth: 58,
+  recipeButtonWidth: 120,
+  recipeIconSize: 25,
+  recipeIconY: 14,
+  recipeLabelY: 27,
+  recipeLabelFontSize: 9,
   autoButtonWidth: 32,
   configurationButtonHeight: PIXI_UI_GEOMETRY.roomControlHeight,
   quantityButtonWidth: 32,
@@ -258,8 +262,6 @@ export class BrewingHudPixi {
     });
     this.cauldronStars = this.cauldronTitlePlaque.stars;
     this.cauldronTitle = this.cauldronTitlePlaque.title;
-    this.counter = centeredText('', RETAINED_TEXT_STYLES.bold);
-    this.counter.anchor.set(1, 0);
     this.recipeOrbit = new Graphics({
       label: 'brewing-recipe-orbit',
     });
@@ -335,7 +337,6 @@ export class BrewingHudPixi {
     this.dots = new Graphics({ label: 'brewing-carousel-dots' });
     this.carouselPanel.body.addChild(
       this.cauldronTitlePlaque.root,
-      this.counter,
       this.recipeOrbit,
       this.recipeOrbitFeedback,
       this.cauldronHearth.root,
@@ -360,6 +361,16 @@ export class BrewingHudPixi {
       'yellow',
       () => this.actions.openRecipes?.(this.selectedIndex),
       'brewing:recipes',
+    );
+    this.recipePotionIcon = new Sprite(Texture.EMPTY);
+    this.recipePotionIcon.anchor.set(0.5);
+    this.recipePotionIcon.eventMode = 'none';
+    this.recipePotionIcon.label = 'brewing-selected-recipe-icon';
+    this.recipes.control.visual.addChildAt(
+      this.recipePotionIcon,
+      this.recipes.control.visual.getChildIndex(
+        this.recipes.control.textLabel,
+      ),
     );
     this.autoBrew = this.createButton('autobrew', 'Auto', 'yellow', () =>
       this.actions.toggleAutoBrew?.(this.selectedIndex),
@@ -625,15 +636,6 @@ export class BrewingHudPixi {
       unlocked ? cauldron?.level ?? 1 : 0,
     );
     this.layoutCarouselHeader();
-    const unlockedCount = cauldrons.filter(
-      (candidate) => candidate?.unlocked !== false,
-    ).length;
-    setText(
-      this.counter,
-      `${number}/${Math.max(1, model.configuredMaxCauldrons ?? 5)}`,
-    );
-    this.counter.visible = unlockedCount > 1;
-    this.counter.renderable = this.counter.visible;
     this.cauldronArt.visible = true;
     this.cauldronArt.renderable = true;
     this.cauldronArt.alpha = 1;
@@ -663,11 +665,25 @@ export class BrewingHudPixi {
     this.next.root.renderable = this.next.root.visible;
 
     const active = cauldron?.activeBrew ?? null;
+    const selectedRecipe = cauldron?.selectedRecipe ?? null;
+    const displayedRecipe = selectedRecipe ?? active;
+    const displayedRecipeKey = displayedRecipe?.key ?? null;
+    this.recipePotionIcon.texture = displayedRecipeKey
+      ? getAtlasTexture(
+          this.assetManager,
+          getPotionIconFrameName(displayedRecipeKey),
+        )
+      : Texture.EMPTY;
+    this.recipePotionIcon.visible = Boolean(displayedRecipe);
+    this.recipePotionIcon.renderable = this.recipePotionIcon.visible;
     this.recipes.setModel({
-      label: 'Recipes',
-      enabled: unlocked && cauldron?.canSelectRecipe !== false && !active,
+      label: displayedRecipe?.label
+        ? toTitleCase(displayedRecipe.label)
+        : 'Recipes',
+      enabled: unlocked && cauldron?.canSelectRecipe !== false,
       action: () => this.actions.openRecipes?.(this.selectedIndex),
     });
+    this.layoutRecipeButtonContent();
     const autoBrewEnabled = cauldron?.autoBrewEnabled === true;
     const autoBrewVariant = autoBrewEnabled ? 'green' : 'yellow';
     this.autoBrew.variant = autoBrewVariant;
@@ -681,12 +697,9 @@ export class BrewingHudPixi {
     });
     this.layoutAutoBrewContent();
     this.setAutoBrewMotionEnabled(autoBrewEnabled);
-    const hasCauldronContents =
-      Boolean(cauldron?.selectedRecipe) ||
-      (cauldron?.ingredients?.length ?? 0) > 0;
     this.emptyCauldron.setModel({
       label: 'Empty',
-      enabled: unlocked && !active && hasCauldronContents,
+      enabled: unlocked,
       action: () =>
         this.actions.emptyCauldron?.(this.selectedIndex) ??
         this.actions.clearRecipe?.(this.selectedIndex) ??
@@ -1123,11 +1136,9 @@ export class BrewingHudPixi {
     this.sourceHeight = sourceHeight;
     const edge = BREWING_HUD_GEOMETRY.edge;
     const width = sourceWidth - edge * 2;
-    const carouselContentOffset =
-      BREWING_HUD_GEOMETRY.carouselContentOffset;
-    const detailTop = resolveBrewingDetailTop(
-      sourceHeight,
-      worldChatVisible,
+    const detailTop = Math.max(
+      BREWING_HUD_GEOMETRY.detailTop,
+      resolveBrewingDetailTop(sourceHeight, worldChatVisible),
     );
     this.previewOffsetY = detailTop - BREWING_HUD_GEOMETRY.detailTop;
     const carouselHeight =
@@ -1153,10 +1164,6 @@ export class BrewingHudPixi {
       BREWING_HUD_GEOMETRY.detailHeight,
     );
     this.layoutCarouselHeader();
-    this.counter.position.set(
-      width - 10,
-      44 + carouselContentOffset,
-    );
     this.cauldronArt.position.set(width / 2, cauldronCenterY);
     this.cauldronArt.width = 116;
     this.cauldronArt.height = 94;
@@ -1314,6 +1321,7 @@ export class BrewingHudPixi {
       BREWING_HUD_GEOMETRY.recipeButtonWidth,
       BREWING_HUD_GEOMETRY.configurationButtonHeight,
     );
+    this.layoutRecipeButtonContent();
     this.layoutConfigurationButtons(sourceWidth);
     this.brew.setBounds(
       edge +
@@ -1335,12 +1343,7 @@ export class BrewingHudPixi {
       getTexture(this.assetManager, PIXI_ROOT_RUN_ASSETS.researchArt),
       POTION_PREVIEW_SOURCE_INSETS,
     );
-    for (const text of [
-      this.counter,
-      this.lockLabel,
-    ]) {
-      applyTextTheme(text, this.theme, text.style);
-    }
+    applyTextTheme(this.lockLabel, this.theme, this.lockLabel.style);
     for (const text of [
       this.potionName,
       this.rarity,
@@ -1385,6 +1388,7 @@ export class BrewingHudPixi {
     ]) {
       button.applyTheme(this.theme);
     }
+    this.layoutRecipeButtonContent();
     this.unlockCostButton.applyTheme(this.theme);
     this.redrawLockedDetailFrame();
     this.progress.applyTheme(this.theme);
@@ -1544,6 +1548,11 @@ export class BrewingHudPixi {
           cauldron,
           { id: 'buy' },
         ),
+      unaffordableAction: () =>
+        this.actions.showCurrencyShortage?.({
+          cost: cauldron.nextCauldronCost,
+          resource: 'coin',
+        }) ?? false,
     });
   }
 
@@ -1581,6 +1590,30 @@ export class BrewingHudPixi {
       hitSize: BREWING_HUD_GEOMETRY.autoHitSize,
       hitTop: BREWING_HUD_GEOMETRY.autoHitTop,
     });
+  }
+
+  layoutRecipeButtonContent() {
+    this.recipePotionIcon.width = BREWING_HUD_GEOMETRY.recipeIconSize;
+    this.recipePotionIcon.height = BREWING_HUD_GEOMETRY.recipeIconSize;
+    this.recipePotionIcon.position.set(
+      this.recipes.width / 2,
+      BREWING_HUD_GEOMETRY.recipeIconY,
+    );
+    this.recipes.control.textLabel
+      .setFontSize(BREWING_HUD_GEOMETRY.recipeLabelFontSize)
+      .setLineHeight(BREWING_HUD_GEOMETRY.recipeLabelFontSize + 2);
+    fitTextLabelToWidth(
+      this.recipes.control.textLabel,
+      this.recipes.width - 8,
+      BREWING_HUD_GEOMETRY.recipeLabelFontSize,
+    );
+    this.recipes.control.textLabel.position.set(
+      this.recipes.width / 2,
+      this.recipePotionIcon.visible
+        ? BREWING_HUD_GEOMETRY.recipeLabelY
+        : this.recipes.height / 2 +
+            (this.recipes.control.activeSkin?.contentOffsetY ?? 0),
+    );
   }
 
   layoutEmptyCauldronContent() {
@@ -2992,7 +3025,10 @@ function resolveIngredientPositions(width, offsetY = 0) {
   ];
 }
 
-function resolveBrewingDetailTop(sourceHeight, worldChatVisible) {
+export function resolveBrewingHudViewportBottom(
+  sourceHeight,
+  worldChatVisible,
+) {
   const chatHeight = worldChatVisible
     ? PIXI_UI_GEOMETRY.roomChatHeight +
       PIXI_UI_GEOMETRY.roomChatTitleOverhang
@@ -3001,7 +3037,13 @@ function resolveBrewingDetailTop(sourceHeight, worldChatVisible) {
     sourceHeight -
     PIXI_UI_GEOMETRY.roomChatBottom -
     chatHeight -
-    BREWING_HUD_GEOMETRY.detailChatGap -
+    BREWING_HUD_GEOMETRY.detailChatGap
+  );
+}
+
+function resolveBrewingDetailTop(sourceHeight, worldChatVisible) {
+  return (
+    resolveBrewingHudViewportBottom(sourceHeight, worldChatVisible) -
     BREWING_HUD_GEOMETRY.detailHeight
   );
 }
@@ -3045,6 +3087,18 @@ function toTitleCase(value) {
   return String(value ?? '').replace(/\b[a-z]/g, (character) =>
     character.toUpperCase(),
   );
+}
+
+function fitTextLabelToWidth(
+  label,
+  maximumWidth,
+  preferredFontSize,
+) {
+  label.scale.set(1);
+  label.setFontSize(preferredFontSize);
+  if (label.measuredWidth > maximumWidth && label.measuredWidth > 0) {
+    label.scale.x = maximumWidth / label.measuredWidth;
+  }
 }
 
 function centeredText(text, style) {

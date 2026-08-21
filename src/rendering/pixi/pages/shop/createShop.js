@@ -328,6 +328,11 @@ function createStallModel({
           ['buyShopShelfSlot', 'buyNextShelfSlot'],
           [],
         ),
+      insufficientAction: () =>
+        uiActions.showCurrencyShortage?.({
+          cost: costCoin,
+          resource: 'coin',
+        }) ?? false,
     };
   }
   const loadedQuantity = nonNegativeInteger(

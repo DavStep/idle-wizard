@@ -17,6 +17,8 @@ export default __t.row({
   character: __t.string(),
   frame: __t.string(),
   playerLevel: __t.u32().name("player_level"),
+  prestigeCount: __t.u32().name("prestige_count"),
+  totalProducedGold: __t.u64().name("total_produced_gold"),
   connected: __t.bool(),
   lastSeenAt: __t.timestamp().name("last_seen_at"),
   createdAt: __t.timestamp().name("created_at"),

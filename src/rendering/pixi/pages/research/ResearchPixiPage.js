@@ -609,6 +609,11 @@ export class ResearchPixiPage extends BaseRetainedPixiPage {
           this.currentActions?.skipResearchTime?.(research.id)
         );
       },
+      insufficient: (cost) =>
+        this.currentActions?.showCurrencyShortage?.({
+          cost: cost?.amount,
+          resource: cost?.resource ?? cost?.currency,
+        }) ?? false,
       locked: (research, target) => {
         const shown = this.showLockTooltip(research, target);
         const action =
@@ -1666,6 +1671,7 @@ export class ResearchRowWidget {
       state: research.skip?.enabled === true ? 'available' : 'unaffordable',
       enabled: true,
       action: () => this.skipResearch(research),
+      unaffordableAction: () => this.actions?.insufficient?.(research.skip),
     });
     this.setResearchingTimer(inProgress ? remainingLabel : '');
     this.readonlyValue.visible =
@@ -1706,6 +1712,8 @@ export class ResearchRowWidget {
         lockReason: '',
         enabled: state === 'available' && research.canResearch === true,
         action: () => this.buyResearch(research),
+        unaffordableAction: () =>
+          this.actions?.insufficient?.(research.cost),
       });
       this.costButton.setNotification(research.notification === true);
     }
@@ -1743,8 +1751,12 @@ export class ResearchRowWidget {
       state: () => ({
         enabled:
           (state === 'available' && research.canResearch === true) ||
-          state === 'locked',
-        interactive: state === 'available' || state === 'locked',
+          state === 'locked' ||
+          state === 'unavailable',
+        interactive:
+          state === 'available' ||
+          state === 'locked' ||
+          state === 'unavailable',
         selected: false,
       }),
       activate: () => {
@@ -1753,6 +1765,9 @@ export class ResearchRowWidget {
         }
         if (state === 'locked') {
           return this.actions?.locked?.(research, this.costButton);
+        }
+        if (state === 'unavailable') {
+          return this.actions?.insufficient?.(research.cost);
         }
         return false;
       },

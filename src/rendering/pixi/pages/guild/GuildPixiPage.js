@@ -350,6 +350,7 @@ export class GuildPixiPage extends BasePixiRetainedView {
       action:
         this.currentActions.upgradeSecretary ??
         this.currentActions.upgradeGuildSecretary,
+      insufficientAction: this.currentActions.showCurrencyShortage,
     });
   }
 

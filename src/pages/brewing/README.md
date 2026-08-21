@@ -8,6 +8,11 @@ a dim static constellation for reduced-motion players and lower intensity in
 Day.
 
 It renders a pannable brewing world, cauldron nodes, bottom icon buttons that expand inline herb and potion boxes, a recipe-only selection dialog opened from the current cauldron, the next buyable cauldron, brew and bottle actions, navigation, and the bottom page name.
+The compact recipe selector beside `Empty` shows the selected potion art and
+name. It remains available while a batch is brewing or bottling so the player
+can choose that cauldron's next recipe without changing the active batch. The
+new recipe takes over after the active batch is granted; researched Auto Brew
+then continues with that saved recipe when enabled.
 The Recipes dialog uses sentence-case player copy: its title, potion and ingredient names, descriptions, navigation, status, and action labels start with uppercase letters.
 Known locked recipes show the passive `Not researched` status on the shared
 Bag-row background. While that recipe is being studied, the same status reads

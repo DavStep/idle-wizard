@@ -53,6 +53,7 @@ export class PixiBaseButton extends Container {
     this.buttonHeight = height;
     this.theme = DEFAULT_PIXI_THEME_SNAPSHOT;
     this.enabled = true;
+    this.pressEnabled = true;
     this.locked = false;
     this.pressed = false;
     this.selected = false;
@@ -99,7 +100,7 @@ export class PixiBaseButton extends Container {
 
     this.registration =
       this.inputRouter?.registerPressTarget?.(this, {
-        enabled: () => this.enabled && this.visible && this.renderable,
+        enabled: () => this.pressEnabled && this.visible && this.renderable,
         selected: () => this.selected,
         onPressChange: (pressed, context) => this.setPressed(pressed, context),
         onActivate: (event) => this.activate(event),
@@ -172,6 +173,13 @@ export class PixiBaseButton extends Container {
 
   setEnabled(enabled) {
     this.enabled = Boolean(enabled);
+    this.pressEnabled = this.enabled;
+    this.syncInteraction();
+    return this;
+  }
+
+  setPressEnabled(pressEnabled) {
+    this.pressEnabled = Boolean(pressEnabled);
     this.syncInteraction();
     return this;
   }
@@ -220,7 +228,8 @@ export class PixiBaseButton extends Container {
   }
 
   setPressed(pressed, context = null) {
-    const nextPressed = Boolean(pressed) && this.enabled && !this.selected;
+    const nextPressed =
+      Boolean(pressed) && this.pressEnabled && !this.selected;
     if (nextPressed) {
       this.cancelReleaseAnimation();
       this.pressed = true;
@@ -261,8 +270,8 @@ export class PixiBaseButton extends Container {
   }
 
   syncInteraction() {
-    this.eventMode = this.enabled && this.visible ? 'static' : 'none';
-    this.cursor = this.enabled && !this.selected ? 'pointer' : 'default';
+    this.eventMode = this.pressEnabled && this.visible ? 'static' : 'none';
+    this.cursor = this.pressEnabled && !this.selected ? 'pointer' : 'default';
     this.syncAppearance();
   }
 

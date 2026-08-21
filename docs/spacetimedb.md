@@ -121,7 +121,7 @@ The server module defines:
 - `leaderboard_summary`: public indexed view returning each period top 100 plus the subscribing player's own row, alliance tag, and rank fields.
 - `world_event_leaderboard`: one row per identity/event period, with `username`, player level, event id, period key, and current event points.
 - `world_event_leaderboard_summary`: public indexed view returning the current weekly event top 100 plus the subscribing player's own row, alliance tag, character, and rank.
-- `world_chat`: one row per chat message, with sender identity, username, sender player level, alliance tag, body, and timestamp. `world_chat_recent` exposes only the latest 40 messages for the client and joins the sender character for avatar display.
+- `world_chat`: one row per chat message, with sender identity, username, sender player level, alliance tag, body, and timestamp. `world_chat_recent` exposes only the latest 40 messages for the client and joins the sender character, frame, and current connection state for social display.
 - `trade_alliance`: one row per alliance, with unique tag, leader identity, join mode, member count, all-time/daily/weekly/monthly income totals, and period keys.
 - `trade_alliance_member`: one row per member identity, with alliance id, username/player-level snapshot, role, lifetime contribution, and current weekly contribution in the legacy `dailyContribution` column.
 - `trade_alliance_application`: pending join requests for apply-mode alliances.

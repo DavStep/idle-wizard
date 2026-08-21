@@ -49,7 +49,10 @@ Canonical IDs:
 - `global.level`
 - `global.inbox` (`mail` routes here)
 - `global.player`
+- `global.friends`
+- `global.directMessage`
 - `global.alliance`
+- `global.allianceRank`
 - `global.announcement`
 - `global.confirmation`
 

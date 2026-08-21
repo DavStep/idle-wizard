@@ -71,7 +71,7 @@ export const PIXI_TEXT_STROKE_RATIO =
   PIXI_TEXT_STROKE_WIDTH / PIXI_UI_GEOMETRY.bodyFontSize;
 export const PIXI_TEXT_STROKE_COLOR = '#0a0a0a';
 export const PIXI_STATUS_COLORS = Object.freeze({
-  insufficient: '#ff8790',
+  insufficient: '#ff5965',
 });
 
 export function resolvePixiTextStrokeWidth(

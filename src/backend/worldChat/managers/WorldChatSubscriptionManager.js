@@ -120,6 +120,7 @@ export class WorldChatSubscriptionManager {
       allianceTagColor: normalizeTradeAllianceTagColor(
         row.allianceTagColor ?? row.alliance_tag_color,
       ),
+      connected: Boolean(row.connected),
       sentAtMs: this.toTimestampMs(row.sentAt ?? row.sent_at),
     };
   }

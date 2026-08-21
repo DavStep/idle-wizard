@@ -13,6 +13,7 @@ export default [
     childWidgetIds: [
       'compound.dialog-frame',
       'compound.player-profile',
+      'primitive.star-level-label',
       'text-button',
     ],
     createThumbnail: () => createWidgetThumbnail(),
@@ -43,6 +44,22 @@ export default [
         preview: 'Request sent.',
         status: 'Pending',
       }),
+      relationshipScenario('alliance-application', 'Alliance application', {
+        dialogId: 'alliance.workspace',
+        detail: 'Lv 9',
+        prestigeCount: 1,
+        preview: '113k Produced',
+        primaryAction: {
+          label: 'Accept',
+          variant: 'green',
+          onActivate: () => true,
+        },
+        secondaryAction: {
+          label: 'Deny',
+          variant: 'red',
+          onActivate: () => true,
+        },
+      }),
     ],
     sectionId: 'composite-widgets',
     usages: [
@@ -62,6 +79,8 @@ function relationshipScenario(id, label, overrides) {
     id: 'juniper',
     identity: 'juniper',
     playerLevel: 10,
+    prestigeCount: 2,
+    totalProducedCoin: 123_456,
     username: 'Juniper',
     ...overrides,
   };
@@ -102,7 +121,11 @@ function mountRelationshipRow(_context, fixture) {
 }
 
 function createRelationshipControl({ assets, fixture, input }) {
-  const dialog = createDialogStub(assets, input, 'global.friends');
+  const dialog = createDialogStub(
+    assets,
+    input,
+    fixture.dialogId ?? 'global.friends',
+  );
   const row = new PlayerRelationshipRowPixi({ dialog });
   row.bind(fixture);
   row.setBounds(0, 0, ROW_WIDTH, row.getPreferredHeight());
@@ -133,6 +156,8 @@ function friendsAssetFilter({ id }) {
     value.startsWith('source:assets/ui/root-run-dialog/') ||
     value.startsWith('source:assets/ui/regular-button/') ||
     value.startsWith('source:assets/ui/root-run-top-hud/') ||
+    value.startsWith('source:assets/ui/root-run-research/') ||
+    value.startsWith('source:assets/ui/stars/') ||
     value.startsWith('source:assets/ui/notification-circle-')
   );
 }

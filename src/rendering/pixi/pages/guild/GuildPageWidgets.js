@@ -480,6 +480,11 @@ export class GuildSecretarySection {
           : 'available',
       enabled: Boolean(next) && secretary.canUpgrade === true,
       action: model.action ?? secretary.action,
+      unaffordableAction: () =>
+        model.insufficientAction?.({
+          cost: next?.costCoin,
+          resource: 'coin',
+        }) ?? false,
       tone: next ? 'green' : 'gray',
       showLabel: true,
     });

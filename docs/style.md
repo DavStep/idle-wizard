@@ -34,7 +34,7 @@ The game should look like a polished fantasy workshop HUD: layered illustrated r
 - Page and surface: Night uses the unchanged original `#1c1e26` and `#17191f`; Day uses the muted-peach wall `#e8bc8c` behind warm-brown `#543a28` components.
 - Disabled/secondary text and borders: medium gray.
 - Missing-resource counts and unaffordable cost values use the shared bright
-  insufficient red `#ff8790`; both projections must stay identical.
+  insufficient red `#ff5965`; both projections must stay identical.
 - Resource and currency displays use their shared icon and approved semantic color while still inheriting disabled/locked treatment. Keep each amount, icon, and resource word together.
 - Page backgrounds keep the active theme's exact base. Night remains the original solid room surface; Day overlays one shared, low-contrast warm paper-fiber treatment on `#e8bc8c`. The material must never change layout, add glow, or compete with room landmarks and controls. The fitted game stage has no decorative outer border. Image-backed panels may still use authored shading, texture, bevels, and mild gradients from their shared skins. Do not add arbitrary feature-local gradients. Default dialogs use the dedicated Root Run composition below.
 - Night is the default and preserves the exact former Midnight appearance. Day is a recolor only: matching assets keep the same dimensions, transparent silhouette, nine-slice margins, layout, and depth.

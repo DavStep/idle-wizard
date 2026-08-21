@@ -28,16 +28,16 @@ const WIDTH = 314;
 const ALLIANCE_DIRECTORY_PREVIEW_WIDTH = 320;
 
 export default [
-  widget('compound.workshop-task-panel', 'Workshop Task Panel', ['compound.market-title-ribbon', 'compound.workshop-task-row', 'text-button'], taskPanelControl, variants(['expanded', 'collapsed', 'claimable'])),
-  widget('compound.workshop-task-row', 'Workshop Task Row', ['text-button', 'primitive.progress-bar'], taskRowControl, variants(['progress', 'claimable', 'complete'])),
+  widget('compound.workshop-task-panel', 'Workshop Task Panel', ['compound.market-title-ribbon', 'compound.workshop-task-row', 'text-button'], taskPanelControl, variants(['expanded', 'collapsed', 'claimable', 'researching'])),
+  widget('compound.workshop-task-row', 'Workshop Task Row', ['text-button', 'primitive.progress-bar'], taskRowControl, variants(['progress', 'claimable', 'researching', 'complete'])),
   widget('compound.workshop-summon-control', 'Workshop Summon Control', ['cost-button', 'info-button', 'primitive.notification-badge'], summonControl, variants(['available', 'unaffordable', 'notified'])),
   widget('compound.root-run-side-action', 'Root Run Side Action', ['primitive.notification-badge', 'compound.trade-alliance-banner'], sideActionControl, variants(['left', 'right', 'disabled', 'notified', 'timed', 'alliance-member'])),
   widget('compound.world-event-donation-option-row', 'World Event Donation Option Row', ['text-button', 'primitive.notification-badge'], donationOptionControl, variants(['available', 'notified', 'unavailable', 'seed-pack'])),
   widget('compound.trade-alliance-banner', 'Alliance Flag', [], allianceBannerControl, variants(['unity', 'crown', 'crescent', 'crossed-wands', 'owl', 'flame', 'oak-leaf', 'key', 'tower', 'sunburst', 'hourglass', 'dragon'])),
   widget('primitive.alliance-emblem-option', 'Alliance Emblem Option', [], allianceEmblemOptionControl, variants(['unity', 'crown', 'crescent', 'crossed-wands', 'owl', 'flame', 'oak-leaf', 'key', 'tower', 'sunburst', 'hourglass', 'dragon'])),
   widget('compound.alliance-directory-row', 'Alliance Directory Row', ['compound.trade-alliance-banner', 'compound.player-profile', 'primitive.resource-label', 'text-button'], allianceDirectoryControl, variants(['join', 'apply', 'cancel', 'closed', 'overflow'])),
-  widget('compound.alliance-member-row', 'Alliance Member Row', ['compound.player-profile', 'text-button'], allianceMemberControl, variants(['leader', 'member', 'passive'])),
-  widget('compound.alliance-quest-row', 'Alliance Quest Row', ['primitive.resource-label', 'text-button'], allianceQuestControl, variants(['fill', 'route', 'claim', 'claimed', 'overflow'])),
+  widget('compound.alliance-member-row', 'Alliance Member Row', ['compound.player-profile', 'primitive.star-level-label', 'primitive.resource-label', 'text-button'], allianceMemberControl, variants(['leader', 'member', 'same-rank', 'passive'])),
+  widget('compound.alliance-quest-row', 'Alliance Quest Row', ['primitive.progress-bar', 'primitive.resource-label', 'text-button'], allianceQuestControl, variants(['fill', 'route', 'claim', 'claimed', 'overflow'])),
   widget('compound.leaderboard-row', 'Leaderboard Row', ['compound.player-profile', 'compound.trade-alliance-banner', 'primitive.star-level-label', 'primitive.resource-label'], leaderboardRowControl, variants(['player', 'current-player', 'alliance', 'world-event-points'])),
   widget('compound.world-event-reward-row', 'World Event Reward Row', [], worldEventRewardRowControl, variants(['two-rewards', 'current-rank', 'one-reward', 'long-rank'])),
   widget('compound.potion-discovery-page', 'Potion Discovery Page', [], potionDiscoveryControl, variants(['discovered', 'undiscovered', 'long-recipe'])),
@@ -128,9 +128,11 @@ function dialogStub(assets, input) {
 
 function taskFixture(state) {
   const claimable = state === 'claimable';
+  const researching = state === 'researching';
   return {
-    id: 'brew-potion', label: claimable ? 'Brew a Potion' : 'Research Mana Tonic Brewing Speed I', current: claimable ? 1 : state === 'complete' ? 5 : 3, required: claimable ? 1 : 5,
-    progress: claimable || state === 'complete' ? 1 : 0.6, actionLabel: claimable ? 'Turn In' : '', enabled: true, showProgress: true,
+    id: 'brew-potion', label: claimable ? 'Brew a Potion' : `${researching ? 'Researching' : 'Research'} Mana Tonic Brewing Speed I`, current: claimable ? 1 : state === 'complete' ? 5 : researching ? 0 : 3, required: claimable ? 1 : researching ? 1 : 5,
+    progress: claimable || state === 'complete' ? 1 : researching ? 0 : 0.6, actionLabel: claimable ? 'Turn In' : '', enabled: true, showProgress: true,
+    ...(researching ? { value: '1m 5s', researchTimer: { active: true, totalMs: 120_000, remainingMs: 65_000 } } : {}),
   };
 }
 
@@ -143,7 +145,7 @@ function taskRowControl({ assets, input, fixture = { state: 'progress' }, contex
 
 function taskPanelControl({ assets, input, fixture = { state: 'expanded' }, context }) {
   const control = new WorkshopTaskPanel({ page: pageStub(input, context), assetManager: assets });
-  control.bind({ title: "Elara's Request", nextText: 'Help prepare the workshop.', rows: [taskFixture(fixture.state === 'claimable' ? 'claimable' : 'progress')], rewardLines: ['20 Mana', '5 Coin'], expanded: fixture.state !== 'collapsed', canToggle: true, showPin: true });
+  control.bind({ title: "Elara's Request", nextText: 'Help prepare the workshop.', rows: [taskFixture(['claimable', 'researching'].includes(fixture.state) ? fixture.state : 'progress')], rewardLines: ['20 Mana', '5 Coin'], expanded: fixture.state !== 'collapsed', canToggle: true, showPin: true });
   control.setBounds(0, 0, WIDTH);
   return wrap(control, WIDTH, control.height);
 }
@@ -184,9 +186,19 @@ function donationOptionControl({ assets, input, fixture = { state: 'available' }
 
 function allianceMemberControl({ assets, input, fixture = { state: 'leader' }, context }) {
   const control = new AllianceMemberRow({ dialog: dialogStub(assets, input) });
-  control.bind({ username: 'Elara', character: 'elara', roleLabel: fixture.state === 'leader' ? 'Trade Master' : 'Trader', levelLabel: 'Lv 12', onActivate: fixture.state === 'passive' ? null : () => context?.emit('memberOpened') ?? true });
-  control.setBounds(0, 0, 282, 50);
-  return wrap(control, 282, 50);
+  control.bind({
+    username: 'Elara',
+    character: 'elara',
+    roleLabel: fixture.state === 'leader' ? 'Trade Master' : 'Trader',
+    levelLabel: 'Lv 12',
+    prestigeCount: 2,
+    totalContributionLabel: '12.5k',
+    showRankHeader: fixture.state !== 'same-rank',
+    onActivate: fixture.state === 'passive' ? null : () => context?.emit('memberOpened') ?? true,
+  });
+  const height = control.getPreferredHeight();
+  control.setBounds(0, 0, 282, height);
+  return wrap(control, 282, height);
 }
 
 function allianceQuestControl({ assets, input, fixture = { state: 'fill' }, context }) {
@@ -202,13 +214,18 @@ function allianceQuestControl({ assets, input, fixture = { state: 'fill' }, cont
         : 'Fill 500 Mana Tonic',
     itemKind: route ? 'resource' : fixture.state === 'overflow' ? 'seed' : 'potion',
     itemKey: route ? 'coin' : fixture.state === 'overflow' ? 'moonflowerSeed' : 'manaTonic',
-    contributionLabel: route ? 'Your Route 12,500/12,500' : 'Your Fill 8/10',
+    contributionLabel: route
+      ? 'Your contribution 12,500/12,500'
+      : 'Your contribution 8/10',
     progressLabel: route ? '86,027/250,000' : fixture.state === 'fill' ? '18/40' : '40/40',
+    progress: route ? 86_027 / 250_000 : fixture.state === 'fill' ? 0.45 : 1,
     rewardAmountLabel: route ? '12' : '3',
     rewardResource: 'crystal',
     actionLabel: claimed ? 'Claimed' : route || fixture.state === 'claim' ? 'Claim' : 'Fill',
     actionVariant: claimed || route ? 'gray' : 'green',
     enabled: !claimed && !route,
+    actionWidth: 72,
+    actionHeight: 42,
     onActivate: claimed || route ? null : () => context?.emit('allianceQuestActivated') ?? true,
   });
   const height = control.getPreferredHeight(252);

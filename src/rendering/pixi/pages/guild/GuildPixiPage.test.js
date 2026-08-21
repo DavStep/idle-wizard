@@ -522,6 +522,28 @@ describe('GuildPixiPage', () => {
     harness.dispose();
   });
 
+  it('routes an unaffordable Secretary upgrade to currency shortage feedback', () => {
+    const harness = createHarness();
+    const showCurrencyShortage = vi.fn(() => true);
+    const upgradeSecretary = vi.fn();
+    const model = createGuildViewModel();
+    model.guild.secretary.canUpgrade = false;
+    model.actions.showCurrencyShortage = showCurrencyShortage;
+    model.actions.upgradeSecretary = upgradeSecretary;
+
+    harness.page.bind(model);
+
+    expect(harness.page.secretarySection.button.activate()).toBe(true);
+    expect(showCurrencyShortage).toHaveBeenCalledWith({
+      cost: 100,
+      resource: 'coin',
+    });
+    expect(upgradeSecretary).not.toHaveBeenCalled();
+
+    harness.page.destroy();
+    harness.dispose();
+  });
+
   it('lets projected visibility suppress person dots without disabling the row action', () => {
     const harness = createHarness();
     const suppressed = createGuildViewModel();

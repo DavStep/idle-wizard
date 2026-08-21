@@ -148,6 +148,7 @@ describe('TradeAllianceSubscriptionManager', () => {
           senderIdentity: 'self',
           username: 'wizard',
           character: 'rowan',
+          connected: true,
           playerLevel: 3,
           body: 'alliance hello',
           sentAt: 1,
@@ -189,6 +190,7 @@ describe('TradeAllianceSubscriptionManager', () => {
     expect(manager.getSnapshot().allianceChatMessages[0]).toMatchObject({
       username: 'wizard',
       character: 'rowan',
+      connected: true,
       body: 'alliance hello',
     });
   });
@@ -283,7 +285,9 @@ describe('TradeAllianceSubscriptionManager', () => {
           character: 'mira',
           frame: 'violet',
           playerLevel: 12,
+          prestigeCount: 2,
           role: 'tradeMaster',
+          totalContribution: 12_500n,
         },
       ]),
       applications: createTable(),
@@ -299,6 +303,8 @@ describe('TradeAllianceSubscriptionManager', () => {
       memberIdentity: 'member-1',
       character: 'mira',
       frame: 'violet',
+      prestigeCount: 2,
+      totalContribution: 12_500,
     });
   });
 

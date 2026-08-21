@@ -64,6 +64,15 @@ describe('PixiBottomPanelView', () => {
       'alliance.requests',
       'alliance.settings',
     ]);
+    expect(PIXI_ALLIANCE_HUD_TABS.map(({ icon }) => icon)).toEqual([
+      'icon-workshop-house-tab.png',
+      undefined,
+      undefined,
+      'icon-alliance-home-tab.png',
+      'icon-alliance-quests-tab.png',
+      'icon-alliance-requests-tab.png',
+      'icon-alliance-settings-tab.png',
+    ]);
   });
 
   it('retains room and Guild HUD tabs while switching navigation modes', () => {
@@ -202,7 +211,7 @@ describe('PixiBottomPanelView', () => {
     view.destroy();
   });
 
-  it('switches Alliance to its permitted text tabs without a Chat destination', () => {
+  it('switches Alliance to its permitted icon tabs without a Chat destination', () => {
     const selectAllianceTab = vi.fn();
     const semanticRegistry = new SemanticTargetRegistry();
     const view = new PixiBottomPanelView({
@@ -239,6 +248,13 @@ describe('PixiBottomPanelView', () => {
     ]);
     expect(view.allianceTabs[3].state.selected).toBe(true);
     expect(view.allianceTabs[5].notification.root.visible).toBe(true);
+    expect(
+      view.allianceTabs
+        .filter((tab) => tab.root.visible)
+        .every((tab) => tab.icon !== null),
+    ).toBe(true);
+    expect(view.allianceTabs[3].labelRoot.visible).toBe(true);
+    expect(view.allianceTabs[4].labelRoot.visible).toBe(false);
 
     expect(semanticRegistry.has('page.alliance.chat')).toBe(false);
     expect(selectAllianceTab).not.toHaveBeenCalled();

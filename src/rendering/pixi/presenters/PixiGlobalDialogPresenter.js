@@ -653,6 +653,8 @@ export class PixiGlobalDialogPresenter {
       character: player.character,
       frame: player.frame,
       playerLevel: player.playerLevel,
+      prestigeCount: player.prestigeCount,
+      totalProducedCoin: player.totalProducedCoin,
       detail: `Level ${player.playerLevel ?? 1}`,
       allianceTag: player.allianceTag,
       allianceTagColor: player.allianceTagColor,
@@ -702,7 +704,13 @@ export class PixiGlobalDialogPresenter {
       : this.friendsFacade?.getDirectMessageSnapshot?.() ?? {};
     const canMessage = relationship === 'friend' && directMessages.connected !== false;
     const chat = this.chatViewModelFactory.createWorldChatDialog(
-      directMessages,
+      {
+        ...directMessages,
+        messages: (directMessages.messages ?? []).map((message) => ({
+          ...message,
+          connected: message.isOwn === true || friend.connected === true,
+        })),
+      },
       {
         sendWorldChat: (body) => this.friendsFacade?.sendDirectMessage?.(friend.identity, body),
         openPlayer: (player) =>

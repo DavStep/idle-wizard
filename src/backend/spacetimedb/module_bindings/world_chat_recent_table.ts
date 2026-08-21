@@ -21,4 +21,5 @@ export default __t.row({
   sentAt: __t.timestamp().name("sent_at"),
   allianceTag: __t.string().name("alliance_tag"),
   allianceTagColor: __t.string().name("alliance_tag_color"),
+  connected: __t.bool(),
 });

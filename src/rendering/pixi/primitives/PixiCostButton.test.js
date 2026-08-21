@@ -85,20 +85,40 @@ describe('PixiCostButton', () => {
     );
   });
 
-  it('keeps an unaffordable cost green while disabling only its action', () => {
+  it('keeps an unaffordable cost green while routing its press to shortage feedback', () => {
     const { button, registrations } = createHarness();
+    const action = vi.fn();
+    const unaffordableAction = vi.fn(() => true);
 
     button.setModel({
       amountLabel: '900 Crystal',
       state: 'unaffordable',
-      action: vi.fn(),
+      action,
+      unaffordableAction,
     });
 
     expect(button.costState).toBe('unaffordable');
     expect(button.enabled).toBe(false);
     expect(button.amountLabel.colorToken).toBe(PIXI_STATUS_COLORS.insufficient);
     expect(button.lockedLabel.visible).toBe(false);
-    expect(registrations[0].descriptor.enabled()).toBe(false);
+    expect(registrations[0].descriptor.enabled()).toBe(true);
+
+    registrations[0].descriptor.onPressChange(true);
+    expect(button.pressed).toBe(true);
+    expect(button.visual.scale.x).toBe(0.94);
+    registrations[0].descriptor.onPressChange(false, { confirmed: true });
+    expect(button.pressed).toBe(false);
+    expect(button.releaseFrame).toBeTruthy();
+
+    const payload = { pointerId: 7 };
+    expect(registrations[0].descriptor.onActivate(payload)).toBe(true);
+    expect(unaffordableAction).toHaveBeenCalledWith({
+      amount: '900',
+      payload,
+      resource: 'crystal',
+    });
+    expect(action).not.toHaveBeenCalled();
+    button.cancelReleaseAnimation();
   });
 
   it('can reuse the whole cost-button silhouette with a yellow status skin', () => {

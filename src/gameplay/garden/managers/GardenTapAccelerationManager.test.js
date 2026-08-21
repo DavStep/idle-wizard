@@ -2,29 +2,23 @@ import { describe, expect, it, vi } from 'vitest';
 
 import {
   GARDEN_PLOT_TAP_COOLDOWN_MS,
-  GARDEN_PLOT_TAP_REDUCTION_RATIO,
+  GARDEN_PLOT_TAP_REDUCTION_SECONDS,
   GardenTapAccelerationManager,
 } from './GardenTapAccelerationManager.js';
 
 describe('GardenTapAccelerationManager', () => {
-  it('removes 30% of the remaining timer and rejects repeated taps until the feedback window ends', () => {
+  it('removes one second and rejects repeated taps until the feedback window ends', () => {
     expect(GARDEN_PLOT_TAP_COOLDOWN_MS).toBe(504);
-    expect(GARDEN_PLOT_TAP_REDUCTION_RATIO).toBe(0.3);
+    expect(GARDEN_PLOT_TAP_REDUCTION_SECONDS).toBe(1);
 
     let now = 1_000;
-    const getTileSnapshots = vi.fn(() => [{
-      tileNumber: 2,
-      phase: 'growing',
-      remainingMs: 9_000,
-    }]);
     const reduceTileProcessRemainingSeconds = vi.fn(() => ({
       phase: 'growing',
-      reducedSeconds: 2.7,
-      remainingSeconds: 6.3,
+      reducedSeconds: 1,
+      remainingSeconds: 8,
     }));
     const manager = new GardenTapAccelerationManager({
       gardenTileEntityManager: {
-        getTileSnapshots,
         reduceTileProcessRemainingSeconds,
       },
       now: () => now,
@@ -34,11 +28,11 @@ describe('GardenTapAccelerationManager', () => {
       ok: true,
       tileNumber: 2,
       phase: 'growing',
-      reducedSeconds: 2.7,
-      remainingMs: 6_300,
+      reducedSeconds: 1,
+      remainingMs: 8_000,
       cooldownMs: GARDEN_PLOT_TAP_COOLDOWN_MS,
     });
-    expect(reduceTileProcessRemainingSeconds).toHaveBeenCalledWith(2, 2.7);
+    expect(reduceTileProcessRemainingSeconds).toHaveBeenCalledWith(2, 1);
 
     now += GARDEN_PLOT_TAP_COOLDOWN_MS - 1;
     expect(manager.accelerate(2)).toMatchObject({
@@ -54,26 +48,23 @@ describe('GardenTapAccelerationManager', () => {
   });
 
   it('does not start a cooldown when the plot has no active timer', () => {
-    let now = 2_000;
-    const getTileSnapshots = vi
+    const reduceTileProcessRemainingSeconds = vi
       .fn()
-      .mockReturnValueOnce([{ tileNumber: 1, phase: 'ready', remainingMs: 0 }])
-      .mockReturnValueOnce([{
-        tileNumber: 1,
+      .mockReturnValueOnce({
+        phase: 'ready',
+        reducedSeconds: 0,
+        remainingSeconds: 0,
+      })
+      .mockReturnValueOnce({
         phase: 'harvesting',
-        remainingMs: 400,
-      }]);
-    const reduceTileProcessRemainingSeconds = vi.fn(() => ({
-      phase: 'harvesting',
-      reducedSeconds: 0.12,
-      remainingSeconds: 0.28,
-    }));
+        reducedSeconds: 0.4,
+        remainingSeconds: 0,
+      });
     const manager = new GardenTapAccelerationManager({
       gardenTileEntityManager: {
-        getTileSnapshots,
         reduceTileProcessRemainingSeconds,
       },
-      now: () => now,
+      now: () => 2_000,
     });
 
     expect(manager.accelerate(1)).toMatchObject({
@@ -84,10 +75,11 @@ describe('GardenTapAccelerationManager', () => {
       ok: true,
       tileNumber: 1,
       phase: 'harvesting',
-      reducedSeconds: 0.12,
-      remainingMs: 280,
+      reducedSeconds: 0.4,
+      remainingMs: 0,
       cooldownMs: GARDEN_PLOT_TAP_COOLDOWN_MS,
     });
-    expect(reduceTileProcessRemainingSeconds).toHaveBeenCalledWith(1, 0.12);
+    expect(reduceTileProcessRemainingSeconds).toHaveBeenNthCalledWith(1, 1, 1);
+    expect(reduceTileProcessRemainingSeconds).toHaveBeenNthCalledWith(2, 1, 1);
   });
 });

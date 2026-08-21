@@ -8,7 +8,7 @@ describe('PixiGlobalDialogPresenter', () => {
     const harness = createHarness({ runtimeInitialized: false });
 
     expect(harness.renderFacade.getUiRuntime).not.toHaveBeenCalled();
-    expect(harness.factories.size).toBe(11);
+    expect(harness.factories.size).toBe(12);
     expect([...harness.factories.keys()]).toEqual([
       GLOBAL_DIALOG_IDS.SETTINGS,
       GLOBAL_DIALOG_IDS.FEEDBACK,
@@ -19,6 +19,7 @@ describe('PixiGlobalDialogPresenter', () => {
       GLOBAL_DIALOG_IDS.FRIENDS,
       GLOBAL_DIALOG_IDS.DIRECT_MESSAGE,
       GLOBAL_DIALOG_IDS.ALLIANCE,
+      GLOBAL_DIALOG_IDS.ALLIANCE_RANK,
       GLOBAL_DIALOG_IDS.ANNOUNCEMENT,
       GLOBAL_DIALOG_IDS.CONFIRMATION,
     ]);
@@ -75,6 +76,8 @@ describe('PixiGlobalDialogPresenter', () => {
       character: 'juniper',
       frame: 'emerald',
       playerLevel: 10,
+      prestigeCount: 2,
+      totalProducedCoin: 123_456,
       allianceTag: 'MOSS',
       allianceTagColor: 'green',
       connected: true,
@@ -93,6 +96,8 @@ describe('PixiGlobalDialogPresenter', () => {
       identity: friend.identity,
       allianceTag: 'MOSS',
       allianceTagColor: 'green',
+      prestigeCount: 2,
+      totalProducedCoin: 123_456,
     });
 
     expect(row.onActivate()).toEqual({
@@ -101,6 +106,30 @@ describe('PixiGlobalDialogPresenter', () => {
     expect(
       harness.getOpenModel(GLOBAL_DIALOG_IDS.DIRECT_MESSAGE).friend,
     ).toMatchObject(friend);
+  });
+
+  it('projects live friend presence into direct-message rows', () => {
+    const harness = createHarness();
+    harness.friendsFacade.getRelationship.mockReturnValue('friend');
+    harness.presenter.mount();
+
+    harness.presenter.open(GLOBAL_DIALOG_IDS.DIRECT_MESSAGE, {
+      friend: {
+        identity: 'identity-juniper',
+        username: 'Juniper',
+        connected: true,
+      },
+      previewMessages: [
+        { id: 'friend', username: 'Juniper', body: 'Hello' },
+        { id: 'own', username: 'Mira', body: 'Hi', isOwn: true },
+      ],
+    });
+
+    expect(
+      harness
+        .getOpenModel(GLOBAL_DIALOG_IDS.DIRECT_MESSAGE)
+        .rows.map((row) => row.connected),
+    ).toEqual([true, true]);
   });
 
   it('replaces a submitted chat report with the requested reminder dialog', () => {
@@ -135,7 +164,7 @@ describe('PixiGlobalDialogPresenter', () => {
 
     expect(harness.presenter.open('settings')).toBe(false);
     expect(harness.runtime.openDialog).not.toHaveBeenCalled();
-    expect(harness.factories.size).toBe(11);
+    expect(harness.factories.size).toBe(12);
 
     harness.presenter.mount();
     const first = harness.presenter.open('settings', {

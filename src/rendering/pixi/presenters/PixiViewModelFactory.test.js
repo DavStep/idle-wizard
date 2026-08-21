@@ -191,6 +191,52 @@ describe('PixiViewModelFactory', () => {
     );
   });
 
+  it('projects active research timing into the matching Elara request', () => {
+    const factory = new PixiViewModelFactory();
+    const model = factory.createWorkshop({
+      gameplay: {
+        tasks: {
+          level: {
+            tasks: [
+              {
+                taskId: 'research-mint',
+                type: 'research',
+                researchId: 'unlockSeed:mintSeed',
+                requirementLabel: 'Research Mint Seed',
+                progressQuantity: 0,
+                requiredQuantity: 1,
+                autoProgress: true,
+                isActiveQuest: true,
+              },
+            ],
+          },
+        },
+        research: {
+          inProgressResearches: [
+            {
+              researchId: 'unlockSeed:mintSeed',
+              totalSeconds: 120,
+              remainingSeconds: 65,
+            },
+          ],
+        },
+      },
+    });
+
+    expect(model.workshop.tasks.rows[0]).toMatchObject({
+      label: 'Researching Mint Seed',
+      value: '1m 5s',
+      researchTimer: {
+        active: true,
+        totalMs: 120_000,
+        remainingMs: 65_000,
+      },
+    });
+    expect(model.workshop.tasks.rows[0].researchTimer.progress).toBeCloseTo(
+      55 / 120,
+    );
+  });
+
   it('does not project the obsolete manual level-up row', () => {
     const factory = new PixiViewModelFactory();
     const model = factory.createWorkshop({
@@ -1304,6 +1350,20 @@ describe('PixiViewModelFactory', () => {
     );
   });
 
+  it('projects current sender presence into player chat rows only', () => {
+    const rows = new PixiViewModelFactory().createWorldChatDialog({
+      connected: true,
+      messages: [
+        { id: 'online', username: 'Mira', connected: true, body: 'Here' },
+        { id: 'offline', username: 'Ada', connected: false, body: 'Away' },
+        { id: 'own', username: 'You', isOwn: true, body: 'Hello' },
+        { id: 'system', username: 'System', connected: true, body: 'News' },
+      ],
+    }).rows;
+
+    expect(rows.map((row) => row.connected)).toEqual([true, false, true, false]);
+  });
+
   it('exposes report selection only for other-player World Chat messages', () => {
     const factory = new PixiViewModelFactory();
     const select = vi.fn(() => true);
@@ -1513,7 +1573,9 @@ describe('PixiViewModelFactory', () => {
       username: 'Mira',
       character: 'mira',
       playerLevel: 12,
+      prestigeCount: 2,
       role: 'tradeMaster',
+      totalContribution: 12_500,
     };
     const outsider = {
       allianceId: 'other-alliance',
@@ -1523,6 +1585,26 @@ describe('PixiViewModelFactory', () => {
       playerLevel: 9,
       role: 'trader',
     };
+    const trader = {
+      allianceId: 'shared-alliance',
+      memberIdentity: 'member-c',
+      username: 'Rowan',
+      character: 'rowan',
+      playerLevel: 9,
+      prestigeCount: 1,
+      role: 'trader',
+      totalContribution: 8_400,
+    };
+    const secondTrader = {
+      allianceId: 'shared-alliance',
+      memberIdentity: 'member-d',
+      username: 'Thorne',
+      character: 'thorne',
+      playerLevel: 8,
+      prestigeCount: 0,
+      role: 'trader',
+      totalContribution: 3_000,
+    };
     const alliance = new PixiViewModelFactory().createAllianceDialog(
       {
         connected: true,
@@ -1531,13 +1613,13 @@ describe('PixiViewModelFactory', () => {
           name: 'Shared Alliance',
           tag: 'SHARE',
           joinMode: 'apply',
-          memberCount: 1,
+          memberCount: 3,
           seasonIncome: 84520,
           description: 'Patient traders sharing one hall.',
         },
         canEditSettings: true,
         canManageApplications: true,
-        members: [member, outsider],
+        members: [secondTrader, outsider, member, trader],
       },
       null,
       { openPlayer, selectAllianceTab },
@@ -1554,7 +1636,7 @@ describe('PixiViewModelFactory', () => {
       },
     });
     expect(alliance.tradeInfoRows).toEqual([
-      expect.objectContaining({ label: 'Members', value: '1/50' }),
+      expect.objectContaining({ label: 'Members', value: '3/50' }),
       expect.objectContaining({ label: 'Season Income', resourceKey: 'coin' }),
       expect.objectContaining({ label: 'Membership', actionLabel: 'Leave' }),
     ]);
@@ -1571,9 +1653,28 @@ describe('PixiViewModelFactory', () => {
       character: 'mira',
       roleLabel: 'Trade Master',
       levelLabel: 'Lv 12',
+      prestigeCount: 2,
+      totalContributionLabel: '12.5k',
+      showRankHeader: true,
     });
-    expect(alliance.members).toHaveLength(1);
-    expect(alliance.rows).toHaveLength(1);
+    expect(alliance.members.map((entry) => entry.username)).toEqual([
+      'Mira',
+      'Rowan',
+      'Thorne',
+    ]);
+    expect(alliance.members.map((entry) => entry.showRankHeader)).toEqual([
+      true,
+      true,
+      false,
+    ]);
+    expect(alliance.members[1]).toMatchObject({
+      roleLabel: 'Trader',
+      levelLabel: 'Lv 9',
+      prestigeCount: 1,
+      totalContributionLabel: '8.4k',
+    });
+    expect(alliance.members).toHaveLength(3);
+    expect(alliance.rows).toHaveLength(3);
 
     alliance.members[0].onActivate();
     expect(openPlayer).toHaveBeenCalledWith(
@@ -1651,7 +1752,7 @@ describe('PixiViewModelFactory', () => {
       username: 'Luna',
       character: 'mira',
       frame: 'violet',
-      detail: 'Lv 14 · Prestige 2',
+      detail: 'Lv 14',
       preview: '12.5k Produced',
       primaryAction: { label: 'Accept', variant: 'green' },
       secondaryAction: { label: 'Deny', variant: 'red' },
@@ -1691,16 +1792,37 @@ describe('PixiViewModelFactory', () => {
         },
         canEditSettings: true,
         canManageApplications: true,
+        members: [
+          {
+            memberIdentity: 'luna-id',
+            allianceId: 'shared-alliance',
+            username: 'Luna',
+            character: 'mira',
+            frame: 'emerald',
+            role: 'quartermaster',
+          },
+          {
+            memberIdentity: 'mira-id',
+            allianceId: 'shared-alliance',
+            username: 'Mira',
+            character: 'rowan',
+            frame: 'violet',
+            role: 'trader',
+          },
+        ],
         allianceChatMessages: [
           {
             id: 'message-1',
+            senderIdentity: 'luna-id',
             username: 'Luna',
             character: 'mira',
+            allianceTag: 'SHARE',
             body: 'Welcome to the hall.',
             sentAtMs: Date.now(),
           },
           {
             id: 'message-2',
+            senderIdentity: 'mira-id',
             username: 'system',
             body: 'Mira was approved by Luna and joined the alliance.',
             sentAtMs: Date.now(),
@@ -1727,11 +1849,19 @@ describe('PixiViewModelFactory', () => {
     expect(workspace.chat.rows[0]).toMatchObject({
       username: 'Luna',
       body: 'Welcome to the hall.',
+      allianceTag: '',
+      rankLabel: 'Quartermaster',
     });
     expect(workspace.chat.rows[1]).toMatchObject({
       type: 'system',
       username: 'System',
       body: 'Mira was approved by Luna and joined the alliance.',
+      systemPlayerUsername: 'Mira',
+      systemPlayerDetail: 'was approved by Luna and joined the alliance.',
+      allianceTag: '',
+      character: 'rowan',
+      frame: 'violet',
+      showSystemAvatar: true,
     });
     workspace.chat.onSubmit('alliance only');
     expect(sendAllianceChat).toHaveBeenCalledWith('alliance only');
@@ -1806,17 +1936,21 @@ describe('PixiViewModelFactory', () => {
     ]);
     expect(dialog.rows[0]).toMatchObject({
       title: 'Fill 500 mana tonic',
-      contributionLabel: 'Your Fill 0/3',
+      contributionLabel: 'Your contribution 0/3',
       progressLabel: '2/10',
+      progress: 0.2,
       itemKind: 'potion',
       itemKey: 'manaTonic',
       rewardAmountLabel: '2',
       rewardResource: 'crystal',
+      actionWidth: 72,
+      actionHeight: 42,
     });
     expect(dialog.rows[1]).toMatchObject({
       title: 'Earn Coin',
-      contributionLabel: 'Your Route 10/10',
+      contributionLabel: 'Your contribution 10/10',
       progressLabel: '100/100',
+      progress: 1,
       itemKind: 'resource',
       itemKey: 'coin',
       rewardAmountLabel: '4',

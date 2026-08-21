@@ -5531,7 +5531,7 @@ describe("GameplayFacade", () => {
     ]);
   });
 
-  it("reduces 30% of one active Garden plot timer per accepted tap", () => {
+  it("reduces one second from one active Garden plot timer per accepted tap", () => {
     const { ecsFacade, gameplayFacade } = createGameplay();
     gameplayFacade.itemsFacade.addItem(1, 1);
     gameplayFacade.plantGardenSeed(1, 1);
@@ -5540,27 +5540,27 @@ describe("GameplayFacade", () => {
       ok: true,
       tileNumber: 1,
       phase: "growing",
-      reducedSeconds: 3.6,
-      remainingMs: 8_400,
+      reducedSeconds: 1,
+      remainingMs: 11_000,
       cooldownMs: GARDEN_PLOT_TAP_COOLDOWN_MS,
     });
     expect(gameplayFacade.getSnapshot().garden.plot.tiles[0]).toMatchObject({
       phase: "growing",
-      remainingMs: 8_400,
+      remainingMs: 11_000,
     });
     expect(gameplayFacade.accelerateGardenPlot(1)).toMatchObject({
       ok: false,
       reason: "tap_cooldown",
     });
 
-    ecsFacade.update({ deltaSeconds: 8.4 });
+    ecsFacade.update({ deltaSeconds: 11 });
     expect(gameplayFacade.getSnapshot().garden.plot.tiles[0]).toMatchObject({
       phase: "ready",
       remainingMs: 0,
     });
   });
 
-  it("reduces 30% of one active Brewing cauldron timer per accepted tap", () => {
+  it("reduces one second from one active Brewing cauldron timer per accepted tap", () => {
     const { gameplayFacade } = createGameplay();
     gameplayFacade.brewingFacade.brewingProcessEntityManager.restoreActiveBrew({
       cauldronIndex: 0,
@@ -5575,13 +5575,13 @@ describe("GameplayFacade", () => {
       ok: true,
       cauldronIndex: 0,
       phase: "brewing",
-      reducedSeconds: 3.6,
-      remainingMs: 8_400,
+      reducedSeconds: 1,
+      remainingMs: 11_000,
       cooldownMs: BREWING_CAULDRON_TAP_COOLDOWN_MS,
     });
     expect(gameplayFacade.getSnapshot().brewing.activeBrew).toMatchObject({
       phase: "brewing",
-      remainingMs: 8_400,
+      remainingMs: 11_000,
     });
     expect(gameplayFacade.accelerateBrewingCauldron(0)).toMatchObject({
       ok: false,

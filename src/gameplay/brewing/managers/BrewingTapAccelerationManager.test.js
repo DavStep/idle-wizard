@@ -2,14 +2,14 @@ import { describe, expect, it, vi } from 'vitest';
 
 import {
   BREWING_CAULDRON_TAP_COOLDOWN_MS,
-  BREWING_CAULDRON_TAP_REDUCTION_RATIO,
+  BREWING_CAULDRON_TAP_REDUCTION_SECONDS,
   BrewingTapAccelerationManager,
 } from './BrewingTapAccelerationManager.js';
 
 describe('BrewingTapAccelerationManager', () => {
-  it('removes 30% of the remaining timer and rejects repeated taps until the feedback window ends', () => {
+  it('removes one second and rejects repeated taps until the feedback window ends', () => {
     expect(BREWING_CAULDRON_TAP_COOLDOWN_MS).toBe(504);
-    expect(BREWING_CAULDRON_TAP_REDUCTION_RATIO).toBe(0.3);
+    expect(BREWING_CAULDRON_TAP_REDUCTION_SECONDS).toBe(1);
 
     let now = 1_000;
     const getActiveBrewSnapshot = vi.fn(() => ({
@@ -19,8 +19,8 @@ describe('BrewingTapAccelerationManager', () => {
     }));
     const reduceRemainingSeconds = vi.fn(() => ({
       phase: 'brewing',
-      remainingSeconds: 6.3,
-      remainingMs: 6_300,
+      remainingSeconds: 8,
+      remainingMs: 8_000,
     }));
     const manager = new BrewingTapAccelerationManager({
       brewingProcessEntityManager: {
@@ -35,11 +35,11 @@ describe('BrewingTapAccelerationManager', () => {
       cauldronIndex: 1,
       cauldronNumber: 2,
       phase: 'brewing',
-      reducedSeconds: 2.7,
-      remainingMs: 6_300,
+      reducedSeconds: 1,
+      remainingMs: 8_000,
       cooldownMs: BREWING_CAULDRON_TAP_COOLDOWN_MS,
     });
-    expect(reduceRemainingSeconds).toHaveBeenCalledWith(2.7, 1);
+    expect(reduceRemainingSeconds).toHaveBeenCalledWith(1, 1);
 
     now += BREWING_CAULDRON_TAP_COOLDOWN_MS - 1;
     expect(manager.accelerate(1)).toMatchObject({
@@ -69,8 +69,8 @@ describe('BrewingTapAccelerationManager', () => {
       });
     const reduceRemainingSeconds = vi.fn(() => ({
       phase: 'bottling',
-      remainingSeconds: 0.28,
-      remainingMs: 280,
+      remainingSeconds: 0,
+      remainingMs: 0,
     }));
     const manager = new BrewingTapAccelerationManager({
       brewingProcessEntityManager: {
@@ -89,10 +89,10 @@ describe('BrewingTapAccelerationManager', () => {
       cauldronIndex: 0,
       cauldronNumber: 1,
       phase: 'bottling',
-      reducedSeconds: 0.12,
-      remainingMs: 280,
+      reducedSeconds: 0.4,
+      remainingMs: 0,
       cooldownMs: BREWING_CAULDRON_TAP_COOLDOWN_MS,
     });
-    expect(reduceRemainingSeconds).toHaveBeenCalledWith(0.12, 0);
+    expect(reduceRemainingSeconds).toHaveBeenCalledWith(1, 0);
   });
 });

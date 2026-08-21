@@ -415,6 +415,35 @@ describe('ResearchPixiPage', () => {
     harness.dispose();
   });
 
+  it('routes an unaffordable research cost press to currency shortage feedback', () => {
+    const showCurrencyShortage = vi.fn(() => true);
+    const buyResearch = vi.fn();
+    const harness = createHarness();
+    const model = createResearchViewModel({
+      buyResearch,
+      canResearch: false,
+      showCurrencyShortage,
+      value: '25 coin',
+    });
+    model.research.tabs[0].boxes[0].researches[0].cost = {
+      amount: 25,
+      amountLabel: '25',
+      resource: 'coin',
+    };
+    harness.page.bind(model);
+
+    const row = harness.page.boxes.get('herbs').rows.get('mint');
+    expect(row.costButton.activate()).toBe(true);
+    expect(showCurrencyShortage).toHaveBeenCalledWith({
+      cost: 25,
+      resource: 'coin',
+    });
+    expect(buyResearch).not.toHaveBeenCalled();
+
+    harness.page.destroy();
+    harness.dispose();
+  });
+
   it('reuses the normal row visuals beneath a translucent locked overlay', () => {
     const normalTexture = Texture.WHITE;
     const lockedTexture = Texture.EMPTY;
@@ -1357,6 +1386,7 @@ function createResearchViewModel({
   canResearch = true,
   notification,
   buyResearch = vi.fn(),
+  showCurrencyShortage = vi.fn(),
   showLockedReason = vi.fn(),
 } = {}) {
   return {
@@ -1392,6 +1422,7 @@ function createResearchViewModel({
     },
     actions: {
       buyResearch,
+      showCurrencyShortage,
       showLockedReason,
     },
   };

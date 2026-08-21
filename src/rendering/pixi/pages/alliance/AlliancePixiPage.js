@@ -65,7 +65,7 @@ const SECTION_CONTENT_BOTTOM =
   PIXI_DIALOG_SPLIT_PAPER_GEOMETRY.contentInsetBottom;
 const SECTION_GAP = PIXI_DIALOG_SPLIT_PAPER_GEOMETRY.sectionGap;
 const MEMBER_ROW_HEIGHT = PIXI_ROOT_RUN_GEOMETRY.settings.rowPitch;
-const HOME_CONTENT_WIDTH = 350;
+const MAX_HOME_CONTENT_WIDTH = 350;
 const HOME_CONTENT_INSET = 14;
 const HOME_IDENTITY_CONTENT_HEIGHT = 120;
 const HOME_ANNOUNCEMENT_CONTENT_HEIGHT = 62;
@@ -429,7 +429,7 @@ export class AlliancePixiPage extends BasePixiRetainedView {
     this.layoutCollection(
       this.quests,
       'quests',
-      listLayout.rowWidth,
+      this.sourceWidth - PAGE_EDGE * 2 + 2,
       viewportHeight,
     );
     const requestsViewportHeight = Math.max(
@@ -488,7 +488,17 @@ export class AlliancePixiPage extends BasePixiRetainedView {
       bottom: PIXI_UI_GEOMETRY.dialogPadding,
       left: PIXI_UI_GEOMETRY.dialogPadding,
     });
-    const rootX = (this.sourceWidth - HOME_CONTENT_WIDTH) / 2;
+    const homeContentWidth = Math.max(
+      0,
+      Math.min(
+        MAX_HOME_CONTENT_WIDTH,
+        this.sourceWidth -
+          PAGE_EDGE * 2 -
+          paperOutsets.left -
+          paperOutsets.right,
+      ),
+    );
+    const rootX = (this.sourceWidth - homeContentWidth) / 2;
     const paperTop = SECTION_FRAME_TOP - paperOutsets.top;
     identity.root.position.set(rootX, PAGE_TOP);
     setDialogPaperSectionBounds(
@@ -496,21 +506,22 @@ export class AlliancePixiPage extends BasePixiRetainedView {
       {
         x: 0,
         y: SECTION_FRAME_TOP,
-        width: HOME_CONTENT_WIDTH,
+        width: homeContentWidth,
         height: HOME_IDENTITY_CONTENT_HEIGHT,
       },
       paperOutsets,
     );
     this.homeFlag.setSize(HOME_FLAG_SIZE, HOME_FLAG_SIZE);
-    this.homeFlag.position.set(
-      (HOME_CONTENT_WIDTH - HOME_FLAG_SIZE) / 2,
-      SECTION_CONTENT_TOP + 1,
-    );
+    const homeFlagX = (homeContentWidth - HOME_FLAG_SIZE) / 2;
+    this.homeFlag.position.set(homeFlagX, SECTION_CONTENT_TOP + 1);
     this.homeName.position.set(HOME_CONTENT_INSET, SECTION_CONTENT_TOP + 24);
-    fitTextToWidth(this.homeName, 108);
+    fitTextToWidth(
+      this.homeName,
+      Math.max(0, homeFlagX - HOME_CONTENT_INSET - 6),
+    );
     this.homeTag.position.set(HOME_CONTENT_INSET, SECTION_CONTENT_TOP + 51);
     const statWidth = HOME_STAT_SOURCE_WIDTH * HOME_STAT_SCALE;
-    const statX = HOME_CONTENT_WIDTH - HOME_CONTENT_INSET - statWidth;
+    const statX = homeContentWidth - HOME_CONTENT_INSET - statWidth;
     this.homeMemberStat.position.set(statX, SECTION_CONTENT_TOP + 20);
     this.homeIncomeStat.position.set(statX, SECTION_CONTENT_TOP + 51);
 
@@ -526,10 +537,16 @@ export class AlliancePixiPage extends BasePixiRetainedView {
       SECTION_CONTENT_TOP + 19,
     );
     announcement.detail.style.wordWrap = true;
-    announcement.detail.style.wordWrapWidth =
-      HOME_CONTENT_WIDTH - HOME_CONTENT_INSET * 2;
+    announcement.detail.style.wordWrapWidth = Math.max(
+      0,
+      homeContentWidth -
+        HOME_CONTENT_INSET * 2 -
+        (this.homeLeaveButton.visible
+          ? this.homeLeaveButton.buttonWidth + 8
+          : 0),
+    );
     this.homeLeaveButton.position.set(
-      HOME_CONTENT_WIDTH - HOME_CONTENT_INSET - this.homeLeaveButton.buttonWidth,
+      homeContentWidth - HOME_CONTENT_INSET - this.homeLeaveButton.buttonWidth,
       SECTION_CONTENT_TOP - 5,
     );
     setDialogPaperSectionBounds(
@@ -537,7 +554,7 @@ export class AlliancePixiPage extends BasePixiRetainedView {
       {
         x: 0,
         y: SECTION_FRAME_TOP,
-        width: HOME_CONTENT_WIDTH,
+        width: homeContentWidth,
         height: HOME_ANNOUNCEMENT_CONTENT_HEIGHT,
       },
       paperOutsets,
@@ -558,8 +575,8 @@ export class AlliancePixiPage extends BasePixiRetainedView {
       remainingHeight - SECTION_FRAME_TOP - paperOutsets.bottom,
     );
     const listLayout = resolveRetainedDialogListLayout({
-      bodyWidth: HOME_CONTENT_WIDTH,
-      paperRight: HOME_CONTENT_WIDTH + 14 / 3,
+      bodyWidth: homeContentWidth,
+      paperRight: homeContentWidth + 14 / 3,
       rowFrameWidth: RETAINED_DIALOG_LIST_GEOMETRY.rowFrameWidth,
     });
     members.scroll.setBounds(
@@ -575,8 +592,9 @@ export class AlliancePixiPage extends BasePixiRetainedView {
     );
     let memberY = 0;
     for (const row of this.homeMemberRows.rows.getWidgets()) {
-      row.setBounds(0, memberY, listLayout.rowWidth, MEMBER_ROW_HEIGHT);
-      memberY += MEMBER_ROW_HEIGHT;
+      const rowHeight = row.getPreferredHeight();
+      row.setBounds(0, memberY, listLayout.rowWidth, rowHeight);
+      memberY += rowHeight;
     }
     members.scroll.setContentHeight(memberY);
     setDialogPaperSectionBounds(
@@ -584,7 +602,7 @@ export class AlliancePixiPage extends BasePixiRetainedView {
       {
         x: 0,
         y: SECTION_FRAME_TOP,
-        width: HOME_CONTENT_WIDTH,
+        width: homeContentWidth,
         height: membersContentHeight,
       },
       paperOutsets,
@@ -608,10 +626,11 @@ export class AlliancePixiPage extends BasePixiRetainedView {
     );
     const widgets = collection.rows.getWidgets();
     let y = topInset;
+    const rowGap = tabId === 'quests' ? 5 : ROW_GAP;
     for (const widget of widgets) {
       const height = widget.getPreferredHeight?.(width) ?? 62;
       widget.setBounds(0, y, width, height);
-      y += height + ROW_GAP;
+      y += height + rowGap;
     }
     const label = this.emptyLabels.get(tabId);
     const emptyText = resolveEmptyLabel(tabId, this.model);

@@ -127,6 +127,16 @@ export class FriendsSubscriptionManager {
       character: normalizePlayerCharacter(row.character),
       frame: normalizePlayerFrame(row.frame),
       playerLevel: Math.max(1, Math.floor(Number(row.playerLevel ?? row.player_level) || 1)),
+      prestigeCount: Math.max(
+        0,
+        Math.floor(Number(row.prestigeCount ?? row.prestige_count) || 0),
+      ),
+      totalProducedCoin: this.toNumber(
+        row.totalProducedCoin ??
+          row.totalProducedGold ??
+          row.total_produced_coin ??
+          row.total_produced_gold,
+      ),
       connected: Boolean(row.connected),
       allianceTag: String(row.allianceTag ?? row.alliance_tag ?? '')
         .trim()
@@ -161,5 +171,13 @@ export class FriendsSubscriptionManager {
       return Number(value.__timestamp_micros_since_unix_epoch__ / 1000n);
     }
     return Number(value) || 0;
+  }
+
+  toNumber(value) {
+    if (typeof value === 'bigint') {
+      return Number(value);
+    }
+
+    return Number.isFinite(value) ? Number(value) : 0;
   }
 }

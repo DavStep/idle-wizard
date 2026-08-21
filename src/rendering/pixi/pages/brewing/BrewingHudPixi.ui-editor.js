@@ -252,7 +252,7 @@ async function mountBrewing(context, fixture) {
     ],
     actions: [
       { id: 'start', label: 'Start brew', enabled: () => !state.active, run: actions.performCauldronAction },
-      { id: 'empty', label: 'Empty cauldron', enabled: () => !state.active && Boolean(state.selectedRecipe || state.ingredients.length), run: actions.emptyCauldron },
+      { id: 'empty', label: 'Empty cauldron', enabled: () => true, run: actions.emptyCauldron },
       { id: 'advance', label: 'Advance 1s', enabled: () => Boolean(state.active), run: () => context.clock.advance(1000) },
       { id: 'complete', label: 'Complete', enabled: () => Boolean(state.active), run: () => context.clock.advance(5000) },
     ],

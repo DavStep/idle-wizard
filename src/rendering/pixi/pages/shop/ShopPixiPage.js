@@ -1607,6 +1607,7 @@ export class ShopStallWidget {
         state: stall.affordable === false ? 'unaffordable' : 'available',
         enabled: this.enabled,
         action: (payload) => this.action?.(payload),
+        unaffordableAction: () => stall.insufficientAction?.() ?? false,
       });
     }
     this.priceResource.visible = Boolean(visiblePriceResourceKey);

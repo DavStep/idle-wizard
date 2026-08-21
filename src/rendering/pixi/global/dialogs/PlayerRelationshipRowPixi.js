@@ -1,10 +1,12 @@
 import { Container, Graphics, Rectangle, Texture } from 'pixi.js';
 
 import { getPlayerFrameTint } from '../../../../player/playerFrames.js';
+import { formatBigNumber } from '../../../../shared/bigNumber.js';
 import { PixiNotificationBadge } from '../transient/PixiNotificationBadges.js';
 import { PixiTextButton } from '../../primitives/PixiTextButton.js';
 import { createDialogPaperSection } from '../../primitives/PixiDialogFrame.js';
 import { PixiNineSliceFrame } from '../../primitives/PixiNineSliceFrame.js';
+import { PixiStarLevelLabel } from '../../primitives/PixiStarLevelLabel.js';
 import {
   PIXI_ROOT_RUN_ASSETS,
   PIXI_ROOT_RUN_GEOMETRY,
@@ -84,6 +86,13 @@ export class PlayerRelationshipRowPixi {
     this.allianceTag = createText('', RETAINED_TEXT_STYLES.bold);
     this.name = createText('', RETAINED_TEXT_STYLES.bold);
     this.detail = createText('', RETAINED_TEXT_STYLES.border);
+    this.prestigeStars = new PixiStarLevelLabel({
+      assetManager: dialog.assetManager,
+      size: 9,
+      gap: 0,
+      label: `${this.root.label}:prestige-stars`,
+    });
+    this.production = createText('', RETAINED_TEXT_STYLES.border);
     this.preview = createText('', RETAINED_TEXT_STYLES.border);
     this.status = createText('', {
       ...RETAINED_TEXT_STYLES.border,
@@ -106,6 +115,8 @@ export class PlayerRelationshipRowPixi {
       this.allianceTag,
       this.name,
       this.detail,
+      this.prestigeStars,
+      this.production,
       this.preview,
       this.status,
       this.notificationDot,
@@ -114,12 +125,14 @@ export class PlayerRelationshipRowPixi {
     );
     this.registration =
       dialog.inputRouter?.registerPressTarget?.(this.root, {
+        fallbackHitTest: true,
         enabled: () => typeof this.model?.onActivate === 'function',
         onActivate: () => this.model?.onActivate?.(this.model) ?? false,
         haptic: 'selection',
         excludePageSwipe: true,
       }) ?? null;
     this.root.visible = false;
+    this.root.eventMode = 'passive';
   }
 
   createAction(id) {
@@ -152,6 +165,17 @@ export class PlayerRelationshipRowPixi {
     );
     setText(this.name, model.username ?? model.label ?? 'Wizard');
     setText(this.detail, model.detail ?? `Level ${model.playerLevel ?? 1}`);
+    this.prestigeStars.setLevel(model.prestigeCount ?? 0);
+    this.prestigeStars.visible = this.usesResearchCard || this.usesFriendCard;
+    this.prestigeStars.renderable = this.prestigeStars.visible;
+    setText(
+      this.production,
+      this.usesFriendCard
+        ? `${formatBigNumber(model.totalProducedCoin ?? 0)} Produced`
+        : '',
+    );
+    this.production.visible = this.usesFriendCard;
+    this.production.renderable = this.production.visible;
     setText(this.preview, model.preview ?? '');
     setText(this.status, model.status ?? '');
     const notificationVisible =
@@ -160,6 +184,9 @@ export class PlayerRelationshipRowPixi {
     this.notificationBadge.setActive(notificationVisible);
     this.bindAction(this.primary, model.primaryAction);
     this.bindAction(this.secondary, model.secondaryAction);
+    const interactive = typeof model.onActivate === 'function';
+    this.root.eventMode = interactive ? 'static' : 'passive';
+    this.root.cursor = interactive ? 'pointer' : 'default';
     this.applyTheme(this.dialog.contentTheme ?? this.dialog.theme);
   }
 
@@ -263,6 +290,13 @@ export class PlayerRelationshipRowPixi {
     this.detail.position.set(copyX, 30);
     this.detail.style.wordWrap = false;
     this.detail.style.wordWrapWidth = copyWidth;
+    this.prestigeStars.position.set(
+      Math.min(
+        copyRight - this.prestigeStars.measuredWidth,
+        copyX + Math.ceil(this.detail.width) + 5,
+      ),
+      33,
+    );
     this.preview.position.set(copyX, 49);
     this.preview.style.wordWrap = false;
     this.preview.style.wordWrapWidth = copyWidth;
@@ -318,6 +352,19 @@ export class PlayerRelationshipRowPixi {
     this.detail.position.set(copyX, 35);
     this.detail.style.wordWrap = false;
     this.detail.style.wordWrapWidth = copyWidth;
+    this.prestigeStars.position.set(
+      copyX + Math.ceil(this.detail.width) + 5,
+      38,
+    );
+    this.production.position.set(
+      this.prestigeStars.x + this.prestigeStars.measuredWidth + 5,
+      35,
+    );
+    this.production.style.wordWrap = false;
+    this.production.style.wordWrapWidth = Math.max(
+      24,
+      copyRight - this.production.x,
+    );
     this.preview.position.set(copyX, 57);
     this.preview.style.wordWrap = false;
     this.preview.style.wordWrapWidth = copyWidth;
@@ -350,6 +397,7 @@ export class PlayerRelationshipRowPixi {
           },
     );
     applyTextTheme(this.preview, theme, RETAINED_TEXT_STYLES.border);
+    applyTextTheme(this.production, theme, RETAINED_TEXT_STYLES.border);
     applyTextTheme(this.allianceTag, theme, RETAINED_TEXT_STYLES.bold);
     this.allianceTag.style.fill = resolveAllianceTagColor(
       this.model?.allianceTagColor,
@@ -367,6 +415,9 @@ export class PlayerRelationshipRowPixi {
     this.model = null;
     this.root.visible = false;
     this.root.renderable = false;
+    this.root.eventMode = 'passive';
+    this.root.cursor = 'default';
+    this.prestigeStars.reset();
     this.notificationBadge.setActive(false);
   }
 

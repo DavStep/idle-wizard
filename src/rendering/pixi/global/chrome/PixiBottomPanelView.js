@@ -85,10 +85,34 @@ export const PIXI_ALLIANCE_HUD_TABS = Object.freeze([
   }),
   Object.freeze({ id: 'alliance.browse', allianceTabId: 'browse', label: 'Browse' }),
   Object.freeze({ id: 'alliance.create', allianceTabId: 'create', label: 'Create' }),
-  Object.freeze({ id: 'alliance.home', allianceTabId: 'home', label: 'Home' }),
-  Object.freeze({ id: 'alliance.quests', allianceTabId: 'quests', label: 'Quests' }),
-  Object.freeze({ id: 'alliance.requests', allianceTabId: 'requests', label: 'Requests' }),
-  Object.freeze({ id: 'alliance.settings', allianceTabId: 'settings', label: 'Settings' }),
+  Object.freeze({
+    id: 'alliance.home',
+    allianceTabId: 'home',
+    label: 'Home',
+    icon: 'icon-alliance-home-tab.png',
+    artScale: 0.72,
+  }),
+  Object.freeze({
+    id: 'alliance.quests',
+    allianceTabId: 'quests',
+    label: 'Quests',
+    icon: 'icon-alliance-quests-tab.png',
+    artScale: 0.78,
+  }),
+  Object.freeze({
+    id: 'alliance.requests',
+    allianceTabId: 'requests',
+    label: 'Requests',
+    icon: 'icon-alliance-requests-tab.png',
+    artScale: 0.7,
+  }),
+  Object.freeze({
+    id: 'alliance.settings',
+    allianceTabId: 'settings',
+    label: 'Settings',
+    icon: 'icon-alliance-settings-tab.png',
+    artScale: 0.72,
+  }),
 ]);
 
 export const PIXI_GUILD_HUD_TABS = Object.freeze([
@@ -327,9 +351,9 @@ export class PixiBottomPanelView extends BasePixiRetainedView {
       });
     });
     this.allianceTabs = PIXI_ALLIANCE_HUD_TABS.map((definition) => {
-      const TabClass = definition.allianceTabId
-        ? PixiBottomHudTextTab
-        : PixiBottomRoomTab;
+      const TabClass = definition.icon
+        ? PixiBottomRoomTab
+        : PixiBottomHudTextTab;
       return new TabClass({
         definition,
         assets,

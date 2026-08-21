@@ -11,7 +11,7 @@ colors:
   disabled: "#6a6a6a"
   active-surface: "{colors.room-surface}"
   notification-red: "#c1121f"
-  insufficient-red: "#ff8790"
+  insufficient-red: "#ff5965"
   notification-orange: "#d66a00"
   mana-blue: "#2fa8ff"
   quest-purple: "#8740df"

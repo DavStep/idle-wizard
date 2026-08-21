@@ -203,20 +203,22 @@
         ],
       };
 
+      window.__allianceQuestLastAction = null;
       const questRows = [
         {
           id: 'quest-mana-tonic',
           title: 'Fill 500 mana tonic',
           itemKind: 'potion',
           itemKey: 'manaTonic',
-          contributionLabel: 'Your Fill 0/25',
+          contributionLabel: 'Your contribution 0/25',
           progressLabel: '138/500',
+          progress: 138 / 500,
           rewardAmountLabel: '5',
           rewardResource: 'crystal',
           actionLabel: 'Locked',
           actionVariant: 'gray',
-          actionWidth: 58,
-          actionHeight: 28,
+          actionWidth: 72,
+          actionHeight: 42,
           enabled: false,
           onActivate: null,
         },
@@ -225,16 +227,20 @@
           title: 'Supply The Market',
           itemKind: 'resource',
           itemKey: 'coin',
-          contributionLabel: 'Your Route 12/12',
+          contributionLabel: 'Your contribution 12/12',
           progressLabel: '50/50',
+          progress: 1,
           rewardAmountLabel: '5',
           rewardResource: 'crystal',
           actionLabel: 'Claim',
-          actionVariant: 'yellow',
-          actionWidth: 58,
-          actionHeight: 28,
+          actionVariant: 'green',
+          actionWidth: 72,
+          actionHeight: 42,
           enabled: true,
-          onActivate: () => true,
+          onActivate: () => {
+            window.__allianceQuestLastAction = 'claim-market';
+            return true;
+          },
         },
       ];
       const applicationRows = [
@@ -244,7 +250,8 @@
           username: 'Luna',
           character: 'mira',
           frame: 'violet',
-          detail: 'Lv 14 · Prestige 3',
+          detail: 'Lv 14',
+          prestigeCount: 3,
           preview: '175k Produced',
           onActivate: () => {
             recordAction({ type: 'open-player', identity: 'luna' });
@@ -257,7 +264,8 @@
           username: 'Thorne',
           character: 'rowan',
           frame: 'classic',
-          detail: 'Lv 9 · Prestige 1',
+          detail: 'Lv 9',
+          prestigeCount: 1,
           preview: '68k Produced',
           onActivate: () => {
             recordAction({ type: 'open-player', identity: 'thorne' });
@@ -320,6 +328,7 @@
               character: 'mira',
               frame: 'violet',
               id: 'alliance-chat-1',
+              rankLabel: 'Quartermaster',
               sentAtMs: Date.now(),
               username: 'Luna',
             },
@@ -328,12 +337,29 @@
               character: 'juniper',
               frame: 'emerald',
               id: 'alliance-chat-2',
+              rankLabel: 'Trader',
               sentAtMs: Date.now(),
               username: 'Juniper',
+            },
+            {
+              body: 'Mira was promoted to Broker by Luna.',
+              character: 'rowan',
+              frame: 'emerald',
+              id: 'alliance-chat-system-1',
+              sentAtMs: Date.now(),
+              showSystemAvatar: true,
+              username: 'system',
             },
           ],
         },
         {
+          openPlayer: (player) => {
+            recordAction({
+              type: 'open-player',
+              username: player.username,
+            });
+            return true;
+          },
           sendWorldChat: async (body) => {
             recordAction({ type: 'alliance-chat', body });
             return { ok: true };

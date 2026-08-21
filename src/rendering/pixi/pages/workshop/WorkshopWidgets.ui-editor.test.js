@@ -33,6 +33,10 @@ describe('Workshop widget UI editor integrations', () => {
       'text-button',
     ]);
     expect(
+      integrations.find(({ id }) => id === 'compound.workshop-task-row')
+        ?.scenarios.map(({ id }) => id),
+    ).toEqual(['progress', 'claimable', 'researching', 'complete']);
+    expect(
       integrations.find(
         ({ id }) => id === 'compound.world-event-donation-option-row',
       )?.childWidgetIds,
@@ -95,7 +99,11 @@ describe('Workshop widget UI editor integrations', () => {
     expect(
       integrations.find(({ id }) => id === 'compound.alliance-quest-row')
         ?.childWidgetIds,
-    ).toEqual(['primitive.resource-label', 'text-button']);
+    ).toEqual([
+      'primitive.progress-bar',
+      'primitive.resource-label',
+      'text-button',
+    ]);
     expect(
       integrations.find(({ id }) => id === 'compound.alliance-quest-row')
         ?.scenarios.map(({ id }) => id),

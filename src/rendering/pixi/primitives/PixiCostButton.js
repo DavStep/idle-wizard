@@ -113,6 +113,7 @@ export class PixiCostButton extends PixiBaseButton {
     this.actionLabel = '';
     this.lockReason = '';
     this.modelEnabled = true;
+    this.unaffordableAction = null;
 
     this.background = this.rootRunFrame;
     this.background.label = `${label}:background`;
@@ -198,6 +199,7 @@ export class PixiCostButton extends PixiBaseButton {
     tone = this.tone,
     sizeTier = this.sizeTier,
     action,
+    unaffordableAction,
   } = {}) {
     const parsed = parseCostLabel(amountLabel ?? label ?? amount, resource);
     const nextState = normalizeCostState(state);
@@ -219,7 +221,12 @@ export class PixiCostButton extends PixiBaseButton {
     this.color = this.tone;
     this.sizeTier = normalizePixiButtonSizeTier(sizeTier, this.sizeTier);
     this.setAction(action);
+    this.unaffordableAction =
+      typeof unaffordableAction === 'function'
+        ? unaffordableAction
+        : null;
     super.setEnabled(this.modelEnabled && this.costState === 'available');
+    super.setPressEnabled(this.costState === 'unaffordable' || this.enabled);
     this.syncCostAppearance();
     return this;
   }
@@ -238,6 +245,7 @@ export class PixiCostButton extends PixiBaseButton {
   setEnabled(enabled) {
     this.modelEnabled = Boolean(enabled);
     super.setEnabled(this.modelEnabled && this.costState === 'available');
+    super.setPressEnabled(this.costState === 'unaffordable' || this.enabled);
     this.syncCostAppearance();
     return this;
   }
@@ -246,6 +254,27 @@ export class PixiCostButton extends PixiBaseButton {
     super.setPressed(pressed, context);
     this.syncCostAppearance();
     return this;
+  }
+
+  activate(payload) {
+    if (this.costState !== 'unaffordable') {
+      return super.activate(payload);
+    }
+    if (
+      !this.pressEnabled ||
+      this.selected ||
+      !this.visible ||
+      !this.renderable
+    ) {
+      return false;
+    }
+    return (
+      this.unaffordableAction?.({
+        amount: this.amount,
+        payload,
+        resource: this.resource,
+      }) ?? false
+    );
   }
 
   applyTheme(theme) {
@@ -267,6 +296,7 @@ export class PixiCostButton extends PixiBaseButton {
     this.costState = 'available';
     this.resource = 'coin';
     this.modelEnabled = false;
+    this.unaffordableAction = null;
     super.reset();
     this.syncCostAppearance();
   }

@@ -116,6 +116,7 @@ describe('WorldChatSubscriptionManager', () => {
           playerLevel: 2,
           allianceTag: '',
           allianceTagColor: 'ink',
+          connected: false,
           body: 'first',
           sentAtMs: 1_000,
         },
@@ -129,12 +130,31 @@ describe('WorldChatSubscriptionManager', () => {
           playerLevel: 4,
           allianceTag: '',
           allianceTagColor: 'ink',
+          connected: false,
           body: 'second',
           sentAtMs: 2_000,
         },
       ],
     });
     expect(snapshots.at(-1)).toEqual(manager.getSnapshot());
+  });
+
+  it('projects the sender current connection state', () => {
+    const table = createWorldChatTable([
+      {
+        messageId: 'a',
+        senderIdentity: 'sender-a',
+        username: 'Ada',
+        connected: true,
+        body: 'online now',
+        sentAt: createTimestamp(1_000),
+      },
+    ]);
+    const manager = new WorldChatSubscriptionManager();
+
+    manager.connect(createConnection(table));
+
+    expect(manager.getSnapshot().messages[0].connected).toBe(true);
   });
 
   it('falls back to level 1 for older player messages without a level', () => {

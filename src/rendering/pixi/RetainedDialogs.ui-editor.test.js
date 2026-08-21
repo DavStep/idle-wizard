@@ -342,11 +342,9 @@ describe('retained dialog UI editor integrations', () => {
     ).toBe(4);
     const firstRow = dialog.rows.getWidgets()[0];
     const firstRowTop = dialog.scroll.root.y + firstRow.root.y;
-    expect(dialog.scroll.root.y).toBeGreaterThanOrEqual(
-      Math.floor(dialog.panel.paperFrame.y),
-    );
+    expect(dialog.scroll.root.y - dialog.panel.paperFrame.y).toBeCloseTo(6);
     expect(firstRowTop - dialog.panel.paperFrame.y).toBeCloseTo(
-      PIXI_UI_GEOMETRY.dialogScrollPaddingTop,
+      PIXI_UI_GEOMETRY.dialogScrollPaddingTop + 6,
     );
     expect(dialog.scroll.root.x).toBe(7);
     expect(firstRow.rank.anchor.x).toBe(0.5);
@@ -356,11 +354,16 @@ describe('retained dialog UI editor integrations', () => {
     expect(firstRow.prestigeStars.tone).toBe('yellow');
     expect(firstRow.prestigeStars.starCount).toBe(3);
     expect(firstRow.prestigeStars.visible).toBe(true);
-    expect(dialog.rows.getWidgets()[2].prestigeStars.visible).toBe(false);
+    expect(dialog.rows.getWidgets()[2].prestigeStars.level).toBe(0);
+    expect(dialog.rows.getWidgets()[2].prestigeStars.starCount).toBe(0);
+    expect(dialog.rows.getWidgets()[2].prestigeStars.visible).toBe(true);
     const periodTabs = dialog.periodTabs.getWidgets();
     const scopeTabs = dialog.tabs.getWidgets();
     expect(periodTabs).toHaveLength(4);
     expect(scopeTabs).toHaveLength(2);
+
+    dialog.layout({ ...PROJECTION, sourceWidth: 390, sourceHeight: 944 });
+    expect(dialog.modal.fixedBounds.height).toBe(532);
     expect(periodTabs[0].root.x).toBe(scopeTabs[0].root.x);
     expect(periodTabs[1].root.x + periodTabs[1].width).toBe(
       scopeTabs[0].root.x + scopeTabs[0].width,
@@ -648,8 +651,11 @@ describe('retained dialog UI editor integrations', () => {
     ).toEqual([
       'player',
       'own-player',
+      'offline-player',
       'report-eligible',
       'system',
+      'alliance-player',
+      'alliance-system',
       'disabled',
     ]);
   });

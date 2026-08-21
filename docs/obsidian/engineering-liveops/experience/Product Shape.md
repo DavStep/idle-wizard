@@ -374,6 +374,7 @@ experience_type: product-shape
 - Workshop summon reward feedback should pulse the matching requirement row only; connector lines across the room read as confusing.
 - Workshop summon requirement pulse should use the existing progress fill only; outlining or filling the row reads as a stray nested box over the item.
 - Reward text flyouts should all spawn from the same base anchor; do not stack older notices upward or derive one flyout position from another.
+- Unaffordable currency cost buttons stay release-pressable without invoking the purchase callback; route that press through the shared text flyout as `Missing <amount> <currency>` using the authoritative balance.
 - Reward flyouts are page-owned: filter events against the active room, never replay hidden-room reward events on resume, and clear active transients when the room changes.
 - With reward events enabled, Workshop summon item text comes from `subscribeRewardEvents`; the action bar only adds the mana-spend flyout.
 - Claim-button reward flyouts should publish before the claim snapshot rebuilds, so the original button can still anchor the motion.
@@ -382,5 +383,6 @@ experience_type: product-shape
 - Ordinary buttons never activate or repeat before release. Workshop summon is the sole documented exception and keeps its hold timer inside the feature-local Pixi control rather than changing the shared button or input-router contract.
 - Android tap haptics should prefer the `IdleWizardHaptics` constant pulse (`5ms`, `0.35` amplitude); Capacitor `Haptics.vibrate()` uses default amplitude and feels harsher.
 - Retained Brewing state motion must reapply cauldron, liquid, and highlight effects from captured rest transforms each tick; otherwise ambient brewing motion, carousel settling, completion impacts, and reduced-motion resets accumulate visual drift.
+- Short retained Brewing layouts keep the HUD anchored below the player banner and scroll overflow toward World Chat; never compress the cauldron composition upward into top chrome.
 - Retained room scroll height must derive from visible rendered rows, not maximum feature capacity; hidden future Garden plots otherwise create blank scroll travel and a misleading overflow rail.
 - Whole-row retained controls use `ClickableWidget` for their single press target and compact release feedback; do not gate that interaction contract behind feature-list constructor flags.

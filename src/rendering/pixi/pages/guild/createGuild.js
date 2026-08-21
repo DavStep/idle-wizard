@@ -104,6 +104,9 @@ function createGuildActionMap({ gameplayActions, uiActions }) {
     'selectTab',
     'selectAdventurerTab',
   ]);
+  assignAction(result, 'showCurrencyShortage', uiActions, [
+    'showCurrencyShortage',
+  ]);
   assignAction(result, 'createGuild', gameplayActions, [
     'createGuild',
   ]);

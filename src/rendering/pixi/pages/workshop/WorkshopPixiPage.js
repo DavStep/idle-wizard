@@ -6,6 +6,7 @@ import {
   getSeedIconFrameName,
   getSeedPackItemFrameName,
 } from '../../../../assets/items/seeds/seedIconFrames.js';
+import { formatRemainingTime } from '../../../../pages/shared/timerDisplay.js';
 import {
   getNotificationTone,
   isNotificationActive,
@@ -16,6 +17,7 @@ import { AllianceFlagWidget } from '../../primitives/AllianceFlagWidget.js';
 import { PixiCostButton } from '../../primitives/PixiCostButton.js';
 import { PixiInfoButton } from '../../primitives/PixiInfoButton.js';
 import { PixiNineSliceFrame } from '../../primitives/PixiNineSliceFrame.js';
+import { createTimedProgressWindow } from '../../primitives/PixiProgressBar.js';
 import { layoutPixiSeedPackIcon } from '../../primitives/PixiSeedPackIcon.js';
 import { normalizePixiTextStroke } from '../../primitives/PixiTextLabel.js';
 import { PooledCollection } from '../../retained/PooledCollection.js';
@@ -43,6 +45,7 @@ import {
   RetainedButton,
   RetainedPanel,
   RetainedProgressBar,
+  RetainedTimedProgressBar,
   applyTextTheme,
   createRetainedInputId,
   createText,
@@ -165,10 +168,12 @@ const SUMMON_BUTTON_UP_OFFSET = 4;
 const SUMMON_INFO_VISUAL_SIZE = 18;
 const SUMMON_INFO_HIT_SIZE = 44;
 const SUMMON_CHAT_GAP = 128;
+const WORKSHOP_REQUEST_DOWN_OFFSET = 8;
+const WORKSHOP_SUMMON_DOWN_OFFSET = 16;
 export const WORKSHOP_WINDOW_ASSET_ID =
   'source:assets/rooms/workshop/workshop-window.png';
 export const WORKSHOP_WINDOW_GEOMETRY = Object.freeze({
-  top: 172,
+  top: 180,
   width: 150,
   height: 300,
   alpha: 0.86,
@@ -714,9 +719,11 @@ export class WorkshopPixiPage extends BaseRetainedPixiPage {
     this.workshopWindow.width = WORKSHOP_WINDOW_GEOMETRY.width;
     this.workshopWindow.height = WORKSHOP_WINDOW_GEOMETRY.height;
     this.fireflies.setBounds(this.sourceWidth, this.sourceHeight);
+    const requestTop =
+      RETAINED_PAGE_GEOMETRY.contentTop + WORKSHOP_REQUEST_DOWN_OFFSET;
     this.tasks.setBounds(
       RETAINED_PAGE_GEOMETRY.contentEdge,
-      RETAINED_PAGE_GEOMETRY.contentTop,
+      requestTop,
       width,
     );
     const worldChatTop =
@@ -728,10 +735,11 @@ export class WorkshopPixiPage extends BaseRetainedPixiPage {
       worldChatTop -
         SUMMON_BUTTON_HEIGHT -
         SUMMON_CHAT_GAP +
-        SUMMON_BUTTON_UP_OFFSET,
+        SUMMON_BUTTON_UP_OFFSET +
+        WORKSHOP_SUMMON_DOWN_OFFSET,
     );
     const sideControlsTop =
-      RETAINED_PAGE_GEOMETRY.contentTop + this.tasks.height + SIDE_CONTROLS_TASK_GAP;
+      requestTop + this.tasks.height + SIDE_CONTROLS_TASK_GAP;
     this.layoutSideControls(sideControlsTop, {
       animate: animateSideControls,
     });
@@ -1435,6 +1443,14 @@ export class WorkshopTaskRow {
       label: 'workshop-task-progress',
       tone: 'root',
     });
+    this.researchProgress = new RetainedTimedProgressBar({
+      assetManager,
+      label: 'workshop-task-research-progress',
+      tone: 'blue',
+      usePlayerStyle: false,
+    });
+    this.researchProgress.root.visible = false;
+    this.researchProgress.root.renderable = false;
     this.progressShineRoot = new Container({
       label: 'workshop-task-progress-shine',
       eventMode: 'none',
@@ -1484,6 +1500,7 @@ export class WorkshopTaskRow {
       this.value,
       this.action.root,
       this.progress.root,
+      this.researchProgress.root,
     );
     this.root.addChild(this.visual);
   }
@@ -1525,9 +1542,13 @@ export class WorkshopTaskRow {
       this.root.eventMode = 'passive';
       this.root.cursor = 'default';
     }
+    const researchTimer = normalizeRequestResearchTimer(model.researchTimer);
     const nextProgress = resolveRequestProgress(model);
     const isNewTask = previousTaskId === null || previousTaskId !== model.id;
-    if (isNewTask) {
+    if (researchTimer) {
+      this.bindResearchTimer(researchTimer);
+    } else if (isNewTask || this.researchTimer) {
+      this.clearResearchTimer();
       this.progressMotion = null;
       this.progressFeedback = null;
       this.queuedProgress = null;
@@ -1535,7 +1556,10 @@ export class WorkshopTaskRow {
     } else {
       this.animateProgressTo(nextProgress);
     }
-    this.progress.root.visible = model.showProgress !== false;
+    this.progress.root.visible = !researchTimer && model.showProgress !== false;
+    this.progress.root.renderable = this.progress.root.visible;
+    this.researchProgress.root.visible = Boolean(researchTimer) && model.showProgress !== false;
+    this.researchProgress.root.renderable = this.researchProgress.root.visible;
     this.updateShineVisibility();
     this.targetId = model.semanticId ?? `workshop.task.${model.id}`;
     this.page.registerSemanticTarget({
@@ -1604,7 +1628,13 @@ export class WorkshopTaskRow {
       width,
       PIXI_UI_GEOMETRY.progressTotalHeight,
     );
-    this.preferredHeight = this.progress.root.visible
+    this.researchProgress.setBounds(
+      0,
+      progressTop,
+      width,
+      PIXI_UI_GEOMETRY.progressTotalHeight,
+    );
+    this.preferredHeight = this.progress.root.visible || this.researchProgress.root.visible
       ? WORKSHOP_TASK_DEFAULT_ROW_HEIGHT
       : WORKSHOP_TASK_ICON_SIZE;
     const height = this.getPreferredHeight();
@@ -1676,6 +1706,7 @@ export class WorkshopTaskRow {
     }
     this.action.applyTheme(theme);
     this.progress.applyTheme(theme);
+    this.researchProgress.applyTheme(theme);
   }
 
   reset() {
@@ -1689,6 +1720,7 @@ export class WorkshopTaskRow {
     this.progressMotion = null;
     this.progressFeedback = null;
     this.queuedProgress = null;
+    this.clearResearchTimer();
     this.setProgressImmediate(0);
     this.model = null;
     this.icon.texture = Texture.EMPTY;
@@ -1707,10 +1739,50 @@ export class WorkshopTaskRow {
     this.pauseMotion();
     this.action.destroy();
     this.progress.destroy();
+    this.researchProgress.destroy();
     this.clickable.destroy({ children: true });
   }
 
+  bindResearchTimer(timer) {
+    this.progressMotion = null;
+    this.progressFeedback = null;
+    this.queuedProgress = null;
+    this.researchTimer = timer;
+    this.progressShineRoot.visible = false;
+    this.progressShineRoot.renderable = false;
+    this.researchProgress.setTimer(
+      createTimedProgressWindow(timer, this.page.timeSource()),
+    );
+    this.updateResearchTimer(this.page.timeSource());
+    this.scheduleMotionFrame();
+  }
+
+  clearResearchTimer() {
+    this.researchTimer = null;
+    this.researchProgress.clearTimer(0);
+    this.researchProgress.root.visible = false;
+    this.researchProgress.root.renderable = false;
+  }
+
+  updateResearchTimer(now = this.page.timeSource()) {
+    if (!this.researchTimer) {
+      return false;
+    }
+    const snapshot = this.researchProgress.updateTimer(now);
+    this.displayedProgress = snapshot.progress;
+    this.targetProgress = snapshot.progress;
+    setText(this.value, formatRemainingTime(snapshot.remainingMs));
+    return !snapshot.complete;
+  }
+
   startCompletionFill(durationMs) {
+    if (this.researchTimer) {
+      const timerProgress = this.researchProgress.progress;
+      this.clearResearchTimer();
+      this.progress.root.visible = true;
+      this.progress.root.renderable = true;
+      this.setProgressImmediate(timerProgress);
+    }
     this.queuedProgress = null;
     this.animateProgressTo(1, {
       durationMs,
@@ -1841,6 +1913,13 @@ export class WorkshopTaskRow {
   }
 
   updateMotion(now = this.page.timeSource()) {
+    const researchTimerRunning = this.updateResearchTimer(now);
+    if (this.researchTimer) {
+      if (researchTimerRunning) {
+        this.scheduleMotionFrame();
+      }
+      return researchTimerRunning;
+    }
     if (!this.page.root.visible || this.page.reducedMotion?.() === true) {
       this.pauseMotion();
       this.progressFeedback = null;
@@ -2003,7 +2082,12 @@ export class WorkshopTaskRow {
 
   resumeMotion() {
     this.updateMotion(this.page.timeSource());
-    if (this.progressMotion || this.progressFeedback || this.queuedProgress) {
+    if (
+      this.researchTimer ||
+      this.progressMotion ||
+      this.progressFeedback ||
+      this.queuedProgress
+    ) {
       this.scheduleMotionFrame();
     }
   }
@@ -2905,6 +2989,26 @@ function resolveRequestProgress(model = {}) {
       ? finiteOr(model.current, 0) / required
       : finiteOr(model.progress, 0),
   );
+}
+
+function normalizeRequestResearchTimer(timer = null) {
+  if (timer?.active !== true) {
+    return null;
+  }
+  const totalMs = Math.max(0, Number(timer.totalMs) || 0);
+  const remainingMs = Math.max(
+    0,
+    Math.min(totalMs, Number(timer.remainingMs) || 0),
+  );
+  if (totalMs <= 0) {
+    return null;
+  }
+  return {
+    active: true,
+    totalMs,
+    remainingMs,
+    progress: clampUnit(1 - remainingMs / totalMs),
+  };
 }
 
 function clampUnit(value) {

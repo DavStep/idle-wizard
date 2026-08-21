@@ -25,7 +25,8 @@ export default defineUiEditorIntegration({
     },
     {
       label: 'Contract',
-      value: 'Compact player or system message row used by World Chat',
+      value:
+        'Compact player or system message row used by World Chat and Alliance Chat',
     },
   ],
   scenarios: [
@@ -39,6 +40,12 @@ export default defineUiEditorIntegration({
       fixture: createPlayerFixture({ isOwn: true, username: 'You' }),
       id: 'own-player',
       label: 'Own player message',
+      mount: mountWorldChatMessageRow,
+    },
+    {
+      fixture: createPlayerFixture({ connected: false }),
+      id: 'offline-player',
+      label: 'Offline player message',
       mount: mountWorldChatMessageRow,
     },
     {
@@ -58,6 +65,25 @@ export default defineUiEditorIntegration({
       mount: mountWorldChatMessageRow,
     },
     {
+      fixture: createPlayerFixture({
+        allianceTag: '',
+        rankLabel: 'Quartermaster',
+      }),
+      id: 'alliance-player',
+      label: 'Alliance player rank',
+      mount: mountWorldChatMessageRow,
+    },
+    {
+      fixture: createSystemFixture({
+        character: 'mira',
+        frame: 'violet',
+        showSystemAvatar: true,
+      }),
+      id: 'alliance-system',
+      label: 'Alliance system avatar',
+      mount: mountWorldChatMessageRow,
+    },
+    {
       fixture: createPlayerFixture({ enabled: false }),
       id: 'disabled',
       label: 'Player message, passive',
@@ -69,6 +95,10 @@ export default defineUiEditorIntegration({
     {
       label: 'World Chat dialog row',
       source: 'src/rendering/pixi/pages/workshop/WorkshopDialogPixi.js',
+    },
+    {
+      label: 'Alliance Chat dialog row',
+      source: 'src/rendering/pixi/pages/alliance/AlliancePixiPage.js',
     },
   ],
 });
@@ -155,8 +185,8 @@ function createWorldChatMessageRowHierarchy(row) {
     }),
     createUiEditorPixiHierarchyComponent({
       displayObjects: [row.tag],
-      id: 'world-chat-message-row:alliance-tag',
-      label: 'Alliance tag',
+      id: 'world-chat-message-row:identity-prefix',
+      label: 'Alliance tag or role',
       primary: row.tag,
       textTarget: row.tag,
       type: 'label',
@@ -168,6 +198,13 @@ function createWorldChatMessageRowHierarchy(row) {
       primary: row.username,
       textTarget: row.username,
       type: 'label',
+    }),
+    createUiEditorPixiHierarchyComponent({
+      displayObjects: [row.presenceDot],
+      id: 'world-chat-message-row:presence',
+      label: 'Online status',
+      primary: row.presenceDot,
+      type: 'image',
     }),
     createUiEditorPixiHierarchyComponent({
       displayObjects: [row.systemPlayerUsername],
@@ -202,6 +239,7 @@ function createPlayerFixture(overrides = {}) {
     allianceTagColor: 'violet',
     body: 'Anyone joining the next expedition?',
     character: 'mira',
+    connected: true,
     enabled: true,
     frame: 'violet',
     id: 'world-chat-player',
@@ -214,6 +252,8 @@ function createSystemFixture(overrides = {}) {
   return {
     ageLabel: '1m',
     body: 'discovered a rare potion.',
+    character: 'mira',
+    frame: 'violet',
     id: 'world-chat-system',
     systemPlayerDetail: 'discovered a rare potion.',
     systemPlayerUsername: 'Mira',

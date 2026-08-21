@@ -1,6 +1,7 @@
 import { Container } from 'pixi.js';
 
 import { PixiAllianceInfoDialog } from './PixiAllianceInfoDialog.js';
+import { PixiAllianceRankDialog } from './PixiAllianceRankDialog.js';
 import { PixiChatReportDialog } from './PixiChatReportDialog.js';
 import { PixiInboxDialog } from './PixiInboxDialog.js';
 import { PixiLevelDialog } from './PixiLevelDialog.js';
@@ -25,6 +26,7 @@ export const GLOBAL_DIALOG_IDS = Object.freeze({
   FRIENDS: 'global.friends',
   DIRECT_MESSAGE: 'global.directMessage',
   ALLIANCE: 'global.alliance',
+  ALLIANCE_RANK: 'global.allianceRank',
   ANNOUNCEMENT: 'global.announcement',
   CONFIRMATION: 'global.confirmation',
 });
@@ -95,6 +97,14 @@ const GLOBAL_DIALOG_DEFINITIONS = Object.freeze([
       new PixiAllianceInfoDialog({
         context,
         dialogId: GLOBAL_DIALOG_IDS.ALLIANCE,
+      }),
+  ]),
+  Object.freeze([
+    GLOBAL_DIALOG_IDS.ALLIANCE_RANK,
+    (context) =>
+      new PixiAllianceRankDialog({
+        context,
+        dialogId: GLOBAL_DIALOG_IDS.ALLIANCE_RANK,
       }),
   ]),
   Object.freeze([

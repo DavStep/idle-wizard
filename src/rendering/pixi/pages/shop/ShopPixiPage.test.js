@@ -464,6 +464,35 @@ describe('ShopPixiPage', () => {
     harness.dispose();
   });
 
+  it('routes an unaffordable trader unlock to currency shortage feedback', () => {
+    const harness = createHarness();
+    const buy = vi.fn();
+    const insufficientAction = vi.fn(() => true);
+    const model = createShopViewModel();
+    model.shop.traders.stalls[0] = {
+      id: 'stall-1',
+      slotNumber: 1,
+      buySlot: true,
+      costCoin: 50,
+      affordable: false,
+      enabled: true,
+      selected: false,
+      action: buy,
+      insufficientAction,
+    };
+
+    harness.page.bind(model);
+    harness.page.activate();
+
+    const stall = harness.page.stallsSection.stalls.get('stall-1');
+    expect(stall.buyCostButton.activate()).toBe(true);
+    expect(insufficientAction).toHaveBeenCalledOnce();
+    expect(buy).not.toHaveBeenCalled();
+
+    harness.page.destroy();
+    harness.dispose();
+  });
+
   it('renders empty Players slots like Traders without section counters', () => {
     const harness = createHarness();
     const model = createShopViewModel();

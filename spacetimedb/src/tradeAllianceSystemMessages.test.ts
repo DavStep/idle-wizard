@@ -109,4 +109,42 @@ describe('trade alliance system messages', () => {
       ),
     ).toContain('formatTradeAllianceKickedMessage');
   });
+
+  it('stores the announced player identity for system-message avatars', () => {
+    const reducerSource = readFileSync(
+      new URL('./index.ts', import.meta.url),
+      'utf8',
+    );
+    const reducerBody = (name: string, nextName: string) =>
+      reducerSource.slice(
+        reducerSource.indexOf(`export const ${name} =`),
+        reducerSource.indexOf(`export const ${nextName} =`),
+      );
+
+    expect(reducerSource).toContain('senderIdentity: subjectIdentity');
+    expect(
+      reducerBody(
+        'accept_trade_alliance_application',
+        'reject_trade_alliance_application',
+      ),
+    ).toContain('application.applicantIdentity');
+    expect(
+      reducerBody(
+        'transfer_trade_alliance_leadership',
+        'set_trade_alliance_member_role',
+      ),
+    ).toContain('target.memberIdentity');
+    expect(
+      reducerBody(
+        'set_trade_alliance_member_role',
+        'kick_trade_alliance_member',
+      ),
+    ).toContain('target.memberIdentity');
+    expect(
+      reducerBody(
+        'kick_trade_alliance_member',
+        'send_trade_alliance_chat_message',
+      ),
+    ).toContain('target.memberIdentity');
+  });
 });

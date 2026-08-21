@@ -21,6 +21,7 @@ import {
   shouldShowItemInActionList,
 } from "../../../pages/shared/itemResearchStatus.js";
 import { formatCoinPriceText } from "../../../shared/coinPrice.js";
+import { formatBigNumber } from "../../../shared/bigNumber.js";
 import {
   PLAYER_MARKET_MAX_PRICE_COIN,
   PLAYER_MARKET_MAX_QUANTITY,
@@ -109,12 +110,31 @@ const WORKSHOP_WORLD_EVENT_TAB_IDS = new Set([
   "rewards",
 ]);
 const MARKET_FILTER_FIELDS = new Set(["item", "minPrice", "username"]);
+const CURRENCY_SHORTAGE_LABELS = Object.freeze({
+  coin: "Coin",
+  mana: "Mana",
+  crystal: "Amber",
+  amethyst: "Amethyst",
+  ruby: "Ruby",
+  emerald: "Emerald",
+});
 export const PIXI_WORLD_CHAT_REPORT_HIGHLIGHT_SURFACE_ID =
   "interaction.worldChatReportHighlight";
 const WORLD_CHAT_REPORT_HIGHLIGHT_MODAL_PRIORITY = 70;
 
 function createEmptyMarketFilters() {
   return { item: "", minPrice: "", username: "" };
+}
+
+function normalizeCurrencyShortageResource(resource) {
+  const normalized = String(resource ?? "")
+    .trim()
+    .toLowerCase()
+    .replace(/s$/, "");
+  const currency = normalized === "amber" ? "crystal" : normalized;
+  return Object.hasOwn(CURRENCY_SHORTAGE_LABELS, currency)
+    ? currency
+    : null;
 }
 
 /**
@@ -1375,6 +1395,8 @@ export class PixiPagesFacade {
 
   createActions() {
     const gameplay = this.gameplayFacade;
+    const showCurrencyShortage = (shortage) =>
+      this.emitCurrencyShortage(shortage);
     return {
       workshop: {
         openGuild: () => this.show("guild"),
@@ -1396,6 +1418,12 @@ export class PixiPagesFacade {
             this.experienceFacade?.transientEffects?.emitReward?.({
               message: "Select a seed to drop",
               flyoutKey: "workshop-summon-seed-selection",
+            });
+          }
+          if (result?.reason === "not_enough_mana") {
+            this.emitCurrencyShortage({
+              cost: result.cost,
+              resource: "mana",
             });
           }
           return result;
@@ -1631,6 +1659,7 @@ export class PixiPagesFacade {
           }) ?? false,
       },
       research: {
+        showCurrencyShortage,
         buyResearch: (researchId) => {
           const anchorId = `research.${researchId}`;
           const anchor =
@@ -1692,6 +1721,7 @@ export class PixiPagesFacade {
       garden: this.createGardenActions(),
       brewing: this.createBrewingActions(),
       shop: {
+        showCurrencyShortage,
         selectTab: (_legacyId, tabId) => {
           this.shopTabId = tabId ?? _legacyId ?? "traders";
           this.syncExternalDataRetention();
@@ -2200,6 +2230,7 @@ export class PixiPagesFacade {
         },
       },
       guild: {
+        showCurrencyShortage,
         selectAdventurerTab: (tabId) => {
           this.guildAdventurerTabId = normalizeGuildAdventurerTabId(tabId);
           this.refreshPage("guild");
@@ -2228,6 +2259,31 @@ export class PixiPagesFacade {
       message: "Not enough resources",
       flyoutKey: "workshop-world-event-donation-shortage",
     });
+  }
+
+  emitCurrencyShortage({ cost, current, missing, resource } = {}) {
+    const currency = normalizeCurrencyShortageResource(resource);
+    if (!currency) {
+      return false;
+    }
+    const requiredAmount = Number(cost);
+    const currentAmount = Number(
+      current ?? this.gameplaySnapshot?.[currency]?.current,
+    );
+    const explicitMissing = missing == null ? Number.NaN : Number(missing);
+    const missingAmount = Number.isFinite(explicitMissing)
+      ? Math.max(0, explicitMissing)
+      : Number.isFinite(requiredAmount) && Number.isFinite(currentAmount)
+        ? Math.max(0, requiredAmount - currentAmount)
+        : 0;
+    if (missingAmount <= 0) {
+      return false;
+    }
+    this.experienceFacade?.transientEffects?.emitReward?.({
+      message: `Missing ${formatBigNumber(Math.ceil(missingAmount))} ${CURRENCY_SHORTAGE_LABELS[currency]}`,
+      flyoutKey: `currency-shortage-${currency}`,
+    });
+    return true;
   }
 
   emitPurchaseSpendBurstForResult(
@@ -2335,6 +2391,11 @@ export class PixiPagesFacade {
           };
         }
         if (plot.affordable === false) {
+          this.emitCurrencyShortage({
+            cost: plot.costCoin,
+            missing: plot.missingCoin,
+            resource: "coin",
+          });
           return {
             ok: false,
             reason: "insufficient_coin",
@@ -2594,7 +2655,11 @@ export class PixiPagesFacade {
 
   decorateCauldron(cauldron, brewing) {
     const index = Math.max(0, Math.floor(Number(cauldron?.cauldronIndex) || 0));
-    const selectedRecipe = this.selectedRecipeByCauldron.get(index) ?? null;
+    const selectedRecipe = this.getSelectedBrewingRecipe(
+      index,
+      brewing,
+      cauldron,
+    );
     const brewQuantity = Math.max(
       1,
       Math.floor(Number(cauldron?.brewQuantity) || 1),
@@ -2702,8 +2767,16 @@ export class PixiPagesFacade {
     );
     const { ownedByItemTypeId, ownedByKey } =
       this.getBrewingOwnedIngredientQuantities(safeCauldronIndex);
-    const selectedRecipe =
-      this.selectedRecipeByCauldron.get(safeCauldronIndex) ?? null;
+    const brewing = this.gameplaySnapshot.brewing ?? {};
+    const cauldron = (brewing.cauldrons ?? []).find(
+      (candidate) =>
+        Number(candidate?.cauldronIndex) === safeCauldronIndex,
+    );
+    const selectedRecipe = this.getSelectedBrewingRecipe(
+      safeCauldronIndex,
+      { ...brewing, recipes },
+      cauldron,
+    );
 
     return (recipes ?? []).map((recipe) => {
       const selected =
@@ -2749,7 +2822,30 @@ export class PixiPagesFacade {
         canSelect: false,
         selected: false,
       };
-    });
+      });
+  }
+
+  getSelectedBrewingRecipe(cauldronIndex, brewing = {}, cauldron = null) {
+    const localSelection =
+      this.selectedRecipeByCauldron.get(cauldronIndex) ?? null;
+    if (localSelection) {
+      return localSelection;
+    }
+
+    const recipeKey =
+      cauldron?.autoBrewRecipeKey ??
+      (cauldronIndex === 0 ? brewing.autoBrewRecipeKey : null);
+    if (!recipeKey) {
+      return null;
+    }
+
+    return (
+      (brewing.recipes ?? []).find(
+        (recipe) =>
+          recipe?.unlocked === true &&
+          (recipe.key ?? recipe.id) === recipeKey,
+      ) ?? null
+    );
   }
 
   canSelectBrewingRecipe(recipe, cauldronIndex = 0) {
@@ -2929,13 +3025,39 @@ export class PixiPagesFacade {
     const performEmptyCauldron = (cauldronIndex = 0) => {
       const result = gameplay?.clearBrewingCauldron?.(cauldronIndex);
       if (result === true || result?.ok === true) {
+        gameplay?.setBrewingAutoBrewRecipe?.(null, cauldronIndex);
         this.selectedRecipeByCauldron.delete(cauldronIndex);
         this.refreshPage("brewing");
       }
       return result;
     };
     const emptyCauldron = (cauldronIndex = 0) => {
-      const value = { cauldronIndex };
+      const safeCauldronIndex = Math.max(
+        0,
+        Math.floor(Number(cauldronIndex) || 0),
+      );
+      const cauldrons = this.gameplaySnapshot.brewing?.cauldrons ?? [];
+      const cauldron =
+        cauldrons.find(
+          (candidate) =>
+            Number(candidate?.cauldronIndex) === safeCauldronIndex,
+        ) ?? cauldrons[safeCauldronIndex];
+      const hasContents =
+        Boolean(cauldron?.activeBrew) ||
+        Boolean(cauldron?.selectedRecipe) ||
+        Boolean(this.selectedRecipeByCauldron.get(safeCauldronIndex)) ||
+        (cauldron?.ingredients?.length ?? 0) > 0;
+      if (!hasContents) {
+        this.experienceFacade?.transientEffects?.emitReward?.({
+          message: "Nothing to empty",
+          flyoutKey: `brewing-nothing-to-empty-${safeCauldronIndex}`,
+        });
+        return {
+          ok: false,
+          reason: "nothing_to_empty",
+        };
+      }
+      const value = { cauldronIndex: safeCauldronIndex };
       const confirmationModel = {
         title: "Empty Cauldron?",
         message: "Are you sure you want to empty the cauldron contents?",
@@ -2959,6 +3081,8 @@ export class PixiPagesFacade {
       );
     };
     return {
+      showCurrencyShortage: (shortage) =>
+        this.emitCurrencyShortage(shortage),
       selectCauldron: (cauldronIndex) => {
         this.selectedBrewingCauldronIndex = Math.max(
           0,
@@ -3013,10 +3137,20 @@ export class PixiPagesFacade {
         this.navigateToResearch(cauldron?.nextCauldronRequiresResearchId),
       selectRecipe: (recipe, cauldronIndex = 0) => {
         const key = recipe?.key ?? recipe?.id ?? null;
-        const result = key
-          ? gameplay?.prepareBrewingRecipe?.(key, cauldronIndex)
-          : gameplay?.setBrewingAutoBrewRecipe?.(null, cauldronIndex);
+        const cauldron = (
+          this.gameplaySnapshot.brewing?.cauldrons ?? []
+        ).find(
+          (candidate) =>
+            Number(candidate?.cauldronIndex) === Number(cauldronIndex),
+        );
+        const active = Boolean(cauldron?.activeBrew);
+        const result = !key || active
+          ? gameplay?.setBrewingAutoBrewRecipe?.(key, cauldronIndex)
+          : gameplay?.prepareBrewingRecipe?.(key, cauldronIndex);
         if (result === true || result?.ok === true) {
+          if (key && !active) {
+            gameplay?.setBrewingAutoBrewRecipe?.(key, cauldronIndex);
+          }
           if (recipe) {
             this.selectedRecipeByCauldron.set(cauldronIndex, recipe);
           } else {

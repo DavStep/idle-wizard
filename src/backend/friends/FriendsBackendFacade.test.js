@@ -10,7 +10,7 @@ describe('FriendsBackendFacade', () => {
     'own_friendship_table.ts',
     'own_incoming_friend_request_table.ts',
     'own_outgoing_friend_request_table.ts',
-  ])('keeps alliance identity in the generated %s contract', (bindingFile) => {
+  ])('keeps relationship profile data in the generated %s contract', (bindingFile) => {
     const source = readFileSync(
       new URL(`../spacetimedb/module_bindings/${bindingFile}`, import.meta.url),
       'utf8',
@@ -18,6 +18,8 @@ describe('FriendsBackendFacade', () => {
 
     expect(source).toContain('allianceTag: __t.string()');
     expect(source).toContain('allianceTagColor: __t.string()');
+    expect(source).toContain('prestigeCount: __t.u32()');
+    expect(source).toContain('totalProducedGold: __t.u64()');
   });
 
   it('maps relationship rows and routes every server-authoritative action', async () => {
@@ -47,6 +49,8 @@ describe('FriendsBackendFacade', () => {
       identity: 'friend',
       allianceTag: 'MOSS',
       allianceTagColor: 'green',
+      prestigeCount: 2,
+      totalProducedCoin: 123_456,
     });
     expect(facade.getRelationship('friend')).toBe('friend');
     expect(facade.getRelationship('incoming')).toBe('incoming');
@@ -159,6 +163,8 @@ function playerRow(overrides = {}) {
     character: 'elara',
     frame: 'classic',
     playerLevel: 7,
+    prestigeCount: 2,
+    totalProducedGold: 123_456n,
     connected: true,
     lastSeenAt: timestamp(1000),
     createdAt: timestamp(500),
