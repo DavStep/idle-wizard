@@ -26,6 +26,8 @@ const DEVICE_PREFERENCE_LABEL_X = 50;
 const DEVICE_PREFERENCE_SLIDER_X = 118;
 const DEVICE_PREFERENCE_LABEL_COLOR = '#735036';
 const DEVICE_PREFERENCE_LABEL_FONT_SIZE = 19;
+const DEVICE_PREFERENCE_LABEL_MIN_FONT_SIZE = 15;
+const DEVICE_PREFERENCE_LABEL_CONTROL_GAP = 6;
 const DEVICE_IDENTITY_COLOR = '#8a684c';
 const DEVICE_IDENTITY_ROW_GAP = 6;
 const DEVICE_IDENTITY_COPY_WIDTH = 58;
@@ -308,10 +310,6 @@ export class RootRunDevicePreferenceRow extends Container {
       DEVICE_PREFERENCE_ICON_WIDTH / 2,
       this.rowHeight / 2,
     );
-    this.textLabel.position.set(
-      DEVICE_PREFERENCE_LABEL_X,
-      (this.rowHeight - this.textLabel.measuredHeight) / 2,
-    );
     if (this.slider) {
       this.slider.setBounds(
         DEVICE_PREFERENCE_SLIDER_X,
@@ -327,6 +325,19 @@ export class RootRunDevicePreferenceRow extends Container {
         (this.rowHeight - this.toggle.controlHeight) / 2,
       );
     }
+    fitPreferenceLabel(
+      this.textLabel,
+      Math.max(
+        0,
+        this.control.x -
+          DEVICE_PREFERENCE_LABEL_X -
+          DEVICE_PREFERENCE_LABEL_CONTROL_GAP,
+      ),
+    );
+    this.textLabel.position.set(
+      DEVICE_PREFERENCE_LABEL_X,
+      (this.rowHeight - this.textLabel.measuredHeight) / 2,
+    );
   }
 
   get labelText() {
@@ -499,6 +510,18 @@ function getPreferenceIconHeight(key) {
     return 29;
   }
   return 33;
+}
+
+function fitPreferenceLabel(label, maximumWidth) {
+  label.setFontSize(DEVICE_PREFERENCE_LABEL_FONT_SIZE);
+  for (
+    let fontSize = DEVICE_PREFERENCE_LABEL_FONT_SIZE;
+    label.measuredWidth > maximumWidth &&
+      fontSize > DEVICE_PREFERENCE_LABEL_MIN_FONT_SIZE;
+    fontSize -= 1
+  ) {
+    label.setFontSize(fontSize - 1);
+  }
 }
 
 function isPreferenceOn(value) {

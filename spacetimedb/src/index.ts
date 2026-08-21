@@ -24,6 +24,7 @@ import {
   normalizeSaveClientTimestamp,
 } from './saveClientTimestampNormalizer';
 import { normalizeSaveSelectedNumber } from './saveSelectedNumberNormalizer';
+import { selectLatestDirectMessagePreview } from './directMessagePreview';
 import {
   normalizeGardenPlotAutomationSettings,
   normalizeGardenSelectedSeedItemKey,
@@ -5945,6 +5946,8 @@ const spacetimedb = schema({
       character: t.string().default(DEFAULT_PLAYER_CHARACTER),
       frame: t.string().default(DEFAULT_PLAYER_FRAME),
       totalPlayTimeMicros: t.u64().default(0n),
+      allowFriendRequests: t.bool().default(true),
+      allowTradeAllianceInvitations: t.bool().default(true),
     },
   ),
   playerGameplaySave: table(
@@ -6808,6 +6811,8 @@ const playerProfileResult = t.option(
     font: t.string(),
     character: t.string(),
     frame: t.string(),
+    allowFriendRequests: t.bool(),
+    allowTradeAllianceInvitations: t.bool(),
   }),
 );
 const adminPlayerGameplaySaveResult = t.array(
@@ -6875,6 +6880,8 @@ const playerInfoSummaryResult = t.array(
     username: t.string(),
     allianceTag: t.string(),
     allianceTagColor: t.string(),
+    allianceName: t.string(),
+    allianceRole: t.string(),
     totalProducedGold: t.u64(),
     totalBrewedPotions: t.u64(),
     totalHarvestedHerbs: t.u64(),
@@ -6953,6 +6960,7 @@ const ownFriendshipResult = t.array(
     createdAt: t.timestamp(),
     allianceTag: t.string(),
     allianceTagColor: t.string(),
+    lastMessagePreview: t.string(),
   }),
 );
 const ownIncomingFriendRequestResult = t.array(
@@ -7316,6 +7324,9 @@ export const own_player_profile = spacetimedb.view(
       font: normalizePlayerFont(player.font),
       character: normalizePlayerCharacter(player.character),
       frame: normalizePlayerFrame(player.frame),
+      allowFriendRequests: player.allowFriendRequests !== false,
+      allowTradeAllianceInvitations:
+        player.allowTradeAllianceInvitations !== false,
     };
   },
 );
@@ -7922,6 +7933,11 @@ function getOwnFriendshipRows(ctx: IdleWizardViewCtx): any[] {
         createdAt: friendship.createdAt,
         allianceTag: getSenderTradeAllianceTag(ctx, friendIdentity),
         allianceTagColor: getSenderTradeAllianceTagColor(ctx, friendIdentity),
+        lastMessagePreview: selectLatestDirectMessagePreview(
+          ctx.db.directMessage.byConversationKey.filter(
+            friendship.friendshipKey,
+          ),
+        ),
       };
     })
     .filter(Boolean)
@@ -10789,6 +10805,12 @@ function normalizePlayerGameplaySave(
       levelLimits.maxCauldrons,
     ),
     garden: normalizeSaveGarden(save.garden, itemCatalog, levelLimits),
+    weeklyOffers: normalizeSaveWeeklyOffers(
+      Object.hasOwn(save, "weeklyOffers")
+        ? save.weeklyOffers
+        : previousSave.weeklyOffers,
+      itemCatalog,
+    ),
     tasks,
     personalTasks: normalizeSaveClientStateBranch(
       Object.hasOwn(save, "personalTasks")
@@ -13164,6 +13186,56 @@ function normalizeSaveGardenTile(
     phase: hasSeed && hasHerb ? phase : "empty",
     totalMs: phase === "ready" ? 0 : totalMs,
     remainingMs,
+  };
+}
+
+function normalizeSaveWeeklyOffers(
+  value: unknown,
+  itemCatalog: Map<string, string>,
+) {
+  const weeklyOffers = isRecord(value) ? value : {};
+  const extraPlotSource = isRecord(weeklyOffers.extraPlot)
+    ? weeklyOffers.extraPlot
+    : null;
+  const extraPlot = extraPlotSource
+    ? normalizeSaveGardenTile(
+        { ...extraPlotSource, tileNumber: 99 },
+        itemCatalog,
+        99,
+      )
+    : null;
+  const extraCauldronSource = isRecord(weeklyOffers.extraCauldron)
+    ? weeklyOffers.extraCauldron
+    : null;
+  const normalizedExtraBrewing = extraCauldronSource
+    ? normalizeSaveBrewing(
+        {
+          unlockedCauldrons: 1,
+          cauldrons: [
+            { ...extraCauldronSource, cauldronNumber: 1 },
+          ],
+        },
+        itemCatalog,
+        1,
+      )
+    : null;
+  const extraCauldron = normalizedExtraBrewing?.cauldrons?.[0]
+    ? {
+        ...normalizedExtraBrewing.cauldrons[0],
+        cauldronNumber: 100,
+      }
+    : null;
+
+  return {
+    version: 1,
+    extraPlotExpiresAt: normalizeSaveClientTimestamp(
+      weeklyOffers.extraPlotExpiresAt,
+    ),
+    extraCauldronExpiresAt: normalizeSaveClientTimestamp(
+      weeklyOffers.extraCauldronExpiresAt,
+    ),
+    extraPlot,
+    extraCauldron,
   };
 }
 
@@ -16513,6 +16585,11 @@ function getPlayerInfoSummaryRows(ctx: any) {
 
 function createPlayerInfoSummaryRow(ctx: any, identity: Identity) {
   const player = ctx.db.player.identity.find(identity);
+  const allianceMember =
+    ctx.db.tradeAllianceMember.memberIdentity.find(identity);
+  const alliance = allianceMember
+    ? ctx.db.tradeAlliance.allianceId.find(allianceMember.allianceId)
+    : undefined;
   const session = ctx.db.playerSession.identity.find(identity);
   const leaderboard = ctx.db.leaderboard.identity.find(identity);
   const save = ctx.db.playerGameplaySave.identity.find(identity);
@@ -16547,6 +16624,8 @@ function createPlayerInfoSummaryRow(ctx: any, identity: Identity) {
     ),
     allianceTag: getSenderTradeAllianceTag(ctx, identity),
     allianceTagColor: getSenderTradeAllianceTagColor(ctx, identity),
+    allianceName: String(alliance?.name ?? ''),
+    allianceRole: String(allianceMember?.role ?? ''),
     totalProducedGold: toBigInt(
       leaderboard?.totalIncome ?? savedTotalProducedGold ?? 0n,
     ),
@@ -18127,6 +18206,9 @@ function ensurePlayer(
     existingPlayer?.frame ?? DEFAULT_PLAYER_FRAME,
   );
   const usernamePromptSeen = Boolean(existingPlayer?.usernamePromptSeen);
+  const allowFriendRequests = existingPlayer?.allowFriendRequests !== false;
+  const allowTradeAllianceInvitations =
+    existingPlayer?.allowTradeAllianceInvitations !== false;
 
   if (existingPlayer) {
     const playerLevel = normalizePlayerLevel(existingPlayer.playerLevel);
@@ -18142,6 +18224,9 @@ function ensurePlayer(
       existingPlayer.character !== character ||
       existingPlayer.frame !== frame ||
       Boolean(existingPlayer.usernamePromptSeen) !== usernamePromptSeen ||
+      existingPlayer.allowFriendRequests !== allowFriendRequests ||
+      existingPlayer.allowTradeAllianceInvitations !==
+        allowTradeAllianceInvitations ||
       existingPlayer.connected !== true ||
       lastSeenAt.microsSinceUnixEpoch !==
         existingPlayer.lastSeenAt.microsSinceUnixEpoch;
@@ -18160,6 +18245,8 @@ function ensurePlayer(
       character,
       frame,
       usernamePromptSeen,
+      allowFriendRequests,
+      allowTradeAllianceInvitations,
       connected: true,
       lastSeenAt,
     });
@@ -18175,6 +18262,8 @@ function ensurePlayer(
     character: DEFAULT_PLAYER_CHARACTER,
     frame: DEFAULT_PLAYER_FRAME,
     usernamePromptSeen: false,
+    allowFriendRequests: true,
+    allowTradeAllianceInvitations: true,
     connected: true,
     createdAt: ctx.timestamp,
     lastSeenAt: ctx.timestamp,
@@ -20444,6 +20533,8 @@ export const set_username = spacetimedb.reducer(
         character: DEFAULT_PLAYER_CHARACTER,
         frame: DEFAULT_PLAYER_FRAME,
         usernamePromptSeen: normalizedUsername !== DEFAULT_USERNAME,
+        allowFriendRequests: true,
+        allowTradeAllianceInvitations: true,
         connected: true,
         createdAt: ctx.timestamp,
         lastSeenAt: ctx.timestamp,
@@ -20470,10 +20561,22 @@ export const set_player_profile = spacetimedb.reducer(
     font: t.string(),
     character: t.string(),
     frame: t.string(),
+    allowFriendRequests: t.bool(),
+    allowTradeAllianceInvitations: t.bool(),
   },
   (
     ctx,
-    { username, theme, colorMode, usernamePromptSeen, font, character, frame },
+    {
+      username,
+      theme,
+      colorMode,
+      usernamePromptSeen,
+      font,
+      character,
+      frame,
+      allowFriendRequests,
+      allowTradeAllianceInvitations,
+    },
   ) => {
     assertActivePlayerSession(ctx);
 
@@ -20497,6 +20600,9 @@ export const set_player_profile = spacetimedb.reducer(
       normalizePlayerColorMode(existingPlayer.colorMode) === safeColorMode &&
       normalizePlayerCharacter(existingPlayer.character) === safeCharacter &&
       normalizePlayerFrame(existingPlayer.frame) === safeFrame &&
+      existingPlayer.allowFriendRequests === allowFriendRequests &&
+      existingPlayer.allowTradeAllianceInvitations ===
+        allowTradeAllianceInvitations &&
       Boolean(existingPlayer.usernamePromptSeen) === nextUsernamePromptSeen
     ) {
       return;
@@ -20517,6 +20623,8 @@ export const set_player_profile = spacetimedb.reducer(
         character: safeCharacter,
         frame: safeFrame,
         usernamePromptSeen: nextUsernamePromptSeen,
+        allowFriendRequests,
+        allowTradeAllianceInvitations,
         lastSeenAt: ctx.timestamp,
       });
     } else {
@@ -20530,6 +20638,8 @@ export const set_player_profile = spacetimedb.reducer(
         character: safeCharacter,
         frame: safeFrame,
         usernamePromptSeen: incomingUsernamePromptSeen,
+        allowFriendRequests,
+        allowTradeAllianceInvitations,
         connected: true,
         createdAt: ctx.timestamp,
         lastSeenAt: ctx.timestamp,
@@ -21571,6 +21681,9 @@ export const send_friend_request = spacetimedb.reducer(
 
     if (recipient.identity.isEqual(ctx.sender)) {
       throw new Error("You cannot add yourself as a friend.");
+    }
+    if (recipient.allowFriendRequests === false) {
+      throw new SenderError("This player is not accepting friend requests.");
     }
     if (getFriendshipForPlayers(ctx, ctx.sender, recipient.identity)) {
       throw new Error("Already friends.");

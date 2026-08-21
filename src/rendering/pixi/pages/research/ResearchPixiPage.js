@@ -55,6 +55,7 @@ import {
   setText,
 } from '../workshop/RetainedPageKit.js';
 import { PixiTooltip } from '../shared/PixiTooltip.js';
+import { MarketTitleRibbon } from '../shop/MarketTitleRibbon.js';
 const MAX_LOCKED_ROWS_PER_BOX = 1;
 export const RESEARCH_PAPER_INK = '#634934';
 export const RESEARCH_PROGRESS_INK = '#725737';
@@ -67,6 +68,9 @@ export const RESEARCH_WIDGET_BOUNCE_DURATION_MS = 360;
 const RESEARCH_BUTTON_SHINE_HEIGHT_SCALE = 1.05;
 const RESEARCH_BUTTON_SHINE_ALPHA = 0.72;
 const RESEARCH_BUTTON_SHINE_CORNER_RADIUS_SCALE = 0.28;
+const RESEARCH_TITLE_ROW_GAP = 5;
+const RESEARCH_TITLE_HEIGHT =
+  PIXI_ROOT_RUN_GEOMETRY.marketTitleRibbon.height;
 export const RESEARCH_WIDGET_SHINE_HEIGHT_SCALE = 1.05;
 export const RESEARCH_WIDGET_SHINE_ALPHA = 0.5;
 export const RESEARCH_WIDGET_SHINE_CORNER_RADIUS_SCALE = 0.16;
@@ -427,6 +431,15 @@ export class ResearchPixiPage extends BaseRetainedPixiPage {
       label: 'research-page-scroll',
       inputRouter: this.inputRouter,
     });
+    this.identityLayer = new Container({ label: 'research-page-identity' });
+    this.titleRibbon = new MarketTitleRibbon({
+      assetManager: this.assetManager,
+      assetId: PIXI_ROOT_RUN_ASSETS.marketTitleRibbonYellow,
+      label: 'research:title-ribbon',
+      showStars: false,
+    });
+    this.titleRibbon.bind('Research', 0);
+    this.identityLayer.addChild(this.titleRibbon.root);
     this.tabsLayer = new Container({ label: 'research-page-tabs' });
     this.lockTooltip = new ResearchLockTooltip({
       assetManager: this.assetManager,
@@ -435,6 +448,7 @@ export class ResearchPixiPage extends BaseRetainedPixiPage {
     });
     this.lockTooltipResearchId = null;
     this.content.addChild(
+      this.identityLayer,
       this.scroll.root,
       this.tabsLayer,
       this.lockTooltip.root,
@@ -815,9 +829,12 @@ export class ResearchPixiPage extends BaseRetainedPixiPage {
       return;
     }
     const edge = RETAINED_PAGE_GEOMETRY.contentEdge;
+    const identityY = RETAINED_PAGE_GEOMETRY.contentTop;
+    const panelTop =
+      identityY + RESEARCH_TITLE_HEIGHT + RESEARCH_TITLE_ROW_GAP;
     const contentHeight =
       sourceHeight -
-      RETAINED_PAGE_GEOMETRY.contentTop -
+      panelTop -
       resolveRetainedPageBottomClearance(this.viewModel);
     const width = sourceWidth - edge * 2;
     const scrollWidth = sourceWidth - edge;
@@ -830,13 +847,19 @@ export class ResearchPixiPage extends BaseRetainedPixiPage {
     this.scrollWidth = scrollWidth;
     this.scroll.setBounds(
       0,
-      RETAINED_PAGE_GEOMETRY.contentTop,
+      panelTop,
       scrollWidth,
       contentHeight - tabClearance,
     );
+    this.identityLayer.position.set(0, identityY);
+    this.titleRibbon.setMaxWidth(sourceWidth);
+    this.titleRibbon.root.position.set(
+      (sourceWidth - this.titleRibbon.width) / 2,
+      0,
+    );
     this.tabsLayer.position.set(
       edge,
-      RETAINED_PAGE_GEOMETRY.contentTop +
+      panelTop +
         contentHeight -
         6 -
         RETAINED_PAGE_GEOMETRY.tabHeight,

@@ -65,6 +65,27 @@ export default defineUiEditorIntegration({
       mount: mountWorldChatMessageRow,
     },
     {
+      fixture: createSystemFixture({
+        body: 'Welcome Mira to the alliance.',
+        bodyRuns: [
+          { kind: 'text', text: 'Welcome ' },
+          {
+            kind: 'widget',
+            widget: 'playerAvatar',
+            character: 'mira',
+            frame: 'violet',
+            fallbackText: '[Mira]',
+            size: 18,
+          },
+          { kind: 'text', text: ' Mira to the alliance.' },
+        ],
+        showSystemAvatar: false,
+      }),
+      id: 'system-inline-avatar',
+      label: 'System message, inline avatar',
+      mount: mountWorldChatMessageRow,
+    },
+    {
       fixture: createPlayerFixture({
         allianceTag: '',
         rankLabel: 'Quartermaster',
@@ -217,6 +238,17 @@ function createWorldChatMessageRowHierarchy(row) {
       primary: row.body,
       type: 'label',
     }),
+    ...(row.inlinePlayerAvatars.length > 0
+      ? [
+          createUiEditorPixiHierarchyComponent({
+            displayObjects: row.inlinePlayerAvatars.map(({ widget }) => widget),
+            id: 'world-chat-message-row:inline-widgets',
+            label: 'Inline message widgets',
+            primary: row.inlinePlayerAvatars[0].widget,
+            type: 'image',
+          }),
+        ]
+      : []),
     createUiEditorPixiHierarchyComponent({
       displayObjects: [row.timestamp],
       id: 'world-chat-message-row:timestamp',

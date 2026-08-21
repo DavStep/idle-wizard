@@ -1056,7 +1056,10 @@ function createFriendsDialogFixture(selectedTabId) {
 
 function createDirectMessageDialogFixture(isFriend) {
   return {
-    actions: { unfriend: isFriend ? () => true : null },
+    actions: {
+      openPlayer: () => true,
+      unfriend: isFriend ? () => true : null,
+    },
     composer: {
       enabled: isFriend,
       maxLength: 160,
@@ -1120,6 +1123,7 @@ function createPlayerInfoDialogFixture(relationship) {
       allianceName: 'Moss Hall',
       allianceTag: 'MOSS',
       allianceTagColor: 'green',
+      allianceRole: ownPlayer ? 'tradeMaster' : 'broker',
       character: 'mira',
       connected: true,
       identity: ownPlayer ? 'mira' : 'juniper',
@@ -2181,10 +2185,24 @@ const GLOBAL_DIALOG_SCENARIOS = Object.freeze({
   ]),
   [GLOBAL_DIALOG_IDS.FRIENDS]: Object.freeze([
     scenario('friends', 'Friends', () => createFriendsDialogFixture('friends')),
+    scenario('friends-empty', 'Friends Empty', () => ({
+      ...createFriendsDialogFixture('friends'),
+      rows: [],
+    })),
     scenario('requests', 'Requests', () =>
       createFriendsDialogFixture('requests'),
     ),
+    scenario('requests-empty', 'Requests Empty', () => ({
+      ...createFriendsDialogFixture('requests'),
+      rows: [],
+      emptyLabel: 'No Friend Requests',
+    })),
     scenario('pending', 'Pending', () => createFriendsDialogFixture('pending')),
+    scenario('pending-empty', 'Pending Empty', () => ({
+      ...createFriendsDialogFixture('pending'),
+      rows: [],
+      emptyLabel: 'No Pending Requests',
+    })),
   ]),
   [GLOBAL_DIALOG_IDS.DIRECT_MESSAGE]: Object.freeze([
     scenario('friend', 'Friend chat', () =>

@@ -154,6 +154,7 @@ function friendsAssetFilter({ id }) {
   return (
     value.startsWith('source:assets/avatars/') ||
     value.startsWith('source:assets/ui/root-run-dialog/') ||
+    value.startsWith('source:assets/ui/root-run-settings/') ||
     value.startsWith('source:assets/ui/regular-button/') ||
     value.startsWith('source:assets/ui/root-run-top-hud/') ||
     value.startsWith('source:assets/ui/root-run-research/') ||

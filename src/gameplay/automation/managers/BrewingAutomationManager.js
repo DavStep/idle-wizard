@@ -9,45 +9,43 @@ export class BrewingAutomationManager {
   }
 
   update() {
-    if (!this.hasAnyBrewingAutomationResearch()) {
+    if (!this.hasAnyBrewingAutomation()) {
       return;
     }
 
-    const cauldronNumbers = this.getCauldronNumbers();
+    const cauldrons = this.getCauldrons();
 
-    for (const cauldronNumber of cauldronNumbers) {
-      this.autoBottleBrewedPotion(cauldronNumber);
+    for (const cauldron of cauldrons) {
+      this.autoBottleBrewedPotion(cauldron);
     }
 
-    for (const cauldronNumber of cauldronNumbers) {
-      this.autoBrewCauldron(cauldronNumber);
+    for (const cauldron of cauldrons) {
+      this.autoBrewCauldron(cauldron);
     }
   }
 
-  autoBottleBrewedPotion(cauldronNumber) {
-    if (!this.hasResearch(automationResearchIds.autoBrewCauldron(cauldronNumber))) {
+  autoBottleBrewedPotion(cauldron) {
+    if (!this.hasCauldronAutomation(cauldron)) {
       return;
     }
 
-    if (!this.getCauldronSnapshot(cauldronNumber)?.canStartBottling) {
+    if (!cauldron?.canStartBottling) {
       return;
     }
 
-    this.brewingFacade.startBottling(cauldronNumber - 1);
+    this.brewingFacade.startBottling(this.getCauldronIndex(cauldron));
   }
 
-  autoBrewCauldron(cauldronNumber) {
-    if (!this.hasResearch(automationResearchIds.autoBrewCauldron(cauldronNumber))) {
+  autoBrewCauldron(cauldron) {
+    if (!this.hasCauldronAutomation(cauldron)) {
       return;
     }
-
-    const cauldron = this.getCauldronSnapshot(cauldronNumber);
 
     if (!cauldron?.autoBrewEnabled || !cauldron.autoBrewRecipeKey) {
       return;
     }
 
-    const result = this.brewingFacade.autoBrew(cauldronNumber - 1);
+    const result = this.brewingFacade.autoBrew(this.getCauldronIndex(cauldron));
 
     if (result.ok) {
       this.onBrewStarted?.(result);
@@ -70,6 +68,24 @@ export class BrewingAutomationManager {
     );
   }
 
+  hasAnyBrewingAutomation() {
+    return (
+      this.hasAnyBrewingAutomationResearch() ||
+      this.getCauldrons().some(
+        (cauldron) => cauldron.entitlementExtra === true,
+      )
+    );
+  }
+
+  hasCauldronAutomation(cauldron) {
+    return (
+      cauldron?.entitlementExtra === true ||
+      this.hasResearch(
+        automationResearchIds.autoBrewCauldron(cauldron?.cauldronNumber),
+      )
+    );
+  }
+
   isBrewingAutomationResearchId(researchId) {
     return (
       typeof researchId === 'string' &&
@@ -77,23 +93,24 @@ export class BrewingAutomationManager {
     );
   }
 
-  getCauldronSnapshot(cauldronNumber) {
-    const snapshot = this.brewingFacade.getSnapshot();
-    return (
-      (snapshot.cauldrons ?? []).find(
-        (cauldron) => cauldron.cauldronNumber === cauldronNumber,
-      ) ?? (cauldronNumber === 1 ? snapshot : null)
-    );
-  }
-
-  getCauldronNumbers() {
+  getCauldrons() {
     const snapshot = this.brewingFacade.getSnapshot();
     const cauldrons = snapshot.cauldrons ?? [];
 
     if (cauldrons.length > 0) {
-      return cauldrons.map((cauldron) => cauldron.cauldronNumber ?? 1);
+      return cauldrons;
     }
 
-    return [snapshot.cauldronNumber ?? 1];
+    return [snapshot];
+  }
+
+  getCauldronIndex(cauldron) {
+    if (Number.isInteger(cauldron?.cauldronIndex)) {
+      return cauldron.cauldronIndex;
+    }
+    const cauldronNumber = Math.floor(Number(cauldron?.cauldronNumber));
+    return Number.isInteger(cauldronNumber) && cauldronNumber > 0
+      ? cauldronNumber - 1
+      : 0;
   }
 }

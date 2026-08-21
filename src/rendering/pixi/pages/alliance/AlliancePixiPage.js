@@ -34,6 +34,7 @@ import {
   createAllianceMembersSection,
 } from '../workshop/WorkshopDialogPixi.js';
 import {
+  RETAINED_DIALOG_SCROLL_GEOMETRY,
   RETAINED_DIALOG_LIST_GEOMETRY,
   RETAINED_PAGE_GEOMETRY,
   RETAINED_TEXT_STYLES,
@@ -44,6 +45,7 @@ import {
   resolveRetainedDialogListLayout,
   setText,
 } from '../workshop/RetainedPageKit.js';
+import { MarketTitleRibbon } from '../shop/MarketTitleRibbon.js';
 
 const PAGE_TABS = Object.freeze([
   'browse',
@@ -55,6 +57,9 @@ const PAGE_TABS = Object.freeze([
 ]);
 const PAGE_EDGE = PIXI_UI_GEOMETRY.roomContentEdge;
 const PAGE_TOP = PIXI_UI_GEOMETRY.roomContentTop;
+const PAGE_TITLE_GAP = 5;
+const PAGE_TITLE_HEIGHT = PIXI_ROOT_RUN_GEOMETRY.marketTitleRibbon.height;
+const PAGE_CONTENT_TOP = PAGE_TOP + PAGE_TITLE_HEIGHT + PAGE_TITLE_GAP;
 const PAGE_BOTTOM_CLEARANCE = RETAINED_PAGE_GEOMETRY.chatClearance;
 const ROW_GAP = 4;
 const REQUESTS_JOIN_MODE_GAP = 6;
@@ -68,8 +73,13 @@ const SECTION_GAP = PIXI_DIALOG_SPLIT_PAPER_GEOMETRY.sectionGap;
 const MEMBER_ROW_HEIGHT = PIXI_ROOT_RUN_GEOMETRY.settings.rowPitch;
 const MAX_HOME_CONTENT_WIDTH = 350;
 const HOME_CONTENT_INSET = 14;
+const HOME_CONTENT_OFFSET_Y = -8;
+const HOME_IDENTITY_OFFSET_Y = -8;
 const HOME_IDENTITY_CONTENT_HEIGHT = 120;
 const HOME_ANNOUNCEMENT_CONTENT_HEIGHT = 62;
+const HOME_ANNOUNCEMENT_TITLE_SCALE = 0.86;
+const HOME_ANNOUNCEMENT_TITLE = 'Announcement';
+const HOME_ANNOUNCEMENT_EMPTY = 'No Alliance Announcement';
 const HOME_FLAG_SIZE = 92;
 const HOME_STAT_SOURCE_WIDTH = 270;
 const HOME_STAT_SCALE = 1 / PIXI_UI_GEOMETRY.sourceScale;
@@ -105,6 +115,14 @@ export class AlliancePixiPage extends BasePixiRetainedView {
     this.registeredTargetIds = new Set();
 
     this.background = new Graphics({ label: 'alliance:background' });
+    this.identityLayer = new Container({ label: 'alliance:identity' });
+    this.titleRibbon = new MarketTitleRibbon({
+      assetManager,
+      label: 'alliance:title-ribbon',
+      showStars: false,
+    });
+    this.titleRibbon.bind('Trade Alliance', 0);
+    this.identityLayer.addChild(this.titleRibbon.root);
     this.contentLayer = new Container({ label: 'alliance:content' });
     this.scrolls = new Map(
       ['browse', 'quests', 'requests'].map((tabId) => [
@@ -178,7 +196,7 @@ export class AlliancePixiPage extends BasePixiRetainedView {
       variant: 'red',
       width: 64,
     });
-    this.homeAnnouncement.root.addChild(this.homeLeaveButton);
+    this.homeIdentitySection.root.addChild(this.homeLeaveButton);
     this.homeMembersSection = createAllianceMembersSection(this.paperHost);
     this.contentLayer.addChild(
       this.homeIdentitySection.root,
@@ -234,7 +252,11 @@ export class AlliancePixiPage extends BasePixiRetainedView {
     this.settingsPane = new AllianceSettingsPane({ dialog: this.paperHost });
     this.contentLayer.addChild(this.settingsPane.root);
 
-    this.root.addChild(this.background, this.contentLayer);
+    this.root.addChild(
+      this.background,
+      this.identityLayer,
+      this.contentLayer,
+    );
     this.rebuildBackgroundGradient();
     this.onApplyTheme(theme);
     this.onBind({});
@@ -315,9 +337,11 @@ export class AlliancePixiPage extends BasePixiRetainedView {
     );
     setText(this.homeName, identity.name);
     setText(this.homeTag, identity.tag ? `[${identity.tag}]` : '');
+    const announcementText = String(info.notice ?? '').trim();
+    this.homeAnnouncement.empty = !announcementText;
     setText(
       this.homeAnnouncement.detail,
-      info.notice || info.description || 'No Alliance Announcement',
+      announcementText || HOME_ANNOUNCEMENT_EMPTY,
     );
     this.homeFlag.setColors(this.model.flag ?? {});
     this.homeMemberStat.setAmount(info.memberCountLabel ?? '0/50');
@@ -379,13 +403,8 @@ export class AlliancePixiPage extends BasePixiRetainedView {
         fill: this.paperHost.contentTheme.muted,
       },
     );
-    applyTextTheme(
-      this.homeAnnouncement.title,
-      this.paperHost.contentTheme,
-      RETAINED_TEXT_STYLES.bold,
-    );
     applyTextTheme(this.homeAnnouncement.detail, this.paperHost.contentTheme, {
-      ...RETAINED_TEXT_STYLES.border,
+      ...RETAINED_TEXT_STYLES.tiny,
       fill: this.paperHost.contentTheme.muted,
     });
     this.homeMemberStat.applyTheme(this.theme);
@@ -414,7 +433,13 @@ export class AlliancePixiPage extends BasePixiRetainedView {
     if (!this.background) return;
     const viewportHeight = Math.max(
       0,
-      this.sourceHeight - PAGE_BOTTOM_CLEARANCE - PAGE_TOP,
+      this.sourceHeight - PAGE_BOTTOM_CLEARANCE - PAGE_CONTENT_TOP,
+    );
+    this.identityLayer.position.set(0, PAGE_TOP);
+    this.titleRibbon.setMaxWidth(this.sourceWidth);
+    this.titleRibbon.root.position.set(
+      (this.sourceWidth - this.titleRibbon.width) / 2,
+      0,
     );
     for (const [tabId, scroll] of this.scrolls) {
       scroll.root.visible = tabId === this.selectedTabId;
@@ -434,6 +459,11 @@ export class AlliancePixiPage extends BasePixiRetainedView {
       'quests',
       this.sourceWidth - PAGE_EDGE * 2 + 2,
       viewportHeight,
+      {
+        rowInsetX: PAGE_EDGE,
+        viewportWidth: this.sourceWidth - PAGE_EDGE,
+        viewportX: 0,
+      },
     );
     const requestsViewportHeight = Math.max(
       0,
@@ -451,7 +481,7 @@ export class AlliancePixiPage extends BasePixiRetainedView {
     if (this.requestJoinModePane.visible) {
       this.requestJoinModePane.setBounds(
         (this.sourceWidth - listLayout.rowWidth) / 2,
-        PAGE_TOP + requestsViewportHeight + REQUESTS_JOIN_MODE_GAP,
+        PAGE_CONTENT_TOP + requestsViewportHeight + REQUESTS_JOIN_MODE_GAP,
         listLayout.rowWidth,
       );
     }
@@ -463,7 +493,7 @@ export class AlliancePixiPage extends BasePixiRetainedView {
       const settingsWidth = Math.min(318, this.sourceWidth - PAGE_EDGE * 2);
       this.settingsPane.setBounds(
         (this.sourceWidth - settingsWidth) / 2,
-        PAGE_TOP,
+        PAGE_CONTENT_TOP,
         settingsWidth,
         viewportHeight,
       );
@@ -503,7 +533,11 @@ export class AlliancePixiPage extends BasePixiRetainedView {
     );
     const rootX = (this.sourceWidth - homeContentWidth) / 2;
     const paperTop = SECTION_FRAME_TOP - paperOutsets.top;
-    identity.root.position.set(rootX, PAGE_TOP);
+    const homeContentTop = PAGE_CONTENT_TOP + HOME_CONTENT_OFFSET_Y;
+    identity.root.position.set(
+      rootX,
+      homeContentTop + HOME_IDENTITY_OFFSET_Y,
+    );
     setDialogPaperSectionBounds(
       identity.paper,
       {
@@ -527,30 +561,46 @@ export class AlliancePixiPage extends BasePixiRetainedView {
     const statX = homeContentWidth - HOME_CONTENT_INSET - statWidth;
     this.homeMemberStat.position.set(statX, SECTION_CONTENT_TOP + 20);
     this.homeIncomeStat.position.set(statX, SECTION_CONTENT_TOP + 51);
+    this.homeLeaveButton.position.set(
+      HOME_CONTENT_INSET,
+      SECTION_CONTENT_TOP + 74,
+    );
 
     const identityBottom = identity.paper.y + identity.paper.frameHeight;
     const announcementY = identityBottom + SECTION_GAP - paperTop;
-    announcement.root.position.set(rootX, PAGE_TOP + announcementY);
-    announcement.title.position.set(
-      HOME_CONTENT_INSET,
-      SECTION_CONTENT_TOP,
+    announcement.root.position.set(rootX, homeContentTop + announcementY);
+    announcement.titleRibbon.setMaxWidth(
+      Math.min(
+        PIXI_ROOT_RUN_GEOMETRY.workshopRequestTitleRibbon.width,
+        homeContentWidth - HOME_CONTENT_INSET * 2,
+      ),
+    );
+    announcement.titleRibbon.root.scale.set(
+      HOME_ANNOUNCEMENT_TITLE_SCALE,
+    );
+    const announcementTitleWidth =
+      announcement.titleRibbon.width * HOME_ANNOUNCEMENT_TITLE_SCALE;
+    const announcementTitleHeight =
+      announcement.titleRibbon.height * HOME_ANNOUNCEMENT_TITLE_SCALE;
+    announcement.titleRibbon.root.position.set(
+      (homeContentWidth - announcementTitleWidth) / 2,
+      SECTION_FRAME_TOP - announcementTitleHeight / 2,
+    );
+    announcement.detail.anchor.set(
+      0.5,
+      announcement.empty ? 0.5 : 0,
     );
     announcement.detail.position.set(
-      HOME_CONTENT_INSET,
-      SECTION_CONTENT_TOP + 19,
+      homeContentWidth / 2,
+      announcement.empty
+        ? SECTION_FRAME_TOP + HOME_ANNOUNCEMENT_CONTENT_HEIGHT / 2
+        : SECTION_FRAME_TOP + announcementTitleHeight / 2 + 4,
     );
+    announcement.detail.style.align = 'center';
     announcement.detail.style.wordWrap = true;
     announcement.detail.style.wordWrapWidth = Math.max(
       0,
-      homeContentWidth -
-        HOME_CONTENT_INSET * 2 -
-        (this.homeLeaveButton.visible
-          ? this.homeLeaveButton.buttonWidth + 8
-          : 0),
-    );
-    this.homeLeaveButton.position.set(
-      homeContentWidth - HOME_CONTENT_INSET - this.homeLeaveButton.buttonWidth,
-      SECTION_CONTENT_TOP - 5,
+      homeContentWidth - HOME_CONTENT_INSET * 2,
     );
     setDialogPaperSectionBounds(
       announcement.paper,
@@ -567,7 +617,7 @@ export class AlliancePixiPage extends BasePixiRetainedView {
       announcement.paper.y + announcement.paper.frameHeight;
     const membersY =
       announcementY + announcementBottom + SECTION_GAP - paperTop;
-    members.root.position.set(rootX, PAGE_TOP + membersY);
+    members.root.position.set(rootX, homeContentTop + membersY);
     members.title.visible = false;
     members.title.renderable = false;
     members.count.visible = false;
@@ -600,6 +650,10 @@ export class AlliancePixiPage extends BasePixiRetainedView {
       memberY += rowHeight;
     }
     members.scroll.setContentHeight(memberY);
+    members.scroll.scrollbarTrack.x =
+      RETAINED_DIALOG_SCROLL_GEOMETRY.scrollbarShiftRight;
+    members.scroll.scrollbarThumb.x =
+      RETAINED_DIALOG_SCROLL_GEOMETRY.scrollbarShiftRight;
     setDialogPaperSectionBounds(
       members.paper,
       {
@@ -617,13 +671,23 @@ export class AlliancePixiPage extends BasePixiRetainedView {
     tabId,
     width,
     viewportHeight,
-    { topInset = 6 } = {},
+    {
+      rowInsetX = 0,
+      topInset = 6,
+      viewportWidth: authoredViewportWidth = null,
+      viewportX: authoredViewportX = null,
+    } = {},
   ) {
     const scroll = this.scrolls.get(tabId);
-    const viewportWidth = Math.min(this.sourceWidth - PAGE_EDGE * 2, width + 2);
+    const viewportWidth = Number.isFinite(authoredViewportWidth)
+      ? Math.max(0, authoredViewportWidth)
+      : Math.min(this.sourceWidth - PAGE_EDGE * 2, width + 2);
+    const viewportX = Number.isFinite(authoredViewportX)
+      ? authoredViewportX
+      : (this.sourceWidth - viewportWidth) / 2;
     scroll.setBounds(
-      (this.sourceWidth - viewportWidth) / 2,
-      PAGE_TOP,
+      viewportX,
+      PAGE_CONTENT_TOP,
       viewportWidth,
       viewportHeight,
     );
@@ -632,7 +696,7 @@ export class AlliancePixiPage extends BasePixiRetainedView {
     const rowGap = tabId === 'quests' ? 5 : ROW_GAP;
     for (const widget of widgets) {
       const height = widget.getPreferredHeight?.(width) ?? 62;
-      widget.setBounds(0, y, width, height);
+      widget.setBounds(rowInsetX, y, width, height);
       y += height + rowGap;
     }
     const label = this.emptyLabels.get(tabId);
@@ -641,7 +705,7 @@ export class AlliancePixiPage extends BasePixiRetainedView {
     label.visible = widgets.length === 0;
     label.renderable = label.visible;
     label.position.set(
-      width / 2,
+      rowInsetX + width / 2,
       topInset + Math.max(0, viewportHeight - topInset) / 2,
     );
     scroll.setContentHeight(Math.max(viewportHeight, y + 6));
@@ -719,13 +783,20 @@ function createHomePaperSection(host, sectionId) {
 
 function createHomeAnnouncementSection(host) {
   const section = createHomePaperSection(host, 'announcement');
-  const title = createText('Announcement', RETAINED_TEXT_STYLES.bold);
-  const detail = createText('', {
-    ...RETAINED_TEXT_STYLES.border,
-    lineHeight: 14,
+  const titleRibbon = new MarketTitleRibbon({
+    assetManager: host.assetManager,
+    assetId: PIXI_ROOT_RUN_ASSETS.workshopRequestTitleRibbon,
+    geometry: PIXI_ROOT_RUN_GEOMETRY.workshopRequestTitleRibbon,
+    label: 'alliance:home:announcement-title-ribbon',
+    showStars: false,
   });
-  section.root.addChild(title, detail);
-  return { ...section, title, detail };
+  titleRibbon.root.eventMode = 'none';
+  titleRibbon.bind(HOME_ANNOUNCEMENT_TITLE);
+  const detail = createText('', {
+    ...RETAINED_TEXT_STYLES.tiny,
+  });
+  section.root.addChild(detail, titleRibbon.root);
+  return { ...section, detail, empty: true, titleRibbon };
 }
 
 function resolveAllianceIdentity(info = {}) {

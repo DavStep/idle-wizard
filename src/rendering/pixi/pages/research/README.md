@@ -13,6 +13,10 @@ reached, while preserving active or completed rows. It also omits any station
 section left with no revealed research, so future category plaques do not
 appear before the player has unlocked something in that category.
 
+The room begins at the shared room-content anchor with the title-only yellow
+folded ribbon used by the other production rooms. The research list starts
+`5px` below it; the fixed category tabs keep their existing bottom anchor.
+
 Category title plaques use the selected tab as their visual variant: Regular
 is yellow, Automation is red, Advanced is emerald green, and the `emerald`
 Amber Research tab is purple. The visible category title remains the primary

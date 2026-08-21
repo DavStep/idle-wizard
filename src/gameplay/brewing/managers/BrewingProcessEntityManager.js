@@ -96,8 +96,12 @@ export class BrewingProcessEntityManager {
     return this.getActiveBrewEntityId(cauldronIndex) !== null;
   }
 
-  hasRunningTimer() {
+  hasRunningTimer(isCauldronActive = () => true) {
     return this.getActiveBrewEntityIds().some((entityId) => {
+      const cauldronIndex = ActiveBrew.cauldronIndex[entityId] ?? 0;
+      if (!isCauldronActive(cauldronIndex)) {
+        return false;
+      }
       const phase = ActiveBrew.phase[entityId] ?? activeBrewPhases.brewing;
       const remainingSeconds = ActiveBrew.remainingSeconds[entityId] ?? 0;
 
@@ -134,12 +138,16 @@ export class BrewingProcessEntityManager {
     return this.getActiveBrewSnapshot(cauldronIndex);
   }
 
-  advanceTime(deltaSeconds) {
+  advanceTime(deltaSeconds, isCauldronActive = () => true) {
     if (!Number.isFinite(deltaSeconds) || deltaSeconds < 0) {
       return this.getActiveBrewSnapshot();
     }
 
     for (const entityId of this.getActiveBrewEntityIds()) {
+      const cauldronIndex = ActiveBrew.cauldronIndex[entityId] ?? 0;
+      if (!isCauldronActive(cauldronIndex)) {
+        continue;
+      }
       this.advanceTimeForEntity(entityId, deltaSeconds);
     }
 

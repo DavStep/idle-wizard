@@ -73,6 +73,7 @@ const DEFAULT_CRYSTAL_OFFERS = Object.freeze([
 export function createShop(options = {}) {
   const gameplaySnapshot = options.gameplaySnapshot ?? {};
   const shop = gameplaySnapshot.shop ?? gameplaySnapshot;
+  const weeklyOffers = gameplaySnapshot.weeklyOffers ?? {};
   const playerShop = options.playerShopSnapshot ?? {};
   const playerInfo = options.playerInfoSnapshot ?? {};
   const actions = options.actions ?? {};
@@ -231,6 +232,10 @@ export function createShop(options = {}) {
         dailyCrystalOffer: createDailyCrystalOfferModel(
           shop.dailyCrystalOffer,
         ),
+        weeklyOffers: safeArray(weeklyOffers.offers).map((offer) => ({
+          ...offer,
+          priceLabel: `$${finiteNumber(offer.priceUsd, 15).toFixed(2)}`,
+        })),
         offers: crystalOffers.map((offer, index) => ({
           ...offer,
           id: offer.id ?? offer.amethystCount ?? offer.crystalCount ?? index,

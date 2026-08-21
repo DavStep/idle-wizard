@@ -81,6 +81,28 @@ describe('GameplayMigrationManager', () => {
     });
   });
 
+  it('preserves weekly offer expiries and temporary slot state from server-normalized saves', () => {
+    const manager = new GameplayMigrationManager();
+    const weeklyOffers = {
+      version: 1,
+      extraPlotExpiresAt: 700_000,
+      extraCauldronExpiresAt: 800_000,
+      extraPlot: { tileNumber: 99, phase: 'growing' },
+      extraCauldron: { cauldronNumber: 100, autoBrewEnabled: true },
+    };
+
+    expect(
+      manager.migrate({
+        version: 3,
+        savedAt: 123,
+        weeklyOffers,
+      }),
+    ).toMatchObject({
+      version: GAMEPLAY_SAVE_VERSION,
+      weeklyOffers,
+    });
+  });
+
   it('keeps the internal Amber key and the separate Amethyst branch', () => {
     const manager = new GameplayMigrationManager();
 

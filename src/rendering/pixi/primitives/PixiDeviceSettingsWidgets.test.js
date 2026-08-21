@@ -82,6 +82,7 @@ describe('RootRunDevicePreferencesPanel', () => {
       iconAssetId: 'settings-sound',
     });
     vi.spyOn(row.textLabel, 'measuredHeight', 'get').mockReturnValue(19);
+    vi.spyOn(row.textLabel, 'measuredWidth', 'get').mockReturnValue(46);
     row.setBounds(0, 0, 244);
     row.bind({ value: 64, onChange });
 
@@ -99,6 +100,40 @@ describe('RootRunDevicePreferencesPanel', () => {
 
     expect(sliderPress.descriptor.onActivate({ localX: 63 })).toBe(true);
     expect(onChange).toHaveBeenLastCalledWith(50);
+
+    row.destroy({ children: true });
+  });
+
+  it('fits long preference labels into the space before their control', () => {
+    const row = new RootRunDevicePreferenceRow({
+      assetManager: {
+        getTexture: () => Texture.EMPTY,
+      },
+      preferenceKey: 'friendRequests',
+      text: 'FRIEND REQUESTS',
+      iconAssetId: 'settings-friend-requests',
+    });
+    vi.spyOn(row.textLabel, 'measuredWidth', 'get').mockImplementation(
+      () => row.textLabel.fontSize * 9,
+    );
+    vi.spyOn(row.textLabel, 'measuredHeight', 'get').mockImplementation(
+      () => row.textLabel.fontSize,
+    );
+
+    row.setBounds(0, 0, 262);
+
+    expect(row.textLabel.fontSize).toBeLessThanOrEqual(19);
+    expect(row.textLabel.fontSize).toBeGreaterThanOrEqual(15);
+    expect(row.textLabel.measuredWidth).toBeLessThanOrEqual(
+      row.control.x - row.textLabel.x - 6,
+    );
+
+    row.setBounds(0, 0, 251);
+
+    expect(row.textLabel.fontSize).toBe(15);
+    expect(row.textLabel.measuredWidth).toBeLessThanOrEqual(
+      row.control.x - row.textLabel.x - 6,
+    );
 
     row.destroy({ children: true });
   });

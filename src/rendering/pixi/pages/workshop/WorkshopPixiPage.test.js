@@ -104,7 +104,7 @@ describe('WorkshopPixiPage', () => {
     vi.useRealTimers();
   });
 
-  it('shows green or gray player presence beside chat usernames and omits it for System', () => {
+  it('shows green or gray presence for other players and omits it for own and System rows', () => {
     const dialog = {
       assetManager: createPixiAssetManagerFake(Texture),
       contentTheme: createPixiThemeSnapshot({ theme: 'night' }),
@@ -131,9 +131,98 @@ describe('WorkshopPixiPage', () => {
       Number.parseInt('8d8172', 16),
     );
 
+    row.bind({ username: 'You', body: 'Hello', connected: true, isOwn: true });
+    row.setBounds(0, 0, 288, row.getPreferredHeight());
+    expect(row.presenceDot.visible).toBe(false);
+    expect(row.presenceDot.renderable).toBe(false);
+
     row.bind({ type: 'system', username: 'System', body: 'News' });
     row.setBounds(0, 0, 288, row.getPreferredHeight());
     expect(row.presenceDot.visible).toBe(false);
+
+    row.destroy();
+  });
+
+  it('lays out a retained player avatar widget inside dynamic system message text', () => {
+    const registrations = [];
+    const openPlayer = vi.fn(() => true);
+    const dialog = {
+      assetManager: createPixiAssetManagerFake(Texture),
+      contentTheme: createPixiThemeSnapshot({ theme: 'night' }),
+      theme: createPixiThemeSnapshot({ theme: 'night' }),
+      dialogId: 'workshop.worldChat',
+      inputRouter: {
+        registerPressTarget: vi.fn((displayObject, descriptor) => {
+          registrations.push({ displayObject, descriptor });
+          return { unregister: vi.fn() };
+        }),
+      },
+      registerTarget: vi.fn(),
+      unregisterTarget: vi.fn(),
+    };
+    const row = new WorldChatMessageRowPixi({ dialog });
+
+    row.bind({
+      id: 'system-welcome-1',
+      type: 'system',
+      username: 'System',
+      systemPlayerUsername: 'Mira',
+      body: 'Welcome Mira to the alliance.',
+      bodyRuns: [
+        { kind: 'text', text: 'Welcome ' },
+        {
+          kind: 'widget',
+          widget: 'playerAvatar',
+          character: 'mira',
+          frame: 'violet',
+          fallbackText: '[Mira]',
+          size: 18,
+        },
+        { kind: 'text', text: ' Mira to the alliance.' },
+      ],
+      onActivate: openPlayer,
+    });
+    row.setBounds(0, 0, 288, row.getPreferredHeight());
+
+    const inlineAvatar = row.inlinePlayerAvatars[0].widget;
+    const welcomeText = row.body.textObjects.find(
+      (textObject) => textObject.visible && textObject.text === 'Welcome',
+    );
+    const followingText = row.body.textObjects.find(
+      (textObject) => textObject.visible && textObject.text.startsWith('Mira'),
+    );
+    const avatarPress = registrations.find(
+      ({ displayObject }) => displayObject === inlineAvatar,
+    );
+
+    expect(row.body.text).toBe('Welcome [Mira] Mira to the alliance.');
+    expect(inlineAvatar.visible).toBe(true);
+    expect(inlineAvatar.width).toBeCloseTo(18);
+    expect(inlineAvatar.height).toBeCloseTo(18);
+    expect(welcomeText.x + welcomeText.width).toBeLessThan(inlineAvatar.x);
+    expect(inlineAvatar.x + inlineAvatar.width).toBeLessThan(followingText.x);
+    expect(avatarPress?.descriptor.enabled()).toBe(true);
+    expect(avatarPress?.descriptor.onActivate()).toBe(true);
+    expect(openPlayer).toHaveBeenCalledOnce();
+
+    row.bind({
+      id: 'system-passive-1',
+      type: 'system',
+      username: 'System',
+      body: 'The event has begun [spell].',
+      bodyRuns: [
+        { kind: 'text', text: 'The event has begun ' },
+        {
+          kind: 'widget',
+          widget: 'unknownSpellButton',
+          fallbackText: '[spell]',
+        },
+        { kind: 'text', text: '.' },
+      ],
+    });
+    expect(inlineAvatar.visible).toBe(false);
+    expect(avatarPress?.descriptor.enabled()).toBe(false);
+    expect(row.body.text).toBe('The event has begun [spell].');
 
     row.destroy();
   });
@@ -173,9 +262,13 @@ describe('WorkshopPixiPage', () => {
 
     expect(row.getPreferredHeight()).toBe(78);
     expect(row.allianceFlag.flagWidth).toBe(56);
+    expect(row.rank.text).toBe('2');
     expect(
       row.allianceFlag.x - (row.rank.x + row.rank.width / 2),
-    ).toBe(3);
+    ).toBe(2);
+    expect(
+      row.tag.x - (row.rank.x + row.rank.width / 2),
+    ).toBe(63);
     expect(row.tag.style.fontSize).toBe(row.name.style.fontSize);
     expect(row.memberCount.text).toBe('34/50');
     expect(row.leaderName.text).toBe('Elara');
@@ -207,9 +300,13 @@ describe('WorkshopPixiPage', () => {
     row.setBounds(0, 0, 258, row.getPreferredHeight());
 
     expect(row.memberCount.text).toBe('18/50');
+    expect(row.rank.text).toBe('18');
     expect(
       row.allianceFlag.x - (row.rank.x + row.rank.width / 2),
-    ).toBe(3);
+    ).toBe(2);
+    expect(
+      row.tag.x - (row.rank.x + row.rank.width / 2),
+    ).toBe(63);
     expect(row.name.text.endsWith('…')).toBe(true);
     expect(row.name.scale.x).toBeGreaterThanOrEqual(0.72);
     expect(row.name.x + row.name.width).toBeLessThan(row.memberCount.x - row.memberCount.width);
@@ -675,7 +772,7 @@ describe('WorkshopPixiPage', () => {
     expect(outgoingRow.progress.root.scale.x).toBe(1);
   });
 
-  it('queues newer request progress without restarting the in-flight shine', () => {
+  it('extends an in-flight shine to newer request progress without starting another shine', () => {
     const motion = createWorkshopMotionHarness();
     const harness = createHarness({
       requestFrame: motion.requestFrame,
@@ -693,38 +790,79 @@ describe('WorkshopPixiPage', () => {
     harness.page.bind(firstProgressModel);
 
     motion.runAt(150);
+    const shineXBeforeRetarget = row.progressShine.x;
     const secondProgressModel = createWorkshopViewModel();
     secondProgressModel.workshop.tasks.rows[0].current = 5;
     secondProgressModel.workshop.tasks.rows[0].required = 6;
     harness.page.bind(secondProgressModel);
 
     expect(row.progressFeedback.startedAtMs).toBe(0);
-    expect(row.progressMotion.end).toBeCloseTo(2 / 3);
-    expect(row.queuedProgress.progress).toBeCloseTo(5 / 6);
+    expect(row.progressFeedback.targetProgress).toBeCloseTo(5 / 6);
+    expect(row.progressMotion.end).toBeCloseTo(5 / 6);
+    expect(row.progressShine.x).toBe(shineXBeforeRetarget);
+
+    harness.page.bind(firstProgressModel);
+    expect(row.progressFeedback.startedAtMs).toBe(0);
+    expect(row.progressFeedback.targetProgress).toBeCloseTo(5 / 6);
+    expect(row.progressMotion.end).toBeCloseTo(5 / 6);
 
     motion.runAt(300);
     expect(row.displayedProgress).toBe(0.5);
     expect(row.progressShineRoot.visible).toBe(false);
 
     motion.runAt(520);
-    expect(row.displayedProgress).toBeCloseTo(2 / 3);
-    expect(row.progressFeedback.startedAtMs).toBe(520);
-    expect(row.progressShineRoot.visible).toBe(true);
-
-    motion.runAt(820);
-    expect(row.displayedProgress).toBeCloseTo(2 / 3);
-    expect(row.progressShineRoot.visible).toBe(false);
-
-    motion.runAt(1040);
     expect(row.displayedProgress).toBeCloseTo(5 / 6);
     expect(row.progressMotion).toBeNull();
-    expect(row.queuedProgress).toBeNull();
+    expect(row.progressFeedback).toBeNull();
+    expect(row.progressShineRoot.visible).toBe(false);
 
     harness.page.destroy();
     harness.dispose();
   });
 
-  it('lets request completion supersede queued progress motion', () => {
+  it('retargets an in-flight fill without replaying the shine', () => {
+    const motion = createWorkshopMotionHarness();
+    const harness = createHarness({
+      requestFrame: motion.requestFrame,
+      cancelFrame: motion.cancelFrame,
+      timeSource: motion.timeSource,
+      reducedMotion: () => false,
+    });
+    harness.page.activate();
+    harness.page.bind(createWorkshopViewModel());
+
+    const row = harness.page.tasks.rows.get('request-1');
+    const firstProgressModel = createWorkshopViewModel();
+    firstProgressModel.workshop.tasks.rows[0].current = 2;
+    firstProgressModel.workshop.tasks.rows[0].required = 3;
+    harness.page.bind(firstProgressModel);
+
+    motion.runAt(410);
+    const displayedBeforeRetarget = row.displayedProgress;
+    const secondProgressModel = createWorkshopViewModel();
+    secondProgressModel.workshop.tasks.rows[0].current = 5;
+    secondProgressModel.workshop.tasks.rows[0].required = 6;
+    harness.page.bind(secondProgressModel);
+
+    expect(row.displayedProgress).toBe(displayedBeforeRetarget);
+    expect(row.progressFeedback).toBeNull();
+    expect(row.progressShineRoot.visible).toBe(false);
+    expect(row.progressMotion).toMatchObject({
+      start: displayedBeforeRetarget,
+      end: 5 / 6,
+      startedAtMs: 410,
+    });
+
+    motion.runAt(630);
+    expect(row.displayedProgress).toBeCloseTo(5 / 6);
+    expect(row.progressMotion).toBeNull();
+    expect(row.progressShineRoot.visible).toBe(false);
+
+    harness.page.destroy();
+    harness.dispose();
+  });
+
+  it('lets request completion supersede dynamically extended progress motion', () => {
     const motion = createWorkshopMotionHarness();
     const questCompletionMotionCoordinator = new QuestCompletionMotionCoordinator();
     const harness = createHarness({
@@ -748,7 +886,8 @@ describe('WorkshopPixiPage', () => {
     secondProgressModel.workshop.tasks.rows[0].current = 5;
     secondProgressModel.workshop.tasks.rows[0].required = 6;
     harness.page.bind(secondProgressModel);
-    expect(row.queuedProgress.progress).toBeCloseTo(5 / 6);
+    expect(row.progressFeedback.startedAtMs).toBe(0);
+    expect(row.progressMotion.end).toBeCloseTo(5 / 6);
 
     questCompletionMotionCoordinator.begin({
       previousTaskId: 'request-1',
@@ -756,7 +895,6 @@ describe('WorkshopPixiPage', () => {
       fillDurationMs: 260,
     });
 
-    expect(row.queuedProgress).toBeNull();
     expect(row.progressFeedback.startedAtMs).toBe(150);
     expect(row.progressMotion).toMatchObject({
       end: 1,
@@ -4582,7 +4720,8 @@ describe('WorkshopPixiPage', () => {
 
     expect(row.isOwn).toBe(true);
     expect(row.avatar.x).toBeCloseTo(row.width - row.avatar.width / 2);
-    expect(row.presenceDot.x + 7).toBeCloseTo(textRight);
+    expect(row.presenceDot.visible).toBe(false);
+    expect(row.username.x + row.username.width).toBeCloseTo(textRight);
     expect(row.body.x + row.body.layoutWidth).toBeCloseTo(textRight);
     expect(row.username.style.fontSize).toBeCloseTo(14.85);
     expect(row.body.style.fontSize).toBeCloseTo(14.1075);

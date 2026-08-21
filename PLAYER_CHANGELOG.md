@@ -5,6 +5,14 @@ upload script posts the section whose heading matches `package.json` `version`.
 Write these developer-to-player notes only in Idle Wizard terms. Do not mention
 other game names, source projects, ports, or implementation provenance.
 
+## 0.3.88
+
+- Added Weekly Offers to the Gems Market, with seven-day extra automated Garden plot and Brewing cauldron slots whose contents pause safely when access expires.
+- Added social privacy controls in Settings for incoming friend requests and alliance invitations, with the preferences kept across connected devices.
+- Improved Friends with latest-message previews, clearer relationship actions, and stable loading layouts in Player Info.
+- Refined Trade Alliance presentation with a consistent room title, clearer announcement and empty states, updated quest claim styling, and polished Home navigation art.
+- Polished room title ribbons, theme and social-setting icons, Workshop progress motion, World Chat inline profiles, and Garden/Brewing completion feedback.
+
 ## 0.3.87
 
 - Refined Trade Alliance rosters with rank-by-rank capacity headers, manager actions directly in Player Info, four new banner emblems, and richer alliance leaderboard rows with leader and membership details.

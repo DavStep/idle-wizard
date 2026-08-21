@@ -110,6 +110,9 @@ export class PlayerBackendSyncManager {
             character: profile.character,
             frame: profile.frame,
             usernamePromptSeen: profile.usernamePromptSeen,
+            allowFriendRequests: profile.allowFriendRequests,
+            allowTradeAllianceInvitations:
+              profile.allowTradeAllianceInvitations,
           })
         : setUsername({ username: profile.username });
     } catch {
@@ -186,6 +189,9 @@ export class PlayerBackendSyncManager {
       character: snapshot?.character ?? 'elara',
       frame: normalizePlayerFrame(snapshot?.frame ?? DEFAULT_PLAYER_FRAME),
       usernamePromptSeen: Boolean(snapshot?.usernamePromptSeen),
+      allowFriendRequests: snapshot?.allowFriendRequests !== false,
+      allowTradeAllianceInvitations:
+        snapshot?.allowTradeAllianceInvitations !== false,
     };
   }
 
@@ -198,6 +204,9 @@ export class PlayerBackendSyncManager {
       character: profile?.character ?? 'elara',
       frame: normalizePlayerFrame(profile?.frame ?? DEFAULT_PLAYER_FRAME),
       usernamePromptSeen: Boolean(profile?.usernamePromptSeen),
+      allowFriendRequests: profile?.allowFriendRequests !== false,
+      allowTradeAllianceInvitations:
+        profile?.allowTradeAllianceInvitations !== false,
     };
   }
 
@@ -222,6 +231,9 @@ export class PlayerBackendSyncManager {
       character: profile.character,
       frame: profile.frame,
       usernamePromptSeen: Boolean(profile.usernamePromptSeen),
+      allowFriendRequests: profile.allowFriendRequests !== false,
+      allowTradeAllianceInvitations:
+        profile.allowTradeAllianceInvitations !== false,
     });
   }
 
@@ -247,6 +259,12 @@ export class PlayerBackendSyncManager {
     this.playerFacade?.setColorMode?.(profile.colorMode);
     this.playerFacade?.setCharacter?.(profile.character);
     this.playerFacade?.setFrame?.(profile.frame);
+    this.playerFacade?.setAllowFriendRequests?.(
+      profile.allowFriendRequests,
+    );
+    this.playerFacade?.setAllowTradeAllianceInvitations?.(
+      profile.allowTradeAllianceInvitations,
+    );
 
     if (profile.usernamePromptSeen) {
       this.playerFacade?.markUsernamePromptSeen?.();

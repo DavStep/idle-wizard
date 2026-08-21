@@ -18,4 +18,6 @@ export default {
   font: __t.string(),
   character: __t.string(),
   frame: __t.string(),
+  allowFriendRequests: __t.bool(),
+  allowTradeAllianceInvitations: __t.bool(),
 };

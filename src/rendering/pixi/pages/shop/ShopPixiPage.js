@@ -93,6 +93,10 @@ const MARKET_OFFER_ACTION_WIDTH = STALL_SELECT_ACTION_WIDTH;
 const MARKET_OFFER_ACTION_HEIGHT = STALL_SELECT_ACTION_HEIGHT;
 const MARKET_OFFER_CARD_ACTION_HEIGHT = 36;
 const MARKET_OFFER_ICON_SIZE = 38;
+const WEEKLY_OFFER_ICON_ASSET_IDS = Object.freeze({
+  extraPlot: 'source:assets/icons/icon-garden-plot-tab.png',
+  extraCauldron: 'source:assets/icons/icon-brewing-cauldron-tab.png',
+});
 const BORDER_ACTION_EDGE_INSET = 12;
 const BORDER_ACTION_GAP = 6;
 const BORDER_ACTION_PADDING_X = 10;
@@ -173,6 +177,7 @@ export class ShopPixiPage extends BasePixiRetainedView {
     this.identityLayer.label = 'shop:marketIdentity';
     this.marketTitleRibbon = new MarketTitleRibbon({
       assetManager,
+      assetId: PIXI_ROOT_RUN_ASSETS.marketTitleRibbonRed,
     });
     this.identityLayer.addChild(this.marketTitleRibbon.root);
 
@@ -253,6 +258,18 @@ export class ShopPixiPage extends BasePixiRetainedView {
       titleVariant: 'crystal',
       rowPresentation: 'offer',
     });
+    this.weeklyOffersSection = new ShopRowsSection({
+      page: this,
+      title: 'Weekly Offers',
+      assetManager,
+      inputRouter,
+      semanticRegistry,
+      counters,
+      rowHeight: OFFER_ROW_HEIGHT,
+      label: 'shop:weeklyOffers',
+      titleVariant: 'crystal',
+      rowPresentation: 'offer-grid',
+    });
     this.amberOffersSection = new ShopRowsSection({
       page: this,
       title: 'Amber',
@@ -291,6 +308,7 @@ export class ShopPixiPage extends BasePixiRetainedView {
       .get('crystals')
       .content.addChild(
         this.coinOfferSection.root,
+        this.weeklyOffersSection.root,
         this.amberOffersSection.root,
         this.amethystOffersSection.root,
       );
@@ -400,6 +418,16 @@ export class ShopPixiPage extends BasePixiRetainedView {
             },
           ]
         : [],
+    );
+    this.weeklyOffersSection.bind(
+      this.model.crystals.weeklyOffers.map((offer, index) =>
+        normalizeWeeklyOffer(offer, index, () =>
+          this.openDialog(
+            SHOP_DIALOG_IDS.SUPPORT,
+            offer.dialog ?? this.model.dialogs.support ?? {},
+          ),
+        ),
+      ),
     );
     const paidGemOffers = this.model.crystals.offers.map(
       (offer, index) =>
@@ -762,6 +790,15 @@ export class ShopPixiPage extends BasePixiRetainedView {
       coinHeight,
     );
     crystalY += coinHeight + SECTION_GAP;
+    const weeklyHeight =
+      this.weeklyOffersSection.getPreferredHeight(stallsWidth);
+    this.weeklyOffersSection.setBounds(
+      0,
+      crystalY,
+      stallsWidth,
+      weeklyHeight,
+    );
+    crystalY += weeklyHeight + SECTION_GAP;
     const amberHeight =
       this.amberOffersSection.getPreferredHeight(stallsWidth);
     this.amberOffersSection.setBounds(
@@ -822,6 +859,7 @@ export class ShopPixiPage extends BasePixiRetainedView {
       this.requestsSection,
       this.playerMarketSection,
       this.coinOfferSection,
+      this.weeklyOffersSection,
       this.amberOffersSection,
       this.amethystOffersSection,
     ].filter(Boolean);
@@ -2132,7 +2170,8 @@ export class MarketOfferCard {
     this.amountLabel.visible = Boolean(this.amountLabel.text);
     this.amountLabel.renderable = this.amountLabel.visible;
     this.resourceKey = String(model.resourceKey ?? '').toLowerCase();
-    this.bindResourceIcon();
+    this.iconAssetId = String(model.iconAssetId ?? '');
+    this.bindOfferIcon();
     const valueText =
       model.priceLabel ??
       model.actionLabel ??
@@ -2221,8 +2260,7 @@ export class MarketOfferCard {
     const iconCenterY =
       this.iconFrame.y + STALL_ART_WELL_SIZE / 2;
     this.icon.position.set(iconCenterX, iconCenterY);
-    this.icon.width = MARKET_OFFER_ICON_SIZE;
-    this.icon.height = MARKET_OFFER_ICON_SIZE;
+    fitOfferIcon(this.icon, MARKET_OFFER_ICON_SIZE);
     this.amountLabel.position.set(
       iconCenterX,
       this.iconFrame.y + STALL_ART_WELL_SIZE - 2,
@@ -2272,20 +2310,21 @@ export class MarketOfferCard {
     this.amountLabel.applyTheme(this.theme);
     this.amountLabel.setColor(STALL_QUANTITY_COLOR);
     this.actionButton.applyTheme(this.theme);
-    this.bindResourceIcon();
+    this.bindOfferIcon();
   }
 
-  bindResourceIcon() {
+  bindOfferIcon() {
     const frameName = this.resourceKey
       ? `resource:${this.resourceKey}`
       : null;
-    this.icon.texture =
-      frameName
-        ? this.assetManager?.getAtlasTexture?.(frameName) ??
-          Texture.EMPTY
+    this.icon.texture = this.iconAssetId
+      ? this.assetManager?.getTexture?.(this.iconAssetId) ?? Texture.EMPTY
+      : frameName
+        ? this.assetManager?.getAtlasTexture?.(frameName) ?? Texture.EMPTY
         : Texture.EMPTY;
-    this.icon.visible = Boolean(frameName);
+    this.icon.visible = Boolean(this.iconAssetId || frameName);
     this.icon.renderable = this.icon.visible;
+    fitOfferIcon(this.icon, MARKET_OFFER_ICON_SIZE);
   }
 
   reset() {
@@ -2299,6 +2338,7 @@ export class MarketOfferCard {
     this.action = null;
     this.enabled = false;
     this.resourceKey = '';
+    this.iconAssetId = '';
     this.icon.texture = Texture.EMPTY;
     this.icon.visible = false;
     this.icon.renderable = false;
@@ -2982,6 +3022,9 @@ function normalizeShopViewModel(viewModel = {}) {
             }
           : null),
       offers: safeArray(crystals.offers ?? source.crystalOffers),
+      weeklyOffers: safeArray(
+        crystals.weeklyOffers ?? source.weeklyOffers,
+      ),
     },
   };
 }
@@ -3099,6 +3142,33 @@ function normalizePaidGemOffer(offer, index, openSupportDialog) {
     semanticId:
       offer.semanticId ??
       `shop.gemOffer.${resourceKey}.${amount}`,
+    action: () => offer.action?.(offer) ?? openSupportDialog(),
+  };
+}
+
+function normalizeWeeklyOffer(offer, index, openSupportDialog) {
+  const active = offer.active === true;
+  const id = offer.id ?? `weekly-${index}`;
+  return {
+    ...offer,
+    compact: false,
+    fullWidth: true,
+    id,
+    title: offer.title ?? 'Weekly Extra',
+    resourceKey: '',
+    iconAssetId:
+      offer.iconAssetId ?? WEEKLY_OFFER_ICON_ASSET_IDS[id] ?? null,
+    amountLabel: offer.slotLabel ?? 'E1',
+    claimCadence:
+      offer.description ?? 'Unlocks 1 extra automated slot for 7 days.',
+    priceLabel: active ? null : offer.priceLabel ?? '$15.00',
+    actionLabel: active ? offer.remainingLabel ?? 'Active' : null,
+    value: active
+      ? offer.remainingLabel ?? 'Active'
+      : offer.priceLabel ?? '$15.00',
+    valueVariant: 'green',
+    enabled: !active && offer.canPurchase !== false,
+    semanticId: offer.semanticId ?? `shop.weeklyOffer.${offer.id ?? index}`,
     action: () => offer.action?.(offer) ?? openSupportDialog(),
   };
 }
@@ -3330,6 +3400,15 @@ function resolveTexture(assetManager, model = {}) {
     return assetManager.getTexture(model.textureId);
   }
   return null;
+}
+
+function fitOfferIcon(sprite, maxSize) {
+  const source = sprite.texture?.orig ?? sprite.texture?.frame;
+  const sourceWidth = Number(source?.width) || 1;
+  const sourceHeight = Number(source?.height) || 1;
+  const scale = Math.min(maxSize / sourceWidth, maxSize / sourceHeight);
+  sprite.width = sourceWidth * scale;
+  sprite.height = sourceHeight * scale;
 }
 
 function bindStallItemIcon({

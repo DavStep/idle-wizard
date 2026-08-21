@@ -72,6 +72,7 @@ export class AppFacade {
     this.experienceFacade = new PixiExperienceFacade({
       renderFacade: this.renderFacade,
       gameplayFacade: this.gameplayFacade,
+      uiClickSoundFacade: this.uiClickSoundFacade,
       getCurrentPageId: () =>
         this.pagesFacade?.getCurrentPageId?.() ?? 'workshop',
       onShowPage: (pageId) =>

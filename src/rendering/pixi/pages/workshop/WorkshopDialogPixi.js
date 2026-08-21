@@ -24,7 +24,6 @@ import {
   normalizeTradeAllianceEmblem,
 } from '../../../../shared/tradeAllianceEmblems.js';
 import { PixiTextButton } from '../../primitives/PixiTextButton.js';
-import { getPixiButtonSkin } from '../../primitives/PixiButtonStyle.js';
 import { ClickableWidget } from '../../primitives/ClickableWidget.js';
 import {
   PIXI_DIALOG_BASE_GEOMETRY,
@@ -58,6 +57,7 @@ import {
   PIXI_ROOT_RUN_ASSETS,
   PIXI_ROOT_RUN_GEOMETRY,
   PIXI_SQUIRCLE_TINTS,
+  PIXI_TEXT_STROKE_COLOR,
   PIXI_UI_GEOMETRY,
 } from '../../theme/PixiThemeTokens.js';
 import {
@@ -132,6 +132,9 @@ const DIRECT_MESSAGE_IDENTITY_TOGGLE_HEIGHT = 58;
 const DIRECT_MESSAGE_UNFRIEND_WIDTH = 100;
 const DIRECT_MESSAGE_UNFRIEND_HEIGHT = 29;
 const FRIENDS_DIALOG_HEIGHT = 594;
+const FRIENDS_EMPTY_STATE_WIDTH = 220;
+const FRIENDS_EMPTY_STATE_HEIGHT = 58;
+const FRIENDS_EMPTY_STATE_FONT_SIZE = 20;
 const WORLD_CHAT_ROW_SCROLLBAR_GUTTER = 3;
 const WORLD_CHAT_AVATAR_SIZE = 22 * WORLD_CHAT_ROW_HEIGHT_SCALE * WORLD_CHAT_AVATAR_SCALE;
 const WORLD_CHAT_TEXT_X = 25 * WORLD_CHAT_ROW_HEIGHT_SCALE * WORLD_CHAT_AVATAR_SCALE;
@@ -231,7 +234,8 @@ const LEADERBOARD_ALLIANCE_LEADER_PROFILE_SIZE = ALLIANCE_DIRECTORY_LEADER_PROFI
 const LEADERBOARD_ALLIANCE_INFO_TOP = ALLIANCE_DIRECTORY_INFO_TOP;
 const LEADERBOARD_ALLIANCE_LEADER_ROLE_GAP = ALLIANCE_DIRECTORY_LEADER_ROLE_GAP;
 const LEADERBOARD_ALLIANCE_FLAG_TOP = ALLIANCE_DIRECTORY_BANNER_TOP;
-const LEADERBOARD_ALLIANCE_RANK_CONTENT_GAP = 3;
+const LEADERBOARD_ALLIANCE_RANK_CONTENT_GAP = 0;
+const LEADERBOARD_ALLIANCE_FLAG_OPTICAL_OFFSET_X = 2;
 const ALLIANCE_DIRECTORY_PAPER_WIDTH = PIXI_ROOT_RUN_GEOMETRY.dialog.innerBoardWidth + 16;
 const ALLIANCE_DIRECTORY_SECTION_GAP = 5;
 const ALLIANCE_MEMBER_ROW_HEIGHT = PIXI_ROOT_RUN_GEOMETRY.settings.rowPitch;
@@ -250,12 +254,14 @@ const ALLIANCE_QUEST_ACTION_RIGHT = 10;
 const ALLIANCE_QUEST_ACTION_WIDTH = 72;
 const ALLIANCE_QUEST_ACTION_HEIGHT = 42;
 const ALLIANCE_QUEST_PROGRESS_HEIGHT = PIXI_UI_GEOMETRY.progressTopPanelTotalHeight;
-const ALLIANCE_QUEST_STATUS_HEIGHT = 32;
+const ALLIANCE_QUEST_STATUS_HEIGHT = 30;
+const ALLIANCE_QUEST_STATUS_CHECKMARK_SIZE = 18;
+const ALLIANCE_QUEST_STATUS_CHECKMARK_RIGHT_INSET = 6;
+const ALLIANCE_QUEST_STATUS_CHECKMARK_GAP = 4;
 const ALLIANCE_QUEST_REWARD_FONT_SIZE = PIXI_UI_GEOMETRY.bodyFontSize;
 const ALLIANCE_QUEST_PAPER_INK = '#634934';
 const ALLIANCE_QUEST_MUTED_INK = '#8b6b4e';
 const ALLIANCE_QUEST_PROGRESS_TEXT = '#ffffff';
-const ALLIANCE_QUEST_STATUS_TEXT = '#f7efe4';
 const ALLIANCE_QUEST_ART_SOURCE_INSETS = Object.freeze({
   top: 41,
   right: 41,
@@ -543,6 +549,37 @@ export class WorkshopDialogPixi {
       ...RETAINED_TEXT_STYLES.border,
       wordWrapWidth: 264,
     });
+    const friendsEmptyGeometry = PIXI_ROOT_RUN_GEOMETRY.account.username;
+    this.friendsEmptyFrame = this.isFriendsDialog
+      ? new PixiNineSliceFrame({
+          texture:
+            this.assetManager?.getTexture?.(PIXI_ROOT_RUN_ASSETS.accountUsername) ??
+            Texture.EMPTY,
+          sourceInsets: friendsEmptyGeometry.sourceInsets,
+          borderInsets: friendsEmptyGeometry.borderInsets,
+          width: FRIENDS_EMPTY_STATE_WIDTH,
+          height: FRIENDS_EMPTY_STATE_HEIGHT,
+          label: `${dialogId}:empty-state-frame`,
+        })
+      : null;
+    this.friendsEmptyLabel = this.isFriendsDialog
+      ? createText('', {
+          fontSize: FRIENDS_EMPTY_STATE_FONT_SIZE,
+          lineHeight: 24,
+          align: 'center',
+          fill: '#ffffff',
+          stroke: PIXI_TEXT_STROKE_COLOR,
+        })
+      : null;
+    if (this.friendsEmptyFrame) {
+      this.friendsEmptyFrame.tint = 0x000000;
+      this.friendsEmptyFrame.alpha = 0.4;
+      this.friendsEmptyFrame.visible = false;
+      this.friendsEmptyFrame.renderable = false;
+      this.friendsEmptyLabel.anchor.set(0.5);
+      this.friendsEmptyLabel.visible = false;
+      this.friendsEmptyLabel.renderable = false;
+    }
     this.directMessageProfile = this.isDirectMessageDialog
       ? new PlayerProfileWidget({
           assets: this.assetManager,
@@ -605,7 +642,18 @@ export class WorkshopDialogPixi {
         this.directMessageUnfriend,
       );
     }
-    this.directMessageProfileRegistration = this.directMessageIdentityHitTarget
+    this.directMessageProfileRegistration = this.directMessageProfile
+      ? (this.inputRouter?.registerPressTarget?.(this.directMessageProfile, {
+          fallbackHitTest: true,
+          enabled: () =>
+            this.modal.shown === true &&
+            typeof this.viewModel.actions?.openPlayer === 'function',
+          onActivate: () => this.activateDirectMessagePlayerInfo(),
+          haptic: 'selection',
+          excludePageSwipe: true,
+        }) ?? null)
+      : null;
+    this.directMessageIdentityRegistration = this.directMessageIdentityHitTarget
       ? (this.inputRouter?.registerPressTarget?.(this.directMessageIdentityHitTarget, {
           fallbackHitTest: true,
           enabled: () =>
@@ -754,6 +802,7 @@ export class WorkshopDialogPixi {
       this.headerBody,
       this.headerMeta,
       this.scroll.root,
+      ...(this.friendsEmptyFrame ? [this.friendsEmptyFrame, this.friendsEmptyLabel] : []),
       this.status,
     );
     this.panel.addChild(...(this.periodTabsLayer ? [this.periodTabsLayer] : []), this.tabsLayer);
@@ -1162,7 +1211,18 @@ export class WorkshopDialogPixi {
     const rows = normalizeRows(
       this.ownedAllianceHomeLayout ? this.viewModel.tradeInfoRows : this.viewModel.rows,
     );
-    if (!this.boundStatus && rows.length === 0) {
+    const friendsEmptyLabel =
+      this.isFriendsDialog && !this.boundStatus && rows.length === 0
+        ? this.viewModel.emptyLabel ?? ''
+        : '';
+    if (this.friendsEmptyLabel) {
+      setText(this.friendsEmptyLabel, friendsEmptyLabel);
+      this.friendsEmptyLabel.visible = Boolean(friendsEmptyLabel);
+      this.friendsEmptyLabel.renderable = this.friendsEmptyLabel.visible;
+      this.friendsEmptyFrame.visible = this.friendsEmptyLabel.visible;
+      this.friendsEmptyFrame.renderable = this.friendsEmptyLabel.visible;
+    }
+    if (!this.boundStatus && rows.length === 0 && !this.isFriendsDialog) {
       this.boundStatus = this.viewModel.emptyLabel ?? '';
     }
     if (this.isDiscoveriesDialog) {
@@ -1614,6 +1674,15 @@ export class WorkshopDialogPixi {
       fill: contentTheme.muted,
       wordWrapWidth: 264,
     });
+    if (this.friendsEmptyLabel) {
+      applyTextTheme(this.friendsEmptyLabel, this.theme, {
+        fontSize: FRIENDS_EMPTY_STATE_FONT_SIZE,
+        lineHeight: 24,
+        align: 'center',
+        fill: '#ffffff',
+        stroke: PIXI_TEXT_STROKE_COLOR,
+      });
+    }
     this.discoveryPrevious?.applyTheme(contentTheme);
     this.discoveryNext?.applyTheme(contentTheme);
     if (this.discoveryPageLabel) {
@@ -1957,6 +2026,22 @@ export class WorkshopDialogPixi {
         shellFooterPaperReduction -
         this.scrollViewportTopInset,
     );
+    if (this.friendsEmptyFrame) {
+      const emptyStateX =
+        this.scroll.root.x + (this.scroll.width - FRIENDS_EMPTY_STATE_WIDTH) / 2;
+      const emptyStateY =
+        this.scroll.root.y + (this.scroll.height - FRIENDS_EMPTY_STATE_HEIGHT) / 2;
+      this.friendsEmptyFrame.position.set(emptyStateX, emptyStateY);
+      this.friendsEmptyFrame.setSize(
+        FRIENDS_EMPTY_STATE_WIDTH,
+        FRIENDS_EMPTY_STATE_HEIGHT,
+        PIXI_ROOT_RUN_GEOMETRY.account.username.borderInsets,
+      );
+      this.friendsEmptyLabel.position.set(
+        emptyStateX + FRIENDS_EMPTY_STATE_WIDTH / 2,
+        emptyStateY + FRIENDS_EMPTY_STATE_HEIGHT / 2,
+      );
+    }
     if (
       this.isChatDialog ||
       bagListLayout ||
@@ -2064,9 +2149,9 @@ export class WorkshopDialogPixi {
     this.directMessageExpandGlyph.position.set(paperWidth - 19, 23);
     this.directMessageIdentityHitTarget.position.set(0, 0);
     this.directMessageIdentityHitTarget.hitArea = new Rectangle(
+      textX,
       0,
-      0,
-      paperWidth,
+      paperWidth - textX,
       DIRECT_MESSAGE_IDENTITY_TOGGLE_HEIGHT,
     );
     this.directMessageUnfriend.position.set(textX, 61);
@@ -2696,6 +2781,13 @@ export class WorkshopDialogPixi {
     return true;
   }
 
+  activateDirectMessagePlayerInfo() {
+    if (typeof this.viewModel.actions?.openPlayer !== 'function') {
+      return false;
+    }
+    return this.viewModel.actions.openPlayer(this.viewModel.friend) ?? true;
+  }
+
   syncDirectMessageIdentityState() {
     if (!this.directMessageUnfriend) {
       return;
@@ -2732,6 +2824,8 @@ export class WorkshopDialogPixi {
     this.composerSubmit = null;
     disposeInputRegistration(this.directMessageProfileRegistration);
     this.directMessageProfileRegistration = null;
+    disposeInputRegistration(this.directMessageIdentityRegistration);
+    this.directMessageIdentityRegistration = null;
     this.directMessageUnfriend?.destroy();
     this.directMessageUnfriend = null;
 
@@ -3342,6 +3436,8 @@ export class WorldChatMessageRowPixi {
       },
       wrapWidth: WORKSHOP_DIALOG_CONTENT_WIDTH - WORLD_CHAT_TEXT_X,
     });
+    this.inlinePlayerAvatars = [];
+    this.inlinePlayerAvatarCount = 0;
     this.systemPlayerUsername = createText('', {
       fontSize: WORLD_CHAT_BODY_FONT_SIZE,
       lineHeight: WORLD_CHAT_BODY_LINE_HEIGHT,
@@ -3432,8 +3528,8 @@ export class WorldChatMessageRowPixi {
     this.avatar.renderable = this.avatar.visible;
     this.systemBackground.visible = this.isSystem;
     this.systemBackground.renderable = this.isSystem;
-    this.presenceDot.visible = !this.isSystem;
-    this.presenceDot.renderable = !this.isSystem;
+    this.presenceDot.visible = !this.isSystem && !this.isOwn;
+    this.presenceDot.renderable = this.presenceDot.visible;
     this.drawPresenceDot();
     this.tag.visible = Boolean(rankLabel || tag);
     this.tag.renderable = this.tag.visible;
@@ -3728,9 +3824,68 @@ export class WorldChatMessageRowPixi {
 
   bindBody(body, bodyRuns, bodyIcon) {
     const rawBody = String(body ?? '');
+    this.inlinePlayerAvatarCount = 0;
+    for (const record of this.inlinePlayerAvatars) {
+      record.enabled = false;
+    }
     this.body.setRuns(
-      resolveWorldChatBodyRuns(this.dialog.assetManager, rawBody, bodyRuns, bodyIcon),
+      resolveWorldChatBodyRuns(
+        this.dialog.assetManager,
+        rawBody,
+        bodyRuns,
+        bodyIcon,
+        (run) => this.resolveInlineBodyWidget(run),
+      ),
     );
+  }
+
+  resolveInlineBodyWidget(run) {
+    if (!this.isSystem || run?.widget !== 'playerAvatar') {
+      return null;
+    }
+
+    const index = this.inlinePlayerAvatarCount++;
+    let record = this.inlinePlayerAvatars[index];
+    if (!record) {
+      const widget = new PlayerProfileWidget({
+        assets: this.dialog.assetManager,
+        texture: Texture.EMPTY,
+        label: `${this.dialog.dialogId}-message-row:inline-player-avatar:${index}`,
+      });
+      record = {
+        enabled: false,
+        interactive: false,
+        registration: null,
+        widget,
+      };
+      record.registration =
+        this.dialog.inputRouter?.registerPressTarget?.(widget, {
+          enabled: () =>
+            record.enabled &&
+            record.interactive &&
+            this.isSystemPlayerInteractive(),
+          onActivate: () => this.activatePlayer(),
+          haptic: 'selection',
+          excludePageSwipe: true,
+        }) ?? null;
+      this.inlinePlayerAvatars.push(record);
+    }
+
+    record.enabled = true;
+    record.interactive = run.interactive !== false;
+    record.widget
+      .setTexture(resolveCharacterTexture(this.dialog.assetManager, run.character))
+      .setBackgroundTint(getPlayerFrameTint(run.frame));
+    record.widget.eventMode =
+      record.interactive && this.isSystemPlayerInteractive() ? 'static' : 'none';
+    record.widget.cursor = record.widget.eventMode === 'static' ? 'pointer' : 'default';
+    record.widget.hitArea = new Rectangle(0, 0, PLAYER_PROFILE_SIZE, PLAYER_PROFILE_SIZE);
+
+    return {
+      ...run,
+      displayObject: record.widget,
+      size: clampWorldChatInlineWidgetSize(run.size),
+    };
   }
 
   getContentX() {
@@ -3763,6 +3918,14 @@ export class WorldChatMessageRowPixi {
     this.presenceDot.renderable = false;
     this.avatarWidget.setTexture(Texture.EMPTY).setBackgroundTint(0xffffff);
     this.body.setRuns([]);
+    this.inlinePlayerAvatarCount = 0;
+    for (const record of this.inlinePlayerAvatars) {
+      record.enabled = false;
+      record.interactive = false;
+      record.widget.eventMode = 'none';
+      record.widget.cursor = 'default';
+      record.widget.setTexture(Texture.EMPTY).setBackgroundTint(0xffffff);
+    }
     setText(this.systemPlayerUsername, '');
     this.root.visible = false;
     this.syncInteraction();
@@ -3781,9 +3944,14 @@ export class WorldChatMessageRowPixi {
     disposeInputRegistration(this.avatarRegistration);
     disposeInputRegistration(this.usernameRegistration);
     disposeInputRegistration(this.systemPlayerRegistration);
+    for (const record of this.inlinePlayerAvatars) {
+      disposeInputRegistration(record.registration);
+      record.registration = null;
+    }
     this.avatarRegistration = null;
     this.usernameRegistration = null;
     this.systemPlayerRegistration = null;
+    this.inlinePlayerAvatars.length = 0;
     this.root.destroy({ children: true });
   }
 }
@@ -5821,7 +5989,8 @@ export class LeaderboardRowPixi extends ClickableWidget {
     const memberCapacity = Math.max(1, Math.floor(Number(this.model.memberCapacity) || 50));
     this.root.visible = true;
     this.root.renderable = true;
-    setText(this.rank, `${Math.max(1, Math.floor(Number(this.model.rank) || 1))}.`);
+    const rank = Math.max(1, Math.floor(Number(this.model.rank) || 1));
+    setText(this.rank, player ? `${rank}.` : `${rank}`);
     setText(
       this.tag,
       normalizeWorldChatTag(this.model.allianceTag)
@@ -5947,7 +6116,9 @@ export class LeaderboardRowPixi extends ClickableWidget {
         LEADERBOARD_ALLIANCE_FLAG_SIZE,
       );
       this.allianceFlag.position.set(
-        flagX + (LEADERBOARD_ALLIANCE_FLAG_SIZE - this.allianceFlag.flagWidth) / 2,
+        flagX +
+          (LEADERBOARD_ALLIANCE_FLAG_SIZE - this.allianceFlag.flagWidth) / 2 +
+          LEADERBOARD_ALLIANCE_FLAG_OPTICAL_OFFSET_X,
         LEADERBOARD_ALLIANCE_FLAG_TOP,
       );
       this.tag.position.set(textX, 8);
@@ -6321,24 +6492,21 @@ export class AllianceQuestRow {
       inputRouter: dialog.inputRouter,
       sizeTier: 30,
     });
-    const claimedSkin = getPixiButtonSkin({
-      color: 'gray',
-      height: ALLIANCE_QUEST_STATUS_HEIGHT,
-      sizeTier: 30,
-      width: ALLIANCE_QUEST_ACTION_WIDTH,
-    });
     this.claimedStatus = new Container({
       label: `${this.root.label}:claimed-status`,
     });
     this.claimedStatus.eventMode = 'none';
     this.claimedStatusFrame = new PixiNineSliceFrame({
-      texture: dialog.assetManager?.getTexture?.(claimedSkin.assetId) ?? Texture.EMPTY,
-      sourceInsets: claimedSkin.sourceInsets,
-      borderInsets: claimedSkin.borderInsets,
+      texture:
+        dialog.assetManager?.getTexture?.(PIXI_ROOT_RUN_ASSETS.settingsRow) ??
+        Texture.EMPTY,
+      sourceInsets: PIXI_ROOT_RUN_GEOMETRY.settings.rowSourceInsets,
+      borderInsets: PIXI_ROOT_RUN_GEOMETRY.settings.rowBorderInsets,
       width: ALLIANCE_QUEST_ACTION_WIDTH,
       height: ALLIANCE_QUEST_STATUS_HEIGHT,
       label: `${this.root.label}:claimed-status-frame`,
     });
+    this.claimedStatusFrame.eventMode = 'none';
     this.claimedCheckmark = new Sprite({
       texture:
         dialog.assetManager?.getTexture?.(PIXI_ROOT_RUN_ASSETS.checkmark) ??
@@ -6347,12 +6515,7 @@ export class AllianceQuestRow {
     });
     this.claimedCheckmark.anchor.set(0.5);
     this.claimedCheckmark.eventMode = 'none';
-    this.claimedLabel = createText('Claimed', {
-      ...RETAINED_TEXT_STYLES.border,
-      fontWeight: '700',
-      fill: ALLIANCE_QUEST_STATUS_TEXT,
-      stroke: { color: '#0a0a0a', width: 1.5 },
-    });
+    this.claimedLabel = createText('Claimed', RETAINED_TEXT_STYLES.body);
     this.claimedLabel.anchor.set(0.5);
     this.claimedStatus.addChild(
       this.claimedStatusFrame,
@@ -6553,35 +6716,28 @@ export class AllianceQuestRow {
 
   layoutClaimedStatus({ actionWidth, actionX, height }) {
     const statusY = Math.max(8, (height - ALLIANCE_QUEST_STATUS_HEIGHT) / 2 - 8);
-    const claimedSkin = getPixiButtonSkin({
-      color: 'gray',
-      height: ALLIANCE_QUEST_STATUS_HEIGHT,
-      sizeTier: 30,
-      width: actionWidth,
-    });
     this.claimedStatus.position.set(actionX, statusY);
-    this.claimedStatusFrame.setSkin({
-      assetId: claimedSkin.assetId,
-      borderInsets: claimedSkin.borderInsets,
-      height: ALLIANCE_QUEST_STATUS_HEIGHT,
-      minimumCenter: claimedSkin.minimumCenter,
-      sourceInsets: claimedSkin.sourceInsets,
-      texture:
-        this.dialog.assetManager?.getTexture?.(claimedSkin.assetId) ?? Texture.EMPTY,
-      width: actionWidth,
-    });
-    const groupGap = 4;
-    const checkmarkSize = 14;
-    const groupWidth = checkmarkSize + groupGap + Math.ceil(this.claimedLabel.width);
-    const groupX = Math.max(4, (actionWidth - groupWidth) / 2);
-    const centerY = ALLIANCE_QUEST_STATUS_HEIGHT / 2 - 1;
-    this.claimedCheckmark.position.set(groupX + checkmarkSize / 2, centerY);
-    this.claimedCheckmark.width = checkmarkSize;
-    this.claimedCheckmark.height = checkmarkSize * (57 / 61);
-    this.claimedLabel.position.set(
-      groupX + checkmarkSize + groupGap + this.claimedLabel.width / 2,
-      centerY,
+    this.claimedStatusFrame.setSize(
+      actionWidth,
+      ALLIANCE_QUEST_STATUS_HEIGHT,
+      PIXI_ROOT_RUN_GEOMETRY.settings.rowBorderInsets,
     );
+    const centerY = ALLIANCE_QUEST_STATUS_HEIGHT / 2;
+    const checkmarkCenterX =
+      actionWidth -
+      ALLIANCE_QUEST_STATUS_CHECKMARK_RIGHT_INSET -
+      ALLIANCE_QUEST_STATUS_CHECKMARK_SIZE / 2;
+    this.claimedCheckmark.position.set(checkmarkCenterX, centerY);
+    this.claimedCheckmark.width = ALLIANCE_QUEST_STATUS_CHECKMARK_SIZE;
+    this.claimedCheckmark.height =
+      ALLIANCE_QUEST_STATUS_CHECKMARK_SIZE * (57 / 61);
+    const labelAreaRight = Math.max(
+      0,
+      checkmarkCenterX -
+        ALLIANCE_QUEST_STATUS_CHECKMARK_SIZE / 2 -
+        ALLIANCE_QUEST_STATUS_CHECKMARK_GAP,
+    );
+    this.claimedLabel.position.set(labelAreaRight / 2, centerY);
   }
 
   getPreferredHeight(width = this.dialog.allianceQuestRowWidth || WORKSHOP_DIALOG_CONTENT_WIDTH) {
@@ -6643,12 +6799,11 @@ export class AllianceQuestRow {
       fontWeight: '700',
       fill: ALLIANCE_QUEST_MUTED_INK,
     });
-    applyTextTheme(this.claimedLabel, resolvedTheme, {
-      ...RETAINED_TEXT_STYLES.border,
-      fontWeight: '700',
-      fill: ALLIANCE_QUEST_STATUS_TEXT,
-      stroke: { color: '#0a0a0a', width: 1.5 },
-    });
+    applyTextTheme(
+      this.claimedLabel,
+      resolvedTheme,
+      RETAINED_TEXT_STYLES.body,
+    );
     this.progressBar.applyTheme(resolvedTheme);
     this.reward.applyTheme(resolvedTheme);
     this.reward.amountLabel.setColor(ALLIANCE_QUEST_PAPER_INK);
@@ -7060,13 +7215,26 @@ function resolveWorldChatBodyIconTexture(assetManager, assetId) {
   return assetManager.getTexture(assetId) ?? Texture.EMPTY;
 }
 
-function resolveWorldChatBodyRuns(assetManager, body, bodyRuns, legacyBodyIcon) {
+function resolveWorldChatBodyRuns(
+  assetManager,
+  body,
+  bodyRuns,
+  legacyBodyIcon,
+  resolveWidget = null,
+) {
   const runs =
     Array.isArray(bodyRuns) && bodyRuns.length > 0
       ? bodyRuns
       : createLegacyWorldChatBodyRuns(body, legacyBodyIcon);
 
   return runs.map((run) => {
+    if (run?.kind === 'widget') {
+      return resolveWidget?.(run) ?? {
+        ...run,
+        displayObject: null,
+        fallbackText: String(run.fallbackText ?? ''),
+      };
+    }
     if (run?.kind !== 'icon') {
       return {
         ...run,
@@ -7087,6 +7255,10 @@ function resolveWorldChatBodyRuns(assetManager, body, bodyRuns, legacyBodyIcon) 
       texture: resolveWorldChatBodyIconTexture(assetManager, run.assetId),
     };
   });
+}
+
+function clampWorldChatInlineWidgetSize(value) {
+  return Math.min(24, Math.max(12, Number(value) || 18));
 }
 
 function createLegacyWorldChatBodyRuns(body, bodyIcon) {

@@ -145,7 +145,10 @@ export class FriendsSubscriptionManager {
         row.allianceTagColor ?? row.alliance_tag_color ?? '',
       ),
       statusMessage: String(
-        row.statusMessage ?? row.status_message ?? row.lastMessagePreview ?? '',
+        row.statusMessage ?? row.status_message ?? '',
+      ).trim(),
+      lastMessagePreview: String(
+        row.lastMessagePreview ?? row.last_message_preview ?? '',
       ).trim(),
       unread: Boolean(row.unread ?? row.hasUnreadMessage ?? row.has_unread_message),
       lastSeenAtMs: this.toTimestampMs(row.lastSeenAt ?? row.last_seen_at),

@@ -117,6 +117,19 @@ describe("GardenPixiPage", () => {
     harness.dispose();
   });
 
+  it("renders the temporary plot with its E1 display label", () => {
+    const harness = createHarness();
+    const model = createGardenViewModel();
+    model.garden.plots[0].displayNumber = "E1";
+
+    harness.page.bind(model);
+
+    expect(harness.page.plots.get("plot-1").number.text).toBe("E1");
+
+    harness.page.destroy();
+    harness.dispose();
+  });
+
   it("keeps unavailable empty plots visually unlabeled", () => {
     const harness = createHarness();
     const model = createGardenViewModel({ actionText: "" });
@@ -1323,7 +1336,7 @@ describe("GardenPixiPage", () => {
     expect(plot.plant.visible).toBe(true);
     expect(plot.plant.alpha).toBe(0);
 
-    now = 300 + 460 * 0.44;
+    now = 300 + 500 * 0.38;
     harness.page.tick(now);
     expect(harness.page.actionBar.seedsButton.seedPack.y).toBe(
       restingSeedPackY,
@@ -1340,25 +1353,25 @@ describe("GardenPixiPage", () => {
     expect(plot.receiveScaleY).toBe(1);
     expect(plot.plant.alpha).toBe(0);
 
-    now = 300 + 460 * 0.58;
+    now = 300 + 500 * 0.54;
     harness.page.tick(now);
     expect(plot.frame.pivot).toMatchObject({ x: 44, y: 42 });
     expect(plot.receiveOffsetY).toBeGreaterThan(1.5);
     expect(plot.receiveScaleX).toBeGreaterThan(1.06);
     expect(plot.receiveScaleY).toBeLessThan(0.92);
-    expect(plot.plant.alpha).toBeGreaterThan(0);
-    expect(plot.plant.alpha).toBeLessThan(1);
-    expect(plot.plantSlots[0].revealMotion.position).toMatchObject({
-      x: 0,
-      y: 0,
-    });
-    expect(plot.plantSlots[0].revealMotion.scale.x).toBeGreaterThan(0.65);
-    expect(plot.plantSlots[0].revealMotion.scale.x).toBeLessThan(1);
-    expect(plot.plantSlots[0].revealMotion.scale.y).toBeGreaterThan(0.08);
-    expect(plot.plantSlots[0].revealMotion.scale.y).toBeLessThan(1);
+    expect(plot.plant.alpha).toBeGreaterThan(0.8);
+    expect(plot.plantSlots[0].revealMotion.position.x).toBe(0);
+    expect(plot.plantSlots[0].revealMotion.position.y).toBeGreaterThan(2);
+    expect(plot.plantSlots[0].revealMotion.position.y).toBeLessThan(8);
+    expect(plot.plantSlots[0].revealMotion.scale.x).toBeGreaterThan(0.34);
+    expect(plot.plantSlots[0].revealMotion.scale.x).toBeLessThan(0.72);
+    expect(plot.plantSlots[0].revealMotion.scale.y).toBeGreaterThan(0.06);
+    expect(plot.plantSlots[0].revealMotion.scale.y).toBeLessThan(0.68);
+    expect(plot.plantSlots[0].revealMotion.rotation).not.toBe(0);
+    expect(plot.receiveBurst.context.instructions.length).toBeGreaterThan(0);
     expect(plot.plant.anchor).toMatchObject({ x: 0.5, y: 1 });
 
-    now = 760;
+    now = 800;
     harness.page.tick(now);
     expect(plot.receiveStartedAt).toBeNull();
     expect(plot.frame.scale).toMatchObject({ x: 1, y: 1 });
@@ -1367,6 +1380,12 @@ describe("GardenPixiPage", () => {
       x: 1,
       y: 1,
     });
+    expect(plot.plantSlots[0].revealMotion.position).toMatchObject({
+      x: 0,
+      y: 0,
+    });
+    expect(plot.plantSlots[0].revealMotion.rotation).toBe(0);
+    expect(plot.receiveBurst.context.instructions).toHaveLength(0);
     expect(plot.plantMotion.scale.x).toBeGreaterThan(0.42);
     expect(harness.page.actionBar.seedsButton.visual.scale).toMatchObject({
       x: 1,

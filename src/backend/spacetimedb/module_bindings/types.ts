@@ -308,6 +308,7 @@ export const OwnFriendshipResult = __t.object("OwnFriendshipResult", {
   createdAt: __t.timestamp(),
   allianceTag: __t.string(),
   allianceTagColor: __t.string(),
+  lastMessagePreview: __t.string(),
 });
 export type OwnFriendshipResult = __Infer<typeof OwnFriendshipResult>;
 
@@ -512,6 +513,8 @@ export const Player = __t.object("Player", {
   character: __t.string(),
   frame: __t.string(),
   totalPlayTimeMicros: __t.u64(),
+  allowFriendRequests: __t.bool(),
+  allowTradeAllianceInvitations: __t.bool(),
 });
 export type Player = __Infer<typeof Player>;
 
@@ -567,6 +570,8 @@ export const PlayerInfoSummaryResult = __t.object("PlayerInfoSummaryResult", {
   username: __t.string(),
   allianceTag: __t.string(),
   allianceTagColor: __t.string(),
+  allianceName: __t.string(),
+  allianceRole: __t.string(),
   totalProducedGold: __t.u64(),
   totalBrewedPotions: __t.u64(),
   totalHarvestedHerbs: __t.u64(),
@@ -607,6 +612,8 @@ export const PlayerProfileResult = __t.object("PlayerProfileResult", {
   font: __t.string(),
   character: __t.string(),
   frame: __t.string(),
+  allowFriendRequests: __t.bool(),
+  allowTradeAllianceInvitations: __t.bool(),
 });
 export type PlayerProfileResult = __Infer<typeof PlayerProfileResult>;
 

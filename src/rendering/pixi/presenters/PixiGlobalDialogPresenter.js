@@ -288,6 +288,9 @@ export class PixiGlobalDialogPresenter {
           sound.sfxEnabled,
         ),
         theme: player.theme === 'day',
+        friendRequests: player.allowFriendRequests !== false,
+        tradeAllianceInvitations:
+          player.allowTradeAllianceInvitations !== false,
       },
       categories: createSettingsCategories(),
       selections: {
@@ -735,9 +738,9 @@ export class PixiGlobalDialogPresenter {
     return {
       ...base,
       preview:
+        player.lastMessagePreview ??
         player.preview ??
         player.statusMessage ??
-        player.lastMessagePreview ??
         (player.connected ? 'Online' : 'Offline'),
       onActivate: () =>
         this.open(GLOBAL_DIALOG_IDS.DIRECT_MESSAGE, { friend: player }),
@@ -787,6 +790,10 @@ export class PixiGlobalDialogPresenter {
       actions: {
         activate: () => this.startDirectMessageSubscriptions(friend),
         deactivate: () => this.stopDirectMessageSubscriptions(),
+        openPlayer: () =>
+          this.open(GLOBAL_DIALOG_IDS.PLAYER, {
+            player: friend,
+          }),
         unfriend:
           relationship === 'friend'
             ? () => this.friendsFacade?.unfriend?.(friend.identity)
@@ -1151,6 +1158,16 @@ export class PixiGlobalDialogPresenter {
         this.playerFacade?.setTheme?.(
           value ? 'day' : 'night',
         ),
+      );
+    }
+    if (key === 'friendRequests') {
+      return Boolean(
+        this.playerFacade?.setAllowFriendRequests?.(value),
+      );
+    }
+    if (key === 'tradeAllianceInvitations') {
+      return Boolean(
+        this.playerFacade?.setAllowTradeAllianceInvitations?.(value),
       );
     }
     return false;

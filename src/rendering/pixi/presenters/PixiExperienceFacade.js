@@ -88,6 +88,7 @@ export class PixiExperienceFacade {
   constructor({
     renderFacade,
     gameplayFacade = null,
+    uiClickSoundFacade = null,
     storage,
     getCurrentPageId = () => 'workshop',
     onFirstRunIntroComplete = null,
@@ -118,6 +119,7 @@ export class PixiExperienceFacade {
 
     this.renderFacade = renderFacade;
     this.gameplayFacade = gameplayFacade;
+    this.uiClickSoundFacade = uiClickSoundFacade;
     this.getCurrentPageId =
       typeof getCurrentPageId === 'function'
         ? getCurrentPageId
@@ -331,7 +333,14 @@ export class PixiExperienceFacade {
       );
     }
 
-    return this.presentRewardEvent(event);
+    const presentation = this.presentRewardEvent(event);
+    if (
+      isItemCompletionEvent(event) &&
+      hasItemDrops(presentation)
+    ) {
+      this.uiClickSoundFacade?.playSummon?.(1);
+    }
+    return presentation;
   }
 
   onPageChanged() {
@@ -1013,6 +1022,24 @@ export class PixiTutorialRuntimeState {
 
 function defaultRewardPresenter(event) {
   return createRewardFlyoutPresentation(event);
+}
+
+function isItemCompletionEvent(event) {
+  return (
+    event?.type === 'herb_harvested' ||
+    event?.type === 'potion_collected'
+  );
+}
+
+function hasItemDrops(presentation) {
+  const models = Array.isArray(presentation)
+    ? presentation
+    : presentation
+      ? [presentation]
+      : [];
+  return models.some(
+    (model) => Array.isArray(model?.itemDrops) && model.itemDrops.length > 0,
+  );
 }
 
 function isFreshIntroSnapshot(snapshot = {}) {

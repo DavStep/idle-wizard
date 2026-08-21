@@ -20,10 +20,10 @@ const DEFAULT_STYLE = Object.freeze({
 });
 
 /**
- * Retained inline flow for ordered text and icon runs.
+ * Retained inline flow for ordered text, icon, and resolved widget runs.
  *
- * Icons occupy their real rendered width, so adjacent text wraps around them
- * instead of relying on an overpainted placeholder glyph.
+ * Inline visuals occupy their real rendered width, so adjacent text wraps
+ * around them instead of relying on an overpainted placeholder glyph.
  */
 export class PixiInlineText extends Container {
   constructor({
@@ -39,8 +39,10 @@ export class PixiInlineText extends Container {
     this.runs = [];
     this.textObjects = [];
     this.iconObjects = [];
+    this.widgetObjects = [];
     this.visibleTextCount = 0;
     this.visibleIconCount = 0;
+    this.visibleWidgetObjects = new Set();
     this.layoutWidth = 0;
     this.layoutHeight = 0;
     this._style = normalizeInlineTextStyle(style);
@@ -58,7 +60,7 @@ export class PixiInlineText extends Container {
   get text() {
     return this.runs
       .map((run) =>
-        run.kind === 'icon'
+        run.kind === 'icon' || run.kind === 'widget'
           ? String(run.fallbackText ?? '')
           : String(run.text ?? ''),
       )
@@ -93,6 +95,7 @@ export class PixiInlineText extends Container {
   layout() {
     this.visibleTextCount = 0;
     this.visibleIconCount = 0;
+    this.visibleWidgetObjects.clear();
     const renderStyle = createRenderableTextStyle(this._style);
     const baseLineHeight = Math.max(
       1,
@@ -114,9 +117,12 @@ export class PixiInlineText extends Container {
       const runStyle = run.style
         ? createRenderableTextStyle({ ...this._style, ...run.style })
         : renderStyle;
-      if (run.kind === 'icon') {
-        const icon = this.acquireIcon(run);
-        if (!icon) {
+      if (run.kind === 'icon' || run.kind === 'widget') {
+        const inlineVisual =
+          run.kind === 'icon'
+            ? this.acquireIcon(run)
+            : this.acquireWidget(run);
+        if (!inlineVisual) {
           this.appendTextTokens(
             String(run.fallbackText ?? ''),
             runStyle,
@@ -134,8 +140,8 @@ export class PixiInlineText extends Container {
           continue;
         }
 
-        const width = icon.width;
-        const height = icon.height;
+        const metrics = measureInlineVisual(inlineVisual, run);
+        const { height, width } = metrics;
         const gap =
           line.items.length > 0
             ? measureInlineText(pendingWhitespace, renderStyle)
@@ -153,9 +159,10 @@ export class PixiInlineText extends Container {
             ? measureInlineText(pendingWhitespace, renderStyle)
             : 0);
         line.items.push({
-          displayObject: icon,
+          displayObject: inlineVisual,
           height,
-          kind: 'icon',
+          kind: run.kind,
+          offsetX: metrics.offsetX,
           offsetY: Number(run.offsetY) || 0,
           width,
           x,
@@ -208,6 +215,11 @@ export class PixiInlineText extends Container {
           item.displayObject.position.set(
             item.x + item.width / 2,
             y + currentLine.height / 2 + item.offsetY,
+          );
+        } else if (item.kind === 'widget') {
+          item.displayObject.position.set(
+            item.x + item.offsetX,
+            y + (currentLine.height - item.height) / 2 + item.offsetY,
           );
         } else {
           item.displayObject.position.set(
@@ -351,6 +363,25 @@ export class PixiInlineText extends Container {
     return icon;
   }
 
+  acquireWidget(run) {
+    const widget = run.displayObject;
+    if (!isInlineDisplayObject(widget) || this.visibleWidgetObjects.has(widget)) {
+      return null;
+    }
+
+    if (widget.parent !== this) {
+      this.addChild(widget);
+    }
+    if (!this.widgetObjects.includes(widget)) {
+      this.widgetObjects.push(widget);
+    }
+    this.visibleWidgetObjects.add(widget);
+    widget.label = run.label || widget.label;
+    widget.visible = true;
+    widget.renderable = true;
+    return widget;
+  }
+
   hideUnusedObjects() {
     for (let index = this.visibleTextCount; index < this.textObjects.length; index += 1) {
       this.textObjects[index].visible = false;
@@ -360,6 +391,13 @@ export class PixiInlineText extends Container {
       this.iconObjects[index].texture = Texture.EMPTY;
       this.iconObjects[index].visible = false;
       this.iconObjects[index].renderable = false;
+    }
+    for (const widget of this.widgetObjects) {
+      if (this.visibleWidgetObjects.has(widget)) {
+        continue;
+      }
+      widget.visible = false;
+      widget.renderable = false;
     }
   }
 }
@@ -402,6 +440,13 @@ function normalizeInlineRuns(runs) {
           kind: 'icon',
         };
       }
+      if (run?.kind === 'widget') {
+        return {
+          ...run,
+          fallbackText: String(run.fallbackText ?? ''),
+          kind: 'widget',
+        };
+      }
       return {
         ...run,
         kind: 'text',
@@ -412,7 +457,12 @@ function normalizeInlineRuns(runs) {
             : null,
       };
     })
-    .filter((run) => run.kind === 'icon' || run.text.length > 0);
+    .filter(
+      (run) =>
+        run.kind === 'icon' ||
+        run.kind === 'widget' ||
+        run.text.length > 0,
+    );
 }
 
 function createLine(baseLineHeight) {
@@ -440,4 +490,49 @@ function fitInlineIcon(icon, run) {
   const scale = requestedSize / Math.max(sourceWidth, sourceHeight);
   icon.width = sourceWidth * scale;
   icon.height = sourceHeight * scale;
+}
+
+function measureInlineVisual(displayObject, run) {
+  if (run.kind === 'icon') {
+    return {
+      height: displayObject.height,
+      offsetX: 0,
+      width: displayObject.width,
+    };
+  }
+
+  const bounds = displayObject.getLocalBounds();
+  const sourceWidth = Math.max(1, Number(bounds.width) || 1);
+  const sourceHeight = Math.max(1, Number(bounds.height) || 1);
+  const requestedWidth = Math.max(0, Number(run.width) || 0);
+  const requestedHeight = Math.max(0, Number(run.height) || 0);
+  const requestedSize = Math.max(0, Number(run.size) || 0);
+
+  if (requestedWidth > 0 && requestedHeight > 0) {
+    displayObject.scale.set(
+      requestedWidth / sourceWidth,
+      requestedHeight / sourceHeight,
+    );
+  } else if (requestedSize > 0) {
+    const scale = requestedSize / Math.max(sourceWidth, sourceHeight);
+    displayObject.scale.set(scale);
+  }
+
+  const width = sourceWidth * Math.abs(displayObject.scale.x);
+  const height = sourceHeight * Math.abs(displayObject.scale.y);
+  return {
+    height,
+    offsetX: -Number(bounds.x || 0) * displayObject.scale.x,
+    width,
+  };
+}
+
+function isInlineDisplayObject(value) {
+  return Boolean(
+    value &&
+      typeof value === 'object' &&
+      value.position?.set &&
+      value.scale?.set &&
+      typeof value.getLocalBounds === 'function',
+  );
 }

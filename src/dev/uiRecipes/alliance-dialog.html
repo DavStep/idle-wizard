@@ -99,6 +99,7 @@
       const recipeParams = new URLSearchParams(window.location.search);
       const recipeMode = recipeParams.get('mode');
       const recipeTab = recipeParams.get('tab');
+      const emptyAnnouncement = recipeParams.get('announcement') === 'empty';
       const directoryMode = recipeMode === 'directory';
       const settingsAccessible = recipeMode !== 'member';
       const homeModel = createDialogViewModel('workshop.alliance', 'a');
@@ -572,6 +573,10 @@
             bannerColor: settings.bannerColor,
             emblemColor: settings.emblemColor,
             emblemId: settings.emblemId,
+          },
+          tradeInfo: {
+            ...homeModel.tradeInfo,
+            notice: emptyAnnouncement ? '' : homeModel.tradeInfo.notice,
           },
           selectedTabId,
           members: memberRows,

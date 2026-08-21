@@ -202,6 +202,7 @@ const WORLD_CHAT_PRESTIGE_ICON_ASSET =
   'source:assets/icons/icon-prestige-star.png';
 const WORLD_CHAT_PRESTIGE_DETAIL_PATTERN =
   /^reached ⭐ \d+, completing prestige level \d+$/u;
+const WORLD_CHAT_SYSTEM_INLINE_AVATAR_SIZE = 18;
 
 export const RESEARCH_TAB_UNLOCK_LEVELS = Object.freeze({
   regular: 1,
@@ -2056,7 +2057,13 @@ export class PixiViewModelFactory {
           systemPlayerDetail,
           bodyRuns: createWorldChatBodyRuns(
             body,
-            { isSystem, systemPlayer },
+            {
+              bodyRuns: message.bodyRuns,
+              character: message.character,
+              frame: message.frame,
+              isSystem,
+              systemPlayer,
+            },
           ),
           allianceTag: message.allianceTag ?? message.alliance_tag ?? '',
           allianceTagColor:
@@ -2789,9 +2796,21 @@ function formatWorldChatMessageAge(sentAtMs, nowMs = Date.now()) {
 
 function createWorldChatBodyRuns(
   body,
-  { isSystem = false, systemPlayer = null } = {},
+  {
+    bodyRuns = null,
+    character = 'elara',
+    frame = 'classic',
+    isSystem = false,
+    systemPlayer = null,
+  } = {},
 ) {
   const text = String(body ?? '');
+  const dynamicRuns = isSystem
+    ? normalizeWorldChatDynamicRuns(bodyRuns, { character, frame })
+    : null;
+  if (dynamicRuns) {
+    return dynamicRuns;
+  }
   const marker = '⭐';
   const textRuns =
     isSystem && systemPlayer?.mentions?.length > 0
@@ -2820,6 +2839,70 @@ function createWorldChatBodyRuns(
       { ...run, text: run.text.slice(markerIndex + marker.length) },
     ].filter((candidate) => candidate.kind === 'icon' || candidate.text);
   });
+}
+
+function normalizeWorldChatDynamicRuns(runs, { character, frame }) {
+  if (!Array.isArray(runs) || runs.length === 0) {
+    return null;
+  }
+
+  const normalized = runs.flatMap((run) => {
+    if (typeof run === 'string') {
+      return run ? [{ kind: 'text', text: run }] : [];
+    }
+    if (!run || typeof run !== 'object') {
+      return [];
+    }
+    if (run.kind === 'icon') {
+      return [{
+        kind: 'icon',
+        assetId: String(run.assetId ?? ''),
+        fallbackText: String(run.fallbackText ?? ''),
+        label: String(run.label ?? 'Inline icon'),
+        size: Math.max(1, Number(run.size) || 12),
+        offsetY: Number(run.offsetY) || 0,
+      }];
+    }
+    if (
+      run.kind === 'widget' &&
+      (run.widget === 'playerAvatar' || run.widgetType === 'playerAvatar')
+    ) {
+      return [{
+        kind: 'widget',
+        widget: 'playerAvatar',
+        character: String(run.character ?? character ?? 'elara'),
+        frame: String(run.frame ?? frame ?? 'classic'),
+        fallbackText: String(run.fallbackText ?? ''),
+        label: String(run.label ?? 'Player avatar'),
+        size: Math.max(1, Number(run.size) || WORLD_CHAT_SYSTEM_INLINE_AVATAR_SIZE),
+        offsetY: Number(run.offsetY) || 0,
+        interactive: run.interactive !== false,
+      }];
+    }
+    if (run.kind === 'widget') {
+      const fallbackText = String(run.fallbackText ?? '');
+      return fallbackText
+        ? [{
+            kind: 'widget',
+            widget: String(run.widget ?? run.widgetType ?? 'unknown'),
+            fallbackText,
+            label: String(run.label ?? 'Inline widget'),
+          }]
+        : [];
+    }
+
+    const value = String(run.text ?? '');
+    if (!value) {
+      return [];
+    }
+    return [{
+      kind: 'text',
+      text: value,
+      ...(run.tone === 'systemPlayer' ? { tone: 'systemPlayer' } : {}),
+    }];
+  });
+
+  return normalized.length > 0 ? normalized : null;
 }
 
 function createSystemPlayerTextRuns(text, mentions) {

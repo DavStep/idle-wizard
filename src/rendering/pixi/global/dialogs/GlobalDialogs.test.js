@@ -44,7 +44,11 @@ import {
   registerGlobalDialogFactories,
 } from './index.js';
 import { GLOBAL_DIALOG_GEOMETRY } from './GlobalDialogKit.js';
-import { RetainedScrollArea } from '../../pages/workshop/RetainedPageKit.js';
+import {
+  RETAINED_DIALOG_LIST_GEOMETRY,
+  RETAINED_SCROLLBAR_GEOMETRY,
+  RetainedScrollArea,
+} from '../../pages/workshop/RetainedPageKit.js';
 import { getPixiButtonSkin } from '../../primitives/PixiButtonStyle.js';
 import { getPlayerFrameTint } from '../../../../player/playerFrames.js';
 import {
@@ -107,7 +111,7 @@ describe('retained global Pixi dialogs', () => {
     harness.dispose();
   });
 
-  it('lays out Friends as tall paper-backed identity cards above Asked You tabs', () => {
+  it('lays out Friends as tall leaderboard-backed identity rows above Asked You tabs', () => {
     const harness = createHarness();
     const openChat = vi.fn(() => true);
     const selectTab = vi.fn(() => true);
@@ -147,12 +151,25 @@ describe('retained global Pixi dialogs', () => {
     expect(friends.scroll.root.x).toBe(0);
     expect(friends.scroll.width).toBe(304);
     expect(row.getPreferredHeight()).toBe(88);
-    expect(row.paper.visible).toBe(true);
-    expect(row.paper.frameWidth).toBe(304);
+    expect(row.background.visible).toBe(true);
+    expect(row.background.frameWidth).toBe(
+      304 - PIXI_ROOT_RUN_GEOMETRY.settings.rowGap,
+    );
+    expect(row.background.frameHeight).toBe(
+      88 - PIXI_ROOT_RUN_GEOMETRY.settings.rowGap,
+    );
+    expect(row.background.y).toBe(PIXI_ROOT_RUN_GEOMETRY.settings.rowGap / 2);
+    expect(row.background.sourceInsets).toEqual(
+      PIXI_ROOT_RUN_GEOMETRY.settings.rowSourceInsets,
+    );
+    expect(row.root.hitArea.width).toBe(row.background.frameWidth);
+    expect(row.rank).toBeUndefined();
     expect(row.profile.width).toBeCloseTo(64);
+    expect(row.profile.y).toBe(44);
     expect(row.allianceTag.text).toBe('[MOSS]');
     expect(row.name.text).toBe('Mira');
     expect(row.detail.text).toBe('Level 12');
+    expect([row.name.y, row.detail.y, row.preview.y]).toEqual([12, 35, 57]);
     expect(row.prestigeStars.visible).toBe(true);
     expect(row.prestigeStars.level).toBe(2);
     expect(row.production.text).toBe('123k Produced');
@@ -179,8 +196,77 @@ describe('retained global Pixi dialogs', () => {
     harness.dispose();
   });
 
+  it('centers the shared outlined squircle empty state on every Friends tab', () => {
+    const harness = createHarness();
+    const friends = harness.registry.open(GLOBAL_DIALOG_IDS.FRIENDS, {
+      title: 'Friends',
+      selectedTabId: 'friends',
+      rowWidget: 'playerRelationship',
+      rows: [],
+      emptyLabel: 'No Friends Yet',
+      tabs: [
+        { id: 'friends', label: 'Friends', selected: true },
+        { id: 'requests', label: 'Asked You', selected: false },
+        { id: 'pending', label: 'Pending', selected: false },
+      ],
+    });
+
+    expect(friends.status.text).toBe('');
+    expect(friends.friendsEmptyFrame).toMatchObject({
+      alpha: 0.4,
+      frameHeight: 58,
+      frameWidth: 220,
+      renderable: true,
+      tint: 0x000000,
+      visible: true,
+    });
+    expect(friends.friendsEmptyLabel.text).toBe('No Friends Yet');
+    expect(friends.friendsEmptyLabel.style).toMatchObject({
+      align: 'center',
+      fill: '#ffffff',
+      fontSize: 20,
+    });
+    expect(friends.friendsEmptyLabel.style.stroke).toMatchObject({
+      color: PIXI_TEXT_STROKE_COLOR,
+      width: resolvePixiTextStrokeWidth(20),
+    });
+    expect(friends.friendsEmptyLabel.x).toBeCloseTo(
+      friends.scroll.root.x + friends.scroll.width / 2,
+    );
+    expect(friends.friendsEmptyLabel.y).toBeCloseTo(
+      friends.scroll.root.y + friends.scroll.height / 2,
+    );
+
+    for (const emptyLabel of ['No Friend Requests', 'No Pending Requests']) {
+      friends.bind({
+        title: 'Friends',
+        selectedTabId: emptyLabel.includes('Pending') ? 'pending' : 'requests',
+        rowWidget: 'playerRelationship',
+        rows: [],
+        emptyLabel,
+        tabs: [],
+      });
+      expect(friends.friendsEmptyLabel.text).toBe(emptyLabel);
+      expect(friends.friendsEmptyFrame.visible).toBe(true);
+    }
+
+    friends.bind({
+      title: 'Friends',
+      selectedTabId: 'friends',
+      rowWidget: 'playerRelationship',
+      rows: [{ id: 'mira', identity: 'mira', username: 'Mira' }],
+      emptyLabel: 'No Friends Yet',
+      tabs: [],
+    });
+    expect(friends.friendsEmptyFrame.visible).toBe(false);
+    expect(friends.friendsEmptyLabel.visible).toBe(false);
+
+    harness.dispose();
+  });
+
   it('expands an inline Unfriend action inside a separate direct-message identity section', () => {
     const harness = createHarness();
+    const openPlayer = vi.fn(() => true);
     const unfriend = vi.fn(() => true);
     const directMessage = harness.registry.open(
       GLOBAL_DIALOG_IDS.DIRECT_MESSAGE,
@@ -197,13 +283,18 @@ describe('retained global Pixi dialogs', () => {
         },
         rows: [],
         composer: { enabled: true, placeholder: 'Message' },
-        actions: { unfriend },
+        actions: { openPlayer, unfriend },
       },
     );
-    const identityPress = harness.inputRouter.store.get(
+    const profilePress = harness.inputRouter.store.get(
       directMessage.directMessageProfileRegistration.id,
     );
+    const identityPress = harness.inputRouter.store.get(
+      directMessage.directMessageIdentityRegistration.id,
+    );
 
+    expect(profilePress.fallbackHitTest).toBe(true);
+    expect(profilePress.enabled()).toBe(true);
     expect(identityPress.fallbackHitTest).toBe(true);
     expect(identityPress.enabled()).toBe(true);
     expect(directMessage.panel.paperFrame.visible).toBe(false);
@@ -218,9 +309,18 @@ describe('retained global Pixi dialogs', () => {
           directMessage.directMessageIdentityPaper.frameHeight),
     ).toBe(8);
 
+    expect(profilePress.onActivate()).toBe(true);
+    expect(openPlayer).toHaveBeenCalledWith(
+      expect.objectContaining({ identity: 'juniper' }),
+    );
+    expect(directMessage.directMessageUnfriend.visible).toBe(false);
+
     expect(identityPress.onActivate()).toBe(true);
     expect(directMessage.directMessageUnfriend.visible).toBe(true);
     expect(directMessage.directMessageLevel.text).toBe('Level 10');
+    expect(directMessage.directMessageIdentityHitTarget.hitArea.x).toBeGreaterThanOrEqual(
+      directMessage.directMessageProfile.x + directMessage.directMessageProfile.width,
+    );
     expect(directMessage.directMessageIdentityHitTarget.hitArea.height).toBeLessThan(
       directMessage.directMessageUnfriend.y,
     );
@@ -665,7 +765,12 @@ describe('retained global Pixi dialogs', () => {
     expect(player.profileWidget.backgroundWidget.decoration.tint).toBe(
       getPlayerFrameTint('gnome'),
     );
-    expect(player.levelLabel.y - player.name.y).toBeLessThanOrEqual(18);
+    expect(player.name.text).toBe('mira');
+    expect(player.allianceButton.textLabel.text).toBe('[MOSS]');
+    expect(player.allianceNameLabel.text).toBe('Moss Hall');
+    expect(player.allianceRoleLabel.text).toBe('Trade Master');
+    expect(player.allianceNameLabel.y - player.name.y).toBeLessThanOrEqual(18);
+    expect(player.levelLabel.y - player.allianceNameLabel.y).toBeLessThanOrEqual(18);
     expect(player.prestigeLabel.y - player.levelLabel.y).toBeLessThanOrEqual(
       18,
     );
@@ -721,10 +826,29 @@ describe('retained global Pixi dialogs', () => {
     player.bind({
       player: {
         ...createPlayer(),
+        allianceName: 'The Thirty Two Character Alliance',
+      },
+    });
+    expect(player.allianceNameLabel.text).toMatch(/…$/);
+    expect(
+      player.allianceNameLabel.x + player.allianceNameLabel.measuredWidth,
+    ).toBeLessThanOrEqual(
+      player.allianceRoleLabel.x - player.allianceRoleLabel.measuredWidth - 4,
+    );
+
+    player.bind({
+      player: {
+        ...createPlayer(),
+        allianceName: '',
+        allianceRole: '',
+        allianceTag: '',
         connected: false,
         lastSeenAtMs: 0,
       },
     });
+    expect(player.allianceNameLabel.visible).toBe(false);
+    expect(player.allianceRoleLabel.visible).toBe(false);
+    expect(player.levelLabel.y - player.name.y).toBeLessThanOrEqual(18);
     expect(player.lastSeenValue.text).toBe('Unknown');
     expect(player.lastSeenValue.textObject.style.fill).toBe('#634934');
     expect(player.cosmeticsButton.visible).toBe(false);
@@ -735,13 +859,14 @@ describe('retained global Pixi dialogs', () => {
   });
 
 
-  it('keeps the loaded Player Info geometry while player data is loading', () => {
+  it('keeps the loaded Player Info geometry and disables its actions while loading', () => {
     const harness = createHarness();
     const openCosmetics = vi.fn(() => true);
+    const openFriends = vi.fn(() => true);
     const loadedPlayer = harness.registry.open(GLOBAL_DIALOG_IDS.PLAYER, {
       ownPlayer: true,
       player: createPlayer(),
-      actions: { openCosmetics },
+      actions: { openCosmetics, openFriends },
     });
     const loadedOuterHeight = loadedPlayer.panel.outerHeight;
     const loadedSummaryBounds = {
@@ -761,7 +886,7 @@ describe('retained global Pixi dialogs', () => {
       ownPlayer: true,
       loading: true,
       player: { username: 'StepWizzard' },
-      actions: { openCosmetics },
+      actions: { openCosmetics, openFriends },
     });
 
     expect(loadedPlayer.panel.outerHeight).toBe(loadedOuterHeight);
@@ -792,9 +917,106 @@ describe('retained global Pixi dialogs', () => {
     expect(loadedPlayer.profileWidget.visible).toBe(false);
     expect(loadedPlayer.totalCoinLabel.visible).toBe(false);
     expect(loadedPlayer.cosmeticsButton.visible).toBe(true);
+    expect(loadedPlayer.cosmeticsButton.textLabel.text).toBe('Loading');
+    expect(loadedPlayer.cosmeticsButton.variant).toBe('gray');
+    expect(loadedPlayer.cosmeticsButton.enabled).toBe(false);
+    expect(loadedPlayer.cosmeticsButton.activate()).toBe(false);
+    expect(loadedPlayer.friendsButton.visible).toBe(true);
+    expect(loadedPlayer.friendsButton.textLabel.text).toBe('Loading');
+    expect(loadedPlayer.friendsButton.variant).toBe('gray');
+    expect(loadedPlayer.friendsButton.enabled).toBe(false);
+    expect(loadedPlayer.friendsButton.notificationBadge.root.visible).toBe(false);
+    expect(openCosmetics).not.toHaveBeenCalled();
+    expect(openFriends).not.toHaveBeenCalled();
+
+    loadedPlayer.bind({
+      ownPlayer: true,
+      player: createPlayer(),
+      actions: { openCosmetics, openFriends },
+    });
+    expect(loadedPlayer.cosmeticsButton.textLabel.text).toBe('Cosmetics');
+    expect(loadedPlayer.cosmeticsButton.variant).toBe('yellow');
     expect(loadedPlayer.cosmeticsButton.enabled).toBe(true);
-    expect(loadedPlayer.cosmeticsButton.activate()).toBe(true);
-    expect(openCosmetics).toHaveBeenCalledOnce();
+    expect(loadedPlayer.friendsButton.textLabel.text).toBe('Friends');
+    expect(loadedPlayer.friendsButton.variant).toBe('yellow');
+    expect(loadedPlayer.friendsButton.enabled).toBe(true);
+
+    harness.dispose();
+  });
+
+  it('reserves possible other-player action rows with disabled Loading buttons', () => {
+    const harness = createHarness();
+    const player = harness.registry.open(GLOBAL_DIALOG_IDS.PLAYER, {
+      loading: true,
+      relationship: 'incoming',
+      allianceMemberActions: {
+        role: 'broker',
+        promoteLabel: 'Promote',
+        demoteLabel: 'Demote',
+        kickLabel: 'Kick',
+      },
+      player: { username: 'Juniper' },
+      actions: {
+        acceptFriend: vi.fn(() => true),
+        rejectFriend: vi.fn(() => true),
+        promoteAllianceMember: vi.fn(() => true),
+        demoteAllianceMember: vi.fn(() => true),
+        kickAllianceMember: vi.fn(() => true),
+      },
+    });
+
+    for (const button of [
+      player.relationshipPrimaryButton,
+      player.relationshipSecondaryButton,
+      player.alliancePromoteButton,
+      player.allianceDemoteButton,
+      player.allianceKickButton,
+    ]) {
+      expect(button.visible).toBe(true);
+      expect(button.textLabel.text).toBe('Loading');
+      expect(button.variant).toBe('gray');
+      expect(button.enabled).toBe(false);
+      expect(button.activate()).toBe(false);
+    }
+    expect(player.alliancePromoteButton.y).toBeGreaterThan(
+      player.relationshipPrimaryButton.y,
+    );
+    expect(
+      player.panel.outerHeight -
+        (player.panel.content.y +
+          player.alliancePromoteButton.y +
+          player.alliancePromoteButton.buttonHeight),
+    ).toBe(10);
+
+    player.bind({
+      relationship: 'incoming',
+      allianceMemberActions: {
+        role: 'broker',
+        promoteLabel: 'Promote',
+        demoteLabel: 'Demote',
+        kickLabel: 'Kick',
+      },
+      player: createPlayer(),
+      actions: {
+        acceptFriend: vi.fn(() => true),
+        rejectFriend: vi.fn(() => true),
+        promoteAllianceMember: vi.fn(() => true),
+        demoteAllianceMember: vi.fn(() => true),
+        kickAllianceMember: vi.fn(() => true),
+      },
+    });
+    expect(player.relationshipPrimaryButton.textLabel.text).toBe('Accept');
+    expect(player.relationshipPrimaryButton.variant).toBe('green');
+    expect(player.relationshipPrimaryButton.enabled).toBe(true);
+    expect(player.relationshipSecondaryButton.textLabel.text).toBe('Reject');
+    expect(player.relationshipSecondaryButton.variant).toBe('red');
+    expect(player.relationshipSecondaryButton.enabled).toBe(true);
+    expect(player.alliancePromoteButton.textLabel.text).toBe('Promote');
+    expect(player.alliancePromoteButton.variant).toBe('green');
+    expect(player.allianceDemoteButton.textLabel.text).toBe('Demote');
+    expect(player.allianceDemoteButton.variant).toBe('yellow');
+    expect(player.allianceKickButton.textLabel.text).toBe('Kick');
+    expect(player.allianceKickButton.variant).toBe('red');
 
     harness.dispose();
   });
@@ -889,6 +1111,8 @@ describe('retained global Pixi dialogs', () => {
         haptics: true,
         music: true,
         sfx: true,
+        friendRequests: true,
+        tradeAllianceInvitations: false,
       },
       actions: {
         togglePreference,
@@ -904,6 +1128,8 @@ describe('retained global Pixi dialogs', () => {
       'music',
       'haptics',
       'theme',
+      'friendRequests',
+      'tradeAllianceInvitations',
     ]);
     expect(
       settings.preferenceRows.slice(0, 2).every(
@@ -917,12 +1143,16 @@ describe('retained global Pixi dialogs', () => {
     ).toBe(true);
     expect(settings.devicePanel).toBeInstanceOf(RootRunDevicePreferencesPanel);
     expect(settings.themePanel).toBeInstanceOf(RootRunDevicePreferencesPanel);
+    expect(settings.socialPanel).toBeInstanceOf(RootRunDevicePreferencesPanel);
     expect(settings.devicePanel.rows).toEqual(
       settings.preferenceRows.slice(0, 3).map(({ widget }) => widget),
     );
     expect(settings.themePanel.rows).toEqual([
       settings.preferenceRows[3].widget,
     ]);
+    expect(settings.socialPanel.rows).toEqual(
+      settings.preferenceRows.slice(4).map(({ widget }) => widget),
+    );
     expect(
       settings.preferenceRows.every(
         ({ widget }) => widget instanceof RootRunDevicePreferenceRow,
@@ -933,11 +1163,20 @@ describe('retained global Pixi dialogs', () => {
       'MUSIC',
       'VIBRATION',
       'THEME',
+      'FRIEND REQUESTS',
+      'ALLIANCE INVITES',
     ]);
     expect(settings.preferenceRows[0].label.colorToken).toBe('#735036');
+    expect(settings.preferenceRows[4].label.fontSize).toBeLessThanOrEqual(19);
+    expect(settings.preferenceRows[5].label.fontSize).toBeLessThanOrEqual(19);
+    expect(settings.preferenceRows.slice(4).every(({ label, control }) =>
+      label.fontSize >= 15 &&
+      label.measuredWidth <= control.x - label.x - 6,
+    )).toBe(true);
     expect(settings.configurationsLayer.children).toEqual([
       settings.devicePanel,
       settings.themePanel,
+      settings.socialPanel,
       settings.accountConnectionPanel,
       settings.accountConnectionLabel,
       settings.accountStatus,
@@ -947,7 +1186,7 @@ describe('retained global Pixi dialogs', () => {
     ]);
     expect(settings.accountConnectionPanel).toBeInstanceOf(PixiNineSliceFrame);
     expect(settings.accountConnectionPanel).toMatchObject({
-      frameWidth: 264,
+      frameWidth: RETAINED_DIALOG_LIST_GEOMETRY.rowFrameWidth,
       frameHeight: 92,
     });
     expect(settings.accountConnectionLabel.text).toBe('GOOGLE ACCOUNT');
@@ -967,14 +1206,34 @@ describe('retained global Pixi dialogs', () => {
       'Check for updates',
     );
     expect(settings.updateCheckButton.enabled).toBe(true);
-    expect(settings.scroll.physics.maxOffset).toBe(0);
+    expect(settings.scroll.physics.maxOffset).toBeGreaterThan(0);
+    expect(settings.scroll.root.x).toBeLessThan(0);
+    expect(settings.scroll.width).toBe(
+      RETAINED_DIALOG_LIST_GEOMETRY.rowFrameWidth +
+        RETAINED_DIALOG_LIST_GEOMETRY.scrollbarViewportOutset,
+    );
+    const paperRight =
+      GLOBAL_DIALOG_GEOMETRY.maxContentWidth +
+      resolveDialogPaperOutsets(settings.panel.contentInsets).right;
+    const scrollbarRight =
+      settings.scroll.root.x +
+      settings.scroll.width +
+      RETAINED_SCROLLBAR_GEOMETRY.gap +
+      RETAINED_SCROLLBAR_GEOMETRY.width;
+    expect(paperRight - scrollbarRight).toBeGreaterThanOrEqual(
+      RETAINED_DIALOG_LIST_GEOMETRY.scrollbarRightInset,
+    );
     expect(
       settings.themePanel.y -
         (settings.devicePanel.y + settings.devicePanel.panelHeight),
     ).toBe(8);
     expect(
-      settings.accountConnectionPanel.y -
+      settings.socialPanel.y -
         (settings.themePanel.y + settings.themePanel.panelHeight),
+    ).toBe(8);
+    expect(
+      settings.accountConnectionPanel.y -
+        (settings.socialPanel.y + settings.socialPanel.panelHeight),
     ).toBe(8);
 
     expect(
@@ -984,9 +1243,16 @@ describe('retained global Pixi dialogs', () => {
     expect(
       settings.preferenceRows[1].control.activate({ localX: 75 }),
     ).toBe(true);
-    expect(togglePreference).toHaveBeenCalledWith('music', 62);
+    expect(togglePreference).toHaveBeenCalledWith('music', 52);
     expect(settings.preferenceRows[3].control.activate()).toBe(true);
     expect(togglePreference).toHaveBeenCalledWith('theme', true);
+    expect(settings.preferenceRows[4].control.activate()).toBe(true);
+    expect(togglePreference).toHaveBeenCalledWith('friendRequests', false);
+    expect(settings.preferenceRows[5].control.activate()).toBe(true);
+    expect(togglePreference).toHaveBeenCalledWith(
+      'tradeAllianceInvitations',
+      true,
+    );
     await settings.accountConnectButton.activate();
     expect(connectAccount).toHaveBeenCalledTimes(1);
     await settings.identityFooter.copyButton.activate();
@@ -1040,7 +1306,7 @@ describe('retained global Pixi dialogs', () => {
       surface: '#ffe7c8',
       text: '#634934',
     });
-    expect(settings.scroll.physics.maxOffset).toBe(0);
+    expect(settings.scroll.physics.maxOffset).toBeGreaterThan(0);
     expect(settings.reportLayer.y).toBe(12);
     expect(settings.scroll).not.toHaveProperty('progressBar');
     expect(settings.panel.closeSprite.width).toBe(38);
@@ -2788,6 +3054,7 @@ function createPlayer() {
     allianceName: 'Moss Hall',
     allianceTag: 'MOSS',
     allianceTagColor: 'green',
+    allianceRole: 'tradeMaster',
   };
 }
 

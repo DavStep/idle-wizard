@@ -654,6 +654,7 @@ describe('retained dialog UI editor integrations', () => {
       'offline-player',
       'report-eligible',
       'system',
+      'system-inline-avatar',
       'alliance-player',
       'alliance-system',
       'disabled',

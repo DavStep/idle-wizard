@@ -135,7 +135,7 @@ describe('ShopPixiPage', () => {
     );
     expect(ribbon.stars.level).toBe(1);
     expect(ribbon.assetId).toBe(
-      PIXI_ROOT_RUN_ASSETS.marketTitleRibbon,
+      PIXI_ROOT_RUN_ASSETS.marketTitleRibbonRed,
     );
     expect(ribbon.jewel).toBeUndefined();
     expect(ribbon.frame.sourceInsets).toEqual(
@@ -2063,6 +2063,27 @@ describe('ShopPixiPage', () => {
     });
     const viewModel = createShopViewModel();
     viewModel.shop.selectedTabId = 'crystals';
+    viewModel.shop.crystals.weeklyOffers = [
+      {
+        id: 'extraPlot',
+        title: 'Extra Plot',
+        description: 'Unlocks 1 extra automated plot for 7 days.',
+        slotLabel: 'E1',
+        priceLabel: '$15.00',
+        active: false,
+        canPurchase: true,
+      },
+      {
+        id: 'extraCauldron',
+        title: 'Extra Cauldron',
+        description: 'Unlocks 1 extra automated cauldron for 7 days.',
+        slotLabel: 'E1',
+        priceLabel: '$15.00',
+        active: true,
+        canPurchase: false,
+        remainingLabel: '6d 2h',
+      },
+    ];
     viewModel.shop.crystals.offers.splice(
       1,
       0,
@@ -2095,6 +2116,9 @@ describe('ShopPixiPage', () => {
       harness.page.amberOffersSection.titlePlaque.title.text,
     ).toBe('Amber');
     expect(
+      harness.page.weeklyOffersSection.titlePlaque.title.text,
+    ).toBe('Weekly Offers');
+    expect(
       harness.page.amethystOffersSection.titlePlaque.title.text,
     ).toBe('Amethyst');
     expect(harness.page.coinOfferSection.titlePlaque.variant).toBe(
@@ -2113,6 +2137,10 @@ describe('ShopPixiPage', () => {
 
     const coinOffer =
       harness.page.coinOfferSection.rows.get('coinOffer');
+    const extraPlotOffer =
+      harness.page.weeklyOffersSection.rows.get('extraPlot');
+    const extraCauldronOffer =
+      harness.page.weeklyOffersSection.rows.get('extraCauldron');
     expect(coinOffer.frame).toBeInstanceOf(PixiNineSliceFrame);
     expect(coinOffer.frame.sourceInsets).toEqual(
       PIXI_ROOT_RUN_GEOMETRY.researchCard.sourceInsets,
@@ -2146,6 +2174,22 @@ describe('ShopPixiPage', () => {
       harness.semanticRegistry.require('shop.coinOffer.collect')
         .displayObject,
     ).toBe(coinOffer.actionButton);
+    expect(extraPlotOffer.title.text).toBe('Extra Plot');
+    expect(extraPlotOffer.amountLabel.text).toBe('E1');
+    expect(extraPlotOffer.claimCadence.text).toBe(
+      'Unlocks 1 extra automated plot for 7 days.',
+    );
+    expect(extraPlotOffer.icon.visible).toBe(true);
+    expect(extraPlotOffer.actionButton.textLabel.text).toBe('$15.00');
+    expect(extraPlotOffer.actionButton.enabled).toBe(true);
+    expect(extraCauldronOffer.title.text).toBe('Extra Cauldron');
+    expect(extraCauldronOffer.amountLabel.text).toBe('E1');
+    expect(extraCauldronOffer.claimCadence.text).toBe(
+      'Unlocks 1 extra automated cauldron for 7 days.',
+    );
+    expect(extraCauldronOffer.icon.visible).toBe(true);
+    expect(extraCauldronOffer.actionButton.textLabel.text).toBe('6d 2h');
+    expect(extraCauldronOffer.actionButton.enabled).toBe(false);
 
     const amberOffer =
       harness.page.amberOffersSection.rows.get('amber-1');
@@ -2218,6 +2262,12 @@ describe('ShopPixiPage', () => {
     expect(getAtlasTexture).toHaveBeenCalledWith('resource:coin');
     expect(getAtlasTexture).toHaveBeenCalledWith(
       'resource:crystal',
+    );
+    expect(getTexture).toHaveBeenCalledWith(
+      'source:assets/icons/icon-garden-plot-tab.png',
+    );
+    expect(getTexture).toHaveBeenCalledWith(
+      'source:assets/icons/icon-brewing-cauldron-tab.png',
     );
 
     viewModel.shop.crystals.coinOffer = {
@@ -2672,6 +2722,7 @@ function createShopViewModel({
           actionLabel: 'free',
           canCollect: true,
         },
+        weeklyOffers: [],
         offers: [
           {
             id: 'amber-1',

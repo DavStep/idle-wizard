@@ -34,6 +34,7 @@
       import { PixiAssetManager } from '/src/rendering/pixi/assets/PixiAssetManager.js';
       import { MarketTitleRibbon } from '/src/rendering/pixi/pages/shop/MarketTitleRibbon.js';
       import { PixiApplicationManager } from '/src/rendering/pixi/runtime/PixiApplicationManager.js';
+      import { PIXI_ROOT_RUN_ASSETS } from '/src/rendering/pixi/theme/PixiThemeTokens.js';
 
       const canvas = document.querySelector('canvas');
       const applicationManager = new PixiApplicationManager({ canvas });
@@ -44,7 +45,10 @@
         assetManager.loadAll(),
       ]);
 
-      const ribbon = new MarketTitleRibbon({ assetManager });
+      const ribbon = new MarketTitleRibbon({
+        assetManager,
+        assetId: PIXI_ROOT_RUN_ASSETS.marketTitleRibbonRed,
+      });
       ribbon.bind('Small Town Market', 1);
       ribbon.setMaxWidth(applicationManager.projection.sourceWidth);
       ribbon.root.position.set(

@@ -2426,7 +2426,7 @@ export class PixiPagesFacade {
       if (plot?.phase === "ready") {
         const result = gameplay?.startGardenHarvest?.(plot.tileNumber);
         if (result?.ok === true) {
-          this.uiClickSoundFacade?.playSummon?.(1);
+          this.uiClickSoundFacade?.playClick?.();
         }
         return result;
       }
@@ -2730,6 +2730,7 @@ export class PixiPagesFacade {
       this.gameplaySnapshot.research?.completedResearchIds ?? [],
     );
     const autoBrewAvailable =
+      cauldron.entitlementExtra === true ||
       cauldron.autoBrewEnabled === true ||
       completedResearchIds.has(
         automationResearchIds.autoBrewCauldron(index + 1),
@@ -3300,9 +3301,7 @@ export class PixiPagesFacade {
       },
       collectBrew: (cauldronIndex) => {
         const result = gameplay?.collectBrewing?.(cauldronIndex);
-        if (result?.ok === true) {
-          this.uiClickSoundFacade?.playSummon?.(1);
-        } else if (result?.ok === false) {
+        if (result?.ok === false) {
           this.experienceFacade?.transientEffects?.emitReward?.({
             message: "No potion is ready to collect",
             flyoutKey: "brewing-collect-empty",
@@ -4075,6 +4074,7 @@ function createGardenPlotModel({
 
   return {
     ...tile,
+    displayNumber: tile.displayNumber ?? tile.tileNumber,
     id: tile.id ?? tile.tileNumber,
     soilLevel: tile.level ?? 1,
     progress: tile.process,

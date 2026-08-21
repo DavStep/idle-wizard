@@ -20,6 +20,7 @@ export class GameplaySaveManager {
     shopFacade,
     brewingFacade,
     gardenFacade,
+    weeklyOffersFacade,
     tasksFacade,
     personalTasksFacade,
     worldNoticeFacade,
@@ -48,6 +49,9 @@ export class GameplaySaveManager {
     this.shopFacade = shopFacade;
     this.brewingFacade = brewingFacade;
     this.gardenFacade = gardenFacade;
+    this.weeklyOffersFacade = weeklyOffersFacade ?? {
+      getPersistenceSnapshot: () => ({ version: 1 }),
+    };
     this.tasksFacade = tasksFacade;
     this.personalTasksFacade = personalTasksFacade;
     this.worldNoticeFacade = worldNoticeFacade;
@@ -92,6 +96,7 @@ export class GameplaySaveManager {
       shop: this.shopFacade.getPersistenceSnapshot(),
       brewing: this.brewingFacade.getPersistenceSnapshot(),
       garden: this.gardenFacade.getPersistenceSnapshot(),
+      weeklyOffers: this.weeklyOffersFacade.getPersistenceSnapshot(),
       tasks: this.tasksFacade.getPersistenceSnapshot(),
       personalTasks: this.personalTasksFacade.getPersistenceSnapshot(),
       worldNotice: this.worldNoticeFacade.getPersistenceSnapshot(),

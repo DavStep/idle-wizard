@@ -14,7 +14,7 @@ export class GardenAutomationManager {
   }
 
   update() {
-    if (!this.hasAnyGardenAutomationResearch()) {
+    if (!this.hasAnyGardenAutomation()) {
       return;
     }
 
@@ -35,6 +35,7 @@ export class GardenAutomationManager {
       }
 
       if (
+        tile.entitlementExtra !== true &&
         !this.hasResearch(automationResearchIds.autoPlantTile(tile.tileNumber))
       ) {
         continue;
@@ -58,6 +59,7 @@ export class GardenAutomationManager {
       }
 
       if (
+        tile.entitlementExtra !== true &&
         !this.hasResearch(automationResearchIds.autoPlantTile(tile.tileNumber))
       ) {
         continue;
@@ -81,6 +83,15 @@ export class GardenAutomationManager {
       this.researchFacade?.hasCompletedResearchMatching?.((researchId) =>
         this.isGardenAutomationResearchId(researchId),
       ) === true
+    );
+  }
+
+  hasAnyGardenAutomation() {
+    return (
+      this.hasAnyGardenAutomationResearch() ||
+      (this.gardenFacade.getSnapshot().plot?.tiles ?? []).some(
+        (tile) => tile.entitlementExtra === true,
+      )
     );
   }
 

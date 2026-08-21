@@ -42,6 +42,10 @@ inventory changes, offers, or backend results. A presenter binds this shape:
       dailyCrystalOffer: {
         rewardLabel, actionLabel, timerLabel, canCollect, notification
       },
+      weeklyOffers: [{
+        id, title, description, slotLabel, priceLabel, active, canPurchase,
+        remainingLabel
+      }],
       offers: [{
         id, resourceKey, amount, bundleLabel, priceLabel, enabled, dialog
       }]
@@ -81,7 +85,7 @@ The compatibility adapter also accepts the current raw `shelf`,
 It only renames display fields; it does not derive game rules.
 
 `MarketTitleRibbon` owns the Market licence identity above the page panels. It
-renders the approved purple folded-ribbon horizontal nine-slice at a fixed
+renders the approved red folded-ribbon horizontal nine-slice at a fixed
 height. The licence name and three rank-star slots are centered as one group
 on the ribbon front, with a small upward optical correction because the folds
 and tails extend below the raised front panel.
@@ -133,7 +137,13 @@ quantity at the same price. Add `&coinOffer=ready` to show the ready green Colle
 Add `&claimFlyout=crystal` to include the production top panel and replay the
 daily Free claim's crystal travel into its HUD counter.
 Currency offers use the reusable `MarketOfferCard`. Coin stays in its own
-section. Amber and Amethyst packs have separate station-title sections, with
+section. Weekly Offers follows it with separate full-width `$15.00` cards for
+the automated `E1` plot and automated `E1` cauldron. Their art wells reuse the
+exact Garden plot and Brewing cauldron room-tab icons. Each description states
+that the offer unlocks one extra automated slot for seven days; while active,
+its disabled action shows the remaining time. Checkout is intentionally unavailable until store purchase integration
+is added, so an inactive card opens the existing Support dialog. Amber and
+Amethyst packs have separate station-title sections, with
 the daily Amber offer first in the Amber section. Coin and daily Amber offers
 retain the wide layout, restore their left-aligned titles, and state their
 2-hour or 24-hour claim cadence beside the reward art. Paid Amber and Amethyst bundles use the compact

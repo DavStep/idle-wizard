@@ -13,18 +13,21 @@ import {
 import { PIXI_UI_GEOMETRY } from '../../theme/PixiThemeTokens.js';
 import { formatBigNumber } from '../../../../shared/bigNumber.js';
 import { normalizeTradeAllianceTagColor } from '../../../../shared/tradeAllianceTagColors.js';
+import { getTradeAllianceRole } from '../../../../shared/tradeAllianceRoles.js';
 import { getPlayerFrameTint } from '../../../../player/playerFrames.js';
 import { PlayerProfileWidget } from '../chrome/PlayerProfileWidgets.js';
 import { RetainedGlobalDialog } from './GlobalDialogKit.js';
 
 const PLAYER_CONTENT_WIDTH = 260;
 const PORTRAIT_SIZE = 72;
-const SUMMARY_GAP = 12;
+const SUMMARY_GAP = 8;
 const SUMMARY_PADDING_TOP = 7;
 const SUMMARY_PADDING_BOTTOM = 5;
 const SUMMARY_HEIGHT =
   SUMMARY_PADDING_TOP + PORTRAIT_SIZE + SUMMARY_PADDING_BOTTOM;
 const DETAIL_ROW_PITCH = 18;
+const CLAN_IDENTITY_GAP = 4;
+const CLAN_ROLE_GAP = 4;
 const SECTION_CONTENT_OUTSET_X = PIXI_UI_GEOMETRY.panelPaddingX;
 const STATS_HEIGHT =
   PIXI_DIALOG_SPLIT_PAPER_GEOMETRY.contentInsetTop +
@@ -129,7 +132,19 @@ export class PixiPlayerInfoDialog extends RetainedGlobalDialog {
       action: () => this.openAlliance(),
       label: `${dialogId}:alliance`,
     });
-    this.allianceButton.textLabel.setAnchor(0, 0.5);
+    this.allianceButton.textLabel
+      .setAnchor(0, 0.5)
+      .setFontSize(PIXI_UI_GEOMETRY.borderLabelFontSize);
+    this.allianceNameLabel = new PixiTextLabel({
+      fontSize: PIXI_UI_GEOMETRY.borderLabelFontSize,
+      label: `${dialogId}:allianceName`,
+    });
+    this.allianceRoleLabel = new PixiTextLabel({
+      anchor: { x: 1, y: 0 },
+      color: PLAYER_INFO_TAG_COLORS.amber,
+      fontSize: 10,
+      label: `${dialogId}:allianceRole`,
+    });
     this.levelLabel = new PixiTextLabel({
       text: 'Level',
       label: `${dialogId}:levelLabel`,
@@ -298,6 +313,8 @@ export class PixiPlayerInfoDialog extends RetainedGlobalDialog {
       this.statsFrame,
       this.profileWidget,
       this.allianceButton,
+      this.allianceNameLabel,
+      this.allianceRoleLabel,
       this.name,
       this.levelLabel,
       this.levelValue,
@@ -331,10 +348,12 @@ export class PixiPlayerInfoDialog extends RetainedGlobalDialog {
     this.playerModel = normalizePlayerModel(viewModel);
     const loading = this.playerModel.loading;
     const showCosmetics = this.playerModel.ownPlayer;
-    const showRelationship = !loading && !this.playerModel.ownPlayer;
+    const showRelationship = !this.playerModel.ownPlayer;
     for (const object of [
       this.profileWidget,
       this.allianceButton,
+      this.allianceNameLabel,
+      this.allianceRoleLabel,
       this.name,
       this.levelLabel,
       this.levelValue,
@@ -358,28 +377,38 @@ export class PixiPlayerInfoDialog extends RetainedGlobalDialog {
     this.loadingLabel.renderable = loading;
     this.cosmeticsButton.visible = showCosmetics;
     this.cosmeticsButton.renderable = showCosmetics;
-    this.cosmeticsButton.setEnabled(
-      showCosmetics && Boolean(this.actions.openCosmetics),
-    );
+    this.cosmeticsButton
+      .setText(loading ? 'Loading' : 'Cosmetics')
+      .setVariant(loading ? 'gray' : 'yellow')
+      .setEnabled(
+        showCosmetics && !loading && Boolean(this.actions.openCosmetics),
+      );
     this.friendsButton.visible = showCosmetics;
     this.friendsButton.renderable = showCosmetics;
-    this.friendsButton.setEnabled(showCosmetics && Boolean(this.actions.openFriends));
+    this.friendsButton
+      .setText(loading ? 'Loading' : 'Friends')
+      .setVariant(loading ? 'gray' : 'yellow')
+      .setEnabled(
+        showCosmetics && !loading && Boolean(this.actions.openFriends),
+      );
     this.friendsButton.setNotification(
-      showCosmetics && this.playerModel.friendsNotification,
+      showCosmetics && !loading && this.playerModel.friendsNotification,
     );
-    this.configureRelationshipButtons(showRelationship);
+    this.configureRelationshipButtons(showRelationship, { loading });
     const showAllianceActions =
-      !loading && !this.playerModel.ownPlayer &&
+      !this.playerModel.ownPlayer &&
       Boolean(this.playerModel.allianceMemberActions);
-    this.configureAllianceMemberButtons(showAllianceActions);
+    this.configureAllianceMemberButtons(showAllianceActions, { loading });
     this.panel.setPaperVisible(false);
 
     if (loading) {
       this.setPanelContentSize(
         PLAYER_CONTENT_WIDTH,
-        this.playerModel.ownPlayer || showRelationship
-          ? OWN_PLAYER_CONTENT_HEIGHT
-          : PLAYER_CONTENT_HEIGHT,
+        showAllianceActions
+          ? ALLIANCE_MEMBER_CONTENT_HEIGHT
+          : this.playerModel.ownPlayer || showRelationship
+            ? OWN_PLAYER_CONTENT_HEIGHT
+            : PLAYER_CONTENT_HEIGHT,
       );
       this.layoutDialog();
       return;
@@ -391,6 +420,8 @@ export class PixiPlayerInfoDialog extends RetainedGlobalDialog {
       )
       .setBackgroundTint(getPlayerFrameTint(this.playerModel.frame));
     this.name.setText(this.playerModel.username);
+    this.allianceNameLabel.setText(this.playerModel.allianceName);
+    this.allianceRoleLabel.setText(this.playerModel.allianceRoleLabel);
     this.levelValue.setText(this.playerModel.playerLevel);
     this.prestigeStars.setLevel(this.playerModel.prestigeCount);
     this.totalCoinValue.setAmount(this.playerModel.totalProducedCoin);
@@ -414,6 +445,10 @@ export class PixiPlayerInfoDialog extends RetainedGlobalDialog {
         showAlliance &&
           Boolean(this.actions.openAlliance ?? this.model.onOpenAlliance),
       );
+    this.allianceNameLabel.visible = showAlliance;
+    this.allianceNameLabel.renderable = showAlliance;
+    this.allianceRoleLabel.visible = showAlliance;
+    this.allianceRoleLabel.renderable = showAlliance;
     this.applyAllianceTagColor();
     this.setPanelContentSize(
       PLAYER_CONTENT_WIDTH,
@@ -448,7 +483,7 @@ export class PixiPlayerInfoDialog extends RetainedGlobalDialog {
     return this.actions.openFriends?.() ?? false;
   }
 
-  configureRelationshipButtons(visible) {
+  configureRelationshipButtons(visible, { loading = false } = {}) {
     const relationship = this.playerModel?.relationship ?? 'stranger';
     const primary = this.relationshipPrimaryButton;
     const secondary = this.relationshipSecondaryButton;
@@ -457,6 +492,11 @@ export class PixiPlayerInfoDialog extends RetainedGlobalDialog {
     secondary.visible = visible && relationship === 'incoming';
     secondary.renderable = secondary.visible;
     if (!visible) {
+      return;
+    }
+    if (loading) {
+      primary.setText('Loading').setVariant('gray').setEnabled(false);
+      secondary.setText('Loading').setVariant('gray').setEnabled(false);
       return;
     }
     const configurations = {
@@ -485,29 +525,35 @@ export class PixiPlayerInfoDialog extends RetainedGlobalDialog {
     return this.actions.rejectFriend?.() ?? false;
   }
 
-  configureAllianceMemberButtons(visible) {
+  configureAllianceMemberButtons(visible, { loading = false } = {}) {
     const configurations = [
       [
         this.alliancePromoteButton,
         this.playerModel?.allianceMemberActions?.promoteLabel,
         this.actions.promoteAllianceMember,
+        'green',
       ],
       [
         this.allianceDemoteButton,
         this.playerModel?.allianceMemberActions?.demoteLabel,
         this.actions.demoteAllianceMember,
+        'yellow',
       ],
       [
         this.allianceKickButton,
         this.playerModel?.allianceMemberActions?.kickLabel,
         this.actions.kickAllianceMember,
+        'red',
       ],
     ];
-    for (const [button, label, action] of configurations) {
+    for (const [button, label, action, variant] of configurations) {
       const buttonVisible = visible && Boolean(label) && typeof action === 'function';
       button.visible = buttonVisible;
       button.renderable = buttonVisible;
-      button.setText(label ?? '').setEnabled(buttonVisible);
+      button
+        .setText(loading && buttonVisible ? 'Loading' : label ?? '')
+        .setVariant(loading ? 'gray' : variant)
+        .setEnabled(buttonVisible && !loading);
     }
   }
 
@@ -607,20 +653,47 @@ export class PixiPlayerInfoDialog extends RetainedGlobalDialog {
     this.profileWidget.position.set(leftX, SUMMARY_PADDING_TOP);
     this.profileWidget.scale.set(PORTRAIT_SIZE / 186);
 
-    let nameX = detailsX;
+    this.name.position.set(detailsX, SUMMARY_PADDING_TOP + 1);
+    this.name.setWrapWidth(Math.max(0, detailsWidth));
+
+    const clanY = SUMMARY_PADDING_TOP + 1 + DETAIL_ROW_PITCH;
     if (this.allianceButton.visible) {
+      this.allianceButton.textLabel.setFontSize(
+        PIXI_UI_GEOMETRY.borderLabelFontSize,
+      );
       const allianceWidth = Math.ceil(
         this.allianceButton.textLabel.measuredWidth,
       );
-      this.allianceButton.position.set(detailsX, SUMMARY_PADDING_TOP);
+      this.allianceButton.position.set(detailsX, clanY - 1);
       this.allianceButton.setSize(allianceWidth, 18);
-      this.allianceButton.textLabel.position.set(0, 9);
-      nameX += allianceWidth + 4;
+      this.allianceButton.textLabel
+        .setFontSize(PIXI_UI_GEOMETRY.borderLabelFontSize)
+        .position.set(0, 9);
+      this.allianceRoleLabel.position.set(rightX, clanY);
+      fitPlayerInfoLabel(this.allianceRoleLabel, detailsWidth * 0.5, {
+        minFontSize: 9,
+        preferredFontSize: 10,
+        sourceText: this.playerModel.allianceRoleLabel,
+      });
+      const allianceNameX = detailsX + allianceWidth + CLAN_IDENTITY_GAP;
+      const allianceNameWidth = Math.max(
+        0,
+        rightX -
+          this.allianceRoleLabel.measuredWidth -
+          CLAN_ROLE_GAP -
+          allianceNameX,
+      );
+      this.allianceNameLabel.position.set(allianceNameX, clanY);
+      fitPlayerInfoLabel(this.allianceNameLabel, allianceNameWidth, {
+        preferredFontSize: PIXI_UI_GEOMETRY.borderLabelFontSize,
+        sourceText: this.playerModel.allianceName,
+      });
     }
-    this.name.position.set(nameX, SUMMARY_PADDING_TOP + 1);
-    this.name.setWrapWidth(Math.max(0, rightX - nameX));
 
-    const levelY = SUMMARY_PADDING_TOP + 1 + DETAIL_ROW_PITCH;
+    const levelY =
+      SUMMARY_PADDING_TOP +
+      1 +
+      DETAIL_ROW_PITCH * (this.allianceButton.visible ? 2 : 1);
     const prestigeY = levelY + DETAIL_ROW_PITCH;
     this.levelLabel.position.set(detailsX, levelY);
     this.levelValue.position.set(rightX, levelY);
@@ -680,6 +753,8 @@ export class PixiPlayerInfoDialog extends RetainedGlobalDialog {
   applyDialogTheme(theme) {
     for (const label of [
       this.name,
+      this.allianceNameLabel,
+      this.allianceRoleLabel,
       this.levelLabel,
       this.levelValue,
       this.prestigeLabel,
@@ -752,6 +827,19 @@ function normalizePlayerModel(model = {}) {
     allianceTag: normalizeTag(source.allianceTag ?? source.alliance_tag),
     allianceTagColor:
       source.allianceTagColor ?? source.alliance_tag_color ?? '',
+    allianceRole: String(
+      source.allianceRole ??
+        source.alliance_role ??
+        source.role ??
+        model.allianceMemberActions?.role ??
+        '',
+    ),
+    allianceRoleLabel: formatAllianceRole(
+      source.allianceRole ??
+        source.alliance_role ??
+        source.role ??
+        model.allianceMemberActions?.role,
+    ),
     character: String(source.character ?? 'elara'),
     frame: String(source.frame ?? 'classic'),
     playerLevel: String(positiveInteger(source.playerLevel ?? source.level, 1)),
@@ -786,6 +874,43 @@ function normalizePlayerModel(model = {}) {
       0,
     ),
   };
+}
+
+function formatAllianceRole(roleId) {
+  return getTradeAllianceRole(roleId)?.label ?? 'Member';
+}
+
+function fitPlayerInfoLabel(
+  label,
+  maxWidth,
+  {
+    minFontSize = 10,
+    preferredFontSize = PIXI_UI_GEOMETRY.bodyFontSize,
+    sourceText = label.text,
+  } = {},
+) {
+  const width = Math.max(0, Number(maxWidth) || 0);
+  label
+    .setText(sourceText)
+    .setWrapWidth(0)
+    .setFontSize(preferredFontSize);
+  if (width <= 0 || label.measuredWidth <= width) {
+    return;
+  }
+  label.setFontSize(
+    Math.max(
+      minFontSize,
+      Math.floor(preferredFontSize * (width / label.measuredWidth)),
+    ),
+  );
+  if (label.measuredWidth <= width) {
+    return;
+  }
+  const characters = Array.from(String(sourceText ?? ''));
+  while (characters.length > 1 && label.measuredWidth > width) {
+    characters.pop();
+    label.setText(`${characters.join('')}…`);
+  }
 }
 
 function normalizeTag(value) {

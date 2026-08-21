@@ -8,7 +8,7 @@
   <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Idle Wizard prestige World Chat recipe</title>
+    <title>Idle Wizard rich World Chat recipe</title>
     <style>
       html,
       body {
@@ -27,7 +27,7 @@
     </style>
   </head>
   <body>
-    <canvas aria-label="Prestige World Chat visual recipe"></canvas>
+    <canvas aria-label="Rich World Chat visual recipe"></canvas>
 
     <script type="module">
       import '@fontsource/lilita-one/400.css';
@@ -141,6 +141,35 @@
             allianceTagColor: 'violet',
             character: 'elara',
             ageLabel: 'now',
+          },
+          {
+            id: 'preview-inline-avatar',
+            type: 'system',
+            username: 'System',
+            systemPlayerUsername: 'Mira',
+            body: 'Welcome Mira to the alliance.',
+            bodyRuns: [
+              { kind: 'text', text: 'Welcome ' },
+              {
+                kind: 'widget',
+                widget: 'playerAvatar',
+                character: 'mira',
+                frame: 'violet',
+                fallbackText: '[Mira]',
+                label: 'Mira avatar',
+                size: 18,
+              },
+              { kind: 'text', text: ' Mira to the alliance.' },
+            ],
+            ageLabel: 'now',
+            onActivate: () => {
+              window.__inlineAvatarActivated =
+                (window.__inlineAvatarActivated ?? 0) + 1;
+              canvas.dataset.inlineAvatarActivated = String(
+                window.__inlineAvatarActivated,
+              );
+              return true;
+            },
           },
         ],
         onSubmit: async () => ({ ok: false, reason: 'offline' }),

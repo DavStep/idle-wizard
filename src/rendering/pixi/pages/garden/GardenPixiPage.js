@@ -100,10 +100,10 @@ const GARDEN_FIREFLY_FIELD = Object.freeze({
 const GARDEN_GROWING_WIND_MS = 2_400;
 const GARDEN_READY_LIFT_MS = 1_080;
 const GARDEN_SCISSORS_SNIP_MS = 420;
-const GARDEN_PLOT_RECEIVE_MS = 460;
-const GARDEN_PLOT_RECEIVE_IMPACT_PROGRESS = 0.46;
-const GARDEN_PLOT_HERB_REVEAL_START_PROGRESS = 0.51;
-const GARDEN_PLOT_HERB_REVEAL_END_PROGRESS = 0.86;
+const GARDEN_PLOT_RECEIVE_MS = 500;
+const GARDEN_PLOT_RECEIVE_IMPACT_PROGRESS = 0.4;
+const GARDEN_PLOT_HERB_REVEAL_START_PROGRESS = 0.42;
+const GARDEN_PLOT_HERB_REVEAL_END_PROGRESS = 0.9;
 const GARDEN_PLOT_TAP_FEEDBACK_MS = 560;
 const GARDEN_PLOT_TAP_REDUCED_MOTION_LABEL_MS = 220;
 const GARDEN_DIALOG_IDS = Object.freeze({
@@ -1071,6 +1071,9 @@ export class GardenPlotWidget {
     this.tapBurst = new Graphics({
       label: `garden-plot-${instanceId}-tap-burst`,
     });
+    this.receiveBurst = new Graphics({
+      label: `garden-plot-${instanceId}-receive-burst`,
+    });
     this.tapFeedback = createText("-1s", {
       ...RETAINED_TEXT_STYLES.bold,
       fontSize: 13,
@@ -1126,6 +1129,7 @@ export class GardenPlotWidget {
       this.buyFrame,
       this.number,
       this.level,
+      this.receiveBurst,
       this.tapPlantMotion,
       this.action,
       this.buyCostButton,
@@ -1195,7 +1199,12 @@ export class GardenPlotWidget {
     this.root.visible = visible;
     this.root.renderable = visible;
     this.root.eventMode = this.enabled ? "static" : "none";
-    setText(this.number, this.model.showNumber === false ? "" : tileNumber);
+    setText(
+      this.number,
+      this.model.showNumber === false
+        ? ""
+        : this.model.displayNumber ?? tileNumber,
+    );
     const plotLevel = Math.max(1, Math.floor(Number(this.model.level) || 1));
     this.level.setLevel(plotLevel - 1);
     setText(this.action, resolveActionText(this.model));
@@ -1867,6 +1876,7 @@ export class GardenPlotWidget {
       return false;
     }
     applyReceiveMotion(this, progress);
+    renderSeedReceiveBurst(this, progress);
     this.setPlantingRevealProgress(
       clamp(
         (progress - GARDEN_PLOT_HERB_REVEAL_START_PROGRESS) /
@@ -1890,20 +1900,71 @@ export class GardenPlotWidget {
     this.receiveOffsetY = 0;
     this.receiveScaleX = 1;
     this.receiveScaleY = 1;
+    this.receiveBurst.clear();
     this.setPlantingRevealProgress(1);
     this.applyFrameTransform();
   }
 
   setPlantingRevealProgress(progress) {
-    const normalized = clamp(Number(progress) || 0, 0, 1);
-    const eased = softEase(normalized);
-    const verticalScale =
-      normalized < 0.78
-        ? lerp(0.05, 1.045, softEase(normalized / 0.78))
-        : lerp(1.045, 1, softEase((normalized - 0.78) / 0.22));
-    this.plantSlots.forEach(({ revealMotion, plant }) => {
-      revealMotion.scale.set(lerp(0.7, 1, eased), verticalScale);
-      plant.alpha = eased;
+    const groupProgress = clamp(Number(progress) || 0, 0, 1);
+    this.plantSlots.forEach(({ revealMotion, plant }, index) => {
+      const delay = index * 0.045;
+      const normalized = clamp(
+        (groupProgress - delay) / Math.max(0.01, 1 - delay),
+        0,
+        1,
+      );
+      const direction = index % 2 === 0 ? -1 : 1;
+      let segment;
+      let fromY;
+      let toY;
+      let fromScaleX;
+      let toScaleX;
+      let fromScaleY;
+      let toScaleY;
+      let fromRotation;
+      let toRotation;
+      if (normalized < 0.42) {
+        segment = normalized / 0.42;
+        fromY = 8;
+        toY = 2;
+        fromScaleX = 0.34;
+        toScaleX = 0.72;
+        fromScaleY = 0.06;
+        toScaleY = 0.68;
+        fromRotation = 6 * direction;
+        toRotation = 2 * direction;
+      } else if (normalized < 0.75) {
+        segment = (normalized - 0.42) / 0.33;
+        fromY = 2;
+        toY = -1.5;
+        fromScaleX = 0.72;
+        toScaleX = 1.08;
+        fromScaleY = 0.68;
+        toScaleY = 1.05;
+        fromRotation = 2 * direction;
+        toRotation = -1 * direction;
+      } else {
+        segment = (normalized - 0.75) / 0.25;
+        fromY = -1.5;
+        toY = 0;
+        fromScaleX = 1.08;
+        toScaleX = 1;
+        fromScaleY = 1.05;
+        toScaleY = 1;
+        fromRotation = -1 * direction;
+        toRotation = 0;
+      }
+      const eased = softEase(segment);
+      revealMotion.position.set(0, lerp(fromY, toY, eased));
+      revealMotion.scale.set(
+        lerp(fromScaleX, toScaleX, eased),
+        lerp(fromScaleY, toScaleY, eased),
+      );
+      revealMotion.rotation = degreesToRadians(
+        lerp(fromRotation, toRotation, eased),
+      );
+      plant.alpha = softEase(clamp(normalized / 0.3, 0, 1));
     });
   }
 
@@ -2076,6 +2137,8 @@ export class GardenPlotWidget {
       tapMotion.scale.set(1);
       tapMotion.rotation = 0;
       revealMotion.scale.set(1);
+      revealMotion.position.set(0, 0);
+      revealMotion.rotation = 0;
       plant.visible = false;
       plant.renderable = false;
       plant.alpha = 1;
@@ -2100,6 +2163,7 @@ export class GardenPlotWidget {
     this.tapFeedback.visible = false;
     this.tapFeedback.renderable = false;
     this.tapBurst.clear();
+    this.receiveBurst.clear();
   }
 
   unregisterSemanticTargets() {
@@ -2229,6 +2293,55 @@ function applyReceiveMotion(plot, progress) {
   plot.receiveOffsetY = lerp(fromY, toY, eased);
   plot.receiveScaleX = lerp(fromScaleX, toScaleX, eased);
   plot.receiveScaleY = lerp(fromScaleY, toScaleY, eased);
+}
+
+function renderSeedReceiveBurst(plot, progress) {
+  plot.receiveBurst.clear();
+  const burstProgress = clamp(
+    (progress - GARDEN_PLOT_RECEIVE_IMPACT_PROGRESS) / 0.38,
+    0,
+    1,
+  );
+  if (burstProgress <= 0 || burstProgress >= 1) {
+    return;
+  }
+
+  const eased = softEase(burstProgress);
+  const alpha = 1 - burstProgress;
+  const centerX = plot.frameX + plot.visualPlotWidth / 2;
+  const centerY = GARDEN_PIXI_GEOMETRY.plotHeight / 2 + 5;
+  plot.receiveBurst
+    .ellipse(
+      centerX,
+      centerY,
+      lerp(4, Math.min(28, plot.visualPlotWidth * 0.32), eased),
+      lerp(1.2, 4, eased),
+    )
+    .stroke({
+      color: 0xd69a5b,
+      width: lerp(2.2, 0.8, burstProgress),
+      alpha: alpha * 0.72,
+    });
+
+  const clodCount = plot.isAutomated ? 7 : 5;
+  for (let index = 0; index < clodCount; index += 1) {
+    const spread = clodCount === 1 ? 0 : index / (clodCount - 1) - 0.5;
+    const direction = spread < 0 ? -1 : 1;
+    const distance = lerp(3, 15 + Math.abs(spread) * 14, eased);
+    const lift = Math.sin(Math.PI * burstProgress) *
+      (5 + (index % 3) * 1.5);
+    const radius = lerp(1.9 - (index % 2) * 0.3, 0.45, burstProgress);
+    plot.receiveBurst
+      .circle(
+        centerX + direction * distance * (0.35 + Math.abs(spread)),
+        centerY - lift + Math.abs(spread) * 2,
+        radius,
+      )
+      .fill({
+        color: index % 2 === 0 ? 0x7b4828 : 0xb96f36,
+        alpha: alpha * 0.9,
+      });
+  }
 }
 
 function getGardenPlotKey(plot, index) {

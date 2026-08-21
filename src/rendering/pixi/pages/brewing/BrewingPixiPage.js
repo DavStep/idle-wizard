@@ -698,10 +698,13 @@ export class BrewingPixiPage extends BaseRetainedPixiPage {
       return false;
     }
     return this.openDialog('settings', {
-      title: `cauldron ${cauldron.cauldronNumber ?? this.selectedCauldronIndex + 1} settings`,
-      cauldronIndex: this.selectedCauldronIndex,
+      title: `cauldron ${cauldron.displayNumber ?? cauldron.cauldronNumber ?? this.selectedCauldronIndex + 1} settings`,
+      cauldronIndex:
+        cauldron.cauldronIndex ?? this.selectedCauldronIndex,
       cauldronNumber:
-        cauldron.cauldronNumber ?? this.selectedCauldronIndex + 1,
+        cauldron.displayNumber ??
+        cauldron.cauldronNumber ??
+        this.selectedCauldronIndex + 1,
       autoBrewEnabled: cauldron.autoBrewEnabled === true,
     });
   }
@@ -1647,6 +1650,7 @@ export class BrewingCauldronWidget {
     this.root.eventMode = this.enabled ? 'static' : 'passive';
 
     const number =
+      this.model.displayNumber ??
       this.model.cauldronNumber ??
       normalizeCauldronIndex(this.model.cauldronIndex) + 1;
     this.panel.setTitle(

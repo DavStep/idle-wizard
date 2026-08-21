@@ -81,6 +81,8 @@ describe('PixiGlobalDialogPresenter', () => {
       allianceTag: 'MOSS',
       allianceTagColor: 'green',
       connected: true,
+      statusMessage: 'Online now',
+      lastMessagePreview: 'Meet by the cauldron.',
     };
     const harness = createHarness({
       friendsSnapshot: { friends: [friend] },
@@ -98,6 +100,7 @@ describe('PixiGlobalDialogPresenter', () => {
       allianceTagColor: 'green',
       prestigeCount: 2,
       totalProducedCoin: 123_456,
+      preview: 'Meet by the cauldron.',
     });
 
     expect(row.onActivate()).toEqual({
@@ -130,6 +133,31 @@ describe('PixiGlobalDialogPresenter', () => {
         .getOpenModel(GLOBAL_DIALOG_IDS.DIRECT_MESSAGE)
         .rows.map((row) => row.connected),
     ).toEqual([true, true]);
+  });
+
+  it('opens Player Info from the direct-message header profile action', () => {
+    const friend = {
+      identity: 'identity-juniper',
+      username: 'Juniper',
+      character: 'juniper',
+      frame: 'emerald',
+      playerLevel: 10,
+    };
+    const harness = createHarness();
+    harness.friendsFacade.getRelationship.mockReturnValue('friend');
+    harness.presenter.mount();
+
+    harness.presenter.open(GLOBAL_DIALOG_IDS.DIRECT_MESSAGE, { friend });
+    const directMessage = harness.getOpenModel(GLOBAL_DIALOG_IDS.DIRECT_MESSAGE);
+
+    expect(directMessage.actions.openPlayer()).toEqual({
+      dialogId: GLOBAL_DIALOG_IDS.PLAYER,
+    });
+    expect(harness.getOpenModel(GLOBAL_DIALOG_IDS.PLAYER).player).toMatchObject(friend);
+    expect(harness.runtime.getOpenDialogIds()).toEqual([
+      GLOBAL_DIALOG_IDS.DIRECT_MESSAGE,
+      GLOBAL_DIALOG_IDS.PLAYER,
+    ]);
   });
 
   it('replaces a submitted chat report with the requested reminder dialog', () => {
@@ -695,6 +723,13 @@ describe('PixiGlobalDialogPresenter', () => {
     expect(model.actions.togglePreference('music', 35)).toBe(true);
     expect(model.actions.togglePreference('sfx', 68)).toBe(true);
     expect(model.actions.togglePreference('theme', true)).toBe(true);
+    expect(model.actions.togglePreference('friendRequests', false)).toBe(true);
+    expect(
+      model.actions.togglePreference(
+        'tradeAllianceInvitations',
+        false,
+      ),
+    ).toBe(true);
     expect(harness.hapticsFacade.setEnabled).toHaveBeenCalledWith(false);
     expect(
       harness.soundSettingsFacade.setMusicVolume,
@@ -703,6 +738,12 @@ describe('PixiGlobalDialogPresenter', () => {
       harness.soundSettingsFacade.setSfxVolume,
     ).toHaveBeenCalledWith(0.68);
     expect(harness.playerFacade.setTheme).toHaveBeenCalledWith('day');
+    expect(
+      harness.playerFacade.setAllowFriendRequests,
+    ).toHaveBeenCalledWith(false);
+    expect(
+      harness.playerFacade.setAllowTradeAllianceInvitations,
+    ).toHaveBeenCalledWith(false);
     expect(model.account.userId).toBe('identity-mira');
     expect(await model.actions.copyUserId(model.account.userId)).toBe(
       true,
@@ -1170,6 +1211,8 @@ function createHarness({
       setCharacter: vi.fn(() => true),
       setFrame: vi.fn(() => true),
       setProgressBar: vi.fn(() => true),
+      setAllowFriendRequests: vi.fn(() => true),
+      setAllowTradeAllianceInvitations: vi.fn(() => true),
     },
   );
   const authFacade = createSnapshotFacade({

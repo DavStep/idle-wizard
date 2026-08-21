@@ -285,6 +285,28 @@ function createPreviewModel(dialogId) {
           },
           ageLabel: 'now',
         },
+        {
+          id: 'preview-inline-avatar',
+          type: 'system',
+          username: 'System',
+          body: 'Welcome Mira to the alliance.',
+          systemPlayerUsername: 'Mira',
+          bodyRuns: [
+            { kind: 'text', text: 'Welcome ' },
+            {
+              kind: 'widget',
+              widget: 'playerAvatar',
+              character: 'mira',
+              frame: 'violet',
+              fallbackText: '[Mira]',
+              label: 'Mira avatar',
+              size: 18,
+              interactive: false,
+            },
+            { kind: 'text', text: ' Mira to the alliance.' },
+          ],
+          ageLabel: 'now',
+        },
       ],
       onSubmit: async () => ({ ok: false, reason: 'offline' }),
     };

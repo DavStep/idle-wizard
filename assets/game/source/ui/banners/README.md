@@ -10,3 +10,6 @@ Banner assets are named by appearance, not by their first feature consumer.
 
 Feature code may keep semantic usage names such as `dialogTitle` or
 `researchStationTitle`, but the source texture remains reusable.
+
+The full ribbon family includes blue, green, purple, red, and yellow variants
+with identical `73 27 73 27` source margins.

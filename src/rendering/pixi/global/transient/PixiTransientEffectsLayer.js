@@ -84,11 +84,11 @@ const ITEM_DROP_SIZES = Object.freeze({
 });
 const GARDEN_HARVEST_ANCHOR_SLOTS = 5;
 const GARDEN_SEED_DROP_SIZE = ITEM_DROP_SIZES.seed * 0.85;
-const GARDEN_PLANT_DROP_DURATION_MS = 460;
-const GARDEN_PLANT_DROP_OFFSET_Y = 48;
-const GARDEN_PLANT_DROP_IMPACT_PROGRESS = 0.46;
-const GARDEN_PLANT_DROP_SQUASH_END_PROGRESS = 0.55;
-const GARDEN_PLANT_DROP_DISAPPEAR_PROGRESS = 0.66;
+const GARDEN_PLANT_DROP_DURATION_MS = 500;
+const GARDEN_PLANT_DROP_OFFSET_Y = 62;
+const GARDEN_PLANT_DROP_IMPACT_PROGRESS = 0.4;
+const GARDEN_PLANT_DROP_SQUASH_END_PROGRESS = 0.51;
+const GARDEN_PLANT_DROP_DISAPPEAR_PROGRESS = 0.72;
 const REWARD_FLYOUT_VISUALS = Object.freeze({
   backgroundColor: 0x000000,
   backgroundAlpha: 0.62,
@@ -2456,10 +2456,11 @@ function interpolateGardenPlantDropFrame(progress) {
   let scaleX;
   let scaleY;
   let alpha = 1;
+  let y = lerp(-GARDEN_PLANT_DROP_OFFSET_Y, 0, acceleratedDrop);
 
   if (safeProgress < GARDEN_PLANT_DROP_IMPACT_PROGRESS) {
-    scaleX = lerp(0.98, 0.84, acceleratedDrop);
-    scaleY = lerp(0.96, 1.22, acceleratedDrop);
+    scaleX = lerp(0.94, 0.8, acceleratedDrop);
+    scaleY = lerp(0.94, 1.3, acceleratedDrop);
   } else if (safeProgress < GARDEN_PLANT_DROP_SQUASH_END_PROGRESS) {
     const squashProgress = cubicBezier(
       (safeProgress - GARDEN_PLANT_DROP_IMPACT_PROGRESS) /
@@ -2470,8 +2471,8 @@ function interpolateGardenPlantDropFrame(progress) {
       0.5,
       1,
     );
-    scaleX = lerp(0.84, 1.24, squashProgress);
-    scaleY = lerp(1.22, 0.64, squashProgress);
+    scaleX = lerp(0.8, 1.3, squashProgress);
+    scaleY = lerp(1.3, 0.58, squashProgress);
   } else {
     const disappearProgress = Math.min(
       1,
@@ -2486,12 +2487,22 @@ function interpolateGardenPlantDropFrame(progress) {
       0.5,
       1,
     );
-    scaleX = lerp(1.24, 1.08, easedDisappear);
-    scaleY = lerp(0.64, 0.32, easedDisappear);
-    alpha = 1 - easedDisappear;
+    scaleX = lerp(1.3, 0.52, easedDisappear);
+    scaleY = lerp(0.58, 0.12, easedDisappear);
+    y = lerp(0, 6, easedDisappear);
+    alpha =
+      disappearProgress < 0.22
+        ? 1
+        : 1 - cubicBezier(
+            (disappearProgress - 0.22) / 0.78,
+            0.25,
+            1,
+            0.5,
+            1,
+          );
   }
   return {
-    y: lerp(-GARDEN_PLANT_DROP_OFFSET_Y, 0, acceleratedDrop),
+    y,
     scaleX,
     scaleY,
     alpha,

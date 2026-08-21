@@ -200,7 +200,7 @@ export default [
     sectionId: FOUNDATION_SECTION,
     properties: [
       { label: 'Production class', value: 'PixiInlineText' },
-      { label: 'Contract', value: 'Ordered text and icon runs' },
+      { label: 'Contract', value: 'Ordered text, icon, and resolved widget runs' },
     ],
     usages: [
       {

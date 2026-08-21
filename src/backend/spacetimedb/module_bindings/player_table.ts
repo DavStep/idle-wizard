@@ -24,4 +24,6 @@ export default __t.row({
   character: __t.string(),
   frame: __t.string(),
   totalPlayTimeMicros: __t.u64().name("total_play_time_micros"),
+  allowFriendRequests: __t.bool().name("allow_friend_requests"),
+  allowTradeAllianceInvitations: __t.bool().name("allow_trade_alliance_invitations"),
 });

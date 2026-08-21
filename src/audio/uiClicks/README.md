@@ -7,9 +7,11 @@ The retained input router and DOM press manager play Idle Outpost's second `butt
 
 Successful manual seed summons play the checked-in short pop once per seed in
 the summon result, spaced into a tight burst with slight pitch variation. The
-same single pop confirms successful manual Garden harvests and potion
-collections. Rejected actions and background automation stay silent. Summon
-bursts are capped at the supported five-seed summon multiplier.
+same single pop plays when a visible Garden harvest or Brewing bottling timer
+completes and its item reward starts flying. Starting a manual Garden harvest
+uses the standard click cue. Rejected actions and off-page completion effects
+stay silent. Summon bursts are capped at the supported five-seed summon
+multiplier.
 
 Mobile audio unlock is gesture-owned. Sound requests made while Web Audio is
 suspended are discarded, so startup dialogs and other pre-touch activity cannot

@@ -29,6 +29,7 @@ import { StatsFacade } from "./stats/StatsFacade.js";
 import { TasksFacade } from "./tasks/TasksFacade.js";
 import { VisualSettingsFacade } from "./visualSettings/VisualSettingsFacade.js";
 import { WhileAwayReportFacade } from "./whileAway/WhileAwayReportFacade.js";
+import { WeeklyOffersFacade } from "./weeklyOffers/WeeklyOffersFacade.js";
 import {
   WORLD_NOTICE_ACTIONS,
   WorldNoticeFacade,
@@ -171,6 +172,11 @@ export class GameplayFacade {
       researchFacade: this.researchFacade,
       onHarvestComplete: (event) => this.handleGardenHarvestComplete(event),
     });
+    this.weeklyOffersFacade = new WeeklyOffersFacade({
+      brewingFacade: this.brewingFacade,
+      gardenFacade: this.gardenFacade,
+      now: persistenceNow,
+    });
     this.automationFacade = new AutomationFacade({
       brewingFacade: this.brewingFacade,
       gardenFacade: this.gardenFacade,
@@ -205,6 +211,7 @@ export class GameplayFacade {
       shopFacade: this.shopFacade,
       brewingFacade: this.brewingFacade,
       gardenFacade: this.gardenFacade,
+      weeklyOffersFacade: this.weeklyOffersFacade,
       tasksFacade: this.tasksFacade,
       personalTasksFacade: this.personalTasksFacade,
       worldNoticeFacade: this.worldNoticeFacade,
@@ -587,6 +594,7 @@ export class GameplayFacade {
     const automation = this.automationFacade.getPersistenceSnapshot();
     const seedSummoning = this.seedSummoningFacade.getPersistenceSnapshot();
     const personalTasks = this.personalTasksFacade.getPersistenceSnapshot();
+    const weeklyOffers = this.weeklyOffersFacade.getPersistenceSnapshot();
 
     this.persistenceFacade.applyRuntimeSave({
       mana: {
@@ -627,6 +635,7 @@ export class GameplayFacade {
       personalTasks,
       worldNotice: this.worldNoticeFacade.getPersistenceSnapshot(),
       guild: this.guildFacade.getPersistenceSnapshot(),
+      weeklyOffers,
       inboxRewards: this.inboxRewardsFacade.getPersistenceSnapshot(),
       stats: this.statsFacade.getPersistenceSnapshot(),
     });
@@ -1674,6 +1683,7 @@ export class GameplayFacade {
     const guild = this.guildFacade.getSnapshot();
 
     const prestige = this.prestigeFacade.getSnapshot();
+    const weeklyOffers = this.weeklyOffersFacade.getSnapshot();
     const brewing = this.brewingFacade.getSnapshot();
     const garden = this.gardenFacade.getSnapshot();
     const previousReservationGarden = this.snapshotGardenForReservations;
@@ -1696,6 +1706,7 @@ export class GameplayFacade {
       ingredientInventory: this.itemsFacade.getIngredientInventorySnapshot(),
       seedSummoning,
       automation,
+      weeklyOffers,
       brewing,
       discoveries: this.itemsFacade.getDiscoverySnapshot({
         getPotionDiscovery: (potionKey) =>
@@ -1924,12 +1935,24 @@ export class GameplayFacade {
 
   hasFrameTimerWork() {
     return (
+      this.weeklyOffersFacade.hasFrameTimerWork() ||
       this.brewingFacade.hasFrameTimerWork() ||
       this.gardenFacade.hasFrameTimerWork() ||
       this.researchFacade.hasFrameTimerWork() ||
       this.shopFacade.hasFrameTimerWork() ||
       this.automationFacade.hasFrameTimerWork()
     );
+  }
+
+  applyVerifiedWeeklyOfferPurchase(offerId, purchase = {}) {
+    const result = this.weeklyOffersFacade.applyVerifiedPurchase(
+      offerId,
+      purchase,
+    );
+    if (result.ok) {
+      this.publishAndSaveSnapshot();
+    }
+    return result;
   }
 
   getNextGameplayTickDelayMs() {

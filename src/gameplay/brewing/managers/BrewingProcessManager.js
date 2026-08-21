@@ -1,7 +1,12 @@
 export class BrewingProcessManager {
-  constructor({ brewingProcessEntityManager, collectReadyBrews } = {}) {
+  constructor({
+    brewingProcessEntityManager,
+    collectReadyBrews,
+    isCauldronActive,
+  } = {}) {
     this.brewingProcessEntityManager = brewingProcessEntityManager;
     this.collectReadyBrews = collectReadyBrews;
+    this.isCauldronActive = isCauldronActive ?? (() => true);
     this.registered = false;
   }
 
@@ -17,7 +22,10 @@ export class BrewingProcessManager {
   }
 
   update(deltaSeconds) {
-    this.brewingProcessEntityManager.advanceTime(deltaSeconds);
+    this.brewingProcessEntityManager.advanceTime(
+      deltaSeconds,
+      this.isCauldronActive,
+    );
     this.collectReadyBrews?.();
   }
 

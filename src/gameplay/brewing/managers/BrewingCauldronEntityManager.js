@@ -5,6 +5,8 @@ import {
   BrewingCauldronIngredient,
 } from '../components/BrewingComponents.js';
 
+export const EXTRA_CAULDRON_INDEX = 99;
+
 export class BrewingCauldronEntityManager {
   constructor({ itemsFacade, maxIngredients, initialUnlockedCauldrons = 1, maxCauldrons = 1 }) {
     this.itemsFacade = itemsFacade;
@@ -18,6 +20,7 @@ export class BrewingCauldronEntityManager {
     this.unlockedCauldrons = this.initialUnlockedCauldrons;
     this.ecsManagers = null;
     this.entityIds = new Map();
+    this.extraCauldronActive = false;
   }
 
   initialize(ecsManagers) {
@@ -152,6 +155,29 @@ export class BrewingCauldronEntityManager {
     );
   }
 
+  getActiveCauldronIndexes() {
+    const indexes = Array.from(
+      { length: this.getUnlockedCauldrons() },
+      (_unused, index) => index,
+    );
+    if (this.extraCauldronActive) {
+      indexes.push(EXTRA_CAULDRON_INDEX);
+    }
+    return indexes;
+  }
+
+  setExtraCauldronActive(active) {
+    this.extraCauldronActive = active === true;
+    if (this.extraCauldronActive && this.ecsManagers) {
+      this.ensureCauldron(EXTRA_CAULDRON_INDEX);
+    }
+    return this.extraCauldronActive;
+  }
+
+  isExtraCauldronActive() {
+    return this.extraCauldronActive;
+  }
+
   unlockNextCauldron() {
     if (this.getUnlockedCauldrons() >= this.maxCauldrons) {
       return false;
@@ -176,7 +202,12 @@ export class BrewingCauldronEntityManager {
   }
 
   isCauldronUnlocked(cauldronIndex = 0) {
-    return this.normalizeCauldronIndex(cauldronIndex) < this.getUnlockedCauldrons();
+    const safeCauldronIndex = this.normalizeCauldronIndex(cauldronIndex);
+    return (
+      safeCauldronIndex < this.getUnlockedCauldrons() ||
+      (safeCauldronIndex === EXTRA_CAULDRON_INDEX &&
+        this.extraCauldronActive)
+    );
   }
 
   getIngredientCount(cauldronIndex = 0) {

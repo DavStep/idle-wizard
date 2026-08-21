@@ -7,6 +7,7 @@ import { PlayerNameManager } from './managers/PlayerNameManager.js';
 import { PlayerPlotViewManager } from './managers/PlayerPlotViewManager.js';
 import { PlayerProgressBarManager } from './managers/PlayerProgressBarManager.js';
 import { PlayerStateObserverManager } from './managers/PlayerStateObserverManager.js';
+import { PlayerSocialPreferencesManager } from './managers/PlayerSocialPreferencesManager.js';
 import { PlayerThemeManager } from './managers/PlayerThemeManager.js';
 
 export class PlayerFacade {
@@ -23,6 +24,7 @@ export class PlayerFacade {
     this.iconModeManager = new PlayerIconModeManager();
     this.plotViewManager = new PlayerPlotViewManager();
     this.progressBarManager = new PlayerProgressBarManager();
+    this.socialPreferencesManager = new PlayerSocialPreferencesManager();
     this.stateObserverManager = new PlayerStateObserverManager();
   }
 
@@ -54,6 +56,7 @@ export class PlayerFacade {
     if (Object.hasOwn(profile ?? {}, 'plotView')) {
       this.plotViewManager.applyServerPlotView(profile.plotView);
     }
+    this.socialPreferencesManager.applyServerPreferences(profile);
     this.publishSnapshot();
     return this.getSnapshot();
   }
@@ -150,6 +153,18 @@ export class PlayerFacade {
     return this.getSnapshot();
   }
 
+  setAllowFriendRequests(allowed) {
+    this.socialPreferencesManager.setAllowFriendRequests(allowed);
+    this.publishSnapshot();
+    return this.getSnapshot();
+  }
+
+  setAllowTradeAllianceInvitations(allowed) {
+    this.socialPreferencesManager.setAllowTradeAllianceInvitations(allowed);
+    this.publishSnapshot();
+    return this.getSnapshot();
+  }
+
   getPlotViewOptions() {
     return this.plotViewManager.getPlotViewOptions();
   }
@@ -168,6 +183,10 @@ export class PlayerFacade {
       iconMode: this.iconModeManager.getIconMode(),
       progressBar: this.progressBarManager.getProgressBar(),
       plotView: this.plotViewManager.getPlotView(),
+      allowFriendRequests:
+        this.socialPreferencesManager.getAllowFriendRequests(),
+      allowTradeAllianceInvitations:
+        this.socialPreferencesManager.getAllowTradeAllianceInvitations(),
     };
   }
 
@@ -184,6 +203,9 @@ export class PlayerFacade {
       iconMode: snapshot.iconMode,
       progressBar: snapshot.progressBar,
       plotView: snapshot.plotView,
+      allowFriendRequests: snapshot.allowFriendRequests,
+      allowTradeAllianceInvitations:
+        snapshot.allowTradeAllianceInvitations,
     };
   }
 

@@ -196,6 +196,48 @@ describe('PixiExperienceFacade', () => {
     expect(harness.views.transient.clear).toHaveBeenCalledOnce();
   });
 
+  it('plays one completion pop when harvested herbs or bottled potions start flying', () => {
+    let currentPageId = 'garden';
+    const harness = createHarness();
+    const facade = harness.createFacade({
+      getCurrentPageId: () => currentPageId,
+    });
+    facade.firstRunProgressManager.markComplete();
+    harness.materializeSurfaces();
+    facade.mount();
+
+    harness.rewardListener({
+      id: 21,
+      type: 'herb_harvested',
+      herb: { key: 'sageHerb', label: 'sage' },
+      quantity: 3,
+      tileNumber: 1,
+    });
+    expect(harness.uiClickSoundFacade.playSummon).toHaveBeenCalledTimes(1);
+    expect(harness.uiClickSoundFacade.playSummon).toHaveBeenLastCalledWith(1);
+
+    currentPageId = 'brewing';
+    harness.rewardListener({
+      id: 22,
+      type: 'potion_collected',
+      potion: { key: 'manaTonic', label: 'mana tonic' },
+      quantity: 2,
+      cauldronIndex: 0,
+    });
+    expect(harness.uiClickSoundFacade.playSummon).toHaveBeenCalledTimes(2);
+    expect(harness.uiClickSoundFacade.playSummon).toHaveBeenLastCalledWith(1);
+
+    currentPageId = 'workshop';
+    harness.rewardListener({
+      id: 23,
+      type: 'herb_harvested',
+      herb: { key: 'sageHerb', label: 'sage' },
+      quantity: 1,
+      tileNumber: 1,
+    });
+    expect(harness.uiClickSoundFacade.playSummon).toHaveBeenCalledTimes(2);
+  });
+
   it('reads the stall tutorial slider in exact item-count units', () => {
     const slider = { value: 1 };
     const state = new PixiTutorialRuntimeState({
@@ -298,6 +340,9 @@ function createHarness({
       return rewardUnsubscribe;
     }),
   };
+  const uiClickSoundFacade = {
+    playSummon: vi.fn(),
+  };
   const timeoutHandle = { unref: vi.fn() };
   const setTimeoutFn = vi.fn(() => timeoutHandle);
   const clearTimeoutFn = vi.fn();
@@ -323,6 +368,7 @@ function createHarness({
       new PixiExperienceFacade({
         renderFacade,
         gameplayFacade,
+        uiClickSoundFacade,
         storage,
         factories,
         setTimeoutFn,
@@ -345,6 +391,7 @@ function createHarness({
     rewardUnsubscribe,
     shopPage,
     surfaceFactories,
+    uiClickSoundFacade,
     views,
   };
   return harness;

@@ -11,6 +11,8 @@ function createPlayerFacade(username) {
     font: 'lexend',
     colorMode: 'resources',
     character: 'elara',
+    allowFriendRequests: true,
+    allowTradeAllianceInvitations: true,
   };
 
   return {
@@ -84,6 +86,8 @@ describe('PlayerBackendSyncManager', () => {
       character: 'elara',
       frame: 'classic',
       usernamePromptSeen: true,
+      allowFriendRequests: true,
+      allowTradeAllianceInvitations: true,
     });
   });
 
@@ -112,6 +116,8 @@ describe('PlayerBackendSyncManager', () => {
       character: 'elara',
       frame: 'classic',
       usernamePromptSeen: true,
+      allowFriendRequests: true,
+      allowTradeAllianceInvitations: true,
     });
   });
 
@@ -151,6 +157,8 @@ describe('PlayerBackendSyncManager', () => {
       character: 'elara',
       frame: 'classic',
       usernamePromptSeen: true,
+      allowFriendRequests: true,
+      allowTradeAllianceInvitations: true,
     });
   });
 
@@ -178,6 +186,8 @@ describe('PlayerBackendSyncManager', () => {
       colorMode: 'resources',
       character: 'mira',
       usernamePromptSeen: true,
+      allowFriendRequests: true,
+      allowTradeAllianceInvitations: true,
     });
 
     expect(playerFacade.getSnapshot()).toMatchObject({
@@ -267,6 +277,8 @@ describe('PlayerBackendSyncManager', () => {
       character: 'elara',
       frame: 'classic',
       usernamePromptSeen: true,
+      allowFriendRequests: true,
+      allowTradeAllianceInvitations: true,
     });
   });
 
@@ -292,6 +304,8 @@ describe('PlayerBackendSyncManager', () => {
       character: 'mira',
       frame: 'classic',
       usernamePromptSeen: false,
+      allowFriendRequests: true,
+      allowTradeAllianceInvitations: true,
     });
     setPlayerProfile.mockClear();
 
@@ -306,6 +320,8 @@ describe('PlayerBackendSyncManager', () => {
       character: 'mira',
       frame: 'classic',
       usernamePromptSeen: false,
+      allowFriendRequests: true,
+      allowTradeAllianceInvitations: true,
     });
 
     manager.applyServerProfile({

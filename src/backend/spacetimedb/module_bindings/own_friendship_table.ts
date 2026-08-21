@@ -24,4 +24,5 @@ export default __t.row({
   createdAt: __t.timestamp().name("created_at"),
   allianceTag: __t.string().name("alliance_tag"),
   allianceTagColor: __t.string().name("alliance_tag_color"),
+  lastMessagePreview: __t.string().name("last_message_preview"),
 });

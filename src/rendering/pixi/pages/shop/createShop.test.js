@@ -24,6 +24,29 @@ describe('createShop', () => {
     };
     const model = createShop({
       gameplaySnapshot: {
+        weeklyOffers: {
+          offers: [
+            {
+              id: 'extraPlot',
+              title: 'Extra Plot',
+              description: 'Unlocks 1 extra automated plot for 7 days.',
+              slotLabel: 'E1',
+              priceUsd: 15,
+              active: false,
+              canPurchase: true,
+            },
+            {
+              id: 'extraCauldron',
+              title: 'Extra Cauldron',
+              description: 'Unlocks 1 extra automated cauldron for 7 days.',
+              slotLabel: 'E1',
+              priceUsd: 15,
+              active: true,
+              canPurchase: false,
+              remainingLabel: '6d 2h',
+            },
+          ],
+        },
         shop: {
           market: {
             name: 'Small Town Market',
@@ -252,6 +275,21 @@ describe('createShop', () => {
       claimCadence: 'Claim every 24 hours',
       notification: true,
     });
+    expect(model.shop.crystals.weeklyOffers).toEqual([
+      expect.objectContaining({
+        id: 'extraPlot',
+        description: 'Unlocks 1 extra automated plot for 7 days.',
+        priceLabel: '$15.00',
+        slotLabel: 'E1',
+      }),
+      expect.objectContaining({
+        id: 'extraCauldron',
+        active: true,
+        description: 'Unlocks 1 extra automated cauldron for 7 days.',
+        priceLabel: '$15.00',
+        remainingLabel: '6d 2h',
+      }),
+    ]);
     expect(model.shop.crystals.offers).toHaveLength(12);
     expect(model.shop.crystals.offers[0]).toMatchObject({
       resourceKey: 'crystal',

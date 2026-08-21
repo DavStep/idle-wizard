@@ -29,3 +29,9 @@ numbered cauldron array, so additional cauldron slots inherit the same
 persistence behavior without slot-specific fields. Automation prepares that
 cauldron's recipe from inventory before starting the brew.
 The Brewing snapshot exposes all recipes with their unlock state so pages can show a read-only recipe book without duplicating recipe catalog rules.
+
+The weekly cauldron offer temporarily adds the separately persisted `E1`
+cauldron. `E1` has Auto Brew available without cauldron-specific automation
+research and does not change the permanent unlocked-cauldron count. Expiry
+hides and pauses it; buying the offer again later resumes its ingredients,
+selected recipe, automation settings, and active process.

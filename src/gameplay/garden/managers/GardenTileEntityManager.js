@@ -6,12 +6,16 @@ import {
   gardenTilePhases,
 } from '../components/GardenComponents.js';
 
+export const EXTRA_GARDEN_PLOT_NUMBER = 99;
+
 export class GardenTileEntityManager {
   constructor({ initialUnlockedTiles = 0, maxTiles }) {
     this.initialUnlockedTiles = initialUnlockedTiles;
     this.maxTiles = maxTiles;
     this.ecsManagers = null;
     this.tileEntityIds = [];
+    this.extraTileEntityId = null;
+    this.extraTileActive = false;
   }
 
   initialize(ecsManagers) {
@@ -24,6 +28,8 @@ export class GardenTileEntityManager {
     for (let tileNumber = 1; tileNumber <= this.maxTiles; tileNumber += 1) {
       this.createTileEntity(tileNumber);
     }
+    this.extraTileEntityId = this.createTileEntity(EXTRA_GARDEN_PLOT_NUMBER);
+    GardenTile.isUnlocked[this.extraTileEntityId] = 0;
   }
 
   configureCapacity({
@@ -37,7 +43,11 @@ export class GardenTileEntityManager {
       return;
     }
 
-    for (let tileNumber = this.tileEntityIds.length + 1; tileNumber <= this.maxTiles; tileNumber += 1) {
+    for (
+      let tileNumber = this.getRegularTileEntityIds().length + 1;
+      tileNumber <= this.maxTiles;
+      tileNumber += 1
+    ) {
       this.createTileEntity(tileNumber);
     }
   }
@@ -51,16 +61,17 @@ export class GardenTileEntityManager {
     GardenTile.plantQuantity[tileEntityId] = 0;
     this.clearTileData(tileEntityId);
     this.tileEntityIds.push(tileEntityId);
+    return tileEntityId;
   }
 
   getUnlockedTiles() {
-    return this.getActiveTileEntityIds().filter(
+    return this.getRegularTileEntityIds().filter(
       (tileEntityId) => GardenTile.isUnlocked[tileEntityId] === 1,
     ).length;
   }
 
   unlockNextTile() {
-    const nextTileEntityId = this.getActiveTileEntityIds().find(
+    const nextTileEntityId = this.getRegularTileEntityIds().find(
       (tileEntityId) => GardenTile.isUnlocked[tileEntityId] !== 1,
     );
 
@@ -73,6 +84,18 @@ export class GardenTileEntityManager {
     GardenTile.plantQuantity[nextTileEntityId] = 0;
     this.clearTileData(nextTileEntityId);
     return true;
+  }
+
+  setExtraTileActive(active) {
+    this.extraTileActive = active === true;
+    if (this.extraTileEntityId !== null) {
+      GardenTile.isUnlocked[this.extraTileEntityId] = this.extraTileActive ? 1 : 0;
+    }
+    return this.extraTileActive;
+  }
+
+  isExtraTileActive() {
+    return this.extraTileActive;
   }
 
   isTileUnlocked(tileNumber) {
@@ -275,62 +298,47 @@ export class GardenTileEntityManager {
       ? Math.max(this.initialUnlockedTiles, Math.min(unlockedTiles, this.maxTiles))
       : this.initialUnlockedTiles;
 
-    for (const tileEntityId of this.getActiveTileEntityIds()) {
+    for (const tileEntityId of this.getRegularTileEntityIds()) {
       const tileNumber = GardenTile.tileNumber[tileEntityId];
       const tile = tiles.find((candidate) => candidate?.tileNumber === tileNumber);
       const isUnlocked = tileNumber <= safeUnlockedTiles;
-      GardenTile.isUnlocked[tileEntityId] = isUnlocked ? 1 : 0;
-      this.clearTileData(tileEntityId);
-      GardenTile.autoEnabled[tileEntityId] =
-        tile?.autoEnabled === false ? 0 : 1;
-      GardenTile.plantQuantity[tileEntityId] =
-        this.normalizeStoredPlantQuantity(tile?.plantQuantity);
-
-      if (!isUnlocked || !tile) {
-        continue;
-      }
-
-      const phase = Number.isInteger(tile.phase) ? tile.phase : gardenTilePhases.empty;
-      const selectedSeedItemTypeId = Number.isInteger(tile.selectedSeedItemTypeId)
-        ? tile.selectedSeedItemTypeId
-        : tile.seedItemTypeId || 0;
-      GardenTile.selectedSeedItemTypeId[tileEntityId] = selectedSeedItemTypeId;
-
-      if (!this.isRestorablePhase(phase, tile)) {
-        continue;
-      }
-
-      if (phase === gardenTilePhases.empty) {
-        continue;
-      }
-
-      GardenTile.seedItemTypeId[tileEntityId] = tile.seedItemTypeId || selectedSeedItemTypeId || 0;
-      GardenTile.herbItemTypeId[tileEntityId] = tile.herbItemTypeId || 0;
-      GardenTile.harvestQuantity[tileEntityId] = this.normalizeHarvestQuantity(
-        tile.harvestQuantity,
-      );
-      GardenTile.phase[tileEntityId] = phase;
-      GardenTile.totalSeconds[tileEntityId] = Math.max(0, tile.totalSeconds || 0);
-      GardenTile.remainingSeconds[tileEntityId] = Math.max(
-        0,
-        Math.min(tile.remainingSeconds || 0, GardenTile.totalSeconds[tileEntityId] || 0),
-      );
-
-      if (phase === gardenTilePhases.ready) {
-        GardenTile.totalSeconds[tileEntityId] = 0;
-        GardenTile.remainingSeconds[tileEntityId] = 0;
-      }
+      this.restoreTileEntityFromSnapshot(tileEntityId, tile, isUnlocked);
     }
   }
 
-  getTileSnapshots() {
-    return this.getActiveTileEntityIds().map((tileEntityId) => {
-      const totalSeconds = GardenTile.totalSeconds[tileEntityId] ?? 0;
-      const remainingSeconds = GardenTile.remainingSeconds[tileEntityId] ?? 0;
-      const phase = GardenTile.phase[tileEntityId] ?? gardenTilePhases.empty;
+  applyExtraTileSnapshot(tile = null) {
+    if (this.extraTileEntityId === null) {
+      return false;
+    }
+    this.restoreTileEntityFromSnapshot(
+      this.extraTileEntityId,
+      tile,
+      this.extraTileActive,
+    );
+    return true;
+  }
 
-      return {
+  getTileSnapshots() {
+    return this.getActiveTileEntityIds().map((tileEntityId) =>
+      this.getTileSnapshotForEntity(tileEntityId),
+    );
+  }
+
+  getExtraTileSnapshot() {
+    return this.extraTileEntityId === null
+      ? null
+      : this.getTileSnapshotForEntity(this.extraTileEntityId);
+  }
+
+  getTileSnapshotForEntity(tileEntityId) {
+    const totalSeconds = GardenTile.totalSeconds[tileEntityId] ?? 0;
+    const remainingSeconds = GardenTile.remainingSeconds[tileEntityId] ?? 0;
+    const phase = GardenTile.phase[tileEntityId] ?? gardenTilePhases.empty;
+
+    return {
         tileNumber: GardenTile.tileNumber[tileEntityId],
+        entitlementExtra:
+          GardenTile.tileNumber[tileEntityId] === EXTRA_GARDEN_PLOT_NUMBER,
         unlocked: GardenTile.isUnlocked[tileEntityId] === 1,
         autoEnabled: GardenTile.autoEnabled[tileEntityId] !== 0,
         plantQuantity: this.normalizeStoredPlantQuantity(
@@ -350,12 +358,11 @@ export class GardenTileEntityManager {
           totalSeconds <= 0
             ? 0
             : Math.min(1, (totalSeconds - remainingSeconds) / totalSeconds),
-      };
-    });
+    };
   }
 
   getTileEntityId(tileNumber) {
-    const tileEntityId = this.getActiveTileEntityIds().find(
+    const tileEntityId = this.tileEntityIds.find(
       (entityId) => GardenTile.tileNumber[entityId] === tileNumber,
     );
 
@@ -369,7 +376,7 @@ export class GardenTileEntityManager {
   getProcessingTileEntityIds(phase = null) {
     return query(this.ecsManagers.world.getWorld(), [GardenTile]).filter(
       (tileEntityId) => {
-      if (GardenTile.tileNumber[tileEntityId] > this.maxTiles) {
+      if (!this.isTileEntityActive(tileEntityId)) {
         return false;
       }
 
@@ -386,7 +393,69 @@ export class GardenTileEntityManager {
   }
 
   getActiveTileEntityIds() {
-    return this.tileEntityIds.filter((tileEntityId) => GardenTile.tileNumber[tileEntityId] <= this.maxTiles);
+    return this.tileEntityIds.filter((tileEntityId) =>
+      this.isTileEntityActive(tileEntityId),
+    );
+  }
+
+  getRegularTileEntityIds() {
+    return this.tileEntityIds.filter(
+      (tileEntityId) => GardenTile.tileNumber[tileEntityId] <= this.maxTiles,
+    );
+  }
+
+  isTileEntityActive(tileEntityId) {
+    const tileNumber = GardenTile.tileNumber[tileEntityId];
+    return (
+      tileNumber <= this.maxTiles ||
+      (tileNumber === EXTRA_GARDEN_PLOT_NUMBER && this.extraTileActive)
+    );
+  }
+
+  restoreTileEntityFromSnapshot(tileEntityId, tile, isUnlocked) {
+    GardenTile.isUnlocked[tileEntityId] = isUnlocked ? 1 : 0;
+    this.clearTileData(tileEntityId);
+    GardenTile.autoEnabled[tileEntityId] = tile?.autoEnabled === false ? 0 : 1;
+    GardenTile.plantQuantity[tileEntityId] = this.normalizeStoredPlantQuantity(
+      tile?.plantQuantity,
+    );
+
+    if (!isUnlocked || !tile) {
+      return;
+    }
+
+    const phase = Number.isInteger(tile.phase)
+      ? tile.phase
+      : gardenTilePhases.empty;
+    const selectedSeedItemTypeId = Number.isInteger(tile.selectedSeedItemTypeId)
+      ? tile.selectedSeedItemTypeId
+      : tile.seedItemTypeId || 0;
+    GardenTile.selectedSeedItemTypeId[tileEntityId] = selectedSeedItemTypeId;
+
+    if (!this.isRestorablePhase(phase, tile) || phase === gardenTilePhases.empty) {
+      return;
+    }
+
+    GardenTile.seedItemTypeId[tileEntityId] =
+      tile.seedItemTypeId || selectedSeedItemTypeId || 0;
+    GardenTile.herbItemTypeId[tileEntityId] = tile.herbItemTypeId || 0;
+    GardenTile.harvestQuantity[tileEntityId] = this.normalizeHarvestQuantity(
+      tile.harvestQuantity,
+    );
+    GardenTile.phase[tileEntityId] = phase;
+    GardenTile.totalSeconds[tileEntityId] = Math.max(0, tile.totalSeconds || 0);
+    GardenTile.remainingSeconds[tileEntityId] = Math.max(
+      0,
+      Math.min(
+        tile.remainingSeconds || 0,
+        GardenTile.totalSeconds[tileEntityId] || 0,
+      ),
+    );
+
+    if (phase === gardenTilePhases.ready) {
+      GardenTile.totalSeconds[tileEntityId] = 0;
+      GardenTile.remainingSeconds[tileEntityId] = 0;
+    }
   }
 
   clearTileData(tileEntityId) {

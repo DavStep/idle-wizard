@@ -34,9 +34,11 @@ import {
   orderDisplayObjects,
 } from './GlobalDialogKit.js';
 import {
+  RETAINED_DIALOG_LIST_GEOMETRY,
   RETAINED_SCROLLBAR_GEOMETRY,
   RetainedButton,
   RetainedScrollArea,
+  resolveRetainedDialogListLayout,
 } from '../../pages/workshop/RetainedPageKit.js';
 
 const SETTINGS_CONTENT_WIDTH = GLOBAL_DIALOG_GEOMETRY.maxContentWidth;
@@ -103,6 +105,8 @@ const ACCOUNT_SAVE_GAP = 8;
 const ACCOUNT_BOTTOM_GAP = 8;
 const SETTINGS_DEVICE_CONTENT_HEIGHT = 480;
 const SETTINGS_DEVICE_SCROLL_HEIGHT = 460;
+const SETTINGS_CONFIGURATION_FRAME_WIDTH =
+  RETAINED_DIALOG_LIST_GEOMETRY.rowFrameWidth;
 const SETTINGS_TABS = new Set(['account', 'report', 'configurations']);
 const FEEDBACK_KINDS = Object.freeze([
   Object.freeze({
@@ -130,26 +134,42 @@ const FEEDBACK_KINDS = Object.freeze([
 const DEVICE_PREFERENCES = Object.freeze([
   Object.freeze({
     key: 'sfx',
+    section: 'device',
     text: 'SOUND',
     iconAssetId: PIXI_ROOT_RUN_ASSETS.settingsSound,
     controlKind: 'slider',
   }),
   Object.freeze({
     key: 'music',
+    section: 'device',
     text: 'MUSIC',
     iconAssetId: PIXI_ROOT_RUN_ASSETS.settingsMusic,
     controlKind: 'slider',
   }),
   Object.freeze({
     key: 'haptics',
+    section: 'device',
     text: 'VIBRATION',
     iconAssetId: PIXI_ROOT_RUN_ASSETS.settingsVibration,
   }),
   Object.freeze({
     key: 'theme',
+    section: 'theme',
     text: 'THEME',
     iconAssetId: PIXI_ROOT_RUN_ASSETS.settingsThemeNight,
     onIconAssetId: PIXI_ROOT_RUN_ASSETS.settingsThemeDay,
+  }),
+  Object.freeze({
+    key: 'friendRequests',
+    section: 'social',
+    text: 'FRIEND REQUESTS',
+    iconAssetId: PIXI_ROOT_RUN_ASSETS.settingsFriendRequests,
+  }),
+  Object.freeze({
+    key: 'tradeAllianceInvitations',
+    section: 'social',
+    text: 'ALLIANCE INVITES',
+    iconAssetId: PIXI_ROOT_RUN_ASSETS.settingsAllianceInvitations,
   }),
 ]);
 const DEVICE_SECTION_GAP = 8;
@@ -485,7 +505,10 @@ export class PixiSettingsDialog extends RetainedGlobalDialog {
     });
     this.devicePanel.setRows(
       this.preferenceRows
-        .filter(({ key }) => key !== 'theme')
+        .filter(({ key }) =>
+          DEVICE_PREFERENCES.find((definition) => definition.key === key)
+            ?.section === 'device',
+        )
         .map(({ widget }) => widget),
     );
     this.themePanel = new RootRunDevicePreferencesPanel({
@@ -495,7 +518,23 @@ export class PixiSettingsDialog extends RetainedGlobalDialog {
     });
     this.themePanel.setRows(
       this.preferenceRows
-        .filter(({ key }) => key === 'theme')
+        .filter(({ key }) =>
+          DEVICE_PREFERENCES.find((definition) => definition.key === key)
+            ?.section === 'theme',
+        )
+        .map(({ widget }) => widget),
+    );
+    this.socialPanel = new RootRunDevicePreferencesPanel({
+      assetManager: this.context.assets,
+      width: SETTINGS_CONTENT_WIDTH,
+      label: `${this.dialogId}:socialPanel`,
+    });
+    this.socialPanel.setRows(
+      this.preferenceRows
+        .filter(({ key }) =>
+          DEVICE_PREFERENCES.find((definition) => definition.key === key)
+            ?.section === 'social',
+        )
         .map(({ widget }) => widget),
     );
     this.accountConnectionPanel = new PixiNineSliceFrame({
@@ -556,6 +595,7 @@ export class PixiSettingsDialog extends RetainedGlobalDialog {
     this.configurationsLayer.addChild(
       this.devicePanel,
       this.themePanel,
+      this.socialPanel,
       this.accountConnectionPanel,
       this.accountConnectionLabel,
       this.accountStatus,
@@ -719,6 +759,14 @@ export class PixiSettingsDialog extends RetainedGlobalDialog {
     this.layoutActivePane();
     const devicePreferences = this.selectedTab === 'configurations';
     const account = this.selectedTab === 'account';
+    const paperOutsets = resolveDialogPaperOutsets(this.panel.contentInsets);
+    const configurationListLayout = devicePreferences
+      ? resolveRetainedDialogListLayout({
+          bodyWidth: SETTINGS_CONTENT_WIDTH,
+          paperRight: SETTINGS_CONTENT_WIDTH + paperOutsets.right,
+          rowFrameWidth: SETTINGS_CONFIGURATION_FRAME_WIDTH,
+        })
+      : null;
     this.accountLayer.position.set(
       ACCOUNT_SCROLL_X,
       PIXI_UI_GEOMETRY.dialogScrollPaddingTop,
@@ -732,9 +780,11 @@ export class PixiSettingsDialog extends RetainedGlobalDialog {
           : SETTINGS_STANDARD_CONTENT_HEIGHT,
     );
     this.scroll.setBounds(
+      configurationListLayout?.x ?? 0,
       0,
-      0,
-      account ? ACCOUNT_HEADER_WIDTH : SETTINGS_CONTENT_WIDTH,
+      account
+        ? ACCOUNT_HEADER_WIDTH
+        : configurationListLayout?.viewportWidth ?? SETTINGS_CONTENT_WIDTH,
       account
         ? this.activePaneHeight
         : devicePreferences
@@ -959,25 +1009,31 @@ export class PixiSettingsDialog extends RetainedGlobalDialog {
   layoutConfigurationsPane() {
     let y = 0;
     this.devicePanel.position.set(0, y);
-    this.devicePanel.setWidth(SETTINGS_CONTENT_WIDTH);
+    this.devicePanel.setWidth(SETTINGS_CONFIGURATION_FRAME_WIDTH);
     y += this.devicePanel.panelHeight + DEVICE_SECTION_GAP;
     this.themePanel.position.set(0, y);
-    this.themePanel.setWidth(SETTINGS_CONTENT_WIDTH);
+    this.themePanel.setWidth(SETTINGS_CONFIGURATION_FRAME_WIDTH);
     y += this.themePanel.panelHeight + DEVICE_SECTION_GAP;
+    this.socialPanel.position.set(0, y);
+    this.socialPanel.setWidth(SETTINGS_CONFIGURATION_FRAME_WIDTH);
+    y += this.socialPanel.panelHeight + DEVICE_SECTION_GAP;
     this.accountConnectionPanel.position.set(0, y);
     this.accountConnectionPanel.setSize(
-      SETTINGS_CONTENT_WIDTH,
+      SETTINGS_CONFIGURATION_FRAME_WIDTH,
       DEVICE_ACCOUNT_PANEL_HEIGHT,
       PIXI_ROOT_RUN_GEOMETRY.settings.rowBorderInsets,
     );
     const accountPanelY = y;
     y += DEVICE_ACCOUNT_PANEL_PADDING_TOP;
-    this.accountConnectionLabel.position.set(SETTINGS_CONTENT_WIDTH / 2, y);
+    this.accountConnectionLabel.position.set(
+      SETTINGS_CONFIGURATION_FRAME_WIDTH / 2,
+      y,
+    );
     y += this.accountConnectionLabel.measuredHeight + DEVICE_ACCOUNT_STATUS_GAP;
-    this.accountStatus.position.set(SETTINGS_CONTENT_WIDTH / 2, y);
+    this.accountStatus.position.set(SETTINGS_CONFIGURATION_FRAME_WIDTH / 2, y);
     y += this.accountStatus.measuredHeight + DEVICE_ACCOUNT_BUTTON_GAP;
     this.accountConnectButton.position.set(
-      (SETTINGS_CONTENT_WIDTH - DEVICE_ACCOUNT_BUTTON_WIDTH) / 2,
+      (SETTINGS_CONFIGURATION_FRAME_WIDTH - DEVICE_ACCOUNT_BUTTON_WIDTH) / 2,
       y,
     );
     this.accountConnectButton.setSize(
@@ -986,10 +1042,10 @@ export class PixiSettingsDialog extends RetainedGlobalDialog {
     );
     y = accountPanelY + DEVICE_ACCOUNT_PANEL_HEIGHT + DEVICE_ACCOUNT_FOOTER_GAP;
     this.identityFooter.position.set(0, y);
-    this.identityFooter.setWidth(SETTINGS_CONTENT_WIDTH);
+    this.identityFooter.setWidth(SETTINGS_CONFIGURATION_FRAME_WIDTH);
     y += this.identityFooter.footerHeight + DEVICE_UPDATE_BUTTON_GAP;
     this.updateCheckButton.position.set(
-      (SETTINGS_CONTENT_WIDTH - DEVICE_UPDATE_BUTTON_WIDTH) / 2,
+      (SETTINGS_CONFIGURATION_FRAME_WIDTH - DEVICE_UPDATE_BUTTON_WIDTH) / 2,
       y,
     );
     this.updateCheckButton.setSize(
@@ -1314,6 +1370,7 @@ export class PixiSettingsDialog extends RetainedGlobalDialog {
     const deviceTheme = this.theme ?? this.context.theme;
     this.devicePanel?.applyTheme(deviceTheme);
     this.themePanel?.applyTheme(deviceTheme);
+    this.socialPanel?.applyTheme(deviceTheme);
     this.identityFooter?.applyTheme(deviceTheme);
     for (const avatar of this.avatars?.getWidgets?.() ?? []) {
       avatar.applyTheme(theme);
@@ -1489,6 +1546,14 @@ function normalizeSettingsModel(
           settings.sfxEnabled,
       ),
       theme: settings.preferences?.theme ?? settings.theme === 'day',
+      friendRequests:
+        settings.preferences?.friendRequests ??
+        settings.allowFriendRequests ??
+        true,
+      tradeAllianceInvitations:
+        settings.preferences?.tradeAllianceInvitations ??
+        settings.allowTradeAllianceInvitations ??
+        true,
     },
     avatars,
     frames,

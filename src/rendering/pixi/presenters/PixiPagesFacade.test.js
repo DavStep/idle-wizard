@@ -2681,7 +2681,7 @@ describe("PixiPagesFacade", () => {
     ]);
   });
 
-  it("plays the summon pop only after a ready Garden plot starts harvesting", () => {
+  it("plays the standard click only after a ready Garden plot starts harvesting", () => {
     const gameplaySnapshot = createGameplaySnapshot();
     gameplaySnapshot.garden.plot = {
       maxTiles: 1,
@@ -2707,18 +2707,19 @@ describe("PixiPagesFacade", () => {
       ok: true,
       tileNumber: 1,
     });
-    expect(harness.uiClickSoundFacade.playSummon).toHaveBeenCalledTimes(1);
-    expect(harness.uiClickSoundFacade.playSummon).toHaveBeenCalledWith(1);
+    expect(harness.uiClickSoundFacade.playClick).toHaveBeenCalledTimes(1);
+    expect(harness.uiClickSoundFacade.playSummon).not.toHaveBeenCalled();
 
     expect(harness.getBoundPage("garden").actions.activatePlot(plot)).toEqual({
       ok: false,
       reason: "not_ready",
       tileNumber: 1,
     });
-    expect(harness.uiClickSoundFacade.playSummon).toHaveBeenCalledTimes(1);
+    expect(harness.uiClickSoundFacade.playClick).toHaveBeenCalledTimes(1);
+    expect(harness.uiClickSoundFacade.playSummon).not.toHaveBeenCalled();
   });
 
-  it("plays the summon pop only after a potion is collected", () => {
+  it("leaves potion completion audio to the reward event presenter", () => {
     const harness = createHarness();
     harness.gameplayFacade.collectBrewing
       .mockReturnValueOnce({ ok: true, quantity: 2 })
@@ -2730,11 +2731,10 @@ describe("PixiPagesFacade", () => {
     const collectBrew = harness.getBoundPage("brewing").actions.collectBrew;
 
     expect(collectBrew(0)).toEqual({ ok: true, quantity: 2 });
-    expect(harness.uiClickSoundFacade.playSummon).toHaveBeenCalledTimes(1);
-    expect(harness.uiClickSoundFacade.playSummon).toHaveBeenCalledWith(1);
+    expect(harness.uiClickSoundFacade.playSummon).not.toHaveBeenCalled();
 
     expect(collectBrew(0)).toEqual({ ok: false, reason: "no_brew" });
-    expect(harness.uiClickSoundFacade.playSummon).toHaveBeenCalledTimes(1);
+    expect(harness.uiClickSoundFacade.playSummon).not.toHaveBeenCalled();
   });
 
   it("accelerates active Garden plots while preserving an intentional seed swap", () => {

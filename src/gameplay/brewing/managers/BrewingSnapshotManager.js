@@ -1,3 +1,5 @@
+import { EXTRA_CAULDRON_INDEX } from './BrewingCauldronEntityManager.js';
+
 export class BrewingSnapshotManager {
   constructor({
     brewingBalanceManager,
@@ -35,9 +37,9 @@ export class BrewingSnapshotManager {
     const maxCauldrons = this.getMaxCauldrons();
     const unlockedCauldrons = this.getUnlockedCauldrons();
     this.brewingCauldronEntityManager.ensureCauldrons(unlockedCauldrons);
-    const cauldrons = Array.from({ length: unlockedCauldrons }, (_unused, index) =>
-      this.getCauldronSnapshot(index, herbs),
-    );
+    const cauldrons = this.brewingCauldronEntityManager
+      .getActiveCauldronIndexes()
+      .map((index) => this.getCauldronSnapshot(index, herbs));
     const nextCauldronNumber = unlockedCauldrons + 1;
     const nextCauldronCost = this.brewingBalanceManager.getCauldronCost(nextCauldronNumber);
     const nextCauldronRequiresResearchId =
@@ -100,6 +102,8 @@ export class BrewingSnapshotManager {
       return {
         cauldronIndex: safeCauldronIndex,
         cauldronNumber: safeCauldronIndex + 1,
+        displayNumber: this.getDisplayNumber(safeCauldronIndex),
+        entitlementExtra: this.isEntitlementExtra(safeCauldronIndex),
         level: maxBrewQuantity,
         ingredients: [],
         match: null,
@@ -134,6 +138,8 @@ export class BrewingSnapshotManager {
       return {
         cauldronIndex: safeCauldronIndex,
         cauldronNumber: safeCauldronIndex + 1,
+        displayNumber: this.getDisplayNumber(safeCauldronIndex),
+        entitlementExtra: this.isEntitlementExtra(safeCauldronIndex),
         level: maxBrewQuantity,
         ingredients,
         match: null,
@@ -196,6 +202,8 @@ export class BrewingSnapshotManager {
     return {
       cauldronIndex: safeCauldronIndex,
       cauldronNumber: safeCauldronIndex + 1,
+      displayNumber: this.getDisplayNumber(safeCauldronIndex),
+      entitlementExtra: this.isEntitlementExtra(safeCauldronIndex),
       level: maxBrewQuantity,
       ingredients,
       match,
@@ -276,6 +284,16 @@ export class BrewingSnapshotManager {
       this.brewingCauldronEntityManager.getUnlockedCauldrons(),
       this.getMaxCauldrons(),
     );
+  }
+
+  getDisplayNumber(cauldronIndex) {
+    return this.isEntitlementExtra(cauldronIndex)
+      ? 'E1'
+      : cauldronIndex + 1;
+  }
+
+  isEntitlementExtra(cauldronIndex) {
+    return cauldronIndex === EXTRA_CAULDRON_INDEX;
   }
 
   hasEnoughIngredients(itemTypeIds) {

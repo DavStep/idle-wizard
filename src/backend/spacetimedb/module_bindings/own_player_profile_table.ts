@@ -20,4 +20,6 @@ export default __t.row({
   font: __t.string(),
   character: __t.string(),
   frame: __t.string(),
+  allowFriendRequests: __t.bool().name("allow_friend_requests"),
+  allowTradeAllianceInvitations: __t.bool().name("allow_trade_alliance_invitations"),
 });

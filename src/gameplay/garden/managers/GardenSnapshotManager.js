@@ -88,27 +88,39 @@ export class GardenSnapshotManager {
   }
 
   getTileSnapshots() {
-    return this.gardenTileEntityManager.getTileSnapshots().map((tile) => {
-      const selectedSeed = tile.selectedSeedItemTypeId
+    return this.gardenTileEntityManager
+      .getTileSnapshots()
+      .map((tile) => this.decorateTileSnapshot(tile));
+  }
+
+  getExtraTileSnapshot() {
+    const tile = this.gardenTileEntityManager.getExtraTileSnapshot();
+    return tile ? this.decorateTileSnapshot(tile) : null;
+  }
+
+  decorateTileSnapshot(tile) {
+    const selectedSeed = tile.selectedSeedItemTypeId
         ? this.itemsFacade.getItemDefinition(tile.selectedSeedItemTypeId)
         : null;
-      const selectedHerb = selectedSeed?.producesHerbTypeId
+    const selectedHerb = selectedSeed?.producesHerbTypeId
         ? this.itemsFacade.getItemDefinition(selectedSeed.producesHerbTypeId)
         : null;
-      const seed = tile.seedItemTypeId
+    const seed = tile.seedItemTypeId
         ? this.itemsFacade.getItemDefinition(tile.seedItemTypeId)
         : null;
-      const herb = tile.herbItemTypeId
+    const herb = tile.herbItemTypeId
         ? this.itemsFacade.getItemDefinition(tile.herbItemTypeId)
         : null;
 
-      return {
+    return {
         ...tile,
+        displayNumber: tile.entitlementExtra ? 'E1' : tile.tileNumber,
         autoEnabled: tile.autoEnabled !== false,
         level: this.getPlotLevel(tile.tileNumber),
         maxPlantQuantity: this.getPlotLevel(tile.tileNumber),
         plantQuantity: this.getPlotPlantQuantity(tile),
         automationAvailable:
+          tile.entitlementExtra === true ||
           this.researchFacade?.hasCompletedResearch?.(
             automationResearchIds.autoPlantTile(tile.tileNumber),
           ) === true,
@@ -129,8 +141,7 @@ export class GardenSnapshotManager {
                 progress: tile.progress,
               }
             : null,
-      };
-    });
+    };
   }
 
   getPlotLevel(tileNumber) {

@@ -8,7 +8,15 @@ import {
   createPixiAssetManagerFake,
   installPixiPageTestCanvas,
 } from '../workshop/PixiPageTestHarness.js';
-import { RETAINED_PAGE_GEOMETRY } from '../workshop/RetainedPageKit.js';
+import {
+  RETAINED_DIALOG_SCROLL_GEOMETRY,
+  RETAINED_PAGE_GEOMETRY,
+} from '../workshop/RetainedPageKit.js';
+import {
+  PIXI_ROOT_RUN_ASSETS,
+  PIXI_ROOT_RUN_GEOMETRY,
+  PIXI_UI_GEOMETRY,
+} from '../../theme/PixiThemeTokens.js';
 import {
   AllianceMemberRow,
 } from '../workshop/WorkshopDialogPixi.js';
@@ -33,9 +41,18 @@ describe('AlliancePixiPage', () => {
     page.bind(model);
 
     const row = page.quests.rows.getWidgets()[0];
+    const questScroll = page.scrolls.get('quests');
     expect(row.getPreferredHeight(360)).toBe(96);
     expect(row.background.frameWidth).toBe(360);
     expect(row.background.frameHeight).toBe(96);
+    expect(questScroll.root.x).toBe(0);
+    expect(questScroll.width).toBe(
+      PIXI_UI_GEOMETRY.sourceWidth - PIXI_UI_GEOMETRY.roomContentEdge,
+    );
+    expect(row.root.x + row.background.x).toBeGreaterThanOrEqual(0);
+    expect(
+      row.root.x + row.background.x + row.background.frameWidth,
+    ).toBeLessThanOrEqual(questScroll.width);
     expect(row.artWell).toMatchObject({
       frameWidth: 52,
       frameHeight: 52,
@@ -83,6 +100,40 @@ describe('AlliancePixiPage', () => {
     page.destroy();
   });
 
+  it('renders claimed quests as passive recipe-style status rows', () => {
+    const page = new AlliancePixiPage({
+      assetManager: createPixiAssetManagerFake(Texture),
+      semanticRegistry: new SemanticTargetRegistry(),
+    });
+    const model = createModel('quests');
+    model.rows[0] = {
+      ...model.rows[0],
+      actionLabel: 'Claimed',
+      claimed: true,
+      enabled: false,
+      onActivate: null,
+    };
+
+    page.layout({ sourceWidth: 390, sourceHeight: 844 });
+    page.bind(model);
+
+    const row = page.quests.rows.getWidgets()[0];
+    expect(row.action.root.visible).toBe(false);
+    expect(row.claimedStatus.visible).toBe(true);
+    expect(row.claimedStatus.eventMode).toBe('none');
+    expect(row.claimedStatusFrame.sourceInsets).toEqual(
+      PIXI_ROOT_RUN_GEOMETRY.settings.rowSourceInsets,
+    );
+    expect(row.claimedStatusFrame.borderInsets).toEqual(
+      PIXI_ROOT_RUN_GEOMETRY.settings.rowBorderInsets,
+    );
+    expect(row.claimedStatusFrame.frameHeight).toBe(30);
+    expect(row.claimedCheckmark.width).toBe(18);
+    expect(row.claimedCheckmark.x).toBeGreaterThan(row.claimedLabel.x);
+
+    page.destroy();
+  });
+
   it('composes the Alliance identity, stats, announcement, and roster in order', () => {
     const semanticRegistry = new SemanticTargetRegistry();
     const page = new AlliancePixiPage({
@@ -94,15 +145,40 @@ describe('AlliancePixiPage', () => {
     page.bind(createModel('home'));
     page.activate();
 
+    expect(page.titleRibbon.assetId).toBe(
+      PIXI_ROOT_RUN_ASSETS.marketTitleRibbon,
+    );
+    expect(page.titleRibbon.title.text).toBe('Trade Alliance');
+    expect(page.titleRibbon.stars.visible).toBe(false);
+    expect(page.titleRibbon.root.x).toBeCloseTo(
+      (PIXI_UI_GEOMETRY.sourceWidth - page.titleRibbon.width) / 2,
+    );
+    expect(page.homeIdentitySection.root.y).toBeCloseTo(
+      PIXI_UI_GEOMETRY.roomContentTop +
+        PIXI_ROOT_RUN_GEOMETRY.marketTitleRibbon.height -
+        11,
+    );
     expect(page.homeIdentitySection.root.visible).toBe(true);
     expect(page.homeName.text).toBe('Night Owls');
     expect(page.homeTag.text).toBe('[OWL]');
     expect(page.homeMemberStat.amount).toBe('1/50');
     expect(page.homeMemberStat.iconFrame).toBe('alliance:members');
     expect(page.homeIncomeStat.amount).toBe('12.5K');
+    expect(page.homeAnnouncement.titleRibbon.assetId).toBe(
+      PIXI_ROOT_RUN_ASSETS.workshopRequestTitleRibbon,
+    );
+    expect(page.homeAnnouncement.titleRibbon.title.text).toBe('Announcement');
+    expect(page.homeAnnouncement.titleRibbon.root.scale.x).toBeCloseTo(0.86);
     expect(page.homeAnnouncement.detail.text).toContain(
       'Weekly goal: support every active member.',
     );
+    expect(page.homeAnnouncement.detail.style.fontSize).toBe(10);
+    expect(page.homeAnnouncement.detail.anchor).toMatchObject({ x: 0.5, y: 0 });
+    expect(page.homeAnnouncement.detail.position.x).toBeCloseTo(
+      PIXI_UI_GEOMETRY.sourceWidth / 2 -
+        page.homeAnnouncement.root.x,
+    );
+    expect(page.homeLeaveButton.parent).toBe(page.homeIdentitySection.root);
     expect(
       page.homeIdentitySection.root.x +
         page.homeFlag.x +
@@ -120,8 +196,14 @@ describe('AlliancePixiPage', () => {
       page.homeAnnouncement.paper.frameHeight;
     const rosterTop =
       page.homeMembersSection.root.y + page.homeMembersSection.paper.y;
-    expect(announcementTop - identityBottom).toBe(8);
+    expect(announcementTop - identityBottom).toBe(16);
     expect(rosterTop - announcementBottom).toBe(8);
+    expect(page.homeMembersSection.scroll.scrollbarTrack.x).toBe(
+      RETAINED_DIALOG_SCROLL_GEOMETRY.scrollbarShiftRight,
+    );
+    expect(page.homeMembersSection.scroll.scrollbarThumb.x).toBe(
+      RETAINED_DIALOG_SCROLL_GEOMETRY.scrollbarShiftRight,
+    );
     for (const section of [
       page.homeIdentitySection,
       page.homeAnnouncement,
@@ -200,6 +282,35 @@ describe('AlliancePixiPage', () => {
     page.destroy();
   });
 
+  it('centers the empty announcement message without using the alliance description', () => {
+    const page = new AlliancePixiPage({
+      assetManager: createPixiAssetManagerFake(Texture),
+      semanticRegistry: new SemanticTargetRegistry(),
+    });
+    const model = createModel('home');
+    model.tradeInfo.notice = '';
+
+    page.layout({ sourceWidth: 390, sourceHeight: 844 });
+    page.bind(model);
+
+    expect(page.homeAnnouncement.detail.text).toBe(
+      'No Alliance Announcement',
+    );
+    expect(page.homeAnnouncement.detail.anchor).toMatchObject({
+      x: 0.5,
+      y: 0.5,
+    });
+    expect(page.homeAnnouncement.detail.position.x).toBeCloseTo(
+      page.homeAnnouncement.titleRibbon.root.x +
+        (page.homeAnnouncement.titleRibbon.width *
+          page.homeAnnouncement.titleRibbon.root.scale.x) /
+          2,
+    );
+    expect(page.homeAnnouncement.detail.position.y).toBeCloseTo(51);
+
+    page.destroy();
+  });
+
   it('anchors focused Profile and Banner tabs below the settings content', () => {
     const page = new AlliancePixiPage({
       assetManager: createPixiAssetManagerFake(Texture),
@@ -256,7 +367,7 @@ describe('AlliancePixiPage', () => {
       pane.bannerColorSwatchLayer.y + 24,
     );
     expect(pane.saveButton.text.text).toBe('Save Banner');
-    expect(pane.scroll.scrollbarThumb.visible).toBe(false);
+    expect(pane.scroll.scrollbarThumb.visible).toBe(true);
     expect(pane.bannerPreview.y).toBe(0);
     expect(pane.sectionTabLayer.y + 28).toBe(pane.lastBounds.height);
 

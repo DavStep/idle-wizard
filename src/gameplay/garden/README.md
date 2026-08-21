@@ -13,6 +13,11 @@ crop is active, and is committed to `harvestQuantity` when growth starts.
 Missing legacy settings keep
 the prior behavior: Auto is on and planting uses the current maximum.
 
+The weekly plot offer temporarily adds the separately persisted `E1` plot.
+`E1` has automation available without plot-specific automation research and
+does not change the permanent unlocked-plot count. Expiry hides and pauses it;
+buying the offer again later resumes its preserved plot state.
+
 Each herb definition owns its configured growth duration. Regular per-herb mastery reduces that duration independently in five-percentage-point ranks, then advanced per-plot research applies to the result. Sage remains at the previous `12s`; early herb uplifts ramp by tier before Glowcap and later herbs use the full `85%` uplift.
 
 `GardenTapAccelerationManager` owns manual active-plot acceleration. Each accepted

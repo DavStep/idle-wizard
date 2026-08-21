@@ -21,6 +21,8 @@ describe('PlayerFacade', () => {
       iconMode: 'icons',
       progressBar: 'regular',
       plotView: 'boxes',
+      allowFriendRequests: true,
+      allowTradeAllianceInvitations: true,
     });
   });
 
@@ -42,6 +44,8 @@ describe('PlayerFacade', () => {
       iconMode: 'icons',
       progressBar: 'regular',
       plotView: 'boxes',
+      allowFriendRequests: true,
+      allowTradeAllianceInvitations: true,
     });
   });
 
@@ -73,6 +77,8 @@ describe('PlayerFacade', () => {
     playerFacade.applyServerProfile({
       username: 'Wizard',
       usernamePromptSeen: true,
+      allowFriendRequests: false,
+      allowTradeAllianceInvitations: false,
     });
 
     expect(playerFacade.getSnapshot()).toMatchObject({
@@ -235,6 +241,8 @@ describe('PlayerFacade', () => {
       progressBar: 'gradient',
       plotView: 'rows',
       usernamePromptSeen: true,
+      allowFriendRequests: false,
+      allowTradeAllianceInvitations: false,
     });
 
     expect(playerFacade.getProfileSnapshot()).toEqual({
@@ -248,6 +256,20 @@ describe('PlayerFacade', () => {
       iconMode: 'icons',
       progressBar: 'gradient',
       plotView: 'boxes',
+      allowFriendRequests: false,
+      allowTradeAllianceInvitations: false,
+    });
+  });
+
+  it('updates social preferences and includes them in the synced profile', () => {
+    const playerFacade = new PlayerFacade();
+
+    playerFacade.setAllowFriendRequests(false);
+    playerFacade.setAllowTradeAllianceInvitations(false);
+
+    expect(playerFacade.getProfileSnapshot()).toMatchObject({
+      allowFriendRequests: false,
+      allowTradeAllianceInvitations: false,
     });
   });
 

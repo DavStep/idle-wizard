@@ -52,7 +52,7 @@ export const BREWING_HUD_GEOMETRY = Object.freeze({
   detailContentInset: 10,
   recipeButtonWidth: 78,
   recipeIconSize: 34,
-  recipeIconY: 5,
+  recipeIconY: 7,
   recipeLabelY: 25,
   recipeLabelFontSize: 9,
   recipeLabelLineHeight: 9,
@@ -362,7 +362,8 @@ export class BrewingHudPixi {
       'recipes',
       'Recipes',
       'yellow',
-      () => this.actions.openRecipes?.(this.selectedIndex),
+      () =>
+        this.actions.openRecipes?.(this.getSelectedCauldronActionIndex()),
       'brewing:recipes',
       { fallbackHitTest: true },
     );
@@ -384,15 +385,15 @@ export class BrewingHudPixi {
       this.layoutRecipeButtonContent();
     };
     this.autoBrew = this.createButton('autobrew', 'Auto', 'yellow', () =>
-      this.actions.toggleAutoBrew?.(this.selectedIndex),
+      this.actions.toggleAutoBrew?.(this.getSelectedCauldronActionIndex()),
     );
     this.emptyCauldron = this.createButton(
       'empty-cauldron',
       'Empty',
       'red',
       () =>
-        this.actions.emptyCauldron?.(this.selectedIndex) ??
-        this.actions.clearRecipe?.(this.selectedIndex) ??
+        this.actions.emptyCauldron?.(this.getSelectedCauldronActionIndex()) ??
+        this.actions.clearRecipe?.(this.getSelectedCauldronActionIndex()) ??
         false,
     );
     this.quantity = this.createButton('quantity', 'x1', 'yellow', () => {
@@ -401,7 +402,7 @@ export class BrewingHudPixi {
       return (
         this.actions.selectBrewQuantity?.(
           quantity.nextQuantity ?? nextBrewQuantity(cauldron),
-          this.selectedIndex,
+          this.getSelectedCauldronActionIndex(),
         ) ?? false
       );
     });
@@ -646,7 +647,10 @@ export class BrewingHudPixi {
       this.lastMotionCauldronKey === motionKey;
     const motionNow = this.getTimerNow();
     const unlocked = cauldron?.unlocked !== false;
-    const number = cauldron?.cauldronNumber ?? this.selectedIndex + 1;
+    const number =
+      cauldron?.displayNumber ??
+      cauldron?.cauldronNumber ??
+      this.selectedIndex + 1;
     this.cauldronStars.setLevel(unlocked ? cauldron?.level ?? 1 : 0);
     this.cauldronStars.visible = unlocked;
     this.cauldronStars.renderable = unlocked;
@@ -700,7 +704,8 @@ export class BrewingHudPixi {
         ? toTitleCase(displayedRecipe.label)
         : 'Recipes',
       enabled: unlocked && cauldron?.canSelectRecipe !== false,
-      action: () => this.actions.openRecipes?.(this.selectedIndex),
+      action: () =>
+        this.actions.openRecipes?.(this.getSelectedCauldronActionIndex()),
     });
     this.layoutRecipeButtonContent();
     const autoBrewEnabled = cauldron?.autoBrewEnabled === true;
@@ -712,7 +717,8 @@ export class BrewingHudPixi {
       enabled:
         autoBrewEnabled || cauldron?.autoBrewAvailable === true,
       selected: false,
-      action: () => this.actions.toggleAutoBrew?.(this.selectedIndex),
+      action: () =>
+        this.actions.toggleAutoBrew?.(this.getSelectedCauldronActionIndex()),
     });
     this.layoutAutoBrewContent();
     this.setAutoBrewMotionEnabled(autoBrewEnabled);
@@ -720,8 +726,8 @@ export class BrewingHudPixi {
       label: 'Empty',
       enabled: unlocked,
       action: () =>
-        this.actions.emptyCauldron?.(this.selectedIndex) ??
-        this.actions.clearRecipe?.(this.selectedIndex) ??
+        this.actions.emptyCauldron?.(this.getSelectedCauldronActionIndex()) ??
+        this.actions.clearRecipe?.(this.getSelectedCauldronActionIndex()) ??
         false,
     });
     this.layoutEmptyCauldronContent();
@@ -732,7 +738,7 @@ export class BrewingHudPixi {
       action: () =>
         this.actions.selectBrewQuantity?.(
           quantity.nextQuantity ?? nextBrewQuantity(cauldron),
-          this.selectedIndex,
+          this.getSelectedCauldronActionIndex(),
         ),
     });
     const primaryState = resolveBrewingPrimaryState(cauldron);
@@ -991,7 +997,8 @@ export class BrewingHudPixi {
     switch (state.id) {
       case 'recipes':
         result =
-          this.actions.openRecipes?.(this.selectedIndex) ?? false;
+          this.actions.openRecipes?.(this.getSelectedCauldronActionIndex()) ??
+          false;
         break;
       case 'cancel':
         if (
@@ -999,11 +1006,14 @@ export class BrewingHudPixi {
           cauldron?.activeBrew?.phase === 'bottling'
         ) {
           result =
-            this.actions.cancelBrew?.(this.selectedIndex) ?? false;
+            this.actions.cancelBrew?.(this.getSelectedCauldronActionIndex()) ??
+            false;
           break;
         }
         result =
-          this.actions.toggleAutoBrew?.(this.selectedIndex) ?? false;
+          this.actions.toggleAutoBrew?.(
+            this.getSelectedCauldronActionIndex(),
+          ) ?? false;
         break;
       case 'bottle':
         result =
@@ -1056,6 +1066,13 @@ export class BrewingHudPixi {
     return this.getCauldrons()[this.selectedIndex] ?? {};
   }
 
+  getSelectedCauldronActionIndex() {
+    const cauldron = this.getSelectedCauldron();
+    return Number.isInteger(cauldron?.cauldronIndex)
+      ? cauldron.cauldronIndex
+      : this.selectedIndex;
+  }
+
   canAccelerateSelectedCauldron() {
     const cauldron = this.getSelectedCauldron();
     const active = cauldron?.activeBrew ?? null;
@@ -1105,7 +1122,9 @@ export class BrewingHudPixi {
       };
     }
     const result =
-      this.actions.accelerateCauldron?.(this.selectedIndex) ?? false;
+      this.actions.accelerateCauldron?.(
+        this.getSelectedCauldronActionIndex(),
+      ) ?? false;
     if (result?.ok === true) {
       this.cauldronTapLockUntilByIndex.set(
         this.selectedIndex,
@@ -1621,6 +1640,7 @@ export class BrewingHudPixi {
     this.recipes.control.textLabel
       .setFontSize(BREWING_HUD_GEOMETRY.recipeLabelFontSize)
       .setLineHeight(BREWING_HUD_GEOMETRY.recipeLabelLineHeight)
+      .setAlign('center')
       .setWrapWidth(
         this.recipes.width - BREWING_HUD_GEOMETRY.recipeLabelInset * 2,
       );

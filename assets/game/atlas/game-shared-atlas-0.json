@@ -2,7 +2,7 @@
   "frames": {
     "source:assets/avatars/adventurer_blackarmor_sword.png": {
       "frame": {
-        "x": 1238,
+        "x": 1511,
         "y": 1417,
         "w": 87,
         "h": 87
@@ -27,7 +27,7 @@
     },
     "source:assets/avatars/adventurer_blondshield_guard.png": {
       "frame": {
-        "x": 1329,
+        "x": 1602,
         "y": 1417,
         "w": 87,
         "h": 87
@@ -52,7 +52,7 @@
     },
     "source:assets/avatars/adventurer_blondsword.png": {
       "frame": {
-        "x": 1420,
+        "x": 1693,
         "y": 1417,
         "w": 87,
         "h": 87
@@ -77,7 +77,7 @@
     },
     "source:assets/avatars/adventurer_bluebandana.png": {
       "frame": {
-        "x": 1511,
+        "x": 1784,
         "y": 1417,
         "w": 87,
         "h": 87
@@ -102,7 +102,7 @@
     },
     "source:assets/avatars/adventurer_bluequiver_archer.png": {
       "frame": {
-        "x": 1602,
+        "x": 1875,
         "y": 1417,
         "w": 87,
         "h": 87
@@ -127,8 +127,8 @@
     },
     "source:assets/avatars/adventurer_bluescarf_spear.png": {
       "frame": {
-        "x": 1693,
-        "y": 1417,
+        "x": 4,
+        "y": 1529,
         "w": 87,
         "h": 87
       },
@@ -152,8 +152,8 @@
     },
     "source:assets/avatars/adventurer_brownhood_archer.png": {
       "frame": {
-        "x": 1784,
-        "y": 1417,
+        "x": 95,
+        "y": 1529,
         "w": 87,
         "h": 87
       },
@@ -177,8 +177,8 @@
     },
     "source:assets/avatars/adventurer_cleric.png": {
       "frame": {
-        "x": 1875,
-        "y": 1417,
+        "x": 186,
+        "y": 1529,
         "w": 87,
         "h": 87
       },
@@ -202,7 +202,7 @@
     },
     "source:assets/avatars/adventurer_furguard.png": {
       "frame": {
-        "x": 4,
+        "x": 277,
         "y": 1529,
         "w": 87,
         "h": 87
@@ -227,7 +227,7 @@
     },
     "source:assets/avatars/adventurer_goldshield_guard.png": {
       "frame": {
-        "x": 95,
+        "x": 368,
         "y": 1529,
         "w": 87,
         "h": 87
@@ -252,7 +252,7 @@
     },
     "source:assets/avatars/adventurer_grayquiver_archer.png": {
       "frame": {
-        "x": 186,
+        "x": 459,
         "y": 1529,
         "w": 87,
         "h": 87
@@ -277,7 +277,7 @@
     },
     "source:assets/avatars/adventurer_greenbow_archer.png": {
       "frame": {
-        "x": 277,
+        "x": 550,
         "y": 1529,
         "w": 87,
         "h": 87
@@ -302,7 +302,7 @@
     },
     "source:assets/avatars/adventurer_greencloak_spear.png": {
       "frame": {
-        "x": 368,
+        "x": 641,
         "y": 1529,
         "w": 87,
         "h": 87
@@ -327,7 +327,7 @@
     },
     "source:assets/avatars/adventurer_greenhood_archer.png": {
       "frame": {
-        "x": 459,
+        "x": 732,
         "y": 1529,
         "w": 87,
         "h": 87
@@ -352,7 +352,7 @@
     },
     "source:assets/avatars/adventurer_greenscarf_dagger.png": {
       "frame": {
-        "x": 550,
+        "x": 823,
         "y": 1529,
         "w": 87,
         "h": 87
@@ -377,7 +377,7 @@
     },
     "source:assets/avatars/adventurer_greenscarf_shield.png": {
       "frame": {
-        "x": 641,
+        "x": 914,
         "y": 1529,
         "w": 87,
         "h": 87
@@ -402,7 +402,7 @@
     },
     "source:assets/avatars/adventurer_headband_furguard.png": {
       "frame": {
-        "x": 732,
+        "x": 1005,
         "y": 1529,
         "w": 87,
         "h": 87
@@ -427,7 +427,7 @@
     },
     "source:assets/avatars/adventurer_helmhammer.png": {
       "frame": {
-        "x": 823,
+        "x": 1096,
         "y": 1529,
         "w": 87,
         "h": 87
@@ -452,7 +452,7 @@
     },
     "source:assets/avatars/adventurer_hornhelm_axe.png": {
       "frame": {
-        "x": 914,
+        "x": 1187,
         "y": 1529,
         "w": 87,
         "h": 87
@@ -477,7 +477,7 @@
     },
     "source:assets/avatars/adventurer_olivehood_archer.png": {
       "frame": {
-        "x": 1005,
+        "x": 1278,
         "y": 1529,
         "w": 87,
         "h": 87
@@ -502,7 +502,7 @@
     },
     "source:assets/avatars/adventurer_packscout.png": {
       "frame": {
-        "x": 1096,
+        "x": 1369,
         "y": 1529,
         "w": 87,
         "h": 87
@@ -527,7 +527,7 @@
     },
     "source:assets/avatars/adventurer_plumehelm_sword.png": {
       "frame": {
-        "x": 1187,
+        "x": 1460,
         "y": 1529,
         "w": 87,
         "h": 87
@@ -552,7 +552,7 @@
     },
     "source:assets/avatars/adventurer_purpleaxe.png": {
       "frame": {
-        "x": 1278,
+        "x": 1551,
         "y": 1529,
         "w": 87,
         "h": 87
@@ -577,7 +577,7 @@
     },
     "source:assets/avatars/adventurer_redaxe_guard.png": {
       "frame": {
-        "x": 1369,
+        "x": 1642,
         "y": 1529,
         "w": 87,
         "h": 87
@@ -602,7 +602,7 @@
     },
     "source:assets/avatars/adventurer_redbow_archer.png": {
       "frame": {
-        "x": 1460,
+        "x": 1733,
         "y": 1529,
         "w": 87,
         "h": 87
@@ -627,7 +627,7 @@
     },
     "source:assets/avatars/adventurer_redplume_sword.png": {
       "frame": {
-        "x": 1551,
+        "x": 1824,
         "y": 1529,
         "w": 87,
         "h": 87
@@ -652,7 +652,7 @@
     },
     "source:assets/avatars/adventurer_redscarf_sword.png": {
       "frame": {
-        "x": 1642,
+        "x": 1915,
         "y": 1529,
         "w": 87,
         "h": 87
@@ -677,8 +677,8 @@
     },
     "source:assets/avatars/adventurer_redspearman.png": {
       "frame": {
-        "x": 1733,
-        "y": 1529,
+        "x": 4,
+        "y": 1620,
         "w": 87,
         "h": 87
       },
@@ -702,8 +702,8 @@
     },
     "source:assets/avatars/adventurer_silverhair_spear.png": {
       "frame": {
-        "x": 1824,
-        "y": 1529,
+        "x": 95,
+        "y": 1620,
         "w": 87,
         "h": 87
       },
@@ -727,8 +727,8 @@
     },
     "source:assets/avatars/adventurer_treasurehunter.png": {
       "frame": {
-        "x": 1915,
-        "y": 1529,
+        "x": 186,
+        "y": 1620,
         "w": 87,
         "h": 87
       },
@@ -752,7 +752,7 @@
     },
     "source:assets/avatars/bramble.png": {
       "frame": {
-        "x": 4,
+        "x": 277,
         "y": 1620,
         "w": 87,
         "h": 87
@@ -777,7 +777,7 @@
     },
     "source:assets/avatars/corvin.png": {
       "frame": {
-        "x": 95,
+        "x": 368,
         "y": 1620,
         "w": 87,
         "h": 87
@@ -802,7 +802,7 @@
     },
     "source:assets/avatars/elara.png": {
       "frame": {
-        "x": 186,
+        "x": 459,
         "y": 1620,
         "w": 87,
         "h": 87
@@ -827,7 +827,7 @@
     },
     "source:assets/avatars/juniper.png": {
       "frame": {
-        "x": 277,
+        "x": 550,
         "y": 1620,
         "w": 87,
         "h": 87
@@ -852,7 +852,7 @@
     },
     "source:assets/avatars/mira.png": {
       "frame": {
-        "x": 368,
+        "x": 641,
         "y": 1620,
         "w": 87,
         "h": 87
@@ -877,7 +877,7 @@
     },
     "source:assets/avatars/rowan.png": {
       "frame": {
-        "x": 459,
+        "x": 732,
         "y": 1620,
         "w": 87,
         "h": 87
@@ -902,7 +902,7 @@
     },
     "source:assets/characters/adventurer_blackarmor_sword.png": {
       "frame": {
-        "x": 883,
+        "x": 1147,
         "y": 1069,
         "w": 87,
         "h": 108
@@ -927,7 +927,7 @@
     },
     "source:assets/characters/adventurer_blacksmith.png": {
       "frame": {
-        "x": 974,
+        "x": 1238,
         "y": 1069,
         "w": 87,
         "h": 108
@@ -952,7 +952,7 @@
     },
     "source:assets/characters/adventurer_blondshield_guard.png": {
       "frame": {
-        "x": 1065,
+        "x": 1329,
         "y": 1069,
         "w": 87,
         "h": 108
@@ -977,7 +977,7 @@
     },
     "source:assets/characters/adventurer_blondsword.png": {
       "frame": {
-        "x": 1156,
+        "x": 1420,
         "y": 1069,
         "w": 87,
         "h": 108
@@ -1002,7 +1002,7 @@
     },
     "source:assets/characters/adventurer_bluebandana.png": {
       "frame": {
-        "x": 1247,
+        "x": 1511,
         "y": 1069,
         "w": 87,
         "h": 108
@@ -1027,7 +1027,7 @@
     },
     "source:assets/characters/adventurer_bluequiver_archer.png": {
       "frame": {
-        "x": 1338,
+        "x": 1602,
         "y": 1069,
         "w": 87,
         "h": 108
@@ -1052,7 +1052,7 @@
     },
     "source:assets/characters/adventurer_bluescarf_spear.png": {
       "frame": {
-        "x": 1429,
+        "x": 1693,
         "y": 1069,
         "w": 87,
         "h": 108
@@ -1077,7 +1077,7 @@
     },
     "source:assets/characters/adventurer_brownhood_archer.png": {
       "frame": {
-        "x": 1520,
+        "x": 1784,
         "y": 1069,
         "w": 87,
         "h": 108
@@ -1102,7 +1102,7 @@
     },
     "source:assets/characters/adventurer_cleric.png": {
       "frame": {
-        "x": 1611,
+        "x": 1875,
         "y": 1069,
         "w": 87,
         "h": 108
@@ -1127,8 +1127,8 @@
     },
     "source:assets/characters/adventurer_furguard.png": {
       "frame": {
-        "x": 1702,
-        "y": 1069,
+        "x": 4,
+        "y": 1193,
         "w": 87,
         "h": 108
       },
@@ -1152,8 +1152,8 @@
     },
     "source:assets/characters/adventurer_goldshield_guard.png": {
       "frame": {
-        "x": 1793,
-        "y": 1069,
+        "x": 95,
+        "y": 1193,
         "w": 87,
         "h": 108
       },
@@ -1177,8 +1177,8 @@
     },
     "source:assets/characters/adventurer_grayquiver_archer.png": {
       "frame": {
-        "x": 1884,
-        "y": 1069,
+        "x": 186,
+        "y": 1193,
         "w": 87,
         "h": 108
       },
@@ -1202,7 +1202,7 @@
     },
     "source:assets/characters/adventurer_greenbow_archer.png": {
       "frame": {
-        "x": 4,
+        "x": 277,
         "y": 1193,
         "w": 87,
         "h": 108
@@ -1227,7 +1227,7 @@
     },
     "source:assets/characters/adventurer_greencloak_spear.png": {
       "frame": {
-        "x": 95,
+        "x": 368,
         "y": 1193,
         "w": 87,
         "h": 108
@@ -1252,7 +1252,7 @@
     },
     "source:assets/characters/adventurer_greenhood_archer.png": {
       "frame": {
-        "x": 186,
+        "x": 459,
         "y": 1193,
         "w": 87,
         "h": 108
@@ -1277,7 +1277,7 @@
     },
     "source:assets/characters/adventurer_greenscarf_dagger.png": {
       "frame": {
-        "x": 277,
+        "x": 550,
         "y": 1193,
         "w": 87,
         "h": 108
@@ -1302,7 +1302,7 @@
     },
     "source:assets/characters/adventurer_greenscarf_shield.png": {
       "frame": {
-        "x": 368,
+        "x": 641,
         "y": 1193,
         "w": 87,
         "h": 108
@@ -1327,7 +1327,7 @@
     },
     "source:assets/characters/adventurer_headband_furguard.png": {
       "frame": {
-        "x": 459,
+        "x": 732,
         "y": 1193,
         "w": 87,
         "h": 108
@@ -1352,7 +1352,7 @@
     },
     "source:assets/characters/adventurer_helmhammer.png": {
       "frame": {
-        "x": 550,
+        "x": 823,
         "y": 1193,
         "w": 87,
         "h": 108
@@ -1377,7 +1377,7 @@
     },
     "source:assets/characters/adventurer_hoodblade.png": {
       "frame": {
-        "x": 641,
+        "x": 914,
         "y": 1193,
         "w": 87,
         "h": 108
@@ -1402,7 +1402,7 @@
     },
     "source:assets/characters/adventurer_hornhelm_axe.png": {
       "frame": {
-        "x": 732,
+        "x": 1005,
         "y": 1193,
         "w": 87,
         "h": 108
@@ -1427,7 +1427,7 @@
     },
     "source:assets/characters/adventurer_lamplighter.png": {
       "frame": {
-        "x": 823,
+        "x": 1096,
         "y": 1193,
         "w": 87,
         "h": 108
@@ -1452,7 +1452,7 @@
     },
     "source:assets/characters/adventurer_minstrel.png": {
       "frame": {
-        "x": 914,
+        "x": 1187,
         "y": 1193,
         "w": 87,
         "h": 108
@@ -1477,7 +1477,7 @@
     },
     "source:assets/characters/adventurer_olivehood_archer.png": {
       "frame": {
-        "x": 1005,
+        "x": 1278,
         "y": 1193,
         "w": 87,
         "h": 108
@@ -1502,7 +1502,7 @@
     },
     "source:assets/characters/adventurer_packscout.png": {
       "frame": {
-        "x": 1096,
+        "x": 1369,
         "y": 1193,
         "w": 87,
         "h": 108
@@ -1527,7 +1527,7 @@
     },
     "source:assets/characters/adventurer_planter.png": {
       "frame": {
-        "x": 1187,
+        "x": 1460,
         "y": 1193,
         "w": 87,
         "h": 108
@@ -1552,7 +1552,7 @@
     },
     "source:assets/characters/adventurer_plumehelm_sword.png": {
       "frame": {
-        "x": 1278,
+        "x": 1551,
         "y": 1193,
         "w": 87,
         "h": 108
@@ -1577,7 +1577,7 @@
     },
     "source:assets/characters/adventurer_pouchrunner.png": {
       "frame": {
-        "x": 1369,
+        "x": 1642,
         "y": 1193,
         "w": 87,
         "h": 108
@@ -1602,7 +1602,7 @@
     },
     "source:assets/characters/adventurer_purpleaxe.png": {
       "frame": {
-        "x": 1460,
+        "x": 1733,
         "y": 1193,
         "w": 87,
         "h": 108
@@ -1627,7 +1627,7 @@
     },
     "source:assets/characters/adventurer_redaxe_guard.png": {
       "frame": {
-        "x": 1551,
+        "x": 1824,
         "y": 1193,
         "w": 87,
         "h": 108
@@ -1652,7 +1652,7 @@
     },
     "source:assets/characters/adventurer_redbow_archer.png": {
       "frame": {
-        "x": 1642,
+        "x": 1915,
         "y": 1193,
         "w": 87,
         "h": 108
@@ -1677,8 +1677,8 @@
     },
     "source:assets/characters/adventurer_redplume_sword.png": {
       "frame": {
-        "x": 1733,
-        "y": 1193,
+        "x": 4,
+        "y": 1305,
         "w": 87,
         "h": 108
       },
@@ -1702,8 +1702,8 @@
     },
     "source:assets/characters/adventurer_redscarf_sword.png": {
       "frame": {
-        "x": 1824,
-        "y": 1193,
+        "x": 95,
+        "y": 1305,
         "w": 87,
         "h": 108
       },
@@ -1727,8 +1727,8 @@
     },
     "source:assets/characters/adventurer_redspearman.png": {
       "frame": {
-        "x": 1915,
-        "y": 1193,
+        "x": 186,
+        "y": 1305,
         "w": 87,
         "h": 108
       },
@@ -1752,7 +1752,7 @@
     },
     "source:assets/characters/adventurer_sapling.png": {
       "frame": {
-        "x": 4,
+        "x": 277,
         "y": 1305,
         "w": 87,
         "h": 108
@@ -1777,7 +1777,7 @@
     },
     "source:assets/characters/adventurer_scrollcap.png": {
       "frame": {
-        "x": 95,
+        "x": 368,
         "y": 1305,
         "w": 87,
         "h": 108
@@ -1802,7 +1802,7 @@
     },
     "source:assets/characters/adventurer_shadowdagger.png": {
       "frame": {
-        "x": 186,
+        "x": 459,
         "y": 1305,
         "w": 87,
         "h": 108
@@ -1827,7 +1827,7 @@
     },
     "source:assets/characters/adventurer_shieldguard.png": {
       "frame": {
-        "x": 277,
+        "x": 550,
         "y": 1305,
         "w": 87,
         "h": 108
@@ -1852,7 +1852,7 @@
     },
     "source:assets/characters/adventurer_silverhair_spear.png": {
       "frame": {
-        "x": 368,
+        "x": 641,
         "y": 1305,
         "w": 87,
         "h": 108
@@ -1877,7 +1877,7 @@
     },
     "source:assets/characters/adventurer_steelward.png": {
       "frame": {
-        "x": 459,
+        "x": 732,
         "y": 1305,
         "w": 87,
         "h": 108
@@ -1902,7 +1902,7 @@
     },
     "source:assets/characters/adventurer_treasurehunter.png": {
       "frame": {
-        "x": 550,
+        "x": 823,
         "y": 1305,
         "w": 87,
         "h": 108
@@ -1927,7 +1927,7 @@
     },
     "source:assets/characters/adventurer_troubadour.png": {
       "frame": {
-        "x": 641,
+        "x": 914,
         "y": 1305,
         "w": 87,
         "h": 108
@@ -1952,7 +1952,7 @@
     },
     "source:assets/characters/adventurer_wayfinder.png": {
       "frame": {
-        "x": 732,
+        "x": 1005,
         "y": 1305,
         "w": 87,
         "h": 108
@@ -1977,7 +1977,7 @@
     },
     "source:assets/characters/bard.png": {
       "frame": {
-        "x": 823,
+        "x": 1096,
         "y": 1305,
         "w": 87,
         "h": 108
@@ -2002,7 +2002,7 @@
     },
     "source:assets/characters/bramble.png": {
       "frame": {
-        "x": 914,
+        "x": 1187,
         "y": 1305,
         "w": 87,
         "h": 108
@@ -2027,7 +2027,7 @@
     },
     "source:assets/characters/corvin.png": {
       "frame": {
-        "x": 1005,
+        "x": 1278,
         "y": 1305,
         "w": 87,
         "h": 108
@@ -2052,7 +2052,7 @@
     },
     "source:assets/characters/elara.png": {
       "frame": {
-        "x": 1096,
+        "x": 1369,
         "y": 1305,
         "w": 87,
         "h": 108
@@ -2077,7 +2077,7 @@
     },
     "source:assets/characters/explorer.png": {
       "frame": {
-        "x": 1187,
+        "x": 1460,
         "y": 1305,
         "w": 87,
         "h": 108
@@ -2102,7 +2102,7 @@
     },
     "source:assets/characters/guild_secretary.png": {
       "frame": {
-        "x": 756,
+        "x": 1020,
         "y": 1069,
         "w": 123,
         "h": 108
@@ -2127,7 +2127,7 @@
     },
     "source:assets/characters/herbalist.png": {
       "frame": {
-        "x": 1278,
+        "x": 1551,
         "y": 1305,
         "w": 87,
         "h": 108
@@ -2152,7 +2152,7 @@
     },
     "source:assets/characters/juniper.png": {
       "frame": {
-        "x": 1369,
+        "x": 1642,
         "y": 1305,
         "w": 87,
         "h": 108
@@ -2177,7 +2177,7 @@
     },
     "source:assets/characters/knight.png": {
       "frame": {
-        "x": 1460,
+        "x": 1733,
         "y": 1305,
         "w": 87,
         "h": 108
@@ -2202,7 +2202,7 @@
     },
     "source:assets/characters/miner.png": {
       "frame": {
-        "x": 1551,
+        "x": 1824,
         "y": 1305,
         "w": 87,
         "h": 108
@@ -2227,7 +2227,7 @@
     },
     "source:assets/characters/mira.png": {
       "frame": {
-        "x": 1642,
+        "x": 1915,
         "y": 1305,
         "w": 87,
         "h": 108
@@ -2252,8 +2252,8 @@
     },
     "source:assets/characters/ranger.png": {
       "frame": {
-        "x": 1733,
-        "y": 1305,
+        "x": 4,
+        "y": 1417,
         "w": 87,
         "h": 108
       },
@@ -2277,8 +2277,8 @@
     },
     "source:assets/characters/rogue.png": {
       "frame": {
-        "x": 1824,
-        "y": 1305,
+        "x": 95,
+        "y": 1417,
         "w": 87,
         "h": 108
       },
@@ -2302,8 +2302,8 @@
     },
     "source:assets/characters/rowan.png": {
       "frame": {
-        "x": 1915,
-        "y": 1305,
+        "x": 186,
+        "y": 1417,
         "w": 87,
         "h": 108
       },
@@ -2327,7 +2327,7 @@
     },
     "source:assets/characters/traveler.png": {
       "frame": {
-        "x": 4,
+        "x": 277,
         "y": 1417,
         "w": 87,
         "h": 108
@@ -2802,7 +2802,7 @@
     },
     "source:assets/icons/icon-bag.png": {
       "frame": {
-        "x": 678,
+        "x": 951,
         "y": 1620,
         "w": 73,
         "h": 77
@@ -2852,7 +2852,7 @@
     },
     "source:assets/icons/icon-crystal.png": {
       "frame": {
-        "x": 674,
+        "x": 947,
         "y": 1417,
         "w": 92,
         "h": 92
@@ -2927,7 +2927,7 @@
     },
     "source:assets/icons/icon-herb-box.png": {
       "frame": {
-        "x": 770,
+        "x": 1043,
         "y": 1417,
         "w": 92,
         "h": 92
@@ -3052,7 +3052,7 @@
     },
     "source:assets/icons/icon-potion-box.png": {
       "frame": {
-        "x": 866,
+        "x": 1139,
         "y": 1417,
         "w": 92,
         "h": 92
@@ -3077,7 +3077,7 @@
     },
     "source:assets/icons/icon-prestige-star.png": {
       "frame": {
-        "x": 962,
+        "x": 1235,
         "y": 1417,
         "w": 92,
         "h": 92
@@ -3127,7 +3127,7 @@
     },
     "source:assets/icons/icon-seed-box.png": {
       "frame": {
-        "x": 1058,
+        "x": 1331,
         "y": 1417,
         "w": 92,
         "h": 92
@@ -3352,7 +3352,7 @@
     },
     "source:assets/icons/icon-stats-ledger-bag-style.png": {
       "frame": {
-        "x": 624,
+        "x": 888,
         "y": 1069,
         "w": 128,
         "h": 112
@@ -3377,7 +3377,7 @@
     },
     "source:assets/rooms/brewing/hearth/hearth-flame.png": {
       "frame": {
-        "x": 429,
+        "x": 702,
         "y": 1417,
         "w": 144,
         "h": 96
@@ -3402,7 +3402,7 @@
     },
     "source:assets/rooms/brewing/hearth/hearth-wood.png": {
       "frame": {
-        "x": 233,
+        "x": 506,
         "y": 1417,
         "w": 192,
         "h": 96
@@ -3702,7 +3702,7 @@
     },
     "source:assets/ui/notification-circle-orange.png": {
       "frame": {
-        "x": 829,
+        "x": 1102,
         "y": 1620,
         "w": 61,
         "h": 65
@@ -3727,7 +3727,7 @@
     },
     "source:assets/ui/notification-circle-red.png": {
       "frame": {
-        "x": 894,
+        "x": 1167,
         "y": 1620,
         "w": 61,
         "h": 65
@@ -3752,7 +3752,7 @@
     },
     "source:assets/ui/prop_info.png": {
       "frame": {
-        "x": 1258,
+        "x": 1531,
         "y": 1620,
         "w": 53,
         "h": 57
@@ -3827,7 +3827,7 @@
     },
     "source:assets/ui/root-run-account/edit-pencil.png": {
       "frame": {
-        "x": 755,
+        "x": 1028,
         "y": 1620,
         "w": 70,
         "h": 74
@@ -3927,7 +3927,7 @@
     },
     "source:assets/ui/root-run-level-star.png": {
       "frame": {
-        "x": 577,
+        "x": 850,
         "y": 1417,
         "w": 93,
         "h": 94
@@ -3952,7 +3952,7 @@
     },
     "source:assets/ui/root-run-research/research-button-shine.png": {
       "frame": {
-        "x": 631,
+        "x": 904,
         "y": 1620,
         "w": 43,
         "h": 81
@@ -3977,7 +3977,7 @@
     },
     "source:assets/ui/root-run-research/research-rank-badge-217x62.png": {
       "frame": {
-        "x": 959,
+        "x": 1232,
         "y": 1620,
         "w": 217,
         "h": 62
@@ -4027,7 +4027,7 @@
     },
     "source:assets/ui/root-run-research/upgrade-lvl-bg.png": {
       "frame": {
-        "x": 1180,
+        "x": 1453,
         "y": 1620,
         "w": 74,
         "h": 57
@@ -4050,9 +4050,59 @@
       },
       "source": "assets/game/source/ui/root-run-research/upgrade-lvl-bg.png"
     },
+    "source:assets/ui/root-run-settings/settings-icon-alliance-invitations.png": {
+      "frame": {
+        "x": 104,
+        "y": 1069,
+        "w": 128,
+        "h": 116
+      },
+      "rotated": false,
+      "trimmed": false,
+      "spriteSourceSize": {
+        "x": 0,
+        "y": 0,
+        "w": 128,
+        "h": 116
+      },
+      "sourceSize": {
+        "w": 128,
+        "h": 116
+      },
+      "originalSourceSize": {
+        "w": 128,
+        "h": 116
+      },
+      "source": "assets/game/source/ui/root-run-settings/settings-icon-alliance-invitations.png"
+    },
+    "source:assets/ui/root-run-settings/settings-icon-friend-requests.png": {
+      "frame": {
+        "x": 236,
+        "y": 1069,
+        "w": 128,
+        "h": 116
+      },
+      "rotated": false,
+      "trimmed": false,
+      "spriteSourceSize": {
+        "x": 0,
+        "y": 0,
+        "w": 128,
+        "h": 116
+      },
+      "sourceSize": {
+        "w": 128,
+        "h": 116
+      },
+      "originalSourceSize": {
+        "w": 128,
+        "h": 116
+      },
+      "source": "assets/game/source/ui/root-run-settings/settings-icon-friend-requests.png"
+    },
     "source:assets/ui/root-run-settings/settings-icon-gear.png": {
       "frame": {
-        "x": 1154,
+        "x": 1427,
         "y": 1417,
         "w": 80,
         "h": 88
@@ -4077,7 +4127,7 @@
     },
     "source:assets/ui/root-run-settings/settings-icon-music.png": {
       "frame": {
-        "x": 368,
+        "x": 632,
         "y": 1069,
         "w": 127,
         "h": 116
@@ -4102,7 +4152,7 @@
     },
     "source:assets/ui/root-run-settings/settings-icon-sound.png": {
       "frame": {
-        "x": 499,
+        "x": 763,
         "y": 1069,
         "w": 121,
         "h": 114
@@ -4127,7 +4177,7 @@
     },
     "source:assets/ui/root-run-settings/settings-icon-theme-day.png": {
       "frame": {
-        "x": 104,
+        "x": 368,
         "y": 1069,
         "w": 128,
         "h": 116
@@ -4152,7 +4202,7 @@
     },
     "source:assets/ui/root-run-settings/settings-icon-theme-night.png": {
       "frame": {
-        "x": 236,
+        "x": 500,
         "y": 1069,
         "w": 128,
         "h": 116
@@ -4177,7 +4227,7 @@
     },
     "source:assets/ui/root-run-settings/settings-icon-vibration.png": {
       "frame": {
-        "x": 95,
+        "x": 368,
         "y": 1417,
         "w": 134,
         "h": 107
@@ -4202,7 +4252,7 @@
     },
     "source:assets/ui/root-run-settings/settings-knob.png": {
       "frame": {
-        "x": 550,
+        "x": 823,
         "y": 1620,
         "w": 77,
         "h": 81
@@ -4252,7 +4302,7 @@
     },
     "source:assets/ui/stars/star-empty.png": {
       "frame": {
-        "x": 1315,
+        "x": 1588,
         "y": 1620,
         "w": 20,
         "h": 20
@@ -4277,7 +4327,7 @@
     },
     "source:assets/ui/stars/star-orange.png": {
       "frame": {
-        "x": 1339,
+        "x": 1612,
         "y": 1620,
         "w": 20,
         "h": 20
@@ -4302,7 +4352,7 @@
     },
     "source:assets/ui/stars/star-purple.png": {
       "frame": {
-        "x": 1363,
+        "x": 1636,
         "y": 1620,
         "w": 20,
         "h": 20
@@ -4327,7 +4377,7 @@
     },
     "source:assets/ui/stars/star-red.png": {
       "frame": {
-        "x": 1387,
+        "x": 1660,
         "y": 1620,
         "w": 20,
         "h": 20
@@ -4352,7 +4402,7 @@
     },
     "source:assets/ui/stars/star-yellow.png": {
       "frame": {
-        "x": 1411,
+        "x": 1684,
         "y": 1620,
         "w": 20,
         "h": 20
@@ -4377,7 +4427,7 @@
     },
     "source:assets/ui/tooltip-pointer.png": {
       "frame": {
-        "x": 1435,
+        "x": 1708,
         "y": 1620,
         "w": 28,
         "h": 15

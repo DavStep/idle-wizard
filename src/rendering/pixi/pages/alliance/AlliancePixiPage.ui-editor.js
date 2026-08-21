@@ -12,6 +12,7 @@ const allianceAssets = ({ id }) =>
 export default defineUiEditorIntegration({
   apiVersion: 1,
   childWidgetIds: [
+    'compound.market-title-ribbon',
     'compound.trade-alliance-banner',
     'primitive.alliance-emblem-option',
     'compound.hud-currency-capsule',

@@ -181,6 +181,38 @@ export class GardenFacade {
     return this.gardenCancellationManager.cancelProgress(tileNumber);
   }
 
+  setExtraPlotActive(active) {
+    return this.gardenTileEntityManager.setExtraTileActive(active);
+  }
+
+  getExtraPlotPersistenceSnapshot() {
+    const tile = this.gardenSnapshotManager.getExtraTileSnapshot();
+    if (!tile) {
+      return null;
+    }
+    return {
+      tileNumber: tile.tileNumber,
+      autoEnabled: tile.autoEnabled !== false,
+      plantQuantity: tile.plantQuantity,
+      selectedSeedItemKey: tile.selectedSeedKey,
+      seedItemKey: tile.seedKey,
+      herbItemKey: tile.herbKey,
+      harvestQuantity: tile.harvestQuantity,
+      phase: tile.phase,
+      totalMs: tile.totalMs,
+      remainingMs: tile.remainingMs,
+    };
+  }
+
+  applyExtraPlotPersistenceSnapshot(snapshot = null) {
+    const wasActive = this.gardenTileEntityManager.isExtraTileActive();
+    this.gardenTileEntityManager.setExtraTileActive(true);
+    const tile = snapshot ? this.restoreTile(snapshot) : null;
+    const applied = this.gardenTileEntityManager.applyExtraTileSnapshot(tile);
+    this.gardenTileEntityManager.setExtraTileActive(wasActive);
+    return applied;
+  }
+
   getSnapshot() {
     return {
       ...this.gardenSnapshotManager.getSnapshot(),
@@ -196,18 +228,21 @@ export class GardenFacade {
     return {
       ...this.gardenSeedSelectionManager.getPersistenceSnapshot(),
       unlockedTiles: this.gardenTileEntityManager.getUnlockedTiles(),
-      tiles: this.gardenSnapshotManager.getTileSnapshots().map((tile) => ({
-        tileNumber: tile.tileNumber,
-        autoEnabled: tile.autoEnabled !== false,
-        plantQuantity: tile.plantQuantity,
-        selectedSeedItemKey: tile.selectedSeedKey,
-        seedItemKey: tile.seedKey,
-        herbItemKey: tile.herbKey,
-        harvestQuantity: tile.harvestQuantity,
-        phase: tile.phase,
-        totalMs: tile.totalMs,
-        remainingMs: tile.remainingMs,
-      })),
+      tiles: this.gardenSnapshotManager
+        .getTileSnapshots()
+        .filter((tile) => tile.entitlementExtra !== true)
+        .map((tile) => ({
+          tileNumber: tile.tileNumber,
+          autoEnabled: tile.autoEnabled !== false,
+          plantQuantity: tile.plantQuantity,
+          selectedSeedItemKey: tile.selectedSeedKey,
+          seedItemKey: tile.seedKey,
+          herbItemKey: tile.herbKey,
+          harvestQuantity: tile.harvestQuantity,
+          phase: tile.phase,
+          totalMs: tile.totalMs,
+          remainingMs: tile.remainingMs,
+        })),
     };
   }
 

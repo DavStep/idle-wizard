@@ -16,6 +16,10 @@ import { gardenBulkResearchIds } from "./garden/gardenBulkResearch.js";
 import { GARDEN_PLOT_TAP_COOLDOWN_MS } from "./garden/managers/GardenTapAccelerationManager.js";
 import { BREWING_CAULDRON_TAP_COOLDOWN_MS } from "./brewing/managers/BrewingTapAccelerationManager.js";
 import { manaResearchIds } from "./research/manaResearch.js";
+import {
+  WEEKLY_OFFER_DURATION_MS,
+  WEEKLY_OFFER_IDS,
+} from "./weeklyOffers/WeeklyOfferEntitlementManager.js";
 
 function createMemoryStorage() {
   const values = new Map();
@@ -219,6 +223,96 @@ function buyCauldronsThrough(gameplayFacade, targetCauldronCount) {
     expect(gameplayFacade.buyBrewingCauldron()).toMatchObject({ ok: true });
   }
 }
+
+describe("weekly extra slot offers", () => {
+  it("projects automated E1 slots for seven days without changing permanent capacity", () => {
+    let now = 1_000;
+    const { gameplayFacade } = createGameplay({
+      persistenceNow: () => now,
+    });
+    const before = gameplayFacade.getSnapshot();
+
+    expect(
+      before.garden.plot.tiles.some((tile) => tile.entitlementExtra),
+    ).toBe(false);
+    expect(
+      before.brewing.cauldrons.some((cauldron) => cauldron.entitlementExtra),
+    ).toBe(false);
+
+    expect(
+      gameplayFacade.applyVerifiedWeeklyOfferPurchase(
+        WEEKLY_OFFER_IDS.extraPlot,
+      ),
+    ).toMatchObject({ ok: true });
+    expect(
+      gameplayFacade.applyVerifiedWeeklyOfferPurchase(
+        WEEKLY_OFFER_IDS.extraCauldron,
+      ),
+    ).toMatchObject({ ok: true });
+
+    const active = gameplayFacade.getSnapshot();
+    expect(active.garden.plot.unlockedTiles).toBe(
+      before.garden.plot.unlockedTiles,
+    );
+    expect(active.brewing.unlockedCauldrons).toBe(
+      before.brewing.unlockedCauldrons,
+    );
+    expect(
+      active.garden.plot.tiles.find((tile) => tile.entitlementExtra),
+    ).toMatchObject({
+      displayNumber: "E1",
+      automationAvailable: true,
+      unlocked: true,
+    });
+    expect(
+      active.brewing.cauldrons.find((cauldron) => cauldron.entitlementExtra),
+    ).toMatchObject({
+      displayNumber: "E1",
+      entitlementExtra: true,
+    });
+
+    const save = gameplayFacade.createPersistenceSave();
+    expect(save.garden.tiles).not.toContainEqual(
+      expect.objectContaining({ tileNumber: 99 }),
+    );
+    expect(save.brewing.cauldrons).not.toContainEqual(
+      expect.objectContaining({ cauldronNumber: 100 }),
+    );
+    expect(save.weeklyOffers).toMatchObject({
+      extraPlotExpiresAt: now + WEEKLY_OFFER_DURATION_MS,
+      extraCauldronExpiresAt: now + WEEKLY_OFFER_DURATION_MS,
+      extraPlot: { tileNumber: 99 },
+      extraCauldron: { cauldronNumber: 100 },
+    });
+
+    const restored = createGameplay({ persistenceNow: () => now });
+    expect(
+      restored.gameplayFacade.loadPersistenceSave(save, restored.ecsFacade),
+    ).toBe(true);
+    expect(
+      restored.gameplayFacade
+        .getSnapshot()
+        .garden.plot.tiles.find((tile) => tile.entitlementExtra),
+    ).toMatchObject({ displayNumber: "E1", unlocked: true });
+    expect(
+      restored.gameplayFacade
+        .getSnapshot()
+        .brewing.cauldrons.find((cauldron) => cauldron.entitlementExtra),
+    ).toMatchObject({ displayNumber: "E1", entitlementExtra: true });
+
+    now += WEEKLY_OFFER_DURATION_MS;
+    const expired = gameplayFacade.getSnapshot();
+    expect(
+      expired.garden.plot.tiles.some((tile) => tile.entitlementExtra),
+    ).toBe(false);
+    expect(
+      expired.brewing.cauldrons.some((cauldron) => cauldron.entitlementExtra),
+    ).toBe(false);
+    expect(expired.weeklyOffers.offers.every((offer) => offer.canPurchase)).toBe(
+      true,
+    );
+  });
+});
 
 function openFirstNpcMarketStand(gameplayFacade) {
   advanceToLevel(gameplayFacade, 4);

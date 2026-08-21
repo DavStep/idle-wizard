@@ -1,6 +1,6 @@
 // @vitest-environment jsdom
 
-import { Texture } from 'pixi.js';
+import { Sprite, Texture } from 'pixi.js';
 import { describe, expect, it } from 'vitest';
 
 import { installPixiPageTestCanvas } from '../pages/workshop/PixiPageTestHarness.js';
@@ -202,6 +202,75 @@ describe('PixiInlineText', () => {
       'Luna',
     ]);
     expect(inline.layoutHeight).toBeGreaterThan(TEST_STYLE.lineHeight);
+
+    inline.destroy({ children: true });
+  });
+
+  it('measures retained widgets between adjacent text runs and hides them on rebind', () => {
+    const avatar = new Sprite(Texture.WHITE);
+    const inline = new PixiInlineText({
+      runs: [
+        { kind: 'text', text: 'Welcome ' },
+        {
+          kind: 'widget',
+          displayObject: avatar,
+          fallbackText: '[Mira]',
+          label: 'Mira avatar',
+          size: 12,
+        },
+        { kind: 'text', text: ' Mira' },
+      ],
+      style: TEST_STYLE,
+      wrapWidth: 160,
+    });
+    const followingText = inline.textObjects.find(
+      (textObject) => textObject.visible && textObject.text.startsWith('Mira'),
+    );
+
+    expect(inline.text).toBe('Welcome [Mira] Mira');
+    expect(inline.widgetObjects).toEqual([avatar]);
+    expect(avatar.parent).toBe(inline);
+    expect(avatar.visible).toBe(true);
+    expect(avatar.width).toBe(12);
+    expect(avatar.height).toBe(12);
+    expect(followingText).toBeDefined();
+    expect(avatar.x + avatar.width).toBeLessThan(followingText.x);
+
+    inline.setRuns([{ kind: 'text', text: 'No avatar' }]);
+    expect(avatar.visible).toBe(false);
+    expect(avatar.renderable).toBe(false);
+
+    inline.setRuns([
+      { kind: 'widget', displayObject: avatar, fallbackText: '[Mira]', size: 12 },
+    ]);
+    expect(inline.widgetObjects).toEqual([avatar]);
+    expect(avatar.visible).toBe(true);
+
+    inline.destroy({ children: true });
+  });
+
+  it('uses widget fallback text when a run has no resolved display object', () => {
+    const inline = new PixiInlineText({
+      runs: [
+        { kind: 'text', text: 'Welcome ' },
+        {
+          kind: 'widget',
+          displayObject: null,
+          fallbackText: '[player]',
+        },
+      ],
+      style: TEST_STYLE,
+      wrapWidth: 120,
+    });
+
+    expect(inline.text).toBe('Welcome [player]');
+    expect(inline.widgetObjects).toHaveLength(0);
+    expect(
+      inline.textObjects.some(
+        (textObject) =>
+          textObject.visible && textObject.text.includes('[player]'),
+      ),
+    ).toBe(true);
 
     inline.destroy({ children: true });
   });

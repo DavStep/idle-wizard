@@ -1481,7 +1481,6 @@ export class WorkshopTaskRow {
     this.preferredHeight = WORKSHOP_TASK_DEFAULT_ROW_HEIGHT;
     this.displayedProgress = 0;
     this.targetProgress = 0;
-    this.queuedProgress = null;
     this.progressMotion = null;
     this.progressFeedback = null;
     this.motionFrame = null;
@@ -1551,7 +1550,6 @@ export class WorkshopTaskRow {
       this.clearResearchTimer();
       this.progressMotion = null;
       this.progressFeedback = null;
-      this.queuedProgress = null;
       this.setProgressImmediate(nextProgress);
     } else {
       this.animateProgressTo(nextProgress);
@@ -1719,7 +1717,6 @@ export class WorkshopTaskRow {
     this.pauseMotion();
     this.progressMotion = null;
     this.progressFeedback = null;
-    this.queuedProgress = null;
     this.clearResearchTimer();
     this.setProgressImmediate(0);
     this.model = null;
@@ -1746,7 +1743,6 @@ export class WorkshopTaskRow {
   bindResearchTimer(timer) {
     this.progressMotion = null;
     this.progressFeedback = null;
-    this.queuedProgress = null;
     this.researchTimer = timer;
     this.progressShineRoot.visible = false;
     this.progressShineRoot.renderable = false;
@@ -1783,7 +1779,6 @@ export class WorkshopTaskRow {
       this.progress.root.renderable = true;
       this.setProgressImmediate(timerProgress);
     }
-    this.queuedProgress = null;
     this.animateProgressTo(1, {
       durationMs,
       completion: true,
@@ -1792,7 +1787,6 @@ export class WorkshopTaskRow {
 
   holdCompletedProgress() {
     this.progressMotion = null;
-    this.queuedProgress = null;
     this.setProgressImmediate(1);
     if (this.progressFeedback) {
       this.scheduleMotionFrame();
@@ -1813,7 +1807,6 @@ export class WorkshopTaskRow {
     ) {
       this.progressMotion = null;
       this.progressFeedback = null;
-      this.queuedProgress = null;
       this.setProgressImmediate(nextProgress);
       return;
     }
@@ -1821,8 +1814,7 @@ export class WorkshopTaskRow {
       if (
         nextProgress < this.displayedProgress ||
         this.progressMotion ||
-        this.progressFeedback ||
-        this.queuedProgress
+        this.progressFeedback
       ) {
         return;
       }
@@ -1840,21 +1832,13 @@ export class WorkshopTaskRow {
       !completion &&
       (this.progressMotion || this.progressFeedback)
     ) {
-      const furthestScheduledProgress = Math.max(
-        this.progressMotion?.end ?? this.targetProgress,
-        this.queuedProgress?.progress ?? 0,
-      );
-      if (nextProgress > furthestScheduledProgress) {
-        this.queuedProgress = {
-          progress: nextProgress,
-          durationMs,
-          completion: false,
-        };
+      if (
+        nextProgress > this.targetProgress &&
+        this.extendProgressMotion(nextProgress, { durationMs })
+      ) {
+        return;
       }
       return;
-    }
-    if (completion) {
-      this.queuedProgress = null;
     }
     this.startProgressMotion(nextProgress, {
       durationMs,
@@ -1883,24 +1867,62 @@ export class WorkshopTaskRow {
     this.scheduleMotionFrame();
   }
 
-  startQueuedProgress(startedAtMs = this.page.timeSource()) {
-    if (
-      this.progressMotion ||
-      this.progressFeedback ||
-      !this.queuedProgress
-    ) {
+  extendProgressMotion(
+    progress,
+    {
+      durationMs = REQUEST_PROGRESS_UPDATE_DURATION_MS,
+      now = this.page.timeSource(),
+    } = {},
+  ) {
+    const nextProgress = clampUnit(progress);
+    if (nextProgress <= this.targetProgress) {
       return false;
     }
-    const queuedProgress = this.queuedProgress;
-    this.queuedProgress = null;
-    if (queuedProgress.progress <= this.displayedProgress) {
+
+    if (this.progressFeedback) {
+      this.updateProgressFeedback(now);
+      if (this.progressFeedback) {
+        const feedbackEndsAtMs =
+          this.progressFeedback.segmentStartedAtMs +
+          this.progressFeedback.durationMs;
+        const remainingShineMs = Math.max(1, feedbackEndsAtMs - now);
+        const currentShineX = this.progressShine.x;
+        this.targetProgress = nextProgress;
+        this.progressMotion.end = nextProgress;
+        this.progressMotion.startedAtMs = now + remainingShineMs;
+        this.progressFeedback = {
+          startedAtMs: this.progressFeedback.startedAtMs,
+          segmentStartedAtMs: now,
+          durationMs: remainingShineMs,
+          startX: currentShineX,
+          targetProgress: nextProgress,
+        };
+        this.layoutProgressShine();
+        this.progressShine.position.set(
+          currentShineX,
+          this.progressShineLayout?.centerY ?? this.progressShine.y,
+        );
+        this.scheduleMotionFrame();
+        return true;
+      }
+    }
+
+    this.updateDisplayedProgress(now);
+    if (!this.progressMotion) {
       return false;
     }
-    this.startProgressMotion(queuedProgress.progress, {
-      durationMs: queuedProgress.durationMs,
-      completion: queuedProgress.completion,
-      startedAtMs,
-    });
+    this.targetProgress = nextProgress;
+    this.progressMotion = {
+      start: this.displayedProgress,
+      end: nextProgress,
+      startedAtMs: now,
+      durationMs: Math.max(
+        1,
+        Number(durationMs) || REQUEST_PROGRESS_UPDATE_DURATION_MS,
+      ),
+      completion: false,
+    };
+    this.scheduleMotionFrame();
     return true;
   }
 
@@ -1923,7 +1945,6 @@ export class WorkshopTaskRow {
     if (!this.page.root.visible || this.page.reducedMotion?.() === true) {
       this.pauseMotion();
       this.progressFeedback = null;
-      this.queuedProgress = null;
       if (this.progressMotion) {
         this.setProgressImmediate(this.progressMotion.end);
         this.progressMotion = null;
@@ -1931,31 +1952,9 @@ export class WorkshopTaskRow {
       return false;
     }
 
-    if (this.progressMotion) {
-      const progress = clampUnit(
-        (now - this.progressMotion.startedAtMs) /
-          this.progressMotion.durationMs,
-      );
-      const eased = easeOutQuart(progress);
-      this.displayedProgress = interpolate(
-        this.progressMotion.start,
-        this.progressMotion.end,
-        eased,
-      );
-      this.progress.setProgress(this.displayedProgress);
-      this.layoutProgressShine();
-      if (progress >= 1) {
-        const settledProgress = this.progressMotion.end;
-        this.progressMotion = null;
-        this.displayedProgress = settledProgress;
-        this.targetProgress = settledProgress;
-        this.progress.setProgress(this.displayedProgress);
-        this.layoutProgressShine();
-      }
-    }
+    this.updateDisplayedProgress(now);
 
     this.updateProgressFeedback(now);
-    this.startQueuedProgress(now);
     const keepAnimating = Boolean(
       this.progressMotion || this.progressFeedback,
     );
@@ -1966,6 +1965,33 @@ export class WorkshopTaskRow {
       this.progressShineRoot.renderable = false;
     }
     return keepAnimating;
+  }
+
+  updateDisplayedProgress(now) {
+    if (!this.progressMotion) {
+      return false;
+    }
+    const progress = clampUnit(
+      (now - this.progressMotion.startedAtMs) /
+        this.progressMotion.durationMs,
+    );
+    const eased = easeOutQuart(progress);
+    this.displayedProgress = interpolate(
+      this.progressMotion.start,
+      this.progressMotion.end,
+      eased,
+    );
+    this.progress.setProgress(this.displayedProgress);
+    this.layoutProgressShine();
+    if (progress >= 1) {
+      const settledProgress = this.progressMotion.end;
+      this.progressMotion = null;
+      this.displayedProgress = settledProgress;
+      this.targetProgress = settledProgress;
+      this.progress.setProgress(this.displayedProgress);
+      this.layoutProgressShine();
+    }
+    return Boolean(this.progressMotion);
   }
 
   startProgressFeedback(
@@ -1981,6 +2007,9 @@ export class WorkshopTaskRow {
     }
     this.progressFeedback = {
       startedAtMs,
+      segmentStartedAtMs: startedAtMs,
+      durationMs: QUEST_REQUEST_SHINE_DURATION_MS,
+      startX: null,
       targetProgress: clampUnit(targetProgress),
     };
     this.layoutProgressShine();
@@ -1994,23 +2023,27 @@ export class WorkshopTaskRow {
     if (!feedback) {
       return;
     }
-    const elapsedMs = Math.max(0, now - feedback.startedAtMs);
+    const elapsedMs = Math.max(0, now - feedback.segmentStartedAtMs);
     const layout = this.progressShineLayout;
     const shineProgress = clampUnit(
-      elapsedMs / QUEST_REQUEST_SHINE_DURATION_MS,
+      elapsedMs / feedback.durationMs,
     );
     if (layout && shineProgress < 1) {
       this.progressShineRoot.visible = true;
       this.progressShineRoot.renderable = true;
       this.progressShine.position.set(
-        interpolate(layout.startX, layout.endX, shineProgress),
+        interpolate(
+          feedback.startX ?? layout.startX,
+          layout.endX,
+          shineProgress,
+        ),
         layout.centerY,
       );
     } else {
       this.progressShineRoot.visible = false;
       this.progressShineRoot.renderable = false;
     }
-    if (elapsedMs >= QUEST_REQUEST_SHINE_DURATION_MS) {
+    if (elapsedMs >= feedback.durationMs) {
       this.progressFeedback = null;
     }
   }
@@ -2085,8 +2118,7 @@ export class WorkshopTaskRow {
     if (
       this.researchTimer ||
       this.progressMotion ||
-      this.progressFeedback ||
-      this.queuedProgress
+      this.progressFeedback
     ) {
       this.scheduleMotionFrame();
     }

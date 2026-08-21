@@ -132,11 +132,13 @@ standalone editor entry is `Inventory Choice Row` under
 `UI Widgets / Composite widgets / Brewing`, with unselected, selected,
 pressed, and unavailable scenarios.
 Successful single-plot planting, `Plant All`, automated planting, and seed
-swaps run one `460ms` tile-owned sequence. One seed pack starts `48px` above
+swaps run one `500ms` tile-owned sequence. One seed pack starts `62px` above
 the plot center, stretches as it accelerates straight down, then snaps from
-vertical stretch into a squash at center impact. The pack collapse, stronger
-center-pivoted soil boink, and bottom-anchored herb reveal overlap around that
-same contact frame so the planted herb reads as the result of the impact.
+vertical stretch into a squash at center impact. The pack sinks into the soil
+instead of fading in place. Its collapse overlaps a short dirt ring/clod burst,
+the stronger center-pivoted soil boink, and a bottom-anchored herb sprout that
+unfurls horizontally before settling. Multi-herb beds add a slight per-slot
+sprout cascade so the planted herbs read as the result of the impact.
 The persistent Seeds
 picker stays still. Failed actions do not animate, hidden-room changes do not
 replay on return, and reduced motion reveals the growing state immediately.

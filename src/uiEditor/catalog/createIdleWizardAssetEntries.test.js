@@ -145,7 +145,9 @@ describe('createIdleWizardAssetEntries', () => {
       'banner-purple-ribbon.9.png',
       'banner-purple-right.9.png',
       'banner-purple.9.png',
+      'banner-red-ribbon.9.png',
       'banner-red-right.9.png',
+      'banner-yellow-ribbon.9.png',
       'banner-yellow-right.9.png',
     ]);
   });

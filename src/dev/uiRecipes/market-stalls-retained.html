@@ -51,6 +51,30 @@
         crystal: { current: 20 },
         playerLevel: { currentLevel: 4 },
         research: { completedResearchIds: ['unlockSeed:sageSeed'] },
+        weeklyOffers: {
+          offers: [
+            {
+              id: 'extraPlot',
+              title: 'Extra Plot',
+              description: 'Unlocks 1 extra automated plot for 7 days.',
+              slotLabel: 'E1',
+              priceUsd: 15,
+              active: false,
+              canPurchase: true,
+              remainingLabel: '',
+            },
+            {
+              id: 'extraCauldron',
+              title: 'Extra Cauldron',
+              description: 'Unlocks 1 extra automated cauldron for 7 days.',
+              slotLabel: 'E1',
+              priceUsd: 15,
+              active: true,
+              canPurchase: false,
+              remainingLabel: '6d 2h',
+            },
+          ],
+        },
         shop: {
           market: {
             name: 'Crossroads Market',

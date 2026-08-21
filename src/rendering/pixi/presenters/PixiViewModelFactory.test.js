@@ -2456,6 +2456,47 @@ describe('PixiViewModelFactory', () => {
     });
   });
 
+  it('preserves allowlisted inline widgets in dynamic system message runs', () => {
+    const dialog = new PixiViewModelFactory().createWorldChatDialog({
+      connected: true,
+      messages: [
+        {
+          id: 'system-welcome-1',
+          username: 'system',
+          body: 'Welcome Mira to the alliance.',
+          character: 'mira',
+          frame: 'violet',
+          bodyRuns: [
+            { kind: 'text', text: 'Welcome ' },
+            {
+              kind: 'widget',
+              widget: 'playerAvatar',
+              fallbackText: '[Mira]',
+              size: 18,
+            },
+            { kind: 'text', text: ' Mira to the alliance.' },
+          ],
+        },
+      ],
+    });
+
+    expect(dialog.rows[0].bodyRuns).toEqual([
+      { kind: 'text', text: 'Welcome ' },
+      {
+        kind: 'widget',
+        widget: 'playerAvatar',
+        character: 'mira',
+        frame: 'violet',
+        fallbackText: '[Mira]',
+        label: 'Player avatar',
+        size: 18,
+        offsetY: 0,
+        interactive: true,
+      },
+      { kind: 'text', text: ' Mira to the alliance.' },
+    ]);
+  });
+
   it('keeps compact preview rows left-aligned and normalizes the System sender label', () => {
     const preview = new PixiViewModelFactory().createWorldChatPreview({
       messages: [

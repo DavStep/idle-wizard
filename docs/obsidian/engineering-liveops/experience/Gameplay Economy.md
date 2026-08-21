@@ -68,6 +68,7 @@ experience_type: gameplay-economy
 - Prestige resets run data but preserves current emerald currency; advanced emerald research remains run-scoped unless explicitly made permanent.
 - The internal `crystals` Market tab is player-facing as Gems; rows show a two-hour coin offer, a daily free `1` Amber offer, paid Amber bundles, and matching-price Amethyst bundles at 100× quantity.
 - Paid Amber and Amethyst price controls open a support-unavailable popup; do not add payment or currency grant logic until transactions are requested.
+- Time-limited paid slots must keep entitlement expiry and slot contents separate from permanent capacity; expiry hides and pauses the slot so a later renewal can resume it without advancing normal numbering.
 - Future resource info or shortfall dialogs should be catalog-backed with source/use rows and explicit goto ids; unknown resource ids should fail loudly, not fall back to generic text.
 - Early task levels must not require items gated far beyond the current research tier; use larger quantities of near-tier seeds, herbs, and potions instead.
 - Task persistence stores progress rows for all configured task ids, even on level 1; the visible task list must come from the current-level snapshot, not the raw save array.

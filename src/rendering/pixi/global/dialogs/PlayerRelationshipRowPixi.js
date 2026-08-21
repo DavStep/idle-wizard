@@ -4,7 +4,6 @@ import { getPlayerFrameTint } from '../../../../player/playerFrames.js';
 import { formatBigNumber } from '../../../../shared/bigNumber.js';
 import { PixiNotificationBadge } from '../transient/PixiNotificationBadges.js';
 import { PixiTextButton } from '../../primitives/PixiTextButton.js';
-import { createDialogPaperSection } from '../../primitives/PixiDialogFrame.js';
 import { PixiNineSliceFrame } from '../../primitives/PixiNineSliceFrame.js';
 import { PixiStarLevelLabel } from '../../primitives/PixiStarLevelLabel.js';
 import {
@@ -58,11 +57,15 @@ export class PlayerRelationshipRowPixi {
       dialog.isFriendsDialog === true || dialog.dialogId === 'global.friends';
     this.usesResearchCard = dialog.dialogId === 'alliance.workspace';
     this.root = new Container({ label: `${dialog.dialogId}-relationship-row` });
-    this.paper = this.usesFriendCard
-      ? createDialogPaperSection(
-          resolvePaperTexture(dialog),
-          `${this.root.label}:paper`,
-        )
+    this.background = this.usesFriendCard
+      ? new PixiNineSliceFrame({
+          texture:
+            dialog.assetManager?.getTexture?.(PIXI_ROOT_RUN_ASSETS.settingsRow) ??
+            Texture.EMPTY,
+          sourceInsets: PIXI_ROOT_RUN_GEOMETRY.settings.rowSourceInsets,
+          borderInsets: PIXI_ROOT_RUN_GEOMETRY.settings.rowBorderInsets,
+          label: `${this.root.label}:background`,
+        })
       : null;
     this.researchCard = this.usesResearchCard
       ? new PixiNineSliceFrame({
@@ -108,7 +111,7 @@ export class PlayerRelationshipRowPixi {
     this.primary = this.createAction('primary');
     this.secondary = this.createAction('secondary');
     this.root.addChild(
-      ...(this.paper ? [this.paper] : []),
+      ...(this.background ? [this.background] : []),
       ...(this.researchCard ? [this.researchCard] : []),
       this.divider,
       this.profile,
@@ -306,12 +309,16 @@ export class PlayerRelationshipRowPixi {
   }
 
   layoutFriendCard(width, height) {
-    this.paper.position.set(0, 0);
-    this.paper.setSize(
-      width,
-      height,
-      PIXI_ROOT_RUN_GEOMETRY.dialog.paperBorderInsets,
+    const rowGap = PIXI_ROOT_RUN_GEOMETRY.settings.rowGap;
+    const backgroundWidth = Math.max(0, width - rowGap);
+    const backgroundHeight = Math.max(0, height - rowGap);
+    this.background.position.set(0, rowGap / 2);
+    this.background.setSize(
+      backgroundWidth,
+      backgroundHeight,
+      PIXI_ROOT_RUN_GEOMETRY.settings.rowBorderInsets,
     );
+    this.root.hitArea = new Rectangle(0, 0, backgroundWidth, height);
     this.divider.clear();
     this.divider.visible = false;
     this.divider.renderable = false;
@@ -426,18 +433,6 @@ export class PlayerRelationshipRowPixi {
     this.primary.destroy();
     this.secondary.destroy();
     this.root.destroy({ children: true });
-  }
-}
-
-function resolvePaperTexture(dialog) {
-  try {
-    return (
-      dialog.panel?.paperFrame?.texture ??
-      dialog.assetManager?.getTexture?.(PIXI_ROOT_RUN_ASSETS.dialogPaper) ??
-      Texture.EMPTY
-    );
-  } catch {
-    return Texture.EMPTY;
   }
 }
 

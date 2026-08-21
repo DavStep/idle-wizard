@@ -20,6 +20,9 @@ describe('FriendsBackendFacade', () => {
     expect(source).toContain('allianceTagColor: __t.string()');
     expect(source).toContain('prestigeCount: __t.u32()');
     expect(source).toContain('totalProducedGold: __t.u64()');
+    if (bindingFile === 'own_friendship_table.ts') {
+      expect(source).toContain('lastMessagePreview: __t.string()');
+    }
   });
 
   it('maps relationship rows and routes every server-authoritative action', async () => {
@@ -51,6 +54,7 @@ describe('FriendsBackendFacade', () => {
       allianceTagColor: 'green',
       prestigeCount: 2,
       totalProducedCoin: 123_456,
+      lastMessagePreview: 'Meet by the cauldron.',
     });
     expect(facade.getRelationship('friend')).toBe('friend');
     expect(facade.getRelationship('incoming')).toBe('incoming');
@@ -168,6 +172,7 @@ function playerRow(overrides = {}) {
     connected: true,
     lastSeenAt: timestamp(1000),
     createdAt: timestamp(500),
+    lastMessagePreview: 'Meet by the cauldron.',
     ...overrides,
   };
 }

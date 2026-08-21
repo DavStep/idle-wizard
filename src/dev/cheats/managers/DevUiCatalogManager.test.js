@@ -92,6 +92,15 @@ describe('DevUiCatalogManager', () => {
                 'source:assets/icons/icon-prestige-star.png',
             }),
           }),
+          expect.objectContaining({
+            id: 'preview-inline-avatar',
+            bodyRuns: expect.arrayContaining([
+              expect.objectContaining({
+                kind: 'widget',
+                widget: 'playerAvatar',
+              }),
+            ]),
+          }),
         ]),
         onSubmit: expect.any(Function),
       }),

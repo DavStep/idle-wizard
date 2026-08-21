@@ -2596,6 +2596,7 @@ describe('BrewingPixiPage', () => {
     expect(harness.page.hud.recipes.text.text).toBe('Minor Healing Potion');
     expect(harness.page.hud.recipes.control.textLabel.scale.x).toBe(1);
     expect(harness.page.hud.recipes.control.textLabel.wordWrap).toBe(true);
+    expect(harness.page.hud.recipes.control.textLabel.align).toBe('center');
     expect(harness.page.hud.recipes.control.textLabel.wrapWidth).toBe(
       BREWING_HUD_GEOMETRY.recipeButtonWidth -
         BREWING_HUD_GEOMETRY.recipeLabelInset * 2,
@@ -3087,6 +3088,26 @@ describe('BrewingPixiPage', () => {
         nextCauldronRequiresResearchId: 'advanced:cauldronCapacity:2',
       }),
     );
+
+    harness.page.destroy();
+    harness.dispose();
+  });
+
+  it('renders E1 while keeping the temporary cauldron technical index', () => {
+    const harness = createHarness();
+    const model = createBrewingViewModel();
+    Object.assign(model.brewing.cauldrons[0], {
+      id: 'weekly-extra-cauldron',
+      cauldronIndex: 99,
+      cauldronNumber: 100,
+      displayNumber: 'E1',
+      entitlementExtra: true,
+    });
+
+    harness.page.bind(model);
+
+    expect(harness.page.hud.cauldronTitle.text).toBe('Cauldron E1');
+    expect(harness.page.hud.getSelectedCauldronActionIndex()).toBe(99);
 
     harness.page.destroy();
     harness.dispose();

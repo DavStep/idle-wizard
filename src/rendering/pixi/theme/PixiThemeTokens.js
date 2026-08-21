@@ -154,6 +154,10 @@ export const PIXI_ROOT_RUN_ASSETS = Object.freeze({
     'source:assets/ui/root-run-settings/settings-icon-theme-night.png',
   settingsThemeDay:
     'source:assets/ui/root-run-settings/settings-icon-theme-day.png',
+  settingsFriendRequests:
+    'source:assets/ui/root-run-settings/settings-icon-friend-requests.png',
+  settingsAllianceInvitations:
+    'source:assets/ui/root-run-settings/settings-icon-alliance-invitations.png',
   accountTitle: 'source:assets/ui/banners/banner-cream.png',
   accountUsername: 'source:assets/ui/white-squircle/white-squircle-40.9.png',
   accountEdit: 'source:assets/ui/root-run-account/edit-pencil.png',
@@ -177,6 +181,10 @@ export const PIXI_ROOT_RUN_ASSETS = Object.freeze({
     'source:assets/ui/banners/banner-blue-ribbon.9.png',
   marketTitleRibbonGreen:
     'source:assets/ui/banners/banner-green-ribbon.9.png',
+  marketTitleRibbonRed:
+    'source:assets/ui/banners/banner-red-ribbon.9.png',
+  marketTitleRibbonYellow:
+    'source:assets/ui/banners/banner-yellow-ribbon.9.png',
   workshopRequestTitleRibbon:
     'source:assets/ui/banners/banner-purple-ribbon-compact.png',
   researchCard: 'source:assets/ui/root-run-research/research-card-1000x304.9.png',

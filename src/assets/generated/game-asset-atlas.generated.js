@@ -74,87 +74,89 @@ import standaloneSource68Url from '../../../assets/game/source/ui/banners/banner
 import standaloneSource69Url from '../../../assets/game/source/ui/banners/banner-purple-ribbon.9.png';
 import standaloneSource70Url from '../../../assets/game/source/ui/banners/banner-purple-right.9.png';
 import standaloneSource71Url from '../../../assets/game/source/ui/banners/banner-purple.9.png';
-import standaloneSource72Url from '../../../assets/game/source/ui/banners/banner-red-right.9.png';
-import standaloneSource73Url from '../../../assets/game/source/ui/banners/banner-yellow-right.9.png';
-import standaloneSource74Url from '../../../assets/game/source/ui/day-room-tab-top-cap-selected.9.png';
-import standaloneSource75Url from '../../../assets/game/source/ui/day-room-tab-top-cap.9.png';
-import standaloneSource76Url from '../../../assets/game/source/ui/day-top-panel-background.9.png';
-import standaloneSource77Url from '../../../assets/game/source/ui/idle-witch-craft-splash/splash-screen.png';
-import standaloneSource78Url from '../../../assets/game/source/ui/inner-section-panel-black.9.png';
-import standaloneSource79Url from '../../../assets/game/source/ui/inner-section-panel-day.9.png';
-import standaloneSource80Url from '../../../assets/game/source/ui/inner-section-panel-midnight.9.png';
-import standaloneSource81Url from '../../../assets/game/source/ui/inner-section-panel-white.9.png';
-import standaloneSource82Url from '../../../assets/game/source/ui/inner-section-panel-witchcraft.9.png';
-import standaloneSource83Url from '../../../assets/game/source/ui/intro-dialog-panel.9.png';
-import standaloneSource84Url from '../../../assets/game/source/ui/midnight-room-tab-top-cap-selected.9.png';
-import standaloneSource85Url from '../../../assets/game/source/ui/midnight-room-tab-top-cap.9.png';
-import standaloneSource86Url from '../../../assets/game/source/ui/midnight-top-panel-background.9.png';
-import standaloneSource87Url from '../../../assets/game/source/ui/player-action-popover/player-action-popover.9.png';
-import standaloneSource88Url from '../../../assets/game/source/ui/prop_checkmark.png';
-import standaloneSource89Url from '../../../assets/game/source/ui/prop_lock.png';
-import standaloneSource90Url from '../../../assets/game/source/ui/regular-button/blue-button-15.9.png';
-import standaloneSource91Url from '../../../assets/game/source/ui/regular-button/blue-button-30.9.png';
-import standaloneSource92Url from '../../../assets/game/source/ui/regular-button/blue-button-50.9.png';
-import standaloneSource93Url from '../../../assets/game/source/ui/regular-button/brown-button-15.9.png';
-import standaloneSource94Url from '../../../assets/game/source/ui/regular-button/brown-button-30.9.png';
-import standaloneSource95Url from '../../../assets/game/source/ui/regular-button/brown-button-50.9.png';
-import standaloneSource96Url from '../../../assets/game/source/ui/regular-button/dark-brown-button-15.9.png';
-import standaloneSource97Url from '../../../assets/game/source/ui/regular-button/dark-brown-button-30.9.png';
-import standaloneSource98Url from '../../../assets/game/source/ui/regular-button/dark-brown-button-50.9.png';
-import standaloneSource99Url from '../../../assets/game/source/ui/regular-button/gray-button-15.9.png';
-import standaloneSource100Url from '../../../assets/game/source/ui/regular-button/gray-button-30.9.png';
-import standaloneSource101Url from '../../../assets/game/source/ui/regular-button/gray-button-50.9.png';
-import standaloneSource102Url from '../../../assets/game/source/ui/regular-button/green-button-15.9.png';
-import standaloneSource103Url from '../../../assets/game/source/ui/regular-button/green-button-30.9.png';
-import standaloneSource104Url from '../../../assets/game/source/ui/regular-button/green-button-50.9.png';
-import standaloneSource105Url from '../../../assets/game/source/ui/regular-button/purple-button-15.9.png';
-import standaloneSource106Url from '../../../assets/game/source/ui/regular-button/purple-button-30.9.png';
-import standaloneSource107Url from '../../../assets/game/source/ui/regular-button/purple-button-50.9.png';
-import standaloneSource108Url from '../../../assets/game/source/ui/regular-button/red-button-15.9.png';
-import standaloneSource109Url from '../../../assets/game/source/ui/regular-button/red-button-30.9.png';
-import standaloneSource110Url from '../../../assets/game/source/ui/regular-button/red-button-50.9.png';
-import standaloneSource111Url from '../../../assets/game/source/ui/regular-button/yellow-button-15.9.png';
-import standaloneSource112Url from '../../../assets/game/source/ui/regular-button/yellow-button-30.9.png';
-import standaloneSource113Url from '../../../assets/game/source/ui/regular-button/yellow-button-50.9.png';
-import standaloneSource114Url from '../../../assets/game/source/ui/root-run-dialog/expedition-dialog-back.9.png';
-import standaloneSource115Url from '../../../assets/game/source/ui/root-run-dialog/expedition-dialog-front.9.png';
-import standaloneSource116Url from '../../../assets/game/source/ui/root-run-progress/progress-fill-mask.9.png';
-import standaloneSource117Url from '../../../assets/game/source/ui/root-run-progress/progress-track.9.png';
-import standaloneSource118Url from '../../../assets/game/source/ui/root-run-research/research-card-1000x304.9.png';
-import standaloneSource119Url from '../../../assets/game/source/ui/root-run-research/research-card-dark-1000x304.9.png';
-import standaloneSource120Url from '../../../assets/game/source/ui/root-run-research/research-card-locked-1000x304.9.png';
-import standaloneSource121Url from '../../../assets/game/source/ui/root-run-research/research-upgrade-bg.9.png';
-import standaloneSource122Url from '../../../assets/game/source/ui/root-run-room-tab-inactive.png';
-import standaloneSource123Url from '../../../assets/game/source/ui/root-run-settings/settings-row-bg.9.png';
-import standaloneSource124Url from '../../../assets/game/source/ui/root-run-top-hud/avatar-frame.9.png';
-import standaloneSource125Url from '../../../assets/game/source/ui/root-run-top-hud/level-progress-fill-mask.9.png';
-import standaloneSource126Url from '../../../assets/game/source/ui/root-run-top-hud/level-progress-track.9.png';
-import standaloneSource127Url from '../../../assets/game/source/ui/root-run-world-chat/world-chat-text-field-clean.9.png';
-import standaloneSource128Url from '../../../assets/game/source/ui/style-box-panel.9.png';
-import standaloneSource129Url from '../../../assets/game/source/ui/white-squircle/white-squircle-10.9.png';
-import standaloneSource130Url from '../../../assets/game/source/ui/white-squircle/white-squircle-114.9.png';
-import standaloneSource131Url from '../../../assets/game/source/ui/white-squircle/white-squircle-15.9.png';
-import standaloneSource132Url from '../../../assets/game/source/ui/white-squircle/white-squircle-16.9.png';
-import standaloneSource133Url from '../../../assets/game/source/ui/white-squircle/white-squircle-19.9.png';
-import standaloneSource134Url from '../../../assets/game/source/ui/white-squircle/white-squircle-2.9.png';
-import standaloneSource135Url from '../../../assets/game/source/ui/white-squircle/white-squircle-20.9.png';
-import standaloneSource136Url from '../../../assets/game/source/ui/white-squircle/white-squircle-25.9.png';
-import standaloneSource137Url from '../../../assets/game/source/ui/white-squircle/white-squircle-30.9.png';
-import standaloneSource138Url from '../../../assets/game/source/ui/white-squircle/white-squircle-35.9.png';
-import standaloneSource139Url from '../../../assets/game/source/ui/white-squircle/white-squircle-4.9.png';
-import standaloneSource140Url from '../../../assets/game/source/ui/white-squircle/white-squircle-40.9.png';
-import standaloneSource141Url from '../../../assets/game/source/ui/white-squircle/white-squircle-50.9.png';
-import standaloneSource142Url from '../../../assets/game/source/ui/white-squircle/white-squircle-55.9.png';
-import standaloneSource143Url from '../../../assets/game/source/ui/white-squircle/white-squircle-6.9.png';
-import standaloneSource144Url from '../../../assets/game/source/ui/white-squircle/white-squircle-60.9.png';
-import standaloneSource145Url from '../../../assets/game/source/ui/white-squircle/white-squircle-70.9.png';
-import standaloneSource146Url from '../../../assets/game/source/ui/white-squircle/white-squircle-80.9.png';
-import standaloneSource147Url from '../../../assets/game/source/ui/white-squircle/white-squircle-90.9.png';
-import standaloneSource148Url from '../../../assets/game/source/world-events/exploration-discovery.png';
-import standaloneSource149Url from '../../../assets/game/source/world-events/military-danger.png';
-import standaloneSource150Url from '../../../assets/game/source/world-events/political-change.png';
-import standaloneSource151Url from '../../../assets/game/source/world-events/trade-disruption.png';
-import standaloneSource152Url from '../../../assets/game/source/world-events/village-crisis.png';
+import standaloneSource72Url from '../../../assets/game/source/ui/banners/banner-red-ribbon.9.png';
+import standaloneSource73Url from '../../../assets/game/source/ui/banners/banner-red-right.9.png';
+import standaloneSource74Url from '../../../assets/game/source/ui/banners/banner-yellow-ribbon.9.png';
+import standaloneSource75Url from '../../../assets/game/source/ui/banners/banner-yellow-right.9.png';
+import standaloneSource76Url from '../../../assets/game/source/ui/day-room-tab-top-cap-selected.9.png';
+import standaloneSource77Url from '../../../assets/game/source/ui/day-room-tab-top-cap.9.png';
+import standaloneSource78Url from '../../../assets/game/source/ui/day-top-panel-background.9.png';
+import standaloneSource79Url from '../../../assets/game/source/ui/idle-witch-craft-splash/splash-screen.png';
+import standaloneSource80Url from '../../../assets/game/source/ui/inner-section-panel-black.9.png';
+import standaloneSource81Url from '../../../assets/game/source/ui/inner-section-panel-day.9.png';
+import standaloneSource82Url from '../../../assets/game/source/ui/inner-section-panel-midnight.9.png';
+import standaloneSource83Url from '../../../assets/game/source/ui/inner-section-panel-white.9.png';
+import standaloneSource84Url from '../../../assets/game/source/ui/inner-section-panel-witchcraft.9.png';
+import standaloneSource85Url from '../../../assets/game/source/ui/intro-dialog-panel.9.png';
+import standaloneSource86Url from '../../../assets/game/source/ui/midnight-room-tab-top-cap-selected.9.png';
+import standaloneSource87Url from '../../../assets/game/source/ui/midnight-room-tab-top-cap.9.png';
+import standaloneSource88Url from '../../../assets/game/source/ui/midnight-top-panel-background.9.png';
+import standaloneSource89Url from '../../../assets/game/source/ui/player-action-popover/player-action-popover.9.png';
+import standaloneSource90Url from '../../../assets/game/source/ui/prop_checkmark.png';
+import standaloneSource91Url from '../../../assets/game/source/ui/prop_lock.png';
+import standaloneSource92Url from '../../../assets/game/source/ui/regular-button/blue-button-15.9.png';
+import standaloneSource93Url from '../../../assets/game/source/ui/regular-button/blue-button-30.9.png';
+import standaloneSource94Url from '../../../assets/game/source/ui/regular-button/blue-button-50.9.png';
+import standaloneSource95Url from '../../../assets/game/source/ui/regular-button/brown-button-15.9.png';
+import standaloneSource96Url from '../../../assets/game/source/ui/regular-button/brown-button-30.9.png';
+import standaloneSource97Url from '../../../assets/game/source/ui/regular-button/brown-button-50.9.png';
+import standaloneSource98Url from '../../../assets/game/source/ui/regular-button/dark-brown-button-15.9.png';
+import standaloneSource99Url from '../../../assets/game/source/ui/regular-button/dark-brown-button-30.9.png';
+import standaloneSource100Url from '../../../assets/game/source/ui/regular-button/dark-brown-button-50.9.png';
+import standaloneSource101Url from '../../../assets/game/source/ui/regular-button/gray-button-15.9.png';
+import standaloneSource102Url from '../../../assets/game/source/ui/regular-button/gray-button-30.9.png';
+import standaloneSource103Url from '../../../assets/game/source/ui/regular-button/gray-button-50.9.png';
+import standaloneSource104Url from '../../../assets/game/source/ui/regular-button/green-button-15.9.png';
+import standaloneSource105Url from '../../../assets/game/source/ui/regular-button/green-button-30.9.png';
+import standaloneSource106Url from '../../../assets/game/source/ui/regular-button/green-button-50.9.png';
+import standaloneSource107Url from '../../../assets/game/source/ui/regular-button/purple-button-15.9.png';
+import standaloneSource108Url from '../../../assets/game/source/ui/regular-button/purple-button-30.9.png';
+import standaloneSource109Url from '../../../assets/game/source/ui/regular-button/purple-button-50.9.png';
+import standaloneSource110Url from '../../../assets/game/source/ui/regular-button/red-button-15.9.png';
+import standaloneSource111Url from '../../../assets/game/source/ui/regular-button/red-button-30.9.png';
+import standaloneSource112Url from '../../../assets/game/source/ui/regular-button/red-button-50.9.png';
+import standaloneSource113Url from '../../../assets/game/source/ui/regular-button/yellow-button-15.9.png';
+import standaloneSource114Url from '../../../assets/game/source/ui/regular-button/yellow-button-30.9.png';
+import standaloneSource115Url from '../../../assets/game/source/ui/regular-button/yellow-button-50.9.png';
+import standaloneSource116Url from '../../../assets/game/source/ui/root-run-dialog/expedition-dialog-back.9.png';
+import standaloneSource117Url from '../../../assets/game/source/ui/root-run-dialog/expedition-dialog-front.9.png';
+import standaloneSource118Url from '../../../assets/game/source/ui/root-run-progress/progress-fill-mask.9.png';
+import standaloneSource119Url from '../../../assets/game/source/ui/root-run-progress/progress-track.9.png';
+import standaloneSource120Url from '../../../assets/game/source/ui/root-run-research/research-card-1000x304.9.png';
+import standaloneSource121Url from '../../../assets/game/source/ui/root-run-research/research-card-dark-1000x304.9.png';
+import standaloneSource122Url from '../../../assets/game/source/ui/root-run-research/research-card-locked-1000x304.9.png';
+import standaloneSource123Url from '../../../assets/game/source/ui/root-run-research/research-upgrade-bg.9.png';
+import standaloneSource124Url from '../../../assets/game/source/ui/root-run-room-tab-inactive.png';
+import standaloneSource125Url from '../../../assets/game/source/ui/root-run-settings/settings-row-bg.9.png';
+import standaloneSource126Url from '../../../assets/game/source/ui/root-run-top-hud/avatar-frame.9.png';
+import standaloneSource127Url from '../../../assets/game/source/ui/root-run-top-hud/level-progress-fill-mask.9.png';
+import standaloneSource128Url from '../../../assets/game/source/ui/root-run-top-hud/level-progress-track.9.png';
+import standaloneSource129Url from '../../../assets/game/source/ui/root-run-world-chat/world-chat-text-field-clean.9.png';
+import standaloneSource130Url from '../../../assets/game/source/ui/style-box-panel.9.png';
+import standaloneSource131Url from '../../../assets/game/source/ui/white-squircle/white-squircle-10.9.png';
+import standaloneSource132Url from '../../../assets/game/source/ui/white-squircle/white-squircle-114.9.png';
+import standaloneSource133Url from '../../../assets/game/source/ui/white-squircle/white-squircle-15.9.png';
+import standaloneSource134Url from '../../../assets/game/source/ui/white-squircle/white-squircle-16.9.png';
+import standaloneSource135Url from '../../../assets/game/source/ui/white-squircle/white-squircle-19.9.png';
+import standaloneSource136Url from '../../../assets/game/source/ui/white-squircle/white-squircle-2.9.png';
+import standaloneSource137Url from '../../../assets/game/source/ui/white-squircle/white-squircle-20.9.png';
+import standaloneSource138Url from '../../../assets/game/source/ui/white-squircle/white-squircle-25.9.png';
+import standaloneSource139Url from '../../../assets/game/source/ui/white-squircle/white-squircle-30.9.png';
+import standaloneSource140Url from '../../../assets/game/source/ui/white-squircle/white-squircle-35.9.png';
+import standaloneSource141Url from '../../../assets/game/source/ui/white-squircle/white-squircle-4.9.png';
+import standaloneSource142Url from '../../../assets/game/source/ui/white-squircle/white-squircle-40.9.png';
+import standaloneSource143Url from '../../../assets/game/source/ui/white-squircle/white-squircle-50.9.png';
+import standaloneSource144Url from '../../../assets/game/source/ui/white-squircle/white-squircle-55.9.png';
+import standaloneSource145Url from '../../../assets/game/source/ui/white-squircle/white-squircle-6.9.png';
+import standaloneSource146Url from '../../../assets/game/source/ui/white-squircle/white-squircle-60.9.png';
+import standaloneSource147Url from '../../../assets/game/source/ui/white-squircle/white-squircle-70.9.png';
+import standaloneSource148Url from '../../../assets/game/source/ui/white-squircle/white-squircle-80.9.png';
+import standaloneSource149Url from '../../../assets/game/source/ui/white-squircle/white-squircle-90.9.png';
+import standaloneSource150Url from '../../../assets/game/source/world-events/exploration-discovery.png';
+import standaloneSource151Url from '../../../assets/game/source/world-events/military-danger.png';
+import standaloneSource152Url from '../../../assets/game/source/world-events/political-change.png';
+import standaloneSource153Url from '../../../assets/game/source/world-events/trade-disruption.png';
+import standaloneSource154Url from '../../../assets/game/source/world-events/village-crisis.png';
 
 export const gameAssetAtlases = Object.freeze([
   Object.freeze({
@@ -467,6 +469,8 @@ const ATLAS_BACKED_SOURCE_IDS = new Set([
   "source:assets/ui/root-run-research/research-rank-badge-217x62.png",
   "source:assets/ui/root-run-research/research-upgrade-bg-locked.png",
   "source:assets/ui/root-run-research/upgrade-lvl-bg.png",
+  "source:assets/ui/root-run-settings/settings-icon-alliance-invitations.png",
+  "source:assets/ui/root-run-settings/settings-icon-friend-requests.png",
   "source:assets/ui/root-run-settings/settings-icon-gear.png",
   "source:assets/ui/root-run-settings/settings-icon-music.png",
   "source:assets/ui/root-run-settings/settings-icon-sound.png",
@@ -888,408 +892,418 @@ export const gameStandaloneSourceAssets = Object.freeze([
     kind: 'texture',
   }),
   Object.freeze({
-    id: "source:assets/ui/banners/banner-red-right.9.png",
+    id: "source:assets/ui/banners/banner-red-ribbon.9.png",
     src: standaloneSource72Url,
     kind: 'texture',
   }),
   Object.freeze({
-    id: "source:assets/ui/banners/banner-yellow-right.9.png",
+    id: "source:assets/ui/banners/banner-red-right.9.png",
     src: standaloneSource73Url,
     kind: 'texture',
   }),
   Object.freeze({
-    id: "source:assets/ui/day-room-tab-top-cap-selected.9.png",
+    id: "source:assets/ui/banners/banner-yellow-ribbon.9.png",
     src: standaloneSource74Url,
     kind: 'texture',
   }),
   Object.freeze({
-    id: "source:assets/ui/day-room-tab-top-cap.9.png",
+    id: "source:assets/ui/banners/banner-yellow-right.9.png",
     src: standaloneSource75Url,
     kind: 'texture',
   }),
   Object.freeze({
-    id: "source:assets/ui/day-top-panel-background.9.png",
+    id: "source:assets/ui/day-room-tab-top-cap-selected.9.png",
     src: standaloneSource76Url,
     kind: 'texture',
   }),
   Object.freeze({
-    id: "source:assets/ui/idle-witch-craft-splash/splash-screen.png",
+    id: "source:assets/ui/day-room-tab-top-cap.9.png",
     src: standaloneSource77Url,
     kind: 'texture',
   }),
   Object.freeze({
-    id: "source:assets/ui/inner-section-panel-black.9.png",
+    id: "source:assets/ui/day-top-panel-background.9.png",
     src: standaloneSource78Url,
     kind: 'texture',
   }),
   Object.freeze({
-    id: "source:assets/ui/inner-section-panel-day.9.png",
+    id: "source:assets/ui/idle-witch-craft-splash/splash-screen.png",
     src: standaloneSource79Url,
     kind: 'texture',
   }),
   Object.freeze({
-    id: "source:assets/ui/inner-section-panel-midnight.9.png",
+    id: "source:assets/ui/inner-section-panel-black.9.png",
     src: standaloneSource80Url,
     kind: 'texture',
   }),
   Object.freeze({
-    id: "source:assets/ui/inner-section-panel-white.9.png",
+    id: "source:assets/ui/inner-section-panel-day.9.png",
     src: standaloneSource81Url,
     kind: 'texture',
   }),
   Object.freeze({
-    id: "source:assets/ui/inner-section-panel-witchcraft.9.png",
+    id: "source:assets/ui/inner-section-panel-midnight.9.png",
     src: standaloneSource82Url,
     kind: 'texture',
   }),
   Object.freeze({
-    id: "source:assets/ui/intro-dialog-panel.9.png",
+    id: "source:assets/ui/inner-section-panel-white.9.png",
     src: standaloneSource83Url,
     kind: 'texture',
   }),
   Object.freeze({
-    id: "source:assets/ui/midnight-room-tab-top-cap-selected.9.png",
+    id: "source:assets/ui/inner-section-panel-witchcraft.9.png",
     src: standaloneSource84Url,
     kind: 'texture',
   }),
   Object.freeze({
-    id: "source:assets/ui/midnight-room-tab-top-cap.9.png",
+    id: "source:assets/ui/intro-dialog-panel.9.png",
     src: standaloneSource85Url,
     kind: 'texture',
   }),
   Object.freeze({
-    id: "source:assets/ui/midnight-top-panel-background.9.png",
+    id: "source:assets/ui/midnight-room-tab-top-cap-selected.9.png",
     src: standaloneSource86Url,
     kind: 'texture',
   }),
   Object.freeze({
-    id: "source:assets/ui/player-action-popover/player-action-popover.9.png",
+    id: "source:assets/ui/midnight-room-tab-top-cap.9.png",
     src: standaloneSource87Url,
     kind: 'texture',
   }),
   Object.freeze({
-    id: "source:assets/ui/prop_checkmark.png",
+    id: "source:assets/ui/midnight-top-panel-background.9.png",
     src: standaloneSource88Url,
     kind: 'texture',
   }),
   Object.freeze({
-    id: "source:assets/ui/prop_lock.png",
+    id: "source:assets/ui/player-action-popover/player-action-popover.9.png",
     src: standaloneSource89Url,
     kind: 'texture',
   }),
   Object.freeze({
-    id: "source:assets/ui/regular-button/blue-button-15.9.png",
+    id: "source:assets/ui/prop_checkmark.png",
     src: standaloneSource90Url,
     kind: 'texture',
   }),
   Object.freeze({
-    id: "source:assets/ui/regular-button/blue-button-30.9.png",
+    id: "source:assets/ui/prop_lock.png",
     src: standaloneSource91Url,
     kind: 'texture',
   }),
   Object.freeze({
-    id: "source:assets/ui/regular-button/blue-button-50.9.png",
+    id: "source:assets/ui/regular-button/blue-button-15.9.png",
     src: standaloneSource92Url,
     kind: 'texture',
   }),
   Object.freeze({
-    id: "source:assets/ui/regular-button/brown-button-15.9.png",
+    id: "source:assets/ui/regular-button/blue-button-30.9.png",
     src: standaloneSource93Url,
     kind: 'texture',
   }),
   Object.freeze({
-    id: "source:assets/ui/regular-button/brown-button-30.9.png",
+    id: "source:assets/ui/regular-button/blue-button-50.9.png",
     src: standaloneSource94Url,
     kind: 'texture',
   }),
   Object.freeze({
-    id: "source:assets/ui/regular-button/brown-button-50.9.png",
+    id: "source:assets/ui/regular-button/brown-button-15.9.png",
     src: standaloneSource95Url,
     kind: 'texture',
   }),
   Object.freeze({
-    id: "source:assets/ui/regular-button/dark-brown-button-15.9.png",
+    id: "source:assets/ui/regular-button/brown-button-30.9.png",
     src: standaloneSource96Url,
     kind: 'texture',
   }),
   Object.freeze({
-    id: "source:assets/ui/regular-button/dark-brown-button-30.9.png",
+    id: "source:assets/ui/regular-button/brown-button-50.9.png",
     src: standaloneSource97Url,
     kind: 'texture',
   }),
   Object.freeze({
-    id: "source:assets/ui/regular-button/dark-brown-button-50.9.png",
+    id: "source:assets/ui/regular-button/dark-brown-button-15.9.png",
     src: standaloneSource98Url,
     kind: 'texture',
   }),
   Object.freeze({
-    id: "source:assets/ui/regular-button/gray-button-15.9.png",
+    id: "source:assets/ui/regular-button/dark-brown-button-30.9.png",
     src: standaloneSource99Url,
     kind: 'texture',
   }),
   Object.freeze({
-    id: "source:assets/ui/regular-button/gray-button-30.9.png",
+    id: "source:assets/ui/regular-button/dark-brown-button-50.9.png",
     src: standaloneSource100Url,
     kind: 'texture',
   }),
   Object.freeze({
-    id: "source:assets/ui/regular-button/gray-button-50.9.png",
+    id: "source:assets/ui/regular-button/gray-button-15.9.png",
     src: standaloneSource101Url,
     kind: 'texture',
   }),
   Object.freeze({
-    id: "source:assets/ui/regular-button/green-button-15.9.png",
+    id: "source:assets/ui/regular-button/gray-button-30.9.png",
     src: standaloneSource102Url,
     kind: 'texture',
   }),
   Object.freeze({
-    id: "source:assets/ui/regular-button/green-button-30.9.png",
+    id: "source:assets/ui/regular-button/gray-button-50.9.png",
     src: standaloneSource103Url,
     kind: 'texture',
   }),
   Object.freeze({
-    id: "source:assets/ui/regular-button/green-button-50.9.png",
+    id: "source:assets/ui/regular-button/green-button-15.9.png",
     src: standaloneSource104Url,
     kind: 'texture',
   }),
   Object.freeze({
-    id: "source:assets/ui/regular-button/purple-button-15.9.png",
+    id: "source:assets/ui/regular-button/green-button-30.9.png",
     src: standaloneSource105Url,
     kind: 'texture',
   }),
   Object.freeze({
-    id: "source:assets/ui/regular-button/purple-button-30.9.png",
+    id: "source:assets/ui/regular-button/green-button-50.9.png",
     src: standaloneSource106Url,
     kind: 'texture',
   }),
   Object.freeze({
-    id: "source:assets/ui/regular-button/purple-button-50.9.png",
+    id: "source:assets/ui/regular-button/purple-button-15.9.png",
     src: standaloneSource107Url,
     kind: 'texture',
   }),
   Object.freeze({
-    id: "source:assets/ui/regular-button/red-button-15.9.png",
+    id: "source:assets/ui/regular-button/purple-button-30.9.png",
     src: standaloneSource108Url,
     kind: 'texture',
   }),
   Object.freeze({
-    id: "source:assets/ui/regular-button/red-button-30.9.png",
+    id: "source:assets/ui/regular-button/purple-button-50.9.png",
     src: standaloneSource109Url,
     kind: 'texture',
   }),
   Object.freeze({
-    id: "source:assets/ui/regular-button/red-button-50.9.png",
+    id: "source:assets/ui/regular-button/red-button-15.9.png",
     src: standaloneSource110Url,
     kind: 'texture',
   }),
   Object.freeze({
-    id: "source:assets/ui/regular-button/yellow-button-15.9.png",
+    id: "source:assets/ui/regular-button/red-button-30.9.png",
     src: standaloneSource111Url,
     kind: 'texture',
   }),
   Object.freeze({
-    id: "source:assets/ui/regular-button/yellow-button-30.9.png",
+    id: "source:assets/ui/regular-button/red-button-50.9.png",
     src: standaloneSource112Url,
     kind: 'texture',
   }),
   Object.freeze({
-    id: "source:assets/ui/regular-button/yellow-button-50.9.png",
+    id: "source:assets/ui/regular-button/yellow-button-15.9.png",
     src: standaloneSource113Url,
     kind: 'texture',
   }),
   Object.freeze({
-    id: "source:assets/ui/root-run-dialog/expedition-dialog-back.9.png",
+    id: "source:assets/ui/regular-button/yellow-button-30.9.png",
     src: standaloneSource114Url,
     kind: 'texture',
   }),
   Object.freeze({
-    id: "source:assets/ui/root-run-dialog/expedition-dialog-front.9.png",
+    id: "source:assets/ui/regular-button/yellow-button-50.9.png",
     src: standaloneSource115Url,
     kind: 'texture',
   }),
   Object.freeze({
-    id: "source:assets/ui/root-run-progress/progress-fill-mask.9.png",
+    id: "source:assets/ui/root-run-dialog/expedition-dialog-back.9.png",
     src: standaloneSource116Url,
     kind: 'texture',
   }),
   Object.freeze({
-    id: "source:assets/ui/root-run-progress/progress-track.9.png",
+    id: "source:assets/ui/root-run-dialog/expedition-dialog-front.9.png",
     src: standaloneSource117Url,
     kind: 'texture',
   }),
   Object.freeze({
-    id: "source:assets/ui/root-run-research/research-card-1000x304.9.png",
+    id: "source:assets/ui/root-run-progress/progress-fill-mask.9.png",
     src: standaloneSource118Url,
     kind: 'texture',
   }),
   Object.freeze({
-    id: "source:assets/ui/root-run-research/research-card-dark-1000x304.9.png",
+    id: "source:assets/ui/root-run-progress/progress-track.9.png",
     src: standaloneSource119Url,
     kind: 'texture',
   }),
   Object.freeze({
-    id: "source:assets/ui/root-run-research/research-card-locked-1000x304.9.png",
+    id: "source:assets/ui/root-run-research/research-card-1000x304.9.png",
     src: standaloneSource120Url,
     kind: 'texture',
   }),
   Object.freeze({
-    id: "source:assets/ui/root-run-research/research-upgrade-bg.9.png",
+    id: "source:assets/ui/root-run-research/research-card-dark-1000x304.9.png",
     src: standaloneSource121Url,
     kind: 'texture',
   }),
   Object.freeze({
-    id: "source:assets/ui/root-run-room-tab-inactive.png",
+    id: "source:assets/ui/root-run-research/research-card-locked-1000x304.9.png",
     src: standaloneSource122Url,
     kind: 'texture',
   }),
   Object.freeze({
-    id: "source:assets/ui/root-run-settings/settings-row-bg.9.png",
+    id: "source:assets/ui/root-run-research/research-upgrade-bg.9.png",
     src: standaloneSource123Url,
     kind: 'texture',
   }),
   Object.freeze({
-    id: "source:assets/ui/root-run-top-hud/avatar-frame.9.png",
+    id: "source:assets/ui/root-run-room-tab-inactive.png",
     src: standaloneSource124Url,
     kind: 'texture',
   }),
   Object.freeze({
-    id: "source:assets/ui/root-run-top-hud/level-progress-fill-mask.9.png",
+    id: "source:assets/ui/root-run-settings/settings-row-bg.9.png",
     src: standaloneSource125Url,
     kind: 'texture',
   }),
   Object.freeze({
-    id: "source:assets/ui/root-run-top-hud/level-progress-track.9.png",
+    id: "source:assets/ui/root-run-top-hud/avatar-frame.9.png",
     src: standaloneSource126Url,
     kind: 'texture',
   }),
   Object.freeze({
-    id: "source:assets/ui/root-run-world-chat/world-chat-text-field-clean.9.png",
+    id: "source:assets/ui/root-run-top-hud/level-progress-fill-mask.9.png",
     src: standaloneSource127Url,
     kind: 'texture',
   }),
   Object.freeze({
-    id: "source:assets/ui/style-box-panel.9.png",
+    id: "source:assets/ui/root-run-top-hud/level-progress-track.9.png",
     src: standaloneSource128Url,
     kind: 'texture',
   }),
   Object.freeze({
-    id: "source:assets/ui/white-squircle/white-squircle-10.9.png",
+    id: "source:assets/ui/root-run-world-chat/world-chat-text-field-clean.9.png",
     src: standaloneSource129Url,
     kind: 'texture',
   }),
   Object.freeze({
-    id: "source:assets/ui/white-squircle/white-squircle-114.9.png",
+    id: "source:assets/ui/style-box-panel.9.png",
     src: standaloneSource130Url,
     kind: 'texture',
   }),
   Object.freeze({
-    id: "source:assets/ui/white-squircle/white-squircle-15.9.png",
+    id: "source:assets/ui/white-squircle/white-squircle-10.9.png",
     src: standaloneSource131Url,
     kind: 'texture',
   }),
   Object.freeze({
-    id: "source:assets/ui/white-squircle/white-squircle-16.9.png",
+    id: "source:assets/ui/white-squircle/white-squircle-114.9.png",
     src: standaloneSource132Url,
     kind: 'texture',
   }),
   Object.freeze({
-    id: "source:assets/ui/white-squircle/white-squircle-19.9.png",
+    id: "source:assets/ui/white-squircle/white-squircle-15.9.png",
     src: standaloneSource133Url,
     kind: 'texture',
   }),
   Object.freeze({
-    id: "source:assets/ui/white-squircle/white-squircle-2.9.png",
+    id: "source:assets/ui/white-squircle/white-squircle-16.9.png",
     src: standaloneSource134Url,
     kind: 'texture',
   }),
   Object.freeze({
-    id: "source:assets/ui/white-squircle/white-squircle-20.9.png",
+    id: "source:assets/ui/white-squircle/white-squircle-19.9.png",
     src: standaloneSource135Url,
     kind: 'texture',
   }),
   Object.freeze({
-    id: "source:assets/ui/white-squircle/white-squircle-25.9.png",
+    id: "source:assets/ui/white-squircle/white-squircle-2.9.png",
     src: standaloneSource136Url,
     kind: 'texture',
   }),
   Object.freeze({
-    id: "source:assets/ui/white-squircle/white-squircle-30.9.png",
+    id: "source:assets/ui/white-squircle/white-squircle-20.9.png",
     src: standaloneSource137Url,
     kind: 'texture',
   }),
   Object.freeze({
-    id: "source:assets/ui/white-squircle/white-squircle-35.9.png",
+    id: "source:assets/ui/white-squircle/white-squircle-25.9.png",
     src: standaloneSource138Url,
     kind: 'texture',
   }),
   Object.freeze({
-    id: "source:assets/ui/white-squircle/white-squircle-4.9.png",
+    id: "source:assets/ui/white-squircle/white-squircle-30.9.png",
     src: standaloneSource139Url,
     kind: 'texture',
   }),
   Object.freeze({
-    id: "source:assets/ui/white-squircle/white-squircle-40.9.png",
+    id: "source:assets/ui/white-squircle/white-squircle-35.9.png",
     src: standaloneSource140Url,
     kind: 'texture',
   }),
   Object.freeze({
-    id: "source:assets/ui/white-squircle/white-squircle-50.9.png",
+    id: "source:assets/ui/white-squircle/white-squircle-4.9.png",
     src: standaloneSource141Url,
     kind: 'texture',
   }),
   Object.freeze({
-    id: "source:assets/ui/white-squircle/white-squircle-55.9.png",
+    id: "source:assets/ui/white-squircle/white-squircle-40.9.png",
     src: standaloneSource142Url,
     kind: 'texture',
   }),
   Object.freeze({
-    id: "source:assets/ui/white-squircle/white-squircle-6.9.png",
+    id: "source:assets/ui/white-squircle/white-squircle-50.9.png",
     src: standaloneSource143Url,
     kind: 'texture',
   }),
   Object.freeze({
-    id: "source:assets/ui/white-squircle/white-squircle-60.9.png",
+    id: "source:assets/ui/white-squircle/white-squircle-55.9.png",
     src: standaloneSource144Url,
     kind: 'texture',
   }),
   Object.freeze({
-    id: "source:assets/ui/white-squircle/white-squircle-70.9.png",
+    id: "source:assets/ui/white-squircle/white-squircle-6.9.png",
     src: standaloneSource145Url,
     kind: 'texture',
   }),
   Object.freeze({
-    id: "source:assets/ui/white-squircle/white-squircle-80.9.png",
+    id: "source:assets/ui/white-squircle/white-squircle-60.9.png",
     src: standaloneSource146Url,
     kind: 'texture',
   }),
   Object.freeze({
-    id: "source:assets/ui/white-squircle/white-squircle-90.9.png",
+    id: "source:assets/ui/white-squircle/white-squircle-70.9.png",
     src: standaloneSource147Url,
     kind: 'texture',
   }),
   Object.freeze({
-    id: "source:assets/world-events/exploration-discovery.png",
+    id: "source:assets/ui/white-squircle/white-squircle-80.9.png",
     src: standaloneSource148Url,
     kind: 'texture',
   }),
   Object.freeze({
-    id: "source:assets/world-events/military-danger.png",
+    id: "source:assets/ui/white-squircle/white-squircle-90.9.png",
     src: standaloneSource149Url,
     kind: 'texture',
   }),
   Object.freeze({
-    id: "source:assets/world-events/political-change.png",
+    id: "source:assets/world-events/exploration-discovery.png",
     src: standaloneSource150Url,
     kind: 'texture',
   }),
   Object.freeze({
-    id: "source:assets/world-events/trade-disruption.png",
+    id: "source:assets/world-events/military-danger.png",
     src: standaloneSource151Url,
     kind: 'texture',
   }),
   Object.freeze({
-    id: "source:assets/world-events/village-crisis.png",
+    id: "source:assets/world-events/political-change.png",
     src: standaloneSource152Url,
+    kind: 'texture',
+  }),
+  Object.freeze({
+    id: "source:assets/world-events/trade-disruption.png",
+    src: standaloneSource153Url,
+    kind: 'texture',
+  }),
+  Object.freeze({
+    id: "source:assets/world-events/village-crisis.png",
+    src: standaloneSource154Url,
     kind: 'texture',
   })
 ]);

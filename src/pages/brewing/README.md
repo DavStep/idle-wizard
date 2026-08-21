@@ -31,5 +31,9 @@ card's existing action control.
 Tapping the active cauldron during brewing or bottling removes at most one second from the remaining time
 from its timer, with the same per-target cooldown used by Garden plots.
 A potion automatically granted after bottling plays the same short pop used by
-manual seed summoning.
+manual seed summoning when the potion flies from the cauldron.
+An active weekly cauldron offer appends the automation-ready temporary
+cauldron as `E1` without renumbering permanent cauldrons. It disappears when
+the seven-day access window expires and returns with its preserved state after
+a later renewal.
 It does not own potion recipes, brewing costs, brew timers, inventory changes, effects, or progression rules; those stay in `src/gameplay/brewing/`.

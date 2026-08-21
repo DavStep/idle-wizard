@@ -24,6 +24,7 @@ import {
 } from '../workshop/RetainedPageKit.js';
 import {
   PIXI_ROOT_RUN_ASSETS,
+  PIXI_ROOT_RUN_GEOMETRY,
   PIXI_UI_GEOMETRY,
   createPixiThemeSnapshot,
   resolvePixiTextStrokeWidth,
@@ -605,14 +606,28 @@ describe('ResearchPixiPage', () => {
     const contentHeight =
       PIXI_UI_GEOMETRY.sourceHeight -
       RETAINED_PAGE_GEOMETRY.contentTop -
+      PIXI_ROOT_RUN_GEOMETRY.marketTitleRibbon.height -
+      5 -
       RETAINED_PAGE_GEOMETRY.chatClearance;
+    const panelTop =
+      RETAINED_PAGE_GEOMETRY.contentTop +
+      PIXI_ROOT_RUN_GEOMETRY.marketTitleRibbon.height +
+      5;
     const tabClearance =
       RETAINED_PAGE_GEOMETRY.tabHeight +
       RETAINED_PAGE_GEOMETRY.scrollCut * 2;
     expect(harness.page.scroll.root.position).toMatchObject({
       x: 0,
-      y: RETAINED_PAGE_GEOMETRY.contentTop,
+      y: panelTop,
     });
+    expect(harness.page.titleRibbon.assetId).toBe(
+      PIXI_ROOT_RUN_ASSETS.marketTitleRibbonYellow,
+    );
+    expect(harness.page.titleRibbon.title.text).toBe('Research');
+    expect(harness.page.titleRibbon.stars.visible).toBe(false);
+    expect(harness.page.titleRibbon.root.x).toBeCloseTo(
+      (PIXI_UI_GEOMETRY.sourceWidth - harness.page.titleRibbon.width) / 2,
+    );
     expect(harness.page.scroll).toMatchObject({
       width: 374,
       height: contentHeight - tabClearance,
@@ -626,7 +641,7 @@ describe('ResearchPixiPage', () => {
     expect(harness.page.tabsLayer.position).toMatchObject({
       x: 16,
       y:
-        RETAINED_PAGE_GEOMETRY.contentTop +
+        panelTop +
         contentHeight -
         6 -
         RETAINED_PAGE_GEOMETRY.tabHeight,
@@ -736,6 +751,8 @@ describe('ResearchPixiPage', () => {
     const visibleScrollHeight =
       PIXI_UI_GEOMETRY.sourceHeight -
       RETAINED_PAGE_GEOMETRY.contentTop -
+      PIXI_ROOT_RUN_GEOMETRY.marketTitleRibbon.height -
+      5 -
       RETAINED_PAGE_GEOMETRY.chatClearance -
       RETAINED_PAGE_GEOMETRY.tabHeight -
       RETAINED_PAGE_GEOMETRY.scrollCut * 2;

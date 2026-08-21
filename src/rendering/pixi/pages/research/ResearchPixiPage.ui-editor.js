@@ -5,6 +5,7 @@ import { ResearchPixiPage } from './ResearchPixiPage.js';
 export default defineUiEditorIntegration({
   apiVersion: 1,
   childWidgetIds: [
+    'compound.market-title-ribbon',
     'compound.research-station-box',
     'compound.research-row',
     'compound.research-station-title',

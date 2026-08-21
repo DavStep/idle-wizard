@@ -15,6 +15,8 @@ export default __t.row({
   username: __t.string(),
   allianceTag: __t.string().name("alliance_tag"),
   allianceTagColor: __t.string().name("alliance_tag_color"),
+  allianceName: __t.string().name("alliance_name"),
+  allianceRole: __t.string().name("alliance_role"),
   totalProducedGold: __t.u64().name("total_produced_gold"),
   totalBrewedPotions: __t.u64().name("total_brewed_potions"),
   totalHarvestedHerbs: __t.u64().name("total_harvested_herbs"),
