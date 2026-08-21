@@ -40,6 +40,7 @@ import {
   setText,
 } from '../workshop/RetainedPageKit.js';
 import { MarketTitleRibbon } from '../shop/MarketTitleRibbon.js';
+import { AutoGearMotion } from '../shared/AutoGearMotion.js';
 
 export const BREWING_HUD_GEOMETRY = Object.freeze({
   edge: 16,
@@ -177,9 +178,6 @@ const INGREDIENT_SLOT_BORDER_INSETS = Object.freeze({
   bottom: 12,
   left: 12,
 });
-const AUTO_GEAR_STEP_INTERVAL_MS = 320;
-const AUTO_GEAR_STEP_DURATION_MS = 70;
-const AUTO_GEAR_STEP_RADIANS = Math.PI / 8;
 const CAULDRON_CHANGE_MOTION_DURATION_MS = 240;
 const CAULDRON_CHANGE_TRAVEL = 18;
 const PRIMARY_ACTION_MOTION_DURATION_MS = 240;
@@ -213,8 +211,9 @@ export class BrewingHudPixi {
     this.model = {};
     this.actions = {};
     this.selectedIndex = 0;
-    this.autoBrewMotionEnabled = false;
-    this.autoBrewMotionStartedAt = null;
+    this.autoBrewGearMotion = new AutoGearMotion({
+      setRotation: (rotation) => this.setAutoBrewGearRotation(rotation),
+    });
     this.cauldronChangeMotion = null;
     this.cauldronChangeRestState = null;
     this.cauldronMotionMode = 'idle';
@@ -1668,14 +1667,7 @@ export class BrewingHudPixi {
   }
 
   setAutoBrewMotionEnabled(enabled) {
-    const nextEnabled = enabled === true;
-    if (nextEnabled !== this.autoBrewMotionEnabled) {
-      this.autoBrewMotionStartedAt = null;
-    }
-    this.autoBrewMotionEnabled = nextEnabled;
-    if (!nextEnabled) {
-      this.resetAutoBrewMotion();
-    }
+    this.autoBrewGearMotion.setEnabled(enabled);
   }
 
   updateMotion(
@@ -1706,37 +1698,7 @@ export class BrewingHudPixi {
       active,
       reducedMotion,
     });
-    if (
-      !active ||
-      reducedMotion ||
-      !this.autoBrewMotionEnabled
-    ) {
-      this.resetAutoBrewMotion();
-      return;
-    }
-    if (!Number.isFinite(this.autoBrewMotionStartedAt)) {
-      this.autoBrewMotionStartedAt = Number(now) || 0;
-    }
-    const elapsed = Math.max(
-      0,
-      (Number(now) || 0) - this.autoBrewMotionStartedAt,
-    );
-    const completedSteps = Math.floor(
-      elapsed / AUTO_GEAR_STEP_INTERVAL_MS,
-    );
-    const stepElapsed =
-      elapsed % AUTO_GEAR_STEP_INTERVAL_MS;
-    const stepProgress = Math.min(
-      1,
-      stepElapsed / AUTO_GEAR_STEP_DURATION_MS,
-    );
-    const easedStep =
-      1 - Math.pow(1 - stepProgress, 4);
-    this.setAutoBrewGearRotation(
-      ((completedSteps + easedStep) *
-        AUTO_GEAR_STEP_RADIANS) %
-        (Math.PI * 2),
-    );
+    this.autoBrewGearMotion.update(now, { active, reducedMotion });
   }
 
   startPrimaryActionMotion(now = this.getTimerNow()) {
@@ -2228,8 +2190,7 @@ export class BrewingHudPixi {
   }
 
   resetAutoBrewMotion() {
-    this.autoBrewMotionStartedAt = null;
-    this.setAutoBrewGearRotation(0);
+    this.autoBrewGearMotion.reset();
   }
 
   setAutoBrewGearRotation(rotation) {

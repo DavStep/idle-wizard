@@ -151,33 +151,37 @@ export class BrewingPageFacade {
 
   selectRecipe(recipeKey, cauldronIndex = 0) {
     const safeCauldronIndex = this.normalizeCauldronIndex(cauldronIndex);
-    const autoBrewState = this.getAutoBrewState(safeCauldronIndex);
 
     if (!recipeKey) {
       this.recipeGuideManager.selectRecipe(null, safeCauldronIndex);
-      const result = autoBrewState.autoBrewEnabled
-        ? this.gameplayFacade?.setBrewingAutoBrewRecipe?.(null, safeCauldronIndex) ?? null
-        : null;
+      const result =
+        this.gameplayFacade?.setBrewingAutoBrewRecipe?.(
+          null,
+          safeCauldronIndex,
+        ) ?? null;
       this.cauldronManager.render(this.gameplayFacade?.getSnapshot());
       return result;
     }
 
-    const result =
-      this.gameplayFacade?.prepareBrewingRecipe?.(recipeKey, safeCauldronIndex) ?? null;
-
-    if (result !== true && result?.ok !== true) {
+    const selectionResult =
+      this.gameplayFacade?.setBrewingAutoBrewRecipe?.(
+        recipeKey,
+        safeCauldronIndex,
+      ) ?? null;
+    if (selectionResult === false || selectionResult?.ok === false) {
       this.cauldronManager.render(this.gameplayFacade?.getSnapshot());
-      return result;
+      return selectionResult;
     }
 
     this.recipeGuideManager.selectRecipe(recipeKey, safeCauldronIndex);
-
-    if (autoBrewState.autoBrewEnabled) {
-      this.gameplayFacade?.setBrewingAutoBrewRecipe?.(recipeKey, safeCauldronIndex);
-    }
+    const preparationResult =
+      this.gameplayFacade?.prepareBrewingRecipe?.(recipeKey, safeCauldronIndex) ?? null;
 
     this.cauldronManager.render(this.gameplayFacade?.getSnapshot());
-    return result;
+    return selectionResult ??
+      (preparationResult === true || preparationResult?.ok === true
+        ? preparationResult
+        : true);
   }
 
   getAutoBrewState(cauldronIndex = 0) {

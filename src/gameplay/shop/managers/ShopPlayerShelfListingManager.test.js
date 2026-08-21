@@ -188,6 +188,9 @@ describe('ShopPlayerShelfListingManager', () => {
       ok: true,
       coin: 5,
     });
-    expect(add).toHaveBeenCalledWith(5, { trackGenerated: false });
+    expect(add).toHaveBeenCalledWith(5, {
+      sourceType: 'player_shop_proceeds',
+      trackGenerated: false,
+    });
   });
 });

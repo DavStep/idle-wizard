@@ -3581,7 +3581,7 @@ export class WorldChatMessageRowPixi {
       this.dialog.registerTarget({
         semanticId: this.targetId,
         tutorialId: this.model.tutorialId ?? null,
-        displayObject: this.isSystem ? this.systemPlayerUsername : this.username,
+        displayObject: this.getPlayerTargetDisplayObject(),
         state: () => ({
           enabled: this.isInteractive(),
           interactive: this.isInteractive(),
@@ -3794,6 +3794,15 @@ export class WorldChatMessageRowPixi {
 
   isInteractive() {
     return this.isPlayerInteractive() || this.isSystemPlayerInteractive();
+  }
+
+  getPlayerTargetDisplayObject() {
+    if (!this.isSystem) {
+      return this.username;
+    }
+    return this.inlinePlayerAvatars.find(
+      (record) => record.enabled && record.interactive,
+    )?.widget ?? this.systemPlayerUsername;
   }
 
   isPlayerInteractive() {

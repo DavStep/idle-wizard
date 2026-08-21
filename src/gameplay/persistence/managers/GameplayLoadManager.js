@@ -192,6 +192,11 @@ function getLegacyPlayerLevelCaps(save = {}) {
 
 function getInferredUnlockedTileCount(garden = {}) {
   const directCount = Math.floor(Number(garden?.unlockedTiles));
+
+  if (Number.isInteger(directCount) && directCount >= 0) {
+    return directCount;
+  }
+
   const tileCount = Array.isArray(garden?.tiles)
     ? Math.max(
         0,
@@ -201,7 +206,7 @@ function getInferredUnlockedTileCount(garden = {}) {
       )
     : 0;
 
-  return Math.max(Number.isInteger(directCount) ? directCount : 0, tileCount);
+  return tileCount;
 }
 
 function getInferredUnlockedCauldronCount(brewing = {}) {

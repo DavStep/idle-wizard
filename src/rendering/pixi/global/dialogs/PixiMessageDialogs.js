@@ -58,6 +58,19 @@ const LEVEL_REWARD_CONTINUE_HEIGHT = 20;
 const LEVEL_REWARD_CONTINUE_DELAY_MS = 150;
 const LEVEL_REWARD_COUNT_DELAY_MS = 120;
 const LEVEL_REWARD_COUNT_DURATION_MS = 700;
+const LEVEL_CEREMONY_STAR_SIZE = 31;
+const LEVEL_CEREMONY_STAR_NUMBER_SIZE = 14;
+const LEVEL_CEREMONY_STAR_STROKE = Object.freeze({
+  color: '#0a0a0a',
+  width: 3,
+});
+const LEVEL_REWARD_STAGE = Object.freeze({
+  width: 126,
+  height: 118,
+  iconWidth: 104,
+  iconHeight: 104,
+});
+const ANNOUNCEMENT_LOCK_SIZE = 46;
 const RESEARCH_COMPLETE_PANEL_OFFSET_Y = -20;
 const CONFIRMATION_WIDTH = 260;
 const CONFIRMATION_MIN_CONTENT_HEIGHT = 124;
@@ -109,6 +122,20 @@ const ANNOUNCEMENT_MOTION_DEFAULTS = Object.freeze({
   researchDetailDelayMs: 610,
   unlockIconStaggerMs: 45,
   fallbackIconDurationMs: 310,
+  levelStarGlideMs: 760,
+  levelStarShakeMs: 220,
+  levelStarPopMs: 120,
+  levelStarReappearMs: 210,
+  levelStarReturnMs: 620,
+  levelBannerHoldMs: 420,
+  levelBannerExitMs: 180,
+  levelRewardDropMs: 760,
+  levelRewardGapMs: 80,
+  researchUnlockShakeMs: 360,
+  researchUnlockBreakMs: 280,
+  researchUnlockHoldMs: 620,
+  featureUnlockItemMs: 720,
+  featureUnlockItemGapMs: 70,
 });
 const ANNOUNCEMENT_PANEL_FRAMES = freezeMotionFrames([
   { offset: 0, alpha: 0, scale: 0.99, x: 0, y: 5 },
@@ -280,6 +307,41 @@ export class PixiAnnouncementSurface extends RetainedGlobalDialog {
       stroke: LEVEL_REWARD_ROW_TEXT_STROKE,
       label: `${dialogId}:continuePrompt`,
     });
+    this.levelCeremonyRoot = new Container({
+      label: `${dialogId}:levelCeremony`,
+      eventMode: 'none',
+    });
+    this.levelCeremonyBurst = new Graphics({
+      label: `${dialogId}:levelCeremonyBurst`,
+    })
+      .circle(0, 0, LEVEL_CEREMONY_STAR_SIZE * 0.62)
+      .stroke({ color: '#ffd447', alpha: 1, width: 2 });
+    this.levelCeremonyStar = new Sprite({
+      texture:
+        this.context.assets?.getTexture?.(
+          PIXI_ROOT_RUN_ASSETS.topHudLevelStar,
+        ) ?? Texture.EMPTY,
+      anchor: 0.5,
+      roundPixels: true,
+      label: `${dialogId}:levelCeremonyStar`,
+    });
+    this.levelCeremonyStar.width = LEVEL_CEREMONY_STAR_SIZE;
+    this.levelCeremonyStar.height = LEVEL_CEREMONY_STAR_SIZE;
+    this.levelCeremonyNumber = new PixiTextLabel({
+      text: '1',
+      fontSize: LEVEL_CEREMONY_STAR_NUMBER_SIZE,
+      fontWeight: 'normal',
+      anchor: { x: 0.5, y: 0.5 },
+      color: '#ffffff',
+      stroke: LEVEL_CEREMONY_STAR_STROKE,
+      label: `${dialogId}:levelCeremonyNumber`,
+    });
+    this.levelCeremonyRoot.addChild(
+      this.levelCeremonyBurst,
+      this.levelCeremonyStar,
+      this.levelCeremonyNumber,
+    );
+    setDisplayObjectVisible(this.levelCeremonyRoot, false);
     this.reportScroll = new RetainedScrollArea({
       assetManager: this.context.assets,
       inputRouter: this.context.inputRouter,
@@ -302,6 +364,7 @@ export class PixiAnnouncementSurface extends RetainedGlobalDialog {
       this.researchItemLayer,
       this.continuePrompt,
     );
+    this.root.addChild(this.levelCeremonyRoot);
     this.rows = new PooledDialogRows({
       assetManager: this.context.assets,
       parent: this.rowsLayer,
@@ -354,9 +417,12 @@ export class PixiAnnouncementSurface extends RetainedGlobalDialog {
     this.copy.setText(model.copy);
     const featureUnlock = model.kind === 'unlock';
     const research = model.kind === 'research';
+    const researchUnlock = model.kind === 'researchUnlock';
     const whileAway = model.kind === 'whileAway';
     const levelRewards =
       model.animation?.kind === 'level-rewards';
+    const revealItems =
+      featureUnlock || researchUnlock || levelRewards;
     this.heading.setText(
       model.framed || bannerRows ? '' : model.title,
     );
@@ -371,6 +437,13 @@ export class PixiAnnouncementSurface extends RetainedGlobalDialog {
       bannerRows,
     );
     setDisplayObjectVisible(this.continuePrompt, levelRewards);
+    setDisplayObjectVisible(
+      this.levelCeremonyRoot,
+      levelRewards,
+    );
+    this.levelCeremonyNumber.setText(
+      String(model.level?.from ?? ''),
+    );
     this.continuePrompt.setText(
       model.continueLabel || 'Tap to continue',
     );
@@ -379,13 +452,13 @@ export class PixiAnnouncementSurface extends RetainedGlobalDialog {
     this.copy.visible = !researchFeature;
     this.copy.renderable = !researchFeature;
     this.rowsLayer.visible =
-      !featureUnlock && !researchFeature;
+      !revealItems && !researchFeature;
     this.rowsLayer.renderable = this.rowsLayer.visible;
-    this.unlockItemsLayer.visible = featureUnlock;
-    this.unlockItemsLayer.renderable = featureUnlock;
+    this.unlockItemsLayer.visible = revealItems;
+    this.unlockItemsLayer.renderable = revealItems;
     this.researchItemLayer.visible = research;
     this.researchItemLayer.renderable = research;
-    if (featureUnlock) {
+    if (revealItems) {
       this.rows.clear();
       this.researchItem.reset();
       this.unlockItems.reconcile(model.items ?? model.rows);
@@ -577,9 +650,12 @@ export class PixiAnnouncementSurface extends RetainedGlobalDialog {
       : Math.min(260, width);
     const featureUnlock = model.kind === 'unlock';
     const research = model.kind === 'research';
+    const researchUnlock = model.kind === 'researchUnlock';
     const whileAway = model.kind === 'whileAway';
     const levelRewards =
       model.animation?.kind === 'level-rewards';
+    const revealItems =
+      featureUnlock || researchUnlock || levelRewards;
     const bannerRows = isBannerRowsAnnouncement(model);
     const researchFeature = research && !bannerRows;
     const researchCelebration = research && bannerRows;
@@ -591,8 +667,12 @@ export class PixiAnnouncementSurface extends RetainedGlobalDialog {
           false,
         ).preferredHeight
       : 0;
-    const rowsHeight = featureUnlock
-      ? this.unlockItems.layout(rowsWidth)
+    const rowsHeight = revealItems
+      ? this.unlockItems.layout(rowsWidth, {
+          stacked:
+            (levelRewards || researchUnlock) &&
+            !getReducedMotion(this.announcementMotionReduced),
+        })
       : researchFeature
         ? researchItemHeight
           : this.rows.layout(
@@ -859,6 +939,8 @@ export class PixiAnnouncementSurface extends RetainedGlobalDialog {
     captureDisplayMotionBase(this.levelBannerLayer);
     captureDisplayMotionBase(this.levelBannerTitle);
     captureDisplayMotionBase(this.continuePrompt);
+    captureDisplayMotionBase(this.levelCeremonyRoot);
+    captureDisplayMotionBase(this.levelCeremonyBurst);
     for (const row of this.rows.collection.getWidgets()) {
       captureDisplayMotionBase(row.root);
     }
@@ -879,6 +961,10 @@ export class PixiAnnouncementSurface extends RetainedGlobalDialog {
     const animation = model.animation ?? {};
     const kind = animation.kind ?? model.kind;
     const levelRewards = kind === 'level-rewards';
+    if (levelRewards) {
+      this.applyLevelSequenceMotion(elapsed, animation);
+      return;
+    }
     const revealDelay = levelRewards
       ? finiteDuration(animation.revealDelayMs)
       : 0;
@@ -935,11 +1021,8 @@ export class PixiAnnouncementSurface extends RetainedGlobalDialog {
       this.applyFeatureUnlockMotion(elapsed, animation);
       return;
     }
-    if (levelRewards) {
-      this.applyLevelAnnouncementMotion(
-        elapsed,
-        animation,
-      );
+    if (kind === 'research-unlock') {
+      this.applyResearchUnlockMotion(elapsed, animation);
     }
   }
 
@@ -1047,70 +1130,313 @@ export class PixiAnnouncementSurface extends RetainedGlobalDialog {
   }
 
   applyFeatureUnlockMotion(elapsed, animation) {
-    const iconDelay = finiteDuration(
-      animation.iconDelayMs,
-      ANNOUNCEMENT_MOTION_DEFAULTS.researchIconDelayMs,
+    const itemDuration = finiteDuration(
+      animation.itemDurationMs,
+      ANNOUNCEMENT_MOTION_DEFAULTS.featureUnlockItemMs,
     );
-    const iconStagger = finiteDuration(
-      animation.iconStaggerMs,
-      ANNOUNCEMENT_MOTION_DEFAULTS.unlockIconStaggerMs,
+    const itemGap = finiteDuration(
+      animation.itemGapMs,
+      ANNOUNCEMENT_MOTION_DEFAULTS.featureUnlockItemGapMs,
     );
-    const iconDuration = finiteDuration(
-      animation.iconDurationMs,
-      ANNOUNCEMENT_MOTION_DEFAULTS
-        .researchIconDurationMs,
-    );
-    const labelDelay = finiteDuration(
-      animation.labelDelayMs,
-      ANNOUNCEMENT_MOTION_DEFAULTS.researchLabelDelayMs,
-    );
-    const labelDuration = finiteDuration(
-      animation.labelDurationMs,
-      ANNOUNCEMENT_MOTION_DEFAULTS.rowDurationMs,
-    );
-    const detailDelay = finiteDuration(
-      animation.detailDelayMs,
-      ANNOUNCEMENT_MOTION_DEFAULTS.researchDetailDelayMs,
-    );
-    const detailDuration = finiteDuration(
-      animation.detailDurationMs,
-      ANNOUNCEMENT_MOTION_DEFAULTS.rowDurationMs,
-    );
-    const sample = this.announcementMotionSample;
     this.unlockItems.collection
       .getWidgets()
       .forEach((item, index) => {
-        item.applyIconMotion(
+        const delay = index * (itemDuration + itemGap);
+        item.applyRootMotion(
           sampleMotionFrames(
             elapsed,
-            iconDelay + index * iconStagger,
-            iconDuration,
+            delay,
+            Math.min(360, itemDuration),
             ANNOUNCEMENT_ICON_FRAMES,
             ANNOUNCEMENT_EASE_RUBBER,
-            sample,
-          ),
-        );
-        item.applyLabelMotion(
-          sampleMotionFrames(
-            elapsed,
-            labelDelay,
-            labelDuration,
-            ANNOUNCEMENT_ROW_FRAMES,
-            ANNOUNCEMENT_EASE_RUBBER,
-            sample,
-          ),
-        );
-        item.applyDetailMotion(
-          sampleMotionFrames(
-            elapsed,
-            detailDelay,
-            detailDuration,
-            ANNOUNCEMENT_ROW_FRAMES,
-            ANNOUNCEMENT_EASE_RUBBER,
-            sample,
+            this.announcementMotionSample,
           ),
         );
       });
+  }
+
+  applyLevelSequenceMotion(elapsed, animation) {
+    const revealDelay = finiteDuration(animation.revealDelayMs);
+    const glideMs = finiteDuration(
+      animation.starGlideMs,
+      ANNOUNCEMENT_MOTION_DEFAULTS.levelStarGlideMs,
+    );
+    const shakeMs = finiteDuration(
+      animation.starShakeMs,
+      ANNOUNCEMENT_MOTION_DEFAULTS.levelStarShakeMs,
+    );
+    const popMs = finiteDuration(
+      animation.starPopMs,
+      ANNOUNCEMENT_MOTION_DEFAULTS.levelStarPopMs,
+    );
+    const reappearMs = finiteDuration(
+      animation.starReappearMs,
+      ANNOUNCEMENT_MOTION_DEFAULTS.levelStarReappearMs,
+    );
+    const returnMs = finiteDuration(
+      animation.starReturnMs,
+      ANNOUNCEMENT_MOTION_DEFAULTS.levelStarReturnMs,
+    );
+    const bannerEnterMs = finiteDuration(
+      animation.bannerEnterMs,
+      ANNOUNCEMENT_MOTION_DEFAULTS.levelPanelDurationMs,
+    );
+    const bannerHoldMs = finiteDuration(
+      animation.bannerHoldMs,
+      ANNOUNCEMENT_MOTION_DEFAULTS.levelBannerHoldMs,
+    );
+    const bannerExitMs = finiteDuration(
+      animation.bannerExitMs,
+      ANNOUNCEMENT_MOTION_DEFAULTS.levelBannerExitMs,
+    );
+    const rewardMs = finiteDuration(
+      animation.rewardDurationMs,
+      ANNOUNCEMENT_MOTION_DEFAULTS.levelRewardDropMs,
+    );
+    const rewardGapMs = finiteDuration(
+      animation.rewardGapMs,
+      ANNOUNCEMENT_MOTION_DEFAULTS.levelRewardGapMs,
+    );
+    const source = animation.starSourceBounds ?? {};
+    const sourceCenter = {
+      x: finiteNumber(source.x) + finiteNumber(source.width) / 2,
+      y: finiteNumber(source.y) + finiteNumber(source.height) / 2,
+    };
+    const sourcePoint = this.root.toLocal(sourceCenter);
+    const targetPoint = {
+      x: GLOBAL_DIALOG_GEOMETRY.sourceWidth / 2,
+      y: (this.viewportProjection?.sourceHeight ?? 844) / 2,
+    };
+    const glideStart = revealDelay;
+    const shakeStart = glideStart + glideMs;
+    const popStart = shakeStart + shakeMs;
+    const reappearStart = popStart + popMs;
+    const returnStart = reappearStart + reappearMs;
+    const bannerStart = returnStart + returnMs;
+    const bannerExitStart =
+      bannerStart + bannerEnterMs + bannerHoldMs;
+    const rewardsStart = bannerExitStart + bannerExitMs;
+    const ceremonyElapsed = Math.max(0, elapsed - revealDelay);
+    const overlayProgress = sampleMotionProgress(
+      elapsed,
+      revealDelay,
+      Math.min(300, glideMs),
+      ANNOUNCEMENT_EASE,
+    );
+    this.backdrop.alpha = overlayProgress;
+    applyDisplayMotion(this.panel, {
+      alpha: 1,
+      scale: 1,
+      x: 0,
+      y: 0,
+    });
+
+    setDisplayObjectVisible(
+      this.levelCeremonyRoot,
+      elapsed >= revealDelay && elapsed < bannerStart,
+    );
+    this.actions.setLevelStarCeremonyActive?.(
+      elapsed >= revealDelay && elapsed < bannerStart,
+    );
+    this.levelCeremonyBurst.alpha = 0;
+    this.levelCeremonyRoot.rotation = 0;
+    if (elapsed < shakeStart) {
+      const progress = sampleMotionProgress(
+        elapsed,
+        glideStart,
+        glideMs,
+        ANNOUNCEMENT_EASE,
+      );
+      const wave = Math.sin(progress * Math.PI * 3) *
+        (1 - progress) * 24;
+      this.levelCeremonyRoot.position.set(
+        interpolate(sourcePoint.x, targetPoint.x, progress) + wave,
+        interpolate(sourcePoint.y, targetPoint.y, progress) +
+          Math.sin(progress * Math.PI * 2) * 16,
+      );
+      this.levelCeremonyRoot.scale.set(
+        interpolate(1, 4, progress),
+      );
+      this.levelCeremonyRoot.alpha = progress;
+    } else if (elapsed < popStart) {
+      const progress = clampUnit(
+        (elapsed - shakeStart) / Math.max(1, shakeMs),
+      );
+      const shake = Math.sin(progress * Math.PI * 9) *
+        (1 - progress) * 5;
+      this.levelCeremonyRoot.position.set(
+        targetPoint.x + shake,
+        targetPoint.y + Math.cos(progress * Math.PI * 8) * 2,
+      );
+      this.levelCeremonyRoot.scale.set(
+        4 + Math.sin(progress * Math.PI) * 0.55,
+      );
+      this.levelCeremonyRoot.rotation = shake * 0.012;
+      this.levelCeremonyRoot.alpha = 1;
+    } else if (elapsed < reappearStart) {
+      const progress = clampUnit(
+        (elapsed - popStart) / Math.max(1, popMs),
+      );
+      this.levelCeremonyRoot.position.set(
+        targetPoint.x,
+        targetPoint.y,
+      );
+      this.levelCeremonyRoot.scale.set(
+        interpolate(4.5, 5.4, progress),
+      );
+      this.levelCeremonyRoot.alpha = 1 - progress;
+      this.levelCeremonyBurst.alpha = 1 - progress;
+      this.levelCeremonyBurst.scale.set(1 + progress * 2.4);
+    } else if (elapsed < returnStart) {
+      const progress = sampleMotionProgress(
+        elapsed,
+        reappearStart,
+        reappearMs,
+        ANNOUNCEMENT_EASE_RUBBER,
+      );
+      this.levelCeremonyNumber.setText(
+        String(this.announcementModel?.level?.to ?? ''),
+      );
+      this.levelCeremonyRoot.position.set(
+        targetPoint.x,
+        targetPoint.y,
+      );
+      this.levelCeremonyRoot.scale.set(
+        interpolate(0.35, 4, progress),
+      );
+      this.levelCeremonyRoot.alpha = progress;
+    } else {
+      const progress = sampleMotionProgress(
+        elapsed,
+        returnStart,
+        returnMs,
+        ANNOUNCEMENT_EASE,
+      );
+      const wave = Math.sin(progress * Math.PI * 3) *
+        (1 - progress) * 18;
+      this.levelCeremonyRoot.position.set(
+        interpolate(targetPoint.x, sourcePoint.x, progress) + wave,
+        interpolate(targetPoint.y, sourcePoint.y, progress) -
+          Math.sin(progress * Math.PI * 2) * 12,
+      );
+      this.levelCeremonyRoot.scale.set(interpolate(4, 1, progress));
+      this.levelCeremonyRoot.alpha = 1 - Math.max(0, progress - 0.88) / 0.12;
+    }
+
+    const bannerEnter = sampleMotionProgress(
+      elapsed,
+      bannerStart,
+      bannerEnterMs,
+      ANNOUNCEMENT_EASE_RUBBER,
+    );
+    const bannerExit = sampleMotionProgress(
+      elapsed,
+      bannerExitStart,
+      bannerExitMs,
+      ANNOUNCEMENT_EASE,
+    );
+    applyDisplayMotion(this.levelBannerLayer, {
+      alpha: bannerEnter * (1 - bannerExit),
+      scale: interpolate(0.7, 1, bannerEnter) *
+        interpolate(1, 1.12, bannerExit),
+      x: 0,
+      y: -bannerExit * 8,
+    });
+    applyDisplayMotion(this.levelBannerTitle, {
+      alpha: bannerEnter * (1 - bannerExit),
+      scale: interpolate(0.82, 1, bannerEnter),
+      x: 0,
+      y: 0,
+    });
+
+    const items = this.unlockItems.collection.getWidgets();
+    items.forEach((item, index) => {
+      const start = rewardsStart + index * (rewardMs + rewardGapMs);
+      const enter = sampleMotionProgress(
+        elapsed,
+        start,
+        Math.min(330, rewardMs * 0.48),
+        ANNOUNCEMENT_EASE_RUBBER,
+      );
+      const exit = index < items.length - 1
+        ? sampleMotionProgress(
+            elapsed,
+            start + rewardMs - 170,
+            170,
+            ANNOUNCEMENT_EASE,
+          )
+        : 0;
+      item.applyRootMotion({
+        alpha: enter * (1 - exit),
+        scale:
+          interpolate(0.76, 1, enter) *
+          interpolate(1, 1.08, exit),
+        x: 0,
+        y: interpolate(-50, 0, enter) + exit * 22,
+      });
+    });
+    const rewardsEnd =
+      rewardsStart +
+      Math.max(0, items.length - 1) * (rewardMs + rewardGapMs) +
+      rewardMs;
+    applyDisplayMotion(
+      this.continuePrompt,
+      sampleMotionFrames(
+        elapsed,
+        rewardsEnd + LEVEL_REWARD_CONTINUE_DELAY_MS,
+        220,
+        ANNOUNCEMENT_PROMPT_FRAMES,
+        ANNOUNCEMENT_EASE,
+        this.announcementMotionSample,
+      ),
+    );
+    this.levelAdvanceReady = elapsed >= rewardsEnd;
+    void ceremonyElapsed;
+  }
+
+  applyResearchUnlockMotion(elapsed, animation) {
+    const item = this.unlockItems.collection.getWidgets()[0];
+    if (!item) {
+      return;
+    }
+    const enterMs = finiteDuration(
+      animation.itemDurationMs,
+      ANNOUNCEMENT_MOTION_DEFAULTS.researchIconDurationMs,
+    );
+    const shakeStart = enterMs;
+    const shakeMs = finiteDuration(
+      animation.shakeDurationMs,
+      ANNOUNCEMENT_MOTION_DEFAULTS.researchUnlockShakeMs,
+    );
+    const breakStart = shakeStart + shakeMs;
+    const breakMs = finiteDuration(
+      animation.breakDurationMs,
+      ANNOUNCEMENT_MOTION_DEFAULTS.researchUnlockBreakMs,
+    );
+    this.backdrop.alpha = sampleMotionProgress(
+      elapsed,
+      0,
+      225,
+      ANNOUNCEMENT_EASE,
+    );
+    item.applyRootMotion(
+      sampleMotionFrames(
+        elapsed,
+        0,
+        enterMs,
+        ANNOUNCEMENT_ICON_FRAMES,
+        ANNOUNCEMENT_EASE_RUBBER,
+        this.announcementMotionSample,
+      ),
+    );
+    item.applyLockShake(
+      clampUnit((elapsed - shakeStart) / Math.max(1, shakeMs)),
+    );
+    if (elapsed >= breakStart) {
+      item.applyLockBreak(
+        clampUnit((elapsed - breakStart) / Math.max(1, breakMs)),
+      );
+    }
   }
 
   applyLevelAnnouncementMotion(elapsed, animation) {
@@ -1280,15 +1606,64 @@ export class PixiAnnouncementSurface extends RetainedGlobalDialog {
     const animation = model.animation ?? {};
     const kind = animation.kind ?? model.kind;
     const levelRewards = kind === 'level-rewards';
+    if (levelRewards) {
+      const itemCount =
+        this.unlockItems.collection.getWidgets().length;
+      return (
+        finiteDuration(animation.revealDelayMs) +
+        finiteDuration(
+          animation.starGlideMs,
+          ANNOUNCEMENT_MOTION_DEFAULTS.levelStarGlideMs,
+        ) +
+        finiteDuration(
+          animation.starShakeMs,
+          ANNOUNCEMENT_MOTION_DEFAULTS.levelStarShakeMs,
+        ) +
+        finiteDuration(
+          animation.starPopMs,
+          ANNOUNCEMENT_MOTION_DEFAULTS.levelStarPopMs,
+        ) +
+        finiteDuration(
+          animation.starReappearMs,
+          ANNOUNCEMENT_MOTION_DEFAULTS.levelStarReappearMs,
+        ) +
+        finiteDuration(
+          animation.starReturnMs,
+          ANNOUNCEMENT_MOTION_DEFAULTS.levelStarReturnMs,
+        ) +
+        finiteDuration(
+          animation.bannerEnterMs,
+          ANNOUNCEMENT_MOTION_DEFAULTS.levelPanelDurationMs,
+        ) +
+        finiteDuration(
+          animation.bannerHoldMs,
+          ANNOUNCEMENT_MOTION_DEFAULTS.levelBannerHoldMs,
+        ) +
+        finiteDuration(
+          animation.bannerExitMs,
+          ANNOUNCEMENT_MOTION_DEFAULTS.levelBannerExitMs,
+        ) +
+        Math.max(0, itemCount - 1) *
+          (finiteDuration(
+            animation.rewardDurationMs,
+            ANNOUNCEMENT_MOTION_DEFAULTS.levelRewardDropMs,
+          ) +
+            finiteDuration(
+              animation.rewardGapMs,
+              ANNOUNCEMENT_MOTION_DEFAULTS.levelRewardGapMs,
+            )) +
+        finiteDuration(
+          animation.rewardDurationMs,
+          ANNOUNCEMENT_MOTION_DEFAULTS.levelRewardDropMs,
+        ) +
+        LEVEL_REWARD_CONTINUE_DELAY_MS +
+        220
+      );
+    }
     let duration =
-      (levelRewards
-        ? finiteDuration(animation.revealDelayMs)
-        : 0) +
       finiteDuration(
         animation.overlayDurationMs,
-        levelRewards
-          ? ANNOUNCEMENT_MOTION_DEFAULTS.levelOverlayDurationMs
-          : ANNOUNCEMENT_MOTION_DEFAULTS.overlayDurationMs,
+        ANNOUNCEMENT_MOTION_DEFAULTS.overlayDurationMs,
       );
     if (kind === 'research-complete') {
       if (isBannerRowsAnnouncement(model)) {
@@ -1344,79 +1719,43 @@ export class PixiAnnouncementSurface extends RetainedGlobalDialog {
     } else if (kind === 'feature-unlock') {
       const itemCount =
         this.unlockItems.collection.getWidgets().length;
-      duration = Math.max(
-        duration,
-        finiteDuration(
-          animation.detailDelayMs,
-          ANNOUNCEMENT_MOTION_DEFAULTS
-            .researchDetailDelayMs,
-        ) +
-          finiteDuration(
-            animation.detailDurationMs,
-            ANNOUNCEMENT_MOTION_DEFAULTS.rowDurationMs,
-          ),
-        finiteDuration(
-          animation.iconDelayMs,
-          ANNOUNCEMENT_MOTION_DEFAULTS
-            .researchIconDelayMs,
-        ) +
-          Math.max(0, itemCount - 1) *
-            finiteDuration(
-              animation.iconStaggerMs,
-              ANNOUNCEMENT_MOTION_DEFAULTS
-                .unlockIconStaggerMs,
-            ) +
-          finiteDuration(
-            animation.iconDurationMs,
-            ANNOUNCEMENT_MOTION_DEFAULTS
-              .researchIconDurationMs,
-          ),
+      const itemDuration = finiteDuration(
+        animation.itemDurationMs,
+        ANNOUNCEMENT_MOTION_DEFAULTS.featureUnlockItemMs,
       );
-    } else if (levelRewards) {
-      const rowCount =
-        this.rows.collection.getWidgets().length;
-      const countUpTail = this.hasLevelRewardCountUp()
-        ? LEVEL_REWARD_COUNT_DELAY_MS +
-          LEVEL_REWARD_COUNT_DURATION_MS
-        : 0;
+      duration = Math.max(
+        duration,
+        Math.max(0, itemCount - 1) *
+          (itemDuration +
+            finiteDuration(
+              animation.itemGapMs,
+              ANNOUNCEMENT_MOTION_DEFAULTS
+                .featureUnlockItemGapMs,
+            )) +
+          itemDuration,
+      );
+    } else if (kind === 'research-unlock') {
       duration = Math.max(
         duration,
         finiteDuration(
-          animation.rowDelayMs,
-          ANNOUNCEMENT_MOTION_DEFAULTS.levelRowDelayMs,
+          animation.itemDurationMs,
+          ANNOUNCEMENT_MOTION_DEFAULTS
+            .researchIconDurationMs,
         ) +
-          Math.max(
-            0,
-            rowCount - 1,
-          ) *
-            finiteDuration(
-              animation.rowStaggerMs,
-              ANNOUNCEMENT_MOTION_DEFAULTS
-                .levelRowStaggerMs,
-            ) +
           finiteDuration(
-            animation.rowDurationMs,
-            ANNOUNCEMENT_MOTION_DEFAULTS.rowDurationMs,
-          ),
-        finiteDuration(
-          animation.rowDelayMs,
-          ANNOUNCEMENT_MOTION_DEFAULTS.levelRowDelayMs,
-        ) +
-          Math.max(0, rowCount - 1) *
-            finiteDuration(
-              animation.rowStaggerMs,
-              ANNOUNCEMENT_MOTION_DEFAULTS
-                .levelRowStaggerMs,
-            ) +
-          finiteDuration(
-            animation.rowDurationMs,
-            ANNOUNCEMENT_MOTION_DEFAULTS.rowDurationMs,
+            animation.shakeDurationMs,
+            ANNOUNCEMENT_MOTION_DEFAULTS
+              .researchUnlockShakeMs,
           ) +
-          countUpTail +
-          LEVEL_REWARD_CONTINUE_DELAY_MS +
           finiteDuration(
-            animation.rowDurationMs,
-            ANNOUNCEMENT_MOTION_DEFAULTS.rowDurationMs,
+            animation.breakDurationMs,
+            ANNOUNCEMENT_MOTION_DEFAULTS
+              .researchUnlockBreakMs,
+          ) +
+          finiteDuration(
+            animation.holdDurationMs,
+            ANNOUNCEMENT_MOTION_DEFAULTS
+              .researchUnlockHoldMs,
           ),
       );
     }
@@ -1432,6 +1771,10 @@ export class PixiAnnouncementSurface extends RetainedGlobalDialog {
     restoreDisplayMotion(this.levelBannerLayer);
     restoreDisplayMotion(this.levelBannerTitle);
     restoreDisplayMotion(this.continuePrompt);
+    restoreDisplayMotion(this.levelCeremonyRoot);
+    restoreDisplayMotion(this.levelCeremonyBurst);
+    setDisplayObjectVisible(this.levelCeremonyRoot, false);
+    this.actions.setLevelStarCeremonyActive?.(false);
     this.backdrop.alpha = 1;
     for (const row of this.rows.collection.getWidgets()) {
       restoreDisplayMotion(row.root);
@@ -1439,11 +1782,19 @@ export class PixiAnnouncementSurface extends RetainedGlobalDialog {
     for (const backing of this.levelRewardRowBackings) {
       restoreDisplayMotion(backing);
     }
-    for (
-      const item of
-      this.unlockItems.collection.getWidgets()
-    ) {
+    const revealItems =
+      this.unlockItems.collection.getWidgets();
+    for (const item of revealItems) {
       item.restoreMotion();
+    }
+    if (
+      this.announcementModel?.animation?.kind ===
+        'level-rewards' &&
+      !getReducedMotion(this.announcementMotionReduced)
+    ) {
+      revealItems.forEach((item, index) => {
+        item.root.alpha = index === revealItems.length - 1 ? 1 : 0;
+      });
     }
     this.researchItem?.restoreMotion();
     this.settleLevelRewardCountUps();
@@ -1669,16 +2020,19 @@ class FeatureUnlockAnnouncementItems {
     }
   }
 
-  layout(width) {
+  layout(width, { stacked = false } = {}) {
     const widgets = this.collection.getWidgets();
     if (widgets.length === 0) {
       return 0;
     }
-    if (widgets.length === 1) {
-      widgets[0].setBounds(0, 0, width, false);
-      return widgets[0].preferredHeight;
+    if (widgets.length === 1 || stacked) {
+      let height = 0;
+      for (const widget of widgets) {
+        widget.setBounds(0, 0, width, false);
+        height = Math.max(height, widget.preferredHeight);
+      }
+      return height;
     }
-
     const columns = Math.max(
       1,
       Math.floor(
@@ -1742,6 +2096,7 @@ export class FeatureUnlockAnnouncementItem {
     this.assets = assets;
     this.theme = theme;
     this.data = {};
+    this.variant = 'feature';
     this.compact = false;
     this.preferredHeight = 0;
     this.root = new Container({ label });
@@ -1773,6 +2128,59 @@ export class FeatureUnlockAnnouncementItem {
       roundPixels: true,
       label: `${label}:iconOverlay`,
     });
+    this.lockRoot = new Container({
+      label: `${label}:lock`,
+      eventMode: 'none',
+    });
+    this.lockLeft = new Sprite({
+      texture:
+        this.assets?.getTexture?.(PIXI_ROOT_RUN_ASSETS.lock) ??
+        Texture.EMPTY,
+      anchor: 0.5,
+      roundPixels: true,
+      label: `${label}:lockLeft`,
+    });
+    this.lockRight = new Sprite({
+      texture:
+        this.assets?.getTexture?.(PIXI_ROOT_RUN_ASSETS.lock) ??
+        Texture.EMPTY,
+      anchor: 0.5,
+      roundPixels: true,
+      label: `${label}:lockRight`,
+    });
+    this.lockLeftMask = new Graphics({
+      label: `${label}:lockLeftMask`,
+    })
+      .rect(
+        -ANNOUNCEMENT_LOCK_SIZE / 2,
+        -ANNOUNCEMENT_LOCK_SIZE / 2,
+        ANNOUNCEMENT_LOCK_SIZE / 2,
+        ANNOUNCEMENT_LOCK_SIZE,
+      )
+      .fill(0xffffff);
+    this.lockRightMask = new Graphics({
+      label: `${label}:lockRightMask`,
+    })
+      .rect(
+        0,
+        -ANNOUNCEMENT_LOCK_SIZE / 2,
+        ANNOUNCEMENT_LOCK_SIZE / 2,
+        ANNOUNCEMENT_LOCK_SIZE,
+      )
+      .fill(0xffffff);
+    this.lockLeft.width = ANNOUNCEMENT_LOCK_SIZE;
+    this.lockLeft.height = ANNOUNCEMENT_LOCK_SIZE;
+    this.lockRight.width = ANNOUNCEMENT_LOCK_SIZE;
+    this.lockRight.height = ANNOUNCEMENT_LOCK_SIZE;
+    this.lockLeft.mask = this.lockLeftMask;
+    this.lockRight.mask = this.lockRightMask;
+    this.lockRoot.addChild(
+      this.lockLeft,
+      this.lockRight,
+      this.lockLeftMask,
+      this.lockRightMask,
+    );
+    setDisplayObjectVisible(this.lockRoot, false);
     this.fallbackIcon = new PixiTextLabel({
       fontSize: 14,
       fontWeight: 'bold',
@@ -1805,6 +2213,7 @@ export class FeatureUnlockAnnouncementItem {
       this.icon,
       this.iconOverlay,
       this.fallbackIcon,
+      this.lockRoot,
     );
     this.root.addChild(
       this.iconStage,
@@ -1816,12 +2225,25 @@ export class FeatureUnlockAnnouncementItem {
 
   bind(data = {}) {
     this.data = data;
+    this.variant = String(data.variant ?? 'feature');
     this.compact = data.compact === true;
     this.root.visible = true;
     this.root.renderable = true;
     this.label.setText(data.label ?? data.feature ?? '');
     this.detail.setText(data.value ?? data.detail ?? '');
     this.bindIcon(data.icon ?? {});
+    setDisplayObjectVisible(
+      this.lockRoot,
+      Boolean(data.lockedReveal),
+    );
+    this.lockRoot.alpha = 1;
+    this.lockRoot.rotation = 0;
+    this.lockLeft.position.set(0, 0);
+    this.lockRight.position.set(0, 0);
+    this.lockLeft.rotation = 0;
+    this.lockRight.rotation = 0;
+    this.lockLeft.alpha = 1;
+    this.lockRight.alpha = 1;
     this.layoutCurrent();
   }
 
@@ -1869,9 +2291,12 @@ export class FeatureUnlockAnnouncementItem {
   }
 
   layoutCurrent() {
-    const geometry = this.compact
-      ? UNLOCK_COMPACT_STAGE
-      : UNLOCK_SINGLE_STAGE;
+    const reward = this.variant === 'reward';
+    const geometry = reward
+      ? LEVEL_REWARD_STAGE
+      : this.compact
+        ? UNLOCK_COMPACT_STAGE
+        : UNLOCK_SINGLE_STAGE;
     const width = Math.max(
       0,
       Number(this.rowWidth) ||
@@ -1914,38 +2339,40 @@ export class FeatureUnlockAnnouncementItem {
       this.iconOverlay.rotation = 0;
     }
     this.fallbackIcon.position.set(centerX, centerY);
+    this.lockRoot.position.set(centerX, centerY);
 
     const labelWidth = this.compact
       ? UNLOCK_ITEM_WIDTH
       : width;
     this.label
-      .setFontSize(this.compact ? 11 : 14)
-      .setLineHeight(this.compact ? 14 : 17)
+      .setFontSize(reward ? 16 : this.compact ? 11 : 14)
+      .setLineHeight(reward ? 19 : this.compact ? 14 : 17)
       .setWrapWidth(labelWidth);
     this.label.position.set(
       width / 2,
-      geometry.height + 4,
+      reward ? -22 : geometry.height + 4,
     );
     this.detail
       .setWrapWidth(width)
-      .setFontSize(13)
-      .setLineHeight(16);
+      .setFontSize(reward ? 24 : 13)
+      .setLineHeight(reward ? 28 : 16);
     this.detail.visible =
       !this.compact && Boolean(this.detail.text);
     this.detail.renderable = this.detail.visible;
     this.detail.position.set(
       width / 2,
-      this.label.y + this.label.measuredHeight + 2,
+      reward
+        ? geometry.height - 24
+        : this.label.y + this.label.measuredHeight + 2,
     );
-    this.preferredHeight =
-      geometry.height +
-      4 +
-      this.label.measuredHeight +
-      (
-        this.detail.visible
+    this.preferredHeight = reward
+      ? geometry.height + 8
+      : geometry.height +
+        4 +
+        this.label.measuredHeight +
+        (this.detail.visible
           ? 2 + this.detail.measuredHeight
-          : 0
-      );
+          : 0);
   }
 
   applyTheme(theme) {
@@ -1988,6 +2415,42 @@ export class FeatureUnlockAnnouncementItem {
     captureDisplayMotionBase(this.fallbackIcon);
     captureDisplayMotionBase(this.label);
     captureDisplayMotionBase(this.detail);
+    captureDisplayMotionBase(this.root);
+    captureDisplayMotionBase(this.lockRoot);
+    captureDisplayMotionBase(this.lockLeft);
+    captureDisplayMotionBase(this.lockRight);
+  }
+
+  applyRootMotion(state) {
+    applyDisplayMotion(this.root, state);
+  }
+
+  applyLockShake(progress) {
+    if (!this.data.lockedReveal) {
+      return;
+    }
+    setDisplayObjectVisible(this.lockRoot, true);
+    const strength = (1 - clampUnit(progress)) * 4;
+    this.lockRoot.position.x =
+      (DISPLAY_MOTION_BASES.get(this.lockRoot)?.x ??
+        this.lockRoot.position.x) +
+      Math.sin(progress * Math.PI * 10) * strength;
+    this.lockRoot.rotation =
+      Math.sin(progress * Math.PI * 9) * 0.09;
+  }
+
+  applyLockBreak(progress) {
+    if (!this.data.lockedReveal) {
+      return;
+    }
+    const amount = clampUnit(progress);
+    this.lockRoot.rotation = 0;
+    this.lockLeft.position.set(-amount * 18, amount * 11);
+    this.lockRight.position.set(amount * 18, amount * 11);
+    this.lockLeft.rotation = -amount * 0.45;
+    this.lockRight.rotation = amount * 0.45;
+    this.lockLeft.alpha = 1 - amount;
+    this.lockRight.alpha = 1 - amount;
   }
 
   applyFallbackMotion(state) {
@@ -2012,23 +2475,31 @@ export class FeatureUnlockAnnouncementItem {
   }
 
   restoreMotion() {
+    restoreDisplayMotion(this.root);
     restoreDisplayMotion(this.silhouette);
     restoreDisplayMotion(this.icon);
     restoreDisplayMotion(this.iconOverlay);
     restoreDisplayMotion(this.fallbackIcon);
     restoreDisplayMotion(this.label);
     restoreDisplayMotion(this.detail);
+    restoreDisplayMotion(this.lockRoot);
+    restoreDisplayMotion(this.lockLeft);
+    restoreDisplayMotion(this.lockRight);
     this.silhouette.alpha = 0;
     this.icon.alpha = 1;
     this.iconOverlay.alpha = 1;
     this.fallbackIcon.alpha = 1;
     this.label.alpha = 1;
     this.detail.alpha = 1;
+    if (this.data.lockedReveal) {
+      setDisplayObjectVisible(this.lockRoot, false);
+    }
   }
 
   reset() {
     this.restoreMotion();
     this.data = {};
+    this.variant = 'feature';
     this.compact = false;
     this.label.setText('');
     this.detail.setText('');
@@ -2478,6 +2949,11 @@ function finiteDuration(value, fallback = 0) {
     value === undefined || value === null ? fallback : value;
   const duration = Number(candidate);
   return Number.isFinite(duration) ? Math.max(0, duration) : 0;
+}
+
+function finiteNumber(value, fallback = 0) {
+  const number = Number(value);
+  return Number.isFinite(number) ? number : fallback;
 }
 
 function sampleMotionProgress(

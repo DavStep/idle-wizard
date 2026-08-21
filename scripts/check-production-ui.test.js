@@ -36,7 +36,7 @@ describe('production UI guard', () => {
     ]);
   });
 
-  it('ignores syntax in comments/strings and permits only exact auth and host-canvas exceptions', () => {
+  it('ignores syntax in comments/strings and permits only exact auth, platform, and host-canvas exceptions', () => {
     const inert = analyzeProductionUiSource(
       `
         const example = "document.createElement('input')";
@@ -85,6 +85,30 @@ describe('production UI guard', () => {
     expect(authResult.exceptions).toHaveLength(2);
     expect(authResult.violations).toEqual([
       expect.objectContaining({ ruleId: 'html-input-creation' }),
+    ]);
+
+    const mobileTextEntryFindings = analyzeProductionUiSource(
+      `
+        documentTarget.createElement('input');
+        documentTarget.createElement('textarea');
+        documentTarget.createElement('form');
+      `,
+      {
+        moduleId:
+          '/repo/src/rendering/textEntry/MobileWebTextEntryAdapter.js',
+      },
+    );
+    const mobileTextEntryResult = evaluateProductionUiFindings(
+      mobileTextEntryFindings,
+      {
+        root: '/repo',
+        entryModuleIds: [],
+        canvasId: 'game-canvas',
+      },
+    );
+    expect(mobileTextEntryResult.exceptions).toHaveLength(2);
+    expect(mobileTextEntryResult.violations).toEqual([
+      expect.objectContaining({ ruleId: 'html-form-creation' }),
     ]);
   });
 

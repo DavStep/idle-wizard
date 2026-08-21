@@ -19,6 +19,7 @@ import {
   DEFAULT_PIXI_THEME_SNAPSHOT,
   PIXI_ROOT_RUN_ASSETS,
   PIXI_ROOT_RUN_GEOMETRY,
+  PIXI_STATUS_COLORS,
   PIXI_UI_GEOMETRY,
 } from '../../theme/PixiThemeTokens.js';
 import {
@@ -61,6 +62,9 @@ const RECIPE_MANA_ICON_SIZE = 13;
 const RECIPE_MANA_ICON_GAP = 2;
 const RECIPE_MANA_ICON_FRAME = 'resource:mana';
 const RECIPE_STATUS_HEIGHT = 30;
+const RECIPE_STATUS_CHECKMARK_SIZE = 18;
+const RECIPE_STATUS_CHECKMARK_RIGHT_INSET = 7;
+const RECIPE_STATUS_CHECKMARK_GAP = 4;
 const RECIPE_CHOICE_CONTENT_WIDTH = 210;
 const RECIPE_CHOICE_OUTER_WIDTH = RECIPE_CHOICE_CONTENT_WIDTH + 44;
 
@@ -598,9 +602,20 @@ export class BrewingRecipeCard {
       RETAINED_TEXT_STYLES.body,
     );
     this.researchStatusLabel.anchor.set(0.5);
+    this.selectedCheckmark = new Sprite({
+      texture:
+        assetManager?.getTexture?.(PIXI_ROOT_RUN_ASSETS.checkmark) ??
+        Texture.EMPTY,
+      label: `brewing-recipe-card-${instanceId}-selected-checkmark`,
+    });
+    this.selectedCheckmark.anchor.set(0.5);
+    this.selectedCheckmark.eventMode = 'none';
+    this.selectedCheckmark.visible = false;
+    this.selectedCheckmark.renderable = false;
     this.researchStatus.addChild(
       this.researchStatusBackground,
       this.researchStatusLabel,
+      this.selectedCheckmark,
     );
     this.select = new PixiTextButton({
       assetManager,
@@ -714,19 +729,22 @@ export class BrewingRecipeCard {
     this.syncIconBounds();
     this.ingredients.reconcile(normalizeRows(this.model.ingredients));
     const selected = this.model.selected === true;
-    const showResearchStatus = locked || unknown;
+    const showPassiveStatus = selected || locked || unknown;
     this.select.setText(unknown ? 'Unknown' : 'Select');
     this.select.setVariant(unknown ? 'yellow' : 'green');
-    const actionEnabled =
-      !unknown && !locked && (selected || this.model.canSelect !== false);
+    const actionEnabled = !selected && !unknown && !locked;
     this.select.setEnabled(actionEnabled);
-    this.select.setSelected(selected);
-    this.select.visible = !showResearchStatus;
-    this.select.renderable = !showResearchStatus;
-    this.researchStatus.visible = showResearchStatus;
-    this.researchStatus.renderable = showResearchStatus;
+    this.select.setSelected(false);
+    this.select.visible = !showPassiveStatus;
+    this.select.renderable = !showPassiveStatus;
+    this.researchStatus.visible = showPassiveStatus;
+    this.researchStatus.renderable = showPassiveStatus;
+    const showSelectedCheckmark =
+      selected && this.selectedCheckmark.texture !== Texture.EMPTY;
+    this.selectedCheckmark.visible = showSelectedCheckmark;
+    this.selectedCheckmark.renderable = showSelectedCheckmark;
     this.researchTimer =
-      showResearchStatus && !unknown && this.model.researchInProgress === true
+      locked && !unknown && this.model.researchInProgress === true
         ? {
             endTimeMs: Number.isFinite(this.model.researchEndTimeMs)
               ? this.model.researchEndTimeMs
@@ -767,7 +785,7 @@ export class BrewingRecipeCard {
   }
 
   activateRecipeAction() {
-    if (this.model.unlocked !== true) {
+    if (this.model.unlocked !== true || this.model.selected === true) {
       return false;
     }
     return this.selectRecipe();
@@ -776,7 +794,7 @@ export class BrewingRecipeCard {
   selectRecipe() {
     if (
       this.model.unlocked !== true ||
-      (this.model.selected !== true && this.model.canSelect === false)
+      this.model.selected === true
     ) {
       return false;
     }
@@ -802,9 +820,11 @@ export class BrewingRecipeCard {
       : 0;
     const label = timer
       ? `Researching: ${formatRemainingTime(remainingMs)}`
-      : this.unknown
-        ? UNKNOWN_RECIPE_STATUS_LABEL
-        : 'Not researched';
+      : this.model.selected === true
+        ? 'Selected'
+        : this.unknown
+          ? UNKNOWN_RECIPE_STATUS_LABEL
+          : 'Not researched';
     if (this.researchStatusLabel.text !== label) {
       setText(this.researchStatusLabel, label);
     }
@@ -879,10 +899,26 @@ export class BrewingRecipeCard {
       RECIPE_STATUS_HEIGHT,
       PIXI_ROOT_RUN_GEOMETRY.settings.rowBorderInsets,
     );
-    this.researchStatusLabel.position.set(
-      contentWidth / 2,
-      RECIPE_STATUS_HEIGHT / 2,
-    );
+    const statusCenterY = RECIPE_STATUS_HEIGHT / 2;
+    if (this.model.selected === true) {
+      const checkmarkCenterX =
+        contentWidth -
+        RECIPE_STATUS_CHECKMARK_RIGHT_INSET -
+        RECIPE_STATUS_CHECKMARK_SIZE / 2;
+      this.selectedCheckmark.position.set(checkmarkCenterX, statusCenterY);
+      this.selectedCheckmark.width = RECIPE_STATUS_CHECKMARK_SIZE;
+      this.selectedCheckmark.height =
+        RECIPE_STATUS_CHECKMARK_SIZE * (57 / 61);
+      const labelAreaRight = Math.max(
+        0,
+        checkmarkCenterX -
+          RECIPE_STATUS_CHECKMARK_SIZE / 2 -
+          RECIPE_STATUS_CHECKMARK_GAP,
+      );
+      this.researchStatusLabel.position.set(labelAreaRight / 2, statusCenterY);
+    } else {
+      this.researchStatusLabel.position.set(contentWidth / 2, statusCenterY);
+    }
     this.select.position.set(RECIPE_CARD_CONTENT_INSET, height - 38);
     this.select.setSize(contentWidth, 30);
     this.separator.visible = false;
@@ -992,6 +1028,8 @@ export class BrewingRecipeCard {
     this.unknownOverlay.visible = false;
     this.unknownOverlay.renderable = false;
     this.researchTimer = null;
+    this.selectedCheckmark.visible = false;
+    this.selectedCheckmark.renderable = false;
     this.root.visible = false;
     this.root.renderable = false;
     this.root.eventMode = 'none';
@@ -1100,7 +1138,11 @@ export class BrewingRecipeIngredientRow {
     });
     applyTextTheme(this.owned, this.theme, {
       ...RETAINED_TEXT_STYLES.border,
-      fill: unavailable || masked ? this.theme.disabled : this.theme.muted,
+      fill: masked
+        ? this.theme.disabled
+        : unavailable
+          ? this.theme.insufficient ?? PIXI_STATUS_COLORS.insufficient
+          : this.theme.muted,
     });
   }
 

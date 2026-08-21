@@ -561,6 +561,8 @@ describe("PixiPagesFacade", () => {
     const workshopModel = harness.getBoundPage("workshop");
     workshopModel.actions.summonSeed();
     expect(harness.gameplayFacade.summonSeed).toHaveBeenCalledTimes(1);
+    workshopModel.actions.setSummonQuantity(3);
+    expect(harness.gameplayFacade.setSeedSummonQuantity).toHaveBeenCalledWith(3);
 
     workshopModel.actions.selectLeaderboardPeriod("weekly");
     expect(
@@ -918,7 +920,7 @@ describe("PixiPagesFacade", () => {
     },
   );
 
-  it("keeps known locked Bag items actionable as exact Research links", () => {
+  it("omits locked zero-count seeds from the Bag", () => {
     const gameplaySnapshot = createGameplaySnapshot();
     gameplaySnapshot.research.tabs = [
       {
@@ -942,19 +944,9 @@ describe("PixiPagesFacade", () => {
     pages.mount();
 
     harness.getBoundPage("workshop").actions.selectBagTab("seeds");
-    const row = harness.getBoundPage("workshop").workshop.dialogs.bag.rows[0];
-    expect(row).toMatchObject({
-      itemKey: "mintSeed",
-      locked: true,
-      value: "locked",
-      semanticId: "workshop.bag.seed.mintSeed",
-    });
-    expect(row.action()).toMatchObject({
-      ok: true,
-      pageId: "research",
-      targetId: "unlockSeed:mintSeed",
-    });
-    expect(harness.runtime.closeDialog).toHaveBeenCalledWith("workshop.bag");
+    expect(
+      harness.getBoundPage("workshop").workshop.dialogs.bag.rows,
+    ).toEqual([]);
   });
 
   it("links known locked Bag potions to their exact recipe Research row", () => {
@@ -2303,28 +2295,27 @@ describe("PixiPagesFacade", () => {
     );
   });
 
-  it("keeps unaffordable Brewing recipes unselected and leaves the book open", () => {
+  it("selects a Brewing recipe even when its ingredients cannot be staged yet", () => {
     const gameplaySnapshot = createGameplaySnapshot();
     const recipe = {
       key: "manaTonic",
       label: "mana tonic",
       unlocked: true,
-      ingredients: [
-        {
+      ingredients: Array.from({ length: 3 }, (_, slotIndex) => ({
+          slotIndex,
           itemTypeId: 1001,
           key: "sageHerb",
           label: "sage",
           quantity: 1,
-        },
-      ],
+        })),
     };
     gameplaySnapshot.brewing = {
       cauldrons: [
         {
           cauldronIndex: 0,
           cauldronNumber: 1,
-          brewQuantity: 2,
-          maxBrewQuantity: 2,
+          brewQuantity: 1,
+          maxBrewQuantity: 1,
           ingredients: [],
         },
       ],
@@ -2333,7 +2324,7 @@ describe("PixiPagesFacade", () => {
         {
           itemTypeId: 1001,
           key: "sageHerb",
-          quantity: 1,
+          quantity: 2,
         },
       ],
     };
@@ -2342,6 +2333,13 @@ describe("PixiPagesFacade", () => {
       ok: false,
       reason: "not_enough_ingredients",
     });
+    harness.gameplayFacade.setBrewingAutoBrewRecipe.mockImplementation(
+      (recipeKey, cauldronIndex) => {
+        gameplaySnapshot.brewing.cauldrons[cauldronIndex].autoBrewRecipeKey =
+          recipeKey;
+        return { ok: true, autoBrewRecipeKey: recipeKey, cauldronIndex };
+      },
+    );
     const pages = new PixiPagesFacade(harness.dependencies);
     pages.mount();
     pages.show("brewing");
@@ -2350,25 +2348,33 @@ describe("PixiPagesFacade", () => {
     const dialogModel = harness.pageSurface.openDialog.mock.calls.at(-1)[1];
     expect(dialogModel.recipes[0]).toMatchObject({
       key: "manaTonic",
-      canSelect: false,
+      canSelect: true,
       selected: false,
     });
+    expect(dialogModel.recipes[0].ingredients).toEqual([
+      expect.objectContaining({ owned: 2, quantity: 1, available: true }),
+      expect.objectContaining({ owned: 1, quantity: 1, available: true }),
+      expect.objectContaining({ owned: 0, quantity: 1, available: false }),
+    ]);
 
     const result = harness
       .getBoundPage("brewing")
       .actions.selectRecipe(recipe, 0);
 
     expect(result).toEqual({
-      ok: false,
-      reason: "not_enough_ingredients",
+      ok: true,
+      autoBrewRecipeKey: "manaTonic",
+      cauldronIndex: 0,
     });
-    expect(harness.runtime.closeDialog).not.toHaveBeenCalledWith(
-      "brewing.recipes",
+    expect(harness.gameplayFacade.prepareBrewingRecipe).toHaveBeenCalledWith(
+      "manaTonic",
+      0,
     );
+    expect(harness.runtime.closeDialog).toHaveBeenCalledWith("brewing.recipes");
     pages.refreshPage("brewing");
     expect(
       harness.getBoundPage("brewing").brewing.cauldrons[0].selectedRecipe,
-    ).toBeNull();
+    ).toMatchObject({ key: "manaTonic" });
   });
 
   it("reuses a selected recipe after collection and projects per-slot availability", () => {
@@ -3594,6 +3600,7 @@ function createHarness({ gameplaySnapshot = createGameplaySnapshot() } = {}) {
     }),
     subscribeFrameResources: vi.fn(() => vi.fn()),
     summonSeed: vi.fn(),
+    setSeedSummonQuantity: vi.fn(),
     donateWorldNoticeResource: vi.fn(),
     fillTask: vi.fn(),
     claimPersonalTaskMilestoneReward: vi.fn(),

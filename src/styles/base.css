@@ -11855,6 +11855,32 @@ div.workshop-page__discovery-row {
   white-space: nowrap;
 }
 
+.brewing-page__recipe-selected-status {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  align-self: center;
+  box-sizing: border-box;
+  width: 112px;
+  min-width: 0;
+  min-height: 30px;
+  padding: 4px 7px 4px 10px;
+  margin: auto 0 8px;
+  gap: 5px;
+  color: inherit;
+  font: inherit;
+  line-height: normal;
+  text-align: center;
+  background: var(--style-surface);
+  border: var(--style-border);
+}
+
+.brewing-page__recipe-selected-checkmark {
+  width: 18px;
+  height: auto;
+  flex: 0 0 auto;
+}
+
 .brewing-page__recipe-row:focus {
   outline: none;
 }
@@ -11911,6 +11937,10 @@ div.workshop-page__discovery-row {
   font-variant-numeric: tabular-nums;
   text-align: left;
   white-space: nowrap;
+}
+
+.brewing-page__recipe-ingredient-owned.is-unavailable {
+  color: var(--style-insufficient);
 }
 
 .brewing-page__recipe-row.is-locked,

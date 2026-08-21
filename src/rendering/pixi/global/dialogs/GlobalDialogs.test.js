@@ -1057,6 +1057,11 @@ describe('retained global Pixi dialogs', () => {
       ),
     ).toBe(true);
     expect(settings.tabsLayer).toBeUndefined();
+    const fullscreenRow = settings.preferenceRows.find(
+      ({ key }) => key === 'fullscreen',
+    );
+    expect(fullscreenRow.widget.visible).toBe(false);
+    expect(settings.devicePanel.rows).not.toContain(fullscreenRow.widget);
 
     harness.dispose();
   });
@@ -1126,11 +1131,13 @@ describe('retained global Pixi dialogs', () => {
       },
       preferences: {
         haptics: true,
+        fullscreen: false,
         music: true,
         sfx: true,
         friendRequests: true,
         tradeAllianceInvitations: false,
       },
+      fullscreen: { available: true },
       actions: {
         togglePreference,
         connectAccount,
@@ -1144,6 +1151,7 @@ describe('retained global Pixi dialogs', () => {
       'sfx',
       'music',
       'haptics',
+      'fullscreen',
       'theme',
       'friendRequests',
       'tradeAllianceInvitations',
@@ -1162,13 +1170,13 @@ describe('retained global Pixi dialogs', () => {
     expect(settings.themePanel).toBeInstanceOf(RootRunDevicePreferencesPanel);
     expect(settings.socialPanel).toBeInstanceOf(RootRunDevicePreferencesPanel);
     expect(settings.devicePanel.rows).toEqual(
-      settings.preferenceRows.slice(0, 3).map(({ widget }) => widget),
+      settings.preferenceRows.slice(0, 4).map(({ widget }) => widget),
     );
     expect(settings.themePanel.rows).toEqual([
-      settings.preferenceRows[3].widget,
+      settings.preferenceRows[4].widget,
     ]);
     expect(settings.socialPanel.rows).toEqual(
-      settings.preferenceRows.slice(4).map(({ widget }) => widget),
+      settings.preferenceRows.slice(5).map(({ widget }) => widget),
     );
     expect(
       settings.preferenceRows.every(
@@ -1179,14 +1187,15 @@ describe('retained global Pixi dialogs', () => {
       'SOUND',
       'MUSIC',
       'VIBRATION',
+      'FULLSCREEN',
       'THEME',
       'FRIEND REQUESTS',
       'ALLIANCE INVITES',
     ]);
     expect(settings.preferenceRows[0].label.colorToken).toBe('#735036');
-    expect(settings.preferenceRows[4].label.fontSize).toBeLessThanOrEqual(19);
     expect(settings.preferenceRows[5].label.fontSize).toBeLessThanOrEqual(19);
-    expect(settings.preferenceRows.slice(4).every(({ label, control }) =>
+    expect(settings.preferenceRows[6].label.fontSize).toBeLessThanOrEqual(19);
+    expect(settings.preferenceRows.slice(5).every(({ label, control }) =>
       label.fontSize >= 15 &&
       label.measuredWidth <= control.x - label.x - 6,
     )).toBe(true);
@@ -1277,10 +1286,12 @@ describe('retained global Pixi dialogs', () => {
     ).toBe(true);
     expect(togglePreference).toHaveBeenCalledWith('music', 52);
     expect(settings.preferenceRows[3].control.activate()).toBe(true);
-    expect(togglePreference).toHaveBeenCalledWith('theme', true);
+    expect(togglePreference).toHaveBeenCalledWith('fullscreen', true);
     expect(settings.preferenceRows[4].control.activate()).toBe(true);
-    expect(togglePreference).toHaveBeenCalledWith('friendRequests', false);
+    expect(togglePreference).toHaveBeenCalledWith('theme', true);
     expect(settings.preferenceRows[5].control.activate()).toBe(true);
+    expect(togglePreference).toHaveBeenCalledWith('friendRequests', false);
+    expect(settings.preferenceRows[6].control.activate()).toBe(true);
     expect(togglePreference).toHaveBeenCalledWith(
       'tradeAllianceInvitations',
       true,
@@ -1319,6 +1330,26 @@ describe('retained global Pixi dialogs', () => {
       'Check for updates',
     );
     expect(settings.updateCheckButton.enabled).toBe(true);
+    harness.dispose();
+  });
+
+  it('preserves the settings scroll position across same-tab model refreshes', () => {
+    const harness = createHarness();
+    const settings = harness.registry.open(GLOBAL_DIALOG_IDS.SETTINGS, {
+      tabId: 'configurations',
+    });
+    const bottomOffset = settings.scroll.contentHeight - settings.scroll.height;
+
+    expect(bottomOffset).toBeGreaterThan(0);
+    settings.scroll.scrollTo(bottomOffset);
+    expect(settings.scroll.offsetY).toBeCloseTo(bottomOffset);
+
+    settings.bind({
+      tabId: 'configurations',
+      preferences: { music: 25 },
+    });
+
+    expect(settings.scroll.offsetY).toBeCloseTo(bottomOffset);
     harness.dispose();
   });
 
@@ -2424,12 +2455,13 @@ describe('retained global Pixi dialogs', () => {
         dismissible: true,
         continueLabel: 'Tap to continue',
         animation: { kind: 'level-rewards' },
-        rows: [
+        items: [
           {
             id: 'coin',
             label: 'coin',
             value: '+10',
-            countUp: { from: 10, to: 20 },
+            variant: 'reward',
+            icon: { frameName: 'resource:coin' },
           },
         ],
       },
@@ -2440,9 +2472,12 @@ describe('retained global Pixi dialogs', () => {
     expect(reducedAnnouncement.backdrop.alpha).toBe(1);
     expect(reducedAnnouncement.panel.alpha).toBe(1);
     expect(reducedAnnouncement.continuePrompt.alpha).toBe(1);
-    expect(
-      reducedAnnouncement.rows.collection.getWidgets()[0].valueLabel.text,
-    ).toBe('20');
+    const reducedReward =
+      reducedAnnouncement.unlockItems.collection.getWidgets()[0];
+    expect(reducedReward.detail.text).toBe('+10');
+    expect(reducedReward.detail.y).toBeGreaterThan(
+      reducedReward.iconStage.y,
+    );
     expect(reducedAnnouncement.levelAdvanceReady).toBe(true);
     reducedHarness.dispose();
   });
@@ -2490,7 +2525,7 @@ describe('retained global Pixi dialogs', () => {
     harness.dispose();
   });
 
-  it('reuses the level-up banner and backed rows for celebration announcements', () => {
+  it('reuses the level-up banner and large reward item for celebration announcements', () => {
     const announcementTexture = new Texture({
       source: new TextureSource({
         resource: { width: 96, height: 96 },
@@ -2505,15 +2540,13 @@ describe('retained global Pixi dialogs', () => {
       dismissible: true,
       continueLabel: 'Tap to continue',
       animation: { kind: 'level-rewards' },
-      rows: [
+      items: [
         {
           id: 'mana',
           label: 'Mana Capacity',
           value: '+10',
-          countUp: { from: 90, to: 100, gain: 10 },
+          variant: 'reward',
           icon: { frameName: 'resource:mana' },
-          color: '#ffffff',
-          mutedLabel: false,
         },
       ],
     });
@@ -2552,42 +2585,23 @@ describe('retained global Pixi dialogs', () => {
     expect(announcement.continuePrompt.position.y).toBeGreaterThan(
       announcement.rowsLayer.position.y,
     );
-    expect(announcement.levelRewardRowBackings).toHaveLength(1);
-    expect(announcement.levelRewardRowBackings[0]).toMatchObject({
-      tint: 0x000000,
-    });
-    expect(
-      announcement.levelRewardRowBackings[0].sprites.every(
-        (slice) => slice.alpha === 0.55,
-      ),
-    ).toBe(true);
-    expect(
-      announcement.rows.collection.getWidgets()[0].keyLabel.stroke,
-    ).toEqual({
-      color: PIXI_TEXT_STROKE_COLOR,
-      width: resolvePixiTextStrokeWidth(
-        announcement.rows.collection.getWidgets()[0].keyLabel.fontSize,
-      ),
-      join: 'round',
-    });
-    const rewardRow = announcement.rows.collection.getWidgets()[0];
-    expect(rewardRow.valueLabel.text).toBe('+10');
-    announcement.applyLevelAnnouncementMotion(
-      1800,
+    expect(announcement.levelRewardRowBackings).toHaveLength(0);
+    const rewardItem =
+      announcement.unlockItems.collection.getWidgets()[0];
+    expect(rewardItem.detail.text).toBe('+10');
+    expect(rewardItem.icon.width).toBeGreaterThan(80);
+    expect(rewardItem.detail.y).toBeGreaterThan(
+      rewardItem.icon.position.y,
+    );
+    announcement.applyLevelSequenceMotion(
+      3000,
       announcement.announcementModel.animation,
     );
-    expect(Number.parseFloat(rewardRow.valueLabel.text)).toBeGreaterThan(90);
-    expect(Number.parseFloat(rewardRow.valueLabel.text)).toBeLessThan(100);
-    expect(rewardRow.valueLabel.text).toMatch(/ \+10$/);
-    announcement.applyLevelAnnouncementMotion(
-      2200,
-      announcement.announcementModel.animation,
-    );
-    expect(Number.parseFloat(rewardRow.valueLabel.text)).toBeLessThan(100);
+    expect(rewardItem.root.alpha).toBeGreaterThan(0);
     expect(announcement.requestClose('outside')).toBe(false);
 
     announcement.settleAnnouncementMotion();
-    expect(rewardRow.valueLabel.text).toBe('100 +10');
+    expect(rewardItem.detail.text).toBe('+10');
     expect(announcement.levelBannerTitle.position.y).toBeCloseTo(
       announcement.levelBannerFrame.frameHeight / 2 +
         PIXI_ROOT_RUN_GEOMETRY.marketTitleRibbon.contentOffsetY,

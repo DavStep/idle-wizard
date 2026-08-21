@@ -50,10 +50,19 @@ describe('InboxRewardGrantManager', () => {
     });
 
     expect(coinFacade.add).toHaveBeenCalledTimes(1);
-    expect(coinFacade.add).toHaveBeenCalledWith(5, { trackGenerated: false });
-    expect(crystalFacade.add).toHaveBeenCalledWith(2);
-    expect(rubyFacade.add).toHaveBeenCalledWith(1);
-    expect(emeraldFacade.add).toHaveBeenCalledWith(3);
+    expect(coinFacade.add).toHaveBeenCalledWith(5, {
+      sourceType: 'inbox_reward',
+      trackGenerated: false,
+    });
+    expect(crystalFacade.add).toHaveBeenCalledWith(2, {
+      sourceType: 'inbox_reward',
+    });
+    expect(rubyFacade.add).toHaveBeenCalledWith(1, {
+      sourceType: 'inbox_reward',
+    });
+    expect(emeraldFacade.add).toHaveBeenCalledWith(3, {
+      sourceType: 'inbox_reward',
+    });
     expect(itemsFacade.addItem).toHaveBeenCalledWith(1, 4);
   });
 

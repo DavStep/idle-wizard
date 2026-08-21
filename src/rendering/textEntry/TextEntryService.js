@@ -1,6 +1,10 @@
 import { Capacitor } from '@capacitor/core';
 
 import { CanvasTextEntryAdapter } from './CanvasTextEntryAdapter.js';
+import {
+  defaultShouldUseMobileWebAdapter,
+  MobileWebTextEntryAdapter,
+} from './MobileWebTextEntryAdapter.js';
 import { NativeTextEntryAdapter } from './NativeTextEntryAdapter.js';
 import { IdleWizardTextEntryPlugin } from './nativeTextEntryPlugin.js';
 import { TextEntrySession } from './TextEntrySession.js';
@@ -21,6 +25,9 @@ export class TextEntryService {
       Capacitor.isPluginAvailable('IdleWizardTextEntry'),
     canvasAdapterFactory = (targetCanvas) =>
       new CanvasTextEntryAdapter({ canvas: targetCanvas }),
+    mobileWebAdapterFactory = (targetCanvas) =>
+      new MobileWebTextEntryAdapter({ canvas: targetCanvas }),
+    shouldUseMobileWebAdapter = defaultShouldUseMobileWebAdapter,
     nativeAdapterFactory = (plugin) => new NativeTextEntryAdapter({ plugin }),
   } = {}) {
     this.canvas = canvas;
@@ -29,6 +36,8 @@ export class TextEntryService {
     this.isNativePlatform = isNativePlatform;
     this.isNativePluginAvailable = isNativePluginAvailable;
     this.canvasAdapterFactory = canvasAdapterFactory;
+    this.mobileWebAdapterFactory = mobileWebAdapterFactory;
+    this.shouldUseMobileWebAdapter = shouldUseMobileWebAdapter;
     this.nativeAdapterFactory = nativeAdapterFactory;
     this.activeSession = null;
     this.activeAdapter = null;
@@ -38,7 +47,9 @@ export class TextEntryService {
   }
 
   async open(options = {}) {
-    await this.close();
+    if (this.activeSession) {
+      await this.close();
+    }
 
     const session = new TextEntrySession({
       id: `text-entry-${nextSessionId++}`,
@@ -164,6 +175,10 @@ export class TextEntryService {
       }
 
       return this.nativeAdapterFactory(this.nativePlugin);
+    }
+
+    if (this.shouldUseMobileWebAdapter?.()) {
+      return this.mobileWebAdapterFactory(this.canvas);
     }
 
     return this.canvasAdapterFactory(this.canvas);

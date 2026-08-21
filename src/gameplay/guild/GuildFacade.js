@@ -570,7 +570,9 @@ export class GuildFacade {
     const quantity = Math.max(1, Math.floor(Number(reward?.quantity) || 1));
 
     if (reward?.kind === 'coin') {
-      this.coinFacade?.add?.(quantity);
+      this.coinFacade?.add?.(quantity, {
+        sourceType: 'guild_request_reward',
+      });
       this.addLog(`${reward.questTitle} pays ${quantity} coin.`, 'orange');
       return;
     }

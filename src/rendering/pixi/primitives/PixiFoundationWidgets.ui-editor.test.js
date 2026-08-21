@@ -72,6 +72,27 @@ vi.mock('../../../uiEditor/widgets/createUiEditorPixiSurface.js', () => ({
 import integrations from './PixiFoundationWidgets.ui-editor.js';
 
 describe('Pixi foundation UI editor integrations', () => {
+  it('previews every star tier through the level-20 shared contract', () => {
+    const stars = integrations.find(
+      ({ id }) => id === 'primitive.star-level-label',
+    );
+
+    expect(stars.properties).toContainEqual({
+      label: 'Maximum visual level',
+      value: '20',
+    });
+    expect(stars.scenarios.map(({ id }) => id)).toEqual([
+      'empty',
+      'yellow',
+      'orange',
+      'red',
+      'purple',
+      'blue',
+      'green',
+      'silver',
+    ]);
+  });
+
   it('catalogues one production room tab and declares it as the group child', () => {
     const tab = integrations.find(
       ({ id }) => id === 'compound.bottom-room-tab',

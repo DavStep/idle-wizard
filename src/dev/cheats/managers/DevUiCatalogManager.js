@@ -352,10 +352,11 @@ function createPreviewModel(dialogId) {
           brewDurationMs: 30_000,
           unlocked: true,
           canSelect: true,
+          selected: true,
           ingredients: [
-            createRecipePreviewIngredient('sageHerb', 'Sage', 7, 'sage-1'),
-            createRecipePreviewIngredient('sageHerb', 'Sage', 7, 'sage-2'),
-            createRecipePreviewIngredient('mintHerb', 'Mint', 3),
+            createRecipePreviewIngredient('sageHerb', 'Sage', 10, 'sage-1'),
+            createRecipePreviewIngredient('sageHerb', 'Sage', 9, 'sage-2'),
+            createRecipePreviewIngredient('sageHerb', 'Sage', 8, 'sage-3'),
           ],
         }),
         createRecipePreviewItem({

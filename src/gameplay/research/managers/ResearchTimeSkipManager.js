@@ -41,7 +41,9 @@ export class ResearchTimeSkipManager {
     }
 
     if (!this.researchProcessManager.finishResearch(researchId)) {
-      this.amethystFacade.add(cost);
+      this.amethystFacade.add(cost, {
+        sourceType: 'research_time_skip_refund',
+      });
       return { ok: false, reason: 'not_in_progress', researchId };
     }
 

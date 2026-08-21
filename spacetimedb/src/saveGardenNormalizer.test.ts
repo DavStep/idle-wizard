@@ -3,6 +3,7 @@ import { describe, expect, it } from 'vitest';
 import {
   normalizeGardenPlotAutomationSettings,
   normalizeGardenSelectedSeedItemKey,
+  readSaveUnlockedGardenTileCount,
 } from "./saveGardenNormalizer";
 
 describe("player gameplay save Garden normalization", () => {
@@ -41,5 +42,26 @@ describe("player gameplay save Garden normalization", () => {
     expect(normalizeGardenPlotAutomationSettings({ plantQuantity: 6 })).toEqual(
       { autoEnabled: true, plantQuantity: null },
     );
+  });
+
+  it("prefers the explicit unlocked plot count over serialized locked rows", () => {
+    expect(
+      readSaveUnlockedGardenTileCount({
+        unlockedTiles: 5,
+        tiles: Array.from({ length: 12 }, (_unused, index) => ({
+          tileNumber: index + 1,
+        })),
+      }),
+    ).toBe(5);
+  });
+
+  it("infers legacy unlocked plots from rows only when the count is missing", () => {
+    expect(
+      readSaveUnlockedGardenTileCount({
+        tiles: Array.from({ length: 8 }, (_unused, index) => ({
+          tileNumber: index + 1,
+        })),
+      }),
+    ).toBe(8);
   });
 });

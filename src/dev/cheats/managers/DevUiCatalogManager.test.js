@@ -159,9 +159,11 @@ describe('DevUiCatalogManager', () => {
           expect.objectContaining({
             key: 'manaTonic',
             unlocked: true,
-            ingredients: expect.arrayContaining([
-              expect.objectContaining({ key: 'sageHerb', owned: 7 }),
-            ]),
+            ingredients: [
+              expect.objectContaining({ key: 'sageHerb', owned: 10 }),
+              expect.objectContaining({ key: 'sageHerb', owned: 9 }),
+              expect.objectContaining({ key: 'sageHerb', owned: 8 }),
+            ],
           }),
           expect.objectContaining({
             key: 'ashenMemory',

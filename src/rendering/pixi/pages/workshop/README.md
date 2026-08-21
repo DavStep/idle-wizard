@@ -35,8 +35,9 @@ Bag's optical weight without changing the underlying assets.
 
 Workshop-owned dialogs are registered lazily as `workshop.<feature>` in the
 injected `DialogRegistry` and retain their display trees after close.
-The Bag presenter keeps unlocked or owned item rows and omits locked zero-count
-catalog entries. Bag reuses the shared Settings-backed `50px` inventory row for
+The Bag presenter keeps only positive owned seed and herb rows. Potion rows
+retain their existing unlock and prerequisite-link behavior, while ingredients
+remain owned-only. Bag reuses the shared Settings-backed `50px` inventory row for
 its passive item and currency catalogue, with the selection marker and row
 action omitted. Its footer keeps the shared popup-tab skin but lays visible
 categories out in a centered grid of at most three tabs per row.

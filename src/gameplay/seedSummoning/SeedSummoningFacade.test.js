@@ -307,4 +307,77 @@ describe('SeedSummoningFacade', () => {
       dropChance: 1,
     });
   });
+
+  it('selects and persists a summon quantity up to the highest star upgrade', () => {
+    const completedResearchIds = [
+      'unlockSeed:sageSeed',
+      'summonSeedsX2',
+      'summonSeedsX3',
+      'summonSeedsX4',
+    ];
+    const seeds = [
+      {
+        id: 1,
+        key: 'sageSeed',
+        label: 'sage seed',
+        kind: 'seed',
+        dropWeight: 1,
+      },
+    ];
+    const facade = createFacade({ completedResearchIds, seeds });
+
+    expect(facade.getSnapshot()).toMatchObject({
+      cost: 40,
+      quantity: 4,
+      maxQuantity: 4,
+      starLevel: 3,
+      starMaxLevel: 4,
+    });
+    expect(facade.setSummonQuantity(2)).toEqual({
+      ok: true,
+      quantity: 2,
+      maxQuantity: 4,
+    });
+    expect(facade.getSnapshot()).toMatchObject({
+      cost: 20,
+      quantity: 2,
+      maxQuantity: 4,
+    });
+
+    const restored = createFacade({ completedResearchIds, seeds });
+    restored.applyPersistenceSnapshot(facade.getPersistenceSnapshot());
+
+    expect(restored.getSnapshot()).toMatchObject({
+      cost: 20,
+      quantity: 2,
+      maxQuantity: 4,
+      starLevel: 3,
+    });
+  });
+
+  it('cycles back to the highest unlocked quantity without storing an override', () => {
+    const facade = createFacade({
+      completedResearchIds: [
+        'unlockSeed:sageSeed',
+        'summonSeedsX2',
+        'summonSeedsX3',
+      ],
+      seeds: [
+        {
+          id: 1,
+          key: 'sageSeed',
+          label: 'sage seed',
+          kind: 'seed',
+          dropWeight: 1,
+        },
+      ],
+    });
+
+    facade.setSummonQuantity(1);
+    expect(facade.getPersistenceSnapshot()).toMatchObject({ quantity: 1 });
+
+    facade.setSummonQuantity(3);
+    expect(facade.getPersistenceSnapshot()).not.toHaveProperty('quantity');
+    expect(facade.getSnapshot().quantity).toBe(3);
+  });
 });

@@ -171,6 +171,26 @@ describe('TextEntryService', () => {
     );
   });
 
+  it('selects the editable DOM adapter only for touch-capable web', async () => {
+    const mobileWebAdapter = new FakeTextEntryAdapter();
+    const canvasAdapter = new FakeTextEntryAdapter();
+    const mobileWebAdapterFactory = vi.fn(() => mobileWebAdapter);
+    const canvasAdapterFactory = vi.fn(() => canvasAdapter);
+    const service = new TextEntryService({
+      canvas: {},
+      isNativePlatform: () => false,
+      platformProvider: () => 'web',
+      shouldUseMobileWebAdapter: () => true,
+      mobileWebAdapterFactory,
+      canvasAdapterFactory,
+    });
+
+    await service.open({ value: 'mobile web' });
+
+    expect(mobileWebAdapterFactory).toHaveBeenCalledWith({});
+    expect(canvasAdapterFactory).not.toHaveBeenCalled();
+  });
+
   it('rejects unsupported input kinds and native platforms', async () => {
     const service = createService({ adapter: new FakeTextEntryAdapter() });
     await expect(service.open({ inputKind: 'mystery' })).rejects.toThrow(

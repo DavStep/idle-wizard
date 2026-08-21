@@ -73,6 +73,10 @@ Open `?devUi=researchCompleteAnnouncement` to inspect the retained
 research-complete ribbon, centered research icon, and row composition without
 completing research or publishing gameplay state.
 
+Open `?devUi=levelUpAnnouncement` to inspect the retained Workshop-only
+HUD-star ceremony, `Level Up!` ribbon, and serial large-icon reward drops
+without changing progression state.
+
 Open `?devUi=global.confirmation` to inspect the production confirmation shell,
 centered message area, and paired actions after the game surfaces mount.
 

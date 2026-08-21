@@ -237,6 +237,9 @@ export const PIXI_ROOT_RUN_ASSETS = Object.freeze({
   starOrange: 'source:assets/ui/stars/star-orange.png',
   starRed: 'source:assets/ui/stars/star-red.png',
   starPurple: 'source:assets/ui/stars/star-purple.png',
+  starBlue: 'source:assets/ui/stars/star-blue.png',
+  starGreen: 'source:assets/ui/stars/star-green.png',
+  starSilver: 'source:assets/ui/stars/star-silver.png',
 });
 
 export const PIXI_SQUIRCLE_TINTS = Object.freeze({

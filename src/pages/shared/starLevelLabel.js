@@ -1,49 +1,38 @@
+import {
+  STARS_PER_TONE,
+  resolveStarLevel,
+} from '../../shared/starLevel.js';
+
 export const STAR_LEVEL_LABEL_CLASS = 'style-star-level';
 
 const STAR_SYMBOL = '\u2605';
 const EMPTY_STAR_SYMBOL = '\u2606';
-const STAR_TONES = Object.freeze(['yellow', 'orange', 'red', 'purple']);
-const EMPTY_STAR_TONE = 'empty';
-const STARS_PER_TONE = 3;
-const MAX_STAR_LEVEL = STAR_TONES.length * STARS_PER_TONE;
 const STAR_IMAGE_URLS = Object.freeze({
   empty: new URL('../../../assets/game/source/ui/stars/star-empty.png', import.meta.url).href,
   yellow: new URL('../../../assets/game/source/ui/stars/star-yellow.png', import.meta.url).href,
   orange: new URL('../../../assets/game/source/ui/stars/star-orange.png', import.meta.url).href,
   red: new URL('../../../assets/game/source/ui/stars/star-red.png', import.meta.url).href,
   purple: new URL('../../../assets/game/source/ui/stars/star-purple.png', import.meta.url).href,
+  blue: new URL('../../../assets/game/source/ui/stars/star-blue.png', import.meta.url).href,
+  green: new URL('../../../assets/game/source/ui/stars/star-green.png', import.meta.url).href,
+  silver: new URL('../../../assets/game/source/ui/stars/star-silver.png', import.meta.url).href,
 });
 
 export function formatStarLevel(level, { slotCount = STARS_PER_TONE } = {}) {
-  const safeLevel = Math.max(0, Math.floor(Number(level) || 0));
-  const safeSlotCount = normalizeSlotCount(slotCount);
-  const visualLevel = Math.min(safeLevel, MAX_STAR_LEVEL);
-  if (visualLevel === 0) {
+  const starLevel = resolveStarLevel(level, { slotCount });
+  if (starLevel.starCount === 0) {
     return {
-      level: safeLevel,
-      tone: EMPTY_STAR_TONE,
+      ...starLevel,
       starCount: 0,
-      slotCount: safeSlotCount,
-      text: EMPTY_STAR_SYMBOL.repeat(safeSlotCount),
+      text: EMPTY_STAR_SYMBOL.repeat(starLevel.slotCount),
       ariaLabel: '0 stars',
     };
   }
 
-  const zeroBasedLevel = visualLevel - 1;
-  const toneIndex = Math.floor(zeroBasedLevel / STARS_PER_TONE);
-  const starCount = Math.min(
-    (zeroBasedLevel % STARS_PER_TONE) + 1,
-    safeSlotCount,
-  );
-  const tone = STAR_TONES[toneIndex];
-
   return {
-    level: safeLevel,
-    tone,
-    starCount,
-    slotCount: safeSlotCount,
-    text: STAR_SYMBOL.repeat(starCount),
-    ariaLabel: `${tone} star ${starCount}`,
+    ...starLevel,
+    text: STAR_SYMBOL.repeat(starLevel.starCount),
+    ariaLabel: `${starLevel.tone} star ${starLevel.starCount}`,
   };
 }
 
@@ -110,11 +99,4 @@ function createStarImage(src, type) {
   image.draggable = false;
   image.setAttribute('aria-hidden', 'true');
   return image;
-}
-
-function normalizeSlotCount(slotCount) {
-  return Math.min(
-    STARS_PER_TONE,
-    Math.max(1, Math.floor(Number(slotCount) || STARS_PER_TONE)),
-  );
 }

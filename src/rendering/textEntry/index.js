@@ -6,6 +6,11 @@ export {
   NATIVE_EVENT_NAMES,
   NativeTextEntryAdapter,
 } from './NativeTextEntryAdapter.js';
+export {
+  defaultShouldUseMobileWebAdapter,
+  EDITOR_ATTRIBUTE,
+  MobileWebTextEntryAdapter,
+} from './MobileWebTextEntryAdapter.js';
 export { TextEntryService } from './TextEntryService.js';
 export {
   TEXT_ENTRY_EVENT_TYPES,

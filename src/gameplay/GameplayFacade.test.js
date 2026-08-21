@@ -272,6 +272,7 @@ describe("weekly extra slot offers", () => {
     });
 
     const save = gameplayFacade.createPersistenceSave();
+    expect(save.garden.tiles).toHaveLength(save.garden.unlockedTiles);
     expect(save.garden.tiles).not.toContainEqual(
       expect.objectContaining({ tileNumber: 99 }),
     );
@@ -1222,6 +1223,41 @@ describe("GameplayFacade", () => {
     });
   }, 30_000);
 
+  it("does not refund retained capacity research as emerald on prestige", () => {
+    const { gameplayFacade } = createGameplay();
+
+    advanceToLevel(gameplayFacade, 10);
+    gameplayFacade.researchFacade.applyPersistenceSnapshot({
+      completedIds: [capacityResearchIds.plot(6)],
+    });
+
+    expect(gameplayFacade.getSnapshot().emerald.current).toBe(0);
+
+    gameplayFacade.completePrestigeMilestone(10);
+
+    expect(gameplayFacade.getSnapshot().emerald.current).toBe(0);
+    expect(
+      gameplayFacade.getSnapshot().research.completedResearchIds,
+    ).toContain(capacityResearchIds.plot(6));
+  }, 30_000);
+
+  it("still refunds run-scoped emerald research cleared by prestige", () => {
+    const { gameplayFacade } = createGameplay();
+    const researchId = advancedResearchIds.plotGrowth(1, 1);
+
+    advanceToLevel(gameplayFacade, 10);
+    gameplayFacade.researchFacade.applyPersistenceSnapshot({
+      completedIds: [researchId],
+    });
+
+    gameplayFacade.completePrestigeMilestone(10);
+
+    expect(gameplayFacade.getSnapshot().emerald.current).toBe(1);
+    expect(
+      gameplayFacade.getSnapshot().research.completedResearchIds,
+    ).not.toContain(researchId);
+  }, 30_000);
+
   it("keeps personal daily and weekly task progress after prestige", () => {
     const { gameplayFacade } = createGameplay();
 
@@ -1527,6 +1563,7 @@ describe("GameplayFacade", () => {
       getPrestigeResetLevel(20),
     );
 
+    gameplayFacade.emeraldFacade.add(1);
     expect(
       gameplayFacade.buyResearch(capacityResearchIds.cauldron(3)),
     ).toMatchObject({
@@ -1688,13 +1725,9 @@ describe("GameplayFacade", () => {
     expect(snapshot.ruby.current).toBe(2);
     expect(snapshot.coin).toMatchObject({ current: 0, totalGenerated: 0 });
     expect(snapshot.inventory).toEqual([]);
-    expect(snapshot.research.completedResearchIds).toEqual(
-      expect.arrayContaining([
-        "unlockSeed:sageSeed",
-        capacityResearchIds.plot(6),
-        capacityResearchIds.plot(8),
-      ]),
-    );
+    expect(snapshot.research.completedResearchIds).toEqual([
+      "unlockSeed:sageSeed",
+    ]);
 
     second.gameplayFacade.shutdown();
     second.ecsFacade.destroyWorld();
@@ -2694,6 +2727,9 @@ describe("GameplayFacade", () => {
     expect(gameplayFacade.getSnapshot().seedSummoning).toEqual({
       cost: 20,
       quantity: 2,
+      maxQuantity: 2,
+      starLevel: 1,
+      starMaxLevel: 4,
       canSummon: true,
       unavailableReason: null,
       autoSummoning: {
@@ -3010,7 +3046,7 @@ describe("GameplayFacade", () => {
       }),
       expect.objectContaining({
         id: "summonSeedsX2",
-        label: "summon seed lvl 1",
+        label: "summon seed",
         displayName: "summon seed",
         value: "locked",
         effect: "x2 seeds",

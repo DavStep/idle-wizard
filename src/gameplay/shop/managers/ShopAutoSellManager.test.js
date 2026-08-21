@@ -92,7 +92,9 @@ describe('ShopAutoSellManager', () => {
     manager.update(1);
     expect(slotState[0].loadedQuantity).toBe(2);
     expect(slotState[0].sellProgressSeconds).toBe(0);
-    expect(addCoin).toHaveBeenCalledWith(4);
+    expect(addCoin).toHaveBeenCalledWith(4, {
+      sourceType: 'npc_market_sale',
+    });
     expect(recordSellToNpc).toHaveBeenCalledWith(sageSeed, 1);
   });
 
@@ -102,7 +104,9 @@ describe('ShopAutoSellManager', () => {
     manager.update(5);
 
     expect(slotState[0].loadedQuantity).toBe(1);
-    expect(addCoin).toHaveBeenCalledWith(8);
+    expect(addCoin).toHaveBeenCalledWith(8, {
+      sourceType: 'npc_market_sale',
+    });
   });
 
   it('keeps progress independently for every stand', () => {
@@ -137,7 +141,9 @@ describe('ShopAutoSellManager', () => {
     manager.update(20);
 
     expect(slotState[0].loadedQuantity).toBe(0);
-    expect(addCoin).toHaveBeenCalledWith(12);
+    expect(addCoin).toHaveBeenCalledWith(12, {
+      sourceType: 'npc_market_sale',
+    });
     expect(onItemSold).toHaveBeenCalledTimes(1);
   });
 
@@ -166,8 +172,12 @@ describe('ShopAutoSellManager', () => {
     manager.update(5);
 
     expect(slotState.map((slot) => slot.loadedQuantity)).toEqual([2, 3]);
-    expect(addCoin).toHaveBeenNthCalledWith(1, 8);
-    expect(addCoin).toHaveBeenNthCalledWith(2, 4);
+    expect(addCoin).toHaveBeenNthCalledWith(1, 8, {
+      sourceType: 'npc_market_sale',
+    });
+    expect(addCoin).toHaveBeenNthCalledWith(2, 4, {
+      sourceType: 'npc_market_sale',
+    });
     expect(recordSellToNpc).toHaveBeenCalledTimes(1);
     expect(recordSellToNpc).toHaveBeenCalledWith(sageSeed, 3);
   });

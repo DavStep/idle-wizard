@@ -309,7 +309,12 @@ export class WorkshopBagManager {
 
   getVisibleItemRows(snapshot, kind) {
     return this.getItemRows(snapshot, kind).filter(
-      (item) => getItemDisplay(snapshot, item, item.quantity).unlocked,
+      (item) => {
+        const display = getItemDisplay(snapshot, item, item.quantity);
+        return kind === 'seed' || kind === 'herb'
+          ? display.owned && !display.locked
+          : display.unlocked;
+      },
     );
   }
 

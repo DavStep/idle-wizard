@@ -11,6 +11,7 @@ import { ItemsFacade } from "./items/ItemsFacade.js";
 import { ManaFacade } from "./mana/ManaFacade.js";
 import { MarketLicenceFacade } from "./market/MarketLicenceFacade.js";
 import { GameplayRewardEventManager } from "./managers/GameplayRewardEventManager.js";
+import { CurrencyGrantEventManager } from "./managers/CurrencyGrantEventManager.js";
 import { GameplayStateObserverManager } from "./managers/GameplayStateObserverManager.js";
 import { LevelUpCrystalRewardManager } from "./managers/LevelUpCrystalRewardManager.js";
 import { GameplayLogFacade } from "./logs/GameplayLogFacade.js";
@@ -66,16 +67,19 @@ export class GameplayFacade {
     this.stateObserverManager = new GameplayStateObserverManager();
     this.frameResourceObserverManager = new GameplayStateObserverManager();
     this.rewardEventManager = new GameplayRewardEventManager();
+    this.currencyGrantEventManager = new CurrencyGrantEventManager();
+    const onCurrencyGrant = (event) =>
+      this.currencyGrantEventManager.publish(event);
     this.itemsFacade = new ItemsFacade();
     this.statsFacade = new StatsFacade({
       itemsFacade: this.itemsFacade,
     });
-    this.manaFacade = new ManaFacade();
-    this.coinFacade = new CoinFacade();
-    this.crystalFacade = new CrystalFacade();
-    this.amethystFacade = new AmethystFacade();
-    this.emeraldFacade = new EmeraldFacade();
-    this.rubyFacade = new RubyFacade();
+    this.manaFacade = new ManaFacade({ onGrant: onCurrencyGrant });
+    this.coinFacade = new CoinFacade({ onGrant: onCurrencyGrant });
+    this.crystalFacade = new CrystalFacade({ onGrant: onCurrencyGrant });
+    this.amethystFacade = new AmethystFacade({ onGrant: onCurrencyGrant });
+    this.emeraldFacade = new EmeraldFacade({ onGrant: onCurrencyGrant });
+    this.rubyFacade = new RubyFacade({ onGrant: onCurrencyGrant });
     this.inboxRewardsFacade = new InboxRewardsFacade({
       coinFacade: this.coinFacade,
       crystalFacade: this.crystalFacade,
@@ -378,6 +382,7 @@ export class GameplayFacade {
     this.stateObserverManager.clear();
     this.frameResourceObserverManager.clear();
     this.rewardEventManager.clear();
+    this.currencyGrantEventManager.clear();
     this.initialized = false;
   }
 
@@ -393,6 +398,12 @@ export class GameplayFacade {
       this.handleSeedSummoned(result);
     }
     this.publishAndSaveSnapshot();
+    return result;
+  }
+
+  setSeedSummonQuantity(quantity) {
+    const result = this.seedSummoningFacade.setSummonQuantity(quantity);
+    this.publishAndFlushSnapshot();
     return result;
   }
 
@@ -673,7 +684,9 @@ export class GameplayFacade {
     const spentEmerald = Math.max(
       0,
       Math.floor(
-        Number(this.researchFacade.getCommittedEmeraldCostTotal()) || 0,
+        Number(
+          this.researchFacade.getCommittedRunScopedEmeraldCostTotal(),
+        ) || 0,
       ),
     );
 
@@ -1405,7 +1418,9 @@ export class GameplayFacade {
       };
     }
 
-    this.crystalFacade.add(crystalReward);
+    this.crystalFacade.add(crystalReward, {
+      sourceType: "trade_alliance_reward",
+    });
     this.gameplayLogFacade.logTradeAllianceReward({
       questLabel: reward?.questLabel,
       crystalReward,
@@ -1668,6 +1683,10 @@ export class GameplayFacade {
 
   subscribeRewardEvents(listener) {
     return this.rewardEventManager.subscribe(listener);
+  }
+
+  subscribeCurrencyGrantEvents(listener) {
+    return this.currencyGrantEventManager.subscribe(listener);
   }
 
   getSnapshot() {

@@ -67,6 +67,12 @@ const AUTH_DOM_EXCEPTIONS = Object.freeze({
     }),
 });
 
+const PLATFORM_DOM_EXCEPTIONS = Object.freeze({
+  'src/rendering/textEntry/MobileWebTextEntryAdapter.js': Object.freeze({
+    createElementTags: Object.freeze(['input', 'textarea']),
+  }),
+});
+
 const SCANNABLE_MODULE_PATTERN = /\.[cm]?[jt]sx?$/i;
 const PRODUCTION_HTML_ALLOWED_BODY_TAGS = new Set(['canvas', 'script']);
 const BLOCKER_SENSITIVE_FILE_TOKEN_PATTERN =
@@ -634,24 +640,28 @@ function resolveFindingException(
   }
 
   const authException = AUTH_DOM_EXCEPTIONS[finding.relativePath];
-  if (!authException) {
+  const platformException = PLATFORM_DOM_EXCEPTIONS[finding.relativePath];
+  const domException = authException ?? platformException;
+  if (!domException) {
     return null;
   }
   if (
-    finding.ruleId === 'dom-create-element' &&
-    authException.createElementTags?.includes(finding.argument)
+    (finding.ruleId === 'dom-create-element' ||
+      finding.ruleId === 'html-input-creation' ||
+      finding.ruleId === 'html-textarea-creation') &&
+    domException.createElementTags?.includes(finding.argument)
   ) {
-    return `auth creates <${finding.argument}>`;
+    return `${authException ? 'auth' : 'mobile web text entry'} creates <${finding.argument}>`;
   }
   if (
     finding.ruleId === 'dom-query' &&
-    authException.querySelectorValues?.includes(finding.argument)
+    domException.querySelectorValues?.includes(finding.argument)
   ) {
     return `auth query ${finding.argument}`;
   }
   if (
     finding.ruleId === 'dom-query' &&
-    authException.querySelectorPrefixes?.some((prefix) =>
+    domException.querySelectorPrefixes?.some((prefix) =>
       finding.argument?.startsWith(prefix),
     )
   ) {

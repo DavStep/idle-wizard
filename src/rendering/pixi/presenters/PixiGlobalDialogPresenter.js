@@ -53,6 +53,7 @@ export class PixiGlobalDialogPresenter {
     friendsFacade = null,
     tradeAllianceFacade = null,
     hapticsFacade = null,
+    fullscreenFacade = null,
     soundSettingsFacade = null,
     checkForUpdates = null,
     installUpdate = null,
@@ -74,6 +75,7 @@ export class PixiGlobalDialogPresenter {
     this.friendsFacade = friendsFacade;
     this.tradeAllianceFacade = tradeAllianceFacade;
     this.hapticsFacade = hapticsFacade;
+    this.fullscreenFacade = fullscreenFacade;
     this.soundSettingsFacade = soundSettingsFacade;
     this.checkForUpdatesAction = checkForUpdates;
     this.installUpdateAction = installUpdate;
@@ -220,6 +222,7 @@ export class PixiGlobalDialogPresenter {
     const gameplay = this.gameplayFacade?.getSnapshot?.() ?? {};
     const auth = this.authFacade?.getSnapshot?.() ?? {};
     const haptics = this.hapticsFacade?.getSnapshot?.() ?? {};
+    const fullscreen = this.fullscreenFacade?.getSnapshot?.() ?? {};
     const sound = this.soundSettingsFacade?.getSnapshot?.() ?? {};
     const requestedTab = normalizeSettingsTab(
       request.tab ??
@@ -279,6 +282,7 @@ export class PixiGlobalDialogPresenter {
       },
       preferences: {
         haptics: haptics.enabled !== false,
+        fullscreen: fullscreen.active === true,
         music: toVolumePercent(
           sound.musicVolume,
           sound.musicEnabled,
@@ -291,6 +295,9 @@ export class PixiGlobalDialogPresenter {
         friendRequests: player.allowFriendRequests !== false,
         tradeAllianceInvitations:
           player.allowTradeAllianceInvitations !== false,
+      },
+      fullscreen: {
+        available: fullscreen.available === true,
       },
       categories: createSettingsCategories(),
       selections: {
@@ -895,6 +902,7 @@ export class PixiGlobalDialogPresenter {
       this.gameplayFacade,
       this.authFacade,
       this.hapticsFacade,
+      this.fullscreenFacade,
       this.soundSettingsFacade,
     ]);
   }
@@ -1165,6 +1173,9 @@ export class PixiGlobalDialogPresenter {
   setPreference(key, value) {
     if (key === 'haptics') {
       return this.hapticsFacade?.setEnabled?.(value) ?? false;
+    }
+    if (key === 'fullscreen') {
+      return this.fullscreenFacade?.setEnabled?.(value) ?? false;
     }
     if (key === 'music') {
       const volume = fromVolumePercent(value);

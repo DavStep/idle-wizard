@@ -22,3 +22,28 @@ export function normalizeGardenPlotAutomationSettings(
         : null,
   };
 }
+
+export function readSaveUnlockedGardenTileCount(value: unknown): number {
+  const garden = isRecord(value) ? value : {};
+  const directCount = Math.floor(Number(garden.unlockedTiles));
+
+  if (Number.isInteger(directCount) && directCount >= 0) {
+    return directCount;
+  }
+
+  if (!Array.isArray(garden.tiles)) {
+    return 0;
+  }
+
+  return Math.max(
+    0,
+    ...garden.tiles
+      .filter((tile): tile is Record<string, unknown> => isRecord(tile))
+      .map((tile) => Math.floor(Number(tile.tileNumber)))
+      .filter((tileNumber) => Number.isInteger(tileNumber) && tileNumber > 0),
+  );
+}
+
+function isRecord(value: unknown): value is Record<string, unknown> {
+  return Boolean(value) && typeof value === 'object' && !Array.isArray(value);
+}

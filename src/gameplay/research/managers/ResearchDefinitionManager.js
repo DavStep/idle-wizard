@@ -68,7 +68,7 @@ const summonSeedResearches = Array.from({ length: 4 }, (_value, index) => {
 
   return {
     id: `summonSeedsX${multiplier}`,
-    label: `summon seed lvl ${level}`,
+    label: 'summon seed',
     displayName: 'summon seed',
     value: `x${multiplier} seeds`,
     showEffect: true,
@@ -78,7 +78,7 @@ const summonSeedResearches = Array.from({ length: 4 }, (_value, index) => {
     ...(level === 1 ? { requiredPlayerLevel: 6 } : {}),
     requiredResearchIds:
       level > 1 ? [`summonSeedsX${multiplier - 1}`] : [],
-    description: `summons ${multiplier} researched seeds for ${multiplier * 10} mana.`,
+    description: `unlocks x${multiplier} seed summoning at 10 mana per seed.`,
   };
 });
 

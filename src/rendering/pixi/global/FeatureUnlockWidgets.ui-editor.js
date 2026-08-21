@@ -41,16 +41,19 @@ export default [
     label: 'Feature Unlock Announcement Item',
     properties: [
       { label: 'Production class', value: 'FeatureUnlockAnnouncementItem' },
-      { label: 'Contract', value: 'Feature icon, label, and unlock detail used by announcement surfaces' },
+      { label: 'Contract', value: 'Feature, level-reward, or research-unlock icon stage with label and bottom detail' },
     ],
     scenarios: [
       { fixture: createAnnouncementFixture(), id: 'single', label: 'Single feature', mount: mountAnnouncement },
       { fixture: createAnnouncementFixture({ compact: true, detail: '', label: 'Garden' }), id: 'compact', label: 'Compact grid item', mount: mountAnnouncement },
       { fixture: createAnnouncementFixture({ detail: 'A new social room is now available.', fallbackLabel: 'G', label: 'Guild', pageId: 'guild' }), id: 'fallback', label: 'Fallback icon', mount: mountAnnouncement },
+      { fixture: createAnnouncementFixture({ detail: '+50', icon: { frameName: 'resource:mana' }, label: 'Mana Capacity', variant: 'reward' }), id: 'level-reward', label: 'Large level reward', mount: mountAnnouncement },
+      { fixture: createAnnouncementFixture({ detail: 'Now available in Research', icon: { frameName: 'research:autoBrew' }, label: 'Auto Brew', lockedReveal: true, pageId: 'research', variant: 'researchUnlock' }), id: 'research-unlock', label: 'Locked research reveal', mount: mountAnnouncement },
     ],
     sectionId: 'composite-widgets',
     usages: [
       { label: 'Full-screen feature unlock announcement', source: 'src/rendering/pixi/global/dialogs/PixiMessageDialogs.js' },
+      { label: 'Level reward and research unlock sequence', source: 'src/rendering/pixi/global/dialogs/PixiMessageDialogs.js' },
     ],
   }),
 ];
@@ -124,11 +127,15 @@ function createAnnouncementControl({ assets, fixture }) {
   widget.bind({
     compact: fixture.compact,
     detail: fixture.detail,
-    icon: fixture.fallbackLabel
-      ? { fallbackLabel: fixture.fallbackLabel }
-      : { assetId: 'source:assets/icons/icon-garden-plot-tab.png' },
+    lockedReveal: fixture.lockedReveal,
+    icon:
+      fixture.icon ??
+      (fixture.fallbackLabel
+        ? { fallbackLabel: fixture.fallbackLabel }
+        : { assetId: 'source:assets/icons/icon-garden-plot-tab.png' }),
     label: fixture.label,
     pageId: fixture.pageId,
+    variant: fixture.variant,
   });
   widget.setBounds(0, 0, fixture.compact ? 86 : 260, fixture.compact);
   return {
@@ -146,10 +153,15 @@ function createAnnouncementFixture(overrides = {}) {
     detail: 'Grow herbs and harvest ingredients for Brewing.',
     label: 'Garden unlocked',
     pageId: 'garden',
+    variant: 'feature',
     ...overrides,
   };
 }
 
 function featureAssetFilter({ id }) {
-  return String(id ?? '').includes('/icons/');
+  const assetId = String(id ?? '');
+  return (
+    assetId.includes('/icons/') ||
+    assetId.includes('/ui/prop_lock')
+  );
 }

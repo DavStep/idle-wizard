@@ -46,6 +46,7 @@ experience_type: product-shape
 - Page announcement baselines must reset on gameplay persistence load; restored backend saves should not replay old level/research popups.
 - Page announcement level baselines must accept pre-level `0`; the first playable `0 -> 1` level-up should queue the level 1/market unlock notice, not treat level 1 as the initial baseline.
 - Feature unlocks should remain separate queued room announcements after the level-up card; the level-up reward row and Elara lesson copy do not replace the unlock card.
+- Level-up celebration records may queue from any room, but presentation waits for Workshop; sequence the HUD-star ceremony, banner, large reward drops, player-level research lock breaks, then the separate feature-unlock announcement.
 - Feature unlock announcements should clone each destination icon and measure each icon's own source rect; one shared origin makes multi-unlock flyouts detach from the icons players just saw.
 - Newly unlocked Workshop side controls must stay non-renderable while the unlock announcement is open; start their entrance only after the announcement clears, including a post-announcement snap for reduced motion.
 - While-away report rows should keep the row label left and the reward/status right; attach item/resource icons to the right-side value instead of adding a separate leading icon slot.
@@ -85,6 +86,7 @@ experience_type: product-shape
 - Popup forms in snapshot-rendered managers need local drafts captured before replacing content; otherwise timer/mana refreshes clear focused fields.
 - Snapshot-rendered popup forms with active text inputs should keep the same input DOM node mounted during refresh; replacing then refocusing can still close mobile keyboards.
 - Mobile keyboard fixes should preserve room scale and use visible-stage metrics to lift focused overlays.
+- Mobile Safari Pixi text entry needs a real editable DOM control focused synchronously inside the validated tap release; an `await` before focus loses the user activation and suppresses the software keyboard.
 - Canvas-only Android text entry must reassert `adjustNothing` at native focus and keep its transparent editor outside the IME overlap; CSS viewport units and retained projection locks cannot prevent native focused-view accommodation.
 - Even with Android `adjustNothing`, WebView text focus can pan the document; keep the app shell fixed and reset document scroll while text entry is locked.
 - World chat dialog should use a fixed upper source-coordinate anchor; focus-within keyboard recentering makes it jump down when the keyboard closes.

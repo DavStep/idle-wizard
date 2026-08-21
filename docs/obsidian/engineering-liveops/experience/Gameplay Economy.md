@@ -58,7 +58,7 @@ experience_type: gameplay-economy
 - Seed/herb unlock research and recipe unlock research are catalog-ordered; each row requires the previous row before it can be bought.
 - `unlockSeed:sageSeed` costs `0` and displays as `free`; seed summoning stays locked until that research is completed.
 - Summon multiplier research is ordered `x2 -> x3 -> x4 -> x5`; each later multiplier requires the previous one.
-- `summonSeedsX2` through `summonSeedsX5` use the highest completed multiplier; summon cost and rolled seed count both scale from 10 mana.
+- `summonSeedsX2` through `summonSeedsX5` define the four-star maximum for the Workshop `xN` selector. The selected batch controls both summon cost and rolled seed count at 10 mana per seed; saves without an override use the highest completed rank, lower choices persist, and selecting the current maximum follows future upgrades.
 - Initial local gameplay defaults: mana cap `50`, mana generation `1/second`, seed summon cost `10`, and configured herb growth ranges from `12s` to `962s` across the 24-herb catalog.
 - Every herb and potion timer-mastery series has 19 ranks. A completed seed/recipe unlock row converts into its speed series and stays hidden from the completed-row eye; at full mastery the terminal speed rank remains eye-visible. The reduction model uses `185%` as its starting scale and reaches `90 / 185` of the configured production timer at full mastery.
 - Amber is the player-facing hard currency; retain internal/save key `crystal` with no balance migration. It is the contextual fourth top-HUD currency, player levels grant `playerLevel.crystal.perLevel` starting at level 1, and plot/cauldron multiplier research spends it.
@@ -66,6 +66,7 @@ experience_type: gameplay-economy
 - Ruby is the prestige currency; it appears in the top panel only where usable, and automation research spends it.
 - Prestige ruby is derived from completed prestige milestones minus committed ruby automation research costs; save prestige milestone data and do not treat raw ruby as permanent across prestige resets.
 - Prestige resets run data but preserves current emerald currency; advanced emerald research remains run-scoped unless explicitly made permanent.
+- Prestige refunds only emerald committed to run-scoped research; retained capacity studies stay spent. Capacity grandfathering must prefer the explicit unlocked-plot count over serialized tile rows so locked plots cannot become paid research.
 - The internal `crystals` Market tab is player-facing as Gems; rows show a two-hour coin offer, a daily free `1` Amber offer, paid Amber bundles, and matching-price Amethyst bundles at 100× quantity.
 - Paid Amber and Amethyst price controls open a support-unavailable popup; do not add payment or currency grant logic until transactions are requested.
 - Time-limited paid slots must keep entitlement expiry and slot contents separate from permanent capacity; expiry hides and pauses the slot so a later renewal can resume it without advancing normal numbering.
@@ -87,6 +88,7 @@ experience_type: gameplay-economy
 - Enabled Auto Brew owns the full loop: bottle, collect the ready potion, and start the next batch. Legacy auto-collect save flags must not stall that loop.
 - Manual fast sell is removed; trader stands always use the full marginal NPC quote.
 - Fresh games start with 0 coin. No player level may require or spend coin. Task `coinBudget` values scale daily/world content only; legacy `completionCostCoin` and `completionCostGold` inputs must normalize into that budget and stay out of level-completion snapshots.
+- Every explicit currency grant must publish its actual credited amount with a stable `sourceType`; persistence hydration and passive mana regeneration are state restoration/generation, not grant events.
 - Research unlock gates for task requirements must be no higher than `target task level - 1`; e.g. nettle seed must unlock at level 5 because it is a level 6 requirement shown while the player is level 5.
 - Market licence rank grants one through five NPC and player stands.
 - NPC market stands hold one item type, sell one item per independent five-second cycle, and can be staffed by advanced research to sell two per cycle.

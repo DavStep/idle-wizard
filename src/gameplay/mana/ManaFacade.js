@@ -3,6 +3,7 @@ import { ManaEntityManager } from './managers/ManaEntityManager.js';
 import { ManaGenerationManager } from './managers/ManaGenerationManager.js';
 import { ManaSpendManager } from './managers/ManaSpendManager.js';
 import { ManaUpgradeEffectManager } from './managers/ManaUpgradeEffectManager.js';
+import { publishCurrencyGrant } from '../managers/CurrencyGrantEventManager.js';
 
 export class ManaFacade {
   static explain =
@@ -12,7 +13,9 @@ export class ManaFacade {
     initialCurrent = 40,
     initialCap = 50,
     initialPerSecond = 1,
+    onGrant,
   } = {}) {
+    this.onGrant = onGrant;
     this.manaEntityManager = new ManaEntityManager({
       initialCurrent,
       initialCap,
@@ -47,16 +50,27 @@ export class ManaFacade {
     return this.manaSpendManager.canSpend(amount);
   }
 
-  add(amount) {
+  add(amount, { sourceType } = {}) {
+    const previousCurrent = this.manaEntityManager.getCurrent();
     this.manaEntityManager.addCurrent(amount);
+    publishCurrencyGrant({
+      onGrant: this.onGrant,
+      currency: 'mana',
+      sourceType,
+      previousCurrent,
+      current: this.manaEntityManager.getCurrent(),
+    });
   }
 
   setCurrent(amount) {
     this.manaEntityManager.setCurrent(amount);
   }
 
-  fill() {
-    this.setCurrent(this.manaEntityManager.getCap());
+  fill({ sourceType } = {}) {
+    this.add(
+      this.manaEntityManager.getCap() - this.manaEntityManager.getCurrent(),
+      { sourceType },
+    );
   }
 
   getSnapshot() {

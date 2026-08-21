@@ -759,6 +759,7 @@ describe('BrewingPixiPage', () => {
     );
     expect(ingredient.required.text).toBe('Sage');
     expect(ingredient.owned.text).toBe('0/3');
+    expect(ingredient.owned.style.fill).toBe(PIXI_STATUS_COLORS.insufficient);
     expect(ingredient.icon.visible).toBe(true);
     expect(ingredient.icon.width).toBe(14);
     expect(ingredient.icon.x).toBe(
@@ -908,6 +909,58 @@ describe('BrewingPixiPage', () => {
     harness.dispose();
   });
 
+  it('replaces the selected recipe action with a passive labeled checkmark status', () => {
+    const assetManager = createPixiAssetManagerFake(Texture);
+    assetManager.getTexture = vi.fn((assetId) =>
+      assetId === PIXI_ROOT_RUN_ASSETS.checkmark ? new Texture() : Texture.EMPTY,
+    );
+    const harness = createHarness({ assetManager });
+    const selectRecipe = vi.fn();
+
+    harness.page.openDialog('recipes', {
+      recipes: [
+        {
+          key: 'manaTonic',
+          label: 'mana tonic',
+          unlocked: true,
+          selected: true,
+          ingredients: [],
+        },
+      ],
+      actions: { selectRecipe },
+    });
+
+    const card = harness.dialogs
+      .get('brewing.recipes')
+      .cards.getWidgets()[0];
+
+    expect(card.select.visible).toBe(false);
+    expect(card.select.enabled).toBe(false);
+    expect(card.researchStatus.visible).toBe(true);
+    expect(card.researchStatus.eventMode).toBe('none');
+    expect(card.researchStatusLabel.text).toBe('Selected');
+    expect(card.selectedCheckmark.visible).toBe(true);
+    expect(card.selectedCheckmark.renderable).toBe(true);
+    expect(card.selectedCheckmark.label).toBe(
+      'brewing-recipe-card-1-selected-checkmark',
+    );
+    expect(card.selectedCheckmark).toMatchObject({
+      width: 18,
+      height: 18 * (57 / 61),
+    });
+    expect(card.activateRecipeAction()).toBe(false);
+    expect(harness.semanticTargets.getState('brewing.recipe.manaTonic')).toMatchObject({
+      enabled: false,
+      interactive: false,
+      selected: true,
+    });
+    expect(harness.semanticTargets.activate('brewing.recipe.manaTonic')).toBe(false);
+    expect(selectRecipe).not.toHaveBeenCalled();
+
+    harness.page.destroy();
+    harness.dispose();
+  });
+
   it('reveals and indicates an exact recipe target in its owning spread', () => {
     const attention = vi
       .spyOn(BrewingRecipeCard.prototype, 'startAttentionEffect')
@@ -997,7 +1050,7 @@ describe('BrewingPixiPage', () => {
     harness.dispose();
   });
 
-  it('disables an unlocked recipe action when its materials are unavailable', () => {
+  it('keeps an unlocked recipe action available when its materials are short', () => {
     const harness = createHarness();
     const selectRecipe = vi.fn();
 
@@ -1021,9 +1074,12 @@ describe('BrewingPixiPage', () => {
 
     expect(card.select.variant).toBe('green');
     expect(card.select.textLabel.text).toBe('Select');
-    expect(card.select.enabled).toBe(false);
-    expect(card.select.activate()).toBe(false);
-    expect(selectRecipe).not.toHaveBeenCalled();
+    expect(card.select.enabled).toBe(true);
+    expect(card.select.activate()).toBe(true);
+    expect(selectRecipe).toHaveBeenCalledWith(
+      expect.objectContaining({ key: 'manaTonic' }),
+      undefined,
+    );
 
     harness.page.destroy();
     harness.dispose();

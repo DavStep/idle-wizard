@@ -136,26 +136,23 @@ describe('PixiAnnouncementPresenter', () => {
       ariaLabel: 'Level 2 up. Tap to continue.',
       dismissible: true,
       continueLabel: 'Tap to continue',
-      durationMs: 3280,
-      pendingDelayMs: 5380,
+      durationMs: 5045,
+      pendingDelayMs: 6555,
       level: { from: 1, to: 2 },
     });
     expect(
       harness
         .getLastModel()
-        .rows.map(({ label, value, icon }) => [
+        .items.map(({ label, value, icon }) => [
           label,
           value,
           icon?.frameName ?? null,
         ]),
-    ).toEqual([
-      ['Unlocks', 'Garden / Research', null],
-      ['Bonus', '+1', 'resource:crystal'],
-    ]);
+    ).toEqual([['Bonus', '+1', 'resource:crystal']]);
     expect(
       harness
         .getLastModel()
-        .rows.slice(1)
+        .items
         .map(({ countUp }) => countUp),
     ).toEqual([
       { from: 1, to: 2, suffix: '' },
@@ -178,7 +175,7 @@ describe('PixiAnnouncementPresenter', () => {
       title: 'features unlocked',
       values: ['garden', 'research'],
       dismissible: false,
-      durationMs: 2100,
+      durationMs: 1510,
     });
 
     harness.fireLastTimer();
@@ -198,6 +195,64 @@ describe('PixiAnnouncementPresenter', () => {
         }),
       ]),
     );
+  });
+
+  it('holds level ceremonies until the player enters Workshop', () => {
+    const snapshot = createSnapshot();
+    const harness = createHarness({ snapshot });
+    const presenter = harness.createPresenter({
+      currentPageId: 'garden',
+    });
+    presenter.mount();
+
+    snapshot.tasks.currentLevel = 2;
+    snapshot.playerLevel.currentLevel = 2;
+    snapshot.crystal.current = 2;
+    harness.publishGameplay();
+
+    expect(harness.runtime.openDialog).not.toHaveBeenCalled();
+    expect(presenter.queue).toHaveLength(2);
+
+    presenter.setCurrentPageId('workshop');
+
+    expect(harness.getLastModel()).toMatchObject({
+      kind: 'level',
+      level: { from: 1, to: 2 },
+    });
+    expect(
+      harness.getLastModel().animation.starSourceBounds,
+    ).toEqual({ x: 18, y: 38, width: 31, height: 31 });
+  });
+
+  it('queues a level-gated research lock break between level rewards and feature unlocks', () => {
+    const snapshot = createSnapshot();
+    const research =
+      snapshot.research.tabs[0].boxes[0].researches[0];
+    research.requiredPlayerLevel = 2;
+    research.locked = true;
+    const harness = createHarness({ snapshot });
+    const presenter = harness.createPresenter();
+    presenter.mount();
+
+    snapshot.tasks.currentLevel = 2;
+    snapshot.playerLevel.currentLevel = 2;
+    snapshot.crystal.current = 2;
+    research.locked = false;
+    harness.publishGameplay();
+    harness.closeLastDialog('outside');
+    harness.flushScheduledTasks();
+
+    expect(harness.getLastModel()).toMatchObject({
+      kind: 'researchUnlock',
+      title: 'Research Unlocked!',
+      items: [
+        expect.objectContaining({
+          label: 'Mana Tonic',
+          lockedReveal: true,
+        }),
+      ],
+      animation: { kind: 'research-unlock' },
+    });
   });
 
   it('suppresses hydration replay and presents only later research completions', () => {
@@ -438,7 +493,7 @@ describe('PixiAnnouncementPresenter', () => {
       continueLabel: 'Tap to continue',
       level: { from: 19, to: 20 },
     });
-    expect(harness.getLastModel().rows).toEqual(
+    expect(harness.getLastModel().items).toEqual(
       expect.arrayContaining([
         expect.objectContaining({
           label: 'Mana Capacity',
@@ -744,6 +799,15 @@ function createHarness({
   const timers = [];
   const scheduledTasks = [];
   const transientEffects = [];
+  const topPanel = {
+    getLevelStarBounds: vi.fn(() => ({
+      x: 18,
+      y: 38,
+      width: 31,
+      height: 31,
+    })),
+    setLevelStarCeremonyActive: vi.fn(),
+  };
 
   const runtime = {
     initialized: true,
@@ -764,6 +828,9 @@ function createHarness({
       return true;
     }),
     getOpenDialogIds: vi.fn(() => [...openDialogIds]),
+    getGlobalSurface: vi.fn((surfaceId) =>
+      surfaceId === 'chrome.top' ? topPanel : null,
+    ),
   };
   const renderFacade = {
     getUiRuntime: vi.fn(() => runtime),
@@ -802,6 +869,7 @@ function createHarness({
     timers,
     scheduledTasks,
     transientEffects,
+    topPanel,
     openedViews,
     createPresenter(options = {}) {
       return new PixiAnnouncementPresenter({

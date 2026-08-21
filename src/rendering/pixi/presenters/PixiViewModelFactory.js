@@ -232,6 +232,7 @@ export class PixiViewModelFactory {
     const contextResource = getPageContextResource(pageId, researchTabId);
 
     return {
+      pageId,
       username: player.username || 'Wizard',
       character: player.character || 'elara',
       frameTint: getPlayerFrameTint(player.frame),
@@ -348,6 +349,12 @@ export class PixiViewModelFactory {
         summon: {
           cost: gameplay.seedSummoning?.cost ?? 0,
           quantity: gameplay.seedSummoning?.quantity ?? 1,
+          maxQuantity:
+            gameplay.seedSummoning?.maxQuantity ??
+            gameplay.seedSummoning?.quantity ??
+            1,
+          starLevel: gameplay.seedSummoning?.starLevel ?? 0,
+          starMaxLevel: gameplay.seedSummoning?.starMaxLevel ?? 4,
           canSummon: gameplay.seedSummoning?.canSummon === true,
           enabled: gameplay.seedSummoning?.canSummon === true,
           pressEnabled:
@@ -2047,6 +2054,19 @@ export class PixiViewModelFactory {
         const canOpenPlayer =
           typeof actions.openPlayer === 'function' &&
           (!isSystem || Boolean(systemPlayer));
+        const bodyRuns = createWorldChatBodyRuns(
+          body,
+          {
+            bodyRuns: message.bodyRuns,
+            character: message.character,
+            frame: message.frame,
+            isSystem,
+            systemPlayer,
+          },
+        );
+        const hasInlinePlayerAvatar = bodyRuns.some(
+          (run) => run.kind === 'widget' && run.widget === 'playerAvatar',
+        );
         return {
           id,
           type: isSystem ? 'system' : 'player',
@@ -2055,16 +2075,7 @@ export class PixiViewModelFactory {
           body,
           systemPlayerUsername: systemPlayer?.username ?? '',
           systemPlayerDetail,
-          bodyRuns: createWorldChatBodyRuns(
-            body,
-            {
-              bodyRuns: message.bodyRuns,
-              character: message.character,
-              frame: message.frame,
-              isSystem,
-              systemPlayer,
-            },
-          ),
+          bodyRuns,
           allianceTag: message.allianceTag ?? message.alliance_tag ?? '',
           allianceTagColor:
             message.allianceTagColor ?? message.alliance_tag_color ?? 'ink',
@@ -2073,7 +2084,8 @@ export class PixiViewModelFactory {
           ).trim(),
           character: message.character ?? 'elara',
           frame: message.frame ?? 'classic',
-          showSystemAvatar: message.showSystemAvatar === true,
+          showSystemAvatar:
+            message.showSystemAvatar === true && !hasInlinePlayerAvatar,
           connected:
             !isSystem &&
             (message.connected === true || message.isOwn === true),
@@ -2814,7 +2826,11 @@ function createWorldChatBodyRuns(
   const marker = '⭐';
   const textRuns =
     isSystem && systemPlayer?.mentions?.length > 0
-      ? createSystemPlayerTextRuns(text, systemPlayer.mentions)
+      ? createSystemPlayerTextRuns(text, systemPlayer.mentions, {
+          character,
+          frame,
+          username: systemPlayer.username,
+        })
       : [{ kind: 'text', text }];
 
   const prestigeDetail = systemPlayer?.detail?.trimStart() ?? text;
@@ -2823,6 +2839,9 @@ function createWorldChatBodyRuns(
   }
 
   return textRuns.flatMap((run) => {
+    if (run.kind !== 'text') {
+      return [run];
+    }
     const markerIndex = run.text.indexOf(marker);
     if (markerIndex < 0) {
       return [run];
@@ -2905,9 +2924,14 @@ function normalizeWorldChatDynamicRuns(runs, { character, frame }) {
   return normalized.length > 0 ? normalized : null;
 }
 
-function createSystemPlayerTextRuns(text, mentions) {
+function createSystemPlayerTextRuns(
+  text,
+  mentions,
+  { character = 'elara', frame = 'classic', username = '' } = {},
+) {
   const runs = [];
   let cursor = 0;
+  let avatarInjected = false;
 
   for (const mention of mentions) {
     const start = Math.max(cursor, Number(mention.start) || 0);
@@ -2917,6 +2941,23 @@ function createSystemPlayerTextRuns(text, mentions) {
     }
     if (start > cursor) {
       runs.push({ kind: 'text', text: text.slice(cursor, start) });
+    }
+    if (!avatarInjected && mention.username === username) {
+      runs.push(
+        {
+          kind: 'widget',
+          widget: 'playerAvatar',
+          character: String(character ?? 'elara'),
+          frame: String(frame ?? 'classic'),
+          fallbackText: '',
+          label: `${mention.username} avatar`,
+          size: WORLD_CHAT_SYSTEM_INLINE_AVATAR_SIZE,
+          offsetY: 0,
+          interactive: true,
+        },
+        { kind: 'text', text: ' ' },
+      );
+      avatarInjected = true;
     }
     runs.push({
       kind: 'text',
@@ -3710,12 +3751,16 @@ function createBagItemRows(gameplay, tabId, actions = {}) {
         ),
       };
     })
-    .filter((item) =>
-      tabId === 'ingredients'
+    .filter((item) => {
+      if (tabId === 'seeds' || tabId === 'herbs') {
+        return item.display.owned && !item.display.locked;
+      }
+
+      return tabId === 'ingredients'
         ? Number(item.quantity) > 0
         : item.display.unlocked ||
-          (!item.display.unknown && item.display.locked),
-    )
+            (!item.display.unknown && item.display.locked);
+    })
     .map((item) => {
       const researchId = getItemResearchId(item);
       const locked = item.display.locked === true && Boolean(researchId);

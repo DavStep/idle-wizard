@@ -432,8 +432,9 @@ describe('WorkshopActionBarManager', () => {
 
     expect(pixiSource).toContain('const SUMMON_BUTTON_HEIGHT = 52;');
     expect(pixiSource).toContain('const SUMMON_BUTTON_UP_OFFSET = 4;');
+    expect(pixiSource).toContain('const controlsX = -controlsWidth / 2;');
     expect(pixiSource).toMatch(
-      /this\.button\.setBounds\(\s*-SUMMON_BUTTON_WIDTH \/ 2,\s*-SUMMON_BUTTON_UP_OFFSET,/,
+      /this\.button\.setBounds\(\s*controlsX,\s*-SUMMON_BUTTON_UP_OFFSET,/,
     );
   });
 

@@ -581,18 +581,30 @@ describe("GardenPixiPage", () => {
         (PIXI_UI_GEOMETRY.sourceWidth -
           harness.page.titleRibbon.width) /
         2,
-      y: GARDEN_PIXI_GEOMETRY.titleTop,
+      y: 0,
     });
+    expect(harness.page.titleRibbon.root.parent).toBe(
+      harness.page.plotScroll.content,
+    );
+    expect(
+      harness.page.titleRibbon.root.x + harness.page.titleRibbon.width,
+    ).toBeLessThanOrEqual(harness.page.plotScroll.width);
     expect(harness.page.plotScroll.root.position).toMatchObject({
       x: 0,
-      y: GARDEN_PIXI_GEOMETRY.plotListTop,
+      y: GARDEN_PIXI_GEOMETRY.titleTop,
     });
     expect(harness.page.plotScroll.height).toBeCloseTo(
       PIXI_UI_GEOMETRY.sourceHeight -
-        GARDEN_PIXI_GEOMETRY.plotListTop -
+        GARDEN_PIXI_GEOMETRY.titleTop -
         GARDEN_PIXI_GEOMETRY.plotListBottom,
     );
-    expect(plot.root.position).toMatchObject({ x: 32, y: 24 });
+    expect(plot.root.position).toMatchObject({
+      x: 32,
+      y:
+        GARDEN_PIXI_GEOMETRY.plotListTop -
+        GARDEN_PIXI_GEOMETRY.titleTop +
+        GARDEN_PIXI_GEOMETRY.gridPaddingTop,
+    });
     expect(harness.page.actionBar.root.position).toMatchObject({
       x: 16,
       y:
@@ -643,7 +655,7 @@ describe("GardenPixiPage", () => {
 
     expect(harness.page.plotScroll.height).toBeCloseTo(
       PIXI_UI_GEOMETRY.sourceHeight -
-        GARDEN_PIXI_GEOMETRY.plotListTop -
+        GARDEN_PIXI_GEOMETRY.titleTop -
         PIXI_UI_GEOMETRY.roomChatBottom,
     );
     expect(harness.page.actionBar.root.position.y).toBeCloseTo(
@@ -714,7 +726,9 @@ describe("GardenPixiPage", () => {
       0,
     );
     expect(harness.page.plotScroll.contentHeight).toBe(
-      GARDEN_PIXI_GEOMETRY.gridPaddingTop +
+      GARDEN_PIXI_GEOMETRY.plotListTop -
+        GARDEN_PIXI_GEOMETRY.titleTop +
+        GARDEN_PIXI_GEOMETRY.gridPaddingTop +
         GARDEN_PIXI_GEOMETRY.gridPaddingBottom +
         GARDEN_PIXI_GEOMETRY.rowHeight * 6 +
         GARDEN_PIXI_GEOMETRY.rowGap * 5,
@@ -725,6 +739,32 @@ describe("GardenPixiPage", () => {
 
     expect(harness.page.plotScroll.offsetY).toBe(24);
     expect(harness.page.plotScroll.content.y).toBe(-24);
+
+    harness.page.destroy();
+    harness.dispose();
+  });
+
+  it("scrolls the Garden title ribbon with the plot content", () => {
+    const harness = createHarness();
+    const model = createGardenViewModel();
+    model.garden.plots = Array.from({ length: 18 }, (_, index) => ({
+      ...model.garden.plots[0],
+      id: `plot-${index + 1}`,
+      tileNumber: index + 1,
+    }));
+
+    harness.page.bind(model);
+
+    expect(harness.page.titleRibbon.root.parent).toBe(
+      harness.page.plotScroll.content,
+    );
+    const initialTitleY = harness.page.titleRibbon.root.getGlobalPosition().y;
+
+    harness.page.plotScroll.scrollBy(24);
+
+    expect(harness.page.titleRibbon.root.getGlobalPosition().y).toBe(
+      initialTitleY - 24,
+    );
 
     harness.page.destroy();
     harness.dispose();
@@ -752,7 +792,9 @@ describe("GardenPixiPage", () => {
 
     expect(harness.page.plots.getWidgets()).toHaveLength(2);
     expect(harness.page.plotScroll.contentHeight).toBe(
-      GARDEN_PIXI_GEOMETRY.gridPaddingTop +
+      GARDEN_PIXI_GEOMETRY.plotListTop -
+        GARDEN_PIXI_GEOMETRY.titleTop +
+        GARDEN_PIXI_GEOMETRY.gridPaddingTop +
         GARDEN_PIXI_GEOMETRY.gridPaddingBottom +
         GARDEN_PIXI_GEOMETRY.rowHeight,
     );
@@ -1063,6 +1105,61 @@ describe("GardenPixiPage", () => {
     harness.dispose();
   });
 
+  it("ticks the automated plot Auto gear with the Brewing motion contract", () => {
+    let now = 0;
+    let reducedMotion = false;
+    const harness = createHarness({
+      timeSource: () => now,
+      reducedMotion: () => reducedMotion,
+    });
+    const model = createGardenViewModel();
+    model.garden.plots[0] = {
+      ...model.garden.plots[0],
+      automationAvailable: true,
+      autoEnabled: true,
+      automationSeed: { key: "sageSeed", label: "Sage", quantity: 12 },
+      maxPlantQuantity: 5,
+      plantQuantity: 5,
+    };
+    harness.page.bind(model);
+    harness.page.activate();
+    const plot = harness.page.plots.get("plot-1");
+
+    harness.page.tick(now);
+    expect(plot.autoGear.rotation).toBe(0);
+    now = 70;
+    harness.page.tick(now);
+    expect(plot.autoGear.rotation).toBeCloseTo(Math.PI / 8);
+    now = 200;
+    harness.page.tick(now);
+    expect(plot.autoGear.rotation).toBeCloseTo(Math.PI / 8);
+
+    model.garden.plots[0].autoEnabled = false;
+    harness.page.bind(model);
+    expect(plot.autoGear.rotation).toBe(0);
+
+    model.garden.plots[0].autoEnabled = true;
+    harness.page.bind(model);
+    reducedMotion = true;
+    now = 400;
+    harness.page.tick(now);
+    expect(plot.autoGear.rotation).toBe(0);
+
+    reducedMotion = false;
+    now = 470;
+    harness.page.tick(now);
+    expect(plot.autoGear.rotation).toBe(0);
+    now = 540;
+    harness.page.tick(now);
+    expect(plot.autoGear.rotation).toBeCloseTo(Math.PI / 8);
+
+    harness.page.deactivate();
+    expect(plot.autoGear.rotation).toBe(0);
+
+    harness.page.destroy();
+    harness.dispose();
+  });
+
   it("centers every automated herb count as an evenly spaced group", () => {
     const harness = createHarness();
     const model = createGardenViewModel();
@@ -1131,11 +1228,15 @@ describe("GardenPixiPage", () => {
     harness.page.bind(model);
 
     expect(harness.page.plots.get("plot-1").root.y).toBe(
-      GARDEN_PIXI_GEOMETRY.gridPaddingTop,
+      GARDEN_PIXI_GEOMETRY.plotListTop -
+        GARDEN_PIXI_GEOMETRY.titleTop +
+        GARDEN_PIXI_GEOMETRY.gridPaddingTop,
     );
     const automated = harness.page.plots.get("plot-1");
     expect(harness.page.plots.get("plot-2").root.y).toBe(
-      GARDEN_PIXI_GEOMETRY.gridPaddingTop +
+      GARDEN_PIXI_GEOMETRY.plotListTop -
+        GARDEN_PIXI_GEOMETRY.titleTop +
+        GARDEN_PIXI_GEOMETRY.gridPaddingTop +
         automated.getLayoutHeight() +
         GARDEN_PIXI_GEOMETRY.rowGap,
     );
@@ -1158,6 +1259,8 @@ describe("GardenPixiPage", () => {
       thirdManual.root.x + thirdManual.frameX + thirdManual.soil.width,
     );
     expect(harness.page.plotScroll.contentHeight).toBe(
+      GARDEN_PIXI_GEOMETRY.plotListTop -
+        GARDEN_PIXI_GEOMETRY.titleTop +
         GARDEN_PIXI_GEOMETRY.gridPaddingTop +
         GARDEN_PIXI_GEOMETRY.gridPaddingBottom +
         automated.getLayoutHeight() +
@@ -1746,7 +1849,13 @@ describe("GardenPixiPage", () => {
     const reused = harness.page.plots.get("plot-2");
 
     expect(reused).toBe(plot);
-    expect(reused.root.position).toMatchObject({ x: 32, y: 24 });
+    expect(reused.root.position).toMatchObject({
+      x: 32,
+      y:
+        GARDEN_PIXI_GEOMETRY.plotListTop -
+        GARDEN_PIXI_GEOMETRY.titleTop +
+        GARDEN_PIXI_GEOMETRY.gridPaddingTop,
+    });
     expectPlotFrameAligned(reused);
     expect(harness.page.plotPool.getStats()).toMatchObject({
       allocated: 1,

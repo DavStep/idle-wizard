@@ -1,11 +1,13 @@
 import { CoinEntityManager } from './managers/CoinEntityManager.js';
 import { CoinSpendManager } from './managers/CoinSpendManager.js';
+import { publishCurrencyGrant } from '../managers/CurrencyGrantEventManager.js';
 
 export class CoinFacade {
   static explain =
     'Coin is market money: selling adds it, and market stands spend it.';
 
-  constructor({ initialCurrent = 0 } = {}) {
+  constructor({ initialCurrent = 0, onGrant } = {}) {
+    this.onGrant = onGrant;
     this.coinEntityManager = new CoinEntityManager({ initialCurrent });
     this.coinSpendManager = new CoinSpendManager({
       coinEntityManager: this.coinEntityManager,
@@ -16,8 +18,16 @@ export class CoinFacade {
     this.coinEntityManager.initialize(ecsManagers);
   }
 
-  add(amount, options) {
+  add(amount, { sourceType, ...options } = {}) {
+    const previousCurrent = this.coinEntityManager.getCurrent();
     this.coinEntityManager.addCurrent(amount, options);
+    publishCurrencyGrant({
+      onGrant: this.onGrant,
+      currency: 'coin',
+      sourceType,
+      previousCurrent,
+      current: this.coinEntityManager.getCurrent(),
+    });
   }
 
   spend(amount) {

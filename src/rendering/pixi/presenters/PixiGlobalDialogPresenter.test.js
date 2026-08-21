@@ -733,6 +733,7 @@ describe('PixiGlobalDialogPresenter', () => {
       harness.gameplayFacade,
       harness.authFacade,
       harness.hapticsFacade,
+      harness.fullscreenFacade,
       harness.soundSettingsFacade,
     ]) {
       expect(source.activeSubscriptions()).toBe(1);
@@ -745,6 +746,7 @@ describe('PixiGlobalDialogPresenter', () => {
       harness.gameplayFacade,
       harness.authFacade,
       harness.hapticsFacade,
+      harness.fullscreenFacade,
       harness.soundSettingsFacade,
     ]) {
       expect(source.activeSubscriptions()).toBe(0);
@@ -796,6 +798,7 @@ describe('PixiGlobalDialogPresenter', () => {
     });
 
     expect(model.actions.togglePreference('haptics', false)).toBe(true);
+    expect(model.actions.togglePreference('fullscreen', true)).toBe(true);
     expect(model.actions.togglePreference('music', 35)).toBe(true);
     expect(model.actions.togglePreference('sfx', 68)).toBe(true);
     expect(model.actions.togglePreference('theme', true)).toBe(true);
@@ -807,6 +810,7 @@ describe('PixiGlobalDialogPresenter', () => {
       ),
     ).toBe(true);
     expect(harness.hapticsFacade.setEnabled).toHaveBeenCalledWith(false);
+    expect(harness.fullscreenFacade.setEnabled).toHaveBeenCalledWith(true);
     expect(
       harness.soundSettingsFacade.setMusicVolume,
     ).toHaveBeenCalledWith(0.35);
@@ -1028,6 +1032,7 @@ describe('PixiGlobalDialogPresenter', () => {
       harness.gameplayFacade,
       harness.authFacade,
       harness.hapticsFacade,
+      harness.fullscreenFacade,
       harness.soundSettingsFacade,
     ]) {
       expect(source.subscribe).toHaveBeenCalledTimes(1);
@@ -1045,6 +1050,7 @@ describe('PixiGlobalDialogPresenter', () => {
       harness.gameplayFacade,
       harness.authFacade,
       harness.hapticsFacade,
+      harness.fullscreenFacade,
       harness.soundSettingsFacade,
     ]) {
       expect(source.activeSubscriptions()).toBe(0);
@@ -1361,6 +1367,10 @@ function createHarness({
     { enabled: true },
     { setEnabled: vi.fn(() => true) },
   );
+  const fullscreenFacade = createSnapshotFacade(
+    { available: true, active: false },
+    { setEnabled: vi.fn(() => true) },
+  );
   const soundSettingsFacade = createSnapshotFacade(
     {
       musicVolume: 0.74,
@@ -1386,6 +1396,7 @@ function createHarness({
     friendsFacade,
     tradeAllianceFacade,
     hapticsFacade,
+    fullscreenFacade,
     soundSettingsFacade,
     checkForUpdates,
     installUpdate,
@@ -1406,6 +1417,7 @@ function createHarness({
     friendsFacade,
     tradeAllianceFacade,
     hapticsFacade,
+    fullscreenFacade,
     soundSettingsFacade,
     copyText,
     getOpenModel: (dialogId) => openModels.get(dialogId),

@@ -33,6 +33,20 @@ export const PIXI_ANNOUNCEMENT_MOTION = Object.freeze({
   researchDetailDelayMs: 610,
   unlockIconStaggerMs: 45,
   fallbackIconDurationMs: 310,
+  levelStarGlideMs: 760,
+  levelStarShakeMs: 220,
+  levelStarPopMs: 120,
+  levelStarReappearMs: 210,
+  levelStarReturnMs: 620,
+  levelBannerHoldMs: 420,
+  levelBannerExitMs: 180,
+  levelRewardDropMs: 760,
+  levelRewardGapMs: 80,
+  researchUnlockShakeMs: 360,
+  researchUnlockBreakMs: 280,
+  researchUnlockHoldMs: 620,
+  featureUnlockItemMs: 720,
+  featureUnlockItemGapMs: 70,
 });
 
 export const FEATURE_UNLOCK_PREVIEW_VALUES = Object.freeze([
@@ -78,6 +92,21 @@ const RESEARCH_ICON_FRAMES = Object.freeze({
   researchCost: 'research:researchCost',
   researchTime: 'research:researchTime',
   summonMultiplier: 'research:summonMultiplier',
+});
+
+const LEVEL_REWARD_ICON_PRESENTATIONS = Object.freeze({
+  'garden plots': Object.freeze({
+    assetId: 'source:assets/icons/icon-garden-plot-tab.png',
+  }),
+  cauldrons: Object.freeze({
+    assetId: 'source:assets/icons/icon-brewing-cauldron-tab.png',
+  }),
+  'trader stands': Object.freeze({
+    assetId: 'source:assets/icons/icon-shop-market-stall-tab.png',
+  }),
+  'player stands': Object.freeze({
+    assetId: 'source:assets/icons/icon-shop-market-stall-tab.png',
+  }),
 });
 
 const FEATURE_ICON_PRESENTATIONS = Object.freeze({
@@ -151,6 +180,7 @@ export class PixiAnnouncementPresenter {
       globalThis.clearTimeout(handle),
     scheduleTask = defaultScheduleTask,
     presentTransientEffect = null,
+    currentPageId = 'workshop',
   } = {}) {
     if (!renderFacade) {
       throw new Error(
@@ -180,6 +210,7 @@ export class PixiAnnouncementPresenter {
       typeof presentTransientEffect === 'function'
         ? presentTransientEffect
         : null;
+    this.currentPageId = normalizePageId(currentPageId);
 
     this.runtime = null;
     this.dialogInstance = null;
@@ -203,6 +234,10 @@ export class PixiAnnouncementPresenter {
 
     this.dialogActions = Object.freeze({
       advance: (details) => this.handleDialogAdvance(details),
+      setLevelStarCeremonyActive: (active) =>
+        this.runtime
+          ?.getGlobalSurface?.('chrome.top')
+          ?.setLevelStarCeremonyActive?.(active) ?? false,
     });
   }
 
@@ -494,6 +529,16 @@ export class PixiAnnouncementPresenter {
       : true;
   }
 
+  setCurrentPageId(pageId) {
+    const normalized = normalizePageId(pageId);
+    const changed = normalized !== this.currentPageId;
+    this.currentPageId = normalized;
+    if (changed && normalized === 'workshop') {
+      this.showNext();
+    }
+    return changed;
+  }
+
   dismissCurrent(source = 'dismiss') {
     if (
       this.current?.preview !== true &&
@@ -640,17 +685,35 @@ export class PixiAnnouncementPresenter {
     this.enqueue({
       key: levelKey,
       kind: 'level',
+      source: 'level',
       fromLevel,
       toLevel: nextLevel,
       rows,
     });
+
+    for (const research of getLevelUnlockedResearches(
+      snapshot,
+      { fromLevel, toLevel: nextLevel },
+    )) {
+      this.enqueue({
+        key: `${levelKey}:research-unlock:${research.id}`,
+        kind: 'researchUnlock',
+        source: 'level',
+        sourceLevelKey: levelKey,
+        research,
+      });
+    }
 
     const unlockAnnouncement =
       getFeatureUnlockAnnouncement(rows, {
         key: `${levelKey}:unlock`,
       });
     if (unlockAnnouncement) {
-      this.enqueue(unlockAnnouncement);
+      this.enqueue({
+        ...unlockAnnouncement,
+        source: 'level',
+        sourceLevelKey: levelKey,
+      });
     }
     return true;
   }
@@ -698,6 +761,13 @@ export class PixiAnnouncementPresenter {
       return null;
     }
 
+    if (
+      isWorkshopEntryAnnouncement(this.queue[0]) &&
+      this.currentPageId !== 'workshop'
+    ) {
+      return null;
+    }
+
     this.current = this.queue.shift();
     return this.presentCurrent();
   }
@@ -715,11 +785,14 @@ export class PixiAnnouncementPresenter {
         ),
         levelRevealDelayMs:
           this.current.kind === 'level'
-            ? this.getAnnouncementDuration(this.current) -
-              this.displayMs
+            ? this.levelRewardRevealDelayMs
             : 0,
         pendingDelayMs: this.getPendingDelayMs(),
         playerSnapshot: this.playerSnapshot,
+        levelStarSourceBounds:
+          this.current.kind === 'level'
+            ? this.getLevelStarSourceBounds()
+            : null,
       });
     const instance = this.runtime.openDialog(
       PIXI_ANNOUNCEMENT_DIALOG_ID,
@@ -736,7 +809,6 @@ export class PixiAnnouncementPresenter {
       );
     }
     this.dialogInstance ??= instance ?? null;
-
     this.clearHideTimeout();
     if (
       this.current.kind !== 'whileAway' &&
@@ -793,6 +865,11 @@ export class PixiAnnouncementPresenter {
     this.current = null;
     this.currentPresentation = null;
     this.queuedKeys.delete(announcement.key);
+    if (announcement.kind === 'level') {
+      this.runtime
+        ?.getGlobalSurface?.('chrome.top')
+        ?.setLevelStarCeremonyActive?.(false);
+    }
 
     if (closeDialog) {
       this.closeDialog();
@@ -837,12 +914,41 @@ export class PixiAnnouncementPresenter {
   }
 
   getAnnouncementDuration(announcement) {
-    const revealDelay =
-      announcement?.kind === 'level' &&
-      !this.getPrefersReducedMotion()
-        ? this.levelRewardRevealDelayMs
-        : 0;
-    return this.displayMs + revealDelay;
+    if (this.getPrefersReducedMotion()) {
+      return this.displayMs;
+    }
+    if (announcement?.kind === 'level') {
+      return getLevelSequenceDuration({
+        rewardCount: createLevelRewardDrops(
+          announcement.rows,
+          announcement.toLevel,
+        ).length,
+        revealDelayMs: this.levelRewardRevealDelayMs,
+      });
+    }
+    if (announcement?.kind === 'researchUnlock') {
+      return (
+        PIXI_ANNOUNCEMENT_MOTION.researchIconDurationMs +
+        PIXI_ANNOUNCEMENT_MOTION.researchUnlockShakeMs +
+        PIXI_ANNOUNCEMENT_MOTION.researchUnlockBreakMs +
+        PIXI_ANNOUNCEMENT_MOTION.researchUnlockHoldMs
+      );
+    }
+    if (announcement?.kind === 'unlock') {
+      const itemCount = Math.max(
+        1,
+        Array.isArray(announcement.values)
+          ? announcement.values.length
+          : 0,
+      );
+      return (
+        itemCount *
+          PIXI_ANNOUNCEMENT_MOTION.featureUnlockItemMs +
+        Math.max(0, itemCount - 1) *
+          PIXI_ANNOUNCEMENT_MOTION.featureUnlockItemGapMs
+      );
+    }
+    return this.displayMs;
   }
 
   getPrefersReducedMotion() {
@@ -862,6 +968,11 @@ export class PixiAnnouncementPresenter {
   }
 
   closeDialog() {
+    if (this.current?.kind === 'level') {
+      this.runtime
+        ?.getGlobalSurface?.('chrome.top')
+        ?.setLevelStarCeremonyActive?.(false);
+    }
     if (
       this.runtime
         ?.getOpenDialogIds?.()
@@ -872,6 +983,18 @@ export class PixiAnnouncementPresenter {
       );
     }
     return false;
+  }
+
+  getLevelStarSourceBounds() {
+    try {
+      return normalizeBounds(
+        this.runtime
+          ?.getGlobalSurface?.('chrome.top')
+          ?.getLevelStarBounds?.(),
+      );
+    } catch {
+      return null;
+    }
   }
 
   requireRuntime() {
@@ -901,6 +1024,7 @@ export function createPixiAnnouncementPresentation(
     levelRevealDelayMs = 0,
     pendingDelayMs = durationMs,
     playerSnapshot = {},
+    levelStarSourceBounds = null,
   } = {},
 ) {
   const shared = {
@@ -920,16 +1044,18 @@ export function createPixiAnnouncementPresentation(
   };
 
   if (announcement.kind === 'level') {
+    const rewardDrops = createLevelRewardDrops(
+      announcement.rows,
+      announcement.toLevel,
+    );
     return {
       ...shared,
       title: 'Level Up!',
       ariaLabel: `Level ${announcement.toLevel} up. Tap to continue.`,
       dismissible: true,
       continueLabel: 'Tap to continue',
-      rows: createLevelPresentationRows(
-        announcement.rows,
-        announcement.toLevel,
-      ),
+      items: rewardDrops,
+      rows: [],
       level: {
         from: announcement.fromLevel,
         to: announcement.toLevel,
@@ -940,6 +1066,29 @@ export function createPixiAnnouncementPresentation(
           0,
           Number(levelRevealDelayMs) || 0,
         ),
+        starSourceBounds: normalizeBounds(
+          levelStarSourceBounds,
+        ),
+        starGlideMs:
+          PIXI_ANNOUNCEMENT_MOTION.levelStarGlideMs,
+        starShakeMs:
+          PIXI_ANNOUNCEMENT_MOTION.levelStarShakeMs,
+        starPopMs:
+          PIXI_ANNOUNCEMENT_MOTION.levelStarPopMs,
+        starReappearMs:
+          PIXI_ANNOUNCEMENT_MOTION.levelStarReappearMs,
+        starReturnMs:
+          PIXI_ANNOUNCEMENT_MOTION.levelStarReturnMs,
+        bannerEnterMs:
+          PIXI_ANNOUNCEMENT_MOTION.levelPanelDurationMs,
+        bannerHoldMs:
+          PIXI_ANNOUNCEMENT_MOTION.levelBannerHoldMs,
+        bannerExitMs:
+          PIXI_ANNOUNCEMENT_MOTION.levelBannerExitMs,
+        rewardDurationMs:
+          PIXI_ANNOUNCEMENT_MOTION.levelRewardDropMs,
+        rewardGapMs:
+          PIXI_ANNOUNCEMENT_MOTION.levelRewardGapMs,
       },
     };
   }
@@ -968,6 +1117,13 @@ export function createPixiAnnouncementPresentation(
 
   if (announcement.kind === 'unlock') {
     return createFeatureUnlockScreenPresentation(
+      announcement,
+      shared,
+    );
+  }
+
+  if (announcement.kind === 'researchUnlock') {
+    return createResearchUnlockPresentation(
       announcement,
       shared,
     );
@@ -1186,6 +1342,51 @@ function createFeatureUnlockScreenPresentation(
         PIXI_ANNOUNCEMENT_MOTION.rowDurationMs,
       detailDelayMs:
         PIXI_ANNOUNCEMENT_MOTION.researchDetailDelayMs,
+      itemDurationMs:
+        PIXI_ANNOUNCEMENT_MOTION.featureUnlockItemMs,
+      itemGapMs:
+        PIXI_ANNOUNCEMENT_MOTION.featureUnlockItemGapMs,
+    },
+  };
+}
+
+function createResearchUnlockPresentation(
+  announcement,
+  shared,
+) {
+  const research = announcement.research ?? {};
+  const label = toTitleCase(
+    research.displayName ?? research.label ?? 'Research',
+  );
+  return {
+    ...shared,
+    title: 'Research Unlocked!',
+    ariaLabel: `${label} research unlocked`,
+    dismissible: announcement.preview === true,
+    showClose: false,
+    research,
+    items: [
+      {
+        id: `${announcement.key ?? 'research-unlock'}:item`,
+        kind: 'researchUnlock',
+        variant: 'researchUnlock',
+        label,
+        value: 'Now available in Research',
+        icon: getResearchIconPresentation(research),
+        lockedReveal: true,
+      },
+    ],
+    rows: [],
+    animation: {
+      kind: 'research-unlock',
+      overlayDurationMs:
+        PIXI_ANNOUNCEMENT_MOTION.overlayDurationMs,
+      shakeDurationMs:
+        PIXI_ANNOUNCEMENT_MOTION.researchUnlockShakeMs,
+      breakDurationMs:
+        PIXI_ANNOUNCEMENT_MOTION.researchUnlockBreakMs,
+      holdDurationMs:
+        PIXI_ANNOUNCEMENT_MOTION.researchUnlockHoldMs,
     },
   };
 }
@@ -1292,12 +1493,20 @@ function getResearchStarSlotCount(research = {}) {
   return maxLevel === 2 ? 2 : 3;
 }
 
-function createLevelPresentationRows(rows, toLevel) {
-  const displayRows =
-    Array.isArray(rows) && rows.length > 0
-      ? rows
-      : [{ label: 'Rewards', value: 'None' }];
-  return displayRows.slice(0, 5).map((row, index) => {
+function createLevelRewardDrops(rows, toLevel) {
+  const displayRows = (Array.isArray(rows) ? rows : [])
+    .filter((row) => String(row?.label ?? '').toLowerCase() !== 'unlocks')
+    .slice(0, 5);
+  if (displayRows.length === 0) {
+    displayRows.push({
+      label: 'Level Reward',
+      value: `Level ${toLevel}`,
+      icon: {
+        assetId: 'source:assets/ui/root-run-level-star.png',
+      },
+    });
+  }
+  return displayRows.map((row, index) => {
     const valueLines = Array.isArray(row.valueLines)
       ? row.valueLines
       : [];
@@ -1307,27 +1516,28 @@ function createLevelPresentationRows(rows, toLevel) {
         : String(row.value ?? '');
     const resource = inferResource(rawValue);
     const iconFrameName = RESOURCE_ICON_FRAMES[resource];
+    const labelKey = String(row.label ?? '').trim().toLowerCase();
     const value = iconFrameName
       ? stripResourceName(rawValue, resource)
-      : toTitleCase(rawValue);
+      : String(rawValue);
     return {
       ...row,
-      id: `level:${toLevel}:${index}`,
-      kind: 'row',
+      id: `level:${toLevel}:reward:${index}`,
+      kind: 'reward',
+      variant: 'reward',
       label: toTitleCase(row.label),
       value,
-      height: 34,
-      keyWidthRatio: 0.58,
-      mutedLabel: false,
-      boldLabel: true,
-      boldValue: true,
-      color: '#ffffff',
+      detail: value,
+      compact: false,
       resource,
-      valueColor: '#ffffff',
-      icon: iconFrameName
-        ? { frameName: iconFrameName }
-        : null,
-      iconPosition: 'after',
+      icon:
+        row.icon ??
+        (iconFrameName
+          ? { frameName: iconFrameName }
+          : LEVEL_REWARD_ICON_PRESENTATIONS[labelKey] ?? {
+              assetId:
+                'source:assets/ui/root-run-level-star.png',
+            }),
     };
   });
 }
@@ -1582,7 +1792,57 @@ function getResearchSnapshot(
     starMaxLevel: research.starMaxLevel ?? null,
     itemKind: research.itemKind ?? null,
     itemKey: research.itemKey ?? null,
+    requiredPlayerLevel:
+      research.requiredPlayerLevel ?? null,
+    requiredResearchIds: Array.isArray(
+      research.requiredResearchIds,
+    )
+      ? [...research.requiredResearchIds]
+      : [],
   };
+}
+
+function getLevelUnlockedResearches(
+  snapshot,
+  { fromLevel, toLevel } = {},
+) {
+  const from = Math.max(0, Math.floor(Number(fromLevel) || 0));
+  const to = Math.max(from, Math.floor(Number(toLevel) || from));
+  const seen = new Set();
+  return getResearches(snapshot)
+    .filter((research) => {
+      const requiredLevel = Math.floor(
+        Number(research?.requiredPlayerLevel),
+      );
+      return (
+        typeof research?.id === 'string' &&
+        !seen.has(research.id) &&
+        Number.isInteger(requiredLevel) &&
+        from < requiredLevel &&
+        requiredLevel <= to &&
+        research.completed !== true &&
+        research.inProgress !== true &&
+        research.locked !== true &&
+        String(research.value ?? '').toLowerCase() !== 'locked'
+      );
+    })
+    .map((research) => {
+      seen.add(research.id);
+      return {
+        id: research.id,
+        label: research.label ?? formatResearchId(research.id),
+        displayName: research.displayName ?? null,
+        description: research.description ?? '',
+        effect: research.effect ?? research.value ?? '',
+        value: research.value ?? '',
+        actionType: research.actionType ?? 'research',
+        costCurrency:
+          research.costCurrency ?? inferResearchCurrency(research),
+        itemKind: research.itemKind ?? null,
+        itemKey: research.itemKey ?? null,
+        requiredPlayerLevel: research.requiredPlayerLevel,
+      };
+    });
 }
 
 function getResearches(snapshot = {}) {
@@ -1594,6 +1854,58 @@ function getResearches(snapshot = {}) {
   }
   return (snapshot?.research?.boxes ?? []).flatMap(
     (box) => box.researches ?? [],
+  );
+}
+
+function isWorkshopEntryAnnouncement(announcement = {}) {
+  return (
+    announcement.kind === 'level' ||
+    announcement.kind === 'researchUnlock' ||
+    announcement.source === 'level'
+  );
+}
+
+function normalizePageId(pageId) {
+  const normalized = String(pageId ?? '').trim().toLowerCase();
+  return normalized || 'workshop';
+}
+
+function normalizeBounds(bounds) {
+  if (
+    !bounds ||
+    ![bounds.x, bounds.y, bounds.width, bounds.height].every(
+      Number.isFinite,
+    )
+  ) {
+    return null;
+  }
+  return {
+    x: Number(bounds.x),
+    y: Number(bounds.y),
+    width: Math.max(0, Number(bounds.width)),
+    height: Math.max(0, Number(bounds.height)),
+  };
+}
+
+function getLevelSequenceDuration({
+  rewardCount = 1,
+  revealDelayMs = 0,
+} = {}) {
+  const count = Math.max(1, Math.floor(Number(rewardCount) || 1));
+  return (
+    Math.max(0, Number(revealDelayMs) || 0) +
+    PIXI_ANNOUNCEMENT_MOTION.levelStarGlideMs +
+    PIXI_ANNOUNCEMENT_MOTION.levelStarShakeMs +
+    PIXI_ANNOUNCEMENT_MOTION.levelStarPopMs +
+    PIXI_ANNOUNCEMENT_MOTION.levelStarReappearMs +
+    PIXI_ANNOUNCEMENT_MOTION.levelStarReturnMs +
+    PIXI_ANNOUNCEMENT_MOTION.levelPanelDurationMs +
+    PIXI_ANNOUNCEMENT_MOTION.levelBannerHoldMs +
+    PIXI_ANNOUNCEMENT_MOTION.levelBannerExitMs +
+    count * PIXI_ANNOUNCEMENT_MOTION.levelRewardDropMs +
+    Math.max(0, count - 1) *
+      PIXI_ANNOUNCEMENT_MOTION.levelRewardGapMs +
+    150 + 220
   );
 }
 

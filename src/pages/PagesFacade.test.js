@@ -5934,6 +5934,9 @@ describe('PagesFacade', () => {
     const stage = document.createElement('section');
     const gameplayFacade = createGameplayFacadeFake();
     markSeedResearchComplete(gameplayFacade, 'sageSeed');
+    gameplayFacade
+      .getSnapshot()
+      .seedInventory.find((item) => item.key === 'sageSeed').quantity = 1;
     const pagesFacade = new PagesFacade({
       gameplayFacade,
       playerFacade: createPlayerFacadeFake(),
@@ -5962,10 +5965,10 @@ describe('PagesFacade', () => {
         .querySelector('.workshop-page__bag-item-row--seed .row_val .workshop-page__bag-value-icon')
         ?.classList.contains('style-seed-label'),
     ).toBe(true);
-    expect(bag.textContent).toContain('0');
+    expect(bag.textContent).toContain('1');
     expect(
       bag.querySelector('.workshop-page__bag-item-row--seed')?.classList.contains('is-empty'),
-    ).toBe(true);
+    ).toBe(false);
 
     document.dispatchEvent(new window.KeyboardEvent('keydown', { key: 'Escape', bubbles: true }));
     bagButton.dispatchEvent(new window.MouseEvent('click', { bubbles: true }));
@@ -6438,7 +6441,7 @@ describe('PagesFacade', () => {
     expect(marketTooltip.hidden).toBe(true);
   });
 
-  it('shows only researched or owned seed inventory rows', () => {
+  it('shows only positive owned seed inventory rows', () => {
     const stage = document.createElement('section');
     const gameplayFacade = createGameplayFacadeFake();
     const snapshot = gameplayFacade.getSnapshot();
@@ -6537,19 +6540,15 @@ describe('PagesFacade', () => {
     const rows = [...bag.querySelectorAll('.workshop-page__bag-item-row--seed')];
     const labels = rows.map((row) => row.querySelector('.row_key')?.textContent);
     const values = rows.map((row) => row.querySelector('.row_val')?.textContent);
-    expect(labels).toEqual(['sage seed', 'mint seed', 'lavender seed']);
-    expect(values).toEqual(['0', '2', '4']);
+    expect(labels).toEqual(['mint seed', 'lavender seed']);
+    expect(values).toEqual(['2', '4']);
     expect(divider).toBeNull();
     expect(
       rows
         .find((row) => row.querySelector('.row_key')?.textContent === 'lavender seed')
         ?.classList.contains('is-locked'),
     ).toBe(false);
-    expect(
-      [...bag.querySelectorAll('.workshop-page__bag-item-row--seed.is-empty')].map(
-        (row) => row.querySelector('.row_key')?.textContent,
-      ),
-    ).toEqual(['sage seed']);
+    expect(bag.querySelectorAll('.workshop-page__bag-item-row--seed.is-empty')).toHaveLength(0);
   });
 
   it('shows currencies in the bag with zero balances muted', () => {
@@ -6590,7 +6589,7 @@ describe('PagesFacade', () => {
     expect(rows.every((row) => row.classList.contains('is-empty'))).toBe(true);
   });
 
-  it('shows only researched, discovered, or owned herb and potion rows in the bag', () => {
+  it('shows positive owned herbs and known or owned potions in the bag', () => {
     const stage = document.createElement('section');
     const gameplayFacade = createGameplayFacadeFake();
     const snapshot = gameplayFacade.getSnapshot();
@@ -6600,7 +6599,7 @@ describe('PagesFacade', () => {
         key: 'sageHerb',
         label: 'sage',
         kind: 'herb',
-        quantity: 0,
+        quantity: 1,
       },
       {
         itemTypeId: 1002,
@@ -6645,7 +6644,7 @@ describe('PagesFacade', () => {
 
     let rows = [...stage.querySelectorAll('.workshop-page__bag-item-row--herb')];
     expect(rows.map((row) => row.querySelector('.row_key')?.textContent)).toEqual(['sage']);
-    expect(rows.map((row) => row.querySelector('.row_val')?.textContent)).toEqual(['0']);
+    expect(rows.map((row) => row.querySelector('.row_val')?.textContent)).toEqual(['1']);
     expect(rows[0].classList.contains('is-locked')).toBe(false);
 
     [...stage.querySelectorAll('.workshop-page__bag-tab-button')]
@@ -9817,15 +9816,18 @@ describe('PagesFacade', () => {
       .dispatchEvent(new window.MouseEvent('click', { bubbles: true }));
 
     expect(popup.hidden).toBe(false);
-    expect(popup.querySelector('.brewing-page__recipe-select-button')?.textContent).toBe(
+    expect(
+      popup.querySelector(
+        '.brewing-page__recipe-row.is-selected .brewing-page__recipe-selected-status',
+      )?.textContent,
+    ).toBe(
       'Selected',
     );
-
-    popup
-      .querySelector('.brewing-page__recipe-row.is-selected .brewing-page__recipe-select-button')
-      .dispatchEvent(new window.MouseEvent('click', { bubbles: true }));
-
-    expect(popup.querySelector('.brewing-page__recipe-select-button')?.textContent).toBe('Select');
+    expect(
+      popup.querySelector(
+        '.brewing-page__recipe-row.is-selected .brewing-page__recipe-selected-checkmark',
+      ),
+    ).not.toBeNull();
   });
 
   it('switches the research page between regular, automation, advanced, and crystal research', () => {
@@ -10010,28 +10012,23 @@ describe('PagesFacade', () => {
     expect(
       [...popup.querySelectorAll('.brewing-page__recipe-row')]
         .find((row) => row.textContent.includes('Mana tonic'))
-        ?.querySelector('.brewing-page__recipe-select-button')?.textContent,
+        ?.querySelector('.brewing-page__recipe-selected-status')?.textContent,
     ).toBe('Selected');
 
     const selectedManaTonicRow = [...popup.querySelectorAll('.brewing-page__recipe-row')].find(
       (row) => row.textContent.includes('Mana tonic'),
     );
-    selectedManaTonicRow
-      .querySelector('.brewing-page__recipe-select-button')
-      .dispatchEvent(new window.MouseEvent('click', { bubbles: true }));
-
+    expect(selectedManaTonicRow?.querySelector('.brewing-page__recipe-select-button')).toBeNull();
+    expect(
+      selectedManaTonicRow?.querySelector('.brewing-page__recipe-selected-checkmark'),
+    ).not.toBeNull();
     expect(popup.hidden).toBe(false);
-    expect(stage.querySelector('.brewing-page__cauldron-guide')?.hidden).toBe(true);
+    expect(stage.querySelector('.brewing-page__cauldron-guide')?.hidden).toBe(false);
     expect(
       [...popup.querySelectorAll('.brewing-page__recipe-row')]
         .find((row) => row.textContent.includes('Mana tonic'))
         ?.classList.contains('is-selected'),
-    ).toBe(false);
-    expect(
-      [...popup.querySelectorAll('.brewing-page__recipe-row')]
-        .find((row) => row.textContent.includes('Mana tonic'))
-        ?.querySelector('.brewing-page__recipe-select-button')?.textContent,
-    ).toBe('Select');
+    ).toBe(true);
 
     dispatchPointerSwipe(stage);
 
@@ -10049,7 +10046,7 @@ describe('PagesFacade', () => {
     expect(popup.hidden).toBe(true);
   });
 
-  it('does not select a Brewing recipe that cannot be staged', () => {
+  it('selects an unlocked Brewing recipe even when it cannot yet be staged', () => {
     const stage = document.createElement('section');
     const gameplayFacade = createGameplayFacadeFake();
     unlockWorkshopSecondaryActions(gameplayFacade);
@@ -10071,12 +10068,16 @@ describe('PagesFacade', () => {
       '.brewing-page__recipe-select-button',
     );
 
-    expect(selectRecipeButton?.disabled).toBe(true);
+    expect(selectRecipeButton?.disabled).toBe(false);
     selectRecipeButton?.dispatchEvent(new window.MouseEvent('click', { bubbles: true }));
 
     expect(stage.querySelector('.brewing-page__cauldron-recipe-title')).toBeNull();
     expect(stage.querySelector('.brewing-page__recipes-popup')?.hidden).toBe(false);
-    expect(stage.querySelector('.brewing-page__cauldron-guide')?.hidden).toBe(true);
+    expect(stage.querySelector('.brewing-page__cauldron-guide')?.hidden).toBe(false);
+    expect(
+      stage.querySelector('.brewing-page__recipe-row.is-selected')
+        ?.querySelector('.brewing-page__recipe-selected-status')?.textContent,
+    ).toBe('Selected');
     expect(stage.querySelector('.brewing-page__action-button')?.disabled).toBe(true);
     expect(stage.querySelector('.brewing-page__cauldron-count')?.textContent).toBe('0/5');
     expect(stage.querySelector('.brewing-page__herbs')?.textContent).toContain('sage1');
@@ -10172,9 +10173,14 @@ describe('PagesFacade', () => {
       .querySelector('.brewing-page__cauldron-select-recipe-text')
       .dispatchEvent(new window.MouseEvent('click', { bubbles: true }));
 
-    const selectButton = stage.querySelector('.brewing-page__recipe-select-button');
+    const selectedStatus = stage.querySelector(
+      '.brewing-page__recipe-row.is-selected .brewing-page__recipe-selected-status',
+    );
 
-    expect(selectButton?.textContent).toBe('Selected');
+    expect(selectedStatus?.textContent).toBe('Selected');
+    expect(
+      selectedStatus?.querySelector('.brewing-page__recipe-selected-checkmark'),
+    ).not.toBeNull();
   });
 
   it('keeps the Brewing fill recipe action for the current cauldron after switching room tabs', () => {

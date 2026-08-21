@@ -5,7 +5,7 @@ import { describe, expect, it } from 'vitest';
 import { formatStarLevel, setStarLevelLabel } from './starLevelLabel.js';
 
 describe('star level labels', () => {
-  it('maps levels into yellow, orange, red, and purple star tiers', () => {
+  it('maps levels through the seven star tiers up to level 20', () => {
     expect(formatStarLevel(0)).toMatchObject({
       text: '☆☆☆',
       tone: 'empty',
@@ -49,11 +49,51 @@ describe('star level labels', () => {
       ariaLabel: 'purple star 3',
     });
     expect(formatStarLevel(13)).toMatchObject({
-      text: '★★★',
-      tone: 'purple',
-      starCount: 3,
-      ariaLabel: 'purple star 3',
+      text: '★',
+      tone: 'blue',
+      starCount: 1,
+      ariaLabel: 'blue star 1',
     });
+    expect(formatStarLevel(16)).toMatchObject({
+      text: '★',
+      tone: 'green',
+      starCount: 1,
+      ariaLabel: 'green star 1',
+    });
+    expect(formatStarLevel(19)).toMatchObject({
+      text: '★',
+      tone: 'silver',
+      starCount: 1,
+      ariaLabel: 'silver star 1',
+    });
+    expect(formatStarLevel(20)).toMatchObject({
+      text: '★★',
+      tone: 'silver',
+      starCount: 2,
+      ariaLabel: 'silver star 2',
+    });
+    expect(formatStarLevel(21)).toMatchObject({
+      text: '★★',
+      tone: 'silver',
+      starCount: 2,
+      ariaLabel: 'silver star 2',
+    });
+  });
+
+  it('uses the matching high-tier image in DOM labels', () => {
+    const element = document.createElement('span');
+
+    setStarLevelLabel(element, 20);
+
+    expect(element.dataset.starTone).toBe('silver');
+    expect(element.dataset.starCount).toBe('2');
+    expect(element.querySelectorAll('.style-star-level__image--fill')).toHaveLength(2);
+    expect(
+      element
+        .querySelector('.style-star-level__slot[data-star-filled="true"]')
+        ?.querySelector('.style-star-level__image--fill')
+        ?.getAttribute('src'),
+    ).toContain('star-silver.png');
   });
 
   it('renders three empty slots for zero stars', () => {

@@ -5,6 +5,15 @@ upload script posts the section whose heading matches `package.json` `version`.
 Write these developer-to-player notes only in Idle Wizard terms. Do not mention
 other game names, source projects, ports, or implementation provenance.
 
+## 0.3.90
+
+- Added a full Workshop level-up celebration with an animated level star, reward reveals, newly available Research, and feature unlocks presented in sequence.
+- Added a selectable `x1`–`x5` Summon Seed batch control that follows Summon Seed research, remembers lower choices, and applies to both manual and automatic summoning.
+- Added a While Away report for completed Research, summoned seeds, Garden harvests, finished Brewing, and Market sales earned during catch-up.
+- Improved mobile web play with software-keyboard text entry and an optional Fullscreen setting on supported browsers.
+- Refined star ranks through level 20, Brewing recipe selection, Garden and Brewing automation feedback, Bag filtering, and reward presentation.
+- Fixed Garden capacity restoration and Prestige emerald refunds so locked plots are not mistaken for paid upgrades and retained capacity research stays spent.
+
 ## 0.3.89
 
 - Added live online and offline circles beside wizard names in Friends and direct conversations.

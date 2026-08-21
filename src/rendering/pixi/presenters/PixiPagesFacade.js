@@ -390,6 +390,9 @@ export class PixiPagesFacade {
     this.syncExternalDataRetention();
     this.globalDialogPresenter?.mount?.();
     this.experienceFacade?.mount?.();
+    this.announcementPresenter?.setCurrentPageId?.(
+      this.currentPageId,
+    );
     this.announcementPresenter?.mount?.();
   }
 
@@ -650,6 +653,9 @@ export class PixiPagesFacade {
         this.resetInventoryUiState(this.currentPageId);
         this.currentPageId = nextPageId;
         this.requireRuntime().activatePage(nextPageId);
+        this.announcementPresenter?.setCurrentPageId?.(
+          nextPageId,
+        );
       }
 
       this.refreshChrome();
@@ -1428,6 +1434,8 @@ export class PixiPagesFacade {
           }
           return result;
         },
+        setSummonQuantity: (quantity) =>
+          gameplay?.setSeedSummonQuantity?.(quantity) ?? false,
         setSummonDropPreference: (seedKey, preference) => {
           const result = gameplay?.setSeedDropPreference?.(seedKey, preference);
           this.refreshPage("workshop");
@@ -2789,20 +2797,41 @@ export class PixiPagesFacade {
       { ...brewing, recipes },
       cauldron,
     );
+    const brewQuantity = Math.max(
+      1,
+      Math.floor(Number(cauldron?.brewQuantity) || 1),
+    );
 
     return (recipes ?? []).map((recipe) => {
       const selected =
         recipe?.key === (selectedRecipe?.key ?? selectedRecipe?.id);
-      const canSelect =
-        selected ||
-        (recipe?.unlocked === true &&
-          this.canSelectBrewingRecipe(recipe, safeCauldronIndex));
-      const ingredients = (recipe?.ingredients ?? []).map((ingredient) => ({
-        ...ingredient,
-        owned: Number.isInteger(ingredient?.itemTypeId)
-          ? (ownedByItemTypeId.get(ingredient.itemTypeId) ?? 0)
-          : (ownedByKey.get(ingredient?.itemKey ?? ingredient?.key) ?? 0),
-      }));
+      const canSelect = recipe?.unlocked === true;
+      const remainingByItemTypeId = new Map(ownedByItemTypeId);
+      const remainingByKey = new Map(ownedByKey);
+      const ingredients = (recipe?.ingredients ?? []).map((ingredient) => {
+        const itemTypeId = ingredient?.itemTypeId;
+        const key = ingredient?.itemKey ?? ingredient?.key;
+        const quantity =
+          Math.max(1, Math.floor(Number(ingredient?.quantity) || 1)) *
+          brewQuantity;
+        const owned = Number.isInteger(itemTypeId)
+          ? (remainingByItemTypeId.get(itemTypeId) ?? 0)
+          : (remainingByKey.get(key) ?? 0);
+        if (Number.isInteger(itemTypeId)) {
+          remainingByItemTypeId.set(
+            itemTypeId,
+            Math.max(0, owned - quantity),
+          );
+        } else if (typeof key === "string") {
+          remainingByKey.set(key, Math.max(0, owned - quantity));
+        }
+        return {
+          ...ingredient,
+          quantity,
+          owned,
+          available: owned >= quantity,
+        };
+      });
 
       const undiscoveredUnknown =
         recipe?.discovered !== true &&
@@ -3156,21 +3185,26 @@ export class PixiPagesFacade {
             Number(candidate?.cauldronIndex) === Number(cauldronIndex),
         );
         const active = Boolean(cauldron?.activeBrew);
-        const result = !key || active
-          ? gameplay?.setBrewingAutoBrewRecipe?.(key, cauldronIndex)
-          : gameplay?.prepareBrewingRecipe?.(key, cauldronIndex);
-        if (result === true || result?.ok === true) {
-          if (key && !active) {
-            gameplay?.setBrewingAutoBrewRecipe?.(key, cauldronIndex);
-          }
-          if (recipe) {
-            this.selectedRecipeByCauldron.set(cauldronIndex, recipe);
-          } else {
-            this.selectedRecipeByCauldron.delete(cauldronIndex);
-          }
-          this.requireRuntime().closeDialog?.("brewing.recipes");
+        const selectionResult = gameplay?.setBrewingAutoBrewRecipe?.(
+          key,
+          cauldronIndex,
+        );
+        if (selectionResult === false || selectionResult?.ok === false) {
+          return selectionResult;
         }
-        return result;
+        const preparationResult = key && !active
+          ? gameplay?.prepareBrewingRecipe?.(key, cauldronIndex)
+          : null;
+        if (recipe) {
+          this.selectedRecipeByCauldron.set(cauldronIndex, recipe);
+        } else {
+          this.selectedRecipeByCauldron.delete(cauldronIndex);
+        }
+        this.requireRuntime().closeDialog?.("brewing.recipes");
+        return selectionResult ??
+          (preparationResult === true || preparationResult?.ok === true
+            ? preparationResult
+            : true);
       },
       performCauldronAction: (cauldron, action) => {
         const index = cauldron?.cauldronIndex ?? 0;
@@ -3384,6 +3418,7 @@ export class PixiPagesFacade {
     this.refreshChrome();
     this.refreshPage(pageId, { force: true });
     this.syncExternalDataRetention();
+    this.announcementPresenter?.setCurrentPageId?.(pageId);
     return true;
   }
 

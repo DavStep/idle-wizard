@@ -16,7 +16,9 @@ export class LevelUpCrystalRewardManager {
     );
 
     if (crystalReward > 0) {
-      this.crystalFacade.add(crystalReward);
+      this.crystalFacade.add(crystalReward, {
+        sourceType: 'level_up_reward',
+      });
     }
 
     return crystalReward;
@@ -37,7 +39,9 @@ export class LevelUpCrystalRewardManager {
     const missingCrystal = Math.max(0, minimumCurrentCrystal - currentCrystal);
 
     if (missingCrystal > 0) {
-      this.crystalFacade.add(missingCrystal);
+      this.crystalFacade.add(missingCrystal, {
+        sourceType: 'level_up_reward_backfill',
+      });
     }
 
     return missingCrystal;

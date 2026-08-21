@@ -151,9 +151,9 @@ Useful view setup commands:
 - `/?devUi=featureUnlockAnnouncement` opens a non-persistent eight-feature unlock
   preview; tapping its backdrop closes it and runs the icon handoff without
   changing gameplay state.
-- `/?devUi=levelUpAnnouncement` opens the persistent level-up reward
-  celebration with its banner, staged rows, resource icons, and tap-to-continue
-  dismissal without changing gameplay state.
+- `/?devUi=levelUpAnnouncement` opens the persistent Workshop level-up
+  celebration with its HUD-star ceremony, banner, serial large-icon reward
+  drops, and tap-to-continue dismissal without changing gameplay state.
 - `/?devUi=whileAwayAnnouncement` opens a non-persistent while-away report with
   seed, herb, potion, and coin rows.
 - `/?devUi=accountChoice` opens the real retained first-run account choice

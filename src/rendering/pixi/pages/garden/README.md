@@ -10,7 +10,8 @@ shared retained ambient layer, animate only while Garden is active, dim in Day,
 and settle into a static constellation when reduced motion is requested.
 
 The room identity is the shared full-width title-only ribbon in its green
-semantic skin. It renders `Garden` without rank-star slots above the plot grid.
+semantic skin. It renders `Garden` without rank-star slots above the plot grid
+and leads the same managed scroll content, matching Brewing's cauldron banner.
 
 The page consumes display-ready presenter data:
 

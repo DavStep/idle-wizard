@@ -25,7 +25,7 @@ function getRowLabels(parent, kind) {
 }
 
 describe('WorkshopBagManager', () => {
-  it('shows only researched or owned seeds, herbs, and potions', () => {
+  it('shows only owned seeds and herbs while preserving unlocked potions', () => {
     const parent = document.createElement('section');
     const snapshot = {
       seedInventory: [
@@ -101,10 +101,10 @@ describe('WorkshopBagManager', () => {
     manager.show();
 
     openTab(parent, 'seeds');
-    expect(getRowLabels(parent, 'seed')).toEqual(['sage seed', 'nettle seed']);
+    expect(getRowLabels(parent, 'seed')).toEqual(['nettle seed']);
 
     openTab(parent, 'herbs');
-    expect(getRowLabels(parent, 'herb')).toEqual(['sage']);
+    expect(getRowLabels(parent, 'herb')).toEqual([]);
 
     openTab(parent, 'potions');
     expect(getRowLabels(parent, 'potion')).toEqual(['mana tonic']);

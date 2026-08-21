@@ -3,7 +3,11 @@ import { setResourceIconText } from '../../shared/resourceIconLabel.js';
 import { setItemIconLabel } from '../../shared/itemIconLabel.js';
 import { MYSTERY_TEXT_LABEL } from '../../shared/mysteryText.js';
 import { createPlayerInfoLink } from '../../shared/playerInfoLink.js';
-import { createStatusIcon, STATUS_ICON_LOCK } from '../../shared/statusIcon.js';
+import {
+  createStatusIcon,
+  STATUS_ICON_CHECK,
+  STATUS_ICON_LOCK,
+} from '../../shared/statusIcon.js';
 import { createAssetAtlasSprite } from '../../../assets/atlas/atlasSprite.js';
 import { getPotionIconFrameName } from '../../../assets/items/potions/potionIcons.js';
 
@@ -404,9 +408,7 @@ export class BrewingRecipeBookManager {
       row.dataset.tutorialId = `brewing:recipe:${recipe.key}`;
     }
     const selected = !display.locked && recipe.key === this.getSelectedRecipeKey?.();
-    const canSelect =
-      selected ||
-      this.hasEnoughMaterials(recipe, ownedIngredientQuantities, brewQuantity);
+    const canSelect = !display.locked;
     row.classList.toggle('is-locked', display.locked);
     row.classList.toggle('is-unknown', display.unknown);
     row.classList.toggle('is-selected', selected);
@@ -415,17 +417,9 @@ export class BrewingRecipeBookManager {
     const main = document.createElement('div');
     main.className = 'brewing-page__recipe-main';
 
-    const selectButton = document.createElement('button');
-    selectButton.className = 'style-button brewing-page__recipe-select-button';
-    selectButton.type = 'button';
-    selectButton.textContent = selected ? 'Selected' : display.actionLabel;
-    selectButton.disabled = display.locked || !canSelect;
-    selectButton.setAttribute('aria-pressed', selected ? 'true' : 'false');
-    selectButton.setAttribute(
-      'aria-label',
-      this.getRecipeActionAriaLabel(recipe, display, selected, canSelect),
-    );
-    selectButton.addEventListener('click', () => this.selectRecipe(recipe));
+    const action = selected
+      ? this.createSelectedRecipeStatus(recipe)
+      : this.createRecipeSelectButton(recipe, display, canSelect);
 
     const label = document.createElement('span');
     label.className = 'row_key brewing-page__recipe-name';
@@ -481,7 +475,7 @@ export class BrewingRecipeBookManager {
     meta.append(cost, duration);
 
     main.append(top, infoText);
-    row.append(main, ingredients, meta, selectButton);
+    row.append(main, ingredients, meta, action);
 
     return row;
   }
@@ -503,6 +497,40 @@ export class BrewingRecipeBookManager {
       discoveredByUsername: this.getRecipeDiscovererName(recipe),
       discoveredByIdentity: this.getRecipeDiscovererIdentity(recipe),
     };
+  }
+
+  createSelectedRecipeStatus(recipe) {
+    const status = document.createElement('div');
+    status.className = 'brewing-page__recipe-selected-status';
+    status.setAttribute('role', 'status');
+    status.setAttribute('aria-label', `${recipe.label} recipe selected`);
+
+    const label = document.createElement('span');
+    label.textContent = 'Selected';
+    const checkmark = createStatusIcon(
+      'brewing-page__recipe-selected-checkmark',
+      STATUS_ICON_CHECK,
+    );
+    status.append(label);
+    if (checkmark) {
+      checkmark.setAttribute('aria-hidden', 'true');
+      status.append(checkmark);
+    }
+    return status;
+  }
+
+  createRecipeSelectButton(recipe, display, canSelect) {
+    const button = document.createElement('button');
+    button.className = 'style-button brewing-page__recipe-select-button';
+    button.type = 'button';
+    button.textContent = display.actionLabel;
+    button.disabled = display.locked || !canSelect;
+    button.setAttribute(
+      'aria-label',
+      this.getRecipeActionAriaLabel(recipe, display, false, canSelect),
+    );
+    button.addEventListener('click', () => this.selectRecipe(recipe));
+    return button;
   }
 
   isRecipeUnknown(recipe) {
@@ -538,18 +566,6 @@ export class BrewingRecipeBookManager {
 
     const selected = recipe?.key && recipe.key === this.getSelectedRecipeKey?.();
     const snapshot = this.gameplayFacade.getSnapshot();
-    const canSelect =
-      selected ||
-      this.hasEnoughMaterials(
-        recipe,
-        this.getOwnedIngredientQuantities(snapshot),
-        this.getBrewQuantity(snapshot),
-      );
-
-    if (!canSelect) {
-      return;
-    }
-
     this.onSelectRecipe?.(selected ? null : recipe);
     this.render(snapshot);
   }
@@ -859,6 +875,8 @@ export class BrewingRecipeBookManager {
       return root;
     }
 
+    const remainingIngredientQuantities = new Map(ownedIngredientQuantities);
+
     root.append(
       ...ingredients.map((ingredient) => {
         const row = document.createElement('div');
@@ -868,12 +886,17 @@ export class BrewingRecipeBookManager {
         const totalQuantity = quantity * brewQuantity;
         const ownedQuantity = this.getOwnedIngredientQuantity(
           ingredient,
-          ownedIngredientQuantities,
+          remainingIngredientQuantities,
         );
+        if (Number.isInteger(ingredient?.itemTypeId)) {
+          remainingIngredientQuantities.set(
+            ingredient.itemTypeId,
+            Math.max(0, ownedQuantity - totalQuantity),
+          );
+        }
 
         const required = document.createElement('span');
         required.className = 'brewing-page__recipe-ingredient-required';
-        required.classList.toggle('is-unavailable', ownedQuantity < totalQuantity);
         if (masked) {
           required.append(
             this.formatIngredientPrefix(quantity, brewQuantity),
@@ -889,6 +912,7 @@ export class BrewingRecipeBookManager {
 
         const owned = document.createElement('span');
         owned.className = 'brewing-page__recipe-ingredient-owned';
+        owned.classList.toggle('is-unavailable', ownedQuantity < totalQuantity);
         owned.textContent = masked ? 'Owned ?' : `Owned ${ownedQuantity}`;
 
         row.append(required, owned);
@@ -946,36 +970,6 @@ export class BrewingRecipeBookManager {
     }
 
     return quantities;
-  }
-
-  hasEnoughMaterials(
-    recipe,
-    ownedIngredientQuantities = new Map(),
-    brewQuantity = 1,
-  ) {
-    const requiredQuantities = new Map();
-    const safeBrewQuantity = Math.max(1, Math.floor(Number(brewQuantity) || 1));
-
-    for (const ingredient of recipe?.ingredients ?? []) {
-      if (!Number.isInteger(ingredient?.itemTypeId)) {
-        return false;
-      }
-
-      const quantity =
-        this.normalizeIngredientQuantity(ingredient) * safeBrewQuantity;
-      requiredQuantities.set(
-        ingredient.itemTypeId,
-        (requiredQuantities.get(ingredient.itemTypeId) ?? 0) + quantity,
-      );
-    }
-
-    for (const [itemTypeId, requiredQuantity] of requiredQuantities) {
-      if ((ownedIngredientQuantities.get(itemTypeId) ?? 0) < requiredQuantity) {
-        return false;
-      }
-    }
-
-    return true;
   }
 
   createIngredientIconLabel(ingredient) {

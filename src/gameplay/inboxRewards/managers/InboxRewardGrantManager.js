@@ -31,19 +31,28 @@ export class InboxRewardGrantManager {
     }
 
     if (reward.coin > 0) {
-      this.coinFacade?.add?.(reward.coin, { trackGenerated: false });
+      this.coinFacade?.add?.(reward.coin, {
+        sourceType: 'inbox_reward',
+        trackGenerated: false,
+      });
     }
 
     if (reward.crystal > 0) {
-      this.crystalFacade?.add?.(reward.crystal);
+      this.crystalFacade?.add?.(reward.crystal, {
+        sourceType: 'inbox_reward',
+      });
     }
 
     if (reward.ruby > 0) {
-      this.rubyFacade?.add?.(reward.ruby);
+      this.rubyFacade?.add?.(reward.ruby, {
+        sourceType: 'inbox_reward',
+      });
     }
 
     if (reward.emerald > 0) {
-      this.emeraldFacade?.add?.(reward.emerald);
+      this.emeraldFacade?.add?.(reward.emerald, {
+        sourceType: 'inbox_reward',
+      });
     }
 
     for (const item of itemGrants.items) {

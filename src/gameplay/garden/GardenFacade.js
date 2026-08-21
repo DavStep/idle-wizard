@@ -230,7 +230,9 @@ export class GardenFacade {
       unlockedTiles: this.gardenTileEntityManager.getUnlockedTiles(),
       tiles: this.gardenSnapshotManager
         .getTileSnapshots()
-        .filter((tile) => tile.entitlementExtra !== true)
+        .filter(
+          (tile) => tile.entitlementExtra !== true && tile.unlocked === true,
+        )
         .map((tile) => ({
           tileNumber: tile.tileNumber,
           autoEnabled: tile.autoEnabled !== false,

@@ -253,6 +253,26 @@ export class ResearchFacade {
     );
   }
 
+  getCommittedRunScopedEmeraldCostTotal() {
+    const permanentResearchIds = new Set(
+      this.getPermanentCompletedResearchIds(),
+    );
+    const researchIds = new Set([
+      ...this.researchStateEntityManager.getCompletedResearchIds(),
+      ...this.researchStateEntityManager
+        .getInProgressResearches()
+        .map((research) => research.researchId),
+    ]);
+
+    return [...researchIds].reduce(
+      (total, researchId) =>
+        permanentResearchIds.has(researchId)
+          ? total
+          : total + this.researchBalanceManager.getCostEmerald(researchId),
+      0,
+    );
+  }
+
   getCompletedHerbGrowthLevel(herbKey) {
     return this.getCompletedItemTimerLevel({
       getId: itemTimerResearchIds.herbGrowth,

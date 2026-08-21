@@ -49,6 +49,10 @@ export class SeedSummoningFacade {
     return this.seedSummonRequestManager.summonSeed();
   }
 
+  setSummonQuantity(quantity) {
+    return this.seedSummonMultiplierManager.setSummonQuantity(quantity);
+  }
+
   canSummonSeed({ reservedMana = 0 } = {}) {
     return this.getSummonUnavailableReason({ reservedMana }) === null;
   }
@@ -79,11 +83,15 @@ export class SeedSummoningFacade {
   getSnapshot() {
     const cost = this.seedSummonCostManager.getVisibleSummonCost();
     const quantity = this.seedSummonMultiplierManager.getSummonQuantity();
+    const maxQuantity = this.seedSummonMultiplierManager.getMaxSummonQuantity();
     const unavailableReason = this.getSummonUnavailableReason();
 
     return {
       cost,
       quantity,
+      maxQuantity,
+      starLevel: this.seedSummonMultiplierManager.getStarLevel(),
+      starMaxLevel: 4,
       canSummon: unavailableReason === null,
       unavailableReason,
       dropChances: this.getDropChances(),
@@ -114,11 +122,15 @@ export class SeedSummoningFacade {
   }
 
   getPersistenceSnapshot() {
-    return this.seedDropPreferenceManager.getPersistenceSnapshot();
+    return {
+      ...this.seedDropPreferenceManager.getPersistenceSnapshot(),
+      ...this.seedSummonMultiplierManager.getPersistenceSnapshot(),
+    };
   }
 
   applyPersistenceSnapshot(snapshot) {
     this.seedDropPreferenceManager.applyPersistenceSnapshot(snapshot);
+    this.seedSummonMultiplierManager.applyPersistenceSnapshot(snapshot);
     this.ensureDefaultSeedDropPreference();
   }
 

@@ -1,11 +1,13 @@
 import { EmeraldEntityManager } from './managers/EmeraldEntityManager.js';
 import { EmeraldSpendManager } from './managers/EmeraldSpendManager.js';
+import { publishCurrencyGrant } from '../managers/CurrencyGrantEventManager.js';
 
 export class EmeraldFacade {
   static explain =
     'Emerald is an upgrade currency for advanced research such as capacity, speed, and efficiency.';
 
-  constructor({ initialCurrent = 0 } = {}) {
+  constructor({ initialCurrent = 0, onGrant } = {}) {
+    this.onGrant = onGrant;
     this.emeraldEntityManager = new EmeraldEntityManager({ initialCurrent });
     this.emeraldSpendManager = new EmeraldSpendManager({
       emeraldEntityManager: this.emeraldEntityManager,
@@ -16,8 +18,16 @@ export class EmeraldFacade {
     this.emeraldEntityManager.initialize(ecsManagers);
   }
 
-  add(amount) {
+  add(amount, { sourceType } = {}) {
+    const previousCurrent = this.emeraldEntityManager.getCurrent();
     this.emeraldEntityManager.addCurrent(amount);
+    publishCurrencyGrant({
+      onGrant: this.onGrant,
+      currency: 'emerald',
+      sourceType,
+      previousCurrent,
+      current: this.emeraldEntityManager.getCurrent(),
+    });
   }
 
   setCurrent(amount) {

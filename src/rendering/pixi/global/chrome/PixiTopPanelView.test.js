@@ -743,7 +743,7 @@ describe('PixiTopPanelView', () => {
     view.destroy();
   });
 
-  it('uses the exact level-up jump keyframes when the visible level advances', () => {
+  it('leaves direct level changes still for the Workshop level ceremony', () => {
     const motion = createMotionHarness();
     const view = new PixiTopPanelView({
       assets: createAssets(),
@@ -769,31 +769,15 @@ describe('PixiTopPanelView', () => {
       }),
     );
 
-    motion.runAt(230 * 0.46);
-    expect(view.levelMotionRoot.scale.x).toBeCloseTo(
-      1.035,
-      5,
-    );
-    expect(view.levelMotionRoot.position.y).toBeCloseTo(
-      37.5,
-      5,
-    );
-    expect(view.questRail.scale.y).toBe(1);
-
-    motion.runAt(230 * 0.74);
-    expect(view.levelMotionRoot.scale.x).toBeCloseTo(
-      0.994,
-      5,
-    );
-    expect(view.levelMotionRoot.position.y).toBeCloseTo(
-      49.5,
-      5,
-    );
-
-    motion.runAt(230);
+    expect(motion.hasPendingFrame()).toBe(false);
     expect(view.levelMotionRoot.scale.x).toBe(1);
     expect(view.levelMotionRoot.position.y).toBe(46.5);
-    expect(motion.hasPendingFrame()).toBe(false);
+    expect(view.questRail.scale.y).toBe(1);
+
+    view.setLevelStarCeremonyActive(true);
+    expect(view.levelMotionRoot.visible).toBe(false);
+    view.setLevelStarCeremonyActive(false);
+    expect(view.levelMotionRoot.visible).toBe(true);
 
     view.destroy();
   });

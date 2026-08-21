@@ -1,5 +1,6 @@
 import { Container } from 'pixi.js';
 
+import { MAX_STAR_LEVEL } from '../../../shared/starLevel.js';
 import { defineUiEditorIntegration } from '../../../uiEditor/sdk/defineUiEditorIntegration.js';
 import {
   createUiEditorPixiHierarchyComponent,
@@ -248,7 +249,7 @@ export default [
     sectionId: FOUNDATION_SECTION,
     properties: [
       { label: 'Production class', value: 'PixiStarLevelLabel' },
-      { label: 'Maximum visual level', value: '12' },
+      { label: 'Maximum visual level', value: String(MAX_STAR_LEVEL) },
     ],
     usages: [
       {
@@ -259,7 +260,12 @@ export default [
     scenarios: [
       { fixture: { level: 0, slotCount: 3 }, id: 'empty', label: 'Empty', mount: mountStarLevel },
       { fixture: { level: 2, slotCount: 3 }, id: 'yellow', label: 'Yellow rank', mount: mountStarLevel },
+      { fixture: { level: 5, slotCount: 3 }, id: 'orange', label: 'Orange rank', mount: mountStarLevel },
       { fixture: { level: 8, slotCount: 3 }, id: 'red', label: 'Red rank', mount: mountStarLevel },
+      { fixture: { level: 11, slotCount: 3 }, id: 'purple', label: 'Purple rank', mount: mountStarLevel },
+      { fixture: { level: 14, slotCount: 3 }, id: 'blue', label: 'Blue rank', mount: mountStarLevel },
+      { fixture: { level: 17, slotCount: 3 }, id: 'green', label: 'Green rank', mount: mountStarLevel },
+      { fixture: { level: 20, slotCount: 3 }, id: 'silver', label: 'Silver rank', mount: mountStarLevel },
     ],
   }),
   defineUiEditorIntegration({
@@ -718,7 +724,7 @@ async function mountStarLevel(_context, fixture) {
   return {
     ...surface,
     controls: [
-      rangeControl('level', 'Level', 0, 12, 1, () => state.level, (value) => {
+      rangeControl('level', 'Level', 0, MAX_STAR_LEVEL, 1, () => state.level, (value) => {
         state.level = Number(value);
         label.setLevel(state.level, { slotCount: state.slotCount });
       }),

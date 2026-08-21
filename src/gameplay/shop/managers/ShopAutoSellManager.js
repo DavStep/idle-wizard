@@ -143,7 +143,9 @@ export class ShopAutoSellManager {
       };
     }
 
-    this.coinFacade.add(quote.totalPriceCoin);
+    this.coinFacade.add(quote.totalPriceCoin, {
+      sourceType: 'npc_market_sale',
+    });
     this.shopShelfEntityManager.changeSlotLoadedQuantity(slot.slotNumber, -quantity);
     this.consumeNpcNeed(item, quantity, npcNeedByItemKey);
     this.onItemSold?.({

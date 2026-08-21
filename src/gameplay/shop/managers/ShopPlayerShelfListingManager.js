@@ -278,7 +278,10 @@ export class ShopPlayerShelfListingManager {
       };
     }
 
-    this.coinFacade.add(safeCoin, { trackGenerated: false });
+    this.coinFacade.add(safeCoin, {
+      sourceType: 'player_shop_proceeds',
+      trackGenerated: false,
+    });
 
     return {
       ok: true,

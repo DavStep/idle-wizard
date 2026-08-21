@@ -58,7 +58,7 @@ export class ShopCoinOfferManager {
       };
     }
 
-    this.coinFacade?.add(coin);
+    this.coinFacade?.add(coin, { sourceType: 'shop_coin_offer' });
     this.setCooldownRemainingSeconds(SHOP_COIN_OFFER_COOLDOWN_SECONDS);
 
     return {

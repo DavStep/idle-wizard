@@ -6,9 +6,13 @@ inset, submit, cancel, and close events. Rendering the label, value, caret,
 selection, placeholder, or validation message belongs to the calling widget.
 
 Desktop web edits through keyboard events on the existing focusable game
-canvas and uses the Clipboard API. It does not create an `input`, `textarea`,
-or `contenteditable` surface. Consequently, full browser IME composition and
-mobile-web soft keyboards are intentionally unsupported. Each inserted key
+canvas and uses the Clipboard API. Touch-capable mobile web instead mounts one
+transparent one-pixel `input` or `textarea` so Safari and Chrome can own the
+software keyboard, composition, selection, and input layout. The mobile editor
+must focus synchronously inside the validated Pixi release; yielding first
+loses Safari's user activation and the keyboard does not open. Visual viewport
+changes are reported as keyboard insets so World Chat follows the same retained
+layout path as the APK without rescaling the room. Each inserted desktop key
 advances the collapsed selection, and tapping a populated single-line field
 moves that selection to the nearest visible character boundary before the next
 key is inserted. The backend-free `world-chat-prestige.html` recipe wires this

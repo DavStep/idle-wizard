@@ -599,6 +599,7 @@ export class PixiTopPanelView extends BasePixiRetainedView {
   shouldStartQuestCompletion(previous, next) {
     return Boolean(
       previous &&
+      next.pageId === 'workshop' &&
       previous.loadRevision === next.loadRevision &&
       previous.questVisible &&
       next.questVisible &&
@@ -745,8 +746,7 @@ export class PixiTopPanelView extends BasePixiRetainedView {
       next.level !== null &&
       next.level > previous.level
     ) {
-      this.startLevelUpMotion();
-      return true;
+      return false;
     }
 
     if (
@@ -1030,7 +1030,35 @@ export class PixiTopPanelView extends BasePixiRetainedView {
     this.questRolloverMotion = null;
     this.renderModel(motion.pendingModel);
     this.renderedModel = motion.pendingModel;
-    this.startLevelUpMotion();
+    return false;
+  }
+
+  getLevelStarBounds() {
+    try {
+      const bounds = this.levelMotionRoot.getBounds();
+      if (
+        !bounds ||
+        ![bounds.x, bounds.y, bounds.width, bounds.height].every(
+          Number.isFinite,
+        )
+      ) {
+        return null;
+      }
+      return {
+        x: bounds.x,
+        y: bounds.y,
+        width: bounds.width,
+        height: bounds.height,
+      };
+    } catch {
+      return null;
+    }
+  }
+
+  setLevelStarCeremonyActive(active) {
+    const visible = !active;
+    this.levelMotionRoot.visible = visible;
+    this.levelMotionRoot.renderable = visible;
     return true;
   }
 
@@ -1187,6 +1215,7 @@ function createMotionSnapshot(model = {}) {
   const quest = model.quest ?? {};
   const reveal = model.reveal ?? {};
   return {
+    pageId: String(model.pageId ?? 'workshop'),
     level,
     completed: Math.max(
       0,

@@ -153,6 +153,13 @@ const DEVICE_PREFERENCES = Object.freeze([
     iconAssetId: PIXI_ROOT_RUN_ASSETS.settingsVibration,
   }),
   Object.freeze({
+    key: 'fullscreen',
+    section: 'device',
+    text: 'FULLSCREEN',
+    iconAssetId: PIXI_ROOT_RUN_ASSETS.settingsGear,
+    mobileBrowserOnly: true,
+  }),
+  Object.freeze({
     key: 'theme',
     section: 'theme',
     text: 'THEME',
@@ -666,6 +673,10 @@ export class PixiSettingsDialog extends RetainedGlobalDialog {
       initialTab: this.initialTab,
       initialFeedbackKind: this.feedbackKind,
     });
+    const preservedScrollOffset =
+      this.shown && model.tabId === this.selectedTab
+        ? this.scroll.offsetY
+        : null;
     this.settingsModel = model;
     this.selectedTab = model.tabId;
     this.feedbackKind = model.feedback.kind;
@@ -694,6 +705,8 @@ export class PixiSettingsDialog extends RetainedGlobalDialog {
     this.updateFeedbackKindButtons();
     this.updateFeedbackPlaceholder();
 
+    this.syncPreferencePanels(model);
+
     for (const preference of this.preferenceRows) {
       preference.value = model.preferences[preference.key];
       preference.widget.bind({
@@ -717,7 +730,7 @@ export class PixiSettingsDialog extends RetainedGlobalDialog {
     this.refreshAccountChoices();
     this.refreshAccountPreview();
     this.syncAccountSaveState();
-    this.renderSelectedPane();
+    this.renderSelectedPane({ preservedScrollOffset });
   }
 
   selectTab(tabId) {
@@ -739,7 +752,7 @@ export class PixiSettingsDialog extends RetainedGlobalDialog {
     return true;
   }
 
-  renderSelectedPane() {
+  renderSelectedPane({ preservedScrollOffset = null } = {}) {
     const pane =
       this.selectedTab === 'report'
         ? this.reportLayer
@@ -794,7 +807,11 @@ export class PixiSettingsDialog extends RetainedGlobalDialog {
     this.scroll.setContentHeight(
       PIXI_UI_GEOMETRY.dialogScrollPaddingTop + this.activePaneHeight,
     );
-    this.scroll.scrollTo(this.scrollOffsets.get(this.selectedTab) ?? 0);
+    this.scroll.scrollTo(
+      Number.isFinite(preservedScrollOffset)
+        ? preservedScrollOffset
+        : (this.scrollOffsets.get(this.selectedTab) ?? 0),
+    );
     this.syncOuterScrollState(account);
     this.syncAccountPaper(account);
     this.syncTitleFrame(account);
@@ -1315,6 +1332,30 @@ export class PixiSettingsDialog extends RetainedGlobalDialog {
     return result ?? true;
   }
 
+  syncPreferencePanels(model) {
+    for (const preference of this.preferenceRows) {
+      const definition = DEVICE_PREFERENCES.find(
+        (candidate) => candidate.key === preference.key,
+      );
+      preference.available =
+        definition?.mobileBrowserOnly !== true ||
+        model.fullscreen.available === true;
+      preference.widget.visible = preference.available;
+      preference.widget.renderable = preference.available;
+    }
+    const rowsForSection = (section) =>
+      this.preferenceRows
+        .filter(({ key, available }) =>
+          available &&
+          DEVICE_PREFERENCES.find((definition) => definition.key === key)
+            ?.section === section,
+        )
+        .map(({ widget }) => widget);
+    this.devicePanel.setRows(rowsForSection('device'));
+    this.themePanel.setRows(rowsForSection('theme'));
+    this.socialPanel.setRows(rowsForSection('social'));
+  }
+
   async checkForUpdates() {
     if (this.updateCheckPending || !this.settingsModel?.updates?.enabled) {
       return false;
@@ -1544,8 +1585,13 @@ function normalizeSettingsModel(
     updates: {
       enabled: settings.updates?.enabled !== false,
     },
+    fullscreen: {
+      available: settings.fullscreen?.available === true,
+    },
     preferences: {
       haptics: settings.preferences?.haptics ?? settings.hapticsEnabled ?? true,
+      fullscreen:
+        settings.preferences?.fullscreen ?? settings.fullscreen?.active ?? false,
       music: normalizeVolumePercent(
         settings.preferences?.music ??
           settings.musicVolume ??

@@ -30,7 +30,7 @@ const ALLIANCE_DIRECTORY_PREVIEW_WIDTH = 320;
 export default [
   widget('compound.workshop-task-panel', 'Workshop Task Panel', ['compound.market-title-ribbon', 'compound.workshop-task-row', 'text-button'], taskPanelControl, variants(['expanded', 'collapsed', 'claimable', 'researching'])),
   widget('compound.workshop-task-row', 'Workshop Task Row', ['text-button', 'primitive.progress-bar'], taskRowControl, variants(['progress', 'claimable', 'researching', 'complete'])),
-  widget('compound.workshop-summon-control', 'Workshop Summon Control', ['cost-button', 'info-button', 'primitive.notification-badge'], summonControl, variants(['available', 'unaffordable', 'notified'])),
+  widget('compound.workshop-summon-control', 'Workshop Summon Control', ['cost-button', 'text-button', 'info-button', 'primitive.star-level-label', 'primitive.notification-badge'], summonControl, variants(['available', 'unaffordable', 'notified'])),
   widget('compound.root-run-side-action', 'Root Run Side Action', ['primitive.notification-badge', 'compound.trade-alliance-banner'], sideActionControl, variants(['left', 'right', 'disabled', 'notified', 'timed', 'alliance-member'])),
   widget('compound.world-event-donation-option-row', 'World Event Donation Option Row', ['text-button', 'primitive.notification-badge'], donationOptionControl, variants(['available', 'notified', 'unavailable', 'seed-pack'])),
   widget('compound.trade-alliance-banner', 'Alliance Flag', [], allianceBannerControl, variants(['unity', 'crown', 'crescent', 'crossed-wands', 'owl', 'flame', 'oak-leaf', 'key', 'tower', 'sunburst', 'hourglass', 'dragon', 'cauldron', 'sword', 'shield', 'book'])),
@@ -152,7 +152,7 @@ function taskPanelControl({ assets, input, fixture = { state: 'expanded' }, cont
 
 function summonControl({ assets, input, fixture = { state: 'available' }, context }) {
   const control = new WorkshopSummonControl({ page: pageStub(input, context), assetManager: assets, reducedMotion: true });
-  control.bind({ cost: 25, enabled: fixture.state !== 'unaffordable', pressEnabled: true, notification: fixture.state === 'notified' }, { summon: () => context?.emit('seedSummoned') ?? true, info: () => context?.emit('summonInfoOpened') ?? true });
+  control.bind({ cost: 30, quantity: 3, maxQuantity: 4, starLevel: 3, starMaxLevel: 4, enabled: fixture.state !== 'unaffordable', pressEnabled: true, notification: fixture.state === 'notified' }, { summon: () => context?.emit('seedSummoned') ?? true, quantity: (quantity) => context?.emit('summonQuantityChanged', { quantity }) ?? true, info: () => context?.emit('summonInfoOpened') ?? true });
   control.setBounds(98, 60);
   control.setActive(true);
   return wrap(control, 196, 120);

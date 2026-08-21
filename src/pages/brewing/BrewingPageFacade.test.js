@@ -5,7 +5,7 @@ import { describe, expect, it, vi } from 'vitest';
 import { BrewingPageFacade } from './BrewingPageFacade.js';
 
 describe('BrewingPageFacade', () => {
-  it('keeps the previous recipe selection when preparation lacks ingredients', () => {
+  it('keeps a newly selected recipe when preparation lacks ingredients', () => {
     const snapshot = {
       brewing: {
         cauldrons: [
@@ -24,6 +24,11 @@ describe('BrewingPageFacade', () => {
         ok: false,
         reason: 'not_enough_ingredients',
       })),
+      setBrewingAutoBrewRecipe: vi.fn(() => ({
+        ok: true,
+        autoBrewRecipeKey: 'minorHealingPotion',
+        cauldronIndex: 0,
+      })),
     };
     const facade = new BrewingPageFacade({ gameplayFacade });
     facade.cauldronManager.render = vi.fn();
@@ -32,10 +37,44 @@ describe('BrewingPageFacade', () => {
     const result = facade.selectRecipe('minorHealingPotion', 0);
 
     expect(result).toEqual({
-      ok: false,
-      reason: 'not_enough_ingredients',
+      ok: true,
+      autoBrewRecipeKey: 'minorHealingPotion',
+      cauldronIndex: 0,
     });
-    expect(facade.recipeGuideManager.getSelectedRecipeKey(0)).toBe('manaTonic');
+    expect(facade.recipeGuideManager.getSelectedRecipeKey(0)).toBe('minorHealingPotion');
+  });
+
+  it('clears a persisted manual recipe while auto brew is off', () => {
+    const snapshot = {
+      brewing: {
+        cauldrons: [
+          {
+            cauldronIndex: 0,
+            cauldronNumber: 1,
+            autoBrewEnabled: false,
+            autoBrewRecipeKey: 'manaTonic',
+          },
+        ],
+      },
+    };
+    const gameplayFacade = {
+      getSnapshot: () => snapshot,
+      setBrewingAutoBrewRecipe: vi.fn(() => ({
+        ok: true,
+        autoBrewRecipeKey: null,
+        cauldronIndex: 0,
+      })),
+    };
+    const facade = new BrewingPageFacade({ gameplayFacade });
+    facade.cauldronManager.render = vi.fn();
+    facade.recipeGuideManager.selectRecipe('manaTonic', 0);
+
+    expect(facade.selectRecipe(null, 0)).toMatchObject({
+      ok: true,
+      autoBrewRecipeKey: null,
+    });
+    expect(gameplayFacade.setBrewingAutoBrewRecipe).toHaveBeenCalledWith(null, 0);
+    expect(facade.recipeGuideManager.getSelectedRecipeKey(0)).toBeNull();
   });
 
   it('does not rewrite cauldron 1 auto brew when selecting a recipe in cauldron 2', () => {
@@ -71,14 +110,17 @@ describe('BrewingPageFacade', () => {
       'minorHealingPotion',
       1,
     );
-    expect(gameplayFacade.setBrewingAutoBrewRecipe).not.toHaveBeenCalled();
+    expect(gameplayFacade.setBrewingAutoBrewRecipe).toHaveBeenCalledWith(
+      'minorHealingPotion',
+      1,
+    );
     expect(snapshot.brewing.cauldrons[0]).toMatchObject({
       autoBrewEnabled: true,
       autoBrewRecipeKey: 'manaTonic',
     });
   });
 
-  it('opens the recipe dialog from the cauldron recipes button and clears there', () => {
+  it('opens the recipe dialog with the selected recipe as a passive status', () => {
     const snapshot = {
       brewing: {
         herbs: [],
@@ -143,12 +185,18 @@ describe('BrewingPageFacade', () => {
     expect(recipePopup?.hidden).toBe(false);
     expect(stage.querySelector('.brewing-page__recipe-choice-popup')?.hidden).toBe(true);
 
-    stage
-      .querySelector('.brewing-page__recipe-row.is-selected .brewing-page__recipe-select-button')
-      ?.dispatchEvent(new window.MouseEvent('click', { bubbles: true }));
-
+    expect(
+      stage.querySelector(
+        '.brewing-page__recipe-row.is-selected .brewing-page__recipe-selected-status',
+      )?.textContent,
+    ).toBe('Selected');
+    expect(
+      stage.querySelector(
+        '.brewing-page__recipe-row.is-selected .brewing-page__recipe-select-button',
+      ),
+    ).toBeNull();
     expect(recipePopup?.hidden).toBe(false);
-    expect(facade.recipeGuideManager.getSelectedRecipeKey(0)).toBeNull();
+    expect(facade.recipeGuideManager.getSelectedRecipeKey(0)).toBe('manaTonic');
 
     facade.unmount();
     stage.remove();

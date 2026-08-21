@@ -371,7 +371,7 @@ describe('ResearchBoxListManager', () => {
     manager.render(snapshot);
 
     expect(stage.querySelector('.research-page__box')?.textContent).toContain(
-      'summon seed lvl 1',
+      'summon seed',
     );
   });
 

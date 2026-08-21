@@ -30,6 +30,7 @@ import {
 import {
   BaseRetainedPixiPage,
   RETAINED_PAGE_GEOMETRY,
+  RETAINED_SCROLLBAR_GEOMETRY,
   RETAINED_TEXT_STYLES,
   RetainedScrollArea,
   RetainedTimedProgressBar,
@@ -49,6 +50,7 @@ import {
   AmbientFireflyLayer,
 } from "../shared/AmbientFireflyLayer.js";
 import { PixiTooltip } from "../shared/PixiTooltip.js";
+import { AutoGearMotion } from "../shared/AutoGearMotion.js";
 import { MarketTitleRibbon } from "../shop/MarketTitleRibbon.js";
 
 export const GARDEN_PIXI_GEOMETRY = Object.freeze({
@@ -250,11 +252,8 @@ export class GardenPixiPage extends BaseRetainedPixiPage {
     });
     this.titleRibbon.bind("Garden");
     this.titleRibbon.root.eventMode = "none";
-    this.content.addChild(
-      this.fireflies.root,
-      this.titleRibbon.root,
-      this.plotScroll.root,
-    );
+    this.plotScroll.content.addChild(this.titleRibbon.root);
+    this.content.addChild(this.fireflies.root, this.plotScroll.root);
     this.plotPool = new WidgetPool({
       name: "garden plot pool",
       counters,
@@ -538,18 +537,21 @@ export class GardenPixiPage extends BaseRetainedPixiPage {
 
   orderPlots(plots) {
     this.plotScroll.content.removeChildren();
+    this.plotScroll.content.addChild(this.titleRibbon.root);
     for (const plot of plots) {
       this.plotScroll.content.addChild(plot.root);
     }
   }
 
   syncPlotContentHeight(contentBottom) {
+    const scrollContentLead =
+      GARDEN_PIXI_GEOMETRY.plotListTop - GARDEN_PIXI_GEOMETRY.titleTop;
+    const minimumContentBottom =
+      scrollContentLead +
+      GARDEN_PIXI_GEOMETRY.gridPaddingTop +
+      GARDEN_PIXI_GEOMETRY.rowHeight;
     this.plotScroll.setContentHeight(
-      Math.max(
-        GARDEN_PIXI_GEOMETRY.gridPaddingTop +
-          GARDEN_PIXI_GEOMETRY.rowHeight,
-        Number(contentBottom) || 0,
-      ) +
+      Math.max(minimumContentBottom, Number(contentBottom) || 0) +
         GARDEN_PIXI_GEOMETRY.gridPaddingBottom,
     );
   }
@@ -574,18 +576,21 @@ export class GardenPixiPage extends BaseRetainedPixiPage {
     this.titleRibbon.setMaxWidth(sourceWidth);
     this.titleRibbon.root.position.set(
       (sourceWidth - this.titleRibbon.width) / 2,
-      GARDEN_PIXI_GEOMETRY.titleTop,
+      0,
     );
     const plotListHeight = Math.max(
       0,
       sourceHeight -
-        GARDEN_PIXI_GEOMETRY.plotListTop -
+        GARDEN_PIXI_GEOMETRY.titleTop -
         bottomClearance,
     );
+    const scrollbarAllowance =
+      RETAINED_SCROLLBAR_GEOMETRY.gap +
+      RETAINED_SCROLLBAR_GEOMETRY.width;
     this.plotScroll.setBounds(
       0,
-      GARDEN_PIXI_GEOMETRY.plotListTop,
-      sourceWidth - RETAINED_PAGE_GEOMETRY.contentEdge,
+      GARDEN_PIXI_GEOMETRY.titleTop,
+      Math.max(0, sourceWidth - scrollbarAllowance - 1),
       plotListHeight,
     );
     this.actionBar.setBounds(
@@ -606,7 +611,10 @@ export class GardenPixiPage extends BaseRetainedPixiPage {
         GARDEN_PIXI_GEOMETRY.gridPaddingX * 2 -
         GARDEN_PIXI_GEOMETRY.columnGap * (GARDEN_PIXI_GEOMETRY.columns - 1)) /
       GARDEN_PIXI_GEOMETRY.columns;
-    let rowY = GARDEN_PIXI_GEOMETRY.gridPaddingTop;
+    let rowY =
+      GARDEN_PIXI_GEOMETRY.plotListTop -
+      GARDEN_PIXI_GEOMETRY.titleTop +
+      GARDEN_PIXI_GEOMETRY.gridPaddingTop;
     let column = 0;
     let contentBottom = rowY + GARDEN_PIXI_GEOMETRY.rowHeight;
     this.plots.getWidgets().forEach((plot) => {
@@ -650,7 +658,6 @@ export class GardenPixiPage extends BaseRetainedPixiPage {
     this.plotScroll?.destroy();
     this.actionBar?.destroy();
     this.plotTooltip?.destroy();
-    this.titleRibbon?.root.destroy({ children: true });
   }
 }
 
@@ -1111,6 +1118,11 @@ export class GardenPlotWidget {
       getTexture(assetManager, PIXI_ROOT_RUN_ASSETS.settingsGear),
     );
     this.autoGear.anchor.set(0.5);
+    this.autoGearMotion = new AutoGearMotion({
+      setRotation: (rotation) => {
+        this.autoGear.rotation = rotation;
+      },
+    });
     this.autoButton.visual.addChildAt(
       this.autoGear,
       this.autoButton.visual.getChildIndex(this.autoButton.textLabel),
@@ -1260,6 +1272,7 @@ export class GardenPlotWidget {
       button.renderable = visible;
     }
     if (!visible) {
+      this.autoGearMotion.setEnabled(false);
       return;
     }
 
@@ -1275,6 +1288,7 @@ export class GardenPlotWidget {
       .setAction(() => this.actions.openPlotSeedPicker?.(this.model) ?? false);
 
     const autoEnabled = this.model.autoEnabled !== false;
+    this.autoGearMotion.setEnabled(autoEnabled);
     this.autoButton.setVariant(autoEnabled ? "green" : "yellow");
     this.autoButton
       .setText("Auto")
@@ -1721,6 +1735,10 @@ export class GardenPlotWidget {
 
     this.updateSeedReceive(now);
     this.updateTapAcceleration(now);
+    this.autoGearMotion.update(now, {
+      active: this.page.active,
+      reducedMotion: this.page.reducedMotion?.() === true,
+    });
   }
 
   isActivationLocked(now = this.page.timeSource()) {
@@ -1893,6 +1911,7 @@ export class GardenPlotWidget {
   settleTransientMotion() {
     this.settleSeedReceive();
     this.settleTapAcceleration();
+    this.autoGearMotion.reset();
   }
 
   settleSeedReceive() {
@@ -2094,6 +2113,7 @@ export class GardenPlotWidget {
     this.actions = {};
     this.enabled = false;
     this.isAutomated = false;
+    this.autoGearMotion.setEnabled(false);
     this.automatedRowWidth = GARDEN_PIXI_GEOMETRY.plotWidth;
     this.visualPlotWidth = GARDEN_PIXI_GEOMETRY.plotWidth;
     this.visiblePlantCount = 1;
@@ -2176,6 +2196,7 @@ export class GardenPlotWidget {
   destroy() {
     this.unregisterSemanticTargets();
     releaseRegistration(this.pressRegistration);
+    this.autoGearMotion.reset();
     this.progress.destroy();
     this.seedButton.destroy({ children: true });
     this.autoButton.destroy({ children: true });

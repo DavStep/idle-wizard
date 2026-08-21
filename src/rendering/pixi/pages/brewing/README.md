@@ -114,12 +114,17 @@ frames use the regular dialog's `6px` visible shell inset with a compact `2px`
 source seam, and the wider pager stays aligned to their outer edges on the brown
 shell below them. Potion art is optically nudged `4px` toward the outer page
 edge while the recipe name keeps the regular content inset. Ingredient rows show
-the herb name and art on the left and `owned/required` on the right. Every card
+the herb name and art on the left and `owned/required` on the right. Repeated
+herbs show the stock remaining at that ordered slot (`10/1`, `9/1`, `8/1`), and
+only an insufficient owned count uses the shared vivid-red shortage ink. Every card
 reserves six ingredient row-heights without drawing empty rows, so mana and time
 share one stable baseline across recipes with different ingredient counts. Those
 rows use aligned `Required mana:` / `Required Time:` labels and right-aligned
 values, with the canonical mana icon after its numeric value. Unlocked recipe actions read
-`Select` on the shared green positive-action skin. Known locked recipes are
+`Select` on the shared green positive-action skin even when the current stock cannot
+stage a batch; selection persists and the Brewing HUD reports what is missing. The selected recipe replaces
+that action with a passive Settings-row box containing `Selected` and the shared
+checkmark. Known locked recipes are
 passive and read `Not researched` over the same Settings-row nine-slice used by
 Workshop Bag rows. While a recipe is being studied, the same passive row reads
 `Researching: <time left>` and counts down from the Research snapshot; the

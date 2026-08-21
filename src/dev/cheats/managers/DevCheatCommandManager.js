@@ -745,7 +745,7 @@ export class DevCheatCommandManager {
   }
 
   fillMana() {
-    this.gameplayFacade.manaFacade.fill();
+    this.gameplayFacade.manaFacade.fill({ sourceType: 'dev_cheat' });
     this.publishAndSave();
     return {
       ok: true,
@@ -760,7 +760,9 @@ export class DevCheatCommandManager {
       return safeAmount;
     }
 
-    this.gameplayFacade.manaFacade.add(safeAmount.value);
+    this.gameplayFacade.manaFacade.add(safeAmount.value, {
+      sourceType: 'dev_cheat',
+    });
     this.publishAndSave();
     return {
       ok: true,
@@ -790,7 +792,9 @@ export class DevCheatCommandManager {
       return safeAmount;
     }
 
-    this.gameplayFacade.coinFacade.add(safeAmount.value);
+    this.gameplayFacade.coinFacade.add(safeAmount.value, {
+      sourceType: 'dev_cheat',
+    });
     this.publishAndSave();
     return {
       ok: true,
@@ -805,7 +809,9 @@ export class DevCheatCommandManager {
       return safeAmount;
     }
 
-    this.gameplayFacade.crystalFacade.add(safeAmount.value);
+    this.gameplayFacade.crystalFacade.add(safeAmount.value, {
+      sourceType: 'dev_cheat',
+    });
     this.publishAndSave();
     return {
       ok: true,
@@ -820,7 +826,9 @@ export class DevCheatCommandManager {
       return safeAmount;
     }
 
-    this.gameplayFacade.emeraldFacade.add(safeAmount.value);
+    this.gameplayFacade.emeraldFacade.add(safeAmount.value, {
+      sourceType: 'dev_cheat',
+    });
     this.publishAndSave();
     return {
       ok: true,
@@ -3608,7 +3616,9 @@ export class DevCheatCommandManager {
     const safeAmount = Math.max(0, Math.floor(Number(amount) || 0));
 
     if (safeAmount > 0) {
-      this.gameplayFacade.coinFacade.add(safeAmount);
+      this.gameplayFacade.coinFacade.add(safeAmount, {
+        sourceType: 'dev_ui_setup',
+      });
     }
   }
 

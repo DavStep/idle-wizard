@@ -4300,7 +4300,7 @@
       },
       "source": "assets/game/source/ui/root-run-top-hud/avatar-head-bg.png"
     },
-    "source:assets/ui/stars/star-empty.png": {
+    "source:assets/ui/stars/star-blue.png": {
       "frame": {
         "x": 1588,
         "y": 1620,
@@ -4323,11 +4323,61 @@
         "w": 20,
         "h": 20
       },
+      "source": "assets/game/source/ui/stars/star-blue.png"
+    },
+    "source:assets/ui/stars/star-empty.png": {
+      "frame": {
+        "x": 1612,
+        "y": 1620,
+        "w": 20,
+        "h": 20
+      },
+      "rotated": false,
+      "trimmed": false,
+      "spriteSourceSize": {
+        "x": 0,
+        "y": 0,
+        "w": 20,
+        "h": 20
+      },
+      "sourceSize": {
+        "w": 20,
+        "h": 20
+      },
+      "originalSourceSize": {
+        "w": 20,
+        "h": 20
+      },
       "source": "assets/game/source/ui/stars/star-empty.png"
+    },
+    "source:assets/ui/stars/star-green.png": {
+      "frame": {
+        "x": 1636,
+        "y": 1620,
+        "w": 20,
+        "h": 20
+      },
+      "rotated": false,
+      "trimmed": false,
+      "spriteSourceSize": {
+        "x": 0,
+        "y": 0,
+        "w": 20,
+        "h": 20
+      },
+      "sourceSize": {
+        "w": 20,
+        "h": 20
+      },
+      "originalSourceSize": {
+        "w": 20,
+        "h": 20
+      },
+      "source": "assets/game/source/ui/stars/star-green.png"
     },
     "source:assets/ui/stars/star-orange.png": {
       "frame": {
-        "x": 1612,
+        "x": 1660,
         "y": 1620,
         "w": 20,
         "h": 20
@@ -4352,7 +4402,7 @@
     },
     "source:assets/ui/stars/star-purple.png": {
       "frame": {
-        "x": 1636,
+        "x": 1684,
         "y": 1620,
         "w": 20,
         "h": 20
@@ -4377,7 +4427,7 @@
     },
     "source:assets/ui/stars/star-red.png": {
       "frame": {
-        "x": 1660,
+        "x": 1708,
         "y": 1620,
         "w": 20,
         "h": 20
@@ -4400,9 +4450,34 @@
       },
       "source": "assets/game/source/ui/stars/star-red.png"
     },
+    "source:assets/ui/stars/star-silver.png": {
+      "frame": {
+        "x": 1732,
+        "y": 1620,
+        "w": 20,
+        "h": 20
+      },
+      "rotated": false,
+      "trimmed": false,
+      "spriteSourceSize": {
+        "x": 0,
+        "y": 0,
+        "w": 20,
+        "h": 20
+      },
+      "sourceSize": {
+        "w": 20,
+        "h": 20
+      },
+      "originalSourceSize": {
+        "w": 20,
+        "h": 20
+      },
+      "source": "assets/game/source/ui/stars/star-silver.png"
+    },
     "source:assets/ui/stars/star-yellow.png": {
       "frame": {
-        "x": 1684,
+        "x": 1756,
         "y": 1620,
         "w": 20,
         "h": 20
@@ -4427,7 +4502,7 @@
     },
     "source:assets/ui/tooltip-pointer.png": {
       "frame": {
-        "x": 1708,
+        "x": 1780,
         "y": 1620,
         "w": 28,
         "h": 15

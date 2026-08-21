@@ -28,6 +28,7 @@ import { selectLatestDirectMessagePreview } from './directMessagePreview';
 import {
   normalizeGardenPlotAutomationSettings,
   normalizeGardenSelectedSeedItemKey,
+  readSaveUnlockedGardenTileCount,
 } from './saveGardenNormalizer';
 import { normalizeResearchForSaveMerge } from './playerGameplayResearchMerge';
 import {
@@ -12090,7 +12091,7 @@ function getSaveInferredCapacityResearchIds(save: Record<string, unknown>) {
 function getSaveInferredPlotCapacityResearchIds(save: Record<string, unknown>) {
   const legacyCaps = getLegacySaveLevelLimits(save);
   const unlockedTiles = Math.min(
-    getSaveInferredUnlockedTileCount(save.garden),
+    readSaveUnlockedGardenTileCount(save.garden),
     legacyCaps.maxGardenTiles,
   );
   const maxPlotNumber = Math.min(
@@ -12153,24 +12154,6 @@ function getLegacySaveLevelLimits(save: Record<string, unknown>) {
   }
 
   return limits;
-}
-
-function getSaveInferredUnlockedTileCount(value: unknown) {
-  const garden = isRecord(value) ? value : {};
-  const directCount = Math.floor(Number(garden.unlockedTiles));
-  const tileCount = Array.isArray(garden.tiles)
-    ? Math.max(
-        0,
-        ...garden.tiles
-          .filter((tile): tile is Record<string, unknown> => isRecord(tile))
-          .map((tile) => Math.floor(Number(tile.tileNumber)))
-          .filter(
-            (tileNumber) => Number.isInteger(tileNumber) && tileNumber > 0,
-          ),
-      )
-    : 0;
-
-  return Math.max(Number.isInteger(directCount) ? directCount : 0, tileCount);
 }
 
 function getSaveInferredUnlockedCauldronCount(value: unknown) {

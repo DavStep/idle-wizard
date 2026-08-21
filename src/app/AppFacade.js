@@ -4,6 +4,7 @@ import { BackendFacade } from '../backend/BackendFacade.js';
 import { EcsFacade } from '../ecs/EcsFacade.js';
 import { GameplayFacade } from '../gameplay/GameplayFacade.js';
 import { HapticsFacade } from './haptics/HapticsFacade.js';
+import { FullscreenFacade } from './fullscreen/FullscreenFacade.js';
 import { PlayerFacade } from '../player/PlayerFacade.js';
 import { RenderFacade } from '../rendering/RenderFacade.js';
 import { PixiAnnouncementPresenter } from '../rendering/pixi/presenters/PixiAnnouncementPresenter.js';
@@ -37,6 +38,7 @@ export class AppFacade {
     this.ecsFacade = new EcsFacade();
     this.gameplayFacade = new GameplayFacade();
     this.hapticsFacade = new HapticsFacade();
+    this.fullscreenFacade = new FullscreenFacade();
     this.playerFacade = new PlayerFacade();
     this.backgroundMusicFacade = new BackgroundMusicFacade();
     this.gardenSoundFacade = new GardenSoundFacade();
@@ -94,6 +96,7 @@ export class AppFacade {
       tradeAllianceFacade:
         this.backendFacade.getTradeAllianceFacade(),
       hapticsFacade: this.hapticsFacade,
+      fullscreenFacade: this.fullscreenFacade,
       soundSettingsFacade: this.soundSettingsFacade,
       checkForUpdates: () => this.checkForLiveUpdateManually(),
       installUpdate: () => this.installLiveUpdate(),
@@ -338,6 +341,7 @@ export class AppFacade {
     this.gardenSoundFacade.destroy();
     this.uiClickSoundFacade.destroy();
     this.hapticsFacade.destroy();
+    this.fullscreenFacade.destroy();
     return true;
   }
 }

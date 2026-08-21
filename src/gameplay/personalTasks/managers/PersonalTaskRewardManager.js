@@ -9,11 +9,15 @@ export class PersonalTaskRewardManager {
     const crystal = Math.max(0, Math.floor(Number(reward.crystal) || 0));
 
     if (coin > 0) {
-      this.coinFacade?.add?.(coin);
+      this.coinFacade?.add?.(coin, {
+        sourceType: 'personal_task_reward',
+      });
     }
 
     if (crystal > 0) {
-      this.crystalFacade?.add?.(crystal);
+      this.crystalFacade?.add?.(crystal, {
+        sourceType: 'personal_task_reward',
+      });
     }
 
     return {

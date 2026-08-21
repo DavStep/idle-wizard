@@ -1936,6 +1936,18 @@ describe('PixiViewModelFactory', () => {
       systemPlayerUsername: 'Mira',
       systemPlayerDetail: 'was approved by Luna and joined the alliance.',
       bodyRuns: [
+        {
+          kind: 'widget',
+          widget: 'playerAvatar',
+          character: 'rowan',
+          frame: 'violet',
+          fallbackText: '',
+          label: 'Mira avatar',
+          size: 18,
+          offsetY: 0,
+          interactive: true,
+        },
+        { kind: 'text', text: ' ' },
         { kind: 'text', text: 'Mira', tone: 'systemPlayer' },
         { kind: 'text', text: ' was approved by ' },
         { kind: 'text', text: 'Luna', tone: 'systemPlayer' },
@@ -1944,7 +1956,7 @@ describe('PixiViewModelFactory', () => {
       allianceTag: '',
       character: 'rowan',
       frame: 'violet',
-      showSystemAvatar: true,
+      showSystemAvatar: false,
     });
     workspace.chat.onSubmit('alliance only');
     expect(sendAllianceChat).toHaveBeenCalledWith('alliance only');
@@ -2382,6 +2394,21 @@ describe('PixiViewModelFactory', () => {
         systemPlayerDetail: 'reached ⭐ 4, completing prestige level 40',
         bodyRuns: [
           {
+            kind: 'widget',
+            widget: 'playerAvatar',
+            character: 'elara',
+            frame: 'classic',
+            fallbackText: '',
+            label: 'Ada avatar',
+            size: 18,
+            offsetY: 0,
+            interactive: true,
+          },
+          {
+            kind: 'text',
+            text: ' ',
+          },
+          {
             kind: 'text',
             text: 'Ada',
             tone: 'systemPlayer',
@@ -2441,9 +2468,22 @@ describe('PixiViewModelFactory', () => {
       systemPlayerUsername: 'Ada',
       systemPlayerDetail: 'reached level 14',
       bodyRuns: [
+        {
+          kind: 'widget',
+          widget: 'playerAvatar',
+          character: 'mira',
+          frame: 'classic',
+          fallbackText: '',
+          label: 'Ada avatar',
+          size: 18,
+          offsetY: 0,
+          interactive: true,
+        },
+        { kind: 'text', text: ' ' },
         { kind: 'text', text: 'Ada', tone: 'systemPlayer' },
         { kind: 'text', text: ' reached level 14' },
       ],
+      showSystemAvatar: false,
       semanticId: 'world-chat-system-player:system-level-1',
     });
     expect(dialog.rows[0].onActivate).toEqual(expect.any(Function));
@@ -2604,7 +2644,7 @@ describe('PixiViewModelFactory', () => {
     ]);
   });
 
-  it('keeps known locked zero-count items navigable from retained Bag rows', () => {
+  it('shows only owned seeds and herbs in retained Bag rows', () => {
     const factory = new PixiViewModelFactory();
     const gameplay = {
       seedInventory: [
@@ -2630,6 +2670,29 @@ describe('PixiViewModelFactory', () => {
           quantity: 2,
         },
       ],
+      inventory: [
+        {
+          itemTypeId: 1001,
+          key: 'sageHerb',
+          label: 'sage herb',
+          kind: 'herb',
+          quantity: 0,
+        },
+        {
+          itemTypeId: 1002,
+          key: 'mintHerb',
+          label: 'mint herb',
+          kind: 'herb',
+          quantity: 0,
+        },
+        {
+          itemTypeId: 1003,
+          key: 'nettleHerb',
+          label: 'nettle herb',
+          kind: 'herb',
+          quantity: 4,
+        },
+      ],
       research: {
         completedResearchIds: ['unlockSeed:sageSeed'],
         boxes: [],
@@ -2638,23 +2701,16 @@ describe('PixiViewModelFactory', () => {
 
     expect(factory.createBagDialog(gameplay, 'seeds').rows).toEqual([
       expect.objectContaining({
-        id: 'sageSeed',
-        label: 'Sage Seed',
-        value: '0',
-        locked: false,
-      }),
-      expect.objectContaining({
-        id: 'mintSeed',
-        label: 'Mint Seed',
-        value: 'locked',
-        locked: true,
-        researchId: 'unlockSeed:mintSeed',
-        action: expect.any(Function),
-      }),
-      expect.objectContaining({
         id: 'nettleSeed',
         label: 'Nettle Seed',
         value: '2',
+      }),
+    ]);
+    expect(factory.createBagDialog(gameplay, 'herbs').rows).toEqual([
+      expect.objectContaining({
+        id: 'nettleHerb',
+        label: 'Nettle Herb',
+        value: '4',
       }),
     ]);
   });
@@ -2876,7 +2932,7 @@ describe('PixiViewModelFactory', () => {
               researches: [
                 {
                   id: 'summonSeedsX2',
-                  label: 'summon seed lvl 1',
+                  label: 'summon seed',
                   requiredPlayerLevel: 6,
                   locked: true,
                 },

@@ -217,7 +217,7 @@ describe('BrewingRecipeBookManager', () => {
     parent.remove();
   });
 
-  it('shows selected recipe action as selected', () => {
+  it('replaces the selected recipe action with a passive labeled checkmark status', () => {
     const parent = document.createElement('div');
     document.body.append(parent);
     const manager = new BrewingRecipeBookManager({
@@ -229,15 +229,16 @@ describe('BrewingRecipeBookManager', () => {
     manager.mount(parent);
 
     const row = parent.querySelector('.brewing-page__recipe-row');
-    const action = row.querySelector('.brewing-page__recipe-select-button');
+    const status = row.querySelector('.brewing-page__recipe-selected-status');
 
     expect(row.tagName).toBe('DIV');
-    expect(action.classList.contains('style-button')).toBe(true);
-    expect(action.textContent).toBe('Selected');
-    expect(action.getAttribute('aria-pressed')).toBe('true');
-    expect(action.getAttribute('aria-label')).toBe(
-      'unselect minor healing potion recipe',
+    expect(row.querySelector('.brewing-page__recipe-select-button')).toBeNull();
+    expect(status?.textContent).toBe('Selected');
+    expect(status?.getAttribute('role')).toBe('status');
+    expect(status?.getAttribute('aria-label')).toBe(
+      'minor healing potion recipe selected',
     );
+    expect(status?.querySelector('.brewing-page__recipe-selected-checkmark')).not.toBeNull();
     expect(row.getAttribute('aria-pressed')).toBe('true');
 
     manager.unmount();
@@ -409,7 +410,8 @@ describe('BrewingRecipeBookManager', () => {
     expect(parent.querySelector('.brewing-page__recipe-row').getAttribute('aria-pressed')).toBe(
       'true',
     );
-    expect(parent.querySelector('.brewing-page__recipe-select-button').textContent).toBe(
+    expect(parent.querySelector('.brewing-page__recipe-select-button')).toBeNull();
+    expect(parent.querySelector('.brewing-page__recipe-selected-status')?.textContent).toBe(
       'Selected',
     );
 
@@ -417,7 +419,7 @@ describe('BrewingRecipeBookManager', () => {
     parent.remove();
   });
 
-  it('disables recipe selection when the current batch lacks materials', () => {
+  it('allows recipe selection when the current batch lacks materials', () => {
     const snapshot = createSnapshot();
     snapshot.brewing.herbs[0].quantity = 1;
     snapshot.brewing.cauldrons = [
@@ -441,12 +443,12 @@ describe('BrewingRecipeBookManager', () => {
     manager.mount(parent);
 
     const select = parent.querySelector('.brewing-page__recipe-select-button');
-    expect(select?.disabled).toBe(true);
-    expect(select?.getAttribute('aria-label')).toBe(
-      'minor healing potion recipe needs more materials',
-    );
+    expect(select?.disabled).toBe(false);
+    expect(select?.getAttribute('aria-label')).toBe('select minor healing potion recipe');
     select?.dispatchEvent(new window.MouseEvent('click', { bubbles: true }));
-    expect(onSelectRecipe).not.toHaveBeenCalled();
+    expect(onSelectRecipe).toHaveBeenCalledWith(
+      expect.objectContaining({ key: 'minorHealingPotion' }),
+    );
 
     manager.unmount();
     parent.remove();
@@ -599,31 +601,24 @@ describe('BrewingRecipeBookManager', () => {
     expect(selectRule).toContain('white-space: nowrap;');
   });
 
-  it('unselects a selected recipe when the recipe action is clicked', () => {
+  it('does not expose an unselect action for the selected recipe status', () => {
     const parent = document.createElement('div');
     document.body.append(parent);
-    let selectedRecipeKey = 'minorHealingPotion';
+    const onSelectRecipe = vi.fn();
     const manager = new BrewingRecipeBookManager({
       gameplayFacade: createGameplayFacadeFake(createSnapshot()),
-      getSelectedRecipeKey: () => selectedRecipeKey,
-      onSelectRecipe: (recipe) => {
-        selectedRecipeKey = recipe?.key ?? null;
-      },
+      getSelectedRecipeKey: () => 'minorHealingPotion',
+      onSelectRecipe,
     });
 
     manager.mount(parent);
 
-    parent
-      .querySelector('.brewing-page__recipe-select-button')
-      .dispatchEvent(new window.MouseEvent('click', { bubbles: true }));
-
-    expect(selectedRecipeKey).toBeNull();
+    expect(parent.querySelector('.brewing-page__recipe-select-button')).toBeNull();
+    expect(parent.querySelector('.brewing-page__recipe-selected-status')).not.toBeNull();
     expect(parent.querySelector('.brewing-page__recipe-row').getAttribute('aria-pressed')).toBe(
-      'false',
+      'true',
     );
-    expect(parent.querySelector('.brewing-page__recipe-select-button').textContent).toBe(
-      'Select',
-    );
+    expect(onSelectRecipe).not.toHaveBeenCalled();
 
     manager.unmount();
     parent.remove();
@@ -733,7 +728,7 @@ describe('BrewingRecipeBookManager', () => {
         required: row.querySelector('.brewing-page__recipe-ingredient-required')?.textContent,
         owned: row.querySelector('.brewing-page__recipe-ingredient-owned')?.textContent,
         unavailable: row
-          .querySelector('.brewing-page__recipe-ingredient-required')
+          .querySelector('.brewing-page__recipe-ingredient-owned')
           ?.classList.contains('is-unavailable'),
       }),
     );
@@ -756,6 +751,62 @@ describe('BrewingRecipeBookManager', () => {
         .querySelector('.brewing-page__recipe-ingredient-row')
         ?.querySelector('.brewing-page__recipe-ingredient-owned')?.textContent,
     ).toBe('Owned 8');
+
+    manager.unmount();
+    parent.remove();
+  });
+
+  it('decrements repeated ingredient stock per recipe slot and marks only short owned counts', () => {
+    const snapshot = {
+      brewing: {
+        herbs: [
+          {
+            itemTypeId: 1001,
+            key: 'sageHerb',
+            label: 'sage',
+            kind: 'herb',
+            quantity: 2,
+          },
+        ],
+        recipes: [
+          {
+            key: 'manaTonic',
+            label: 'mana tonic',
+            unlocked: true,
+            ingredients: Array.from({ length: 3 }, (_, slotIndex) => ({
+              slotIndex,
+              itemTypeId: 1001,
+              key: 'sageHerb',
+              label: 'sage',
+              quantity: 1,
+            })),
+          },
+        ],
+      },
+    };
+    const parent = document.createElement('div');
+    document.body.append(parent);
+    const manager = new BrewingRecipeBookManager({
+      gameplayFacade: createGameplayFacadeFake(snapshot),
+      getSelectedRecipeKey: () => null,
+      onSelectRecipe: () => {},
+    });
+
+    manager.mount(parent);
+
+    const owned = [
+      ...parent.querySelectorAll('.brewing-page__recipe-ingredient-owned'),
+    ];
+    expect(owned.map((label) => label.textContent)).toEqual([
+      'Owned 2',
+      'Owned 1',
+      'Owned 0',
+    ]);
+    expect(owned.map((label) => label.classList.contains('is-unavailable'))).toEqual([
+      false,
+      false,
+      true,
+    ]);
 
     manager.unmount();
     parent.remove();

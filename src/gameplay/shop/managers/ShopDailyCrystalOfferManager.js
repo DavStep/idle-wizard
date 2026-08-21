@@ -48,7 +48,9 @@ export class ShopDailyCrystalOfferManager {
       };
     }
 
-    this.crystalFacade?.add(SHOP_DAILY_CRYSTAL_OFFER_REWARD);
+    this.crystalFacade?.add(SHOP_DAILY_CRYSTAL_OFFER_REWARD, {
+      sourceType: 'shop_daily_crystal_offer',
+    });
     this.setCooldownRemainingSeconds(SHOP_DAILY_CRYSTAL_OFFER_COOLDOWN_SECONDS);
 
     return {

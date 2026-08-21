@@ -1,11 +1,13 @@
 import { RubyEntityManager } from './managers/RubyEntityManager.js';
 import { RubySpendManager } from './managers/RubySpendManager.js';
+import { publishCurrencyGrant } from '../managers/CurrencyGrantEventManager.js';
 
 export class RubyFacade {
   static explain =
     'Ruby is an upgrade currency for automation research that removes repeated manual actions.';
 
-  constructor({ initialCurrent = 0 } = {}) {
+  constructor({ initialCurrent = 0, onGrant } = {}) {
+    this.onGrant = onGrant;
     this.rubyEntityManager = new RubyEntityManager({ initialCurrent });
     this.rubySpendManager = new RubySpendManager({
       rubyEntityManager: this.rubyEntityManager,
@@ -16,8 +18,16 @@ export class RubyFacade {
     this.rubyEntityManager.initialize(ecsManagers);
   }
 
-  add(amount) {
+  add(amount, { sourceType } = {}) {
+    const previousCurrent = this.rubyEntityManager.getCurrent();
     this.rubyEntityManager.addCurrent(amount);
+    publishCurrencyGrant({
+      onGrant: this.onGrant,
+      currency: 'ruby',
+      sourceType,
+      previousCurrent,
+      current: this.rubyEntityManager.getCurrent(),
+    });
   }
 
   setCurrent(amount) {

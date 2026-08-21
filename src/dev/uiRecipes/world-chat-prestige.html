@@ -34,12 +34,11 @@
       import { PixiAssetManager } from '/src/rendering/pixi/assets/PixiAssetManager.js';
       import { PixiInputRouter } from '/src/rendering/pixi/input/PixiInputRouter.js';
       import { WorkshopDialogPixi } from '/src/rendering/pixi/pages/workshop/WorkshopDialogPixi.js';
+      import { PixiViewModelFactory } from '/src/rendering/pixi/presenters/PixiViewModelFactory.js';
       import { SemanticTargetRegistry } from '/src/rendering/pixi/retained/SemanticTargetRegistry.js';
       import { PixiApplicationManager } from '/src/rendering/pixi/runtime/PixiApplicationManager.js';
       import { TextEntryService } from '/src/rendering/textEntry/TextEntryService.js';
 
-      const PRESTIGE_ICON_ASSET =
-        'source:assets/icons/icon-prestige-star.png';
       const keyboardInset = Math.max(
         0,
         Number(
@@ -71,6 +70,28 @@
         semanticTargets,
         textEntryService,
       });
+      const prestigeRow = new PixiViewModelFactory().createWorldChatDialog(
+        {
+          connected: true,
+          messages: [
+            {
+              id: 'preview-prestige',
+              senderIdentity: 'preview-ada',
+              username: 'System',
+              body: 'Ada reached ⭐ 4, completing prestige level 40',
+              character: 'mira',
+              frame: 'violet',
+              sentAtMs: Date.now(),
+            },
+          ],
+        },
+        {
+          openPlayer: (player) => {
+            canvas.dataset.playerInfoUsername = player.username;
+            return true;
+          },
+        },
+      ).rows[0];
       dialog.bind({
         title: 'World Chat',
         composer: {
@@ -104,33 +125,7 @@
             body: 'The weekly world event has begun.',
             ageLabel: '1m ago',
           },
-          {
-            id: 'preview-prestige',
-            type: 'system',
-            username: 'System',
-            body: 'Ada reached ⭐ 4, completing prestige level 40',
-            systemPlayerUsername: 'Ada',
-            systemPlayerDetail:
-              'reached ⭐ 4, completing prestige level 40',
-            bodyRuns: [
-              {
-                kind: 'text',
-                text: 'reached ',
-              },
-              {
-                kind: 'icon',
-                assetId: PRESTIGE_ICON_ASSET,
-                fallbackText: '⭐',
-                label: 'Prestige star',
-                size: 12,
-              },
-              {
-                kind: 'text',
-                text: ' 4, completing prestige level 40',
-              },
-            ],
-            ageLabel: 'now',
-          },
+          prestigeRow,
           {
             id: 'preview-own-player',
             type: 'player',

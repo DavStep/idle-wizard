@@ -1,15 +1,20 @@
 import { Container, Sprite, Texture } from 'pixi.js';
 
+import {
+  STARS_PER_TONE,
+  normalizeStarSlotCount,
+  resolveStarLevel,
+} from '../../../shared/starLevel.js';
 import { PIXI_ROOT_RUN_ASSETS } from '../theme/PixiThemeTokens.js';
 
-const TONES = Object.freeze(['yellow', 'orange', 'red', 'purple']);
-const STARS_PER_TONE = 3;
-const MAX_STAR_LEVEL = TONES.length * STARS_PER_TONE;
 const TONE_ASSETS = Object.freeze({
   yellow: PIXI_ROOT_RUN_ASSETS.starYellow,
   orange: PIXI_ROOT_RUN_ASSETS.starOrange,
   red: PIXI_ROOT_RUN_ASSETS.starRed,
   purple: PIXI_ROOT_RUN_ASSETS.starPurple,
+  blue: PIXI_ROOT_RUN_ASSETS.starBlue,
+  green: PIXI_ROOT_RUN_ASSETS.starGreen,
+  silver: PIXI_ROOT_RUN_ASSETS.starSilver,
 });
 
 /**
@@ -27,7 +32,7 @@ export class PixiStarLevelLabel extends Container {
     super({ label });
     this.assetManager = assetManager;
     this.level = 0;
-    this.slotCount = normalizeSlotCount(slotCount);
+    this.slotCount = normalizeStarSlotCount(slotCount);
     this.starSize = size;
     this.gap = gap;
     this.slots = Array.from({ length: STARS_PER_TONE }, (_, index) =>
@@ -63,38 +68,25 @@ export class PixiStarLevelLabel extends Container {
   }
 
   setLevel(level, { slotCount = this.slotCount } = {}) {
-    const safeLevel = Math.max(0, Math.floor(Number(level) || 0));
     this.setSlotCount(slotCount);
-    const visualLevel = Math.min(safeLevel, MAX_STAR_LEVEL);
-    const toneIndex =
-      visualLevel > 0
-        ? Math.floor((visualLevel - 1) / STARS_PER_TONE)
-        : -1;
-    const starCount =
-      visualLevel > 0
-        ? Math.min(
-            ((visualLevel - 1) % STARS_PER_TONE) + 1,
-            this.slotCount,
-          )
-        : 0;
-    const tone = TONES[toneIndex] ?? null;
-    const texture = tone
-      ? this.resolveTexture(TONE_ASSETS[tone])
+    const starLevel = resolveStarLevel(level, { slotCount: this.slotCount });
+    const texture = starLevel.tone !== 'empty'
+      ? this.resolveTexture(TONE_ASSETS[starLevel.tone])
       : Texture.EMPTY;
 
-    this.level = safeLevel;
-    this.tone = tone ?? 'empty';
-    this.starCount = starCount;
+    this.level = starLevel.level;
+    this.tone = starLevel.tone;
+    this.starCount = starLevel.starCount;
     this.slots.forEach((slot, index) => {
       slot.fill.texture = texture;
-      slot.fill.visible = index < starCount;
+      slot.fill.visible = index < starLevel.starCount;
       slot.fill.renderable = slot.fill.visible;
     });
     return this;
   }
 
   setSlotCount(slotCount) {
-    this.slotCount = normalizeSlotCount(slotCount);
+    this.slotCount = normalizeStarSlotCount(slotCount);
     this.slots.forEach((slot, index) => {
       slot.root.visible = index < this.slotCount;
       slot.root.renderable = slot.root.visible;
@@ -142,11 +134,4 @@ export class PixiStarLevelLabel extends Container {
       ? this.assetManager.getTexture(assetId)
       : Texture.EMPTY;
   }
-}
-
-function normalizeSlotCount(slotCount) {
-  return Math.min(
-    STARS_PER_TONE,
-    Math.max(1, Math.floor(Number(slotCount) || STARS_PER_TONE)),
-  );
 }

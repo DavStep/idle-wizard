@@ -6,6 +6,7 @@ import { describe, expect, it, vi } from 'vitest';
 
 import { DialogRegistry } from '../../retained/DialogRegistry.js';
 import { PixiInputRouter } from '../../input/PixiInputRouter.js';
+import { PixiViewModelFactory } from '../../presenters/PixiViewModelFactory.js';
 import {
   PIXI_DIALOG_SPLIT_PAPER_GEOMETRY,
   PixiDialogFrame,
@@ -223,6 +224,65 @@ describe('WorkshopPixiPage', () => {
     expect(inlineAvatar.visible).toBe(false);
     expect(avatarPress?.descriptor.enabled()).toBe(false);
     expect(row.body.text).toBe('The event has begun [spell].');
+
+    row.destroy();
+  });
+
+  it('opens Player Info from an automatically injected system-player avatar', () => {
+    const registrations = [];
+    const openPlayer = vi.fn(() => true);
+    const message = {
+      id: 'system-level-1',
+      senderIdentity: 'sender-ada',
+      username: 'system',
+      character: 'mira',
+      frame: 'violet',
+      body: 'Ada reached level 14',
+    };
+    const model = new PixiViewModelFactory().createWorldChatDialog(
+      { connected: true, messages: [message] },
+      { openPlayer },
+    ).rows[0];
+    const dialog = {
+      assetManager: createPixiAssetManagerFake(Texture),
+      contentTheme: createPixiThemeSnapshot({ theme: 'night' }),
+      theme: createPixiThemeSnapshot({ theme: 'night' }),
+      dialogId: 'workshop.worldChat',
+      inputRouter: {
+        registerPressTarget: vi.fn((displayObject, descriptor) => {
+          registrations.push({ displayObject, descriptor });
+          return { unregister: vi.fn() };
+        }),
+      },
+      registerTarget: vi.fn(),
+      unregisterTarget: vi.fn(),
+    };
+    const row = new WorldChatMessageRowPixi({ dialog });
+
+    row.bind(model);
+    row.setBounds(0, 0, 288, row.getPreferredHeight());
+
+    const inlineAvatar = row.inlinePlayerAvatars[0]?.widget;
+    const avatarPress = registrations.find(
+      ({ displayObject }) => displayObject === inlineAvatar,
+    )?.descriptor;
+
+    expect(row.showSystemAvatar).toBe(false);
+    expect(row.body.text).toBe(' Ada reached level 14');
+    expect(inlineAvatar?.visible).toBe(true);
+    expect(inlineAvatar?.width).toBeCloseTo(18);
+    expect(avatarPress?.enabled()).toBe(true);
+    expect(avatarPress?.onActivate()).toBe(true);
+    expect(dialog.registerTarget).toHaveBeenCalledWith(
+      expect.objectContaining({
+        semanticId: 'world-chat-system-player:system-level-1',
+        displayObject: inlineAvatar,
+      }),
+    );
+    expect(openPlayer).toHaveBeenCalledWith({
+      ...message,
+      username: 'Ada',
+    });
 
     row.destroy();
   });
@@ -895,6 +955,7 @@ describe('WorkshopPixiPage', () => {
       fillDurationMs: 260,
     });
 
+    expect(row.value.text).toBe('6/6');
     expect(row.progressFeedback.startedAtMs).toBe(150);
     expect(row.progressMotion).toMatchObject({
       end: 1,
@@ -4775,6 +4836,16 @@ describe('WorkshopPixiPage', () => {
           systemPlayerDetail: 'reached level 14',
           body: 'Ada was approved by Luna and joined the alliance.',
           bodyRuns: [
+            {
+              kind: 'widget',
+              widget: 'playerAvatar',
+              character: 'rowan',
+              frame: 'emerald',
+              fallbackText: '',
+              label: 'Ada avatar',
+              size: 18,
+            },
+            { kind: 'text', text: ' ' },
             { kind: 'text', text: 'Ada', tone: 'systemPlayer' },
             { kind: 'text', text: ' was approved by ' },
             { kind: 'text', text: 'Luna', tone: 'systemPlayer' },
@@ -4782,7 +4853,7 @@ describe('WorkshopPixiPage', () => {
           ],
           character: 'rowan',
           frame: 'emerald',
-          showSystemAvatar: true,
+          showSystemAvatar: false,
           ageLabel: 'now',
           semanticId: 'world-chat-system-player:system-level-1',
           onActivate: openPlayer,
@@ -4797,11 +4868,9 @@ describe('WorkshopPixiPage', () => {
     const dialog = harness.dialogs.get('workshop.worldChat');
     const playerRow = dialog.rows.get('alliance-player-1');
     const row = dialog.rows.get('system-level-1');
-    const playerPress = pressRegistrations.find(
-      ({ displayObject }) => displayObject === row.systemPlayerUsername,
-    );
-    const avatarPress = pressRegistrations.find(
-      ({ displayObject }) => displayObject === row.avatar,
+    const inlineAvatar = row.inlinePlayerAvatars[0].widget;
+    const inlineAvatarPress = pressRegistrations.find(
+      ({ displayObject }) => displayObject === inlineAvatar,
     );
 
     expect(playerRow.tag.text).toBe('Quartermaster');
@@ -4813,9 +4882,7 @@ describe('WorkshopPixiPage', () => {
     expect(row.systemPlayerUsername.style.fill).toBe('#72533a');
     expect(row.systemPlayerUsername.eventMode).toBe('static');
     expect(row.systemPlayerUsername.renderable).toBe(false);
-    expect(row.body.text).toBe(
-      'Ada was approved by Luna and joined the alliance.',
-    );
+    expect(row.body.text).toBe(' Ada was approved by Luna and joined the alliance.');
     expect(
       row.body.textObjects
         .filter(
@@ -4825,13 +4892,13 @@ describe('WorkshopPixiPage', () => {
         .map((textObject) => textObject.text),
     ).toEqual(['Ada', 'Luna']);
     expect(row.body.x).toBe(row.systemPlayerUsername.x);
-    expect(row.avatar.visible).toBe(true);
-    expect(row.avatar.scale.x * 186).toBeCloseTo(20);
-    expect(row.avatar.eventMode).toBe('static');
-    expect(avatarPress?.descriptor.enabled()).toBe(true);
-    expect(avatarPress?.descriptor.onActivate()).toBe(true);
-    expect(playerPress?.descriptor.excludePageSwipe).toBe(true);
-    expect(playerPress?.descriptor.onActivate()).toBe(true);
+    expect(row.avatar.visible).toBe(false);
+    expect(inlineAvatar.visible).toBe(true);
+    expect(inlineAvatar.width).toBeCloseTo(18);
+    expect(inlineAvatar.eventMode).toBe('static');
+    expect(inlineAvatarPress?.descriptor.enabled()).toBe(true);
+    expect(inlineAvatarPress?.descriptor.excludePageSwipe).toBe(true);
+    expect(inlineAvatarPress?.descriptor.onActivate()).toBe(true);
     expect(openPlayer).toHaveBeenCalledWith(expect.objectContaining({ id: 'system-level-1' }));
 
     harness.page.destroy();
@@ -4953,8 +5020,16 @@ describe('WorkshopPixiPage', () => {
         16,
     });
     expect(harness.page.summon.button.position).toMatchObject({
-      x: -60,
+      x: -81,
       y: -4,
+    });
+    expect(harness.page.summon.quantityButton.position).toMatchObject({
+      x: 45,
+      y: 4,
+    });
+    expect(harness.page.summon.stars.position).toMatchObject({
+      x: -17.5,
+      y: -43,
     });
     const worldChatTop =
       PIXI_UI_GEOMETRY.sourceHeight -
@@ -5298,6 +5373,70 @@ describe('WorkshopPixiPage', () => {
 
     expect(harness.page.summon.button.background.texture).toBe(disabledTexture);
     expect(harness.page.summon.button.enabled).toBe(false);
+
+    harness.page.destroy();
+    harness.dispose();
+  });
+
+  it('cycles the adjacent summon quantity through the unlocked star rank', () => {
+    const setSummonQuantity = vi.fn(() => ({ ok: true }));
+    const harness = createHarness();
+    const model = createWorkshopViewModel();
+    model.workshop.summon = {
+      cost: 30,
+      quantity: 3,
+      maxQuantity: 4,
+      starLevel: 3,
+      starMaxLevel: 4,
+      enabled: true,
+      pressEnabled: true,
+    };
+    model.actions.setSummonQuantity = setSummonQuantity;
+    harness.page.bind(model);
+
+    expect(harness.page.summon.button.actionTextLabel.text).toBe('Summon Seed');
+    expect(harness.page.summon.button.amountLabel.text).toBe('30');
+    expect(harness.page.summon.quantityButton.textLabel.text).toBe('x3');
+    expect(harness.page.summon.quantityButton).toMatchObject({
+      buttonWidth: 36,
+      buttonHeight: 36,
+      sizeTier: 30,
+      color: 'yellow',
+      enabled: true,
+    });
+    expect(harness.page.summon.quantityButton.hitArea).toMatchObject({
+      width: 44,
+      height: 44,
+    });
+    expect(harness.page.summon.stars).toMatchObject({
+      level: 3,
+      starCount: 3,
+      tone: 'yellow',
+    });
+
+    expect(harness.semanticTargets.activate('workshop.summon.quantity')).toEqual({
+      ok: true,
+    });
+    expect(setSummonQuantity).toHaveBeenCalledWith(4);
+
+    model.workshop.summon = {
+      ...model.workshop.summon,
+      cost: 40,
+      quantity: 4,
+      starLevel: 4,
+    };
+    harness.page.bind(model);
+    expect(harness.page.summon.quantityButton.textLabel.text).toBe('x4');
+    expect(harness.page.summon.stars).toMatchObject({
+      level: 4,
+      starCount: 1,
+      tone: 'orange',
+    });
+
+    expect(harness.semanticTargets.activate('workshop.summon.quantity')).toEqual({
+      ok: true,
+    });
+    expect(setSummonQuantity).toHaveBeenLastCalledWith(1);
 
     harness.page.destroy();
     harness.dispose();

@@ -17,6 +17,8 @@ import { AllianceFlagWidget } from '../../primitives/AllianceFlagWidget.js';
 import { PixiCostButton } from '../../primitives/PixiCostButton.js';
 import { PixiInfoButton } from '../../primitives/PixiInfoButton.js';
 import { PixiNineSliceFrame } from '../../primitives/PixiNineSliceFrame.js';
+import { PixiStarLevelLabel } from '../../primitives/PixiStarLevelLabel.js';
+import { PixiTextButton } from '../../primitives/PixiTextButton.js';
 import { createTimedProgressWindow } from '../../primitives/PixiProgressBar.js';
 import { layoutPixiSeedPackIcon } from '../../primitives/PixiSeedPackIcon.js';
 import { normalizePixiTextStroke } from '../../primitives/PixiTextLabel.js';
@@ -165,6 +167,12 @@ const SUMMON_HOLD_REPEAT_MS = 100;
 const SUMMON_BUTTON_WIDTH = 120;
 const SUMMON_BUTTON_HEIGHT = 52;
 const SUMMON_BUTTON_UP_OFFSET = 4;
+const SUMMON_QUANTITY_BUTTON_WIDTH = 36;
+const SUMMON_QUANTITY_BUTTON_HEIGHT = 36;
+const SUMMON_QUANTITY_BUTTON_GAP = 6;
+const SUMMON_QUANTITY_HIT_SIZE = 44;
+const SUMMON_STAR_SIZE = 11;
+const SUMMON_STAR_GAP = 1;
 const SUMMON_INFO_VISUAL_SIZE = 18;
 const SUMMON_INFO_HIT_SIZE = 44;
 const SUMMON_CHAT_GAP = 128;
@@ -497,6 +505,9 @@ export class WorkshopPixiPage extends BaseRetainedPixiPage {
     this.tasks.bind(workshop.tasks ?? {});
     this.summon.bind(workshop.summon ?? {}, {
       summon: () => workshop.summon?.onActivate?.() ?? this.currentActions?.summonSeed?.(),
+      quantity: (quantity) =>
+        workshop.summon?.onQuantityActivate?.(quantity) ??
+        this.currentActions?.setSummonQuantity?.(quantity),
       info: () => this.openDialog('summonInfo'),
     });
     this.bagButton.setModel({
@@ -1772,6 +1783,11 @@ export class WorkshopTaskRow {
   }
 
   startCompletionFill(durationMs) {
+    const required = Math.max(0, finiteOr(this.model?.required, 0));
+    setText(this.value, `${required}/${required}`);
+    if (Number.isFinite(this.width)) {
+      this.setBounds(this.root.x, this.root.y, this.width);
+    }
     if (this.researchTimer) {
       const timerProgress = this.researchProgress.progress;
       this.clearResearchTimer();
@@ -2152,6 +2168,25 @@ export class WorkshopSummonControl {
       sizeTier: 50,
       label: 'workshop-summon-button',
     });
+    this.quantityButton = new PixiTextButton({
+      assetManager,
+      inputRouter: this.page.inputRouter,
+      width: SUMMON_QUANTITY_BUTTON_WIDTH,
+      height: SUMMON_QUANTITY_BUTTON_HEIGHT,
+      text: 'x1',
+      variant: 'yellow',
+      sizeTier: 30,
+      label: 'workshop-summon-quantity',
+    });
+    this.stars = new PixiStarLevelLabel({
+      assetManager,
+      level: 0,
+      slotCount: 3,
+      size: SUMMON_STAR_SIZE,
+      gap: SUMMON_STAR_GAP,
+      label: 'workshop-summon-stars',
+    });
+    this.stars.eventMode = 'none';
     this.info = new PixiInfoButton({
       assetManager,
       label: 'workshop-summon-info',
@@ -2160,7 +2195,13 @@ export class WorkshopSummonControl {
     });
     this.notification = new PixiNotificationBadge({ assetManager });
     this.notification.root.label = 'workshop-summon-notification';
-    this.root.addChild(this.circle, this.button, this.info);
+    this.root.addChild(
+      this.circle,
+      this.stars,
+      this.button,
+      this.quantityButton,
+      this.info,
+    );
     this.holdPointerId = null;
     this.holdTriggered = false;
     this.holdTimer = null;
@@ -2241,15 +2282,28 @@ export class WorkshopSummonControl {
     this.actions = actions;
     this.enabled = model.enabled ?? model.canSummon ?? true;
     this.pressEnabled = model.pressEnabled ?? this.enabled;
-    const actionLabel =
-      model.label ??
-      (finiteOr(model.quantity, 1) > 1 ? `Summon x${finiteOr(model.quantity, 1)}` : 'Summon Seed');
+    const quantity = Math.max(1, Math.floor(finiteOr(model.quantity, 1)));
+    const maxQuantity = Math.max(
+      1,
+      Math.floor(finiteOr(model.maxQuantity, quantity)),
+    );
+    const nextQuantity = quantity >= maxQuantity ? 1 : quantity + 1;
+    const actionLabel = model.label ?? 'Summon Seed';
     this.button.setModel({
       actionLabel,
       amount: finiteOr(model.cost, 0),
       resource: 'mana',
       enabled: this.enabled,
     });
+    this.quantityButton
+      .setText(`x${quantity}`)
+      .setEnabled(maxQuantity > 1)
+      .setAction(() => this.actions?.quantity?.(nextQuantity) ?? false);
+    this.stars.setLevel(model.starLevel ?? maxQuantity - 1, {
+      slotCount: 3,
+    });
+    this.stars.visible = true;
+    this.stars.renderable = true;
     this.button.eventMode = this.pressEnabled ? 'static' : 'none';
     this.button.cursor = this.pressEnabled ? 'pointer' : 'default';
     this.info.setModel({
@@ -2276,12 +2330,29 @@ export class WorkshopSummonControl {
     this.circleBaseHeight = 196 * (592 / 1374);
     this.circle.position.set(0, -60 + this.circleBaseHeight / 2);
     this.setCircleEffectFrame({ alpha: this.enabled ? 1 : 0.38, scale: 1 });
+    const controlsWidth =
+      SUMMON_BUTTON_WIDTH +
+      SUMMON_QUANTITY_BUTTON_GAP +
+      SUMMON_QUANTITY_BUTTON_WIDTH;
+    const controlsX = -controlsWidth / 2;
     this.button.setBounds(
-      -SUMMON_BUTTON_WIDTH / 2,
+      controlsX,
       -SUMMON_BUTTON_UP_OFFSET,
       SUMMON_BUTTON_WIDTH,
       SUMMON_BUTTON_HEIGHT,
     );
+    this.quantityButton.position.set(
+      controlsX + SUMMON_BUTTON_WIDTH + SUMMON_QUANTITY_BUTTON_GAP,
+      -SUMMON_BUTTON_UP_OFFSET +
+        (SUMMON_BUTTON_HEIGHT - SUMMON_QUANTITY_BUTTON_HEIGHT) / 2,
+    );
+    this.quantityButton.hitArea = new Rectangle(
+      (SUMMON_QUANTITY_BUTTON_WIDTH - SUMMON_QUANTITY_HIT_SIZE) / 2,
+      (SUMMON_QUANTITY_BUTTON_HEIGHT - SUMMON_QUANTITY_HIT_SIZE) / 2,
+      SUMMON_QUANTITY_HIT_SIZE,
+      SUMMON_QUANTITY_HIT_SIZE,
+    );
+    this.stars.position.set(-this.stars.measuredWidth / 2, -43);
     this.info.setBounds(
       60,
       -50,
@@ -2313,6 +2384,16 @@ export class WorkshopSummonControl {
       activate: () => this.activateSummon(),
     });
     this.page.registerSemanticTarget({
+      semanticId: 'workshop.summon.quantity',
+      tutorialId: null,
+      displayObject: this.quantityButton,
+      state: () => ({
+        enabled: Number(this.model?.maxQuantity) > 1,
+        interactive: true,
+      }),
+      activate: () => this.quantityButton.activate(),
+    });
+    this.page.registerSemanticTarget({
       semanticId: 'workshop.summon.info',
       tutorialId: null,
       displayObject: this.info,
@@ -2327,6 +2408,7 @@ export class WorkshopSummonControl {
   applyTheme(theme) {
     this.theme = theme;
     this.button.applyTheme(theme);
+    this.quantityButton.applyTheme(theme);
     this.notification.applyTheme(theme);
 
     if (this.assetManager?.getAtlasTexture && this.circle.texture === Texture.EMPTY) {
@@ -2469,6 +2551,8 @@ export class WorkshopSummonControl {
     this.notification.destroy();
     this.info.destroy();
     this.button.destroy();
+    this.quantityButton.destroy({ children: true });
+    this.stars.destroy({ children: true });
     this.root.destroy({ children: true });
   }
 }
