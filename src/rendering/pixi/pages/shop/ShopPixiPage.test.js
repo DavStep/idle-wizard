@@ -839,6 +839,19 @@ describe('ShopPixiPage', () => {
     inputRouter.destroy();
   });
 
+  it('registers the Traders tab as a visible tutorial recovery target', () => {
+    const harness = createHarness();
+    harness.page.bind(createShopViewModel());
+    harness.page.activate();
+
+    expect(
+      harness.semanticRegistry.getTutorialTarget('shop:tab:traders'),
+    ).toMatchObject({ semanticId: 'shop.tab.traders' });
+
+    harness.page.destroy();
+    harness.dispose();
+  });
+
   it('keeps the complete stall row passive outside its action button', () => {
     const inputRouter = new PixiInputRouter();
     const harness = createHarness({ inputRouter });

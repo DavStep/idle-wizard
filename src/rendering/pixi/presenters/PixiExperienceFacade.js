@@ -838,8 +838,8 @@ export class PixiTutorialRuntimeState {
         this.isShopSellQuantitySelected(quantity),
       isShopSellTabSelected: (kind) =>
         this.isTargetSelected(`shop:sell:tab:${kind}`),
-      isShopTradersTabOpen: () =>
-        this.isTargetSelected('shop.tab.traders'),
+      isShopTradersTabSelected: () =>
+        this.isTargetSelected('shop:tab:traders'),
       getUsername: () => this.getUsername(),
       isTasksExpanded: () => this.isTasksExpanded(),
       isTasksPinned: () => this.isTasksPinned(),

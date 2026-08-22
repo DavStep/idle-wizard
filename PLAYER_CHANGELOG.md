@@ -12,6 +12,10 @@ other game names, source projects, ports, or implementation provenance.
 - Improved Market guidance so it recovers to the Traders tab, waits for a real selection, and clearly teaches loading exactly one Sage Seed into the timed stall.
 - Fixed Garden guidance being skipped after Research consumed the last Sage Seed, and aligned Sage and Mint objectives with the active request order.
 
+## 0.3.91
+
+- Fixed the Market lesson getting stuck on Gems by guiding players back to Traders before opening the first stall.
+
 ## 0.3.90
 
 - Added a full Workshop level-up celebration with an animated level star, reward reveals, newly available Research, and feature unlocks presented in sequence.

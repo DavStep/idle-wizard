@@ -381,24 +381,23 @@ export const TUTORIAL_STEPS = [
     id: 'select-market-stand',
     kind: 'objective',
     pageId: 'shop',
-    getTargetId: ({ currentPageId, dom }) => {
-      if (currentPageId !== 'shop') return 'page:shop';
-      return dom.isShopTradersTabOpen?.()
-        ? 'shop:stand:1'
-        : 'shop.tab.traders';
-    },
+    getTargetId: ({ currentPageId, dom }) =>
+      currentPageId === 'shop' && !isShopTradersTabSelected(dom)
+        ? 'shop:tab:traders'
+        : 'shop:stand:1',
     getObjectiveText: ({ currentPageId, dom }) => {
       if (currentPageId !== 'shop') return 'open market';
-      return dom.isShopTradersTabOpen?.()
+      return isShopTradersTabSelected(dom)
         ? 'open the first stall'
         : 'open traders';
     },
     getHintText: ({ currentPageId, dom }) => {
       if (currentPageId !== 'shop') return 'open market';
-      return dom.isShopTradersTabOpen?.()
+      return isShopTradersTabSelected(dom)
         ? 'open a stall'
         : 'open traders';
     },
+    text: 'Open a stall',
     getProgress: ({ dom }) => ({
       value: dom.isShopSellPopupOpen?.() ? 1 : 0,
       max: 1,
@@ -419,21 +418,33 @@ export const TUTORIAL_STEPS = [
     kind: 'objective',
     pageId: 'shop',
     getObjectiveText: ({ dom }) => {
-      if (!dom.isShopSellPopupOpen?.()) return 'open the first stall';
+      if (!dom.isShopSellPopupOpen?.()) {
+        return isShopTradersTabSelected(dom)
+          ? 'open the first stall'
+          : 'open traders';
+      }
       if (!dom.hasShopSellSelection?.()) return 'select sage seed';
       return dom.isShopSellQuantitySelected?.(1)
         ? 'mark 1 sage seed'
         : 'select 1 sage seed';
     },
     getTargetId: ({ dom }) => {
-      if (!dom.isShopSellPopupOpen?.()) return 'shop:stand:1';
+      if (!dom.isShopSellPopupOpen?.()) {
+        return isShopTradersTabSelected(dom)
+          ? 'shop:stand:1'
+          : 'shop:tab:traders';
+      }
       if (!dom.hasShopSellSelection?.()) return `shop:sell:${SAGE_SEED_KEY}`;
       return dom.isShopSellQuantitySelected?.(1)
         ? 'shop:sell:mark'
         : 'shop:sell:percentage';
     },
     getHintText: ({ dom }) => {
-      if (!dom.isShopSellPopupOpen?.()) return 'open the first stall';
+      if (!dom.isShopSellPopupOpen?.()) {
+        return isShopTradersTabSelected(dom)
+          ? 'open the first stall'
+          : 'open traders';
+      }
       if (!dom.hasShopSellSelection?.()) return 'select sage seed';
       return dom.isShopSellQuantitySelected?.(1)
         ? 'mark one seed'
@@ -1718,6 +1729,7 @@ function getLevelTwoSaleObjectiveText({ currentPageId, dom, snapshot }) {
   }
 
   if (state.kind === 'select-kind') return `open ${getSellKindLabel(state.itemKind)} tab`;
+  if (state.kind === 'select-market-tab') return 'open traders';
   if (state.kind === 'open-stall') return 'open a market stall';
   if (state.kind === 'wait-for-sale') return 'wait for the stall to sell';
 
@@ -1734,6 +1746,10 @@ function getLevelTwoSaleTargetId({ currentPageId, dom, snapshot }) {
 
   if (state.kind === 'open-market') {
     return 'page:shop';
+  }
+
+  if (state.kind === 'select-market-tab') {
+    return 'shop:tab:traders';
   }
 
   if (state.kind === 'open-stall') {
@@ -1767,6 +1783,10 @@ function getLevelTwoSaleHintText({ currentPageId, dom, snapshot }) {
 
   if (state.kind === 'open-market') {
     return 'open market';
+  }
+
+  if (state.kind === 'select-market-tab') {
+    return 'open traders';
   }
 
   if (state.kind === 'open-stall') {
@@ -1949,6 +1969,10 @@ function getMarketSaleState({
     return { kind: 'open-market' };
   }
 
+  if (!isShopTradersTabSelected(dom)) {
+    return { kind: 'select-market-tab' };
+  }
+
   if (!dom?.isShopSellPopupOpen?.()) {
     const openSlot = (snapshot?.shop?.shelf?.slots ?? []).find(
       (slot) => slot?.unlocked && !slot.sellItemTypeId,
@@ -1967,6 +1991,10 @@ function getMarketSaleState({
   }
 
   return { kind: 'choose-item', itemKey: item.key };
+}
+
+function isShopTradersTabSelected(dom) {
+  return dom?.isShopTradersTabSelected?.() !== false;
 }
 
 function hasAnyAvailableSellItemQuantity(snapshot, itemKeys) {

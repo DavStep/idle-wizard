@@ -60,6 +60,7 @@ experience_type: product-shape
 - Mana consumption updates the HUD balance only; do not animate negative mana flyouts, mana drops, or spend particles for summoning, brewing, automation, or other mana costs.
 - Cauldron potion preview labels need a fixed-width summary that can overflow the 86px potion box; `max-width: 100%` clamps labels and truncates names under world zoom.
 - Tutorial target pointers default to the Spine asset on WebGL; do not restore the old `pointing-hand.png` sprite fallback unless explicitly requested.
+- Tutorial steps that target controls inside tabbed pages must inspect the active tab and guide the visible owning tab first; targeting a retained control under a hidden tab can place the pointer over unrelated content and block progression.
 - Public tutorial Spine asset URLs must include `import.meta.env.BASE_URL`; GitHub Pages serves them under `/idle-wizard/`, not site root.
 - Active timers still need low-cadence full snapshots plus smooth fills; suppressing them entirely makes Garden/Brewing/Research progress appear frozen.
 - Reduced motion must not freeze elapsed timer labels or progress rails; only decorative motion should stop.

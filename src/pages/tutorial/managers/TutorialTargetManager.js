@@ -93,6 +93,12 @@ export class TutorialTargetManager {
             `[data-tutorial-id="shop:sell:tab:${kind}"][aria-selected="true"]`,
           ),
         ),
+      isShopTradersTabSelected: () =>
+        Boolean(
+          this.stage?.querySelector(
+            '[data-tutorial-id="shop:tab:traders"][aria-selected="true"]',
+          ),
+        ),
       getUsername: () =>
         this.stage
           ?.querySelector('[data-tutorial-id="top:username"]')

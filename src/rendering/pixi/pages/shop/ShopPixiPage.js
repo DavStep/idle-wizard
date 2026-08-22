@@ -190,6 +190,7 @@ export class ShopPixiPage extends BasePixiRetainedView {
         inputRouter,
         semanticRegistry,
         semanticId: `shop.tab.${tab.id}`,
+        tutorialId: tab.id === 'traders' ? 'shop:tab:traders' : null,
         text: tab.label,
         label: `shop:tab:${tab.id}`,
         action: () => this.selectTab(tab.id),

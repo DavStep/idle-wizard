@@ -29,8 +29,8 @@ function createDomFake({
   shopSellPopupOpen = false,
   shopSellSelection = false,
   shopSellQuantity = 0,
+  shopTradersTabSelected = true,
   sellTabKind = 'seed',
-  shopTradersTabOpen = true,
 } = {}) {
   return {
     isBrewingRecipePopupOpen: () => recipePopupOpen,
@@ -41,7 +41,7 @@ function createDomFake({
     isShopSellQuantitySelected: (quantity) => shopSellQuantity === quantity,
     isShopSellPopupOpen: () => shopSellPopupOpen,
     isShopSellTabSelected: (kind) => sellTabKind === kind,
-    isShopTradersTabOpen: () => shopTradersTabOpen,
+    isShopTradersTabSelected: () => shopTradersTabSelected,
     isTasksExpanded: () => tasksExpanded,
     isTasksPinned: () => tasksPinned,
   };
@@ -640,13 +640,28 @@ describe('TutorialStepManager', () => {
       getStep({
         pageId: 'shop',
         snapshot,
+        dom: createDomFake({ shopTradersTabSelected: false }),
+        completed: completedThrough('select-market-stand'),
+      }),
+    ).toMatchObject({
+      id: 'select-sage-seed-sale',
+      targetId: 'shop:tab:traders',
+      hintText: 'open traders',
+      objectiveText: 'open traders',
+    });
+
+    expect(
+      getStep({
+        pageId: 'shop',
+        snapshot,
+        dom: createDomFake({ shopTradersTabSelected: false }),
         completed,
-        dom: createDomFake({ shopTradersTabOpen: false }),
       }),
     ).toMatchObject({
       id: 'select-market-stand',
-      targetId: 'shop.tab.traders',
+      targetId: 'shop:tab:traders',
       objectiveText: 'open traders',
+      hintText: 'open traders',
     });
   });
 
