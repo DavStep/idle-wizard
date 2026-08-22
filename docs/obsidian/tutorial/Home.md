@@ -11,8 +11,9 @@ world: tutorial
 # Tutorial Home
 
 This vault maps the Elara tutorial as a focused Obsidian world. The current
-source graph has 37 ordered steps across five lesson groups, from the first
-workshop entry through mana tonic brewing.
+source graph has 31 ordered steps across five lesson groups, from the first
+workshop entry through mana tonic brewing. The production-backed visual pass
+captures the 28 player-visible canonical states.
 
 ## Core Notes
 
@@ -30,4 +31,5 @@ workshop entry through mana tonic brewing.
 > [!warning] Source Of Truth
 > `src/pages/tutorial/managers/TutorialStepManager.js` is the step source of
 > truth. `docs/tutorial-flow.md` mirrors the current source order, while its
-> screenshot table is historical visual reference until captures are refreshed.
+> screenshot table and contact sheet are refreshed from the real retained Pixi
+> experience by `npm run tutorial:capture`.

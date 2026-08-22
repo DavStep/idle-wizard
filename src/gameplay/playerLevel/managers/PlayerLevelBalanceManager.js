@@ -8,21 +8,21 @@ export const DEFAULT_PLAYER_LEVEL_BALANCE = {
       "level": 1,
       "maxGardenTiles": 2,
       "maxCauldrons": 1,
-      "maxNpcMarketStands": 0,
+      "maxNpcMarketStands": 1,
       "maxPlayerMarketStands": 0
     },
     {
       "level": 2,
       "maxGardenTiles": 3,
       "maxCauldrons": 1,
-      "maxNpcMarketStands": 0,
+      "maxNpcMarketStands": 1,
       "maxPlayerMarketStands": 0
     },
     {
       "level": 3,
       "maxGardenTiles": 3,
       "maxCauldrons": 1,
-      "maxNpcMarketStands": 0,
+      "maxNpcMarketStands": 1,
       "maxPlayerMarketStands": 0
     },
     {

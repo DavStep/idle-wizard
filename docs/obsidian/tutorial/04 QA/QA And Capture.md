@@ -21,6 +21,11 @@ records 28 of the 31 current source steps. It excludes the optional
 `purchase-house`, `finish-seed-task`, and legacy balance-conditional
 `fill-sage-seed-task` branches.
 
+The adapter drives the retained Pixi fresh-start controller, intro presenter,
+tutorial overlay, semantic targets, and open dialogs. Capture must stay usable
+before gameplay initialization so the account-choice and story intro can be QA'd
+without a pre-game snapshot crash.
+
 ## Source Assets
 
 - Automation: `scripts/capture-tutorial-flow.js`
@@ -43,7 +48,8 @@ readable, top/bottom chrome is coherent, and no lesson or objective box is
 cropped.
 
 Capture automation asserts that each active step target resolves to a visible,
-measurable live `data-tutorial-id` before writing the screenshot.
+measurable live semantic target before writing the screenshot. The full pass
+also verifies account choice and story intro at `390x844` and `1800x1200`.
 
 ## Related
 

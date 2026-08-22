@@ -57,8 +57,8 @@ const LEVEL_FOUR_STEP_IDS = [
   'intro-garden',
   'grow-sage',
   'first-harvest-complete',
-  'fill-sage-herb-task',
   'fill-mint-herb-task',
+  'fill-sage-herb-task',
 ];
 
 const LEVEL_FIVE_STEP_IDS = [
@@ -381,10 +381,24 @@ export const TUTORIAL_STEPS = [
     id: 'select-market-stand',
     kind: 'objective',
     pageId: 'shop',
-    targetId: 'shop:stand:1',
-    getObjectiveText: ({ currentPageId }) =>
-      currentPageId === 'shop' ? 'open the first stall' : 'open market',
-    text: 'Open a stall',
+    getTargetId: ({ currentPageId, dom }) => {
+      if (currentPageId !== 'shop') return 'page:shop';
+      return dom.isShopTradersTabOpen?.()
+        ? 'shop:stand:1'
+        : 'shop.tab.traders';
+    },
+    getObjectiveText: ({ currentPageId, dom }) => {
+      if (currentPageId !== 'shop') return 'open market';
+      return dom.isShopTradersTabOpen?.()
+        ? 'open the first stall'
+        : 'open traders';
+    },
+    getHintText: ({ currentPageId, dom }) => {
+      if (currentPageId !== 'shop') return 'open market';
+      return dom.isShopTradersTabOpen?.()
+        ? 'open a stall'
+        : 'open traders';
+    },
     getProgress: ({ dom }) => ({
       value: dom.isShopSellPopupOpen?.() ? 1 : 0,
       max: 1,
@@ -517,7 +531,7 @@ export const TUTORIAL_STEPS = [
     advanceLabel: 'continue',
     advanceOnClick: true,
     isAvailable: ({ snapshot }) =>
-      getCurrentLevel(snapshot) === 3 && hasSageSeedSource(snapshot),
+      getCurrentLevel(snapshot) === 3,
     isComplete: ({ currentPageId, snapshot }) =>
       getCurrentLevel(snapshot) >= 4 ||
       currentPageId === 'garden' ||
@@ -694,18 +708,31 @@ export const TUTORIAL_STEPS = [
     id: 'fill-sage-herb-task',
     kind: 'objective',
     cueMode: 'delayed-target',
-    objectiveText: 'turn in sage for the next level.',
+    getObjectiveText: ({ snapshot }) =>
+      getActiveTask(snapshot)?.itemKey === MINT_HERB_KEY
+        ? 'turn in mint for the next level'
+        : 'turn in sage for the next level',
     getTargetId: ({ currentPageId, dom, snapshot }) => {
-      const taskAction = getTaskActionForItem(snapshot, SAGE_HERB_KEY);
+      const activeTask = getActiveTask(snapshot);
+      const taskAction = getTaskAction(snapshot, activeTask);
 
       if (taskAction) {
         return getTaskActionTargetId({ currentPageId, dom, task: taskAction.task });
       }
 
-      return getSageObtainTargetId({ currentPageId, dom, snapshot });
+      return activeTask?.itemKey === MINT_HERB_KEY
+        ? getHerbObtainTargetId({
+            currentPageId,
+            dom,
+            snapshot,
+            seedKey: MINT_SEED_KEY,
+            researchId: MINT_SEED_RESEARCH_ID,
+          })
+        : getSageObtainTargetId({ currentPageId, dom, snapshot });
     },
     getHintText: ({ currentPageId, dom, snapshot }) => {
-      const taskAction = getTaskActionForItem(snapshot, SAGE_HERB_KEY);
+      const activeTask = getActiveTask(snapshot);
+      const taskAction = getTaskAction(snapshot, activeTask);
 
       if (taskAction) {
         return getTaskActionHintText({
@@ -713,15 +740,30 @@ export const TUTORIAL_STEPS = [
           dom,
           snapshot,
           taskAction,
-          fillText: 'turn in sage',
+          fillText:
+            activeTask?.itemKey === MINT_HERB_KEY
+              ? 'turn in mint'
+              : 'turn in sage',
         });
       }
 
-      return getSageObtainHintText({ currentPageId, dom, snapshot });
+      return activeTask?.itemKey === MINT_HERB_KEY
+        ? getHerbObtainHintText({
+            currentPageId,
+            dom,
+            snapshot,
+            seedKey: MINT_SEED_KEY,
+            herbName: 'mint',
+            researchId: MINT_SEED_RESEARCH_ID,
+          })
+        : getSageObtainHintText({ currentPageId, dom, snapshot });
     },
-    getProgress: ({ snapshot }) => getTaskProgress(getCurrentTaskForItem(snapshot, SAGE_HERB_KEY)),
+    getProgress: ({ snapshot }) => getTaskProgress(getActiveTask(snapshot)),
     getProgressLabel: ({ snapshot }) =>
-      getTaskProgressLabel(getCurrentTaskForItem(snapshot, SAGE_HERB_KEY), 'sage'),
+      getTaskProgressLabel(
+        getActiveTask(snapshot),
+        getActiveTask(snapshot)?.itemKey === MINT_HERB_KEY ? 'mint' : 'sage',
+      ),
     getReminderKey: () => 'lesson-three-sage-actions',
     getReminderMs: () => TUTORIAL_LESSON_THREE_STUCK_MS,
     isPaused: ({ snapshot }) =>
@@ -732,9 +774,9 @@ export const TUTORIAL_STEPS = [
       !hasTaskActionForItem(snapshot, SAGE_HERB_KEY),
     isAvailable: ({ snapshot }) =>
       getCurrentLevel(snapshot) === 3 &&
-      hasActiveTurnInTaskForItem(snapshot, SAGE_HERB_KEY),
-    isComplete: ({ snapshot }) =>
-      getCurrentLevel(snapshot) >= 4 || hasCompletedTaskForItem(snapshot, SAGE_HERB_KEY),
+      isTurnInTask(getActiveTask(snapshot)) &&
+      [SAGE_HERB_KEY, MINT_HERB_KEY].includes(getActiveTask(snapshot)?.itemKey),
+    isComplete: ({ snapshot }) => getCurrentLevel(snapshot) >= 4,
   },
   {
     id: 'intro-research',
@@ -894,10 +936,10 @@ export const TUTORIAL_STEPS = [
       !hasTaskActionForItem(snapshot, MINT_HERB_KEY),
     isAvailable: ({ snapshot }) =>
       getCurrentLevel(snapshot) === 3 &&
-      Boolean(getActiveTaskForItem(snapshot, MINT_HERB_KEY)) &&
-      !hasCompletedTaskForItem(snapshot, MINT_HERB_KEY),
+      getTaskType(getActiveTaskForItem(snapshot, MINT_HERB_KEY)) === 'grow',
     isComplete: ({ snapshot }) =>
-      getCurrentLevel(snapshot) >= 4 || hasCompletedTaskForItem(snapshot, MINT_HERB_KEY),
+      getCurrentLevel(snapshot) >= 4 ||
+      getCurrentTaskForItemByType(snapshot, MINT_HERB_KEY, 'grow')?.completed === true,
   },
   {
     id: 'research-mana-tonic',
@@ -1422,10 +1464,6 @@ export class TutorialStepManager {
       this.completeSteps(['fill-sage-seed-task']);
     }
 
-    if (hasCompletedTaskForItem(snapshot, SAGE_HERB_KEY)) {
-      this.completeSteps(['fill-sage-herb-task']);
-    }
-
     if (
       hasCompletedResearch(snapshot, MINT_SEED_RESEARCH_ID) ||
       hasTaskActionForItem(snapshot, MINT_SEED_KEY)
@@ -1437,7 +1475,9 @@ export class TutorialStepManager {
       this.completeSteps(['fill-mint-seed-task']);
     }
 
-    if (hasCompletedTaskForItem(snapshot, MINT_HERB_KEY)) {
+    if (
+      getCurrentTaskForItemByType(snapshot, MINT_HERB_KEY, 'grow')?.completed === true
+    ) {
       this.completeSteps(['fill-mint-herb-task']);
     }
 
@@ -2308,11 +2348,6 @@ function isTaskActive(snapshot, task) {
   return Boolean(task?.taskId && getActiveTask(snapshot)?.taskId === task.taskId);
 }
 
-function hasActiveTurnInTaskForItem(snapshot, itemKey) {
-  const task = getActiveTaskForItem(snapshot, itemKey);
-  return Boolean(task && isTurnInTask(task) && !task.completed);
-}
-
 function getCurrentTaskForItem(snapshot, itemKey) {
   const tasks = getCurrentTasks(snapshot).filter((task) => task.itemKey === itemKey);
   const activeTask = getActiveTaskForItem(snapshot, itemKey);
@@ -2666,10 +2701,6 @@ function hasActiveCrop(snapshot, seedKey) {
       tile.seedKey === seedKey &&
       (tile.phase === 'ready' || tile.phase === 'growing' || tile.phase === 'harvesting'),
   );
-}
-
-function hasSageSeedSource(snapshot) {
-  return getItemQuantity(snapshot, SAGE_SEED_KEY) > 0 || hasActiveCrop(snapshot, SAGE_SEED_KEY);
 }
 
 function isWaitingForCrop(snapshot, seedKey) {

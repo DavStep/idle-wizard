@@ -14,11 +14,11 @@ Lesson 5 introduces mana tonic research, Brewing, and the first potion loop.
 
 | Code | Step | Kind | Page | Target | Cue |
 |---|---|---|---|---|---|
-| `t33` | `research-mana-tonic` | objective | `research` | `research:unlockRecipe:manaTonic` |  |
-| `t34` | `intro-brewing` | dialog |  | `page:brewing` |  |
-| `t35` | `brew-mana-tonic` | objective | `brewing` |  |  |
-| `t36` | `first-brew-complete` | prompt |  |  |  |
-| `t37` | `refill-mana-tonic-cauldron` | objective |  |  |  |
+| `t27` | `research-mana-tonic` | objective | `research` | `research:unlockRecipe:manaTonic` |  |
+| `t28` | `intro-brewing` | dialog |  | `page:brewing` |  |
+| `t29` | `brew-mana-tonic` | objective | `brewing` |  |  |
+| `t30` | `first-brew-complete` | prompt |  |  |  |
+| `t31` | `refill-mana-tonic-cauldron` | objective |  |  |  |
 
 ## Completion
 

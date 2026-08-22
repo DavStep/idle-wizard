@@ -838,6 +838,8 @@ export class PixiTutorialRuntimeState {
         this.isShopSellQuantitySelected(quantity),
       isShopSellTabSelected: (kind) =>
         this.isTargetSelected(`shop:sell:tab:${kind}`),
+      isShopTradersTabOpen: () =>
+        this.isTargetSelected('shop.tab.traders'),
       getUsername: () => this.getUsername(),
       isTasksExpanded: () => this.isTasksExpanded(),
       isTasksPinned: () => this.isTasksPinned(),
@@ -965,7 +967,11 @@ export class PixiTutorialRuntimeState {
 
   hasShopSellSelection() {
     const target = this.resolveTarget('shop:sell:percentage');
-    return Boolean(target?.state?.visible);
+    return Boolean(
+      target?.state?.visible &&
+        target?.state?.enabled !== false &&
+        target?.state?.interactive !== false,
+    );
   }
 
   isShopSellQuantitySelected(quantity) {

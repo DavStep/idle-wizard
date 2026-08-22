@@ -37,13 +37,13 @@ export function getTutorialCaptureStepIds() {
 
 const STEP_ACTIONS = {
   'purchase-house': async (page) => {
-    await page.clickSelector('.tutorial-layer__lesson-advance:not([hidden])');
+    await page.advanceTutorial();
   },
   'intro-welcome': async (page) => {
-    await page.clickSelector('.tutorial-layer__lesson-advance:not([hidden])');
+    await page.advanceTutorial();
   },
   'intro-mana-sphere': async (page) => {
-    await page.clickSelector('.tutorial-layer__lesson-advance:not([hidden])');
+    await page.advanceTutorial();
     await page.cheat('fillMana');
   },
   'first-summon-seed': async (page) => {
@@ -54,7 +54,7 @@ const STEP_ACTIONS = {
     await page.recordTaskAction({ type: 'summon', itemKey: 'sageSeed', quantity: 4 });
   },
   'intro-level-requirements': async (page) => {
-    await page.clickSelector('.tutorial-layer__lesson-advance:not([hidden])');
+    await page.advanceTutorial();
   },
   'first-fill-seed-task': async (page) => {
     await page.ensureTasksExpanded();
@@ -65,7 +65,7 @@ const STEP_ACTIONS = {
     await page.completeTurnInTaskByItem('sageSeed');
   },
   'intro-market': async (page) => {
-    await page.clickSelector('.tutorial-layer__lesson-advance:not([hidden])');
+    await page.advanceTutorial();
     await page.cheat('fillMana');
   },
   'prepare-seed-sale': async (page) => {
@@ -76,21 +76,18 @@ const STEP_ACTIONS = {
     await page.clickTarget('page:shop');
   },
   'select-market-stand': async (page) => {
-    await page.clickTarget('shop:directSell');
+    await page.completeActiveStepByTargets('select-market-stand');
   },
   'select-sage-seed-sale': async (page) => {
     await page.ensureShopDirectSellPopup();
-    await page.clickTarget('shop:directSell:sageSeed');
-  },
-  'show-selected-sale-amount': async () => {
-    await sleep(2_100);
+    await page.completeActiveStepByTargets('select-sage-seed-sale');
   },
   'earn-tutorial-coin': async (page) => {
-    await page.clickTarget('shop:directSell:sell');
     await page.cheat('addCoin', 4);
+    await page.recordTaskAction({ type: 'sell', itemKey: 'sageSeed', quantity: 1 });
   },
   'first-sale-complete': async (page) => {
-    await page.clickSelector('.tutorial-layer__lesson-advance:not([hidden])');
+    await page.advanceTutorial();
   },
   'unselect-sage-seed-sale': async (page) => {
     await page.clickTarget('page:workshop');
@@ -103,7 +100,7 @@ const STEP_ACTIONS = {
     await page.clickActiveTarget();
   },
   'intro-research': async (page) => {
-    await page.clickSelector('.tutorial-layer__lesson-advance:not([hidden])');
+    await page.advanceTutorial();
   },
   'research-mint-seed': async (page) => {
     await page.clickTarget('page:research');
@@ -112,7 +109,7 @@ const STEP_ACTIONS = {
     await page.cheat('addItem', 'mintSeed', 3);
   },
   'first-research-complete': async (page) => {
-    await page.clickSelector('.tutorial-layer__lesson-advance:not([hidden])');
+    await page.advanceTutorial();
   },
   'fill-mint-seed-task': async (page) => {
     await page.clickTarget('page:workshop');
@@ -127,29 +124,27 @@ const STEP_ACTIONS = {
     await page.cheat('addItem', 'sageSeed', 2);
   },
   'intro-garden': async (page) => {
-    await page.clickSelector('.tutorial-layer__lesson-advance:not([hidden])');
+    await page.advanceTutorial();
   },
   'grow-sage': async (page) => {
+    await page.cheat('addItem', 'sageSeed', 2);
     await page.clickTarget('page:garden');
     await page.cheat('addItem', 'sageHerb', 4);
     await page.recordTaskAction({ type: 'grow', itemKey: 'sageHerb', quantity: 4 });
   },
   'first-harvest-complete': async (page) => {
-    await page.clickSelector('.tutorial-layer__lesson-advance:not([hidden])');
+    await page.advanceTutorial();
   },
   'fill-sage-herb-task': async (page) => {
     await page.clickTarget('page:workshop');
     await page.ensureTasksExpanded();
     await page.completeTurnInTaskByItem('sageHerb');
-  },
-  'fill-mint-herb-task': async (page) => {
-    await page.clickTarget('page:garden');
-    await page.cheat('addItem', 'mintHerb', 2);
-    await page.recordTaskAction({ type: 'grow', itemKey: 'mintHerb', quantity: 2 });
-    await page.clickTarget('page:workshop');
-    await page.ensureTasksExpanded();
     await page.completeTurnInTaskByItem('mintHerb');
     await page.cheat('addCoin', 16);
+  },
+  'fill-mint-herb-task': async (page) => {
+    await page.cheat('addItem', 'mintHerb', 2);
+    await page.recordTaskAction({ type: 'grow', itemKey: 'mintHerb', quantity: 2 });
   },
   'level-up-four': async (page) => {
     await page.ensureTasksExpanded();
@@ -163,7 +158,7 @@ const STEP_ACTIONS = {
     await page.cheat('fillMana');
   },
   'intro-brewing': async (page) => {
-    await page.clickSelector('.tutorial-layer__lesson-advance:not([hidden])');
+    await page.advanceTutorial();
   },
   'brew-mana-tonic': async (page) => {
     await page.clickTarget('page:brewing');
@@ -171,7 +166,7 @@ const STEP_ACTIONS = {
     await page.recordTaskAction({ type: 'brew', itemKey: 'manaTonic', quantity: 1 });
   },
   'first-brew-complete': async (page) => {
-    await page.clickSelector('.tutorial-layer__lesson-advance:not([hidden])');
+    await page.advanceTutorial();
   },
   'refill-mana-tonic-cauldron': async (page) => {
     await page.clickTarget('page:brewing');
@@ -328,7 +323,7 @@ async function captureFirstRunFlow(page) {
   await page.setViewport(VIEWPORT.width, VIEWPORT.height);
   await page.startFresh();
   await page.waitForExpression(
-    `Boolean(document.querySelector('.first-run-intro:not([hidden])'))`,
+    `window.tutorialCapture.getState().firstRunIntroVisible === true`,
     { timeoutMs: 20_000 },
   );
   await page.waitForImages();
@@ -339,13 +334,9 @@ async function captureFirstRunFlow(page) {
   await sleep(250);
   await page.captureScreenshot(path.join(FIRST_RUN_OUT_DIR, 'intro-castle-1800x1200.png'));
 
-  await page.clickSelector('.first-run-intro__advance:not([hidden])');
+  await page.advanceFirstRunIntro();
   await page.waitForExpression(
-    `document.querySelector('.first-run-intro:not([hidden])')?.dataset.step === 'defeated'`,
-    { timeoutMs: 5_000 },
-  );
-  await page.waitForExpression(
-    `document.querySelector('.first-run-intro__advance:not([hidden])')?.disabled === false`,
+    `window.tutorialCapture.getState().firstRunIntroStepId === 'defeated'`,
     { timeoutMs: 5_000 },
   );
   await sleep(500);
@@ -367,19 +358,16 @@ async function prepareStepForCapture(page, stepId) {
     case 'fill-mint-seed-task':
     case 'level-up-three':
     case 'fill-sage-herb-task':
-    case 'fill-mint-herb-task':
     case 'level-up-four':
       await page.ensurePage('workshop');
       await page.ensureTasksExpanded();
       break;
     case 'select-sage-seed-sale':
-    case 'show-selected-sale-amount':
-    case 'earn-tutorial-coin':
       await page.ensurePage('shop');
       await page.ensureShopDirectSellPopup();
       break;
-    case 'grow-sage':
-      await page.ensurePage('garden');
+    case 'earn-tutorial-coin':
+      await page.ensurePage('shop');
       break;
     case 'research-mint-seed':
     case 'research-mana-tonic':
@@ -401,30 +389,41 @@ async function prepareStepForCapture(page, stepId) {
 }
 
 async function completeFirstRunIntro(page) {
-  await page.waitForExpression(
-    `typeof window.tutorialCapture === 'object' && (
-      Boolean(document.querySelector('.first-run-intro:not([hidden])')) ||
-      Boolean(window.tutorialCapture.getState().activeStep)
-    )`,
-    { timeoutMs: 20_000 },
-  );
+  try {
+    await page.waitForExpression(
+      `typeof window.tutorialCapture === 'object' && (
+        window.tutorialCapture.getState().firstRunIntroVisible ||
+        Boolean(window.tutorialCapture.getState().activeStep)
+      )`,
+      { timeoutMs: 20_000 },
+    );
+  } catch (error) {
+    const state = await page.getState();
+    throw new Error(
+      `${error.message}; state=${JSON.stringify({
+        activeStep: state.activeStep,
+        freshStartVisible: state.freshStartVisible,
+        onlineGateVisible: state.onlineGateVisible,
+        currentPageId: state.currentPageId,
+        snapshot: state.snapshot,
+      })}`,
+    );
+  }
 
   for (let count = 0; count < 10; count += 1) {
-    const visible = await page.run(() =>
-      Boolean(document.querySelector('.first-run-intro:not([hidden])')),
-    );
+    const visible = (await page.getState()).firstRunIntroVisible;
 
     if (!visible) {
       break;
     }
 
-    await page.clickSelector('.first-run-intro__advance:not([hidden])');
+    await page.advanceFirstRunIntro();
     await sleep(700);
   }
 
   const state = await page.getState();
   if (state.activeStep?.id === 'purchase-house') {
-    await page.clickSelector('.tutorial-layer__lesson-advance:not([hidden])');
+    await page.advanceTutorial();
   }
 }
 
@@ -574,61 +573,96 @@ class TutorialPage {
     return this.run(() => window.tutorialCapture.openLessonPanel());
   }
 
-  async startFresh() {
-    const result = await this.run(() => {
-      window.tutorialCapture.hideOnlineGate();
-      const state = window.tutorialCapture.getState();
-      if (state.freshStartVisible) {
-        return window.tutorialCapture.startFresh();
-      }
-
-      return { ok: true, skipped: true };
-    });
+  async advanceFirstRunIntro() {
+    const result = await this.run(() => window.tutorialCapture.advanceFirstRunIntro());
     if (!result?.ok) {
-      throw new Error(`Failed to start fresh: ${JSON.stringify(result ?? null)}`);
+      throw new Error(`Failed to advance first-run intro: ${JSON.stringify(result ?? null)}`);
     }
+    await sleep(700);
+  }
 
-    await sleep(500);
+  async advanceTutorial() {
+    const result = await this.run(() => window.tutorialCapture.advanceTutorial());
+    if (!result?.ok) {
+      throw new Error(`Failed to advance tutorial: ${JSON.stringify(result ?? null)}`);
+    }
+    await sleep(150);
     await this.hideOnlineGate();
-    const state = await this.getState();
+  }
 
-    if (state.freshStartVisible) {
-      const fallback = await this.run(() =>
-        window.tutorialCapture.clickByText('start fresh', 'button'),
-      );
+  async startFresh() {
+    for (let attempt = 0; attempt < 10; attempt += 1) {
+      const result = await this.run(() => {
+        window.tutorialCapture.hideOnlineGate();
+        const state = window.tutorialCapture.getState();
+        if (state.freshStartVisible) {
+          return window.tutorialCapture.startFresh();
+        }
 
-      if (!fallback?.ok) {
-        throw new Error(
-          `Failed to start fresh with fallback: ${JSON.stringify(fallback ?? null)}`,
-        );
+        return { ok: true, skipped: true };
+      });
+      if (!result?.ok) {
+        throw new Error(`Failed to start fresh: ${JSON.stringify(result ?? null)}`);
       }
 
       await sleep(500);
       await this.hideOnlineGate();
+
+      if (!(await this.getState()).freshStartVisible) {
+        return;
+      }
     }
+
+    throw new Error('Fresh-start choice remained visible after four controller attempts.');
   }
 
   async waitForStep(stepId, { timeoutMs = 10_000 } = {}) {
-    try {
-      await this.waitForExpression(
-        `typeof window.tutorialCapture === 'object' && window.tutorialCapture.getState().activeStep?.id === ${JSON.stringify(stepId)}`,
-        { timeoutMs },
-      );
-    } catch (error) {
-      const state = await this.getState();
-      throw new Error(
-        `${error.message}; state=${JSON.stringify({
-          activeStep: state.activeStep,
-          currentPageId: state.currentPageId,
-          freshStartVisible: state.freshStartVisible,
-          onlineGateVisible: state.onlineGateVisible,
-          completedStepIds: state.completedStepIds,
-          snapshot: state.snapshot,
-        })}`,
-      );
+    const deadline = Date.now() + timeoutMs;
+    let state = await this.getState();
+
+    while (Date.now() < deadline) {
+      if (state.activeStep?.id === stepId) {
+        await this.hideOnlineGate();
+        return this.getState();
+      }
+      if (state.openDialogIds.includes('global.announcement')) {
+        await sleep(1_350);
+        await this.dismissDialog('global.announcement');
+      } else {
+        await sleep(100);
+      }
+      state = await this.getState();
     }
-    await this.hideOnlineGate();
-    return this.getState();
+
+    throw new Error(
+      `Timed out waiting for tutorial step ${JSON.stringify(stepId)}; state=${JSON.stringify({
+        activeStep: state.activeStep,
+        currentPageId: state.currentPageId,
+        freshStartVisible: state.freshStartVisible,
+        onlineGateVisible: state.onlineGateVisible,
+        openDialogIds: state.openDialogIds,
+        completedStepIds: state.completedStepIds,
+        snapshot: state.snapshot,
+      })}`,
+    );
+  }
+
+  async dismissDialog(dialogId) {
+    for (let attempt = 0; attempt < 4; attempt += 1) {
+      const result = await this.run(
+        (id) => window.tutorialCapture.dismissDialog(id),
+        dialogId,
+      );
+      if (result?.ok || result?.reason === 'dialog_missing') {
+        await sleep(150);
+        return;
+      }
+      if (result?.reason !== 'dialog_not_ready') {
+        throw new Error(`Failed to dismiss dialog ${dialogId}: ${JSON.stringify(result)}`);
+      }
+      await sleep(500);
+    }
+    throw new Error(`Dialog ${dialogId} stayed unavailable after ten player-paced taps.`);
   }
 
   async ensurePage(pageId) {
@@ -644,39 +678,23 @@ class TutorialPage {
   }
 
   async ensureTasksExpanded() {
-    const expanded = await this.run(
-      () => {
-        const toggle = document.querySelector('.workshop-page__tasks-toggle');
-
-        if (toggle) {
-          return toggle.hidden || toggle.getAttribute('aria-expanded') === 'true';
-        }
-
-        return (
-          document
-            .querySelector('[data-tutorial-id="workshop:tasks"]')
-            ?.getAttribute('aria-expanded') === 'true'
-        );
-      },
-    );
+    const expanded = (await this.getState()).tasksExpanded;
 
     if (!expanded) {
       await this.clickTarget('workshop:tasks');
       await this.waitForExpression(
-        `document.querySelector('[data-tutorial-id="workshop:tasks"]')?.getAttribute('aria-expanded') === 'true'`,
+        `window.tutorialCapture.getState().tasksExpanded === true`,
       );
     }
   }
 
   async ensureShopDirectSellPopup() {
-    const open = await this.run(
-      () => Boolean(document.querySelector('.shop-page__direct-sell-popup:not([hidden])')),
-    );
+    const open = (await this.getState()).openDialogIds.some((id) => id.startsWith('shop.'));
 
     if (!open) {
-      await this.clickTarget('shop:directSell');
+      await this.clickTarget('shop:stand:1');
       await this.waitForExpression(
-        `Boolean(document.querySelector('.shop-page__direct-sell-popup:not([hidden])'))`,
+        `window.tutorialCapture.getState().openDialogIds.some((id) => id.startsWith('shop.'))`,
       );
     }
   }
@@ -692,10 +710,27 @@ class TutorialPage {
     await this.clickTarget(targetId);
   }
 
+  async completeActiveStepByTargets(stepId, { maxActions = 6 } = {}) {
+    for (let count = 0; count < maxActions; count += 1) {
+      const state = await this.getState();
+      if (state.activeStep?.id !== stepId) {
+        return state;
+      }
+      if (!state.activeStep.targetId) {
+        throw new Error(`Tutorial step ${stepId} has no actionable target.`);
+      }
+      await this.clickTarget(state.activeStep.targetId);
+    }
+    const state = await this.getState();
+    throw new Error(
+      `Tutorial step ${stepId} did not complete after ${maxActions} target actions: ${JSON.stringify(state.activeStep)}`,
+    );
+  }
+
   async clickTarget(targetId) {
     const result = await this.run((id) => window.tutorialCapture.clickTarget(id), targetId);
     if (!result?.ok) {
-      throw new Error(`Failed to click target ${targetId}: ${result?.reason ?? 'unknown'}`);
+      throw new Error(`Failed to click target ${targetId}: ${JSON.stringify(result ?? null)}`);
     }
     await sleep(150);
     await this.hideOnlineGate();
@@ -828,15 +863,8 @@ class TutorialPage {
 
   waitForLessonText() {
     return this.waitForExpression(
-      `(() => {
-        const text = document.querySelector('.tutorial-layer__lesson-text');
-        if (!text || text.closest('[hidden]')) {
-          return true;
-        }
-
-        const fullText = text.dataset.tutorialFullText;
-        return !fullText || text.textContent === fullText;
-      })()`,
+      `window.tutorialCapture.getState().lessonOpen === false ||
+        window.tutorialCapture.getState().lessonText.length > 0`,
       { timeoutMs: 10_000 },
     );
   }

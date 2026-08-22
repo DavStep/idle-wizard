@@ -5,6 +5,13 @@ upload script posts the section whose heading matches `package.json` `version`.
 Write these developer-to-player notes only in Idle Wizard terms. Do not mention
 other game names, source projects, ports, or implementation provenance.
 
+## 0.3.92
+
+- Refined Elara's complete opening journey from the first Workshop lesson through Market, Research, Garden, and Brewing with clearer contextual directions and cleaner request sequencing.
+- New wizards now receive a free first Trader stand, ensuring the first Market lesson is immediately playable without needing coins or a later unlock.
+- Improved Market guidance so it recovers to the Traders tab, waits for a real selection, and clearly teaches loading exactly one Sage Seed into the timed stall.
+- Fixed Garden guidance being skipped after Research consumed the last Sage Seed, and aligned Sage and Mint objectives with the active request order.
+
 ## 0.3.90
 
 - Added a full Workshop level-up celebration with an animated level star, reward reveals, newly available Research, and feature unlocks presented in sequence.

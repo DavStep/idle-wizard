@@ -586,7 +586,7 @@ describe("GameplayFacade", () => {
         kind: "herb",
       },
     ]);
-    expect(snapshot.shop.shelf.unlockedSlots).toBe(0);
+    expect(snapshot.shop.shelf.unlockedSlots).toBe(1);
     expect(snapshot.shop.playerRequests.unlockedSlots).toBe(1);
   });
 
@@ -1210,7 +1210,7 @@ describe("GameplayFacade", () => {
       "unlockSeed:sageSeed",
     ]);
     expect(snapshot.brewing.ingredients).toEqual([]);
-    expect(snapshot.shop.shelf.selectedSlotNumber).toBeNull();
+    expect(snapshot.shop.shelf.selectedSlotNumber).toBe(1);
     expect(snapshot.logs.entries).toEqual([]);
     expect(snapshot.visualSettings.researched.theme).toEqual({
       night: true,
@@ -2208,7 +2208,6 @@ describe("GameplayFacade", () => {
     expect(
       gameplayFacade.getSnapshot().logs.entries.map((entry) => entry.message),
     ).toEqual([
-      "opened trader market stand 1",
       "summoned sage seed",
       "sold sage seed for 1 coin",
       "brewed wasted potion",
@@ -3862,8 +3861,7 @@ describe("GameplayFacade", () => {
       sellNeed: 1000,
     });
     expect(gameplayFacade.loadSelectedShopShelfSlotItem(1, 2)).toMatchObject({
-      ok: false,
-      reason: "no_selected_slot",
+      ok: true,
     });
     ecsFacade.update({ deltaSeconds: 5 });
     expect(backendSells).toEqual([]);
@@ -5089,16 +5087,16 @@ describe("GameplayFacade", () => {
     );
   });
 
-  it("requires coin purchases for NPC stalls while player-market capacity follows licence rank", () => {
+  it("provides one starter NPC stall and charges coin for additional stalls while player-market capacity follows licence rank", () => {
     const { gameplayFacade } = createGameplay();
 
     expect(gameplayFacade.getSnapshot().shop.shelf).toMatchObject({
-      unlockedSlots: 0,
+      unlockedSlots: 1,
       maxSlots: 1,
       slotCosts: [50, 150, 400, 1000, 2500],
-      nextSlotNumber: 1,
-      nextSlotCost: 50,
-      selectedSlotNumber: null,
+      nextSlotNumber: null,
+      nextSlotCost: null,
+      selectedSlotNumber: 1,
     });
 
     gameplayFacade.prestigeFacade.applyPersistenceSnapshot({
@@ -5109,11 +5107,11 @@ describe("GameplayFacade", () => {
     expect(gameplayFacade.getSnapshot().shop).toMatchObject({
       market: { id: "crossroads", rank: 2 },
       shelf: {
-        unlockedSlots: 0,
+        unlockedSlots: 1,
         maxSlots: 2,
-        nextSlotNumber: 1,
-        nextSlotCost: 50,
-        selectedSlotNumber: null,
+        nextSlotNumber: 2,
+        nextSlotCost: 150,
+        selectedSlotNumber: 1,
       },
       playerShelf: {
         unlockedSlots: 2,
@@ -5123,11 +5121,6 @@ describe("GameplayFacade", () => {
     });
 
     gameplayFacade.coinFacade.add(200);
-    expect(gameplayFacade.buyShopShelfSlot()).toMatchObject({
-      ok: true,
-      slotNumber: 1,
-      cost: 50,
-    });
     expect(gameplayFacade.buyShopShelfSlot()).toMatchObject({
       ok: true,
       slotNumber: 2,

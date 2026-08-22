@@ -240,6 +240,7 @@ describe('PixiExperienceFacade', () => {
 
   it('reads the stall tutorial slider in exact item-count units', () => {
     const slider = { value: 1 };
+    let enabled = true;
     const state = new PixiTutorialRuntimeState({
       runtime: { getOpenDialogIds: () => ['shop.stall'] },
       semanticRegistry: {
@@ -247,7 +248,7 @@ describe('PixiExperienceFacade', () => {
           tutorialId === 'shop:sell:percentage'
             ? {
                 displayObject: slider,
-                state: { visible: true },
+                state: { visible: true, enabled, interactive: true },
               }
             : null,
       },
@@ -256,6 +257,8 @@ describe('PixiExperienceFacade', () => {
     expect(state.hasShopSellSelection()).toBe(true);
     expect(state.isShopSellQuantitySelected(1)).toBe(true);
     expect(state.isShopSellQuantitySelected(2)).toBe(false);
+    enabled = false;
+    expect(state.hasShopSellSelection()).toBe(false);
   });
 });
 

@@ -10,11 +10,11 @@ The guide covers the sequential main requests for a free level 1 seed task with 
 
 Lesson 5 prepares and refills mana tonic through the live retained Brewing controls: `Recipes`, Mana Tonic in the recipe book, then the primary Brew action. When the refill reaches `3/3 Sage`, the objective and pointer switch from filling/Recipes to `Brew Mana Tonic Again` and the live Brew action. The live HUD controls own those tutorial IDs; hidden legacy Brewing controls are not tutorial targets.
 
-The first Market sequence opens stand 1 and explicitly asks the player to select the `shop:sell:sageSeed` row before the allocation control becomes the lesson target. It then demonstrates the exact-count gesture from the live knob to `x1`: appear on the knob, press and hold, drag to one seed, release, hide, and repeat after a two-second pause. Once one of the five lesson seeds is selected, it points at `shop:sell:mark`. Once matching stock is loaded, the objective becomes a passive wait for the five-second sale.
+The first Market sequence gives every new player one unlocked starter NPC stand, recovers to the Traders tab if another Market tab was remembered, and explicitly asks the player to select the `shop:sell:sageSeed` row before the allocation control becomes the lesson target. It then demonstrates the exact-count gesture from the live knob to `x1`: appear on the knob, press and hold, drag to one seed, release, hide, and repeat after a two-second pause. Once one of the five lesson seeds is selected, it points at `shop:sell:mark`. Once matching stock is loaded, the objective becomes a passive wait for the five-second sale.
 
 The target cue keeps the same diagonal placement math and uses the Spine pointer on a pointer-local Pixi canvas. Rotate the Spine shell by placement so the authored upward tap points at the target anchor.
 
-Lesson 4 follows the active level 4 request, then sends players to Garden for the first sage grow using the live sage-herb target, so they see why the summon/plant loop matters. The lesson panel opens immediately, but target pointer help waits for the 2-second gardening idle window or an explicit `show me` press. Later herb objectives use the same delayed target pointer behavior, then point only when the player appears stuck.
+Lesson 4 opens as soon as level 4 begins, even when Research consumed the player's last sage seed. It then follows the active request order: teach the first sage grow, complete the mint grow request, and guide the remaining sage/mint turn-ins. The lesson panel opens immediately, but target pointer help waits for the 2-second gardening idle window or an explicit `show me` press. Later herb objectives use the same delayed target pointer behavior, then point only when the player appears stuck.
 
 Tutorial market steps use normal timed stands and `shop:stand:*` / `shop:sell:*` targets. Do not add FTUE-only coin grants, tutorial price overrides, or tutorial-owned inventory mutation. Level 2 teaches systemic selling as a task, while every level-up remains coin-free.
 
@@ -25,3 +25,5 @@ Dev builds with `VITE_ENABLE_CHEATS=true` expose tutorial step tooling through
 to inspect the current step graph, then `cheats.loadTutorialStep('t01')` or
 `cheats.loadTutorialStep('intro-garden')` to reset local gameplay into the
 matching tutorial/cutscene state for manual QA.
+
+Production-backed capture additionally requires `VITE_ENABLE_TUTORIAL_CAPTURE=true`. The capture adapter reads and drives the retained Pixi intro, tutorial overlay, semantic targets, and dialogs; it does not depend on retired DOM tutorial controls.

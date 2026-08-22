@@ -12,6 +12,8 @@ world: tutorial
 
 Lesson 2 teaches the normal summon, timed-stall, and turn-in requirement order.
 The flow uses live available quantities and loaded stall state, not tutorial-owned prices.
+One starter NPC stand is unlocked from level 1 so the required first sale cannot
+deadlock behind a level-4 slot unlock or a coin purchase.
 
 | Code | Step | Kind | Page | Target | Cue |
 |---|---|---|---|---|---|
@@ -26,6 +28,8 @@ The flow uses live available quantities and loaded stall state, not tutorial-own
 
 ## Design Notes
 
+- If the Market remembers Gems or Players, Elara first points to Traders instead
+  of pointing through the wrong panel.
 - Elara points to the first stand, explicitly asks for `shop:sell:sageSeed`, then targets `shop:sell:percentage` until the exact allocation is `x1`, then points to `shop:sell:mark` and waits while the loaded stall sells.
 - The sale is a normal level-2 request. Completing the final request advances the level automatically.
 

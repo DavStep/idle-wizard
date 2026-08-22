@@ -9,13 +9,12 @@ world: tutorial
 
 # Tutorial Risks
 
-## Stale Visual Reference
+## Visual Reference Drift
 
-The existing screenshot table in `docs/tutorial-flow.md` is retained as
-historical visual reference. It does not cover the current 31-step source order
-or the 28-step default capture set, even though the text graph/table now mirror
-source. Run `node scripts/capture-tutorial-flow.js --check` first, then refresh
-it with `npm run tutorial:capture`.
+The screenshot table and contact sheet in `docs/tutorial-flow.md` cover the
+current 28-step default capture. Run
+`node scripts/capture-tutorial-flow.js --check` after graph edits, then refresh
+the real-game images with `npm run tutorial:capture`.
 
 ## Balance Drift
 

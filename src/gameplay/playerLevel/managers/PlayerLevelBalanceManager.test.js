@@ -9,8 +9,8 @@ describe('PlayerLevelBalanceManager', () => {
     expect(manager.getEffects(0)).toEqual({
       maxGardenTiles: 2,
       maxCauldrons: 1,
-      maxShopSlots: 0,
-      maxNpcMarketStands: 0,
+      maxShopSlots: 1,
+      maxNpcMarketStands: 1,
       maxPlayerMarketStands: 0,
     });
     expect(manager.getCrystalRewardThroughLevel(0)).toBe(0);

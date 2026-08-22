@@ -241,6 +241,8 @@ experience_type: product-shape
 - FTUE NPC market `data-tutorial-id` should sit on stand/item name spans, not full rows or price/value spans, so the finger avoids the demand control.
 - Trader loader rows are one action; make the whole visual row the button and put FTUE ids on that button (`shop:sell:<itemKey>`).
 - FTUE Market teaching is `open first stall -> select sage seed -> set exact amount x1 -> mark one seed -> wait for timed sale`; keep the item-selection objective visible until the Sage Seed row is selected, then target `shop:sell:percentage` until `x1`, then `shop:sell:mark`.
+- FTUE prerequisites must be reachable at the level where they are taught. The level-2 sale requires one free unlocked NPC stand from level 1; do not gate the first stand behind later progression or coin the player cannot yet earn.
+- FTUE objective order must mirror the active request queue. When several herb requests share one lesson, complete the grow request first and let the final turn-in step follow whichever sage or mint request is currently active.
 - FTUE slider demonstrations must anchor the tutorial target to the live knob, not the whole rail; the level-2 Market allocation cue presses, holds, drags to the exact count `x1`, releases, hides, and repeats after a two-second pause. Tutorial checks must compare the slider's current units, never a retired percentage representation.
 - FTUE guide border labels need white surface backgrounds as masks; transparent labels lose legibility over the overlay/top border.
 - FTUE lesson border-action buttons need late `.style-box .tutorial-layer__...` overrides, because the global `.style-box :where(button, ...)` rule can re-inflate them to body size.

@@ -6,7 +6,7 @@ Screenshots are captured from the real Vite game surface at the authored `390x84
 
 The automation uses the real `TutorialFacade`, CSS, Elara assets, and `data-tutorial-id` targets. Dev capture hooks only skip waits/background resource tasks and hide the local offline gate so the screenshots show the actual game UI, not a harness.
 
-Current source has a 31-step source order. The default screenshot capture tracks 28 of those steps; it excludes the purchase dialog, the final level-1 turn-in transition, and the balance-conditional `fill-sage-seed-task` branch. Every level advances automatically when its final request completes. Level 2 teaches the timed stall flow: open the Market, open the first stall, select sage seed, set the exact allocation to one seed, mark it, then wait for the stall's five-second sale. Coin-shortfall guidance uses available Market quantities, loaded stall state, and the `shop:sell:*` tutorial targets. The screenshot set below predates the current source order and should be refreshed with `npm run tutorial:capture`.
+Current source has a 31-step source order. The default screenshot capture tracks 28 of those steps; it excludes the purchase dialog, the final level-1 turn-in transition, and the balance-conditional `fill-sage-seed-task` branch. Every level advances automatically when its final request completes. Level 2 teaches the timed stall flow: open the Market, recover to Traders when needed, open the free starter stand, select sage seed, set the exact allocation to one seed, mark it, then wait for the stall's five-second sale. Level 4 follows the live request queue: mint grow precedes the final dynamic sage/mint turn-ins. The screenshot set below is refreshed from the production retained Pixi experience.
 
 ![tutorial flow contact sheet](tutorial-flow/contact-sheet.png)
 
@@ -40,8 +40,8 @@ This table mirrors `getTutorialStepGraph()` from `TutorialStepManager.js`.
 | `t22` | `intro-garden` | dialog | Garden Opened |  | page:garden |  |
 | `t23` | `grow-sage` | objective | Lesson 4: Gardening |  |  | delayed-target |
 | `t24` | `first-harvest-complete` | prompt | Lesson 4: Gardening |  |  |  |
-| `t25` | `fill-sage-herb-task` | objective | Lesson 4: Gardening |  |  | delayed-target |
-| `t26` | `fill-mint-herb-task` | objective | Lesson 4: Gardening |  |  | passive |
+| `t25` | `fill-mint-herb-task` | objective | Lesson 4: Gardening |  |  | passive |
+| `t26` | `fill-sage-herb-task` | objective | Lesson 4: Gardening |  |  | delayed-target; follows active herb turn-in |
 | `t27` | `research-mana-tonic` | objective | Lesson 5: Brewing | research | research:unlockRecipe:manaTonic |  |
 | `t28` | `intro-brewing` | dialog | Brewing Opened |  | page:brewing |  |
 | `t29` | `brew-mana-tonic` | objective | Lesson 5: Brewing | brewing |  |  |
@@ -76,8 +76,8 @@ flowchart TD
   S22["22. intro-garden<br/>Garden Opened"]
   S23["23. grow-sage<br/>Lesson 4: Gardening"]
   S24["24. first-harvest-complete<br/>Lesson 4: Gardening"]
-  S25["25. fill-sage-herb-task<br/>Lesson 4: Gardening"]
-  S26["26. fill-mint-herb-task<br/>Lesson 4: Gardening"]
+  S25["25. fill-mint-herb-task<br/>Lesson 4: Gardening"]
+  S26["26. fill-sage-herb-task<br/>Lesson 4: Gardening"]
   S27["27. research-mana-tonic<br/>Lesson 5: Brewing"]
   S28["28. intro-brewing<br/>Brewing Opened"]
   S29["29. brew-mana-tonic<br/>Lesson 5: Brewing"]
@@ -122,30 +122,38 @@ flowchart TD
 
 ## Screenshots
 
-The table below is the last captured screenshot set. It is intentionally retained as historical visual reference, but it does not cover the current 31-step tutorial source order or the 28-step default capture set.
+The table below is the current 28-state production-backed capture at the authored `390x844` viewport.
 
 | Step | Screenshot |
 |---|---|
 | 1. `intro-welcome` | <img src="tutorial-flow/screenshots/01-intro-welcome.png" width="220" alt="intro-welcome"> |
-| 4. `intro-mana-sphere` | <img src="tutorial-flow/screenshots/04-intro-mana-sphere.png" width="220" alt="intro-mana-sphere"> |
-| 5. `first-summon-seed` | <img src="tutorial-flow/screenshots/05-first-summon-seed.png" width="220" alt="first-summon-seed"> |
+| 2. `intro-mana-sphere` | <img src="tutorial-flow/screenshots/02-intro-mana-sphere.png" width="220" alt="intro-mana-sphere"> |
+| 3. `first-summon-seed` | <img src="tutorial-flow/screenshots/03-first-summon-seed.png" width="220" alt="first-summon-seed"> |
+| 4. `summon-five-seeds` | <img src="tutorial-flow/screenshots/04-summon-five-seeds.png" width="220" alt="summon-five-seeds"> |
+| 5. `intro-level-requirements` | <img src="tutorial-flow/screenshots/05-intro-level-requirements.png" width="220" alt="intro-level-requirements"> |
 | 6. `first-fill-seed-task` | <img src="tutorial-flow/screenshots/06-first-fill-seed-task.png" width="220" alt="first-fill-seed-task"> |
-| 7. `finish-seed-task` | <img src="tutorial-flow/screenshots/07-finish-seed-task.png" width="220" alt="finish-seed-task"> |
-| 8. `intro-market` | <img src="tutorial-flow/screenshots/08-intro-market.png" width="220" alt="intro-market"> |
-| 9. `prepare-seed-sale` | <img src="tutorial-flow/screenshots/09-prepare-seed-sale.png" width="220" alt="prepare-seed-sale"> |
-| 10. `open-market` | <img src="tutorial-flow/screenshots/10-open-market.png" width="220" alt="open-market"> |
-| 11. `select-market-stand` | <img src="tutorial-flow/screenshots/11-select-market-stand.png" width="220" alt="select-market-stand"> |
-| 12. `select-sage-seed-sale` | <img src="tutorial-flow/screenshots/12-select-sage-seed-sale.png" width="220" alt="select-sage-seed-sale"> |
-| 13. `earn-tutorial-coin` | <img src="tutorial-flow/screenshots/13-earn-tutorial-coin.png" width="220" alt="earn-tutorial-coin"> |
+| 7. `intro-market` | <img src="tutorial-flow/screenshots/07-intro-market.png" width="220" alt="intro-market"> |
+| 8. `prepare-seed-sale` | <img src="tutorial-flow/screenshots/08-prepare-seed-sale.png" width="220" alt="prepare-seed-sale"> |
+| 9. `open-market` | <img src="tutorial-flow/screenshots/09-open-market.png" width="220" alt="open-market"> |
+| 10. `select-market-stand` | <img src="tutorial-flow/screenshots/10-select-market-stand.png" width="220" alt="select-market-stand"> |
+| 11. `select-sage-seed-sale` | <img src="tutorial-flow/screenshots/11-select-sage-seed-sale.png" width="220" alt="select-sage-seed-sale"> |
+| 12. `earn-tutorial-coin` | <img src="tutorial-flow/screenshots/12-earn-tutorial-coin.png" width="220" alt="earn-tutorial-coin"> |
+| 13. `first-sale-complete` | <img src="tutorial-flow/screenshots/13-first-sale-complete.png" width="220" alt="first-sale-complete"> |
 | 14. `unselect-sage-seed-sale` | <img src="tutorial-flow/screenshots/14-unselect-sage-seed-sale.png" width="220" alt="unselect-sage-seed-sale"> |
-| 16. `grow-sage` | <img src="tutorial-flow/screenshots/16-grow-sage.png" width="220" alt="grow-sage"> |
-| 17. `fill-sage-herb-task` | <img src="tutorial-flow/screenshots/17-fill-sage-herb-task.png" width="220" alt="fill-sage-herb-task"> |
-| 19. `research-mint-seed` | <img src="tutorial-flow/screenshots/19-research-mint-seed.png" width="220" alt="research-mint-seed"> |
-| 20. `fill-mint-seed-task` | <img src="tutorial-flow/screenshots/20-fill-mint-seed-task.png" width="220" alt="fill-mint-seed-task"> |
-| 21. `fill-mint-herb-task` | <img src="tutorial-flow/screenshots/21-fill-mint-herb-task.png" width="220" alt="fill-mint-herb-task"> |
-| 23. `research-mana-tonic` | <img src="tutorial-flow/screenshots/23-research-mana-tonic.png" width="220" alt="research-mana-tonic"> |
-| 24. `brew-mana-tonic` | <img src="tutorial-flow/screenshots/24-brew-mana-tonic.png" width="220" alt="brew-mana-tonic"> |
-| 25. `refill-mana-tonic-cauldron` | <img src="tutorial-flow/screenshots/25-refill-mana-tonic-cauldron.png" width="220" alt="refill-mana-tonic-cauldron"> |
+| 15. `intro-research` | <img src="tutorial-flow/screenshots/15-intro-research.png" width="220" alt="intro-research"> |
+| 16. `research-mint-seed` | <img src="tutorial-flow/screenshots/16-research-mint-seed.png" width="220" alt="research-mint-seed"> |
+| 17. `first-research-complete` | <img src="tutorial-flow/screenshots/17-first-research-complete.png" width="220" alt="first-research-complete"> |
+| 18. `fill-mint-seed-task` | <img src="tutorial-flow/screenshots/18-fill-mint-seed-task.png" width="220" alt="fill-mint-seed-task"> |
+| 19. `intro-garden` | <img src="tutorial-flow/screenshots/19-intro-garden.png" width="220" alt="intro-garden"> |
+| 20. `grow-sage` | <img src="tutorial-flow/screenshots/20-grow-sage.png" width="220" alt="grow-sage"> |
+| 21. `first-harvest-complete` | <img src="tutorial-flow/screenshots/21-first-harvest-complete.png" width="220" alt="first-harvest-complete"> |
+| 22. `fill-mint-herb-task` | <img src="tutorial-flow/screenshots/22-fill-mint-herb-task.png" width="220" alt="fill-mint-herb-task"> |
+| 23. `fill-sage-herb-task` | <img src="tutorial-flow/screenshots/23-fill-sage-herb-task.png" width="220" alt="fill-sage-herb-task"> |
+| 24. `research-mana-tonic` | <img src="tutorial-flow/screenshots/24-research-mana-tonic.png" width="220" alt="research-mana-tonic"> |
+| 25. `intro-brewing` | <img src="tutorial-flow/screenshots/25-intro-brewing.png" width="220" alt="intro-brewing"> |
+| 26. `brew-mana-tonic` | <img src="tutorial-flow/screenshots/26-brew-mana-tonic.png" width="220" alt="brew-mana-tonic"> |
+| 27. `first-brew-complete` | <img src="tutorial-flow/screenshots/27-first-brew-complete.png" width="220" alt="first-brew-complete"> |
+| 28. `refill-mana-tonic-cauldron` | <img src="tutorial-flow/screenshots/28-refill-mana-tonic-cauldron.png" width="220" alt="refill-mana-tonic-cauldron"> |
 
 ## Files
 

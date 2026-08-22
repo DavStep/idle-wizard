@@ -30,6 +30,7 @@ function createDomFake({
   shopSellSelection = false,
   shopSellQuantity = 0,
   sellTabKind = 'seed',
+  shopTradersTabOpen = true,
 } = {}) {
   return {
     isBrewingRecipePopupOpen: () => recipePopupOpen,
@@ -40,6 +41,7 @@ function createDomFake({
     isShopSellQuantitySelected: (quantity) => shopSellQuantity === quantity,
     isShopSellPopupOpen: () => shopSellPopupOpen,
     isShopSellTabSelected: (kind) => sellTabKind === kind,
+    isShopTradersTabOpen: () => shopTradersTabOpen,
     isTasksExpanded: () => tasksExpanded,
     isTasksPinned: () => tasksPinned,
   };
@@ -634,6 +636,18 @@ describe('TutorialStepManager', () => {
       objectiveText: 'open the first stall',
       stepLabel: '12/31',
     });
+    expect(
+      getStep({
+        pageId: 'shop',
+        snapshot,
+        completed,
+        dom: createDomFake({ shopTradersTabOpen: false }),
+      }),
+    ).toMatchObject({
+      id: 'select-market-stand',
+      targetId: 'shop.tab.traders',
+      objectiveText: 'open traders',
+    });
   });
 
   it('guides level 2 players to load sage seed and wait for the stall', () => {
@@ -1017,6 +1031,14 @@ describe('TutorialStepManager', () => {
       lessonTitle: 'Garden Opened',
       stepLabel: '22/31',
     });
+    expect(
+      getStep({
+        snapshot: createLevelFourSnapshot({ seedInventory: [] }),
+      }),
+    ).toMatchObject({
+      id: 'intro-garden',
+      kind: 'dialog',
+    });
   });
 
   it('opens pinned level 4 requirements before sending the player to garden', () => {
@@ -1149,7 +1171,7 @@ describe('TutorialStepManager', () => {
       id: 'fill-sage-herb-task',
       targetId: 'task:level4-turn-in-sage-herb',
       hintText: 'turn in sage',
-      stepLabel: '25/31',
+      stepLabel: '26/31',
     });
   });
 
@@ -1218,14 +1240,15 @@ describe('TutorialStepManager', () => {
       targetId: 'page:garden',
       objectiveText: 'grow mint for the next level',
       progressLabel: '0/2 mint',
-      stepLabel: '26/31',
+      stepLabel: '25/31',
     });
   });
 
-  it('guides level 4 mint herb after sage herb is handled', () => {
+  it('keeps the final herb turn-in step active for mint after sage', () => {
     expect(
       getStep({
         snapshot: createLevelFourSnapshot({
+          inventory: [{ key: 'mintHerb', quantity: 1 }],
           tasks: {
             currentLevel: 3,
             level: {
@@ -1245,16 +1268,19 @@ describe('TutorialStepManager', () => {
                   requiredQuantity: 1,
                   progressQuantity: 0,
                   remainingQuantity: 1,
+                  canFill: true,
                 }),
               ],
             },
           },
         }),
-        completed: completedThrough('fill-sage-herb-task'),
+        dom: createDomFake({ tasksExpanded: true }),
+        completed: completedThrough('fill-mint-herb-task'),
       }),
     ).toMatchObject({
-      id: 'fill-mint-herb-task',
-      targetId: 'page:garden',
+      id: 'fill-sage-herb-task',
+      targetId: 'task:level4-turn-in-mint-herb',
+      objectiveText: 'turn in mint for the next level',
       stepLabel: '26/31',
     });
   });
