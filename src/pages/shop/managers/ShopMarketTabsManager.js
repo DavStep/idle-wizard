@@ -158,6 +158,9 @@ export class ShopMarketTabsManager {
     button.type = 'button';
     button.textContent = tab.label;
     button.setAttribute('role', 'tab');
+    if (tab.id === 'npm') {
+      button.dataset.tutorialId = 'shop:tab:traders';
+    }
     button.addEventListener('click', () => this.setActiveTab(tab.id));
     return button;
   }

@@ -194,6 +194,22 @@ describe('TutorialTargetManager', () => {
     expect(manager.getDomState().isShopSellTabSelected('herb')).toBe(true);
   });
 
+  it('reads whether the visible Market Traders tab is selected', () => {
+    const stage = document.createElement('section');
+    const tradersTab = document.createElement('button');
+    const manager = new TutorialTargetManager({ stage });
+
+    tradersTab.dataset.tutorialId = 'shop:tab:traders';
+    tradersTab.setAttribute('aria-selected', 'false');
+    stage.append(tradersTab);
+
+    expect(manager.getDomState().isShopTradersTabSelected()).toBe(false);
+
+    tradersTab.setAttribute('aria-selected', 'true');
+
+    expect(manager.getDomState().isShopTradersTabSelected()).toBe(true);
+  });
+
   it('reads whether the stall loader popup is open', () => {
     const stage = document.createElement('section');
     const popup = document.createElement('section');

@@ -5,6 +5,10 @@ upload script posts the section whose heading matches `package.json` `version`.
 Write these developer-to-player notes only in Idle Wizard terms. Do not mention
 other game names, source projects, ports, or implementation provenance.
 
+## 0.3.91
+
+- Fixed the Market lesson getting stuck on Gems by guiding players back to Traders before opening the first stall.
+
 ## 0.3.90
 
 - Added a full Workshop level-up celebration with an animated level star, reward reveals, newly available Research, and feature unlocks presented in sequence.

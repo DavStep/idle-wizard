@@ -257,6 +257,22 @@ describe('PixiExperienceFacade', () => {
     expect(state.isShopSellQuantitySelected(1)).toBe(true);
     expect(state.isShopSellQuantitySelected(2)).toBe(false);
   });
+
+  it('reads whether the retained Market Traders tab is selected', () => {
+    const state = new PixiTutorialRuntimeState({
+      semanticRegistry: {
+        getTutorialTarget: (tutorialId) =>
+          tutorialId === 'shop:tab:traders'
+            ? {
+                displayObject: { selected: false },
+                state: { selected: false, visible: true },
+              }
+            : null,
+      },
+    }).createManagerState();
+
+    expect(state.isShopTradersTabSelected()).toBe(false);
+  });
 });
 
 function createHarness({
