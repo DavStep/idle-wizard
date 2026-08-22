@@ -15,6 +15,10 @@ export class TutorialProgressManager {
     return false;
   }
 
+  hasCompletedAll(stepIds = []) {
+    return stepIds.every((stepId) => this.hasCompleted(stepId));
+  }
+
   hasCompleted(stepId) {
     return this.completedStepIds.has(normalizeTutorialStepId(stepId));
   }

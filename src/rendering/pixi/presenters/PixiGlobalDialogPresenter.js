@@ -52,6 +52,7 @@ export class PixiGlobalDialogPresenter {
     playerInfoFacade = null,
     friendsFacade = null,
     tradeAllianceFacade = null,
+    experienceFacade = null,
     hapticsFacade = null,
     fullscreenFacade = null,
     soundSettingsFacade = null,
@@ -74,6 +75,7 @@ export class PixiGlobalDialogPresenter {
     this.playerInfoFacade = playerInfoFacade;
     this.friendsFacade = friendsFacade;
     this.tradeAllianceFacade = tradeAllianceFacade;
+    this.experienceFacade = experienceFacade;
     this.hapticsFacade = hapticsFacade;
     this.fullscreenFacade = fullscreenFacade;
     this.soundSettingsFacade = soundSettingsFacade;
@@ -282,6 +284,8 @@ export class PixiGlobalDialogPresenter {
       },
       preferences: {
         haptics: haptics.enabled !== false,
+        tutorial:
+          this.experienceFacade?.isTutorialEnabled?.() !== false,
         fullscreen: fullscreen.active === true,
         music: toVolumePercent(
           sound.musicVolume,
@@ -1171,6 +1175,9 @@ export class PixiGlobalDialogPresenter {
   }
 
   setPreference(key, value) {
+    if (key === 'tutorial') {
+      return this.experienceFacade?.setTutorialEnabled?.(value) ?? false;
+    }
     if (key === 'haptics') {
       return this.hapticsFacade?.setEnabled?.(value) ?? false;
     }

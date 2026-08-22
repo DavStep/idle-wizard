@@ -73,7 +73,9 @@ export class ShopBalanceManager {
       throw new Error('game_config.shop initial unlocked slots must fit market stands.');
     }
 
-    return initialUnlockedSlots;
+    // The level-two tutorial needs a usable stall before the level-four
+    // purchase milestone. Older hosted config rows still report zero here.
+    return Math.max(1, initialUnlockedSlots);
   }
 
   readAutoSellSeconds() {

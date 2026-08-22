@@ -1131,6 +1131,7 @@ describe('retained global Pixi dialogs', () => {
       },
       preferences: {
         haptics: true,
+        tutorial: true,
         fullscreen: false,
         music: true,
         sfx: true,
@@ -1151,6 +1152,7 @@ describe('retained global Pixi dialogs', () => {
       'sfx',
       'music',
       'haptics',
+      'tutorial',
       'fullscreen',
       'theme',
       'friendRequests',
@@ -1170,13 +1172,13 @@ describe('retained global Pixi dialogs', () => {
     expect(settings.themePanel).toBeInstanceOf(RootRunDevicePreferencesPanel);
     expect(settings.socialPanel).toBeInstanceOf(RootRunDevicePreferencesPanel);
     expect(settings.devicePanel.rows).toEqual(
-      settings.preferenceRows.slice(0, 4).map(({ widget }) => widget),
+      settings.preferenceRows.slice(0, 5).map(({ widget }) => widget),
     );
     expect(settings.themePanel.rows).toEqual([
-      settings.preferenceRows[4].widget,
+      settings.preferenceRows[5].widget,
     ]);
     expect(settings.socialPanel.rows).toEqual(
-      settings.preferenceRows.slice(5).map(({ widget }) => widget),
+      settings.preferenceRows.slice(6).map(({ widget }) => widget),
     );
     expect(
       settings.preferenceRows.every(
@@ -1187,15 +1189,16 @@ describe('retained global Pixi dialogs', () => {
       'SOUND',
       'MUSIC',
       'VIBRATION',
+      'TUTORIAL',
       'FULLSCREEN',
       'THEME',
       'FRIEND REQUESTS',
       'ALLIANCE INVITES',
     ]);
     expect(settings.preferenceRows[0].label.colorToken).toBe('#735036');
-    expect(settings.preferenceRows[5].label.fontSize).toBeLessThanOrEqual(19);
     expect(settings.preferenceRows[6].label.fontSize).toBeLessThanOrEqual(19);
-    expect(settings.preferenceRows.slice(5).every(({ label, control }) =>
+    expect(settings.preferenceRows[7].label.fontSize).toBeLessThanOrEqual(19);
+    expect(settings.preferenceRows.slice(6).every(({ label, control }) =>
       label.fontSize >= 15 &&
       label.measuredWidth <= control.x - label.x - 6,
     )).toBe(true);
@@ -1286,12 +1289,14 @@ describe('retained global Pixi dialogs', () => {
     ).toBe(true);
     expect(togglePreference).toHaveBeenCalledWith('music', 52);
     expect(settings.preferenceRows[3].control.activate()).toBe(true);
-    expect(togglePreference).toHaveBeenCalledWith('fullscreen', true);
+    expect(togglePreference).toHaveBeenCalledWith('tutorial', false);
     expect(settings.preferenceRows[4].control.activate()).toBe(true);
-    expect(togglePreference).toHaveBeenCalledWith('theme', true);
+    expect(togglePreference).toHaveBeenCalledWith('fullscreen', true);
     expect(settings.preferenceRows[5].control.activate()).toBe(true);
-    expect(togglePreference).toHaveBeenCalledWith('friendRequests', false);
+    expect(togglePreference).toHaveBeenCalledWith('theme', true);
     expect(settings.preferenceRows[6].control.activate()).toBe(true);
+    expect(togglePreference).toHaveBeenCalledWith('friendRequests', false);
+    expect(settings.preferenceRows[7].control.activate()).toBe(true);
     expect(togglePreference).toHaveBeenCalledWith(
       'tradeAllianceInvitations',
       true,

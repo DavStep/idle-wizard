@@ -20,6 +20,8 @@ Tutorial market steps use normal timed stands and `shop:stand:*` / `shop:sell:*`
 
 Players already past level 5 auto-complete the tutorial. Earlier snapshots that already show later progress skip stale lessons.
 
+Settings exposes the existing Root Run toggle row as `Tutorial`. Turning it off marks the current tutorial graph complete and hides Elara immediately; turning it back on clears tutorial progress so the live snapshot can resume at the first still-relevant step.
+
 Dev builds with `VITE_ENABLE_CHEATS=true` expose tutorial step tooling through
 `window.cheats`. Use `cheats.listTutorialStages()` or `cheats.getTutorialGraph()`
 to inspect the current step graph, then `cheats.loadTutorialStep('t01')` or

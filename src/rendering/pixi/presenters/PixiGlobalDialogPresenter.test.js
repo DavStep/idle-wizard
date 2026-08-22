@@ -796,7 +796,9 @@ describe('PixiGlobalDialogPresenter', () => {
       frame: 'classic',
       progressBar: 'gradient',
     });
+    expect(model.preferences.tutorial).toBe(true);
 
+    expect(model.actions.togglePreference('tutorial', false)).toBe(true);
     expect(model.actions.togglePreference('haptics', false)).toBe(true);
     expect(model.actions.togglePreference('fullscreen', true)).toBe(true);
     expect(model.actions.togglePreference('music', 35)).toBe(true);
@@ -809,6 +811,9 @@ describe('PixiGlobalDialogPresenter', () => {
         false,
       ),
     ).toBe(true);
+    expect(harness.experienceFacade.setTutorialEnabled).toHaveBeenCalledWith(
+      false,
+    );
     expect(harness.hapticsFacade.setEnabled).toHaveBeenCalledWith(false);
     expect(harness.fullscreenFacade.setEnabled).toHaveBeenCalledWith(true);
     expect(
@@ -1367,6 +1372,10 @@ function createHarness({
     { enabled: true },
     { setEnabled: vi.fn(() => true) },
   );
+  const experienceFacade = {
+    isTutorialEnabled: vi.fn(() => true),
+    setTutorialEnabled: vi.fn(() => true),
+  };
   const fullscreenFacade = createSnapshotFacade(
     { available: true, active: false },
     { setEnabled: vi.fn(() => true) },
@@ -1395,6 +1404,7 @@ function createHarness({
     playerInfoFacade,
     friendsFacade,
     tradeAllianceFacade,
+    experienceFacade,
     hapticsFacade,
     fullscreenFacade,
     soundSettingsFacade,
@@ -1416,6 +1426,7 @@ function createHarness({
     playerInfoFacade,
     friendsFacade,
     tradeAllianceFacade,
+    experienceFacade,
     hapticsFacade,
     fullscreenFacade,
     soundSettingsFacade,

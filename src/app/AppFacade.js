@@ -95,6 +95,7 @@ export class AppFacade {
       friendsFacade: this.backendFacade.getFriendsFacade(),
       tradeAllianceFacade:
         this.backendFacade.getTradeAllianceFacade(),
+      experienceFacade: this.experienceFacade,
       hapticsFacade: this.hapticsFacade,
       fullscreenFacade: this.fullscreenFacade,
       soundSettingsFacade: this.soundSettingsFacade,

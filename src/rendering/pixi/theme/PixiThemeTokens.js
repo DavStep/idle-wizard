@@ -150,6 +150,7 @@ export const PIXI_ROOT_RUN_ASSETS = Object.freeze({
   settingsSound: 'source:assets/ui/root-run-settings/settings-icon-sound.png',
   settingsMusic: 'source:assets/ui/root-run-settings/settings-icon-music.png',
   settingsVibration: 'source:assets/ui/root-run-settings/settings-icon-vibration.png',
+  settingsTutorial: 'source:assets/avatars/elara.png',
   settingsThemeNight:
     'source:assets/ui/root-run-settings/settings-icon-theme-night.png',
   settingsThemeDay:

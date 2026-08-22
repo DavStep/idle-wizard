@@ -5,6 +5,11 @@ upload script posts the section whose heading matches `package.json` `version`.
 Write these developer-to-player notes only in Idle Wizard terms. Do not mention
 other game names, source projects, ports, or implementation provenance.
 
+## 0.3.93
+
+- Fixed the opening Market lesson so the free first Trader stand stays available for new wizards, even when an older saved configuration tries to lock it again.
+- Added a Tutorial toggle to Settings. Turning it off immediately dismisses Elara's guidance and marks the remaining lessons complete; it can be enabled again later.
+
 ## 0.3.92
 
 - Refined Elara's complete opening journey from the first Workshop lesson through Market, Research, Garden, and Brewing with clearer contextual directions and cleaner request sequencing.

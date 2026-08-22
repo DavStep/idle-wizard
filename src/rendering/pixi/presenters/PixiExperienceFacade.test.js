@@ -94,6 +94,24 @@ describe('PixiExperienceFacade', () => {
     expect(facade.resetTutorialProgress()).toBe(true);
   });
 
+  it('disables tutorial guidance by completing the graph and can re-enable it', () => {
+    const harness = createHarness();
+    const facade = harness.createFacade();
+    harness.materializeSurfaces();
+
+    expect(facade.isTutorialEnabled()).toBe(true);
+    expect(facade.setTutorialEnabled(false)).toBe(true);
+    expect(facade.isTutorialEnabled()).toBe(false);
+    expect(facade.tutorialStepManager.hasCompletedAllSteps()).toBe(true);
+    expect(harness.views.tutorial.bind).toHaveBeenLastCalledWith({
+      kind: 'hidden',
+    });
+
+    expect(facade.setTutorialEnabled(true)).toBe(true);
+    expect(facade.isTutorialEnabled()).toBe(true);
+    expect(facade.tutorialStepManager.hasCompletedAllSteps()).toBe(false);
+  });
+
   it('owns one reward subscription and releases all active lifecycle work', () => {
     const harness = createHarness();
     const facade = harness.createFacade({

@@ -2030,6 +2030,7 @@ const GLOBAL_DIALOG_SCENARIOS = Object.freeze({
         music: 72,
         sfx: 58,
         theme: false,
+        tutorial: true,
       },
       actions: { checkForUpdates: () => new Promise(() => {}) },
       tabId: 'configurations',

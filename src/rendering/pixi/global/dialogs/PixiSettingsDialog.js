@@ -153,6 +153,12 @@ const DEVICE_PREFERENCES = Object.freeze([
     iconAssetId: PIXI_ROOT_RUN_ASSETS.settingsVibration,
   }),
   Object.freeze({
+    key: 'tutorial',
+    section: 'device',
+    text: 'TUTORIAL',
+    iconAssetId: PIXI_ROOT_RUN_ASSETS.settingsTutorial,
+  }),
+  Object.freeze({
     key: 'fullscreen',
     section: 'device',
     text: 'FULLSCREEN',
@@ -1590,6 +1596,7 @@ function normalizeSettingsModel(
     },
     preferences: {
       haptics: settings.preferences?.haptics ?? settings.hapticsEnabled ?? true,
+      tutorial: settings.preferences?.tutorial ?? true,
       fullscreen:
         settings.preferences?.fullscreen ?? settings.fullscreen?.active ?? false,
       music: normalizeVolumePercent(

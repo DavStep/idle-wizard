@@ -36,6 +36,37 @@ describe('ShopFacade trader stall purchases', () => {
     expect(gameplayFacade.getSnapshot().coin.current).toBe(0);
   });
 
+  it('keeps the starter stall unlocked when an older runtime config reports zero', () => {
+    const gameplayFacade = createGameplayAtLevel(1);
+
+    gameplayFacade.applyRuntimeConfig({
+      gameConfigs: [
+        {
+          configKey: 'shop',
+          configJson: JSON.stringify({
+            shopShelf: {
+              initialUnlockedSlots: 0,
+              slotCostsCoin: [50, 150, 400, 1000, 2500],
+              autoSellSeconds: 5,
+            },
+          }),
+        },
+      ],
+    });
+    gameplayFacade.shopFacade.applyPersistenceSnapshot({
+      shelf: {
+        unlockedSlots: 0,
+        selectedSlotNumber: null,
+        slots: [],
+      },
+    });
+
+    expect(gameplayFacade.getSnapshot().shop.shelf).toMatchObject({
+      unlockedSlots: 1,
+      slots: [{ slotNumber: 1, unlocked: true }],
+    });
+  });
+
   it('keeps a higher-rank next stall level-locked until its milestone', () => {
     const gameplayFacade = createGameplayAtLevel(4);
     gameplayFacade.marketLicenceFacade.getStallCount = () => 2;

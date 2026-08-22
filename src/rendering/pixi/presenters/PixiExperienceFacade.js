@@ -678,6 +678,28 @@ export class PixiExperienceFacade {
     return true;
   }
 
+  isTutorialEnabled() {
+    return !this.tutorialProgressManager.hasCompletedAll(
+      TUTORIAL_STEP_IDS,
+    );
+  }
+
+  setTutorialEnabled(enabled) {
+    if (enabled === true) {
+      return this.resetTutorialProgress();
+    }
+
+    this.tutorialProgressManager.completeMany(TUTORIAL_STEP_IDS);
+    this.tutorialLogicManager.activeStep = null;
+    this.tutorialStepManager.activeStepId = null;
+    this.activeTutorialStep = null;
+    this.requestedTargetGuidanceStepId = null;
+    this.tutorialSaleManager.cancel();
+    this.tutorialOverlay?.bind?.({ kind: 'hidden' });
+    this.publishNotificationPolicy(null);
+    return true;
+  }
+
   listTutorialStages() {
     const graph = getTutorialStepGraph();
     return {
