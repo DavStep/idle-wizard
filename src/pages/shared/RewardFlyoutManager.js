@@ -31,6 +31,7 @@ const COIN_PARTICLE_DURATION_VARIANCE_MS = 150;
 const COIN_PARTICLE_STAGGER_MS = 24;
 const COIN_PARTICLE_DELAY_VARIANCE_MS = 18;
 const MAX_VISUAL_ITEM_DROPS = 12;
+const MAX_VISUAL_HERB_DROPS = 5;
 
 export class RewardFlyoutManager {
   constructor({ rootClassName = 'room-reward-flyouts', flyoutClassName = 'room-reward-flyout' } = {}) {
@@ -260,7 +261,11 @@ export class RewardFlyoutManager {
 
     if (event.type === 'herb_harvested') {
       return this.playItemDrop(
-        this.getItemDropSource(event.herb, 'herb'),
+        this.getRepeatedItemDropSources(
+          event.herb,
+          'herb',
+          Math.min(MAX_VISUAL_HERB_DROPS, this.normalizeQuantity(event.quantity)),
+        ),
         this.getAnchorForEvent(event),
         'herb',
       );

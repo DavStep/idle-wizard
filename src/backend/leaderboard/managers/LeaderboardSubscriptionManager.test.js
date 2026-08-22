@@ -280,6 +280,33 @@ describe('LeaderboardSubscriptionManager', () => {
     ]);
   });
 
+  it('ranks and publishes exact totals beyond the legacy u64 mirror', () => {
+    const larger = 10n ** 2_044n;
+    const smaller = 10n ** 2_043n;
+    const rows = [
+      {
+        username: 'Smaller',
+        playerLevel: 2,
+        totalIncome: 18_446_744_073_709_551_615n,
+        totalIncomeExact: smaller.toString(),
+      },
+      {
+        username: 'Larger',
+        playerLevel: 10,
+        totalIncome: 18_446_744_073_709_551_615n,
+        totalIncomeExact: larger.toString(),
+      },
+    ];
+    const manager = new LeaderboardSubscriptionManager();
+
+    manager.connect(createConnection(createLeaderboardTable(rows)));
+
+    expect(manager.getSnapshot().topAllTimeUsers).toMatchObject([
+      { name: 'Larger', totalIncome: larger },
+      { name: 'Smaller', totalIncome: smaller },
+    ]);
+  });
+
   it('preserves player identity when leaderboard usernames are duplicated', () => {
     const rows = [
       {

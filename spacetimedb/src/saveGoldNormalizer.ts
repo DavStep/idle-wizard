@@ -1,13 +1,9 @@
-export const MAX_PLAYER_SAVE_TOTAL_GENERATED_GOLD = 1_000_000_000;
-export const MAX_PLAYER_SAVE_CURRENT_GOLD = MAX_PLAYER_SAVE_TOTAL_GENERATED_GOLD;
+export const MAX_PLAYER_SAVE_CURRENT_GOLD = 1_000_000_000;
 
 export function normalizeSaveGold(value: unknown) {
   const gold = isRecord(value) ? value : {};
   const current = clampSaveGoldPrice(gold.current, BigInt(MAX_PLAYER_SAVE_CURRENT_GOLD));
-  const explicitTotalGenerated = normalizeOptionalSaveGoldPrice(
-    gold.totalGenerated,
-    BigInt(MAX_PLAYER_SAVE_TOTAL_GENERATED_GOLD),
-  );
+  const explicitTotalGenerated = normalizeOptionalSaveGoldPrice(gold.totalGenerated);
 
   return {
     current,
@@ -23,34 +19,28 @@ export function readSaveTotalGeneratedGold(value: unknown): number | null {
     gold.totalGeneratedGold,
     gold.totalIncome,
   ]) {
-    const totalGenerated = normalizeOptionalSaveGoldPrice(
-      candidate,
-      BigInt(MAX_PLAYER_SAVE_TOTAL_GENERATED_GOLD),
-    );
+    const totalGenerated = normalizeOptionalSaveGoldPrice(candidate);
 
     if (totalGenerated !== null) {
       return totalGenerated;
     }
   }
 
-  return normalizeOptionalSaveGoldPrice(
-    gold.current,
-    BigInt(MAX_PLAYER_SAVE_TOTAL_GENERATED_GOLD),
-  );
+  return normalizeOptionalSaveGoldPrice(gold.current);
 }
 
 export function clampSaveGoldPrice(value: unknown, max: bigint): number {
   return normalizeOptionalSaveGoldPrice(value, max) ?? 0;
 }
 
-function normalizeOptionalSaveGoldPrice(value: unknown, max: bigint): number | null {
+function normalizeOptionalSaveGoldPrice(value: unknown, max?: bigint): number | null {
   const price = normalizeGoldPrice(typeof value === 'bigint' ? value : Number(value));
 
   if (price === null) {
     return null;
   }
 
-  return clampNumber(price, 0, Number(max));
+  return max === undefined ? price : clampNumber(price, 0, Number(max));
 }
 
 function normalizeGoldPrice(value: bigint | number): number | null {

@@ -143,6 +143,26 @@ describe('LeaderboardGeneratedCoinSyncManager', () => {
     expect(setTotalGeneratedCoin).toHaveBeenCalledWith({ totalGeneratedCoin: 7n });
   });
 
+  it('prefers exact score transport for totals beyond native integer columns', async () => {
+    const setTotalGeneratedCoinExact = vi.fn(() => Promise.resolve());
+    const totalGenerated = 10n ** 2_044n;
+    const gameplayFacade = createGameplayFacade(totalGenerated);
+    const manager = new LeaderboardGeneratedCoinSyncManager({ syncIntervalMs: 0 });
+
+    manager.setGameplayFacade(gameplayFacade);
+    manager.connect({
+      reducers: {
+        setTotalGeneratedCoinExact,
+      },
+    });
+    manager.setReadyToSync(true);
+    await Promise.resolve();
+
+    expect(setTotalGeneratedCoinExact).toHaveBeenCalledWith({
+      totalGeneratedCoinExact: totalGenerated.toString(),
+    });
+  });
+
   it('does not report small generated coin deltas after the initial sync', async () => {
     const setTotalGeneratedCoin = vi.fn(() => Promise.resolve());
     const gameplayFacade = createGameplayFacade(10);

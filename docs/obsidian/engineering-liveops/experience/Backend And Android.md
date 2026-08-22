@@ -21,7 +21,7 @@ experience_type: backend-android
 - SpacetimeDB TypeScript UUID values expose `compareTo`/string conversion, not `isEqual`; normalize UUID keys before comparing alliance IDs.
 - Player market exchange, NPC market pressure, research announcements, potion discoveries, leaderboard totals, and public player levels must stay locked down until the server owns the matching state; capped client reports are still spoofable.
 - Generated-coin leaderboard values are stored in `leaderboard.totalIncome`; UI should prefer that over any legacy `totalGeneratedCoin` field.
-- Leaderboard income intentionally has no application-level cap; treat its client-reported `u64` totals as untrusted until coin generation becomes server-authoritative.
+- Leaderboard income intentionally has no application-level numeric cap; canonical decimal-string fields own exact totals while saturated `u64` mirrors serve legacy clients. Treat client reports as untrusted until coin generation becomes server-authoritative.
 - Remote `game_config` JSON must be key-specific and schema-bounded; parse-only validation is not enough because clients apply those rows at runtime.
 - Runtime balance/catalog config lives in SpacetimeDB `game_config`: `tasks`, `playerLevel`, `garden`, `shop`, `research`, `brewing`, `tradeAlliance`, `items`, and `potionRecipes`; client source defaults are only bootstrap fallbacks before subscription data applies.
 - Task balance default changes need a matching `game_config.tasks` update path, such as a narrow legacy-value normalizer or an admin upsert; valid stored rows do not change just because source defaults changed.
@@ -107,6 +107,7 @@ experience_type: backend-android
 - Maincloud currently has no full action-log table; balance reads can only infer behavior from `player`, `leaderboard`, `world_chat`, player-shop tables, `npc_market_price`, and potion discoveries until analytics exists.
 - Gameplay save raw JSON must stay below the server cap before reducer normalization; cap noisy client branches like logs and do not persist full future task catalogs.
 - Gameplay save currency ceilings must cover every legitimate economy balance; a lower normalizer cap silently destroys the excess on the next save/reload round trip.
+- Do not reuse the current-coin safety ceiling for `coin.totalGenerated`; lifetime generated coin feeds the leaderboard and must survive save normalization without an application-level cap.
 - Client migrations must preserve newer branches present on lower-version server-normalized saves; Maincloud can return `version: 3` with `guild` state, and dropping it resets player guilds.
 - Android packaging uses Capacitor.
 - Cap high-refresh Android rendering on the production Pixi application ticker, not `AppGameplayTickManager`; gameplay and timer correctness stay tied to elapsed time while presentation frames can run at a lower ceiling.

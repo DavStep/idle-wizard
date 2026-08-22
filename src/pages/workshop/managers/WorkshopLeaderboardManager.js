@@ -1,5 +1,6 @@
 import { normalizePlayerCharacter } from '../../../player/playerCharacters.js';
 import { normalizeTradeAllianceTagColor } from '../../../shared/tradeAllianceTagColors.js';
+import { formatCoinAmount } from '../../../shared/coinPrice.js';
 import { createAllianceTagSpan, normalizeAllianceTag } from '../../shared/allianceTagLabel.js';
 import { setSelectedTabState } from '../../shared/selectedTabState.js';
 import {
@@ -436,7 +437,9 @@ export class WorkshopLeaderboardManager {
     return users
       .map((user) => this.normalizeUser(user))
       .filter(Boolean)
-      .sort((left, right) => right[period.valueKey] - left[period.valueKey])
+      .sort((left, right) =>
+        this.compareMetrics(right[period.valueKey], left[period.valueKey]),
+      )
       .slice(0, LEADERBOARD_VISIBLE_USER_LIMIT);
   }
 
@@ -457,7 +460,9 @@ export class WorkshopLeaderboardManager {
     return alliances
       .map((alliance) => this.normalizeAlliance(alliance))
       .filter(Boolean)
-      .sort((left, right) => right[period.valueKey] - left[period.valueKey])
+      .sort((left, right) =>
+        this.compareMetrics(right[period.valueKey], left[period.valueKey]),
+      )
       .slice(0, LEADERBOARD_VISIBLE_ALLIANCE_LIMIT)
       .map((alliance, index) => ({
         ...alliance,
@@ -499,7 +504,7 @@ export class WorkshopLeaderboardManager {
   }
 
   formatValue(value) {
-    return String(Math.floor(value));
+    return formatCoinAmount(value);
   }
 
   formatUserLabel(user, index) {
@@ -571,12 +576,32 @@ export class WorkshopLeaderboardManager {
   normalizeMetric(...values) {
     for (const value of values) {
       if (typeof value === 'bigint') {
-        return Number(value);
+        return value <= BigInt(Number.MAX_SAFE_INTEGER) ? Number(value) : value;
+      }
+
+      if (typeof value === 'string' && /^\d+$/.test(value.trim())) {
+        const metric = BigInt(value.trim());
+        return metric <= BigInt(Number.MAX_SAFE_INTEGER) ? Number(metric) : metric;
       }
 
       if (Number.isFinite(value)) {
         return value;
       }
+    }
+
+    return 0;
+  }
+
+  compareMetrics(left, right) {
+    const leftMetric = typeof left === 'bigint' ? left : BigInt(Math.floor(left || 0));
+    const rightMetric = typeof right === 'bigint' ? right : BigInt(Math.floor(right || 0));
+
+    if (leftMetric < rightMetric) {
+      return -1;
+    }
+
+    if (leftMetric > rightMetric) {
+      return 1;
     }
 
     return 0;

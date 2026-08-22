@@ -82,7 +82,7 @@ const ITEM_DROP_SIZES = Object.freeze({
   herb: 38,
   potion: 36,
 });
-const GARDEN_HARVEST_ANCHOR_SLOTS = 5;
+const GARDEN_HARVEST_VISUAL_DROP_CAP = 5;
 const GARDEN_SEED_DROP_SIZE = ITEM_DROP_SIZES.seed * 0.85;
 const GARDEN_PLANT_DROP_DURATION_MS = 500;
 const GARDEN_PLANT_DROP_OFFSET_Y = 62;
@@ -337,8 +337,7 @@ export class PixiTransientEffectsLayer extends BasePixiRetainedView {
       0,
       PIXI_TRANSIENT_LIMITS.itemDropsPerReward,
     );
-    let count = 0;
-    for (const [index, drop] of normalizedDrops.entries()) {
+    const anchoredDrops = normalizedDrops.flatMap((drop) => {
       const anchor = this.resolveAnchor(
         drop.anchor ?? drop.anchorId,
         {
@@ -347,8 +346,33 @@ export class PixiTransientEffectsLayer extends BasePixiRetainedView {
             : 0.5,
         },
       );
-      if (!anchor) {
+      return anchor ? [{ drop, anchor }] : [];
+    });
+    const sharedAnchorCounts = new Map();
+    for (const { drop, anchor } of anchoredDrops) {
+      if (drop.spreadWhenSharedAnchor !== true) {
         continue;
+      }
+      const key = `${anchor.x}:${anchor.y}`;
+      sharedAnchorCounts.set(key, (sharedAnchorCounts.get(key) ?? 0) + 1);
+    }
+    const sharedAnchorIndexes = new Map();
+    let count = 0;
+    for (const [index, { drop, anchor }] of anchoredDrops.entries()) {
+      let resolvedAnchor = anchor;
+      if (drop.spreadWhenSharedAnchor === true) {
+        const key = `${anchor.x}:${anchor.y}`;
+        const sharedCount = sharedAnchorCounts.get(key) ?? 1;
+        if (sharedCount > 1) {
+          const sharedIndex = sharedAnchorIndexes.get(key) ?? 0;
+          const spread = Math.min(56, 18 + sharedCount * 8);
+          const t = sharedIndex / (sharedCount - 1);
+          resolvedAnchor = {
+            x: anchor.x + (t - 0.5) * spread,
+            y: anchor.y,
+          };
+          sharedAnchorIndexes.set(key, sharedIndex + 1);
+        }
       }
       validateItemDropTexture(this.assets, drop);
       this.releaseOldestAtLimit(
@@ -363,10 +387,10 @@ export class PixiTransientEffectsLayer extends BasePixiRetainedView {
             drop.id ?? `item-${++this.sequence}`,
             {
               ...drop,
-              anchor,
+              anchor: resolvedAnchor,
               random: this.random,
               index,
-              count: normalizedDrops.length,
+              count: anchoredDrops.length,
             },
           );
         },
@@ -976,14 +1000,21 @@ export function createRewardVisualPresentation(event) {
             event,
             kind: 'herb',
             frameName,
-            anchorId: (index) => [
-              `garden.plot.${event.tileNumber}.plant.${
-                (index % GARDEN_HARVEST_ANCHOR_SLOTS) + 1
-              }`,
-              `garden.plot.${event.tileNumber}`,
-            ],
+            maxDrops: GARDEN_HARVEST_VISUAL_DROP_CAP,
+            anchorId: (index) => {
+              const plantIndex =
+                (index % GARDEN_HARVEST_VISUAL_DROP_CAP) + 1;
+              return [
+                `garden.plot.${event.tileNumber}.plant.${plantIndex}`,
+                ...(plantIndex === 1
+                  ? []
+                  : [`garden.plot.${event.tileNumber}.plant.1`]),
+                `garden.plot.${event.tileNumber}`,
+              ];
+            },
             anchorYRatio: 0.5,
             spread: 0,
+            spreadWhenSharedAnchor: true,
           }),
         }
       : {};
@@ -2115,12 +2146,14 @@ function createRepeatedItemDrops({
   event,
   kind,
   frameName,
+  maxDrops = PIXI_TRANSIENT_LIMITS.itemDropsPerReward,
   anchorId,
   anchorYRatio,
   spread,
+  spreadWhenSharedAnchor = false,
 }) {
   return Array.from(
-    { length: getVisualDropQuantity(event.quantity) },
+    { length: getVisualDropQuantity(event.quantity, maxDrops) },
     (_, index) => ({
       id: createRewardVisualId(event, kind, index),
       kind,
@@ -2129,6 +2162,7 @@ function createRepeatedItemDrops({
         typeof anchorId === 'function' ? anchorId(index) : anchorId,
       anchorYRatio,
       ...(Number.isFinite(spread) ? { spread } : {}),
+      ...(spreadWhenSharedAnchor ? { spreadWhenSharedAnchor: true } : {}),
     }),
   );
 }
@@ -2142,9 +2176,12 @@ function createRewardVisualId(event, kind, index) {
   return `${eventId}:${kind}:${index}`;
 }
 
-function getVisualDropQuantity(quantity) {
+function getVisualDropQuantity(
+  quantity,
+  maxDrops = PIXI_TRANSIENT_LIMITS.itemDropsPerReward,
+) {
   return Math.min(
-    PIXI_TRANSIENT_LIMITS.itemDropsPerReward,
+    maxDrops,
     normalizeItemQuantity(quantity),
   );
 }

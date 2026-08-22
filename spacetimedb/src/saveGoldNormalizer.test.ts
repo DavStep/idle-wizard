@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest';
 
 import {
-  MAX_PLAYER_SAVE_TOTAL_GENERATED_GOLD,
+  MAX_PLAYER_SAVE_CURRENT_GOLD,
   normalizeSaveGold,
   readSaveTotalGeneratedGold,
 } from './saveGoldNormalizer';
@@ -52,15 +52,31 @@ describe('normalizeSaveGold', () => {
     });
   });
 
-  it('still caps current and lifetime coin at the server save ceiling', () => {
+  it('preserves leaderboard income beyond the old billion-coin save ceiling', () => {
     expect(
       normalizeSaveGold({
-        current: MAX_PLAYER_SAVE_TOTAL_GENERATED_GOLD + 1,
-        totalGenerated: MAX_PLAYER_SAVE_TOTAL_GENERATED_GOLD + 1,
+        current: 25,
+        totalGenerated: 2_550_000_000,
       }),
     ).toEqual({
-      current: MAX_PLAYER_SAVE_TOTAL_GENERATED_GOLD,
-      totalGenerated: MAX_PLAYER_SAVE_TOTAL_GENERATED_GOLD,
+      current: 25,
+      totalGenerated: 2_550_000_000,
+    });
+
+    expect(readSaveTotalGeneratedGold({ totalGenerated: 10_000_000_000_000_000 })).toBe(
+      10_000_000_000_000_000,
+    );
+  });
+
+  it('keeps the current-coin safety ceiling separate from leaderboard income', () => {
+    expect(
+      normalizeSaveGold({
+        current: MAX_PLAYER_SAVE_CURRENT_GOLD + 1,
+        totalGenerated: 2_550_000_000,
+      }),
+    ).toEqual({
+      current: MAX_PLAYER_SAVE_CURRENT_GOLD,
+      totalGenerated: 2_550_000_000,
     });
   });
 });

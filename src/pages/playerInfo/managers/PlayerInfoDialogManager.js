@@ -339,7 +339,12 @@ export class PlayerInfoDialogManager {
   normalizeMetric(...values) {
     for (const value of values) {
       if (typeof value === 'bigint') {
-        return Number(value);
+        return value <= BigInt(Number.MAX_SAFE_INTEGER) ? Number(value) : value;
+      }
+
+      if (typeof value === 'string' && /^\d+$/.test(value.trim())) {
+        const metric = BigInt(value.trim());
+        return metric <= BigInt(Number.MAX_SAFE_INTEGER) ? Number(metric) : metric;
       }
 
       const number = Number(value);

@@ -935,6 +935,24 @@ describe('PixiGlobalDialogPresenter', () => {
     expect(otherPlayer.actions.openCosmetics).toBeUndefined();
   });
 
+  it('preserves exact leaderboard totals in Player Info', () => {
+    const totalProducedCoin = 10n ** 2_044n;
+    const harness = createHarness();
+    harness.presenter.mount();
+
+    harness.presenter.open(GLOBAL_DIALOG_IDS.PLAYER, {
+      player: {
+        identity: 'identity-mira',
+        username: 'mira',
+        totalProducedCoin,
+      },
+    });
+
+    expect(
+      harness.getOpenModel(GLOBAL_DIALOG_IDS.PLAYER).player.totalProducedCoin,
+    ).toBe(totalProducedCoin);
+  });
+
   it('connects Google from settings with the current gameplay save', async () => {
     const harness = createHarness();
     harness.authFacade.signInWithGoogle = vi.fn(() =>

@@ -122,4 +122,24 @@ describe('PlayerInfoSubscriptionManager', () => {
       ],
     });
   });
+
+  it('prefers exact leaderboard totals in player info rows', () => {
+    const totalProducedCoin = 10n ** 2_044n;
+    const manager = new PlayerInfoSubscriptionManager();
+
+    manager.connect(
+      createConnection(
+        createTable([
+          {
+            identity: 'identity-ada',
+            username: 'Ada',
+            totalProducedGold: 18_446_744_073_709_551_615n,
+            totalProducedGoldExact: totalProducedCoin.toString(),
+          },
+        ]),
+      ),
+    );
+
+    expect(manager.getSnapshot().players[0].totalProducedCoin).toBe(totalProducedCoin);
+  });
 });

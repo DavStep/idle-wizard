@@ -116,15 +116,31 @@ export class LeaderboardSubscriptionManager {
             }
           : {}),
         playerLevel: this.toPlayerLevel(row.playerLevel ?? row.player_level),
-        income: this.toNumber(row.income),
-        dailyIncome: this.toNumber(row.dailyIncome ?? row.daily_income),
-        weeklyIncome: this.toNumber(row.weeklyIncome ?? row.weekly_income),
-        monthlyIncome: this.toNumber(row.monthlyIncome ?? row.monthly_income),
-        totalGeneratedCoin: this.toNumber(
-          row.totalIncome ?? row.totalGeneratedCoin ?? row.totalGeneratedGold,
+        income: this.toMetric(
+          row.totalIncomeExact ?? row.total_income_exact ?? row.income,
         ),
-        totalIncome: this.toNumber(
-          row.totalIncome ?? row.totalGeneratedCoin ?? row.totalGeneratedGold,
+        dailyIncome: this.toMetric(
+          row.dailyIncomeExact ?? row.daily_income_exact ?? row.dailyIncome ?? row.daily_income,
+        ),
+        weeklyIncome: this.toMetric(
+          row.weeklyIncomeExact ?? row.weekly_income_exact ?? row.weeklyIncome ?? row.weekly_income,
+        ),
+        monthlyIncome: this.toMetric(
+          row.monthlyIncomeExact ?? row.monthly_income_exact ?? row.monthlyIncome ?? row.monthly_income,
+        ),
+        totalGeneratedCoin: this.toMetric(
+          row.totalIncomeExact ??
+            row.total_income_exact ??
+            row.totalIncome ??
+            row.totalGeneratedCoin ??
+            row.totalGeneratedGold,
+        ),
+        totalIncome: this.toMetric(
+          row.totalIncomeExact ??
+            row.total_income_exact ??
+            row.totalIncome ??
+            row.totalGeneratedCoin ??
+            row.totalGeneratedGold,
         ),
         dailyRank: this.toRank(row.dailyRank ?? row.daily_rank),
         weeklyRank: this.toRank(row.weeklyRank ?? row.weekly_rank),
@@ -163,7 +179,7 @@ export class LeaderboardSubscriptionManager {
     const rankKey = this.getRankKeyForValueKey(key);
 
     return [...users]
-      .sort((left, right) => right[key] - left[key])
+      .sort((left, right) => this.compareMetrics(right[key], left[key]))
       .map((user, index) => ({
         ...user,
         rank: rankKey ? user[rankKey] || index + 1 : index + 1,
@@ -248,6 +264,34 @@ export class LeaderboardSubscriptionManager {
     }
 
     return Number.isFinite(value) ? value : 0;
+  }
+
+  toMetric(value) {
+    if (typeof value === 'bigint') {
+      return value <= BigInt(Number.MAX_SAFE_INTEGER) ? Number(value) : value;
+    }
+
+    if (typeof value === 'string' && /^\d+$/.test(value.trim())) {
+      const metric = BigInt(value.trim());
+      return metric <= BigInt(Number.MAX_SAFE_INTEGER) ? Number(metric) : metric;
+    }
+
+    return Number.isFinite(value) && value >= 0 ? value : 0;
+  }
+
+  compareMetrics(left, right) {
+    const leftMetric = typeof left === 'bigint' ? left : BigInt(Math.floor(left || 0));
+    const rightMetric = typeof right === 'bigint' ? right : BigInt(Math.floor(right || 0));
+
+    if (leftMetric < rightMetric) {
+      return -1;
+    }
+
+    if (leftMetric > rightMetric) {
+      return 1;
+    }
+
+    return 0;
   }
 
   toRank(value) {

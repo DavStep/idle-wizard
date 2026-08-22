@@ -28,4 +28,5 @@ export default __t.row({
   updatedAt: __t.timestamp().name("updated_at"),
   character: __t.string(),
   frame: __t.string(),
+  totalProducedGoldExact: __t.string().name("total_produced_gold_exact"),
 });

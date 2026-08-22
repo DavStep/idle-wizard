@@ -29,4 +29,8 @@ export default __t.row({
   weeklyRank: __t.u32().name("weekly_rank"),
   monthlyRank: __t.u32().name("monthly_rank"),
   allTimeRank: __t.u32().name("all_time_rank"),
+  totalIncomeExact: __t.string().name("total_income_exact"),
+  dailyIncomeExact: __t.string().name("daily_income_exact"),
+  weeklyIncomeExact: __t.string().name("weekly_income_exact"),
+  monthlyIncomeExact: __t.string().name("monthly_income_exact"),
 });

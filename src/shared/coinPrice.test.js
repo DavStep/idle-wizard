@@ -37,4 +37,9 @@ describe('coin price formatting', () => {
     expect(formatCoinAmount(999_999)).toBe('999k');
     expect(formatCoinAmount(1_000_000)).toBe('1m');
   });
+
+  it('formats leaderboard-sized integer values without converting through Number', () => {
+    expect(formatCoinAmount(10_000_000_000_000_000n)).toBe('10aa');
+    expect(formatCoinAmount(10n ** 2_044n)).toBe('10aaa');
+  });
 });

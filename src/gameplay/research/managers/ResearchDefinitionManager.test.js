@@ -79,6 +79,8 @@ describe('ResearchDefinitionManager', () => {
       requiredPlayerLevel: 2,
       requiredResearchIds: [],
       value: '+50 mana',
+      starLevel: 1,
+      starMaxLevel: 99,
       description: 'increases mana capacity from 50 to 100.',
     });
     expect(utilityBox?.researches[1]).toMatchObject({
@@ -91,6 +93,8 @@ describe('ResearchDefinitionManager', () => {
       requiredPlayerLevel: 2,
       requiredResearchIds: [],
       value: '+1/sec',
+      starLevel: 1,
+      starMaxLevel: 99,
       description: 'increases mana generation from 1/sec to 2/sec.',
     });
     expect(utilityBox?.researches[114]).toMatchObject({
@@ -98,6 +102,8 @@ describe('ResearchDefinitionManager', () => {
       requiredPlayerLevel: 17,
       requiredResearchIds: [manaResearchIds.generation(16)],
       value: '+0.25/sec',
+      starLevel: 16,
+      starMaxLevel: 99,
       description: 'increases mana generation from 9/sec to 9.25/sec.',
     });
     expect(utilityBox?.researches.slice(198, 202)).toMatchObject([

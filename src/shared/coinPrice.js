@@ -48,6 +48,13 @@ export function formatCoinPrice(value) {
 }
 
 export function formatCoinAmount(value) {
+  if (
+    (typeof value === 'bigint' && value >= 0n) ||
+    (typeof value === 'string' && /^\d+$/.test(value.trim()))
+  ) {
+    return formatBigNumber(value);
+  }
+
   const price = normalizeCoinPrice(value);
 
   if (price === null) {

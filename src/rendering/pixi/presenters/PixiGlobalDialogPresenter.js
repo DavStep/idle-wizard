@@ -1495,7 +1495,7 @@ function normalizePlayerRequest(player = {}) {
       0,
       Math.floor(Number(player.prestigeCount ?? player.prestige) || 0),
     ),
-    totalProducedCoin: Number(
+    totalProducedCoin: nonNegativeMetric(
       player.totalProducedCoin ?? player.totalProducedGold ?? 0,
     ),
   };
@@ -1835,6 +1835,19 @@ function normalizeName(value) {
 function positiveInteger(value) {
   const number = Math.floor(Number(value));
   return Number.isFinite(number) && number > 0 ? number : null;
+}
+
+function nonNegativeMetric(value) {
+  if (typeof value === 'bigint') {
+    return value >= 0n ? value : 0;
+  }
+
+  if (typeof value === 'string' && /^\d+$/.test(value.trim())) {
+    return value.trim();
+  }
+
+  const number = Number(value);
+  return Number.isFinite(number) && number >= 0 ? number : 0;
 }
 
 function formatNumber(value) {

@@ -439,7 +439,7 @@ describe('RewardFlyoutManager', () => {
     manager.unmount();
   });
 
-  it('starts herb drops from the plant inside the garden plot', () => {
+  it('starts one herb drop per harvested herb from a single Garden plot', () => {
     document.documentElement.dataset.styleIcons = 'icons';
     const host = document.createElement('section');
     const row = document.createElement('button');
@@ -469,13 +469,41 @@ describe('RewardFlyoutManager', () => {
     manager.showReward({
       type: 'herb_harvested',
       herb: { key: 'sageHerb', label: 'sage', kind: 'herb' },
-      quantity: 1,
+      quantity: 2,
       tileNumber: 1,
     });
 
-    const anchor = document.querySelector('.room-item-drop-anchor.is-herb');
-    expect(anchor?.style.left).toBe('240px');
-    expect(anchor?.style.top).toBe('313px');
+    const anchors = document.querySelectorAll('.room-item-drop-anchor.is-herb');
+    expect(anchors).toHaveLength(2);
+    expect([...anchors].map((anchor) => anchor.style.left)).toEqual(['223px', '257px']);
+    expect([...anchors].map((anchor) => anchor.style.top)).toEqual(['313px', '313px']);
+  });
+
+  it('caps single Garden plot harvest visuals at five herb drops', () => {
+    document.documentElement.dataset.styleIcons = 'icons';
+    const host = document.createElement('section');
+    const row = document.createElement('button');
+    row.className = 'garden-page__plot-row';
+    row.dataset.gardenTileNumber = '1';
+    setRect(row, { left: 100, top: 280, width: 360, height: 40 });
+
+    const plant = document.createElement('span');
+    plant.className = 'garden-page__plot-plant';
+    setRect(plant, { left: 222, top: 292, width: 36, height: 42 });
+    row.append(plant);
+    host.append(row);
+    document.body.append(host);
+
+    const manager = new RewardFlyoutManager();
+    manager.mount(host);
+    manager.showReward({
+      type: 'herb_harvested',
+      herb: { key: 'sageHerb', label: 'sage', kind: 'herb' },
+      quantity: 10,
+      tileNumber: 1,
+    });
+
+    expect(document.querySelectorAll('.room-item-drop-anchor.is-herb')).toHaveLength(5);
   });
 
   it('starts potion drops from the cauldron liquid', () => {

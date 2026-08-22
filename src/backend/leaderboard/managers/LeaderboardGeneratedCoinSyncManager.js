@@ -83,19 +83,18 @@ export class LeaderboardGeneratedCoinSyncManager {
     }
 
     const totalGeneratedCoin = this.readTotalGeneratedCoin(snapshot);
-    if (!Number.isFinite(totalGeneratedCoin)) {
+    if (totalGeneratedCoin === null) {
       return;
     }
 
-    const flooredTotalGeneratedCoin = Math.floor(totalGeneratedCoin);
-    if (flooredTotalGeneratedCoin === this.lastObservedTotalGeneratedCoin) {
+    if (totalGeneratedCoin === this.lastObservedTotalGeneratedCoin) {
       return;
     }
 
-    this.lastObservedTotalGeneratedCoin = flooredTotalGeneratedCoin;
+    this.lastObservedTotalGeneratedCoin = totalGeneratedCoin;
 
-    if (flooredTotalGeneratedCoin > 0) {
-      this.queue(flooredTotalGeneratedCoin);
+    if (totalGeneratedCoin > 0n) {
+      this.queue(totalGeneratedCoin);
     }
   }
 
@@ -104,12 +103,12 @@ export class LeaderboardGeneratedCoinSyncManager {
       return;
     }
 
-    this.lastQueuedTotalGeneratedCoin = Math.max(
-      this.lastQueuedTotalGeneratedCoin ?? 0,
+    this.lastQueuedTotalGeneratedCoin = this.maxIncome(
+      this.lastQueuedTotalGeneratedCoin,
       totalGeneratedCoin,
     );
-    this.pendingTotalGeneratedCoin = Math.max(
-      this.pendingTotalGeneratedCoin ?? 0,
+    this.pendingTotalGeneratedCoin = this.maxIncome(
+      this.pendingTotalGeneratedCoin,
       totalGeneratedCoin,
     );
     this.flush();
@@ -128,7 +127,10 @@ export class LeaderboardGeneratedCoinSyncManager {
       return true;
     }
 
-    return totalGeneratedCoin - this.lastQueuedTotalGeneratedCoin >= this.minSyncDeltaCoin;
+    return (
+      totalGeneratedCoin - this.lastQueuedTotalGeneratedCoin >=
+      BigInt(this.minSyncDeltaCoin)
+    );
   }
 
   flush({ force = false } = {}) {
@@ -158,7 +160,9 @@ export class LeaderboardGeneratedCoinSyncManager {
     let syncResult;
     try {
       syncResult = reducer.call({
-        [reducer.paramName]: BigInt(totalGeneratedCoin),
+        [reducer.paramName]: reducer.exact
+          ? totalGeneratedCoin.toString()
+          : totalGeneratedCoin,
       });
     } catch {
       this.restorePending(totalGeneratedCoin);
@@ -211,8 +215,8 @@ export class LeaderboardGeneratedCoinSyncManager {
   }
 
   restorePending(totalGeneratedCoin) {
-    this.pendingTotalGeneratedCoin = Math.max(
-      this.pendingTotalGeneratedCoin ?? 0,
+    this.pendingTotalGeneratedCoin = this.maxIncome(
+      this.pendingTotalGeneratedCoin,
       totalGeneratedCoin,
     );
   }
@@ -223,13 +227,12 @@ export class LeaderboardGeneratedCoinSyncManager {
     }
 
     const totalGeneratedCoin = this.readTotalGeneratedCoin(this.gameplayFacade?.getSnapshot?.());
-    if (!Number.isFinite(totalGeneratedCoin)) {
+    if (totalGeneratedCoin === null) {
       return;
     }
 
-    const flooredTotalGeneratedCoin = Math.floor(totalGeneratedCoin);
-    if (flooredTotalGeneratedCoin > 0) {
-      this.queue(flooredTotalGeneratedCoin, { force });
+    if (totalGeneratedCoin > 0n) {
+      this.queue(totalGeneratedCoin, { force });
     }
   }
 
@@ -242,27 +245,56 @@ export class LeaderboardGeneratedCoinSyncManager {
   readTotalGeneratedCoin(snapshot) {
     const coin = snapshot?.coin ?? snapshot?.gold;
 
-    if (Number.isFinite(coin?.totalGenerated)) {
-      return coin.totalGenerated;
+    const totalGenerated = this.normalizeIncome(coin?.totalGenerated);
+    if (totalGenerated !== null) {
+      return totalGenerated;
     }
 
-    if (Number.isFinite(coin?.totalGeneratedCoin)) {
-      return coin.totalGeneratedCoin;
-    }
-
-    return null;
+    return this.normalizeIncome(coin?.totalGeneratedCoin);
   }
 
   findSetTotalGeneratedCoinReducer() {
     const reducers = this.connection?.reducers;
+    const exactCall =
+      reducers?.setTotalGeneratedCoinExact ??
+      reducers?.set_total_generated_coin_exact ??
+      null;
+    if (exactCall) {
+      return {
+        call: exactCall,
+        paramName: 'totalGeneratedCoinExact',
+        exact: true,
+      };
+    }
+
     const call =
       reducers?.setTotalGeneratedCoin ?? reducers?.set_total_generated_coin ?? null;
     if (call) {
-      return { call, paramName: 'totalGeneratedCoin' };
+      return { call, paramName: 'totalGeneratedCoin', exact: false };
     }
 
     const legacyCall =
       reducers?.setTotalGeneratedGold ?? reducers?.set_total_generated_gold ?? null;
-    return legacyCall ? { call: legacyCall, paramName: 'totalGeneratedGold' } : null;
+    return legacyCall
+      ? { call: legacyCall, paramName: 'totalGeneratedGold', exact: false }
+      : null;
+  }
+
+  normalizeIncome(value) {
+    if (typeof value === 'bigint') {
+      return value >= 0n ? value : null;
+    }
+
+    if (typeof value === 'string' && /^\d+$/.test(value.trim())) {
+      return BigInt(value.trim());
+    }
+
+    return Number.isFinite(value) && value >= 0
+      ? BigInt(Math.floor(value))
+      : null;
+  }
+
+  maxIncome(left, right) {
+    return left === null || right > left ? right : left;
   }
 }

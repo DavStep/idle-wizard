@@ -323,6 +323,7 @@ export class ResearchDefinitionManager {
   getManaResearches() {
     const capacityResearches = [];
     const generationResearches = [];
+    const maxRank = getManaResearchRank(manaResearchMaxPlayerLevel);
 
     for (
       let playerLevel = manaResearchFirstPlayerLevel;
@@ -341,6 +342,8 @@ export class ResearchDefinitionManager {
         displayName: 'mana capacity',
         value: '+50 mana',
         showEffect: true,
+        starLevel: rank,
+        starMaxLevel: maxRank,
         seriesId: manaResearchSeriesIds.capacity,
         requiredPlayerLevel: playerLevel,
         requiredResearchIds:
@@ -353,6 +356,8 @@ export class ResearchDefinitionManager {
         displayName: 'mana generation',
         value: `+${generationIncrease}/sec`,
         showEffect: true,
+        starLevel: rank,
+        starMaxLevel: maxRank,
         seriesId: manaResearchSeriesIds.generation,
         requiredPlayerLevel: playerLevel,
         requiredResearchIds:

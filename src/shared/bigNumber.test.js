@@ -9,4 +9,9 @@ describe('big number formatting', () => {
     expect(formatBigNumber(12_345_678)).toBe('12.3m');
     expect(formatBigNumber(9_876_543_210n)).toBe('9.87b');
   });
+
+  it('continues compact suffixes without an application-level display cap', () => {
+    expect(formatBigNumber(10_000_000_000_000_000n)).toBe('10aa');
+    expect(formatBigNumber(10n ** 2_044n)).toBe('10aaa');
+  });
 });

@@ -98,8 +98,12 @@ export class PlayerInfoSubscriptionManager {
       allianceTagColor: normalizeTradeAllianceTagColor(
         row.allianceTagColor ?? row.alliance_tag_color,
       ),
-      totalProducedCoin: this.toNumber(
-        row.totalProducedCoin ??
+      totalProducedCoin: this.toMetric(
+        row.totalProducedCoinExact ??
+          row.totalProducedGoldExact ??
+          row.total_produced_coin_exact ??
+          row.total_produced_gold_exact ??
+          row.totalProducedCoin ??
           row.totalProducedGold ??
           row.total_produced_coin ??
           row.total_produced_gold,
@@ -157,6 +161,19 @@ export class PlayerInfoSubscriptionManager {
     }
 
     return Number.isFinite(value) ? Number(value) : 0;
+  }
+
+  toMetric(value) {
+    if (typeof value === 'bigint') {
+      return value <= BigInt(Number.MAX_SAFE_INTEGER) ? Number(value) : value;
+    }
+
+    if (typeof value === 'string' && /^\d+$/.test(value.trim())) {
+      const metric = BigInt(value.trim());
+      return metric <= BigInt(Number.MAX_SAFE_INTEGER) ? Number(metric) : metric;
+    }
+
+    return this.toNumber(value);
   }
 
   toIdentityKey(identity) {

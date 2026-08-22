@@ -878,10 +878,10 @@ describe('reward flyout presenter', () => {
       createRewardVisualPresentation({
         type: 'herb_harvested',
         herb: { key: 'sageHerb', label: 'sage' },
-        quantity: 20,
+        quantity: 10,
         tileNumber: 2,
       }).itemDrops,
-    ).toHaveLength(12);
+    ).toHaveLength(5);
 
     expect(
       createRewardVisualPresentation({
@@ -946,8 +946,8 @@ describe('reward flyout presenter', () => {
     const drops = layer.entries.filter((entry) => entry.kind === 'item');
     expect(drops.map(({ widget }) => widget.model.anchorId)).toEqual([
       ['garden.plot.2.plant.1', 'garden.plot.2'],
-      ['garden.plot.2.plant.2', 'garden.plot.2'],
-      ['garden.plot.2.plant.3', 'garden.plot.2'],
+      ['garden.plot.2.plant.2', 'garden.plot.2.plant.1', 'garden.plot.2'],
+      ['garden.plot.2.plant.3', 'garden.plot.2.plant.1', 'garden.plot.2'],
     ]);
     expect(drops.map(({ widget }) => widget.model.anchor)).toEqual([
       { x: 30, y: 130 },
@@ -955,6 +955,44 @@ describe('reward flyout presenter', () => {
       { x: 150, y: 130 },
     ]);
     expect(drops.map(({ widget }) => widget.root.x)).toEqual([30, 90, 150]);
+  });
+
+  it('spreads multiple harvest drops around the one visible plant on a manual plot', () => {
+    const layer = new PixiTransientEffectsLayer({
+      assets: createAssets(),
+      semanticRegistry: createSemanticRegistry({
+        'garden.plot.1': {
+          bounds: { x: 0, y: 100, width: 90, height: 80 },
+        },
+        'garden.plot.1.plant.1': {
+          bounds: { x: 30, y: 110, width: 30, height: 40 },
+        },
+      }),
+      random: () => 0.5,
+    });
+    layer.layout({
+      sourceScale: 1,
+      authoredOffsetX: 0,
+      sourceWidth: 390,
+      sourceHeight: 844,
+    });
+
+    layer.emitReward(
+      createRewardFlyoutPresentation({
+        type: 'herb_harvested',
+        eventId: 'manual-harvest-1',
+        herb: { key: 'sageHerb', label: 'sage' },
+        quantity: 2,
+        tileNumber: 1,
+      }),
+    );
+
+    const drops = layer.entries.filter((entry) => entry.kind === 'item');
+    expect(drops.map(({ widget }) => widget.model.anchor)).toEqual([
+      { x: 28, y: 130 },
+      { x: 62, y: 130 },
+    ]);
+    expect(drops.map(({ widget }) => widget.root.x)).toEqual([28, 62]);
   });
 
   it('maps shop and task rewards to stable retained visual origins', () => {

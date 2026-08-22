@@ -5,6 +5,12 @@ upload script posts the section whose heading matches `package.json` `version`.
 Write these developer-to-player notes only in Idle Wizard terms. Do not mention
 other game names, source projects, ports, or implementation provenance.
 
+## 0.3.94
+
+- Fixed lifetime coin totals and leaderboards so extremely large earnings keep their exact value, rank correctly, and remain readable in player profiles.
+- Added visible star ranks to Mana Capacity and Mana Generation Research.
+- Improved Garden harvest feedback so a single visible plant releases one herb drop per harvested herb, capped at five visual drops without changing the real reward.
+
 ## 0.3.93
 
 - Fixed the opening Market lesson so the free first Trader stand stays available for new wizards, even when an older saved configuration tries to lock it again.

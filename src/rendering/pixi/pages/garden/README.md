@@ -147,6 +147,10 @@ Successful single-plot planting and harvesting use the dedicated Garden action
 sound banks instead of the generic click. Plot registrations suppress the
 router click; purchases, dialogs, and timer acceleration retain their existing
 action-specific feedback, while rejected plot taps stay silent.
+Harvest completion emits one herb drop per authoritative harvested unit with a
+five-drop visual cap. A manual plot keeps its single visible plant even when it
+harvests more than one herb; automated beds anchor those drops to their visible
+plant slots.
 Open `/src/dev/uiRecipes/garden-seed-picker.html` for the deterministic,
 non-persistent four-row visual-reference state.
 Open `/src/dev/uiRecipes/garden-plots.html` for the deterministic,
@@ -164,9 +168,11 @@ the player-wide progress style is gradient. Add
 render any committed count from one through five and verify that the herb group
 stays evenly spaced and centered. Add `?automated=1&tapAcceleration=1` to
 exercise the production per-herb
-timer-reduction feedback with live recipe time. Add `?automated=1&harvest=1`
-to make the long bed ready and emit the production harvest flyout from each
-matching herb slot when pressed. The default recipe shows both researched bulk
+timer-reduction feedback with live recipe time. Add `?harvest=1&quantity=2` to
+make the first manual plot ready with a two-herb reward, or
+`?automated=1&harvest=1` to make the long bed ready and emit the production
+harvest flyout from each matching herb slot when pressed. The default recipe
+shows both researched bulk
 actions with a selected Nettle seed; use `?bulk=plant` for the
 level-5 two-action composition and `?bulk=locked` for the pre-research
 Seeds-only composition. Successful planting uses one centered seed-pack drop

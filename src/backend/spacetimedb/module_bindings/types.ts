@@ -91,6 +91,10 @@ export const Leaderboard = __t.object("Leaderboard", {
   dayKey: __t.string(),
   weekKey: __t.string(),
   monthKey: __t.string(),
+  totalIncomeExact: __t.string(),
+  dailyIncomeExact: __t.string(),
+  weeklyIncomeExact: __t.string(),
+  monthlyIncomeExact: __t.string(),
 });
 export type Leaderboard = __Infer<typeof Leaderboard>;
 
@@ -116,6 +120,10 @@ export const LeaderboardSummaryResult = __t.object("LeaderboardSummaryResult", {
   weeklyRank: __t.u32(),
   monthlyRank: __t.u32(),
   allTimeRank: __t.u32(),
+  totalIncomeExact: __t.string(),
+  dailyIncomeExact: __t.string(),
+  weeklyIncomeExact: __t.string(),
+  monthlyIncomeExact: __t.string(),
 });
 export type LeaderboardSummaryResult = __Infer<typeof LeaderboardSummaryResult>;
 
@@ -583,6 +591,7 @@ export const PlayerInfoSummaryResult = __t.object("PlayerInfoSummaryResult", {
   updatedAt: __t.timestamp(),
   character: __t.string(),
   frame: __t.string(),
+  totalProducedGoldExact: __t.string(),
 });
 export type PlayerInfoSummaryResult = __Infer<typeof PlayerInfoSummaryResult>;
 

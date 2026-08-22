@@ -253,6 +253,9 @@ the soil and sibling herbs remain still while the cooldown stays plot-wide.
 Nested controls own their own release targets. States: Auto on/off, empty, growing
 x1-x5, ready, harvesting, future seed selected, active quantity committed, reduced
 motion, pooled reset, and destroyed. Scope: researched Garden plot automation.
+Harvest completion renders one herb drop per authoritative harvested unit with
+a five-drop visual cap; manual plots keep their single visible plant while
+automated beds distribute those drops across their visible plant slots.
 Reproducible preview: `src/dev/uiRecipes/garden-plots.html?automated=1`.
 Evidence: `screenshots/garden-automated-plot-390x844.jpg`,
 `screenshots/garden-automated-plot-native-crop.jpg`, and

@@ -22,4 +22,8 @@ export default __t.row({
   dayKey: __t.string().name("day_key"),
   weekKey: __t.string().name("week_key"),
   monthKey: __t.string().name("month_key"),
+  totalIncomeExact: __t.string().name("total_income_exact"),
+  dailyIncomeExact: __t.string().name("daily_income_exact"),
+  weeklyIncomeExact: __t.string().name("weekly_income_exact"),
+  monthlyIncomeExact: __t.string().name("monthly_income_exact"),
 });

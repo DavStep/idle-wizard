@@ -269,6 +269,8 @@ function createResearchRowModel({ itemTimer = false, manaModifier = null, state 
             manaModifier === 'capacity'
               ? 'source:assets/icons/research/icon-research-mana-capacity-up.png'
               : 'source:assets/icons/research/icon-research-mana-generation-plus.png',
+          starLevel: 1,
+          starMaxLevel: 99,
         }
       : {}),
     ...(itemTimer

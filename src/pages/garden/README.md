@@ -11,7 +11,9 @@ It renders open plots plus the next buy slot inside the shared bounded vertical 
 A successful tap on an empty plot plants the selected seed and plays the Garden
 planting cue. A successful tap on a ready plot starts its harvest timer with the
 standard click sound. When that harvest timer completes and the herbs fly from
-the plot, the reward plays the same short pop used by manual seed summoning.
+the plot, the reward shows one drop per harvested herb with a five-drop visual
+cap, then plays the same short pop used by manual seed summoning. The tile may
+still show one plant while its authoritative harvest quantity is higher.
 These cues use the device-local `sfx` preference.
 Tapping a growing or harvesting plot reduces its remaining active timer by at most one second,
 then locks that plot for the complete 560ms feedback sequence. A selected seed

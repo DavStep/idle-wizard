@@ -120,6 +120,17 @@
                   },
               semanticId: `garden.plot.${tileNumber}`,
             }
+          : harvest && tileNumber === 1
+            ? {
+                id: `plot-${tileNumber}`,
+                tileNumber,
+                level: 2,
+                phase: 'ready',
+                herbKey: 'sageHerb',
+                harvestQuantity: automatedQuantity,
+                process: null,
+                semanticId: `garden.plot.${tileNumber}`,
+              }
           : growing
           ? {
               id: `plot-${tileNumber}`,

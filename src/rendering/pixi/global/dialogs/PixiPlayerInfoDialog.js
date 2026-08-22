@@ -845,7 +845,7 @@ function normalizePlayerModel(model = {}) {
     playerLevel: String(positiveInteger(source.playerLevel ?? source.level, 1)),
     prestigeCount,
     totalProducedCoin: formatBigNumber(
-      nonNegativeInteger(
+      nonNegativeMetric(
         source.totalProducedCoin ??
           source.totalGeneratedCoin ??
           source.totalIncome,
@@ -928,6 +928,18 @@ function positiveInteger(value, fallback) {
 function nonNegativeInteger(value, fallback) {
   const number = Math.floor(Number(value));
   return Number.isFinite(number) && number >= 0 ? number : fallback;
+}
+
+function nonNegativeMetric(value, fallback) {
+  if (typeof value === 'bigint') {
+    return value >= 0n ? value : fallback;
+  }
+
+  if (typeof value === 'string' && /^\d+$/.test(value.trim())) {
+    return value.trim();
+  }
+
+  return nonNegativeInteger(value, fallback);
 }
 
 function nonNegativeNumber(value, fallback) {
