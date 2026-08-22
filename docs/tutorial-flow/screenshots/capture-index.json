@@ -115,7 +115,7 @@
     "step": "select-market-stand",
     "lesson": "Open Traders",
     "progress": "0/1 open",
-    "targetId": "shop.tab.traders",
+    "targetId": "shop:tab:traders",
     "page": "shop",
     "pointerVisible": true
   },
